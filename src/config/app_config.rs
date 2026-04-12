@@ -113,14 +113,36 @@ impl AppConfig {
         }
 
         let content = toml::to_string_pretty(self).context("Failed to serialize config")?;
-        std::fs::write(path, content)
-            .with_context(|| format!("Failed to write config file: {}", path.display()))?;
+
+        // Write to a temp file first, then rename for atomicity.
+        // On Unix, create with restricted permissions (0o600) BEFORE writing
+        // content to avoid a race where the file is world-readable.
+        let tmp_path = path.with_extension("tmp");
 
         #[cfg(unix)]
         {
-            use std::os::unix::fs::PermissionsExt;
-            std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600))?;
+            use std::io::Write;
+            use std::os::unix::fs::OpenOptionsExt;
+            let mut f = std::fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .mode(0o600)
+                .open(&tmp_path)
+                .with_context(|| format!("Failed to create config file: {}", tmp_path.display()))?;
+            f.write_all(content.as_bytes())
+                .with_context(|| format!("Failed to write config file: {}", tmp_path.display()))?;
+            f.flush()?;
         }
+
+        #[cfg(not(unix))]
+        {
+            std::fs::write(&tmp_path, &content)
+                .with_context(|| format!("Failed to write config file: {}", tmp_path.display()))?;
+        }
+
+        std::fs::rename(&tmp_path, path)
+            .with_context(|| format!("Failed to finalize config file: {}", path.display()))?;
 
         Ok(())
     }

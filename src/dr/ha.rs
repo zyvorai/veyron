@@ -76,17 +76,18 @@ impl HAConfig {
         self
     }
 
-    pub fn with_replicas(mut self, min: u32, max: u32) -> Self {
-        // Ensure min <= max to prevent invalid configurations
+    /// Set replica counts. Returns an error if min > max to prevent silent misconfiguration.
+    pub fn with_replicas(mut self, min: u32, max: u32) -> anyhow::Result<Self> {
         if min > max {
-            log::warn!("HA config: min_replicas ({}) > max_replicas ({}), swapping values", min, max);
-            self.min_replicas = max;
-            self.max_replicas = min;
-        } else {
-            self.min_replicas = min;
-            self.max_replicas = max;
+            anyhow::bail!(
+                "HA config: min_replicas ({}) must not exceed max_replicas ({})",
+                min,
+                max
+            );
         }
-        self
+        self.min_replicas = min;
+        self.max_replicas = max;
+        Ok(self)
     }
 
     pub fn with_health_check(
@@ -368,7 +369,7 @@ mod tests {
     fn test_ha_config_builder() {
         let config = HAConfig::new("HA")
             .with_mode(HAMode::ActiveActive)
-            .with_replicas(3, 5)
+            .with_replicas(3, 5).unwrap()
             .with_health_check(HealthCheckType::TCP, 15, 3)
             .with_auto_healing(false);
 
@@ -495,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_group_health() {
-        let config = HAConfig::new("Test HA").with_replicas(2, 4);
+        let config = HAConfig::new("Test HA").with_replicas(2, 4).unwrap();
         let mut group = HAGroup::new("Group", config);
 
         let mut member1 = HAMember::new("M1", "vm-1", true);
@@ -513,7 +514,7 @@ mod tests {
     #[test]
     fn test_group_needs_healing() {
         let config = HAConfig::new("Test HA")
-            .with_replicas(2, 4)
+            .with_replicas(2, 4).unwrap()
             .with_auto_healing(true);
         let mut group = HAGroup::new("Group", config);
 
@@ -554,7 +555,7 @@ mod tests {
     fn test_manager_healthy_groups() {
         let mut manager = HAManager::new();
 
-        let config1 = HAConfig::new("HA1").with_replicas(2, 4);
+        let config1 = HAConfig::new("HA1").with_replicas(2, 4).unwrap();
         let mut group1 = HAGroup::new("G1", config1);
         let mut m1 = HAMember::new("M1", "vm-1", true);
         m1.update_health(true);
@@ -563,7 +564,7 @@ mod tests {
         group1.add_member(m1);
         group1.add_member(m2);
 
-        let config2 = HAConfig::new("HA2").with_replicas(2, 4);
+        let config2 = HAConfig::new("HA2").with_replicas(2, 4).unwrap();
         let mut group2 = HAGroup::new("G2", config2);
         let mut m3 = HAMember::new("M3", "vm-3", true);
         m3.update_health(false);
@@ -583,7 +584,7 @@ mod tests {
         let mut manager = HAManager::new();
 
         let config1 = HAConfig::new("HA1")
-            .with_replicas(2, 4)
+            .with_replicas(2, 4).unwrap()
             .with_auto_healing(true);
         let mut group1 = HAGroup::new("G1", config1);
         let mut m1 = HAMember::new("M1", "vm-1", true);
@@ -592,7 +593,7 @@ mod tests {
         m1.update_health(false);
         group1.add_member(m1);
 
-        let config2 = HAConfig::new("HA2").with_replicas(2, 4);
+        let config2 = HAConfig::new("HA2").with_replicas(2, 4).unwrap();
         let mut group2 = HAGroup::new("G2", config2);
         let mut m2 = HAMember::new("M2", "vm-2", true);
         m2.update_health(true);

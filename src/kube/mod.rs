@@ -166,28 +166,26 @@ impl KubeClient {
         }
     }
 
-    /// Restart a VM (stop then start, polling for shutdown)
+    /// Restart a VM (stop then start, polling for shutdown with timeout)
     pub async fn restart_vm(&self, namespace: &str, name: &str) -> Result<VirtualMachine> {
         self.stop_vm(namespace, name).await?;
-        // Poll for VM to stop (max 30 seconds)
-        let mut stopped = false;
-        for _ in 0..30 {
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-            match self.is_running(namespace, name).await {
-                Ok(false) => {
-                    stopped = true;
-                    break;
-                }
-                Ok(true) => continue,
-                Err(e) => {
-                    log::warn!("Error checking VM status during restart: {}", e);
-                    return Err(e);
+        // Poll for VM to stop with a 30-second timeout
+        let poll = async {
+            loop {
+                tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                match self.is_running(namespace, name).await {
+                    Ok(false) => return Ok(()),
+                    Ok(true) => continue,
+                    Err(e) => {
+                        log::warn!("Error checking VM status during restart: {}", e);
+                        return Err(e);
+                    }
                 }
             }
-        }
-        if !stopped {
-            anyhow::bail!("VM '{}' did not stop within 30 seconds", name);
-        }
+        };
+        tokio::time::timeout(tokio::time::Duration::from_secs(30), poll)
+            .await
+            .map_err(|_| anyhow::anyhow!("VM '{}' did not stop within 30 seconds", name))??;
         self.start_vm(namespace, name).await
     }
 

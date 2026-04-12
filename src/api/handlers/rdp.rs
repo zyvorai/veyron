@@ -281,10 +281,13 @@ pub struct RdpCredentialsRequest {
     pub domain: Option<String>,
 }
 
+/// Maximum clipboard size (10 MiB) to prevent memory exhaustion
+const MAX_CLIPBOARD_SIZE: usize = 10 * 1024 * 1024;
+
 /// RDP clipboard transfer
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RdpClipboardRequest {
-    /// Clipboard content (text)
+    /// Clipboard content (text, max 10 MiB)
     pub text: Option<String>,
     /// Clipboard content type
     pub content_type: String,
@@ -451,6 +454,16 @@ async fn send_clipboard(
     Path(id): Path<String>,
     Json(req): Json<RdpClipboardRequest>,
 ) -> Json<serde_json::Value> {
+    // Enforce clipboard size limit
+    if let Some(ref text) = req.text {
+        if text.len() > MAX_CLIPBOARD_SIZE {
+            return Json(serde_json::json!({
+                "session_id": id,
+                "sent": false,
+                "error": format!("Clipboard content exceeds maximum size of {} bytes", MAX_CLIPBOARD_SIZE)
+            }));
+        }
+    }
     let _ = &req;
     Json(serde_json::json!({
         "session_id": id,

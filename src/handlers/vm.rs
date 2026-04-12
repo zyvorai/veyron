@@ -369,7 +369,7 @@ pub async fn handle_create(
             config.disks.insert(0, disk);
             // Bump boot_order of existing disks to avoid conflicts
             for disk in config.disks.iter_mut().skip(1) {
-                disk.boot_order += 1;
+                disk.boot_order = disk.boot_order.saturating_add(1);
             }
         }
     }
@@ -1194,7 +1194,7 @@ pub async fn handle_batch(
     pb.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:40.cyan/blue} {pos}/{len} {msg}")
-            .expect("invalid progress bar template")
+            .unwrap_or_else(|_| ProgressStyle::default_bar())
             .progress_chars("=>-"),
     );
 

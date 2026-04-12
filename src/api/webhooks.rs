@@ -167,8 +167,32 @@ impl WebhookConfig {
         self
     }
 
-    pub fn add_header(&mut self, key: impl Into<String>, value: impl Into<String>) {
-        self.headers.insert(key.into(), value.into());
+    /// Add a custom header. Validates that the key and value are safe HTTP header values
+    /// (no CRLF injection, reasonable size, no forbidden headers).
+    pub fn add_header(&mut self, key: impl Into<String>, value: impl Into<String>) -> anyhow::Result<()> {
+        let key = key.into();
+        let value = value.into();
+
+        // Reject CRLF injection
+        if key.contains('\r') || key.contains('\n') || value.contains('\r') || value.contains('\n') {
+            anyhow::bail!("Header key/value must not contain CR or LF characters");
+        }
+        // Reject oversized headers
+        if key.len() > 256 || value.len() > 8192 {
+            anyhow::bail!("Header key must be <= 256 bytes, value <= 8192 bytes");
+        }
+        // Reject forbidden headers
+        let lower = key.to_lowercase();
+        if ["host", "content-length", "transfer-encoding"].contains(&lower.as_str()) {
+            anyhow::bail!("Header '{}' is forbidden for webhook custom headers", key);
+        }
+        // Validate header name: only visible ASCII chars except delimiters (RFC 7230)
+        if !key.bytes().all(|b| b > 32 && b < 127 && !b"\"(),/:;<=>?@[\\]{}".contains(&b)) {
+            anyhow::bail!("Header key contains invalid characters");
+        }
+
+        self.headers.insert(key, value);
+        Ok(())
     }
 
     pub fn with_retry(mut self, count: u32, delay_secs: u64) -> Self {
@@ -369,8 +393,22 @@ mod tests {
     #[test]
     fn test_webhook_add_header() {
         let mut wh = WebhookConfig::new("test", "https://example.com").unwrap();
-        wh.add_header("X-Custom", "value");
+        wh.add_header("X-Custom", "value").unwrap();
         assert_eq!(wh.headers.get("X-Custom"), Some(&"value".to_string()));
+    }
+
+    #[test]
+    fn test_webhook_rejects_crlf_header() {
+        let mut wh = WebhookConfig::new("test", "https://example.com").unwrap();
+        assert!(wh.add_header("X-Bad\r\n", "value").is_err());
+        assert!(wh.add_header("X-OK", "bad\nvalue").is_err());
+    }
+
+    #[test]
+    fn test_webhook_rejects_forbidden_header() {
+        let mut wh = WebhookConfig::new("test", "https://example.com").unwrap();
+        assert!(wh.add_header("Host", "evil.com").is_err());
+        assert!(wh.add_header("Content-Length", "999").is_err());
     }
 
     #[test]

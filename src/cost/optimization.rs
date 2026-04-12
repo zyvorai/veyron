@@ -209,10 +209,17 @@ impl OptimizationEngine {
                 .ceil() as u32)
                 .max(1);
 
-            let savings_percent = ((current_cpu - recommended_cpu) as f64 / current_cpu as f64
-                + (current_memory_gb - recommended_memory) as f64 / current_memory_gb as f64)
-                / 2.0
-                * 100.0;
+            let cpu_savings_ratio = if current_cpu > 0 {
+                (current_cpu - recommended_cpu) as f64 / current_cpu as f64
+            } else {
+                0.0
+            };
+            let mem_savings_ratio = if current_memory_gb > 0 {
+                (current_memory_gb - recommended_memory) as f64 / current_memory_gb as f64
+            } else {
+                0.0
+            };
+            let savings_percent = (cpu_savings_ratio + mem_savings_ratio) / 2.0 * 100.0;
             let potential_savings = current_monthly_cost * (savings_percent / 100.0);
 
             Some(

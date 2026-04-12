@@ -67,10 +67,20 @@ impl EncryptionKey {
         self.metadata.insert(key.into(), value.into());
     }
 
+    /// Rotate key metadata (bumps version and records rotation time).
+    ///
+    /// **Important**: This only updates metadata. Actual key material
+    /// regeneration must be handled by the encryption provider (KMS, Vault, etc.).
+    /// For `EncryptionProvider::Local`, callers must generate new key material
+    /// and re-encrypt existing data with the new key.
     pub fn rotate(&mut self) {
-        log::warn!("Key rotation only updates metadata. Actual key material regeneration is not yet implemented.");
         self.version += 1;
         self.last_rotated = Some(Utc::now());
+        log::info!(
+            "Key '{}' rotated to version {} (metadata only — provider must handle material rotation)",
+            self.name,
+            self.version
+        );
     }
 
     pub fn deactivate(&mut self) {

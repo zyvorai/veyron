@@ -10,7 +10,10 @@ struct WebhookStore {
 impl WebhookStore {
     fn path() -> std::path::PathBuf {
         dirs::data_dir()
-            .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+            .unwrap_or_else(|| {
+                log::warn!("Could not determine data directory, falling back to /tmp");
+                std::path::PathBuf::from("/tmp")
+            })
             .join("vmrogue")
             .join("webhooks.json")
     }
@@ -33,11 +36,32 @@ impl WebhookStore {
             let _ = std::fs::create_dir_all(parent);
         }
         if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = std::fs::write(&path, content);
+            // Atomic write: write to temp file then rename to prevent
+            // data loss from concurrent save operations.
+            let tmp_path = path.with_extension("tmp");
+
             #[cfg(unix)]
             {
-                use std::os::unix::fs::PermissionsExt;
-                let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+                use std::io::Write;
+                use std::os::unix::fs::OpenOptionsExt;
+                if let Ok(mut f) = std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .mode(0o600)
+                    .open(&tmp_path)
+                {
+                    if f.write_all(content.as_bytes()).is_ok() && f.flush().is_ok() {
+                        let _ = std::fs::rename(&tmp_path, &path);
+                    }
+                }
+            }
+
+            #[cfg(not(unix))]
+            {
+                if std::fs::write(&tmp_path, &content).is_ok() {
+                    let _ = std::fs::rename(&tmp_path, &path);
+                }
             }
         }
     }
@@ -105,6 +129,13 @@ fn validate_webhook_url(url: &str) -> Result<(), String> {
                         "Webhook URLs to loopback/unspecified IPs are not allowed".to_string(),
                     );
                 }
+                // Check IPv6 unique-local (fc00::/7) and link-local (fe80::/10)
+                let segments = v6.segments();
+                if (segments[0] & 0xfe00) == 0xfc00 || (segments[0] & 0xffc0) == 0xfe80 {
+                    return Err(
+                        "Webhook URLs to private/internal IPs are not allowed".to_string(),
+                    );
+                }
                 // Check for IPv4-mapped IPv6 (::ffff:x.x.x.x)
                 if let Some(v4) = v6.to_ipv4_mapped() {
                     if v4.is_loopback()
@@ -127,7 +158,9 @@ fn validate_webhook_url(url: &str) -> Result<(), String> {
 pub async fn deliver_webhook(url: &str, event: &str, data: &serde_json::Value) -> Result<()> {
     // Validate the webhook URL to prevent SSRF attacks
     if let Err(e) = validate_webhook_url(url) {
-        log::warn!("Webhook URL validation failed for '{}': {}", url, e);
+        // Redact URL in logs to avoid leaking tokens in query parameters
+        let redacted = url.split('?').next().unwrap_or("[invalid]");
+        log::warn!("Webhook URL validation failed for '{}': {}", redacted, e);
         return Ok(());
     }
 
@@ -145,11 +178,13 @@ pub async fn deliver_webhook(url: &str, event: &str, data: &serde_json::Value) -
 
     match status {
         Ok(output) if output.status.success() => {
-            log::info!("Webhook delivered to {}", url);
+            let redacted = url.split('?').next().unwrap_or("[url]");
+            log::info!("Webhook delivered to {}", redacted);
             Ok(())
         }
         Ok(output) => {
-            log::warn!("Webhook delivery to {} failed: {}", url, String::from_utf8_lossy(&output.stderr));
+            let redacted = url.split('?').next().unwrap_or("[url]");
+            log::warn!("Webhook delivery to {} failed: {}", redacted, String::from_utf8_lossy(&output.stderr));
             Ok(()) // Don't fail the operation due to webhook delivery failure
         }
         Err(e) => {
@@ -862,8 +897,9 @@ pub async fn handle_tui(namespace: String, theme: Option<String>, interactive: b
     let _ = execute!(terminal.backend_mut(), LeaveAlternateScreen);
     let _ = terminal.show_cursor();
 
-    // Remove the custom panic hook (restores default behavior)
-    let _ = std::panic::take_hook();
+    // Restore the default panic hook (take_hook removes our custom one,
+    // then set_hook installs the returned default)
+    drop(std::panic::take_hook());
 
     // Handle any errors after terminal is restored
     result?;

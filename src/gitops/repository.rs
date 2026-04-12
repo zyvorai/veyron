@@ -33,12 +33,26 @@ impl GitRepository {
     }
 
     pub fn clone(&mut self) -> Result<(), String> {
-        // Validate inputs to prevent git argument injection
-        if self.url.starts_with('-') {
-            return Err("Invalid repository URL".to_string());
+        // Validate inputs to prevent git argument injection.
+        // Block values starting with '-' (git flag injection), containing
+        // null bytes, or using shell metacharacters that could be dangerous.
+        for (label, value) in [("URL", &self.url), ("branch", &self.branch)] {
+            if value.starts_with('-') {
+                return Err(format!("Invalid repository {}: must not start with '-'", label));
+            }
+            if value.contains('\0') {
+                return Err(format!("Invalid repository {}: must not contain null bytes", label));
+            }
+            if value.contains("--upload-pack")
+                || value.contains("--config")
+                || value.contains("--exec-path")
+            {
+                return Err(format!("Invalid repository {}: contains disallowed git option", label));
+            }
         }
-        if self.branch.starts_with('-') {
-            return Err("Invalid branch name".to_string());
+        // Branch names: only allow alphanumeric, '-', '_', '.', '/'
+        if !self.branch.chars().all(|c| c.is_alphanumeric() || "-_./".contains(c)) {
+            return Err("Invalid branch name: contains disallowed characters".to_string());
         }
 
         self.status = RepositoryStatus::Cloning;
@@ -110,11 +124,17 @@ impl GitRepository {
     pub fn checkout(&mut self, revision: impl Into<String>) -> Result<(), String> {
         let rev = revision.into();
 
+        // Validate revision to prevent argument injection
+        if rev.starts_with('-') || rev.contains('\0') {
+            return Err("Invalid revision: must not start with '-' or contain null bytes".to_string());
+        }
+
         if matches!(self.status, RepositoryStatus::Ready) {
             let output = std::process::Command::new("git")
                 .arg("-C")
                 .arg(&self.path)
                 .arg("checkout")
+                .arg("--")
                 .arg(&rev)
                 .output()
                 .map_err(|e| format!("Failed to execute git checkout: {}", e))?;
@@ -353,8 +373,10 @@ impl RepositoryManager {
             .collect();
         if parts.len() >= 2 {
             format!("{}-{}", parts[parts.len() - 2], parts[parts.len() - 1])
+        } else if let Some(last) = parts.last() {
+            last.to_string()
         } else {
-            parts.last().unwrap_or(&"repo").to_string()
+            "repo".to_string()
         }
     }
 }

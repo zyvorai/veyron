@@ -106,7 +106,10 @@ impl Secret {
         if self.status == SecretStatus::Revoked {
             anyhow::bail!("Cannot rotate a revoked secret '{}'", self.name);
         }
-        // Clear old value before replacing
+        // Overwrite old value bytes with zeros before dropping to reduce
+        // the window where sensitive data remains in memory.
+        let old_bytes = unsafe { self.value.as_mut_vec() };
+        old_bytes.fill(0);
         self.value.clear();
         self.value = new_value.into();
         self.version += 1;
@@ -116,7 +119,10 @@ impl Secret {
 
     pub fn revoke(&mut self) {
         self.status = SecretStatus::Revoked;
-        self.value = String::new();
+        // Zero out the secret value before clearing
+        let old_bytes = unsafe { self.value.as_mut_vec() };
+        old_bytes.fill(0);
+        self.value.clear();
         self.updated_at = Utc::now();
     }
 

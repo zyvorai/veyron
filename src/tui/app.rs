@@ -144,13 +144,16 @@ impl App {
 
         let area = f.area();
 
-        // Show error message if present
+        // Show error message if present (guard against very small terminals)
         if let Some(ref msg) = self.error_message {
+            if area.width < 8 || area.height < 6 {
+                // Terminal too small to render error overlay
+            } else {
             let error_area = Rect {
                 x: area.width / 4,
                 y: area.height / 3,
                 width: area.width / 2,
-                height: 3,
+                height: 3.min(area.height.saturating_sub(area.height / 3)),
             };
 
             let error = Paragraph::new(msg.as_str())
@@ -159,15 +162,17 @@ impl App {
                 .alignment(Alignment::Center);
 
             f.render_widget(error, error_area);
+        } // else: terminal too small
         }
 
-        // Show success message if present
+        // Show success message if present (guard against very small terminals)
         if let Some(ref msg) = self.success_message {
+            if area.width >= 8 && area.height >= 6 {
             let success_area = Rect {
                 x: area.width / 4,
                 y: area.height / 3,
                 width: area.width / 2,
-                height: 3,
+                height: 3.min(area.height.saturating_sub(area.height / 3)),
             };
 
             let success = Paragraph::new(msg.as_str())
@@ -180,6 +185,7 @@ impl App {
                 .alignment(Alignment::Center);
 
             f.render_widget(success, success_area);
+        } // small terminal guard
         }
     }
 

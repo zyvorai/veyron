@@ -186,7 +186,7 @@ impl BudgetStatus {
                 BudgetPeriod::Monthly => {
                     let now = Utc::now();
                     let next_month_start = if now.month() == 12 {
-                        chrono::NaiveDate::from_ymd_opt(now.year() + 1, 1, 1)
+                        chrono::NaiveDate::from_ymd_opt(now.year().saturating_add(1), 1, 1)
                     } else {
                         chrono::NaiveDate::from_ymd_opt(now.year(), now.month() + 1, 1)
                     };
@@ -199,7 +199,7 @@ impl BudgetStatus {
                     let now = Utc::now();
                     let quarter_end_month = ((now.month() - 1) / 3 + 1) * 3 + 1;
                     let (y, m) = if quarter_end_month > 12 {
-                        (now.year() + 1, 1)
+                        (now.year().saturating_add(1), 1)
                     } else {
                         (now.year(), quarter_end_month)
                     };
@@ -210,7 +210,7 @@ impl BudgetStatus {
                 }
                 BudgetPeriod::Yearly => {
                     let now = Utc::now();
-                    match chrono::NaiveDate::from_ymd_opt(now.year() + 1, 1, 1) {
+                    match chrono::NaiveDate::from_ymd_opt(now.year().saturating_add(1), 1, 1) {
                         Some(end) => (end - now.date_naive()).num_days().max(0),
                         None => 365,
                     }

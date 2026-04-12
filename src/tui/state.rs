@@ -615,9 +615,7 @@ impl AppState {
             Some(s) if s == "Stopped" => Some("Failed".to_string()),
             _ => None,
         };
-        // Reset selection, clamping to filtered list bounds
-        let filtered_len = self.filtered_vms().len();
-        let _ = filtered_len;
+        // Reset selection
         self.selected_index = 0;
     }
 

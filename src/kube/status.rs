@@ -230,10 +230,10 @@ impl ResourceSummary {
             }
 
             if let Some(cpu) = &vm.spec.template.spec.domain.cpu {
-                let cores = cpu.cores.unwrap_or(1);
-                let sockets = cpu.sockets.unwrap_or(1);
-                let threads = cpu.threads.unwrap_or(1);
-                total_cpu_cores += cores * sockets * threads;
+                let cores = cpu.cores.unwrap_or(1) as u64;
+                let sockets = cpu.sockets.unwrap_or(1) as u64;
+                let threads = cpu.threads.unwrap_or(1) as u64;
+                total_cpu_cores += (cores.saturating_mul(sockets).saturating_mul(threads)) as u32;
             }
 
             if let Some(memory) = &vm.spec.template.spec.domain.memory {
