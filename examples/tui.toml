@@ -1,0 +1,67 @@
+# VMRogue TUI Configuration
+# Save this file to ~/.config/vmrogue/tui.toml
+
+[theme]
+# Theme name: "default", "dark", "light", "kubernetes"
+name = "default"
+
+# Custom color overrides (hex format)
+# Uncomment to override default colors
+# primary = "#8856DE"
+# success = "#32CD32"
+# error = "#DC322F"
+
+[ui]
+# Show splash screen on startup
+show_splash = true
+
+# Splash screen duration in milliseconds
+splash_duration_ms = 800
+
+# Show stats bar (displays total VMs, running VMs, etc.)
+show_stats_bar = true
+
+# Default view on startup
+# Options: "dashboard", "vms", "templates", "events", "monitoring"
+default_view = "dashboard"
+
+# Auto-refresh interval in seconds (0 to disable)
+auto_refresh_interval = 5
+
+# Table formatting style
+# Options: "rounded", "sharp", "double", "simple"
+table_style = "rounded"
+
+[behavior]
+# Show confirmation prompt before deleting VMs
+confirm_delete = true
+
+# Show confirmation prompt before stopping VMs
+confirm_stop = false
+
+# Show confirmation prompt before restarting VMs
+confirm_restart = false
+
+# Search case sensitive by default
+search_case_sensitive = false
+
+# Search regex mode by default
+search_regex = false
+
+# Scroll amount (lines per page up/down)
+scroll_amount = 10
+
+# Maximum items in lists
+max_list_items = 1000
+
+[keybindings]
+# Enable vim mode (hjkl navigation)
+vim_mode = true
+
+# Enable quick jump menu (Ctrl+P)
+quick_jump = true
+
+# Custom keybindings (future feature)
+# [keybindings.custom]
+# "ctrl+t" = "toggle_theme"
+# "ctrl+r" = "refresh"

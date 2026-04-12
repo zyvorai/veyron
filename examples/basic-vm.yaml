@@ -1,0 +1,25 @@
+# VMRogue VM Configuration
+# This file uses VMRogue's simplified YAML format.
+# To convert to KubeVirt manifest: vmrogue create --from-file basic-vm.yaml --output yaml --dry-run
+name: my-vm
+namespace: default
+cpu:
+  cores: 2
+  sockets: 1
+  threads: 1
+memory:
+  size: 4Gi
+disks:
+  - name: rootdisk
+    size: 20Gi
+    boot_order: 1
+    source:
+      type: blank
+interfaces:
+  - name: default
+    network: default
+    model: virtio
+    network_type: pod
+labels:
+  app: my-app
+  environment: dev

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v9s Web UI — Live Product Showcase</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+  .cover { height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; }
+  .cover h1 { font-size: 3.5em; font-weight: 800; margin-bottom: 0.2em; } .cover h1 span { color: #3b82f6; }
+  .cover h2 { font-size: 1.4em; font-weight: 300; opacity: 0.9; margin-bottom: 1.5em; }
+  .cover .tagline { font-size: 1.1em; opacity: 0.7; max-width: 600px; }
+  .cover .badge { display: inline-block; background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.4); padding: 8px 20px; border-radius: 20px; font-size: 0.9em; margin-top: 2em; }
+  .page { min-height: 100vh; padding: 50px 60px; page-break-after: always; }
+  .page-dark { background: #0f111a; color: #e8e6df; }
+  .page-light { background: #fafbfc; }
+  h2.st { font-size: 2em; font-weight: 700; margin-bottom: 0.5em; } h2.st span { color: #3b82f6; }
+  h3 { font-size: 1.2em; font-weight: 600; margin: 1em 0 0.4em; color: #3b82f6; }
+  .page-light h3 { color: #1d4ed8; }
+  p { margin-bottom: 0.8em; font-size: 1em; }
+  .sub { font-size: 1em; opacity: 0.7; margin-bottom: 1.5em; }
+  .screenshot { width: 100%; border-radius: 12px; border: 2px solid rgba(59,130,246,0.3); box-shadow: 0 8px 32px rgba(0,0,0,0.3); margin: 1em 0; }
+  .screenshot-sm { width: 100%; border-radius: 10px; border: 1px solid rgba(59,130,246,0.2); box-shadow: 0 4px 16px rgba(0,0,0,0.2); margin: 0.8em 0; }
+  .ss-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 1em 0; }
+  .ss-item { text-align: center; }
+  .ss-item img { width: 100%; border-radius: 8px; border: 1px solid rgba(59,130,246,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .ss-item .caption { font-size: 0.85em; opacity: 0.7; margin-top: 6px; }
+  .feature-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 1em 0; }
+  .feature-item { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15); border-radius: 8px; padding: 12px 16px; font-size: 0.9em; }
+  .page-dark .feature-item { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); }
+  .footer { text-align: center; padding: 20px; font-size: 0.85em; opacity: 0.5; }
+  .cta-box { background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; padding: 30px; border-radius: 16px; text-align: center; margin: 2em 0; }
+  .cta-box h3 { color: #fff; font-size: 1.4em; margin-bottom: 0.3em; }
+  .cta-box p { opacity: 0.9; font-size: 1em; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>v<span>9</span>s</h1>
+  <h2>Live Product Showcase</h2>
+  <p class="tagline">Real screenshots from a production KubeVirt cluster. Every feature shown is live and working at https://185.165.240.5:5050</p>
+  <div class="badge">Live Screenshots &mdash; Production Environment</div>
+</div>
+
+<!-- PAGE 2: LOGIN + DASHBOARD -->
+<div class="page page-dark">
+  <h2 class="st">Login &amp; <span>Dashboard</span></h2>
+  <p class="sub">Secure PAM authentication and real-time cluster overview.</p>
+
+  <h3>Login Screen</h3>
+  <img src="screenshots/01-login-page.png" class="screenshot" alt="v9s Login" />
+  <p>System-level PAM authentication. Supports local users, LDAP, SSSD. JWT token-based sessions.</p>
+</div>
+
+<div class="page page-light">
+  <h3>Dashboard</h3>
+  <img src="screenshots/03-dashboard.png" class="screenshot" alt="v9s Dashboard" />
+  <p>Cluster overview: VM count, allocated vCPUs, memory, nodes. Host CPU/memory/disk gauges with load average. OS, kernel, CPU model. VM list with status. Recent Kubernetes events feed.</p>
+</div>
+
+<!-- PAGE 4: VM LIST + DETAILS -->
+<div class="page page-dark">
+  <h2 class="st">VM <span>Management</span></h2>
+  <p class="sub">Full lifecycle control with slide-out detail panel.</p>
+
+  <h3>VM List with Details Panel</h3>
+  <img src="screenshots/05-vm-details-summary.png" class="screenshot" alt="VM Details" />
+  <p>Click any VM to open the detail panel. Summary tab shows: status badge (Running/Stopped), CPU/memory usage, node, age. Action buttons: Start, Stop, Restart, Delete. Basic info and resource allocation.</p>
+</div>
+
+<!-- PAGE 5: CONSOLE -->
+<div class="page page-light">
+  <h2 class="st">Console <span>Access</span></h2>
+  <p class="sub">VNC, Serial, and SSH &mdash; directly in the browser.</p>
+
+  <h3>VNC Console with Sendkey Toolbar</h3>
+  <img src="screenshots/06-vm-console.png" class="screenshot" alt="VNC Console" />
+  <p>Full graphical VNC console via noVNC WebSocket proxy. Sendkey toolbar with Ctrl+Alt+Delete, Ctrl+Alt+F1/F2/F7. Fullscreen mode. Connection status indicator. Auto-reconnect.</p>
+</div>
+
+<!-- PAGE 6: METRICS -->
+<div class="page page-dark">
+  <h2 class="st">Real-Time <span>Metrics</span></h2>
+  <p class="sub">WebSocket-streamed performance data with live charts.</p>
+
+  <h3>VM Metrics Dashboard</h3>
+  <img src="screenshots/07-vm-metrics.png" class="screenshot" alt="VM Metrics" />
+  <p>Per-VM metrics via WebSocket: CPU usage (green), Memory usage (blue), Network I/O dual-line (RX purple, TX amber), Disk I/O dual-line (Read cyan, Write red). 60-point rolling history. No Prometheus required.</p>
+</div>
+
+<!-- PAGE 7: STORAGE + NETWORK -->
+<div class="page page-light">
+  <h2 class="st">Storage &amp; <span>Network</span></h2>
+  <p class="sub">Disk management, ISO mount, and network interface control.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/08-vm-storage.png" alt="Storage" />
+      <div class="caption">Storage Tab &mdash; Attached volumes, ISO mount button</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/09-vm-network.png" alt="Network" />
+      <div class="caption">Network Tab &mdash; Interfaces, IP, MAC, Add Network</div>
+    </div>
+  </div>
+
+  <div class="feature-list">
+    <div class="feature-item"><strong>Mount ISO</strong> &mdash; Modal dialog, container disk URL, SATA CDROM, duplicate protection</div>
+    <div class="feature-item"><strong>Add Network</strong> &mdash; Pod/Multus types, Bridge/Masquerade/SR-IOV bindings</div>
+    <div class="feature-item"><strong>Storage Classes</strong> &mdash; View available K8s storage classes for PVC provisioning</div>
+    <div class="feature-item"><strong>Guest OS Info</strong> &mdash; OS name, version, kernel from QEMU guest agent</div>
+  </div>
+</div>
+
+<!-- PAGE 8: SNAPSHOTS + EVENTS + YAML -->
+<div class="page page-dark">
+  <h2 class="st">Snapshots, Events &amp; <span>YAML</span></h2>
+  <p class="sub">Point-in-time backups, audit trail, and configuration editing.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/10-vm-snapshots.png" alt="Snapshots" />
+      <div class="caption">Snapshots &mdash; Create, list, delete with status badges</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/11-vm-events.png" alt="Events" />
+      <div class="caption">Events &mdash; K8s events filtered by VM</div>
+    </div>
+  </div>
+
+  <h3>YAML Editor</h3>
+  <img src="screenshots/12-vm-yaml.png" class="screenshot-sm" alt="YAML Editor" />
+  <p>Full VM YAML configuration viewer with copy-to-clipboard. Edit and apply changes directly via KubeVirt API.</p>
+</div>
+
+<!-- PAGE 9: HOST INFO -->
+<div class="page page-light">
+  <h2 class="st">Host <span>Information</span></h2>
+  <p class="sub">Complete hardware and system inventory in 5 tabbed sections.</p>
+
+  <h3>System Overview</h3>
+  <img src="screenshots/14-host-overview.png" class="screenshot" alt="Host Overview" />
+  <p>Hostname, OS (AlmaLinux 9.7), kernel, CPU model (Intel Xeon E3-1230 v6), BIOS, vendor (Fujitsu). CPU 66%, Memory 52%, Disk 78% with gradient bars. Uptime 2d 21h.</p>
+</div>
+
+<!-- PAGE 10: HOST HARDWARE -->
+<div class="page page-dark">
+  <h3>Hardware Inventory</h3>
+  <img src="screenshots/15-host-hardware.png" class="screenshot" alt="Host Hardware" />
+  <p>RAM modules: DIMM slot, 16GB DDR4, 2400 MHz, Kingston. PCI devices: 15+ devices with slot, class, vendor, device name. Scrollable table with hover highlight.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/16-host-partitions.png" alt="Partitions" />
+      <div class="caption">Partitions &mdash; /boot, /boot/efi, / with usage bars</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/18-host-services.png" alt="Services" />
+      <div class="caption">Services &mdash; 55+ systemd services with status badges</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 11: MORE PAGES -->
+<div class="page page-light">
+  <h2 class="st">Additional <span>Views</span></h2>
+  <p class="sub">Templates, events, and node management.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/20-templates-page.png" alt="Templates" />
+      <div class="caption">Templates &mdash; Browse and deploy VM templates</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/19-events-page.png" alt="Events" />
+      <div class="caption">Events &mdash; Cluster-wide Kubernetes events</div>
+    </div>
+  </div>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/21-nodes-page.png" alt="Nodes" />
+      <div class="caption">Nodes &mdash; Kubernetes node status and resources</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/17-host-network.png" alt="Host Network" />
+      <div class="caption">Host Network &mdash; Interfaces, IPs, traffic counters</div>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h3>See it live</h3>
+    <p>https://185.165.240.5:5050<br>Production KubeVirt cluster. Real VMs. Real metrics.</p>
+  </div>
+
+  <div class="footer">
+    <p>v9s &mdash; KubeVirt Web Management Platform<br>
+    Proprietary Software &mdash; Founders: Susant Sahani &amp; Sibu</p>
+  </div>
+</div>
+
+</body>
+</html>

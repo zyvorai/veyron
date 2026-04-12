@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMRogue — KubeVirt VM Management CLI</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+  .cover { height: 100vh; background: linear-gradient(135deg, #1a0533, #2d1b69, #4c1d95); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; position: relative; overflow: hidden; }
+  .cover::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle at 30% 50%, rgba(192,132,252,0.15) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(139,92,246,0.1) 0%, transparent 50%); }
+  .cover h1 { font-size: 3.5em; font-weight: 800; letter-spacing: -2px; margin-bottom: 0.2em; position: relative; }
+  .cover h1 span { color: #c084fc; }
+  .cover h2 { font-size: 1.4em; font-weight: 300; opacity: 0.9; margin-bottom: 1em; position: relative; }
+  .cover .tagline { font-size: 1.1em; opacity: 0.7; max-width: 650px; position: relative; }
+  .cover .badge { display: inline-block; background: rgba(192,132,252,0.2); border: 1px solid rgba(192,132,252,0.4); padding: 8px 20px; border-radius: 20px; font-size: 0.9em; margin-top: 2em; position: relative; }
+  .page { min-height: 100vh; padding: 60px 80px; page-break-after: always; }
+  .page-dark { background: #0f0a1a; color: #e8e6df; }
+  .page-light { background: #faf5ff; }
+  .page-accent { background: linear-gradient(135deg, #1a0533, #2d1b69); color: #e8e6df; }
+  h2.section-title { font-size: 2.2em; font-weight: 700; margin-bottom: 0.8em; letter-spacing: -1px; }
+  h2.section-title span { color: #c084fc; }
+  h3 { font-size: 1.3em; font-weight: 600; margin: 1.2em 0 0.5em; }
+  p { margin-bottom: 1em; font-size: 1.05em; }
+  .subtitle { font-size: 1.1em; opacity: 0.7; margin-bottom: 2em; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin: 1.5em 0; }
+  .card-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 28px; }
+  .page-light .card { background: #fff; border: 1px solid #e9d5ff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .card .icon { font-size: 2em; margin-bottom: 12px; }
+  .card h4 { font-size: 1.15em; font-weight: 600; margin-bottom: 8px; }
+  .card p { font-size: 0.95em; opacity: 0.85; margin-bottom: 0; }
+  .stat-row { display: flex; gap: 40px; margin: 2em 0; }
+  .stat { text-align: center; flex: 1; }
+  .stat .number { font-size: 3em; font-weight: 800; color: #c084fc; line-height: 1; }
+  .stat .label { font-size: 0.95em; opacity: 0.7; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: 0.95em; }
+  th { background: #7c3aed; color: #fff; padding: 14px 18px; text-align: left; font-weight: 600; }
+  td { padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .page-light td { border-bottom: 1px solid #e9d5ff; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+  .page-light tr:nth-child(even) td { background: #faf5ff; }
+  .check { color: #22c55e; font-weight: 700; }
+  ul { margin: 0.5em 0 1em 1.5em; }
+  li { margin-bottom: 0.4em; font-size: 1em; }
+  pre { background: #0f0a1a; color: #c084fc; padding: 20px; border-radius: 10px; font-size: 0.9em; line-height: 1.7; font-family: 'JetBrains Mono', monospace; margin: 1em 0; overflow-x: auto; }
+  .page-light pre { background: #1a0533; color: #e9d5ff; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2em 0; flex-wrap: wrap; }
+  .flow-step { background: rgba(192,132,252,0.15); border: 1px solid rgba(192,132,252,0.3); padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.95em; }
+  .flow-arrow { font-size: 1.5em; color: #c084fc; }
+  .cta-box { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff; padding: 40px; border-radius: 16px; text-align: center; margin: 2em 0; }
+  .cta-box h3 { font-size: 1.5em; margin-bottom: 0.5em; }
+  .cta-box p { opacity: 0.9; }
+  .footer { text-align: center; padding: 20px; font-size: 0.85em; opacity: 0.5; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>Virt<span>Craft</span></h1>
+  <h2>KubeVirt VM Management CLI</h2>
+  <p class="tagline">Craft, deploy, and manage KubeVirt virtual machines with a powerful Rust CLI. 44 OS templates, 8 resource profiles, multi-VM blueprints, interactive TUI, and full lifecycle management.</p>
+  <div class="badge">Rust-Powered &mdash; Single Binary &mdash; Production Ready</div>
+</div>
+
+<!-- PAGE 2: WHY VMROGUE -->
+<div class="page page-dark">
+  <h2 class="section-title">Why <span>VMRogue</span>?</h2>
+  <p class="subtitle">The kubectl alternative purpose-built for KubeVirt VMs.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="icon">🎯</div>
+      <h4>Purpose-Built for KubeVirt</h4>
+      <p>Not a generic K8s tool. Every command is designed for VM lifecycle: create, start, stop, clone, snapshot, export, health-check. No YAML required.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🐧</div>
+      <h4>44 OS Templates</h4>
+      <p>Ubuntu, Fedora, CentOS, Debian, RHEL, AlmaLinux, Rocky, Alpine, Arch, Windows 10/11/2022, FreeBSD, Talos, Flatcar, and more. One command to deploy.</p>
+    </div>
+    <div class="card">
+      <div class="icon">📊</div>
+      <h4>Interactive TUI Dashboard</h4>
+      <p>Rich terminal UI with real-time VM stats, resource gauges, activity feed, sparkline charts, and keyboard navigation. No browser needed.</p>
+    </div>
+    <div class="card">
+      <div class="icon">⚡</div>
+      <h4>Rust Performance</h4>
+      <p>Single binary, zero dependencies, instant startup. Compiled with LTO for minimal size. Shell completions for bash, zsh, fish, PowerShell.</p>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="number">44</div>
+      <div class="label">OS Templates</div>
+    </div>
+    <div class="stat">
+      <div class="number">8</div>
+      <div class="label">Resource Profiles</div>
+    </div>
+    <div class="stat">
+      <div class="number">60+</div>
+      <div class="label">CLI Commands</div>
+    </div>
+    <div class="stat">
+      <div class="number">11MB</div>
+      <div class="label">Binary Size</div>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 3: FEATURES -->
+<div class="page page-light">
+  <h2 class="section-title">Feature <span>Overview</span></h2>
+  <p class="subtitle">Complete KubeVirt VM management from the command line.</p>
+
+  <h3>VM Lifecycle</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td>vmrogue create</td><td>Create a VM from template, profile, or YAML config</td></tr>
+    <tr><td>vmrogue list</td><td>List all VMs with status, CPU, memory, IP, node, age</td></tr>
+    <tr><td>vmrogue start / stop / restart</td><td>Control VM power state via KubeVirt RunStrategy</td></tr>
+    <tr><td>vmrogue status</td><td>Detailed VM status with resources, volumes, conditions</td></tr>
+    <tr><td>vmrogue clone</td><td>Clone an existing VM with new name</td></tr>
+    <tr><td>vmrogue export</td><td>Export VM configuration to YAML/JSON</td></tr>
+    <tr><td>vmrogue delete</td><td>Delete a VM with confirmation</td></tr>
+    <tr><td>vmrogue generate</td><td>Generate VM manifest without creating it</td></tr>
+    <tr><td>vmrogue validate</td><td>Validate a VM configuration file before deployment</td></tr>
+    <tr><td>vmrogue diff</td><td>Compare two VM configurations side by side</td></tr>
+  </table>
+
+  <h3>Quick Start</h3>
+  <pre>
+# Create an Ubuntu 24.04 VM with 4 CPUs and 8GB RAM
+$ vmrogue create --name web-01 --template ubuntu-24.04 \
+    --cpus 4 --memory 8Gi --disk 50Gi
+
+# List all VMs
+$ vmrogue list
+NAME          NAMESPACE   STATUS    RUNNING   CPU       MEMORY
+web-01        default     Running   Yes       4 cores   8Gi
+
+# Take a snapshot
+$ vmrogue snapshot create web-01 --name before-upgrade
+
+# Use the interactive TUI
+$ vmrogue tui</pre>
+</div>
+
+<!-- PAGE 4: TEMPLATES & PROFILES -->
+<div class="page page-dark">
+  <h2 class="section-title">Templates &amp; <span>Profiles</span></h2>
+  <p class="subtitle">Pre-configured OS templates and resource profiles for every workload.</p>
+
+  <h3>OS Templates (44 total)</h3>
+  <div class="card-grid card-grid-3">
+    <div class="card">
+      <h4>Red Hat Family</h4>
+      <ul>
+        <li>RHEL 8, 9</li>
+        <li>CentOS Stream 8, 9</li>
+        <li>Fedora 39, 40, 41</li>
+        <li>AlmaLinux 8, 9</li>
+        <li>Rocky 8, 9</li>
+        <li>Oracle Linux 8, 9</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Debian Family</h4>
+      <ul>
+        <li>Ubuntu 24.04, 22.04, 20.04, 18.04</li>
+        <li>Debian 11, 12</li>
+      </ul>
+      <h4 style="margin-top:12px;">SUSE Family</h4>
+      <ul>
+        <li>openSUSE Leap, Tumbleweed</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Windows</h4>
+      <ul>
+        <li>Windows 11, 10</li>
+        <li>Windows Server 2022, 2019</li>
+      </ul>
+      <h4 style="margin-top:12px;">Others</h4>
+      <ul>
+        <li>Alpine, Arch Linux</li>
+        <li>FreeBSD 13, 14</li>
+        <li>Flatcar, Talos</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Resource Profiles (8 built-in)</h3>
+  <table>
+    <tr><th>Profile</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Use Case</th></tr>
+    <tr><td>dev</td><td>1 core</td><td>1 Gi</td><td>10 Gi</td><td>Development &amp; testing</td></tr>
+    <tr><td>small</td><td>2 cores</td><td>2 Gi</td><td>20 Gi</td><td>Light workloads</td></tr>
+    <tr><td>medium</td><td>4 cores</td><td>4 Gi</td><td>40 Gi</td><td>General purpose</td></tr>
+    <tr><td>large</td><td>8 cores</td><td>16 Gi</td><td>100 Gi</td><td>Production services</td></tr>
+    <tr><td>database</td><td>4 cores</td><td>16 Gi</td><td>200 Gi</td><td>Database servers</td></tr>
+    <tr><td>web</td><td>2 cores</td><td>4 Gi</td><td>40 Gi</td><td>Web/API servers</td></tr>
+    <tr><td>high-perf</td><td>16 cores</td><td>64 Gi</td><td>500 Gi</td><td>HPC, analytics</td></tr>
+    <tr><td>prod</td><td>8 cores</td><td>32 Gi</td><td>200 Gi</td><td>Production critical</td></tr>
+  </table>
+</div>
+
+<!-- PAGE 5: BLUEPRINTS & ADVANCED -->
+<div class="page page-light">
+  <h2 class="section-title">Blueprints &amp; <span>Advanced</span></h2>
+  <p class="subtitle">Multi-VM stacks, snapshots, health checks, and API server.</p>
+
+  <h3>Multi-VM Blueprints</h3>
+  <p>Deploy complete application stacks with a single command. Blueprints define multiple VMs with dependencies, networking, and resource profiles.</p>
+  <div class="card-grid">
+    <div class="card">
+      <h4>LAMP Stack</h4>
+      <p>Linux + Apache + MySQL + PHP. 3 VMs with automatic dependency ordering.</p>
+    </div>
+    <div class="card">
+      <h4>Kubernetes Cluster</h4>
+      <p>1 control plane + 2 worker nodes. Pre-configured for kubeadm bootstrap.</p>
+    </div>
+    <div class="card">
+      <h4>3-Tier Architecture</h4>
+      <p>Web frontend + application server + database. Network isolation.</p>
+    </div>
+    <div class="card">
+      <h4>CI/CD Pipeline</h4>
+      <p>Jenkins/GitLab + build agents + artifact storage. Ready to use.</p>
+    </div>
+  </div>
+
+  <h3>Snapshot Management</h3>
+  <pre>
+$ vmrogue snapshot create web-01 --name before-upgrade
+$ vmrogue snapshot list web-01
+$ vmrogue snapshot restore web-01 --name before-upgrade
+$ vmrogue snapshot delete web-01 --name before-upgrade</pre>
+
+  <h3>Health Checks &amp; Recommendations</h3>
+  <pre>
+$ vmrogue health-check
+  System Health Score: 87/100
+  [OK]  CPU utilization normal (45%)
+  [OK]  Memory utilization normal (62%)
+  [WARN] Disk usage above 75% on 2 VMs
+  Recommendation: Consider expanding disk for database-01</pre>
+
+  <h3>REST API Server</h3>
+  <pre>
+$ vmrogue api-serve --port 8080
+$ curl http://localhost:8080/api/v1/vms
+$ vmrogue api-routes    # List all endpoints
+$ vmrogue api-spec      # Generate OpenAPI spec</pre>
+</div>
+
+<!-- PAGE 6: TUI + RBAC -->
+<div class="page page-dark">
+  <h2 class="section-title">Interactive <span>TUI</span></h2>
+  <p class="subtitle">Full-featured terminal dashboard for VM management.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="icon">📊</div>
+      <h4>Dashboard View</h4>
+      <p>Real-time cluster overview with VM counts, CPU/memory/disk gauges, sparkline charts for trends, recent activity feed, and quick navigation.</p>
+    </div>
+    <div class="card">
+      <div class="icon">📋</div>
+      <h4>VM List View</h4>
+      <p>Sortable table with name, status, CPU, memory, IP, node, age. Search and filter. Multi-select for batch operations. Keyboard navigation.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🔍</div>
+      <h4>VM Details View</h4>
+      <p>Comprehensive VM info: status, conditions, resources, volumes, network. Start/stop/restart actions directly from the TUI.</p>
+    </div>
+    <div class="card">
+      <div class="icon">📸</div>
+      <h4>Snapshot View</h4>
+      <p>List, create, and manage snapshots. Ready/pending status. One-key snapshot creation.</p>
+    </div>
+  </div>
+
+  <h3>Multi-Tenant RBAC</h3>
+  <table>
+    <tr><th>Command</th><th>Description</th></tr>
+    <tr><td>vmrogue tenants-create</td><td>Create isolated tenant with namespace and quotas</td></tr>
+    <tr><td>vmrogue users-create</td><td>Create user with role assignment</td></tr>
+    <tr><td>vmrogue roles-create</td><td>Define custom RBAC roles</td></tr>
+    <tr><td>vmrogue quotas-create</td><td>Set resource quotas per tenant</td></tr>
+    <tr><td>vmrogue groups-create</td><td>Organize users into groups</td></tr>
+  </table>
+
+  <h3>Additional Features</h3>
+  <div class="card-grid card-grid-3">
+    <div class="card">
+      <h4>Webhooks</h4>
+      <p>Register webhooks for VM events: created, started, stopped, failed, snapshot, migration.</p>
+    </div>
+    <div class="card">
+      <h4>Config Management</h4>
+      <p>Save, load, list, delete reusable VM configs. Template library for team sharing.</p>
+    </div>
+    <div class="card">
+      <h4>Shell Completions</h4>
+      <p>Auto-generated for bash, zsh, fish, PowerShell, elvish. Tab-complete everything.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE 7: TECHNOLOGY + CTA -->
+<div class="page page-accent">
+  <h2 class="section-title">Technology <span>Stack</span></h2>
+  <p class="subtitle">Built with Rust for performance, safety, and reliability.</p>
+
+  <table>
+    <tr><th>Component</th><th>Technology</th><th>Details</th></tr>
+    <tr><td>Language</td><td>Rust</td><td>Memory-safe, zero-cost abstractions, single binary</td></tr>
+    <tr><td>K8s Client</td><td>kube-rs</td><td>Native async Kubernetes client</td></tr>
+    <tr><td>CLI Framework</td><td>clap v4</td><td>Derive-based args with shell completions</td></tr>
+    <tr><td>TUI Framework</td><td>ratatui</td><td>Terminal UI with charts, gauges, tables</td></tr>
+    <tr><td>Terminal</td><td>crossterm</td><td>Cross-platform terminal control</td></tr>
+    <tr><td>Serialization</td><td>serde</td><td>YAML, JSON, TOML configuration</td></tr>
+    <tr><td>Build</td><td>LTO + strip</td><td>11MB optimized binary</td></tr>
+    <tr><td>Tests</td><td>54 unit + 8 doc</td><td>Comprehensive test coverage</td></tr>
+  </table>
+
+  <h3>Integration with hyper2kvm Ecosystem</h3>
+  <div class="flow">
+    <div class="flow-step">hypersdk (export)</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">hyper2kvm (migrate)</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">VMRogue (CLI manage)</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">v9s (web manage)</div>
+  </div>
+
+  <div class="cta-box">
+    <h3>VMRogue &mdash; KubeVirt management, done right</h3>
+    <p>44 OS templates. 8 profiles. Multi-VM blueprints. Interactive TUI.<br>One binary. Zero dependencies. Instant productivity.</p>
+  </div>
+
+  <div class="footer">
+    <p>VMRogue &mdash; KubeVirt VM Management CLI<br>
+    Built with Rust &mdash; Proprietary Software<br>
+    Founders: Susant Sahani &amp; Sibu</p>
+  </div>
+</div>
+
+</body>
+</html>
