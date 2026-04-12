@@ -274,6 +274,9 @@ pub mod web {
         headers.insert("cache-control", "no-store".parse().unwrap());
         headers.insert("x-xss-protection", "0".parse().unwrap());
         headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".parse().unwrap());
+        headers.insert("referrer-policy", "no-referrer".parse().unwrap());
+        // HSTS: instruct browsers to only use HTTPS for 1 year
+        headers.insert("strict-transport-security", "max-age=31536000; includeSubDomains".parse().unwrap());
         response
     }
 
@@ -406,31 +409,24 @@ pub mod web {
 
     /// Sanitize internal error details before sending to clients.
     ///
-    /// For known patterns (e.g. kube errors), returns just the first sentence.
+    /// Maps known error types to safe user-facing messages.
     /// For anything else, returns a generic message to avoid leaking internals.
     fn sanitize_error(e: &dyn std::fmt::Display) -> String {
         let msg = e.to_string();
-        // Known patterns where the first sentence is safe to expose
-        let known_prefixes = [
-            "ApiError",
-            "NotFound",
-            "Conflict",
-            "Unauthorized",
-            "Forbidden",
-            "Timeout",
-            "connection",
-        ];
-        let is_known = known_prefixes
-            .iter()
-            .any(|p| msg.starts_with(p));
 
-        if is_known {
-            // Keep the first sentence (up to the first ". " or ": ")
-            let end = msg
-                .find(". ")
-                .or_else(|| msg.find(": "))
-                .unwrap_or(msg.len());
-            msg[..end].to_string()
+        // Map known error patterns to safe, generic messages
+        if msg.starts_with("NotFound") || msg.contains("not found") {
+            "Resource not found".to_string()
+        } else if msg.starts_with("Conflict") {
+            "Resource conflict".to_string()
+        } else if msg.starts_with("Unauthorized") {
+            "Unauthorized".to_string()
+        } else if msg.starts_with("Forbidden") {
+            "Forbidden".to_string()
+        } else if msg.starts_with("Timeout") || msg.contains("timed out") {
+            "Request timed out".to_string()
+        } else if msg.starts_with("connection") || msg.contains("connection refused") {
+            "Service unavailable".to_string()
         } else {
             "Internal server error".to_string()
         }

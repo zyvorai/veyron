@@ -134,16 +134,23 @@ pub fn handle_config_load(name: String, output: Option<String>, format: String) 
     let mut found_path = None;
 
     for path in &candidates {
-        // Verify the resolved path stays within the templates directory
-        if let Ok(canonical) = path.canonicalize() {
-            if let Ok(canonical_dir) = templates_dir.canonicalize() {
-                if !canonical.starts_with(&canonical_dir) {
-                    continue;
-                }
+        if !path.exists() {
+            continue;
+        }
+        // Verify the resolved path stays within the templates directory.
+        // Use the canonicalized path for the actual read to prevent
+        // TOCTOU symlink attacks.
+        let canonical = match path.canonicalize() {
+            Ok(c) => c,
+            Err(_) => continue,
+        };
+        if let Ok(canonical_dir) = templates_dir.canonicalize() {
+            if !canonical.starts_with(&canonical_dir) {
+                continue;
             }
         }
-        if path.exists() {
-            match std::fs::read_to_string(path) {
+        {
+            match std::fs::read_to_string(&canonical) {
                 Ok(data) => {
                     content = Some(data);
                     found_path = Some(path.clone());

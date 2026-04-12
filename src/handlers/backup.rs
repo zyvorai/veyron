@@ -193,7 +193,7 @@ pub async fn handle_backup_delete(name: String, yes: bool, namespace: &str) -> R
     if !yes {
         use std::io::Write;
         print!(
-            "Are you sure you want to delete backup '{}'? Type 'yes' to confirm: ",
+            "Are you sure you want to delete backup '{}'? (y/N): ",
             name
         );
         std::io::stdout().flush()?;
@@ -201,7 +201,7 @@ pub async fn handle_backup_delete(name: String, yes: bool, namespace: &str) -> R
         let mut input = String::new();
         std::io::stdin().read_line(&mut input)?;
 
-        if input.trim() != "yes" {
+        if !input.trim().eq_ignore_ascii_case("y") {
             println!("Cancelled");
             return Ok(());
         }

@@ -267,13 +267,16 @@ impl ReportGenerator {
     /// Generate monthly cost report
     pub fn monthly_report(year: i32, month: u32) -> CostReport {
         let clamped_month = month.clamp(1, 12);
-        // SAFETY: clamped_month is 1-12 and day is 1, so only an extreme year value
-        // (outside ~262000 BCE to 262000 CE) could fail. Fall back to Unix epoch.
-        let fallback = chrono::NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        // clamped_month is 1-12 and day is 1, so only an extreme year value
+        // (outside ~262000 BCE to 262000 CE) could fail. Fall back to a safe date.
+        let fallback = chrono::NaiveDate::from_ymd_opt(2024, 1, 1)
+            .expect("hardcoded date 2024-01-01 is always valid");
         let start_date =
             chrono::NaiveDate::from_ymd_opt(year, clamped_month, 1).unwrap_or(fallback);
-        // SAFETY: (0,0,0) is always a valid time
-        let start = start_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+        // (0,0,0) is always a valid time
+        let start = start_date.and_hms_opt(0, 0, 0)
+            .expect("midnight is always a valid time")
+            .and_utc();
 
         let end_date = if clamped_month == 12 {
             chrono::NaiveDate::from_ymd_opt(year.saturating_add(1), 1, 1)
@@ -281,8 +284,9 @@ impl ReportGenerator {
             chrono::NaiveDate::from_ymd_opt(year, clamped_month + 1, 1)
         }
         .unwrap_or(start_date + chrono::TimeDelta::days(30));
-        // SAFETY: (0,0,0) is always a valid time
-        let end = end_date.and_hms_opt(0, 0, 0).unwrap().and_utc();
+        let end = end_date.and_hms_opt(0, 0, 0)
+            .expect("midnight is always a valid time")
+            .and_utc();
 
         CostReport::new(ReportType::Monthly, start, end)
     }

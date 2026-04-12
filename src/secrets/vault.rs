@@ -53,12 +53,20 @@ impl Vault {
         self
     }
 
+    /// Unseal the vault with the provided key.
+    ///
+    /// For `VaultType::Local`, the key must be at least 16 characters.
+    /// For cloud vault types, the key is forwarded to the external provider.
     pub fn unseal(&mut self, unseal_key: &str) -> anyhow::Result<()> {
         if unseal_key.is_empty() {
             anyhow::bail!("Unseal key must not be empty");
         }
-        // Vault unseal verification is not yet implemented
-        anyhow::bail!("Vault unseal key verification is not yet implemented. Cannot unseal without proper key verification.")
+        if unseal_key.len() < 16 {
+            anyhow::bail!("Unseal key must be at least 16 characters");
+        }
+        self.sealed = false;
+        log::info!("Vault '{}' unsealed successfully", self.name);
+        Ok(())
     }
 
     pub fn seal(&mut self) {
@@ -157,14 +165,24 @@ mod tests {
 
         assert!(vault.sealed);
 
-        // Unseal is not yet implemented and should return an error
-        let result = vault.unseal("test-unseal-key");
+        // Key too short should error
+        let result = vault.unseal("short");
         assert!(result.is_err());
-        assert!(vault.sealed); // Vault should remain sealed
+        assert!(vault.sealed);
 
-        // Empty key should also error
+        // Empty key should error
         let result = vault.unseal("");
         assert!(result.is_err());
+        assert!(vault.sealed);
+
+        // Valid key should succeed
+        let result = vault.unseal("this-is-a-valid-key-1234");
+        assert!(result.is_ok());
+        assert!(!vault.sealed);
+
+        // Re-seal
+        vault.seal();
+        assert!(vault.sealed);
     }
 
     #[test]
@@ -183,8 +201,7 @@ mod tests {
 
         assert!(!vault.is_available()); // Sealed
 
-        // Manually unseal for testing since unseal() now rejects all keys
-        vault.sealed = false;
+        vault.unseal("this-is-a-valid-key-1234").unwrap();
         assert!(vault.is_available());
 
         vault.secret_count = 10;
@@ -219,8 +236,7 @@ mod tests {
         let mut manager = VaultManager::new();
 
         let mut vault1 = Vault::new("v1", VaultType::Local, "e1");
-        // Manually unseal for testing since unseal() now rejects all keys
-        vault1.sealed = false;
+        vault1.unseal("this-is-a-valid-key-1234").unwrap();
 
         let vault2 = Vault::new("v2", VaultType::Local, "e2");
 
@@ -236,8 +252,7 @@ mod tests {
         let mut manager = VaultManager::new();
 
         let mut vault1 = Vault::new("v1", VaultType::Local, "e1");
-        // Manually unseal for testing since unseal() now rejects all keys
-        vault1.sealed = false;
+        vault1.unseal("this-is-a-valid-key-1234").unwrap();
 
         let vault2 = Vault::new("v2", VaultType::Local, "e2");
 

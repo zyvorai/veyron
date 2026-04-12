@@ -80,6 +80,10 @@ pub fn validate_username(username: &str) -> bool {
     if username.is_empty() || username.len() > 32 {
         return false;
     }
+    // Disallow leading dot, all-dots, and path traversal patterns
+    if username.starts_with('.') || username.contains("..") {
+        return false;
+    }
     // Allow alphanumeric, dash, underscore, dot
     username
         .chars()
@@ -112,6 +116,9 @@ mod tests {
         assert!(validate_username("user-name_1"));
         assert!(!validate_username(""));
         assert!(!validate_username("user name")); // space not allowed
+        assert!(!validate_username(".hidden")); // leading dot
+        assert!(!validate_username("user..name")); // path traversal
+        assert!(!validate_username("..")); // directory traversal
     }
 
     #[test]

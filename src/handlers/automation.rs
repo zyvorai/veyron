@@ -10,7 +10,10 @@ struct AutomationStore {
 impl AutomationStore {
     fn path() -> std::path::PathBuf {
         dirs::data_dir()
-            .unwrap_or_else(|| std::path::PathBuf::from("/tmp"))
+            .unwrap_or_else(|| {
+                log::warn!("Could not determine data directory, falling back to /tmp");
+                std::path::PathBuf::from("/tmp")
+            })
             .join("vmrogue")
             .join("automation_rules.json")
     }

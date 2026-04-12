@@ -6,6 +6,9 @@ use regex::Regex;
 static MEMORY_SIZE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^([1-9]\d*)(Mi|Gi|Ti|M|G|T)$").expect("invalid memory size regex"));
 
+static NAMESPACE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$").expect("invalid namespace regex"));
+
 /// Validates a VM configuration
 pub fn validate_vm_config(config: &VMConfig) -> Result<()> {
     validate_name(&config.name)?;
@@ -31,6 +34,11 @@ fn validate_name(name: &str) -> Result<()> {
 
     if name.len() > 253 {
         return Err(anyhow!("VM name cannot exceed 253 characters"));
+    }
+
+    // Reject null bytes which could cause injection in file/API operations
+    if name.contains('\0') {
+        return Err(anyhow!("VM name must not contain null bytes"));
     }
 
     // Kubernetes name validation: lowercase alphanumeric, '-', '.'
@@ -63,9 +71,11 @@ fn validate_namespace(namespace: &str) -> Result<()> {
         return Err(anyhow!("Namespace must be 63 characters or less"));
     }
 
-    static RE: std::sync::LazyLock<regex::Regex> =
-        std::sync::LazyLock::new(|| regex::Regex::new(r"^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$").unwrap());
-    if !RE.is_match(namespace) {
+    if namespace.contains('\0') {
+        return Err(anyhow!("Namespace must not contain null bytes"));
+    }
+
+    if !NAMESPACE_RE.is_match(namespace) {
         return Err(anyhow!(
             "Namespace must consist of lowercase alphanumeric characters or '-', and must start and end with an alphanumeric character"
         ));
@@ -87,15 +97,24 @@ fn validate_cpu(cpu: &CPUConfig) -> Result<()> {
         return Err(anyhow!("CPU threads must be greater than 0"));
     }
 
-    // Reasonable upper limits
+    // Reasonable upper limits — check for overflow explicitly
     let total_cpus = (cpu.cores as u64)
-        .saturating_mul(cpu.sockets as u64)
-        .saturating_mul(cpu.threads as u64);
-    if total_cpus > 256 {
-        return Err(anyhow!(
-            "Total CPU count ({}) exceeds reasonable limit (256)",
-            total_cpus
-        ));
+        .checked_mul(cpu.sockets as u64)
+        .and_then(|v| v.checked_mul(cpu.threads as u64));
+    match total_cpus {
+        None => {
+            return Err(anyhow!(
+                "CPU topology overflow: cores={} * sockets={} * threads={} overflows",
+                cpu.cores, cpu.sockets, cpu.threads
+            ));
+        }
+        Some(total) if total > 256 => {
+            return Err(anyhow!(
+                "Total CPU count ({}) exceeds reasonable limit (256)",
+                total
+            ));
+        }
+        _ => {}
     }
 
     Ok(())

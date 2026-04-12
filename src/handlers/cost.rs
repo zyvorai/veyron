@@ -65,6 +65,12 @@ fn extract_and_calculate_cost(
         })
         .unwrap_or(20);
 
+    if memory_gi > u32::MAX as u64 {
+        log::warn!("VM '{}': memory {}Gi exceeds u32 range, clamping to {}Gi for cost calculation", name, memory_gi, u32::MAX);
+    }
+    if storage_gi > u32::MAX as u64 {
+        log::warn!("VM '{}': storage {}Gi exceeds u32 range, clamping to {}Gi for cost calculation", name, storage_gi, u32::MAX);
+    }
     calculator.calculate_vm_cost(
         name,
         vm_ns,

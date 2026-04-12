@@ -82,6 +82,8 @@ pub struct EncryptedData {
 }
 
 impl EncryptedData {
+    /// Create a new EncryptedData. For AEAD algorithms (AES-GCM, ChaCha20Poly1305),
+    /// use `new_aead()` instead to ensure IV and tag are always provided.
     pub fn new(
         ciphertext: impl Into<String>,
         algorithm: EncryptionAlgorithm,
@@ -98,6 +100,27 @@ impl EncryptedData {
             tag: None,
             encrypted_at: Utc::now(),
         }
+    }
+
+    /// Create a new EncryptedData for AEAD algorithms, requiring IV and tag upfront.
+    pub fn new_aead(
+        ciphertext: impl Into<String>,
+        algorithm: EncryptionAlgorithm,
+        key_id: impl Into<String>,
+        iv: impl Into<String>,
+        tag: impl Into<String>,
+    ) -> anyhow::Result<Self> {
+        let data = Self {
+            id: format!("enc-data-{}", Utc::now().timestamp_micros()),
+            ciphertext: ciphertext.into(),
+            algorithm,
+            key_id: key_id.into(),
+            iv: Some(iv.into()),
+            tag: Some(tag.into()),
+            encrypted_at: Utc::now(),
+        };
+        data.validate()?;
+        Ok(data)
     }
 
     pub fn with_iv(mut self, iv: impl Into<String>) -> Self {
@@ -166,10 +189,12 @@ impl EncryptionManager {
         self.configs.len()
     }
 
-    pub fn add_encrypted_data(&mut self, data: EncryptedData) -> String {
+    /// Add encrypted data to the manager. Validates AEAD data has required IV/tag.
+    pub fn add_encrypted_data(&mut self, data: EncryptedData) -> anyhow::Result<String> {
+        data.validate()?;
         let id = data.id.clone();
         self.encrypted_data.insert(id.clone(), data);
-        id
+        Ok(id)
     }
 
     pub fn get_encrypted_data(&self, id: &str) -> Option<&EncryptedData> {
@@ -291,11 +316,27 @@ mod tests {
     fn test_manager_add_encrypted_data() {
         let mut manager = EncryptionManager::new();
 
-        let data = EncryptedData::new("cipher", EncryptionAlgorithm::AES256GCM, "key-1");
-        let id = manager.add_encrypted_data(data);
+        let data = EncryptedData::new_aead(
+            "cipher",
+            EncryptionAlgorithm::AES256GCM,
+            "key-1",
+            "test-iv",
+            "test-tag",
+        )
+        .unwrap();
+        let id = manager.add_encrypted_data(data).unwrap();
 
         assert_eq!(manager.encrypted_data_count(), 1);
         assert!(manager.get_encrypted_data(&id).is_some());
+    }
+
+    #[test]
+    fn test_manager_rejects_invalid_aead_data() {
+        let mut manager = EncryptionManager::new();
+
+        // AES-GCM without IV/tag should be rejected
+        let data = EncryptedData::new("cipher", EncryptionAlgorithm::AES256GCM, "key-1");
+        assert!(manager.add_encrypted_data(data).is_err());
     }
 
     #[test]
