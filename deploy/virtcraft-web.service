@@ -1,0 +1,29 @@
+[Unit]
+Description=VirtCraft Web Dashboard
+Documentation=https://github.com/ssahani/virtcraft
+After=network-online.target k3s.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/virtcraft api-serve --port 5151 --host 0.0.0.0
+Restart=on-failure
+RestartSec=5
+# NOTE: For production, use a scoped service account kubeconfig instead of k3s admin credentials
+Environment=KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+EnvironmentFile=-/etc/virtcraft/env
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+MemoryDenyWriteExecute=yes
+
+[Install]
+WantedBy=multi-user.target

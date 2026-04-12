@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VM Lifecycle Management — VMRogue + v9s</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; color: #1a1a2e; background: #fff; line-height: 1.6; }
+  .cover { height: 100vh; background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; }
+  .cover h1 { font-size: 3em; font-weight: 800; margin-bottom: 0.2em; } .cover h1 span { color: #22c55e; }
+  .cover h2 { font-size: 1.3em; font-weight: 300; opacity: 0.9; margin-bottom: 1.5em; }
+  .cover .tagline { font-size: 1em; opacity: 0.7; max-width: 600px; }
+  .cover .badge { display: inline-block; background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); padding: 8px 20px; border-radius: 20px; font-size: 0.9em; margin-top: 2em; }
+  .page { min-height: 100vh; padding: 55px 70px; page-break-after: always; }
+  .page-dark { background: #0f111a; color: #e8e6df; }
+  .page-light { background: #f0fdf4; }
+  .page-accent { background: linear-gradient(135deg, #064e3b, #065f46); color: #e8e6df; }
+  h2.st { font-size: 2.2em; font-weight: 700; margin-bottom: 0.6em; } h2.st span { color: #22c55e; }
+  h3 { font-size: 1.25em; font-weight: 600; margin: 1em 0 0.4em; color: #22c55e; }
+  .page-light h3 { color: #15803d; }
+  p { margin-bottom: 0.8em; font-size: 1.02em; }
+  .sub { font-size: 1em; opacity: 0.7; margin-bottom: 1.5em; }
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 1.2em 0; }
+  .card-grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; }
+  .page-light .card { background: #fff; border: 1px solid #bbf7d0; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .card .icon { font-size: 1.8em; margin-bottom: 10px; }
+  .card h4 { font-size: 1.1em; font-weight: 600; margin-bottom: 6px; }
+  .card p { font-size: 0.92em; opacity: 0.85; margin-bottom: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1.2em 0; font-size: 0.93em; }
+  th { background: #15803d; color: #fff; padding: 12px 16px; text-align: left; font-weight: 600; }
+  td { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .page-light td { border-bottom: 1px solid #bbf7d0; }
+  tr:nth-child(even) td { background: rgba(255,255,255,0.03); }
+  .page-light tr:nth-child(even) td { background: #f0fdf4; }
+  .check { color: #22c55e; font-weight: 700; }
+  pre { background: #0f172a; color: #86efac; padding: 18px; border-radius: 10px; font-size: 0.88em; line-height: 1.7; font-family: monospace; margin: 1em 0; overflow-x: auto; }
+  .screenshot { width: 100%; border-radius: 10px; border: 2px solid rgba(34,197,94,0.3); box-shadow: 0 6px 24px rgba(0,0,0,0.25); margin: 1em 0; }
+  .ss-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 1em 0; }
+  .ss-item { text-align: center; }
+  .ss-item img { width: 100%; border-radius: 8px; border: 1px solid rgba(34,197,94,0.2); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .ss-item .caption { font-size: 0.82em; opacity: 0.6; margin-top: 5px; }
+  .flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2em 0; flex-wrap: wrap; }
+  .flow-step { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); padding: 12px 20px; border-radius: 8px; font-weight: 600; }
+  .flow-arrow { font-size: 1.5em; color: #22c55e; }
+  ul { margin: 0.5em 0 1em 1.5em; } li { margin-bottom: 0.3em; font-size: 0.95em; }
+  .cta-box { background: linear-gradient(135deg, #15803d, #166534); color: #fff; padding: 35px; border-radius: 16px; text-align: center; margin: 2em 0; }
+  .cta-box h3 { color: #fff; font-size: 1.4em; margin-bottom: 0.4em; }
+  .footer { text-align: center; padding: 20px; font-size: 0.82em; opacity: 0.4; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>VM <span>Lifecycle</span></h1>
+  <h2>Create, Deploy, Manage, Protect</h2>
+  <p class="tagline">Complete guide to managing KubeVirt VMs from creation to day-2 operations using VMRogue CLI and v9s web UI.</p>
+  <div class="badge">CLI + Web &mdash; Two Interfaces, One Platform</div>
+</div>
+
+<!-- CREATE -->
+<div class="page page-dark">
+  <h2 class="st">Create &amp; <span>Deploy</span></h2>
+  <p class="sub">Multiple ways to create VMs &mdash; templates, profiles, YAML, or the web wizard.</p>
+
+  <h3>CLI: One-Command Creation</h3>
+  <pre>
+# From template + profile
+$ vmrogue create --name db-01 --template rhel-9 --profile database
+
+# With custom resources
+$ vmrogue create --name web-01 --template ubuntu-24.04 \
+    --cpus 4 --memory 8Gi --disk 50Gi --cloud-init user-data.yaml
+
+# From YAML config file
+$ vmrogue create -f vm-config.yaml
+
+# Generate manifest without deploying
+$ vmrogue generate --name test --template fedora-41 --profile dev > vm.yaml</pre>
+
+  <h3>Web: Dashboard VM View</h3>
+  <img src="screenshots/03-dashboard.png" class="screenshot" alt="Dashboard" />
+  <p>VMs appear in the dashboard immediately after creation with real-time status updates.</p>
+</div>
+
+<!-- START/STOP -->
+<div class="page page-light">
+  <h2 class="st">Power <span>Management</span></h2>
+  <p class="sub">Start, stop, restart from CLI or web UI.</p>
+
+  <h3>CLI Commands</h3>
+  <pre>
+$ vmrogue start web-01          # Start a VM
+$ vmrogue stop web-01           # Graceful shutdown (ACPI)
+$ vmrogue restart web-01        # Stop + start
+$ vmrogue list                  # Check status
+
+NAME     NAMESPACE  STATUS   RUNNING  CPU       MEMORY  IP           NODE
+web-01   default    Running  Yes      4 cores   8Gi     10.42.0.15   node-1
+db-01    default    Stopped  No       4 cores   16Gi    -            -</pre>
+
+  <h3>Web: Action Buttons</h3>
+  <img src="screenshots/05-vm-details-summary.png" class="screenshot" alt="VM Actions" />
+  <p>Start, Stop, Restart, Delete buttons with color coding. Status badge updates in real-time. Delete auto-closes the detail panel after success.</p>
+</div>
+
+<!-- MONITOR -->
+<div class="page page-dark">
+  <h2 class="st">Monitor &amp; <span>Observe</span></h2>
+  <p class="sub">Real-time metrics, events, and logs.</p>
+
+  <h3>Live Metrics via WebSocket</h3>
+  <img src="screenshots/07-vm-metrics.png" class="screenshot" alt="Metrics" />
+
+  <div class="card-grid">
+    <div class="card">
+      <h4>CPU &amp; Memory</h4>
+      <p>Area charts with 60-point rolling history. Percentage display. Color-coded gradients.</p>
+    </div>
+    <div class="card">
+      <h4>Network &amp; Disk I/O</h4>
+      <p>Dual-line charts: RX/TX for network, Read/Write for disk. KB/s throughput tracking.</p>
+    </div>
+  </div>
+
+  <h3>CLI Health Check</h3>
+  <pre>
+$ vmrogue health-check
+  System Health Score: 87/100
+  [OK]   CPU utilization: 45%
+  [OK]   Memory utilization: 62%
+  [WARN] Disk usage above 75% on db-01
+  Recommendation: Expand disk on db-01 or archive old data
+
+$ vmrogue resources          # Resource usage summary
+$ vmrogue trends-analyze     # Usage trend analysis</pre>
+</div>
+
+<!-- CONSOLE -->
+<div class="page page-light">
+  <h2 class="st">Console <span>Access</span></h2>
+  <p class="sub">Three ways to access VMs directly.</p>
+
+  <img src="screenshots/06-vm-console.png" class="screenshot" alt="Console" />
+
+  <div class="card-grid card-grid-3">
+    <div class="card">
+      <div class="icon">🖥️</div>
+      <h4>VNC Console</h4>
+      <p>Full graphical desktop. noVNC via WebSocket. Sendkey: Ctrl+Alt+Del, Ctrl+Alt+F1/F2/F7. Fullscreen.</p>
+    </div>
+    <div class="card">
+      <div class="icon">⌨️</div>
+      <h4>Serial Console</h4>
+      <p>xterm.js terminal. Boot troubleshooting. GRUB access. Kernel panic debugging. Headless VMs.</p>
+    </div>
+    <div class="card">
+      <div class="icon">🔑</div>
+      <h4>SSH Console</h4>
+      <p>Web SSH via IP address. Configurable port. Fastest for CLI admin. Requires network connectivity.</p>
+    </div>
+  </div>
+</div>
+
+<!-- STORAGE + NETWORK -->
+<div class="page page-dark">
+  <h2 class="st">Storage &amp; <span>Network</span></h2>
+  <p class="sub">Disk management, ISO mount, and network interfaces.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/08-vm-storage.png" alt="Storage" />
+      <div class="caption">Storage: volumes, ISO mount, storage classes</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/09-vm-network.png" alt="Network" />
+      <div class="caption">Network: interfaces, IP/MAC, add network</div>
+    </div>
+  </div>
+
+  <table>
+    <tr><th>Operation</th><th>CLI</th><th>Web UI</th></tr>
+    <tr><td>View disks</td><td>vmrogue status vm-name</td><td>Storage tab</td></tr>
+    <tr><td>Mount ISO</td><td>YAML edit</td><td>Mount ISO button + modal</td></tr>
+    <tr><td>Add network</td><td>YAML edit</td><td>Add Network button + modal (pod/multus, bridge/masquerade/SR-IOV)</td></tr>
+    <tr><td>View interfaces</td><td>vmrogue get vm-name</td><td>Network tab (IP, MAC, state)</td></tr>
+    <tr><td>Guest OS info</td><td>N/A</td><td>Network tab (OS name, version, kernel)</td></tr>
+  </table>
+</div>
+
+<!-- SNAPSHOTS + PROTECT -->
+<div class="page page-light">
+  <h2 class="st">Protect &amp; <span>Recover</span></h2>
+  <p class="sub">Snapshots, cloning, and configuration backup.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/10-vm-snapshots.png" alt="Snapshots" />
+      <div class="caption">Snapshots: create, list, delete with status</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/12-vm-yaml.png" alt="YAML" />
+      <div class="caption">YAML: export, edit, copy configuration</div>
+    </div>
+  </div>
+
+  <h3>CLI Snapshot &amp; Clone</h3>
+  <pre>
+# Snapshots
+$ vmrogue snapshot create web-01 --name pre-upgrade
+$ vmrogue snapshot list web-01
+$ vmrogue snapshot restore web-01 --name pre-upgrade
+
+# Clone
+$ vmrogue clone web-01 --name web-01-clone
+
+# Export config
+$ vmrogue export web-01 --format yaml > web-01-backup.yaml
+
+# Config templates
+$ vmrogue config-save --name "prod-web" --from web-01
+$ vmrogue config-list
+$ vmrogue config-load --name "prod-web" --as web-02</pre>
+</div>
+
+<!-- HOST + CLOSING -->
+<div class="page page-accent">
+  <h2 class="st">Host <span>Visibility</span></h2>
+  <p class="sub">Complete infrastructure monitoring from the web UI.</p>
+
+  <div class="ss-grid">
+    <div class="ss-item">
+      <img src="screenshots/14-host-overview.png" alt="Host Overview" />
+      <div class="caption">Overview: system info, CPU/memory/disk gauges</div>
+    </div>
+    <div class="ss-item">
+      <img src="screenshots/15-host-hardware.png" alt="Host Hardware" />
+      <div class="caption">Hardware: RAM modules, PCI devices</div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-step">Create</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Deploy</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Monitor</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Console</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Protect</div>
+    <div class="flow-arrow">&rarr;</div>
+    <div class="flow-step">Scale</div>
+  </div>
+
+  <div class="cta-box">
+    <h3>Complete VM lifecycle &mdash; CLI + Web</h3>
+    <p>VMRogue for power users. v9s for web management.<br>Same VMs, same cluster, two perfect interfaces.</p>
+  </div>
+  <div class="footer"><p>VMRogue + v9s &mdash; VM Lifecycle Management &mdash; Proprietary Software &mdash; Founders: Susant Sahani &amp; Sibu</p></div>
+</div>
+</body></html>

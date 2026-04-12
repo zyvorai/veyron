@@ -1,0 +1,47 @@
+# VMRogue VM Configuration
+# This file uses VMRogue's simplified YAML format.
+# To convert to KubeVirt manifest: vmrogue create --from-file centos-template.yaml --output yaml --dry-run
+name: centos-vm
+namespace: default
+cpu:
+  cores: 2
+  sockets: 1
+  threads: 1
+memory:
+  size: 4Gi
+disks:
+- name: rootdisk
+  size: '0'
+  boot_order: 1
+  source:
+    type: containerDisk
+    image: quay.io/containerdisks/centos-stream:9
+- name: datadisk
+  size: 20Gi
+  boot_order: 2
+  source:
+    type: blank
+interfaces:
+- name: default
+  network: default
+  model: virtio
+  network_type: pod
+cloud_init:
+  user_data: |
+    #cloud-config
+    user: vmrogue
+    # WARNING: Change this password immediately after first login
+    password: CHANGE_ME_BEFORE_USE
+    chpasswd: { expire: True }
+    ssh_pwauth: False
+    package_update: true
+    packages:
+      - qemu-guest-agent
+    runcmd:
+      - [ systemctl, enable, qemu-guest-agent ]
+      - [ systemctl, start, qemu-guest-agent ]
+labels:
+  os.version: stream9
+  os: centos
+annotations: {}
+

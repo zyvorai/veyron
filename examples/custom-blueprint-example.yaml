@@ -1,0 +1,63 @@
+# VMRogue Blueprint Configuration
+# This file defines a custom blueprint for deploying a multi-VM stack.
+# Usage: vmrogue blueprint-import custom-blueprint-example.yaml
+name: ml-stack
+description: Machine Learning Stack with Jupyter, MLflow, and GPU Nodes
+vms:
+  - name: mlflow-server
+    template: ubuntu-22.04
+    profile: prod
+    cpu: 4
+    memory: 8Gi
+    disk_size: 100Gi
+    depends_on: []
+    labels:
+      tier: tracking
+      app: ml-stack
+
+  - name: jupyter-lab
+    template: ubuntu-24.04
+    profile: high-perf
+    cpu: 8
+    memory: 32Gi
+    disk_size: 200Gi
+    depends_on:
+      - mlflow-server
+    labels:
+      tier: notebook
+      app: ml-stack
+
+  - name: training-node-1
+    template: ubuntu-24.04
+    profile: high-perf
+    cpu: 16
+    memory: 128Gi
+    disk_size: 1Ti
+    depends_on:
+      - mlflow-server
+      - jupyter-lab
+    labels:
+      tier: compute
+      app: ml-stack
+      gpu: "true"
+
+  - name: training-node-2
+    template: ubuntu-24.04
+    profile: high-perf
+    cpu: 16
+    memory: 128Gi
+    disk_size: 1Ti
+    depends_on:
+      - mlflow-server
+      - jupyter-lab
+    labels:
+      tier: compute
+      app: ml-stack
+      gpu: "true"
+
+tags:
+  - machine-learning
+  - ai
+  - jupyter
+  - mlflow
+  - training

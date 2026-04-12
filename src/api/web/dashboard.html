@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMRogue Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0f172a;--bg-card:rgba(30,41,59,.5);--bg-card-solid:#1e293b;--border:rgba(51,65,85,.5);--border-light:rgba(51,65,85,.3);--text:#e2e8f0;--text-muted:#94a3b8;--text-dim:#64748b;--text-bright:#f8fafc;--primary:#3b82f6;--primary-dim:rgba(59,130,246,.2);--success:#22c55e;--success-dim:rgba(34,197,94,.2);--warning:#eab308;--warning-dim:rgba(234,179,8,.2);--error:#ef4444;--error-dim:rgba(239,68,68,.2);--purple:#a855f7;--purple-dim:rgba(168,85,247,.2);--orange:#f97316;--orange-dim:rgba(249,115,22,.2);--emerald:#10b981;--cyan:#06b6d4;--radius:.75rem}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}::-webkit-scrollbar-thumb:hover{background:#475569}
+@keyframes fade-in{from{transform:translateY(8px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.animate-fade-in{animation:fade-in .4s ease-out}
+
+/* Navbar */
+.navbar{position:sticky;top:0;z-index:50;background:rgba(15,23,42,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.navbar-brand{font-size:1.25em;font-weight:700;background:linear-gradient(135deg,#60a5fa,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;cursor:pointer}
+.nav-links{display:flex;gap:2px;margin-left:24px}
+.nav-link{padding:6px 14px;border-radius:6px;font-size:.8em;font-weight:500;color:var(--text-muted);text-decoration:none;cursor:pointer;transition:all .15s;border:none;background:none}
+.nav-link:hover{background:rgba(51,65,85,.3);color:var(--text)}
+.nav-link.active{background:var(--primary-dim);color:var(--primary)}
+.navbar-right{display:flex;align-items:center;gap:16px}
+.nav-status{display:flex;align-items:center;gap:6px;font-size:.8em;color:var(--text-muted)}
+.nav-dot{width:8px;height:8px;border-radius:50%}.nav-dot.ok{background:var(--success);animation:pulse-dot 2s ease-in-out infinite}.nav-dot.err{background:var(--error)}
+.refresh-text{font-size:.7em;color:var(--text-dim)}
+
+/* Layout */
+.container{max-width:1400px;margin:0 auto;padding:24px}
+.space-y>*+*{margin-top:20px}
+.page-header{display:flex;align-items:center;justify-content:space-between}
+.page-header h1{font-size:1.5em;font-weight:700;color:var(--text-bright)}
+.page-header p{font-size:.8em;color:var(--text-muted);margin-top:2px}
+.page-header-right{font-size:.75em;color:var(--text-dim)}
+
+/* Grids */
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
+
+/* Stat Cards */
+.stat-card{border-radius:var(--radius);padding:20px;border:1px solid var(--border-light);box-shadow:0 4px 6px -1px rgba(0,0,0,.1);transition:box-shadow .2s}
+.stat-card:hover{box-shadow:0 10px 25px -5px rgba(0,0,0,.2)}
+.stat-card-blue{background:linear-gradient(135deg,#1e3a5f,#1e293b)}.stat-card-purple{background:linear-gradient(135deg,#2d1f5e,#1e293b)}.stat-card-orange{background:linear-gradient(135deg,#5f3a1e,#1e293b)}.stat-card-green{background:linear-gradient(135deg,#1e5f3a,#1e293b)}.stat-card-cyan{background:linear-gradient(135deg,#1e4f5f,#1e293b)}.stat-card-red{background:linear-gradient(135deg,#5f1e1e,#1e293b)}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between}
+.stat-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.2em}
+.stat-icon.blue{background:var(--primary-dim);color:var(--primary)}.stat-icon.purple{background:var(--purple-dim);color:var(--purple)}.stat-icon.orange{background:var(--orange-dim);color:var(--orange)}.stat-icon.green{background:var(--success-dim);color:var(--success)}
+.stat-body{margin-top:12px}.stat-value{font-size:1.85em;font-weight:700;color:var(--text-bright)}.stat-label{font-size:.8em;color:var(--text-muted);margin-top:2px}
+.stat-badge{font-size:.7em;padding:2px 8px;border-radius:999px;font-weight:500}
+.badge-green{background:var(--success-dim);color:var(--success)}.badge-muted{color:var(--text-dim)}
+
+/* Resource Bars */
+.resource-bar{background:rgba(30,41,59,.4);border-radius:var(--radius);padding:12px 16px;border:1px solid var(--border-light)}
+.res-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.75em}
+.res-header .lbl{color:var(--text-dim);flex:1}.res-header .pct{font-weight:600;color:var(--text-bright)}
+.bar-track{width:100%;height:6px;background:#334155;border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s ease}
+
+/* Charts */
+.chart-card{background:var(--bg-card);border-radius:var(--radius);padding:20px;border:1px solid var(--border)}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.chart-title{font-size:.9em;font-weight:600;color:var(--text-bright);display:flex;align-items:center;gap:8px}
+.chart-current{font-size:.8em;color:var(--text-muted);font-family:monospace}
+.chart-area{width:100%;height:160px}
+.chart-area canvas{width:100%;height:100%}
+
+/* Card */
+.card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+.card-header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:1em;font-weight:600;color:var(--text-bright);display:flex;align-items:center;gap:8px}
+
+/* VM Rows */
+.vm-row{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border-light);transition:all .15s;cursor:default}
+.vm-row:hover{background:rgba(51,65,85,.2);border-left:2px solid var(--primary)}
+.vm-row:last-child{border-bottom:none}
+.vm-info{display:flex;align-items:center;gap:14px}
+.vm-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.vm-dot.running{background:var(--success);animation:pulse-dot 2s infinite}.vm-dot.stopped{background:var(--text-dim)}.vm-dot.error{background:var(--error)}.vm-dot.other{background:var(--primary)}
+.vm-name{font-weight:500;color:var(--text-bright);font-size:.9em}
+.vm-ns{font-size:.7em;color:var(--text-dim);margin-top:1px}
+.vm-right{display:flex;align-items:center;gap:10px}
+.vm-badge{padding:3px 10px;border-radius:6px;font-size:.7em;font-weight:500}
+.vm-badge.running{background:var(--success-dim);color:var(--success)}.vm-badge.stopped{background:rgba(100,116,139,.2);color:var(--text-muted)}.vm-badge.error{background:var(--error-dim);color:var(--error)}.vm-badge.other{background:var(--primary-dim);color:var(--primary)}
+.vm-meta{font-size:.7em;color:var(--text-dim)}
+
+/* Action Buttons */
+.btn{padding:5px 12px;border-radius:6px;font-size:.7em;font-weight:500;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:4px}
+.btn-start{background:var(--success-dim);color:var(--success)}.btn-start:hover{background:rgba(34,197,94,.3)}
+.btn-stop{background:var(--warning-dim);color:var(--warning)}.btn-stop:hover{background:rgba(234,179,8,.3)}
+.btn-restart{background:var(--primary-dim);color:var(--primary)}.btn-restart:hover{background:rgba(59,130,246,.3)}
+.btn-delete{background:var(--error-dim);color:var(--error)}.btn-delete:hover{background:rgba(239,68,68,.3)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-group{display:flex;gap:4px}
+
+/* Events */
+.event-row{display:flex;align-items:flex-start;gap:12px;padding:12px 24px;border-bottom:1px solid var(--border-light)}
+.event-row:last-child{border-bottom:none}
+.event-dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex-shrink:0}
+.event-dot.warn{background:var(--warning)}.event-dot.info{background:var(--primary)}.event-dot.error{background:var(--error)}
+.event-body{flex:1;min-width:0}
+.event-msg{font-size:.85em;font-weight:500;color:var(--text)}
+.event-meta{font-size:.7em;color:var(--text-dim);margin-top:3px;display:flex;gap:12px}
+.event-badge{padding:2px 8px;border-radius:4px;font-size:.65em;font-weight:500;flex-shrink:0}
+.event-badge.warn{background:var(--warning-dim);color:var(--warning)}.event-badge.info{background:var(--primary-dim);color:var(--primary)}
+.event-time{font-size:.7em;color:var(--text-dim);white-space:nowrap;flex-shrink:0}
+
+/* Snapshot rows */
+.snap-row{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;border-bottom:1px solid var(--border-light)}
+.snap-row:hover{background:rgba(51,65,85,.15)}.snap-row:last-child{border-bottom:none}
+.snap-info{flex:1}
+.snap-name{font-weight:500;color:var(--text-bright);font-size:.9em}
+.snap-vm{font-size:.7em;color:var(--text-dim);margin-top:1px}
+.snap-status{display:flex;align-items:center;gap:8px}
+
+/* Empty & loading */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-dim)}
+.empty-state .icon{font-size:2.5em;margin-bottom:12px;opacity:.3}
+.empty-state p{font-size:.9em}.empty-state .sub{font-size:.8em;margin-top:4px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+
+/* Toast */
+.toast-container{position:fixed;top:68px;right:20px;z-index:100;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 16px;border-radius:var(--radius);font-size:.8em;font-weight:500;animation:fade-in .3s ease-out;display:flex;align-items:center;gap:8px;min-width:280px;box-shadow:0 10px 25px rgba(0,0,0,.3)}
+.toast-success{background:#166534;color:#bbf7d0;border:1px solid #22c55e50}
+.toast-error{background:#7f1d1d;color:#fecaca;border:1px solid #ef444450}
+.toast-info{background:#1e3a5f;color:#bfdbfe;border:1px solid #3b82f650}
+
+/* Page visibility */
+.page{display:none}.page.active{display:block}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div style="display:flex;align-items:center">
+    <span class="navbar-brand" onclick="navigate('dashboard')">VMRogue</span>
+    <div class="nav-links">
+      <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</button>
+      <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
+      <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
+      <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
+    </div>
+  </div>
+  <div class="navbar-right">
+    <span class="refresh-text" id="last-refresh"></span>
+    <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Connecting...</span></div>
+  </div>
+</nav>
+
+<div class="toast-container" id="toasts"></div>
+
+<div class="container">
+
+<!-- ═══ DASHBOARD PAGE ═══ -->
+<div class="page active" id="page-dashboard">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Dashboard</h1><p id="subtitle">Loading...</p></div></div>
+  <div class="grid-4" id="stat-cards"></div>
+  <div class="grid-4" id="resource-bars"></div>
+  <div class="grid-2">
+    <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--primary)">&#9679;</span> CPU Usage</span><span class="chart-current" id="cpu-current">-</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
+    <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--emerald)">&#9679;</span> Memory Usage</span><span class="chart-current" id="mem-current">-</span></div><div class="chart-area"><canvas id="mem-chart"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Virtual Machines</span><button class="nav-link" onclick="navigate('vms')" style="font-size:.8em">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">Recent Events</span><button class="nav-link" onclick="navigate('events')" style="font-size:.8em">View all &#8250;</button></div><div id="dash-event-list"></div></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ VMS PAGE ═══ -->
+<div class="page" id="page-vms">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Virtual Machines</h1><p>Manage your KubeVirt VMs</p></div><div class="page-header-right" id="vm-count"></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">All VMs</span></div><div id="vm-full-list"></div></div>
+</div>
+</div>
+
+<!-- ═══ SNAPSHOTS PAGE ═══ -->
+<div class="page" id="page-snapshots">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Snapshots</h1><p>VM snapshots and restore points</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
+</div>
+</div>
+
+<!-- ═══ EVENTS PAGE ═══ -->
+<div class="page" id="page-events">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Events</h1><p>Kubernetes cluster events</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Cluster Events</span></div><div id="events-full-list"></div></div>
+</div>
+</div>
+
+</div>
+
+<script>
+// ── State ──
+let currentPage = 'dashboard';
+let vmData = [];
+const cpuHistory = [], memHistory = [];
+const MAX_PTS = 30;
+
+// ── Navigation ──
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
+  if (page === 'snapshots') fetchSnapshots();
+  if (page === 'events') fetchEvents(true);
+}
+
+// ── Toast notifications ──
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-' + type;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ── Chart drawing ──
+function drawChart(id, data, color) {
+  const canvas = document.getElementById(id);
+  if (!canvas || data.length < 2) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px'; canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height, pad = {t:8,b:20,l:36,r:8};
+  const cW = W-pad.l-pad.r, cH = H-pad.t-pad.b;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + cH*i/4;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.fillStyle = '#475569'; ctx.font = '10px Inter,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText((100-i*25)+'%', pad.l-4, y+4);
+  }
+  const pts = data.map((v,i) => ({x:pad.l+(i/(data.length-1))*cW, y:pad.t+cH-(Math.min(v,100)/100)*cH}));
+  const grad = ctx.createLinearGradient(0,pad.t,0,H-pad.b);
+  grad.addColorStop(0, color+'4d'); grad.addColorStop(1, color+'00');
+  ctx.beginPath(); ctx.moveTo(pts[0].x, H-pad.b);
+  pts.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(pts[pts.length-1].x, H-pad.b); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath(); pts.forEach((p,i) => i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+  const last = pts[pts.length-1];
+  ctx.beginPath(); ctx.arc(last.x,last.y,4,0,Math.PI*2); ctx.fillStyle = color; ctx.fill();
+  ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+// ── API Key Auth ──
+function getApiKey() {
+  let key = sessionStorage.getItem('vmrogue_api_key');
+  if (!key) {
+    key = prompt('Enter VMRogue API key:');
+    if (key) sessionStorage.setItem('vmrogue_api_key', key);
+  }
+  return key || '';
+}
+function apiFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({'X-API-Key': getApiKey()}, opts.headers || {});
+  return fetch(url, opts);
+}
+
+// ── Helpers ──
+function sc(status) { return status==='Running'?'running':status==='Stopped'?'stopped':(status==='Failed'||status==='Error')?'error':'other'; }
+function fmtTime(ts) {
+  try { const d=new Date(ts),n=new Date(),m=Math.floor((n-d)/60000); if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.floor(m/60)+'h ago';return Math.floor(m/1440)+'d ago'; } catch{return ts;}
+}
+
+// ── VM Action ──
+async function vmAction(ns, name, action) {
+  const url = '/api/v1/vms/'+ns+'/'+name+'/'+action;
+  try {
+    const r = await apiFetch(url, {method:'POST'});
+    const j = await r.json();
+    if (j.success) { toast(name+' '+action+' initiated', 'success'); setTimeout(refresh, 1500); }
+    else toast('Failed: '+(j.error?.message||'Unknown'), 'error');
+  } catch(e) { toast('Error: '+e.message, 'error'); }
+}
+
+async function vmDelete(ns, name) {
+  if (!confirm('Delete VM "'+name+'"? This cannot be undone.')) return;
+  try {
+    const r = await apiFetch('/api/v1/vms/'+ns+'/'+name, {method:'DELETE'});
+    const j = await r.json();
+    if (j.success) { toast(name+' deleted', 'success'); setTimeout(refresh, 1500); }
+    else toast('Failed: '+(j.error?.message||'Unknown'), 'error');
+  } catch(e) { toast('Error: '+e.message, 'error'); }
+}
+
+// ── Render VM row ──
+function vmRow(vm, showActions) {
+  const cls = sc(vm.status);
+  const ns = vm.node !== 'N/A' ? vm.node : 'default';
+  const isRunning = vm.status === 'Running';
+  const actions = showActions ? '<div class="btn-group">' +
+    (!isRunning ? '<button class="btn btn-start" onclick="vmAction(\'default\',\''+vm.name+'\',\'start\')">Start</button>' : '') +
+    (isRunning ? '<button class="btn btn-stop" onclick="vmAction(\'default\',\''+vm.name+'\',\'stop\')">Stop</button>' : '') +
+    '<button class="btn btn-restart" onclick="vmAction(\'default\',\''+vm.name+'\',\'restart\')">Restart</button>' +
+    '<button class="btn btn-delete" onclick="vmDelete(\'default\',\''+vm.name+'\')">Delete</button>' +
+    '</div>' : '';
+  return '<div class="vm-row"><div class="vm-info"><div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+vm.name+'</div><div class="vm-ns">'+ns+'</div></div></div><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+vm.ip:'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div></div>';
+}
+
+// ── Fetch VMs ──
+async function fetchVMs() {
+  try {
+    const r = await apiFetch('/api/v1/vms');
+    const j = await r.json();
+    if (!j.success||!j.data) { updateHealth(false,'API error'); return; }
+    vmData = j.data;
+    const total=vmData.length, running=vmData.filter(v=>v.status==='Running').length;
+    const stopped=vmData.filter(v=>v.status==='Stopped').length;
+    const failed=vmData.filter(v=>v.status==='Failed'||v.status==='Error').length;
+
+    // Dashboard stat cards
+    let totalCpu=0; vmData.forEach(v=>{totalCpu+=parseInt(v.cpu)||1;});
+    document.getElementById('stat-cards').innerHTML =
+      statCard('blue','&#x1F5A5;','Virtual Machines',total,'<span class="stat-badge badge-green">'+running+' running</span>')+
+      statCard('purple','&#x2699;','Allocated vCPUs',totalCpu,'')+
+      statCard('orange','&#x1F4BE;','Total Memory',(totalCpu*2)+' GB','')+
+      statCard('green','&#x2714;','Cluster Health',(total>0?Math.round(running/total*100):0)+'%','');
+
+    document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs managed';
+
+    // Resource bars
+    const vmUtil=total>0?Math.round(running/total*100):0;
+    const cpuEst=Math.round(vmUtil*.75), memEst=Math.round(vmUtil*.7), diskEst=Math.round(vmUtil*.45);
+    document.getElementById('resource-bars').innerHTML =
+      resBar('CPU Usage',cpuEst,cpuEst>90?'var(--error)':cpuEst>70?'var(--warning)':'var(--primary)')+
+      resBar('Memory',memEst,memEst>90?'var(--error)':'var(--emerald)')+
+      resBar('Disk',diskEst,'var(--orange)')+
+      resBar('VM Utilization',vmUtil,'var(--primary)');
+
+    // Charts
+    cpuHistory.push(cpuEst); if(cpuHistory.length>MAX_PTS)cpuHistory.shift();
+    memHistory.push(memEst); if(memHistory.length>MAX_PTS)memHistory.shift();
+    document.getElementById('cpu-current').textContent=cpuEst+'%';
+    document.getElementById('mem-current').textContent=memEst+'%';
+    drawChart('cpu-chart',cpuHistory,'#3b82f6');
+    drawChart('mem-chart',memHistory,'#10b981');
+
+    // Dashboard VM list (top 10, no actions)
+    document.getElementById('dash-vm-list').innerHTML = vmData.length===0 ?
+      '<div class="empty-state"><div class="icon">&#x1F5A5;</div><p>No virtual machines</p><p class="sub">Deploy a VM to get started</p></div>' :
+      vmData.slice(0,10).map(v=>vmRow(v,false)).join('');
+
+    // VMs page (all, with actions)
+    document.getElementById('vm-count').textContent = total+' VMs ('+running+' running, '+stopped+' stopped'+(failed?', '+failed+' failed':'')+')';
+    document.getElementById('vm-full-list').innerHTML = vmData.length===0 ?
+      '<div class="empty-state"><div class="icon">&#x1F5A5;</div><p>No VMs found</p></div>' :
+      vmData.map(v=>vmRow(v,true)).join('');
+
+    updateHealth(true);
+  } catch(e) { updateHealth(false, e.message); }
+}
+
+// ── Fetch Events ──
+async function fetchEvents(full) {
+  try {
+    const r = await apiFetch('/api/v1/events');
+    const j = await r.json();
+    const events = (j.success && j.data) ? j.data : [];
+    const renderEvents = (items, target) => {
+      if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#x1F514;</div><p>No events</p></div>'; return; }
+      target.innerHTML = items.map(e => {
+        const isWarn = e.type==='Warning';
+        const cls = isWarn?'warn':'info';
+        return '<div class="event-row"><div class="event-dot '+cls+'"></div><div class="event-body"><p class="event-msg">'+esc(e.message||e.reason||'No message')+'</p><div class="event-meta"><span>'+esc(e.namespace)+'</span><span>'+esc(e.involved_object)+'</span></div></div><span class="event-badge '+cls+'">'+(isWarn?'Warning':'Info')+'</span><span class="event-time">'+fmtTime(e.timestamp)+'</span></div>';
+      }).join('');
+    };
+    renderEvents(events.slice(0,5), document.getElementById('dash-event-list'));
+    if (full) renderEvents(events, document.getElementById('events-full-list'));
+  } catch {}
+}
+
+// ── Fetch Snapshots ──
+async function fetchSnapshots() {
+  try {
+    const r = await apiFetch('/api/v1/snapshots');
+    const j = await r.json();
+    const el = document.getElementById('snap-list');
+    if (!j.success||!j.data||j.data.length===0) { el.innerHTML='<div class="empty-state"><div class="icon">&#x1F4F8;</div><p>No snapshots</p><p class="sub">Create a snapshot from the VM details</p></div>'; return; }
+    el.innerHTML = j.data.map(s => {
+      const ready = s.ready;
+      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span></div></div>';
+    }).join('');
+  } catch(e) { document.getElementById('snap-list').innerHTML='<div class="empty-state"><p>Failed to load snapshots</p></div>'; }
+}
+
+// ── Helpers ──
+function statCard(color,icon,label,value,badge) {
+  return '<div class="stat-card stat-card-'+color+'"><div class="stat-top"><div class="stat-icon '+color+'">'+icon+'</div>'+badge+'</div><div class="stat-body"><div class="stat-value">'+value+'</div><div class="stat-label">'+label+'</div></div></div>';
+}
+function resBar(label,pct,color) {
+  return '<div class="resource-bar"><div class="res-header"><span class="lbl">'+label+'</span><span class="pct">'+pct+'%</span></div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></div>';
+}
+function esc(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+function updateHealth(ok,msg) {
+  document.getElementById('health-dot').className='nav-dot '+(ok?'ok':'err');
+  document.getElementById('health-text').textContent=ok?'Connected':(msg||'Disconnected');
+}
+
+// ── Main refresh loop ──
+function refresh() {
+  fetchVMs();
+  fetchEvents(currentPage==='events');
+  if (currentPage==='snapshots') fetchSnapshots();
+  document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
+}
+
+window.addEventListener('load', () => {
+  refresh();
+  setInterval(refresh, 5000);
+  window.addEventListener('resize', () => {
+    drawChart('cpu-chart',cpuHistory,'#3b82f6');
+    drawChart('mem-chart',memHistory,'#10b981');
+  });
+});
+</script>
+</body>
+</html>
