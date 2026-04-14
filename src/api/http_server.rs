@@ -670,7 +670,8 @@ pub mod web {
             }
         }
 
-        ws.on_upgrade(move |socket| vnc_proxy(socket, client, ns, name))
+        ws.protocols(["binary"])
+            .on_upgrade(move |socket| vnc_proxy(socket, client, ns, name))
             .into_response()
     }
 

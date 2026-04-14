@@ -1664,7 +1664,9 @@ async function connectVnc() {
   container.querySelectorAll('canvas, div:not(#vnc-placeholder)').forEach(el => el.remove());
 
   try {
-    vncRfb = new window.RFB(container, url);
+    vncRfb = new window.RFB(container, url, {
+      wsProtocols: ['binary'],
+    });
     vncRfb.scaleViewport = true;
     vncRfb.resizeSession = true;
     vncRfb.addEventListener('connect', () => {
@@ -1672,12 +1674,20 @@ async function connectVnc() {
       document.getElementById('vnc-status').style.color = 'var(--success)';
     });
     vncRfb.addEventListener('disconnect', (e) => {
-      document.getElementById('vnc-status').textContent = e.detail.clean ? 'Disconnected' : 'Connection lost';
+      const reason = e.detail?.reason || (e.detail?.clean ? 'Disconnected' : 'Connection lost');
+      document.getElementById('vnc-status').textContent = reason;
       document.getElementById('vnc-status').style.color = 'var(--error)';
+      console.error('VNC disconnect:', e.detail);
     });
     vncRfb.addEventListener('securityfailure', (e) => {
-      document.getElementById('vnc-status').textContent = 'Security failure';
+      document.getElementById('vnc-status').textContent = 'Auth failed: ' + (e.detail?.reason || 'unknown');
       document.getElementById('vnc-status').style.color = 'var(--error)';
+    });
+    vncRfb.addEventListener('credentialsrequired', (e) => {
+      document.getElementById('vnc-status').textContent = 'VNC password required';
+      document.getElementById('vnc-status').style.color = 'var(--warning)';
+      // KubeVirt VNC typically has no password
+      vncRfb.sendCredentials({ password: '' });
     });
   } catch (e) {
     placeholder.style.display = 'block';
