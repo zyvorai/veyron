@@ -38,17 +38,48 @@ pub struct RollbackExecution {
 }
 
 impl RollbackManager {
-    pub fn new() -> Self { Self { rollback_plans: Vec::new(), executed_rollbacks: Vec::new() } }
+    pub fn new() -> Self {
+        Self {
+            rollback_plans: Vec::new(),
+            executed_rollbacks: Vec::new(),
+        }
+    }
 
-    pub fn create_plan(&mut self, migration_id: &str, vm_name: &str, original_node: &str) -> String {
+    pub fn create_plan(
+        &mut self,
+        migration_id: &str,
+        vm_name: &str,
+        original_node: &str,
+    ) -> String {
         let plan = RollbackPlan {
-            migration_id: migration_id.to_string(), vm_name: vm_name.to_string(),
+            migration_id: migration_id.to_string(),
+            vm_name: vm_name.to_string(),
             original_node: original_node.to_string(),
             steps: vec![
-                RollbackStep { order: 1, action: "stop_vm".to_string(), description: "Stop VM on current node".to_string(), automated: true },
-                RollbackStep { order: 2, action: "migrate_back".to_string(), description: format!("Migrate VM back to {}", original_node), automated: true },
-                RollbackStep { order: 3, action: "verify".to_string(), description: "Verify VM is running on original node".to_string(), automated: true },
-                RollbackStep { order: 4, action: "cleanup".to_string(), description: "Clean up migration artifacts".to_string(), automated: true },
+                RollbackStep {
+                    order: 1,
+                    action: "stop_vm".to_string(),
+                    description: "Stop VM on current node".to_string(),
+                    automated: true,
+                },
+                RollbackStep {
+                    order: 2,
+                    action: "migrate_back".to_string(),
+                    description: format!("Migrate VM back to {}", original_node),
+                    automated: true,
+                },
+                RollbackStep {
+                    order: 3,
+                    action: "verify".to_string(),
+                    description: "Verify VM is running on original node".to_string(),
+                    automated: true,
+                },
+                RollbackStep {
+                    order: 4,
+                    action: "cleanup".to_string(),
+                    description: "Clean up migration artifacts".to_string(),
+                    automated: true,
+                },
             ],
             created_at: Utc::now(),
             valid_until: Utc::now() + chrono::TimeDelta::hours(24),
@@ -59,7 +90,9 @@ impl RollbackManager {
     }
 
     pub fn get_plan(&self, migration_id: &str) -> Option<&RollbackPlan> {
-        self.rollback_plans.iter().find(|p| p.migration_id == migration_id)
+        self.rollback_plans
+            .iter()
+            .find(|p| p.migration_id == migration_id)
     }
 
     /// Execute a rollback by creating a new migration CRD to move the VM back.
@@ -71,7 +104,10 @@ impl RollbackManager {
         migration_id: &str,
         namespace: &str,
     ) -> Option<RollbackExecution> {
-        let plan = self.rollback_plans.iter().find(|p| p.migration_id == migration_id)?;
+        let plan = self
+            .rollback_plans
+            .iter()
+            .find(|p| p.migration_id == migration_id)?;
 
         // Check if the rollback plan has expired
         if Utc::now() > plan.valid_until {
@@ -92,7 +128,7 @@ impl RollbackManager {
 
         // Create a new migration CRD to move the VM back to the original node
         let result = async {
-            let client = kube::Client::try_default().await?;
+            let client = crate::kube::get_client().await?;
             let mig_api: kube::api::Api<crate::kube::types::VirtualMachineInstanceMigration> =
                 kube::api::Api::namespaced(client, namespace);
 
@@ -109,7 +145,9 @@ impl RollbackManager {
                 status: None,
             };
 
-            mig_api.create(&kube::api::PostParams::default(), &migration).await?;
+            mig_api
+                .create(&kube::api::PostParams::default(), &migration)
+                .await?;
             Ok::<(), anyhow::Error>(())
         }
         .await;
@@ -133,5 +171,7 @@ impl RollbackManager {
 }
 
 impl Default for RollbackManager {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

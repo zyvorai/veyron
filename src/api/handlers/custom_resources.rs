@@ -16,8 +16,7 @@ pub struct CustomResourceResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/custom-resources", get(list_custom_resources))
+    Router::new().route("/custom-resources", get(list_custom_resources))
 }
 
 #[cfg(feature = "web")]

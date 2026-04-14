@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Error message sanitization** - HTTP API responses no longer leak internal Kubernetes error details to clients
 - **Request ID uniqueness** - API request IDs now include random suffix to prevent collisions under concurrency
 - **PAM username length** - Username validation tightened from 256 to 32 characters (PAM LOGIN_NAME_MAX)
+- **Secret zeroization** - Replaced `unsafe { as_mut_vec() }` with `zeroize` crate for memory-safe secret clearing on rotate, revoke, and drop
+- **Secret non-cloneable** - Removed `Clone` from `Secret` to prevent accidental copies that bypass zeroization
+- **SSRF DNS rebinding prevention** - Webhook delivery now resolves DNS upfront, validates all returned IPs, and pins curl via `--resolve` to prevent TOCTOU attacks
+- **CGNAT range blocked** - Webhook SSRF filter now blocks `100.64.0.0/10` (RFC 6598 shared address space)
+- **Async DNS resolution** - Webhook URL validation uses `tokio::net::lookup_host` instead of blocking `std::net::ToSocketAddrs`
+- **No `/tmp` fallback** - Data persistence no longer falls back to world-readable `/tmp`; returns error if `XDG_DATA_HOME`/`HOME` is unset
+- **Atomic writes with fsync** - All JSON persistence uses write-to-temp + `sync_all` + rename for crash-safe, race-free file updates
+- **Restrictive file permissions** - Persisted data files created with mode `0600` on Unix
+- **Unique temp file names** - Atomic writes use randomized `.tmp.<hex>` suffix to prevent races between concurrent writers
 
 ### Fixed
 
@@ -55,6 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Connection Pooling
 - **HTTP server client reuse** - All 8 API handlers refactored to use shared `WebState.get_client()` instead of creating new `KubeClient::new()` per request
+- **Kubeconfig caching** - Kubeconfig parsed once via `tokio::sync::OnceCell` and reused across all client creation; `KubeClient::new()` now delegates to cached `get_client()`
+- **Centralized client factory** - New `kube::get_client()` replaces scattered `Client::try_default()` calls, ensuring consistent kubeconfig resolution
+
+#### Code Quality
+- **Centralized data directory** - New `utils::data_dir()` replaces 6 duplicated `dirs::data_dir()` + `/tmp` fallback patterns
+- **Centralized atomic write** - New `utils::atomic_write()` replaces 6 duplicated write-to-temp-then-rename implementations
+- **VM CLI overrides deduplicated** - Extracted `CliOverrides` struct and `apply_cli_overrides()` to eliminate duplicated override logic between `handle_create` and `handle_generate`
 
 #### RDP Session
 - **Serialization error handling** - RDP session creation logs error and returns error JSON instead of silently returning empty object
@@ -133,14 +149,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary size reduced from 17MB to 11MB
 
 ### Statistics
-- Commands: 147 (145 + config-show + config-init)
+- Commands: 169
 - Templates: 44 OS templates
 - Resource Profiles: 8 built-in
 - Deployment Blueprints: 5 built-in
-- Tests: 2,076 (all passing)
+- Tests: 2,388 (all passing: 2,326 unit + 54 integration + 8 doc)
 - Compiler warnings: 0
 - Clippy warnings: 0
-- Lines of code: ~76,400
+- Lines of code: ~107,000
 
 ## [0.1.0] - 2024-02-05
 

@@ -11,18 +11,18 @@ struct TenancyStore {
 }
 
 impl TenancyStore {
-    fn path() -> std::path::PathBuf {
-        dirs::data_dir()
-            .unwrap_or_else(|| {
-                log::warn!("Could not determine data directory, falling back to /tmp");
-                std::path::PathBuf::from("/tmp")
-            })
-            .join("vmrogue")
-            .join("tenancy.json")
+    fn path() -> anyhow::Result<std::path::PathBuf> {
+        Ok(crate::utils::data_dir()?.join("tenancy.json"))
     }
 
     fn load() -> Self {
-        let path = Self::path();
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to determine data directory: {}", e);
+                return Self::default();
+            }
+        };
         if path.exists() {
             std::fs::read_to_string(&path)
                 .ok()
@@ -34,12 +34,15 @@ impl TenancyStore {
     }
 
     fn save(&self) {
-        let path = Self::path();
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = std::fs::write(&path, content);
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to save tenancy data: {}", e);
+                return;
+            }
+        };
+        if let Err(e) = crate::utils::atomic_write(&path, self) {
+            log::error!("Failed to save tenancy data: {}", e);
         }
     }
 }
@@ -128,7 +131,10 @@ pub fn handle_tenants_create(
     println!("  Owner:   {}", tenant.owner_id);
     println!("  Email:   {}", tenant.contact_email);
     println!();
-    println!("{}", color::success("✓ Tenant created and persisted successfully"));
+    println!(
+        "{}",
+        color::success("✓ Tenant created and persisted successfully")
+    );
     Ok(())
 }
 
@@ -147,12 +153,23 @@ pub fn handle_tenants_delete(tenant: String, yes: bool) -> Result<()> {
     println!();
 
     if !yes {
-        println!("  Skipped: Confirmation required");
-    } else {
-        println!("  Tenant ID: {}", color::value(&tenant));
-        println!();
-        println!("{}", color::success("✓ Tenant deleted"));
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt(format!(
+                "Delete tenant '{}'? This will remove all associated resources.",
+                tenant
+            ))
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
+            println!("{}", color::muted("Cancelled"));
+            return Ok(());
+        }
     }
+
+    println!("  Tenant ID: {}", color::value(&tenant));
+    println!();
+    println!("{}", color::success("✓ Tenant deleted"));
     Ok(())
 }
 
@@ -211,7 +228,10 @@ pub fn handle_users_create(
     println!("  Username: {}", color::value(&user.username));
     println!("  Email:    {}", user.email);
     println!();
-    println!("{}", color::success("✓ User created and persisted successfully"));
+    println!(
+        "{}",
+        color::success("✓ User created and persisted successfully")
+    );
     Ok(())
 }
 
@@ -294,7 +314,10 @@ pub fn handle_roles_create(
     println!("  Name:        {}", color::value(&role.name));
     println!("  Permissions: {}", permissions);
     println!();
-    println!("{}", color::success("✓ Role created and persisted successfully"));
+    println!(
+        "{}",
+        color::success("✓ Role created and persisted successfully")
+    );
     Ok(())
 }
 
@@ -348,8 +371,7 @@ pub async fn handle_quotas_create(name: String, namespace: String, preset: Strin
     };
 
     // Create real K8s ResourceQuota
-    let client = kube::Client::try_default().await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
 
     use k8s_openapi::api::core::v1::ResourceQuota;
     use k8s_openapi::apimachinery::pkg::api::resource::Quantity;
@@ -373,7 +395,9 @@ pub async fn handle_quotas_create(name: String, namespace: String, preset: Strin
         status: None,
     };
 
-    quotas_api.create(&kube::api::PostParams::default(), &k8s_quota).await
+    quotas_api
+        .create(&kube::api::PostParams::default(), &k8s_quota)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to create ResourceQuota: {}", e))?;
 
     println!("{}", color::success("✓ Quota created in Kubernetes"));
@@ -437,7 +461,10 @@ pub fn handle_groups_create(
 
     println!("  Name: {}", color::value(&group.name));
     println!();
-    println!("{}", color::success("✓ Group created and persisted successfully"));
+    println!(
+        "{}",
+        color::success("✓ Group created and persisted successfully")
+    );
     Ok(())
 }
 

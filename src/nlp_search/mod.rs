@@ -5,8 +5,8 @@
 // - "stopped vms created last week"
 // - "ubuntu vms in production namespace"
 
-use std::sync::LazyLock;
 use regex::Regex;
+use std::sync::LazyLock;
 
 #[derive(Debug, Clone)]
 pub struct SearchQuery {
@@ -28,7 +28,12 @@ pub enum Filter {
 }
 
 #[derive(Debug, Clone)]
-pub enum StatusFilter { Running, Stopped, Failed, Any }
+pub enum StatusFilter {
+    Running,
+    Stopped,
+    Failed,
+    Any,
+}
 
 #[derive(Debug, Clone)]
 pub struct ComparisonFilter {
@@ -37,10 +42,22 @@ pub struct ComparisonFilter {
 }
 
 #[derive(Debug, Clone)]
-pub enum Operator { GreaterThan, LessThan, Equal, GreaterOrEqual, LessOrEqual }
+pub enum Operator {
+    GreaterThan,
+    LessThan,
+    Equal,
+    GreaterOrEqual,
+    LessOrEqual,
+}
 
 #[derive(Debug, Clone)]
-pub enum SortField { Name, Cpu, Memory, Age, Status }
+pub enum SortField {
+    Name,
+    Cpu,
+    Memory,
+    Age,
+    Status,
+}
 
 impl SearchQuery {
     pub fn parse(query: &str) -> Self {
@@ -48,9 +65,13 @@ impl SearchQuery {
         let mut filters = Vec::new();
 
         // Parse status
-        if q.contains("running") { filters.push(Filter::Status(StatusFilter::Running)); }
-        else if q.contains("stopped") || q.contains("shut") { filters.push(Filter::Status(StatusFilter::Stopped)); }
-        else if q.contains("failed") || q.contains("error") { filters.push(Filter::Status(StatusFilter::Failed)); }
+        if q.contains("running") {
+            filters.push(Filter::Status(StatusFilter::Running));
+        } else if q.contains("stopped") || q.contains("shut") {
+            filters.push(Filter::Status(StatusFilter::Stopped));
+        } else if q.contains("failed") || q.contains("error") {
+            filters.push(Filter::Status(StatusFilter::Failed));
+        }
 
         // Parse CPU usage
         if let Some(cpu) = parse_resource_threshold(&q, "cpu") {
@@ -63,8 +84,13 @@ impl SearchQuery {
         }
 
         // Parse OS type
-        for os in &["ubuntu", "centos", "fedora", "rhel", "debian", "windows", "alpine"] {
-            if q.contains(os) { filters.push(Filter::OsType(os.to_string())); break; }
+        for os in &[
+            "ubuntu", "centos", "fedora", "rhel", "debian", "windows", "alpine",
+        ] {
+            if q.contains(os) {
+                filters.push(Filter::OsType(os.to_string()));
+                break;
+            }
         }
 
         // Parse namespace
@@ -78,20 +104,31 @@ impl SearchQuery {
         }
 
         // Parse sort
-        let sort_by = if q.contains("sort by cpu") || q.contains("by cpu") { Some(SortField::Cpu) }
-        else if q.contains("sort by memory") || q.contains("by memory") { Some(SortField::Memory) }
-        else if q.contains("sort by name") || q.contains("by name") { Some(SortField::Name) }
-        else if q.contains("sort by age") || q.contains("by age") { Some(SortField::Age) }
-        else { None };
+        let sort_by = if q.contains("sort by cpu") || q.contains("by cpu") {
+            Some(SortField::Cpu)
+        } else if q.contains("sort by memory") || q.contains("by memory") {
+            Some(SortField::Memory)
+        } else if q.contains("sort by name") || q.contains("by name") {
+            Some(SortField::Name)
+        } else if q.contains("sort by age") || q.contains("by age") {
+            Some(SortField::Age)
+        } else {
+            None
+        };
 
         // Parse limit
         static LIMIT_RE: LazyLock<Regex> =
             LazyLock::new(|| Regex::new(r"(?:top|first|limit)\s+(\d+)").unwrap());
-        let limit = LIMIT_RE.captures(&q)
+        let limit = LIMIT_RE
+            .captures(&q)
             .and_then(|caps| caps.get(1))
             .and_then(|m| m.as_str().parse().ok());
 
-        SearchQuery { filters, sort_by, limit }
+        SearchQuery {
+            filters,
+            sort_by,
+            limit,
+        }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -104,7 +141,9 @@ impl SearchQuery {
             match filter {
                 Filter::Status(s) => parts.push(format!("status={:?}", s)),
                 Filter::CpuUsage(c) => parts.push(format!("cpu {:?} {:.0}%", c.operator, c.value)),
-                Filter::MemoryUsage(c) => parts.push(format!("memory {:?} {:.0}%", c.operator, c.value)),
+                Filter::MemoryUsage(c) => {
+                    parts.push(format!("memory {:?} {:.0}%", c.operator, c.value))
+                }
                 Filter::OsType(os) => parts.push(format!("os={}", os)),
                 Filter::Namespace(ns) => parts.push(format!("namespace={}", ns)),
                 Filter::NodeName(n) => parts.push(format!("node={}", n)),
@@ -112,8 +151,12 @@ impl SearchQuery {
                 Filter::Name(n) => parts.push(format!("name~{}", n)),
             }
         }
-        if let Some(ref s) = self.sort_by { parts.push(format!("sort={:?}", s)); }
-        if let Some(l) = self.limit { parts.push(format!("limit={}", l)); }
+        if let Some(ref s) = self.sort_by {
+            parts.push(format!("sort={:?}", s));
+        }
+        if let Some(l) = self.limit {
+            parts.push(format!("limit={}", l));
+        }
         parts.join(", ")
     }
 }
@@ -124,25 +167,58 @@ fn parse_resource_threshold(query: &str, resource: &str) -> Option<ComparisonFil
 
     // Cache compiled regexes per resource name
     type PatternCache = HashMap<String, Vec<(Regex, Operator)>>;
-    static CACHE: LazyLock<Mutex<PatternCache>> =
-        LazyLock::new(|| Mutex::new(HashMap::new()));
+    static CACHE: LazyLock<Mutex<PatternCache>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
     let patterns = {
         let mut cache = CACHE.lock().ok()?;
-        cache.entry(resource.to_string()).or_insert_with(|| {
-            vec![
-                (Regex::new(&format!(r"{}\s*(?:usage\s*)?(?:>|more than|above|over)\s*(\d+)", resource)).unwrap(), Operator::GreaterThan),
-                (Regex::new(&format!(r"{}\s*(?:usage\s*)?(?:<|less than|below|under)\s*(\d+)", resource)).unwrap(), Operator::LessThan),
-                (Regex::new(&format!(r"(?:>|more than|above|over)\s*(\d+)%?\s*{}", resource)).unwrap(), Operator::GreaterThan),
-                (Regex::new(&format!(r"(?:<|less than|below|under)\s*(\d+)%?\s*{}", resource)).unwrap(), Operator::LessThan),
-            ]
-        }).clone()
+        cache
+            .entry(resource.to_string())
+            .or_insert_with(|| {
+                vec![
+                    (
+                        Regex::new(&format!(
+                            r"{}\s*(?:usage\s*)?(?:>|more than|above|over)\s*(\d+)",
+                            resource
+                        ))
+                        .unwrap(),
+                        Operator::GreaterThan,
+                    ),
+                    (
+                        Regex::new(&format!(
+                            r"{}\s*(?:usage\s*)?(?:<|less than|below|under)\s*(\d+)",
+                            resource
+                        ))
+                        .unwrap(),
+                        Operator::LessThan,
+                    ),
+                    (
+                        Regex::new(&format!(
+                            r"(?:>|more than|above|over)\s*(\d+)%?\s*{}",
+                            resource
+                        ))
+                        .unwrap(),
+                        Operator::GreaterThan,
+                    ),
+                    (
+                        Regex::new(&format!(
+                            r"(?:<|less than|below|under)\s*(\d+)%?\s*{}",
+                            resource
+                        ))
+                        .unwrap(),
+                        Operator::LessThan,
+                    ),
+                ]
+            })
+            .clone()
     };
 
     for (re, op) in &patterns {
         if let Some(caps) = re.captures(query) {
             if let Some(val) = caps.get(1).and_then(|m| m.as_str().parse::<f64>().ok()) {
-                return Some(ComparisonFilter { operator: op.clone(), value: val });
+                return Some(ComparisonFilter {
+                    operator: op.clone(),
+                    value: val,
+                });
             }
         }
     }
@@ -167,14 +243,23 @@ fn parse_node(query: &str) -> Option<String> {
 
 impl std::fmt::Display for StatusFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self { Self::Running => write!(f, "Running"), Self::Stopped => write!(f, "Stopped"),
-            Self::Failed => write!(f, "Failed"), Self::Any => write!(f, "Any") }
+        match self {
+            Self::Running => write!(f, "Running"),
+            Self::Stopped => write!(f, "Stopped"),
+            Self::Failed => write!(f, "Failed"),
+            Self::Any => write!(f, "Any"),
+        }
     }
 }
 
 impl std::fmt::Display for Operator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self { Self::GreaterThan => write!(f, ">"), Self::LessThan => write!(f, "<"),
-            Self::Equal => write!(f, "="), Self::GreaterOrEqual => write!(f, ">="), Self::LessOrEqual => write!(f, "<=") }
+        match self {
+            Self::GreaterThan => write!(f, ">"),
+            Self::LessThan => write!(f, "<"),
+            Self::Equal => write!(f, "="),
+            Self::GreaterOrEqual => write!(f, ">="),
+            Self::LessOrEqual => write!(f, "<="),
+        }
     }
 }

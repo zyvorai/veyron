@@ -34,7 +34,11 @@ pub struct Participant {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ParticipantRole { Owner, Editor, Viewer }
+pub enum ParticipantRole {
+    Owner,
+    Editor,
+    Viewer,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SessionPermissions {
@@ -45,7 +49,12 @@ pub struct SessionPermissions {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum SessionStatus { Active, Paused, Expired, Closed }
+pub enum SessionStatus {
+    Active,
+    Paused,
+    Expired,
+    Closed,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharingConfig {
@@ -57,39 +66,73 @@ pub struct SharingConfig {
 
 impl Default for SharingConfig {
     fn default() -> Self {
-        Self { enabled: true, default_expiry_hours: 24, max_sessions: 10, require_auth: true }
+        Self {
+            enabled: true,
+            default_expiry_hours: 24,
+            max_sessions: 10,
+            require_auth: true,
+        }
     }
 }
 
 impl SessionManager {
     pub fn new() -> Self {
-        Self { sessions: Vec::new(), config: SharingConfig::default() }
+        Self {
+            sessions: Vec::new(),
+            config: SharingConfig::default(),
+        }
     }
 
     pub fn create_session(&mut self, owner: &str, namespace: &str) -> String {
         let id = generate_id("sess", owner);
         let session = SharedSession {
-            id: id.clone(), owner: owner.to_string(),
-            participants: vec![Participant { user_id: owner.to_string(), display_name: owner.to_string(),
-                role: ParticipantRole::Owner, joined_at: Utc::now(), last_active: Utc::now() }],
-            permissions: SessionPermissions { can_modify: true, can_execute_actions: true, can_invite: true, max_participants: 10 },
-            status: SessionStatus::Active, created_at: Utc::now(),
-            expires_at: Some(Utc::now() + chrono::TimeDelta::hours(self.config.default_expiry_hours as i64)),
-            namespace: namespace.to_string(), view_state: String::new(),
+            id: id.clone(),
+            owner: owner.to_string(),
+            participants: vec![Participant {
+                user_id: owner.to_string(),
+                display_name: owner.to_string(),
+                role: ParticipantRole::Owner,
+                joined_at: Utc::now(),
+                last_active: Utc::now(),
+            }],
+            permissions: SessionPermissions {
+                can_modify: true,
+                can_execute_actions: true,
+                can_invite: true,
+                max_participants: 10,
+            },
+            status: SessionStatus::Active,
+            created_at: Utc::now(),
+            expires_at: Some(
+                Utc::now() + chrono::TimeDelta::hours(self.config.default_expiry_hours as i64),
+            ),
+            namespace: namespace.to_string(),
+            view_state: String::new(),
         };
         self.sessions.push(session);
         id
     }
 
     pub fn join_session(&mut self, session_id: &str, user_id: &str, name: &str) -> bool {
-        if let Some(session) = self.sessions.iter_mut().find(|s| s.id == session_id && s.status == SessionStatus::Active) {
-            if session.participants.len() >= session.permissions.max_participants { return false; }
+        if let Some(session) = self
+            .sessions
+            .iter_mut()
+            .find(|s| s.id == session_id && s.status == SessionStatus::Active)
+        {
+            if session.participants.len() >= session.permissions.max_participants {
+                return false;
+            }
             session.participants.push(Participant {
-                user_id: user_id.to_string(), display_name: name.to_string(),
-                role: ParticipantRole::Viewer, joined_at: Utc::now(), last_active: Utc::now(),
+                user_id: user_id.to_string(),
+                display_name: name.to_string(),
+                role: ParticipantRole::Viewer,
+                joined_at: Utc::now(),
+                last_active: Utc::now(),
             });
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 
     pub fn close_session(&mut self, session_id: &str) {
@@ -99,7 +142,10 @@ impl SessionManager {
     }
 
     pub fn active_sessions(&self) -> Vec<&SharedSession> {
-        self.sessions.iter().filter(|s| s.status == SessionStatus::Active).collect()
+        self.sessions
+            .iter()
+            .filter(|s| s.status == SessionStatus::Active)
+            .collect()
     }
 
     pub fn get_session(&self, id: &str) -> Option<&SharedSession> {
@@ -108,5 +154,7 @@ impl SessionManager {
 }
 
 impl Default for SessionManager {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

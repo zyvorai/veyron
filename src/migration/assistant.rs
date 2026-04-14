@@ -13,7 +13,14 @@ pub struct MigrationAssistant {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum MigrationStep { SelectTarget, PreCheck, Confirm, Migrating, PostCheck, Complete }
+pub enum MigrationStep {
+    SelectTarget,
+    PreCheck,
+    Confirm,
+    Migrating,
+    PostCheck,
+    Complete,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PreCheckResult {
@@ -25,13 +32,28 @@ pub struct PreCheckResult {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CheckType { Resource, Network, Storage, Compatibility, Health }
+pub enum CheckType {
+    Resource,
+    Network,
+    Storage,
+    Compatibility,
+    Health,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum CheckStatus { Passed, Warning, Failed, Skipped }
+pub enum CheckStatus {
+    Passed,
+    Warning,
+    Failed,
+    Skipped,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum CheckSeverity { Required, Recommended, Optional }
+pub enum CheckSeverity {
+    Required,
+    Recommended,
+    Optional,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PostCheckResult {
@@ -50,19 +72,33 @@ pub struct AssistantConfig {
 
 impl Default for AssistantConfig {
     fn default() -> Self {
-        Self { auto_pre_check: true, auto_post_check: true, require_all_pre_checks: false, timeout_secs: 600 }
+        Self {
+            auto_pre_check: true,
+            auto_post_check: true,
+            require_all_pre_checks: false,
+            timeout_secs: 600,
+        }
     }
 }
 
 impl MigrationAssistant {
     pub fn new() -> Self {
-        Self { current_step: MigrationStep::SelectTarget, selected_vms: Vec::new(),
-            target_node: None, pre_check_results: Vec::new(), post_check_results: Vec::new(),
-            config: AssistantConfig::default() }
+        Self {
+            current_step: MigrationStep::SelectTarget,
+            selected_vms: Vec::new(),
+            target_node: None,
+            pre_check_results: Vec::new(),
+            post_check_results: Vec::new(),
+            config: AssistantConfig::default(),
+        }
     }
 
-    pub fn select_vms(&mut self, vms: Vec<String>) { self.selected_vms = vms; }
-    pub fn select_target(&mut self, node: &str) { self.target_node = Some(node.to_string()); }
+    pub fn select_vms(&mut self, vms: Vec<String>) {
+        self.selected_vms = vms;
+    }
+    pub fn select_target(&mut self, node: &str) {
+        self.target_node = Some(node.to_string());
+    }
 
     /// Run pre-migration checks against the Kubernetes cluster.
     ///
@@ -93,7 +129,9 @@ impl MigrationAssistant {
                 kube::api::Api::all(k8s);
             match nodes_api.get(target).await {
                 Ok(node) => {
-                    let unschedulable = node.spec.as_ref()
+                    let unschedulable = node
+                        .spec
+                        .as_ref()
                         .and_then(|s| s.unschedulable)
                         .unwrap_or(false);
                     if unschedulable {
@@ -135,7 +173,10 @@ impl MigrationAssistant {
                         check_type: CheckType::Health,
                         status: CheckStatus::Passed,
                         severity: CheckSeverity::Required,
-                        message: format!("VM '{}' is running and ready for live migration", vm_name),
+                        message: format!(
+                            "VM '{}' is running and ready for live migration",
+                            vm_name
+                        ),
                     });
                 }
                 Ok(false) => {
@@ -144,7 +185,10 @@ impl MigrationAssistant {
                         check_type: CheckType::Health,
                         status: CheckStatus::Failed,
                         severity: CheckSeverity::Required,
-                        message: format!("VM '{}' is not running — cannot live-migrate a stopped VM", vm_name),
+                        message: format!(
+                            "VM '{}' is not running — cannot live-migrate a stopped VM",
+                            vm_name
+                        ),
                     });
                 }
                 Err(e) => {
@@ -162,8 +206,16 @@ impl MigrationAssistant {
         // Check storage accessibility (VM has shared storage, not local)
         for vm_name in &self.selected_vms {
             if let Ok(vm) = client.get_vm(namespace, vm_name).await {
-                let has_local_only = vm.spec.template.spec.volumes.as_ref()
-                    .map(|vols| vols.iter().all(|v| v.empty_disk.is_some() || v.container_disk.is_some()))
+                let has_local_only = vm
+                    .spec
+                    .template
+                    .spec
+                    .volumes
+                    .as_ref()
+                    .map(|vols| {
+                        vols.iter()
+                            .all(|v| v.empty_disk.is_some() || v.container_disk.is_some())
+                    })
                     .unwrap_or(true);
                 if has_local_only {
                     self.pre_check_results.push(PreCheckResult {
@@ -190,11 +242,18 @@ impl MigrationAssistant {
     }
 
     pub fn pre_checks_passed(&self) -> bool {
-        !self.pre_check_results.iter().any(|r| r.status == CheckStatus::Failed)
+        !self
+            .pre_check_results
+            .iter()
+            .any(|r| r.status == CheckStatus::Failed)
     }
 
-    pub fn confirm(&mut self) { self.current_step = MigrationStep::Confirm; }
-    pub fn start_migration(&mut self) { self.current_step = MigrationStep::Migrating; }
+    pub fn confirm(&mut self) {
+        self.current_step = MigrationStep::Confirm;
+    }
+    pub fn start_migration(&mut self) {
+        self.current_step = MigrationStep::Migrating;
+    }
 
     /// Run post-migration checks — verify VMs are running and have IPs.
     pub async fn run_post_checks(&mut self, namespace: &str) {
@@ -227,7 +286,9 @@ impl MigrationAssistant {
             });
 
             // Check VM has network access (IP assigned)
-            let has_ip = client.get_vm_ip(namespace, vm_name).await
+            let has_ip = client
+                .get_vm_ip(namespace, vm_name)
+                .await
                 .ok()
                 .flatten()
                 .is_some();
@@ -237,13 +298,18 @@ impl MigrationAssistant {
                 message: if has_ip {
                     format!("VM '{}' has a network IP assigned", vm_name)
                 } else {
-                    format!("VM '{}' does not have an IP yet (may still be initializing)", vm_name)
+                    format!(
+                        "VM '{}' does not have an IP yet (may still be initializing)",
+                        vm_name
+                    )
                 },
             });
 
             // Check VM is on the target node (if specified)
             if let Some(ref target) = self.target_node {
-                let on_target = client.get_vm_node(namespace, vm_name).await
+                let on_target = client
+                    .get_vm_node(namespace, vm_name)
+                    .await
                     .ok()
                     .flatten()
                     .map(|n| n == *target)
@@ -263,10 +329,16 @@ impl MigrationAssistant {
         self.current_step = MigrationStep::PostCheck;
     }
 
-    pub fn complete(&mut self) { self.current_step = MigrationStep::Complete; }
-    pub fn reset(&mut self) { *self = Self::new(); }
+    pub fn complete(&mut self) {
+        self.current_step = MigrationStep::Complete;
+    }
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
 }
 
 impl Default for MigrationAssistant {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

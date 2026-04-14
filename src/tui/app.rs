@@ -4,7 +4,7 @@ use super::config::TuiConfig;
 use super::state::AppState;
 use anyhow::Result;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
-use ratatui::{backend::Backend, Terminal};
+use ratatui::{Terminal, backend::Backend};
 use std::time::Duration;
 
 /// TUI View enum - different screens in the application
@@ -122,7 +122,9 @@ impl App {
         match self.current_view {
             View::Dashboard => ui::dashboard::render(f, &self.state, &self.config),
             View::VmList => ui::vm_list::render(f, &mut self.state, &self.config),
-            View::VmDetails => ui::vm_details::render(f, &self.state, &self.config, self.detail_tab),
+            View::VmDetails => {
+                ui::vm_details::render(f, &self.state, &self.config, self.detail_tab)
+            }
             View::Snapshots => ui::snapshots::render(f, &self.state, &self.config),
             View::Profiles => ui::profiles::render(f, &self.state, &self.config),
             View::Blueprints => ui::blueprints::render(f, &self.state, &self.config),
@@ -149,43 +151,43 @@ impl App {
             if area.width < 8 || area.height < 6 {
                 // Terminal too small to render error overlay
             } else {
-            let error_area = Rect {
-                x: area.width / 4,
-                y: area.height / 3,
-                width: area.width / 2,
-                height: 3.min(area.height.saturating_sub(area.height / 3)),
-            };
+                let error_area = Rect {
+                    x: area.width / 4,
+                    y: area.height / 3,
+                    width: area.width / 2,
+                    height: 3.min(area.height.saturating_sub(area.height / 3)),
+                };
 
-            let error = Paragraph::new(msg.as_str())
-                .block(Block::default().borders(Borders::ALL).title("Error"))
-                .style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
-                .alignment(Alignment::Center);
+                let error = Paragraph::new(msg.as_str())
+                    .block(Block::default().borders(Borders::ALL).title("Error"))
+                    .style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+                    .alignment(Alignment::Center);
 
-            f.render_widget(error, error_area);
-        } // else: terminal too small
+                f.render_widget(error, error_area);
+            } // else: terminal too small
         }
 
         // Show success message if present (guard against very small terminals)
         if let Some(ref msg) = self.success_message {
             if area.width >= 8 && area.height >= 6 {
-            let success_area = Rect {
-                x: area.width / 4,
-                y: area.height / 3,
-                width: area.width / 2,
-                height: 3.min(area.height.saturating_sub(area.height / 3)),
-            };
+                let success_area = Rect {
+                    x: area.width / 4,
+                    y: area.height / 3,
+                    width: area.width / 2,
+                    height: 3.min(area.height.saturating_sub(area.height / 3)),
+                };
 
-            let success = Paragraph::new(msg.as_str())
-                .block(Block::default().borders(Borders::ALL).title("Success"))
-                .style(
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .alignment(Alignment::Center);
+                let success = Paragraph::new(msg.as_str())
+                    .block(Block::default().borders(Borders::ALL).title("Success"))
+                    .style(
+                        Style::default()
+                            .fg(Color::Green)
+                            .add_modifier(Modifier::BOLD),
+                    )
+                    .alignment(Alignment::Center);
 
-            f.render_widget(success, success_area);
-        } // small terminal guard
+                f.render_widget(success, success_area);
+            } // small terminal guard
         }
     }
 

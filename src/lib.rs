@@ -93,8 +93,8 @@ pub mod topology;
 // Convenience re-exports for public API
 pub use config::{VMConfig, VMConfigBuilder};
 pub use kube::converter::vm_config_to_kubevirt;
-pub use output::{format_output, to_json, to_yaml, OutputFormat};
-pub use utils::{format_bytes, generate_id, percent_to_u8, VMRogueError};
+pub use output::{OutputFormat, format_output, to_json, to_yaml};
+pub use utils::{VMRogueError, format_bytes, generate_id, percent_to_u8};
 
 use anyhow::Result;
 use cli::{Cli, Commands};
@@ -102,12 +102,21 @@ use config::AppConfig;
 
 /// Main entry point for the library
 pub async fn run(mut cli: Cli) -> Result<()> {
+    // Disable colored output if --no-color, NO_COLOR is set, or stdout is not a TTY
+    use std::io::IsTerminal;
+    if cli.no_color || std::env::var_os("NO_COLOR").is_some() || !std::io::stdout().is_terminal() {
+        colored::control::set_override(false);
+    }
+
     // Load application config file
     let app_config = if let Some(ref config_path) = cli.config {
         match AppConfig::load_from(std::path::PathBuf::from(config_path)) {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("Warning: Failed to load config file '{}': {}", config_path, e);
+                eprintln!(
+                    "Warning: Failed to load config file '{}': {}",
+                    config_path, e
+                );
                 AppConfig::default()
             }
         }
@@ -563,7 +572,8 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             migration_type,
             plan,
         } => {
-            handlers::backup::handle_migrate(vm, target_node, migration_type, plan, &cli.namespace).await?;
+            handlers::backup::handle_migrate(vm, target_node, migration_type, plan, &cli.namespace)
+                .await?;
         }
 
         Commands::MigrationStatus {
@@ -590,7 +600,15 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             priority,
             eviction_strategy,
         } => {
-            handlers::backup::handle_ha_config(vm, enable, disable, priority, eviction_strategy, &cli.namespace).await?;
+            handlers::backup::handle_ha_config(
+                vm,
+                enable,
+                disable,
+                priority,
+                eviction_strategy,
+                &cli.namespace,
+            )
+            .await?;
         }
 
         Commands::HAStatus { vm, output } => {
@@ -689,7 +707,13 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             containers,
             output,
         } => {
-            handlers::security::handle_security_scan(vm, scan_type, containers, output, &cli.namespace)?;
+            handlers::security::handle_security_scan(
+                vm,
+                scan_type,
+                containers,
+                output,
+                &cli.namespace,
+            )?;
         }
 
         Commands::SecurityAssess { vm, output } => {
@@ -713,7 +737,8 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             framework,
             output,
         } => {
-            handlers::security::handle_compliance_check(vm, framework, output, &cli.namespace).await?;
+            handlers::security::handle_compliance_check(vm, framework, output, &cli.namespace)
+                .await?;
         }
 
         Commands::ComplianceReport {
@@ -721,7 +746,8 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             report_id,
             output,
         } => {
-            handlers::security::handle_compliance_report(vm, report_id, output, &cli.namespace).await?;
+            handlers::security::handle_compliance_report(vm, report_id, output, &cli.namespace)
+                .await?;
         }
 
         Commands::AuditList {
@@ -731,7 +757,14 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             security_only,
             output,
         } => {
-            handlers::security::handle_audit_list(vm, event_type, severity, security_only, output, &cli.namespace)?;
+            handlers::security::handle_audit_list(
+                vm,
+                event_type,
+                severity,
+                security_only,
+                output,
+                &cli.namespace,
+            )?;
         }
 
         Commands::AuditGet { log_id, output } => {
@@ -850,7 +883,9 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         Commands::LogsPatterns { min_count } => {
             handlers::observability::handle_logs_patterns(min_count)?
         }
-        Commands::MetricsCollect { vm } => handlers::observability::handle_metrics_collect(vm).await?,
+        Commands::MetricsCollect { vm } => {
+            handlers::observability::handle_metrics_collect(vm).await?
+        }
         Commands::MetricsQuery {
             name,
             start,
@@ -1061,7 +1096,17 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             let tls_key = tls_key.or(app_config.api.tls_key.clone());
             let auth = auth.unwrap_or_else(|| app_config.api.auth.clone());
             let rate_limit = rate_limit.unwrap_or(app_config.api.rate_limit);
-            handlers::api::handle_api_serve(port, host, cli.namespace.clone(), tls, tls_cert, tls_key, auth, rate_limit).await?;
+            handlers::api::handle_api_serve(
+                port,
+                host,
+                cli.namespace.clone(),
+                tls,
+                tls_cert,
+                tls_key,
+                auth,
+                rate_limit,
+            )
+            .await?;
         }
         Commands::ApiStatus { output } => handlers::api::handle_api_status(output)?,
         Commands::ApiRoutes { method, output } => handlers::api::handle_api_routes(method, output)?,
@@ -1098,8 +1143,10 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         Commands::Tui {
             no_splash,
             theme,
-            interactive,
-        } => handlers::api::handle_tui(cli.namespace.clone(), theme, interactive, no_splash).await?,
+            basic,
+        } => {
+            handlers::api::handle_tui(cli.namespace.clone(), theme, basic, no_splash).await?
+        }
 
         // ========== CONFIGURATION ==========
         Commands::ConfigShow { path } => {
@@ -1390,7 +1437,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 ),
                 (
                     "Configuration",
-                    vec!["config-show", "config-init", "commands"],
+                    vec!["config-show", "config-init", "commands", "doctor"],
                 ),
             ];
 
@@ -1406,6 +1453,10 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 "{}",
                 color::muted("Use 'vmrogue <command> --help' for details on a specific command")
             );
+        }
+
+        Commands::Doctor => {
+            handlers::vm::handle_doctor(&cli.namespace).await?;
         }
     }
 

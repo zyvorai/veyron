@@ -29,8 +29,7 @@ pub struct TopologyEdge {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/topology/map", get(get_topology_map))
+    Router::new().route("/topology/map", get(get_topology_map))
 }
 
 #[cfg(feature = "web")]

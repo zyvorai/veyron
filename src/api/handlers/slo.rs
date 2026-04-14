@@ -17,8 +17,7 @@ pub struct SloObjective {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/slo/objectives", get(list_slo_objectives))
+    Router::new().route("/slo/objectives", get(list_slo_objectives))
 }
 
 #[cfg(feature = "web")]

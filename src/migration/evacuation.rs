@@ -220,7 +220,9 @@ impl EvacuationPlanner {
         if max_parallel == 0 {
             log::warn!("max_parallel cannot be 0, defaulting to 1");
         }
-        Self { max_parallel: max_parallel.max(1) }
+        Self {
+            max_parallel: max_parallel.max(1),
+        }
     }
 
     /// Plan evacuation order (by priority)

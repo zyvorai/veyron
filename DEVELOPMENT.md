@@ -2,15 +2,15 @@
 
 ## Project Statistics
 
-- **Lines of Code**: ~76,400
+- **Lines of Code**: ~107,000
 - **Modules**: 37 public modules + 11 handler modules
 - **Templates**: 44 OS templates
-- **CLI Commands**: 145
+- **CLI Commands**: 169
 - **Resource Profiles**: 8 built-in
 - **Deployment Blueprints**: 5 built-in
-- **Tests**: 2,032 (all passing)
+- **Tests**: 2,388 (all passing: 2,326 unit + 54 integration + 8 doc)
 - **Compiler Warnings**: 0
-- **Dependencies**: 24 core + 1 dev
+- **Dependencies**: 25 core + 1 dev
 
 ## Architecture
 
@@ -148,11 +148,19 @@ src/
 - [x] Service mesh integration
 - [x] Disaster recovery (failover, HA, replication)
 - [x] Edge computing (nodes, sync, telemetry)
-- [x] Secrets management (encryption, rotation)
+- [x] Secrets management (encryption, rotation, zeroization via `zeroize` crate)
 - [x] Multi-cloud (providers, federation, connectivity, portability)
 - [x] Capacity planning
 - [x] AI/ML (GPU management, inference)
 - [x] GitOps integration
+
+### Security & Robustness
+- [x] Centralized data directory (`utils::data_dir()`) — no `/tmp` fallback
+- [x] Atomic file writes with fsync and unique temp names (`utils::atomic_write()`)
+- [x] Kubeconfig caching via `tokio::sync::OnceCell` (`kube::get_client()`)
+- [x] SSRF prevention with DNS rebinding protection and CGNAT blocking
+- [x] Secret memory zeroization on drop/rotate/revoke
+- [x] Restrictive file permissions (0600) on persisted data
 
 ## Quick Test Commands
 
@@ -197,3 +205,6 @@ cargo run -- tui --interactive
 5. **Validation first**: All configs validated before operations
 6. **Async-first**: Built on Tokio for Kubernetes operations
 7. **Proper error handling**: No unsafe `.unwrap()` in production code, `anyhow` for error propagation
+8. **Centralized persistence**: All stores use `utils::data_dir()` and `utils::atomic_write()` for consistent, crash-safe file I/O
+9. **Client caching**: Kubeconfig parsed once and cached; `kube::get_client()` provides cheap client creation
+10. **Defense in depth**: SSRF prevention with DNS resolution + IP validation + connection pinning; secret zeroization on all code paths

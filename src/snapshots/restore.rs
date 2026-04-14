@@ -1,16 +1,16 @@
 // Restore Manager - Restore VMs from snapshots
 // Real KubeVirt CRD integration
 
+use super::SnapshotConfig;
 use super::crds::{RestoreTarget, VirtualMachineRestore, VirtualMachineRestoreSpec};
 use super::manager::SnapshotManager;
 use super::types::{RestoreInfo, RestoreStatus};
-use super::SnapshotConfig;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use kube::{
-    api::{DeleteParams, ListParams, PostParams},
     Api, Client,
+    api::{DeleteParams, ListParams, PostParams},
 };
 use std::collections::BTreeMap;
 
@@ -23,9 +23,7 @@ pub struct RestoreManager {
 impl RestoreManager {
     /// Create a new RestoreManager
     pub async fn new(namespace: impl Into<String>) -> Result<Self> {
-        let client = Client::try_default()
-            .await
-            .context("Failed to create Kubernetes client")?;
+        let client = crate::kube::get_client().await?;
 
         Ok(Self {
             client,
@@ -55,18 +53,12 @@ impl RestoreManager {
 
         // Build labels
         let mut labels = BTreeMap::new();
-        labels.insert(
-            "vmrogue.io/snapshot".to_string(),
-            snapshot_name.to_string(),
-        );
+        labels.insert("vmrogue.io/snapshot".to_string(), snapshot_name.to_string());
         labels.insert(
             "vmrogue.io/target-vm".to_string(),
             target_vm_name.to_string(),
         );
-        labels.insert(
-            "vmrogue.io/created-by".to_string(),
-            "vmrogue".to_string(),
-        );
+        labels.insert("vmrogue.io/created-by".to_string(), "vmrogue".to_string());
 
         // Create the restore CRD
         let restore = VirtualMachineRestore {
@@ -134,7 +126,8 @@ impl RestoreManager {
             Err(e) => {
                 return Err(anyhow::anyhow!(
                     "Cannot verify VM '{}' running state: {}. Aborting restore for safety.",
-                    vm_name, e
+                    vm_name,
+                    e
                 ));
             }
             Ok(false) => {} // VM is stopped, safe to proceed
@@ -146,7 +139,10 @@ impl RestoreManager {
             vm_name,
             Utc::now().format("%Y%m%d%H%M%S")
         );
-        log::info!("Creating pre-restore safety snapshot: {}", safety_snapshot_name);
+        log::info!(
+            "Creating pre-restore safety snapshot: {}",
+            safety_snapshot_name
+        );
         let snapshot_manager = SnapshotManager::from_client(self.client.clone(), &self.namespace);
         let safety_config = SnapshotConfig::new(vm_name, &safety_snapshot_name)
             .with_description(format!(

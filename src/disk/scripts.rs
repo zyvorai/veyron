@@ -1,8 +1,8 @@
 // Expansion Scripts - Automated filesystem expansion for VMs
 
-use std::sync::LazyLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
 
 /// Regex for validating device paths (alphanumeric, slashes, hyphens only)
 static DEVICE_PATH_RE: LazyLock<Regex> =
@@ -337,7 +337,10 @@ echo "=== Expansion Complete ==="
     /// Generate one-liner script for quick execution
     ///
     /// Returns an error if the device path is invalid (potential injection).
-    pub fn generate_oneliner(filesystem_type: &FilesystemType, device: &str) -> Result<String, String> {
+    pub fn generate_oneliner(
+        filesystem_type: &FilesystemType,
+        device: &str,
+    ) -> Result<String, String> {
         validate_device_path(device)?;
         Ok(Self::generate_oneliner_unchecked(filesystem_type, device))
     }
@@ -445,7 +448,8 @@ mod tests {
 
     #[test]
     fn test_oneliner_generation() {
-        let oneliner = ScriptGenerator::generate_oneliner(&FilesystemType::LVM, "/dev/vda").unwrap();
+        let oneliner =
+            ScriptGenerator::generate_oneliner(&FilesystemType::LVM, "/dev/vda").unwrap();
 
         assert!(oneliner.contains("pvresize"));
         assert!(oneliner.contains("lvextend"));

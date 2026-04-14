@@ -8,12 +8,12 @@ pub mod web {
     use crate::kube::KubeClient;
     use crate::tui::state::VmInfo;
     use axum::{
+        Router,
         extract::{DefaultBodyLimit, Path, Query, State},
-        http::{header, HeaderMap, StatusCode},
+        http::{HeaderMap, StatusCode, header},
         middleware,
         response::{Html, IntoResponse, Json},
         routing::{delete, get, post},
-        Router,
     };
     use serde::{Deserialize, Serialize};
     use std::sync::Arc;
@@ -85,10 +85,7 @@ pub mod web {
                 ));
             }
             if !std::path::Path::new(&self.key_path).exists() {
-                return Err(anyhow::anyhow!(
-                    "TLS key file not found: {}",
-                    self.key_path
-                ));
+                return Err(anyhow::anyhow!("TLS key file not found: {}", self.key_path));
             }
             Ok(())
         }
@@ -103,7 +100,9 @@ pub mod web {
 
     impl WebState {
         pub async fn new(namespace: String, rate_limit_per_minute: u64) -> anyhow::Result<Self> {
-            let api_key = std::env::var("VMROGUE_API_KEY").ok().filter(|k| !k.is_empty());
+            let api_key = std::env::var("VMROGUE_API_KEY")
+                .ok()
+                .filter(|k| !k.is_empty());
             if api_key.is_none() {
                 log::warn!(
                     "VMROGUE_API_KEY is not set - API will reject all requests. \
@@ -140,8 +139,7 @@ pub mod web {
         if !bytes[0].is_ascii_lowercase() && !bytes[0].is_ascii_digit() {
             return false;
         }
-        if !bytes[bytes.len() - 1].is_ascii_lowercase()
-            && !bytes[bytes.len() - 1].is_ascii_digit()
+        if !bytes[bytes.len() - 1].is_ascii_lowercase() && !bytes[bytes.len() - 1].is_ascii_digit()
         {
             return false;
         }
@@ -191,8 +189,10 @@ pub mod web {
         request: axum::extract::Request,
         next: middleware::Next,
     ) -> impl IntoResponse {
-        // Allow health endpoint without auth
-        if request.uri().path() == "/api/v1/health" {
+        // Allow health endpoint and dashboard without auth
+        if request.uri().path() == "/api/v1/health"
+            || request.uri().path() == "/dashboard"
+        {
             return next.run(request).await.into_response();
         }
 
@@ -253,7 +253,8 @@ pub mod web {
 
         let s = state.read().await;
         if !s.rate_limiter.check_rate_limit() {
-            let (status, json) = err_json(429, "RATE_LIMITED", "Too many requests. Please slow down.");
+            let (status, json) =
+                err_json(429, "RATE_LIMITED", "Too many requests. Please slow down.");
             return (status, json).into_response();
         }
         drop(s);
@@ -276,7 +277,10 @@ pub mod web {
         headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".parse().unwrap());
         headers.insert("referrer-policy", "no-referrer".parse().unwrap());
         // HSTS: instruct browsers to only use HTTPS for 1 year
-        headers.insert("strict-transport-security", "max-age=31536000; includeSubDomains".parse().unwrap());
+        headers.insert(
+            "strict-transport-security",
+            "max-age=31536000; includeSubDomains".parse().unwrap(),
+        );
         response
     }
 
@@ -341,13 +345,19 @@ pub mod web {
             .route("/api/v1/events", get(list_events_handler))
             .route("/api/v1/events/recent", get(recent_events_handler))
             // Dashboard overview
-            .route("/api/v1/dashboard/overview", get(dashboard_overview_handler))
+            .route(
+                "/api/v1/dashboard/overview",
+                get(dashboard_overview_handler),
+            )
             // Health
             .route("/api/v1/health", get(health_handler))
             .with_state(state.clone())
             // Layers applied in reverse order (outermost = last .layer() call)
             .layer(middleware::from_fn(security_headers_middleware))
-            .layer(middleware::from_fn_with_state(state.clone(), rate_limit_middleware))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                rate_limit_middleware,
+            ))
             .layer(middleware::from_fn_with_state(state, auth_middleware))
             .layer(build_cors_layer())
             // Request timeout: 30 seconds
@@ -371,7 +381,9 @@ pub mod web {
         }
 
         // Initialize kube client at startup instead of lazily per-request
-        let state = Arc::new(RwLock::new(WebState::new(namespace, rate_limit_per_minute).await?));
+        let state = Arc::new(RwLock::new(
+            WebState::new(namespace, rate_limit_per_minute).await?,
+        ));
         let app = build_router(state);
         let addr = format!("{}:{}", host, port);
 
@@ -381,11 +393,9 @@ pub mod web {
             // Install the ring crypto provider (already used by kube-client)
             let _ = rustls::crypto::ring::default_provider().install_default();
 
-            let rustls_config = axum_server::tls_rustls::RustlsConfig::from_pem_file(
-                &tls.cert_path,
-                &tls.key_path,
-            )
-            .await?;
+            let rustls_config =
+                axum_server::tls_rustls::RustlsConfig::from_pem_file(&tls.cert_path, &tls.key_path)
+                    .await?;
             let addr: std::net::SocketAddr = addr.parse()?;
             axum_server::bind_rustls(addr, rustls_config)
                 .serve(app.into_make_service())
@@ -450,7 +460,10 @@ pub mod web {
 
         match client.list_vms(&namespace).await {
             Ok(vms) => {
-                let vm_infos: Vec<VmInfo> = vms.iter().map(|vm| VmInfo::from_vm_with_ip(vm, None)).collect();
+                let vm_infos: Vec<VmInfo> = vms
+                    .iter()
+                    .map(|vm| VmInfo::from_vm_with_ip(vm, None))
+                    .collect();
                 let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms");
                 ok_json(&ApiResponse::success(&vm_infos, &ctx.request_id))
             }
@@ -605,7 +618,10 @@ pub mod web {
     ) -> impl IntoResponse {
         let namespace = {
             let s = state.read().await;
-            query.namespace.clone().unwrap_or_else(|| s.namespace.clone())
+            query
+                .namespace
+                .clone()
+                .unwrap_or_else(|| s.namespace.clone())
         };
 
         match crate::snapshots::SnapshotManager::new(&namespace).await {
@@ -725,9 +741,7 @@ pub mod web {
                         timestamp: e
                             .last_timestamp
                             .map(|t| t.0.to_rfc3339())
-                            .or_else(|| {
-                                e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339())
-                            })
+                            .or_else(|| e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339()))
                             .unwrap_or_default(),
                     })
                     .collect();
@@ -738,9 +752,7 @@ pub mod web {
         }
     }
 
-    async fn recent_events_handler(
-        State(state): State<SharedState>,
-    ) -> impl IntoResponse {
+    async fn recent_events_handler(State(state): State<SharedState>) -> impl IntoResponse {
         let (client, namespace) = {
             let s = state.read().await;
             (s.kube_client.clone(), s.namespace.clone())
@@ -777,9 +789,7 @@ pub mod web {
                         timestamp: e
                             .last_timestamp
                             .map(|t| t.0.to_rfc3339())
-                            .or_else(|| {
-                                e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339())
-                            })
+                            .or_else(|| e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339()))
                             .unwrap_or_default(),
                     })
                     .collect();
@@ -792,9 +802,7 @@ pub mod web {
 
     // ── Dashboard Overview ────────────────────────────────────────
 
-    async fn dashboard_overview_handler(
-        State(state): State<SharedState>,
-    ) -> impl IntoResponse {
+    async fn dashboard_overview_handler(State(state): State<SharedState>) -> impl IntoResponse {
         let (client, namespace) = {
             let s = state.read().await;
             (s.kube_client.clone(), s.namespace.clone())
@@ -861,8 +869,7 @@ pub mod web {
                 stopped_vms: stopped,
                 error_vms: error,
                 total_vcpus_allocated: total_cpus,
-                total_memory_allocated_gb: (total_memory_bytes as f64)
-                    / (1024.0 * 1024.0 * 1024.0),
+                total_memory_allocated_gb: (total_memory_bytes as f64) / (1024.0 * 1024.0 * 1024.0),
                 total_snapshots: snapshot_count,
             },
         };
@@ -931,9 +938,9 @@ pub mod web {
     // ── Helpers ─────────────────────────────────────────────────────
 
     fn ok_json<T: Serialize>(data: &T) -> (StatusCode, Json<serde_json::Value>) {
-        let value = serde_json::to_value(data).unwrap_or_else(|e| {
-            serde_json::json!({"error": format!("serialization failed: {}", e)})
-        });
+        let value = serde_json::to_value(data).unwrap_or_else(
+            |e| serde_json::json!({"error": format!("serialization failed: {}", e)}),
+        );
         // Extract the status code from the serialized response if present,
         // so that 201/204/etc. responses get the correct HTTP status.
         let status_code = value
@@ -944,16 +951,12 @@ pub mod web {
         (status_code, Json(value))
     }
 
-    fn err_json(
-        status: u16,
-        code: &str,
-        message: &str,
-    ) -> (StatusCode, Json<serde_json::Value>) {
+    fn err_json(status: u16, code: &str, message: &str) -> (StatusCode, Json<serde_json::Value>) {
         let ctx = req_ctx(HttpMethod::GET, "");
         let resp = ApiResponse::error(status, code, message, &ctx.request_id);
-        let value = serde_json::to_value(&resp).unwrap_or_else(|_| {
-            serde_json::json!({"status": status, "error": code, "message": "internal error"})
-        });
+        let value = serde_json::to_value(&resp).unwrap_or_else(
+            |_| serde_json::json!({"status": status, "error": code, "message": "internal error"}),
+        );
         (
             StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
             Json(value),

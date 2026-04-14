@@ -2,13 +2,12 @@
 
 use crate::tui::colors::gradient;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
-    Frame,
 };
-
 
 pub fn render(f: &mut Frame, area: Rect) {
     let chunks = Layout::default()
@@ -25,8 +24,16 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Header
     // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
-    header_spans.push(Span::styled(" | ", Style::default().fg(Color::Rgb(128, 128, 128))));
-    header_spans.push(Span::styled("Cluster Health Dashboard", Style::default().fg(Color::Rgb(255, 145, 115)).add_modifier(Modifier::BOLD)));
+    header_spans.push(Span::styled(
+        " | ",
+        Style::default().fg(Color::Rgb(128, 128, 128)),
+    ));
+    header_spans.push(Span::styled(
+        "Cluster Health Dashboard",
+        Style::default()
+            .fg(Color::Rgb(255, 145, 115))
+            .add_modifier(Modifier::BOLD),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -51,15 +58,24 @@ pub fn render(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("  API Server:       ", Style::default().fg(Color::Gray)),
-            Span::styled("Responsive (12ms)", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled(
+                "Responsive (12ms)",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  etcd:             ", Style::default().fg(Color::Gray)),
-            Span::styled("Healthy (3/3 members)", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled(
+                "Healthy (3/3 members)",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  KubeVirt:         ", Style::default().fg(Color::Gray)),
-            Span::styled("v1.2.0 - Operational", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled(
+                "v1.2.0 - Operational",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
         ]),
     ];
     let status_widget = Paragraph::new(status_lines).block(
@@ -68,7 +84,9 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Cluster Status ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(status_widget, chunks[1]);
@@ -90,7 +108,11 @@ pub fn render(f: &mut Frame, area: Rect) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(" CPU "),
         )
-        .gauge_style(Style::default().fg(gradient::health().at(0.52)).bg(Color::Rgb(40, 35, 55)))
+        .gauge_style(
+            Style::default()
+                .fg(gradient::health().at(0.52))
+                .bg(Color::Rgb(40, 35, 55)),
+        )
         .percent(52)
         .label("52%");
     f.render_widget(cpu_gauge, gauge_chunks[0]);
@@ -102,7 +124,11 @@ pub fn render(f: &mut Frame, area: Rect) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(" Memory "),
         )
-        .gauge_style(Style::default().fg(Color::Rgb(100, 150, 255)).bg(Color::Rgb(40, 35, 55)))
+        .gauge_style(
+            Style::default()
+                .fg(Color::Rgb(100, 150, 255))
+                .bg(Color::Rgb(40, 35, 55)),
+        )
         .percent(67)
         .label("67%");
     f.render_widget(mem_gauge, gauge_chunks[1]);
@@ -114,7 +140,11 @@ pub fn render(f: &mut Frame, area: Rect) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(" Storage "),
         )
-        .gauge_style(Style::default().fg(Color::Rgb(255, 200, 0)).bg(Color::Rgb(40, 35, 55)))
+        .gauge_style(
+            Style::default()
+                .fg(Color::Rgb(255, 200, 0))
+                .bg(Color::Rgb(40, 35, 55)),
+        )
         .percent(78)
         .label("78%");
     f.render_widget(storage_gauge, gauge_chunks[2]);
@@ -122,10 +152,7 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Node status
     let node_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(50),
-            Constraint::Percentage(50),
-        ])
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chunks[3]);
 
     let node_status = vec![
@@ -161,7 +188,9 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Node Health ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(nodes_widget, node_chunks[0]);
@@ -170,7 +199,10 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(vec![
             Span::styled("  [CRIT] ", Style::default().fg(Color::Rgb(220, 50, 47))),
-            Span::styled("node-4 unreachable for 5m", Style::default().fg(Color::White)),
+            Span::styled(
+                "node-4 unreachable for 5m",
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
@@ -178,7 +210,10 @@ pub fn render(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("  [INFO] ", Style::default().fg(Color::Rgb(100, 150, 255))),
-            Span::styled("2 VMs pending scheduling", Style::default().fg(Color::White)),
+            Span::styled(
+                "2 VMs pending scheduling",
+                Style::default().fg(Color::White),
+            ),
         ]),
     ];
     let alerts_widget = Paragraph::new(alerts).block(
@@ -187,20 +222,42 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Active Alerts ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(alerts_widget, node_chunks[1]);
 
     // Help
     let help = Paragraph::new(Line::from(vec![
-        Span::styled("r", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "r",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Refresh | ", Style::default().fg(Color::Gray)),
-        Span::styled("n", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "n",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Nodes | ", Style::default().fg(Color::Gray)),
-        Span::styled("a", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "a",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Alerts | ", Style::default().fg(Color::Gray)),
-        Span::styled("q", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "q",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Back", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)

@@ -29,12 +29,27 @@ pub struct ChangeRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ChangeType {
-    VmCreate, VmDelete, VmMigrate, VmScale, ConfigChange,
-    SecurityUpdate, NetworkChange, StorageChange, ClusterWide,
+    VmCreate,
+    VmDelete,
+    VmMigrate,
+    VmScale,
+    ConfigChange,
+    SecurityUpdate,
+    NetworkChange,
+    StorageChange,
+    ClusterWide,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ApprovalStatus { Pending, Approved, Rejected, Expired, InProgress, Completed, RolledBack }
+pub enum ApprovalStatus {
+    Pending,
+    Approved,
+    Rejected,
+    Expired,
+    InProgress,
+    Completed,
+    RolledBack,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Approval {
@@ -45,7 +60,11 @@ pub struct Approval {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ApprovalDecision { Approved, Rejected, NeedsInfo }
+pub enum ApprovalDecision {
+    Approved,
+    Rejected,
+    NeedsInfo,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CheckResult {
@@ -66,7 +85,10 @@ pub struct ApprovalPolicy {
 
 impl ChangeApprovalManager {
     pub fn new() -> Self {
-        Self { requests: Vec::new(), policies: Vec::new() }
+        Self {
+            requests: Vec::new(),
+            policies: Vec::new(),
+        }
     }
 
     pub fn submit_request(&mut self, request: ChangeRequest) -> String {
@@ -76,31 +98,67 @@ impl ChangeApprovalManager {
     }
 
     pub fn approve(&mut self, request_id: &str, approver: &str, comment: &str) -> bool {
-        if let Some(req) = self.requests.iter_mut().find(|r| r.id == request_id && r.status == ApprovalStatus::Pending) {
+        if let Some(req) = self
+            .requests
+            .iter_mut()
+            .find(|r| r.id == request_id && r.status == ApprovalStatus::Pending)
+        {
             req.approvals.push(Approval {
-                approver: approver.to_string(), decision: ApprovalDecision::Approved,
-                comment: comment.to_string(), timestamp: Utc::now(),
+                approver: approver.to_string(),
+                decision: ApprovalDecision::Approved,
+                comment: comment.to_string(),
+                timestamp: Utc::now(),
             });
-            let required = self.policies.iter()
-                .find(|p| p.change_types.iter().any(|ct| std::mem::discriminant(ct) == std::mem::discriminant(&req.change_type)))
-                .map(|p| p.required_approvers).unwrap_or(1);
-            let approved_count = req.approvals.iter().filter(|a| matches!(a.decision, ApprovalDecision::Approved)).count();
-            if approved_count >= required { req.status = ApprovalStatus::Approved; req.resolved_at = Some(Utc::now()); }
+            let required = self
+                .policies
+                .iter()
+                .find(|p| {
+                    p.change_types.iter().any(|ct| {
+                        std::mem::discriminant(ct) == std::mem::discriminant(&req.change_type)
+                    })
+                })
+                .map(|p| p.required_approvers)
+                .unwrap_or(1);
+            let approved_count = req
+                .approvals
+                .iter()
+                .filter(|a| matches!(a.decision, ApprovalDecision::Approved))
+                .count();
+            if approved_count >= required {
+                req.status = ApprovalStatus::Approved;
+                req.resolved_at = Some(Utc::now());
+            }
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 
     pub fn reject(&mut self, request_id: &str, approver: &str, comment: &str) -> bool {
-        if let Some(req) = self.requests.iter_mut().find(|r| r.id == request_id && r.status == ApprovalStatus::Pending) {
-            req.approvals.push(Approval { approver: approver.to_string(), decision: ApprovalDecision::Rejected, comment: comment.to_string(), timestamp: Utc::now() });
+        if let Some(req) = self
+            .requests
+            .iter_mut()
+            .find(|r| r.id == request_id && r.status == ApprovalStatus::Pending)
+        {
+            req.approvals.push(Approval {
+                approver: approver.to_string(),
+                decision: ApprovalDecision::Rejected,
+                comment: comment.to_string(),
+                timestamp: Utc::now(),
+            });
             req.status = ApprovalStatus::Rejected;
             req.resolved_at = Some(Utc::now());
             true
-        } else { false }
+        } else {
+            false
+        }
     }
 
     pub fn pending_requests(&self) -> Vec<&ChangeRequest> {
-        self.requests.iter().filter(|r| r.status == ApprovalStatus::Pending).collect()
+        self.requests
+            .iter()
+            .filter(|r| r.status == ApprovalStatus::Pending)
+            .collect()
     }
 
     pub fn get_request(&self, id: &str) -> Option<&ChangeRequest> {
@@ -109,5 +167,7 @@ impl ChangeApprovalManager {
 }
 
 impl Default for ChangeApprovalManager {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

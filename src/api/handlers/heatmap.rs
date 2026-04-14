@@ -23,8 +23,7 @@ pub struct NodeHeatmapEntry {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/heatmap/resources", get(get_resource_heatmap))
+    Router::new().route("/heatmap/resources", get(get_resource_heatmap))
 }
 
 #[cfg(feature = "web")]

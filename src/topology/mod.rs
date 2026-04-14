@@ -30,10 +30,19 @@ pub struct TopologyNode {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum NodeStatus { Ready, NotReady, Unknown, SchedulingDisabled }
+pub enum NodeStatus {
+    Ready,
+    NotReady,
+    Unknown,
+    SchedulingDisabled,
+}
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum NodeRole { ControlPlane, Worker, Edge }
+pub enum NodeRole {
+    ControlPlane,
+    Worker,
+    Edge,
+}
 
 #[derive(Debug, Clone)]
 pub struct TopologyVm {
@@ -49,7 +58,13 @@ pub struct TopologyVm {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum VmStatus { Running, Stopped, Paused, Migrating, Unknown }
+pub enum VmStatus {
+    Running,
+    Stopped,
+    Paused,
+    Migrating,
+    Unknown,
+}
 
 #[derive(Debug, Clone)]
 pub struct TopologyConnection {
@@ -61,7 +76,12 @@ pub struct TopologyConnection {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ConnectionType { VmToNode, NodeToNode, VmToStorage, VmToNetwork }
+pub enum ConnectionType {
+    VmToNode,
+    NodeToNode,
+    VmToStorage,
+    VmToNetwork,
+}
 
 #[derive(Debug, Clone)]
 pub struct NetworkZone {
@@ -90,14 +110,26 @@ pub struct TopologyMetadata {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Position { pub x: f64, pub y: f64 }
+pub struct Position {
+    pub x: f64,
+    pub y: f64,
+}
 
 impl TopologyMap {
     pub fn new(cluster_name: String) -> Self {
         Self {
-            nodes: Vec::new(), vms: Vec::new(), connections: Vec::new(),
-            network_zones: Vec::new(), storage_pools: Vec::new(),
-            metadata: TopologyMetadata { cluster_name, total_nodes: 0, total_vms: 0, healthy_nodes: 0, running_vms: 0 },
+            nodes: Vec::new(),
+            vms: Vec::new(),
+            connections: Vec::new(),
+            network_zones: Vec::new(),
+            storage_pools: Vec::new(),
+            metadata: TopologyMetadata {
+                cluster_name,
+                total_nodes: 0,
+                total_vms: 0,
+                healthy_nodes: 0,
+                running_vms: 0,
+            },
         }
     }
 
@@ -108,8 +140,11 @@ impl TopologyMap {
 
     pub fn add_vm(&mut self, vm: TopologyVm) {
         self.connections.push(TopologyConnection {
-            from: vm.name.clone(), to: vm.node.clone(),
-            connection_type: ConnectionType::VmToNode, bandwidth: None, latency_ms: None,
+            from: vm.name.clone(),
+            to: vm.node.clone(),
+            connection_type: ConnectionType::VmToNode,
+            bandwidth: None,
+            latency_ms: None,
         });
         self.vms.push(vm);
         self.update_metadata();
@@ -117,15 +152,24 @@ impl TopologyMap {
 
     pub fn remove_vm(&mut self, vm_name: &str) {
         self.vms.retain(|v| v.name != vm_name);
-        self.connections.retain(|c| c.from != vm_name && c.to != vm_name);
+        self.connections
+            .retain(|c| c.from != vm_name && c.to != vm_name);
         self.update_metadata();
     }
 
     fn update_metadata(&mut self) {
         self.metadata.total_nodes = self.nodes.len();
         self.metadata.total_vms = self.vms.len();
-        self.metadata.healthy_nodes = self.nodes.iter().filter(|n| n.status == NodeStatus::Ready).count();
-        self.metadata.running_vms = self.vms.iter().filter(|v| v.status == VmStatus::Running).count();
+        self.metadata.healthy_nodes = self
+            .nodes
+            .iter()
+            .filter(|n| n.status == NodeStatus::Ready)
+            .count();
+        self.metadata.running_vms = self
+            .vms
+            .iter()
+            .filter(|v| v.status == VmStatus::Running)
+            .count();
     }
 
     pub fn calculate_layout(&mut self, width: usize, height: usize) {
@@ -141,7 +185,10 @@ impl TopologyMap {
 
         for vm in &mut self.vms {
             if let Some(node) = self.nodes.iter().find(|n| n.name == vm.node) {
-                vm.position = Position { x: node.position.x + 2.0, y: node.position.y + 1.0 };
+                vm.position = Position {
+                    x: node.position.x + 2.0,
+                    y: node.position.y + 1.0,
+                };
             }
         }
     }

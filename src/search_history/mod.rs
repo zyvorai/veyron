@@ -19,11 +19,19 @@ pub struct SearchEntry {
 
 impl SearchHistory {
     pub fn new(max_entries: usize) -> Self {
-        Self { entries: Vec::new(), max_entries }
+        Self {
+            entries: Vec::new(),
+            max_entries,
+        }
     }
 
     pub fn add(&mut self, query: String, result_count: usize, duration_ms: u64) {
-        self.entries.push(SearchEntry { query, timestamp: Utc::now(), result_count, duration_ms });
+        self.entries.push(SearchEntry {
+            query,
+            timestamp: Utc::now(),
+            result_count,
+            duration_ms,
+        });
         if self.entries.len() > self.max_entries {
             let excess = self.entries.len().saturating_sub(self.max_entries);
             if excess > 0 {
@@ -38,10 +46,15 @@ impl SearchHistory {
 
     pub fn search(&self, pattern: &str) -> Vec<&SearchEntry> {
         let p = pattern.to_lowercase();
-        self.entries.iter().filter(|e| e.query.to_lowercase().contains(&p)).collect()
+        self.entries
+            .iter()
+            .filter(|e| e.query.to_lowercase().contains(&p))
+            .collect()
     }
 
-    pub fn clear(&mut self) { self.entries.clear(); }
+    pub fn clear(&mut self) {
+        self.entries.clear();
+    }
 
     pub fn most_frequent(&self, limit: usize) -> Vec<(String, usize)> {
         let mut counts = std::collections::HashMap::new();
@@ -56,5 +69,7 @@ impl SearchHistory {
 }
 
 impl Default for SearchHistory {
-    fn default() -> Self { Self::new(100) }
+    fn default() -> Self {
+        Self::new(100)
+    }
 }

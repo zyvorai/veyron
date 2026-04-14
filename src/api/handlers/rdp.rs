@@ -1,10 +1,13 @@
 #[cfg(feature = "web")]
-use axum::{extract::Path, Json, Router, routing::{get, post}};
+use axum::{
+    Json, Router,
+    extract::Path,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 
 /// RDP session security protocol
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum RdpSecurityProtocol {
     /// Standard RDP security
     Rdp,
@@ -20,7 +23,6 @@ pub enum RdpSecurityProtocol {
     #[default]
     Auto,
 }
-
 
 impl std::fmt::Display for RdpSecurityProtocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -354,19 +356,34 @@ pub struct RdpGatewayConfig {
 pub fn router() -> Router {
     Router::new()
         // Session management
-        .route("/rdp/sessions", get(list_rdp_sessions).post(create_rdp_session))
-        .route("/rdp/sessions/{id}", get(get_rdp_session).delete(delete_rdp_session))
+        .route(
+            "/rdp/sessions",
+            get(list_rdp_sessions).post(create_rdp_session),
+        )
+        .route(
+            "/rdp/sessions/{id}",
+            get(get_rdp_session).delete(delete_rdp_session),
+        )
         .route("/rdp/sessions/{id}/resize", post(resize_rdp_session))
-        .route("/rdp/sessions/{id}/clipboard", get(get_clipboard).post(send_clipboard))
+        .route(
+            "/rdp/sessions/{id}/clipboard",
+            get(get_clipboard).post(send_clipboard),
+        )
         .route("/rdp/sessions/{id}/stats", get(get_session_stats))
         .route("/rdp/sessions/{id}/screenshot", get(take_screenshot))
-        .route("/rdp/sessions/{id}/disconnect", post(disconnect_rdp_session))
+        .route(
+            "/rdp/sessions/{id}/disconnect",
+            post(disconnect_rdp_session),
+        )
         .route("/rdp/sessions/{id}/reconnect", post(reconnect_rdp_session))
         // VM discovery
         .route("/rdp/vms", get(list_rdp_capable_vms))
         // Configuration
         .route("/rdp/config/defaults", get(get_default_config))
-        .route("/rdp/gateway", get(get_gateway_config).post(set_gateway_config))
+        .route(
+            "/rdp/gateway",
+            get(get_gateway_config).post(set_gateway_config),
+        )
 }
 
 #[cfg(feature = "web")]

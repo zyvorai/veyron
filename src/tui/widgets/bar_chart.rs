@@ -3,11 +3,11 @@ use crate::tui::colors::gradient;
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::Line,
     widgets::{BarChart as RatatuiBarChart, Block, Borders},
-    Frame,
 };
 
 pub struct BarChart {

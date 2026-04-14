@@ -22,8 +22,14 @@ pub struct PostureCategory {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum PostureCategoryType {
-    NetworkPolicy, PodSecurity, RBAC, SecretManagement,
-    ImageSecurity, RuntimeSecurity, Compliance, Configuration,
+    NetworkPolicy,
+    PodSecurity,
+    RBAC,
+    SecretManagement,
+    ImageSecurity,
+    RuntimeSecurity,
+    Compliance,
+    Configuration,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,31 +49,78 @@ pub struct SecurityFinding {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub enum FindingSeverity { Critical, High, Medium, Low, Info }
+pub enum FindingSeverity {
+    Critical,
+    High,
+    Medium,
+    Low,
+    Info,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum FindingStatus { Open, Acknowledged, InProgress, Resolved, FalsePositive }
+pub enum FindingStatus {
+    Open,
+    Acknowledged,
+    InProgress,
+    Resolved,
+    FalsePositive,
+}
 
 impl SecurityPosture {
     pub fn new() -> Self {
-        Self { overall_score: 0, categories: Vec::new(), findings: Vec::new(), assessed_at: Utc::now() }
+        Self {
+            overall_score: 0,
+            categories: Vec::new(),
+            findings: Vec::new(),
+            assessed_at: Utc::now(),
+        }
     }
 
-    pub fn add_finding(&mut self, finding: SecurityFinding) { self.findings.push(finding); }
-    pub fn critical_findings(&self) -> Vec<&SecurityFinding> { self.findings.iter().filter(|f| f.severity == FindingSeverity::Critical).collect() }
-    pub fn open_findings(&self) -> Vec<&SecurityFinding> { self.findings.iter().filter(|f| f.status == FindingStatus::Open).collect() }
-    pub fn by_category(&self, cat: &PostureCategoryType) -> Vec<&SecurityFinding> { self.findings.iter().filter(|f| f.category == *cat).collect() }
+    pub fn add_finding(&mut self, finding: SecurityFinding) {
+        self.findings.push(finding);
+    }
+    pub fn critical_findings(&self) -> Vec<&SecurityFinding> {
+        self.findings
+            .iter()
+            .filter(|f| f.severity == FindingSeverity::Critical)
+            .collect()
+    }
+    pub fn open_findings(&self) -> Vec<&SecurityFinding> {
+        self.findings
+            .iter()
+            .filter(|f| f.status == FindingStatus::Open)
+            .collect()
+    }
+    pub fn by_category(&self, cat: &PostureCategoryType) -> Vec<&SecurityFinding> {
+        self.findings
+            .iter()
+            .filter(|f| f.category == *cat)
+            .collect()
+    }
 
     pub fn calculate_score(&mut self) {
-        if self.findings.is_empty() { self.overall_score = 100; return; }
-        let total_impact: f64 = self.findings.iter().filter(|f| f.status == FindingStatus::Open).map(|f| match f.severity {
-            FindingSeverity::Critical => 25.0, FindingSeverity::High => 15.0,
-            FindingSeverity::Medium => 8.0, FindingSeverity::Low => 3.0, FindingSeverity::Info => 1.0,
-        }).sum();
+        if self.findings.is_empty() {
+            self.overall_score = 100;
+            return;
+        }
+        let total_impact: f64 = self
+            .findings
+            .iter()
+            .filter(|f| f.status == FindingStatus::Open)
+            .map(|f| match f.severity {
+                FindingSeverity::Critical => 25.0,
+                FindingSeverity::High => 15.0,
+                FindingSeverity::Medium => 8.0,
+                FindingSeverity::Low => 3.0,
+                FindingSeverity::Info => 1.0,
+            })
+            .sum();
         self.overall_score = (100.0 - total_impact).clamp(0.0, 100.0) as u8;
     }
 }
 
 impl Default for SecurityPosture {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

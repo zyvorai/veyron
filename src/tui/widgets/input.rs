@@ -2,11 +2,11 @@
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 
 #[derive(Debug, Clone, PartialEq)]

@@ -3,11 +3,11 @@ use crate::tui::colors::gradient;
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Gauge, Paragraph},
-    Frame,
 };
 
 pub struct ResourceGauge {
@@ -57,7 +57,10 @@ impl ResourceGauge {
                     self.label, self.value, self.max, self.unit, percentage
                 )
             } else {
-                format!("{}: {:.1}/{} {}", self.label, self.value, self.max, self.unit)
+                format!(
+                    "{}: {:.1}/{} {}",
+                    self.label, self.value, self.max, self.unit
+                )
             };
 
             let bar_width = inner.width as usize;
@@ -79,7 +82,10 @@ impl ResourceGauge {
                     let mut buf = [0u8; 4];
                     spans[idx] = Span::styled(
                         ch.encode_utf8(&mut buf).to_string(),
-                        Style::default().fg(colors::TEXT).bg(bg).add_modifier(Modifier::BOLD),
+                        Style::default()
+                            .fg(colors::TEXT)
+                            .bg(bg)
+                            .add_modifier(Modifier::BOLD),
                     );
                 }
             }
@@ -90,14 +96,29 @@ impl ResourceGauge {
             // Fallback: standard ratatui Gauge
             let color = gradient::health().at(percentage / 100.0);
             let label = if self.show_percentage {
-                format!("{}: {:.1}/{} {} ({:.0}%)", self.label, self.value, self.max, self.unit, percentage)
+                format!(
+                    "{}: {:.1}/{} {} ({:.0}%)",
+                    self.label, self.value, self.max, self.unit, percentage
+                )
             } else {
-                format!("{}: {:.1}/{} {}", self.label, self.value, self.max, self.unit)
+                format!(
+                    "{}: {:.1}/{} {}",
+                    self.label, self.value, self.max, self.unit
+                )
             };
 
             let gauge = Gauge::default()
-                .block(Block::default().borders(Borders::ALL).border_style(Style::default().fg(colors::BORDER)))
-                .gauge_style(Style::default().fg(color).bg(colors::TEXT_MUTED).add_modifier(Modifier::BOLD))
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .border_style(Style::default().fg(colors::BORDER)),
+                )
+                .gauge_style(
+                    Style::default()
+                        .fg(color)
+                        .bg(colors::TEXT_MUTED)
+                        .add_modifier(Modifier::BOLD),
+                )
                 .percent(percentage as u16)
                 .label(label);
             f.render_widget(gauge, area);

@@ -270,8 +270,7 @@ mod tests {
 
     #[test]
     fn test_record_is_long_ttl() {
-        let record1 =
-            DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 3600).unwrap();
+        let record1 = DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 3600).unwrap();
         assert!(record1.is_long_ttl());
 
         let record2 = DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 300).unwrap();
@@ -333,9 +332,8 @@ mod tests {
     fn test_manager_records_by_type() {
         let mut manager = DNSManager::new();
 
-        manager.add_record(
-            DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 300).unwrap(),
-        );
+        manager
+            .add_record(DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 300).unwrap());
         manager.add_record(
             DNSRecord::new("mail.example.com", RecordType::MX, "mail.example.com", 300).unwrap(),
         );
@@ -351,9 +349,8 @@ mod tests {
     fn test_manager_find_record_by_name() {
         let mut manager = DNSManager::new();
 
-        manager.add_record(
-            DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 300).unwrap(),
-        );
+        manager
+            .add_record(DNSRecord::new("example.com", RecordType::A, "192.168.1.1", 300).unwrap());
         manager.add_record(
             DNSRecord::new("example.com", RecordType::AAAA, "2001:db8::1", 300).unwrap(),
         );

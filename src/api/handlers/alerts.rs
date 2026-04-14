@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{extract::Path, Json, Router, routing::{get, put}};
+use axum::{
+    Json, Router,
+    extract::Path,
+    routing::{get, put},
+};
 use serde::{Deserialize, Serialize};
 
 /// Alert response

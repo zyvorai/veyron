@@ -1,7 +1,7 @@
 // Blueprint Validation Logic
 
 use super::{Blueprint, VMSpec};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::collections::{HashMap, HashSet};
 
 /// Validate a blueprint

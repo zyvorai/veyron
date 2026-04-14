@@ -1,34 +1,36 @@
-# 🚀 VMRogue
+# VMRogue
 
 [![CI](https://github.com/ssahani/VMRogue/workflows/CI/badge.svg)](https://github.com/ssahani/VMRogue/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org/)
 
-> Rogue VM management for KubeVirt with Rust power!
+> Rogue VM management for KubeVirt — forged in Rust.
 
-A powerful, ergonomic, and extensible Rust CLI and library to declaratively build, validate, visualize, and apply KubeVirt VMs.
+A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to declaratively build, validate, visualize, and apply KubeVirt VMs.
 
-## ✨ Features
+## Features
 
-### 🚀 Innovative Features (Unique to VMRogue!)
-- 📸 **VM Snapshots & Backup** - Production-grade snapshot management for disaster recovery
-- 📊 **8 VM Resource Profiles** - Pre-configured profiles (dev, prod, database, web, etc.)
-- 🏗️ **Multi-VM Blueprints** - Deploy complete stacks (LAMP, Kubernetes, 3-tier, CI/CD)
-- 🏥 **Automated Health Checks** - Diagnostics with scoring and recommendations
-- 💡 **Smart Recommendations** - AI-like resource suggestions based on workload
-- 🔄 **Dependency Management** - Automatic VM deployment ordering
-- 🎨 **Beautiful Themed CLI** - Purple Kubernetes-inspired colors with status symbols
+### Innovative Features (Unique to VMRogue)
+- **VM Snapshots & Backup** - Production-grade snapshot management for disaster recovery
+- **8 VM Resource Profiles** - Pre-configured profiles (dev, prod, database, web, etc.)
+- **Multi-VM Blueprints** - Deploy complete stacks (LAMP, Kubernetes, 3-tier, CI/CD)
+- **Automated Health Checks** - Diagnostics with scoring and recommendations
+- **Smart Recommendations** - AI-like resource suggestions based on workload
+- **Dependency Management** - Automatic VM deployment ordering
+- **Web Dashboard** - Metal-themed real-time dashboard with live charts, VM management, and event feed
+- **REST API** - 24 endpoints with OpenAPI spec, API key auth, rate limiting, and webhooks
 
-### 🎯 Core Features
-- 🐧 **44 OS Templates** - Ubuntu, Fedora, CentOS, Debian, RHEL, AlmaLinux, Rocky, Alpine, Arch, Windows, and more!
-- 🛠️ **Flexible configuration** - YAML/JSON configuration files or CLI arguments
-- ✅ **Built-in validation** - Validate VM configs before deployment
-- 📦 **Cloud-init support** - Easy VM customization with cloud-init
-- 🔧 **CLI & Library** - Use as a command-line tool or Rust library
-- 📈 **Full VM lifecycle** - Create, start, stop, restart, clone, export, delete
+### Core Features
+- **44 OS Templates** - Ubuntu, Fedora, CentOS, Debian, RHEL, AlmaLinux, Rocky, Alpine, Arch, Windows, and more
+- **Flexible configuration** - YAML/JSON configuration files or CLI arguments
+- **Built-in validation** - Validate VM configs before deployment
+- **Cloud-init support** - Easy VM customization with cloud-init
+- **CLI & Library** - Use as a command-line tool or Rust library
+- **Full VM lifecycle** - Create, start, stop, restart, clone, export, delete
+- **Interactive TUI** - Full terminal UI with ratatui for dashboard, VM management, and monitoring
 
-## 📦 Installation
+## Installation
 
 ```bash
 cargo install --path .
@@ -37,14 +39,45 @@ cargo install --path .
 Or build from source:
 
 ```bash
-git clone https://github.com/yourusername/vmrogue.git
-cd vmrogue
+git clone https://github.com/ssahani/VMRogue.git
+cd VMRogue
 cargo build --release
 ```
 
-## 🚀 Quick Start
+## Web Dashboard
 
-### 🎯 Smart VM Creation with Profiles
+VMRogue includes a built-in web dashboard with a metal-forged dark theme.
+
+### Start the API server
+
+```bash
+# Set an API key (required)
+export VMROGUE_API_KEY="your-secret-key"
+
+# Start the server
+vmrogue api-serve --port 5151 --host 0.0.0.0
+```
+
+Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load.
+
+### Dashboard features
+- Real-time VM fleet overview with live CPU/memory charts
+- VM lifecycle controls (start, stop, restart, delete)
+- Snapshot management
+- Cluster event feed
+- Auto-refresh every 5 seconds
+
+### Deploy to a remote server via SSH
+
+```bash
+./scripts/deploy-ssh.sh HOST sus
+```
+
+This builds a static musl binary, uploads it via SCP, installs a systemd service, and starts it. See `scripts/deploy-ssh.sh` for details.
+
+## Quick Start
+
+### Smart VM Creation with Profiles
 
 ```bash
 # Get recommendations for your workload
@@ -57,7 +90,7 @@ vmrogue create prod-db --template ubuntu-22.04 --profile database
 vmrogue create dev-vm --template ubuntu --profile dev
 ```
 
-### 🏗️ Deploy Complete Application Stacks
+### Deploy Complete Application Stacks
 
 ```bash
 # List available blueprints
@@ -70,7 +103,7 @@ vmrogue deploy lamp --prefix myapp --start
 vmrogue deploy k8s-cluster --prefix prod
 ```
 
-### 🐧 Create VMs from Templates (44 templates available!)
+### Create VMs from Templates (44 templates available)
 
 ```bash
 # Create an Ubuntu VM
@@ -83,7 +116,7 @@ vmrogue create my-alma --template almalinux-9
 vmrogue create my-vm --template fedora-40 --cpus 8 --memory 16Gi --disk-size 100Gi
 ```
 
-### 🏥 Check VM Health
+### Check VM Health
 
 ```bash
 # Run health check on VM
@@ -202,7 +235,7 @@ vmrogue delete production-db
 vmrogue delete production-db --yes  # Skip confirmation
 ```
 
-## 📊 VM Resource Profiles
+## VM Resource Profiles
 
 VMRogue includes **8 pre-configured profiles** optimized for different workloads:
 
@@ -222,7 +255,7 @@ vmrogue profiles              # List all profiles
 vmrogue profile database      # View specific profile
 ```
 
-## 🏗️ Multi-VM Blueprints
+## Multi-VM Blueprints
 
 Deploy complete application stacks with **5 ready-to-use blueprints**:
 
@@ -240,7 +273,7 @@ vmrogue blueprint lamp        # View blueprint details
 vmrogue deploy lamp --start   # Deploy and start
 ```
 
-## 🐧 OS Templates (44 Available!)
+## OS Templates (44 Available)
 
 ### Linux Distributions
 - **Ubuntu**: 18.04, 20.04, 22.04, 24.04, latest
@@ -270,7 +303,7 @@ vmrogue template ubuntu-22.04 # View template details
 
 See [OS_TEMPLATES.md](OS_TEMPLATES.md) for complete catalog.
 
-## 🔧 Configuration File Format
+## Configuration File Format
 
 Create a YAML or JSON file with your VM configuration:
 
@@ -305,7 +338,7 @@ labels:
   app: my-app
 ```
 
-## ⚙️ Application Configuration
+## Application Configuration
 
 VMRogue supports a layered configuration file for setting defaults:
 
@@ -348,7 +381,7 @@ refresh_interval = 5     # seconds
 interactive = false
 ```
 
-## 📚 Library Usage
+## Library Usage
 
 Use vmrogue as a library in your Rust projects:
 
@@ -373,67 +406,32 @@ fn main() -> anyhow::Result<()> {
 }
 ```
 
-## 🎯 Roadmap
+## Roadmap
 
-### Current Status (v0.2.0) ✅
+### Current Status (v0.2.0)
 
-#### Innovative Features ✅
-- ✅ 8 VM resource profiles (minimal, dev, test, web, prod, database, microservice, high-perf)
-- ✅ 5 multi-VM blueprints (LAMP, k8s-cluster, 3tier, cicd, dev-stack)
-- ✅ Automated health checks with scoring (0-100)
-- ✅ Smart resource recommendations based on workload
-- ✅ Dependency-aware VM deployment
-- ✅ Beautiful themed CLI with purple Kubernetes palette
-- ✅ VM status symbols and colored output
+**Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands, configuration validation, YAML/JSON output, cloud-init support.
 
-#### OS Templates ✅
-- ✅ 44 OS templates across 15 families
-- ✅ Ubuntu (5), Fedora (4), CentOS (3), Debian (3), RHEL (3)
-- ✅ AlmaLinux (3), Rocky (3), OpenSUSE (3), Alpine (2)
-- ✅ Oracle (3), FreeBSD (3), Arch (1), Flatcar (1), Talos (1)
-- ✅ Windows (5 versions)
+**Kubernetes** - Full CRUD, VM lifecycle management, KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types.
 
-#### Core Features ✅
-- ✅ Core type definitions
-- ✅ Configuration validation (46 tests passing)
-- ✅ YAML/JSON output
-- ✅ CLI with 25+ commands
+**Operations** - Custom profile/blueprint CRUD with filesystem persistence, cost estimation and budgets, VM snapshots and backups with scheduling, live migration with progress tracking and HA, interactive TUI with ratatui.
 
-#### Kubernetes Integration ✅
-- ✅ Full Kubernetes CRUD operations
-- ✅ VM lifecycle management (create, start, stop, restart, delete, clone)
-- ✅ KubeVirt CRD types and conversion
-- ✅ VM status monitoring and health checks
-- ✅ Multi-namespace support
-- ✅ PVC creation support
-- ✅ Batch operations
+**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization.
 
-#### Manifest Generation ✅
-- ✅ KubeVirt VirtualMachine CRD output
-- ✅ Cloud-init volume generation
-- ✅ All disk types (Blank, PVC, ContainerDisk, DataVolume)
-- ✅ All network types (Pod, Bridge, Multus)
+**API & Dashboard** - REST API with 24 endpoints, OpenAPI spec, API key auth, rate limiting, webhooks, metal-themed web dashboard with real-time charts.
+
+**Infrastructure** - Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery, SSH deploy scripts.
 
 ### Future Enhancements
 
-- [ ] Custom profile creation
-- [ ] Custom blueprint definitions
 - [ ] Profile auto-selection based on template
-- [ ] Resource usage tracking and analytics
-- [ ] Cost estimation
-- [ ] Auto-scaling recommendations
 - [ ] ML-based optimization
-- [ ] 🔌 Pluggable template registry (local/remote)
-- [ ] 📸 VM snapshots and backups
-- [ ] 🔄 Live migration support
-- [ ] 🎨 Full interactive TUI
-- [ ] 🔧 Terraform provider
-- [ ] 🌐 Advanced networking (SR-IOV, OVN)
-- [ ] 💾 DataVolume CRD management (CDI)
-- [ ] 📊 Resource quota management
-- [ ] 🔐 RBAC and security policies
+- [ ] Pluggable template registry (local/remote)
+- [ ] Terraform provider
+- [ ] SR-IOV and OVN networking
+- [ ] DataVolume CRD management (CDI)
 
-## 🧪 Development
+## Development
 
 A `Makefile` is provided for common tasks:
 
@@ -460,13 +458,13 @@ vmrogue --verbose create my-vm --template ubuntu
 cargo doc --open
 ```
 
-### Browse all 148 commands
+### Browse all 169 commands
 
 ```bash
 vmrogue commands
 ```
 
-## 💡 Usage Examples
+## Usage Examples
 
 ### Create Development Environment
 ```bash
@@ -496,13 +494,19 @@ vmrogue blueprint k8s-cluster
 vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 ```
 
-## 📖 Documentation
+## Documentation
 
-- **[INNOVATIVE_FEATURES.md](INNOVATIVE_FEATURES.md)** - Complete guide to innovative features
-- **[OS_TEMPLATES.md](OS_TEMPLATES.md)** - Full OS template catalog
-- **[THEME_DESIGN.md](THEME_DESIGN.md)** - Theme system documentation
+- **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
+- **[docs/INNOVATIVE_FEATURES.md](docs/INNOVATIVE_FEATURES.md)** - Complete guide to innovative features
+- **[docs/OS_TEMPLATES.md](docs/OS_TEMPLATES.md)** - Full OS template catalog
+- **[docs/THEME.md](docs/THEME.md)** - Theme system documentation
+- **[docs/SNAPSHOTS.md](docs/SNAPSHOTS.md)** - Snapshot and backup management
+- **[docs/DISK_MANAGEMENT.md](docs/DISK_MANAGEMENT.md)** - Disk operations guide
+- **[docs/NETWORK_MANAGEMENT.md](docs/NETWORK_MANAGEMENT.md)** - Network management guide
+- **[docs/INTERACTIVE_TUI.md](docs/INTERACTIVE_TUI.md)** - Interactive TUI guide
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference card
-- **[IMPLEMENTATION_COMPLETE.md](IMPLEMENTATION_COMPLETE.md)** - Implementation summary
+- **[SECURITY.md](SECURITY.md)** - Security policy and hardening details
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development status and architecture
 
 ### Configuration Examples
 
@@ -512,11 +516,15 @@ See the `examples/` directory for more configuration examples:
 - `ubuntu-cloud-init.yaml` - Ubuntu VM with cloud-init
 - `demo_theme.rs` - Theme demonstration
 
-## 🔒 Security
+## Security
 
 VMRogue follows secure-by-default principles:
 
 - **No `unsafe` code** - The entire codebase is safe Rust
+- **Secret zeroization** - Secrets are cleared from memory on drop, rotate, and revoke via the `zeroize` crate
+- **SSRF prevention** - Webhook URLs validated against private/internal IPs with DNS rebinding protection
+- **Crash-safe persistence** - Atomic writes with fsync and unique temp file names; no `/tmp` fallback
+- **Restrictive file permissions** - Persisted data created with mode `0600` on Unix
 - **CORS disabled by default** - API server requires explicit origin configuration
 - **TLS certificate validation enforced** - Cannot be bypassed via configuration
 - **Path traversal protection** - Profile/blueprint names are sanitized before filesystem access
@@ -524,17 +532,17 @@ VMRogue follows secure-by-default principles:
 - **Input validation** - PAM usernames, cron expressions, and API parameters are validated at boundaries
 - **Arithmetic safety** - Saturating/checked arithmetic prevents integer overflow throughout
 - **No panics in production paths** - All `.unwrap()` / `.expect()` calls verified safe or replaced with error handling
-- **Connection pooling** - HTTP API reuses Kubernetes client connections instead of per-request allocation
+- **Connection pooling** - Kubeconfig cached and reused; HTTP API shares Kubernetes client connections
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## License
 
 This project is licensed under MIT OR Apache-2.0.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [KubeVirt](https://kubevirt.io/) - Kubernetes Virtualization API
 - [kube-rs](https://github.com/kube-rs/kube) - Kubernetes client for Rust

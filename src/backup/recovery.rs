@@ -229,12 +229,10 @@ impl PointInTimeRecovery {
 
     /// Find the absolute closest backup to the target time (including after)
     pub fn find_closest_backup(&self) -> Option<&BackupInfo> {
-        self.available_backups
-            .iter()
-            .min_by_key(|b| {
-                let diff = b.created_at.signed_duration_since(self.target_time);
-                diff.num_seconds().unsigned_abs()
-            })
+        self.available_backups.iter().min_by_key(|b| {
+            let diff = b.created_at.signed_duration_since(self.target_time);
+            diff.num_seconds().unsigned_abs()
+        })
     }
 
     /// Find backup immediately before target time

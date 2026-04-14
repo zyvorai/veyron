@@ -44,8 +44,16 @@ impl RetentionEnforcer {
                     }
 
                     // Skip snapshots that may be in use by active restores
-                    if self.manager.is_snapshot_in_use(&snapshot.name).await.unwrap_or(true) {
-                        log::warn!("Skipping deletion of snapshot '{}': may be in use by an active restore", snapshot.name);
+                    if self
+                        .manager
+                        .is_snapshot_in_use(&snapshot.name)
+                        .await
+                        .unwrap_or(true)
+                    {
+                        log::warn!(
+                            "Skipping deletion of snapshot '{}': may be in use by an active restore",
+                            snapshot.name
+                        );
                         continue;
                     }
 
@@ -84,8 +92,16 @@ impl RetentionEnforcer {
                 if let Some(created_at) = snapshot.created_at {
                     if created_at < cutoff_date {
                         // Skip snapshots that may be in use by active restores
-                        if self.manager.is_snapshot_in_use(&snapshot.name).await.unwrap_or(true) {
-                            log::warn!("Skipping deletion of snapshot '{}': may be in use by an active restore", snapshot.name);
+                        if self
+                            .manager
+                            .is_snapshot_in_use(&snapshot.name)
+                            .await
+                            .unwrap_or(true)
+                        {
+                            log::warn!(
+                                "Skipping deletion of snapshot '{}': may be in use by an active restore",
+                                snapshot.name
+                            );
                             continue;
                         }
 

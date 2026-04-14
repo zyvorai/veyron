@@ -35,8 +35,7 @@ pub struct PanelPosition {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/dashboards", get(list_dashboards))
+    Router::new().route("/dashboards", get(list_dashboards))
 }
 
 #[cfg(feature = "web")]

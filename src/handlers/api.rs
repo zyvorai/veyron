@@ -8,18 +8,18 @@ struct WebhookStore {
 }
 
 impl WebhookStore {
-    fn path() -> std::path::PathBuf {
-        dirs::data_dir()
-            .unwrap_or_else(|| {
-                log::warn!("Could not determine data directory, falling back to /tmp");
-                std::path::PathBuf::from("/tmp")
-            })
-            .join("vmrogue")
-            .join("webhooks.json")
+    fn path() -> anyhow::Result<std::path::PathBuf> {
+        Ok(crate::utils::data_dir()?.join("webhooks.json"))
     }
 
     fn load() -> Self {
-        let path = Self::path();
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to determine data directory: {}", e);
+                return Self::default();
+            }
+        };
         if path.exists() {
             std::fs::read_to_string(&path)
                 .ok()
@@ -31,47 +31,76 @@ impl WebhookStore {
     }
 
     fn save(&self) {
-        let path = Self::path();
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        if let Ok(content) = serde_json::to_string_pretty(self) {
-            // Atomic write: write to temp file then rename to prevent
-            // data loss from concurrent save operations.
-            let tmp_path = path.with_extension("tmp");
-
-            #[cfg(unix)]
-            {
-                use std::io::Write;
-                use std::os::unix::fs::OpenOptionsExt;
-                if let Ok(mut f) = std::fs::OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .mode(0o600)
-                    .open(&tmp_path)
-                {
-                    if f.write_all(content.as_bytes()).is_ok() && f.flush().is_ok() {
-                        let _ = std::fs::rename(&tmp_path, &path);
-                    }
-                }
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to save webhooks: {}", e);
+                return;
             }
-
-            #[cfg(not(unix))]
-            {
-                if std::fs::write(&tmp_path, &content).is_ok() {
-                    let _ = std::fs::rename(&tmp_path, &path);
-                }
-            }
+        };
+        if let Err(e) = crate::utils::atomic_write(&path, self) {
+            log::error!("Failed to save webhooks: {}", e);
         }
     }
 }
 
-fn validate_webhook_url(url: &str) -> Result<(), String> {
-    // Only allow http and https
-    if !url.starts_with("http://") && !url.starts_with("https://") {
-        return Err("Unsupported URL scheme. Only http:// and https:// are allowed".to_string());
+/// Check whether an IP address is private/internal and should be blocked for SSRF prevention.
+fn is_blocked_ip(ip: std::net::IpAddr) -> bool {
+    match ip {
+        std::net::IpAddr::V4(v4) => {
+            if v4.is_loopback() || v4.is_private() || v4.is_link_local() || v4.is_unspecified() {
+                return true;
+            }
+            // CGNAT / shared address space (100.64.0.0/10, RFC 6598)
+            let octets = v4.octets();
+            if octets[0] == 100 && (octets[1] & 0xC0) == 0x40 {
+                return true;
+            }
+            false
+        }
+        std::net::IpAddr::V6(v6) => {
+            if v6.is_loopback() || v6.is_unspecified() {
+                return true;
+            }
+            let segments = v6.segments();
+            // IPv6 unique-local (fc00::/7) or link-local (fe80::/10)
+            if (segments[0] & 0xfe00) == 0xfc00 || (segments[0] & 0xffc0) == 0xfe80 {
+                return true;
+            }
+            // IPv4-mapped IPv6 (::ffff:x.x.x.x)
+            if let Some(v4) = v6.to_ipv4_mapped() {
+                return v4.is_loopback()
+                    || v4.is_private()
+                    || v4.is_link_local()
+                    || v4.is_unspecified();
+            }
+            false
+        }
     }
+}
+
+/// Parsed webhook URL components needed for SSRF-safe delivery.
+struct ValidatedWebhook {
+    host: String,
+    port: u16,
+    resolved_ip: std::net::IpAddr,
+}
+
+/// Validate and DNS-resolve a webhook URL.
+///
+/// Returns the host, port, and a resolved IP that has been checked against
+/// private/internal ranges. The caller must use `--resolve` (or equivalent)
+/// to pin curl to this IP, preventing DNS rebinding between validation and
+/// the actual connection.
+async fn validate_webhook_url(url: &str) -> Result<ValidatedWebhook, String> {
+    // Only allow http and https
+    let is_https = if url.starts_with("https://") {
+        true
+    } else if url.starts_with("http://") {
+        false
+    } else {
+        return Err("Unsupported URL scheme. Only http:// and https:// are allowed".to_string());
+    };
 
     // Extract authority (everything between :// and the first /)
     let after_scheme = url
@@ -87,82 +116,93 @@ fn validate_webhook_url(url: &str) -> Result<(), String> {
     };
 
     // Handle IPv6 brackets: [::1]:port
-    let host = if host_port.starts_with('[') {
-        // IPv6 in brackets
-        host_port
-            .split(']')
-            .next()
-            .unwrap_or("")
-            .trim_start_matches('[')
+    let (host, explicit_port) = if host_port.starts_with('[') {
+        let bracket_end = host_port.find(']').unwrap_or(host_port.len());
+        let h = &host_port[1..bracket_end];
+        let p = host_port
+            .get(bracket_end + 1..)
+            .and_then(|s| s.strip_prefix(':'))
+            .and_then(|s| s.parse::<u16>().ok());
+        (h, p)
     } else {
-        // IPv4 or hostname: strip port
-        host_port.split(':').next().unwrap_or("")
+        let mut parts = host_port.rsplitn(2, ':');
+        let last = parts.next().unwrap_or("");
+        match parts.next() {
+            Some(h) => (h, last.parse::<u16>().ok()),
+            None => (last, None),
+        }
     };
 
     if host.is_empty() {
         return Err("Empty hostname in webhook URL".to_string());
     }
 
-    // Block localhost and loopback
+    let port = explicit_port.unwrap_or(if is_https { 443 } else { 80 });
+
+    // Block well-known localhost names before DNS resolution
     let blocked_hosts = ["localhost", "127.0.0.1", "::1", "0.0.0.0"];
     if blocked_hosts.contains(&host) {
         return Err("Webhook URLs to localhost/loopback are not allowed".to_string());
     }
 
-    // Block private IP ranges
+    // If host is a literal IP, validate directly
     if let Ok(ip) = host.parse::<std::net::IpAddr>() {
-        match ip {
-            std::net::IpAddr::V4(v4) => {
-                if v4.is_loopback()
-                    || v4.is_private()
-                    || v4.is_link_local()
-                    || v4.is_unspecified()
-                {
-                    return Err(
-                        "Webhook URLs to private/internal IPs are not allowed".to_string(),
-                    );
-                }
-            }
-            std::net::IpAddr::V6(v6) => {
-                if v6.is_loopback() || v6.is_unspecified() {
-                    return Err(
-                        "Webhook URLs to loopback/unspecified IPs are not allowed".to_string(),
-                    );
-                }
-                // Check IPv6 unique-local (fc00::/7) and link-local (fe80::/10)
-                let segments = v6.segments();
-                if (segments[0] & 0xfe00) == 0xfc00 || (segments[0] & 0xffc0) == 0xfe80 {
-                    return Err(
-                        "Webhook URLs to private/internal IPs are not allowed".to_string(),
-                    );
-                }
-                // Check for IPv4-mapped IPv6 (::ffff:x.x.x.x)
-                if let Some(v4) = v6.to_ipv4_mapped() {
-                    if v4.is_loopback()
-                        || v4.is_private()
-                        || v4.is_link_local()
-                        || v4.is_unspecified()
-                    {
-                        return Err(
-                            "Webhook URLs to private/internal IPs are not allowed".to_string(),
-                        );
-                    }
-                }
-            }
+        if is_blocked_ip(ip) {
+            return Err("Webhook URLs to private/internal IPs are not allowed".to_string());
+        }
+        return Ok(ValidatedWebhook {
+            host: host.to_string(),
+            port,
+            resolved_ip: ip,
+        });
+    }
+
+    // Resolve hostname and validate ALL returned IPs to prevent rebinding
+    let socket_addr = format!("{}:{}", host, port);
+    let addrs: Vec<_> = tokio::net::lookup_host(&socket_addr)
+        .await
+        .map_err(|e| format!("DNS resolution failed for '{}': {}", host, e))?
+        .collect();
+
+    if addrs.is_empty() {
+        return Err(format!(
+            "DNS resolution for '{}' returned no addresses",
+            host
+        ));
+    }
+
+    for addr in &addrs {
+        if is_blocked_ip(addr.ip()) {
+            return Err(format!(
+                "Webhook URL '{}' resolved to private/internal IP {}",
+                host,
+                addr.ip()
+            ));
         }
     }
 
-    Ok(())
+    // Use the first safe address for pinning
+    Ok(ValidatedWebhook {
+        host: host.to_string(),
+        port,
+        resolved_ip: addrs[0].ip(),
+    })
 }
 
 pub async fn deliver_webhook(url: &str, event: &str, data: &serde_json::Value) -> Result<()> {
-    // Validate the webhook URL to prevent SSRF attacks
-    if let Err(e) = validate_webhook_url(url) {
-        // Redact URL in logs to avoid leaking tokens in query parameters
-        let redacted = url.split('?').next().unwrap_or("[invalid]");
-        log::warn!("Webhook URL validation failed for '{}': {}", redacted, e);
-        return Ok(());
-    }
+    // Validate and resolve the webhook URL to prevent SSRF (including DNS rebinding)
+    let validated = match validate_webhook_url(url).await {
+        Ok(v) => v,
+        Err(e) => {
+            let redacted = url.split('?').next().unwrap_or("[invalid]");
+            log::error!(
+                "Webhook blocked (SSRF prevention) for '{}': {}",
+                redacted,
+                e
+            );
+            return Err(anyhow::anyhow!("Webhook URL validation failed: {}", e));
+        }
+    };
 
     let payload = serde_json::json!({
         "event": event,
@@ -172,8 +212,28 @@ pub async fn deliver_webhook(url: &str, event: &str, data: &serde_json::Value) -
 
     let payload_str = serde_json::to_string(&payload)?;
 
+    // Pin curl to the resolved IP to prevent DNS rebinding between
+    // our validation and curl's connection.
+    let resolve_arg = format!(
+        "{}:{}:{}",
+        validated.host, validated.port, validated.resolved_ip
+    );
+
     let status = std::process::Command::new("curl")
-        .args(["--max-time", "10", "-s", "-X", "POST", "-H", "Content-Type: application/json", "-d", &payload_str, url])
+        .args([
+            "--resolve",
+            &resolve_arg,
+            "--max-time",
+            "10",
+            "-s",
+            "-X",
+            "POST",
+            "-H",
+            "Content-Type: application/json",
+            "-d",
+            &payload_str,
+            url,
+        ])
         .output();
 
     match status {
@@ -184,11 +244,15 @@ pub async fn deliver_webhook(url: &str, event: &str, data: &serde_json::Value) -
         }
         Ok(output) => {
             let redacted = url.split('?').next().unwrap_or("[url]");
-            log::warn!("Webhook delivery to {} failed: {}", redacted, String::from_utf8_lossy(&output.stderr));
+            log::warn!(
+                "Webhook delivery to {} failed: {}",
+                redacted,
+                String::from_utf8_lossy(&output.stderr)
+            );
             Ok(()) // Don't fail the operation due to webhook delivery failure
         }
         Err(e) => {
-            log::warn!("Failed to deliver webhook to {}: {}", url, e);
+            log::warn!("Failed to deliver webhook: {}", e);
             Ok(())
         }
     }
@@ -205,7 +269,7 @@ pub async fn handle_api_serve(
     auth: String,
     rate_limit: u32,
 ) -> Result<()> {
-    use crate::api::server::{default_endpoints, ApiServer};
+    use crate::api::server::{ApiServer, default_endpoints};
     use crate::api::{ApiConfig, AuthMethod, RateLimitConfig};
 
     let mut config = ApiConfig::new(port).with_host(&host);
@@ -224,8 +288,12 @@ pub async fn handle_api_serve(
         }
     }
 
-    let auth_method = AuthMethod::parse(&auth)
-        .ok_or_else(|| anyhow::anyhow!("Invalid auth method '{}'. Valid values: none, api-key, bearer, basic", auth))?;
+    let auth_method = AuthMethod::parse(&auth).ok_or_else(|| {
+        anyhow::anyhow!(
+            "Invalid auth method '{}'. Valid values: none, api-key, bearer, basic",
+            auth
+        )
+    })?;
     config = config.with_auth(auth_method.clone());
 
     if rate_limit > 0 {
@@ -289,7 +357,14 @@ pub async fn handle_api_serve(
         } else {
             None
         };
-        crate::api::http_server::web::start_server(&host, port, namespace, tls_config, rate_limit as u64).await?;
+        crate::api::http_server::web::start_server(
+            &host,
+            port,
+            namespace,
+            tls_config,
+            rate_limit as u64,
+        )
+        .await?;
     }
 
     Ok(())
@@ -313,8 +388,16 @@ pub fn handle_api_status(output: String) -> Result<()> {
         _ => {
             println!("{}", color::header("API Server Status"));
             println!();
-            println!("  {}", color::muted("No running server instance detected from CLI."));
-            println!("  {}", color::muted("Query the /api/v1/health endpoint on the running server for live status."));
+            println!(
+                "  {}",
+                color::muted("No running server instance detected from CLI.")
+            );
+            println!(
+                "  {}",
+                color::muted(
+                    "Query the /api/v1/health endpoint on the running server for live status."
+                )
+            );
             println!();
             println!("  Default port: {}", color::value("8080"));
             println!("  Start with:   {}", color::value("vmrogue api-serve"));
@@ -463,8 +546,7 @@ pub fn handle_api_key_create(
     let random_bytes: Vec<u8> = (0..32).map(|_| rand::thread_rng().r#gen::<u8>()).collect();
     let key_hash: String = random_bytes.iter().map(|b| format!("{:02x}", b)).collect();
 
-    let mut key = ApiKey::new(&name, key_hash.clone())
-        .with_permissions(perms.clone());
+    let mut key = ApiKey::new(&name, key_hash.clone()).with_permissions(perms.clone());
 
     if let Some(limit) = rate_limit {
         key = key.with_rate_limit(limit);
@@ -486,12 +568,15 @@ pub fn handle_api_key_delete(key: String, yes: bool) -> Result<()> {
     println!();
 
     if !yes {
-        println!(
-            "  {}",
-            color::warning("This will permanently revoke the API key")
-        );
-        println!("  Use --yes to confirm");
-        return Ok(());
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt("This will permanently revoke the API key. Continue?")
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
+            println!("{}", color::muted("Cancelled"));
+            return Ok(());
+        }
     }
 
     println!();
@@ -618,7 +703,10 @@ pub fn handle_webhook_create(
     println!("  Events:   {}", events);
     println!("  ID:       {}", color::muted(&webhook.id));
     println!();
-    println!("{}", color::success("✓ Webhook registered and persisted successfully"));
+    println!(
+        "{}",
+        color::success("✓ Webhook registered and persisted successfully")
+    );
     Ok(())
 }
 
@@ -630,12 +718,15 @@ pub fn handle_webhook_delete(webhook: String, yes: bool) -> Result<()> {
     println!();
 
     if !yes {
-        println!(
-            "  {}",
-            color::warning("This will permanently remove the webhook")
-        );
-        println!("  Use --yes to confirm");
-        return Ok(());
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt("This will permanently remove the webhook. Continue?")
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
+            println!("{}", color::muted("Cancelled"));
+            return Ok(());
+        }
     }
 
     // Remove from persistent store
@@ -658,7 +749,10 @@ pub fn handle_webhook_delete(webhook: String, yes: bool) -> Result<()> {
     if removed > 0 {
         println!(
             "{}",
-            color::success(&format!("✓ Webhook '{}' deleted and removed from store", webhook))
+            color::success(&format!(
+                "✓ Webhook '{}' deleted and removed from store",
+                webhook
+            ))
         );
     } else {
         println!(
@@ -691,8 +785,7 @@ pub fn handle_event_list(
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::automation::triggers::Event;
 
-    let ctx = RequestContext::new(HttpMethod::GET, "/api/v1/events")
-        .with_namespace(&namespace);
+    let ctx = RequestContext::new(HttpMethod::GET, "/api/v1/events").with_namespace(&namespace);
 
     // Collect events from the trigger system and any persisted activity
     let mut events: Vec<Event> = Vec::new();
@@ -776,8 +869,8 @@ pub fn handle_event_recent(namespace: String, limit: usize, output: String) -> R
     use crate::automation::triggers::Event;
     use chrono::TimeDelta as Duration;
 
-    let ctx = RequestContext::new(HttpMethod::GET, "/api/v1/events/recent")
-        .with_namespace(&namespace);
+    let ctx =
+        RequestContext::new(HttpMethod::GET, "/api/v1/events/recent").with_namespace(&namespace);
 
     // Recent events — in production from an event store with time-based query
     let recent_types = [
@@ -843,12 +936,17 @@ pub fn handle_event_recent(namespace: String, limit: usize, output: String) -> R
     Ok(())
 }
 
-pub async fn handle_tui(namespace: String, theme: Option<String>, interactive: bool, no_splash: bool) -> Result<()> {
+pub async fn handle_tui(
+    namespace: String,
+    theme: Option<String>,
+    basic: bool,
+    no_splash: bool,
+) -> Result<()> {
     use crossterm::{
         execute,
-        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
     };
-    use ratatui::{backend::CrosstermBackend, Terminal};
+    use ratatui::{Terminal, backend::CrosstermBackend};
     use std::io;
 
     // Load TUI config
@@ -881,14 +979,30 @@ pub async fn handle_tui(namespace: String, theme: Option<String>, interactive: b
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    // Show splash screen if enabled
+    if config.ui.show_splash {
+        use crossterm::event::{self, Event};
+        use std::time::Duration;
+
+        let splash = crate::tui::SplashScreen::new(config.ui.splash_duration_ms);
+        while !splash.is_expired() {
+            terminal.draw(|f| splash.render(f))?;
+            if event::poll(Duration::from_millis(50))? {
+                if let Event::Key(_) = event::read()? {
+                    break; // Any key skips splash
+                }
+            }
+        }
+    }
+
     // Create and run app - use a closure to ensure terminal cleanup on panic or error
-    let result = if interactive {
-        // Enhanced interactive mode with dialogs, menus, and notifications
-        let mut app = crate::tui::InteractiveApp::with_config(namespace.clone(), config);
+    let result = if basic {
+        // Basic TUI mode (no dialogs, menus, or notifications)
+        let mut app = crate::tui::App::with_config(namespace.clone(), config);
         app.run(&mut terminal).await
     } else {
-        // Basic TUI mode
-        let mut app = crate::tui::App::with_config(namespace.clone(), config);
+        // Full interactive mode (default)
+        let mut app = crate::tui::InteractiveApp::with_config(namespace.clone(), config);
         app.run(&mut terminal).await
     };
 
@@ -1049,10 +1163,7 @@ mod tests {
 
         assert_eq!(event.event_type, "vm.started");
         assert_eq!(event.source, "web-server-01");
-        assert_eq!(
-            event.data.get("namespace"),
-            Some(&"production".to_string())
-        );
+        assert_eq!(event.data.get("namespace"), Some(&"production".to_string()));
         assert!(event.event_id.starts_with("evt-"));
     }
 
@@ -1080,8 +1191,8 @@ mod tests {
     fn test_event_request_context() {
         use crate::api::{HttpMethod, RequestContext};
 
-        let ctx = RequestContext::new(HttpMethod::GET, "/api/v1/events")
-            .with_namespace("production");
+        let ctx =
+            RequestContext::new(HttpMethod::GET, "/api/v1/events").with_namespace("production");
         assert_eq!(ctx.namespace, "production");
         assert_eq!(ctx.method, HttpMethod::GET);
         assert!(!ctx.is_authenticated());
@@ -1104,15 +1215,21 @@ mod tests {
         use crate::api::server::default_endpoints;
 
         let endpoints = default_endpoints();
-        assert!(endpoints
-            .iter()
-            .any(|e| e.path == "/api/v1/events" && e.method == "GET"));
-        assert!(endpoints
-            .iter()
-            .any(|e| e.path == "/api/v1/events/recent" && e.method == "GET"));
-        assert!(endpoints
-            .iter()
-            .any(|e| e.path == "/api/v1/events/vm/:name" && e.method == "GET"));
+        assert!(
+            endpoints
+                .iter()
+                .any(|e| e.path == "/api/v1/events" && e.method == "GET")
+        );
+        assert!(
+            endpoints
+                .iter()
+                .any(|e| e.path == "/api/v1/events/recent" && e.method == "GET")
+        );
+        assert!(
+            endpoints
+                .iter()
+                .any(|e| e.path == "/api/v1/events/vm/:name" && e.method == "GET")
+        );
     }
 
     #[test]
@@ -1122,49 +1239,117 @@ mod tests {
         let router = build_default_router();
         let all_routes = router.all_routes();
         assert!(all_routes.iter().any(|r| r.handler == "list_events"));
-        assert!(all_routes
-            .iter()
-            .any(|r| r.handler == "list_recent_events"));
+        assert!(all_routes.iter().any(|r| r.handler == "list_recent_events"));
         assert!(all_routes.iter().any(|r| r.handler == "list_vm_events"));
     }
 
-    #[test]
-    fn test_validate_webhook_url_valid() {
-        assert!(super::validate_webhook_url("https://example.com/webhook").is_ok());
-        assert!(super::validate_webhook_url("http://example.com/webhook").is_ok());
+    #[tokio::test]
+    async fn test_validate_webhook_url_valid() {
+        assert!(
+            super::validate_webhook_url("https://example.com/webhook")
+                .await
+                .is_ok()
+        );
+        assert!(
+            super::validate_webhook_url("http://example.com/webhook")
+                .await
+                .is_ok()
+        );
     }
 
-    #[test]
-    fn test_validate_webhook_url_bad_scheme() {
-        assert!(super::validate_webhook_url("file:///etc/passwd").is_err());
-        assert!(super::validate_webhook_url("gopher://evil.com").is_err());
-        assert!(super::validate_webhook_url("ftp://evil.com").is_err());
+    #[tokio::test]
+    async fn test_validate_webhook_url_bad_scheme() {
+        assert!(
+            super::validate_webhook_url("file:///etc/passwd")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("gopher://evil.com")
+                .await
+                .is_err()
+        );
+        assert!(super::validate_webhook_url("ftp://evil.com").await.is_err());
     }
 
-    #[test]
-    fn test_validate_webhook_url_loopback() {
-        assert!(super::validate_webhook_url("http://127.0.0.1/secret").is_err());
-        assert!(super::validate_webhook_url("http://localhost/secret").is_err());
-        assert!(super::validate_webhook_url("http://0.0.0.0/secret").is_err());
+    #[tokio::test]
+    async fn test_validate_webhook_url_loopback() {
+        assert!(
+            super::validate_webhook_url("http://127.0.0.1/secret")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://localhost/secret")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://0.0.0.0/secret")
+                .await
+                .is_err()
+        );
     }
 
-    #[test]
-    fn test_validate_webhook_url_private_ip() {
-        assert!(super::validate_webhook_url("http://10.0.0.1/secret").is_err());
-        assert!(super::validate_webhook_url("http://192.168.1.1/secret").is_err());
-        assert!(super::validate_webhook_url("http://172.16.0.1/secret").is_err());
-        assert!(super::validate_webhook_url("http://169.254.1.1/secret").is_err());
+    #[tokio::test]
+    async fn test_validate_webhook_url_private_ip() {
+        assert!(
+            super::validate_webhook_url("http://10.0.0.1/secret")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://192.168.1.1/secret")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://172.16.0.1/secret")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://169.254.1.1/secret")
+                .await
+                .is_err()
+        );
     }
 
-    #[test]
-    fn test_validate_webhook_url_userinfo_bypass() {
+    #[tokio::test]
+    async fn test_validate_webhook_url_cgnat() {
+        assert!(
+            super::validate_webhook_url("http://100.64.0.1/secret")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://100.127.255.254/secret")
+                .await
+                .is_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_validate_webhook_url_userinfo_bypass() {
         // Should still block loopback even with userinfo
-        assert!(super::validate_webhook_url("http://user:pass@127.0.0.1/hook").is_err());
-        assert!(super::validate_webhook_url("http://admin@10.0.0.1/hook").is_err());
+        assert!(
+            super::validate_webhook_url("http://user:pass@127.0.0.1/hook")
+                .await
+                .is_err()
+        );
+        assert!(
+            super::validate_webhook_url("http://admin@10.0.0.1/hook")
+                .await
+                .is_err()
+        );
     }
 
-    #[test]
-    fn test_validate_webhook_url_ipv6() {
-        assert!(super::validate_webhook_url("http://[::1]:8080/hook").is_err());
+    #[tokio::test]
+    async fn test_validate_webhook_url_ipv6() {
+        assert!(
+            super::validate_webhook_url("http://[::1]:8080/hook")
+                .await
+                .is_err()
+        );
     }
 }

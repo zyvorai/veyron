@@ -21,8 +21,7 @@ pub struct PerformanceProfile {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/performance/profiles", get(list_performance_profiles))
+    Router::new().route("/performance/profiles", get(list_performance_profiles))
 }
 
 #[cfg(feature = "web")]

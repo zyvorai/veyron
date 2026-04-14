@@ -243,7 +243,11 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         .with_auth(),
         // Events/Activity
         Endpoint::new("GET", "/api/v1/events", "List all activity events"),
-        Endpoint::new("GET", "/api/v1/events/recent", "List recent activity events"),
+        Endpoint::new(
+            "GET",
+            "/api/v1/events/recent",
+            "List recent activity events",
+        ),
         Endpoint::new(
             "GET",
             "/api/v1/events/vm/:name",

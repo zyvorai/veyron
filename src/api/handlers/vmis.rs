@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{extract::Path, Json, Router, routing::get};
+use axum::{Json, Router, extract::Path, routing::get};
 use serde::{Deserialize, Serialize};
 
 /// VMI (VirtualMachineInstance) response

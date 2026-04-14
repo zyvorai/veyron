@@ -19,7 +19,12 @@ pub struct TroubleshootSession {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum SessionStatus { InProgress, DiagnosisComplete, Resolved, Abandoned }
+pub enum SessionStatus {
+    InProgress,
+    DiagnosisComplete,
+    Resolved,
+    Abandoned,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Symptom {
@@ -31,11 +36,23 @@ pub struct Symptom {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum IssueSeverity { Critical, High, Medium, Low, Info }
+pub enum IssueSeverity {
+    Critical,
+    High,
+    Medium,
+    Low,
+    Info,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SymptomCategory {
-    Performance, Connectivity, Storage, Configuration, Resource, Security, Scheduling,
+    Performance,
+    Connectivity,
+    Storage,
+    Configuration,
+    Resource,
+    Security,
+    Scheduling,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,7 +64,12 @@ pub struct RootCause {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum DiagnosisConfidence { High, Medium, Low, Uncertain }
+pub enum DiagnosisConfidence {
+    High,
+    Medium,
+    Low,
+    Uncertain,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Remediation {
@@ -62,16 +84,26 @@ pub struct Remediation {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RemediationRisk { None, Low, Medium, High, Critical }
+pub enum RemediationRisk {
+    None,
+    Low,
+    Medium,
+    High,
+    Critical,
+}
 
 impl TroubleshootSession {
     pub fn new(title: &str, description: &str) -> Self {
         Self {
             id: generate_id("ts", title),
-            title: title.to_string(), description: description.to_string(),
-            status: SessionStatus::InProgress, symptoms: Vec::new(),
-            root_causes: Vec::new(), remediations: Vec::new(),
-            created_at: Utc::now(), updated_at: Utc::now(),
+            title: title.to_string(),
+            description: description.to_string(),
+            status: SessionStatus::InProgress,
+            symptoms: Vec::new(),
+            root_causes: Vec::new(),
+            remediations: Vec::new(),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         }
     }
 
@@ -101,7 +133,9 @@ impl TroubleshootSession {
                         prerequisites: vec!["Available cluster resources".to_string()],
                         rollback_plan: "Revert resource allocation to previous values".to_string(),
                         automated: true,
-                        commands: vec!["vmrogue resources scale --cpu +2 --memory +2Gi".to_string()],
+                        commands: vec![
+                            "vmrogue resources scale --cpu +2 --memory +2Gi".to_string(),
+                        ],
                     });
                 }
                 SymptomCategory::Connectivity => {
@@ -142,7 +176,10 @@ impl TroubleshootSession {
                 }
                 _ => {
                     self.root_causes.push(RootCause {
-                        description: format!("Issue in {:?} category requires investigation", symptom.category),
+                        description: format!(
+                            "Issue in {:?} category requires investigation",
+                            symptom.category
+                        ),
                         confidence: DiagnosisConfidence::Low,
                         evidence: vec![symptom.description.clone()],
                         category: format!("{:?}", symptom.category),
@@ -161,9 +198,15 @@ impl TroubleshootSession {
     }
 
     pub fn highest_severity(&self) -> Option<&IssueSeverity> {
-        self.symptoms.iter().map(|s| &s.severity).min_by_key(|s| match s {
-            IssueSeverity::Critical => 0, IssueSeverity::High => 1,
-            IssueSeverity::Medium => 2, IssueSeverity::Low => 3, IssueSeverity::Info => 4,
-        })
+        self.symptoms
+            .iter()
+            .map(|s| &s.severity)
+            .min_by_key(|s| match s {
+                IssueSeverity::Critical => 0,
+                IssueSeverity::High => 1,
+                IssueSeverity::Medium => 2,
+                IssueSeverity::Low => 3,
+                IssueSeverity::Info => 4,
+            })
     }
 }

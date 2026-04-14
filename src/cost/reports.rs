@@ -274,7 +274,8 @@ impl ReportGenerator {
         let start_date =
             chrono::NaiveDate::from_ymd_opt(year, clamped_month, 1).unwrap_or(fallback);
         // (0,0,0) is always a valid time
-        let start = start_date.and_hms_opt(0, 0, 0)
+        let start = start_date
+            .and_hms_opt(0, 0, 0)
             .expect("midnight is always a valid time")
             .and_utc();
 
@@ -284,7 +285,8 @@ impl ReportGenerator {
             chrono::NaiveDate::from_ymd_opt(year, clamped_month + 1, 1)
         }
         .unwrap_or(start_date + chrono::TimeDelta::days(30));
-        let end = end_date.and_hms_opt(0, 0, 0)
+        let end = end_date
+            .and_hms_opt(0, 0, 0)
             .expect("midnight is always a valid time")
             .and_utc();
 

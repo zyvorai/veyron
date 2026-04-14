@@ -40,15 +40,27 @@ pub struct ClusterMetrics {
 
 impl ClusterMetrics {
     pub fn cpu_usage_percent(&self) -> f64 {
-        if self.cpu_capacity > 0.0 { (self.cpu_usage / self.cpu_capacity) * 100.0 } else { 0.0 }
+        if self.cpu_capacity > 0.0 {
+            (self.cpu_usage / self.cpu_capacity) * 100.0
+        } else {
+            0.0
+        }
     }
 
     pub fn memory_usage_percent(&self) -> f64 {
-        if self.memory_capacity_gb > 0.0 { (self.memory_usage_gb / self.memory_capacity_gb) * 100.0 } else { 0.0 }
+        if self.memory_capacity_gb > 0.0 {
+            (self.memory_usage_gb / self.memory_capacity_gb) * 100.0
+        } else {
+            0.0
+        }
     }
 
     pub fn storage_usage_percent(&self) -> f64 {
-        if self.storage_capacity_gb > 0.0 { (self.storage_usage_gb / self.storage_capacity_gb) * 100.0 } else { 0.0 }
+        if self.storage_capacity_gb > 0.0 {
+            (self.storage_usage_gb / self.storage_capacity_gb) * 100.0
+        } else {
+            0.0
+        }
     }
 }
 
@@ -94,7 +106,11 @@ impl ClusterHealth {
             return;
         }
 
-        if self.issues.iter().any(|i| i.severity == HealthStatus::Critical) {
+        if self
+            .issues
+            .iter()
+            .any(|i| i.severity == HealthStatus::Critical)
+        {
             self.overall_status = HealthStatus::Critical;
             return;
         }
@@ -107,7 +123,13 @@ impl ClusterHealth {
             return;
         }
 
-        if self.issues.iter().any(|i| i.severity == HealthStatus::Warning) || cpu_pct > 75.0 || mem_pct > 75.0 {
+        if self
+            .issues
+            .iter()
+            .any(|i| i.severity == HealthStatus::Warning)
+            || cpu_pct > 75.0
+            || mem_pct > 75.0
+        {
             self.overall_status = HealthStatus::Warning;
             return;
         }
@@ -126,10 +148,16 @@ impl ClusterHealth {
     }
 
     pub fn critical_issues(&self) -> Vec<&HealthIssue> {
-        self.issues.iter().filter(|i| i.severity == HealthStatus::Critical).collect()
+        self.issues
+            .iter()
+            .filter(|i| i.severity == HealthStatus::Critical)
+            .collect()
     }
 
     pub fn warning_issues(&self) -> Vec<&HealthIssue> {
-        self.issues.iter().filter(|i| i.severity == HealthStatus::Warning).collect()
+        self.issues
+            .iter()
+            .filter(|i| i.severity == HealthStatus::Warning)
+            .collect()
     }
 }

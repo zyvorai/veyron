@@ -1,9 +1,9 @@
-use crate::config::{validate_vm_config, InterfaceConfig, NetworkType, VMConfig, VMConfigBuilder};
+use crate::config::{InterfaceConfig, NetworkType, VMConfig, VMConfigBuilder, validate_vm_config};
 use crate::kube::types::VirtualMachine;
-use crate::output::{format_output, OutputFormat};
+use crate::output::{OutputFormat, format_output};
 use crate::templates::TEMPLATES;
 use crate::tui::colors::cli as color;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 /// Convert a KubeVirt VirtualMachine to a VMConfig
 fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
@@ -261,6 +261,89 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
     builder.build()
 }
 
+/// CLI overrides that can be applied on top of a loaded VMConfig.
+#[derive(Default)]
+pub struct CliOverrides {
+    pub cpus: Option<u32>,
+    pub memory: Option<String>,
+    pub disk_size: Option<String>,
+    pub storage_class: Option<String>,
+    pub container_disk: Option<String>,
+    pub cloud_init: Option<String>,
+}
+
+/// Apply CLI overrides on top of a loaded VMConfig.
+fn apply_cli_overrides(config: &mut VMConfig, overrides: CliOverrides) -> Result<()> {
+    let CliOverrides {
+        cpus,
+        memory,
+        disk_size,
+        storage_class,
+        container_disk,
+        cloud_init,
+    } = overrides;
+    if let Some(cpus) = cpus {
+        config.cpu.cores = cpus;
+    }
+    if let Some(memory) = memory {
+        config.memory.size = memory;
+    }
+    if let Some(disk_size) = disk_size {
+        if let Some(disk) = config.disks.first_mut() {
+            disk.size = disk_size;
+        } else {
+            log::warn!("--disk-size specified but no disks configured; adding a blank disk");
+            config.disks.push(crate::config::DiskConfig {
+                name: "rootdisk".to_string(),
+                size: disk_size,
+                storage_class: None,
+                boot_order: 1,
+                source: crate::config::DiskSource::Blank,
+                device_type: crate::config::DiskDeviceType::default(),
+                bus: None,
+                cache: None,
+                io: None,
+            });
+        }
+    }
+    if let Some(ref sc) = storage_class {
+        for disk in &mut config.disks {
+            disk.storage_class = Some(sc.clone());
+        }
+    }
+    if let Some(ref image) = container_disk {
+        let disk = crate::config::DiskConfig {
+            name: "containerdisk".to_string(),
+            size: "0".to_string(),
+            storage_class: None,
+            boot_order: 1,
+            source: crate::config::DiskSource::ContainerDisk {
+                image: image.clone(),
+            },
+            device_type: crate::config::DiskDeviceType::default(),
+            bus: None,
+            cache: None,
+            io: None,
+        };
+        if config.disks.is_empty() {
+            config.disks.push(disk);
+        } else {
+            config.disks.insert(0, disk);
+            for disk in config.disks.iter_mut().skip(1) {
+                disk.boot_order = disk.boot_order.saturating_add(1);
+            }
+        }
+    }
+    if let Some(cloud_init_file) = cloud_init {
+        let user_data = std::fs::read_to_string(&cloud_init_file)?;
+        config.cloud_init = Some(crate::config::CloudInitConfig {
+            user_data,
+            network_data: None,
+        });
+    }
+    Ok(())
+}
+
 fn load_or_create_config(
     name: &str,
     namespace: &str,
@@ -280,9 +363,32 @@ fn load_or_create_config(
         config.namespace = namespace.to_string();
         Ok(config)
     } else if let Some(template_name) = template {
-        let mut config = TEMPLATES
-            .get(&template_name)
-            .ok_or_else(|| anyhow!("Template not found: {}", template_name))?;
+        let mut config = TEMPLATES.get(&template_name).ok_or_else(|| {
+            let available = TEMPLATES.list();
+            let mut msg = format!("Template not found: '{}'", template_name);
+            // Suggest similar template names
+            let suggestions: Vec<_> = available
+                .iter()
+                .filter(|t| {
+                    t.contains(&template_name)
+                        || template_name.contains(t.as_str())
+                        || t.starts_with(template_name.split('-').next().unwrap_or(""))
+                })
+                .take(5)
+                .collect();
+            if !suggestions.is_empty() {
+                msg.push_str("\n  Did you mean: ");
+                msg.push_str(
+                    &suggestions
+                        .iter()
+                        .map(|s| s.as_str())
+                        .collect::<Vec<_>>()
+                        .join(", "),
+                );
+            }
+            msg.push_str("\n  Run 'vmrogue templates' to see all available templates.");
+            anyhow!(msg)
+        })?;
         config.name = name.to_string();
         config.namespace = namespace.to_string();
         Ok(config)
@@ -314,74 +420,19 @@ pub async fn handle_create(
     namespace: &str,
 ) -> Result<()> {
     use crate::kube;
-    use std::fs;
 
     let mut config = load_or_create_config(&name, namespace, template, from_file)?;
-
-    // Apply CLI overrides
-    if let Some(cpus) = cpus {
-        config.cpu.cores = cpus;
-    }
-    if let Some(memory) = memory {
-        config.memory.size = memory;
-    }
-    if let Some(disk_size) = disk_size {
-        if let Some(disk) = config.disks.first_mut() {
-            disk.size = disk_size;
-        } else {
-            log::warn!("--disk-size specified but no disks configured; adding a blank disk");
-            config.disks.push(crate::config::DiskConfig {
-                name: "rootdisk".to_string(),
-                size: disk_size,
-                storage_class: None,
-                boot_order: 1,
-                source: crate::config::DiskSource::Blank,
-                device_type: crate::config::DiskDeviceType::default(),
-                bus: None,
-                cache: None,
-                io: None,
-            });
-        }
-    }
-    if let Some(ref sc) = storage_class {
-        for disk in &mut config.disks {
-            disk.storage_class = Some(sc.clone());
-        }
-    }
-    if let Some(ref image) = container_disk {
-        // Add a container disk at the front of the disk list
-        let disk = crate::config::DiskConfig {
-            name: "containerdisk".to_string(),
-            size: "0".to_string(),
-            storage_class: None,
-            boot_order: 1,
-            source: crate::config::DiskSource::ContainerDisk {
-                image: image.clone(),
-            },
-            device_type: crate::config::DiskDeviceType::default(),
-            bus: None,
-            cache: None,
-            io: None,
-        };
-        if config.disks.is_empty() {
-            config.disks.push(disk);
-        } else {
-            config.disks.insert(0, disk);
-            // Bump boot_order of existing disks to avoid conflicts
-            for disk in config.disks.iter_mut().skip(1) {
-                disk.boot_order = disk.boot_order.saturating_add(1);
-            }
-        }
-    }
-    if let Some(cloud_init_file) = cloud_init {
-        let user_data = fs::read_to_string(&cloud_init_file)?;
-        config.cloud_init = Some(crate::config::CloudInitConfig {
-            user_data,
-            network_data: None,
-        });
-    }
-
-    // Validate configuration
+    apply_cli_overrides(
+        &mut config,
+        CliOverrides {
+            cpus,
+            memory,
+            disk_size,
+            storage_class,
+            container_disk,
+            cloud_init,
+        },
+    )?;
     validate_vm_config(&config)?;
 
     let format = OutputFormat::parse_format(&output)
@@ -396,9 +447,11 @@ pub async fn handle_create(
         log::info!("Creating VM: {}", name);
 
         // Create the VM via Kubernetes API
+        let sp = crate::output::spinner::spinner(&format!("Creating VM '{}'...", name));
         match kube::KubeClient::new().await {
             Ok(client) => match client.create_vm(&config).await {
                 Ok(_vm) => {
+                    sp.finish_and_clear();
                     println!(
                         "{}",
                         color::success(&format!("VM '{}' created successfully", name))
@@ -411,10 +464,12 @@ pub async fn handle_create(
                     );
                 }
                 Err(e) => {
+                    sp.finish_and_clear();
                     return Err(anyhow!("Failed to create VM: {}", e));
                 }
             },
             Err(e) => {
+                sp.finish_and_clear();
                 return Err(anyhow!("Failed to connect to Kubernetes: {}", e));
             }
         }
@@ -435,7 +490,21 @@ pub async fn handle_list(all_namespaces: bool, output: String, namespace: &str) 
     };
 
     if vms.is_empty() {
-        println!("No VMs found");
+        use crate::tui::colors::cli as color;
+        if all_namespaces {
+            println!("{}", color::muted("No VMs found in any namespace."));
+        } else {
+            println!(
+                "{}",
+                color::muted(&format!("No VMs found in namespace '{}'.", namespace))
+            );
+            println!(
+                "  {}",
+                color::muted(
+                    "Use --all-namespaces to search everywhere, or --namespace to change."
+                )
+            );
+        }
         return Ok(());
     }
 
@@ -449,44 +518,31 @@ pub async fn handle_list(all_namespaces: bool, output: String, namespace: &str) 
             println!("{}", json);
         }
         _ => {
+            use crate::output::table::CliTable;
             use crate::tui::colors::vm_status_symbol;
 
-            // Print header with theme colors
-            println!(
-                "{:<30} {:<20} {:<15} {:<10}",
-                color::header("NAME"),
-                color::header("NAMESPACE"),
-                color::header("STATUS"),
-                color::header("RUNNING")
-            );
-            println!("{}", color::muted(&"-".repeat(75)));
-
-            for vm in vms {
+            let mut table = CliTable::new(vec!["NAME", "NAMESPACE", "STATUS", "RUNNING"]);
+            for vm in &vms {
                 let name = vm.metadata.name.as_deref().unwrap_or("N/A");
-                let namespace = vm.metadata.namespace.as_deref().unwrap_or("N/A");
+                let ns = vm.metadata.namespace.as_deref().unwrap_or("N/A");
+                let status = vm
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.printable_status.as_deref())
+                    .unwrap_or("Unknown");
                 let running = if vm.spec.running.unwrap_or(false) {
                     color::success("Yes")
                 } else {
                     color::muted("No")
                 };
-                let status = if let Some(s) = &vm.status {
-                    s.printable_status.as_deref().unwrap_or("Unknown")
-                } else {
-                    "Unknown"
-                };
-
-                // Format with theme colors
-                let status_display =
-                    format!("{} {}", vm_status_symbol(status), color::vm_status(status));
-
-                println!(
-                    "{:<30} {:<20} {:<25} {:<10}",
+                table.add_row(vec![
                     color::vm_name(name),
-                    color::namespace(namespace),
-                    status_display,
-                    running
-                );
+                    color::namespace(ns),
+                    format!("{} {}", vm_status_symbol(status), color::vm_status(status)),
+                    running,
+                ]);
             }
+            table.print();
         }
     }
     Ok(())
@@ -512,20 +568,20 @@ pub async fn handle_delete(name: String, yes: bool, namespace: &str) -> Result<(
     let client = kube::KubeClient::new().await?;
 
     if !yes {
-        use std::io::Write;
-        print!("Are you sure you want to delete VM '{}'? (y/N): ", name);
-        std::io::stdout().flush()?;
-
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-
-        if !input.trim().eq_ignore_ascii_case("y") {
-            println!("Cancelled");
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt(format!("Delete VM '{}'?", name))
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
+            println!("{}", color::muted("Cancelled"));
             return Ok(());
         }
     }
 
+    let sp = crate::output::spinner::spinner(&format!("Deleting VM '{}'...", name));
     client.delete_vm(namespace, &name).await?;
+    sp.finish_and_clear();
     println!(
         "{}",
         color::success(&format!("VM '{}' deleted successfully", name))
@@ -535,34 +591,112 @@ pub async fn handle_delete(name: String, yes: bool, namespace: &str) -> Result<(
 
 pub async fn handle_start(name: String, namespace: &str) -> Result<()> {
     use crate::kube;
+    use crate::output::spinner::spinner;
 
+    let sp = spinner(&format!("Starting VM '{}'...", name));
     let client = kube::KubeClient::new().await?;
     client.start_vm(namespace, &name).await?;
-    println!(
-        "{}",
-        color::success(&format!("VM '{}' started successfully", name))
-    );
-    Ok(())
+    sp.set_message(format!("Waiting for VM '{}' to become running...", name));
+
+    // Poll until actually running (up to 30s)
+    let deadline = tokio::time::Instant::now() + tokio::time::Duration::from_secs(30);
+    loop {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        match client.is_running(namespace, &name).await {
+            Ok(true) => {
+                sp.finish_and_clear();
+                println!(
+                    "{}",
+                    color::success(&format!("VM '{}' is now running", name))
+                );
+                return Ok(());
+            }
+            Ok(false) if tokio::time::Instant::now() >= deadline => {
+                sp.finish_and_clear();
+                println!(
+                    "{}",
+                    color::warning(&format!(
+                        "VM '{}' start initiated but not yet running (may take longer)",
+                        name
+                    ))
+                );
+                return Ok(());
+            }
+            Ok(false) => continue,
+            Err(_) if tokio::time::Instant::now() >= deadline => {
+                sp.finish_and_clear();
+                println!(
+                    "{}",
+                    color::warning(&format!(
+                        "VM '{}' start initiated (could not confirm status)",
+                        name
+                    ))
+                );
+                return Ok(());
+            }
+            Err(_) => continue,
+        }
+    }
 }
 
 pub async fn handle_stop(name: String, namespace: &str) -> Result<()> {
     use crate::kube;
+    use crate::output::spinner::spinner;
 
+    let sp = spinner(&format!("Stopping VM '{}'...", name));
     let client = kube::KubeClient::new().await?;
     client.stop_vm(namespace, &name).await?;
-    println!(
-        "{}",
-        color::success(&format!("VM '{}' stopped successfully", name))
-    );
-    Ok(())
+    sp.set_message(format!("Waiting for VM '{}' to stop...", name));
+
+    // Poll until actually stopped (up to 30s)
+    let deadline = tokio::time::Instant::now() + tokio::time::Duration::from_secs(30);
+    loop {
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+        match client.is_running(namespace, &name).await {
+            Ok(false) => {
+                sp.finish_and_clear();
+                println!(
+                    "{}",
+                    color::success(&format!("VM '{}' is now stopped", name))
+                );
+                return Ok(());
+            }
+            Ok(true) if tokio::time::Instant::now() >= deadline => {
+                sp.finish_and_clear();
+                println!(
+                    "{}",
+                    color::warning(&format!(
+                        "VM '{}' stop initiated but not yet stopped (may take longer)",
+                        name
+                    ))
+                );
+                return Ok(());
+            }
+            Ok(true) => continue,
+            Err(_) if tokio::time::Instant::now() >= deadline => {
+                sp.finish_and_clear();
+                println!(
+                    "{}",
+                    color::warning(&format!(
+                        "VM '{}' stop initiated (could not confirm status)",
+                        name
+                    ))
+                );
+                return Ok(());
+            }
+            Err(_) => continue,
+        }
+    }
 }
 
 pub async fn handle_restart(name: String, namespace: &str) -> Result<()> {
     use crate::kube;
+    use crate::output::spinner::spinner;
 
+    let sp = spinner(&format!("Restarting VM '{}'...", name));
     let client = kube::KubeClient::new().await?;
-    println!("{}", color::info(&format!("Restarting VM '{}'...", name)));
     client.restart_vm(namespace, &name).await?;
+    sp.finish_and_clear();
     println!(
         "{}",
         color::success(&format!("VM '{}' restarted successfully", name))
@@ -585,9 +719,10 @@ pub async fn handle_console(name: String, namespace: &str) -> Result<()> {
 
     match status {
         Ok(exit) if exit.success() => Ok(()),
-        Ok(exit) => {
-            Err(anyhow::anyhow!("Console session ended with exit code: {}", exit.code().unwrap_or(-1)))
-        }
+        Ok(exit) => Err(anyhow::anyhow!(
+            "Console session ended with exit code: {}",
+            exit.code().unwrap_or(-1)
+        )),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             eprintln!("Error: 'virtctl' not found in PATH.");
             eprintln!();
@@ -614,7 +749,10 @@ pub async fn handle_ssh(name: String, user: String, namespace: &str) -> Result<(
                         .status();
                     match status {
                         Ok(exit) if exit.success() => Ok(()),
-                        Ok(exit) => Err(anyhow::anyhow!("SSH session ended with exit code: {}", exit.code().unwrap_or(-1))),
+                        Ok(exit) => Err(anyhow::anyhow!(
+                            "SSH session ended with exit code: {}",
+                            exit.code().unwrap_or(-1)
+                        )),
                         Err(e) => Err(anyhow::anyhow!("Failed to launch ssh: {}", e)),
                     }
                 }
@@ -626,10 +764,12 @@ pub async fn handle_ssh(name: String, user: String, namespace: &str) -> Result<(
                         .status();
                     match status {
                         Ok(exit) if exit.success() => Ok(()),
-                        Ok(_) => Err(anyhow::anyhow!("SSH session failed. Ensure the VM is running and SSH is enabled.")),
-                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                            Err(anyhow::anyhow!("Neither direct SSH (no IP available) nor virtctl found. Install virtctl for SSH access."))
-                        }
+                        Ok(_) => Err(anyhow::anyhow!(
+                            "SSH session failed. Ensure the VM is running and SSH is enabled."
+                        )),
+                        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(anyhow::anyhow!(
+                            "Neither direct SSH (no IP available) nor virtctl found. Install virtctl for SSH access."
+                        )),
                         Err(e) => Err(anyhow::anyhow!("Failed to launch virtctl: {}", e)),
                     }
                 }
@@ -646,7 +786,10 @@ pub async fn handle_vnc(name: String, namespace: &str) -> Result<()> {
         .status();
     match status {
         Ok(exit) if exit.success() => Ok(()),
-        Ok(exit) => Err(anyhow::anyhow!("VNC session ended with exit code: {}", exit.code().unwrap_or(-1))),
+        Ok(exit) => Err(anyhow::anyhow!(
+            "VNC session ended with exit code: {}",
+            exit.code().unwrap_or(-1)
+        )),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             eprintln!("Error: 'virtctl' not found in PATH.");
             eprintln!("Install virtctl for VNC access:");
@@ -669,14 +812,19 @@ pub async fn handle_logs(name: String, follow: bool, tail: u32, namespace: &str)
 
     use k8s_openapi::api::core::v1::Pod;
     let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(k8s_client, namespace);
-    let lp = kube::api::ListParams::default()
-        .labels(&format!("kubevirt.io/vm={}", name));
+    let lp = kube::api::ListParams::default().labels(&format!("kubevirt.io/vm={}", name));
 
-    let pod_list = pods_api.list(&lp).await
+    let pod_list = pods_api
+        .list(&lp)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to list pods: {}", e))?;
 
-    let pod = pod_list.items.first()
-        .ok_or_else(|| anyhow::anyhow!("No virt-launcher pod found for VM '{}'. Is the VM running?", name))?;
+    let pod = pod_list.items.first().ok_or_else(|| {
+        anyhow::anyhow!(
+            "No virt-launcher pod found for VM '{}'. Is the VM running?",
+            name
+        )
+    })?;
     let pod_name = pod.metadata.name.as_deref().unwrap_or_default();
 
     // Use kubectl logs for streaming
@@ -692,7 +840,10 @@ pub async fn handle_logs(name: String, follow: bool, tail: u32, namespace: &str)
         .map_err(|e| anyhow::anyhow!("Failed to launch kubectl: {}", e))?;
 
     if !status.success() {
-        return Err(anyhow::anyhow!("kubectl logs exited with code: {}", status.code().unwrap_or(-1)));
+        return Err(anyhow::anyhow!(
+            "kubectl logs exited with code: {}",
+            status.code().unwrap_or(-1)
+        ));
     }
     Ok(())
 }
@@ -714,34 +865,15 @@ pub fn handle_generate(
     use std::fs;
 
     let mut config = load_or_create_config(&name, namespace, template, from_file)?;
-
-    // Apply CLI overrides
-    if let Some(cpus) = cpus {
-        config.cpu.cores = cpus;
-    }
-    if let Some(memory) = memory {
-        config.memory.size = memory;
-    }
-    if let Some(disk_size) = disk_size {
-        if let Some(disk) = config.disks.first_mut() {
-            disk.size = disk_size;
-        } else {
-            log::warn!("--disk-size specified but no disks configured; adding a blank disk");
-            config.disks.push(crate::config::DiskConfig {
-                name: "rootdisk".to_string(),
-                size: disk_size,
-                storage_class: None,
-                boot_order: 1,
-                source: crate::config::DiskSource::Blank,
-                device_type: crate::config::DiskDeviceType::default(),
-                bus: None,
-                cache: None,
-                io: None,
-            });
-        }
-    }
-
-    // Validate configuration
+    apply_cli_overrides(
+        &mut config,
+        CliOverrides {
+            cpus,
+            memory,
+            disk_size,
+            ..CliOverrides::default()
+        },
+    )?;
     validate_vm_config(&config)?;
 
     let output_format = OutputFormat::parse_format(&format)
@@ -853,12 +985,9 @@ pub async fn handle_clone(
 ) -> Result<()> {
     use crate::kube;
 
+    let sp =
+        crate::output::spinner::spinner(&format!("Cloning VM '{}' to '{}'...", source, target));
     let client = kube::KubeClient::new().await?;
-
-    println!(
-        "{}",
-        color::info(&format!("Cloning VM '{}' to '{}'...", source, target))
-    );
 
     // Get source VM and convert to VMConfig to preserve all fields
     let source_vm = client.get_vm(namespace, &source).await?;
@@ -872,6 +1001,7 @@ pub async fn handle_clone(
 
     // Create the cloned VM
     client.create_vm(&config).await?;
+    sp.finish_and_clear();
     println!(
         "{}",
         color::success(&format!("VM '{}' cloned successfully", target))
@@ -1276,6 +1406,151 @@ pub async fn handle_batch(
     if error_count > 0 && !continue_on_error {
         return Err(anyhow!("Batch creation had {} error(s)", error_count));
     }
+    Ok(())
+}
+
+/// Diagnose environment: kubeconfig, cluster connectivity, KubeVirt CRDs, namespace.
+pub async fn handle_doctor(namespace: &str) -> Result<()> {
+    println!("{}", color::header("VMRogue Doctor"));
+    println!();
+
+    let mut issues = 0u32;
+
+    // 1. Check kubeconfig
+    print!("  Kubeconfig ............ ");
+    let kubeconfig_display = if let Some(p) = crate::kube::KUBECONFIG_PATH.get() {
+        format!("--kubeconfig {}", p)
+    } else if let Ok(env) = std::env::var("KUBECONFIG") {
+        format!("$KUBECONFIG={}", env)
+    } else {
+        "~/.kube/config (default)".to_string()
+    };
+    println!("{}", color::success(&kubeconfig_display));
+
+    // 2. Check cluster connectivity
+    print!("  Cluster connection .... ");
+    let client = match crate::kube::get_client().await {
+        Ok(c) => {
+            println!("{}", color::success("ok"));
+            Some(c)
+        }
+        Err(e) => {
+            println!("{}", color::error("FAILED"));
+            println!("    {}", color::muted(&format!("{}", e)));
+            issues += 1;
+            None
+        }
+    };
+
+    // 3. Check KubeVirt CRDs
+    print!("  KubeVirt CRDs ......... ");
+    if let Some(ref client) = client {
+        let vms: kube::api::Api<crate::kube::types::VirtualMachine> =
+            kube::api::Api::namespaced(client.clone(), namespace);
+        match vms.list(&kube::api::ListParams::default().limit(1)).await {
+            Ok(_) => println!("{}", color::success("installed")),
+            Err(kube::Error::Api(ae)) if ae.code == 404 => {
+                println!("{}", color::error("NOT FOUND"));
+                println!(
+                    "    {}",
+                    color::muted("KubeVirt does not appear to be installed.")
+                );
+                println!(
+                    "    {}",
+                    color::muted("See: https://kubevirt.io/user-guide/cluster_admin/installation/")
+                );
+                issues += 1;
+            }
+            Err(_) => {
+                println!("{}", color::error("NOT FOUND"));
+                println!(
+                    "    {}",
+                    color::muted("VirtualMachine CRD not available. Install KubeVirt first.")
+                );
+                issues += 1;
+            }
+        }
+    } else {
+        println!("{}", color::muted("skipped (no cluster connection)"));
+    }
+
+    // 4. Check namespace
+    print!("  Namespace '{}' .. ", namespace);
+    if let Some(ref client) = client {
+        let ns_api: kube::api::Api<k8s_openapi::api::core::v1::Namespace> =
+            kube::api::Api::all(client.clone());
+        match ns_api.get(namespace).await {
+            Ok(_) => println!("{}", color::success("exists")),
+            Err(_) => {
+                println!("{}", color::warning("NOT FOUND"));
+                println!(
+                    "    {}",
+                    color::muted(&format!(
+                        "Namespace '{}' does not exist. Create it or use --namespace.",
+                        namespace
+                    ))
+                );
+                issues += 1;
+            }
+        }
+    } else {
+        println!("{}", color::muted("skipped (no cluster connection)"));
+    }
+
+    // 5. Check data directory
+    print!("  Data directory ........ ");
+    match crate::utils::data_dir() {
+        Ok(dir) => {
+            if dir.exists() {
+                println!("{}", color::success(&format!("ok ({})", dir.display())));
+            } else {
+                println!(
+                    "{}",
+                    color::success(&format!("will be created at {}", dir.display()))
+                );
+            }
+        }
+        Err(e) => {
+            println!("{}", color::error("FAILED"));
+            println!("    {}", color::muted(&format!("{}", e)));
+            issues += 1;
+        }
+    }
+
+    // 6. Config file
+    print!("  Config file ........... ");
+    match crate::config::AppConfig::user_path() {
+        Ok(path) => {
+            if path.exists() {
+                println!(
+                    "{}",
+                    color::success(&format!("loaded ({})", path.display()))
+                );
+            } else {
+                println!(
+                    "{}",
+                    color::muted(&format!("not found ({})", path.display()))
+                );
+                println!(
+                    "    {}",
+                    color::muted("Run 'vmrogue config-init' to create one.")
+                );
+            }
+        }
+        Err(_) => println!("{}", color::muted("could not determine path")),
+    }
+
+    // Summary
+    println!();
+    if issues == 0 {
+        println!("{}", color::success("✓ All checks passed"));
+    } else {
+        println!(
+            "{}",
+            color::warning(&format!("✗ {} issue(s) found", issues))
+        );
+    }
+
     Ok(())
 }
 

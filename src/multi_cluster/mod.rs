@@ -29,11 +29,20 @@ pub struct ClusterInfo {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ClusterEnvironment {
-    Production, Staging, Development, Testing, Custom(String),
+    Production,
+    Staging,
+    Development,
+    Testing,
+    Custom(String),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ClusterHealth { Healthy, Degraded, Unhealthy, Unknown }
+pub enum ClusterHealth {
+    Healthy,
+    Degraded,
+    Unhealthy,
+    Unknown,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AggregatedMetrics {
@@ -69,13 +78,23 @@ pub struct MultiClusterConfig {
 
 impl Default for MultiClusterConfig {
     fn default() -> Self {
-        Self { auto_discover: true, sync_interval_secs: 300, primary_cluster: None, excluded_contexts: Vec::new() }
+        Self {
+            auto_discover: true,
+            sync_interval_secs: 300,
+            primary_cluster: None,
+            excluded_contexts: Vec::new(),
+        }
     }
 }
 
 impl MultiClusterManager {
     pub fn new() -> Self {
-        Self { clusters: Vec::new(), aggregated_metrics: AggregatedMetrics::default(), config: MultiClusterConfig::default(), last_sync: None }
+        Self {
+            clusters: Vec::new(),
+            aggregated_metrics: AggregatedMetrics::default(),
+            config: MultiClusterConfig::default(),
+            last_sync: None,
+        }
     }
 
     pub fn add_cluster(&mut self, cluster: ClusterInfo) {
@@ -93,15 +112,24 @@ impl MultiClusterManager {
     }
 
     pub fn healthy_clusters(&self) -> Vec<&ClusterInfo> {
-        self.clusters.iter().filter(|c| c.health == ClusterHealth::Healthy).collect()
+        self.clusters
+            .iter()
+            .filter(|c| c.health == ClusterHealth::Healthy)
+            .collect()
     }
 
     pub fn unhealthy_clusters(&self) -> Vec<&ClusterInfo> {
-        self.clusters.iter().filter(|c| c.health != ClusterHealth::Healthy).collect()
+        self.clusters
+            .iter()
+            .filter(|c| c.health != ClusterHealth::Healthy)
+            .collect()
     }
 
     pub fn clusters_by_env(&self, env: &ClusterEnvironment) -> Vec<&ClusterInfo> {
-        self.clusters.iter().filter(|c| c.environment == *env).collect()
+        self.clusters
+            .iter()
+            .filter(|c| c.environment == *env)
+            .collect()
     }
 
     fn update_aggregated_metrics(&mut self) {
@@ -114,12 +142,31 @@ impl MultiClusterManager {
 
         for cluster in &self.clusters {
             let env_key = format!("{:?}", cluster.environment);
-            let env = self.aggregated_metrics.by_environment.entry(env_key).or_insert(EnvironmentMetrics { cluster_count: 0, vm_count: 0, healthy_clusters: 0 });
+            let env = self
+                .aggregated_metrics
+                .by_environment
+                .entry(env_key)
+                .or_insert(EnvironmentMetrics {
+                    cluster_count: 0,
+                    vm_count: 0,
+                    healthy_clusters: 0,
+                });
             env.cluster_count += 1;
             env.vm_count += cluster.vm_count;
-            if cluster.health == ClusterHealth::Healthy { env.healthy_clusters += 1; }
+            if cluster.health == ClusterHealth::Healthy {
+                env.healthy_clusters += 1;
+            }
 
-            let region = self.aggregated_metrics.by_region.entry(cluster.region.clone()).or_insert(RegionMetrics { cluster_count: 0, vm_count: 0, avg_cpu_usage: 0.0, avg_memory_usage: 0.0 });
+            let region = self
+                .aggregated_metrics
+                .by_region
+                .entry(cluster.region.clone())
+                .or_insert(RegionMetrics {
+                    cluster_count: 0,
+                    vm_count: 0,
+                    avg_cpu_usage: 0.0,
+                    avg_memory_usage: 0.0,
+                });
             region.cluster_count += 1;
             region.vm_count += cluster.vm_count;
         }
@@ -127,5 +174,7 @@ impl MultiClusterManager {
 }
 
 impl Default for MultiClusterManager {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

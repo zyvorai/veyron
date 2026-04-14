@@ -55,7 +55,8 @@ pub async fn handle_backup_create(
     println!();
 
     // Create actual VirtualMachineSnapshot via SnapshotManager
-    let manager = crate::snapshots::SnapshotManager::new(namespace).await
+    let manager = crate::snapshots::SnapshotManager::new(namespace)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
 
     let snapshot_config = crate::snapshots::SnapshotConfig::new(&vm, &backup_name)
@@ -66,7 +67,9 @@ pub async fn handle_backup_create(
         ))
         .with_label("vmrogue.io/backup-type", config.backup_type.as_str());
 
-    manager.create_snapshot(&snapshot_config).await
+    manager
+        .create_snapshot(&snapshot_config)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to create backup snapshot: {}", e))?;
 
     println!("{}", color::success("✓ Backup created successfully"));
@@ -92,9 +95,7 @@ pub async fn handle_backup_list(vm: Option<String>, output: String, namespace: &
     println!();
 
     // Query VirtualMachineSnapshot CRDs (backups are snapshots in KubeVirt)
-    let client = kube::Client::try_default()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
 
     let snapshots_api: kube::api::Api<VirtualMachineSnapshot> =
         kube::api::Api::namespaced(client, namespace);
@@ -191,18 +192,13 @@ pub async fn handle_backup_delete(name: String, yes: bool, namespace: &str) -> R
     log::debug!("Using namespace: {}", namespace);
 
     if !yes {
-        use std::io::Write;
-        print!(
-            "Are you sure you want to delete backup '{}'? (y/N): ",
-            name
-        );
-        std::io::stdout().flush()?;
-
-        let mut input = String::new();
-        std::io::stdin().read_line(&mut input)?;
-
-        if !input.trim().eq_ignore_ascii_case("y") {
-            println!("Cancelled");
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt(format!("Delete backup '{}'?", name))
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
+            println!("{}", color::muted("Cancelled"));
             return Ok(());
         }
     }
@@ -211,17 +207,25 @@ pub async fn handle_backup_delete(name: String, yes: bool, namespace: &str) -> R
     println!();
 
     // Delete actual VirtualMachineSnapshot via SnapshotManager
-    let manager = crate::snapshots::SnapshotManager::new(namespace).await
+    let manager = crate::snapshots::SnapshotManager::new(namespace)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
 
-    manager.delete_snapshot(&name).await
+    manager
+        .delete_snapshot(&name)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to delete backup: {}", e))?;
 
     println!("{}", color::success("✓ Backup deleted successfully"));
     Ok(())
 }
 
-pub async fn handle_backup_restore(backup: String, target: Option<String>, start: bool, namespace: &str) -> Result<()> {
+pub async fn handle_backup_restore(
+    backup: String,
+    target: Option<String>,
+    start: bool,
+    namespace: &str,
+) -> Result<()> {
     log::debug!("Using namespace: {}", namespace);
 
     let target_vm = target.unwrap_or_else(|| backup.replace("-backup-", "-restored-"));
@@ -233,10 +237,13 @@ pub async fn handle_backup_restore(backup: String, target: Option<String>, start
     println!();
 
     // Restore via RestoreManager (creates VirtualMachineRestore CRD)
-    let restore_manager = crate::snapshots::RestoreManager::new(namespace).await
+    let restore_manager = crate::snapshots::RestoreManager::new(namespace)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
 
-    let restore_info = restore_manager.restore_to_new_vm(&backup, &target_vm, start).await
+    let restore_info = restore_manager
+        .restore_to_new_vm(&backup, &target_vm, start)
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to initiate restore: {}", e))?;
 
     println!("  Restore ID:   {}", color::value(&restore_info.name));
@@ -253,7 +260,11 @@ pub async fn handle_backup_restore(backup: String, target: Option<String>, start
     Ok(())
 }
 
-pub async fn handle_backup_verify(name: String, verification_type: String, namespace: &str) -> Result<()> {
+pub async fn handle_backup_verify(
+    name: String,
+    verification_type: String,
+    namespace: &str,
+) -> Result<()> {
     use crate::backup::verify::{VerificationRunner, VerificationStatus, VerificationType};
 
     log::debug!("Using namespace: {}", namespace);
@@ -282,7 +293,9 @@ pub async fn handle_backup_verify(name: String, verification_type: String, names
     println!("  Checks Run:         {}", report.checks.len());
     println!(
         "  Passed:             {}",
-        report.checks.len()
+        report
+            .checks
+            .len()
             .saturating_sub(report.error_count as usize)
             .saturating_sub(report.warning_count as usize)
     );
@@ -459,10 +472,13 @@ pub async fn handle_recovery_execute(plan: String, dry_run: bool, namespace: &st
         println!();
 
         // List available snapshots to show what would be restored
-        let manager = crate::snapshots::SnapshotManager::new(namespace).await
+        let manager = crate::snapshots::SnapshotManager::new(namespace)
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
 
-        let snapshots = manager.list_all_snapshots().await
+        let snapshots = manager
+            .list_all_snapshots()
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to list snapshots: {}", e))?;
 
         if snapshots.is_empty() {
@@ -470,8 +486,18 @@ pub async fn handle_recovery_execute(plan: String, dry_run: bool, namespace: &st
         } else {
             println!("Recovery Steps:");
             for (i, snap) in snapshots.iter().enumerate() {
-                let ready = if snap.ready_to_use { color::success("ready") } else { color::warning("not ready") };
-                println!("  {}. Restore VM '{}' from snapshot '{}' ({})", i + 1, snap.vm_name, snap.name, ready);
+                let ready = if snap.ready_to_use {
+                    color::success("ready")
+                } else {
+                    color::warning("not ready")
+                };
+                println!(
+                    "  {}. Restore VM '{}' from snapshot '{}' ({})",
+                    i + 1,
+                    snap.vm_name,
+                    snap.name,
+                    ready
+                );
             }
         }
 
@@ -479,10 +505,13 @@ pub async fn handle_recovery_execute(plan: String, dry_run: bool, namespace: &st
         println!("{}", color::info("ℹ Run without --dry-run to execute"));
     } else {
         // Find the latest snapshot for each VM and trigger restores
-        let manager = crate::snapshots::SnapshotManager::new(namespace).await
+        let manager = crate::snapshots::SnapshotManager::new(namespace)
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
 
-        let snapshots = manager.list_snapshots_sorted(None).await
+        let snapshots = manager
+            .list_snapshots_sorted(None)
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to list snapshots: {}", e))?;
 
         if snapshots.is_empty() {
@@ -501,7 +530,8 @@ pub async fn handle_recovery_execute(plan: String, dry_run: bool, namespace: &st
             }
         }
 
-        let restore_manager = crate::snapshots::RestoreManager::new(namespace).await
+        let restore_manager = crate::snapshots::RestoreManager::new(namespace)
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
 
         let mut restored = 0usize;
@@ -509,18 +539,39 @@ pub async fn handle_recovery_execute(plan: String, dry_run: bool, namespace: &st
 
         for snap in &latest_per_vm {
             if !snap.ready_to_use {
-                println!("  {} Skipping '{}': snapshot '{}' not ready", color::warning("⚠"), snap.vm_name, snap.name);
+                println!(
+                    "  {} Skipping '{}': snapshot '{}' not ready",
+                    color::warning("⚠"),
+                    snap.vm_name,
+                    snap.name
+                );
                 continue;
             }
 
-            println!("  Restoring VM '{}' from snapshot '{}'...", snap.vm_name, snap.name);
-            match restore_manager.restore_in_place(&snap.vm_name, &snap.name).await {
+            println!(
+                "  Restoring VM '{}' from snapshot '{}'...",
+                snap.vm_name, snap.name
+            );
+            match restore_manager
+                .restore_in_place(&snap.vm_name, &snap.name)
+                .await
+            {
                 Ok(info) => {
-                    println!("  {} Restore '{}' initiated for VM '{}'", color::success("✓"), info.name, snap.vm_name);
+                    println!(
+                        "  {} Restore '{}' initiated for VM '{}'",
+                        color::success("✓"),
+                        info.name,
+                        snap.vm_name
+                    );
                     restored += 1;
                 }
                 Err(e) => {
-                    println!("  {} Failed to restore VM '{}': {}", color::error("✗"), snap.vm_name, e);
+                    println!(
+                        "  {} Failed to restore VM '{}': {}",
+                        color::error("✗"),
+                        snap.vm_name,
+                        e
+                    );
                     failed += 1;
                 }
             }
@@ -563,7 +614,9 @@ pub async fn handle_migrate(
 
     let source_node = "unknown";
     if target_node.is_none() {
-        log::warn!("No --target-node specified; source node could not be auto-detected. Specify nodes explicitly for production use.");
+        log::warn!(
+            "No --target-node specified; source node could not be auto-detected. Specify nodes explicitly for production use."
+        );
     }
     let request = MigrationRequest::new(&vm, source_node)
         .to_node(target_node.unwrap_or_else(|| {
@@ -596,9 +649,7 @@ pub async fn handle_migrate(
         );
     } else {
         // Create actual VirtualMachineInstanceMigration CRD
-        let client = kube::Client::try_default()
-            .await
-            .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+        let client = crate::kube::get_client().await?;
 
         let migrations_api: kube::api::Api<VirtualMachineInstanceMigration> =
             kube::api::Api::namespaced(client, namespace);
@@ -655,9 +706,7 @@ pub async fn handle_migration_status(
     use crate::kube::types::VirtualMachineInstanceMigration;
     use crate::migration::{MigrationPhase, MigrationState, MigrationStatus};
 
-    let client = kube::Client::try_default()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
 
     let mut first = true;
     loop {
@@ -804,9 +853,7 @@ pub async fn handle_migration_list(
     println!();
 
     // Query VirtualMachineInstanceMigration CRDs from K8s
-    let client = kube::Client::try_default()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
 
     let migrations_api: kube::api::Api<VirtualMachineInstanceMigration> = if all_namespaces {
         kube::api::Api::all(client)
@@ -955,7 +1002,9 @@ pub async fn handle_ha_config(
     log::debug!("Using namespace: {}", namespace);
 
     if enable && disable {
-        return Err(anyhow::anyhow!("Cannot specify both --enable and --disable"));
+        return Err(anyhow::anyhow!(
+            "Cannot specify both --enable and --disable"
+        ));
     }
     if !enable && !disable {
         return Err(anyhow::anyhow!("Must specify either --enable or --disable"));
@@ -988,8 +1037,7 @@ pub async fn handle_ha_config(
     };
 
     // Patch the VM's eviction strategy via the Kubernetes API
-    let client = kube::Client::try_default().await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
     let vms_api: kube::api::Api<crate::kube::types::VirtualMachine> =
         kube::api::Api::namespaced(client, namespace);
 
@@ -1015,7 +1063,13 @@ pub async fn handle_ha_config(
         })
     };
 
-    vms_api.patch(&vm, &kube::api::PatchParams::default(), &kube::api::Patch::Merge(&patch)).await
+    vms_api
+        .patch(
+            &vm,
+            &kube::api::PatchParams::default(),
+            &kube::api::Patch::Merge(&patch),
+        )
+        .await
         .map_err(|e| anyhow::anyhow!("Failed to update VM HA config: {}", e))?;
 
     println!(
@@ -1161,18 +1215,27 @@ pub async fn handle_evacuate_node(
         );
     } else {
         // Cordon the node (mark as unschedulable)
-        let client = kube::Client::try_default().await
-            .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+        let client = crate::kube::get_client().await?;
 
         let nodes_api: kube::api::Api<k8s_openapi::api::core::v1::Node> =
             kube::api::Api::all(client.clone());
         let cordon_patch = serde_json::json!({
             "spec": { "unschedulable": true }
         });
-        nodes_api.patch(&node, &kube::api::PatchParams::default(), &kube::api::Patch::Merge(&cordon_patch)).await
+        nodes_api
+            .patch(
+                &node,
+                &kube::api::PatchParams::default(),
+                &kube::api::Patch::Merge(&cordon_patch),
+            )
+            .await
             .map_err(|e| anyhow::anyhow!("Failed to cordon node: {}", e))?;
 
-        println!("  {} Node '{}' cordoned (marked unschedulable)", color::success("✓"), node);
+        println!(
+            "  {} Node '{}' cordoned (marked unschedulable)",
+            color::success("✓"),
+            node
+        );
 
         // List VMIs on the node and create migrations
         let kube_client = crate::kube::KubeClient::new().await?;
@@ -1185,7 +1248,11 @@ pub async fn handle_evacuate_node(
             if let Ok(Some(vm_node)) = kube_client.get_vm_node(namespace, vm_name).await {
                 if vm_node == node {
                     // Create migration CRD
-                    let mig_name = format!("{}-evacuate-{}", vm_name, chrono::Utc::now().format("%H%M%S"));
+                    let mig_name = format!(
+                        "{}-evacuate-{}",
+                        vm_name,
+                        chrono::Utc::now().format("%H%M%S")
+                    );
                     let migration = crate::kube::types::VirtualMachineInstanceMigration {
                         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
                             name: Some(mig_name),
@@ -1197,14 +1264,27 @@ pub async fn handle_evacuate_node(
                         },
                         status: None,
                     };
-                    let mig_api: kube::api::Api<crate::kube::types::VirtualMachineInstanceMigration> =
-                        kube::api::Api::namespaced(client.clone(), namespace);
-                    match mig_api.create(&kube::api::PostParams::default(), &migration).await {
+                    let mig_api: kube::api::Api<
+                        crate::kube::types::VirtualMachineInstanceMigration,
+                    > = kube::api::Api::namespaced(client.clone(), namespace);
+                    match mig_api
+                        .create(&kube::api::PostParams::default(), &migration)
+                        .await
+                    {
                         Ok(_) => {
-                            println!("  {} Initiated migration for {}", color::success("✓"), vm_name);
+                            println!(
+                                "  {} Initiated migration for {}",
+                                color::success("✓"),
+                                vm_name
+                            );
                             migrated_count += 1;
                         }
-                        Err(e) => println!("  {} Failed to migrate {}: {}", color::error("✗"), vm_name, e),
+                        Err(e) => println!(
+                            "  {} Failed to migrate {}: {}",
+                            color::error("✗"),
+                            vm_name,
+                            e
+                        ),
                     }
                 }
             }
@@ -1233,9 +1313,7 @@ pub async fn handle_evacuation_status(node: String, watch: bool, namespace: &str
     use crate::kube::types::VirtualMachineInstanceMigration;
     use crate::migration::evacuation::{EvacuationState, EvacuationStatus};
 
-    let client = kube::Client::try_default()
-        .await
-        .map_err(|e| anyhow::anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
 
     let mut first = true;
     loop {

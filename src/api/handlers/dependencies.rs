@@ -28,8 +28,7 @@ pub struct DependencyEdge {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/dependencies/graph", get(get_dependency_graph))
+    Router::new().route("/dependencies/graph", get(get_dependency_graph))
 }
 
 #[cfg(feature = "web")]

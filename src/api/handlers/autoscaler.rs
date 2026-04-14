@@ -30,8 +30,10 @@ pub struct CreateAutoscalerPolicyRequest {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/autoscaler/policies", get(list_policies).post(create_policy))
+    Router::new().route(
+        "/autoscaler/policies",
+        get(list_policies).post(create_policy),
+    )
 }
 
 #[cfg(feature = "web")]
@@ -40,7 +42,9 @@ async fn list_policies() -> Json<Vec<AutoscalerPolicy>> {
 }
 
 #[cfg(feature = "web")]
-async fn create_policy(Json(req): Json<CreateAutoscalerPolicyRequest>) -> Json<Option<AutoscalerPolicy>> {
+async fn create_policy(
+    Json(req): Json<CreateAutoscalerPolicyRequest>,
+) -> Json<Option<AutoscalerPolicy>> {
     let _ = req;
     Json(None)
 }

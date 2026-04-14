@@ -1,7 +1,7 @@
 // Performance Analyzer - Bottleneck detection and performance scoring
 
-use super::metrics::{ResourceUsage, VMMetrics};
 use super::AlertThresholds;
+use super::metrics::{ResourceUsage, VMMetrics};
 use serde::{Deserialize, Serialize};
 
 /// Performance bottleneck type
@@ -295,9 +295,11 @@ mod tests {
 
         let bottlenecks = analyzer.detect_bottlenecks(&usage);
         assert!(!bottlenecks.is_empty());
-        assert!(bottlenecks
-            .iter()
-            .any(|b| b.bottleneck_type == BottleneckType::CPU));
+        assert!(
+            bottlenecks
+                .iter()
+                .any(|b| b.bottleneck_type == BottleneckType::CPU)
+        );
     }
 
     #[test]

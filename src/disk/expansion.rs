@@ -6,8 +6,8 @@ use chrono::{DateTime, Utc};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use k8s_openapi::api::storage::v1::StorageClass;
 use kube::{
-    api::{Api, Patch, PatchParams},
     Client,
+    api::{Api, Patch, PatchParams},
 };
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -25,8 +25,9 @@ fn validate_pvc_name(name: &str) -> Result<()> {
 
 /// Validate that a size string matches Kubernetes quantity format (e.g., "10Gi", "500Mi")
 fn validate_k8s_quantity(size: &str) -> Result<()> {
-    static RE: std::sync::LazyLock<Regex> =
-        std::sync::LazyLock::new(|| Regex::new(r"^[0-9]+(\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$").unwrap());
+    static RE: std::sync::LazyLock<Regex> = std::sync::LazyLock::new(|| {
+        Regex::new(r"^[0-9]+(\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$").unwrap()
+    });
     if size.is_empty() || !RE.is_match(size) {
         anyhow::bail!("Invalid Kubernetes quantity format: {}", size);
     }
@@ -82,8 +83,10 @@ impl ExpansionPlan {
             ExpansionStep {
                 step_number: 1,
                 description: "Resize PVC in Kubernetes".to_string(),
-                command: format!("kubectl patch pvc {} -p '{{\"spec\":{{\"resources\":{{\"requests\":{{\"storage\":\"{}\"}}}}}}}}'",
-                    config.pvc_name, config.target_size),
+                command: format!(
+                    "kubectl patch pvc {} -p '{{\"spec\":{{\"resources\":{{\"requests\":{{\"storage\":\"{}\"}}}}}}}}'",
+                    config.pvc_name, config.target_size
+                ),
                 completed: false,
             },
             ExpansionStep {
@@ -98,13 +101,16 @@ impl ExpansionPlan {
             ExpansionStep {
                 step_number: 3,
                 description: "Extend LVM physical volume (if using LVM)".to_string(),
-                command: "sudo pvresize /dev/<partition>  # Adjust partition for your VM layout".to_string(),
+                command: "sudo pvresize /dev/<partition>  # Adjust partition for your VM layout"
+                    .to_string(),
                 completed: false,
             },
             ExpansionStep {
                 step_number: 4,
                 description: "Extend LVM logical volume".to_string(),
-                command: "sudo lvextend -l +100%FREE /dev/<vg>/<lv>  # Adjust VG/LV names for your VM".to_string(),
+                command:
+                    "sudo lvextend -l +100%FREE /dev/<vg>/<lv>  # Adjust VG/LV names for your VM"
+                        .to_string(),
                 completed: false,
             },
             ExpansionStep {
@@ -194,9 +200,7 @@ impl DiskExpansion {
 
     /// Create with a Kubernetes client for real operations
     pub async fn with_kube(namespace: impl Into<String>) -> Result<Self> {
-        let client = Client::try_default()
-            .await
-            .context("Failed to create Kubernetes client")?;
+        let client = crate::kube::get_client().await?;
         Ok(Self {
             namespace: namespace.into(),
             client: Some(client),
@@ -208,9 +212,7 @@ impl DiskExpansion {
         if let Some(ref client) = self.client {
             Ok(client.clone())
         } else {
-            Client::try_default()
-                .await
-                .context("Failed to create Kubernetes client for PVC operations")
+            crate::kube::get_client().await
         }
     }
 

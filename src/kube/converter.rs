@@ -115,10 +115,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         } else {
             None
         };
-        let bus = disk
-            .bus
-            .clone()
-            .unwrap_or_else(|| "virtio".to_string());
+        let bus = disk.bus.clone().unwrap_or_else(|| "virtio".to_string());
 
         match disk.device_type {
             DiskDeviceType::CDROM => {
@@ -258,12 +255,9 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
     let firmware = config.firmware.as_ref().map(convert_firmware);
 
     // Build machine type
-    let machine = config
-        .machine_type
-        .as_ref()
-        .map(|t| Machine {
-            machine_type: Some(t.clone()),
-        });
+    let machine = config.machine_type.as_ref().map(|t| Machine {
+        machine_type: Some(t.clone()),
+    });
 
     // Build memory with hugepages
     let memory_hugepages = config

@@ -15,8 +15,7 @@ pub struct OperatorResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/operators", get(list_operators))
+    Router::new().route("/operators", get(list_operators))
 }
 
 #[cfg(feature = "web")]

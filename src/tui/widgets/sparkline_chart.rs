@@ -3,11 +3,11 @@ use crate::tui::colors::gradient;
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Sparkline},
-    Frame,
 };
 
 pub struct SparklineChart {
@@ -37,7 +37,11 @@ impl SparklineChart {
 
         // Determine sparkline color from latest value relative to max
         let latest = self.data.last().copied().unwrap_or(0);
-        let ratio = if max > 0 { latest as f64 / max as f64 } else { 0.0 };
+        let ratio = if max > 0 {
+            latest as f64 / max as f64
+        } else {
+            0.0
+        };
         let spark_color = gradient::health().at(ratio);
 
         // Gradient title
@@ -48,7 +52,9 @@ impl SparklineChart {
         let val_text = format!(" {}", latest);
         title_line.push(Span::styled(
             val_text,
-            Style::default().fg(spark_color).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(spark_color)
+                .add_modifier(Modifier::BOLD),
         ));
 
         let sparkline = Sparkline::default()

@@ -60,7 +60,9 @@ impl Default for ObservabilityConfig {
 /// Alert channel
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AlertChannel {
-    Email { recipients: Vec<String> },
+    Email {
+        recipients: Vec<String>,
+    },
     Slack {
         #[serde(skip_serializing)]
         webhook_url: String,
@@ -69,7 +71,9 @@ pub enum AlertChannel {
         #[serde(skip_serializing)]
         integration_key: String,
     },
-    Webhook { url: String },
+    Webhook {
+        url: String,
+    },
 }
 
 /// Time series data point

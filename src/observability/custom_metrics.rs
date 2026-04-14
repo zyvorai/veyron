@@ -23,7 +23,12 @@ pub struct CustomMetric {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MetricType { Counter, Gauge, Histogram, Summary }
+pub enum MetricType {
+    Counter,
+    Gauge,
+    Histogram,
+    Summary,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricValue {
@@ -45,19 +50,38 @@ pub struct CustomMetricsConfig {
 }
 
 impl Default for CustomMetricsConfig {
-    fn default() -> Self { Self { max_values_per_metric: 1000, collection_interval_secs: 30 } }
+    fn default() -> Self {
+        Self {
+            max_values_per_metric: 1000,
+            collection_interval_secs: 30,
+        }
+    }
 }
 
 const MAX_SERIES: usize = 10_000;
 
 impl CustomMetricsManager {
-    pub fn new() -> Self { Self { metrics: HashMap::new(), config: CustomMetricsConfig::default() } }
+    pub fn new() -> Self {
+        Self {
+            metrics: HashMap::new(),
+            config: CustomMetricsConfig::default(),
+        }
+    }
 
     pub fn register(&mut self, name: &str, description: &str, unit: &str, metric_type: MetricType) {
-        self.metrics.insert(name.to_string(), CustomMetric {
-            name: name.to_string(), description: description.to_string(), unit: unit.to_string(),
-            metric_type, values: Vec::new(), thresholds: None, labels: HashMap::new(), created_at: Utc::now(),
-        });
+        self.metrics.insert(
+            name.to_string(),
+            CustomMetric {
+                name: name.to_string(),
+                description: description.to_string(),
+                unit: unit.to_string(),
+                metric_type,
+                values: Vec::new(),
+                thresholds: None,
+                labels: HashMap::new(),
+                created_at: Utc::now(),
+            },
+        );
     }
 
     pub fn record(&mut self, name: &str, value: f64, labels: HashMap<String, String>) {
@@ -82,7 +106,11 @@ impl CustomMetricsManager {
         }
 
         if let Some(metric) = self.metrics.get_mut(name) {
-            metric.values.push(MetricValue { timestamp: Utc::now(), value, labels });
+            metric.values.push(MetricValue {
+                timestamp: Utc::now(),
+                value,
+                labels,
+            });
             if metric.values.len() > self.config.max_values_per_metric {
                 let drain_count = metric.values.len().min(100);
                 metric.values.drain(0..drain_count);
@@ -96,26 +124,42 @@ impl CustomMetricsManager {
         }
     }
 
-    pub fn get(&self, name: &str) -> Option<&CustomMetric> { self.metrics.get(name) }
-    pub fn list(&self) -> Vec<&CustomMetric> { self.metrics.values().collect() }
+    pub fn get(&self, name: &str) -> Option<&CustomMetric> {
+        self.metrics.get(name)
+    }
+    pub fn list(&self) -> Vec<&CustomMetric> {
+        self.metrics.values().collect()
+    }
 
     pub fn latest_value(&self, name: &str) -> Option<f64> {
-        self.metrics.get(name).and_then(|m| m.values.last().map(|v| v.value))
+        self.metrics
+            .get(name)
+            .and_then(|m| m.values.last().map(|v| v.value))
     }
 
     pub fn check_thresholds(&self, name: &str) -> Option<ThresholdStatus> {
         let metric = self.metrics.get(name)?;
         let thresholds = metric.thresholds.as_ref()?;
         let value = metric.values.last()?.value;
-        Some(if value >= thresholds.critical { ThresholdStatus::Critical }
-        else if value >= thresholds.warning { ThresholdStatus::Warning }
-        else { ThresholdStatus::Normal })
+        Some(if value >= thresholds.critical {
+            ThresholdStatus::Critical
+        } else if value >= thresholds.warning {
+            ThresholdStatus::Warning
+        } else {
+            ThresholdStatus::Normal
+        })
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ThresholdStatus { Normal, Warning, Critical }
+pub enum ThresholdStatus {
+    Normal,
+    Warning,
+    Critical,
+}
 
 impl Default for CustomMetricsManager {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

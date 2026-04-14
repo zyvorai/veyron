@@ -428,9 +428,11 @@ mod tests {
         manager.add_capacity("cluster-1", capacity);
 
         assert_eq!(manager.capacity_count(), 1);
-        assert!(manager
-            .get_capacity("cluster-1", &ResourceType::CPU)
-            .is_some());
+        assert!(
+            manager
+                .get_capacity("cluster-1", &ResourceType::CPU)
+                .is_some()
+        );
     }
 
     #[test]

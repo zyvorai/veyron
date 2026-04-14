@@ -477,11 +477,13 @@ mod tests {
     fn test_sync_status_display() {
         assert_eq!(SyncStatus::Synced.to_string(), "Synced");
         assert_eq!(SyncStatus::OutOfSync.to_string(), "OutOfSync");
-        assert!(SyncStatus::Failed {
-            error: "test".to_string()
-        }
-        .to_string()
-        .contains("Failed"));
+        assert!(
+            SyncStatus::Failed {
+                error: "test".to_string()
+            }
+            .to_string()
+            .contains("Failed")
+        );
     }
 
     #[test]

@@ -14,8 +14,7 @@ pub struct SchedulingStatus {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/scheduling/status", get(get_scheduling_status))
+    Router::new().route("/scheduling/status", get(get_scheduling_status))
 }
 
 #[cfg(feature = "web")]

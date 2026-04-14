@@ -37,8 +37,11 @@ pub struct UserPreferences {
 impl Default for UserPreferences {
     fn default() -> Self {
         Self {
-            theme: "default".to_string(), refresh_interval_secs: 5, show_stats_bar: true,
-            default_namespace: "default".to_string(), favorite_vms: Vec::new(),
+            theme: "default".to_string(),
+            refresh_interval_secs: 5,
+            show_stats_bar: true,
+            default_namespace: "default".to_string(),
+            favorite_vms: Vec::new(),
             column_visibility: HashMap::new(),
         }
     }
@@ -54,9 +57,18 @@ pub struct CachedData {
 impl PersistedState {
     pub fn new(namespace: &str) -> Self {
         Self {
-            version: "1.0".to_string(), saved_at: Utc::now(), namespace: namespace.to_string(),
-            view_state: ViewState { active_view: "vms".to_string(), selected_index: 0, sort_mode: "default".to_string(), filters: HashMap::new(), expanded_panels: Vec::new() },
-            preferences: UserPreferences::default(), cached_data: CachedData::default(),
+            version: "1.0".to_string(),
+            saved_at: Utc::now(),
+            namespace: namespace.to_string(),
+            view_state: ViewState {
+                active_view: "vms".to_string(),
+                selected_index: 0,
+                sort_mode: "default".to_string(),
+                filters: HashMap::new(),
+                expanded_panels: Vec::new(),
+            },
+            preferences: UserPreferences::default(),
+            cached_data: CachedData::default(),
         }
     }
 
@@ -77,7 +89,9 @@ impl PersistedState {
     }
 
     pub fn state_path() -> anyhow::Result<PathBuf> {
-        let dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("vmrogue");
+        let dir = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("vmrogue");
         Ok(dir.join("state.json"))
     }
 
@@ -87,7 +101,9 @@ impl PersistedState {
 
     pub fn delete() -> anyhow::Result<()> {
         let path = Self::state_path()?;
-        if path.exists() { std::fs::remove_file(path)?; }
+        if path.exists() {
+            std::fs::remove_file(path)?;
+        }
         Ok(())
     }
 }

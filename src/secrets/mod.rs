@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use zeroize::Zeroize;
 
 pub mod access;
 pub mod encryption;
@@ -31,7 +32,10 @@ pub enum SecretStatus {
 }
 
 /// Secret
-#[derive(Clone, Serialize, Deserialize)]
+///
+/// This type intentionally does not implement `Clone` to prevent
+/// accidental copies of secret values that would bypass zeroization.
+#[derive(Serialize, Deserialize)]
 pub struct Secret {
     pub id: String,
     pub name: String,
@@ -66,11 +70,7 @@ impl std::fmt::Debug for Secret {
 }
 
 impl Secret {
-    pub fn new(
-        name: impl Into<String>,
-        secret_type: SecretType,
-        value: impl Into<String>,
-    ) -> Self {
+    pub fn new(name: impl Into<String>, secret_type: SecretType, value: impl Into<String>) -> Self {
         let name_str = name.into();
         let id = format!(
             "secret-{}-{}",
@@ -106,12 +106,8 @@ impl Secret {
         if self.status == SecretStatus::Revoked {
             anyhow::bail!("Cannot rotate a revoked secret '{}'", self.name);
         }
-        // Overwrite old value bytes with zeros before dropping to reduce
-        // the window where sensitive data remains in memory.
-        let old_bytes = unsafe { self.value.as_mut_vec() };
-        old_bytes.fill(0);
-        self.value.clear();
-        self.value = new_value.into();
+        let mut old = std::mem::replace(&mut self.value, new_value.into());
+        old.zeroize();
         self.version += 1;
         self.updated_at = Utc::now();
         Ok(())
@@ -119,10 +115,8 @@ impl Secret {
 
     pub fn revoke(&mut self) {
         self.status = SecretStatus::Revoked;
-        // Zero out the secret value before clearing
-        let old_bytes = unsafe { self.value.as_mut_vec() };
-        old_bytes.fill(0);
-        self.value.clear();
+        let mut old = std::mem::take(&mut self.value);
+        old.zeroize();
         self.updated_at = Utc::now();
     }
 
@@ -259,6 +253,12 @@ impl SecretManager {
             .values()
             .filter(|r| r.consumer == consumer)
             .collect()
+    }
+}
+
+impl Drop for Secret {
+    fn drop(&mut self) {
+        self.value.zeroize();
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::config::*;
-use std::sync::LazyLock;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 // ============================================================================
 // Shared feature/firmware/clock presets
@@ -805,13 +805,18 @@ fn talos_template() -> VMConfig {
 fn generate_random_password() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
-    let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%".chars().collect();
-    (0..16).map(|_| chars[rng.gen_range(0..chars.len())]).collect()
+    let chars: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%"
+        .chars()
+        .collect();
+    (0..16)
+        .map(|_| chars[rng.gen_range(0..chars.len())])
+        .collect()
 }
 
 fn default_cloud_init() -> String {
     let password = generate_random_password();
-    format!(r#"#cloud-config
+    format!(
+        r#"#cloud-config
 user: vmrogue
 password: {}
 lock_passwd: false
@@ -823,12 +828,15 @@ packages:
 runcmd:
   - [ systemctl, enable, qemu-guest-agent ]
   - [ systemctl, start, qemu-guest-agent ]
-"#, password)
+"#,
+        password
+    )
 }
 
 fn default_ubuntu_cloud_init() -> String {
     let password = generate_random_password();
-    format!(r#"#cloud-config
+    format!(
+        r#"#cloud-config
 user: ubuntu
 password: {}
 lock_passwd: false
@@ -840,12 +848,15 @@ packages:
 runcmd:
   - [ systemctl, enable, qemu-guest-agent ]
   - [ systemctl, start, qemu-guest-agent ]
-"#, password)
+"#,
+        password
+    )
 }
 
 fn alpine_cloud_init() -> String {
     let password = generate_random_password();
-    format!(r#"#cloud-config
+    format!(
+        r#"#cloud-config
 user: alpine
 password: {}
 lock_passwd: false
@@ -856,7 +867,9 @@ packages:
 runcmd:
   - rc-update add qemu-guest-agent
   - rc-service qemu-guest-agent start
-"#, password)
+"#,
+        password
+    )
 }
 
 #[cfg(test)]

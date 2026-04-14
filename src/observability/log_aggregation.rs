@@ -20,7 +20,13 @@ pub struct LogSource {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum LogSourceType { Pod, Node, VM, Container, System }
+pub enum LogSourceType {
+    Pod,
+    Node,
+    VM,
+    Container,
+    System,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
@@ -32,7 +38,14 @@ pub struct LogEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub enum LogLevel { Trace, Debug, Info, Warn, Error, Fatal }
+pub enum LogLevel {
+    Trace,
+    Debug,
+    Info,
+    Warn,
+    Error,
+    Fatal,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogAggregationConfig {
@@ -42,15 +55,27 @@ pub struct LogAggregationConfig {
 }
 
 impl Default for LogAggregationConfig {
-    fn default() -> Self { Self { max_entries: 50000, retention_hours: 720, default_level: LogLevel::Info } }
+    fn default() -> Self {
+        Self {
+            max_entries: 50000,
+            retention_hours: 720,
+            default_level: LogLevel::Info,
+        }
+    }
 }
 
 impl LogAggregator {
     pub fn new() -> Self {
-        Self { sources: Vec::new(), entries: Vec::new(), config: LogAggregationConfig::default() }
+        Self {
+            sources: Vec::new(),
+            entries: Vec::new(),
+            config: LogAggregationConfig::default(),
+        }
     }
 
-    pub fn add_source(&mut self, source: LogSource) { self.sources.push(source); }
+    pub fn add_source(&mut self, source: LogSource) {
+        self.sources.push(source);
+    }
 
     pub fn add_entry(&mut self, entry: LogEntry) {
         self.entries.push(entry);
@@ -60,12 +85,21 @@ impl LogAggregator {
         }
     }
 
-    pub fn query(&self, source: Option<&str>, level: Option<&LogLevel>, search: Option<&str>, limit: usize) -> Vec<&LogEntry> {
-        self.entries.iter().rev()
+    pub fn query(
+        &self,
+        source: Option<&str>,
+        level: Option<&LogLevel>,
+        search: Option<&str>,
+        limit: usize,
+    ) -> Vec<&LogEntry> {
+        self.entries
+            .iter()
+            .rev()
             .filter(|e| source.is_none_or(|s| e.source == s))
             .filter(|e| level.is_none_or(|l| e.level >= *l))
             .filter(|e| search.is_none_or(|s| e.message.to_lowercase().contains(&s.to_lowercase())))
-            .take(limit).collect()
+            .take(limit)
+            .collect()
     }
 
     pub fn stats(&self) -> HashMap<String, usize> {
@@ -76,9 +110,16 @@ impl LogAggregator {
         counts
     }
 
-    pub fn error_count(&self) -> usize { self.entries.iter().filter(|e| e.level >= LogLevel::Error).count() }
+    pub fn error_count(&self) -> usize {
+        self.entries
+            .iter()
+            .filter(|e| e.level >= LogLevel::Error)
+            .count()
+    }
 }
 
 impl Default for LogAggregator {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

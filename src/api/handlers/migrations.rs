@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{extract::Path, Json, Router, routing::{delete, get}};
+use axum::{
+    Json, Router,
+    extract::Path,
+    routing::{delete, get},
+};
 use serde::{Deserialize, Serialize};
 
 /// Migration response
@@ -37,7 +41,9 @@ async fn list_migrations() -> Json<Vec<MigrationResponse>> {
 }
 
 #[cfg(feature = "web")]
-async fn create_migration(Json(req): Json<CreateMigrationRequest>) -> Json<Option<MigrationResponse>> {
+async fn create_migration(
+    Json(req): Json<CreateMigrationRequest>,
+) -> Json<Option<MigrationResponse>> {
     let _ = req;
     Json(None)
 }

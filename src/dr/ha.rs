@@ -369,7 +369,8 @@ mod tests {
     fn test_ha_config_builder() {
         let config = HAConfig::new("HA")
             .with_mode(HAMode::ActiveActive)
-            .with_replicas(3, 5).unwrap()
+            .with_replicas(3, 5)
+            .unwrap()
             .with_health_check(HealthCheckType::TCP, 15, 3)
             .with_auto_healing(false);
 
@@ -514,7 +515,8 @@ mod tests {
     #[test]
     fn test_group_needs_healing() {
         let config = HAConfig::new("Test HA")
-            .with_replicas(2, 4).unwrap()
+            .with_replicas(2, 4)
+            .unwrap()
             .with_auto_healing(true);
         let mut group = HAGroup::new("Group", config);
 
@@ -584,7 +586,8 @@ mod tests {
         let mut manager = HAManager::new();
 
         let config1 = HAConfig::new("HA1")
-            .with_replicas(2, 4).unwrap()
+            .with_replicas(2, 4)
+            .unwrap()
             .with_auto_healing(true);
         let mut group1 = HAGroup::new("G1", config1);
         let mut m1 = HAMember::new("M1", "vm-1", true);

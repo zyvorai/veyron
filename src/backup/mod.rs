@@ -191,7 +191,11 @@ impl RetentionPolicy {
     /// - `keep_weekly`: keep the most recent backup from each of the last N ISO weeks
     /// - `keep_monthly`: keep the most recent backup from each of the last N months
     /// - `keep_yearly`: keep the most recent backup from each of the last N years
-    pub fn filter_backups(&self, backups: &[(String, DateTime<Utc>)], now: DateTime<Utc>) -> Vec<String> {
+    pub fn filter_backups(
+        &self,
+        backups: &[(String, DateTime<Utc>)],
+        now: DateTime<Utc>,
+    ) -> Vec<String> {
         let mut keep = std::collections::HashSet::new();
 
         // Sort by date descending

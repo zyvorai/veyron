@@ -2,12 +2,15 @@
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Span,
     widgets::{Block, Borders, Clear, Gauge, Paragraph},
-    Frame,
 };
+
+/// Braille spinner animation frames
+const SPINNER_FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProgressBar {
@@ -15,6 +18,7 @@ pub struct ProgressBar {
     pub message: String,
     pub progress: f64, // 0.0 to 1.0
     pub indeterminate: bool,
+    pub frame: usize, // animation frame counter
 }
 
 impl ProgressBar {
@@ -24,6 +28,7 @@ impl ProgressBar {
             message: message.into(),
             progress: 0.0,
             indeterminate: false,
+            frame: 0,
         }
     }
 
@@ -84,8 +89,9 @@ impl ProgressBar {
 
         // Progress bar
         if self.indeterminate {
-            // Spinner animation
-            let spinner = Paragraph::new("⠋ Working...")
+            // Animated spinner
+            let spinner_char = SPINNER_FRAMES[self.frame % SPINNER_FRAMES.len()];
+            let spinner = Paragraph::new(format!("{} {}...", spinner_char, self.message))
                 .alignment(Alignment::Center)
                 .style(
                     Style::default()

@@ -25,8 +25,7 @@ pub struct IngressRule {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/ingress", get(list_ingress))
+    Router::new().route("/ingress", get(list_ingress))
 }
 
 #[cfg(feature = "web")]

@@ -30,11 +30,7 @@ impl AuditEvent {
         let event_id = {
             use rand::Rng;
             let random: u32 = rand::thread_rng().r#gen();
-            format!(
-                "evt-{}-{:08x}",
-                Utc::now().format("%Y%m%d-%H%M%S"),
-                random
-            )
+            format!("evt-{}-{:08x}", Utc::now().format("%Y%m%d-%H%M%S"), random)
         };
         Self {
             event_id,
