@@ -1019,7 +1019,7 @@ async function vmDelete(ns, name) {
 // Render VM row
 function vmRow(vm, showActions) {
   const cls = sc(vm.status);
-  const ns = vm.node !== 'N/A' ? vm.node : 'default';
+  const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
     (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\'default\',\''+vm.name+'\')">VNC</button>' : '') +
@@ -1044,28 +1044,22 @@ async function fetchVMs() {
     const failed=vmData.filter(v=>v.status==='Failed'||v.status==='Error').length;
 
     let totalCpu=0; vmData.forEach(v=>{totalCpu+=parseInt(v.cpu)||1;});
+    let totalMemGb = 0; vmData.forEach(v=>{
+      const m = v.memory || '';
+      if (m.endsWith('Gi')) totalMemGb += parseFloat(m);
+      else if (m.endsWith('Mi')) totalMemGb += parseFloat(m)/1024;
+    });
+
     document.getElementById('stat-cards').innerHTML =
       statCard('blue','&#9889;','Virtual Machines',total,'<span class="stat-badge badge-green">'+running+' active</span>')+
       statCard('orange','&#9881;','Allocated vCPUs',totalCpu,'')+
-      statCard('purple','&#9830;','Total Memory',(totalCpu*2)+' GB','')+
+      statCard('purple','&#9830;','Total Memory',totalMemGb.toFixed(1)+' GB','')+
       statCard('green','&#9733;','Fleet Health',(total>0?Math.round(running/total*100):0)+'%','');
 
     document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs under command';
 
-    const vmUtil=total>0?Math.round(running/total*100):0;
-    const cpuEst=Math.round(vmUtil*.75), memEst=Math.round(vmUtil*.7), diskEst=Math.round(vmUtil*.45);
-    document.getElementById('resource-bars').innerHTML =
-      resBar('CPU Forge',cpuEst,cpuEst>90?'var(--error)':cpuEst>70?'var(--warning)':'var(--spark)')+
-      resBar('Memory',memEst,memEst>90?'var(--error)':'var(--success)')+
-      resBar('Disk',diskEst,'var(--ember)')+
-      resBar('VM Util',vmUtil,'var(--plasma)');
-
-    cpuHistory.push(cpuEst); if(cpuHistory.length>MAX_PTS)cpuHistory.shift();
-    memHistory.push(memEst); if(memHistory.length>MAX_PTS)memHistory.shift();
-    document.getElementById('cpu-current').textContent=cpuEst+'%';
-    document.getElementById('mem-current').textContent=memEst+'%';
-    drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
-    drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');
+    // Fetch real cluster capacity for resource bars
+    fetchOverview();
 
     document.getElementById('dash-vm-list').innerHTML = vmData.length===0 ?
       '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>' :
@@ -1108,11 +1102,43 @@ async function fetchSnapshots() {
     if (!j.success||!j.data||j.data.length===0) { el.innerHTML='<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot from VM details</p></div>'; return; }
     el.innerHTML = j.data.map(s => {
       const ready = s.ready;
+      const safeName = s.name.replace(/'/g, "\\'");
       return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
-        (ready ? '<button class="btn btn-restart" onclick="restoreSnapshot(\'default\',\''+esc(s.name)+'\')">Restore</button>' : '') +
+        (ready ? '<button class="btn btn-restart" onclick="restoreSnapshot(\'default\',\''+safeName+'\')">Restore</button>' : '') +
+        '<button class="btn btn-delete" onclick="deleteSnapshot(\'default\',\''+safeName+'\')">&#10005;</button>' +
         '</div></div>';
     }).join('');
   } catch(e) { document.getElementById('snap-list').innerHTML='<div class="empty-state"><p>Failed to load snapshots</p></div>'; }
+}
+
+// Fetch cluster overview for real resource bars
+async function fetchOverview() {
+  try {
+    const r = await apiFetch('/api/v1/dashboard/overview');
+    const j = await r.json();
+    if (!j.success || !j.data) return;
+    const c = j.data.cluster;
+    const n = j.data.nodes;
+
+    const cpuPct = n.total_cpu_allocatable > 0 ? Math.round((c.total_vcpus_allocated / n.total_cpu_allocatable) * 100) : 0;
+    const memPct = n.total_memory_allocatable_gb > 0 ? Math.round((c.total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) : 0;
+    const vmUtil = c.total_vms > 0 ? Math.round((c.running_vms / c.total_vms) * 100) : 0;
+    const nodeHealth = n.total_nodes > 0 ? Math.round((n.ready_nodes / n.total_nodes) * 100) : 0;
+
+    document.getElementById('resource-bars').innerHTML =
+      resBar('CPU (' + c.total_vcpus_allocated + '/' + n.total_cpu_allocatable + ' cores)', cpuPct, cpuPct>90?'var(--error)':cpuPct>70?'var(--warning)':'var(--spark)') +
+      resBar('Memory (' + c.total_memory_allocated_gb.toFixed(1) + '/' + n.total_memory_allocatable_gb.toFixed(1) + ' GB)', memPct, memPct>90?'var(--error)':'var(--success)') +
+      resBar('Nodes (' + n.ready_nodes + '/' + n.total_nodes + ' ready)', nodeHealth, 'var(--ember)') +
+      resBar('VM Util (' + c.running_vms + '/' + c.total_vms + ' running)', vmUtil, 'var(--plasma)');
+
+    // Update chart data with real values
+    cpuHistory.push(cpuPct); if(cpuHistory.length>MAX_PTS)cpuHistory.shift();
+    memHistory.push(memPct); if(memHistory.length>MAX_PTS)memHistory.shift();
+    document.getElementById('cpu-current').textContent=cpuPct+'%';
+    document.getElementById('mem-current').textContent=memPct+'%';
+    drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
+    drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');
+  } catch {}
 }
 
 // Helpers
@@ -1263,6 +1289,9 @@ document.getElementById('create-modal').addEventListener('click', e => {
 });
 document.getElementById('snap-create-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeSnapModal();
+});
+document.getElementById('vnc-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeVncModal();
 });
 
 // ── VM Detail Panel ──
@@ -1485,6 +1514,16 @@ async function createSnapshot() {
   finally { btn.disabled = false; btn.textContent = 'Create Snapshot'; }
 }
 
+async function deleteSnapshot(ns, snapName) {
+  if (!confirm('Delete snapshot "' + snapName + '"? This cannot be undone.')) return;
+  try {
+    const r = await apiFetch('/api/v1/snapshots/' + ns + '/' + snapName + '/delete', { method: 'POST' });
+    const j = await r.json();
+    if (j.success) { toast('Snapshot "' + snapName + '" deleted', 'success'); fetchSnapshots(); }
+    else toast('Failed: ' + (j.error?.message || 'Unknown'), 'error');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
 async function restoreSnapshot(ns, snapName) {
   if (!confirm('Restore snapshot "' + snapName + '"? The VM must be stopped.')) return;
   try {
@@ -1609,6 +1648,8 @@ function refresh() {
   fetchVMs();
   fetchEvents(currentPage==='events');
   if (currentPage==='snapshots') fetchSnapshots();
+  if (currentPage==='nodes') fetchNodes();
+  if (currentPage==='pods') fetchPods();
   document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
 }
 
