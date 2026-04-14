@@ -481,6 +481,212 @@ body>*{position:relative;z-index:1}
   color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
 }
 .footer-bar span{color:var(--molten);font-weight:700}
+
+/* ═══════════════════════════════════════════════════
+   CREATE VM BUTTON
+   ═══════════════════════════════════════════════════ */
+.btn-create{
+  padding:8px 18px;border-radius:4px;
+  font-family:'Orbitron',monospace;font-size:.65em;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;
+  background:linear-gradient(135deg,var(--molten),var(--ember));
+  color:#fff;border:none;cursor:pointer;
+  transition:all .2s;
+  box-shadow:0 0 15px rgba(255,69,0,.2);
+}
+.btn-create:hover{
+  box-shadow:0 0 25px rgba(255,69,0,.4),0 0 50px rgba(255,69,0,.15);
+  transform:translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL — Forge Chamber
+   ═══════════════════════════════════════════════════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:200;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--bg-card-solid);border:1px solid var(--border-hot);
+  border-radius:var(--radius);width:520px;max-width:90vw;max-height:85vh;
+  overflow-y:auto;position:relative;
+  box-shadow:0 25px 80px rgba(0,0,0,.6),0 0 40px rgba(255,69,0,.1);
+  animation:fade-in .25s cubic-bezier(.16,1,.3,1);
+}
+.modal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--molten),var(--ember),var(--molten),transparent);
+}
+.modal-header{
+  padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);
+}
+.modal-header h2{
+  font-family:'Orbitron',monospace;font-size:.9em;font-weight:700;
+  color:var(--text-bright);letter-spacing:2px;text-transform:uppercase;
+}
+.modal-close{
+  background:none;border:1px solid var(--border);border-radius:4px;
+  color:var(--text-muted);cursor:pointer;width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;font-size:1.1em;
+  transition:all .15s;
+}
+.modal-close:hover{border-color:var(--error);color:var(--error)}
+.modal-body{padding:20px 24px}
+.modal-footer{
+  padding:16px 24px 20px;display:flex;gap:10px;justify-content:flex-end;
+  border-top:1px solid var(--border);
+}
+.form-group{margin-bottom:16px}
+.form-label{
+  display:block;font-family:'Orbitron',monospace;font-size:.6em;font-weight:500;
+  color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:6px;
+}
+.form-input,.form-select{
+  width:100%;padding:10px 14px;border-radius:4px;
+  background:var(--steel);border:1px solid var(--border);
+  color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:.85em;
+  transition:border-color .15s;outline:none;
+}
+.form-input:focus,.form-select:focus{border-color:var(--ember);box-shadow:0 0 10px rgba(255,69,0,.1)}
+.form-select option{background:var(--bg-card-solid);color:var(--text)}
+.form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.btn-cancel{
+  padding:8px 18px;border-radius:4px;
+  font-family:'Orbitron',monospace;font-size:.6em;font-weight:500;
+  letter-spacing:1px;text-transform:uppercase;
+  background:var(--steel);border:1px solid var(--border);
+  color:var(--text-muted);cursor:pointer;transition:all .15s;
+}
+.btn-cancel:hover{border-color:var(--text-muted);color:var(--text)}
+.btn-forge{
+  padding:8px 24px;border-radius:4px;
+  font-family:'Orbitron',monospace;font-size:.6em;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;
+  background:linear-gradient(135deg,var(--molten),var(--ember));
+  color:#fff;border:none;cursor:pointer;transition:all .15s;
+}
+.btn-forge:hover{box-shadow:0 0 20px rgba(255,69,0,.3)}
+.btn-forge:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+
+/* ═══════════════════════════════════════════════════
+   VM DETAIL PANEL
+   ═══════════════════════════════════════════════════ */
+.vm-detail{
+  padding:18px 24px 18px 48px;
+  border-bottom:1px solid rgba(255,100,0,.08);
+  background:rgba(10,10,20,.5);
+  animation:fade-in .25s cubic-bezier(.16,1,.3,1);
+}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.detail-section{
+  background:var(--steel);border-radius:4px;padding:14px 16px;
+  border:1px solid var(--border);
+}
+.detail-section-title{
+  font-family:'Orbitron',monospace;font-size:.55em;font-weight:600;
+  color:var(--ember);letter-spacing:2px;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.detail-section-title::before{
+  content:'';display:inline-block;width:3px;height:12px;
+  background:var(--molten);border-radius:1px;
+}
+.detail-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:4px 0;font-size:.8em;
+}
+.detail-row .lbl{color:var(--text-muted);font-size:.85em}
+.detail-row .val{
+  color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:.85em;
+}
+.detail-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+
+/* ═══════════════════════════════════════════════════
+   SEARCH & FILTER BAR
+   ═══════════════════════════════════════════════════ */
+.filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.filter-bar .form-input,.filter-bar .form-select{
+  max-width:220px;padding:7px 12px;font-size:.8em;
+}
+
+/* ═══════════════════════════════════════════════════
+   TABLE ROWS — Nodes & Pods
+   ═══════════════════════════════════════════════════ */
+.table-row{
+  display:grid;align-items:center;
+  padding:12px 24px;border-bottom:1px solid rgba(255,100,0,.06);
+  font-size:.82em;transition:background .15s;
+}
+.table-row:hover{background:rgba(255,69,0,.03)}
+.table-row:last-child{border-bottom:none}
+.table-header{
+  padding:10px 24px;border-bottom:1px solid var(--border);
+  font-family:'Orbitron',monospace;font-size:.6em;font-weight:600;
+  color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;
+}
+.table-row.node-row{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr}
+.table-header.node-header{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr;display:grid}
+.table-row.pod-row{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr}
+.table-header.pod-header{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr;display:grid}
+.cell-name{font-family:'JetBrains Mono',monospace;color:var(--text-bright);font-weight:500}
+.cell-mono{font-family:'JetBrains Mono',monospace;color:var(--text)}
+.cell-badge{
+  display:inline-block;padding:2px 8px;border-radius:3px;
+  font-family:'Orbitron',monospace;font-size:.8em;font-weight:500;
+  letter-spacing:.5px;
+}
+.cell-badge.ready{background:var(--success-dim);color:var(--success)}
+.cell-badge.not-ready{background:var(--error-dim);color:var(--error)}
+.cell-badge.running{background:var(--success-dim);color:var(--success)}
+.cell-badge.pending{background:var(--warning-dim);color:var(--warning)}
+.cell-badge.failed{background:var(--error-dim);color:var(--error)}
+.cell-badge.succeeded{background:rgba(0,180,255,.1);color:var(--spark)}
+
+/* ═══════════════════════════════════════════════════
+   INTERFACE TABLE — in VM detail
+   ═══════════════════════════════════════════════════ */
+.iface-table{width:100%;font-size:.8em;border-collapse:collapse}
+.iface-table th{
+  font-family:'Orbitron',monospace;font-size:.7em;font-weight:500;
+  color:var(--text-dim);text-align:left;padding:4px 8px;
+  letter-spacing:1px;text-transform:uppercase;
+  border-bottom:1px solid var(--border);
+}
+.iface-table td{
+  padding:4px 8px;color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:.9em;
+}
+
+/* ═══════════════════════════════════════════════════
+   REFRESH SELECTOR
+   ═══════════════════════════════════════════════════ */
+.refresh-select{
+  background:var(--steel);border:1px solid var(--border);
+  color:var(--text-muted);border-radius:3px;padding:2px 6px;
+  font-family:'JetBrains Mono',monospace;font-size:.65em;
+  cursor:pointer;outline:none;
+}
+.refresh-select:focus{border-color:var(--ember)}
+
+/* ═══════════════════════════════════════════════════
+   PROFILE PICKER CARDS
+   ═══════════════════════════════════════════════════ */
+.profile-card{
+  padding:8px 12px;border-radius:4px;cursor:pointer;
+  background:var(--steel);border:1px solid var(--border);
+  transition:all .15s;min-width:80px;text-align:center;
+}
+.profile-card:hover{border-color:var(--ember);background:rgba(255,69,0,.05)}
+.profile-card.selected{border-color:var(--molten);background:rgba(255,69,0,.1);box-shadow:0 0 10px rgba(255,69,0,.1)}
+.profile-card .pc-name{
+  font-family:'Orbitron',monospace;font-size:.55em;font-weight:600;
+  color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;
+}
+.profile-card .pc-spec{font-size:.65em;color:var(--text-dim);margin-top:2px;font-family:'JetBrains Mono',monospace}
 </style>
 </head>
 <body>
@@ -492,10 +698,15 @@ body>*{position:relative;z-index:1}
       <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</button>
       <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
       <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
+      <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
+      <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
       <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
     </div>
   </div>
   <div class="navbar-right">
+    <select class="refresh-select" id="refresh-interval" onchange="setRefreshInterval(this.value)" title="Auto-refresh interval">
+      <option value="5000">5s</option><option value="10000">10s</option><option value="30000">30s</option><option value="0">Off</option>
+    </select>
     <span class="refresh-text" id="last-refresh"></span>
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
@@ -525,16 +736,51 @@ body>*{position:relative;z-index:1}
 <!-- VMS PAGE -->
 <div class="page" id="page-vms">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Virtual Machines</h1><p>KubeVirt fleet command</p></div><div class="page-header-right" id="vm-count"></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Fleet Roster</span></div><div id="vm-full-list"></div></div>
+  <div class="page-header"><div><h1>Virtual Machines</h1><p>KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button class="btn-create" onclick="openCreateModal()">+ Forge VM</button></div></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Fleet Roster</span>
+      <div class="filter-bar">
+        <input type="text" class="form-input" id="vm-search" placeholder="Search VMs..." oninput="filterVMs()">
+        <select class="form-select" id="vm-filter-status" onchange="filterVMs()">
+          <option value="">All</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="Error">Error</option>
+        </select>
+      </div>
+    </div>
+    <div id="vm-full-list"></div>
+  </div>
 </div>
 </div>
 
 <!-- SNAPSHOTS PAGE -->
 <div class="page" id="page-snapshots">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div></div>
+  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div><button class="btn-create" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
   <div class="card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
+</div>
+</div>
+
+<!-- NODES PAGE -->
+<div class="page" id="page-nodes">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div><div class="page-header-right" id="node-count"></div></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Cluster Nodes</span></div>
+    <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
+    <div id="node-list"></div>
+  </div>
+</div>
+</div>
+
+<!-- PODS PAGE -->
+<div class="page" id="page-pods">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div><div class="page-header-right" id="pod-count"></div></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Pods</span></div>
+    <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span></div>
+    <div id="pod-list"></div>
+  </div>
 </div>
 </div>
 
@@ -546,9 +792,112 @@ body>*{position:relative;z-index:1}
 </div>
 </div>
 
+<!-- CREATE VM MODAL -->
+<div class="modal-overlay" id="create-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Forge New VM</h2>
+      <button class="modal-close" onclick="closeCreateModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">VM Name</label>
+        <input type="text" class="form-input" id="vm-name" placeholder="my-vm" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Template</label>
+        <select class="form-select" id="vm-template" onchange="onTemplateChange()">
+          <option value="">-- Select template --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Profile</label>
+        <div id="profile-picker" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Namespace</label>
+        <input type="text" class="form-input" id="vm-namespace" placeholder="default" value="default">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">CPU Cores</label>
+          <input type="number" class="form-input" id="vm-cpus" min="1" max="64" value="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Memory</label>
+          <input type="text" class="form-input" id="vm-memory" placeholder="2Gi" value="2Gi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Disk Size</label>
+          <input type="text" class="form-input" id="vm-disk" placeholder="10Gi" value="10Gi">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cloud-Init (optional)</label>
+        <textarea class="form-input" id="vm-cloudinit" rows="4" placeholder="#cloud-config&#10;user: vmrogue&#10;password: changeme&#10;chpasswd: { expire: false }" style="font-size:.8em;resize:vertical"></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+        <input type="checkbox" id="vm-autostart" style="accent-color:var(--molten)">
+        <label for="vm-autostart" style="font-size:.8em;color:var(--text-muted);cursor:pointer">Start VM after creation</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn-forge" id="btn-forge-vm" onclick="forgeVM()">Forge VM</button>
+    </div>
+  </div>
+</div>
+
+<!-- SNAPSHOT CREATE MODAL -->
+<div class="modal-overlay" id="snap-create-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <h2>Create Snapshot</h2>
+      <button class="modal-close" onclick="closeSnapModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">VM Name</label>
+        <input type="text" class="form-input" id="snap-vm-name" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Snapshot Name (optional)</label>
+        <input type="text" class="form-input" id="snap-name" placeholder="Auto-generated if empty">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeSnapModal()">Cancel</button>
+      <button class="btn-forge" id="btn-create-snap" onclick="createSnapshot()">Create Snapshot</button>
+    </div>
+  </div>
+</div>
+
+<!-- VNC CONSOLE MODAL -->
+<div class="modal-overlay" id="vnc-modal">
+  <div class="modal" style="width:92vw;max-width:1280px;height:82vh">
+    <div class="modal-header">
+      <h2 id="vnc-title">Console: --</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="vnc-status" style="font-size:.7em;color:var(--text-dim);font-family:'JetBrains Mono',monospace">Disconnected</span>
+        <button class="btn btn-restart" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
+        <button class="btn btn-start" onclick="toggleVncFullscreen()">Fullscreen</button>
+        <button class="btn btn-stop" onclick="reconnectVnc()">Reconnect</button>
+        <button class="modal-close" onclick="closeVncModal()">&#10005;</button>
+      </div>
+    </div>
+    <div id="vnc-container" style="width:100%;height:calc(100% - 56px);background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden">
+      <div id="vnc-placeholder" style="color:var(--text-dim);font-family:'Orbitron',monospace;font-size:.8em;letter-spacing:2px">Loading VNC...</div>
+    </div>
+  </div>
+</div>
+
 <div class="footer-bar">Forged with <span>Rust</span> &mdash; VMRogue v0.2.0</div>
 </div>
 
+<script type="module">
+import RFB from 'https://cdn.jsdelivr.net/npm/@novnc/novnc@1.5.0/+esm';
+window.RFB = RFB;
+</script>
 <script>
 // State
 let currentPage = 'dashboard';
@@ -564,6 +913,8 @@ function navigate(page) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   if (page === 'snapshots') fetchSnapshots();
   if (page === 'events') fetchEvents(true);
+  if (page === 'nodes') fetchNodes();
+  if (page === 'pods') fetchPods();
 }
 
 // Toast notifications
@@ -675,12 +1026,14 @@ function vmRow(vm, showActions) {
   const ns = vm.node !== 'N/A' ? vm.node : 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (!isRunning ? '<button class="btn btn-start" onclick="vmAction(\'default\',\''+vm.name+'\',\'start\')">&#9654; Start</button>' : '') +
-    (isRunning ? '<button class="btn btn-stop" onclick="vmAction(\'default\',\''+vm.name+'\',\'stop\')">&#9632; Stop</button>' : '') +
-    '<button class="btn btn-restart" onclick="vmAction(\'default\',\''+vm.name+'\',\'restart\')">&#8635; Restart</button>' +
-    '<button class="btn btn-delete" onclick="vmDelete(\'default\',\''+vm.name+'\')">&#10005; Delete</button>' +
+    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\'default\',\''+vm.name+'\')">VNC</button>' : '') +
+    (!isRunning ? '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'default\',\''+vm.name+'\',\'start\')">&#9654;</button>' : '') +
+    (isRunning ? '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'default\',\''+vm.name+'\',\'stop\')">&#9632;</button>' : '') +
+    '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'default\',\''+vm.name+'\',\'restart\')">&#8635;</button>' +
+    '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'default\',\''+vm.name+'\')">&#10005;</button>' +
     '</div>' : '';
-  return '<div class="vm-row"><div class="vm-info"><div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+vm.name+'</div><div class="vm-ns">'+ns+'</div></div></div><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+vm.ip:'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div></div>';
+  const clickAttr = showActions ? ' onclick="toggleVmDetail(\'default\',\''+vm.name+'\')" style="cursor:pointer"' : '';
+  return '<div class="vm-row"'+clickAttr+'><div class="vm-info"><div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+vm.name+'</div><div class="vm-ns">'+ns+'</div></div></div><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+vm.ip:'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div></div>';
 }
 
 // Fetch VMs
@@ -759,7 +1112,9 @@ async function fetchSnapshots() {
     if (!j.success||!j.data||j.data.length===0) { el.innerHTML='<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot from VM details</p></div>'; return; }
     el.innerHTML = j.data.map(s => {
       const ready = s.ready;
-      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span></div></div>';
+      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
+        (ready ? '<button class="btn btn-restart" onclick="restoreSnapshot(\'default\',\''+esc(s.name)+'\')">Restore</button>' : '') +
+        '</div></div>';
     }).join('');
   } catch(e) { document.getElementById('snap-list').innerHTML='<div class="empty-state"><p>Failed to load snapshots</p></div>'; }
 }
@@ -777,6 +1132,467 @@ function updateHealth(ok,msg) {
   document.getElementById('health-text').textContent=ok?'Online':(msg||'Offline');
 }
 
+// ── Create VM ──
+let templateCache = [];
+
+async function fetchTemplates() {
+  try {
+    const r = await apiFetch('/api/v1/templates');
+    const j = await r.json();
+    if (j.success && j.data) {
+      templateCache = j.data;
+      const sel = document.getElementById('vm-template');
+      sel.innerHTML = '<option value="">-- Select template --</option>';
+      j.data.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.name;
+        opt.textContent = t.name + ' (' + t.cpu + ' CPU, ' + t.memory + ', ' + t.disk + ')';
+        sel.appendChild(opt);
+      });
+    }
+  } catch {}
+}
+
+function onTemplateChange() {
+  const name = document.getElementById('vm-template').value;
+  const tpl = templateCache.find(t => t.name === name);
+  if (tpl) {
+    document.getElementById('vm-cpus').value = tpl.cpu;
+    document.getElementById('vm-memory').value = tpl.memory;
+    document.getElementById('vm-disk').value = tpl.disk;
+  }
+}
+
+let profileCache = [];
+let selectedProfile = '';
+
+async function fetchProfiles() {
+  try {
+    const r = await apiFetch('/api/v1/profiles');
+    const j = await r.json();
+    if (j.success && j.data) {
+      profileCache = j.data;
+      renderProfilePicker();
+    }
+  } catch {}
+}
+
+function renderProfilePicker() {
+  const el = document.getElementById('profile-picker');
+  el.innerHTML = profileCache.map(p =>
+    '<div class="profile-card' + (selectedProfile === p.name ? ' selected' : '') + '" onclick="selectProfile(\'' + p.name + '\')">' +
+    '<div class="pc-name">' + esc(p.name) + '</div>' +
+    '<div class="pc-spec">' + p.cpu_cores + 'C / ' + esc(p.memory) + '</div>' +
+    '</div>'
+  ).join('');
+}
+
+function selectProfile(name) {
+  if (selectedProfile === name) { selectedProfile = ''; renderProfilePicker(); return; }
+  selectedProfile = name;
+  const p = profileCache.find(x => x.name === name);
+  if (p) {
+    document.getElementById('vm-cpus').value = p.cpu_cores;
+    document.getElementById('vm-memory').value = p.memory;
+    document.getElementById('vm-disk').value = p.disk_size;
+  }
+  renderProfilePicker();
+}
+
+function openCreateModal() {
+  if (templateCache.length === 0) fetchTemplates();
+  if (profileCache.length === 0) fetchProfiles();
+  selectedProfile = '';
+  document.getElementById('create-modal').classList.add('open');
+  document.getElementById('vm-name').value = '';
+  document.getElementById('vm-cloudinit').value = '';
+  document.getElementById('vm-autostart').checked = false;
+  document.getElementById('vm-name').focus();
+  renderProfilePicker();
+}
+
+function closeCreateModal() {
+  document.getElementById('create-modal').classList.remove('open');
+}
+
+async function forgeVM() {
+  const name = document.getElementById('vm-name').value.trim();
+  if (!name) { toast('VM name is required', 'error'); return; }
+
+  const btn = document.getElementById('btn-forge-vm');
+  btn.disabled = true;
+  btn.textContent = 'Forging...';
+
+  const cloudInit = document.getElementById('vm-cloudinit').value.trim();
+  const body = {
+    name: name,
+    namespace: document.getElementById('vm-namespace').value.trim() || 'default',
+    template: document.getElementById('vm-template').value || null,
+    profile: selectedProfile || null,
+    cpus: parseInt(document.getElementById('vm-cpus').value) || 1,
+    memory: document.getElementById('vm-memory').value.trim() || '2Gi',
+    disk_size: document.getElementById('vm-disk').value.trim() || '10Gi',
+    cloud_init: cloudInit || null,
+    start: document.getElementById('vm-autostart').checked,
+  };
+
+  try {
+    const r = await apiFetch('/api/v1/vms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (j.success) {
+      toast('VM "' + name + '" forged successfully', 'success');
+      closeCreateModal();
+      setTimeout(refresh, 1500);
+    } else {
+      toast('Failed: ' + (j.error?.message || 'Unknown error'), 'error');
+    }
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Forge VM';
+  }
+}
+
+// Close modals on Escape or overlay click
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeCreateModal(); closeSnapModal(); closeVncModal(); }
+});
+document.getElementById('create-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeCreateModal();
+});
+document.getElementById('snap-create-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSnapModal();
+});
+
+// ── VM Detail Panel ──
+let expandedVm = null;
+
+function toggleVmDetail(ns, name) {
+  const key = ns + '/' + name;
+  const existing = document.getElementById('detail-' + name);
+  if (existing) {
+    existing.remove();
+    expandedVm = null;
+    return;
+  }
+  // Collapse any other open detail
+  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
+  expandedVm = key;
+  fetchVmDetail(ns, name);
+}
+
+async function fetchVmDetail(ns, name) {
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name);
+    const j = await r.json();
+    if (!j.success || !j.data) return;
+    const vm = j.data;
+    const vmi = vm.vmi_status || {};
+    const ifaces = vmi.interfaces || [];
+    const guestOS = vmi.guest_os_info;
+
+    let html = '<div class="vm-detail" id="detail-' + name + '"><div class="detail-grid">';
+
+    // Status section
+    html += '<div class="detail-section"><div class="detail-section-title">Status</div>';
+    html += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
+    html += detailRow('Ready', vm.ready ? 'Yes' : 'No');
+    html += detailRow('Node', vm.node || 'N/A');
+    html += detailRow('Age', vm.age || 'N/A');
+    html += detailRow('IP', vm.ip || 'N/A');
+    html += '</div>';
+
+    // Resources section
+    html += '<div class="detail-section"><div class="detail-section-title">Resources</div>';
+    html += detailRow('CPU', vm.cpu || 'N/A');
+    html += detailRow('Memory', vm.memory || 'N/A');
+    html += detailRow('Disk', vm.disk || 'N/A');
+    html += '</div>';
+
+    // Network interfaces
+    if (ifaces.length > 0) {
+      html += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
+      html += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
+      ifaces.forEach(i => {
+        html += '<tr><td>' + esc(i.interface_name || i.name || '-') + '</td><td>' + esc(i.ip_address || i.ip || '-') + '</td><td>' + esc(i.mac || '-') + '</td></tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    // Guest OS
+    if (guestOS) {
+      html += '<div class="detail-section"><div class="detail-section-title">Guest OS</div>';
+      html += detailRow('OS', guestOS.name || guestOS.id || 'Unknown');
+      if (guestOS.version) html += detailRow('Version', guestOS.version);
+      if (guestOS.kernel_release) html += detailRow('Kernel', guestOS.kernel_release);
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    html += '</div>';
+
+    // Action buttons
+    html += '<div class="detail-actions">';
+    if (vm.status === 'Running') {
+      html += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; Console</button>';
+    }
+    html += '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'start\')">&#9654; Start</button>';
+    html += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
+    html += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
+    html += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
+    html += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
+    html += '</div>';
+
+    // Security placeholder (loaded async)
+    html += '<div id="security-' + name + '"></div>';
+    html += '</div>';
+
+    // Insert after the VM row
+    const rows = document.querySelectorAll('#vm-full-list .vm-row');
+    for (const row of rows) {
+      if (row.querySelector('.vm-name')?.textContent === name) {
+        row.insertAdjacentHTML('afterend', html);
+        break;
+      }
+    }
+    // Async load security posture
+    fetchSecurity(ns, name).then(secHtml => {
+      const el = document.getElementById('security-' + name);
+      if (el && secHtml) el.innerHTML = secHtml;
+    });
+  } catch (e) { toast('Failed to load VM details', 'error'); }
+}
+
+function detailRow(label, value) {
+  return '<div class="detail-row"><span class="lbl">' + label + '</span><span class="val">' + esc(String(value)) + '</span></div>';
+}
+
+// ── Search & Filter ──
+function filterVMs() {
+  const q = (document.getElementById('vm-search').value || '').toLowerCase();
+  const statusFilter = document.getElementById('vm-filter-status').value;
+  const filtered = vmData.filter(v => {
+    if (q && !v.name.toLowerCase().includes(q)) return false;
+    if (statusFilter && v.status !== statusFilter) return false;
+    return true;
+  });
+  document.getElementById('vm-full-list').innerHTML = filtered.length === 0 ?
+    '<div class="empty-state"><div class="icon">&#9881;</div><p>No VMs match filter</p></div>' :
+    filtered.map(v => vmRow(v, true)).join('');
+}
+
+// ── Nodes ──
+async function fetchNodes() {
+  try {
+    const r = await apiFetch('/api/v1/nodes');
+    const j = await r.json();
+    const el = document.getElementById('node-list');
+    if (!j.success || !j.data || j.data.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
+      return;
+    }
+    document.getElementById('node-count').textContent = j.data.length + ' nodes';
+    el.innerHTML = j.data.map(n => {
+      const statusCls = n.status === 'Ready' ? 'ready' : 'not-ready';
+      const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
+      return '<div class="table-row node-row">' +
+        '<span class="cell-name">' + esc(n.name) + '</span>' +
+        '<span><span class="cell-badge ' + statusCls + '">' + esc(n.status) + '</span></span>' +
+        '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
+        '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
+        '<span class="cell-mono">' + memGb + '</span>' +
+        '<span class="cell-mono">' + esc(n.kubelet_version) + '</span>' +
+        '<span class="cell-mono" style="font-size:.85em">' + esc(n.os_image) + '</span>' +
+        '</div>';
+    }).join('');
+  } catch (e) { document.getElementById('node-list').innerHTML = '<div class="empty-state"><p>Failed to load nodes</p></div>'; }
+}
+
+function parseMemK8s(s) {
+  if (!s) return 0;
+  if (s.endsWith('Ki')) return parseFloat(s) * 1024;
+  if (s.endsWith('Mi')) return parseFloat(s) * 1024 * 1024;
+  if (s.endsWith('Gi')) return parseFloat(s) * 1024 * 1024 * 1024;
+  return parseFloat(s) || 0;
+}
+
+// ── Pods ──
+async function fetchPods() {
+  try {
+    const r = await apiFetch('/api/v1/pods');
+    const j = await r.json();
+    const el = document.getElementById('pod-list');
+    if (!j.success || !j.data || j.data.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No pods found</p></div>';
+      return;
+    }
+    document.getElementById('pod-count').textContent = j.data.length + ' pods';
+    el.innerHTML = j.data.map(p => {
+      const phaseCls = p.phase === 'Running' ? 'running' : p.phase === 'Pending' ? 'pending' : p.phase === 'Failed' ? 'failed' : 'succeeded';
+      return '<div class="table-row pod-row">' +
+        '<span class="cell-name">' + esc(p.name) + '</span>' +
+        '<span><span class="cell-badge ' + phaseCls + '">' + esc(p.phase) + '</span></span>' +
+        '<span class="cell-mono">' + esc(p.node_name) + '</span>' +
+        '<span class="cell-mono">' + esc(p.ip) + '</span>' +
+        '<span class="cell-mono">' + p.restarts + '</span>' +
+        '<span class="cell-mono">' + esc(p.age) + '</span>' +
+        '</div>';
+    }).join('');
+  } catch (e) { document.getElementById('pod-list').innerHTML = '<div class="empty-state"><p>Failed to load pods</p></div>'; }
+}
+
+// ── Snapshot Create/Restore ──
+let snapNs = 'default';
+
+function openSnapModalPick() {
+  if (vmData.length === 0) { toast('No VMs available', 'error'); return; }
+  const name = prompt('Enter VM name to snapshot:\n\nAvailable: ' + vmData.map(v => v.name).join(', '));
+  if (name) openSnapModalFor('default', name.trim());
+}
+
+function openSnapModalFor(ns, vmName) {
+  snapNs = ns;
+  document.getElementById('snap-vm-name').value = vmName;
+  document.getElementById('snap-name').value = '';
+  document.getElementById('snap-create-modal').classList.add('open');
+}
+function closeSnapModal() {
+  document.getElementById('snap-create-modal').classList.remove('open');
+}
+
+async function createSnapshot() {
+  const vmName = document.getElementById('snap-vm-name').value;
+  const snapName = document.getElementById('snap-name').value.trim() || null;
+  const btn = document.getElementById('btn-create-snap');
+  btn.disabled = true; btn.textContent = 'Creating...';
+  try {
+    const r = await apiFetch('/api/v1/snapshots/' + snapNs + '/' + vmName + '/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot_name: snapName }),
+    });
+    const j = await r.json();
+    if (j.success) {
+      toast('Snapshot created for ' + vmName, 'success');
+      closeSnapModal();
+      if (currentPage === 'snapshots') fetchSnapshots();
+    } else {
+      toast('Failed: ' + (j.error?.message || 'Unknown'), 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Create Snapshot'; }
+}
+
+async function restoreSnapshot(ns, snapName) {
+  if (!confirm('Restore snapshot "' + snapName + '"? The VM must be stopped.')) return;
+  try {
+    const r = await apiFetch('/api/v1/snapshots/' + ns + '/' + snapName + '/restore', { method: 'POST' });
+    const j = await r.json();
+    if (j.success) { toast('Restore initiated for ' + snapName, 'success'); setTimeout(refresh, 2000); }
+    else toast('Failed: ' + (j.error?.message || 'Unknown'), 'error');
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── VNC Console ──
+let vncRfb = null;
+let vncVmNs = '', vncVmName = '';
+
+function openVncConsole(ns, name) {
+  vncVmNs = ns; vncVmName = name;
+  document.getElementById('vnc-title').textContent = 'Console: ' + name;
+  document.getElementById('vnc-modal').classList.add('open');
+  document.getElementById('vnc-status').textContent = 'Connecting...';
+  document.getElementById('vnc-placeholder').style.display = 'block';
+  connectVnc();
+}
+
+function connectVnc() {
+  if (vncRfb) { vncRfb.disconnect(); vncRfb = null; }
+  const container = document.getElementById('vnc-container');
+  const placeholder = document.getElementById('vnc-placeholder');
+
+  if (!window.RFB) {
+    placeholder.textContent = 'noVNC loading... retry in 2s';
+    setTimeout(connectVnc, 2000);
+    return;
+  }
+
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const apiKey = getApiKey();
+  const url = proto + '//' + location.host + '/api/v1/vms/' + vncVmNs + '/' + vncVmName + '/vnc?token=' + encodeURIComponent(apiKey);
+
+  placeholder.style.display = 'none';
+  try {
+    vncRfb = new window.RFB(container, url, { wsProtocols: ['binary'] });
+    vncRfb.scaleViewport = true;
+    vncRfb.resizeSession = true;
+    vncRfb.addEventListener('connect', () => {
+      document.getElementById('vnc-status').textContent = 'Connected';
+      document.getElementById('vnc-status').style.color = 'var(--success)';
+    });
+    vncRfb.addEventListener('disconnect', (e) => {
+      document.getElementById('vnc-status').textContent = e.detail.clean ? 'Disconnected' : 'Connection lost';
+      document.getElementById('vnc-status').style.color = 'var(--error)';
+    });
+  } catch (e) {
+    placeholder.style.display = 'block';
+    placeholder.textContent = 'VNC error: ' + e.message;
+  }
+}
+
+function closeVncModal() {
+  document.getElementById('vnc-modal').classList.remove('open');
+  if (vncRfb) { vncRfb.disconnect(); vncRfb = null; }
+}
+
+function reconnectVnc() { connectVnc(); }
+
+function sendCtrlAltDel() {
+  if (vncRfb) vncRfb.sendCtrlAltDel();
+}
+
+function toggleVncFullscreen() {
+  const el = document.getElementById('vnc-modal');
+  if (!document.fullscreenElement) el.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
+
+// ── Security Posture ──
+async function fetchSecurity(ns, name) {
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/security');
+    const j = await r.json();
+    if (!j.success || !j.data) return '';
+    const d = j.data;
+    const scoreColor = d.score >= 80 ? 'var(--success)' : d.score >= 50 ? 'var(--warning)' : 'var(--error)';
+    let html = '<div class="detail-section"><div class="detail-section-title">Security Posture</div>';
+    html += '<div class="detail-row"><span class="lbl">Score</span><span class="val" style="color:' + scoreColor + ';font-weight:700;font-size:1.1em">' + d.score + '/100</span></div>';
+    d.checks.forEach(c => {
+      const icon = c.pass ? '<span style="color:var(--success)">&#10003;</span>' : '<span style="color:var(--error)">&#10007;</span>';
+      html += '<div class="detail-row"><span class="lbl">' + icon + ' ' + esc(c.name) + '</span><span class="val" style="font-size:.8em">' + esc(c.detail) + '</span></div>';
+    });
+    html += '</div>';
+    return html;
+  } catch { return ''; }
+}
+
+// ── Refresh Interval ──
+let refreshTimer = null;
+let refreshInterval = parseInt(localStorage.getItem('vmrogue_refresh') || '5000');
+
+function setRefreshInterval(val) {
+  refreshInterval = parseInt(val);
+  localStorage.setItem('vmrogue_refresh', val);
+  if (refreshTimer) clearInterval(refreshTimer);
+  if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
+}
+
 // Main refresh loop
 function refresh() {
   fetchVMs();
@@ -786,8 +1602,13 @@ function refresh() {
 }
 
 window.addEventListener('load', () => {
+  // Set saved refresh interval
+  const sel = document.getElementById('refresh-interval');
+  sel.value = refreshInterval || '5000';
+
   refresh();
-  setInterval(refresh, 5000);
+  fetchTemplates();
+  if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   window.addEventListener('resize', () => {
     drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
     drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');

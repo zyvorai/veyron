@@ -5,11 +5,14 @@
 #[cfg(feature = "web")]
 pub mod web {
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
+    use crate::config::VMConfigBuilder;
     use crate::kube::KubeClient;
+    use crate::profiles::PROFILES;
+    use crate::templates::TEMPLATES;
     use crate::tui::state::VmInfo;
     use axum::{
         Router,
-        extract::{DefaultBodyLimit, Path, Query, State},
+        extract::{DefaultBodyLimit, Path, Query, State, WebSocketUpgrade, ws::{Message, WebSocket}},
         http::{HeaderMap, StatusCode, header},
         middleware,
         response::{Html, IntoResponse, Json},
@@ -215,7 +218,7 @@ pub mod web {
         };
         drop(s);
 
-        // Check X-API-Key header first, then Authorization: Bearer
+        // Check X-API-Key header, Authorization: Bearer, or ?token= query param (for WebSocket)
         let provided_key = headers
             .get("x-api-key")
             .and_then(|v| v.to_str().ok())
@@ -225,6 +228,15 @@ pub mod web {
                     .get(header::AUTHORIZATION)
                     .and_then(|v| v.to_str().ok())
                     .and_then(|v| v.strip_prefix("Bearer ").map(|s| s.to_string()))
+            })
+            .or_else(|| {
+                request
+                    .uri()
+                    .query()
+                    .and_then(|q| {
+                        q.split('&')
+                            .find_map(|p| p.strip_prefix("token=").map(|s| s.to_string()))
+                    })
             });
 
         match provided_key {
@@ -274,7 +286,7 @@ pub mod web {
         headers.insert("x-frame-options", "DENY".parse().unwrap());
         headers.insert("cache-control", "no-store".parse().unwrap());
         headers.insert("x-xss-protection", "0".parse().unwrap());
-        headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'".parse().unwrap());
+        headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:".parse().unwrap());
         headers.insert("referrer-policy", "no-referrer".parse().unwrap());
         // HSTS: instruct browsers to only use HTTPS for 1 year
         headers.insert(
@@ -329,11 +341,16 @@ pub mod web {
             .route("/dashboard", get(dashboard_handler))
             // VM endpoints
             .route("/api/v1/vms", get(list_vms_handler))
+            .route("/api/v1/vms", post(create_vm_handler))
             .route("/api/v1/vms/:ns/:name", get(get_vm_handler))
             .route("/api/v1/vms/:ns/:name", delete(delete_vm_handler))
+            // Templates
+            .route("/api/v1/templates", get(list_templates_handler))
             .route("/api/v1/vms/:ns/:name/start", post(start_vm_handler))
             .route("/api/v1/vms/:ns/:name/stop", post(stop_vm_handler))
             .route("/api/v1/vms/:ns/:name/restart", post(restart_vm_handler))
+            .route("/api/v1/vms/:ns/:name/vnc", get(vnc_websocket_handler))
+            .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
             // Snapshots
             .route("/api/v1/snapshots", get(list_snapshots_handler))
             .route("/api/v1/snapshots/:ns/:vm", get(list_vm_snapshots_handler))
@@ -341,9 +358,24 @@ pub mod web {
                 "/api/v1/snapshots/:ns/:name/delete",
                 post(delete_snapshot_handler),
             )
+            // Snapshots - create & restore
+            .route(
+                "/api/v1/snapshots/:ns/:vm/create",
+                post(create_snapshot_handler),
+            )
+            .route(
+                "/api/v1/snapshots/:ns/:name/restore",
+                post(restore_snapshot_handler),
+            )
             // Events
             .route("/api/v1/events", get(list_events_handler))
             .route("/api/v1/events/recent", get(recent_events_handler))
+            // Cluster resources
+            .route("/api/v1/nodes", get(list_nodes_handler))
+            .route("/api/v1/pods", get(list_pods_handler))
+            .route("/api/v1/profiles", get(list_profiles_handler))
+            .route("/api/v1/namespaces", get(list_namespaces_handler))
+            .route("/api/v1/activity", get(activity_feed_handler))
             // Dashboard overview
             .route(
                 "/api/v1/dashboard/overview",
@@ -585,6 +617,316 @@ pub mod web {
         }
     }
 
+    // ── VNC Console WebSocket Proxy ─────────────────────────────
+
+    async fn vnc_websocket_handler(
+        ws: WebSocketUpgrade,
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        // Check VM is running
+        match client.is_running(&ns, &name).await {
+            Ok(true) => {}
+            Ok(false) => {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    "VM is not running",
+                )
+                    .into_response();
+            }
+            Err(_) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to check VM status",
+                )
+                    .into_response();
+            }
+        }
+
+        ws.on_upgrade(move |socket| vnc_proxy(socket, client, ns, name))
+            .into_response()
+    }
+
+    async fn vnc_proxy(
+        mut client_ws: WebSocket,
+        _kube_client: KubeClient,
+        ns: String,
+        name: String,
+    ) {
+        use tokio_tungstenite::tungstenite;
+
+        // Get the K8s API server URL and auth from kube config
+        let config = match kube::Config::infer().await {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("Failed to infer kube config for VNC: {}", e);
+                let _ = client_ws
+                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                        code: 1011,
+                        reason: "Failed to get kube config".into(),
+                    })))
+                    .await;
+                return;
+            }
+        };
+
+        // Build the VNC subresource WebSocket URL
+        let base_url = config.cluster_url.to_string();
+        let base = base_url.trim_end_matches('/');
+        let vnc_path = format!(
+            "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/vnc",
+            ns, name
+        );
+        let ws_url = base.replace("https://", "wss://").replace("http://", "ws://")
+            + &vnc_path;
+
+        // Build TLS connector that trusts the K8s API server (accept self-signed certs)
+        let connector = {
+            // Use rustls with custom config that skips cert verification for K8s self-signed certs
+            let tls_config = rustls::ClientConfig::builder()
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
+                .with_no_client_auth();
+            Some(tokio_tungstenite::Connector::Rustls(Arc::new(tls_config)))
+        };
+
+        // Build the WebSocket request with auth headers
+        // Extract host from URL for Host header
+        let host = config
+            .cluster_url
+            .host()
+            .unwrap_or("localhost")
+            .to_string();
+
+        let mut request = tungstenite::http::Request::builder()
+            .uri(&ws_url)
+            .header("Host", &host);
+
+        // Add bearer token auth - read service account token from well-known path
+        let token_path = std::env::var("KUBECONFIG")
+            .ok()
+            .and_then(|_| None)
+            .or_else(|| {
+                let sa_token = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+                if std::path::Path::new(sa_token).exists() {
+                    Some(sa_token.to_string())
+                } else {
+                    None
+                }
+            });
+        if let Some(path) = token_path {
+            if let Ok(token) = std::fs::read_to_string(&path) {
+                request = request.header("Authorization", format!("Bearer {}", token.trim()));
+            }
+        } else {
+            // Try extracting from kubeconfig file
+            if let Ok(kubeconfig_path) = std::env::var("KUBECONFIG") {
+                if let Ok(contents) = std::fs::read_to_string(&kubeconfig_path) {
+                    // Look for token in kubeconfig
+                    for line in contents.lines() {
+                        let trimmed = line.trim();
+                        if trimmed.starts_with("token:") {
+                            let token = trimmed.trim_start_matches("token:").trim().trim_matches('"');
+                            request = request.header("Authorization", format!("Bearer {}", token));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        let request = match request.body(()) {
+            Ok(r) => r,
+            Err(e) => {
+                log::error!("Failed to build VNC WS request: {}", e);
+                return;
+            }
+        };
+
+        // Connect to K8s API server VNC subresource
+        let (mut k8s_ws, _) =
+            match tokio_tungstenite::connect_async_tls_with_config(request, None, false, connector)
+                .await
+            {
+                Ok(conn) => conn,
+                Err(e) => {
+                    log::error!("Failed to connect to VNC subresource: {}", e);
+                    let _ = client_ws
+                        .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                            code: 1011,
+                            reason: "Failed to connect to VNC".into(),
+                        })))
+                        .await;
+                    return;
+                }
+            };
+
+        use futures_util::{SinkExt, StreamExt};
+
+        // Bidirectional proxy
+        loop {
+            tokio::select! {
+                // Client (browser) → K8s VNC
+                msg = client_ws.recv() => {
+                    match msg {
+                        Some(Ok(Message::Binary(data))) => {
+                            if k8s_ws.send(tungstenite::Message::Binary(data.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(Message::Text(text))) => {
+                            if k8s_ws.send(tungstenite::Message::Text(text.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(Message::Close(_))) | None => break,
+                        _ => {}
+                    }
+                }
+                // K8s VNC → Client (browser)
+                msg = k8s_ws.next() => {
+                    match msg {
+                        Some(Ok(tungstenite::Message::Binary(data))) => {
+                            if client_ws.send(Message::Binary(data.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(tungstenite::Message::Text(text))) => {
+                            if client_ws.send(Message::Text(text.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(tungstenite::Message::Close(_))) | None => break,
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        // Clean close
+        let _ = k8s_ws.close(None).await;
+        let _ = client_ws
+            .send(Message::Close(None))
+            .await;
+    }
+
+    // ── VM Security Posture ──────────────────────────────────────
+
+    async fn vm_security_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        match client.get_vm(&ns, &name).await {
+            Ok(vm) => {
+                let domain = &vm.spec.template.spec.domain;
+                let mut checks = Vec::new();
+                let mut score = 100u32;
+
+                // Check Secure Boot
+                let has_secure_boot = domain
+                    .firmware
+                    .as_ref()
+                    .and_then(|f| f.bootloader.as_ref())
+                    .and_then(|b| b.efi.as_ref())
+                    .is_some_and(|e| e.secure_boot.unwrap_or(false));
+                checks.push(serde_json::json!({
+                    "name": "Secure Boot",
+                    "pass": has_secure_boot,
+                    "detail": if has_secure_boot { "UEFI Secure Boot enabled" } else { "Secure Boot not configured" },
+                }));
+                if !has_secure_boot {
+                    score = score.saturating_sub(15);
+                }
+
+                // Check TPM
+                let has_tpm = domain
+                    .devices
+                    .as_ref()
+                    .and_then(|d| d.tpm.as_ref())
+                    .is_some();
+                checks.push(serde_json::json!({
+                    "name": "TPM 2.0",
+                    "pass": has_tpm,
+                    "detail": if has_tpm { "TPM device attached" } else { "No TPM device" },
+                }));
+                if !has_tpm {
+                    score = score.saturating_sub(10);
+                }
+
+                // Check RNG
+                let has_rng = domain
+                    .devices
+                    .as_ref()
+                    .and_then(|d| d.rng.as_ref())
+                    .is_some();
+                checks.push(serde_json::json!({
+                    "name": "Hardware RNG",
+                    "pass": has_rng,
+                    "detail": if has_rng { "virtio-rng configured" } else { "No RNG device" },
+                }));
+                if !has_rng {
+                    score = score.saturating_sub(5);
+                }
+
+                // Check eviction strategy
+                let has_eviction = vm
+                    .spec
+                    .template
+                    .spec
+                    .eviction_strategy
+                    .as_ref()
+                    .is_some_and(|e| !e.is_empty());
+                checks.push(serde_json::json!({
+                    "name": "Eviction Strategy",
+                    "pass": has_eviction,
+                    "detail": if has_eviction { "Live migration on eviction" } else { "No eviction strategy" },
+                }));
+                if !has_eviction {
+                    score = score.saturating_sub(10);
+                }
+
+                // Check resource limits
+                let has_limits = domain
+                    .resources
+                    .limits
+                    .as_ref()
+                    .is_some_and(|l| !l.is_empty());
+                checks.push(serde_json::json!({
+                    "name": "Resource Limits",
+                    "pass": has_limits,
+                    "detail": if has_limits { "CPU/memory limits set" } else { "No resource limits defined" },
+                }));
+                if !has_limits {
+                    score = score.saturating_sub(10);
+                }
+
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/security");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({
+                        "score": score,
+                        "checks": checks,
+                    }),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
     async fn delete_vm_handler(
         State(state): State<SharedState>,
         Path((ns, name)): Path<(String, String)>,
@@ -608,6 +950,157 @@ pub mod web {
             }
             Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
         }
+    }
+
+    // ── Create VM Endpoint ────────────────────────────────────────
+
+    #[derive(Deserialize)]
+    struct CreateVmRequest {
+        name: String,
+        namespace: Option<String>,
+        template: Option<String>,
+        profile: Option<String>,
+        cpus: Option<u32>,
+        memory: Option<String>,
+        disk_size: Option<String>,
+        cloud_init: Option<String>,
+        start: Option<bool>,
+    }
+
+    async fn create_vm_handler(
+        State(state): State<SharedState>,
+        Json(req): Json<CreateVmRequest>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("name", &req.name)]) {
+            return resp;
+        }
+
+        let ns = req.namespace.as_deref().unwrap_or("default");
+        if let Some(resp) = validate_k8s_params(&[("namespace", ns)]) {
+            return resp;
+        }
+
+        // Start with template or blank config
+        let mut builder = if let Some(ref tpl_name) = req.template {
+            if let Some(tpl_config) = TEMPLATES.get(tpl_name) {
+                let mut b = VMConfigBuilder::new(&req.name);
+                b = b.namespace(ns);
+                b = b.cpu(tpl_config.cpu.cores, tpl_config.cpu.sockets, tpl_config.cpu.threads);
+                b = b.memory(&tpl_config.memory.size);
+                for disk in &tpl_config.disks {
+                    b = b.add_blank_disk(&disk.name, &disk.size, disk.boot_order);
+                }
+                b = b.add_pod_network("default");
+                b
+            } else {
+                return err_json(400, "INVALID_TEMPLATE", &format!("Template '{}' not found", tpl_name));
+            }
+        } else {
+            let mut b = VMConfigBuilder::new(&req.name);
+            b = b.namespace(ns);
+            b = b.add_blank_disk("rootdisk", "10Gi", 1);
+            b = b.add_pod_network("default");
+            b
+        };
+
+        // Apply profile defaults (before manual overrides)
+        if let Some(ref profile_name) = req.profile {
+            if let Ok(profiles) = PROFILES.read() {
+                if let Some(profile) = profiles.get(profile_name) {
+                    builder = builder.cpu(profile.cpu_cores, profile.cpu_sockets, profile.cpu_threads);
+                    builder = builder.memory(&profile.memory);
+                    // Profile disk size applied below via config.disks
+                }
+            }
+        }
+
+        // Apply manual overrides (take priority over profile)
+        if let Some(cpus) = req.cpus {
+            builder = builder.cpu(cpus, 1, 1);
+        }
+        if let Some(ref mem) = req.memory {
+            builder = builder.memory(mem);
+        }
+
+        // Apply cloud-init
+        if let Some(ref ci) = req.cloud_init {
+            if !ci.is_empty() {
+                builder = builder.cloud_init(ci);
+            }
+        }
+
+        let mut config = builder.build();
+
+        // Override disk size if specified
+        if let Some(ref ds) = req.disk_size {
+            if let Some(disk) = config.disks.first_mut() {
+                disk.size = ds.clone();
+            }
+        } else if let Some(ref profile_name) = req.profile {
+            // Apply profile disk size if no explicit override
+            if let Ok(profiles) = PROFILES.read() {
+                if let Some(profile) = profiles.get(profile_name) {
+                    if let Some(disk) = config.disks.first_mut() {
+                        disk.size = profile.disk_size.clone();
+                    }
+                }
+            }
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        match client.create_vm(&config).await {
+            Ok(_) => {
+                // Auto-start if requested
+                let started = if req.start.unwrap_or(false) {
+                    client.start_vm(ns, &req.name).await.is_ok()
+                } else {
+                    false
+                };
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({
+                        "message": format!("VM '{}' created{}", req.name, if started { " and started" } else { "" }),
+                        "name": req.name,
+                        "namespace": ns,
+                        "started": started,
+                    }),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                if msg.contains("already exists") || msg.contains("conflict") {
+                    err_json(409, "VM_EXISTS", &format!("VM '{}' already exists", req.name))
+                } else {
+                    err_json(500, "CREATE_FAILED", &msg)
+                }
+            }
+        }
+    }
+
+    // ── Templates Endpoint ───────────────────────────────────────
+
+    async fn list_templates_handler() -> impl IntoResponse {
+        let templates: Vec<serde_json::Value> = TEMPLATES
+            .list()
+            .iter()
+            .filter_map(|name| {
+                TEMPLATES.get(name).map(|t| {
+                    serde_json::json!({
+                        "name": name,
+                        "cpu": t.cpu.cores,
+                        "memory": t.memory.size,
+                        "disk": t.disks.first().map(|d| d.size.as_str()).unwrap_or("10Gi"),
+                    })
+                })
+            })
+            .collect();
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/templates");
+        ok_json(&ApiResponse::success(&templates, &ctx.request_id))
     }
 
     // ── Snapshot Endpoints ────────────────────────────────────────
@@ -800,6 +1293,325 @@ pub mod web {
         }
     }
 
+    // ── Snapshot Create & Restore ─────────────────────────────────
+
+    #[derive(Deserialize)]
+    struct CreateSnapshotRequest {
+        snapshot_name: Option<String>,
+    }
+
+    async fn create_snapshot_handler(
+        Path((ns, vm)): Path<(String, String)>,
+        Json(req): Json<CreateSnapshotRequest>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &vm)]) {
+            return resp;
+        }
+
+        let snap_name = req.snapshot_name.unwrap_or_else(|| {
+            let ts = chrono::Utc::now().format("%Y%m%d-%H%M%S");
+            format!("{}-snap-{}", vm, ts)
+        });
+
+        match crate::snapshots::SnapshotManager::new(&ns).await {
+            Ok(manager) => {
+                let config = crate::snapshots::SnapshotConfig::new(&vm, &snap_name);
+                match manager.create_snapshot(&config).await {
+                    Ok(info) => {
+                        let ctx = req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:vm/create");
+                        ok_json(&ApiResponse::success(
+                            &serde_json::json!({
+                                "message": format!("Snapshot '{}' created", snap_name),
+                                "name": info.name,
+                                "vm_name": info.vm_name,
+                            }),
+                            &ctx.request_id,
+                        ))
+                    }
+                    Err(e) => err_json(500, "CREATE_FAILED", &sanitize_error(&e)),
+                }
+            }
+            Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
+        }
+    }
+
+    async fn restore_snapshot_handler(
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+
+        match crate::snapshots::restore::RestoreManager::new(&ns).await {
+            Ok(manager) => {
+                // Derive VM name from snapshot name (convention: vmname-snap-timestamp)
+                let vm_name = name
+                    .rsplit_once("-snap-")
+                    .map(|(v, _)| v.to_string())
+                    .unwrap_or_else(|| name.clone());
+                match manager.restore_in_place(&vm_name, &name).await {
+                    Ok(info) => {
+                        let ctx =
+                            req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:name/restore");
+                        ok_json(&ApiResponse::success(
+                            &serde_json::json!({
+                                "message": format!("Restore '{}' initiated", info.name),
+                                "name": info.name,
+                            }),
+                            &ctx.request_id,
+                        ))
+                    }
+                    Err(e) => err_json(500, "RESTORE_FAILED", &sanitize_error(&e)),
+                }
+            }
+            Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
+        }
+    }
+
+    // ── Cluster Resources ────────────────────────────────────────
+
+    async fn list_nodes_handler(State(state): State<SharedState>) -> impl IntoResponse {
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        match client.list_nodes().await {
+            Ok(nodes) => {
+                let items: Vec<NodeItem> = nodes
+                    .iter()
+                    .map(|node| {
+                        let meta = &node.metadata;
+                        let name = meta.name.clone().unwrap_or_default();
+                        let labels = meta.labels.as_ref();
+
+                        let roles: Vec<String> = labels
+                            .map(|l| {
+                                l.keys()
+                                    .filter_map(|k| k.strip_prefix("node-role.kubernetes.io/"))
+                                    .map(|r| r.to_string())
+                                    .collect()
+                            })
+                            .unwrap_or_default();
+
+                        let status = node
+                            .status
+                            .as_ref()
+                            .and_then(|s| s.conditions.as_ref())
+                            .and_then(|conds| {
+                                conds
+                                    .iter()
+                                    .find(|c| c.type_ == "Ready")
+                                    .map(|c| {
+                                        if c.status == "True" {
+                                            "Ready"
+                                        } else {
+                                            "NotReady"
+                                        }
+                                    })
+                            })
+                            .unwrap_or("Unknown")
+                            .to_string();
+
+                        let capacity = node
+                            .status
+                            .as_ref()
+                            .and_then(|s| s.capacity.as_ref());
+                        let allocatable = node
+                            .status
+                            .as_ref()
+                            .and_then(|s| s.allocatable.as_ref());
+                        let node_info = node
+                            .status
+                            .as_ref()
+                            .and_then(|s| s.node_info.as_ref());
+
+                        NodeItem {
+                            name,
+                            status,
+                            roles,
+                            cpu_capacity: capacity
+                                .and_then(|c| c.get("cpu"))
+                                .map(|v| v.0.clone())
+                                .unwrap_or_default(),
+                            memory_capacity: capacity
+                                .and_then(|c| c.get("memory"))
+                                .map(|v| v.0.clone())
+                                .unwrap_or_default(),
+                            cpu_allocatable: allocatable
+                                .and_then(|a| a.get("cpu"))
+                                .map(|v| v.0.clone())
+                                .unwrap_or_default(),
+                            memory_allocatable: allocatable
+                                .and_then(|a| a.get("memory"))
+                                .map(|v| v.0.clone())
+                                .unwrap_or_default(),
+                            kubelet_version: node_info
+                                .map(|i| i.kubelet_version.clone())
+                                .unwrap_or_default(),
+                            os_image: node_info
+                                .map(|i| i.os_image.clone())
+                                .unwrap_or_default(),
+                            kernel_version: node_info
+                                .map(|i| i.kernel_version.clone())
+                                .unwrap_or_default(),
+                            age: meta
+                                .creation_timestamp
+                                .as_ref()
+                                .map(|t| format_age(&t.0))
+                                .unwrap_or_default(),
+                        }
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/nodes");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn list_pods_handler(
+        State(state): State<SharedState>,
+        Query(query): Query<VmQuery>,
+    ) -> impl IntoResponse {
+        let (client, namespace) = {
+            let s = state.read().await;
+            (s.kube_client.clone(), s.namespace.clone())
+        };
+        let ns = query.namespace.as_deref().unwrap_or(&namespace);
+
+        match client.list_pods(ns).await {
+            Ok(pods) => {
+                let items: Vec<PodItem> = pods
+                    .iter()
+                    .map(|pod| {
+                        let meta = &pod.metadata;
+                        let spec = pod.spec.as_ref();
+                        let status = pod.status.as_ref();
+
+                        let containers: Vec<String> = spec
+                            .map(|s| s.containers.iter().map(|c| c.name.clone()).collect())
+                            .unwrap_or_default();
+
+                        let restarts: u32 = status
+                            .and_then(|s| s.container_statuses.as_ref())
+                            .map(|cs| cs.iter().map(|c| c.restart_count as u32).sum())
+                            .unwrap_or(0);
+
+                        PodItem {
+                            name: meta.name.clone().unwrap_or_default(),
+                            namespace: meta.namespace.clone().unwrap_or_default(),
+                            phase: status
+                                .and_then(|s| s.phase.clone())
+                                .unwrap_or_else(|| "Unknown".to_string()),
+                            node_name: spec
+                                .and_then(|s| s.node_name.clone())
+                                .unwrap_or_else(|| "N/A".to_string()),
+                            ip: status
+                                .and_then(|s| s.pod_ip.clone())
+                                .unwrap_or_else(|| "N/A".to_string()),
+                            containers,
+                            restarts,
+                            age: meta
+                                .creation_timestamp
+                                .as_ref()
+                                .map(|t| format_age(&t.0))
+                                .unwrap_or_default(),
+                        }
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/pods");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn list_profiles_handler() -> impl IntoResponse {
+        let profiles = PROFILES.read().unwrap();
+        let items: Vec<ProfileItem> = profiles
+            .list()
+            .into_iter()
+            .map(|p| ProfileItem {
+                name: p.name.clone(),
+                description: p.description.clone(),
+                cpu_cores: p.cpu_cores,
+                memory: p.memory.clone(),
+                disk_size: p.disk_size.clone(),
+                use_cases: p.use_cases.clone(),
+            })
+            .collect();
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/profiles");
+        ok_json(&ApiResponse::success(&items, &ctx.request_id))
+    }
+
+    async fn list_namespaces_handler(State(state): State<SharedState>) -> impl IntoResponse {
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        match client.list_namespaces().await {
+            Ok(ns_list) => {
+                let names: Vec<String> = ns_list
+                    .iter()
+                    .filter_map(|ns| ns.metadata.name.clone())
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/namespaces");
+                ok_json(&ApiResponse::success(&names, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn activity_feed_handler(State(state): State<SharedState>) -> impl IntoResponse {
+        let (client, namespace) = {
+            let s = state.read().await;
+            (s.kube_client.clone(), s.namespace.clone())
+        };
+
+        use k8s_openapi::api::core::v1::Event;
+        use kube::Api;
+        let events_api: Api<Event> = Api::namespaced(client.client(), &namespace);
+        let lp = kube::api::ListParams::default().limit(200);
+        match events_api.list(&lp).await {
+            Ok(event_list) => {
+                let mut items: Vec<EventItem> = event_list
+                    .items
+                    .into_iter()
+                    .filter(|e| {
+                        let kind = e
+                            .involved_object
+                            .kind
+                            .as_deref()
+                            .unwrap_or("");
+                        kind == "VirtualMachine"
+                            || kind == "VirtualMachineInstance"
+                            || kind == "VirtualMachineSnapshot"
+                    })
+                    .map(|e| EventItem {
+                        type_: e.type_.unwrap_or_default(),
+                        reason: e.reason.unwrap_or_default(),
+                        message: e.message.unwrap_or_default(),
+                        namespace: e.metadata.namespace.unwrap_or_default(),
+                        involved_object: e.involved_object.name.unwrap_or_default(),
+                        timestamp: e
+                            .last_timestamp
+                            .map(|t| t.0.to_rfc3339())
+                            .or_else(|| {
+                                e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339())
+                            })
+                            .unwrap_or_default(),
+                    })
+                    .collect();
+                items.truncate(20);
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/activity");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
     // ── Dashboard Overview ────────────────────────────────────────
 
     async fn dashboard_overview_handler(State(state): State<SharedState>) -> impl IntoResponse {
@@ -862,6 +1674,68 @@ pub mod web {
             Err(_) => 0,
         };
 
+        // Aggregate node capacity
+        let node_summary = match client.list_nodes().await {
+            Ok(nodes) => {
+                let total_nodes = nodes.len();
+                let ready_nodes = nodes
+                    .iter()
+                    .filter(|n| {
+                        n.status
+                            .as_ref()
+                            .and_then(|s| s.conditions.as_ref())
+                            .and_then(|conds| conds.iter().find(|c| c.type_ == "Ready"))
+                            .is_some_and(|c| c.status == "True")
+                    })
+                    .count();
+                let mut cap_cpu = 0u64;
+                let mut cap_mem = 0u64;
+                let mut alloc_cpu = 0u64;
+                let mut alloc_mem = 0u64;
+                for node in &nodes {
+                    if let Some(cap) = node.status.as_ref().and_then(|s| s.capacity.as_ref()) {
+                        cap_cpu += cap
+                            .get("cpu")
+                            .map(|v| v.0.parse::<u64>().unwrap_or(0))
+                            .unwrap_or(0);
+                        cap_mem += cap
+                            .get("memory")
+                            .map(|v| parse_memory(&v.0))
+                            .unwrap_or(0);
+                    }
+                    if let Some(alloc) =
+                        node.status.as_ref().and_then(|s| s.allocatable.as_ref())
+                    {
+                        alloc_cpu += alloc
+                            .get("cpu")
+                            .map(|v| v.0.parse::<u64>().unwrap_or(0))
+                            .unwrap_or(0);
+                        alloc_mem += alloc
+                            .get("memory")
+                            .map(|v| parse_memory(&v.0))
+                            .unwrap_or(0);
+                    }
+                }
+                NodeSummary {
+                    total_nodes,
+                    ready_nodes,
+                    total_cpu_capacity: cap_cpu,
+                    total_memory_capacity_gb: (cap_mem as f64) / (1024.0 * 1024.0 * 1024.0),
+                    total_cpu_allocatable: alloc_cpu,
+                    total_memory_allocatable_gb: (alloc_mem as f64)
+                        / (1024.0 * 1024.0 * 1024.0),
+                }
+            }
+            Err(_) => NodeSummary {
+                total_nodes: 0,
+                ready_nodes: 0,
+                total_cpu_capacity: 0,
+                total_memory_capacity_gb: 0.0,
+                total_cpu_allocatable: 0,
+                total_memory_allocatable_gb: 0.0,
+            },
+        };
+
         let overview = DashboardOverview {
             cluster: ClusterStats {
                 total_vms: total,
@@ -872,6 +1746,7 @@ pub mod web {
                 total_memory_allocated_gb: (total_memory_bytes as f64) / (1024.0 * 1024.0 * 1024.0),
                 total_snapshots: snapshot_count,
             },
+            nodes: node_summary,
         };
 
         let ctx = req_ctx(HttpMethod::GET, "/api/v1/dashboard/overview");
@@ -922,6 +1797,7 @@ pub mod web {
     #[derive(Serialize)]
     struct DashboardOverview {
         cluster: ClusterStats,
+        nodes: NodeSummary,
     }
 
     #[derive(Serialize)]
@@ -933,6 +1809,53 @@ pub mod web {
         total_vcpus_allocated: u32,
         total_memory_allocated_gb: f64,
         total_snapshots: usize,
+    }
+
+    #[derive(Serialize)]
+    struct NodeSummary {
+        total_nodes: usize,
+        ready_nodes: usize,
+        total_cpu_capacity: u64,
+        total_memory_capacity_gb: f64,
+        total_cpu_allocatable: u64,
+        total_memory_allocatable_gb: f64,
+    }
+
+    #[derive(Serialize)]
+    struct NodeItem {
+        name: String,
+        status: String,
+        roles: Vec<String>,
+        cpu_capacity: String,
+        memory_capacity: String,
+        cpu_allocatable: String,
+        memory_allocatable: String,
+        kubelet_version: String,
+        os_image: String,
+        kernel_version: String,
+        age: String,
+    }
+
+    #[derive(Serialize)]
+    struct PodItem {
+        name: String,
+        namespace: String,
+        phase: String,
+        node_name: String,
+        ip: String,
+        containers: Vec<String>,
+        restarts: u32,
+        age: String,
+    }
+
+    #[derive(Serialize)]
+    struct ProfileItem {
+        name: String,
+        description: String,
+        cpu_cores: u32,
+        memory: String,
+        disk_size: String,
+        use_cases: Vec<String>,
     }
 
     // ── Helpers ─────────────────────────────────────────────────────
@@ -961,6 +1884,71 @@ pub mod web {
             StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR),
             Json(value),
         )
+    }
+
+    /// Certificate verifier that accepts all certs (for K8s self-signed API server certs).
+    #[derive(Debug)]
+    struct AcceptAllVerifier;
+
+    impl rustls::client::danger::ServerCertVerifier for AcceptAllVerifier {
+        fn verify_server_cert(
+            &self,
+            _end_entity: &rustls::pki_types::CertificateDer<'_>,
+            _intermediates: &[rustls::pki_types::CertificateDer<'_>],
+            _server_name: &rustls::pki_types::ServerName<'_>,
+            _ocsp_response: &[u8],
+            _now: rustls::pki_types::UnixTime,
+        ) -> Result<rustls::client::danger::ServerCertVerified, rustls::Error> {
+            Ok(rustls::client::danger::ServerCertVerified::assertion())
+        }
+
+        fn verify_tls12_signature(
+            &self,
+            _message: &[u8],
+            _cert: &rustls::pki_types::CertificateDer<'_>,
+            _dss: &rustls::DigitallySignedStruct,
+        ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+            Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+        }
+
+        fn verify_tls13_signature(
+            &self,
+            _message: &[u8],
+            _cert: &rustls::pki_types::CertificateDer<'_>,
+            _dss: &rustls::DigitallySignedStruct,
+        ) -> Result<rustls::client::danger::HandshakeSignatureValid, rustls::Error> {
+            Ok(rustls::client::danger::HandshakeSignatureValid::assertion())
+        }
+
+        fn supported_verify_schemes(&self) -> Vec<rustls::SignatureScheme> {
+            vec![
+                rustls::SignatureScheme::RSA_PKCS1_SHA256,
+                rustls::SignatureScheme::RSA_PKCS1_SHA384,
+                rustls::SignatureScheme::RSA_PKCS1_SHA512,
+                rustls::SignatureScheme::ECDSA_NISTP256_SHA256,
+                rustls::SignatureScheme::ECDSA_NISTP384_SHA384,
+                rustls::SignatureScheme::ECDSA_NISTP521_SHA512,
+                rustls::SignatureScheme::RSA_PSS_SHA256,
+                rustls::SignatureScheme::RSA_PSS_SHA384,
+                rustls::SignatureScheme::RSA_PSS_SHA512,
+                rustls::SignatureScheme::ED25519,
+            ]
+        }
+    }
+
+    fn format_age(ts: &chrono::DateTime<chrono::Utc>) -> String {
+        let now = chrono::Utc::now();
+        let dur = now.signed_duration_since(*ts);
+        let mins = dur.num_minutes();
+        if mins < 1 {
+            "just now".to_string()
+        } else if mins < 60 {
+            format!("{}m", mins)
+        } else if mins < 1440 {
+            format!("{}h", mins / 60)
+        } else {
+            format!("{}d{}h", mins / 1440, (mins % 1440) / 60)
+        }
     }
 
     fn parse_memory(s: &str) -> u64 {
