@@ -1074,7 +1074,16 @@ async function apiFetch(url, opts) {
   if (!key) key = await requireApiKey();
   opts = opts || {};
   opts.headers = Object.assign({'X-API-Key': key}, opts.headers || {});
-  return fetch(url, opts);
+  const resp = await fetch(url, opts);
+  // If 401, clear saved key and re-prompt
+  if (resp.status === 401) {
+    localStorage.removeItem('vmrogue_api_key');
+    sessionStorage.removeItem('vmrogue_api_key');
+    const newKey = await requireApiKey();
+    opts.headers['X-API-Key'] = newKey;
+    return fetch(url, opts);
+  }
+  return resp;
 }
 
 // Helpers
@@ -1752,10 +1761,13 @@ function refresh() {
   document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   // Set saved refresh interval
   const sel = document.getElementById('refresh-interval');
   sel.value = refreshInterval || '5000';
+
+  // Ensure API key is set before any API calls
+  await requireApiKey();
 
   refresh();
   fetchTemplates();
