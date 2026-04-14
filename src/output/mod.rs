@@ -1,3 +1,6 @@
+pub mod spinner;
+pub mod table;
+
 use crate::config::VMConfig;
 use anyhow::Result;
 use serde::Serialize;

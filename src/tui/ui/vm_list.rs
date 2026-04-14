@@ -1,40 +1,19 @@
 // Enhanced VM List View - Advanced table with search, filter, sort, multi-select
-use crate::tui::{colors::tui as colors, config::TuiConfig, state::AppState, widgets::SearchBar};
+use crate::tui::{colors::tui as colors, config::TuiConfig, state::AppState};
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Cell, Paragraph, Row, Table},
-    Frame,
+    widgets::{Block, Borders, Cell, Paragraph, Row, Table, TableState},
 };
 
-pub fn render(f: &mut Frame, state: &mut AppState, config: &TuiConfig) {
-    // Create a default search bar for now
-    let search_bar = SearchBar::new();
-    render_with_search(f, state, config, &search_bar);
-}
-
-fn render_with_search(
-    f: &mut Frame,
-    state: &mut AppState,
-    _config: &TuiConfig,
-    search_bar: &SearchBar,
-) {
+pub fn render(f: &mut Frame, state: &mut AppState, _config: &TuiConfig) {
     let size = f.area();
 
-    // Main layout with optional stats bar and search
-    let main_chunks = if search_bar.is_active {
-        Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Length(3), // Header
-                Constraint::Length(4), // Search bar
-                Constraint::Min(0),    // VM table
-                Constraint::Length(5), // Help text
-            ])
-            .split(size)
-    } else if state.show_stats_bar {
+    // Main layout with optional stats bar
+    let main_chunks = if state.show_stats_bar {
         Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -61,21 +40,18 @@ fn render_with_search(
     render_header(f, state, main_chunks[current_idx]);
     current_idx += 1;
 
-    // Search bar (if active)
-    if search_bar.is_active {
-        search_bar.render(f, main_chunks[current_idx]);
-        current_idx += 1;
-    } else if state.show_stats_bar {
+    // Stats bar (if enabled)
+    if state.show_stats_bar {
         render_stats_bar(f, state, main_chunks[current_idx]);
         current_idx += 1;
     }
 
-    // VM table
+    // VM table (with stateful scroll-to-selection)
     render_vm_table(f, state, main_chunks[current_idx]);
     current_idx += 1;
 
     // Help text
-    render_help(f, state, search_bar, main_chunks[current_idx]);
+    render_help(f, state, main_chunks[current_idx]);
 }
 
 fn render_header(f: &mut Frame, state: &AppState, area: Rect) {
@@ -191,7 +167,7 @@ fn render_stats_bar(f: &mut Frame, state: &AppState, area: Rect) {
     f.render_widget(paragraph, area);
 }
 
-fn render_vm_table(f: &mut Frame, state: &AppState, area: Rect) {
+fn render_vm_table(f: &mut Frame, state: &mut AppState, area: Rect) {
     // Enhanced header with icons
     let header_cells = ["", "Name", "Status", "CPU", "Memory", "Disk", "Age", "IP"]
         .iter()
@@ -222,11 +198,7 @@ fn render_vm_table(f: &mut Frame, state: &AppState, area: Rect) {
 
         // Selection indicators
         let selection_indicator = if state.multi_select_mode {
-            if is_multi_selected {
-                "☑ "
-            } else {
-                "☐ "
-            }
+            if is_multi_selected { "☑ " } else { "☐ " }
         } else if is_selected {
             "▶ "
         } else {
@@ -303,61 +275,17 @@ fn render_vm_table(f: &mut Frame, state: &AppState, area: Rect) {
                 .border_style(Style::default().fg(colors::BORDER))
                 .title(title),
         )
+        .highlight_style(Style::default()) // We already style selected row inline
         .column_spacing(1);
 
-    f.render_widget(table, area);
+    // Use TableState for auto-scroll to selected row
+    let mut table_state = TableState::default().with_selected(Some(state.selected_index));
+    f.render_stateful_widget(table, area, &mut table_state);
 }
 
-fn render_help(f: &mut Frame, state: &AppState, search_bar: &SearchBar, area: Rect) {
+fn render_help(f: &mut Frame, state: &AppState, area: Rect) {
     let sort_text = format!(" [{}]", state.sort_mode.display());
-    let help_lines = if search_bar.is_active {
-        vec![
-            Line::from(""),
-            Line::from(vec![
-                Span::styled(
-                    "🔍 Search Mode",
-                    Style::default()
-                        .fg(colors::ORANGE)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(
-                    " - Type to search, ",
-                    Style::default().fg(colors::TEXT_MUTED),
-                ),
-                Span::styled(
-                    "Ctrl+I",
-                    Style::default()
-                        .fg(colors::INFO)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(
-                    ": Case sensitive, ",
-                    Style::default().fg(colors::TEXT_MUTED),
-                ),
-                Span::styled(
-                    "Ctrl+R",
-                    Style::default()
-                        .fg(colors::INFO)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(": Regex mode, ", Style::default().fg(colors::TEXT_MUTED)),
-                Span::styled(
-                    "ESC",
-                    Style::default()
-                        .fg(colors::INFO)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(": Cancel, ", Style::default().fg(colors::TEXT_MUTED)),
-                Span::styled(
-                    "Enter",
-                    Style::default()
-                        .fg(colors::INFO)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(": Apply", Style::default().fg(colors::TEXT_MUTED)),
-            ]),
-        ]
-    } else if state.multi_select_mode {
+    let help_lines = if state.multi_select_mode {
         vec![
             Line::from(""),
             Line::from(vec![
@@ -383,7 +311,7 @@ fn render_help(f: &mut Frame, state: &AppState, search_bar: &SearchBar, area: Re
                 ),
                 Span::styled(": All, ", Style::default().fg(colors::TEXT_MUTED)),
                 Span::styled(
-                    "m",
+                    "v",
                     Style::default()
                         .fg(colors::INFO)
                         .add_modifier(Modifier::BOLD),
@@ -480,7 +408,7 @@ fn render_help(f: &mut Frame, state: &AppState, search_bar: &SearchBar, area: Re
                 Span::styled(sort_text, Style::default().fg(colors::INFO)),
                 Span::styled(" │ ", Style::default().fg(colors::TEXT_MUTED)),
                 Span::styled(
-                    "m",
+                    "v",
                     Style::default()
                         .fg(colors::INFO)
                         .add_modifier(Modifier::BOLD),
@@ -496,20 +424,20 @@ fn render_help(f: &mut Frame, state: &AppState, search_bar: &SearchBar, area: Re
                 Span::styled(": Filter", Style::default().fg(colors::TEXT)),
                 Span::styled(" │ ", Style::default().fg(colors::TEXT_MUTED)),
                 Span::styled(
-                    "r",
+                    "Ctrl+P",
+                    Style::default()
+                        .fg(colors::INFO)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(": Jump", Style::default().fg(colors::TEXT)),
+                Span::styled(" │ ", Style::default().fg(colors::TEXT_MUTED)),
+                Span::styled(
+                    "Ctrl+R",
                     Style::default()
                         .fg(colors::INFO)
                         .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(": Refresh", Style::default().fg(colors::TEXT)),
-                Span::styled(" │ ", Style::default().fg(colors::TEXT_MUTED)),
-                Span::styled(
-                    "q",
-                    Style::default()
-                        .fg(colors::INFO)
-                        .add_modifier(Modifier::BOLD),
-                ),
-                Span::styled(": Quit", Style::default().fg(colors::TEXT)),
             ]),
         ]
     };

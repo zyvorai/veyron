@@ -292,8 +292,8 @@ impl Port {
 
     /// Check if port matches
     pub fn matches(&self, port: u16, protocol: &str) -> bool {
-        let proto_match = self.protocol == Protocol::Any
-            || protocol.to_uppercase() == self.protocol.as_str();
+        let proto_match =
+            self.protocol == Protocol::Any || protocol.to_uppercase() == self.protocol.as_str();
 
         let port_match = if let Some(end) = self.end_port {
             port >= self.port && port <= end

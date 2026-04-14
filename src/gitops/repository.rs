@@ -38,20 +38,33 @@ impl GitRepository {
         // null bytes, or using shell metacharacters that could be dangerous.
         for (label, value) in [("URL", &self.url), ("branch", &self.branch)] {
             if value.starts_with('-') {
-                return Err(format!("Invalid repository {}: must not start with '-'", label));
+                return Err(format!(
+                    "Invalid repository {}: must not start with '-'",
+                    label
+                ));
             }
             if value.contains('\0') {
-                return Err(format!("Invalid repository {}: must not contain null bytes", label));
+                return Err(format!(
+                    "Invalid repository {}: must not contain null bytes",
+                    label
+                ));
             }
             if value.contains("--upload-pack")
                 || value.contains("--config")
                 || value.contains("--exec-path")
             {
-                return Err(format!("Invalid repository {}: contains disallowed git option", label));
+                return Err(format!(
+                    "Invalid repository {}: contains disallowed git option",
+                    label
+                ));
             }
         }
         // Branch names: only allow alphanumeric, '-', '_', '.', '/'
-        if !self.branch.chars().all(|c| c.is_alphanumeric() || "-_./".contains(c)) {
+        if !self
+            .branch
+            .chars()
+            .all(|c| c.is_alphanumeric() || "-_./".contains(c))
+        {
             return Err("Invalid branch name: contains disallowed characters".to_string());
         }
 
@@ -126,7 +139,9 @@ impl GitRepository {
 
         // Validate revision to prevent argument injection
         if rev.starts_with('-') || rev.contains('\0') {
-            return Err("Invalid revision: must not start with '-' or contain null bytes".to_string());
+            return Err(
+                "Invalid revision: must not start with '-' or contain null bytes".to_string(),
+            );
         }
 
         if matches!(self.status, RepositoryStatus::Ready) {

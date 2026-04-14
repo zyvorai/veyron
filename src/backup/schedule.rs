@@ -73,9 +73,14 @@ pub enum ScheduleType {
 impl ScheduleType {
     pub fn hourly(minute: u32) -> Self {
         if minute > 59 {
-            log::warn!("Hourly schedule minute {} is out of range 0-59, clamping", minute);
+            log::warn!(
+                "Hourly schedule minute {} is out of range 0-59, clamping",
+                minute
+            );
         }
-        ScheduleType::Hourly { minute: minute.min(59) }
+        ScheduleType::Hourly {
+            minute: minute.min(59),
+        }
     }
 
     pub fn daily(hour: u32, minute: u32) -> Self {
@@ -85,8 +90,7 @@ impl ScheduleType {
             None => unreachable!(),
         };
         ScheduleType::Daily {
-            time: NaiveTime::from_hms_opt(hour.min(23), minute.min(59), 0)
-                .unwrap_or(MIDNIGHT),
+            time: NaiveTime::from_hms_opt(hour.min(23), minute.min(59), 0).unwrap_or(MIDNIGHT),
         }
     }
 
@@ -97,8 +101,7 @@ impl ScheduleType {
         };
         ScheduleType::Weekly {
             weekday,
-            time: NaiveTime::from_hms_opt(hour.min(23), minute.min(59), 0)
-                .unwrap_or(MIDNIGHT),
+            time: NaiveTime::from_hms_opt(hour.min(23), minute.min(59), 0).unwrap_or(MIDNIGHT),
         }
     }
 
@@ -108,12 +111,14 @@ impl ScheduleType {
             None => unreachable!(),
         };
         if day == 0 || day > 31 {
-            log::warn!("Monthly schedule day {} is out of range 1-31, clamping", day);
+            log::warn!(
+                "Monthly schedule day {} is out of range 1-31, clamping",
+                day
+            );
         }
         ScheduleType::Monthly {
             day: day.clamp(1, 31),
-            time: NaiveTime::from_hms_opt(hour.min(23), minute.min(59), 0)
-                .unwrap_or(MIDNIGHT),
+            time: NaiveTime::from_hms_opt(hour.min(23), minute.min(59), 0).unwrap_or(MIDNIGHT),
         }
     }
 }
@@ -133,18 +138,18 @@ pub struct ScheduleManager {
 }
 
 impl ScheduleManager {
-    fn persistence_path() -> std::path::PathBuf {
-        dirs::data_dir()
-            .unwrap_or_else(|| {
-                log::warn!("Could not determine data directory, falling back to /tmp");
-                std::path::PathBuf::from("/tmp")
-            })
-            .join("vmrogue")
-            .join("backup_schedules.json")
+    fn persistence_path() -> anyhow::Result<std::path::PathBuf> {
+        Ok(crate::utils::data_dir()?.join("backup_schedules.json"))
     }
 
     pub fn load() -> Self {
-        let path = Self::persistence_path();
+        let path = match Self::persistence_path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to determine data directory: {}", e);
+                return Self::new();
+            }
+        };
         if path.exists() {
             match std::fs::read_to_string(&path) {
                 Ok(content) => match serde_json::from_str(&content) {
@@ -158,13 +163,8 @@ impl ScheduleManager {
     }
 
     pub fn save(&self) -> anyhow::Result<()> {
-        let path = Self::persistence_path();
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let content = serde_json::to_string_pretty(self)?;
-        std::fs::write(&path, content)?;
-        Ok(())
+        let path = Self::persistence_path()?;
+        crate::utils::atomic_write(&path, self)
     }
 
     pub fn new() -> Self {

@@ -1,5 +1,5 @@
 use crate::tui::colors::cli as color;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use std::path::PathBuf;
 
 /// Validate that a template name is safe (no path traversal).
@@ -273,12 +273,15 @@ pub fn handle_config_delete(name: String, yes: bool) -> Result<()> {
     println!();
 
     if !yes {
-        println!(
-            "  {}",
-            color::warning("This will permanently delete the saved configuration")
-        );
-        println!("  Use --yes to confirm");
-        return Ok(());
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt("This will permanently delete the saved configuration. Continue?")
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
+            println!("{}", color::muted("Cancelled"));
+            return Ok(());
+        }
     }
 
     println!();
@@ -409,7 +412,7 @@ pub fn handle_info(
     output: String,
     cli_namespace: &str,
 ) -> Result<()> {
-    use crate::devexp::info::{run_diagnostics, DiagnosticStatus, EnvironmentInfo};
+    use crate::devexp::info::{DiagnosticStatus, EnvironmentInfo, run_diagnostics};
 
     let info = EnvironmentInfo::collect(cli_namespace);
 

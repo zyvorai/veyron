@@ -8,20 +8,22 @@ pub mod validator;
 pub use validator::{check_circular_dependencies, resolve_deployment_order, validate_blueprint};
 
 use anyhow::Result;
-use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use std::sync::RwLock;
 
-pub static BLUEPRINTS: LazyLock<RwLock<BlueprintManager>> = LazyLock::new(|| {
-    match BlueprintManager::new() {
+pub static BLUEPRINTS: LazyLock<RwLock<BlueprintManager>> =
+    LazyLock::new(|| match BlueprintManager::new() {
         Ok(manager) => RwLock::new(manager),
         Err(e) => {
-            log::error!("Failed to initialize BlueprintManager: {}. Using empty manager.", e);
+            log::error!(
+                "Failed to initialize BlueprintManager: {}. Using empty manager.",
+                e
+            );
             RwLock::new(BlueprintManager::empty())
         }
-    }
-});
+    });
 
 /// VMSpec defines a single VM in a blueprint
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -194,7 +196,10 @@ impl BlueprintManager {
 impl Default for BlueprintManager {
     fn default() -> Self {
         Self::new().unwrap_or_else(|e| {
-            log::error!("Failed to initialize BlueprintManager: {}. Using empty manager.", e);
+            log::error!(
+                "Failed to initialize BlueprintManager: {}. Using empty manager.",
+                e
+            );
             Self::empty()
         })
     }

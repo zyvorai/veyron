@@ -3,11 +3,11 @@
 use crate::tui::colors::tui as colors;
 use crate::tui::{config::TuiConfig, state::AppState};
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 
 pub const TAB_NAMES: [&str; 3] = ["Overview", "Network", "Events"];
@@ -68,7 +68,7 @@ pub fn render(f: &mut Frame, state: &AppState, _config: &TuiConfig, active_tab: 
     }
 
     // Help
-    let help = Paragraph::new("←→/hl/Tab: Switch tabs │ Backspace: Back │ q: Quit")
+    let help = Paragraph::new("←→/hl/Tab: Switch tabs │ j/k: Scroll (Events) │ Backspace: Back")
         .style(Style::default().fg(colors::TEXT_MUTED))
         .alignment(Alignment::Center)
         .block(
@@ -106,11 +106,7 @@ fn render_tab_bar(f: &mut Frame, active_tab: usize, area: ratatui::layout::Rect)
     f.render_widget(tab_line, area);
 }
 
-fn render_overview_tab(
-    f: &mut Frame,
-    vm: &crate::tui::state::VmInfo,
-    area: ratatui::layout::Rect,
-) {
+fn render_overview_tab(f: &mut Frame, vm: &crate::tui::state::VmInfo, area: ratatui::layout::Rect) {
     let status_color = match vm.status.as_str() {
         "Running" => colors::SUCCESS,
         "Stopped" => colors::TEXT_MUTED,
@@ -286,10 +282,7 @@ fn render_network_tab(
     } else if vm.ip != "N/A" {
         lines.push(Line::from(vec![
             Span::styled("  eth0                 ", Style::default().fg(colors::TEXT)),
-            Span::styled(
-                format!("{:<21}", vm.ip),
-                Style::default().fg(colors::INFO),
-            ),
+            Span::styled(format!("{:<21}", vm.ip), Style::default().fg(colors::INFO)),
             Span::styled("—", Style::default().fg(colors::TEXT_MUTED)),
         ]));
     } else {
@@ -348,16 +341,14 @@ fn render_events_tab(
     ];
 
     if vm_events.is_empty() {
-        lines.push(Line::from(vec![
-            Span::styled(
-                "  No activity recorded for this VM",
-                Style::default()
-                    .fg(colors::TEXT_MUTED)
-                    .add_modifier(Modifier::ITALIC),
-            ),
-        ]));
+        lines.push(Line::from(vec![Span::styled(
+            "  No activity recorded for this VM",
+            Style::default()
+                .fg(colors::TEXT_MUTED)
+                .add_modifier(Modifier::ITALIC),
+        )]));
     } else {
-        for event in vm_events.iter().take(15) {
+        for event in &vm_events {
             let icon_color = match event.action.as_str() {
                 "started" | "start requested" => colors::SUCCESS,
                 "stopped" | "stop requested" => colors::WARNING,
@@ -367,7 +358,10 @@ fn render_events_tab(
             };
 
             lines.push(Line::from(vec![
-                Span::styled(format!("  {} ", event.icon), Style::default().fg(icon_color)),
+                Span::styled(
+                    format!("  {} ", event.icon),
+                    Style::default().fg(icon_color),
+                ),
                 Span::styled(
                     format!("{:<20}", event.action),
                     Style::default().fg(colors::TEXT),
@@ -389,7 +383,8 @@ fn render_events_tab(
                 .border_style(Style::default().fg(colors::BORDER))
                 .title("Events"),
         )
-        .alignment(Alignment::Left);
+        .alignment(Alignment::Left)
+        .scroll((state.detail_events_scroll, 0));
 
     f.render_widget(details, area);
 }

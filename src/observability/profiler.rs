@@ -22,7 +22,13 @@ pub struct Profile {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ProfileType { CPU, Memory, IO, Network, Full }
+pub enum ProfileType {
+    CPU,
+    Memory,
+    IO,
+    Network,
+    Full,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileDataPoint {
@@ -47,7 +53,12 @@ pub struct ProfileSummary {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum ProfileStatus { Recording, Completed, Analyzing, Failed }
+pub enum ProfileStatus {
+    Recording,
+    Completed,
+    Analyzing,
+    Failed,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfilerConfig {
@@ -57,19 +68,41 @@ pub struct ProfilerConfig {
 }
 
 impl Default for ProfilerConfig {
-    fn default() -> Self { Self { sample_interval_ms: 1000, max_duration_secs: 300, auto_analyze: true } }
+    fn default() -> Self {
+        Self {
+            sample_interval_ms: 1000,
+            max_duration_secs: 300,
+            auto_analyze: true,
+        }
+    }
 }
 
 impl PerformanceProfiler {
-    pub fn new() -> Self { Self { profiles: Vec::new(), config: ProfilerConfig::default() } }
+    pub fn new() -> Self {
+        Self {
+            profiles: Vec::new(),
+            config: ProfilerConfig::default(),
+        }
+    }
 
     pub fn start_profile(&mut self, vm_name: &str, profile_type: ProfileType) -> String {
         let id = format!("profile-{}", Utc::now().timestamp_micros());
         self.profiles.push(Profile {
-            id: id.clone(), vm_name: vm_name.to_string(), profile_type,
-            started_at: Utc::now(), duration_secs: 0, data_points: Vec::new(),
-            summary: ProfileSummary { avg_cpu: 0.0, max_cpu: 0.0, avg_memory: 0.0, max_memory: 0.0,
-                total_io_read: 0, total_io_write: 0, bottleneck: None },
+            id: id.clone(),
+            vm_name: vm_name.to_string(),
+            profile_type,
+            started_at: Utc::now(),
+            duration_secs: 0,
+            data_points: Vec::new(),
+            summary: ProfileSummary {
+                avg_cpu: 0.0,
+                max_cpu: 0.0,
+                avg_memory: 0.0,
+                max_memory: 0.0,
+                total_io_read: 0,
+                total_io_write: 0,
+                bottleneck: None,
+            },
             status: ProfileStatus::Recording,
         });
         id
@@ -88,24 +121,43 @@ impl PerformanceProfiler {
             if !p.data_points.is_empty() {
                 let n = p.data_points.len() as f64;
                 p.summary.avg_cpu = p.data_points.iter().map(|d| d.cpu_percent).sum::<f64>() / n;
-                p.summary.max_cpu = p.data_points.iter().map(|d| d.cpu_percent).fold(0.0_f64, f64::max);
-                p.summary.avg_memory = p.data_points.iter().map(|d| d.memory_percent).sum::<f64>() / n;
-                p.summary.max_memory = p.data_points.iter().map(|d| d.memory_percent).fold(0.0_f64, f64::max);
+                p.summary.max_cpu = p
+                    .data_points
+                    .iter()
+                    .map(|d| d.cpu_percent)
+                    .fold(0.0_f64, f64::max);
+                p.summary.avg_memory =
+                    p.data_points.iter().map(|d| d.memory_percent).sum::<f64>() / n;
+                p.summary.max_memory = p
+                    .data_points
+                    .iter()
+                    .map(|d| d.memory_percent)
+                    .fold(0.0_f64, f64::max);
                 p.summary.total_io_read = p.data_points.iter().map(|d| d.io_read_bytes).sum();
                 p.summary.total_io_write = p.data_points.iter().map(|d| d.io_write_bytes).sum();
 
-                p.summary.bottleneck = if p.summary.max_cpu > 90.0 { Some("CPU".to_string()) }
-                else if p.summary.max_memory > 90.0 { Some("Memory".to_string()) }
-                else { None };
+                p.summary.bottleneck = if p.summary.max_cpu > 90.0 {
+                    Some("CPU".to_string())
+                } else if p.summary.max_memory > 90.0 {
+                    Some("Memory".to_string())
+                } else {
+                    None
+                };
             }
             p.status = ProfileStatus::Completed;
         }
     }
 
-    pub fn get_profile(&self, id: &str) -> Option<&Profile> { self.profiles.iter().find(|p| p.id == id) }
-    pub fn list(&self) -> &[Profile] { &self.profiles }
+    pub fn get_profile(&self, id: &str) -> Option<&Profile> {
+        self.profiles.iter().find(|p| p.id == id)
+    }
+    pub fn list(&self) -> &[Profile] {
+        &self.profiles
+    }
 }
 
 impl Default for PerformanceProfiler {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

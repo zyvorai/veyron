@@ -44,34 +44,68 @@ pub struct RbacSubject {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum SubjectKind { User, Group, ServiceAccount }
+pub enum SubjectKind {
+    User,
+    Group,
+    ServiceAccount,
+}
 
 impl RbacVisualizer {
-    pub fn new() -> Self { Self { roles: Vec::new(), bindings: Vec::new(), subjects: Vec::new() } }
+    pub fn new() -> Self {
+        Self {
+            roles: Vec::new(),
+            bindings: Vec::new(),
+            subjects: Vec::new(),
+        }
+    }
 
-    pub fn add_role(&mut self, role: RbacRole) { self.roles.push(role); }
-    pub fn add_binding(&mut self, binding: RoleBinding) { self.bindings.push(binding); }
-    pub fn add_subject(&mut self, subject: RbacSubject) { self.subjects.push(subject); }
+    pub fn add_role(&mut self, role: RbacRole) {
+        self.roles.push(role);
+    }
+    pub fn add_binding(&mut self, binding: RoleBinding) {
+        self.bindings.push(binding);
+    }
+    pub fn add_subject(&mut self, subject: RbacSubject) {
+        self.subjects.push(subject);
+    }
 
-    pub fn get_role(&self, name: &str) -> Option<&RbacRole> { self.roles.iter().find(|r| r.name == name) }
+    pub fn get_role(&self, name: &str) -> Option<&RbacRole> {
+        self.roles.iter().find(|r| r.name == name)
+    }
 
     pub fn roles_for_subject(&self, subject: &str) -> Vec<&RbacRole> {
-        let role_names: Vec<&str> = self.bindings.iter()
+        let role_names: Vec<&str> = self
+            .bindings
+            .iter()
             .filter(|b| b.subjects.iter().any(|s| s == subject))
-            .map(|b| b.role_ref.as_str()).collect();
-        self.roles.iter().filter(|r| role_names.contains(&r.name.as_str())).collect()
+            .map(|b| b.role_ref.as_str())
+            .collect();
+        self.roles
+            .iter()
+            .filter(|r| role_names.contains(&r.name.as_str()))
+            .collect()
     }
 
     pub fn subjects_with_role(&self, role: &str) -> Vec<&str> {
-        self.bindings.iter().filter(|b| b.role_ref == role).flat_map(|b| b.subjects.iter().map(|s| s.as_str())).collect()
+        self.bindings
+            .iter()
+            .filter(|b| b.role_ref == role)
+            .flat_map(|b| b.subjects.iter().map(|s| s.as_str()))
+            .collect()
     }
 
     pub fn permission_matrix(&self) -> HashMap<String, Vec<String>> {
         let mut matrix = HashMap::new();
         for subject in &self.subjects {
-            let perms: Vec<String> = self.roles_for_subject(&subject.name).iter()
+            let perms: Vec<String> = self
+                .roles_for_subject(&subject.name)
+                .iter()
                 .flat_map(|r| r.rules.iter())
-                .flat_map(|rule| rule.verbs.iter().flat_map(|v| rule.resources.iter().map(move |r| format!("{}/{}", v, r))))
+                .flat_map(|rule| {
+                    rule.verbs
+                        .iter()
+                        .flat_map(|v| rule.resources.iter().map(move |r| format!("{}/{}", v, r)))
+                })
                 .collect();
             matrix.insert(subject.name.clone(), perms);
         }
@@ -79,12 +113,21 @@ impl RbacVisualizer {
     }
 
     pub fn overprivileged_subjects(&self) -> Vec<&RbacSubject> {
-        self.subjects.iter().filter(|s| {
-            self.roles_for_subject(&s.name).iter().any(|r| r.rules.iter().any(|rule| rule.verbs.contains(&"*".to_string())))
-        }).collect()
+        self.subjects
+            .iter()
+            .filter(|s| {
+                self.roles_for_subject(&s.name).iter().any(|r| {
+                    r.rules
+                        .iter()
+                        .any(|rule| rule.verbs.contains(&"*".to_string()))
+                })
+            })
+            .collect()
     }
 }
 
 impl Default for RbacVisualizer {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

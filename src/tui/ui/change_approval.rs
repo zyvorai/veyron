@@ -2,13 +2,12 @@
 
 use crate::tui::colors::gradient;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
-    Frame,
 };
-
 
 pub fn render(f: &mut Frame, area: Rect) {
     let chunks = Layout::default()
@@ -23,8 +22,16 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Header
     // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
-    header_spans.push(Span::styled(" | ", Style::default().fg(Color::Rgb(128, 128, 128))));
-    header_spans.push(Span::styled("Change Approval Workflow", Style::default().fg(Color::Rgb(255, 145, 115)).add_modifier(Modifier::BOLD)));
+    header_spans.push(Span::styled(
+        " | ",
+        Style::default().fg(Color::Rgb(128, 128, 128)),
+    ));
+    header_spans.push(Span::styled(
+        "Change Approval Workflow",
+        Style::default()
+            .fg(Color::Rgb(255, 145, 115))
+            .add_modifier(Modifier::BOLD),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -38,10 +45,7 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Content
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(60),
-            Constraint::Percentage(40),
-        ])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(chunks[1]);
 
     // Pending changes table
@@ -58,13 +62,57 @@ pub fn render(f: &mut Frame, area: Rect) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let changes = [("CR-042", "Scale", "Scale worker pool 3->5", "ops-user", "Pending"),
-        ("CR-041", "Config", "Update VM memory limits", "dev-lead", "Approved"),
-        ("CR-040", "Delete", "Remove stale snapshots", "ci-bot", "Pending"),
-        ("CR-039", "Migrate", "Migrate db-primary to node-3", "ops-user", "Pending"),
-        ("CR-038", "Create", "New staging environment", "dev-lead", "Approved"),
-        ("CR-037", "Update", "Patch KubeVirt to v1.2.1", "admin", "Rejected"),
-        ("CR-036", "Scale", "Scale API gateway replicas", "ops-user", "Executed")];
+    let changes = [
+        (
+            "CR-042",
+            "Scale",
+            "Scale worker pool 3->5",
+            "ops-user",
+            "Pending",
+        ),
+        (
+            "CR-041",
+            "Config",
+            "Update VM memory limits",
+            "dev-lead",
+            "Approved",
+        ),
+        (
+            "CR-040",
+            "Delete",
+            "Remove stale snapshots",
+            "ci-bot",
+            "Pending",
+        ),
+        (
+            "CR-039",
+            "Migrate",
+            "Migrate db-primary to node-3",
+            "ops-user",
+            "Pending",
+        ),
+        (
+            "CR-038",
+            "Create",
+            "New staging environment",
+            "dev-lead",
+            "Approved",
+        ),
+        (
+            "CR-037",
+            "Update",
+            "Patch KubeVirt to v1.2.1",
+            "admin",
+            "Rejected",
+        ),
+        (
+            "CR-036",
+            "Scale",
+            "Scale API gateway replicas",
+            "ops-user",
+            "Executed",
+        ),
+    ];
 
     let rows = changes.iter().map(|(id, ctype, desc, req, status)| {
         let status_color = match *status {
@@ -79,7 +127,11 @@ pub fn render(f: &mut Frame, area: Rect) {
             Cell::from(*ctype),
             Cell::from(*desc),
             Cell::from(*req),
-            Cell::from(*status).style(Style::default().fg(status_color).add_modifier(Modifier::BOLD)),
+            Cell::from(*status).style(
+                Style::default()
+                    .fg(status_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ])
         .height(1)
     });
@@ -100,7 +152,9 @@ pub fn render(f: &mut Frame, area: Rect) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
                     " Change Requests ",
-                    Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Rgb(222, 115, 86))
+                        .add_modifier(Modifier::BOLD),
                 )),
         )
         .column_spacing(1);
@@ -111,7 +165,9 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  CR-042: Scale worker pool",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
@@ -133,7 +189,9 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Impact Analysis",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(vec![
             Span::styled("  CPU:        ", Style::default().fg(Color::Gray)),
@@ -150,7 +208,9 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Approvals (1/2 required)",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(vec![
             Span::styled("  [x] ", Style::default().fg(Color::Rgb(50, 205, 50))),
@@ -158,7 +218,10 @@ pub fn render(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("  [ ] ", Style::default().fg(Color::Gray)),
-            Span::styled("security-team (pending)", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                "security-team (pending)",
+                Style::default().fg(Color::Rgb(255, 200, 0)),
+            ),
         ]),
     ];
     let details_widget = Paragraph::new(details).block(
@@ -167,24 +230,56 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Change Details ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(details_widget, content_chunks[1]);
 
     // Help
     let help = Paragraph::new(Line::from(vec![
-        Span::styled("↑↓", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "↑↓",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Navigate | ", Style::default().fg(Color::Gray)),
-        Span::styled("a", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "a",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Approve | ", Style::default().fg(Color::Gray)),
-        Span::styled("r", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "r",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Reject | ", Style::default().fg(Color::Gray)),
-        Span::styled("x", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "x",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Execute | ", Style::default().fg(Color::Gray)),
-        Span::styled("n", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "n",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": New | ", Style::default().fg(Color::Gray)),
-        Span::styled("q", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "q",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Back", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)

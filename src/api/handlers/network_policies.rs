@@ -16,8 +16,7 @@ pub struct NetworkPolicyResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/network-policies", get(list_network_policies))
+    Router::new().route("/network-policies", get(list_network_policies))
 }
 
 #[cfg(feature = "web")]

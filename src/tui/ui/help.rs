@@ -3,11 +3,11 @@
 use crate::tui::colors::tui as colors;
 use crate::tui::config::TuiConfig;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, _config: &TuiConfig) {
@@ -25,26 +25,19 @@ pub fn render(f: &mut Frame, _config: &TuiConfig) {
     // Header
     let header_text = Line::from(vec![
         Span::styled(
-            "VMRogue".to_string(),
+            "VMRogue",
             Style::default()
                 .fg(colors::ORANGE)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(" - ".to_string(), Style::default().fg(colors::TEXT_MUTED)),
+        Span::styled(" - ", Style::default().fg(colors::TEXT_MUTED)),
+        Span::styled("KubeVirt VM Manager", Style::default().fg(colors::TEXT)),
+        Span::styled("  |  ", Style::default().fg(colors::TEXT_MUTED)),
         Span::styled(
-            "KubeVirt VM Manager".to_string(),
-            Style::default().fg(colors::TEXT),
-        ),
-        Span::styled("  │  ".to_string(), Style::default().fg(colors::TEXT_MUTED)),
-        Span::styled(
-            "📖 Help".to_string(),
+            "Keyboard Reference",
             Style::default()
                 .fg(colors::LIGHT_ORANGE)
                 .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(
-            ": Keyboard Shortcuts & Reference".to_string(),
-            Style::default().fg(colors::TEXT),
         ),
     ]);
     let header = Paragraph::new(header_text)
@@ -61,27 +54,19 @@ pub fn render(f: &mut Frame, _config: &TuiConfig) {
 
     // Footer
     let footer_text = Line::from(vec![
-        Span::styled("⌨  ".to_string(), Style::default().fg(colors::ORANGE)),
         Span::styled(
-            "Press any key to return".to_string(),
+            "Press any key to return",
             Style::default().fg(colors::TEXT),
         ),
-        Span::styled(" │ ".to_string(), Style::default().fg(colors::TEXT_MUTED)),
+        Span::styled(" | ", Style::default().fg(colors::TEXT_MUTED)),
         Span::styled(
-            "💡 Tip: ".to_string(),
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled("Use ".to_string(), Style::default().fg(colors::TEXT_MUTED)),
-        Span::styled(
-            "Ctrl+P".to_string(),
+            "Ctrl+P",
             Style::default()
                 .fg(colors::LIGHT_ORANGE)
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(
-            " for quick jump menu".to_string(),
+            " Quick Jump to any view",
             Style::default().fg(colors::TEXT_MUTED),
         ),
     ]);
@@ -95,265 +80,117 @@ pub fn render(f: &mut Frame, _config: &TuiConfig) {
     f.render_widget(footer, chunks[2]);
 }
 
+fn section(title: &str) -> Line<'_> {
+    Line::from(vec![Span::styled(
+        title,
+        Style::default()
+            .fg(colors::WARNING)
+            .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
+    )])
+}
+
+fn key_line<'a>(key: &'a str, desc: &'a str) -> Line<'a> {
+    Line::from(vec![
+        Span::styled(
+            format!("  {:<16}", key),
+            Style::default()
+                .fg(colors::ORANGE)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(desc),
+    ])
+}
+
+fn key_line_colored<'a>(key: &'a str, desc: &'a str, color: ratatui::style::Color) -> Line<'a> {
+    Line::from(vec![
+        Span::styled(
+            format!("  {:<16}", key),
+            Style::default()
+                .fg(color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw(desc),
+    ])
+}
+
 fn render_help_content(f: &mut Frame, area: ratatui::layout::Rect) {
     let help_text = vec![
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "⌨  GLOBAL KEYBINDINGS",
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]),
+        // ── GLOBAL ──
+        section("GLOBAL"),
+        Line::from(""),
+        key_line("q", "Quit application"),
+        key_line("Esc", "Go back / quit from main views"),
+        key_line("?", "Show this help screen"),
+        key_line("Ctrl+R", "Refresh data from Kubernetes"),
+        key_line("Ctrl+P", "Quick Jump menu (fuzzy search all views)"),
+        key_line("/", "Open search bar"),
+        Line::from(""),
+        // ── VIEWS ──
+        section("VIEW NAVIGATION"),
+        Line::from(""),
+        key_line_colored("1", "Dashboard - System overview", colors::INFO),
+        key_line_colored("2", "VM List - Browse and manage VMs", colors::INFO),
+        key_line_colored("3", "Snapshots - Backup and restore", colors::INFO),
+        key_line_colored("4", "Profiles - Resource templates", colors::INFO),
+        key_line_colored("5", "Blueprints - Multi-VM deployments", colors::INFO),
+        key_line_colored("6", "Activity Log - Recent operations", colors::INFO),
+        key_line_colored("7", "Nodes - Cluster node status", colors::INFO),
+        key_line_colored("8", "Events - Kubernetes events", colors::INFO),
+        key_line_colored("9", "Cluster Health - Health dashboard", colors::INFO),
+        key_line_colored("0", "Topology - VM placement map", colors::INFO),
+        Line::from(""),
+        // ── VM LIST ──
+        section("VM LIST"),
+        Line::from(""),
+        key_line("j/k  or  Up/Down", "Navigate VM list"),
+        key_line("Enter", "View VM details"),
+        key_line("m", "Context menu for selected VM"),
+        key_line("c", "Create new VM"),
+        key_line_colored("s", "Start VM (batch in multi-select)", colors::SUCCESS),
+        key_line_colored("x", "Stop VM (batch in multi-select)", colors::ERROR),
+        key_line_colored("d", "Delete VM (batch in multi-select)", colors::ERROR),
+        key_line("o", "Cycle sort mode (Name/Status/Age)"),
+        key_line("f", "Cycle status filter (All/Running/Stopped/Failed)"),
+        key_line("v", "Toggle multi-select mode"),
+        Line::from(""),
+        // ── MULTI-SELECT ──
+        section("MULTI-SELECT MODE (v)"),
+        Line::from(""),
+        key_line("Space", "Toggle selection on current VM"),
+        key_line("Ctrl+A", "Select all VMs"),
+        key_line("s / x / d", "Batch start / stop / delete selected"),
+        key_line("v", "Exit multi-select mode"),
+        Line::from(""),
+        // ── SEARCH ──
+        section("SEARCH (/)"),
+        Line::from(""),
+        key_line("Type", "Filter VMs by name or status"),
+        key_line("Ctrl+I", "Toggle case sensitivity (aa/Aa)"),
+        key_line("Ctrl+R", "Toggle regex/literal mode"),
+        key_line("Enter", "Apply search and close"),
+        key_line("Esc", "Cancel search"),
+        Line::from(""),
+        // ── VM DETAILS ──
+        section("VM DETAILS"),
+        Line::from(""),
+        key_line("Tab / h/l", "Switch tabs (Overview, Network, Events)"),
+        key_line("Backspace", "Go back to VM list"),
+        Line::from(""),
+        // ── SNAPSHOTS ──
+        section("SNAPSHOTS"),
+        Line::from(""),
+        key_line("j/k", "Navigate snapshot list"),
+        key_line_colored("c", "Create new snapshot", colors::SUCCESS),
+        Line::from(""),
+        // ── STATUS INDICATORS ──
+        section("STATUS INDICATORS"),
         Line::from(""),
         Line::from(vec![
-            Span::styled(
-                "  q / Esc       ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🚪  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Quit application"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  ?             ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("📖  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Show this help screen"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  r / Ctrl+R    ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🔄  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Refresh data from Kubernetes"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  Ctrl+P        ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🚀  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Quick jump menu (fuzzy search)"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "🧭  VIEW NAVIGATION",
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  1             ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("📊  ", Style::default().fg(colors::ORANGE)),
-            Span::raw("Dashboard - System overview"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  2             ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("💻  ", Style::default().fg(colors::ORANGE)),
-            Span::raw("VM List - Browse and manage VMs"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  3             ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("📸  ", Style::default().fg(colors::ORANGE)),
-            Span::raw("Snapshots - Backup and restore"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  4             ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("⚙️  ", Style::default().fg(colors::ORANGE)),
-            Span::raw("Profiles - Resource templates"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  5             ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🏗️  ", Style::default().fg(colors::ORANGE)),
-            Span::raw("Blueprints - Multi-VM deployments"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "💻  VM LIST VIEW",
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  ↑↓ / j/k      ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("Navigate VM list"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  Enter         ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("View VM details"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  s             ",
-                Style::default()
-                    .fg(colors::SUCCESS)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🟢  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Start selected VM"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  x             ",
-                Style::default()
-                    .fg(colors::ERROR)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("⏸   ", Style::default().fg(colors::TEXT)),
-            Span::raw("Stop selected VM"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  d             ",
-                Style::default()
-                    .fg(colors::ERROR)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🗑️  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Delete selected VM (with confirmation)"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "📸  SNAPSHOTS VIEW",
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  ↑↓ / j/k      ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("Navigate snapshot list"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  c             ",
-                Style::default()
-                    .fg(colors::SUCCESS)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("📸  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Create new snapshot"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  d             ",
-                Style::default()
-                    .fg(colors::ERROR)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🗑️  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Delete selected snapshot"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  r             ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("♻️  ", Style::default().fg(colors::TEXT)),
-            Span::raw("Restore selected snapshot"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "⚙️  PROFILES & BLUEPRINTS",
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  ↑↓ / j/k      ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::raw("Navigate list"),
-        ]),
-        Line::from(vec![
-            Span::styled(
-                "  Enter         ",
-                Style::default()
-                    .fg(colors::ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🔍  ", Style::default().fg(colors::TEXT)),
-            Span::raw("View details"),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "💡 STATUS INDICATORS",
-            Style::default()
-                .fg(colors::WARNING)
-                .add_modifier(Modifier::BOLD | Modifier::UNDERLINED),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  🟢 ", Style::default().fg(colors::SUCCESS)),
-            Span::raw("Running / OK        "),
-            Span::styled("🟡 ", Style::default().fg(colors::WARNING)),
-            Span::raw("Starting / Warning        "),
-            Span::styled("🔴 ", Style::default().fg(colors::ERROR)),
-            Span::raw("Failed / Error"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ⏸  ", Style::default().fg(colors::TEXT_MUTED)),
-            Span::raw("Stopped             "),
-            Span::styled("⚪ ", Style::default().fg(colors::TEXT_MUTED)),
-            Span::raw("Unknown / Inactive"),
+            Span::styled("  Running  ", Style::default().fg(colors::SUCCESS)),
+            Span::styled("  Stopped  ", Style::default().fg(colors::TEXT_MUTED)),
+            Span::styled("  Starting  ", Style::default().fg(colors::WARNING)),
+            Span::styled("  Failed  ", Style::default().fg(colors::ERROR)),
         ]),
     ];
 
@@ -362,7 +199,12 @@ fn render_help_content(f: &mut Frame, area: ratatui::layout::Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(colors::BORDER))
-                .title("Keybindings"),
+                .title(Span::styled(
+                    " Keybindings ",
+                    Style::default()
+                        .fg(colors::ORANGE)
+                        .add_modifier(Modifier::BOLD),
+                )),
         )
         .alignment(Alignment::Left);
 

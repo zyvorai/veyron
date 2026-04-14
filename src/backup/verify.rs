@@ -165,7 +165,11 @@ pub struct VerificationRunner;
 
 impl VerificationRunner {
     /// Run verification checks by querying the VirtualMachineSnapshot CRD
-    pub async fn verify(backup_name: &str, namespace: &str, verification_type: VerificationType) -> VerificationReport {
+    pub async fn verify(
+        backup_name: &str,
+        namespace: &str,
+        verification_type: VerificationType,
+    ) -> VerificationReport {
         let mut report = VerificationReport::new(backup_name, verification_type.clone());
 
         // Check if snapshot exists in Kubernetes
@@ -175,20 +179,29 @@ impl VerificationRunner {
                     Ok(snapshot) => {
                         // File/snapshot exists check
                         report.add_check(
-                            VerificationCheck::new("snapshot-exists", "Verify snapshot exists in cluster")
-                                .passed()
+                            VerificationCheck::new(
+                                "snapshot-exists",
+                                "Verify snapshot exists in cluster",
+                            )
+                            .passed(),
                         );
 
                         // Ready-to-use check
                         if snapshot.ready_to_use {
                             report.add_check(
-                                VerificationCheck::new("ready-to-use", "Verify snapshot is ready to use")
-                                    .passed()
+                                VerificationCheck::new(
+                                    "ready-to-use",
+                                    "Verify snapshot is ready to use",
+                                )
+                                .passed(),
                             );
                         } else {
                             report.add_check(
-                                VerificationCheck::new("ready-to-use", "Verify snapshot is ready to use")
-                                    .failed("Snapshot is not yet ready to use")
+                                VerificationCheck::new(
+                                    "ready-to-use",
+                                    "Verify snapshot is ready to use",
+                                )
+                                .failed("Snapshot is not yet ready to use"),
                             );
                         }
 
@@ -196,12 +209,12 @@ impl VerificationRunner {
                         if !snapshot.vm_name.is_empty() {
                             report.add_check(
                                 VerificationCheck::new("metadata", "Verify snapshot metadata")
-                                    .passed()
+                                    .passed(),
                             );
                         } else {
                             report.add_check(
                                 VerificationCheck::new("metadata", "Verify snapshot metadata")
-                                    .failed("Snapshot has no source VM name")
+                                    .failed("Snapshot has no source VM name"),
                             );
                         }
 
@@ -210,27 +223,30 @@ impl VerificationRunner {
                             crate::snapshots::SnapshotStatus::Succeeded => {
                                 report.add_check(
                                     VerificationCheck::new("status", "Verify snapshot status")
-                                        .passed()
+                                        .passed(),
                                 );
                             }
                             crate::snapshots::SnapshotStatus::Failed => {
                                 report.add_check(
                                     VerificationCheck::new("status", "Verify snapshot status")
-                                        .failed("Snapshot is in Failed state")
+                                        .failed("Snapshot is in Failed state"),
                                 );
                             }
                             _ => {
                                 report.add_check(
                                     VerificationCheck::new("status", "Verify snapshot status")
-                                        .warning("Snapshot is still in progress")
+                                        .warning("Snapshot is still in progress"),
                                 );
                             }
                         }
                     }
                     Err(_) => {
                         report.add_check(
-                            VerificationCheck::new("snapshot-exists", "Verify snapshot exists in cluster")
-                                .failed(format!("Snapshot '{}' not found in namespace", backup_name))
+                            VerificationCheck::new(
+                                "snapshot-exists",
+                                "Verify snapshot exists in cluster",
+                            )
+                            .failed(format!("Snapshot '{}' not found in namespace", backup_name)),
                         );
                     }
                 }
@@ -238,7 +254,7 @@ impl VerificationRunner {
             Err(e) => {
                 report.add_check(
                     VerificationCheck::new("cluster-connection", "Connect to Kubernetes cluster")
-                        .failed(format!("Failed to connect: {}", e))
+                        .failed(format!("Failed to connect: {}", e)),
                 );
             }
         }
@@ -326,7 +342,8 @@ mod tests {
     #[tokio::test]
     async fn test_verification_runner() {
         // Without a real K8s cluster, verify returns a report with a connection failure
-        let report = VerificationRunner::verify("test-backup", "default", VerificationType::Quick).await;
+        let report =
+            VerificationRunner::verify("test-backup", "default", VerificationType::Quick).await;
         assert!(!report.checks.is_empty());
         // Without cluster access, expect a failed cluster-connection check
         assert_eq!(report.status, VerificationStatus::Failed);

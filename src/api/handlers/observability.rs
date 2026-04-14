@@ -17,8 +17,7 @@ pub struct ObservabilityOverview {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/observability/overview", get(get_observability_overview))
+    Router::new().route("/observability/overview", get(get_observability_overview))
 }
 
 #[cfg(feature = "web")]

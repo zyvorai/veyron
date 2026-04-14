@@ -2911,6 +2911,7 @@ dependencies = [
  "tokio",
  "toml",
  "tower-http 0.6.8",
+ "zeroize",
 ]
 
 [[package]]

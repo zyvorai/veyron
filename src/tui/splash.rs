@@ -2,11 +2,11 @@
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
-    Frame,
 };
 use std::time::{Duration, Instant};
 
@@ -151,6 +151,18 @@ impl SplashScreen {
                 "KubeVirt VM Management & Orchestration",
                 Style::default()
                     .fg(colors::TEXT)
+                    .add_modifier(Modifier::ITALIC),
+            )),
+            Line::from(""),
+            Line::from(Span::styled(
+                format!("v{}", env!("CARGO_PKG_VERSION")),
+                Style::default().fg(colors::TEXT_MUTED),
+            )),
+            Line::from(""),
+            Line::from(Span::styled(
+                "Press any key to continue...",
+                Style::default()
+                    .fg(colors::TEXT_MUTED)
                     .add_modifier(Modifier::ITALIC),
             )),
         ];

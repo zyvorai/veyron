@@ -6,7 +6,8 @@ We release patches for security vulnerabilities for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.1.x   | :white_check_mark: |
+| 0.2.x   | :white_check_mark: |
+| 0.1.x   | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -75,6 +76,34 @@ When using vmrogue:
 4. **Audit Logs**: Monitor vmrogue operations in production
 5. **Secure Credentials**: Never commit credentials or secrets to git
 6. **Network Security**: Use appropriate network policies in Kubernetes
+
+### 🛡️ Security Hardening (v0.2.x)
+
+VMRogue implements the following security measures:
+
+#### Secret Management
+- Secret values are zeroized on drop, rotate, and revoke using the `zeroize` crate
+- `Secret` type does not implement `Clone` to prevent accidental copies that bypass zeroization
+- Secret values are excluded from serialization (`#[serde(skip_serializing)]`)
+- Custom `Debug` implementation redacts secret values
+
+#### SSRF Prevention
+- Webhook URLs are validated against private/internal IP ranges (RFC 1918, RFC 6598 CGNAT, link-local, loopback)
+- DNS resolution is performed upfront and all returned addresses are validated
+- Curl is pinned to the resolved IP via `--resolve` to prevent DNS rebinding attacks
+- Only `http://` and `https://` schemes are allowed
+
+#### Data Persistence
+- Persistent data is never written to world-readable `/tmp`
+- All file writes use atomic write-to-temp + fsync + rename to prevent corruption
+- Temp files use randomized names to prevent race conditions
+- Files are created with mode `0600` on Unix
+
+#### API Security
+- CORS disabled by default; requires explicit origin configuration
+- TLS certificate validation is always enforced
+- PAM usernames limited to 32 characters
+- API error responses do not leak internal details
 
 ### 🚨 Known Security Considerations
 

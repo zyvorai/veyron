@@ -8,18 +8,18 @@ struct AlertStore {
 }
 
 impl AlertStore {
-    fn path() -> std::path::PathBuf {
-        dirs::data_dir()
-            .unwrap_or_else(|| {
-                log::warn!("Could not determine data directory, falling back to /tmp");
-                std::path::PathBuf::from("/tmp")
-            })
-            .join("vmrogue")
-            .join("alerts.json")
+    fn path() -> anyhow::Result<std::path::PathBuf> {
+        Ok(crate::utils::data_dir()?.join("alerts.json"))
     }
 
     fn load() -> Self {
-        let path = Self::path();
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to determine data directory: {}", e);
+                return Self::default();
+            }
+        };
         if path.exists() {
             std::fs::read_to_string(&path)
                 .ok()
@@ -31,12 +31,15 @@ impl AlertStore {
     }
 
     fn save(&self) {
-        let path = Self::path();
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = std::fs::write(&path, content);
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to save alerts: {}", e);
+                return;
+            }
+        };
+        if let Err(e) = crate::utils::atomic_write(&path, self) {
+            log::error!("Failed to save alerts: {}", e);
         }
     }
 }
@@ -376,7 +379,10 @@ pub fn handle_alerts_create(
     println!("  Threshold: {} {}", operator, threshold);
     println!("  Duration:  {} minutes", duration);
     println!();
-    println!("{}", color::success("✓ Alert rule created and persisted successfully"));
+    println!(
+        "{}",
+        color::success("✓ Alert rule created and persisted successfully")
+    );
     Ok(())
 }
 
@@ -519,10 +525,7 @@ pub async fn handle_health_check(component: Option<String>, output: String) -> R
 
     if let Some(comp) = &component {
         println!("  Component: {}", color::value(comp));
-        let check = health
-            .checks
-            .iter()
-            .find(|c| c.component == *comp);
+        let check = health.checks.iter().find(|c| c.component == *comp);
         if let Some(c) = check {
             let status_str = match c.status {
                 HealthStatus::Healthy => color::success("Healthy"),

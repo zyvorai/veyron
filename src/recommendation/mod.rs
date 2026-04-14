@@ -28,21 +28,47 @@ pub struct Recommendation {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum RecommendationCategory {
-    ResourceOptimization, CostSaving, PerformanceTuning, SecurityHardening,
-    HighAvailability, Compliance, BestPractice,
+    ResourceOptimization,
+    CostSaving,
+    PerformanceTuning,
+    SecurityHardening,
+    HighAvailability,
+    Compliance,
+    BestPractice,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-pub enum Priority { Critical, High, Medium, Low, Info }
+pub enum Priority {
+    Critical,
+    High,
+    Medium,
+    Low,
+    Info,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Impact { High, Medium, Low }
+pub enum Impact {
+    High,
+    Medium,
+    Low,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Effort { Minimal, Low, Medium, High }
+pub enum Effort {
+    Minimal,
+    Low,
+    Medium,
+    High,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum RecommendationStatus { New, Acknowledged, InProgress, Applied, Dismissed }
+pub enum RecommendationStatus {
+    New,
+    Acknowledged,
+    InProgress,
+    Applied,
+    Dismissed,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecommendedAction {
@@ -62,9 +88,14 @@ pub struct RecommendationConfig {
 impl Default for RecommendationConfig {
     fn default() -> Self {
         Self {
-            enabled: true, min_priority: Priority::Low,
-            categories: vec![RecommendationCategory::ResourceOptimization, RecommendationCategory::CostSaving,
-                RecommendationCategory::PerformanceTuning, RecommendationCategory::SecurityHardening],
+            enabled: true,
+            min_priority: Priority::Low,
+            categories: vec![
+                RecommendationCategory::ResourceOptimization,
+                RecommendationCategory::CostSaving,
+                RecommendationCategory::PerformanceTuning,
+                RecommendationCategory::SecurityHardening,
+            ],
             auto_refresh_secs: 3600,
         }
     }
@@ -72,7 +103,10 @@ impl Default for RecommendationConfig {
 
 impl RecommendationEngine {
     pub fn new() -> Self {
-        Self { recommendations: Vec::new(), config: RecommendationConfig::default() }
+        Self {
+            recommendations: Vec::new(),
+            config: RecommendationConfig::default(),
+        }
     }
 
     pub fn add(&mut self, rec: Recommendation) {
@@ -80,19 +114,31 @@ impl RecommendationEngine {
     }
 
     pub fn by_category(&self, cat: &RecommendationCategory) -> Vec<&Recommendation> {
-        self.recommendations.iter().filter(|r| r.category == *cat).collect()
+        self.recommendations
+            .iter()
+            .filter(|r| r.category == *cat)
+            .collect()
     }
 
     pub fn by_priority(&self, min: &Priority) -> Vec<&Recommendation> {
-        self.recommendations.iter().filter(|r| r.priority <= *min).collect()
+        self.recommendations
+            .iter()
+            .filter(|r| r.priority <= *min)
+            .collect()
     }
 
     pub fn pending(&self) -> Vec<&Recommendation> {
-        self.recommendations.iter().filter(|r| matches!(r.status, RecommendationStatus::New)).collect()
+        self.recommendations
+            .iter()
+            .filter(|r| matches!(r.status, RecommendationStatus::New))
+            .collect()
     }
 
     pub fn total_potential_savings(&self) -> f64 {
-        self.recommendations.iter().map(|r| r.potential_savings).sum()
+        self.recommendations
+            .iter()
+            .map(|r| r.potential_savings)
+            .sum()
     }
 
     pub fn dismiss(&mut self, id: &str) {
@@ -109,5 +155,7 @@ impl RecommendationEngine {
 }
 
 impl Default for RecommendationEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

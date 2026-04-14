@@ -8,11 +8,11 @@ use crate::tui::{
 };
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, state: &AppState, _config: &TuiConfig) {
@@ -81,16 +81,29 @@ fn render_header(f: &mut Frame, state: &AppState, area: Rect) {
     // Build header with gradient brand name
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(" - ", Style::default().fg(colors::TEXT_MUTED)));
-    header_spans.push(Span::styled("KubeVirt VM Manager", Style::default().fg(colors::TEXT)));
-    header_spans.push(Span::styled("  │  ", Style::default().fg(colors::TEXT_MUTED)));
+    header_spans.push(Span::styled(
+        "KubeVirt VM Manager",
+        Style::default().fg(colors::TEXT),
+    ));
+    header_spans.push(Span::styled(
+        "  │  ",
+        Style::default().fg(colors::TEXT_MUTED),
+    ));
     // Gradient "Dashboard" label
     let mut dash_spans = gradient::sunset().text("📊 Dashboard");
     header_spans.append(&mut dash_spans);
     header_spans.push(Span::styled(
-        format!(": {} VMs • {} Running", state.vms.len(), state.get_stats().running),
+        format!(
+            ": {} VMs • {} Running",
+            state.vms.len(),
+            state.get_stats().running
+        ),
         Style::default().fg(colors::TEXT),
     ));
-    header_spans.push(Span::styled("  │  1-6: Views", Style::default().fg(colors::TEXT_MUTED)));
+    header_spans.push(Span::styled(
+        "  │  1-6: Views",
+        Style::default().fg(colors::TEXT_MUTED),
+    ));
     let header_text = Line::from(header_spans);
 
     let header = Paragraph::new(header_text)
@@ -232,21 +245,19 @@ fn render_cluster_health(f: &mut Frame, state: &AppState, area: Rect) {
         ("⚪", "Idle", colors::TEXT_MUTED)
     };
 
-    let text = vec![
-        Line::from(vec![
-            Span::styled(format!("{} ", health_icon), Style::default()),
-            Span::styled(
-                health_text,
-                Style::default()
-                    .fg(health_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                format!("  ns:{}", state.namespace),
-                Style::default().fg(colors::TEXT_MUTED),
-            ),
-        ]),
-    ];
+    let text = vec![Line::from(vec![
+        Span::styled(format!("{} ", health_icon), Style::default()),
+        Span::styled(
+            health_text,
+            Style::default()
+                .fg(health_color)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("  ns:{}", state.namespace),
+            Style::default().fg(colors::TEXT_MUTED),
+        ),
+    ])];
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -452,10 +463,7 @@ fn render_recent_activity(f: &mut Frame, state: &AppState, area: Rect) {
                 };
                 ListItem::new(vec![
                     Line::from(vec![
-                        Span::styled(
-                            format!("{} ", event.icon),
-                            Style::default().fg(icon_color),
-                        ),
+                        Span::styled(format!("{} ", event.icon), Style::default().fg(icon_color)),
                         Span::styled(
                             &event.vm_name,
                             Style::default()
@@ -498,62 +506,34 @@ fn render_recent_activity(f: &mut Frame, state: &AppState, area: Rect) {
 }
 
 fn render_quick_actions(f: &mut Frame, _state: &AppState, area: Rect) {
+    fn nav_line<'a>(key: &'a str, icon: &'a str, label: &'a str) -> Line<'a> {
+        Line::from(vec![
+            Span::styled(
+                format!(" {} ", key),
+                Style::default()
+                    .fg(colors::INFO)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(format!("{} ", icon), Style::default().fg(colors::ORANGE)),
+            Span::styled(label, Style::default().fg(colors::TEXT)),
+        ])
+    }
+
     let text = vec![
         Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  2 ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("💻  ", Style::default().fg(colors::ORANGE)),
-            Span::styled("VM List", Style::default().fg(colors::TEXT)),
-        ]),
+        nav_line("2", "💻", "VM List"),
+        nav_line("3", "📸", "Snapshots"),
+        nav_line("4", "⚙️", "Profiles"),
+        nav_line("5", "🏗️", "Blueprints"),
+        nav_line("6", "📋", "Activity"),
+        nav_line("7", "🖥️", "Nodes"),
+        nav_line("8", "⚡", "Events"),
+        nav_line("9", "💚", "Health"),
+        nav_line("0", "🗺️", "Topology"),
         Line::from(""),
         Line::from(vec![
-            Span::styled(
-                "  3 ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("📸  ", Style::default().fg(colors::ORANGE)),
-            Span::styled("Snapshots", Style::default().fg(colors::TEXT)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  4 ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("⚙️  ", Style::default().fg(colors::ORANGE)),
-            Span::styled("Profiles", Style::default().fg(colors::TEXT)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  5 ",
-                Style::default()
-                    .fg(colors::INFO)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled("🏗️  ", Style::default().fg(colors::ORANGE)),
-            Span::styled("Blueprints", Style::default().fg(colors::TEXT)),
-        ]),
-        Line::from(""),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  💡 ", Style::default().fg(colors::WARNING)),
-            Span::styled(
-                "Ctrl+P",
-                Style::default()
-                    .fg(colors::LIGHT_ORANGE)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(" Quick Jump", Style::default().fg(colors::TEXT_MUTED)),
+            Span::styled(" Ctrl+P ", Style::default().fg(colors::LIGHT_ORANGE).add_modifier(Modifier::BOLD)),
+            Span::styled("All views", Style::default().fg(colors::TEXT_MUTED)),
         ]),
     ];
 
@@ -579,7 +559,7 @@ fn render_footer(f: &mut Frame, state: &AppState, area: Rect) {
     let footer_line = Line::from(vec![
         Span::styled("⌨  ", Style::default().fg(colors::ORANGE)),
         Span::styled(
-            "1-6",
+            "1-0",
             Style::default()
                 .fg(colors::INFO)
                 .add_modifier(Modifier::BOLD),

@@ -2,7 +2,30 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
 #[command(name = "vmrogue")]
-#[command(about = "Craft VMs for KubeVirt with Rust power!", long_about = None)]
+#[command(about = "Craft VMs for KubeVirt with Rust power!")]
+#[command(long_about = "\
+Craft VMs for KubeVirt with Rust power!
+
+VMRogue is a CLI and TUI for managing KubeVirt virtual machines on Kubernetes.
+
+Quick start:
+  vmrogue doctor                     Check cluster connectivity and KubeVirt
+  vmrogue create my-vm -t ubuntu     Create a VM from a template
+  vmrogue ls                         List all VMs
+  vmrogue status my-vm               Show VM status and resources
+  vmrogue tui                        Launch interactive terminal UI
+
+  vmrogue commands                   List all commands grouped by category
+  vmrogue <command> --help           Detailed help for any command
+
+Configuration:
+  vmrogue config-init                Create default config file
+  vmrogue completions bash           Generate shell completions
+
+Environment variables:
+  KUBECONFIG                         Path to kubeconfig file
+  VMROGUE_NAMESPACE                  Default namespace
+  NO_COLOR                           Disable colored output")]
 #[command(version)]
 pub struct Cli {
     /// Kubernetes namespace
@@ -20,6 +43,10 @@ pub struct Cli {
     /// Enable verbose logging
     #[arg(short, long, global = true)]
     pub verbose: bool,
+
+    /// Disable colored output (also respects NO_COLOR env var)
+    #[arg(long, global = true)]
+    pub no_color: bool,
 
     #[command(subcommand)]
     pub command: Box<Commands>,
@@ -74,6 +101,7 @@ pub enum Commands {
     },
 
     /// List VMs in the namespace
+    #[command(visible_alias = "ls")]
     List {
         /// Show all namespaces
         #[arg(short = 'A', long)]
@@ -85,6 +113,7 @@ pub enum Commands {
     },
 
     /// Get details of a VM
+    #[command(visible_alias = "describe")]
     Get {
         /// VM name
         name: String,
@@ -95,6 +124,7 @@ pub enum Commands {
     },
 
     /// Delete a VM
+    #[command(visible_alias = "rm")]
     Delete {
         /// VM name
         name: String,
@@ -144,6 +174,7 @@ pub enum Commands {
     },
 
     /// Stream logs from a VM's virt-launcher pod
+    #[command(visible_alias = "log")]
     Logs {
         /// VM name
         name: String,
@@ -156,6 +187,7 @@ pub enum Commands {
     },
 
     /// Generate a VM manifest without creating it
+    #[command(visible_alias = "gen")]
     Generate {
         /// VM name
         name: String,
@@ -213,6 +245,7 @@ pub enum Commands {
     },
 
     /// Show detailed VM status with resource information
+    #[command(visible_alias = "stat")]
     Status {
         /// VM name
         name: String,
@@ -240,6 +273,7 @@ pub enum Commands {
     },
 
     /// Show resource usage summary
+    #[command(visible_alias = "top")]
     Resources {
         /// Show all namespaces
         #[arg(short = 'A', long)]
@@ -265,6 +299,7 @@ pub enum Commands {
     },
 
     /// Interactive VM creation wizard
+    #[command(visible_alias = "wiz")]
     Wizard {
         /// VM name (optional, will prompt if not provided)
         name: Option<String>,
@@ -2110,13 +2145,13 @@ pub enum Commands {
         #[arg(long)]
         theme: Option<String>,
 
-        /// Enable enhanced interactive mode with dialogs and menus
-        #[arg(short, long)]
-        interactive: bool,
+        /// Use basic TUI mode (without dialogs, menus, notifications)
+        #[arg(long)]
+        basic: bool,
     },
 
     /// Show current configuration
-    #[command(name = "config-show")]
+    #[command(name = "config-show", visible_alias = "config")]
     ConfigShow {
         /// Show config file path only
         #[arg(long)]
@@ -2134,6 +2169,10 @@ pub enum Commands {
     /// List all commands grouped by category
     #[command(name = "commands")]
     CommandList,
+
+    /// Diagnose environment and connectivity
+    #[command(name = "doctor", visible_alias = "doc")]
+    Doctor,
 }
 
 #[cfg(test)]
@@ -2393,9 +2432,9 @@ mod tests {
 
     #[test]
     fn test_tui_command() {
-        let cli = parse(&["vmrogue", "tui", "--interactive"]).unwrap();
+        let cli = parse(&["vmrogue", "tui", "--basic"]).unwrap();
         match *cli.command {
-            Commands::Tui { interactive, .. } => assert!(interactive),
+            Commands::Tui { basic, .. } => assert!(basic),
             _ => panic!("Expected Tui command"),
         }
     }

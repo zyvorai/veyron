@@ -228,7 +228,9 @@ impl TrafficAnalyzer {
             }
             // If still at capacity after cleanup, remove oldest flow
             if self.flows.len() >= self.max_flows {
-                if let Some(oldest_key) = self.flows.iter()
+                if let Some(oldest_key) = self
+                    .flows
+                    .iter()
                     .min_by_key(|(_, f)| f.last_seen)
                     .map(|(k, _)| k.clone())
                 {

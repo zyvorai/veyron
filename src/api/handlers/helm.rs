@@ -17,8 +17,7 @@ pub struct HelmReleaseResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/helm/releases", get(list_helm_releases))
+    Router::new().route("/helm/releases", get(list_helm_releases))
 }
 
 #[cfg(feature = "web")]

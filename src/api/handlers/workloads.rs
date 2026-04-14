@@ -17,8 +17,7 @@ pub struct WorkloadResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/workloads", get(list_workloads))
+    Router::new().route("/workloads", get(list_workloads))
 }
 
 #[cfg(feature = "web")]

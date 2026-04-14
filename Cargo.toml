@@ -40,6 +40,7 @@ chrono = "0.4"
 dialoguer = "0.11"
 indicatif = "0.17"
 rand = "0.8"
+zeroize = "1.8"
 
 # TUI dependencies
 ratatui = "0.28"

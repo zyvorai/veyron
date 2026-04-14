@@ -14,16 +14,8 @@ fn extract_and_calculate_cost(
     namespace: &str,
     period_hours: f64,
 ) -> crate::cost::VMCost {
-    let name = vm_obj
-        .metadata
-        .name
-        .as_deref()
-        .unwrap_or("unknown");
-    let vm_ns = vm_obj
-        .metadata
-        .namespace
-        .as_deref()
-        .unwrap_or(namespace);
+    let name = vm_obj.metadata.name.as_deref().unwrap_or("unknown");
+    let vm_ns = vm_obj.metadata.namespace.as_deref().unwrap_or(namespace);
     let cpu = vm_obj
         .spec
         .template
@@ -42,8 +34,7 @@ fn extract_and_calculate_cost(
         .as_ref()
         .and_then(|m| m.guest.as_deref())
         .unwrap_or("2Gi");
-    let memory_gi = crate::disk::DiskInfo::parse_size(memory_str)
-        / (1024 * 1024 * 1024);
+    let memory_gi = crate::disk::DiskInfo::parse_size(memory_str) / (1024 * 1024 * 1024);
     let storage_gi = vm_obj
         .spec
         .template
@@ -56,8 +47,7 @@ fn extract_and_calculate_cost(
                     v.empty_disk
                         .as_ref()
                         .map(|e| {
-                            crate::disk::DiskInfo::parse_size(&e.capacity)
-                                / (1024 * 1024 * 1024)
+                            crate::disk::DiskInfo::parse_size(&e.capacity) / (1024 * 1024 * 1024)
                         })
                         .unwrap_or(20) // estimate PVCs at 20Gi when size is unknown
                 })
@@ -66,10 +56,20 @@ fn extract_and_calculate_cost(
         .unwrap_or(20);
 
     if memory_gi > u32::MAX as u64 {
-        log::warn!("VM '{}': memory {}Gi exceeds u32 range, clamping to {}Gi for cost calculation", name, memory_gi, u32::MAX);
+        log::warn!(
+            "VM '{}': memory {}Gi exceeds u32 range, clamping to {}Gi for cost calculation",
+            name,
+            memory_gi,
+            u32::MAX
+        );
     }
     if storage_gi > u32::MAX as u64 {
-        log::warn!("VM '{}': storage {}Gi exceeds u32 range, clamping to {}Gi for cost calculation", name, storage_gi, u32::MAX);
+        log::warn!(
+            "VM '{}': storage {}Gi exceeds u32 range, clamping to {}Gi for cost calculation",
+            name,
+            storage_gi,
+            u32::MAX
+        );
     }
     calculator.calculate_vm_cost(
         name,
@@ -122,7 +122,12 @@ fn parse_period_hours(period: &str) -> f64 {
     }
 }
 
-pub async fn handle_cost_analyze(vm: Option<String>, period: String, output: String, namespace: &str) -> Result<()> {
+pub async fn handle_cost_analyze(
+    vm: Option<String>,
+    period: String,
+    output: String,
+    namespace: &str,
+) -> Result<()> {
     println!("{}", color::header("Cost Analysis"));
     if let Some(ref vm_name) = vm {
         println!("  VM:      {}", color::value(vm_name));
@@ -151,14 +156,12 @@ pub async fn handle_cost_analyze(vm: Option<String>, period: String, output: Str
                     Err(e) => {
                         eprintln!(
                             "{}",
-                            color::warning(&format!(
-                                "Could not fetch VM '{}': {}",
-                                vm_name, e
-                            ))
+                            color::warning(&format!("Could not fetch VM '{}': {}", vm_name, e))
                         );
                         return Err(anyhow::anyhow!(
                             "VM '{}' not found in namespace '{}'. Specify a valid VM name or omit it to list all VMs.",
-                            vm_name, namespace
+                            vm_name,
+                            namespace
                         ));
                     }
                 }
@@ -200,7 +203,10 @@ pub async fn handle_cost_analyze(vm: Option<String>, period: String, output: Str
 
                         for vm_obj in &vms {
                             let cost = extract_and_calculate_cost(
-                                &calculator, vm_obj, namespace, period_hours,
+                                &calculator,
+                                vm_obj,
+                                namespace,
+                                period_hours,
                             );
                             summary.add_vm_cost(&cost);
                             all_costs.push(cost);
@@ -222,9 +228,22 @@ pub async fn handle_cost_analyze(vm: Option<String>, period: String, output: Str
                             println!(
                                 "{:<25} {:<8} {:<10} {:<10} ${:<11.4} {}",
                                 cost.vm_name,
-                                format!("{:.0}", cost.cpu_cost / (calculator_rate_cpu(&calculator) * period_hours)),
-                                format!("{:.0}", cost.memory_cost / (calculator_rate_mem(&calculator) * period_hours)),
-                                format!("{:.1}", cost.storage_cost / (calculator_rate_storage(&calculator) * period_hours / COST_HOURS_PER_MONTH)),
+                                format!(
+                                    "{:.0}",
+                                    cost.cpu_cost
+                                        / (calculator_rate_cpu(&calculator) * period_hours)
+                                ),
+                                format!(
+                                    "{:.0}",
+                                    cost.memory_cost
+                                        / (calculator_rate_mem(&calculator) * period_hours)
+                                ),
+                                format!(
+                                    "{:.1}",
+                                    cost.storage_cost
+                                        / (calculator_rate_storage(&calculator) * period_hours
+                                            / COST_HOURS_PER_MONTH)
+                                ),
                                 cost.cost_per_hour(),
                                 color::value(&format!("${:.2}", cost.total_cost)),
                             );
@@ -256,7 +275,8 @@ pub async fn handle_cost_analyze(vm: Option<String>, period: String, output: Str
                     Err(e) => {
                         return Err(anyhow::anyhow!(
                             "Failed to list VMs in namespace '{}': {}",
-                            namespace, e
+                            namespace,
+                            e
                         ));
                     }
                 }
@@ -314,25 +334,25 @@ pub async fn handle_cost_summary(
 
     // If a namespace is specified, list VMs in that namespace; otherwise list across all namespaces.
     let vms = if let Some(ref ns) = namespace {
-        client.list_vms(ns).await.map_err(|e| {
-            anyhow::anyhow!("Failed to list VMs in namespace '{}': {}", ns, e)
-        })?
+        client
+            .list_vms(ns)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to list VMs in namespace '{}': {}", ns, e))?
     } else {
-        client.list_all_vms().await.map_err(|e| {
-            anyhow::anyhow!("Failed to list VMs across all namespaces: {}", e)
-        })?
+        client
+            .list_all_vms()
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to list VMs across all namespaces: {}", e))?
     };
 
     if vms.is_empty() {
-        println!(
-            "{}",
-            color::muted("No VMs found. Showing empty summary.")
-        );
+        println!("{}", color::muted("No VMs found. Showing empty summary."));
         println!();
     } else {
         for vm_obj in &vms {
             let ns_for_calc = namespace.as_deref().unwrap_or("default");
-            let vm_cost = extract_and_calculate_cost(&calculator, vm_obj, ns_for_calc, period_hours);
+            let vm_cost =
+                extract_and_calculate_cost(&calculator, vm_obj, ns_for_calc, period_hours);
             summary.add_vm_cost(&vm_cost);
         }
     }

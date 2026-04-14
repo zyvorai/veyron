@@ -31,7 +31,10 @@ impl PortRange {
     pub fn new(start: u16, end: u16) -> Self {
         // Ensure start <= end by swapping if needed
         if start > end {
-            Self { start: end, end: start }
+            Self {
+                start: end,
+                end: start,
+            }
         } else {
             Self { start, end }
         }

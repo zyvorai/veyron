@@ -59,11 +59,7 @@ impl CostMetric {
 
     pub fn hourly_cost(&self) -> f64 {
         let hours = self.duration_hours();
-        if hours > 0.0 {
-            self.cost / hours
-        } else {
-            0.0
-        }
+        if hours > 0.0 { self.cost / hours } else { 0.0 }
     }
 }
 

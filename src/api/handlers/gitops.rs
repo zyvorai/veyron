@@ -1,5 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::{get, post}};
+use axum::{
+    Json, Router,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 
 /// GitOps status

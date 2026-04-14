@@ -22,7 +22,10 @@ impl ProfileStorage {
             fs::create_dir_all(&config_dir).context("Failed to create profiles directory")?;
         }
 
-        Ok(Self { config_dir, read_only: false })
+        Ok(Self {
+            config_dir,
+            read_only: false,
+        })
     }
 
     /// Create an in-memory (no-op) storage for fallback scenarios
@@ -48,7 +51,11 @@ impl ProfileStorage {
             .chars()
             .filter(|c| *c != '/' && *c != '\\' && *c != '.')
             .collect();
-        let safe_name = if safe_name.is_empty() { "unnamed" } else { &safe_name };
+        let safe_name = if safe_name.is_empty() {
+            "unnamed"
+        } else {
+            &safe_name
+        };
         self.config_dir.join(format!("{}.yaml", safe_name))
     }
 

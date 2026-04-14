@@ -1,5 +1,5 @@
 use crate::tui::colors::cli as color;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 pub fn handle_profiles(details: bool) -> Result<()> {
     use crate::profiles::PROFILES;
@@ -52,7 +52,12 @@ pub fn handle_profiles(details: bool) -> Result<()> {
         "{}",
         color::muted("Use 'vmrogue profile <name>' for details")
     );
-    println!("{}", color::muted("Create custom: vmrogue profile-create <name> --cpus <n> --memory <size> --disk-size <size>"));
+    println!(
+        "{}",
+        color::muted(
+            "Create custom: vmrogue profile-create <name> --cpus <n> --memory <size> --disk-size <size>"
+        )
+    );
     Ok(())
 }
 
@@ -92,7 +97,7 @@ pub fn handle_profile_create(
     recommended_os: Option<String>,
     from_file: Option<String>,
 ) -> Result<()> {
-    use crate::profiles::{Profile, PROFILES};
+    use crate::profiles::{PROFILES, Profile};
     use anyhow::Context;
 
     let profile = if let Some(file_path) = from_file {
@@ -498,7 +503,7 @@ pub fn handle_blueprint_create(
     from_file: String,
     description: Option<String>,
 ) -> Result<()> {
-    use crate::blueprints::{Blueprint, BLUEPRINTS};
+    use crate::blueprints::{BLUEPRINTS, Blueprint};
     use anyhow::Context;
 
     // Load blueprint from file
@@ -619,7 +624,7 @@ pub fn handle_blueprint_delete(name: String, yes: bool) -> Result<()> {
 }
 
 pub fn handle_blueprint_validate(file: String, detailed: bool) -> Result<()> {
-    use crate::blueprints::{validator, Blueprint};
+    use crate::blueprints::{Blueprint, validator};
     use anyhow::Context;
 
     // Load blueprint from file

@@ -17,8 +17,7 @@ pub struct ForecastPrediction {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/forecasting/predictions", get(list_predictions))
+    Router::new().route("/forecasting/predictions", get(list_predictions))
 }
 
 #[cfg(feature = "web")]

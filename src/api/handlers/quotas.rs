@@ -17,8 +17,7 @@ pub struct QuotaResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/quotas", get(list_quotas))
+    Router::new().route("/quotas", get(list_quotas))
 }
 
 #[cfg(feature = "web")]

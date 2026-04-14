@@ -7,8 +7,8 @@ use crate::utils::VMRogueError;
 use anyhow::Result;
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use kube::{
-    api::{Api, DeleteParams, ListParams, Patch, PatchParams, PostParams},
     Client, Config,
+    api::{Api, DeleteParams, ListParams, Patch, PatchParams, PostParams},
 };
 use serde_json::json;
 use std::sync::OnceLock;
@@ -17,11 +17,55 @@ pub use converter::vm_config_to_kubevirt;
 pub use status::{ResourceSummary, VMStatus};
 pub use types::*;
 
-static KUBECONFIG_PATH: OnceLock<String> = OnceLock::new();
+pub(crate) static KUBECONFIG_PATH: OnceLock<String> = OnceLock::new();
+static CACHED_CONFIG: tokio::sync::OnceCell<Config> = tokio::sync::OnceCell::const_new();
 
 /// Set the global kubeconfig path (called once at startup)
 pub fn set_kubeconfig_path(path: String) {
     let _ = KUBECONFIG_PATH.set(path);
+}
+
+/// Resolve the kube `Config`, caching it for subsequent calls.
+///
+/// The config is pure data (no runtime handles), so it is safe to cache
+/// across await points and even across tokio runtimes in tests.
+async fn resolve_config() -> Result<Config> {
+    let config = CACHED_CONFIG
+        .get_or_try_init(|| async {
+            let cfg = if let Some(path) = KUBECONFIG_PATH.get() {
+                let kubeconfig =
+                    kube::config::Kubeconfig::read_from(path).map_err(|e| anyhow::anyhow!(e))?;
+                Config::from_custom_kubeconfig(
+                    kubeconfig,
+                    &kube::config::KubeConfigOptions::default(),
+                )
+                .await
+                .map_err(|e| anyhow::anyhow!(e))?
+            } else {
+                Config::infer().await.map_err(|e| anyhow::anyhow!(e))?
+            };
+            Ok::<Config, anyhow::Error>(cfg)
+        })
+        .await?;
+    Ok(config.clone())
+}
+
+/// Get a raw `kube::Client` that respects the global kubeconfig path.
+///
+/// The kubeconfig is parsed once and cached. A fresh `Client` is created
+/// per call so it binds to the current tokio runtime (important for tests).
+/// `Client::try_from` is cheap — it only allocates a connection pool.
+pub async fn get_client() -> Result<Client> {
+    let config = resolve_config().await.map_err(|e| {
+        let hint = if KUBECONFIG_PATH.get().is_some() {
+            "Check that the --kubeconfig path is correct and the file is readable."
+        } else {
+            "Set KUBECONFIG, pass --kubeconfig, or run inside a Kubernetes pod.\n  \
+             Verify with: kubectl cluster-info"
+        };
+        anyhow::anyhow!("Failed to connect to Kubernetes: {}\n  Hint: {}", e, hint)
+    })?;
+    Ok(Client::try_from(config)?)
 }
 
 /// Kubernetes client for managing KubeVirt VMs
@@ -33,13 +77,8 @@ pub struct KubeClient {
 impl KubeClient {
     /// Create a new KubeClient using the global kubeconfig if set, or default discovery
     pub async fn new() -> Result<Self> {
-        if let Some(path) = KUBECONFIG_PATH.get() {
-            Self::with_kubeconfig(path).await
-        } else {
-            let config = Config::infer().await?;
-            let client = Client::try_from(config)?;
-            Ok(Self { client })
-        }
+        let client = get_client().await?;
+        Ok(Self { client })
     }
 
     /// Create a new KubeClient with custom kubeconfig path
@@ -271,6 +310,37 @@ impl KubeClient {
         }
     }
 
+    /// Get both IP and node from a single VMI fetch (avoids double API call)
+    pub async fn get_vm_ip_and_node(
+        &self,
+        namespace: &str,
+        name: &str,
+    ) -> Result<(Option<String>, Option<String>)> {
+        match self.get_vmi(namespace, name).await {
+            Ok(vmi) => {
+                let ip = vmi.status.as_ref().and_then(|s| {
+                    s.interfaces.iter().find_map(|iface| {
+                        iface
+                            .ip_address
+                            .as_ref()
+                            .filter(|ip| !ip.is_empty())
+                            .cloned()
+                    })
+                });
+                let node = vmi.status.and_then(|s| s.node_name);
+                Ok((ip, node))
+            }
+            Err(e) => {
+                if let Some(kube::Error::Api(ae)) = e.downcast_ref::<kube::Error>() {
+                    if ae.code == 404 {
+                        return Ok((None, None));
+                    }
+                }
+                Err(e)
+            }
+        }
+    }
+
     /// Create a PVC for a VM disk
     pub async fn create_pvc(
         &self,
@@ -310,6 +380,62 @@ impl KubeClient {
         let created = pvcs.create(&pp, &pvc).await?;
 
         Ok(created)
+    }
+
+    /// List all nodes in the cluster
+    pub async fn list_nodes(
+        &self,
+    ) -> Result<Vec<k8s_openapi::api::core::v1::Node>> {
+        let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(self.client.clone());
+        let lp = ListParams::default();
+        let node_list = nodes.list(&lp).await?;
+        Ok(node_list.items)
+    }
+
+    /// List pods in a namespace
+    pub async fn list_pods(
+        &self,
+        namespace: &str,
+    ) -> Result<Vec<k8s_openapi::api::core::v1::Pod>> {
+        let pods: Api<k8s_openapi::api::core::v1::Pod> =
+            Api::namespaced(self.client.clone(), namespace);
+        let lp = ListParams::default();
+        let pod_list = pods.list(&lp).await?;
+        Ok(pod_list.items)
+    }
+
+    /// List events in a namespace
+    pub async fn list_events(
+        &self,
+        namespace: &str,
+    ) -> Result<Vec<k8s_openapi::api::core::v1::Event>> {
+        let events: Api<k8s_openapi::api::core::v1::Event> =
+            Api::namespaced(self.client.clone(), namespace);
+        let lp = ListParams::default();
+        let event_list = events.list(&lp).await?;
+        Ok(event_list.items)
+    }
+
+    /// List all namespaces
+    pub async fn list_namespaces(
+        &self,
+    ) -> Result<Vec<k8s_openapi::api::core::v1::Namespace>> {
+        let ns: Api<k8s_openapi::api::core::v1::Namespace> = Api::all(self.client.clone());
+        let lp = ListParams::default();
+        let ns_list = ns.list(&lp).await?;
+        Ok(ns_list.items)
+    }
+
+    /// List all VMIs in a namespace
+    pub async fn list_vmis(
+        &self,
+        namespace: &str,
+    ) -> Result<Vec<VirtualMachineInstance>> {
+        let vmis: Api<VirtualMachineInstance> =
+            Api::namespaced(self.client.clone(), namespace);
+        let lp = ListParams::default();
+        let vmi_list = vmis.list(&lp).await?;
+        Ok(vmi_list.items)
     }
 }
 

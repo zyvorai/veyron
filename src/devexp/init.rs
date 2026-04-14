@@ -318,10 +318,7 @@ Thumbs.db
         }
 
         if self.include_ci {
-            files.push(format!(
-                "{}/.github/workflows/vmrogue.yaml",
-                self.directory
-            ));
+            files.push(format!("{}/.github/workflows/vmrogue.yaml", self.directory));
         }
 
         files

@@ -91,7 +91,7 @@ impl CompletionGenerator {
 
     pub fn generate(&self) -> String {
         use clap::CommandFactory;
-        use clap_complete::{generate as gen_completion, Shell};
+        use clap_complete::{Shell, generate as gen_completion};
 
         let shell = match self.shell {
             CompletionShell::Bash => Shell::Bash,

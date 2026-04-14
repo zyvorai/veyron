@@ -752,9 +752,7 @@ pub fn generate_default_spec() -> OpenApiSpec {
         "get".to_string(),
         Operation {
             summary: "List RDP-capable VMs".to_string(),
-            description: Some(
-                "Returns VMs that support Windows RDP connections".to_string(),
-            ),
+            description: Some("Returns VMs that support Windows RDP connections".to_string()),
             operation_id: "listRdpCapableVms".to_string(),
             tags: vec!["rdp".to_string()],
             parameters: Vec::new(),

@@ -96,7 +96,10 @@ impl PaginationInfo {
 }
 
 /// Apply pagination to a vector of items.
-pub fn paginate<T: Clone + Serialize>(items: &[T], params: &PaginationParams) -> PaginatedResponse<T> {
+pub fn paginate<T: Clone + Serialize>(
+    items: &[T],
+    params: &PaginationParams,
+) -> PaginatedResponse<T> {
     let max_per_page = 100;
     let per_page = params.items_per_page(max_per_page) as usize;
     let offset = params.offset(max_per_page) as usize;
@@ -106,11 +109,7 @@ pub fn paginate<T: Clone + Serialize>(items: &[T], params: &PaginationParams) ->
 
     PaginatedResponse {
         items: page_items,
-        pagination: PaginationInfo::new(
-            params.page_number(),
-            per_page as u32,
-            total_items,
-        ),
+        pagination: PaginationInfo::new(params.page_number(), per_page as u32, total_items),
     }
 }
 

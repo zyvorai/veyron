@@ -1,16 +1,16 @@
 // Pods Table View
 
 use crate::tui::colors::gradient;
+use crate::tui::state::AppState;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
-    Frame,
 };
 
-
-pub fn render(f: &mut Frame, area: Rect) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,10 +21,17 @@ pub fn render(f: &mut Frame, area: Rect) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
-    header_spans.push(Span::styled(" | ", Style::default().fg(Color::Rgb(128, 128, 128))));
-    header_spans.push(Span::styled("Pods", Style::default().fg(Color::Rgb(255, 145, 115)).add_modifier(Modifier::BOLD)));
+    header_spans.push(Span::styled(
+        " | ",
+        Style::default().fg(Color::Rgb(128, 128, 128)),
+    ));
+    header_spans.push(Span::styled(
+        format!("Pods ({})", state.pods.len()),
+        Style::default()
+            .fg(Color::Rgb(255, 145, 115))
+            .add_modifier(Modifier::BOLD),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -49,62 +56,97 @@ pub fn render(f: &mut Frame, area: Rect) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let sample_data = [("virt-launcher-web-01-abc12", "default", "Running", "node-1", "2d"),
-        ("virt-launcher-db-pri-def34", "production", "Running", "node-2", "5d"),
-        ("virt-launcher-wrk-03-ghi56", "staging", "Pending", "node-1", "10m"),
-        ("virt-handler-jkl78", "kubevirt", "Running", "node-3", "14d"),
-        ("virt-api-mno90", "kubevirt", "Running", "node-1", "14d"),
-        ("cdi-operator-pqr12", "cdi", "Running", "node-2", "14d")];
+    if state.pods.is_empty() {
+        let empty = Paragraph::new("No pods found. Data will load on next refresh.")
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(Color::Gray))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
+                    .title(Span::styled(
+                        " Pods ",
+                        Style::default()
+                            .fg(Color::Rgb(222, 115, 86))
+                            .add_modifier(Modifier::BOLD),
+                    )),
+            );
+        f.render_widget(empty, chunks[1]);
+    } else {
+        let rows = state.pods.iter().enumerate().map(|(i, pod)| {
+            let status_color = match pod.status.as_str() {
+                "Running" => Color::Rgb(50, 205, 50),
+                "Pending" => Color::Rgb(255, 200, 0),
+                "Failed" | "CrashLoopBackOff" => Color::Rgb(220, 50, 47),
+                "Succeeded" => Color::Rgb(100, 150, 255),
+                _ => Color::Gray,
+            };
+            let style = if i == state.pod_selected_index {
+                Style::default()
+                    .bg(Color::Rgb(60, 50, 75))
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+            };
+            Row::new(vec![
+                Cell::from(pod.name.as_str()),
+                Cell::from(pod.namespace.as_str()),
+                Cell::from(pod.status.as_str()).style(Style::default().fg(status_color)),
+                Cell::from(pod.node.as_str()),
+                Cell::from(pod.age.as_str()),
+            ])
+            .style(style)
+            .height(1)
+        });
 
-    let rows = sample_data.iter().map(|(name, ns, status, node, age)| {
-        let status_color = match *status {
-            "Running" => Color::Rgb(50, 205, 50),
-            "Pending" => Color::Rgb(255, 200, 0),
-            "Failed" | "CrashLoopBackOff" => Color::Rgb(220, 50, 47),
-            _ => Color::Gray,
-        };
-        Row::new(vec![
-            Cell::from(*name),
-            Cell::from(*ns),
-            Cell::from(*status).style(Style::default().fg(status_color)),
-            Cell::from(*node),
-            Cell::from(*age),
-        ])
-        .height(1)
-    });
+        let widths = [
+            Constraint::Percentage(35),
+            Constraint::Percentage(18),
+            Constraint::Percentage(15),
+            Constraint::Percentage(18),
+            Constraint::Percentage(14),
+        ];
 
-    let widths = [
-        Constraint::Percentage(35),
-        Constraint::Percentage(18),
-        Constraint::Percentage(15),
-        Constraint::Percentage(18),
-        Constraint::Percentage(14),
-    ];
-
-    let table = Table::new(rows, widths)
-        .header(table_header)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
-                .title(Span::styled(
-                    " Pods ",
-                    Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
-                )),
-        )
-        .column_spacing(1);
-    f.render_widget(table, chunks[1]);
+        let table = Table::new(rows, widths)
+            .header(table_header)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
+                    .title(Span::styled(
+                        " Pods ",
+                        Style::default()
+                            .fg(Color::Rgb(222, 115, 86))
+                            .add_modifier(Modifier::BOLD),
+                    )),
+            )
+            .column_spacing(1);
+        f.render_widget(table, chunks[1]);
+    }
 
     // Help
     let help = Paragraph::new(Line::from(vec![
-        Span::styled("↑↓", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "↑↓",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Navigate | ", Style::default().fg(Color::Gray)),
-        Span::styled("l", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
-        Span::styled(": Logs | ", Style::default().fg(Color::Gray)),
-        Span::styled("d", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
-        Span::styled(": Describe | ", Style::default().fg(Color::Gray)),
-        Span::styled("q", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
-        Span::styled(": Back", Style::default().fg(Color::Gray)),
+        Span::styled(
+            "Esc",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(": Back | ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            "Ctrl+R",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(": Refresh", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)
     .block(

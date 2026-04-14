@@ -2,13 +2,12 @@
 
 use crate::tui::colors::gradient;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
-    Frame,
 };
-
 
 pub fn render(f: &mut Frame, area: Rect) {
     let chunks = Layout::default()
@@ -23,8 +22,16 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Header
     // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
-    header_spans.push(Span::styled(" | ", Style::default().fg(Color::Rgb(128, 128, 128))));
-    header_spans.push(Span::styled("Custom Metrics", Style::default().fg(Color::Rgb(255, 145, 115)).add_modifier(Modifier::BOLD)));
+    header_spans.push(Span::styled(
+        " | ",
+        Style::default().fg(Color::Rgb(128, 128, 128)),
+    ));
+    header_spans.push(Span::styled(
+        "Custom Metrics",
+        Style::default()
+            .fg(Color::Rgb(255, 145, 115))
+            .add_modifier(Modifier::BOLD),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -38,10 +45,7 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Metrics content
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(60),
-            Constraint::Percentage(40),
-        ])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(chunks[1]);
 
     // Metrics table
@@ -85,10 +89,18 @@ pub fn render(f: &mut Frame, area: Rect) {
         };
         Row::new(vec![
             Cell::from(*name).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(*val).style(Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Cell::from(*val).style(
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Cell::from(*unit),
             Cell::from(*trend).style(Style::default().fg(trend_color)),
-            Cell::from(*alert).style(Style::default().fg(alert_color).add_modifier(Modifier::BOLD)),
+            Cell::from(*alert).style(
+                Style::default()
+                    .fg(alert_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ])
         .height(1)
     });
@@ -109,7 +121,9 @@ pub fn render(f: &mut Frame, area: Rect) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
                     " Metrics ",
-                    Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Rgb(222, 115, 86))
+                        .add_modifier(Modifier::BOLD),
                 )),
         )
         .column_spacing(1);
@@ -120,7 +134,9 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Active Dashboards",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
@@ -138,19 +154,40 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Alert Thresholds",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  api_latency_p99 > 100ms  ", Style::default().fg(Color::White)),
-            Span::styled("TRIGGERED", Style::default().fg(Color::Rgb(220, 50, 47)).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  api_latency_p99 > 100ms  ",
+                Style::default().fg(Color::White),
+            ),
+            Span::styled(
+                "TRIGGERED",
+                Style::default()
+                    .fg(Color::Rgb(220, 50, 47))
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(vec![
-            Span::styled("  vm_boot_time_avg > 15s   ", Style::default().fg(Color::White)),
-            Span::styled("TRIGGERED", Style::default().fg(Color::Rgb(220, 50, 47)).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  vm_boot_time_avg > 15s   ",
+                Style::default().fg(Color::White),
+            ),
+            Span::styled(
+                "TRIGGERED",
+                Style::default()
+                    .fg(Color::Rgb(220, 50, 47))
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(vec![
-            Span::styled("  vm_cpu_utilization > 80% ", Style::default().fg(Color::White)),
+            Span::styled(
+                "  vm_cpu_utilization > 80% ",
+                Style::default().fg(Color::White),
+            ),
             Span::styled("OK", Style::default().fg(Color::Rgb(50, 205, 50))),
         ]),
         Line::from(""),
@@ -165,22 +202,49 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Configuration ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(config_widget, content_chunks[1]);
 
     // Help
     let help = Paragraph::new(Line::from(vec![
-        Span::styled("↑↓", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "↑↓",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Navigate | ", Style::default().fg(Color::Gray)),
-        Span::styled("a", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "a",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Add Metric | ", Style::default().fg(Color::Gray)),
-        Span::styled("t", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "t",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Thresholds | ", Style::default().fg(Color::Gray)),
-        Span::styled("r", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "r",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Refresh | ", Style::default().fg(Color::Gray)),
-        Span::styled("q", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "q",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Back", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)

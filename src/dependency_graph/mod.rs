@@ -22,8 +22,18 @@ pub struct DependencyNode {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum NodeType {
-    VirtualMachine, Database, Backend, Frontend, Cache, Queue,
-    Worker, LoadBalancer, Storage, ConfigMap, Secret, Service,
+    VirtualMachine,
+    Database,
+    Backend,
+    Frontend,
+    Cache,
+    Queue,
+    Worker,
+    LoadBalancer,
+    Storage,
+    ConfigMap,
+    Secret,
+    Service,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,11 +47,24 @@ pub struct DependencyEdge {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DependencyType {
-    Network, Storage, Service, ConfigMap, Secret, Database, Cache, Queue, API,
+    Network,
+    Storage,
+    Service,
+    ConfigMap,
+    Secret,
+    Database,
+    Cache,
+    Queue,
+    API,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum DependencyStrength { Critical, High, Medium, Weak }
+pub enum DependencyStrength {
+    Critical,
+    High,
+    Medium,
+    Weak,
+}
 
 #[derive(Debug, Clone)]
 pub struct DependencyCluster {
@@ -52,7 +75,11 @@ pub struct DependencyCluster {
 
 impl DependencyGraph {
     pub fn new() -> Self {
-        Self { nodes: Vec::new(), edges: Vec::new(), clusters: Vec::new() }
+        Self {
+            nodes: Vec::new(),
+            edges: Vec::new(),
+            clusters: Vec::new(),
+        }
     }
 
     pub fn add_node(&mut self, node: DependencyNode) {
@@ -83,7 +110,11 @@ impl DependencyGraph {
 
     pub fn critical_paths(&self) -> Vec<Vec<&DependencyNode>> {
         let mut paths = Vec::new();
-        for edge in self.edges.iter().filter(|e| e.strength == DependencyStrength::Critical) {
+        for edge in self
+            .edges
+            .iter()
+            .filter(|e| e.strength == DependencyStrength::Critical)
+        {
             if let (Some(from), Some(to)) = (self.get_node(&edge.from), self.get_node(&edge.to)) {
                 paths.push(vec![from, to]);
             }
@@ -98,8 +129,15 @@ impl DependencyGraph {
         affected
     }
 
-    fn collect_dependents<'a>(&'a self, node_id: &str, affected: &mut Vec<&'a DependencyNode>, visited: &mut std::collections::HashSet<String>) {
-        if !visited.insert(node_id.to_string()) { return; }
+    fn collect_dependents<'a>(
+        &'a self,
+        node_id: &str,
+        affected: &mut Vec<&'a DependencyNode>,
+        visited: &mut std::collections::HashSet<String>,
+    ) {
+        if !visited.insert(node_id.to_string()) {
+            return;
+        }
         for edge in self.get_dependents(node_id) {
             if let Some(node) = self.get_node(&edge.from) {
                 affected.push(node);
@@ -110,5 +148,7 @@ impl DependencyGraph {
 }
 
 impl Default for DependencyGraph {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

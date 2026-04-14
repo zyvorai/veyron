@@ -2,13 +2,12 @@
 
 use crate::tui::colors::gradient;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
-
 
 pub fn render(f: &mut Frame, area: Rect) {
     let chunks = Layout::default()
@@ -24,8 +23,16 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Header
     // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
-    header_spans.push(Span::styled(" | ", Style::default().fg(Color::Rgb(128, 128, 128))));
-    header_spans.push(Span::styled("Natural Language Search", Style::default().fg(Color::Rgb(255, 145, 115)).add_modifier(Modifier::BOLD)));
+    header_spans.push(Span::styled(
+        " | ",
+        Style::default().fg(Color::Rgb(128, 128, 128)),
+    ));
+    header_spans.push(Span::styled(
+        "Natural Language Search",
+        Style::default()
+            .fg(Color::Rgb(255, 145, 115))
+            .add_modifier(Modifier::BOLD),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -40,12 +47,22 @@ pub fn render(f: &mut Frame, area: Rect) {
     let search_lines = vec![
         Line::from(""),
         Line::from(vec![
-            Span::styled("  > ", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "  > ",
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(
                 "show me all VMs using more than 4 cores that are running",
                 Style::default().fg(Color::White),
             ),
-            Span::styled("_", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "_",
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
     ];
     let search_widget = Paragraph::new(search_lines).block(
@@ -54,7 +71,9 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Query ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(search_widget, chunks[1]);
@@ -62,22 +81,26 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Results
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(60),
-            Constraint::Percentage(40),
-        ])
+        .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(chunks[2]);
 
     let results = vec![
         Line::from(""),
         Line::from(Span::styled(
             "  Search Results (3 matches)",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
             Span::styled("  1. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("db-primary", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "db-primary",
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(vec![
             Span::styled("     Status: ", Style::default().fg(Color::Gray)),
@@ -90,7 +113,12 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(vec![
             Span::styled("  2. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("api-gateway", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "api-gateway",
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(vec![
             Span::styled("     Status: ", Style::default().fg(Color::Gray)),
@@ -103,7 +131,12 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(vec![
             Span::styled("  3. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("worker-node-01", Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "worker-node-01",
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(vec![
             Span::styled("     Status: ", Style::default().fg(Color::Gray)),
@@ -120,7 +153,9 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Results ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(results_widget, content_chunks[0]);
@@ -130,7 +165,9 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(Span::styled(
             "  Parsed Query",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
@@ -143,29 +180,46 @@ pub fn render(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("  Filter:   ", Style::default().fg(Color::Gray)),
-            Span::styled("status = Running", Style::default().fg(Color::Rgb(222, 115, 86))),
+            Span::styled(
+                "status = Running",
+                Style::default().fg(Color::Rgb(222, 115, 86)),
+            ),
         ]),
         Line::from(""),
         Line::from(Span::styled(
             "  Suggestions",
-            Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
-            Span::styled("\"VMs with high memory usage\"", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(
+                "\"VMs with high memory usage\"",
+                Style::default().fg(Color::Rgb(100, 150, 255)),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
-            Span::styled("\"failed migrations this week\"", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(
+                "\"failed migrations this week\"",
+                Style::default().fg(Color::Rgb(100, 150, 255)),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
-            Span::styled("\"snapshots older than 7 days\"", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(
+                "\"snapshots older than 7 days\"",
+                Style::default().fg(Color::Rgb(100, 150, 255)),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
-            Span::styled("\"nodes with most pods\"", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(
+                "\"nodes with most pods\"",
+                Style::default().fg(Color::Rgb(100, 150, 255)),
+            ),
         ]),
     ];
     let parsed_widget = Paragraph::new(parsed).block(
@@ -174,22 +228,49 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Query Analysis ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(parsed_widget, content_chunks[1]);
 
     // Help
     let help = Paragraph::new(Line::from(vec![
-        Span::styled("Type", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Type",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Search | ", Style::default().fg(Color::Gray)),
-        Span::styled("Enter", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Enter",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Execute | ", Style::default().fg(Color::Gray)),
-        Span::styled("Tab", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Tab",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Autocomplete | ", Style::default().fg(Color::Gray)),
-        Span::styled("Ctrl+H", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Ctrl+H",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": History | ", Style::default().fg(Color::Gray)),
-        Span::styled("Esc", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Esc",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Back", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)

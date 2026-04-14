@@ -14,8 +14,7 @@ pub struct NamespaceResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/namespaces", get(list_namespaces))
+    Router::new().route("/namespaces", get(list_namespaces))
 }
 
 #[cfg(feature = "web")]

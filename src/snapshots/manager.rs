@@ -1,15 +1,15 @@
 // Snapshot Manager - Create, list, delete, and manage VM snapshots
 // Real KubeVirt CRD integration
 
+use super::SnapshotConfig;
 use super::crds::{SnapshotSource, VirtualMachineSnapshot, VirtualMachineSnapshotSpec};
 use super::types::{SnapshotInfo, SnapshotStatus};
-use super::SnapshotConfig;
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use kube::{
-    api::{DeleteParams, ListParams, PostParams},
     Api, Client,
+    api::{DeleteParams, ListParams, PostParams},
 };
 use std::collections::BTreeMap;
 
@@ -22,9 +22,7 @@ pub struct SnapshotManager {
 impl SnapshotManager {
     /// Create a new SnapshotManager
     pub async fn new(namespace: impl Into<String>) -> Result<Self> {
-        let client = Client::try_default()
-            .await
-            .context("Failed to create Kubernetes client")?;
+        let client = crate::kube::get_client().await?;
 
         Ok(Self {
             client,
@@ -48,10 +46,7 @@ impl SnapshotManager {
         // Build labels
         let mut labels = BTreeMap::new();
         labels.insert("vmrogue.io/vm".to_string(), config.vm_name.clone());
-        labels.insert(
-            "vmrogue.io/created-by".to_string(),
-            "vmrogue".to_string(),
-        );
+        labels.insert("vmrogue.io/created-by".to_string(), "vmrogue".to_string());
 
         for (k, v) in &config.labels {
             labels.insert(k.clone(), v.clone());
@@ -102,8 +97,9 @@ impl SnapshotManager {
         if value.len() > 63 {
             anyhow::bail!("Label value must be 63 characters or less");
         }
-        static RE: std::sync::LazyLock<regex::Regex> =
-            std::sync::LazyLock::new(|| regex::Regex::new(r"^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$").unwrap());
+        static RE: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+            regex::Regex::new(r"^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$").unwrap()
+        });
         if !value.is_empty() && !RE.is_match(value) {
             anyhow::bail!("Invalid label value: {}", value);
         }
@@ -234,8 +230,15 @@ impl SnapshotManager {
             // Delete oldest snapshots beyond the limit
             for snapshot in sorted.iter().skip(max_snapshots as usize) {
                 // Skip snapshots that may be in use by active restores
-                if self.is_snapshot_in_use(&snapshot.name).await.unwrap_or(true) {
-                    log::warn!("Skipping deletion of snapshot '{}': may be in use by an active restore", snapshot.name);
+                if self
+                    .is_snapshot_in_use(&snapshot.name)
+                    .await
+                    .unwrap_or(true)
+                {
+                    log::warn!(
+                        "Skipping deletion of snapshot '{}': may be in use by an active restore",
+                        snapshot.name
+                    );
                     continue;
                 }
 

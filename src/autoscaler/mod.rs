@@ -113,7 +113,13 @@ pub struct TimeWindow {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum DayOfWeek {
-    Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday,
+    Monday,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -126,8 +132,19 @@ pub struct DateRange {
 impl PolicySchedule {
     pub fn business_hours() -> Self {
         Self {
-            time_windows: vec![TimeWindow { start_hour: 9, start_minute: 0, end_hour: 17, end_minute: 0 }],
-            active_days: vec![DayOfWeek::Monday, DayOfWeek::Tuesday, DayOfWeek::Wednesday, DayOfWeek::Thursday, DayOfWeek::Friday],
+            time_windows: vec![TimeWindow {
+                start_hour: 9,
+                start_minute: 0,
+                end_hour: 17,
+                end_minute: 0,
+            }],
+            active_days: vec![
+                DayOfWeek::Monday,
+                DayOfWeek::Tuesday,
+                DayOfWeek::Wednesday,
+                DayOfWeek::Thursday,
+                DayOfWeek::Friday,
+            ],
             timezone: "UTC".to_string(),
             blackout_periods: Vec::new(),
         }
@@ -158,10 +175,19 @@ pub struct ActiveScaling {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ScalingDirection { Up, Down }
+pub enum ScalingDirection {
+    Up,
+    Down,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ScalingStatus { Pending, InProgress, Completed, Failed(String), RolledBack }
+pub enum ScalingStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Failed(String),
+    RolledBack,
+}
 
 /// Scaling event for history tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -235,7 +261,10 @@ impl AutoScaler {
         self.policies.iter().filter(|p| p.enabled).collect()
     }
 
-    pub fn evaluate(&mut self, vm_metrics: &HashMap<String, VmMetrics>) -> Vec<ScalingRecommendation> {
+    pub fn evaluate(
+        &mut self,
+        vm_metrics: &HashMap<String, VmMetrics>,
+    ) -> Vec<ScalingRecommendation> {
         if !self.config.enabled {
             return Vec::new();
         }
@@ -260,43 +289,65 @@ impl AutoScaler {
         recommendations
     }
 
-    fn get_target_vms<'a>(&self, policy: &AutoScalingPolicy, metrics: &'a HashMap<String, VmMetrics>) -> Vec<(String, &'a VmMetrics)> {
+    fn get_target_vms<'a>(
+        &self,
+        policy: &AutoScalingPolicy,
+        metrics: &'a HashMap<String, VmMetrics>,
+    ) -> Vec<(String, &'a VmMetrics)> {
         match &policy.target {
-            ScalingTarget::SingleVm { name, .. } => {
-                metrics.get(name).map(|m| vec![(name.clone(), m)]).unwrap_or_default()
-            }
-            ScalingTarget::Namespace { namespace } => {
-                metrics.iter()
-                    .filter(|(_, m)| m.namespace == *namespace)
-                    .map(|(k, v)| (k.clone(), v))
-                    .collect()
-            }
+            ScalingTarget::SingleVm { name, .. } => metrics
+                .get(name)
+                .map(|m| vec![(name.clone(), m)])
+                .unwrap_or_default(),
+            ScalingTarget::Namespace { namespace } => metrics
+                .iter()
+                .filter(|(_, m)| m.namespace == *namespace)
+                .map(|(k, v)| (k.clone(), v))
+                .collect(),
             ScalingTarget::LabelSelector { .. } => {
                 metrics.iter().map(|(k, v)| (k.clone(), v)).collect()
             }
         }
     }
 
-    fn evaluate_vm(&self, vm_name: &str, metrics: &VmMetrics, policy: &AutoScalingPolicy) -> Option<ScalingRecommendation> {
-        let avg_cpu = if metrics.cpu_samples.is_empty() { 0.0 } else {
+    fn evaluate_vm(
+        &self,
+        vm_name: &str,
+        metrics: &VmMetrics,
+        policy: &AutoScalingPolicy,
+    ) -> Option<ScalingRecommendation> {
+        let avg_cpu = if metrics.cpu_samples.is_empty() {
+            0.0
+        } else {
             metrics.cpu_samples.iter().sum::<f64>() / metrics.cpu_samples.len() as f64
         };
-        let avg_memory = if metrics.memory_samples.is_empty() { 0.0 } else {
+        let avg_memory = if metrics.memory_samples.is_empty() {
+            0.0
+        } else {
             metrics.memory_samples.iter().sum::<f64>() / metrics.memory_samples.len() as f64
         };
 
         let cpu_scale = if avg_cpu > policy.cpu_threshold.scale_up_threshold {
             Some((ScalingDirection::Up, policy.cpu_threshold.scale_up_factor))
         } else if avg_cpu < policy.cpu_threshold.scale_down_threshold {
-            Some((ScalingDirection::Down, policy.cpu_threshold.scale_down_factor))
+            Some((
+                ScalingDirection::Down,
+                policy.cpu_threshold.scale_down_factor,
+            ))
         } else {
             None
         };
 
         let mem_scale = if avg_memory > policy.memory_threshold.scale_up_threshold {
-            Some((ScalingDirection::Up, policy.memory_threshold.scale_up_factor))
+            Some((
+                ScalingDirection::Up,
+                policy.memory_threshold.scale_up_factor,
+            ))
         } else if avg_memory < policy.memory_threshold.scale_down_threshold {
-            Some((ScalingDirection::Down, policy.memory_threshold.scale_down_factor))
+            Some((
+                ScalingDirection::Down,
+                policy.memory_threshold.scale_down_factor,
+            ))
         } else {
             None
         };
@@ -321,8 +372,12 @@ impl AutoScaler {
             return None;
         }
 
-        let cpu_cost_diff = (recommended_cpu as f64 - metrics.current_cpu as f64) * self.config.cpu_cost_per_core_hour * 730.0;
-        let mem_cost_diff = (recommended_memory as f64 - metrics.current_memory as f64) * self.config.memory_cost_per_gi_hour * 730.0;
+        let cpu_cost_diff = (recommended_cpu as f64 - metrics.current_cpu as f64)
+            * self.config.cpu_cost_per_core_hour
+            * 730.0;
+        let mem_cost_diff = (recommended_memory as f64 - metrics.current_memory as f64)
+            * self.config.memory_cost_per_gi_hour
+            * 730.0;
 
         Some(ScalingRecommendation {
             vm_name: vm_name.to_string(),

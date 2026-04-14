@@ -1,9 +1,9 @@
 use vmrogue::blueprints::BLUEPRINTS;
-use vmrogue::config::{validate_vm_config, DiskSource, NetworkType, VMConfig, VMConfigBuilder};
+use vmrogue::config::{DiskSource, NetworkType, VMConfig, VMConfigBuilder, validate_vm_config};
 use vmrogue::kube::vm_config_to_kubevirt;
 use vmrogue::output::{to_json, to_yaml};
 use vmrogue::profiles::PROFILES;
-use vmrogue::storage::{format_bytes, parse_size_to_bytes, AccessMode, PvcSpec};
+use vmrogue::storage::{AccessMode, PvcSpec, format_bytes, parse_size_to_bytes};
 use vmrogue::templates::TEMPLATES;
 
 #[test]
@@ -79,13 +79,15 @@ users:
     // Check cloud-init volume exists
     let cloudinit_vol = volumes.iter().find(|v| v.name == "cloudinitdisk");
     assert!(cloudinit_vol.is_some());
-    assert!(cloudinit_vol
-        .unwrap()
-        .cloud_init_no_cloud
-        .as_ref()
-        .unwrap()
-        .user_data
-        .is_some());
+    assert!(
+        cloudinit_vol
+            .unwrap()
+            .cloud_init_no_cloud
+            .as_ref()
+            .unwrap()
+            .user_data
+            .is_some()
+    );
 }
 
 #[test]
@@ -657,21 +659,29 @@ fn test_multi_disk_vm_with_all_types() {
     assert_eq!(volumes.len(), 4);
 
     // Verify blank (emptyDisk)
-    assert!(volumes
-        .iter()
-        .any(|v| v.name == "rootdisk" && v.empty_disk.is_some()));
+    assert!(
+        volumes
+            .iter()
+            .any(|v| v.name == "rootdisk" && v.empty_disk.is_some())
+    );
     // Verify container disk
-    assert!(volumes
-        .iter()
-        .any(|v| v.name == "cdrom" && v.container_disk.is_some()));
+    assert!(
+        volumes
+            .iter()
+            .any(|v| v.name == "cdrom" && v.container_disk.is_some())
+    );
     // Verify PVC
-    assert!(volumes
-        .iter()
-        .any(|v| v.name == "pvc-disk" && v.persistent_volume_claim.is_some()));
+    assert!(
+        volumes
+            .iter()
+            .any(|v| v.name == "pvc-disk" && v.persistent_volume_claim.is_some())
+    );
     // Verify DataVolume
-    assert!(volumes
-        .iter()
-        .any(|v| v.name == "dv-disk" && v.data_volume.is_some()));
+    assert!(
+        volumes
+            .iter()
+            .any(|v| v.name == "dv-disk" && v.data_volume.is_some())
+    );
 }
 
 // ========== CLOUD-INIT IN KUBEVIRT CONVERSION ==========
@@ -818,10 +828,10 @@ fn test_backup_config_types_and_retention() {
 
 #[test]
 fn test_network_policy_rule_creation() {
+    use vmrogue::networking::NetworkProtocol;
     use vmrogue::networking::policies::{
         NetworkPolicyRule, PolicyAction, PortRange, TrafficDirection,
     };
-    use vmrogue::networking::NetworkProtocol;
 
     let mut rule =
         NetworkPolicyRule::new("allow-http", PolicyAction::Allow, TrafficDirection::Ingress)
@@ -1038,9 +1048,7 @@ fn test_migration_strategy_node_scoring() {
 
 #[test]
 fn test_vm_metrics_collection_and_aggregation() {
-    use vmrogue::observability::metrics::{
-        Metric, MetricAggregator, MetricCollector, MetricType,
-    };
+    use vmrogue::observability::metrics::{Metric, MetricAggregator, MetricCollector, MetricType};
 
     // Create and record metrics
     let mut collector = MetricCollector::new();

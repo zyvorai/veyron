@@ -2,7 +2,7 @@
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
-use kube::{api::Api, Client};
+use kube::api::Api;
 use serde::{Deserialize, Serialize};
 
 /// VM resource metrics at a point in time
@@ -216,9 +216,7 @@ impl MetricsCollector {
     async fn create_metrics_from_vm(&self, vm_name: &str) -> Result<VMMetrics> {
         use crate::kube::types::VirtualMachine;
 
-        let client = Client::try_default()
-            .await
-            .context("Failed to create Kubernetes client for metrics")?;
+        let client = crate::kube::get_client().await?;
 
         let vms: Api<VirtualMachine> = Api::namespaced(client, &self.namespace);
         let vm = vms
@@ -342,7 +340,6 @@ impl MetricsCollector {
             },
         }
     }
-
 }
 
 #[cfg(test)]

@@ -8,18 +8,18 @@ struct AutomationStore {
 }
 
 impl AutomationStore {
-    fn path() -> std::path::PathBuf {
-        dirs::data_dir()
-            .unwrap_or_else(|| {
-                log::warn!("Could not determine data directory, falling back to /tmp");
-                std::path::PathBuf::from("/tmp")
-            })
-            .join("vmrogue")
-            .join("automation_rules.json")
+    fn path() -> anyhow::Result<std::path::PathBuf> {
+        Ok(crate::utils::data_dir()?.join("automation_rules.json"))
     }
 
     fn load() -> Self {
-        let path = Self::path();
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to determine data directory: {}", e);
+                return Self::default();
+            }
+        };
         if path.exists() {
             std::fs::read_to_string(&path)
                 .ok()
@@ -31,12 +31,15 @@ impl AutomationStore {
     }
 
     fn save(&self) {
-        let path = Self::path();
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        if let Ok(content) = serde_json::to_string_pretty(self) {
-            let _ = std::fs::write(&path, content);
+        let path = match Self::path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to save automation rules: {}", e);
+                return;
+            }
+        };
+        if let Err(e) = crate::utils::atomic_write(&path, self) {
+            log::error!("Failed to save automation rules: {}", e);
         }
     }
 }
@@ -100,11 +103,7 @@ pub(crate) fn schedule_label(schedule: &crate::automation::schedules::Schedule) 
 /// Format a rule's enabled/disabled state for display.
 #[cfg(test)]
 pub(crate) fn format_rule_state(enabled: bool) -> &'static str {
-    if enabled {
-        "Enabled"
-    } else {
-        "Disabled"
-    }
+    if enabled { "Enabled" } else { "Disabled" }
 }
 
 pub fn handle_automation_list(enabled_only: bool, output: String) -> Result<()> {

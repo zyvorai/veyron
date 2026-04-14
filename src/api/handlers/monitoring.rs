@@ -17,8 +17,7 @@ pub struct MonitoringStatus {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/monitoring/status", get(get_monitoring_status))
+    Router::new().route("/monitoring/status", get(get_monitoring_status))
 }
 
 #[cfg(feature = "web")]

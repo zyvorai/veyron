@@ -2,11 +2,11 @@
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::Rect,
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::Paragraph,
-    Frame,
 };
 use std::time::Instant;
 
@@ -36,9 +36,7 @@ impl Footer {
 
     pub fn render(&self, f: &mut Frame, area: Rect, context: ViewContext) {
         let help_text = match context {
-            ViewContext::Dashboard => {
-                "⌨  1-6: Jump │ r: Refresh │ ?: Help │ q: Quit"
-            }
+            ViewContext::Dashboard => "⌨  1-6: Jump │ r: Refresh │ ?: Help │ q: Quit",
             ViewContext::VmList => {
                 "⌨  ↑↓: Navigate │ Enter: Details │ s: Start │ x: Stop │ d: Delete │ c: Create │ r: Refresh │ ?: Help │ q: Quit"
             }
@@ -54,9 +52,7 @@ impl Footer {
             ViewContext::Blueprints => {
                 "⌨  ↑↓: Navigate │ Enter: Deploy │ c: Create │ e: Edit │ d: Delete │ Esc: Back │ ?: Help │ q: Quit"
             }
-            ViewContext::Help => {
-                "⌨  ↑↓: Scroll │ Esc: Back │ q: Quit"
-            }
+            ViewContext::Help => "⌨  ↑↓: Scroll │ Esc: Back │ q: Quit",
         };
 
         let time_since_refresh = if let Some(last) = self.last_refresh {

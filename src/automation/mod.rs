@@ -177,11 +177,7 @@ impl Condition {
             ConditionType::Namespace { namespace } => context.namespace_matches(namespace),
         };
 
-        if self.negate {
-            !result
-        } else {
-            result
-        }
+        if self.negate { !result } else { result }
     }
 }
 

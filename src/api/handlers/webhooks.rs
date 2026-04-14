@@ -27,8 +27,7 @@ pub struct CreateWebhookRequest {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/webhooks", get(list_webhooks).post(create_webhook))
+    Router::new().route("/webhooks", get(list_webhooks).post(create_webhook))
 }
 
 #[cfg(feature = "web")]

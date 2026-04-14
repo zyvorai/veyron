@@ -22,8 +22,7 @@ pub struct CloneResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/clones", post(create_clone))
+    Router::new().route("/clones", post(create_clone))
 }
 
 #[cfg(feature = "web")]

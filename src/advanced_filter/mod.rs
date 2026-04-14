@@ -20,18 +20,40 @@ pub struct FilterCondition {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum FilterField {
-    Name, Status, Namespace, Node, CpuCores, Memory, Age, Labels, Annotations, Ready,
+    Name,
+    Status,
+    Namespace,
+    Node,
+    CpuCores,
+    Memory,
+    Age,
+    Labels,
+    Annotations,
+    Ready,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FilterOperator {
-    Equals, NotEquals, Contains, StartsWith, EndsWith,
-    GreaterThan, LessThan, GreaterOrEqual, LessOrEqual,
-    In, NotIn, Exists, Regex,
+    Equals,
+    NotEquals,
+    Contains,
+    StartsWith,
+    EndsWith,
+    GreaterThan,
+    LessThan,
+    GreaterOrEqual,
+    LessOrEqual,
+    In,
+    NotIn,
+    Exists,
+    Regex,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum FilterLogic { And, Or }
+pub enum FilterLogic {
+    And,
+    Or,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SortConfig {
@@ -47,7 +69,12 @@ pub struct PaginationConfig {
 
 impl AdvancedFilter {
     pub fn new() -> Self {
-        Self { conditions: Vec::new(), logic: FilterLogic::And, sort: None, pagination: None }
+        Self {
+            conditions: Vec::new(),
+            logic: FilterLogic::And,
+            sort: None,
+            pagination: None,
+        }
     }
 
     pub fn add_condition(&mut self, condition: FilterCondition) {
@@ -65,26 +92,40 @@ impl AdvancedFilter {
     }
 
     pub fn matches(&self, values: &std::collections::HashMap<String, String>) -> bool {
-        let results: Vec<bool> = self.conditions.iter().map(|c| {
-            let field_name = format!("{:?}", c.field).to_lowercase();
-            let val = values.get(&field_name).map(|s| s.as_str()).unwrap_or("");
-            let matched = match c.operator {
-                FilterOperator::Equals => val == c.value,
-                FilterOperator::NotEquals => val != c.value,
-                FilterOperator::Contains => val.contains(&c.value),
-                FilterOperator::StartsWith => val.starts_with(&c.value),
-                FilterOperator::EndsWith => val.ends_with(&c.value),
-                FilterOperator::GreaterThan => val.parse::<f64>().unwrap_or(0.0) > c.value.parse::<f64>().unwrap_or(0.0),
-                FilterOperator::LessThan => val.parse::<f64>().unwrap_or(0.0) < c.value.parse::<f64>().unwrap_or(0.0),
-                FilterOperator::GreaterOrEqual => val.parse::<f64>().unwrap_or(0.0) >= c.value.parse::<f64>().unwrap_or(0.0),
-                FilterOperator::LessOrEqual => val.parse::<f64>().unwrap_or(0.0) <= c.value.parse::<f64>().unwrap_or(0.0),
-                FilterOperator::In => c.value.split(',').any(|v| v.trim() == val),
-                FilterOperator::NotIn => !c.value.split(',').any(|v| v.trim() == val),
-                FilterOperator::Exists => !val.is_empty(),
-                FilterOperator::Regex => regex::Regex::new(&c.value).map(|re| re.is_match(val)).unwrap_or(false),
-            };
-            if c.negate { !matched } else { matched }
-        }).collect();
+        let results: Vec<bool> = self
+            .conditions
+            .iter()
+            .map(|c| {
+                let field_name = format!("{:?}", c.field).to_lowercase();
+                let val = values.get(&field_name).map(|s| s.as_str()).unwrap_or("");
+                let matched = match c.operator {
+                    FilterOperator::Equals => val == c.value,
+                    FilterOperator::NotEquals => val != c.value,
+                    FilterOperator::Contains => val.contains(&c.value),
+                    FilterOperator::StartsWith => val.starts_with(&c.value),
+                    FilterOperator::EndsWith => val.ends_with(&c.value),
+                    FilterOperator::GreaterThan => {
+                        val.parse::<f64>().unwrap_or(0.0) > c.value.parse::<f64>().unwrap_or(0.0)
+                    }
+                    FilterOperator::LessThan => {
+                        val.parse::<f64>().unwrap_or(0.0) < c.value.parse::<f64>().unwrap_or(0.0)
+                    }
+                    FilterOperator::GreaterOrEqual => {
+                        val.parse::<f64>().unwrap_or(0.0) >= c.value.parse::<f64>().unwrap_or(0.0)
+                    }
+                    FilterOperator::LessOrEqual => {
+                        val.parse::<f64>().unwrap_or(0.0) <= c.value.parse::<f64>().unwrap_or(0.0)
+                    }
+                    FilterOperator::In => c.value.split(',').any(|v| v.trim() == val),
+                    FilterOperator::NotIn => !c.value.split(',').any(|v| v.trim() == val),
+                    FilterOperator::Exists => !val.is_empty(),
+                    FilterOperator::Regex => regex::Regex::new(&c.value)
+                        .map(|re| re.is_match(val))
+                        .unwrap_or(false),
+                };
+                if c.negate { !matched } else { matched }
+            })
+            .collect();
 
         match self.logic {
             FilterLogic::And => results.iter().all(|&r| r),
@@ -92,9 +133,13 @@ impl AdvancedFilter {
         }
     }
 
-    pub fn is_empty(&self) -> bool { self.conditions.is_empty() }
+    pub fn is_empty(&self) -> bool {
+        self.conditions.is_empty()
+    }
 }
 
 impl Default for AdvancedFilter {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

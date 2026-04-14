@@ -18,8 +18,7 @@ pub struct Recommendation {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/recommendations", get(list_recommendations))
+    Router::new().route("/recommendations", get(list_recommendations))
 }
 
 #[cfg(feature = "web")]

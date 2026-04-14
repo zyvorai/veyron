@@ -2,13 +2,12 @@
 
 use crate::tui::colors::gradient;
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
-    Frame,
 };
-
 
 pub fn render(f: &mut Frame, area: Rect) {
     let chunks = Layout::default()
@@ -24,8 +23,16 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Header
     // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
-    header_spans.push(Span::styled(" | ", Style::default().fg(Color::Rgb(128, 128, 128))));
-    header_spans.push(Span::styled("Live Migration Wizard", Style::default().fg(Color::Rgb(255, 145, 115)).add_modifier(Modifier::BOLD)));
+    header_spans.push(Span::styled(
+        " | ",
+        Style::default().fg(Color::Rgb(128, 128, 128)),
+    ));
+    header_spans.push(Span::styled(
+        "Live Migration Wizard",
+        Style::default()
+            .fg(Color::Rgb(255, 145, 115))
+            .add_modifier(Modifier::BOLD),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -37,11 +44,13 @@ pub fn render(f: &mut Frame, area: Rect) {
     f.render_widget(header, chunks[0]);
 
     // Steps progress bar
-    let steps = [("1. Select VM", true),
+    let steps = [
+        ("1. Select VM", true),
         ("2. Select Target", true),
         ("3. Pre-checks", false),
         ("4. Confirm", false),
-        ("5. Migrate", false)];
+        ("5. Migrate", false),
+    ];
     let current_step = 2; // 0-indexed, currently on step 3
 
     let step_spans: Vec<Span> = steps
@@ -73,7 +82,9 @@ pub fn render(f: &mut Frame, area: Rect) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
                     " Migration Steps ",
-                    Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Rgb(222, 115, 86))
+                        .add_modifier(Modifier::BOLD),
                 )),
         );
     f.render_widget(steps_widget, chunks[1]);
@@ -81,10 +92,7 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Current step content
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage(50),
-            Constraint::Percentage(50),
-        ])
+        .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chunks[2]);
 
     // Pre-check results
@@ -92,15 +100,24 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(""),
         Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("Sufficient CPU on target node", Style::default().fg(Color::White)),
+            Span::styled(
+                "Sufficient CPU on target node",
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("Sufficient memory on target node", Style::default().fg(Color::White)),
+            Span::styled(
+                "Sufficient memory on target node",
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("Network connectivity verified", Style::default().fg(Color::White)),
+            Span::styled(
+                "Network connectivity verified",
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
@@ -108,14 +125,19 @@ pub fn render(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("No anti-affinity conflicts", Style::default().fg(Color::White)),
+            Span::styled(
+                "No anti-affinity conflicts",
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(""),
         Line::from(vec![
             Span::styled("  Result: ", Style::default().fg(Color::Gray)),
             Span::styled(
                 "4 passed, 1 warning, 0 failed",
-                Style::default().fg(Color::Rgb(50, 205, 50)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(50, 205, 50))
+                    .add_modifier(Modifier::BOLD),
             ),
         ]),
     ];
@@ -125,7 +147,9 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Pre-flight Checks ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(prechecks_widget, content_chunks[0]);
@@ -143,11 +167,19 @@ pub fn render(f: &mut Frame, area: Rect) {
         ]),
         Line::from(vec![
             Span::styled("  Target:      ", Style::default().fg(Color::Gray)),
-            Span::styled("node-3", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "node-3",
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  Strategy:    ", Style::default().fg(Color::Gray)),
-            Span::styled("Live Migration (pre-copy)", Style::default().fg(Color::White)),
+            Span::styled(
+                "Live Migration (pre-copy)",
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  Est. Time:   ", Style::default().fg(Color::Gray)),
@@ -164,20 +196,42 @@ pub fn render(f: &mut Frame, area: Rect) {
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
                 " Migration Details ",
-                Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD),
+                Style::default()
+                    .fg(Color::Rgb(222, 115, 86))
+                    .add_modifier(Modifier::BOLD),
             )),
     );
     f.render_widget(details_widget, content_chunks[1]);
 
     // Help
     let help = Paragraph::new(Line::from(vec![
-        Span::styled("Tab", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Tab",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Next Step | ", Style::default().fg(Color::Gray)),
-        Span::styled("Shift+Tab", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Shift+Tab",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Prev Step | ", Style::default().fg(Color::Gray)),
-        Span::styled("Enter", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Enter",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Confirm | ", Style::default().fg(Color::Gray)),
-        Span::styled("Esc", Style::default().fg(Color::Rgb(222, 115, 86)).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            "Esc",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        ),
         Span::styled(": Cancel", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)

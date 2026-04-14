@@ -138,7 +138,10 @@ impl ComplianceReport {
     }
 
     fn calculate_compliance_score(&self) -> f64 {
-        let applicable = self.summary.total_checks.saturating_sub(self.summary.not_applicable);
+        let applicable = self
+            .summary
+            .total_checks
+            .saturating_sub(self.summary.not_applicable);
         if applicable == 0 {
             return 100.0;
         }
@@ -343,9 +346,8 @@ impl ComplianceChecker {
         // PCI-DSS Requirement 3: Not in default namespace
         {
             let ns = vm.namespace().unwrap_or_default();
-            let result =
-                CheckResult::new("PCI-3.1", "REQ-3", "VM not in default namespace")
-                    .with_severity(CheckSeverity::Critical);
+            let result = CheckResult::new("PCI-3.1", "REQ-3", "VM not in default namespace")
+                .with_severity(CheckSeverity::Critical);
 
             if ns != "default" && !ns.is_empty() {
                 report.add_result(
@@ -460,9 +462,12 @@ impl ComplianceChecker {
                 .as_ref()
                 .map(|l| !l.is_empty())
                 .unwrap_or(false);
-            let result =
-                CheckResult::new("HIPAA-AU-1", "164.312(b)", "Labels present for audit tracking")
-                    .with_severity(CheckSeverity::High);
+            let result = CheckResult::new(
+                "HIPAA-AU-1",
+                "164.312(b)",
+                "Labels present for audit tracking",
+            )
+            .with_severity(CheckSeverity::High);
 
             if has_labels {
                 let label_count = vm.metadata.labels.as_ref().map(|l| l.len()).unwrap_or(0);
@@ -500,9 +505,8 @@ impl ComplianceChecker {
                 .as_ref()
                 .map(|r| !r.is_empty())
                 .unwrap_or(false);
-            let result =
-                CheckResult::new("SOC2-SEC-1", "CC6.1", "Resource requests defined")
-                    .with_severity(CheckSeverity::High);
+            let result = CheckResult::new("SOC2-SEC-1", "CC6.1", "Resource requests defined")
+                .with_severity(CheckSeverity::High);
 
             if has_requests {
                 report.add_result(

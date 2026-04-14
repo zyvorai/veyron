@@ -8,20 +8,22 @@ mod validator;
 pub use validator::{validate_name, validate_profile};
 
 use anyhow::Result;
-use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::LazyLock;
 use std::sync::RwLock;
 
-pub static PROFILES: LazyLock<RwLock<ProfileManager>> = LazyLock::new(|| {
-    match ProfileManager::new() {
+pub static PROFILES: LazyLock<RwLock<ProfileManager>> =
+    LazyLock::new(|| match ProfileManager::new() {
         Ok(manager) => RwLock::new(manager),
         Err(e) => {
-            log::error!("Failed to initialize ProfileManager: {}. Using empty manager.", e);
+            log::error!(
+                "Failed to initialize ProfileManager: {}. Using empty manager.",
+                e
+            );
             RwLock::new(ProfileManager::empty())
         }
-    }
-});
+    });
 
 /// Profile represents a pre-configured resource allocation template
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,7 +191,10 @@ impl ProfileManager {
 impl Default for ProfileManager {
     fn default() -> Self {
         Self::new().unwrap_or_else(|e| {
-            log::error!("Failed to initialize ProfileManager: {}. Using empty manager.", e);
+            log::error!(
+                "Failed to initialize ProfileManager: {}. Using empty manager.",
+                e
+            );
             Self::empty()
         })
     }

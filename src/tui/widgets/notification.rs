@@ -2,10 +2,10 @@
 use crate::tui::colors::tui as colors;
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Rect},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
-    Frame,
 };
 use std::time::{Duration, Instant};
 

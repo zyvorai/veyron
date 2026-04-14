@@ -1,13 +1,15 @@
 use super::types::*;
-use anyhow::{anyhow, Result};
-use std::sync::LazyLock;
+use anyhow::{Result, anyhow};
 use regex::Regex;
+use std::sync::LazyLock;
 
-static MEMORY_SIZE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^([1-9]\d*)(Mi|Gi|Ti|M|G|T)$").expect("invalid memory size regex"));
+static MEMORY_SIZE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^([1-9]\d*)(Mi|Gi|Ti|M|G|T)$").expect("invalid memory size regex")
+});
 
-static NAMESPACE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$").expect("invalid namespace regex"));
+static NAMESPACE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$").expect("invalid namespace regex")
+});
 
 /// Validates a VM configuration
 pub fn validate_vm_config(config: &VMConfig) -> Result<()> {
@@ -105,7 +107,9 @@ fn validate_cpu(cpu: &CPUConfig) -> Result<()> {
         None => {
             return Err(anyhow!(
                 "CPU topology overflow: cores={} * sockets={} * threads={} overflows",
-                cpu.cores, cpu.sockets, cpu.threads
+                cpu.cores,
+                cpu.sockets,
+                cpu.threads
             ));
         }
         Some(total) if total > 256 => {
@@ -177,25 +181,41 @@ fn validate_disk(disk: &DiskConfig) -> Result<()> {
     }
 
     // Validate disk name is DNS-compliant (lowercase alphanumeric and hyphens)
-    if !disk.name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
-        return Err(anyhow!("Disk name '{}' must contain only lowercase alphanumeric characters or '-'", disk.name));
+    if !disk
+        .name
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
+        return Err(anyhow!(
+            "Disk name '{}' must contain only lowercase alphanumeric characters or '-'",
+            disk.name
+        ));
     }
 
     if let Some(ref bus) = disk.bus {
         if !["virtio", "sata", "scsi"].contains(&bus.as_str()) {
-            return Err(anyhow!("Invalid disk bus '{}'. Must be one of: virtio, sata, scsi", bus));
+            return Err(anyhow!(
+                "Invalid disk bus '{}'. Must be one of: virtio, sata, scsi",
+                bus
+            ));
         }
     }
 
     if let Some(ref cache) = disk.cache {
         if !["none", "writethrough", "writeback"].contains(&cache.as_str()) {
-            return Err(anyhow!("Invalid disk cache '{}'. Must be one of: none, writethrough, writeback", cache));
+            return Err(anyhow!(
+                "Invalid disk cache '{}'. Must be one of: none, writethrough, writeback",
+                cache
+            ));
         }
     }
 
     if let Some(ref io) = disk.io {
         if !["native", "threads", "default"].contains(&io.as_str()) {
-            return Err(anyhow!("Invalid disk I/O mode '{}'. Must be one of: native, threads, default", io));
+            return Err(anyhow!(
+                "Invalid disk I/O mode '{}'. Must be one of: native, threads, default",
+                io
+            ));
         }
     }
 

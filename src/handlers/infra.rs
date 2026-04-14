@@ -1,6 +1,6 @@
-use crate::output::{format_output, OutputFormat};
+use crate::output::{OutputFormat, format_output};
 use crate::tui::colors::cli as color;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 
 /// Classification of disk usage level based on percentage thresholds.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -221,17 +221,12 @@ pub async fn handle_snapshot_delete(name: String, yes: bool, namespace: &str) ->
     use crate::snapshots::SnapshotManager;
 
     if !yes {
-        print!(
-            "Are you sure you want to delete snapshot '{}'? [y/N] ",
-            name
-        );
-        use std::io::{self, Write};
-        io::stdout().flush()?;
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input)?;
-
-        if !input.trim().eq_ignore_ascii_case("y") {
+        let confirmed = dialoguer::Confirm::new()
+            .with_prompt(format!("Delete snapshot '{}'?", name))
+            .default(false)
+            .interact()
+            .unwrap_or(false);
+        if !confirmed {
             println!("{}", color::muted("Cancelled"));
             return Ok(());
         }
@@ -1351,9 +1346,7 @@ pub async fn handle_network_policies(
     println!();
 
     // Query real K8s NetworkPolicy resources
-    let client = kube::Client::try_default()
-        .await
-        .map_err(|e| anyhow!("Failed to connect to Kubernetes: {}", e))?;
+    let client = crate::kube::get_client().await?;
 
     let k8s_policies_api: kube::api::Api<k8s_openapi::api::networking::v1::NetworkPolicy> =
         if all_namespaces {

@@ -39,8 +39,15 @@ impl NetworkInterface {
         // Validate MAC address format (XX:XX:XX:XX:XX:XX)
         if !mac.is_empty() {
             let parts: Vec<&str> = mac.split(':').collect();
-            if parts.len() != 6 || !parts.iter().all(|p| p.len() == 2 && p.chars().all(|c| c.is_ascii_hexdigit())) {
-                log::warn!("Invalid MAC address format: {}. Expected XX:XX:XX:XX:XX:XX — ignoring", mac);
+            if parts.len() != 6
+                || !parts
+                    .iter()
+                    .all(|p| p.len() == 2 && p.chars().all(|c| c.is_ascii_hexdigit()))
+            {
+                log::warn!(
+                    "Invalid MAC address format: {}. Expected XX:XX:XX:XX:XX:XX — ignoring",
+                    mac
+                );
                 return self;
             }
         }

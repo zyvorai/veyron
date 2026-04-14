@@ -3,11 +3,11 @@
 use crate::tui::colors::tui as colors;
 use crate::tui::{config::TuiConfig, state::AppState};
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
-    Frame,
 };
 
 pub fn render(f: &mut Frame, state: &AppState, _config: &TuiConfig) {

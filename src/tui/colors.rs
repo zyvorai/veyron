@@ -76,7 +76,11 @@ pub mod gradient {
             }
 
             let range = upper.0 - lower.0;
-            let local_t = if range > 0.0 { (t - lower.0) / range } else { 0.0 };
+            let local_t = if range > 0.0 {
+                (t - lower.0) / range
+            } else {
+                0.0
+            };
 
             let r = lerp_u8(lower.1, upper.1, local_t);
             let g = lerp_u8(lower.2, upper.2, local_t);
@@ -87,23 +91,37 @@ pub mod gradient {
 
         /// Generate N evenly-spaced colors from the gradient
         pub fn colors(&self, n: usize) -> Vec<Color> {
-            if n == 0 { return Vec::new(); }
-            if n == 1 { return vec![self.at(0.5)]; }
+            if n == 0 {
+                return Vec::new();
+            }
+            if n == 1 {
+                return vec![self.at(0.5)];
+            }
             (0..n).map(|i| self.at(i as f64 / (n - 1) as f64)).collect()
         }
 
         /// Render a text string with per-character gradient coloring
         pub fn text<'a>(&self, text: &'a str) -> Vec<Span<'a>> {
-            if text.is_empty() { return Vec::new(); }
+            if text.is_empty() {
+                return Vec::new();
+            }
             let chars: Vec<char> = text.chars().collect();
             let n = chars.len();
-            chars.into_iter().enumerate().map(|(i, ch)| {
-                let t = if n > 1 { i as f64 / (n - 1) as f64 } else { 0.5 };
-                let mut buf = [0u8; 4];
-                let s = ch.encode_utf8(&mut buf);
-                // We need owned strings for Span, so use Span::raw with String
-                Span::styled(s.to_string(), Style::default().fg(self.at(t)))
-            }).collect()
+            chars
+                .into_iter()
+                .enumerate()
+                .map(|(i, ch)| {
+                    let t = if n > 1 {
+                        i as f64 / (n - 1) as f64
+                    } else {
+                        0.5
+                    };
+                    let mut buf = [0u8; 4];
+                    let s = ch.encode_utf8(&mut buf);
+                    // We need owned strings for Span, so use Span::raw with String
+                    Span::styled(s.to_string(), Style::default().fg(self.at(t)))
+                })
+                .collect()
         }
 
         /// Render a bar (gauge fill) with gradient colors
@@ -112,23 +130,39 @@ pub mod gradient {
             let empty = width.saturating_sub(filled);
             let mut spans = Vec::with_capacity(filled + 1);
             for i in 0..filled {
-                let t = if filled > 1 { i as f64 / (filled - 1) as f64 } else { 0.5 };
-                spans.push(Span::styled("█".to_string(), Style::default().fg(self.at(t))));
+                let t = if filled > 1 {
+                    i as f64 / (filled - 1) as f64
+                } else {
+                    0.5
+                };
+                spans.push(Span::styled(
+                    "█".to_string(),
+                    Style::default().fg(self.at(t)),
+                ));
             }
             if empty > 0 {
-                spans.push(Span::styled("░".repeat(empty), Style::default().fg(Color::Rgb(60, 60, 60))));
+                spans.push(Span::styled(
+                    "░".repeat(empty),
+                    Style::default().fg(Color::Rgb(60, 60, 60)),
+                ));
             }
             spans
         }
 
         /// Render a horizontal gradient border/line
         pub fn line(&self, width: usize, ch: char) -> Vec<Span<'static>> {
-            (0..width).map(|i| {
-                let t = if width > 1 { i as f64 / (width - 1) as f64 } else { 0.5 };
-                let mut buf = [0u8; 4];
-                let s = ch.encode_utf8(&mut buf).to_string();
-                Span::styled(s, Style::default().fg(self.at(t)))
-            }).collect()
+            (0..width)
+                .map(|i| {
+                    let t = if width > 1 {
+                        i as f64 / (width - 1) as f64
+                    } else {
+                        0.5
+                    };
+                    let mut buf = [0u8; 4];
+                    let s = ch.encode_utf8(&mut buf).to_string();
+                    Span::styled(s, Style::default().fg(self.at(t)))
+                })
+                .collect()
         }
     }
 
@@ -142,20 +176,20 @@ pub mod gradient {
     /// Coral sunset: dark terracotta → coral → light peach
     pub fn sunset() -> Gradient {
         Gradient::new(vec![
-            (0.0, 140, 60, 35),    // Deep terracotta
-            (0.3, 222, 115, 86),   // Coral orange (primary)
-            (0.6, 255, 145, 115),  // Light coral
-            (1.0, 255, 200, 170),  // Warm peach
+            (0.0, 140, 60, 35),   // Deep terracotta
+            (0.3, 222, 115, 86),  // Coral orange (primary)
+            (0.6, 255, 145, 115), // Light coral
+            (1.0, 255, 200, 170), // Warm peach
         ])
     }
 
     /// Fire: deep red → orange → golden yellow
     pub fn fire() -> Gradient {
         Gradient::new(vec![
-            (0.0, 180, 30, 20),   // Deep ember
-            (0.3, 220, 80, 40),   // Burnt orange
-            (0.6, 255, 160, 50),  // Amber
-            (1.0, 255, 220, 80),  // Golden
+            (0.0, 180, 30, 20),  // Deep ember
+            (0.3, 220, 80, 40),  // Burnt orange
+            (0.6, 255, 160, 50), // Amber
+            (1.0, 255, 220, 80), // Golden
         ])
     }
 
@@ -182,9 +216,9 @@ pub mod gradient {
     /// Health inverted: green → yellow → red (for score/rating gauges where high = good)
     pub fn health_inverted() -> Gradient {
         Gradient::new(vec![
-            (0.0, 220, 50, 47),   // Red (low score = bad)
-            (0.5, 255, 200, 0),   // Yellow
-            (1.0, 50, 205, 50),   // Green (high score = good)
+            (0.0, 220, 50, 47), // Red (low score = bad)
+            (0.5, 255, 200, 0), // Yellow
+            (1.0, 50, 205, 50), // Green (high score = good)
         ])
     }
 
@@ -220,9 +254,9 @@ pub mod gradient {
     /// Terminal green: dark green → bright green (Matrix style)
     pub fn matrix() -> Gradient {
         Gradient::new(vec![
-            (0.0, 0, 80, 0),     // Dark green
-            (0.5, 0, 180, 0),    // Green
-            (1.0, 50, 255, 50),  // Bright green
+            (0.0, 0, 80, 0),    // Dark green
+            (0.5, 0, 180, 0),   // Green
+            (1.0, 50, 255, 50), // Bright green
         ])
     }
 
@@ -239,11 +273,11 @@ pub mod gradient {
     /// Security gradient: green → yellow → red for severity
     pub fn severity() -> Gradient {
         Gradient::new(vec![
-            (0.0, 50, 205, 50),  // Info (green)
+            (0.0, 50, 205, 50), // Info (green)
             (0.25, 100, 200, 80),
-            (0.5, 255, 200, 0),  // Warning (yellow)
+            (0.5, 255, 200, 0), // Warning (yellow)
             (0.75, 255, 130, 50),
-            (1.0, 220, 50, 47),  // Critical (red)
+            (1.0, 220, 50, 47), // Critical (red)
         ])
     }
 

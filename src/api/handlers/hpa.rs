@@ -21,8 +21,7 @@ pub struct HpaResponse {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/hpa", get(list_hpa))
+    Router::new().route("/hpa", get(list_hpa))
 }
 
 #[cfg(feature = "web")]

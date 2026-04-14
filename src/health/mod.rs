@@ -303,9 +303,11 @@ mod tests {
     fn test_resource_checks() {
         let checks = VMHealthReport::check_resources(2, "4Gi", "20Gi");
         assert_eq!(checks.len(), 3);
-        assert!(checks
-            .iter()
-            .all(|c| c.status == HealthStatus::Healthy || c.status == HealthStatus::Warning));
+        assert!(
+            checks
+                .iter()
+                .all(|c| c.status == HealthStatus::Healthy || c.status == HealthStatus::Warning)
+        );
     }
 
     #[test]

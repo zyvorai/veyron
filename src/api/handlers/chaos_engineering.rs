@@ -27,8 +27,7 @@ pub struct ChaosResults {
 
 #[cfg(feature = "web")]
 pub fn router() -> Router {
-    Router::new()
-        .route("/chaos/experiments", get(list_experiments))
+    Router::new().route("/chaos/experiments", get(list_experiments))
 }
 
 #[cfg(feature = "web")]

@@ -301,7 +301,11 @@ fn parse_memory_to_gi(mem_str: &str) -> Option<f64> {
             .ok()
             .map(|m| m * 1024.0)
     } else if mem_str.ends_with("G") {
-        mem_str.trim_end_matches("G").parse::<f64>().ok().map(|m| m * 1_000_000_000.0 / 1_073_741_824.0)
+        mem_str
+            .trim_end_matches("G")
+            .parse::<f64>()
+            .ok()
+            .map(|m| m * 1_000_000_000.0 / 1_073_741_824.0)
     } else if mem_str.ends_with("M") {
         mem_str
             .trim_end_matches("M")

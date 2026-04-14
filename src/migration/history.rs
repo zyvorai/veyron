@@ -27,23 +27,28 @@ pub struct MigrationRecord {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum MigrationOutcome { Succeeded, Failed(String), Cancelled, RolledBack }
+pub enum MigrationOutcome {
+    Succeeded,
+    Failed(String),
+    Cancelled,
+    RolledBack,
+}
 
 impl MigrationHistory {
     /// Default persistence path
-    fn persistence_path() -> std::path::PathBuf {
-        dirs::data_dir()
-            .unwrap_or_else(|| {
-                log::warn!("Could not determine data directory, falling back to /tmp");
-                std::path::PathBuf::from("/tmp")
-            })
-            .join("vmrogue")
-            .join("migration_history.json")
+    fn persistence_path() -> anyhow::Result<std::path::PathBuf> {
+        Ok(crate::utils::data_dir()?.join("migration_history.json"))
     }
 
     /// Load migration history from disk
     pub fn load() -> Self {
-        let path = Self::persistence_path();
+        let path = match Self::persistence_path() {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to determine data directory: {}", e);
+                return Self::default();
+            }
+        };
         if path.exists() {
             match std::fs::read_to_string(&path) {
                 Ok(content) => match serde_json::from_str(&content) {
@@ -58,16 +63,16 @@ impl MigrationHistory {
 
     /// Save migration history to disk
     pub fn save(&self) -> anyhow::Result<()> {
-        let path = Self::persistence_path();
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)?;
-        }
-        let content = serde_json::to_string_pretty(self)?;
-        std::fs::write(&path, content)?;
-        Ok(())
+        let path = Self::persistence_path()?;
+        crate::utils::atomic_write(&path, self)
     }
 
-    pub fn new(max: usize) -> Self { Self { records: Vec::new(), max_records: max } }
+    pub fn new(max: usize) -> Self {
+        Self {
+            records: Vec::new(),
+            max_records: max,
+        }
+    }
 
     pub fn record(&mut self, record: MigrationRecord) {
         self.records.insert(0, record);
@@ -77,16 +82,36 @@ impl MigrationHistory {
         }
     }
 
-    pub fn by_vm(&self, vm_name: &str) -> Vec<&MigrationRecord> { self.records.iter().filter(|r| r.vm_name == vm_name).collect() }
-    pub fn recent(&self, limit: usize) -> Vec<&MigrationRecord> { self.records.iter().take(limit).collect() }
-    pub fn failed(&self) -> Vec<&MigrationRecord> { self.records.iter().filter(|r| matches!(r.status, MigrationOutcome::Failed(_))).collect() }
+    pub fn by_vm(&self, vm_name: &str) -> Vec<&MigrationRecord> {
+        self.records
+            .iter()
+            .filter(|r| r.vm_name == vm_name)
+            .collect()
+    }
+    pub fn recent(&self, limit: usize) -> Vec<&MigrationRecord> {
+        self.records.iter().take(limit).collect()
+    }
+    pub fn failed(&self) -> Vec<&MigrationRecord> {
+        self.records
+            .iter()
+            .filter(|r| matches!(r.status, MigrationOutcome::Failed(_)))
+            .collect()
+    }
     pub fn success_rate(&self) -> f64 {
-        if self.records.is_empty() { return 0.0; }
-        let succeeded = self.records.iter().filter(|r| r.status == MigrationOutcome::Succeeded).count();
+        if self.records.is_empty() {
+            return 0.0;
+        }
+        let succeeded = self
+            .records
+            .iter()
+            .filter(|r| r.status == MigrationOutcome::Succeeded)
+            .count();
         succeeded as f64 / self.records.len() as f64 * 100.0
     }
 }
 
 impl Default for MigrationHistory {
-    fn default() -> Self { Self::new(1000) }
+    fn default() -> Self {
+        Self::new(1000)
+    }
 }

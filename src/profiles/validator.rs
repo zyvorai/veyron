@@ -1,9 +1,9 @@
 // Profile Validation Logic
 
 use super::Profile;
-use anyhow::{anyhow, Result};
-use std::sync::LazyLock;
+use anyhow::{Result, anyhow};
 use regex::Regex;
+use std::sync::LazyLock;
 
 // Compiled regex for validation
 static NAME_PATTERN: LazyLock<Regex> =

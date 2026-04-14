@@ -64,7 +64,9 @@ impl ActivityEvent {
 
     /// Format the elapsed time since this event
     pub fn elapsed_display(&self) -> String {
-        let secs = Utc::now().signed_duration_since(self.timestamp).num_seconds();
+        let secs = Utc::now()
+            .signed_duration_since(self.timestamp)
+            .num_seconds();
         format_elapsed(secs)
     }
 }
@@ -208,6 +210,21 @@ impl VmInfo {
         }
         info
     }
+
+    pub fn from_vm_with_vmi_data(
+        vm: &crate::kube::types::VirtualMachine,
+        ip: Option<String>,
+        node: Option<String>,
+    ) -> Self {
+        let mut info = Self::from_vm(vm);
+        if let Some(ip_addr) = ip {
+            info.ip = ip_addr;
+        }
+        if let Some(node_name) = node {
+            info.node = node_name;
+        }
+        info
+    }
 }
 
 /// Snapshot information for display
@@ -218,6 +235,47 @@ pub struct SnapshotDisplayInfo {
     pub status: String,
     pub age: String,
     pub ready: bool,
+}
+
+/// Node information for display
+#[derive(Debug, Clone)]
+pub struct NodeInfo {
+    pub name: String,
+    pub status: String,
+    pub role: String,
+    pub cpu_capacity: String,
+    pub memory_capacity: String,
+    pub pod_count: String,
+    pub age: String,
+}
+
+/// Pod information for display
+#[derive(Debug, Clone)]
+pub struct PodInfo {
+    pub name: String,
+    pub namespace: String,
+    pub status: String,
+    pub node: String,
+    pub age: String,
+}
+
+/// K8s event for display
+#[derive(Debug, Clone)]
+pub struct EventInfo {
+    pub time: String,
+    pub event_type: String,
+    pub reason: String,
+    pub object: String,
+    pub message: String,
+}
+
+/// VMI information for display
+#[derive(Debug, Clone)]
+pub struct VmiInfo {
+    pub name: String,
+    pub phase: String,
+    pub node: String,
+    pub ip: String,
 }
 
 /// Application state
@@ -231,11 +289,35 @@ pub struct AppState {
     /// List of snapshots
     pub snapshots: Vec<SnapshotDisplayInfo>,
 
+    /// Cluster nodes
+    pub nodes: Vec<NodeInfo>,
+
+    /// Pods in namespace
+    pub pods: Vec<PodInfo>,
+
+    /// K8s events
+    pub events: Vec<EventInfo>,
+
+    /// Running VMIs
+    pub vmis: Vec<VmiInfo>,
+
     /// Selected index in current list
     pub selected_index: usize,
 
     /// Selected index in snapshots list
     pub snapshot_selected_index: usize,
+
+    /// Activity log scroll offset
+    pub activity_scroll_offset: usize,
+
+    /// VM details events tab scroll offset
+    pub detail_events_scroll: u16,
+
+    /// Selection indices for extended views
+    pub node_selected_index: usize,
+    pub pod_selected_index: usize,
+    pub event_selected_index: usize,
+    pub vmi_selected_index: usize,
 
     /// Last refresh time
     pub last_refresh: DateTime<Utc>,
@@ -285,6 +367,12 @@ pub struct AppState {
     /// Status filter for VM list (None = show all)
     pub status_filter: Option<String>,
 
+    /// Search case sensitive
+    pub search_case_sensitive: bool,
+
+    /// Search regex mode
+    pub search_regex: bool,
+
     /// Previous VM statuses for change detection
     previous_vm_statuses: HashMap<String, String>,
 }
@@ -296,8 +384,18 @@ impl AppState {
             namespace,
             vms: Vec::new(),
             snapshots: Vec::new(),
+            nodes: Vec::new(),
+            pods: Vec::new(),
+            events: Vec::new(),
+            vmis: Vec::new(),
             selected_index: 0,
             snapshot_selected_index: 0,
+            activity_scroll_offset: 0,
+            detail_events_scroll: 0,
+            node_selected_index: 0,
+            pod_selected_index: 0,
+            event_selected_index: 0,
+            vmi_selected_index: 0,
             last_refresh: Utc::now(),
             refresh_interval: 5, // 5 seconds
             sort_mode: SortMode::Default,
@@ -314,6 +412,8 @@ impl AppState {
             selected_vmi_detail: None,
             selected_vmi_name: None,
             status_filter: None,
+            search_case_sensitive: false,
+            search_regex: false,
             previous_vm_statuses: HashMap::new(),
         }
     }
@@ -336,14 +436,17 @@ impl AppState {
         let mut vm_infos = Vec::with_capacity(vm_list.len());
         for vm in &vm_list {
             let vm_name = vm.metadata.name.clone().unwrap_or_default();
-            let ip = match client.get_vm_ip(&self.namespace, &vm_name).await {
-                Ok(ip) => ip,
+            let (ip, node) = match client
+                .get_vm_ip_and_node(&self.namespace, &vm_name)
+                .await
+            {
+                Ok(result) => result,
                 Err(e) => {
-                    log::debug!("Failed to get IP for VM '{}': {}", vm_name, e);
-                    None
+                    log::debug!("Failed to get VMI data for VM '{}': {}", vm_name, e);
+                    (None, None)
                 }
             };
-            vm_infos.push(VmInfo::from_vm_with_ip(vm, ip));
+            vm_infos.push(VmInfo::from_vm_with_vmi_data(vm, ip, node));
         }
 
         // Detect status changes and record activity events
@@ -420,6 +523,83 @@ impl AppState {
         }
     }
 
+    /// Scroll activity log down
+    pub fn activity_scroll_down(&mut self) {
+        if self.activity_scroll_offset < self.recent_activity.len().saturating_sub(1) {
+            self.activity_scroll_offset += 1;
+        }
+    }
+
+    /// Scroll activity log up
+    pub fn activity_scroll_up(&mut self) {
+        self.activity_scroll_offset = self.activity_scroll_offset.saturating_sub(1);
+    }
+
+    /// Navigate selection in extended views
+    pub fn select_next_node(&mut self) {
+        if !self.nodes.is_empty() {
+            self.node_selected_index = (self.node_selected_index + 1) % self.nodes.len();
+        }
+    }
+
+    pub fn select_previous_node(&mut self) {
+        if !self.nodes.is_empty() {
+            self.node_selected_index = if self.node_selected_index == 0 {
+                self.nodes.len() - 1
+            } else {
+                self.node_selected_index - 1
+            };
+        }
+    }
+
+    pub fn select_next_pod(&mut self) {
+        if !self.pods.is_empty() {
+            self.pod_selected_index = (self.pod_selected_index + 1) % self.pods.len();
+        }
+    }
+
+    pub fn select_previous_pod(&mut self) {
+        if !self.pods.is_empty() {
+            self.pod_selected_index = if self.pod_selected_index == 0 {
+                self.pods.len() - 1
+            } else {
+                self.pod_selected_index - 1
+            };
+        }
+    }
+
+    pub fn select_next_event(&mut self) {
+        if !self.events.is_empty() {
+            self.event_selected_index = (self.event_selected_index + 1) % self.events.len();
+        }
+    }
+
+    pub fn select_previous_event(&mut self) {
+        if !self.events.is_empty() {
+            self.event_selected_index = if self.event_selected_index == 0 {
+                self.events.len() - 1
+            } else {
+                self.event_selected_index - 1
+            };
+        }
+    }
+
+    pub fn select_next_vmi(&mut self) {
+        if !self.vmis.is_empty() {
+            self.vmi_selected_index = (self.vmi_selected_index + 1) % self.vmis.len();
+        }
+    }
+
+    pub fn select_previous_vmi(&mut self) {
+        if !self.vmis.is_empty() {
+            self.vmi_selected_index = if self.vmi_selected_index == 0 {
+                self.vmis.len() - 1
+            } else {
+                self.vmi_selected_index - 1
+            };
+        }
+    }
+
     /// Select next item in the list (respects active filter)
     pub fn select_next(&mut self) {
         let count = self.filtered_vms().len();
@@ -452,6 +632,11 @@ impl AppState {
     pub fn selected_vm(&self) -> Option<&VmInfo> {
         let filtered = self.filtered_vms();
         filtered.get(self.selected_index).copied()
+    }
+
+    /// Get the currently selected snapshot
+    pub fn selected_snapshot(&self) -> Option<&SnapshotDisplayInfo> {
+        self.snapshots.get(self.snapshot_selected_index)
     }
 
     /// Check if data should be refreshed
@@ -543,12 +728,12 @@ impl AppState {
             SortMode::NameDesc => self.vms.sort_by(|a, b| b.name.cmp(&a.name)),
             SortMode::StatusAsc => self.vms.sort_by(|a, b| a.status.cmp(&b.status)),
             SortMode::StatusDesc => self.vms.sort_by(|a, b| b.status.cmp(&a.status)),
-            SortMode::AgeAsc => self.vms.sort_by(|a, b| {
-                parse_age_to_seconds(&a.age).cmp(&parse_age_to_seconds(&b.age))
-            }),
-            SortMode::AgeDesc => self.vms.sort_by(|a, b| {
-                parse_age_to_seconds(&b.age).cmp(&parse_age_to_seconds(&a.age))
-            }),
+            SortMode::AgeAsc => self
+                .vms
+                .sort_by(|a, b| parse_age_to_seconds(&a.age).cmp(&parse_age_to_seconds(&b.age))),
+            SortMode::AgeDesc => self
+                .vms
+                .sort_by(|a, b| parse_age_to_seconds(&b.age).cmp(&parse_age_to_seconds(&a.age))),
         }
     }
 
@@ -594,15 +779,30 @@ impl AppState {
     pub fn filtered_vms(&self) -> Vec<&VmInfo> {
         let mut result: Vec<&VmInfo> = match &self.status_filter {
             None => self.vms.iter().collect(),
-            Some(filter) => self
-                .vms
-                .iter()
-                .filter(|vm| vm.status == *filter)
-                .collect(),
+            Some(filter) => self.vms.iter().filter(|vm| vm.status == *filter).collect(),
         };
         if !self.search_query.is_empty() {
-            let query = self.search_query.to_lowercase();
-            result.retain(|vm| vm.name.to_lowercase().contains(&query));
+            if self.search_regex {
+                // Regex search mode
+                let pattern = if self.search_case_sensitive {
+                    regex::Regex::new(&self.search_query)
+                } else {
+                    regex::Regex::new(&format!("(?i){}", self.search_query))
+                };
+                if let Ok(re) = pattern {
+                    result.retain(|vm| re.is_match(&vm.name) || re.is_match(&vm.status));
+                }
+            } else if self.search_case_sensitive {
+                result.retain(|vm| {
+                    vm.name.contains(&self.search_query) || vm.status.contains(&self.search_query)
+                });
+            } else {
+                let query = self.search_query.to_lowercase();
+                result.retain(|vm| {
+                    vm.name.to_lowercase().contains(&query)
+                        || vm.status.to_lowercase().contains(&query)
+                });
+            }
         }
         result
     }
@@ -706,6 +906,279 @@ impl AppState {
         push_history(&mut self.vm_count_history, self.vms.len() as u64);
         push_history(&mut self.disk_history, disk_usage);
         push_history(&mut self.network_history, network_usage);
+    }
+
+    /// Refresh cluster nodes
+    pub async fn refresh_nodes(&mut self) -> Result<()> {
+        use crate::kube::KubeClient;
+
+        let client = KubeClient::new().await?;
+        let node_list = client.list_nodes().await?;
+
+        self.nodes = node_list
+            .iter()
+            .map(|node| {
+                let name = node
+                    .metadata
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| "unknown".to_string());
+                let status = node
+                    .status
+                    .as_ref()
+                    .and_then(|s| {
+                        s.conditions.as_ref().and_then(|conds| {
+                            conds
+                                .iter()
+                                .find(|c| c.type_ == "Ready")
+                                .map(|c| {
+                                    if c.status == "True" {
+                                        "Ready"
+                                    } else {
+                                        "NotReady"
+                                    }
+                                })
+                        })
+                    })
+                    .unwrap_or("Unknown")
+                    .to_string();
+                let role = node
+                    .metadata
+                    .labels
+                    .as_ref()
+                    .map(|labels| {
+                        if labels.contains_key("node-role.kubernetes.io/control-plane") {
+                            "control-plane"
+                        } else if labels.contains_key("node-role.kubernetes.io/master") {
+                            "master"
+                        } else {
+                            "worker"
+                        }
+                    })
+                    .unwrap_or("worker")
+                    .to_string();
+                let cpu_capacity = node
+                    .status
+                    .as_ref()
+                    .and_then(|s| {
+                        s.capacity
+                            .as_ref()
+                            .and_then(|c| c.get("cpu").map(|q| q.0.clone()))
+                    })
+                    .unwrap_or_else(|| "?".to_string());
+                let memory_capacity = node
+                    .status
+                    .as_ref()
+                    .and_then(|s| {
+                        s.capacity
+                            .as_ref()
+                            .and_then(|c| c.get("memory").map(|q| q.0.clone()))
+                    })
+                    .unwrap_or_else(|| "?".to_string());
+                let pod_count = node
+                    .status
+                    .as_ref()
+                    .and_then(|s| {
+                        s.capacity
+                            .as_ref()
+                            .and_then(|c| c.get("pods").map(|q| q.0.clone()))
+                    })
+                    .unwrap_or_else(|| "?".to_string());
+                let age = node
+                    .metadata
+                    .creation_timestamp
+                    .as_ref()
+                    .map(|ts| {
+                        let duration = Utc::now().signed_duration_since(ts.0);
+                        let days = duration.num_days();
+                        if days > 0 {
+                            format!("{}d", days)
+                        } else {
+                            let hours = duration.num_hours();
+                            format!("{}h", hours)
+                        }
+                    })
+                    .unwrap_or_else(|| "?".to_string());
+
+                NodeInfo {
+                    name,
+                    status,
+                    role,
+                    cpu_capacity,
+                    memory_capacity,
+                    pod_count,
+                    age,
+                }
+            })
+            .collect();
+
+        Ok(())
+    }
+
+    /// Refresh pods in namespace
+    pub async fn refresh_pods(&mut self) -> Result<()> {
+        use crate::kube::KubeClient;
+
+        let client = KubeClient::new().await?;
+        let pod_list = client.list_pods(&self.namespace).await?;
+
+        self.pods = pod_list
+            .iter()
+            .map(|pod| {
+                let name = pod
+                    .metadata
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| "unknown".to_string());
+                let namespace = pod
+                    .metadata
+                    .namespace
+                    .clone()
+                    .unwrap_or_else(|| "default".to_string());
+                let status = pod
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.phase.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                let node = pod
+                    .spec
+                    .as_ref()
+                    .and_then(|s| s.node_name.clone())
+                    .unwrap_or_else(|| "N/A".to_string());
+                let age = pod
+                    .metadata
+                    .creation_timestamp
+                    .as_ref()
+                    .map(|ts| {
+                        let duration = Utc::now().signed_duration_since(ts.0);
+                        let days = duration.num_days();
+                        if days > 0 {
+                            format!("{}d", days)
+                        } else {
+                            let hours = duration.num_hours();
+                            if hours > 0 {
+                                format!("{}h", hours)
+                            } else {
+                                format!("{}m", duration.num_minutes())
+                            }
+                        }
+                    })
+                    .unwrap_or_else(|| "?".to_string());
+
+                PodInfo {
+                    name,
+                    namespace,
+                    status,
+                    node,
+                    age,
+                }
+            })
+            .collect();
+
+        Ok(())
+    }
+
+    /// Refresh K8s events in namespace
+    pub async fn refresh_events(&mut self) -> Result<()> {
+        use crate::kube::KubeClient;
+
+        let client = KubeClient::new().await?;
+        let event_list = client.list_events(&self.namespace).await?;
+
+        self.events = event_list
+            .iter()
+            .map(|event| {
+                let time = event
+                    .last_timestamp
+                    .as_ref()
+                    .map(|ts| {
+                        let secs = Utc::now().signed_duration_since(ts.0).num_seconds();
+                        format_elapsed(secs)
+                    })
+                    .unwrap_or_else(|| "?".to_string());
+                let event_type = event.type_.clone().unwrap_or_else(|| "Normal".to_string());
+                let reason = event
+                    .reason
+                    .clone()
+                    .unwrap_or_else(|| "Unknown".to_string());
+                let object = event
+                    .involved_object
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| "?".to_string());
+                let message = event
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "".to_string());
+
+                EventInfo {
+                    time,
+                    event_type,
+                    reason,
+                    object,
+                    message,
+                }
+            })
+            .collect();
+
+        // Sort newest first
+        self.events.reverse();
+
+        Ok(())
+    }
+
+    /// Refresh VMIs in namespace
+    pub async fn refresh_vmis(&mut self) -> Result<()> {
+        use crate::kube::KubeClient;
+
+        let client = KubeClient::new().await?;
+        let vmi_list = client.list_vmis(&self.namespace).await?;
+
+        self.vmis = vmi_list
+            .iter()
+            .map(|vmi| {
+                let name = vmi
+                    .metadata
+                    .name
+                    .clone()
+                    .unwrap_or_else(|| "unknown".to_string());
+                let phase = vmi
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.phase.clone())
+                    .unwrap_or_else(|| "Unknown".to_string());
+                let node = vmi
+                    .status
+                    .as_ref()
+                    .and_then(|s| s.node_name.clone())
+                    .unwrap_or_else(|| "N/A".to_string());
+                let ip = vmi
+                    .status
+                    .as_ref()
+                    .map(|s| {
+                        s.interfaces
+                            .iter()
+                            .find_map(|iface| {
+                                iface
+                                    .ip_address
+                                    .as_ref()
+                                    .filter(|ip| !ip.is_empty())
+                                    .cloned()
+                            })
+                            .unwrap_or_else(|| "N/A".to_string())
+                    })
+                    .unwrap_or_else(|| "N/A".to_string());
+
+                VmiInfo {
+                    name,
+                    phase,
+                    node,
+                    ip,
+                }
+            })
+            .collect();
+
+        Ok(())
     }
 }
 
