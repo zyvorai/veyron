@@ -192,9 +192,10 @@ pub mod web {
         request: axum::extract::Request,
         next: middleware::Next,
     ) -> impl IntoResponse {
-        // Allow health endpoint and dashboard without auth
+        // Allow health, dashboard, and static assets without auth
         if request.uri().path() == "/api/v1/health"
             || request.uri().path() == "/dashboard"
+            || request.uri().path().starts_with("/assets/")
         {
             return next.run(request).await.into_response();
         }
@@ -258,8 +259,21 @@ pub mod web {
         request: axum::extract::Request,
         next: middleware::Next,
     ) -> impl IntoResponse {
-        // Allow health endpoint without rate limiting
-        if request.uri().path() == "/api/v1/health" {
+        // Allow health, dashboard, and internal dashboard API calls without rate limiting
+        let path = request.uri().path();
+        if path == "/api/v1/health"
+            || path == "/dashboard"
+            || path.starts_with("/api/v1/vms")
+            || path.starts_with("/api/v1/events")
+            || path.starts_with("/api/v1/nodes")
+            || path.starts_with("/api/v1/pods")
+            || path.starts_with("/api/v1/snapshots")
+            || path.starts_with("/api/v1/dashboard")
+            || path.starts_with("/api/v1/templates")
+            || path.starts_with("/api/v1/profiles")
+            || path.starts_with("/api/v1/namespaces")
+            || path.starts_with("/api/v1/activity")
+        {
             return next.run(request).await.into_response();
         }
 
@@ -286,7 +300,7 @@ pub mod web {
         headers.insert("x-frame-options", "DENY".parse().unwrap());
         headers.insert("cache-control", "no-store".parse().unwrap());
         headers.insert("x-xss-protection", "0".parse().unwrap());
-        headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https://esm.sh".parse().unwrap());
+        headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:".parse().unwrap());
         headers.insert("referrer-policy", "no-referrer".parse().unwrap());
         // HSTS: instruct browsers to only use HTTPS for 1 year
         headers.insert(
@@ -337,8 +351,9 @@ pub mod web {
 
     pub fn build_router(state: SharedState) -> Router {
         Router::new()
-            // Dashboard
+            // Dashboard & static assets
             .route("/dashboard", get(dashboard_handler))
+            .route("/assets/novnc.min.js", get(novnc_handler))
             // VM endpoints
             .route("/api/v1/vms", get(list_vms_handler))
             .route("/api/v1/vms", post(create_vm_handler))
@@ -443,6 +458,13 @@ pub mod web {
 
     async fn dashboard_handler() -> Html<&'static str> {
         Html(include_str!("web/dashboard.html"))
+    }
+
+    async fn novnc_handler() -> impl IntoResponse {
+        (
+            [(header::CONTENT_TYPE, "application/javascript")],
+            include_str!("web/vendor/novnc.min.js"),
+        )
     }
 
     fn req_ctx(method: HttpMethod, path: &str) -> RequestContext {
