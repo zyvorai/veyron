@@ -1,7 +1,19 @@
-# Prerequisites: Create the API key secret:
+# VMRogue Kubernetes Deployment
+#
+# Prerequisites:
 #   kubectl create secret generic vmrogue-api-key \
 #     --namespace=vmrogue-system \
 #     --from-literal=api-key=$(openssl rand -hex 32)
+#
+# Or use: ./scripts/deploy-k8s.sh deploy (creates the secret automatically)
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vmrogue-system
+  labels:
+    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/part-of: vmrogue
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -14,15 +26,26 @@ kind: ClusterRole
 metadata:
   name: vmrogue
 rules:
+  # KubeVirt VMs
   - apiGroups: ["kubevirt.io"]
     resources: ["virtualmachines", "virtualmachineinstances", "virtualmachineinstancemigrations"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # KubeVirt VNC/console subresources (needed for virtctl vnc)
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources: ["virtualmachineinstances/vnc", "virtualmachineinstances/console"]
+    verbs: ["get"]
+  # KubeVirt snapshots
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Core resources
   - apiGroups: [""]
-    resources: ["namespaces", "persistentvolumeclaims", "pods", "events"]
+    resources: ["namespaces", "nodes", "pods", "events", "persistentvolumeclaims"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["create", "delete"]
+  # Storage classes
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "watch"]
@@ -39,14 +62,6 @@ roleRef:
   kind: ClusterRole
   name: vmrogue
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: vmrogue-system
-  labels:
-    app.kubernetes.io/name: vmrogue
-    app.kubernetes.io/part-of: vmrogue
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -71,8 +86,8 @@ spec:
       serviceAccountName: vmrogue
       containers:
         - name: vmrogue
-          image: ghcr.io/ssahani/VMRogue:latest
-          args: ["api-serve", "--port", "5151"]
+          image: ghcr.io/ssahani/vmrogue:latest
+          args: ["api-serve", "--port", "5151", "--host", "0.0.0.0"]
           ports:
             - containerPort: 5151
               name: http
@@ -98,7 +113,6 @@ spec:
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
-            readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             seccompProfile:
               type: RuntimeDefault
@@ -110,8 +124,8 @@ spec:
               cpu: 50m
               memory: 64Mi
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: 500m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
@@ -122,6 +136,7 @@ metadata:
     app.kubernetes.io/name: vmrogue
     app.kubernetes.io/component: api
 spec:
+  type: NodePort
   selector:
     app.kubernetes.io/name: vmrogue
     app.kubernetes.io/component: api
@@ -130,3 +145,4 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+      nodePort: 30151
