@@ -104,6 +104,19 @@ VMRogue implements the following security measures:
 - TLS certificate validation is always enforced
 - PAM usernames limited to 32 characters
 - API error responses do not leak internal details
+- API key authentication via `X-API-Key` header, `Authorization: Bearer`, or `?token=` query param
+- Constant-time API key comparison prevents timing attacks
+- Security headers on all responses (CSP, X-Frame-Options DENY, HSTS, no-sniff, no-referrer)
+- Rate limiting (configurable per minute, dashboard endpoints exempt)
+- Kubernetes name validation (RFC 1123) on all VM/snapshot names
+- VNC WebSocket proxy authenticates to K8s API via client certificate (mTLS)
+
+#### Dashboard Security
+- API key stored in localStorage (opt-in "Remember me") or sessionStorage
+- 401 responses auto-clear stored key and re-prompt
+- CSP restricts scripts to `'self'` only (no external CDN dependencies)
+- noVNC bundled locally (no runtime CDN fetches)
+- Dashboard page served without auth; all API calls require valid key
 
 ### 🚨 Known Security Considerations
 

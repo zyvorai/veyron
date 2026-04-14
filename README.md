@@ -18,8 +18,9 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **Automated Health Checks** - Diagnostics with scoring and recommendations
 - **Smart Recommendations** - AI-like resource suggestions based on workload
 - **Dependency Management** - Automatic VM deployment ordering
-- **Web Dashboard** - Metal-themed real-time dashboard with live charts, VM management, and event feed
-- **REST API** - 24 endpoints with OpenAPI spec, API key auth, rate limiting, and webhooks
+- **Web Dashboard** - Real-time dashboard with VNC console, VM detail panels, security posture, node/pod views
+- **REST API** - 30+ endpoints with OpenAPI spec, API key auth, rate limiting, and webhooks
+- **VNC Console** - Browser-based VM console via noVNC with Ctrl+Alt+Del, fullscreen, reconnect
 
 ### Core Features
 - **44 OS Templates** - Ubuntu, Fedora, CentOS, Debian, RHEL, AlmaLinux, Rocky, Alpine, Arch, Windows, and more
@@ -46,7 +47,7 @@ cargo build --release
 
 ## Web Dashboard
 
-VMRogue includes a built-in web dashboard with a metal-forged dark theme.
+VMRogue includes a built-in web dashboard with a dark industrial theme.
 
 ### Start the API server
 
@@ -58,14 +59,35 @@ export VMROGUE_API_KEY="your-secret-key"
 vmrogue api-serve --port 5151 --host 0.0.0.0
 ```
 
-Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load.
+Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load (with a "Remember me" option).
 
 ### Dashboard features
-- Real-time VM fleet overview with live CPU/memory charts
-- VM lifecycle controls (start, stop, restart, delete)
-- Snapshot management
-- Cluster event feed
-- Auto-refresh every 5 seconds
+- **Dashboard** - Real-time VM fleet overview with live CPU/memory utilization charts, real cluster capacity gauges (CPU, memory, nodes), VM summary, and event feed
+- **VMs** - Full VM list with search/filter, clickable detail panels showing status, resources, network interfaces (IP/MAC), guest OS info, and security posture scoring
+- **VNC Console** - Browser-based VM console via bundled noVNC with Ctrl+Alt+Del, fullscreen toggle, and reconnect
+- **VM Creation** - Forge VMs from 43 OS templates with profile picker (8 profiles), CPU/memory/disk overrides, cloud-init editor, and auto-start
+- **Snapshots** - Create, restore, and delete VM snapshots from the UI
+- **Nodes** - Kubernetes node table with CPU/memory capacity, kubelet version, OS info
+- **Pods** - Namespace pod listing with phase, node, IP, restarts, age
+- **Events** - Cluster event feed with auto-refresh
+- **Security** - Per-VM security posture scoring (Secure Boot, TPM, RNG, eviction strategy, resource limits)
+- **Configurable refresh** - 5s/10s/30s/off auto-refresh saved to localStorage
+
+### Deploy to Kubernetes
+
+```bash
+# Build container image and deploy
+./scripts/deploy-k8s.sh deploy
+
+# Or step by step
+./scripts/deploy-k8s.sh build    # Build container image
+./scripts/deploy-k8s.sh deploy   # Apply K8s manifests
+./scripts/deploy-k8s.sh status   # Check deployment
+./scripts/deploy-k8s.sh logs     # Tail pod logs
+./scripts/deploy-k8s.sh delete   # Remove everything
+```
+
+The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresources, snapshots), a NodePort service on port 30151, and automatic API key secret creation. See `deploy/k8s.yaml` for the full manifest.
 
 ### Deploy to a remote server via SSH
 
@@ -73,7 +95,7 @@ Open `http://localhost:5151/dashboard` in your browser. The dashboard will promp
 ./scripts/deploy-ssh.sh 185.165.240.5 sus
 ```
 
-This builds a static musl binary, uploads it via SCP, installs a systemd service, and starts it. See `scripts/deploy-ssh.sh` for details.
+Builds a static musl binary, uploads via SCP, installs a systemd service, and starts it.
 
 ## Quick Start
 
@@ -418,9 +440,9 @@ fn main() -> anyhow::Result<()> {
 
 **Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization.
 
-**API & Dashboard** - REST API with 24 endpoints, OpenAPI spec, API key auth, rate limiting, webhooks, metal-themed web dashboard with real-time charts.
+**API & Dashboard** - REST API with 30+ endpoints, OpenAPI spec, API key auth, rate limiting, webhooks. Web dashboard with VNC console (bundled noVNC), VM detail panels, security posture scoring, node/pod views, search/filter, profile picker, cloud-init editor.
 
-**Infrastructure** - Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery, SSH deploy scripts.
+**Infrastructure** - Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. SSH deploy scripts. Docker image (scratch-based, ~75MB) with bundled virtctl for VNC.
 
 ### Future Enhancements
 
@@ -496,17 +518,16 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 
 ## Documentation
 
-- **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
-- **[docs/INNOVATIVE_FEATURES.md](docs/INNOVATIVE_FEATURES.md)** - Complete guide to innovative features
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development status and architecture
+- **[SECURITY.md](SECURITY.md)** - Security policy and hardening details
+- **[CHANGELOG.md](CHANGELOG.md)** - Release changelog
+- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference card
 - **[docs/OS_TEMPLATES.md](docs/OS_TEMPLATES.md)** - Full OS template catalog
-- **[docs/THEME.md](docs/THEME.md)** - Theme system documentation
 - **[docs/SNAPSHOTS.md](docs/SNAPSHOTS.md)** - Snapshot and backup management
 - **[docs/DISK_MANAGEMENT.md](docs/DISK_MANAGEMENT.md)** - Disk operations guide
 - **[docs/NETWORK_MANAGEMENT.md](docs/NETWORK_MANAGEMENT.md)** - Network management guide
 - **[docs/INTERACTIVE_TUI.md](docs/INTERACTIVE_TUI.md)** - Interactive TUI guide
-- **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference card
-- **[SECURITY.md](SECURITY.md)** - Security policy and hardening details
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development status and architecture
+- **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
 
 ### Configuration Examples
 

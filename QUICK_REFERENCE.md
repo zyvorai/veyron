@@ -61,6 +61,21 @@ vmrogue templates                 # List all templates
 vmrogue template ubuntu-22.04     # View template details
 ```
 
+### Web Dashboard & API
+```bash
+# Start API server with dashboard
+export VMROGUE_API_KEY="your-key"
+vmrogue api-serve --port 5151     # Dashboard at /dashboard
+
+# Deploy to Kubernetes
+./scripts/deploy-k8s.sh deploy    # Full K8s deployment
+./scripts/deploy-k8s.sh status    # Check deployment
+./scripts/deploy-k8s.sh logs      # Tail logs
+
+# Deploy via SSH
+./scripts/deploy-ssh.sh HOST USER # Deploy to remote server
+```
+
 ### Advanced
 ```bash
 vmrogue wizard                    # Interactive wizard
