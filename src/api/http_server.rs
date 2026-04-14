@@ -286,7 +286,7 @@ pub mod web {
         headers.insert("x-frame-options", "DENY".parse().unwrap());
         headers.insert("cache-control", "no-store".parse().unwrap());
         headers.insert("x-xss-protection", "0".parse().unwrap());
-        headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss:".parse().unwrap());
+        headers.insert("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self' ws: wss: https://esm.sh".parse().unwrap());
         headers.insert("referrer-policy", "no-referrer".parse().unwrap());
         // HSTS: instruct browsers to only use HTTPS for 1 year
         headers.insert(
