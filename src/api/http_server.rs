@@ -712,34 +712,32 @@ pub mod web {
             }
         };
 
-        // Wait for virtctl to start listening
-        let mut connected = false;
+        // Wait for virtctl to start listening, then connect
+        // Important: virtctl accepts only one connection, so we must use the
+        // successful connect attempt directly — don't probe then reconnect.
+        let mut stream = None;
         for _ in 0..20 {
-            tokio::time::sleep(std::time::Duration::from_millis(250)).await;
-            if TcpStream::connect(format!("127.0.0.1:{}", port)).await.is_ok() {
-                connected = true;
-                break;
+            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
+            match TcpStream::connect(format!("127.0.0.1:{}", port)).await {
+                Ok(s) => {
+                    stream = Some(s);
+                    break;
+                }
+                Err(_) => continue,
             }
         }
 
-        if !connected {
-            log::error!("virtctl VNC proxy did not start on port {}", port);
-            child.kill().await.ok();
-            let _ = client_ws
-                .send(Message::Close(Some(axum::extract::ws::CloseFrame {
-                    code: 1011,
-                    reason: "VNC proxy failed to start".into(),
-                })))
-                .await;
-            return;
-        }
-
-        // Connect to the local VNC proxy
-        let stream = match TcpStream::connect(format!("127.0.0.1:{}", port)).await {
-            Ok(s) => s,
-            Err(e) => {
-                log::error!("Failed to connect to VNC proxy port {}: {}", port, e);
+        let stream = match stream {
+            Some(s) => s,
+            None => {
+                log::error!("virtctl VNC proxy did not start on port {}", port);
                 child.kill().await.ok();
+                let _ = client_ws
+                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                        code: 1011,
+                        reason: "VNC proxy failed to start".into(),
+                    })))
+                    .await;
                 return;
             }
         };
