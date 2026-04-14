@@ -894,10 +894,6 @@ body>*{position:relative;z-index:1}
 <div class="footer-bar">Forged with <span>Rust</span> &mdash; VMRogue v0.2.0</div>
 </div>
 
-<script type="module">
-import RFB from 'https://cdn.jsdelivr.net/npm/@novnc/novnc@1.5.0/+esm';
-window.RFB = RFB;
-</script>
 <script>
 // State
 let currentPage = 'dashboard';
@@ -1512,15 +1508,22 @@ function openVncConsole(ns, name) {
   connectVnc();
 }
 
-function connectVnc() {
+async function connectVnc() {
   if (vncRfb) { vncRfb.disconnect(); vncRfb = null; }
   const container = document.getElementById('vnc-container');
   const placeholder = document.getElementById('vnc-placeholder');
 
+  // Dynamically load noVNC if not cached
   if (!window.RFB) {
-    placeholder.textContent = 'noVNC loading... retry in 2s';
-    setTimeout(connectVnc, 2000);
-    return;
+    placeholder.textContent = 'Loading noVNC...';
+    placeholder.style.display = 'block';
+    try {
+      const module = await import('https://esm.sh/@novnc/novnc@1.5.0/core/rfb');
+      window.RFB = module.default;
+    } catch (e) {
+      placeholder.textContent = 'Failed to load noVNC: ' + e.message;
+      return;
+    }
   }
 
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1528,8 +1531,12 @@ function connectVnc() {
   const url = proto + '//' + location.host + '/api/v1/vms/' + vncVmNs + '/' + vncVmName + '/vnc?token=' + encodeURIComponent(apiKey);
 
   placeholder.style.display = 'none';
+
+  // Clear any previous noVNC canvases from the container
+  container.querySelectorAll('canvas, div:not(#vnc-placeholder)').forEach(el => el.remove());
+
   try {
-    vncRfb = new window.RFB(container, url, { wsProtocols: ['binary'] });
+    vncRfb = new window.RFB(container, url);
     vncRfb.scaleViewport = true;
     vncRfb.resizeSession = true;
     vncRfb.addEventListener('connect', () => {
@@ -1538,6 +1545,10 @@ function connectVnc() {
     });
     vncRfb.addEventListener('disconnect', (e) => {
       document.getElementById('vnc-status').textContent = e.detail.clean ? 'Disconnected' : 'Connection lost';
+      document.getElementById('vnc-status').style.color = 'var(--error)';
+    });
+    vncRfb.addEventListener('securityfailure', (e) => {
+      document.getElementById('vnc-status').textContent = 'Security failure';
       document.getElementById('vnc-status').style.color = 'var(--error)';
     });
   } catch (e) {
