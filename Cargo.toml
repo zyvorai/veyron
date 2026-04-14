@@ -58,10 +58,12 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "logg
 tower-http = { version = "0.6", features = ["cors", "timeout"], optional = true }
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots", "rustls-tls-native-roots"], optional = true }
 futures-util = { version = "0.3", optional = true }
+rustls-pemfile = { version = "2", optional = true }
+base64 = { version = "0.22", optional = true }
 
 [features]
 default = ["web"]
-web = ["axum", "axum-server", "rustls", "tower-http", "tokio-tungstenite", "futures-util"]
+web = ["axum", "axum-server", "rustls", "tower-http", "tokio-tungstenite", "futures-util", "rustls-pemfile", "base64"]
 
 [dev-dependencies]
 tempfile = "3.8"

@@ -707,34 +707,13 @@ pub mod web {
         let ws_url = base.replace("https://", "wss://").replace("http://", "ws://")
             + &vnc_path;
 
-        // Build TLS connector that trusts the K8s API server (accept self-signed certs)
+        // Build TLS config with client certificate auth from kubeconfig
         let connector = {
-            let tls_config = rustls::ClientConfig::builder()
-                .dangerous()
-                .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
-                .with_no_client_auth();
+            let tls_config = build_k8s_tls_config();
             Some(tokio_tungstenite::Connector::Rustls(Arc::new(tls_config)))
         };
 
-        // Get bearer token for K8s API auth
-        let bearer_token = {
-            // Try service account token first
-            let sa_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-            if std::path::Path::new(sa_path).exists() {
-                std::fs::read_to_string(sa_path).ok()
-            } else if let Ok(kubeconfig_path) = std::env::var("KUBECONFIG") {
-                // Extract token from kubeconfig YAML
-                std::fs::read_to_string(&kubeconfig_path).ok().and_then(|contents| {
-                    contents.lines()
-                        .find(|l| l.trim().starts_with("token:"))
-                        .map(|l| l.trim().trim_start_matches("token:").trim().trim_matches('"').to_string())
-                })
-            } else {
-                None
-            }
-        };
-
-        // Build WebSocket request with proper upgrade headers
+        // Build WebSocket request
         let host = config.cluster_url.host().unwrap_or("localhost").to_string();
         let port = config.cluster_url.port_u16().unwrap_or(6443);
         let host_header = if port == 443 || port == 6443 {
@@ -743,7 +722,6 @@ pub mod web {
             format!("{}:{}", host, port)
         };
 
-        // Generate WebSocket key
         let ws_key = {
             use std::time::SystemTime;
             let seed = SystemTime::now()
@@ -762,8 +740,12 @@ pub mod web {
             .header("Sec-WebSocket-Version", "13")
             .header("Sec-WebSocket-Key", &ws_key);
 
-        if let Some(ref token) = bearer_token {
-            request = request.header("Authorization", format!("Bearer {}", token.trim()));
+        // Add bearer token if available (service account or kubeconfig token)
+        let sa_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+        if std::path::Path::new(sa_path).exists() {
+            if let Ok(token) = std::fs::read_to_string(sa_path) {
+                request = request.header("Authorization", format!("Bearer {}", token.trim()));
+            }
         }
 
         let request = match request.body(()) {
@@ -1960,6 +1942,87 @@ pub mod web {
                 rustls::SignatureScheme::ED25519,
             ]
         }
+    }
+
+    /// Build a rustls ClientConfig that authenticates to the K8s API server.
+    /// Supports client certificate auth (k3s/kubeadm) and falls back to no client auth.
+    fn build_k8s_tls_config() -> rustls::ClientConfig {
+        #![allow(unused_imports)]
+
+        // Try reading client cert/key from kubeconfig
+        if let Ok(kubeconfig_path) = std::env::var("KUBECONFIG") {
+            if let Ok(contents) = std::fs::read_to_string(&kubeconfig_path) {
+                let mut cert_b64 = None;
+                let mut key_b64 = None;
+                for line in contents.lines() {
+                    let trimmed = line.trim();
+                    if trimmed.starts_with("client-certificate-data:") {
+                        cert_b64 = Some(
+                            trimmed
+                                .trim_start_matches("client-certificate-data:")
+                                .trim()
+                                .to_string(),
+                        );
+                    }
+                    if trimmed.starts_with("client-key-data:") {
+                        key_b64 = Some(
+                            trimmed
+                                .trim_start_matches("client-key-data:")
+                                .trim()
+                                .to_string(),
+                        );
+                    }
+                }
+
+                if let (Some(cert_b64), Some(key_b64)) = (cert_b64, key_b64) {
+                    use base64::Engine;
+                    let decoder = base64::engine::general_purpose::STANDARD;
+                    if let (Ok(cert_pem), Ok(key_pem)) =
+                        (decoder.decode(&cert_b64), decoder.decode(&key_b64))
+                    {
+                        // Parse PEM cert
+                        let mut certs = Vec::new();
+                        let mut cursor = &cert_pem[..];
+                        while let Ok(Some(item)) =
+                            rustls_pemfile::read_one(&mut cursor)
+                        {
+                            if let rustls_pemfile::Item::X509Certificate(cert) = item {
+                                certs.push(cert);
+                            }
+                        }
+
+                        // Parse PEM key
+                        let mut key_cursor = &key_pem[..];
+                        let private_key =
+                            rustls_pemfile::private_key(&mut key_cursor)
+                                .ok()
+                                .flatten();
+
+                        if !certs.is_empty() {
+                            if let Some(key) = private_key {
+                                if let Ok(cfg) = rustls::ClientConfig::builder()
+                                    .dangerous()
+                                    .with_custom_certificate_verifier(Arc::new(
+                                        AcceptAllVerifier,
+                                    ))
+                                    .with_client_auth_cert(certs, key)
+                                {
+                                    log::info!("VNC proxy: using client certificate auth");
+                                    return cfg;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback: no client auth
+        log::warn!("VNC proxy: no client certificate found, using anonymous TLS");
+        rustls::ClientConfig::builder()
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
+            .with_no_client_auth()
     }
 
     /// Simple base64 encoding for WebSocket key generation.
