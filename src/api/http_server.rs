@@ -709,7 +709,6 @@ pub mod web {
 
         // Build TLS connector that trusts the K8s API server (accept self-signed certs)
         let connector = {
-            // Use rustls with custom config that skips cert verification for K8s self-signed certs
             let tls_config = rustls::ClientConfig::builder()
                 .dangerous()
                 .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
@@ -717,49 +716,54 @@ pub mod web {
             Some(tokio_tungstenite::Connector::Rustls(Arc::new(tls_config)))
         };
 
-        // Build the WebSocket request with auth headers
-        // Extract host from URL for Host header
-        let host = config
-            .cluster_url
-            .host()
-            .unwrap_or("localhost")
-            .to_string();
+        // Get bearer token for K8s API auth
+        let bearer_token = {
+            // Try service account token first
+            let sa_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+            if std::path::Path::new(sa_path).exists() {
+                std::fs::read_to_string(sa_path).ok()
+            } else if let Ok(kubeconfig_path) = std::env::var("KUBECONFIG") {
+                // Extract token from kubeconfig YAML
+                std::fs::read_to_string(&kubeconfig_path).ok().and_then(|contents| {
+                    contents.lines()
+                        .find(|l| l.trim().starts_with("token:"))
+                        .map(|l| l.trim().trim_start_matches("token:").trim().trim_matches('"').to_string())
+                })
+            } else {
+                None
+            }
+        };
+
+        // Build WebSocket request with proper upgrade headers
+        let host = config.cluster_url.host().unwrap_or("localhost").to_string();
+        let port = config.cluster_url.port_u16().unwrap_or(6443);
+        let host_header = if port == 443 || port == 6443 {
+            host.clone()
+        } else {
+            format!("{}:{}", host, port)
+        };
+
+        // Generate WebSocket key
+        let ws_key = {
+            use std::time::SystemTime;
+            let seed = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos();
+            base64_encode_simple(seed)
+        };
 
         let mut request = tungstenite::http::Request::builder()
+            .method("GET")
             .uri(&ws_url)
-            .header("Host", &host);
+            .header("Host", &host_header)
+            .header("Connection", "Upgrade")
+            .header("Upgrade", "websocket")
+            .header("Sec-WebSocket-Version", "13")
+            .header("Sec-WebSocket-Key", &ws_key);
 
-        // Add bearer token auth - read service account token from well-known path
-        let token_path = std::env::var("KUBECONFIG")
-            .ok()
-            .and_then(|_| None)
-            .or_else(|| {
-                let sa_token = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-                if std::path::Path::new(sa_token).exists() {
-                    Some(sa_token.to_string())
-                } else {
-                    None
-                }
-            });
-        if let Some(path) = token_path {
-            if let Ok(token) = std::fs::read_to_string(&path) {
-                request = request.header("Authorization", format!("Bearer {}", token.trim()));
-            }
-        } else {
-            // Try extracting from kubeconfig file
-            if let Ok(kubeconfig_path) = std::env::var("KUBECONFIG") {
-                if let Ok(contents) = std::fs::read_to_string(&kubeconfig_path) {
-                    // Look for token in kubeconfig
-                    for line in contents.lines() {
-                        let trimmed = line.trim();
-                        if trimmed.starts_with("token:") {
-                            let token = trimmed.trim_start_matches("token:").trim().trim_matches('"');
-                            request = request.header("Authorization", format!("Bearer {}", token));
-                            break;
-                        }
-                    }
-                }
-            }
+        if let Some(ref token) = bearer_token {
+            request = request.header("Authorization", format!("Bearer {}", token.trim()));
         }
 
         let request = match request.body(()) {
@@ -781,7 +785,7 @@ pub mod web {
                     let _ = client_ws
                         .send(Message::Close(Some(axum::extract::ws::CloseFrame {
                             code: 1011,
-                            reason: "Failed to connect to VNC".into(),
+                            reason: format!("VNC connection failed: {}", e).into(),
                         })))
                         .await;
                     return;
@@ -1956,6 +1960,33 @@ pub mod web {
                 rustls::SignatureScheme::ED25519,
             ]
         }
+    }
+
+    /// Simple base64 encoding for WebSocket key generation.
+    fn base64_encode_simple(value: u128) -> String {
+        const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let bytes = value.to_le_bytes();
+        let mut result = String::with_capacity(24);
+        for chunk in bytes.chunks(3) {
+            let b0 = chunk[0] as u32;
+            let b1 = if chunk.len() > 1 { chunk[1] as u32 } else { 0 };
+            let b2 = if chunk.len() > 2 { chunk[2] as u32 } else { 0 };
+            let triple = (b0 << 16) | (b1 << 8) | b2;
+            result.push(CHARS[((triple >> 18) & 0x3F) as usize] as char);
+            result.push(CHARS[((triple >> 12) & 0x3F) as usize] as char);
+            if chunk.len() > 1 {
+                result.push(CHARS[((triple >> 6) & 0x3F) as usize] as char);
+            }
+            if chunk.len() > 2 {
+                result.push(CHARS[(triple & 0x3F) as usize] as char);
+            }
+        }
+        // Pad to exactly 24 chars (standard WS key length)
+        while result.len() < 24 {
+            result.push('=');
+        }
+        result.truncate(24);
+        result
     }
 
     fn format_age(ts: &chrono::DateTime<chrono::Utc>) -> String {
