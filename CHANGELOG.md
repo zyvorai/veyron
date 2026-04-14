@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Web Dashboard
+- Full-featured web dashboard embedded in binary (single HTML, no build tools)
+- **VNC Console** - Browser-based VM console via bundled noVNC (284KB), proxied through virtctl to KubeVirt VNC subresource
+- **VM Detail Panel** - Click any VM to expand inline: status, resources, network interfaces (IP/MAC), guest OS info, security posture
+- **VM Creation Modal** - Forge VMs from 43 templates with profile picker (8 profiles), CPU/memory/disk overrides, cloud-init editor, auto-start
+- **Security Posture** - Per-VM scoring (0-100) checking Secure Boot, TPM 2.0, RNG, eviction strategy, resource limits
+- **Nodes Page** - Kubernetes node table with CPU/memory capacity/allocatable, kubelet version, OS image
+- **Pods Page** - Pod listing with phase, node, IP, containers, restarts, age
+- **Search & Filter** - Text search and status dropdown on VMs page
+- **Snapshot Management** - Create, restore, and delete snapshots from the UI
+- **Real Capacity Gauges** - Dashboard resource bars show actual cluster CPU/memory utilization from node data
+- **API Key Modal** - Login modal with password field, eye toggle, "Remember me" (localStorage persistence)
+- **Configurable Refresh** - 5s/10s/30s/off auto-refresh interval saved to localStorage
+- **Activity Feed** - VM-specific event feed filtered to VirtualMachine/VMI/Snapshot kinds
+
+#### API Endpoints (12 new)
+- `GET /api/v1/nodes` - Kubernetes nodes with capacity, kubelet version, OS
+- `GET /api/v1/pods` - Pods with phase, node, IP, containers, restarts
+- `GET /api/v1/profiles` - VM resource profiles (8 built-in)
+- `GET /api/v1/namespaces` - Namespace listing
+- `GET /api/v1/activity` - VM-specific activity feed
+- `GET /api/v1/vms/:ns/:name/vnc` - WebSocket VNC proxy via virtctl
+- `GET /api/v1/vms/:ns/:name/security` - VM security posture scoring
+- `POST /api/v1/vms` - Create VM with template, profile, cloud-init, auto-start
+- `POST /api/v1/snapshots/:ns/:vm/create` - Create snapshot
+- `POST /api/v1/snapshots/:ns/:name/restore` - Restore snapshot
+- `GET /api/v1/templates` - List all VM templates with specs
+- `GET /api/v1/dashboard/overview` - Enhanced with real node capacity data
+
+#### Kubernetes Deployment
+- `deploy/k8s.yaml` - Full manifest with RBAC (VMs, nodes, pods, VNC subresources, snapshots), NodePort 30151
+- `scripts/deploy-k8s.sh` - One-command K8s deploy (build/push/deploy/status/logs/delete)
+- `Dockerfile` - Scratch-based image (~75MB) with static musl binary + virtctl
+
+#### SSH Deployment
+- `scripts/deploy-ssh.sh` - Deploy to remote server via SCP + systemd
+
+### Fixed
+- **VM creation preserved containerDisk** - Templates with OS container images (quay.io/containerdisks/*) were being converted to blank disks; now preserves disk source type, cloud-init, RNG, clock, features, firmware, and labels
+- **Rate limiter** - Dashboard API endpoints exempt from rate limiting (was causing constant 429 errors with 5s auto-refresh)
+- **VM detail panel persistence** - Auto-refresh no longer wipes expanded detail panels
+- **API key auth** - Token query param support for WebSocket connections; 401 re-prompts for key
+- **VNC proxy** - Reuse TCP connection from port check (virtctl accepts only one connection)
+
 ### Security
 
 - **Path traversal prevention** - Profile and blueprint storage now sanitize names to block directory traversal attacks

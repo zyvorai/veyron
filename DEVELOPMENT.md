@@ -2,15 +2,17 @@
 
 ## Project Statistics
 
-- **Lines of Code**: ~107,000
+- **Lines of Code**: ~120,000
 - **Modules**: 37 public modules + 11 handler modules
-- **Templates**: 44 OS templates
+- **Templates**: 43 OS templates (with containerDisk images)
 - **CLI Commands**: 169
 - **Resource Profiles**: 8 built-in
 - **Deployment Blueprints**: 5 built-in
-- **Tests**: 2,388 (all passing: 2,326 unit + 54 integration + 8 doc)
+- **API Endpoints**: 30+ (REST + WebSocket)
+- **Dashboard Pages**: 6 (Dashboard, VMs, Snapshots, Nodes, Pods, Events)
+- **Tests**: 2,388 (all passing)
 - **Compiler Warnings**: 0
-- **Dependencies**: 25 core + 1 dev
+- **Dependencies**: 30 core + 1 dev
 
 ## Architecture
 
@@ -48,6 +50,9 @@ src/
 ├── observability/      (logs, metrics, alerts, insights)
 ├── multitenancy/       (tenants, RBAC, quotas)
 ├── api/                (REST API, OpenAPI, webhooks)
+│   ├── http_server.rs  (axum web server, 30+ handlers)
+│   ├── web/            (dashboard HTML, noVNC bundle)
+│   └── handlers/       (47 endpoint handler modules)
 ├── devexp/             (completions, config templates, diff, init)
 └── [12 more modules]   (networking, finops, edge, secrets, etc.)
 ```
@@ -60,9 +65,23 @@ src/
 - [x] VM cloning, export, batch operations
 - [x] Interactive creation wizard
 - [x] Configuration validation (46 tests)
-- [x] 44 OS templates (Ubuntu, Fedora, CentOS, Debian, RHEL, Windows, etc.)
+- [x] 43 OS templates with containerDisk images (Ubuntu, Fedora, CentOS, Debian, RHEL, Windows, etc.)
 - [x] Builder pattern for VMConfig
 - [x] YAML/JSON output formatting
+
+### Web Dashboard & API
+- [x] Single-file HTML dashboard embedded in binary (Inter + JetBrains Mono fonts, dark theme)
+- [x] 30+ REST API endpoints with API key auth, rate limiting, security headers
+- [x] VNC console via bundled noVNC (284KB) + virtctl WebSocket proxy
+- [x] VM detail panels with status, resources, network interfaces, guest OS, security posture
+- [x] VM creation from templates (43) with profile picker (8), cloud-init, auto-start
+- [x] Snapshot create/restore/delete from UI
+- [x] Nodes and Pods pages with auto-refresh
+- [x] Real cluster capacity gauges (CPU, memory, nodes from K8s API)
+- [x] Search/filter on VMs page
+- [x] API key login modal with remember me (localStorage)
+- [x] Kubernetes deployment with RBAC, NodePort, scratch Docker image (~75MB)
+- [x] SSH deployment script
 
 ### Resource Profiles & Blueprints
 - [x] 8 built-in profiles (minimal, dev, test, web, prod, database, microservice, high-perf)
