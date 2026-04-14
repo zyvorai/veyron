@@ -956,10 +956,32 @@ pub mod web {
                 b = b.namespace(ns);
                 b = b.cpu(tpl_config.cpu.cores, tpl_config.cpu.sockets, tpl_config.cpu.threads);
                 b = b.memory(&tpl_config.memory.size);
+                // Preserve disk types from template (containerDisk, blank, etc.)
                 for disk in &tpl_config.disks {
-                    b = b.add_blank_disk(&disk.name, &disk.size, disk.boot_order);
+                    b = b.add_disk(disk.clone());
                 }
-                b = b.add_pod_network("default");
+                // Preserve network interfaces from template
+                for iface in &tpl_config.interfaces {
+                    b = b.add_interface(iface.clone());
+                }
+                // Preserve cloud-init, features, clock from template
+                if let Some(ref ci) = tpl_config.cloud_init {
+                    b = b.cloud_init(&ci.user_data);
+                }
+                if tpl_config.enable_rng {
+                    b = b.enable_rng();
+                }
+                if let Some(ref clock) = tpl_config.clock {
+                    b = b.clock(clock.clone());
+                }
+                if let Some(ref features) = tpl_config.features {
+                    b = b.features(features.clone());
+                }
+                if let Some(ref firmware) = tpl_config.firmware {
+                    b = b.firmware(firmware.clone());
+                }
+                // Preserve labels from template
+                b = b.labels(tpl_config.labels.clone());
                 b
             } else {
                 return err_json(400, "INVALID_TEMPLATE", &format!("Template '{}' not found", tpl_name));
