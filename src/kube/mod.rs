@@ -437,6 +437,134 @@ impl KubeClient {
         let vmi_list = vmis.list(&lp).await?;
         Ok(vmi_list.items)
     }
+
+    /// Clone a VM by copying its spec and creating a new VM with a different name
+    pub async fn clone_vm(
+        &self,
+        namespace: &str,
+        name: &str,
+        new_name: &str,
+    ) -> Result<VirtualMachine> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+
+        // Get existing VM
+        let source = vms.get(name).await?;
+
+        // Build new VM from source spec
+        let mut new_vm = VirtualMachine {
+            metadata: kube::api::ObjectMeta {
+                name: Some(new_name.to_string()),
+                namespace: Some(namespace.to_string()),
+                labels: source.metadata.labels.clone(),
+                annotations: source.metadata.annotations.clone(),
+                ..Default::default()
+            },
+            spec: source.spec.clone(),
+            status: None,
+        };
+        // Don't auto-start the clone — use RunStrategy instead of deprecated Running field
+        new_vm.spec.running = None;
+        new_vm.spec.run_strategy = Some("Halted".to_string());
+
+        let pp = PostParams::default();
+        let created = vms.create(&pp, &new_vm).await?;
+        Ok(created)
+    }
+
+    /// Pause a running VM instance via virtctl
+    pub async fn pause_vm(&self, namespace: &str, name: &str) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args(["pause", "vmi", name, "-n", namespace])
+            .output()
+            .await?;
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!("Failed to pause VM: {}", err));
+        }
+        Ok(())
+    }
+
+    /// Unpause a paused VM instance via virtctl
+    pub async fn unpause_vm(&self, namespace: &str, name: &str) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args(["unpause", "vmi", name, "-n", namespace])
+            .output()
+            .await?;
+        if !output.status.success() {
+            let err = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!("Failed to unpause VM: {}", err));
+        }
+        Ok(())
+    }
+
+    /// Trigger live migration of a VM to another node
+    pub async fn migrate_vm(&self, namespace: &str, name: &str) -> Result<()> {
+        let migrations: Api<VirtualMachineInstanceMigration> =
+            Api::namespaced(self.client.clone(), namespace);
+
+        let migration_name = format!("{}-migration-{}", name, chrono::Utc::now().format("%Y%m%d%H%M%S"));
+        let migration = VirtualMachineInstanceMigration {
+            metadata: kube::api::ObjectMeta {
+                name: Some(migration_name),
+                namespace: Some(namespace.to_string()),
+                ..Default::default()
+            },
+            spec: VirtualMachineInstanceMigrationSpec {
+                vmi_name: Some(name.to_string()),
+            },
+            status: None,
+        };
+
+        let pp = PostParams::default();
+        migrations.create(&pp, &migration).await?;
+        Ok(())
+    }
+
+    /// Update VM CPU and memory (requires VM to be stopped for changes to take effect)
+    pub async fn update_vm_resources(
+        &self,
+        namespace: &str,
+        name: &str,
+        cpus: Option<u32>,
+        memory: Option<&str>,
+    ) -> Result<VirtualMachine> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+
+        let mut patch = json!({});
+        if let Some(cores) = cpus {
+            patch["spec"]["template"]["spec"]["domain"]["cpu"]["cores"] = json!(cores);
+        }
+        if let Some(mem) = memory {
+            patch["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] = json!(mem);
+        }
+
+        let pp = PatchParams::default();
+        let patched = vms.patch(name, &pp, &Patch::Merge(patch)).await?;
+        Ok(patched)
+    }
+
+    /// List PVCs in a namespace
+    pub async fn list_pvcs(
+        &self,
+        namespace: &str,
+    ) -> Result<Vec<PersistentVolumeClaim>> {
+        let pvcs: Api<PersistentVolumeClaim> =
+            Api::namespaced(self.client.clone(), namespace);
+        let lp = ListParams::default();
+        let list = pvcs.list(&lp).await?;
+        Ok(list.items)
+    }
+
+    /// List storage classes
+    pub async fn list_storage_classes(
+        &self,
+    ) -> Result<Vec<k8s_openapi::api::storage::v1::StorageClass>> {
+        let scs: Api<k8s_openapi::api::storage::v1::StorageClass> =
+            Api::all(self.client.clone());
+        let lp = ListParams::default();
+        let list = scs.list(&lp).await?;
+        Ok(list.items)
+    }
 }
 
 #[cfg(test)]

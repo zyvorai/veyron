@@ -30,10 +30,14 @@ rules:
   - apiGroups: ["kubevirt.io"]
     resources: ["virtualmachines", "virtualmachineinstances", "virtualmachineinstancemigrations"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # KubeVirt VNC/console subresources (needed for virtctl vnc)
+  # KubeVirt subresources (VNC, console, pause, unpause, migrate)
   - apiGroups: ["subresources.kubevirt.io"]
-    resources: ["virtualmachineinstances/vnc", "virtualmachineinstances/console"]
-    verbs: ["get"]
+    resources:
+      - "virtualmachineinstances/vnc"
+      - "virtualmachineinstances/console"
+      - "virtualmachineinstances/pause"
+      - "virtualmachineinstances/unpause"
+    verbs: ["get", "update"]
   # KubeVirt snapshots
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]

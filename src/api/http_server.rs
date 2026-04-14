@@ -364,8 +364,14 @@ pub mod web {
             .route("/api/v1/vms/:ns/:name/start", post(start_vm_handler))
             .route("/api/v1/vms/:ns/:name/stop", post(stop_vm_handler))
             .route("/api/v1/vms/:ns/:name/restart", post(restart_vm_handler))
+            .route("/api/v1/vms/:ns/:name/clone", post(clone_vm_handler))
+            .route("/api/v1/vms/:ns/:name/pause", post(pause_vm_handler))
+            .route("/api/v1/vms/:ns/:name/unpause", post(unpause_vm_handler))
+            .route("/api/v1/vms/:ns/:name/migrate", post(migrate_vm_handler))
+            .route("/api/v1/vms/:ns/:name", axum::routing::put(update_vm_handler))
             .route("/api/v1/vms/:ns/:name/vnc", get(vnc_websocket_handler))
             .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
+            .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
             // Snapshots
             .route("/api/v1/snapshots", get(list_snapshots_handler))
             .route("/api/v1/snapshots/:ns/:vm", get(list_vm_snapshots_handler))
@@ -391,6 +397,11 @@ pub mod web {
             .route("/api/v1/profiles", get(list_profiles_handler))
             .route("/api/v1/namespaces", get(list_namespaces_handler))
             .route("/api/v1/activity", get(activity_feed_handler))
+            // Storage
+            .route("/api/v1/storage/pvcs", get(list_pvcs_handler))
+            .route("/api/v1/storage/classes", get(list_storage_classes_handler))
+            // OpenAPI
+            .route("/api/openapi.json", get(openapi_handler))
             // Dashboard overview
             .route(
                 "/api/v1/dashboard/overview",
@@ -894,6 +905,237 @@ pub mod web {
             }
             Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
         }
+    }
+
+    // ── Clone, Pause, Unpause, Migrate, Update, VM Events ──────
+
+    #[derive(Deserialize)]
+    struct CloneRequest {
+        new_name: String,
+    }
+
+    async fn clone_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<CloneRequest>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name), ("new_name", &req.new_name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.clone_vm(&ns, &name, &req.new_name).await {
+            Ok(_) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/clone");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": format!("VM '{}' cloned to '{}'", name, req.new_name)}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => {
+                log::error!("Clone VM failed: {}", e);
+                err_json(500, "CLONE_FAILED", &sanitize_error(&e))
+            }
+        }
+    }
+
+    async fn pause_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.pause_vm(&ns, &name).await {
+            Ok(_) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/pause");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": format!("VM '{}' paused", name)}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "PAUSE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn unpause_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.unpause_vm(&ns, &name).await {
+            Ok(_) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/unpause");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": format!("VM '{}' unpaused", name)}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "UNPAUSE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn migrate_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.migrate_vm(&ns, &name).await {
+            Ok(_) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/migrate");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": format!("Migration initiated for VM '{}'", name)}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "MIGRATE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct UpdateVmRequest {
+        cpus: Option<u32>,
+        memory: Option<String>,
+    }
+
+    async fn update_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<UpdateVmRequest>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.update_vm_resources(&ns, &name, req.cpus, req.memory.as_deref()).await {
+            Ok(_) => {
+                let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": format!("VM '{}' updated", name)}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "UPDATE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn vm_events_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+
+        use k8s_openapi::api::core::v1::Event;
+        use kube::Api;
+        let events_api: Api<Event> = Api::namespaced(client.client(), &ns);
+        let lp = kube::api::ListParams::default().limit(100);
+        match events_api.list(&lp).await {
+            Ok(event_list) => {
+                let items: Vec<EventItem> = event_list
+                    .items
+                    .into_iter()
+                    .filter(|e| e.involved_object.name.as_deref() == Some(&name))
+                    .map(|e| EventItem {
+                        type_: e.type_.unwrap_or_default(),
+                        reason: e.reason.unwrap_or_default(),
+                        message: e.message.unwrap_or_default(),
+                        namespace: e.metadata.namespace.unwrap_or_default(),
+                        involved_object: e.involved_object.name.unwrap_or_default(),
+                        timestamp: e.last_timestamp
+                            .map(|t| t.0.to_rfc3339())
+                            .or_else(|| e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339()))
+                            .unwrap_or_default(),
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/events");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    // ── Storage Endpoints ────────────────────────────────────────
+
+    async fn list_pvcs_handler(
+        State(state): State<SharedState>,
+        Query(query): Query<VmQuery>,
+    ) -> impl IntoResponse {
+        let (client, namespace) = {
+            let s = state.read().await;
+            (s.kube_client.clone(), s.namespace.clone())
+        };
+        let ns = query.namespace.as_deref().unwrap_or(&namespace);
+
+        match client.list_pvcs(ns).await {
+            Ok(pvcs) => {
+                let items: Vec<serde_json::Value> = pvcs
+                    .iter()
+                    .map(|pvc| {
+                        let meta = &pvc.metadata;
+                        let spec = pvc.spec.as_ref();
+                        let status = pvc.status.as_ref();
+                        serde_json::json!({
+                            "name": meta.name.clone().unwrap_or_default(),
+                            "namespace": meta.namespace.clone().unwrap_or_default(),
+                            "status": status.and_then(|s| s.phase.as_ref()).map(|s| s.to_string()).unwrap_or_default(),
+                            "capacity": status
+                                .and_then(|s| s.capacity.as_ref())
+                                .and_then(|c| c.get("storage"))
+                                .map(|v| v.0.clone())
+                                .unwrap_or_default(),
+                            "storage_class": spec.and_then(|s| s.storage_class_name.clone()).unwrap_or_default(),
+                            "access_modes": spec.map(|s| s.access_modes.clone().unwrap_or_default()).unwrap_or_default(),
+                        })
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/storage/pvcs");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn list_storage_classes_handler(State(state): State<SharedState>) -> impl IntoResponse {
+        let client = { state.read().await.kube_client.clone() };
+        match client.list_storage_classes().await {
+            Ok(scs) => {
+                let items: Vec<serde_json::Value> = scs
+                    .iter()
+                    .map(|sc| {
+                        serde_json::json!({
+                            "name": sc.metadata.name.clone().unwrap_or_default(),
+                            "provisioner": sc.provisioner,
+                            "reclaim_policy": sc.reclaim_policy.clone().unwrap_or_default(),
+                            "volume_binding_mode": sc.volume_binding_mode.clone().unwrap_or_default(),
+                            "is_default": sc.metadata.annotations.as_ref()
+                                .and_then(|a| a.get("storageclass.kubernetes.io/is-default-class"))
+                                .map(|v| v == "true")
+                                .unwrap_or(false),
+                        })
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/storage/classes");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    // ── OpenAPI ──────────────────────────────────────────────────
+
+    async fn openapi_handler() -> impl IntoResponse {
+        let spec = crate::api::openapi::generate_default_spec();
+        let json = serde_json::to_value(&spec).unwrap_or_default();
+        (StatusCode::OK, Json(json))
     }
 
     async fn delete_vm_handler(

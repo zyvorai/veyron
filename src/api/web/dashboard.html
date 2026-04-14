@@ -704,6 +704,53 @@ body>*{position:relative;z-index:1}
 }
 .remember-row input[type="checkbox"]{accent-color:var(--molten)}
 .remember-row label{font-size:.8em;color:var(--text-muted);cursor:pointer}
+
+/* Namespace selector */
+.ns-select{
+  background:var(--steel);border:1px solid var(--border);
+  color:var(--text-bright);border-radius:4px;padding:4px 8px;
+  font-family:'JetBrains Mono',monospace;font-size:.7em;
+  cursor:pointer;outline:none;max-width:140px;
+}
+.ns-select:focus{border-color:var(--ember)}
+
+/* Bulk operations */
+.bulk-bar{
+  display:none;padding:10px 24px;background:rgba(255,69,0,.06);
+  border-bottom:1px solid var(--border);align-items:center;gap:10px;
+  font-size:.8em;
+}
+.bulk-bar.visible{display:flex}
+.bulk-check{accent-color:var(--molten);cursor:pointer;width:16px;height:16px}
+
+/* Resize modal */
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Mobile responsive */
+@media(max-width:768px){
+  .navbar{padding:0 12px;height:50px;flex-wrap:wrap}
+  .nav-links{gap:0;margin-left:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .nav-link{padding:6px 8px;font-size:.55em;white-space:nowrap}
+  .navbar-right{gap:8px}
+  .container{padding:12px}
+  .page-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .grid-4,.grid-3{grid-template-columns:1fr 1fr}
+  .grid-2{grid-template-columns:1fr}
+  .vm-row{flex-direction:column;align-items:flex-start;gap:8px}
+  .vm-right{flex-wrap:wrap}
+  .detail-grid{grid-template-columns:1fr}
+  .table-row.node-row,.table-row.pod-row{grid-template-columns:1fr 1fr;gap:4px;font-size:.75em}
+  .table-header{display:none!important}
+  .filter-bar{flex-direction:column}
+  .filter-bar .form-input,.filter-bar .form-select{max-width:100%}
+  .modal{width:95vw;max-height:90vh}
+  .btn-group{flex-wrap:wrap}
+}
+@media(max-width:480px){
+  .grid-4,.grid-3{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .stat-value{font-size:1.4em}
+}
 </style>
 </head>
 <body>
@@ -717,10 +764,14 @@ body>*{position:relative;z-index:1}
       <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
       <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
       <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
+      <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
       <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
     </div>
   </div>
   <div class="navbar-right">
+    <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Namespace">
+      <option value="default">default</option>
+    </select>
     <select class="refresh-select" id="refresh-interval" onchange="setRefreshInterval(this.value)" title="Auto-refresh interval">
       <option value="5000">5s</option><option value="10000">10s</option><option value="30000">30s</option><option value="0">Off</option>
     </select>
@@ -764,9 +815,31 @@ body>*{position:relative;z-index:1}
         </select>
       </div>
     </div>
+    <div class="bulk-bar" id="bulk-bar">
+      <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)">
+      <span id="bulk-count">0 selected</span>
+      <button class="btn btn-start" onclick="bulkAction('start')">Start</button>
+      <button class="btn btn-stop" onclick="bulkAction('stop')">Stop</button>
+      <button class="btn btn-delete" onclick="bulkAction('delete')">Delete</button>
+    </div>
     <div id="vm-full-list"></div>
   </div>
 </div>
+</div>
+
+<!-- RESIZE VM MODAL -->
+<div class="modal-overlay" id="resize-modal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header"><h2>Resize VM</h2><button class="modal-close" onclick="closeResizeModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="resize-ns"><input type="hidden" id="resize-name">
+      <div class="form-row-2">
+        <div class="form-group"><label class="form-label">CPU Cores</label><input type="number" class="form-input" id="resize-cpus" min="1" max="64"></div>
+        <div class="form-group"><label class="form-label">Memory</label><input type="text" class="form-input" id="resize-memory" placeholder="4Gi"></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeResizeModal()">Cancel</button><button class="btn-forge" onclick="submitResize()">Resize</button></div>
+  </div>
 </div>
 
 <!-- SNAPSHOTS PAGE -->
@@ -797,6 +870,17 @@ body>*{position:relative;z-index:1}
     <div class="card-header"><span class="card-title">Pods</span></div>
     <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span></div>
     <div id="pod-list"></div>
+  </div>
+</div>
+</div>
+
+<!-- STORAGE PAGE -->
+<div class="page" id="page-storage">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span></div><div id="pvc-list"></div></div>
+    <div class="card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
   </div>
 </div>
 </div>
@@ -953,6 +1037,7 @@ function navigate(page) {
   if (page === 'events') fetchEvents(true);
   if (page === 'nodes') fetchNodes();
   if (page === 'pods') fetchPods();
+  if (page === 'storage') fetchStorage();
 }
 
 // Toast notifications
@@ -1119,14 +1204,15 @@ function vmRow(vm, showActions) {
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\'default\',\''+vm.name+'\')">VNC</button>' : '') +
-    (!isRunning ? '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'default\',\''+vm.name+'\',\'start\')">&#9654;</button>' : '') +
-    (isRunning ? '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'default\',\''+vm.name+'\',\'stop\')">&#9632;</button>' : '') +
-    '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'default\',\''+vm.name+'\',\'restart\')">&#8635;</button>' +
-    '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'default\',\''+vm.name+'\')">&#10005;</button>' +
+    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\''+ns+'\',\''+vm.name+'\')">VNC</button>' : '') +
+    (!isRunning ? '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'start\')">&#9654;</button>' : '') +
+    (isRunning ? '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'stop\')">&#9632;</button>' : '') +
+    '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'restart\')">&#8635;</button>' +
+    '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\''+ns+'\',\''+vm.name+'\')">&#10005;</button>' +
     '</div>' : '';
-  const clickAttr = showActions ? ' onclick="toggleVmDetail(\'default\',\''+vm.name+'\')" style="cursor:pointer"' : '';
-  return '<div class="vm-row"'+clickAttr+'><div class="vm-info"><div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+vm.name+'</div><div class="vm-ns">'+ns+'</div></div></div><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+vm.ip:'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div></div>';
+  const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" onclick="event.stopPropagation();toggleVMSelect(\''+vm.name+'\',this.checked)"' + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
+  const clickAttr = showActions ? ' onclick="toggleVmDetail(\''+ns+'\',\''+vm.name+'\')" style="cursor:pointer"' : '';
+  return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+vm.name+'</div><div class="vm-ns">'+ns+'</div></div></div><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+vm.ip:'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div></div>';
 }
 
 // Fetch VMs
@@ -1382,7 +1468,7 @@ async function forgeVM() {
 
 // Close modals on Escape or overlay click
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCreateModal(); closeSnapModal(); closeVncModal(); }
+  if (e.key === 'Escape') { closeCreateModal(); closeSnapModal(); closeVncModal(); closeResizeModal(); }
 });
 document.getElementById('create-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCreateModal();
@@ -1466,10 +1552,18 @@ async function fetchVmDetail(ns, name) {
     html += '<div class="detail-actions">';
     if (vm.status === 'Running') {
       html += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; Console</button>';
+      html += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" onclick="event.stopPropagation();pauseVM(\'' + ns + '\',\'' + name + '\')">&#10074;&#10074; Pause</button>';
+      html += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
+      html += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();migrateVM(\'' + ns + '\',\'' + name + '\')">&#8644; Migrate</button>';
+    } else {
+      html += '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'start\')">&#9654; Start</button>';
     }
-    html += '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'start\')">&#9654; Start</button>';
-    html += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
+    if (vmi.phase === 'Paused') {
+      html += '<button class="btn btn-start" onclick="event.stopPropagation();unpauseVM(\'' + ns + '\',\'' + name + '\')">&#9654; Unpause</button>';
+    }
     html += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
+    html += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" onclick="event.stopPropagation();cloneVM(\'' + ns + '\',\'' + name + '\')">&#10697; Clone</button>';
+    html += '<button class="btn" style="background:rgba(255,100,0,.08);color:var(--ember);border:1px solid rgba(255,100,0,.12)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
     html += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
     html += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
     html += '</div>';
@@ -1526,7 +1620,7 @@ async function fetchNodes() {
     el.innerHTML = j.data.map(n => {
       const statusCls = n.status === 'Ready' ? 'ready' : 'not-ready';
       const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
-      return '<div class="table-row node-row">' +
+      return '<div class="table-row node-row" style="cursor:pointer" onclick="toggleNodeDetail(\'' + esc(n.name) + '\')">' +
         '<span class="cell-name">' + esc(n.name) + '</span>' +
         '<span><span class="cell-badge ' + statusCls + '">' + esc(n.status) + '</span></span>' +
         '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
@@ -1743,6 +1837,203 @@ async function fetchSecurity(ns, name) {
   } catch { return ''; }
 }
 
+// ── Namespace Selector ──
+let currentNamespace = localStorage.getItem('vmrogue_ns') || 'default';
+
+async function fetchNamespaces() {
+  try {
+    const r = await apiFetch('/api/v1/namespaces');
+    const j = await r.json();
+    if (j.success && j.data) {
+      const sel = document.getElementById('ns-selector');
+      sel.innerHTML = j.data.map(ns =>
+        '<option value="' + esc(ns) + '"' + (ns === currentNamespace ? ' selected' : '') + '>' + esc(ns) + '</option>'
+      ).join('');
+    }
+  } catch {}
+}
+
+function setNamespace(ns) {
+  currentNamespace = ns;
+  localStorage.setItem('vmrogue_ns', ns);
+  refresh();
+}
+
+function nsParam() {
+  return currentNamespace !== 'default' ? '?namespace=' + encodeURIComponent(currentNamespace) : '';
+}
+
+// ── Clone, Resize, Pause, Migrate ──
+async function cloneVM(ns, name) {
+  const newName = prompt('Clone "' + name + '" — enter new VM name:');
+  if (!newName) return;
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/clone', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({new_name: newName.trim()}),
+    });
+    const j = await r.json();
+    if (j.success) { toast('Cloned to ' + newName, 'success'); setTimeout(refresh, 1500); }
+    else toast('Clone failed: ' + (j.error?.message || '?'), 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+function openResizeModal(ns, name, cpu, memory) {
+  document.getElementById('resize-ns').value = ns;
+  document.getElementById('resize-name').value = name;
+  document.getElementById('resize-cpus').value = parseInt(cpu) || 1;
+  document.getElementById('resize-memory').value = memory || '2Gi';
+  document.getElementById('resize-modal').classList.add('open');
+}
+function closeResizeModal() { document.getElementById('resize-modal').classList.remove('open'); }
+
+async function submitResize() {
+  const ns = document.getElementById('resize-ns').value;
+  const name = document.getElementById('resize-name').value;
+  const cpus = parseInt(document.getElementById('resize-cpus').value);
+  const memory = document.getElementById('resize-memory').value.trim();
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({cpus, memory}),
+    });
+    const j = await r.json();
+    if (j.success) { toast(name + ' resized (restart to apply)', 'success'); closeResizeModal(); setTimeout(refresh, 1500); }
+    else toast('Resize failed: ' + (j.error?.message || '?'), 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function pauseVM(ns, name) {
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/pause', {method:'POST'});
+    const j = await r.json();
+    if (j.success) { toast(name + ' paused', 'success'); setTimeout(refresh, 1500); }
+    else toast('Pause failed: ' + (j.error?.message || '?'), 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function unpauseVM(ns, name) {
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/unpause', {method:'POST'});
+    const j = await r.json();
+    if (j.success) { toast(name + ' unpaused', 'success'); setTimeout(refresh, 1500); }
+    else toast('Unpause failed: ' + (j.error?.message || '?'), 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function migrateVM(ns, name) {
+  if (!confirm('Migrate "' + name + '" to another node?')) return;
+  try {
+    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/migrate', {method:'POST'});
+    const j = await r.json();
+    if (j.success) { toast(name + ' migration initiated', 'success'); setTimeout(refresh, 2000); }
+    else toast('Migration failed: ' + (j.error?.message || '?'), 'error');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── Bulk Operations ──
+let selectedVMs = new Set();
+
+function toggleBulkBar() {
+  const bar = document.getElementById('bulk-bar');
+  bar.classList.toggle('visible', selectedVMs.size > 0);
+  document.getElementById('bulk-count').textContent = selectedVMs.size + ' selected';
+}
+
+function toggleVMSelect(name, checked) {
+  if (checked) selectedVMs.add(name);
+  else selectedVMs.delete(name);
+  toggleBulkBar();
+}
+
+function toggleSelectAll(checked) {
+  vmData.forEach(v => {
+    if (checked) selectedVMs.add(v.name);
+    else selectedVMs.delete(v.name);
+  });
+  document.querySelectorAll('.vm-check').forEach(cb => cb.checked = checked);
+  toggleBulkBar();
+}
+
+async function bulkAction(action) {
+  if (selectedVMs.size === 0) return;
+  if (action === 'delete' && !confirm('Delete ' + selectedVMs.size + ' VMs? This cannot be undone.')) return;
+  const names = [...selectedVMs];
+  for (const name of names) {
+    if (action === 'delete') {
+      await apiFetch('/api/v1/vms/default/' + name, {method:'DELETE'}).catch(() => {});
+    } else {
+      await apiFetch('/api/v1/vms/default/' + name + '/' + action, {method:'POST'}).catch(() => {});
+    }
+  }
+  toast(names.length + ' VMs: ' + action, 'success');
+  selectedVMs.clear();
+  toggleBulkBar();
+  setTimeout(refresh, 1500);
+}
+
+// ── Storage ──
+async function fetchStorage() {
+  try {
+    const [pvcsR, scsR] = await Promise.all([
+      apiFetch('/api/v1/storage/pvcs' + nsParam()),
+      apiFetch('/api/v1/storage/classes'),
+    ]);
+    const pvcs = await pvcsR.json();
+    const scs = await scsR.json();
+
+    const pvcEl = document.getElementById('pvc-list');
+    if (pvcs.success && pvcs.data && pvcs.data.length > 0) {
+      pvcEl.innerHTML = pvcs.data.map(p =>
+        '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) + '</div><div class="snap-vm">' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div></div><div class="snap-status"><span class="vm-badge ' + (p.status==='Bound'?'running':'other') + '">' + esc(p.status) + '</span></div></div>'
+      ).join('');
+    } else {
+      pvcEl.innerHTML = '<div class="empty-state"><p>No PVCs</p></div>';
+    }
+
+    const scEl = document.getElementById('sc-list');
+    if (scs.success && scs.data && scs.data.length > 0) {
+      scEl.innerHTML = scs.data.map(s =>
+        '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(s.name) + (s.is_default ? ' (default)' : '') + '</div><div class="snap-vm">' + esc(s.provisioner) + ' &bull; ' + esc(s.reclaim_policy) + '</div></div></div>'
+      ).join('');
+    } else {
+      scEl.innerHTML = '<div class="empty-state"><p>No storage classes</p></div>';
+    }
+  } catch {}
+}
+
+// ── Node Detail ──
+async function toggleNodeDetail(nodeName) {
+  const existing = document.getElementById('node-detail-' + nodeName);
+  if (existing) { existing.remove(); return; }
+  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
+
+  try {
+    const r = await apiFetch('/api/v1/pods?namespace=all');
+    const j = await r.json();
+    const nodePods = (j.success && j.data) ? j.data.filter(p => p.node_name === nodeName) : [];
+
+    let html = '<div class="vm-detail" id="node-detail-' + nodeName + '"><div class="detail-grid">';
+    html += '<div class="detail-section"><div class="detail-section-title">Pods on Node</div>';
+    if (nodePods.length > 0) {
+      nodePods.forEach(p => {
+        html += detailRow(p.name, p.phase + ' (' + p.namespace + ')');
+      });
+    } else {
+      html += '<div style="color:var(--text-dim);font-size:.8em">No pods found</div>';
+    }
+    html += '</div></div></div>';
+
+    const rows = document.querySelectorAll('#node-list .table-row');
+    for (const row of rows) {
+      if (row.querySelector('.cell-name')?.textContent === nodeName) {
+        row.insertAdjacentHTML('afterend', html);
+        break;
+      }
+    }
+  } catch {}
+}
+
 // ── Refresh Interval ──
 let refreshTimer = null;
 let refreshInterval = parseInt(localStorage.getItem('vmrogue_refresh') || '5000');
@@ -1761,6 +2052,7 @@ function refresh() {
   if (currentPage==='snapshots') fetchSnapshots();
   if (currentPage==='nodes') fetchNodes();
   if (currentPage==='pods') fetchPods();
+  if (currentPage==='storage') fetchStorage();
   document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
 }
 
@@ -1774,6 +2066,7 @@ window.addEventListener('load', async () => {
 
   refresh();
   fetchTemplates();
+  fetchNamespaces();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   window.addEventListener('resize', () => {
     drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
