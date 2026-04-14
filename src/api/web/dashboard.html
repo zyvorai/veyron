@@ -1163,9 +1163,12 @@ async function fetchVMs() {
       vmData.slice(0,10).map(v=>vmRow(v,false)).join('');
 
     document.getElementById('vm-count').textContent = total+' VMs // '+running+' active / '+stopped+' idle'+(failed?' / '+failed+' failed':'');
-    document.getElementById('vm-full-list').innerHTML = vmData.length===0 ?
-      '<div class="empty-state"><div class="icon">&#9881;</div><p>No VMs found</p></div>' :
-      vmData.map(v=>vmRow(v,true)).join('');
+    // Only re-render VM list if no detail panel is open (prevents wiping expanded detail)
+    if (!expandedVm) {
+      document.getElementById('vm-full-list').innerHTML = vmData.length===0 ?
+        '<div class="empty-state"><div class="icon">&#9881;</div><p>No VMs found</p></div>' :
+        vmData.map(v=>vmRow(v,true)).join('');
+    }
 
     updateHealth(true);
   } catch(e) { updateHealth(false, e.message); }
