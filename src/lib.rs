@@ -45,7 +45,6 @@ pub mod api;
 pub mod automation;
 pub mod backup;
 pub mod blueprints;
-#[cfg(feature = "experimental")]
 pub mod capacity;
 pub mod compliance;
 pub mod cost;
@@ -95,7 +94,6 @@ pub mod notifications;
 pub mod placement;
 pub mod recommendation;
 pub mod search_history;
-#[cfg(feature = "experimental")]
 pub mod session_sharing;
 pub mod state_persistence;
 pub mod topology;
@@ -1539,6 +1537,19 @@ pub async fn run(mut cli: Cli) -> Result<()> {
 
         Commands::Troubleshoot { name } => {
             handlers::vm::handle_troubleshoot(name, &cli.namespace).await?;
+        }
+
+        // ========== CAPACITY & PLACEMENT ==========
+        Commands::Capacity { detailed, output } => {
+            handlers::vm::handle_capacity(detailed, output, &cli.namespace).await?;
+        }
+
+        Commands::Placement { name, strategy } => {
+            handlers::vm::handle_placement(name, strategy, &cli.namespace).await?;
+        }
+
+        Commands::ListJson => {
+            handlers::vm::handle_list_json(&cli.namespace).await?;
         }
 
         // ========== OPERATOR CRD MANAGEMENT ==========

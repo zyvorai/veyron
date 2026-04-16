@@ -2458,3 +2458,185 @@ pub async fn handle_clusters_discover() -> Result<()> {
     }
     Ok(())
 }
+
+// ========== CAPACITY & PLACEMENT ==========
+
+pub async fn handle_capacity(detailed: bool, output: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::table::CliTable;
+
+    let client = kube::KubeClient::new().await?;
+    let nodes = client.list_nodes().await?;
+    let vms = client.list_vms(namespace).await?;
+
+    if output == "json" {
+        let info = serde_json::json!({
+            "nodes": nodes.len(),
+            "vms": vms.len(),
+            "running": vms.iter().filter(|v| v.spec.running.unwrap_or(false)).count(),
+        });
+        println!("{}", serde_json::to_string_pretty(&info)?);
+        return Ok(());
+    }
+
+    println!("{}", color::header("Cluster Capacity"));
+    println!();
+    println!("  Nodes: {}", color::value(&nodes.len().to_string()));
+    println!("  VMs:   {}", color::value(&vms.len().to_string()));
+
+    let running_count = vms.iter().filter(|v| v.spec.running.unwrap_or(false)).count();
+    println!("  Running: {}", color::value(&running_count.to_string()));
+    println!();
+
+    let mut total_cpu = 0u64;
+    let mut total_mem_gi = 0f64;
+    for node in &nodes {
+        let cap = node.status.as_ref().and_then(|s| s.capacity.as_ref());
+        if let Some(cpu) = cap.and_then(|c| c.get("cpu")).and_then(|v| v.0.parse::<u64>().ok()) {
+            total_cpu += cpu;
+        }
+        if let Some(mem) = cap.and_then(|c| c.get("memory")).map(|v| &v.0) {
+            total_mem_gi += crate::utils::parse_memory_gib(mem);
+        }
+    }
+
+    let mut vm_cpu = 0u64;
+    let mut vm_mem_gi = 0f64;
+    for vm in &vms {
+        if let Some(ref cpu) = vm.spec.template.spec.domain.cpu {
+            vm_cpu += cpu.cores.unwrap_or(0) as u64;
+        }
+        if let Some(ref mem) = vm.spec.template.spec.domain.memory {
+            if let Some(ref guest) = mem.guest {
+                vm_mem_gi += crate::utils::parse_memory_gib(guest);
+            }
+        }
+    }
+
+    let cpu_pct = if total_cpu > 0 { (vm_cpu as f64 / total_cpu as f64 * 100.0).round() } else { 0.0 };
+    let mem_pct = if total_mem_gi > 0.0 { (vm_mem_gi / total_mem_gi * 100.0).round() } else { 0.0 };
+
+    println!("  CPU:    {}/{} cores allocated ({:.0}%)", vm_cpu, total_cpu, cpu_pct);
+    println!("  Memory: {:.1}/{:.1} GiB allocated ({:.0}%)", vm_mem_gi, total_mem_gi, mem_pct);
+
+    if detailed {
+        println!();
+        let mut table = CliTable::new(vec!["Node", "Status", "CPU", "Memory", "Roles"]);
+        for node in &nodes {
+            let name = node.metadata.name.as_deref().unwrap_or("");
+            let status = node.status.as_ref()
+                .and_then(|s| s.conditions.as_ref())
+                .and_then(|c| c.iter().find(|c| c.type_ == "Ready"))
+                .map(|c| if c.status == "True" { "Ready" } else { "NotReady" })
+                .unwrap_or("Unknown");
+            let cpu = node.status.as_ref()
+                .and_then(|s| s.capacity.as_ref())
+                .and_then(|c| c.get("cpu"))
+                .map(|v| v.0.clone())
+                .unwrap_or_default();
+            let mem = node.status.as_ref()
+                .and_then(|s| s.capacity.as_ref())
+                .and_then(|c| c.get("memory"))
+                .map(|v| v.0.clone())
+                .unwrap_or_default();
+            let roles: Vec<String> = node.metadata.labels.as_ref()
+                .map(|l| l.keys().filter_map(|k| k.strip_prefix("node-role.kubernetes.io/").map(String::from)).collect())
+                .unwrap_or_default();
+
+            table.add_row(vec![
+                name.to_string(),
+                status.to_string(),
+                cpu,
+                mem,
+                if roles.is_empty() { "<none>".to_string() } else { roles.join(",") },
+            ]);
+        }
+        table.print();
+    }
+
+    Ok(())
+}
+
+pub async fn handle_placement(name: String, strategy: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+
+    println!("{}", color::header(&format!("Placement: {}", name)));
+    println!("  Strategy: {}", color::value(&strategy));
+    println!();
+
+    let client = kube::KubeClient::new().await?;
+    let _vm = client.get_vm(namespace, &name).await?;
+    let nodes = client.list_nodes().await?;
+
+    if nodes.is_empty() {
+        println!("{}", color::warning("No nodes available for placement"));
+        return Ok(());
+    }
+
+    let mut scored: Vec<(String, f64, String)> = nodes
+        .iter()
+        .filter_map(|node| {
+            let node_name = node.metadata.name.as_deref()?;
+            let is_ready = node.status.as_ref()
+                .and_then(|s| s.conditions.as_ref())
+                .and_then(|c| c.iter().find(|c| c.type_ == "Ready"))
+                .map(|c| c.status == "True")
+                .unwrap_or(false);
+            if !is_ready { return None; }
+
+            let cpu_cap = node.status.as_ref()
+                .and_then(|s| s.capacity.as_ref())
+                .and_then(|c| c.get("cpu"))
+                .and_then(|v| v.0.parse::<f64>().ok())
+                .unwrap_or(0.0);
+            let cpu_alloc = node.status.as_ref()
+                .and_then(|s| s.allocatable.as_ref())
+                .and_then(|a| a.get("cpu"))
+                .and_then(|v| v.0.parse::<f64>().ok())
+                .unwrap_or(0.0);
+
+            let score = match strategy.as_str() {
+                "spread" => cpu_alloc,
+                "binpack" => cpu_cap - cpu_alloc,
+                _ => cpu_alloc,
+            };
+            let reason = format!("{:.1} CPU available of {:.0}", cpu_alloc, cpu_cap);
+            Some((node_name.to_string(), score, reason))
+        })
+        .collect();
+
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+    println!("  Recommended placement (ranked):");
+    for (i, (node_name, score, reason)) in scored.iter().enumerate() {
+        let prefix = if i == 0 { "  → " } else { "    " };
+        println!("{}{} (score: {:.1}) — {}", prefix, color::vm_name(node_name), score, color::muted(reason));
+    }
+
+    Ok(())
+}
+
+pub async fn handle_list_json(namespace: &str) -> Result<()> {
+    use crate::kube;
+
+    let client = kube::KubeClient::new().await?;
+    let vms = client.list_vms(namespace).await?;
+
+    for vm in &vms {
+        let name = vm.metadata.name.as_deref().unwrap_or("");
+        let ns = vm.metadata.namespace.as_deref().unwrap_or("");
+        let status = vm.status.as_ref()
+            .and_then(|s| s.printable_status.as_deref())
+            .unwrap_or("Unknown");
+        let running = vm.spec.running.unwrap_or(false);
+
+        let line = serde_json::json!({
+            "name": name,
+            "namespace": ns,
+            "status": status,
+            "running": running,
+        });
+        println!("{}", serde_json::to_string(&line)?);
+    }
+    Ok(())
+}
