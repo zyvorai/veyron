@@ -51,16 +51,13 @@ pub mod cost;
 pub mod devexp;
 pub mod disk;
 pub mod dr;
-#[cfg(feature = "experimental")]
 pub mod edge;
-#[cfg(feature = "experimental")]
 pub mod finops;
 pub mod gitops;
 pub mod handlers;
 pub mod health;
 pub mod migration;
 pub mod monitoring;
-#[cfg(feature = "experimental")]
 pub mod multicloud;
 pub mod multitenancy;
 pub mod networking;
@@ -68,7 +65,6 @@ pub mod observability;
 pub mod profiles;
 pub mod secrets;
 pub mod security;
-#[cfg(feature = "experimental")]
 pub mod servicemesh;
 pub mod snapshots;
 
@@ -85,7 +81,6 @@ pub mod cluster_health;
 pub mod console_panel;
 pub mod dependency_graph;
 pub mod disk_conversion;
-#[cfg(feature = "experimental")]
 pub mod hypervisor;
 pub mod macros;
 pub mod multi_cluster;

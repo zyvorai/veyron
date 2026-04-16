@@ -1,0 +1,84 @@
+package metrics
+
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"sigs.k8s.io/controller-runtime/pkg/metrics"
+)
+
+var (
+	// ReconcileTotal counts total reconciliation attempts by controller and result.
+	ReconcileTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vmrogue_reconcile_total",
+			Help: "Total number of reconciliation attempts",
+		},
+		[]string{"controller", "result"},
+	)
+
+	// ReconcileDuration tracks reconciliation duration in seconds.
+	ReconcileDuration = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "vmrogue_reconcile_duration_seconds",
+			Help:    "Duration of reconciliation in seconds",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"controller"},
+	)
+
+	// VMCount tracks the current number of VMRogueVM resources by phase.
+	VMCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vmrogue_vm_count",
+			Help: "Current number of VMRogueVM resources by phase",
+		},
+		[]string{"phase"},
+	)
+
+	// BlueprintCount tracks the current number of VMRogueBlueprint resources by phase.
+	BlueprintCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vmrogue_blueprint_count",
+			Help: "Current number of VMRogueBlueprint resources by phase",
+		},
+		[]string{"phase"},
+	)
+
+	// PolicyViolations tracks the number of active policy violations.
+	PolicyViolations = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vmrogue_policy_violations",
+			Help: "Current number of policy violations",
+		},
+		[]string{"policy"},
+	)
+
+	// ActionExecutions counts action executions by type and result.
+	ActionExecutions = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "vmrogue_action_executions_total",
+			Help: "Total number of action executions",
+		},
+		[]string{"action_type", "result"},
+	)
+
+	// InsightCount tracks the number of insights by type and severity.
+	InsightCount = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "vmrogue_insight_count",
+			Help: "Current number of insights by type and severity",
+		},
+		[]string{"type", "severity"},
+	)
+)
+
+func init() {
+	metrics.Registry.MustRegister(
+		ReconcileTotal,
+		ReconcileDuration,
+		VMCount,
+		BlueprintCount,
+		PolicyViolations,
+		ActionExecutions,
+		InsightCount,
+	)
+}

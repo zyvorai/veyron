@@ -18,6 +18,7 @@ import (
 
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
 	"github.com/ssahani/vmrogue/operator/internal/eventbus"
+	vmmetrics "github.com/ssahani/vmrogue/operator/internal/metrics"
 )
 
 // VMRogueActionReconciler reconciles a VMRogueAction object.
@@ -102,11 +103,13 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		action.Status.Message = fmt.Sprintf("Execution failed: %v", err)
 		r.Recorder.Eventf(&action, "Warning", "ExecutionFailed", "Action %s failed: %v", action.Spec.ActionType, err)
 		r.publishActionEvent(eventbus.SubjectActionFailed, &action)
+		vmmetrics.ActionExecutions.WithLabelValues(action.Spec.ActionType, "failed").Inc()
 	} else {
 		action.Status.Phase = vmroguev1alpha1.ActionPhaseCompleted
 		action.Status.Message = "Action completed successfully"
 		r.Recorder.Eventf(&action, "Normal", "Executed", "Action %s completed for VM %s", action.Spec.ActionType, action.Spec.VMRef)
 		r.publishActionEvent(eventbus.SubjectActionExecuted, &action)
+		vmmetrics.ActionExecutions.WithLabelValues(action.Spec.ActionType, "success").Inc()
 	}
 
 	setCondition(&action.Status.Conditions, metav1.Condition{
