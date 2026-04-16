@@ -47,12 +47,17 @@ vmrogue health my-vm --detailed   # Detailed checks
 ```bash
 vmrogue create myvm --template ubuntu --profile prod
 vmrogue list                      # List all VMs
+vmrogue list-json                 # JSON Lines output for scripting
 vmrogue get myvm                  # Get VM details
 vmrogue start myvm                # Start VM
 vmrogue stop myvm                 # Stop VM
+vmrogue pause myvm                # Pause VM
+vmrogue unpause myvm              # Unpause VM
 vmrogue delete myvm               # Delete VM
 vmrogue status myvm               # Detailed status
 vmrogue clone source target       # Clone VM
+vmrogue resize myvm --cpus 4 --memory 16Gi  # Resize VM
+vmrogue import vm-manifest.yaml   # Import from KubeVirt YAML
 ```
 
 ### Templates
@@ -61,10 +66,33 @@ vmrogue templates                 # List all templates
 vmrogue template ubuntu-22.04     # View template details
 ```
 
+### Cluster Operations
+```bash
+vmrogue nodes                     # List cluster nodes
+vmrogue pods                      # List pods
+vmrogue events                    # List K8s events
+vmrogue capacity                  # Cluster capacity analysis
+vmrogue placement myvm --strategy spread  # Node recommendation
+```
+
+### Search & Diagnostics
+```bash
+vmrogue search "running vms in production"  # Natural language search
+vmrogue troubleshoot myvm         # AI-assisted diagnostics
+```
+
+### Multi-Cluster & GitOps
+```bash
+vmrogue clusters-list             # List configured clusters
+vmrogue clusters-discover         # Discover from kubeconfig
+vmrogue gitops-diff --namespace production  # Compare manifests
+vmrogue gitops-status             # Check sync status
+```
+
 ### Web Dashboard & API
 ```bash
-# Start API server with dashboard
-export VMROGUE_API_KEY="your-key"
+# Start API server with RBAC
+export VMROGUE_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
 vmrogue api-serve --port 5151     # Dashboard at /dashboard
 
 # Key API endpoints
@@ -86,8 +114,16 @@ vmrogue api-serve --port 5151     # Dashboard at /dashboard
 ./scripts/deploy-k8s.sh status    # Check deployment
 ./scripts/deploy-k8s.sh logs      # Tail logs
 
-# Deploy via SSH
-./scripts/deploy-ssh.sh HOST USER # Deploy to remote server
+# Deploy to remote K8s cluster
+./scripts/deploy-k8s-remote.sh HOST USER
+
+# Deploy with Helm
+helm install vmrogue ./charts/vmrogue --set apiKeys="admin:key"
+helm install vmrogue-operator ./charts/vmrogue-operator
+
+# Deploy with Kustomize
+kubectl apply -k deploy/kustomize/overlays/dev   # Dev
+kubectl apply -k deploy/kustomize/overlays/prod  # Prod
 ```
 
 ### GitOps Export
@@ -261,23 +297,21 @@ Environment variables:
 ```bash
 export VMROGUE_NAMESPACE=default
 export KUBECONFIG=~/.kube/config
+export VMROGUE_API_KEYS="admin:key,write:devkey,readonly:viewkey"
+# Or legacy single key:
 export VMROGUE_API_KEY=your-key
-```
-
-Feature flags:
-```bash
-cargo build --features experimental  # Enable 8 scaffolding modules
 ```
 
 ---
 
 ## 📊 Statistics
 
-- **1,781 tests** (1,709 unit + 64 integration + 8 doc)
-- **19 API handlers** wired to real Kubernetes (up from 8)
+- **2,433 tests** (all passing)
+- **49 API handlers** all returning real data (zero stubs)
+- **31 TUI views** all rendering live data
 - **44 OS templates**, **8 profiles**, **5 blueprints**
-- **31 stub handlers** return HTTP 501 (not misleading 200+empty)
-- **`experimental` feature flag** gates 8 scaffolding-only modules
+- **15 dashboard pages** (including Security, Monitoring, Workloads)
+- **All modules promoted** (zero experimental feature gates)
 
 ---
 
