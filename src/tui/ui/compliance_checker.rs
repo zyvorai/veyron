@@ -196,7 +196,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let overall_score = if total_vms == 0 {
         100
     } else {
-        (resource_pct as u32 + eviction_pct as u32 + rng_pct as u32 + node_pct as u32) as u32 / 4
+        (resource_pct as u32 + eviction_pct as u32 + rng_pct as u32 + node_pct as u32) / 4
     };
 
     let table = Table::new(rows, widths)

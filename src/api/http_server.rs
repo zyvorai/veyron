@@ -2611,6 +2611,7 @@ pub mod web {
 
     /// Certificate verifier that accepts all certs (for K8s self-signed API server certs).
     #[derive(Debug)]
+    #[allow(dead_code)]
     struct AcceptAllVerifier;
 
     impl rustls::client::danger::ServerCertVerifier for AcceptAllVerifier {
@@ -2661,6 +2662,7 @@ pub mod web {
 
     /// Build a rustls ClientConfig that authenticates to the K8s API server.
     /// Supports client certificate auth (k3s/kubeadm) and falls back to no client auth.
+    #[allow(dead_code)]
     fn build_k8s_tls_config() -> rustls::ClientConfig {
         #![allow(unused_imports)]
 
@@ -2741,6 +2743,7 @@ pub mod web {
     }
 
     /// Simple base64 encoding for WebSocket key generation.
+    #[allow(dead_code)]
     fn base64_encode_simple(value: u128) -> String {
         const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         let bytes = value.to_le_bytes();

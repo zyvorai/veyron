@@ -103,7 +103,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         100u16
     } else {
         let deductions = critical as u16 * 20 + high as u16 * 10 + medium as u16 * 5 + low as u16 * 2;
-        100u16.saturating_sub(deductions).max(0)
+        100u16.saturating_sub(deductions)
     };
     let score_label = match score {
         90..=100 => "Excellent",
@@ -224,7 +224,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         vec![]
     };
 
-    let all_rows: Vec<Row> = rows.chain(empty_msg.into_iter()).collect();
+    let all_rows: Vec<Row> = rows.chain(empty_msg).collect();
 
     let widths = [
         Constraint::Length(6),
