@@ -181,6 +181,72 @@ pub mod web {
                 }
             })
         }
+
+        /// Authenticate a JWT Bearer token. Validates standard claims
+        /// (exp, iss) and extracts role from configurable claim.
+        ///
+        /// Set VMROGUE_JWT_ISSUER to enable JWT validation.
+        /// Set VMROGUE_JWT_ROLE_CLAIM to customize role claim (default: "role").
+        /// JWT roles: "admin", "write", "readonly" (default: "readonly").
+        pub fn authenticate_jwt(&self, token: &str) -> Option<ApiRole> {
+            let parts: Vec<&str> = token.split('.').collect();
+            if parts.len() != 3 {
+                return None;
+            }
+
+            // Decode payload (part 1)
+            let payload_bytes = base64url_decode(parts[1])?;
+            let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).ok()?;
+
+            // Check expiration
+            if let Some(exp) = payload.get("exp").and_then(|v| v.as_i64()) {
+                let now = chrono::Utc::now().timestamp();
+                if now > exp {
+                    log::debug!("JWT token expired");
+                    return None;
+                }
+            }
+
+            // Check issuer if configured
+            if let Ok(expected_issuer) = std::env::var("VMROGUE_JWT_ISSUER") {
+                let iss = payload.get("iss").and_then(|v| v.as_str()).unwrap_or("");
+                if iss != expected_issuer {
+                    log::debug!("JWT issuer mismatch: got '{}', expected '{}'", iss, expected_issuer);
+                    return None;
+                }
+            } else {
+                // No issuer configured — JWT auth is disabled
+                return None;
+            }
+
+            // Extract role from claim
+            let role_claim = std::env::var("VMROGUE_JWT_ROLE_CLAIM")
+                .unwrap_or_else(|_| "role".to_string());
+            let role_str = payload
+                .get(&role_claim)
+                .and_then(|v| v.as_str())
+                .unwrap_or("readonly");
+
+            let role = match role_str {
+                "admin" => ApiRole::Admin,
+                "write" => ApiRole::Write,
+                _ => ApiRole::ReadOnly,
+            };
+
+            Some(role)
+        }
+    }
+
+    /// Decode a base64url-encoded string (no padding).
+    fn base64url_decode(input: &str) -> Option<Vec<u8>> {
+        let mut s = input.replace('-', "+").replace('_', "/");
+        match s.len() % 4 {
+            2 => s.push_str("=="),
+            3 => s.push('='),
+            0 => {}
+            _ => return None,
+        }
+        base64::engine::Engine::decode(&base64::engine::general_purpose::STANDARD, &s).ok()
     }
 
     pub type SharedState = Arc<RwLock<WebState>>;
@@ -327,9 +393,13 @@ pub mod web {
             Some(key) => {
                 // Check multi-key table for additional keys
                 let s2 = state.read().await;
-                match s2.authenticate(&key) {
+                let role = s2.authenticate(&key).cloned().or_else(|| {
+                    // Try JWT Bearer token validation
+                    s2.authenticate_jwt(&key)
+                });
+                match role {
                     Some(role) => {
-                        if *role == ApiRole::ReadOnly
+                        if role == ApiRole::ReadOnly
                             && request.method() != axum::http::Method::GET
                             && request.method() != axum::http::Method::HEAD
                         {
@@ -337,7 +407,7 @@ pub mod web {
                             let (status, json) = err_json(
                                 403,
                                 "FORBIDDEN",
-                                "Read-only API key cannot perform mutating operations",
+                                "Read-only token cannot perform mutating operations",
                             );
                             return (status, json).into_response();
                         }

@@ -771,6 +771,9 @@ body>*{position:relative;z-index:1}
       <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
       <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
       <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
+      <button class="nav-link" data-page="security" onclick="navigate('security')">Security</button>
+      <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
+      <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
     </div>
   </div>
   <div class="navbar-right">
@@ -949,6 +952,35 @@ body>*{position:relative;z-index:1}
   </div>
   <div class="card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span></div>
   <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th></tr></thead><tbody id="costs-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-security">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Security</h1><p>Security posture and vulnerability findings</p></div></div>
+  <div id="security-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Security Findings</span></div>
+  <table class="table" id="security-table"><thead><tr><th>Severity</th><th>Category</th><th>Title</th><th>Resource</th><th>Recommendation</th></tr></thead><tbody id="security-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-monitoring">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Monitoring</h1><p>Cluster monitoring stack status</p></div></div>
+  <div id="monitoring-status" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Recommendations</span></div>
+  <table class="table" id="recommendations-table"><thead><tr><th>Priority</th><th>Category</th><th>Title</th><th>Resource</th><th>Impact</th></tr></thead><tbody id="recommendations-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-workloads">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Workloads</h1><p>Deployments, StatefulSets, and DaemonSets</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
+  <table class="table" id="workloads-table"><thead><tr><th>Name</th><th>Type</th><th>Replicas</th><th>Ready</th><th>Status</th><th>Namespace</th></tr></thead><tbody id="workloads-body"></tbody></table>
   </div>
 </div>
 </div>
@@ -1147,6 +1179,9 @@ function navigate(page) {
   if (page === 'insights') fetchInsights();
   if (page === 'actions') fetchActions();
   if (page === 'costs') fetchCosts();
+  if (page === 'security') fetchSecurity();
+  if (page === 'monitoring') fetchMonitoring();
+  if (page === 'workloads') fetchWorkloads();
 }
 
 // Toast notifications
@@ -2355,6 +2390,75 @@ window.addEventListener('load', async () => {
     drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
     drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');
   });
+});
+
+// Security page
+async function fetchSecurity() {
+  try {
+    const [posture, findings] = await Promise.all([
+      apiFetch('api/v1/security/posture').then(r => r.json()),
+      apiFetch('api/v1/security/findings').then(r => r.json()),
+    ]);
+    const sum = document.getElementById('security-summary');
+    if (sum) {
+      const sc = posture.overall_score || 0;
+      const clr = sc >= 90 ? 'var(--success)' : sc >= 70 ? 'var(--warning)' : 'var(--error)';
+      sum.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Security Score</div><div class="stat-value" style="color:${clr}">${sc}/100</div></div>
+        <div class="stat-card"><div class="stat-label">Risk Level</div><div class="stat-value">${posture.risk_level||'N/A'}</div></div>
+        <div class="stat-card"><div class="stat-label">Total Findings</div><div class="stat-value">${posture.total_findings||0}</div></div>
+        <div class="stat-card"><div class="stat-label">Critical</div><div class="stat-value" style="color:var(--error)">${posture.critical_findings||0}</div></div>`;
+    }
+    const tb = document.getElementById('security-body');
+    if (tb) {
+      tb.innerHTML = findings.map(f => {
+        const sclr = f.severity === 'Critical' ? 'var(--error)' : f.severity === 'High' ? 'var(--warning)' : 'var(--text-muted)';
+        return `<tr><td style="color:${sclr};font-weight:600">${f.severity}</td><td>${f.category}</td><td>${f.title}</td><td><code>${f.resource}</code></td><td>${f.recommendation}</td></tr>`;
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No security findings</td></tr>';
+    }
+  } catch(e) { console.error('Security fetch error:', e); }
+}
+
+// Monitoring page
+async function fetchMonitoring() {
+  try {
+    const [status, recs] = await Promise.all([
+      apiFetch('api/v1/monitoring/status').then(r => r.json()),
+      apiFetch('api/v1/recommendations').then(r => r.json()),
+    ]);
+    const sum = document.getElementById('monitoring-status');
+    if (sum) {
+      const dot = (ok) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ok?'var(--success)':'var(--error)'};margin-right:6px"></span>`;
+      sum.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Prometheus</div><div class="stat-value">${dot(status.prometheus_available)}${status.prometheus_available?'Available':'Not Found'}</div></div>
+        <div class="stat-card"><div class="stat-label">Grafana</div><div class="stat-value">${dot(status.grafana_available)}${status.grafana_available?'Available':'Not Found'}</div></div>
+        <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${status.healthy_targets}/${status.total_targets} healthy</div></div>
+        <div class="stat-card"><div class="stat-label">Alerts</div><div class="stat-value">${status.active_alerts}</div></div>`;
+    }
+    const tb = document.getElementById('recommendations-body');
+    if (tb) {
+      tb.innerHTML = recs.map(r => {
+        const pclr = r.priority === 'High' ? 'var(--error)' : r.priority === 'Medium' ? 'var(--warning)' : 'var(--text-muted)';
+        return `<tr><td style="color:${pclr};font-weight:600">${r.priority}</td><td>${r.category}</td><td>${r.title}</td><td><code>${r.resource}</code></td><td>${r.impact}</td></tr>`;
+      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No recommendations</td></tr>';
+    }
+  } catch(e) { console.error('Monitoring fetch error:', e); }
+}
+
+// Workloads page
+async function fetchWorkloads() {
+  try {
+    const data = await apiFetch('api/v1/workloads').then(r => r.json());
+    const tb = document.getElementById('workloads-body');
+    if (tb) {
+      tb.innerHTML = data.map(w => {
+        const ok = w.ready_replicas >= w.replicas;
+        const sclr = ok ? 'var(--success)' : 'var(--warning)';
+        return `<tr><td>${w.name}</td><td><span class="badge">${w.workload_type}</span></td><td>${w.replicas}</td><td style="color:${sclr}">${w.ready_replicas}</td><td style="color:${sclr}">${w.status}</td><td>${w.namespace}</td></tr>`;
+      }).join('') || '<tr><td colspan="6" style="text-align:center">No workloads found</td></tr>';
+    }
+  } catch(e) { console.error('Workloads fetch error:', e); }
+}
 });
 </script>
 </body>
