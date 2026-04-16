@@ -1,0 +1,65 @@
+{{- if .Values.rbac.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "vmrogue.fullname" . }}
+  labels:
+    {{- include "vmrogue.labels" . | nindent 4 }}
+rules:
+  # KubeVirt VMs and VMIs
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachines", "virtualmachineinstances"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachineinstancemigrations"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  # KubeVirt subresources
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources: ["virtualmachineinstances/vnc", "virtualmachineinstances/console"]
+    verbs: ["get"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources: ["virtualmachineinstances/pause", "virtualmachineinstances/unpause"]
+    verbs: ["update"]
+  # Snapshots
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources: ["virtualmachinesnapshots", "virtualmachinerestores"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+  # VMRogue CRDs
+  - apiGroups: ["vmrogue.io"]
+    resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["vmrogue.io"]
+    resources: ["vmroguevms/status", "vmrogueblueprints/status", "vmroguepolicies/status", "vmrogueinsights/status", "vmrogueactions/status"]
+    verbs: ["get", "update", "patch"]
+  # Core K8s resources
+  - apiGroups: [""]
+    resources: ["namespaces", "nodes", "pods", "pods/log", "events", "services", "persistentvolumeclaims", "configmaps", "secrets", "resourcequotas"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims", "configmaps"]
+    verbs: ["create", "update", "patch", "delete"]
+  # Storage
+  - apiGroups: ["storage.k8s.io"]
+    resources: ["storageclasses"]
+    verbs: ["get", "list", "watch"]
+  # Networking
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies", "ingresses"]
+    verbs: ["get", "list", "watch"]
+  # RBAC (read-only for visualization)
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+    verbs: ["get", "list", "watch"]
+  # Apps (for workload and operator discovery)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch"]
+  # Autoscaling
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch"]
+  # CRD discovery
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "list", "watch"]
+{{- end }}

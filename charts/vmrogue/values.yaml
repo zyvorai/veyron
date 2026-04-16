@@ -1,0 +1,61 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ssahani/vmrogue
+  tag: ""  # defaults to Chart.appVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+service:
+  type: NodePort
+  port: 5151
+  nodePort: 30151
+
+api:
+  host: "0.0.0.0"
+  port: 5151
+  namespace: "default"
+
+tls:
+  enabled: true
+  # Auto-generate self-signed certs if no existing secret
+  autoGenerate: true
+  # Use existing secret (must contain tls.crt and tls.key)
+  existingSecret: ""
+
+auth:
+  # API key for authentication (auto-generated if empty)
+  apiKey: ""
+  # Additional API keys with roles: "name1:key1:admin,name2:key2:readonly"
+  additionalKeys: ""
+
+rateLimit:
+  perMinute: 60
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# NetworkPolicy to restrict traffic
+networkPolicy:
+  enabled: true
+
+# RBAC for KubeVirt and VMRogue CRD access
+rbac:
+  create: true

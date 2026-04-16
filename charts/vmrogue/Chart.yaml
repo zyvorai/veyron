@@ -1,0 +1,18 @@
+apiVersion: v2
+name: vmrogue
+description: KubeVirt VM Management & Orchestration Platform
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+keywords:
+  - kubevirt
+  - kubernetes
+  - virtual-machine
+  - kvm
+  - vm-management
+home: https://github.com/ssahani/VMRogue
+sources:
+  - https://github.com/ssahani/VMRogue
+maintainers:
+  - name: Susant Sahani
+    url: https://github.com/ssahani

@@ -1,0 +1,134 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vmrogue.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vmrogue.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vmrogue.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vmrogue.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "vmrogue.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.tls.enabled .Values.tls.autoGenerate (not .Values.tls.existingSecret) }}
+      initContainers:
+        - name: tls-init
+          image: alpine:3.20
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache openssl
+              openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+                -keyout /tls/tls.key -out /tls/tls.crt -days 365 -nodes \
+                -subj "/CN={{ include "vmrogue.fullname" . }}.{{ .Release.Namespace }}.svc"
+              chown 10001:10001 /tls/tls.key /tls/tls.crt
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /tls
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ include "vmrogue.imageTag" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - api-serve
+            - --port
+            - "{{ .Values.api.port }}"
+            - --host
+            - "{{ .Values.api.host }}"
+            - --namespace
+            - "{{ .Values.api.namespace }}"
+            {{- if .Values.tls.enabled }}
+            - --tls
+            - --tls-cert
+            - /tls/tls.crt
+            - --tls-key
+            - /tls/tls.key
+            {{- end }}
+            - --rate-limit
+            - "{{ .Values.rateLimit.perMinute }}"
+          env:
+            - name: VMROGUE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vmrogue.fullname" . }}-api-key
+                  key: api-key
+            {{- if .Values.auth.additionalKeys }}
+            - name: VMROGUE_API_KEYS
+              value: {{ .Values.auth.additionalKeys | quote }}
+            {{- end }}
+            - name: RUST_LOG
+              value: "info"
+          ports:
+            - name: https
+              containerPort: {{ .Values.api.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: https
+              {{- if .Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: https
+              {{- if .Values.tls.enabled }}
+              scheme: HTTPS
+              {{- end }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            {{- if .Values.tls.enabled }}
+            - name: tls-certs
+              mountPath: /tls
+              readOnly: true
+            {{- end }}
+      volumes:
+        {{- if .Values.tls.enabled }}
+        - name: tls-certs
+          {{- if .Values.tls.existingSecret }}
+          secret:
+            secretName: {{ .Values.tls.existingSecret }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
