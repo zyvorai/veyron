@@ -14,6 +14,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/common/types"
+
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
 	"github.com/ssahani/vmrogue/operator/internal/eventbus"
 )
@@ -147,8 +150,9 @@ func (r *VMRoguePolicyReconciler) evaluateRules(policy *vmroguev1alpha1.VMRogueP
 }
 
 // evaluateCondition evaluates a policy rule condition against a VM.
-// Supports built-in conditions. Full CEL support via cel-go can be added later.
+// First checks built-in conditions for fast path, then falls back to CEL evaluation.
 func evaluateCondition(condition string, vm *vmroguev1alpha1.VMRogueVM) bool {
+	// Fast path: built-in conditions
 	switch condition {
 	case "spec.enableTpm == true":
 		return vm.Spec.EnableTPM
@@ -168,12 +172,94 @@ func evaluateCondition(condition string, vm *vmroguev1alpha1.VMRogueVM) bool {
 		return vm.Spec.EvictionStrategy != nil
 	case "has(spec.cloudInit)":
 		return vm.Spec.CloudInit != nil
-	default:
-		// Unknown condition — treat as NON-COMPLIANT and log a warning.
-		// This prevents typos from silently bypassing policies.
-		log.Log.Info("unknown policy condition, treating as non-compliant", "condition", condition, "vm", vm.Name)
+	}
+
+	// Slow path: CEL expression evaluation
+	result, err := evaluateCEL(condition, vm)
+	if err != nil {
+		log.Log.Info("CEL evaluation failed, treating as non-compliant",
+			"condition", condition, "vm", vm.Name, "error", err.Error())
 		return false
 	}
+	return result
+}
+
+// evaluateCEL evaluates a CEL expression against a VM specification.
+// The VM fields are exposed as CEL variables: cpu_cores, memory_size,
+// enable_tpm, enable_rng, has_cloud_init, has_eviction_strategy,
+// num_disks, num_interfaces, template, name, namespace.
+func evaluateCEL(expression string, vm *vmroguev1alpha1.VMRogueVM) (bool, error) {
+	env, err := cel.NewEnv(
+		cel.Variable("cpu_cores", cel.UintType),
+		cel.Variable("cpu_sockets", cel.UintType),
+		cel.Variable("cpu_threads", cel.UintType),
+		cel.Variable("memory_size", cel.StringType),
+		cel.Variable("enable_tpm", cel.BoolType),
+		cel.Variable("enable_rng", cel.BoolType),
+		cel.Variable("has_cloud_init", cel.BoolType),
+		cel.Variable("has_eviction_strategy", cel.BoolType),
+		cel.Variable("has_firmware", cel.BoolType),
+		cel.Variable("has_features", cel.BoolType),
+		cel.Variable("num_disks", cel.UintType),
+		cel.Variable("num_interfaces", cel.UintType),
+		cel.Variable("template", cel.StringType),
+		cel.Variable("name", cel.StringType),
+		cel.Variable("namespace", cel.StringType),
+		cel.Variable("running", cel.BoolType),
+	)
+	if err != nil {
+		return false, fmt.Errorf("creating CEL environment: %w", err)
+	}
+
+	ast, issues := env.Compile(expression)
+	if issues != nil && issues.Err() != nil {
+		return false, fmt.Errorf("compiling CEL expression: %w", issues.Err())
+	}
+
+	// Ensure output is boolean
+	if ast.OutputType() != cel.BoolType {
+		return false, fmt.Errorf("CEL expression must return bool, got %s", ast.OutputType())
+	}
+
+	prg, err := env.Program(ast)
+	if err != nil {
+		return false, fmt.Errorf("creating CEL program: %w", err)
+	}
+
+	// Build variable map from VM spec
+	running := false
+	if vm.Spec.Running != nil {
+		running = *vm.Spec.Running
+	}
+	vars := map[string]interface{}{
+		"cpu_cores":              uint64(vm.Spec.CPU.Cores),
+		"cpu_sockets":            uint64(vm.Spec.CPU.Sockets),
+		"cpu_threads":            uint64(vm.Spec.CPU.Threads),
+		"memory_size":            vm.Spec.Memory.Size,
+		"enable_tpm":             vm.Spec.EnableTPM,
+		"enable_rng":             vm.Spec.EnableRNG,
+		"has_cloud_init":         vm.Spec.CloudInit != nil,
+		"has_eviction_strategy":  vm.Spec.EvictionStrategy != nil,
+		"has_firmware":           vm.Spec.Firmware != nil,
+		"has_features":           vm.Spec.Features != nil,
+		"num_disks":              uint64(len(vm.Spec.Disks)),
+		"num_interfaces":         uint64(len(vm.Spec.Interfaces)),
+		"template":               vm.Spec.Template,
+		"name":                   vm.Name,
+		"namespace":              vm.Namespace,
+		"running":                running,
+	}
+
+	out, _, err := prg.Eval(vars)
+	if err != nil {
+		return false, fmt.Errorf("evaluating CEL expression: %w", err)
+	}
+
+	if out.Type() != types.BoolType {
+		return false, fmt.Errorf("expected bool result, got %s", out.Type())
+	}
+
+	return out.Value().(bool), nil
 }
 
 func (r *VMRoguePolicyReconciler) publishViolationEvent(policy *vmroguev1alpha1.VMRoguePolicy, v *vmroguev1alpha1.PolicyViolation) {
