@@ -158,6 +158,20 @@ func (r *VMRogueActionReconciler) executeAction(ctx context.Context, action *vmr
 		return r.patchVMRunning(ctx, namespace, action.Spec.VMRef, true)
 	case "ScaleResources":
 		return r.scaleVM(ctx, namespace, action.Spec.VMRef, action.Spec.Parameters)
+	case "CreateSnapshot":
+		return r.createSnapshot(ctx, namespace, action.Spec.VMRef, action.Spec.Parameters)
+	case "DeleteVM":
+		return r.deleteVM(ctx, namespace, action.Spec.VMRef)
+	case "Migrate":
+		return r.migrateVM(ctx, namespace, action.Spec.VMRef)
+	case "SendNotification":
+		// Log-based notification (webhook delivery requires HTTP client)
+		msg := action.Spec.Parameters["message"]
+		if msg == "" {
+			msg = fmt.Sprintf("Action notification for VM %s", action.Spec.VMRef)
+		}
+		log.FromContext(ctx).Info("Notification", "message", msg, "vm", action.Spec.VMRef)
+		return nil
 	default:
 		return fmt.Errorf("unsupported action type: %s", action.Spec.ActionType)
 	}
@@ -192,6 +206,55 @@ func (r *VMRogueActionReconciler) scaleVM(ctx context.Context, namespace, name s
 	}
 
 	return r.Update(ctx, &vm)
+}
+
+func (r *VMRogueActionReconciler) createSnapshot(ctx context.Context, namespace, vmName string, params map[string]string) error {
+	snapshotName := params["name"]
+	if snapshotName == "" {
+		snapshotName = fmt.Sprintf("snap-%s-%d", vmName, time.Now().Unix())
+	}
+
+	snapshot := &unstructured.Unstructured{}
+	snapshot.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "snapshot.kubevirt.io",
+		Version: "v1alpha1",
+		Kind:    "VirtualMachineSnapshot",
+	})
+	snapshot.SetNamespace(namespace)
+	snapshot.SetName(snapshotName)
+	snapshot.Object["spec"] = map[string]interface{}{
+		"source": map[string]interface{}{
+			"apiGroup": "kubevirt.io",
+			"kind":     "VirtualMachine",
+			"name":     vmName,
+		},
+	}
+
+	return r.Create(ctx, snapshot)
+}
+
+func (r *VMRogueActionReconciler) deleteVM(ctx context.Context, namespace, name string) error {
+	var vm vmroguev1alpha1.VMRogueVM
+	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
+		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
+	}
+	return r.Delete(ctx, &vm)
+}
+
+func (r *VMRogueActionReconciler) migrateVM(ctx context.Context, namespace, vmName string) error {
+	migration := &unstructured.Unstructured{}
+	migration.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "kubevirt.io",
+		Version: "v1",
+		Kind:    "VirtualMachineInstanceMigration",
+	})
+	migration.SetNamespace(namespace)
+	migration.SetGenerateName(fmt.Sprintf("migrate-%s-", vmName))
+	migration.Object["spec"] = map[string]interface{}{
+		"vmiName": vmName,
+	}
+
+	return r.Create(ctx, migration)
 }
 
 func (r *VMRogueActionReconciler) publishActionEvent(subject string, action *vmroguev1alpha1.VMRogueAction) {
