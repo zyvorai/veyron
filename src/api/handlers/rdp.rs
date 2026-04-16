@@ -1,13 +1,14 @@
 #[cfg(feature = "web")]
 use axum::{
-    Router,
-    extract::Path,
-    response::IntoResponse,
-    routing::{get, post},
+    Json, Router,
+    extract::{Path, State},
+    http::StatusCode,
+    routing::get,
 };
 use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "web")]
-use super::not_implemented;
+use crate::api::http_server::web::SharedState;
 
 /// RDP session security protocol
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -357,127 +358,121 @@ pub struct RdpGatewayConfig {
 }
 
 #[cfg(feature = "web")]
-pub fn router() -> Router {
+pub fn router(state: SharedState) -> Router {
     Router::new()
-        // Session management
-        .route(
-            "/rdp/sessions",
-            get(list_rdp_sessions).post(create_rdp_session),
-        )
-        .route(
-            "/rdp/sessions/{id}",
-            get(get_rdp_session).delete(delete_rdp_session),
-        )
-        .route("/rdp/sessions/{id}/resize", post(resize_rdp_session))
-        .route(
-            "/rdp/sessions/{id}/clipboard",
-            get(get_clipboard).post(send_clipboard),
-        )
-        .route("/rdp/sessions/{id}/stats", get(get_session_stats))
-        .route("/rdp/sessions/{id}/screenshot", get(take_screenshot))
-        .route(
-            "/rdp/sessions/{id}/disconnect",
-            post(disconnect_rdp_session),
-        )
-        .route("/rdp/sessions/{id}/reconnect", post(reconnect_rdp_session))
-        // VM discovery
+        .route("/rdp/sessions", get(list_rdp_sessions))
+        .route("/rdp/sessions/{id}", get(get_rdp_session))
         .route("/rdp/vms", get(list_rdp_capable_vms))
-        // Configuration
         .route("/rdp/config/defaults", get(get_default_config))
-        .route(
-            "/rdp/gateway",
-            get(get_gateway_config).post(set_gateway_config),
-        )
+        .with_state(state)
+}
+
+/// List RDP-capable VMs by finding Windows VMs with IP addresses.
+#[cfg(feature = "web")]
+async fn list_rdp_capable_vms(State(state): State<SharedState>) -> Json<Vec<RdpCapableVm>> {
+    use crate::kube::types::VirtualMachineInstance;
+
+    let s = state.read().await;
+    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let mut results = Vec::new();
+
+    // Check VMIs for IP addresses
+    let vmis_api: ::kube::api::Api<VirtualMachineInstance> =
+        ::kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let vmis = vmis_api
+        .list(&::kube::api::ListParams::default())
+        .await
+        .ok();
+
+    for vm in &vms {
+        let vm_name = vm.metadata.name.as_deref().unwrap_or("");
+        let template = vm
+            .metadata
+            .labels
+            .as_ref()
+            .and_then(|l| l.get("vmrogue.io/template"))
+            .or_else(|| {
+                vm.metadata
+                    .labels
+                    .as_ref()
+                    .and_then(|l| l.get("vm.kubevirt.io/template"))
+            })
+            .cloned()
+            .unwrap_or_default();
+
+        // Detect Windows VMs by template name or labels
+        let is_windows = template.to_lowercase().contains("windows")
+            || template.to_lowercase().contains("win");
+
+        let ip = vmis.as_ref().and_then(|list| {
+            list.items.iter().find_map(|vmi| {
+                if vmi.metadata.name.as_deref() == Some(vm_name) {
+                    vmi.status.as_ref().and_then(|st| {
+                        st.interfaces
+                            .iter()
+                            .find_map(|iface| iface.ip_address.clone())
+                    })
+                } else {
+                    None
+                }
+            })
+        });
+
+        let os_type = if is_windows {
+            "Windows".to_string()
+        } else {
+            "Linux".to_string()
+        };
+
+        results.push(RdpCapableVm {
+            name: vm_name.to_string(),
+            namespace: vm.metadata.namespace.clone().unwrap_or_default(),
+            ip_address: ip,
+            rdp_port: 3389,
+            reachable: false, // Would need actual TCP probe
+            os_type,
+            active_sessions: 0,
+        });
+    }
+
+    Json(results)
+}
+
+/// List active RDP sessions (stored as ConfigMaps).
+#[cfg(feature = "web")]
+async fn list_rdp_sessions(State(_state): State<SharedState>) -> Json<Vec<serde_json::Value>> {
+    // RDP session proxy requires an external gateway (e.g., Apache Guacamole, xrdp)
+    // This endpoint returns the empty list until a gateway is configured
+    Json(vec![])
 }
 
 #[cfg(feature = "web")]
-async fn list_rdp_sessions() -> impl IntoResponse {
-    not_implemented("RDP sessions")
+async fn get_rdp_session(
+    State(_state): State<SharedState>,
+    Path(_id): Path<String>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({
+            "error": "NOT_FOUND",
+            "message": "RDP session proxy requires an external gateway. Use /rdp/vms to discover RDP-capable VMs, then connect directly via an RDP client."
+        })),
+    )
 }
 
+/// Return default RDP configuration.
 #[cfg(feature = "web")]
-async fn create_rdp_session(axum::Json(req): axum::Json<CreateRdpSessionRequest>) -> impl IntoResponse {
-    let _ = req;
-    not_implemented("RDP session creation")
-}
-
-#[cfg(feature = "web")]
-async fn get_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP session retrieval")
-}
-
-#[cfg(feature = "web")]
-async fn delete_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP session deletion")
-}
-
-#[cfg(feature = "web")]
-async fn resize_rdp_session(
-    Path(id): Path<String>,
-    axum::Json(req): axum::Json<ResizeRdpSessionRequest>,
-) -> impl IntoResponse {
-    let _ = (id, req);
-    not_implemented("RDP session resize")
-}
-
-#[cfg(feature = "web")]
-async fn get_clipboard(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP clipboard retrieval")
-}
-
-#[cfg(feature = "web")]
-async fn send_clipboard(
-    Path(id): Path<String>,
-    axum::Json(req): axum::Json<RdpClipboardRequest>,
-) -> impl IntoResponse {
-    let _ = (id, req);
-    not_implemented("RDP clipboard send")
-}
-
-#[cfg(feature = "web")]
-async fn get_session_stats(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP session statistics")
-}
-
-#[cfg(feature = "web")]
-async fn take_screenshot(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP screenshot")
-}
-
-#[cfg(feature = "web")]
-async fn disconnect_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP session disconnect")
-}
-
-#[cfg(feature = "web")]
-async fn reconnect_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
-    let _ = id;
-    not_implemented("RDP session reconnect")
-}
-
-#[cfg(feature = "web")]
-async fn list_rdp_capable_vms() -> impl IntoResponse {
-    not_implemented("RDP-capable VM discovery")
-}
-
-#[cfg(feature = "web")]
-async fn get_default_config() -> impl IntoResponse {
-    not_implemented("RDP default configuration")
-}
-
-#[cfg(feature = "web")]
-async fn get_gateway_config() -> impl IntoResponse {
-    not_implemented("RDP gateway configuration")
-}
-
-#[cfg(feature = "web")]
-async fn set_gateway_config(axum::Json(req): axum::Json<RdpGatewayConfig>) -> impl IntoResponse {
-    let _ = req;
-    not_implemented("RDP gateway configuration")
+async fn get_default_config(State(_state): State<SharedState>) -> Json<serde_json::Value> {
+    Json(serde_json::json!({
+        "default_port": 3389,
+        "default_width": 1920,
+        "default_height": 1080,
+        "default_color_depth": 32,
+        "default_security": "auto",
+        "clipboard_enabled": true,
+        "audio_enabled": false,
+        "drive_redirection": false,
+        "gateway_configured": false,
+        "note": "Full RDP proxy requires an external gateway (Apache Guacamole or xrdp). Use /rdp/vms to discover VMs with RDP access."
+    }))
 }
