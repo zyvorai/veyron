@@ -2874,4 +2874,115 @@ mod tests {
             _ => panic!("Expected Migrate command"),
         }
     }
+
+    #[test]
+    fn test_events_command() {
+        let cli = parse(&["vmrogue", "events", "--limit", "25"]).unwrap();
+        match *cli.command {
+            Commands::EventsList { limit, .. } => assert_eq!(limit, 25),
+            _ => panic!("Expected EventsList"),
+        }
+    }
+
+    #[test]
+    fn test_nodes_command() {
+        let cli = parse(&["vmrogue", "nodes"]).unwrap();
+        assert!(matches!(*cli.command, Commands::NodesList { .. }));
+    }
+
+    #[test]
+    fn test_pods_command() {
+        let cli = parse(&["vmrogue", "pods", "--output", "json"]).unwrap();
+        match *cli.command {
+            Commands::PodsList { output } => assert_eq!(output, "json"),
+            _ => panic!("Expected PodsList"),
+        }
+    }
+
+    #[test]
+    fn test_import_command() {
+        let cli = parse(&["vmrogue", "import", "vm.yaml", "--start", "--dry-run"]).unwrap();
+        match *cli.command {
+            Commands::Import { ref file, start, dry_run } => {
+                assert_eq!(file, "vm.yaml");
+                assert!(start);
+                assert!(dry_run);
+            }
+            _ => panic!("Expected Import"),
+        }
+    }
+
+    #[test]
+    fn test_search_command() {
+        let cli = parse(&["vmrogue", "search", "running", "vms", "in", "production"]).unwrap();
+        match *cli.command {
+            Commands::Search { ref query } => {
+                assert_eq!(query, &["running", "vms", "in", "production"]);
+            }
+            _ => panic!("Expected Search"),
+        }
+    }
+
+    #[test]
+    fn test_troubleshoot_command() {
+        let cli = parse(&["vmrogue", "troubleshoot", "my-vm"]).unwrap();
+        match *cli.command {
+            Commands::Troubleshoot { ref name } => assert_eq!(name, "my-vm"),
+            _ => panic!("Expected Troubleshoot"),
+        }
+    }
+
+    #[test]
+    fn test_capacity_command() {
+        let cli = parse(&["vmrogue", "capacity", "--detailed"]).unwrap();
+        match *cli.command {
+            Commands::Capacity { detailed, .. } => assert!(detailed),
+            _ => panic!("Expected Capacity"),
+        }
+    }
+
+    #[test]
+    fn test_placement_command() {
+        let cli = parse(&["vmrogue", "placement", "my-vm", "--strategy", "binpack"]).unwrap();
+        match *cli.command {
+            Commands::Placement { ref name, ref strategy } => {
+                assert_eq!(name, "my-vm");
+                assert_eq!(strategy, "binpack");
+            }
+            _ => panic!("Expected Placement"),
+        }
+    }
+
+    #[test]
+    fn test_clusters_list_command() {
+        let cli = parse(&["vmrogue", "clusters-list"]).unwrap();
+        assert!(matches!(*cli.command, Commands::ClustersList { .. }));
+    }
+
+    #[test]
+    fn test_clusters_discover_command() {
+        let cli = parse(&["vmrogue", "clusters-discover"]).unwrap();
+        assert!(matches!(*cli.command, Commands::ClustersDiscover));
+    }
+
+    #[test]
+    fn test_gitops_diff_command() {
+        let cli = parse(&["vmrogue", "gitops-diff", "--directory", "manifests"]).unwrap();
+        match *cli.command {
+            Commands::GitopsDiff { ref directory } => assert_eq!(directory, "manifests"),
+            _ => panic!("Expected GitopsDiff"),
+        }
+    }
+
+    #[test]
+    fn test_gitops_status_command() {
+        let cli = parse(&["vmrogue", "gitops-status"]).unwrap();
+        assert!(matches!(*cli.command, Commands::GitopsStatus));
+    }
+
+    #[test]
+    fn test_list_json_command() {
+        let cli = parse(&["vmrogue", "list-json"]).unwrap();
+        assert!(matches!(*cli.command, Commands::ListJson));
+    }
 }
