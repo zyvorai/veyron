@@ -1941,3 +1941,274 @@ mod tests {
         assert!(err_msg.contains("Template not found"));
     }
 }
+
+// ========== INFRASTRUCTURE COMMANDS ==========
+
+pub async fn handle_events_list(limit: usize, output: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::table::CliTable;
+
+    let client = kube::KubeClient::new().await?;
+    let events = client.list_events(namespace).await?;
+
+    if output == "json" || output == "yaml" {
+        let limited: Vec<_> = events.iter().take(limit).collect();
+        let text = if output == "json" {
+            serde_json::to_string_pretty(&limited)?
+        } else {
+            serde_yml::to_string(&limited)?
+        };
+        println!("{}", text);
+        return Ok(());
+    }
+
+    let mut table = CliTable::new(vec!["Type", "Reason", "Object", "Message", "Age"]);
+    for event in events.iter().take(limit) {
+        let event_type = event.type_.as_deref().unwrap_or("Normal");
+        let reason = event.reason.as_deref().unwrap_or("");
+        let obj = event
+            .involved_object
+            .name
+            .as_deref()
+            .unwrap_or("");
+        let message = event.message.as_deref().unwrap_or("").chars().take(60).collect::<String>();
+        let age = event
+            .last_timestamp
+            .as_ref()
+            .or(event.metadata.creation_timestamp.as_ref())
+            .map(|t| {
+                let secs = (chrono::Utc::now() - t.0).num_seconds();
+                if secs < 60 { format!("{}s", secs) }
+                else if secs < 3600 { format!("{}m", secs / 60) }
+                else { format!("{}h", secs / 3600) }
+            })
+            .unwrap_or_default();
+
+        table.add_row(vec![
+            event_type.to_string(),
+            reason.to_string(),
+            obj.to_string(),
+            message,
+            age,
+        ]);
+    }
+    table.print();
+    Ok(())
+}
+
+pub async fn handle_nodes_list(output: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::table::CliTable;
+
+    let _ = namespace;
+    let client = kube::KubeClient::new().await?;
+    let nodes = client.list_nodes().await?;
+
+    if output == "json" || output == "yaml" {
+        let text = if output == "json" {
+            serde_json::to_string_pretty(&nodes)?
+        } else {
+            serde_yml::to_string(&nodes)?
+        };
+        println!("{}", text);
+        return Ok(());
+    }
+
+    let mut table = CliTable::new(vec!["Name", "Status", "Roles", "Version", "CPU", "Memory"]);
+    for node in &nodes {
+        let name = node.metadata.name.as_deref().unwrap_or("");
+        let status = node.status.as_ref()
+            .and_then(|s| s.conditions.as_ref())
+            .and_then(|c| c.iter().find(|c| c.type_ == "Ready"))
+            .map(|c| if c.status == "True" { "Ready" } else { "NotReady" })
+            .unwrap_or("Unknown");
+        let roles: Vec<String> = node.metadata.labels.as_ref()
+            .map(|l| l.keys().filter_map(|k| k.strip_prefix("node-role.kubernetes.io/").map(String::from)).collect())
+            .unwrap_or_default();
+        let version = node.status.as_ref()
+            .and_then(|s| s.node_info.as_ref())
+            .map(|i| i.kubelet_version.as_str())
+            .unwrap_or("");
+        let cpu = node.status.as_ref()
+            .and_then(|s| s.capacity.as_ref())
+            .and_then(|c| c.get("cpu"))
+            .map(|v| v.0.clone())
+            .unwrap_or_default();
+        let memory = node.status.as_ref()
+            .and_then(|s| s.capacity.as_ref())
+            .and_then(|c| c.get("memory"))
+            .map(|v| v.0.clone())
+            .unwrap_or_default();
+
+        table.add_row(vec![
+            name.to_string(),
+            status.to_string(),
+            if roles.is_empty() { "<none>".to_string() } else { roles.join(",") },
+            version.to_string(),
+            cpu,
+            memory,
+        ]);
+    }
+    table.print();
+    Ok(())
+}
+
+pub async fn handle_pods_list(output: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::table::CliTable;
+
+    let client = kube::KubeClient::new().await?;
+    let pods = client.list_pods(namespace).await?;
+
+    if output == "json" || output == "yaml" {
+        let text = if output == "json" {
+            serde_json::to_string_pretty(&pods)?
+        } else {
+            serde_yml::to_string(&pods)?
+        };
+        println!("{}", text);
+        return Ok(());
+    }
+
+    let mut table = CliTable::new(vec!["Name", "Status", "Node", "IP", "Restarts", "Age"]);
+    for pod in &pods {
+        let name = pod.metadata.name.as_deref().unwrap_or("");
+        let phase = pod.status.as_ref()
+            .and_then(|s| s.phase.as_deref())
+            .unwrap_or("Unknown");
+        let node = pod.spec.as_ref()
+            .and_then(|s| s.node_name.as_deref())
+            .unwrap_or("");
+        let ip = pod.status.as_ref()
+            .and_then(|s| s.pod_ip.as_deref())
+            .unwrap_or("");
+        let restarts: i32 = pod.status.as_ref()
+            .and_then(|s| s.container_statuses.as_ref())
+            .map(|cs| cs.iter().map(|c| c.restart_count).sum())
+            .unwrap_or(0);
+        let age = pod.metadata.creation_timestamp.as_ref()
+            .map(|t| {
+                let secs = (chrono::Utc::now() - t.0).num_seconds();
+                if secs < 60 { format!("{}s", secs) }
+                else if secs < 3600 { format!("{}m", secs / 60) }
+                else if secs < 86400 { format!("{}h", secs / 3600) }
+                else { format!("{}d", secs / 86400) }
+            })
+            .unwrap_or_default();
+
+        table.add_row(vec![
+            name.to_string(),
+            phase.to_string(),
+            node.to_string(),
+            ip.to_string(),
+            restarts.to_string(),
+            age,
+        ]);
+    }
+    table.print();
+    Ok(())
+}
+
+pub async fn handle_import(file: String, start: bool, dry_run: bool, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::spinner::spinner;
+
+    let content = std::fs::read_to_string(&file)?;
+    let vm: crate::kube::types::VirtualMachine = if file.ends_with(".json") {
+        serde_json::from_str(&content)?
+    } else {
+        serde_yml::from_str(&content)?
+    };
+
+    let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
+    println!("{}", color::header("Import VM"));
+    println!("  File:      {}", color::value(&file));
+    println!("  VM:        {}", color::vm_name(vm_name));
+    println!("  Namespace: {}", color::value(namespace));
+
+    if dry_run {
+        println!();
+        println!("{}", color::success("Dry run: VM manifest is valid"));
+        println!("{}", serde_yml::to_string(&vm)?);
+        return Ok(());
+    }
+
+    let sp = spinner(&format!("Importing VM '{}'...", vm_name));
+    let client = kube::KubeClient::new().await?;
+
+    let kube_client = client.client();
+    let api: ::kube::api::Api<crate::kube::types::VirtualMachine> =
+        ::kube::api::Api::namespaced(kube_client, namespace);
+    api.create(&::kube::api::PostParams::default(), &vm).await?;
+    sp.finish_and_clear();
+
+    println!("{}", color::success(&format!("VM '{}' imported successfully", vm_name)));
+
+    if start {
+        client.start_vm(namespace, vm_name).await?;
+        println!("{}", color::success(&format!("VM '{}' started", vm_name)));
+    }
+
+    Ok(())
+}
+
+pub async fn handle_clusters_list(output: String) -> Result<()> {
+    use crate::output::table::CliTable;
+
+    let manager = crate::multi_cluster::MultiClusterManager::new();
+
+    if output == "json" || output == "yaml" {
+        let text = if output == "json" {
+            serde_json::to_string_pretty(&manager)?
+        } else {
+            serde_yml::to_string(&manager)?
+        };
+        println!("{}", text);
+        return Ok(());
+    }
+
+    println!("{}", color::header("Kubernetes Clusters"));
+    println!();
+
+    if manager.clusters.is_empty() {
+        println!("  {}", color::muted("No clusters configured. Run 'vmrogue clusters-discover' to scan kubeconfig."));
+        return Ok(());
+    }
+
+    let mut table = CliTable::new(vec!["Name", "Context", "Environment", "Region", "Health", "Primary"]);
+    for cluster in &manager.clusters {
+        table.add_row(vec![
+            cluster.name.clone(),
+            cluster.context.clone(),
+            format!("{:?}", cluster.environment),
+            cluster.region.clone(),
+            format!("{:?}", cluster.health),
+            if cluster.is_primary { "✓" } else { "" }.to_string(),
+        ]);
+    }
+    table.print();
+    Ok(())
+}
+
+pub async fn handle_clusters_discover() -> Result<()> {
+    println!("{}", color::header("Cluster Discovery"));
+    println!();
+
+    let mut manager = crate::multi_cluster::MultiClusterManager::new();
+    match manager.discover_from_kubeconfig().await {
+        Ok(count) => {
+            println!("{}", color::success(&format!("Discovered {} cluster(s):", count)));
+            for cluster in &manager.clusters {
+                println!("  {} ({}) - {:?}",
+                    color::vm_name(&cluster.name),
+                    color::muted(&cluster.context),
+                    cluster.environment,
+                );
+            }
+        }
+        Err(e) => {
+            println!("{}", color::error(&format!("Failed to discover clusters: {}", e)));
+        }
+    }
+    Ok(())
+}

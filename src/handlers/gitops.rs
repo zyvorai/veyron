@@ -212,6 +212,116 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
     Ok(())
 }
 
+/// Show GitOps diff: compare exported manifests with cluster state.
+pub async fn handle_gitops_diff(directory: String, namespace: &str) -> Result<()> {
+    use crate::kube::KubeClient;
+
+    println!("{}", color::header("GitOps Diff"));
+
+    let client = KubeClient::new().await?;
+    let vms = client.list_vms(namespace).await?;
+    let dir_path = std::path::Path::new(&directory);
+
+    if !dir_path.exists() {
+        println!("  {}", color::warning("Directory does not exist. Run 'vmrogue gitops-export' first."));
+        return Ok(());
+    }
+
+    let mut in_cluster_only = Vec::new();
+    let mut in_dir_only = Vec::new();
+    let mut in_both = 0u32;
+
+    // Cluster VMs
+    let cluster_names: std::collections::HashSet<String> = vms
+        .iter()
+        .filter_map(|vm| vm.metadata.name.clone())
+        .collect();
+
+    // Directory manifests
+    let mut dir_names: std::collections::HashSet<String> = std::collections::HashSet::new();
+    if let Ok(entries) = std::fs::read_dir(dir_path) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().map(|e| e == "yaml" || e == "yml").unwrap_or(false) {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    dir_names.insert(stem.to_string());
+                }
+            }
+        }
+    }
+
+    for name in &cluster_names {
+        if dir_names.contains(name) {
+            in_both += 1;
+        } else {
+            in_cluster_only.push(name.clone());
+        }
+    }
+    for name in &dir_names {
+        if !cluster_names.contains(name) {
+            in_dir_only.push(name.clone());
+        }
+    }
+
+    println!("  Synced:       {} VMs", in_both);
+    if !in_cluster_only.is_empty() {
+        println!("  {}", color::warning(&format!("Cluster only: {} VMs (not exported)", in_cluster_only.len())));
+        for name in &in_cluster_only {
+            println!("    + {}", color::vm_name(name));
+        }
+    }
+    if !in_dir_only.is_empty() {
+        println!("  {}", color::warning(&format!("Directory only: {} manifests (not in cluster)", in_dir_only.len())));
+        for name in &in_dir_only {
+            println!("    - {}", name);
+        }
+    }
+    if in_cluster_only.is_empty() && in_dir_only.is_empty() {
+        println!("  {}", color::success("All VMs are in sync"));
+    }
+
+    Ok(())
+}
+
+/// Show GitOps sync status.
+pub async fn handle_gitops_status(namespace: &str) -> Result<()> {
+    use crate::kube::KubeClient;
+
+    println!("{}", color::header("GitOps Status"));
+
+    let client = KubeClient::new().await?;
+    let vms = client.list_vms(namespace).await?;
+
+    println!("  Namespace: {}", color::value(namespace));
+    println!("  VMs:       {}", color::value(&vms.len().to_string()));
+
+    // Check for common GitOps directories
+    let git_dirs = [".", "deploy", "manifests", "gitops"];
+    for dir in &git_dirs {
+        let path = std::path::Path::new(dir);
+        if path.exists() {
+            let yaml_count = std::fs::read_dir(path)
+                .map(|entries| {
+                    entries
+                        .flatten()
+                        .filter(|e| {
+                            e.path()
+                                .extension()
+                                .map(|ext| ext == "yaml" || ext == "yml")
+                                .unwrap_or(false)
+                        })
+                        .count()
+                })
+                .unwrap_or(0);
+            if yaml_count > 0 {
+                println!("  Manifests: {} YAML files in {}/", yaml_count, dir);
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
