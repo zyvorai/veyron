@@ -30,6 +30,48 @@ ok()   { echo -e "${GREEN}[✓]${NC} $*"; }
 warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 err()  { echo -e "${RED}[✗]${NC} $*" >&2; }
 
+# ── Auto-detect container runtime ──
+detect_container_runtime() {
+    if [ -n "${CONTAINER_RUNTIME:-}" ]; then
+        if command -v "${CONTAINER_RUNTIME}" &>/dev/null; then
+            RUNTIME="${CONTAINER_RUNTIME}"
+            return
+        fi
+        warn "CONTAINER_RUNTIME=${CONTAINER_RUNTIME} not found, auto-detecting..."
+    fi
+
+    if command -v docker &>/dev/null && docker info &>/dev/null 2>&1; then
+        RUNTIME="docker"
+    elif command -v podman &>/dev/null; then
+        RUNTIME="podman"
+    elif command -v nerdctl &>/dev/null; then
+        RUNTIME="nerdctl"
+    else
+        err "No container runtime found (tried: docker, podman, nerdctl)"
+        err "Install one or set CONTAINER_RUNTIME= to override"
+        exit 1
+    fi
+}
+
+# ── Auto-detect kubectl ──
+detect_kubectl() {
+    if [ -n "${KUBECTL:-}" ]; then
+        return
+    elif command -v kubectl &>/dev/null; then
+        KUBECTL="kubectl"
+    elif command -v k3s &>/dev/null; then
+        KUBECTL="k3s kubectl"
+    elif command -v microk8s &>/dev/null; then
+        KUBECTL="microk8s kubectl"
+    else
+        KUBECTL="kubectl"  # will fail later with a clear message
+    fi
+}
+
+detect_container_runtime
+detect_kubectl
+log "Container runtime: ${RUNTIME} | kubectl: ${KUBECTL}"
+
 # ── Test ─────────────────────────────────────────────
 cmd_test() {
     log "Running full test suite..."
@@ -58,57 +100,63 @@ cmd_build() {
     ok "Binary: target/release/vmrogue ($size)"
 }
 
-# ── Docker ───────────────────────────────────────────
+# ── Docker/Podman ────────────────────────────────────
 cmd_docker() {
-    log "Building Docker image: ${IMAGE}"
-    docker build -t "${IMAGE}" -t "${IMAGE_LATEST}" .
+    log "Building container image: ${IMAGE} (${RUNTIME})"
+
+    local build_args=()
+    if [ "${RUNTIME}" = "podman" ]; then
+        build_args+=(--format docker)
+    fi
+
+    ${RUNTIME} build "${build_args[@]}" -t "${IMAGE}" -t "${IMAGE_LATEST}" .
     ok "Image built: ${IMAGE}"
 
     local size
-    size=$(docker image inspect "${IMAGE}" --format='{{.Size}}' | numfmt --to=iec 2>/dev/null || echo "unknown")
+    size=$(${RUNTIME} image inspect "${IMAGE}" --format='{{.Size}}' | numfmt --to=iec 2>/dev/null || echo "unknown")
     log "Image size: ${size}"
 }
 
 # ── Push ─────────────────────────────────────────────
 cmd_push() {
     log "Pushing ${IMAGE}..."
-    docker push "${IMAGE}"
-    docker push "${IMAGE_LATEST}"
+    ${RUNTIME} push "${IMAGE}"
+    ${RUNTIME} push "${IMAGE_LATEST}"
     ok "Pushed ${IMAGE} and ${IMAGE_LATEST}"
 }
 
 # ── Deploy ───────────────────────────────────────────
 cmd_deploy() {
-    log "Deploying to Kubernetes..."
+    log "Deploying to Kubernetes (${KUBECTL})..."
 
-    if ! kubectl cluster-info &>/dev/null; then
+    if ! ${KUBECTL} cluster-info &>/dev/null; then
         err "Cannot connect to Kubernetes cluster"
         exit 1
     fi
 
     # Create namespace if needed
-    kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+    ${KUBECTL} create namespace "${NAMESPACE}" --dry-run=client -o yaml | ${KUBECTL} apply -f -
 
     # Apply manifests
-    kubectl apply -f deploy/k8s.yaml
+    ${KUBECTL} apply -f deploy/k8s.yaml
 
     # Update image
-    kubectl -n "${NAMESPACE}" set image deployment/vmrogue-api \
+    ${KUBECTL} -n "${NAMESPACE}" set image deployment/vmrogue-api \
         vmrogue="${IMAGE}" 2>/dev/null || true
 
     # Wait for rollout
     log "Waiting for rollout..."
-    kubectl -n "${NAMESPACE}" rollout status deployment/vmrogue-api --timeout=120s
+    ${KUBECTL} -n "${NAMESPACE}" rollout status deployment/vmrogue-api --timeout=120s
 
     ok "Deployed ${IMAGE} to ${NAMESPACE}"
-    kubectl -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=vmrogue
+    ${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=vmrogue
 }
 
 # ── Clean ────────────────────────────────────────────
 cmd_clean() {
     log "Cleaning up..."
     cargo clean
-    docker rmi "${IMAGE}" "${IMAGE_LATEST}" 2>/dev/null || true
+    ${RUNTIME} rmi "${IMAGE}" "${IMAGE_LATEST}" 2>/dev/null || true
     ok "Clean complete"
 }
 

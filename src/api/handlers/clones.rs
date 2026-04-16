@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::post};
+use axum::{Router, response::IntoResponse, routing::post};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Clone request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +28,7 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn create_clone(Json(req): Json<CloneRequest>) -> Json<Option<CloneResponse>> {
+async fn create_clone(axum::Json(req): axum::Json<CloneRequest>) -> impl IntoResponse {
     let _ = req;
-    Json(None)
+    not_implemented("VM cloning")
 }

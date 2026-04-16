@@ -96,6 +96,31 @@ pub async fn create_vm(&self, config: &VMConfig) -> Result<VirtualMachine> {
 }
 ```
 
+### Error Handling in API Handlers
+
+API handlers should return `VMRogueError` which implements `IntoResponse`. This ensures all error paths produce proper HTTP status codes and consistent JSON error bodies. Do not return `(StatusCode, String)` tuples or `200 OK` with empty data for errors.
+
+```rust
+use crate::api::handlers::VMRogueError;
+
+pub async fn my_handler(
+    State(state): State<AppState>,
+) -> Result<Json<MyResponse>, VMRogueError> {
+    let data = do_something().map_err(|e| VMRogueError::KubeError(e.to_string()))?;
+    Ok(Json(data))
+}
+```
+
+### 501 Pattern for Stub Handlers
+
+When adding a new endpoint that is not yet implemented, use the `not_implemented("feature_name")` helper function. This returns `501 Not Implemented` with a clear JSON message, signaling to clients that the feature exists in the API surface but is not yet functional.
+
+```rust
+pub async fn my_future_handler() -> impl IntoResponse {
+    not_implemented("my_future_feature")
+}
+```
+
 ### Commit Messages
 
 Follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
@@ -178,6 +203,35 @@ fn test_validate_vm_config_with_invalid_name() {
 }
 ```
 
+### API Integration Tests
+
+API handler tests use the tower/axum test pattern: build the router with `app()`, then send requests via `tower::ServiceExt::oneshot`. This avoids spinning up a real HTTP server.
+
+```rust
+use axum::http::{Request, StatusCode};
+use tower::ServiceExt;
+
+#[tokio::test]
+async fn test_handler_returns_501() {
+    let app = app(state.clone());
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/v1/some-stub")
+                .header("X-API-Key", "test-key")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
+}
+```
+
+### CI: Kind + KubeVirt Integration Tests
+
+Integration tests that require a real Kubernetes cluster run automatically on pushes to `main`. The CI job provisions a Kind cluster with KubeVirt installed, then runs the full test suite. These tests are not triggered on pull request branches to avoid long feedback loops during development.
+
 ## 📚 Documentation
 
 ### Code Documentation
@@ -243,6 +297,25 @@ cargo install --path .
 # Run with verbose logging
 RUST_LOG=debug vmrogue --verbose list
 ```
+
+### Feature Flags
+
+VMRogue uses the `experimental` Cargo feature flag to gate scaffolding-only modules (operator CRDs, experimental handlers, etc.). These modules are excluded from default builds to reduce compile time and attack surface.
+
+When working on experimental modules:
+
+```bash
+# Build with experimental modules enabled
+cargo build --features experimental
+
+# Test with experimental modules
+RUST_MIN_STACK=8388608 cargo test --features experimental
+
+# Check clippy on experimental code
+cargo clippy --features experimental --all-targets -- -D warnings
+```
+
+If you are adding a new module that is not yet production-ready, gate it behind this flag in `Cargo.toml` and `src/lib.rs`.
 
 ### Useful Commands
 

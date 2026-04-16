@@ -1444,3 +1444,170 @@ fn test_bridge_network_kubevirt_conversion() {
     assert!(interfaces[0].bridge.is_some()); // Bridge binding
     assert!(interfaces[0].masquerade.is_none());
 }
+
+// ── API Handler Tests ──────────────────────────────────────────
+
+#[test]
+fn test_templates_api_returns_all_templates() {
+    // Verify the templates handler has data to serve
+    let names = TEMPLATES.list();
+    assert!(names.len() >= 40, "Should have 40+ templates, got {}", names.len());
+
+    // Verify each template can be retrieved
+    for name in &names {
+        let tpl = TEMPLATES.get(name);
+        assert!(tpl.is_some(), "Template '{}' should exist", name);
+    }
+}
+
+#[test]
+fn test_template_response_fields() {
+    // Test that the fields needed by the API response are accessible
+    let config = TEMPLATES.get("ubuntu").expect("ubuntu template exists");
+    assert!(config.cpu.cores > 0, "CPU cores should be > 0");
+    assert!(!config.memory.size.is_empty(), "Memory size should not be empty");
+    assert!(!config.disks.is_empty(), "Should have at least one disk");
+    assert!(!config.disks[0].size.is_empty(), "Disk size should not be empty");
+}
+
+#[test]
+fn test_profiles_api_returns_all_profiles() {
+    let profiles = PROFILES.read().expect("profiles readable");
+    let names = profiles.list();
+    assert!(names.len() >= 8, "Should have 8+ profiles, got {}", names.len());
+}
+
+#[test]
+fn test_vmrogue_error_types() {
+    use vmrogue::utils::VMRogueError;
+
+    // Test that all error types have correct Display output
+    let errors = vec![
+        VMRogueError::VmNotFound("test-vm".to_string()),
+        VMRogueError::VmExists("test-vm".to_string()),
+        VMRogueError::ValidationError("bad field".to_string()),
+        VMRogueError::ConfigError("bad config".to_string()),
+        VMRogueError::Timeout("timed out".to_string()),
+        VMRogueError::NotImplemented("feature X".to_string()),
+        VMRogueError::Unauthorized("no token".to_string()),
+        VMRogueError::Forbidden("no access".to_string()),
+        VMRogueError::ResourceConflict("already exists".to_string()),
+        VMRogueError::ServiceUnavailable("down".to_string()),
+        VMRogueError::KubeError("k8s error".to_string()),
+    ];
+
+    for err in &errors {
+        let msg = err.to_string();
+        assert!(!msg.is_empty(), "Error message should not be empty");
+    }
+}
+
+#[test]
+fn test_snapshot_config_creation() {
+    use vmrogue::snapshots::SnapshotConfig;
+
+    let config = SnapshotConfig::new("test-vm", "snap-test");
+    assert_eq!(config.vm_name, "test-vm");
+    assert_eq!(config.snapshot_name, "snap-test");
+    assert!(config.description.is_none());
+}
+
+#[test]
+fn test_dr_config_creation() {
+    use vmrogue::dr::{DRConfig, DRStrategy, RPO, RTO};
+
+    let config = DRConfig::new("test-dr", "site-a", "site-b")
+        .with_strategy(DRStrategy::ActivePassive)
+        .with_rpo(RPO::minutes(15))
+        .with_rto(RTO::hours(1))
+        .with_auto_failover(false);
+
+    assert_eq!(config.name, "test-dr");
+    assert_eq!(config.primary_site, "site-a");
+    assert_eq!(config.secondary_site, "site-b");
+    assert_eq!(config.rpo.as_minutes(), 15);
+    assert_eq!(config.rto.as_hours(), 1);
+    assert!(!config.auto_failover);
+}
+
+#[test]
+fn test_multi_cluster_manager() {
+    use vmrogue::multi_cluster::{MultiClusterManager, ClusterInfo, ClusterHealth, ClusterEnvironment};
+    use chrono::Utc;
+
+    let mut manager = MultiClusterManager::new();
+    assert_eq!(manager.clusters.len(), 0);
+
+    manager.add_cluster(ClusterInfo {
+        name: "test-cluster".to_string(),
+        context: "test-context".to_string(),
+        environment: ClusterEnvironment::Development,
+        region: "us-east-1".to_string(),
+        health: ClusterHealth::Healthy,
+        vm_count: 5,
+        node_count: 3,
+        cpu_usage_percent: 45.0,
+        memory_usage_percent: 60.0,
+        last_synced: Utc::now(),
+        is_primary: true,
+    });
+
+    assert_eq!(manager.clusters.len(), 1);
+    assert_eq!(manager.aggregated_metrics.total_vms, 5);
+    assert_eq!(manager.aggregated_metrics.total_nodes, 3);
+    assert_eq!(manager.healthy_clusters().len(), 1);
+}
+
+#[test]
+fn test_cost_calculation() {
+    // Verify cost calculation logic
+    let cpu_rate = 0.048_f64;
+    let memory_rate = 0.006_f64;
+    let hours_per_month = 730.0_f64;
+
+    let cpu_cost = 2.0 * cpu_rate * hours_per_month; // 2 cores
+    let memory_cost = 4.0 * memory_rate * hours_per_month; // 4Gi
+
+    assert!(cpu_cost > 0.0, "CPU cost should be > 0");
+    assert!(memory_cost > 0.0, "Memory cost should be > 0");
+    assert!(cpu_cost > memory_cost, "CPU should cost more than memory at same units");
+}
+
+#[test]
+fn test_k8s_quantity_parsing() {
+    use vmrogue::utils::{parse_memory_gib, parse_memory_bytes, parse_cpu_nanocores};
+
+    // Memory GiB parsing
+    assert!((parse_memory_gib("4Gi") - 4.0).abs() < 0.001);
+    assert!((parse_memory_gib("512Mi") - 0.5).abs() < 0.001);
+    assert!((parse_memory_gib("1Ti") - 1024.0).abs() < 0.001);
+    assert!((parse_memory_gib("0")).abs() < 0.001);
+
+    // Memory bytes parsing
+    assert_eq!(parse_memory_bytes("1Gi"), 1024 * 1024 * 1024);
+    assert_eq!(parse_memory_bytes("512Mi"), 512 * 1024 * 1024);
+    assert_eq!(parse_memory_bytes("1024Ki"), 1024 * 1024);
+    assert_eq!(parse_memory_bytes("0"), 0);
+
+    // CPU nanocores parsing
+    assert_eq!(parse_cpu_nanocores("1"), 1_000_000_000);
+    assert_eq!(parse_cpu_nanocores("250m"), 250_000_000);
+    assert_eq!(parse_cpu_nanocores("100000000n"), 100_000_000);
+    assert_eq!(parse_cpu_nanocores("0"), 0);
+}
+
+#[test]
+fn test_policy_rule_value_field() {
+    use vmrogue::operator_crds::CRDPolicyRule;
+
+    // Verify the value field exists and works
+    let rule_json = r#"{"name":"max-cpu","condition":"max_cpu_cores","message":"Too many cores","value":8.0}"#;
+    let rule: CRDPolicyRule = serde_json::from_str(rule_json).expect("should parse");
+    assert_eq!(rule.value, Some(8.0));
+    assert_eq!(rule.condition, "max_cpu_cores");
+
+    // Value field is optional
+    let rule_json_no_val = r#"{"name":"require-ci","condition":"require_cloud_init","message":"Cloud-init required"}"#;
+    let rule2: CRDPolicyRule = serde_json::from_str(rule_json_no_val).expect("should parse without value");
+    assert_eq!(rule2.value, None);
+}

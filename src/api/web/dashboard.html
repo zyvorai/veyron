@@ -766,6 +766,11 @@ body>*{position:relative;z-index:1}
       <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
       <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
       <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
+      <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
+      <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
+      <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
+      <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
+      <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
     </div>
   </div>
   <div class="navbar-right">
@@ -891,6 +896,105 @@ body>*{position:relative;z-index:1}
   <div class="page-header"><div><h1>Events</h1><p>Cluster signal intercepts</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span></div><div id="events-full-list"></div></div>
 </div>
+</div>
+
+<!-- CRD PAGES -->
+<div class="page" id="page-crds">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button class="btn" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
+  <div class="card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
+  <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-policies">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Policies</h1><p>VMRoguePolicy compliance enforcement</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Active Policies</span></div>
+  <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-insights">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Active Insights</span></div>
+  <table class="table" id="insights-table"><thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>VM</th><th>Title</th><th>State</th></tr></thead><tbody id="insights-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-actions">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Actions</h1><p>VMRogueAction autopilot proposals</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Action Queue</span></div>
+  <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-costs">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Cost Analysis</h1><p>Per-VM cost breakdown and namespace budgets (estimated monthly USD)</p></div></div>
+  <div id="cost-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card"><div class="card-header"><span class="card-title">Cost by Namespace</span></div>
+    <div id="cost-by-namespace" style="padding:12px"></div>
+    </div>
+    <div class="card"><div class="card-header"><span class="card-title">Cost Forecast</span></div>
+    <div id="cost-forecast" style="padding:12px"></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span></div>
+  <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th></tr></thead><tbody id="costs-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<!-- CRD CREATE MODAL -->
+<div class="modal-overlay" id="crd-create-modal" style="display:none">
+  <div class="modal" style="max-width:700px">
+    <div class="modal-header">
+      <h2>Create VMRogueVM</h2>
+      <button class="modal-close" onclick="closeCrdCreateModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">VM Name</label><input type="text" class="form-input" id="crd-vm-name" placeholder="my-vm"></div>
+        <div class="form-group"><label class="form-label">Template</label><select class="form-select" id="crd-vm-template"><option value="">-- None --</option></select></div>
+        <div class="form-group"><label class="form-label">CPU Cores</label><input type="number" class="form-input" id="crd-vm-cpu" value="2" min="1"></div>
+        <div class="form-group"><label class="form-label">Memory</label><input type="text" class="form-input" id="crd-vm-memory" value="4Gi"></div>
+      </div>
+      <hr style="border-color:var(--border);margin:12px 0">
+      <h3 style="font-size:.9em;color:var(--text-secondary);margin-bottom:8px">Disks</h3>
+      <div id="crd-disks-list"></div>
+      <button class="btn btn-sm" onclick="addCrdDisk()" style="margin-top:4px">+ Add Disk</button>
+      <hr style="border-color:var(--border);margin:12px 0">
+      <h3 style="font-size:.9em;color:var(--text-secondary);margin-bottom:8px">Network</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="crd-net-type"><option value="pod">Pod (masquerade)</option><option value="bridge">Bridge</option><option value="multus">Multus</option><option value="sriov">SR-IOV</option></select></div>
+        <div class="form-group"><label class="form-label">Network Name</label><input type="text" class="form-input" id="crd-net-name" placeholder="(for multus/sriov)"></div>
+      </div>
+      <hr style="border-color:var(--border);margin:12px 0">
+      <h3 style="font-size:.9em;color:var(--text-secondary);margin-bottom:8px">Advanced</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Firmware</label><select class="form-select" id="crd-vm-firmware"><option value="">Default</option><option value="bios">BIOS</option><option value="efi">EFI (UEFI)</option></select></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="crd-vm-secureboot"> Secure Boot</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="crd-vm-tpm"> TPM 2.0</label>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="crd-vm-rng" checked> RNG</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="crd-vm-start"> Start after creation</label>
+      </div>
+      <div class="form-group" style="margin-top:12px"><label class="form-label">Cloud-Init (user-data)</label><textarea class="form-input" id="crd-vm-cloudinit" rows="4" placeholder="#cloud-config&#10;hostname: my-vm"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCrdCreateModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitCrdCreate()">Create VMRogueVM</button>
+    </div>
+  </div>
 </div>
 
 <!-- CREATE VM MODAL -->
@@ -1038,6 +1142,11 @@ function navigate(page) {
   if (page === 'nodes') fetchNodes();
   if (page === 'pods') fetchPods();
   if (page === 'storage') fetchStorage();
+  if (page === 'crds') fetchCRDs();
+  if (page === 'policies') fetchPolicies();
+  if (page === 'insights') fetchInsights();
+  if (page === 'actions') fetchActions();
+  if (page === 'costs') fetchCosts();
 }
 
 // Toast notifications
@@ -2000,6 +2109,180 @@ async function fetchStorage() {
       scEl.innerHTML = '<div class="empty-state"><p>No storage classes</p></div>';
     }
   } catch {}
+}
+
+// ── CRD Pages ──
+async function fetchCRDs() {
+  try {
+    const r = await apiFetch('/api/v1/crds/vmroguevms');
+    const j = await r.json();
+    const items = j.items || [];
+    const tb = document.getElementById('crds-body');
+    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No VMRogueVM resources</td></tr>'; return; }
+    tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="vm-badge ' + sc(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
+  } catch {}
+}
+
+async function fetchPolicies() {
+  try {
+    const r = await apiFetch('/api/v1/crds/policies');
+    const j = await r.json();
+    const items = j.items || [];
+    const tb = document.getElementById('policies-body');
+    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No policies</td></tr>'; return; }
+    tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="vm-badge ' + (p.severity==='Critical'?'error':p.severity==='High'?'error':'other') + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
+  } catch {}
+}
+
+async function fetchInsights() {
+  try {
+    const r = await apiFetch('/api/v1/crds/insights');
+    const j = await r.json();
+    const items = j.items || [];
+    const tb = document.getElementById('insights-body');
+    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No insights</td></tr>'; return; }
+    tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="vm-badge ' + (i.severity==='Critical'||i.severity==='High'?'error':'other') + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
+  } catch {}
+}
+
+async function fetchActions() {
+  try {
+    const r = await apiFetch('/api/v1/crds/actions');
+    const j = await r.json();
+    const items = j.items || [];
+    const tb = document.getElementById('actions-body');
+    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No actions</td></tr>'; return; }
+    tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="vm-badge running">Yes</span>':'<span class="vm-badge stopped">No</span>') + '</td><td><span class="vm-badge ' + sc(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
+  } catch {}
+}
+
+async function fetchCosts() {
+  try {
+    const cr = await apiFetch('/api/v1/costs');
+    const sr = await apiFetch('/api/v1/costs/summary');
+    const costs = await cr.json();
+    const summary = await sr.json();
+
+    const sumEl = document.getElementById('cost-summary');
+    const total = summary.total_cost || 0;
+    sumEl.innerHTML = '<div class="stat-card"><div class="stat-value">$' + total.toFixed(2) + '</div><div class="stat-label">Monthly Total</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + (costs.length||0) + '</div><div class="stat-label">VMs Tracked</div></div>' +
+      '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.cpu||0).toFixed(2) + '</div><div class="stat-label">CPU Cost</div></div>' +
+      '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.memory||0).toFixed(2) + '</div><div class="stat-label">Memory Cost</div></div>';
+
+    // Namespace breakdown
+    const nsEl = document.getElementById('cost-by-namespace');
+    const byNs = summary.by_namespace || {};
+    const nsEntries = Object.entries(byNs).sort((a,b) => b[1]-a[1]);
+    if (nsEntries.length) {
+      const maxVal = nsEntries[0][1] || 1;
+      nsEl.innerHTML = nsEntries.map(([ns, cost]) => {
+        const pct = (cost / maxVal * 100).toFixed(0);
+        return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>' + esc(ns) + '</span><span style="font-weight:600">$' + cost.toFixed(2) + '</span></div><div style="background:var(--bg-tertiary);border-radius:4px;height:8px"><div style="background:var(--accent);width:' + pct + '%;height:100%;border-radius:4px"></div></div></div>';
+      }).join('');
+    } else { nsEl.innerHTML = '<p style="color:var(--text-dim)">No namespace data</p>'; }
+
+    // Forecast
+    const fcEl = document.getElementById('cost-forecast');
+    try {
+      const fcR = await apiFetch('/api/v1/costs/forecast');
+      const fc = await fcR.json();
+      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'rgba(255,100,100,0.2);color:#ff6464' : 'rgba(100,255,100,0.2);color:#64ff64') + '">' + esc(fc.trend || 'stable') + '</div></div>';
+    } catch { fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>'; }
+
+    const tb = document.getElementById('costs-body');
+    if (!costs.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No cost data</td></tr>'; return; }
+    tb.innerHTML = costs.sort((a,b) => b.total_cost - a.total_cost).map(c => '<tr><td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + c.cpu_cost.toFixed(2) + '</td><td>$' + c.memory_cost.toFixed(2) + '</td><td>$' + c.storage_cost.toFixed(2) + '</td><td><strong>$' + c.total_cost.toFixed(2) + '</strong></td></tr>').join('');
+  } catch(e) {
+    document.getElementById('costs-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Cost data unavailable</td></tr>';
+  }
+}
+
+// ── CRD Create Modal ──
+function openCrdCreateModal() {
+  document.getElementById('crd-create-modal').style.display = 'flex';
+  document.getElementById('crd-disks-list').innerHTML = '';
+  addCrdDisk(); // Add one default disk row
+  // Populate template selector
+  apiFetch('/api/v1/templates').then(r => r.json()).then(j => {
+    const sel = document.getElementById('crd-vm-template');
+    sel.innerHTML = '<option value="">-- None --</option>';
+    const templates = (j.success && j.data) ? j.data : [];
+    templates.forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
+  }).catch(() => {});
+}
+function closeCrdCreateModal() { document.getElementById('crd-create-modal').style.display = 'none'; }
+
+let crdDiskCount = 0;
+function addCrdDisk() {
+  const n = crdDiskCount++;
+  const el = document.createElement('div');
+  el.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:6px;align-items:end';
+  el.id = 'crd-disk-' + n;
+  el.innerHTML = '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Name</label><input type="text" class="form-input" id="crd-disk-name-'+n+'" value="disk'+n+'" style="font-size:.85em"></div>' +
+    '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Size</label><input type="text" class="form-input" id="crd-disk-size-'+n+'" value="20Gi" style="font-size:.85em"></div>' +
+    '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Source</label><select class="form-select" id="crd-disk-source-'+n+'" style="font-size:.85em"><option value="blank">Blank</option><option value="containerDisk">Container Disk</option><option value="pvc">PVC</option></select></div>' +
+    '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Image / PVC</label><input type="text" class="form-input" id="crd-disk-ref-'+n+'" placeholder="image or pvc name" style="font-size:.85em"></div>' +
+    '<button class="btn btn-sm" onclick="document.getElementById(\'crd-disk-'+n+'\').remove()" style="color:var(--ember)">X</button>';
+  document.getElementById('crd-disks-list').appendChild(el);
+}
+
+async function submitCrdCreate() {
+  const name = document.getElementById('crd-vm-name').value.trim();
+  if (!name) { toast('VM name is required', 'error'); return; }
+
+  // Collect disks
+  const disks = [];
+  document.querySelectorAll('[id^="crd-disk-name-"]').forEach(el => {
+    const n = el.id.replace('crd-disk-name-', '');
+    const srcType = document.getElementById('crd-disk-source-' + n).value;
+    const ref = document.getElementById('crd-disk-ref-' + n).value.trim();
+    const disk = {
+      name: el.value.trim() || 'disk' + n,
+      size: document.getElementById('crd-disk-size-' + n).value.trim() || '20Gi',
+      bootOrder: disks.length === 0 ? 1 : 0,
+      source: { type: srcType },
+      deviceType: 'disk'
+    };
+    if (srcType === 'containerDisk' && ref) disk.source.image = ref;
+    if (srcType === 'pvc' && ref) disk.source.name = ref;
+    disks.push(disk);
+  });
+
+  const netType = document.getElementById('crd-net-type').value;
+  const netName = document.getElementById('crd-net-name').value.trim();
+  const interfaces = [{ name: 'default', network: 'default', model: 'virtio', networkType: { type: netType, name: netName || undefined } }];
+
+  const fw = document.getElementById('crd-vm-firmware').value;
+  const sb = document.getElementById('crd-vm-secureboot').checked;
+  const ci = document.getElementById('crd-vm-cloudinit').value.trim();
+
+  const spec = {
+    name: name,
+    template: document.getElementById('crd-vm-template').value || undefined,
+    cpu: { cores: parseInt(document.getElementById('crd-vm-cpu').value) || 2, sockets: 1, threads: 1 },
+    memory: { size: document.getElementById('crd-vm-memory').value || '4Gi' },
+    disks: disks,
+    interfaces: interfaces,
+    cloudInit: ci ? { userData: ci } : undefined,
+    firmware: fw ? { bootloader: fw, secureBoot: sb, persistent: fw === 'efi' } : undefined,
+    enableTpm: document.getElementById('crd-vm-tpm').checked,
+    enableRng: document.getElementById('crd-vm-rng').checked,
+    running: document.getElementById('crd-vm-start').checked,
+    features: { acpi: true, smm: sb ? true : undefined }
+  };
+
+  try {
+    const r = await apiFetch('/api/v1/crds/vmroguevms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) });
+    if (r.ok) {
+      toast('VMRogueVM created: ' + name, 'success');
+      closeCrdCreateModal();
+      fetchCRDs();
+    } else {
+      const j = await r.json().catch(() => ({}));
+      toast('Failed: ' + (j.message || r.statusText), 'error');
+    }
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 // ── Node Detail ──

@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Compliance status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,11 +44,11 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_compliance_status() -> Json<Vec<ComplianceStatus>> {
-    Json(vec![])
+async fn get_compliance_status() -> impl IntoResponse {
+    not_implemented("Compliance status")
 }
 
 #[cfg(feature = "web")]
-async fn list_compliance_reports() -> Json<Vec<ComplianceReport>> {
-    Json(vec![])
+async fn list_compliance_reports() -> impl IntoResponse {
+    not_implemented("Compliance reports")
 }

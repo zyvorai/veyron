@@ -699,6 +699,31 @@ impl CiliumNetworkPolicy {
 }
 ```
 
+## REST API
+
+The network API is wired to real VMI interface data from KubeVirt.
+
+### List Network Interfaces
+
+```
+GET /network/interfaces
+```
+
+Returns network interfaces extracted from VirtualMachineInstance status, including:
+- IP address, MAC address, interface name
+- Associated VM name and namespace
+- Interface type and network name
+
+### Bandwidth Monitoring
+
+```
+GET /network/bandwidth
+```
+
+> **Note:** Bandwidth monitoring requires metrics integration and returns 501 until wired.
+
+---
+
 ## Examples
 
 See the [examples/network/](examples/network/) directory for:

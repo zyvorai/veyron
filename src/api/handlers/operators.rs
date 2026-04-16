@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Operator response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,6 +21,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_operators() -> Json<Vec<OperatorResponse>> {
-    Json(vec![])
+async fn list_operators() -> impl IntoResponse {
+    not_implemented("Operators")
 }

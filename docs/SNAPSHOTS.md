@@ -476,16 +476,62 @@ Planned features for future releases:
 
 ---
 
+## REST API
+
+The snapshot system is also available via the REST API. All endpoints require API key authentication.
+
+### List Snapshots
+
+```
+GET /snapshots
+```
+
+Returns all VirtualMachineSnapshot CRDs in the configured namespace.
+
+### Create Snapshot
+
+```
+POST /snapshots
+Content-Type: application/json
+
+{
+  "vm_name": "my-vm",
+  "name": "pre-upgrade-backup",
+  "description": "Before OS upgrade"
+}
+```
+
+If `name` is omitted, one is auto-generated as `snap-{vm_name}-{timestamp}`.
+
+### Delete Snapshot
+
+```
+DELETE /snapshots/{snapshot-name}
+```
+
+### Restore Snapshot
+
+```
+POST /snapshots/{snapshot-name}/restore
+Content-Type: application/json
+
+{"target_vm": "restored-vm"}
+```
+
+> **Note:** Restore via API returns 501 — VirtualMachineRestore CRD wiring is in progress. Use the CLI for restore operations.
+
+---
+
 ## 🎉 Summary
 
 VMRogue's VM Snapshots & Backup System provides:
 
 ✅ **5 CLI commands** for comprehensive snapshot management
-✅ **16 unit tests** ensuring reliability
+✅ **REST API** with real VirtualMachineSnapshot CRD integration
 ✅ **Production-ready** disaster recovery capabilities
 ✅ **Beautiful CLI** with themed colored output
 ✅ **Flexible restore** options (new VM or in-place)
 ✅ **Automatic** snapshot naming and metadata
 ✅ **Integration** with existing VMRogue features
 
-**Critical for production environments - No other KubeVirt CLI offers this level of snapshot management!** 🚀
+**Critical for production environments - No other KubeVirt CLI offers this level of snapshot management!**

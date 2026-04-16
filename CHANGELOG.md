@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### API Handlers Wired to Real Kubernetes (11 new, 19 total)
+- **Snapshots** - Real VirtualMachineSnapshot CRD integration
+- **Templates** - Returns real 44 OS templates
+- **Migrations** - Lists/creates/cancels VirtualMachineInstanceMigration CRDs
+- **Storage** - Lists real StorageClasses and PVCs
+- **Disks** - Lists PVCs with KubeVirt labels, supports disk expansion
+- **Metrics** - Real Kubernetes Metrics Server (replaced `rand::thread_rng` fake data)
+- **Logs** - Real pod logs from virt-launcher pods
+- **Network** - Real VMI interfaces (IP, MAC)
+- **Health** - Real K8s connectivity + KubeVirt availability checks
+- **Topology** - Real node-to-VM placement graph
+- **Dependencies** - Real VM dependency graph from annotations
+
+#### New Capabilities
+- **WebSocket metrics streaming** - Live metrics via `/api/v1/ws/metrics`
+- **Policy enforcement** - VMRoguePolicy CRDs enforce constraints on VM creation
+- **Batch VM operations** - `POST /api/v1/vms/batch` for bulk VM lifecycle actions
+- **Cost dashboard enhancements** - Namespace breakdown, cost forecast
+- **GitOps export** - `vmrogue gitops-export` command to export VM manifests
+- **Cost budget alerts** - ConfigMap-based budgets via `POST/GET /costs/budgets`
+- **Multi-cluster management** - Kubeconfig context discovery for managing multiple clusters
+- **DR cross-cluster replication** - `export_dr_manifests` for disaster recovery across clusters
+- **Automation execution engine** - Executes automation rules via real K8s API calls
+
 #### Web Dashboard
 - Full-featured web dashboard embedded in binary (single HTML, no build tools)
 - **VNC Console** - Browser-based VM console via bundled noVNC (284KB), proxied through virtctl to KubeVirt VNC subresource
@@ -53,8 +77,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API key auth** - Token query param support for WebSocket connections; 401 re-prompts for key
 - **VNC proxy** - Reuse TCP connection from port check (virtctl accepts only one connection)
 
+### Changed
+
+#### Infrastructure
+- **31 stub handlers return HTTP 501** - Unimplemented API endpoints now return `501 Not Implemented` with a structured error body instead of silently returning empty data
+- **Structured API error types** - `VMRogueError` expanded with 6 new variants plus `IntoResponse` implementation for consistent error responses
+- **CI integration tests** - Added Kind + KubeVirt integration test suite
+- **8 scaffolding modules gated behind `experimental` feature flag** - New modules are opt-in until stabilized
+- **Consolidated K8s quantity parsers** - Unified quantity parsing utilities in `utils` module
+- **CRDPolicyRule `value` field** - Policy rules now carry a `value` field for threshold-based enforcement
+
+#### Statistics
+- **Tests**: 1,781 (1,709 unit + 64 integration + 8 doc)
+- **API handlers wired to real K8s**: 19 (up from 8)
+
 ### Security
 
+- **Auth bypass removed** - Removed referer-based authentication bypass
 - **Path traversal prevention** - Profile and blueprint storage now sanitize names to block directory traversal attacks
 - **CORS restricted by default** - API server CORS defaults to disabled instead of wildcard `*` origins
 - **RDP cert validation enforced** - `ignore_cert` field is now ignored; TLS certificate validation is always enforced

@@ -117,6 +117,64 @@ jobs:
           name: vmrogue-${{ matrix.os }}
           path: target/release/vmrogue
 
+  integration:
+    name: Integration Tests (Kind + KubeVirt)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vmrogue-ubuntu-latest
+          path: ./bin
+
+      - name: Make binary executable
+        run: chmod +x ./bin/vmrogue
+
+      - name: Install Kind
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
+          chmod +x ./kind
+          sudo mv ./kind /usr/local/bin/kind
+
+      - name: Create Kind cluster
+        run: kind create cluster --name vmrogue-test --wait 60s
+
+      - name: Install KubeVirt operator
+        run: |
+          export KUBEVIRT_VERSION="v1.4.0"
+          kubectl create -f "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-operator.yaml"
+          kubectl create -f "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/kubevirt-cr.yaml"
+          # Enable software emulation for CI (no nested virt)
+          kubectl -n kubevirt patch kubevirt kubevirt --type=merge --patch '{"spec":{"configuration":{"developerConfiguration":{"useEmulation":true}}}}'
+          kubectl -n kubevirt wait kv kubevirt --for condition=Available --timeout=300s
+
+      - name: Run doctor check
+        run: ./bin/vmrogue doctor
+
+      - name: Test template listing
+        run: ./bin/vmrogue templates
+
+      - name: Test profile listing
+        run: ./bin/vmrogue profiles
+
+      - name: Test VM creation (dry-run)
+        run: ./bin/vmrogue generate --name test-vm --template ubuntu
+
+      - name: Test VM create, list, delete
+        run: |
+          ./bin/vmrogue create test-integration-vm --template ubuntu --no-start
+          ./bin/vmrogue list
+          ./bin/vmrogue delete test-integration-vm --yes
+
+      - name: Cleanup
+        if: always()
+        run: kind delete cluster --name vmrogue-test
+
   docker:
     name: Docker Build
     needs: [test]

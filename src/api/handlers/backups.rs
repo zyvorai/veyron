@@ -1,10 +1,13 @@
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
+    Router,
     extract::Path,
+    response::IntoResponse,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Backup response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,17 +43,18 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_backups() -> Json<Vec<BackupResponse>> {
-    Json(vec![])
+async fn list_backups() -> impl IntoResponse {
+    not_implemented("Backups")
 }
 
 #[cfg(feature = "web")]
-async fn create_backup(Json(req): Json<CreateBackupRequest>) -> Json<Option<BackupResponse>> {
+async fn create_backup(axum::Json(req): axum::Json<CreateBackupRequest>) -> impl IntoResponse {
     let _ = req;
-    Json(None)
+    not_implemented("Backup creation")
 }
 
 #[cfg(feature = "web")]
-async fn restore_backup(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"restoring": id}))
+async fn restore_backup(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("Backup restoration")
 }

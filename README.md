@@ -12,15 +12,26 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 ## Features
 
 ### Innovative Features (Unique to VMRogue)
-- **VM Snapshots & Backup** - Production-grade snapshot management for disaster recovery
+- **VM Snapshots & Backup** - Production-grade snapshot management via real VirtualMachineSnapshot CRDs
 - **8 VM Resource Profiles** - Pre-configured profiles (dev, prod, database, web, etc.)
 - **Multi-VM Blueprints** - Deploy complete stacks (LAMP, Kubernetes, 3-tier, CI/CD)
-- **Automated Health Checks** - Diagnostics with scoring and recommendations
+- **Automated Health Checks** - Diagnostics with scoring and recommendations; health API with real K8s connectivity checks, KubeVirt availability, and process uptime
 - **Smart Recommendations** - AI-like resource suggestions based on workload
 - **Dependency Management** - Automatic VM deployment ordering
-- **Web Dashboard** - Real-time dashboard with VNC console, VM detail panels, security posture, node/pod views
+- **Web Dashboard** - Real-time dashboard with VNC console, VM detail panels, security posture, node/pod views, cost page with namespace breakdown and forecast
 - **REST API** - 30+ endpoints with OpenAPI spec, API key auth, rate limiting, and webhooks
 - **VNC Console** - Browser-based VM console via noVNC with Ctrl+Alt+Del, fullscreen, reconnect
+- **Real Kubernetes Metrics** - CPU/memory utilization from Kubernetes Metrics Server (no fake data)
+- **Policy Enforcement** - VMRoguePolicy CRDs evaluated on VM creation; Deny violations block the request
+- **Batch VM Operations** - Start, stop, restart, or delete multiple VMs in a single API call
+- **WebSocket Metrics Streaming** - Live cluster metrics pushed every 5 seconds over WebSocket
+- **GitOps Export** - `vmrogue gitops-export` exports VMs as VMRogueVM CRD YAML manifests
+- **Cost Budget Alerts** - Define per-namespace cost budgets via ConfigMaps with POST/GET API
+- **Multi-Cluster Management** - Kubeconfig context discovery with per-cluster sync
+- **DR Cross-Cluster Replication** - Export disaster recovery manifests for cross-cluster VM replication
+- **Automation Rule Engine** - Execute automation rules with real K8s API calls (start/stop/restart/snapshot/delete)
+- **Network Topology** - Real VMI interface data (IP, MAC, interface name) for topology views
+- **Topology/Dependency Graph** - Real node-to-VM placement graph from cluster state
 
 ### Core Features
 - **44 OS Templates** - Ubuntu, Fedora, CentOS, Debian, RHEL, AlmaLinux, Rocky, Alpine, Arch, Windows, and more
@@ -30,6 +41,11 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **CLI & Library** - Use as a command-line tool or Rust library
 - **Full VM lifecycle** - Create, start, stop, restart, clone, export, delete
 - **Interactive TUI** - Full terminal UI with ratatui for dashboard, VM management, and monitoring
+- **Structured API Errors** - VMRogueError with typed variants (NotImplemented, Unauthorized, Forbidden, ResourceConflict, ServiceUnavailable, KubeError) and proper HTTP status codes
+- **Real Pod Logs** - Logs API fetches real output from virt-launcher pods
+- **Storage & Disk Management** - List real StorageClasses, PVCs, and KubeVirt-labeled disks; expand disks via PVC patch
+- **Migration Management** - List, create, and cancel VirtualMachineInstanceMigration CRDs
+- **`experimental` Feature Flag** - Scaffolding-only modules gated behind a compile-time feature flag
 
 ## Installation
 
@@ -62,15 +78,18 @@ vmrogue api-serve --port 5151 --host 0.0.0.0
 Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load (with a "Remember me" option).
 
 ### Dashboard features
-- **Dashboard** - Real-time VM fleet overview with live CPU/memory utilization charts, real cluster capacity gauges (CPU, memory, nodes), VM summary, and event feed
+- **Dashboard** - Real-time VM fleet overview with live CPU/memory utilization charts (from Kubernetes Metrics Server), real cluster capacity gauges (CPU, memory, nodes), VM summary, and event feed
 - **VMs** - Full VM list with search/filter, clickable detail panels showing status, resources, network interfaces (IP/MAC), guest OS info, and security posture scoring
+- **Batch Operations** - Select multiple VMs and start, stop, restart, or delete them in a single action
 - **VNC Console** - Browser-based VM console via bundled noVNC with Ctrl+Alt+Del, fullscreen toggle, and reconnect
-- **VM Creation** - Forge VMs from 43 OS templates with profile picker (8 profiles), CPU/memory/disk overrides, cloud-init editor, and auto-start
-- **Snapshots** - Create, restore, and delete VM snapshots from the UI
+- **VM Creation** - Forge VMs from 44 OS templates with profile picker (8 profiles), CPU/memory/disk overrides, cloud-init editor, and auto-start; policy enforcement blocks Deny violations
+- **Cost Dashboard** - Per-namespace cost breakdown with forecast chart and budget alert management
+- **Snapshots** - Create, restore, and delete VM snapshots from the UI (backed by real VirtualMachineSnapshot CRDs)
 - **Nodes** - Kubernetes node table with CPU/memory capacity, kubelet version, OS info
 - **Pods** - Namespace pod listing with phase, node, IP, restarts, age
 - **Events** - Cluster event feed with auto-refresh
 - **Security** - Per-VM security posture scoring (Secure Boot, TPM, RNG, eviction strategy, resource limits)
+- **WebSocket Metrics** - Live cluster metrics streamed over WebSocket (`/api/v1/ws/metrics`) at 5-second intervals
 - **Configurable refresh** - 5s/10s/30s/off auto-refresh saved to localStorage
 
 ### Deploy to Kubernetes
@@ -96,6 +115,25 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ```
 
 Builds a static musl binary, uploads via SCP, installs a systemd service, and starts it.
+
+### Key API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/vms` | GET | List all VMs |
+| `/api/v1/vms/batch` | POST | Batch start/stop/restart/delete multiple VMs |
+| `/api/v1/ws/metrics` | WS | WebSocket stream of real cluster metrics (5s interval) |
+| `/api/v1/costs/budgets` | GET/POST | View and set per-namespace cost budgets |
+| `/api/v1/health` | GET | Health check with K8s connectivity, KubeVirt status, uptime |
+| `/api/v1/snapshots` | GET/POST | List and create VirtualMachineSnapshot CRDs |
+| `/api/v1/migrations` | GET/POST | List and create VirtualMachineInstanceMigration CRDs |
+| `/api/v1/storage` | GET | List real StorageClasses and PVCs |
+| `/api/v1/metrics` | GET | Real CPU/memory metrics from Kubernetes Metrics Server |
+| `/api/v1/logs/{vm}` | GET | Fetch real pod logs from virt-launcher pods |
+| `/api/v1/topology` | GET | Node-to-VM placement dependency graph |
+| `/api/v1/network` | GET | Network topology from real VMI interfaces |
+
+See the OpenAPI spec for the full list of 30+ endpoints.
 
 ## Quick Start
 
@@ -257,6 +295,42 @@ vmrogue delete production-db
 vmrogue delete production-db --yes  # Skip confirmation
 ```
 
+### GitOps Export
+
+```bash
+# Export all VMs in a namespace as VMRogueVM CRD YAML manifests
+vmrogue gitops-export --namespace production --output gitops/
+
+# Export a single VM
+vmrogue gitops-export my-vm --output gitops/my-vm.yaml
+```
+
+### Batch VM Operations
+
+```bash
+# Start multiple VMs at once via the API
+curl -X POST http://localhost:5151/api/v1/vms/batch \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "start", "vms": ["vm-1", "vm-2", "vm-3"]}'
+
+# Supported actions: start, stop, restart, delete
+```
+
+### Cost Budgets
+
+```bash
+# Set a cost budget for a namespace
+curl -X POST http://localhost:5151/api/v1/costs/budgets \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "production", "monthly_budget": 500.0}'
+
+# View cost budgets
+curl http://localhost:5151/api/v1/costs/budgets \
+  -H "X-API-Key: $VMROGUE_API_KEY"
+```
+
 ## VM Resource Profiles
 
 VMRogue includes **8 pre-configured profiles** optimized for different workloads:
@@ -403,6 +477,18 @@ refresh_interval = 5     # seconds
 interactive = false
 ```
 
+### Feature Flags
+
+VMRogue uses Cargo feature flags to control optional functionality:
+
+```bash
+# Build with experimental modules enabled
+cargo build --features experimental
+
+# The `experimental` flag gates 8 scaffolding-only modules
+# that are under active development
+```
+
 ## Library Usage
 
 Use vmrogue as a library in your Rust projects:
@@ -432,17 +518,23 @@ fn main() -> anyhow::Result<()> {
 
 ### Current Status (v0.2.0)
 
-**Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands, configuration validation, YAML/JSON output, cloud-init support.
+**Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands, configuration validation, YAML/JSON output, cloud-init support. 1,781 tests (1,709 unit + 64 integration + 8 doc).
 
-**Kubernetes** - Full CRUD, VM lifecycle management, KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types.
+**Kubernetes** - Full CRUD, VM lifecycle management, KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types. 19 API handlers wired to real Kubernetes (up from 8).
 
-**Operations** - Custom profile/blueprint CRUD with filesystem persistence, cost estimation and budgets, VM snapshots and backups with scheduling, live migration with progress tracking and HA, interactive TUI with ratatui.
+**Real K8s Integration** - Snapshots via VirtualMachineSnapshot CRDs, 44 OS templates with real data, migrations via VirtualMachineInstanceMigration CRDs, real StorageClasses and PVCs, disk listing with KubeVirt labels and PVC-based expansion, metrics from Kubernetes Metrics Server, real pod logs from virt-launcher pods. 31 stub handlers now return HTTP 501 instead of misleading 200+empty.
 
-**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization.
+**Operations** - Custom profile/blueprint CRUD with filesystem persistence, cost estimation and budgets (with ConfigMap-backed budget alerts), VM snapshots and backups with scheduling, live migration with progress tracking and HA, interactive TUI with ratatui, GitOps export (`vmrogue gitops-export`), automation rule execution engine.
 
-**API & Dashboard** - REST API with 30+ endpoints, OpenAPI spec, API key auth, rate limiting, webhooks. Web dashboard with VNC console (bundled noVNC), VM detail panels, security posture scoring, node/pod views, search/filter, profile picker, cloud-init editor.
+**Multi-Cluster & DR** - Multi-cluster management via kubeconfig context discovery with per-cluster sync. DR cross-cluster VM replication with `export_dr_manifests`.
 
-**Infrastructure** - Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. SSH deploy scripts. Docker image (scratch-based, ~75MB) with bundled virtctl for VNC.
+**Policy & Automation** - VMRoguePolicy CRD enforcement on VM creation (blocks Deny violations). Automation rules with real K8s API calls for start/stop/restart/snapshot/delete. CRDPolicyRule supports structured `value` field for condition thresholds.
+
+**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization. Network topology from real VMI interfaces (IP, MAC, interface name). Auth bypass removed (referer-based dashboard bypass was spoofable).
+
+**API & Dashboard** - REST API with 30+ endpoints, OpenAPI spec, API key auth, rate limiting, webhooks. Web dashboard with VNC console (bundled noVNC), VM detail panels, security posture scoring, node/pod views, search/filter, profile picker, cloud-init editor. New: batch VM operations (`POST /api/v1/vms/batch`), WebSocket metrics streaming (`/api/v1/ws/metrics`), cost dashboard with namespace breakdown and forecast chart, cost budget API (`/api/v1/costs/budgets`), health check API with real K8s connectivity.
+
+**Infrastructure** - Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. SSH deploy scripts. Docker image (scratch-based, ~75MB) with bundled virtctl for VNC. Structured API error types (VMRogueError with IntoResponse). CI integration tests with Kind + KubeVirt (nightly job). Scaffolding modules gated behind `experimental` feature flag. Consolidated K8s quantity parsers in utils.
 
 ### Future Enhancements
 
@@ -542,6 +634,8 @@ See the `examples/` directory for more configuration examples:
 VMRogue follows secure-by-default principles:
 
 - **No `unsafe` code** - The entire codebase is safe Rust
+- **Auth bypass removed** - Referer-based dashboard bypass was spoofable; now requires proper API key authentication
+- **Structured error types** - VMRogueError variants ensure internal details are never leaked; 31 stub handlers return HTTP 501 instead of misleading 200+empty
 - **Secret zeroization** - Secrets are cleared from memory on drop, rotate, and revoke via the `zeroize` crate
 - **SSRF prevention** - Webhook URLs validated against private/internal IPs with DNS rebinding protection
 - **Crash-safe persistence** - Atomic writes with fsync and unique temp file names; no `/tmp` fallback

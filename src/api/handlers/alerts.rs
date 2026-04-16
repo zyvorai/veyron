@@ -1,10 +1,13 @@
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
+    Router,
     extract::Path,
+    response::IntoResponse,
     routing::{get, put},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Alert response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -38,17 +41,18 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_alerts() -> Json<Vec<AlertResponse>> {
-    Json(vec![])
+async fn list_alerts() -> impl IntoResponse {
+    not_implemented("Alerts")
 }
 
 #[cfg(feature = "web")]
-async fn create_alert(Json(req): Json<CreateAlertRequest>) -> Json<Option<AlertResponse>> {
+async fn create_alert(axum::Json(req): axum::Json<CreateAlertRequest>) -> impl IntoResponse {
     let _ = req;
-    Json(None)
+    not_implemented("Alert creation")
 }
 
 #[cfg(feature = "web")]
-async fn resolve_alert(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"resolved": id}))
+async fn resolve_alert(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("Alert resolution")
 }

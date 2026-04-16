@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// RBAC role
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,11 +46,11 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_roles() -> Json<Vec<RbacRole>> {
-    Json(vec![])
+async fn list_roles() -> impl IntoResponse {
+    not_implemented("RBAC roles")
 }
 
 #[cfg(feature = "web")]
-async fn list_bindings() -> Json<Vec<RbacBinding>> {
-    Json(vec![])
+async fn list_bindings() -> impl IntoResponse {
+    not_implemented("RBAC bindings")
 }

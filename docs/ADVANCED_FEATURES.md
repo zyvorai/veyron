@@ -467,15 +467,92 @@ vmrogue batch backups/*.yaml
 
 ---
 
+## GitOps Export
+
+Export all VMs as VMRogueVM CRD manifests for use with ArgoCD or Flux:
+
+```bash
+# Export to current directory
+vmrogue gitops-export
+
+# Export to specific directory
+vmrogue gitops-export --directory ./manifests
+```
+
+Each VM is exported as a `{namespace}-{name}.yaml` file containing a `VMRogueVM` custom resource definition. These can be committed to a Git repository and managed by any GitOps controller.
+
+---
+
+## Batch Operations via API
+
+The REST API supports batch VM operations:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vms/batch \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "action": "stop",
+    "vms": [
+      {"namespace": "default", "name": "dev-vm-1"},
+      {"namespace": "default", "name": "dev-vm-2"},
+      {"namespace": "default", "name": "dev-vm-3"}
+    ]
+  }'
+```
+
+Supported actions: `start`, `stop`, `restart`, `delete`.
+
+---
+
+## Policy Enforcement
+
+VM creation is validated against VMRoguePolicy CRDs deployed in the cluster. Policies with `Deny` enforcement block creation; `Warn` enforcement logs warnings but allows creation.
+
+Policy rules support structured conditions:
+- `max_cpu_cores` with `value: 8` — reject VMs with >8 CPU cores
+- `min_memory_gib` with `value: 1` — reject VMs with <1 GiB memory
+- `max_disk_gib` with `value: 500` — reject VMs with >500 GiB total disk
+- `require_cloud_init` — reject VMs without cloud-init configuration
+- `require_network` — reject VMs without network interfaces
+
+---
+
+## Cost Budgets
+
+Set monthly spending limits per namespace:
+
+```bash
+# Create a budget
+curl -X POST http://localhost:8080/costs/budgets \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "dev-budget", "namespace": "dev", "monthly_limit": 500.0}'
+
+# List budgets with status
+curl http://localhost:8080/costs/budgets -H "X-API-Key: $VMROGUE_API_KEY"
+```
+
+Budget status: `healthy` (under threshold), `warning` (over alert threshold), `exceeded` (over limit).
+
+---
+
 ## 🚀 What's Next?
+
+Recently completed:
+- VM snapshots and backups (CLI + API)
+- Live migration support (list/create/cancel)
+- Resource usage from Kubernetes Metrics Server
+- Health checks with real K8s connectivity probes
+- GitOps export for ArgoCD/Flux workflows
+- Multi-cluster discovery from kubeconfig
+- Cost budgets and anomaly detection
 
 Future enhancements planned:
 - SSH key injection command
-- VM snapshots and backups
-- Live migration support
-- Resource usage graphs
 - Auto-scaling groups
-- Health checks and monitoring integration
+- Prometheus integration for historical metrics
+- Cross-cluster DR failover execution
 
 ---
 

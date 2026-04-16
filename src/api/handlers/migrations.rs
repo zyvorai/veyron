@@ -1,10 +1,23 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::Path,
+    extract::{Path, State},
+    http::StatusCode,
     routing::{delete, get},
 };
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "web")]
+use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use kube::{
+    Api,
+    api::{DeleteParams, ListParams},
+};
+
+#[cfg(feature = "web")]
+use crate::kube::types::VirtualMachineInstanceMigration;
 
 /// Migration response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,26 +42,99 @@ pub struct CreateMigrationRequest {
 }
 
 #[cfg(feature = "web")]
-pub fn router() -> Router {
+pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/migrations", get(list_migrations).post(create_migration))
         .route("/migrations/{id}", delete(cancel_migration))
+        .with_state(state)
 }
 
 #[cfg(feature = "web")]
-async fn list_migrations() -> Json<Vec<MigrationResponse>> {
-    Json(vec![])
+async fn list_migrations(State(state): State<SharedState>) -> Json<Vec<MigrationResponse>> {
+    let s = state.read().await;
+    let api: Api<VirtualMachineInstanceMigration> =
+        Api::namespaced(s.client().client(), &s.namespace);
+
+    match api.list(&ListParams::default()).await {
+        Ok(list) => {
+            let results: Vec<MigrationResponse> = list
+                .items
+                .iter()
+                .map(|m| {
+                    let meta = &m.metadata;
+                    let status = m.status.as_ref();
+                    let migration_state = status.and_then(|s| s.migration_state.as_ref());
+
+                    let phase = status
+                        .and_then(|s| s.phase.as_deref())
+                        .unwrap_or("Unknown")
+                        .to_string();
+
+                    let progress = match phase.as_str() {
+                        "Succeeded" => 100,
+                        "Running" => 50,
+                        _ => 0,
+                    };
+
+                    MigrationResponse {
+                        id: meta.name.clone().unwrap_or_default(),
+                        vm_name: m.spec.vmi_name.clone().unwrap_or_default(),
+                        source_node: migration_state
+                            .and_then(|ms| ms.source_node.clone())
+                            .unwrap_or_default(),
+                        target_node: migration_state
+                            .and_then(|ms| ms.target_node.clone())
+                            .unwrap_or_default(),
+                        status: phase,
+                        migration_type: "LiveMigration".to_string(),
+                        progress_percent: progress,
+                        started_at: migration_state
+                            .and_then(|ms| ms.start_timestamp.clone()),
+                        completed_at: migration_state
+                            .and_then(|ms| ms.end_timestamp.clone()),
+                    }
+                })
+                .collect();
+
+            Json(results)
+        }
+        Err(_) => Json(vec![]),
+    }
 }
 
 #[cfg(feature = "web")]
 async fn create_migration(
+    State(state): State<SharedState>,
     Json(req): Json<CreateMigrationRequest>,
-) -> Json<Option<MigrationResponse>> {
-    let _ = req;
-    Json(None)
+) -> Result<Json<MigrationResponse>, StatusCode> {
+    let s = state.read().await;
+    match s.client().migrate_vm(&s.namespace, &req.vm_name).await {
+        Ok(()) => Ok(Json(MigrationResponse {
+            id: format!("{}-migration", req.vm_name),
+            vm_name: req.vm_name,
+            source_node: String::new(),
+            target_node: req.target_node.unwrap_or_default(),
+            status: "Pending".to_string(),
+            migration_type: req.migration_type.unwrap_or_else(|| "LiveMigration".to_string()),
+            progress_percent: 0,
+            started_at: None,
+            completed_at: None,
+        })),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
 }
 
 #[cfg(feature = "web")]
-async fn cancel_migration(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"cancelled": id}))
+async fn cancel_migration(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    let s = state.read().await;
+    let api: Api<VirtualMachineInstanceMigration> =
+        Api::namespaced(s.client().client(), &s.namespace);
+
+    match api.delete(&id, &DeleteParams::default()).await {
+        Ok(_) => Ok(Json(serde_json::json!({"cancelled": id}))),
+        Err(_) => Err(StatusCode::NOT_FOUND),
+    }
 }

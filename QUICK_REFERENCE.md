@@ -67,6 +67,20 @@ vmrogue template ubuntu-22.04     # View template details
 export VMROGUE_API_KEY="your-key"
 vmrogue api-serve --port 5151     # Dashboard at /dashboard
 
+# Key API endpoints
+# GET  /api/v1/vms                # List VMs
+# POST /api/v1/vms/batch          # Batch start/stop/restart/delete
+# WS   /api/v1/ws/metrics         # WebSocket metrics (5s interval)
+# GET  /api/v1/costs/budgets      # View cost budgets
+# POST /api/v1/costs/budgets      # Set cost budgets
+# GET  /api/v1/health             # Health check (K8s + KubeVirt)
+# GET  /api/v1/metrics            # Real cluster metrics
+# GET  /api/v1/snapshots          # List snapshots (real CRDs)
+# GET  /api/v1/migrations         # List migrations (real CRDs)
+# GET  /api/v1/storage            # StorageClasses + PVCs
+# GET  /api/v1/topology           # Node-to-VM placement graph
+# GET  /api/v1/logs/{vm}          # Real virt-launcher pod logs
+
 # Deploy to Kubernetes
 ./scripts/deploy-k8s.sh deploy    # Full K8s deployment
 ./scripts/deploy-k8s.sh status    # Check deployment
@@ -74,6 +88,53 @@ vmrogue api-serve --port 5151     # Dashboard at /dashboard
 
 # Deploy via SSH
 ./scripts/deploy-ssh.sh HOST USER # Deploy to remote server
+```
+
+### GitOps Export
+```bash
+vmrogue gitops-export --namespace production --output gitops/
+vmrogue gitops-export my-vm --output gitops/my-vm.yaml
+```
+
+### Batch VM Operations (API)
+```bash
+# Start multiple VMs
+curl -X POST http://localhost:5151/api/v1/vms/batch \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"action": "start", "vms": ["vm-1", "vm-2", "vm-3"]}'
+
+# Supported actions: start, stop, restart, delete
+```
+
+### Cost Budgets (API)
+```bash
+# Set a namespace budget
+curl -X POST http://localhost:5151/api/v1/costs/budgets \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "production", "monthly_budget": 500.0}'
+
+# View budgets
+curl http://localhost:5151/api/v1/costs/budgets \
+  -H "X-API-Key: $VMROGUE_API_KEY"
+```
+
+### Migrations (API)
+```bash
+# List migrations
+curl http://localhost:5151/api/v1/migrations \
+  -H "X-API-Key: $VMROGUE_API_KEY"
+
+# Create a migration
+curl -X POST http://localhost:5151/api/v1/migrations \
+  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"vm_name": "my-vm"}'
+
+# Cancel a migration
+curl -X DELETE http://localhost:5151/api/v1/migrations/my-migration \
+  -H "X-API-Key: $VMROGUE_API_KEY"
 ```
 
 ### Advanced
@@ -185,6 +246,11 @@ vmrogue deploy k8s-cluster --prefix prod --start
 vmrogue health my-vm --detailed
 ```
 
+### Export VMs for GitOps
+```bash
+vmrogue gitops-export --namespace default --output gitops/
+```
+
 ---
 
 ## 🔧 Configuration
@@ -195,7 +261,23 @@ Environment variables:
 ```bash
 export VMROGUE_NAMESPACE=default
 export KUBECONFIG=~/.kube/config
+export VMROGUE_API_KEY=your-key
 ```
+
+Feature flags:
+```bash
+cargo build --features experimental  # Enable 8 scaffolding modules
+```
+
+---
+
+## 📊 Statistics
+
+- **1,781 tests** (1,709 unit + 64 integration + 8 doc)
+- **19 API handlers** wired to real Kubernetes (up from 8)
+- **44 OS templates**, **8 profiles**, **5 blueprints**
+- **31 stub handlers** return HTTP 501 (not misleading 200+empty)
+- **`experimental` feature flag** gates 8 scaffolding-only modules
 
 ---
 

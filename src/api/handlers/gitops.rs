@@ -1,9 +1,12 @@
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
+    Router,
+    response::IntoResponse,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// GitOps status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,19 +34,12 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_gitops_status() -> Json<GitOpsStatus> {
-    Json(GitOpsStatus {
-        repo_url: String::new(),
-        branch: "main".to_string(),
-        last_commit: String::new(),
-        sync_status: "unknown".to_string(),
-        last_synced: None,
-        drift_detected: false,
-    })
+async fn get_gitops_status() -> impl IntoResponse {
+    not_implemented("GitOps status")
 }
 
 #[cfg(feature = "web")]
-async fn trigger_sync(Json(req): Json<GitOpsSyncRequest>) -> Json<serde_json::Value> {
+async fn trigger_sync(axum::Json(req): axum::Json<GitOpsSyncRequest>) -> impl IntoResponse {
     let _ = req;
-    Json(serde_json::json!({"status": "sync_triggered"}))
+    not_implemented("GitOps sync")
 }

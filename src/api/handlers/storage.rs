@@ -1,6 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Json, Router, extract::State, routing::get};
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "web")]
+use crate::api::http_server::web::SharedState;
 
 /// Storage pool
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,18 +30,75 @@ pub struct StorageUsage {
 }
 
 #[cfg(feature = "web")]
-pub fn router() -> Router {
+pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/storage/pools", get(list_storage_pools))
         .route("/storage/usage", get(get_storage_usage))
+        .with_state(state)
 }
 
 #[cfg(feature = "web")]
-async fn list_storage_pools() -> Json<Vec<StoragePool>> {
-    Json(vec![])
+async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<StoragePool>> {
+    let s = state.read().await;
+    let storage_classes = s.client().list_storage_classes().await.unwrap_or_default();
+
+    let results: Vec<StoragePool> = storage_classes
+        .iter()
+        .map(|sc| {
+            let meta = &sc.metadata;
+            StoragePool {
+                name: meta.name.clone().unwrap_or_default(),
+                storage_class: meta.name.clone().unwrap_or_default(),
+                provisioner: sc.provisioner.clone(),
+                total_capacity: String::new(),
+                used_capacity: String::new(),
+                available_capacity: String::new(),
+                volume_count: 0,
+            }
+        })
+        .collect();
+
+    Json(results)
 }
 
 #[cfg(feature = "web")]
-async fn get_storage_usage() -> Json<Vec<StorageUsage>> {
-    Json(vec![])
+async fn get_storage_usage(State(state): State<SharedState>) -> Json<Vec<StorageUsage>> {
+    let s = state.read().await;
+    let pvcs = s.client().list_pvcs(&s.namespace).await.unwrap_or_default();
+
+    let results: Vec<StorageUsage> = pvcs
+        .iter()
+        .map(|pvc| {
+            let meta = &pvc.metadata;
+            let spec = pvc.spec.as_ref();
+            let status = pvc.status.as_ref();
+
+            let storage_class = spec
+                .and_then(|s| s.storage_class_name.clone())
+                .unwrap_or_default();
+
+            let capacity = status
+                .and_then(|s| s.capacity.as_ref())
+                .and_then(|c| c.get("storage"))
+                .map(|q| q.0.clone())
+                .unwrap_or_default();
+
+            let bound_to_vm = meta
+                .labels
+                .as_ref()
+                .and_then(|l| l.get("kubevirt.io/vm").cloned());
+
+            StorageUsage {
+                pvc_name: meta.name.clone().unwrap_or_default(),
+                namespace: meta.namespace.clone().unwrap_or_default(),
+                storage_class,
+                capacity,
+                used: String::new(),
+                usage_percent: 0.0,
+                bound_to_vm,
+            }
+        })
+        .collect();
+
+    Json(results)
 }

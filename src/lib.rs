@@ -45,19 +45,23 @@ pub mod api;
 pub mod automation;
 pub mod backup;
 pub mod blueprints;
+#[cfg(feature = "experimental")]
 pub mod capacity;
 pub mod compliance;
 pub mod cost;
 pub mod devexp;
 pub mod disk;
 pub mod dr;
+#[cfg(feature = "experimental")]
 pub mod edge;
+#[cfg(feature = "experimental")]
 pub mod finops;
 pub mod gitops;
 pub mod handlers;
 pub mod health;
 pub mod migration;
 pub mod monitoring;
+#[cfg(feature = "experimental")]
 pub mod multicloud;
 pub mod multitenancy;
 pub mod networking;
@@ -65,11 +69,16 @@ pub mod observability;
 pub mod profiles;
 pub mod secrets;
 pub mod security;
+#[cfg(feature = "experimental")]
 pub mod servicemesh;
 pub mod snapshots;
 
+// Operator CRD types (vmrogue.io/v1alpha1)
+pub mod operator_crds;
+
 // Features ported from v9s
 pub mod advanced_filter;
+#[cfg(feature = "experimental")]
 pub mod ai_troubleshoot;
 pub mod audit_trail;
 pub mod autoscaler;
@@ -78,14 +87,17 @@ pub mod cluster_health;
 pub mod console_panel;
 pub mod dependency_graph;
 pub mod disk_conversion;
+#[cfg(feature = "experimental")]
 pub mod hypervisor;
 pub mod macros;
 pub mod multi_cluster;
+#[cfg(feature = "experimental")]
 pub mod nlp_search;
 pub mod notifications;
 pub mod placement;
 pub mod recommendation;
 pub mod search_history;
+#[cfg(feature = "experimental")]
 pub mod session_sharing;
 pub mod state_persistence;
 pub mod topology;
@@ -94,7 +106,7 @@ pub mod topology;
 pub use config::{VMConfig, VMConfigBuilder};
 pub use kube::converter::vm_config_to_kubevirt;
 pub use output::{OutputFormat, format_output, to_json, to_yaml};
-pub use utils::{VMRogueError, format_bytes, generate_id, percent_to_u8};
+pub use utils::{VMRogueError, format_bytes, generate_id, parse_cpu_nanocores, parse_memory_bytes, parse_memory_gib, percent_to_u8};
 
 use anyhow::Result;
 use cli::{Cli, Commands};
@@ -1457,6 +1469,76 @@ pub async fn run(mut cli: Cli) -> Result<()> {
 
         Commands::Doctor => {
             handlers::vm::handle_doctor(&cli.namespace).await?;
+        }
+
+        // ========== GITOPS ==========
+        Commands::GitopsExport { directory } => {
+            handlers::gitops::handle_gitops_export(directory, &cli.namespace).await?;
+        }
+
+        // ========== OPERATOR CRD MANAGEMENT ==========
+        Commands::VrvmList => {
+            handlers::crds::handle_vrvm_list(&cli.namespace).await?;
+        }
+        Commands::VrvmGet { name } => {
+            handlers::crds::handle_vrvm_get(&cli.namespace, &name).await?;
+        }
+        Commands::VrvmCreate {
+            name, template, cpus, memory, disk, cdrom, network,
+            cloud_init, firmware, secure_boot, tpm, no_rng,
+            machine_type, eviction_strategy, label, from_file,
+            dry_run, start,
+        } => {
+            handlers::crds::handle_vrvm_create(
+                &cli.namespace, &name,
+                handlers::crds::VrvmCreateArgs {
+                    template, cpus, memory, disks: disk, cdrom, networks: network,
+                    cloud_init, firmware, secure_boot, tpm, no_rng,
+                    machine_type, eviction_strategy, labels: label,
+                    from_file, dry_run, start,
+                },
+            ).await?;
+        }
+        Commands::VrvmApply { file, dry_run } => {
+            handlers::crds::handle_vrvm_apply(&cli.namespace, &file, dry_run).await?;
+        }
+        Commands::VrvmDelete { name, yes } => {
+            if !yes {
+                use dialoguer::Confirm;
+                let confirmed = Confirm::new()
+                    .with_prompt(format!("Delete VMRogueVM '{}'?", name))
+                    .default(false)
+                    .interact()?;
+                if !confirmed { return Ok(()); }
+            }
+            handlers::crds::handle_vrvm_delete(&cli.namespace, &name).await?;
+        }
+        Commands::VrbpList => {
+            handlers::crds::handle_vrbp_list(&cli.namespace).await?;
+        }
+        Commands::VrbpGet { name } => {
+            handlers::crds::handle_vrbp_get(&cli.namespace, &name).await?;
+        }
+        Commands::VrbpDelete { name } => {
+            handlers::crds::handle_vrbp_delete(&cli.namespace, &name).await?;
+        }
+        Commands::VrpolList => {
+            handlers::crds::handle_vrpol_list(&cli.namespace).await?;
+        }
+        Commands::VrpolGet { name } => {
+            handlers::crds::handle_vrpol_get(&cli.namespace, &name).await?;
+        }
+        Commands::VrpolDelete { name } => {
+            handlers::crds::handle_vrpol_delete(&cli.namespace, &name).await?;
+        }
+        Commands::VrinList => {
+            handlers::crds::handle_vrin_list(&cli.namespace).await?;
+        }
+        Commands::VractList => {
+            handlers::crds::handle_vract_list(&cli.namespace).await?;
+        }
+        Commands::VractApprove { name } => {
+            handlers::crds::handle_vract_approve(&cli.namespace, &name).await?;
         }
     }
 
