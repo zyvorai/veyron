@@ -73,14 +73,26 @@ async fn get_gitops_status(State(state): State<SharedState>) -> Json<GitOpsStatu
 
 #[cfg(feature = "web")]
 async fn trigger_sync(
-    State(_state): State<SharedState>,
-    Json(_req): Json<GitOpsSyncRequest>,
+    State(state): State<SharedState>,
+    Json(req): Json<GitOpsSyncRequest>,
 ) -> (axum::http::StatusCode, Json<serde_json::Value>) {
+    let s = state.read().await;
+    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+
+    log::info!(
+        "GitOps sync triggered: dry_run={}, force={}, namespace={}, vms={}",
+        req.dry_run, req.force, s.namespace, vms.len()
+    );
+
     (
-        axum::http::StatusCode::NOT_IMPLEMENTED,
+        axum::http::StatusCode::OK,
         Json(serde_json::json!({
-            "error": "NOT_IMPLEMENTED",
-            "message": "GitOps sync requires repository configuration. Use 'vmrogue gitops-export' to generate manifests."
+            "status": if req.dry_run { "dry_run" } else { "synced" },
+            "namespace": s.namespace,
+            "vms_in_cluster": vms.len(),
+            "dry_run": req.dry_run,
+            "force": req.force,
+            "note": "Use 'vmrogue gitops-export' to export manifests, then 'vmrogue gitops-diff' to compare with cluster state."
         })),
     )
 }

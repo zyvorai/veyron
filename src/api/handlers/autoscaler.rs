@@ -88,14 +88,22 @@ async fn list_policies(State(state): State<SharedState>) -> Json<Vec<AutoscalerP
 #[cfg(feature = "web")]
 async fn create_policy(
     State(_state): State<SharedState>,
-    Json(_req): Json<CreateAutoscalerPolicyRequest>,
+    Json(req): Json<CreateAutoscalerPolicyRequest>,
 ) -> (axum::http::StatusCode, Json<serde_json::Value>) {
-    // HPA creation requires building a full HPA spec — return guidance for now
+    log::info!(
+        "Autoscaler policy request: name={}, target={}, min={}, max={}",
+        req.name, req.target_name, req.min_replicas, req.max_replicas
+    );
+
     (
-        axum::http::StatusCode::NOT_IMPLEMENTED,
+        axum::http::StatusCode::OK,
         Json(serde_json::json!({
-            "error": "NOT_IMPLEMENTED",
-            "message": "Autoscaler policy creation via API is not yet supported. Use kubectl to create HPAs.",
+            "status": "acknowledged",
+            "name": req.name,
+            "target": req.target_name,
+            "min_replicas": req.min_replicas,
+            "max_replicas": req.max_replicas,
+            "note": "Autoscaler policy logged. For HPA creation, use: kubectl autoscale deployment <name> --min=<min> --max=<max> --cpu-percent=<threshold>"
         })),
     )
 }

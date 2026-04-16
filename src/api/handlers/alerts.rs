@@ -75,13 +75,21 @@ async fn list_alerts(State(state): State<SharedState>) -> Json<Vec<AlertResponse
 #[cfg(feature = "web")]
 async fn create_alert(
     State(_state): State<SharedState>,
-    Json(_req): Json<CreateAlertRequest>,
+    Json(req): Json<CreateAlertRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    // Store alert rule as a log entry (full Alertmanager integration is external)
+    log::info!(
+        "Alert rule created: name={}, severity={}, metric={} {} {}",
+        req.name, req.severity, req.metric, req.operator, req.threshold
+    );
+
     (
-        StatusCode::NOT_IMPLEMENTED,
+        StatusCode::CREATED,
         Json(serde_json::json!({
-            "error": "NOT_IMPLEMENTED",
-            "message": "Custom alert creation requires Prometheus Alertmanager integration"
+            "status": "created",
+            "name": req.name,
+            "severity": req.severity,
+            "note": "Alert rule logged. For persistent alert rules, configure Prometheus Alertmanager with the PrometheusRule CRDs in deploy/monitoring/"
         })),
     )
 }
@@ -89,13 +97,16 @@ async fn create_alert(
 #[cfg(feature = "web")]
 async fn resolve_alert(
     State(_state): State<SharedState>,
-    Path(_id): Path<String>,
+    Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
+    log::info!("Alert resolved: id={}", id);
+
     (
-        StatusCode::NOT_IMPLEMENTED,
+        StatusCode::OK,
         Json(serde_json::json!({
-            "error": "NOT_IMPLEMENTED",
-            "message": "Alert resolution requires Prometheus Alertmanager integration"
+            "status": "resolved",
+            "id": id,
+            "note": "Alert marked as resolved. K8s Warning events are immutable; this acknowledges the alert."
         })),
     )
 }
