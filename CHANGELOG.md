@@ -9,6 +9,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### All 49 API Handlers Now Return Real Data
+- **RBAC** - Lists ClusterRoles and ClusterRoleBindings from K8s API
+- **Quotas** - Lists ResourceQuotas with CPU/memory limits and usage
+- **NetworkPolicies** - Lists policies with pod selectors and rule counts
+- **Workloads** - Lists Deployments, StatefulSets, DaemonSets with status
+- **Clones** - Creates VM clones via KubeClient
+- **Ingress** - Lists Ingress resources with hosts, TLS, and rules
+- **HPA** - Lists HorizontalPodAutoscalers with replica status
+- **Backups** - Snapshot-based backups via VirtualMachineSnapshot CRDs
+- **Security** - Analyzes VMs for RNG, TPM, resource limits
+- **Compliance** - CIS benchmark compliance checking across VM fleet
+- **Monitoring** - Detects Prometheus/Grafana/Alertmanager services
+- **Audit** - Event-based audit trail from K8s events
+- **Scheduling** - Pending/scheduled pod counts and unschedulable nodes
+- **Heatmap** - Per-node CPU/memory utilization with VM density
+- **Helm** - Discovers Helm releases from Secrets (owner=helm)
+- **Operators** - Discovers operators from Deployment naming patterns
+- **CustomResources** - Lists CRDs via apiextensions API
+- **Recommendations** - Config-based recommendations from VM analysis
+- **Performance** - Per-VM metrics via MetricsCollector
+- **Forecasting** - Resource growth projections from VM/node counts
+- **Observability** - Monitoring stack detection and event counts
+- **Notifications** - Warning events as notifications
+- **Autoscaler** - HPA-based autoscaler policies
+- **Webhooks** - CRUD via ConfigMaps (vmrogue.io/type=webhook)
+- **Alerts** - Warning events as alerts with create/resolve
+- **Cilium** - DaemonSet detection and NetworkPolicy fallback
+- **GitOps** - Config discovery and sync status
+- **ChaosEngineering** - CRD detection for Chaos Mesh/LitmusChaos
+- **SLO** - VM availability as SLO objective
+- **CustomDashboards** - Dashboard storage via ConfigMaps
+- **RDP** - VM discovery with Windows detection, default config
+
+#### New CLI Commands
+- `pause` / `unpause` - Pause/unpause running VMs via virtctl
+- `resize` - Resize VM CPU and/or memory
+- `events` - List K8s events with table/yaml/json output
+- `nodes` - List cluster nodes with status, roles, resources
+- `pods` - List pods with status, node, IP, restarts
+- `import` - Import VM from KubeVirt YAML manifest
+- `clusters-list` / `clusters-discover` - Multi-cluster management
+- `gitops-diff` / `gitops-status` - GitOps manifest comparison
+- `search` - Natural language VM search (e.g. "running vms in production")
+- `troubleshoot` - AI-assisted VM diagnostics
+- `capacity` - Cluster capacity analysis with per-node breakdown
+- `placement` - Optimal node recommendation (spread/binpack/leastloaded)
+- `list-json` - JSON Lines output for scripting
+
+#### All 19 TUI Preview Views Wired to Real Data
+- SecurityDashboard, CostAnalytics, ComplianceChecker, VulnerabilityScanner
+- AuditPanel, Timeline, DependencyGraph, ForecastDashboard
+- PerformanceProfiler, NlpSearch, RbacVisualizer, CustomMetrics
+- Autoscaler, SecurityPosture, AiTroubleshoot, ChangeApproval
+- MacroView, SessionSharing, MigrationWizard
+
+#### Infrastructure
+- **Helm charts** for VMRogue API and operator with full RBAC, TLS, NetworkPolicy
+- **Kustomize overlays** for dev and prod environments
+- **Prometheus ServiceMonitor** and **PrometheusRule** with 6 alerts
+- **Grafana dashboard** with 10 panels (VM count, CPU, memory, network, storage, migrations)
+- **Operator Prometheus metrics** (7 custom metrics)
+
+#### Security & Auth
+- **Multi-key RBAC** via VMROGUE_API_KEYS (admin/write/readonly roles)
+- **JWT Bearer token** validation with OIDC issuer checking
+- **Persistent audit trail** saved to disk
+- **Local secrets encryption** with key expansion and integrity tag
+- **Webhook delivery** via curl subprocess with SSRF protection
+- **Notification delivery** for Log and Webhook channels
+
+#### Operator Enhancements
+- **CEL policy expressions** via google/cel-go for custom compliance rules
+- **4 new action types**: CreateSnapshot, DeleteVM, Migrate, SendNotification
+
+#### Modules Promoted from Experimental
+- capacity, edge, finops, multicloud, servicemesh, hypervisor
+- nlp_search, ai_troubleshoot, session_sharing
+
+#### Web Dashboard
+- Security page with posture score and findings table
+- Monitoring page with Prometheus/Grafana detection and recommendations
+- Workloads page with Deployment/StatefulSet/DaemonSet listing
+
 #### API Handlers Wired to Real Kubernetes (11 new, 19 total)
 - **Snapshots** - Real VirtualMachineSnapshot CRD integration
 - **Templates** - Returns real 44 OS templates

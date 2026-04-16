@@ -50,20 +50,6 @@ pub mod workloads;
 /// VMRogue CRD management handlers (vmrogue.io/v1alpha1).
 pub mod crds;
 
-/// Helper for stub handlers that are not yet implemented.
-/// Returns HTTP 501 with a JSON body describing the unimplemented feature.
-#[cfg(feature = "web")]
-pub fn not_implemented(feature: &str) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
-    (
-        axum::http::StatusCode::NOT_IMPLEMENTED,
-        axum::Json(serde_json::json!({
-            "error": "NOT_IMPLEMENTED",
-            "message": format!("{} is not yet implemented", feature),
-            "feature": feature
-        })),
-    )
-}
-
 /// Build the combined API router from all handler sub-routers.
 ///
 /// Handlers that have been wired to real Kubernetes data receive SharedState.
