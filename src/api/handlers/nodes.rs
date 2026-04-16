@@ -31,8 +31,23 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>> {
+    use crate::kube::types::VirtualMachineInstance;
+
     let s = state.read().await;
     let nodes = s.client().list_nodes().await.unwrap_or_default();
+
+    // Count running VMs per node via cluster-wide VMI listing
+    let mut vmi_per_node: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    let vmis_api: kube::api::Api<VirtualMachineInstance> = kube::api::Api::all(s.client().client());
+    if let Ok(vmi_list) = vmis_api.list(&kube::api::ListParams::default()).await {
+        for vmi in &vmi_list.items {
+            if let Some(ref status) = vmi.status {
+                if let Some(ref node) = status.node_name {
+                    *vmi_per_node.entry(node.clone()).or_insert(0) += 1;
+                }
+            }
+        }
+    }
 
     let results: Vec<NodeResponse> = nodes
         .iter()
@@ -99,6 +114,8 @@ async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>>
                 .map(|i| i.kernel_version.clone())
                 .unwrap_or_default();
 
+            let vm_count = vmi_per_node.get(name.as_str()).copied().unwrap_or(0);
+
             NodeResponse {
                 name,
                 status,
@@ -110,7 +127,7 @@ async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>>
                 kubelet_version,
                 os_image,
                 kernel_version,
-                vm_count: 0,
+                vm_count,
             }
         })
         .collect();

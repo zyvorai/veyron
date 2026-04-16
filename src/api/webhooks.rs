@@ -330,6 +330,86 @@ impl Default for WebhookManager {
     }
 }
 
+/// Deliver a webhook payload to a URL using curl subprocess.
+///
+/// Returns `Ok(true)` on successful delivery (2xx), `Ok(false)` on HTTP failure.
+pub async fn deliver_webhook(
+    config: &WebhookConfig,
+    payload: &WebhookPayload,
+) -> anyhow::Result<bool> {
+    let payload_json = serde_json::to_string(payload)?;
+
+    let mut args = vec![
+        "-s".to_string(),
+        "-o".to_string(),
+        "/dev/null".to_string(),
+        "-w".to_string(),
+        "%{http_code}".to_string(),
+        "-X".to_string(),
+        "POST".to_string(),
+        "-H".to_string(),
+        "Content-Type: application/json".to_string(),
+        "--max-time".to_string(),
+        config.timeout_secs.to_string(),
+    ];
+
+    for (key, value) in &config.headers {
+        args.push("-H".to_string());
+        args.push(format!("{}: {}", key, value));
+    }
+
+    if let Some(ref secret) = config.secret {
+        args.push("-H".to_string());
+        args.push(format!("X-Webhook-Secret: {}", secret));
+    }
+
+    args.push("-d".to_string());
+    args.push(payload_json);
+    args.push(config.url.clone());
+
+    let output = tokio::process::Command::new("curl")
+        .args(&args)
+        .output()
+        .await?;
+
+    let status_code = String::from_utf8_lossy(&output.stdout);
+    let success = status_code.starts_with('2');
+
+    if !success {
+        log::warn!(
+            "Webhook delivery to '{}' failed with HTTP {}",
+            config.url,
+            status_code.trim()
+        );
+    }
+
+    Ok(success)
+}
+
+/// Deliver a webhook event to all matching registered webhooks.
+pub async fn deliver_event(
+    manager: &WebhookManager,
+    event: &WebhookEvent,
+    payload: &WebhookPayload,
+) {
+    let webhooks = manager.webhooks_for_event(event);
+    for webhook in webhooks {
+        match deliver_webhook(webhook, payload).await {
+            Ok(success) => {
+                log::debug!(
+                    "Webhook '{}' delivery {}: {}",
+                    webhook.name,
+                    if success { "succeeded" } else { "failed" },
+                    webhook.url
+                );
+            }
+            Err(e) => {
+                log::error!("Webhook '{}' delivery error: {}", webhook.name, e);
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

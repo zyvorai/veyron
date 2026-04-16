@@ -27,19 +27,29 @@ async fn list_namespaces(State(state): State<SharedState>) -> Json<Vec<Namespace
     let s = state.read().await;
     let namespaces = s.client().list_namespaces().await.unwrap_or_default();
 
+    // Count VMs per namespace with a single cluster-wide API call
+    let mut vm_counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    if let Ok(all_vms) = s.client().list_all_vms().await {
+        for vm in &all_vms {
+            let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+            *vm_counts.entry(ns.to_string()).or_insert(0) += 1;
+        }
+    }
+
     let results: Vec<NamespaceResponse> = namespaces
         .iter()
         .map(|ns| {
             let meta = &ns.metadata;
+            let name = meta.name.clone().unwrap_or_default();
             NamespaceResponse {
-                name: meta.name.clone().unwrap_or_default(),
+                vm_count: vm_counts.get(&name).copied().unwrap_or(0),
+                name,
                 status: ns
                     .status
                     .as_ref()
                     .and_then(|s| s.phase.as_deref())
                     .unwrap_or("Active")
                     .to_string(),
-                vm_count: 0,
                 created_at: meta
                     .creation_timestamp
                     .as_ref()

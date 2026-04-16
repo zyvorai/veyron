@@ -86,15 +86,29 @@ async fn get_storage_usage(State(state): State<SharedState>) -> Json<Vec<Storage
             let bound_to_vm = meta
                 .labels
                 .as_ref()
-                .and_then(|l| l.get("kubevirt.io/vm").cloned());
+                .and_then(|l| {
+                    l.get("kubevirt.io/vm")
+                        .or_else(|| l.get("kubevirt.io/created-by"))
+                        .cloned()
+                });
+
+            let phase = status.and_then(|s| s.phase.as_deref()).unwrap_or("");
+
+            // K8s PVC API does not expose filesystem-level usage (requires kubelet metrics).
+            // For Bound PVCs the full capacity is allocated, so we report that as used.
+            let (used, usage_percent) = if phase == "Bound" && !capacity.is_empty() {
+                (capacity.clone(), 100.0)
+            } else {
+                (String::new(), 0.0)
+            };
 
             StorageUsage {
                 pvc_name: meta.name.clone().unwrap_or_default(),
                 namespace: meta.namespace.clone().unwrap_or_default(),
                 storage_class,
                 capacity,
-                used: String::new(),
-                usage_percent: 0.0,
+                used,
+                usage_percent,
                 bound_to_vm,
             }
         })

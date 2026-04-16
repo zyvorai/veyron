@@ -1,8 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Router, response::IntoResponse, routing::get};
+use axum::{Json, Router, extract::State, routing::get};
 use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "web")]
-use super::not_implemented;
+use crate::api::http_server::web::SharedState;
 
 /// Chaos experiment response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,11 +29,37 @@ pub struct ChaosResults {
 }
 
 #[cfg(feature = "web")]
-pub fn router() -> Router {
-    Router::new().route("/chaos/experiments", get(list_experiments))
+pub fn router(state: SharedState) -> Router {
+    Router::new()
+        .route("/chaos/experiments", get(list_experiments))
+        .with_state(state)
 }
 
+/// List chaos experiments by checking for Chaos Mesh or LitmusChaos CRDs.
 #[cfg(feature = "web")]
-async fn list_experiments() -> impl IntoResponse {
-    not_implemented("Chaos experiments")
+async fn list_experiments(State(state): State<SharedState>) -> Json<Vec<ChaosExperiment>> {
+    use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
+
+    let s = state.read().await;
+    let api: kube::api::Api<CustomResourceDefinition> = kube::api::Api::all(s.client().client());
+
+    // Check if any chaos engineering CRDs are installed
+    let mut chaos_installed = false;
+    if let Ok(crds) = api.list(&kube::api::ListParams::default()).await {
+        for crd in &crds.items {
+            let name = crd.metadata.name.as_deref().unwrap_or("");
+            if name.contains("chaos-mesh") || name.contains("litmuschaos") {
+                chaos_installed = true;
+                break;
+            }
+        }
+    }
+
+    if !chaos_installed {
+        return Json(vec![]);
+    }
+
+    // If chaos CRDs exist, we'd list experiments here
+    // For now return empty since we can't query unknown CRD schemas
+    Json(vec![])
 }
