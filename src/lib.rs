@@ -78,7 +78,6 @@ pub mod operator_crds;
 
 // Features ported from v9s
 pub mod advanced_filter;
-#[cfg(feature = "experimental")]
 pub mod ai_troubleshoot;
 pub mod audit_trail;
 pub mod autoscaler;
@@ -91,7 +90,6 @@ pub mod disk_conversion;
 pub mod hypervisor;
 pub mod macros;
 pub mod multi_cluster;
-#[cfg(feature = "experimental")]
 pub mod nlp_search;
 pub mod notifications;
 pub mod placement;
@@ -1532,6 +1530,15 @@ pub async fn run(mut cli: Cli) -> Result<()> {
 
         Commands::PodsList { output } => {
             handlers::vm::handle_pods_list(output, &cli.namespace).await?;
+        }
+
+        // ========== SEARCH & TROUBLESHOOT ==========
+        Commands::Search { query } => {
+            handlers::vm::handle_search(query, &cli.namespace).await?;
+        }
+
+        Commands::Troubleshoot { name } => {
+            handlers::vm::handle_troubleshoot(name, &cli.namespace).await?;
         }
 
         // ========== OPERATOR CRD MANAGEMENT ==========

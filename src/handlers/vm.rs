@@ -1942,6 +1942,252 @@ mod tests {
     }
 }
 
+// ========== SEARCH & TROUBLESHOOT ==========
+
+pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::nlp_search::SearchQuery;
+    use crate::output::table::CliTable;
+
+    let query_str = query.join(" ");
+    println!("{}", color::header(&format!("Search: {}", query_str)));
+    println!();
+
+    let parsed = SearchQuery::parse(&query_str);
+
+    let client = kube::KubeClient::new().await?;
+    let vms = client.list_vms(namespace).await?;
+
+    // Apply parsed filters to VM list
+    let mut filtered: Vec<_> = vms
+        .iter()
+        .filter(|vm| {
+            let name = vm.metadata.name.as_deref().unwrap_or("");
+            let status = vm
+                .status
+                .as_ref()
+                .and_then(|s| s.printable_status.as_deref())
+                .unwrap_or("Unknown");
+
+            // Apply parsed filters
+            for filter in &parsed.filters {
+                match filter {
+                    crate::nlp_search::Filter::Status(s) => {
+                        let status_lower = status.to_lowercase();
+                        match s {
+                            crate::nlp_search::StatusFilter::Running => {
+                                if !status_lower.contains("running") { return false; }
+                            }
+                            crate::nlp_search::StatusFilter::Stopped => {
+                                if !status_lower.contains("stop") { return false; }
+                            }
+                            crate::nlp_search::StatusFilter::Failed => {
+                                if !status_lower.contains("fail") { return false; }
+                            }
+                            crate::nlp_search::StatusFilter::Any => {}
+                        }
+                    }
+                    crate::nlp_search::Filter::Name(n) => {
+                        if !name.to_lowercase().contains(&n.to_lowercase()) {
+                            return false;
+                        }
+                    }
+                    crate::nlp_search::Filter::Namespace(ns) => {
+                        let vm_ns = vm.metadata.namespace.as_deref().unwrap_or("");
+                        if !vm_ns.to_lowercase().contains(&ns.to_lowercase()) {
+                            return false;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            true
+        })
+        .collect();
+
+    // Apply limit
+    if let Some(limit) = parsed.limit {
+        filtered.truncate(limit);
+    }
+
+    if filtered.is_empty() {
+        println!("  {}", color::muted("No VMs match the query"));
+        return Ok(());
+    }
+
+    let mut table = CliTable::new(vec!["Name", "Status", "CPU", "Memory", "Namespace"]);
+    for vm in &filtered {
+        let name = vm.metadata.name.as_deref().unwrap_or("");
+        let ns = vm.metadata.namespace.as_deref().unwrap_or("");
+        let status = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.printable_status.as_deref())
+            .unwrap_or("Unknown");
+        let cpu = vm
+            .spec
+            .template
+            .spec
+            .domain
+            .cpu
+            .as_ref()
+            .and_then(|c| c.cores)
+            .map(|c| c.to_string())
+            .unwrap_or_default();
+        let memory = vm
+            .spec
+            .template
+            .spec
+            .domain
+            .memory
+            .as_ref()
+            .and_then(|m| m.guest.clone())
+            .unwrap_or_default();
+
+        table.add_row(vec![
+            name.to_string(),
+            status.to_string(),
+            cpu,
+            memory,
+            ns.to_string(),
+        ]);
+    }
+
+    println!("  {} VM(s) found", color::value(&filtered.len().to_string()));
+    println!();
+    table.print();
+    Ok(())
+}
+
+pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+
+    println!("{}", color::header(&format!("Troubleshooting VM: {}", name)));
+    println!();
+
+    let client = kube::KubeClient::new().await?;
+
+    // Check if VM exists
+    let vm = match client.get_vm(namespace, &name).await {
+        Ok(vm) => vm,
+        Err(_) => {
+            println!("{}", color::error(&format!("VM '{}' not found in namespace '{}'", name, namespace)));
+            return Ok(());
+        }
+    };
+
+    let status_str = vm
+        .status
+        .as_ref()
+        .and_then(|s| s.printable_status.as_deref())
+        .unwrap_or("Unknown");
+    let ready = vm.status.as_ref().and_then(|s| s.ready).unwrap_or(false);
+    let running = vm.spec.running.unwrap_or(false);
+
+    println!("  Status:  {}", color::vm_status(status_str));
+    println!("  Running: {}", if running { color::success("true") } else { color::warning("false") });
+    println!("  Ready:   {}", if ready { color::success("true") } else { color::warning("false") });
+    println!();
+
+    // Diagnose issues
+    let mut issues = Vec::new();
+
+    if running && !ready {
+        issues.push(("HIGH", "VM is running but not ready — may be booting or stuck"));
+    }
+
+    if !running && status_str.contains("Failed") {
+        issues.push(("CRIT", "VM is in Failed state — check events for errors"));
+    }
+
+    if !running && !status_str.contains("Stop") {
+        issues.push(("MED", "VM is not running and not cleanly stopped"));
+    }
+
+    // Check for VMI
+    match client.get_vmi(namespace, &name).await {
+        Ok(vmi) => {
+            let phase = vmi
+                .status
+                .as_ref()
+                .and_then(|s| s.phase.as_deref())
+                .unwrap_or("Unknown");
+            println!("  VMI Phase: {}", phase);
+
+            if let Some(ref status) = vmi.status {
+                if !status.interfaces.is_empty() {
+                    for iface in &status.interfaces {
+                        let ip = iface.ip_address.as_deref().unwrap_or("none");
+                        let name = iface.name.as_deref().unwrap_or("unknown");
+                        println!("  Interface {}: IP={}", name, ip);
+                    }
+                } else if status.interfaces.is_empty() {
+                    issues.push(("MED", "No network interfaces reported by guest agent"));
+                }
+
+                if status.node_name.is_none() {
+                    issues.push(("HIGH", "VM is not scheduled to any node"));
+                } else {
+                    println!("  Node: {}", status.node_name.as_deref().unwrap_or("unknown"));
+                }
+            }
+        }
+        Err(_) => {
+            if running {
+                issues.push(("HIGH", "VM is set to running but no VMI found — instance may have failed to start"));
+            }
+        }
+    }
+
+    // Check events
+    let events = client.list_events(namespace).await.unwrap_or_default();
+    let vm_events: Vec<_> = events
+        .iter()
+        .filter(|e| {
+            e.involved_object
+                .name
+                .as_deref()
+                .map(|n| n == name || n.starts_with(&format!("virt-launcher-{}", name)))
+                .unwrap_or(false)
+        })
+        .collect();
+
+    let warning_events: Vec<_> = vm_events
+        .iter()
+        .filter(|e| e.type_.as_deref() == Some("Warning"))
+        .collect();
+
+    if !warning_events.is_empty() {
+        issues.push(("MED", "Warning events detected for this VM"));
+        println!();
+        println!("  {}", color::warning("Recent warnings:"));
+        for event in warning_events.iter().take(5) {
+            println!(
+                "    {} - {}",
+                event.reason.as_deref().unwrap_or("Unknown"),
+                event.message.as_deref().unwrap_or("")
+            );
+        }
+    }
+
+    println!();
+    if issues.is_empty() {
+        println!("  {}", color::success("No issues detected — VM appears healthy"));
+    } else {
+        println!("  {} issue(s) found:", issues.len());
+        for (severity, description) in &issues {
+            let sev_color = match *severity {
+                "CRIT" => color::error(severity),
+                "HIGH" => color::warning(severity),
+                _ => color::info(severity),
+            };
+            println!("    [{}] {}", sev_color, description);
+        }
+    }
+
+    Ok(())
+}
+
 // ========== INFRASTRUCTURE COMMANDS ==========
 
 pub async fn handle_events_list(limit: usize, output: String, namespace: &str) -> Result<()> {

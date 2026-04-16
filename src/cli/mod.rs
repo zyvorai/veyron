@@ -2451,6 +2451,22 @@ pub enum Commands {
         #[arg(short, long, default_value = "table")]
         output: String,
     },
+
+    // ========== NATURAL LANGUAGE SEARCH ==========
+    /// Search VMs using natural language queries
+    #[command(name = "search")]
+    Search {
+        /// Natural language query (e.g., "running vms using more than 4 cpu")
+        query: Vec<String>,
+    },
+
+    // ========== AI TROUBLESHOOT ==========
+    /// Run AI-assisted troubleshooting for a VM
+    #[command(name = "troubleshoot")]
+    Troubleshoot {
+        /// VM name to troubleshoot
+        name: String,
+    },
 }
 
 #[cfg(test)]
