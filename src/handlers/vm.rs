@@ -741,6 +741,23 @@ pub async fn handle_resize(
         anyhow::bail!("At least one of --cpus or --memory must be specified");
     }
 
+    // Validate memory format if provided
+    if let Some(ref mem) = memory {
+        let valid = regex::Regex::new(r"^\d+(\.\d+)?(Mi|Gi|Ti|M|G|T)$")
+            .map(|re| re.is_match(mem))
+            .unwrap_or(false);
+        if !valid {
+            anyhow::bail!("Invalid memory format '{}'. Use Kubernetes quantities like '4Gi', '512Mi'", mem);
+        }
+    }
+
+    // Validate CPU count
+    if let Some(c) = cpus {
+        if c == 0 || c > 256 {
+            anyhow::bail!("CPU cores must be between 1 and 256, got {}", c);
+        }
+    }
+
     let sp = spinner(&format!("Resizing VM '{}'...", name));
     let client = kube::KubeClient::new().await?;
     client
@@ -1950,6 +1967,9 @@ pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
     use crate::output::table::CliTable;
 
     let query_str = query.join(" ");
+    if query_str.len() > 1000 {
+        anyhow::bail!("Search query too long (max 1000 characters)");
+    }
     println!("{}", color::header(&format!("Search: {}", query_str)));
     println!();
 
@@ -2359,11 +2379,21 @@ pub async fn handle_import(file: String, start: bool, dry_run: bool, namespace: 
     use crate::kube;
     use crate::output::spinner::spinner;
 
+    // Validate file size to prevent resource exhaustion
+    let metadata = std::fs::metadata(&file)
+        .map_err(|e| anyhow::anyhow!("Cannot read file '{}': {}", file, e))?;
+    const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024; // 10 MB
+    if metadata.len() > MAX_FILE_SIZE {
+        anyhow::bail!("File too large ({} bytes, max {} bytes)", metadata.len(), MAX_FILE_SIZE);
+    }
+
     let content = std::fs::read_to_string(&file)?;
     let vm: crate::kube::types::VirtualMachine = if file.ends_with(".json") {
-        serde_json::from_str(&content)?
+        serde_json::from_str(&content)
+            .map_err(|e| anyhow::anyhow!("Invalid JSON in '{}': {}", file, e))?
     } else {
-        serde_yml::from_str(&content)?
+        serde_yml::from_str(&content)
+            .map_err(|e| anyhow::anyhow!("Invalid YAML in '{}': {}", file, e))?
     };
 
     let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");

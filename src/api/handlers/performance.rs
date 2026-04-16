@@ -47,15 +47,19 @@ async fn list_performance_profiles(
         );
 
         if let Ok(metrics) = collector.collect(vm_name).await {
+            // Single-point metrics — percentiles require historical data collection.
+            // Current values are used as the latest observation for all percentile fields.
+            let cpu = metrics.cpu.usage_percent;
+            let mem = metrics.memory.usage_percent;
             profiles.push(PerformanceProfile {
                 name: format!("profile-{}", vm_name),
                 vm_name: vm_name.to_string(),
-                cpu_p50: metrics.cpu.usage_percent * 0.8,
-                cpu_p95: metrics.cpu.usage_percent * 0.95,
-                cpu_p99: metrics.cpu.usage_percent,
-                memory_p50: metrics.memory.usage_percent * 0.85,
-                memory_p95: metrics.memory.usage_percent * 0.95,
-                memory_p99: metrics.memory.usage_percent,
+                cpu_p50: cpu,
+                cpu_p95: cpu,
+                cpu_p99: cpu,
+                memory_p50: mem,
+                memory_p95: mem,
+                memory_p99: mem,
                 iops_read: metrics.disk.read_ops_per_sec,
                 iops_write: metrics.disk.write_ops_per_sec,
                 latency_avg_ms: 0.0,

@@ -34,9 +34,20 @@ async fn list_workloads(State(state): State<SharedState>) -> Json<Vec<WorkloadRe
     let client = s.client().client();
     let mut results: Vec<WorkloadResponse> = Vec::new();
 
-    // Deployments
+    // Fetch all workload types concurrently
     let deploy_api: kube::api::Api<Deployment> = kube::api::Api::namespaced(client.clone(), ns);
-    if let Ok(deploys) = deploy_api.list(&kube::api::ListParams::default()).await {
+    let sts_api: kube::api::Api<StatefulSet> = kube::api::Api::namespaced(client.clone(), ns);
+    let ds_api: kube::api::Api<DaemonSet> = kube::api::Api::namespaced(client.clone(), ns);
+
+    let lp = kube::api::ListParams::default();
+    let (deploy_result, sts_result, ds_result) = tokio::join!(
+        deploy_api.list(&lp),
+        sts_api.list(&lp),
+        ds_api.list(&lp),
+    );
+
+    // Deployments
+    if let Ok(deploys) = deploy_result {
         for d in &deploys.items {
             let status = d.status.as_ref();
             results.push(WorkloadResponse {
@@ -59,8 +70,7 @@ async fn list_workloads(State(state): State<SharedState>) -> Json<Vec<WorkloadRe
     }
 
     // StatefulSets
-    let sts_api: kube::api::Api<StatefulSet> = kube::api::Api::namespaced(client.clone(), ns);
-    if let Ok(stss) = sts_api.list(&kube::api::ListParams::default()).await {
+    if let Ok(stss) = sts_result {
         for s in &stss.items {
             let status = s.status.as_ref();
             results.push(WorkloadResponse {
@@ -83,8 +93,7 @@ async fn list_workloads(State(state): State<SharedState>) -> Json<Vec<WorkloadRe
     }
 
     // DaemonSets
-    let ds_api: kube::api::Api<DaemonSet> = kube::api::Api::namespaced(client.clone(), ns);
-    if let Ok(dss) = ds_api.list(&kube::api::ListParams::default()).await {
+    if let Ok(dss) = ds_result {
         for d in &dss.items {
             let status = d.status.as_ref();
             let desired = status.map(|s| s.desired_number_scheduled).unwrap_or(0);
