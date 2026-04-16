@@ -20,6 +20,7 @@ import (
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
 	"github.com/ssahani/vmrogue/operator/internal/converter"
 	"github.com/ssahani/vmrogue/operator/internal/eventbus"
+	vmmetrics "github.com/ssahani/vmrogue/operator/internal/metrics"
 )
 
 const (
@@ -43,6 +44,10 @@ type VMRogueVMReconciler struct {
 
 func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
+	reconcileStart := time.Now()
+	defer func() {
+		vmmetrics.ReconcileDuration.WithLabelValues("vmroguevm").Observe(time.Since(reconcileStart).Seconds())
+	}()
 
 	// Fetch the VMRogueVM
 	var vm vmroguev1alpha1.VMRogueVM
@@ -50,6 +55,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
+		vmmetrics.ReconcileTotal.WithLabelValues("vmroguevm", "error").Inc()
 		return ctrl.Result{}, err
 	}
 
