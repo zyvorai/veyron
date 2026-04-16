@@ -150,6 +150,35 @@ impl AuditTrail {
         self.entries.iter().filter(|e| !e.success).collect()
     }
 
+    /// Load audit trail from persistent storage.
+    pub fn load() -> Self {
+        let path = Self::storage_path();
+        if path.exists() {
+            match std::fs::read_to_string(&path) {
+                Ok(content) => match serde_json::from_str::<Self>(&content) {
+                    Ok(trail) => return trail,
+                    Err(e) => log::warn!("Failed to parse audit trail: {}", e),
+                },
+                Err(e) => log::warn!("Failed to read audit trail: {}", e),
+            }
+        }
+        Self::default()
+    }
+
+    /// Save audit trail to persistent storage.
+    pub fn save(&self) -> anyhow::Result<()> {
+        let path = Self::storage_path();
+        crate::utils::atomic_write(&path, self)?;
+        Ok(())
+    }
+
+    /// Path to the audit trail storage file.
+    fn storage_path() -> std::path::PathBuf {
+        crate::utils::data_dir()
+            .unwrap_or_else(|_| std::path::PathBuf::from(".vmrogue"))
+            .join("audit_trail.json")
+    }
+
     pub fn stats(&self) -> AuditStats {
         AuditStats {
             total: self.entries.len(),
