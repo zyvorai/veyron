@@ -1,6 +1,7 @@
-// Security Dashboard View
+// Security Dashboard View — wired to real VM data from AppState
 
 use crate::tui::colors::gradient;
+use crate::tui::state::AppState;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -9,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Gauge, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +22,6 @@ pub fn render(f: &mut Frame, area: Rect) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -43,11 +43,86 @@ pub fn render(f: &mut Frame, area: Rect) {
         );
     f.render_widget(header, chunks[0]);
 
-    // Security posture score gauge
+    // Analyze VMs for security findings
+    let mut critical = 0u32;
+    let mut high = 0u32;
+    let mut medium = 0u32;
+    let mut low = 0u32;
+    let mut findings: Vec<(&str, String, String, &str)> = Vec::new();
+
+    for vm in &state.vms {
+        let name = &vm.name;
+
+        // Check resource limits (disk field used as proxy for config completeness)
+        if vm.disk.is_empty() || vm.disk == "0" {
+            high += 1;
+            findings.push((
+                "HIGH",
+                "Resource".to_string(),
+                format!("No disk configured for '{}'", name),
+                "Open",
+            ));
+        }
+
+        // Check if VM is in failed state
+        if vm.status.contains("Fail") || vm.status.contains("Error") {
+            critical += 1;
+            findings.push((
+                "CRIT",
+                "Runtime".to_string(),
+                format!("VM '{}' in {} state", name, vm.status),
+                "Open",
+            ));
+        }
+
+        // Check for VMs without IP (possibly misconfigured networking)
+        if vm.ip.is_empty() && vm.status.contains("Running") {
+            medium += 1;
+            findings.push((
+                "MED",
+                "Network".to_string(),
+                format!("Running VM '{}' has no IP assigned", name),
+                "Open",
+            ));
+        }
+
+        // Check for VMs on unknown nodes
+        if vm.node.is_empty() && vm.status.contains("Running") {
+            low += 1;
+            findings.push((
+                "LOW",
+                "Scheduling".to_string(),
+                format!("VM '{}' node not reported", name),
+                "Open",
+            ));
+        }
+    }
+
+    let total = critical + high + medium + low;
+    let score = if total == 0 {
+        100u16
+    } else {
+        let deductions = critical as u16 * 20 + high as u16 * 10 + medium as u16 * 5 + low as u16 * 2;
+        100u16.saturating_sub(deductions).max(0)
+    };
+    let score_label = match score {
+        90..=100 => "Excellent",
+        70..=89 => "Good",
+        50..=69 => "Fair",
+        _ => "Poor",
+    };
+
+    // Score gauge
     let score_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(chunks[1]);
+
+    let gauge_color = match score {
+        90..=100 => Color::Rgb(50, 205, 50),
+        70..=89 => Color::Rgb(255, 200, 0),
+        _ => Color::Rgb(220, 50, 47),
+    };
 
     let score_gauge = Gauge::default()
         .block(
@@ -58,11 +133,11 @@ pub fn render(f: &mut Frame, area: Rect) {
         )
         .gauge_style(
             Style::default()
-                .fg(Color::Rgb(50, 205, 50))
+                .fg(gauge_color)
                 .bg(Color::Rgb(40, 35, 55)),
         )
-        .percent(82)
-        .label("82/100 - Good");
+        .percent(score)
+        .label(format!("{}/100 - {}", score, score_label));
     f.render_widget(score_gauge, score_chunks[0]);
 
     let summary = vec![
@@ -70,28 +145,28 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled("  Critical: ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                "1",
+                critical.to_string(),
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled("  High: ", Style::default().fg(Color::Rgb(255, 165, 0))),
             Span::styled(
-                "3",
+                high.to_string(),
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled("  Medium: ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                "7",
+                medium.to_string(),
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled("  Low: ", Style::default().fg(Color::Rgb(100, 150, 255))),
             Span::styled(
-                "12",
+                low.to_string(),
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
@@ -102,7 +177,7 @@ pub fn render(f: &mut Frame, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
-            .title(" Findings by Severity "),
+            .title(format!(" Findings ({} VMs analyzed) ", state.vms.len())),
     );
     f.render_widget(summary_widget, score_chunks[1]);
 
@@ -126,16 +201,6 @@ pub fn render(f: &mut Frame, area: Rect) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let findings = [
-        ("CRIT", "Network", "Pod network policy missing", "Open"),
-        ("HIGH", "RBAC", "Overly permissive role", "In Progress"),
-        ("HIGH", "Image", "Unscanned container image", "Open"),
-        ("HIGH", "Config", "Secrets in env vars", "Open"),
-        ("MED", "Network", "Ingress without TLS", "Remediated"),
-        ("MED", "Runtime", "Privileged container", "Open"),
-        ("LOW", "Config", "Resource limits not set", "Open"),
-    ];
-
     let rows = findings.iter().map(|(sev, cat, finding, status)| {
         let sev_color = match *sev {
             "CRIT" => Color::Rgb(220, 50, 47),
@@ -143,20 +208,23 @@ pub fn render(f: &mut Frame, area: Rect) {
             "MED" => Color::Rgb(255, 200, 0),
             _ => Color::Rgb(100, 150, 255),
         };
-        let status_color = match *status {
-            "Open" => Color::Rgb(220, 50, 47),
-            "In Progress" => Color::Rgb(255, 200, 0),
-            "Remediated" => Color::Rgb(50, 205, 50),
-            _ => Color::Gray,
-        };
         Row::new(vec![
             Cell::from(*sev).style(Style::default().fg(sev_color).add_modifier(Modifier::BOLD)),
-            Cell::from(*cat),
-            Cell::from(*finding),
-            Cell::from(*status).style(Style::default().fg(status_color)),
+            Cell::from(cat.as_str()),
+            Cell::from(finding.as_str()),
+            Cell::from(*status).style(Style::default().fg(Color::Rgb(220, 50, 47))),
         ])
         .height(1)
     });
+
+    let empty_msg = if findings.is_empty() {
+        vec![Row::new(vec![Cell::from("  No security findings - all VMs healthy")
+            .style(Style::default().fg(Color::Rgb(50, 205, 50)))])]
+    } else {
+        vec![]
+    };
+
+    let all_rows: Vec<Row> = rows.chain(empty_msg.into_iter()).collect();
 
     let widths = [
         Constraint::Length(6),
@@ -165,7 +233,7 @@ pub fn render(f: &mut Frame, area: Rect) {
         Constraint::Percentage(20),
     ];
 
-    let table = Table::new(rows, widths)
+    let table = Table::new(all_rows, widths)
         .header(table_header)
         .block(
             Block::default()
@@ -181,105 +249,92 @@ pub fn render(f: &mut Frame, area: Rect) {
         .column_spacing(1);
     f.render_widget(table, main_chunks[0]);
 
-    // Compliance status
-    let compliance = vec![
+    // VM Status Summary
+    let stats = state.get_stats();
+    let vm_status_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Compliance Frameworks",
+            "  VM Fleet Status",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  CIS Benchmark    ", Style::default().fg(Color::White)),
+            Span::styled("  Total VMs:    ", Style::default().fg(Color::White)),
             Span::styled(
-                "78%  ",
+                stats.total.to_string(),
                 Style::default()
-                    .fg(Color::Rgb(255, 200, 0))
+                    .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled("(62/79 controls)", Style::default().fg(Color::Gray)),
         ]),
         Line::from(vec![
-            Span::styled("  PCI DSS          ", Style::default().fg(Color::White)),
+            Span::styled("  Running:      ", Style::default().fg(Color::White)),
             Span::styled(
-                "91%  ",
+                stats.running.to_string(),
                 Style::default()
                     .fg(Color::Rgb(50, 205, 50))
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled("(221/243 controls)", Style::default().fg(Color::Gray)),
         ]),
         Line::from(vec![
-            Span::styled("  SOC 2            ", Style::default().fg(Color::White)),
+            Span::styled("  Stopped:      ", Style::default().fg(Color::White)),
             Span::styled(
-                "85%  ",
+                stats.stopped.to_string(),
                 Style::default()
-                    .fg(Color::Rgb(50, 205, 50))
+                    .fg(Color::Gray)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled("(102/120 controls)", Style::default().fg(Color::Gray)),
         ]),
         Line::from(vec![
-            Span::styled("  HIPAA            ", Style::default().fg(Color::White)),
+            Span::styled("  Failed:       ", Style::default().fg(Color::White)),
             Span::styled(
-                "73%  ",
+                stats.failed.to_string(),
                 Style::default()
-                    .fg(Color::Rgb(255, 200, 0))
+                    .fg(if stats.failed > 0 {
+                        Color::Rgb(220, 50, 47)
+                    } else {
+                        Color::Gray
+                    })
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled("(44/60 controls)", Style::default().fg(Color::Gray)),
         ]),
         Line::from(""),
         Line::from(Span::styled(
-            "  Last scan: 2h ago",
+            format!("  Last refresh: {}", state.last_refresh.format("%H:%M:%S")),
             Style::default().fg(Color::Gray),
         )),
     ];
-    let compliance_widget = Paragraph::new(compliance).block(
+    let status_widget = Paragraph::new(vm_status_lines).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
-                " Compliance Status ",
+                " Fleet Overview ",
                 Style::default()
                     .fg(Color::Rgb(222, 115, 86))
                     .add_modifier(Modifier::BOLD),
             )),
     );
-    f.render_widget(compliance_widget, main_chunks[1]);
+    f.render_widget(status_widget, main_chunks[1]);
 
     // Help
     let help = Paragraph::new(Line::from(vec![
         Span::styled(
-            "↑↓",
+            "Backspace",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(": Navigate | ", Style::default().fg(Color::Gray)),
-        Span::styled(
-            "s",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(": Scan | ", Style::default().fg(Color::Gray)),
+        Span::styled(": Back | ", Style::default().fg(Color::Gray)),
         Span::styled(
             "r",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(": Remediate | ", Style::default().fg(Color::Gray)),
-        Span::styled(
-            "q",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(": Back", Style::default().fg(Color::Gray)),
+        Span::styled(": Refresh", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)
     .block(

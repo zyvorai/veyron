@@ -1,6 +1,7 @@
-// Cost Analytics View
+// Cost Analytics View — wired to real VM data from AppState
 
 use crate::tui::colors::gradient;
+use crate::tui::state::AppState;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -9,7 +10,12 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect) {
+// AWS-like pricing constants (monthly)
+const CPU_MONTHLY: f64 = 30.0; // ~$30/core/month
+const MEM_GB_MONTHLY: f64 = 3.75; // ~$3.75/GB/month
+const STORAGE_GB_MONTHLY: f64 = 0.10; // $0.10/GB/month
+
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +27,6 @@ pub fn render(f: &mut Frame, area: Rect) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -43,7 +48,53 @@ pub fn render(f: &mut Frame, area: Rect) {
         );
     f.render_widget(header, chunks[0]);
 
-    // Cost summary
+    // Calculate costs from VM specs
+    struct VmCost {
+        name: String,
+        cpu_cost: f64,
+        mem_cost: f64,
+        storage_cost: f64,
+        total: f64,
+    }
+
+    let mut vm_costs: Vec<VmCost> = state
+        .vms
+        .iter()
+        .map(|vm| {
+            let cpu_cores: f64 = vm.cpu.parse().unwrap_or(0.0);
+            let mem_gib = crate::utils::parse_memory_gib(&vm.memory);
+            let disk_gib = crate::utils::parse_memory_gib(&vm.disk);
+
+            let cpu_cost = cpu_cores * CPU_MONTHLY;
+            let mem_cost = mem_gib * MEM_GB_MONTHLY;
+            let storage_cost = disk_gib * STORAGE_GB_MONTHLY;
+            let total = cpu_cost + mem_cost + storage_cost;
+
+            VmCost {
+                name: vm.name.clone(),
+                cpu_cost,
+                mem_cost,
+                storage_cost,
+                total,
+            }
+        })
+        .collect();
+
+    vm_costs.sort_by(|a, b| b.total.partial_cmp(&a.total).unwrap_or(std::cmp::Ordering::Equal));
+
+    let total_monthly: f64 = vm_costs.iter().map(|c| c.total).sum();
+    let daily_avg = total_monthly / 30.0;
+    let stopped_vms = state.vms.iter().filter(|v| v.status.contains("Stop")).count();
+    let stopped_savings: f64 = vm_costs
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| {
+            state.vms.get(*i).map(|v| v.status.contains("Stop")).unwrap_or(false)
+        })
+        .map(|(_, c)| c.total)
+        .sum();
+
+    // Cost summary panels
     let summary_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -58,22 +109,25 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled("  Total: ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "$2,847.52",
+                format!("${:.2}", total_monthly),
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  vs Last Month: ", Style::default().fg(Color::Gray)),
-            Span::styled("+8.3%", Style::default().fg(Color::Rgb(220, 50, 47))),
+            Span::styled("  VMs:   ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                state.vms.len().to_string(),
+                Style::default().fg(Color::White),
+            ),
         ]),
     ];
     let monthly_widget = Paragraph::new(monthly).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
-            .title(" This Month "),
+            .title(" Monthly Estimate "),
     );
     f.render_widget(monthly_widget, summary_chunks[0]);
 
@@ -82,15 +136,22 @@ pub fn render(f: &mut Frame, area: Rect) {
         Line::from(vec![
             Span::styled("  Avg Daily: ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "$94.92",
+                format!("${:.2}", daily_avg),
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  Today:     ", Style::default().fg(Color::Gray)),
-            Span::styled("$88.14", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("  Per VM:    ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                if state.vms.is_empty() {
+                    "$0.00".to_string()
+                } else {
+                    format!("${:.2}", total_monthly / state.vms.len() as f64)
+                },
+                Style::default().fg(Color::White),
+            ),
         ]),
     ];
     let daily_widget = Paragraph::new(daily).block(
@@ -104,24 +165,31 @@ pub fn render(f: &mut Frame, area: Rect) {
     let savings = vec![
         Line::from(""),
         Line::from(vec![
-            Span::styled("  Potential: ", Style::default().fg(Color::Gray)),
+            Span::styled("  Savings:   ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "$412.30",
+                format!("${:.2}", stopped_savings),
                 Style::default()
                     .fg(Color::Rgb(50, 205, 50))
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  Idle VMs:  ", Style::default().fg(Color::Gray)),
-            Span::styled("3 detected", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled("  Stopped:   ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{} VMs", stopped_vms),
+                Style::default().fg(if stopped_vms > 0 {
+                    Color::Rgb(255, 200, 0)
+                } else {
+                    Color::Gray
+                }),
+            ),
         ]),
     ];
     let savings_widget = Paragraph::new(savings).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
-            .title(" Savings Opportunity "),
+            .title(" Stopped VM Costs "),
     );
     f.render_widget(savings_widget, summary_chunks[2]);
 
@@ -131,7 +199,6 @@ pub fn render(f: &mut Frame, area: Rect) {
         "CPU Cost",
         "Memory Cost",
         "Storage Cost",
-        "Network",
         "Total",
     ]
     .iter()
@@ -146,96 +213,35 @@ pub fn render(f: &mut Frame, area: Rect) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let costs = [
-        (
-            "db-primary",
-            "$185.20",
-            "$312.40",
-            "$142.80",
-            "$18.50",
-            "$658.90",
-        ),
-        (
-            "web-server-01",
-            "$92.60",
-            "$156.20",
-            "$42.10",
-            "$45.30",
-            "$336.20",
-        ),
-        (
-            "web-server-02",
-            "$92.60",
-            "$156.20",
-            "$42.10",
-            "$38.70",
-            "$329.60",
-        ),
-        (
-            "api-gateway",
-            "$148.10",
-            "$208.30",
-            "$28.40",
-            "$62.10",
-            "$446.90",
-        ),
-        (
-            "worker-node-01",
-            "$120.40",
-            "$180.60",
-            "$85.20",
-            "$12.40",
-            "$398.60",
-        ),
-        (
-            "cache-server",
-            "$74.20",
-            "$312.40",
-            "$14.20",
-            "$8.60",
-            "$409.40",
-        ),
-        (
-            "test-vm-alpha",
-            "$37.10",
-            "$78.10",
-            "$28.40",
-            "$2.10",
-            "$145.70",
-        ),
-        (
-            "monitoring",
-            "$48.30",
-            "$52.10",
-            "$18.60",
-            "$3.22",
-            "$122.22",
-        ),
-    ];
-
-    let rows = costs.iter().map(|(name, cpu, mem, stor, net, total)| {
-        Row::new(vec![
-            Cell::from(*name),
-            Cell::from(*cpu),
-            Cell::from(*mem),
-            Cell::from(*stor),
-            Cell::from(*net),
-            Cell::from(*total).style(
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ])
-        .height(1)
-    });
+    let rows: Vec<Row> = if vm_costs.is_empty() {
+        vec![Row::new(vec![Cell::from("  No VMs to analyze")
+            .style(Style::default().fg(Color::Gray))])]
+    } else {
+        vm_costs
+            .iter()
+            .map(|c| {
+                Row::new(vec![
+                    Cell::from(c.name.as_str()),
+                    Cell::from(format!("${:.2}", c.cpu_cost)),
+                    Cell::from(format!("${:.2}", c.mem_cost)),
+                    Cell::from(format!("${:.2}", c.storage_cost)),
+                    Cell::from(format!("${:.2}", c.total)).style(
+                        Style::default()
+                            .fg(Color::White)
+                            .add_modifier(Modifier::BOLD),
+                    ),
+                ])
+                .height(1)
+            })
+            .collect()
+    };
 
     let widths = [
-        Constraint::Percentage(20),
-        Constraint::Percentage(14),
+        Constraint::Percentage(25),
+        Constraint::Percentage(18),
+        Constraint::Percentage(19),
+        Constraint::Percentage(19),
         Constraint::Percentage(16),
-        Constraint::Percentage(16),
-        Constraint::Percentage(14),
-        Constraint::Percentage(14),
     ];
 
     let table = Table::new(rows, widths)
@@ -257,40 +263,19 @@ pub fn render(f: &mut Frame, area: Rect) {
     // Help
     let help = Paragraph::new(Line::from(vec![
         Span::styled(
-            "↑↓",
+            "Backspace",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(": Navigate | ", Style::default().fg(Color::Gray)),
+        Span::styled(": Back | ", Style::default().fg(Color::Gray)),
         Span::styled(
-            "p",
+            "r",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(": Period | ", Style::default().fg(Color::Gray)),
-        Span::styled(
-            "t",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(": Trends | ", Style::default().fg(Color::Gray)),
-        Span::styled(
-            "e",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(": Export | ", Style::default().fg(Color::Gray)),
-        Span::styled(
-            "q",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        ),
-        Span::styled(": Back", Style::default().fg(Color::Gray)),
+        Span::styled(": Refresh", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)
     .block(

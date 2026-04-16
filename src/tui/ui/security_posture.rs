@@ -1,6 +1,7 @@
 // Detailed Security Posture View
 
 use crate::tui::colors::gradient;
+use crate::tui::state::AppState;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -9,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Gauge, Paragraph},
 };
 
-pub fn render(f: &mut Frame, area: Rect) {
+pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
