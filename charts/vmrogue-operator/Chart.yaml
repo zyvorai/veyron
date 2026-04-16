@@ -1,0 +1,16 @@
+apiVersion: v2
+name: vmrogue-operator
+description: VMRogue Kubernetes Operator for KubeVirt VM lifecycle management
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+keywords:
+  - kubevirt
+  - operator
+  - virtual-machine
+home: https://github.com/ssahani/VMRogue
+sources:
+  - https://github.com/ssahani/VMRogue
+maintainers:
+  - name: Susant Sahani
+    url: https://github.com/ssahani

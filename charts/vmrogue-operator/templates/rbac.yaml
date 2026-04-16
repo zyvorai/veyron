@@ -1,0 +1,49 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "vmrogue-operator.fullname" . }}
+  labels:
+    {{- include "vmrogue-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["vmrogue.io"]
+    resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["vmrogue.io"]
+    resources: ["vmroguevms/status", "vmrogueblueprints/status", "vmroguepolicies/status", "vmrogueinsights/status", "vmrogueactions/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["vmrogue.io"]
+    resources: ["vmroguevms/finalizers", "vmrogueblueprints/finalizers"]
+    verbs: ["update"]
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachines"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachineinstances"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["kubevirt.io"]
+    resources: ["virtualmachineinstancemigrations"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources: ["virtualmachinesnapshots"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "vmrogue-operator.fullname" . }}
+  labels:
+    {{- include "vmrogue-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "vmrogue-operator.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "vmrogue-operator.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

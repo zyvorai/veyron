@@ -1,0 +1,38 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ssahani/vmrogue-operator
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+# Install CRDs
+crds:
+  install: true
+
+# NATS event bus
+nats:
+  enabled: false
+  url: "nats://nats.vmrogue-system.svc:4222"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+leaderElection:
+  enabled: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
