@@ -3,18 +3,19 @@
 ## Project Statistics
 
 - **Lines of Code**: ~120,000
-- **Modules**: 37 public modules + 11 handler modules + 8 experimental modules
+- **Modules**: 56 public modules + 11 handler modules (all promoted, zero experimental)
 - **Templates**: 44 OS templates (with containerDisk images)
-- **CLI Commands**: 169
+- **CLI Commands**: 169+
 - **Resource Profiles**: 8 built-in
 - **Deployment Blueprints**: 5 built-in
-- **API Endpoints**: 30+ (REST + WebSocket)
-- **API Handlers Wired to Real K8s**: 19 (up from 8)
-- **Dashboard Pages**: 6 (Dashboard, VMs, Snapshots, Nodes, Pods, Events)
-- **Tests**: 1,781 (1,709 unit + 64 integration + 8 doc)
+- **API Endpoints**: 49 (REST + WebSocket), all returning real data
+- **API Handlers Wired to Real K8s**: 49 (zero stubs remaining)
+- **Dashboard Pages**: 15 (Dashboard, VMs, Snapshots, Nodes, Pods, Events, Cost, VNC Console, Security, Monitoring, Workloads, and more)
+- **TUI Views**: 31 (all rendering live data)
+- **Tests**: 2,433 (all passing)
 - **Compiler Warnings**: 0
 - **Dependencies**: 30 core + 1 dev
-- **Stub Handlers**: 31 return HTTP 501 Not Implemented
+- **Helm Charts**: vmrogue, vmrogue-operator
 
 ## Architecture
 
@@ -52,15 +53,14 @@ src/
 ├── observability/      (logs, metrics, alerts, insights)
 ├── multitenancy/       (tenants, RBAC, quotas)
 ├── api/                (REST API, OpenAPI, webhooks)
-│   ├── http_server.rs  (axum web server, 19 real K8s handlers + 31 stubs)
+│   ├── http_server.rs  (axum web server, 49 real K8s handlers)
 │   ├── web/            (dashboard HTML, noVNC bundle)
-│   └── handlers/       (47 endpoint handler modules)
+│   └── handlers/       (49 endpoint handler modules)
 ├── devexp/             (completions, config templates, diff, init)
 ├── operator_crds/      (VMRoguePolicy and other operator CRDs)
 └── [12 more modules]   (networking, finops, edge, secrets, etc.)
 
-# 8 experimental modules are gated behind the `experimental` feature flag.
-# Build with: cargo build --features experimental
+# All modules are included in default builds (no experimental feature gates).
 ```
 
 ## Completed Features
@@ -80,13 +80,16 @@ src/
 
 ### Web Dashboard & API
 - [x] Single-file HTML dashboard embedded in binary (Inter + JetBrains Mono fonts, dark theme)
-- [x] 30+ REST API endpoints with API key auth, rate limiting, security headers
-- [x] 19 API handlers wired to real Kubernetes (snapshots, templates, migrations, storage, disks, metrics, logs, network, health, topology, dependencies)
-- [x] VNC console via bundled noVNC (284KB) + virtctl WebSocket proxy
+- [x] 49 REST API endpoints with JWT Bearer auth, multi-key RBAC, rate limiting, security headers
+- [x] All 49 API handlers wired to real Kubernetes (zero stubs remaining)
+- [x] VNC console via bundled noVNC (284KB) + direct K8s API WebSocket (no virtctl timeout)
 - [x] VM detail panels with status, resources, network interfaces, guest OS, security posture
 - [x] VM creation from templates (44) with profile picker (8), cloud-init, auto-start
 - [x] Snapshot create/restore/delete from UI
 - [x] Nodes and Pods pages with auto-refresh
+- [x] Security page with posture score and findings table
+- [x] Monitoring page with Prometheus/Grafana detection and recommendations
+- [x] Workloads page with Deployment/StatefulSet/DaemonSet listing
 - [x] Real cluster capacity gauges (CPU, memory, nodes from K8s API)
 - [x] Real Kubernetes Metrics Server integration (replaced fake random data)
 - [x] WebSocket metrics streaming (`/api/v1/ws/metrics`)
@@ -96,8 +99,11 @@ src/
 - [x] Search/filter on VMs page
 - [x] API key login modal with remember me (localStorage)
 - [x] Kubernetes deployment with RBAC, NodePort, scratch Docker image (~75MB)
-- [x] SSH deployment script
-- [x] 31 stub handlers return HTTP 501 Not Implemented (clear contract for unimplemented endpoints)
+- [x] Helm charts for vmrogue and vmrogue-operator
+- [x] Kustomize overlays for dev and prod environments
+- [x] Prometheus ServiceMonitor with 6 alert rules
+- [x] Grafana dashboard with 10 panels
+- [x] K8s-only remote deployment via `scripts/deploy-k8s-remote.sh`
 - [x] Structured API error types (`VMRogueError` with 6 new variants + `IntoResponse`)
 
 ### Resource Profiles & Blueprints
@@ -192,6 +198,10 @@ src/
 - [x] GitOps integration
 
 ### Security & Robustness
+- [x] JWT Bearer token auth with HMAC-SHA256 signature verification
+- [x] Multi-key RBAC (admin/write/readonly) via `VMROGUE_API_KEYS`
+- [x] Persistent audit trail saved to disk
+- [x] Local secrets encryption with key expansion and integrity tag
 - [x] Centralized data directory (`utils::data_dir()`) — no `/tmp` fallback
 - [x] Atomic file writes with fsync and unique temp names (`utils::atomic_write()`)
 - [x] Kubeconfig caching via `tokio::sync::OnceCell` (`kube::get_client()`)
@@ -201,7 +211,7 @@ src/
 - [x] Auth bypass removed (referer-based authentication bypass eliminated)
 - [x] CI integration tests with Kind + KubeVirt
 - [x] Consolidated K8s quantity parsers in `utils`
-- [x] 8 scaffolding modules gated behind `experimental` feature flag
+- [x] All modules promoted (zero experimental feature gates)
 
 ## Quick Test Commands
 
@@ -249,5 +259,5 @@ cargo run -- tui --interactive
 8. **Centralized persistence**: All stores use `utils::data_dir()` and `utils::atomic_write()` for consistent, crash-safe file I/O
 9. **Client caching**: Kubeconfig parsed once and cached; `kube::get_client()` provides cheap client creation
 10. **Defense in depth**: SSRF prevention with DNS resolution + IP validation + connection pinning; secret zeroization on all code paths
-11. **501 Not Implemented pattern**: Stub handlers return `501` with a structured error body instead of fake data, making the API contract explicit
-12. **Experimental feature flag**: New modules are gated behind `--features experimental` to keep the default build stable
+11. **All handlers return real data**: Every API handler is wired to real Kubernetes; no stubs or fake data
+12. **Helm-first deployment**: Helm charts with full RBAC, TLS, and monitoring integration for production deployments

@@ -3,7 +3,7 @@
 [![CI](https://github.com/ssahani/VMRogue/workflows/CI/badge.svg)](https://github.com/ssahani/VMRogue/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org/)
+[![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org/)
 
 > Rogue VM management for KubeVirt — forged in Rust.
 
@@ -18,9 +18,9 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **Automated Health Checks** - Diagnostics with scoring and recommendations; health API with real K8s connectivity checks, KubeVirt availability, and process uptime
 - **Smart Recommendations** - AI-like resource suggestions based on workload
 - **Dependency Management** - Automatic VM deployment ordering
-- **Web Dashboard** - Real-time dashboard with VNC console, VM detail panels, security posture, node/pod views, cost page with namespace breakdown and forecast
-- **REST API** - 30+ endpoints with OpenAPI spec, API key auth, rate limiting, and webhooks
-- **VNC Console** - Browser-based VM console via noVNC with Ctrl+Alt+Del, fullscreen, reconnect
+- **Web Dashboard** - Real-time dashboard with 15 pages including VNC console, VM detail panels, security posture, monitoring, workloads, node/pod views, cost page with namespace breakdown and forecast
+- **REST API** - 49 endpoints with OpenAPI spec, JWT Bearer auth, multi-key RBAC, rate limiting, and webhooks
+- **VNC Console** - Browser-based VM console via direct K8s API WebSocket (no virtctl timeout) with Ctrl+Alt+Del, fullscreen, reconnect
 - **Real Kubernetes Metrics** - CPU/memory utilization from Kubernetes Metrics Server (no fake data)
 - **Policy Enforcement** - VMRoguePolicy CRDs evaluated on VM creation; Deny violations block the request
 - **Batch VM Operations** - Start, stop, restart, or delete multiple VMs in a single API call
@@ -45,7 +45,12 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **Real Pod Logs** - Logs API fetches real output from virt-launcher pods
 - **Storage & Disk Management** - List real StorageClasses, PVCs, and KubeVirt-labeled disks; expand disks via PVC patch
 - **Migration Management** - List, create, and cancel VirtualMachineInstanceMigration CRDs
-- **`experimental` Feature Flag** - Scaffolding-only modules gated behind a compile-time feature flag
+- **Helm Charts** - Production-ready Helm charts for VMRogue API and VMRogue Operator
+- **Kustomize Overlays** - Dev and prod environment overlays
+- **Prometheus Integration** - ServiceMonitor, 6 alert rules, and Grafana dashboard
+- **VMRogue Operator** - 8 action types, CEL policy expressions, Prometheus metrics
+- **Persistent Audit Trail** - Disk-backed audit log for all operations
+- **Local Secrets Encryption** - Key expansion and integrity tag for at-rest secret protection
 
 ## Installation
 
@@ -68,14 +73,17 @@ VMRogue includes a built-in web dashboard with a dark industrial theme.
 ### Start the API server
 
 ```bash
-# Set an API key (required)
+# Set API keys with RBAC roles (admin/write/readonly)
+export VMROGUE_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
+
+# Or use a single API key (legacy)
 export VMROGUE_API_KEY="your-secret-key"
 
 # Start the server
 vmrogue api-serve --port 5151 --host 0.0.0.0
 ```
 
-Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load (with a "Remember me" option).
+Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load (with a "Remember me" option). JWT Bearer tokens with HMAC-SHA256 signature verification are also supported.
 
 ### Dashboard features
 - **Dashboard** - Real-time VM fleet overview with live CPU/memory utilization charts (from Kubernetes Metrics Server), real cluster capacity gauges (CPU, memory, nodes), VM summary, and event feed
@@ -88,7 +96,9 @@ Open `http://localhost:5151/dashboard` in your browser. The dashboard will promp
 - **Nodes** - Kubernetes node table with CPU/memory capacity, kubelet version, OS info
 - **Pods** - Namespace pod listing with phase, node, IP, restarts, age
 - **Events** - Cluster event feed with auto-refresh
-- **Security** - Per-VM security posture scoring (Secure Boot, TPM, RNG, eviction strategy, resource limits)
+- **Security** - Per-VM security posture scoring (Secure Boot, TPM, RNG, eviction strategy, resource limits) with findings table
+- **Monitoring** - Prometheus/Grafana detection with health status and recommendations
+- **Workloads** - Deployment, StatefulSet, and DaemonSet listing with replica status
 - **WebSocket Metrics** - Live cluster metrics streamed over WebSocket (`/api/v1/ws/metrics`) at 5-second intervals
 - **Configurable refresh** - 5s/10s/30s/off auto-refresh saved to localStorage
 
@@ -108,13 +118,46 @@ Open `http://localhost:5151/dashboard` in your browser. The dashboard will promp
 
 The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresources, snapshots), a NodePort service on port 30151, and automatic API key secret creation. See `deploy/k8s.yaml` for the full manifest.
 
-### Deploy to a remote server via SSH
+### Deploy to a remote Kubernetes cluster via SSH
 
 ```bash
-./scripts/deploy-ssh.sh 185.165.240.5 sus
+./scripts/deploy-k8s-remote.sh 185.165.240.5 sus
 ```
 
-Builds a static musl binary, uploads via SCP, installs a systemd service, and starts it.
+Builds the container image, pushes to the remote node, and applies K8s manifests via SSH. No systemd required.
+
+### Deploy with Helm
+
+```bash
+# Install VMRogue API server
+helm install vmrogue ./charts/vmrogue \
+  --set apiKeys="admin:supersecret" \
+  --namespace vmrogue-system --create-namespace
+
+# Install VMRogue Operator
+helm install vmrogue-operator ./charts/vmrogue-operator \
+  --namespace vmrogue-system
+```
+
+The Helm charts include full RBAC, TLS, NetworkPolicy, Prometheus ServiceMonitor, and Grafana dashboard ConfigMap.
+
+### Deploy with Kustomize
+
+```bash
+# Development environment
+kubectl apply -k deploy/kustomize/overlays/dev
+
+# Production environment
+kubectl apply -k deploy/kustomize/overlays/prod
+```
+
+### Quick image builds
+
+Use `Dockerfile.deploy` for rapid image builds with virtctl included:
+
+```bash
+docker build -f Dockerfile.deploy -t vmrogue:latest .
+```
 
 ### Key API Endpoints
 
@@ -132,8 +175,15 @@ Builds a static musl binary, uploads via SCP, installs a systemd service, and st
 | `/api/v1/logs/{vm}` | GET | Fetch real pod logs from virt-launcher pods |
 | `/api/v1/topology` | GET | Node-to-VM placement dependency graph |
 | `/api/v1/network` | GET | Network topology from real VMI interfaces |
+| `/api/v1/rbac` | GET | ClusterRoles and ClusterRoleBindings |
+| `/api/v1/quotas` | GET | ResourceQuotas with CPU/memory limits |
+| `/api/v1/workloads` | GET | Deployments, StatefulSets, DaemonSets |
+| `/api/v1/hpa` | GET | HorizontalPodAutoscalers with replica status |
+| `/api/v1/helm` | GET | Helm releases discovered from Secrets |
+| `/api/v1/compliance` | GET | CIS benchmark compliance checking |
+| `/api/v1/audit` | GET | Persistent audit trail |
 
-See the OpenAPI spec for the full list of 30+ endpoints.
+All 49 API handlers return real data from the Kubernetes API. See the OpenAPI spec for the full endpoint list.
 
 ## Quick Start
 
@@ -269,6 +319,7 @@ vmrogue create production-db --template ubuntu-22.04 --profile database
 # List VMs
 vmrogue list
 vmrogue list --all-namespaces
+vmrogue list-json                   # JSON Lines output for scripting
 
 # Get VM details and status
 vmrogue get production-db
@@ -279,10 +330,15 @@ vmrogue status production-db --watch  # Watch mode
 vmrogue health production-db
 vmrogue health production-db --detailed
 
-# Start/Stop/Restart VMs
+# Start/Stop/Restart/Pause VMs
 vmrogue start production-db
 vmrogue stop production-db
 vmrogue restart production-db
+vmrogue pause production-db
+vmrogue unpause production-db
+
+# Resize VM resources
+vmrogue resize production-db --cpus 8 --memory 32Gi
 
 # Clone VM
 vmrogue clone production-db staging-db --start
@@ -290,9 +346,53 @@ vmrogue clone production-db staging-db --start
 # Export VM config
 vmrogue export production-db --output prod-db.yaml
 
+# Import VM from KubeVirt YAML manifest
+vmrogue import prod-db.yaml
+
 # Delete VM
 vmrogue delete production-db
 vmrogue delete production-db --yes  # Skip confirmation
+```
+
+### Cluster Operations
+
+```bash
+# List cluster nodes with status, roles, resources
+vmrogue nodes
+
+# List pods with status, node, IP, restarts
+vmrogue pods
+
+# List Kubernetes events
+vmrogue events
+
+# Cluster capacity analysis
+vmrogue capacity
+
+# Optimal node placement recommendation
+vmrogue placement my-vm --strategy spread
+
+# Search VMs with natural language
+vmrogue search "running vms in production"
+
+# AI-assisted VM diagnostics
+vmrogue troubleshoot my-vm
+```
+
+### Multi-Cluster & GitOps
+
+```bash
+# List configured clusters
+vmrogue clusters-list
+
+# Discover clusters from kubeconfig
+vmrogue clusters-discover
+
+# Compare local manifests to live cluster state
+vmrogue gitops-diff --namespace production
+
+# Check GitOps sync status
+vmrogue gitops-status
 ```
 
 ### GitOps Export
@@ -477,18 +577,6 @@ refresh_interval = 5     # seconds
 interactive = false
 ```
 
-### Feature Flags
-
-VMRogue uses Cargo feature flags to control optional functionality:
-
-```bash
-# Build with experimental modules enabled
-cargo build --features experimental
-
-# The `experimental` flag gates 8 scaffolding-only modules
-# that are under active development
-```
-
 ## Library Usage
 
 Use vmrogue as a library in your Rust projects:
@@ -516,25 +604,25 @@ fn main() -> anyhow::Result<()> {
 
 ## Roadmap
 
-### Current Status (v0.2.0)
+### Current Status
 
-**Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands, configuration validation, YAML/JSON output, cloud-init support. 1,781 tests (1,709 unit + 64 integration + 8 doc).
+**Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands (including pause, unpause, resize, events, nodes, pods, import, search, troubleshoot, capacity, placement, list-json, clusters-list, clusters-discover, gitops-diff, gitops-status), configuration validation, YAML/JSON output, cloud-init support. 2,433 tests passing. All modules promoted (zero experimental feature gates).
 
-**Kubernetes** - Full CRUD, VM lifecycle management, KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types. 19 API handlers wired to real Kubernetes (up from 8).
+**Kubernetes** - Full CRUD, VM lifecycle management (including pause/unpause and resize), KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types. All 49 API handlers return real data from the Kubernetes API (zero stubs remaining).
 
-**Real K8s Integration** - Snapshots via VirtualMachineSnapshot CRDs, 44 OS templates with real data, migrations via VirtualMachineInstanceMigration CRDs, real StorageClasses and PVCs, disk listing with KubeVirt labels and PVC-based expansion, metrics from Kubernetes Metrics Server, real pod logs from virt-launcher pods. 31 stub handlers now return HTTP 501 instead of misleading 200+empty.
+**TUI** - All 31 TUI views render live data from the cluster. Interactive terminal UI with ratatui covering VM management, security dashboard, cost analytics, compliance, performance profiling, RBAC visualization, migration wizard, and more.
 
-**Operations** - Custom profile/blueprint CRUD with filesystem persistence, cost estimation and budgets (with ConfigMap-backed budget alerts), VM snapshots and backups with scheduling, live migration with progress tracking and HA, interactive TUI with ratatui, GitOps export (`vmrogue gitops-export`), automation rule execution engine.
+**Operations** - Custom profile/blueprint CRUD with filesystem persistence, cost estimation and budgets (with ConfigMap-backed budget alerts), VM snapshots and backups with scheduling, live migration with progress tracking and HA, GitOps export/diff/status, automation rule execution engine with 8 action types.
 
-**Multi-Cluster & DR** - Multi-cluster management via kubeconfig context discovery with per-cluster sync. DR cross-cluster VM replication with `export_dr_manifests`.
+**Multi-Cluster & DR** - Multi-cluster management via kubeconfig context discovery with per-cluster sync. DR cross-cluster VM replication with `export_dr_manifests`. CLI commands for cluster listing and discovery.
 
-**Policy & Automation** - VMRoguePolicy CRD enforcement on VM creation (blocks Deny violations). Automation rules with real K8s API calls for start/stop/restart/snapshot/delete. CRDPolicyRule supports structured `value` field for condition thresholds.
+**Policy & Automation** - VMRoguePolicy CRD enforcement on VM creation (blocks Deny violations). VMRogue Operator with CEL policy expressions, 8 action types (CreateSnapshot, DeleteVM, Migrate, SendNotification, and 4 more), and Prometheus metrics. Automation rules with real K8s API calls.
 
-**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization. Network topology from real VMI interfaces (IP, MAC, interface name). Auth bypass removed (referer-based dashboard bypass was spoofable).
+**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization and local encryption. Network topology from real VMI interfaces (IP, MAC, interface name). JWT Bearer token auth with HMAC-SHA256 signature verification. Multi-key RBAC (admin/write/readonly) via `VMROGUE_API_KEYS`. Persistent audit trail.
 
-**API & Dashboard** - REST API with 30+ endpoints, OpenAPI spec, API key auth, rate limiting, webhooks. Web dashboard with VNC console (bundled noVNC), VM detail panels, security posture scoring, node/pod views, search/filter, profile picker, cloud-init editor. New: batch VM operations (`POST /api/v1/vms/batch`), WebSocket metrics streaming (`/api/v1/ws/metrics`), cost dashboard with namespace breakdown and forecast chart, cost budget API (`/api/v1/costs/budgets`), health check API with real K8s connectivity.
+**API & Dashboard** - REST API with 49 endpoints, OpenAPI spec, JWT auth, multi-key RBAC, rate limiting, webhooks. Web dashboard with 15 pages: Dashboard, VMs, Snapshots, Nodes, Pods, Events, Cost, VNC Console, Security, Monitoring, Workloads, and more. VNC console uses direct K8s API WebSocket (no virtctl timeout). Batch VM operations, WebSocket metrics streaming, cost budget management.
 
-**Infrastructure** - Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. SSH deploy scripts. Docker image (scratch-based, ~75MB) with bundled virtctl for VNC. Structured API error types (VMRogueError with IntoResponse). CI integration tests with Kind + KubeVirt (nightly job). Scaffolding modules gated behind `experimental` feature flag. Consolidated K8s quantity parsers in utils.
+**Infrastructure** - Helm charts for vmrogue and vmrogue-operator. Kustomize overlays for dev/prod. Prometheus ServiceMonitor with 6 alert rules. Grafana dashboard with 10 panels. Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. Docker image with Dockerfile.deploy for quick builds. CI integration tests with Kind + KubeVirt.
 
 ### Future Enhancements
 
@@ -634,8 +722,11 @@ See the `examples/` directory for more configuration examples:
 VMRogue follows secure-by-default principles:
 
 - **No `unsafe` code** - The entire codebase is safe Rust
-- **Auth bypass removed** - Referer-based dashboard bypass was spoofable; now requires proper API key authentication
-- **Structured error types** - VMRogueError variants ensure internal details are never leaked; 31 stub handlers return HTTP 501 instead of misleading 200+empty
+- **JWT Bearer token auth** - HMAC-SHA256 signature verification for API authentication
+- **Multi-key RBAC** - Admin, write, and readonly roles via `VMROGUE_API_KEYS` environment variable
+- **Persistent audit trail** - All operations logged to disk for forensic review
+- **Local secrets encryption** - At-rest encryption with key expansion and integrity tag
+- **Structured error types** - VMRogueError variants ensure internal details are never leaked
 - **Secret zeroization** - Secrets are cleared from memory on drop, rotate, and revoke via the `zeroize` crate
 - **SSRF prevention** - Webhook URLs validated against private/internal IPs with DNS rebinding protection
 - **Crash-safe persistence** - Atomic writes with fsync and unique temp file names; no `/tmp` fallback

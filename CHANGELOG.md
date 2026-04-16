@@ -57,12 +57,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `placement` - Optimal node recommendation (spread/binpack/leastloaded)
 - `list-json` - JSON Lines output for scripting
 
-#### All 19 TUI Preview Views Wired to Real Data
+#### All 31 TUI Views Render Live Data
+- All 31 TUI views now render live data from the cluster (was 12 real + 19 preview)
 - SecurityDashboard, CostAnalytics, ComplianceChecker, VulnerabilityScanner
 - AuditPanel, Timeline, DependencyGraph, ForecastDashboard
 - PerformanceProfiler, NlpSearch, RbacVisualizer, CustomMetrics
 - Autoscaler, SecurityPosture, AiTroubleshoot, ChangeApproval
 - MacroView, SessionSharing, MigrationWizard
+- Plus all 12 previously-wired views
 
 #### Infrastructure
 - **Helm charts** for VMRogue API and operator with full RBAC, TLS, NetworkPolicy
@@ -83,27 +85,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CEL policy expressions** via google/cel-go for custom compliance rules
 - **4 new action types**: CreateSnapshot, DeleteVM, Migrate, SendNotification
 
-#### Modules Promoted from Experimental
+#### All Modules Promoted from Experimental (Zero Feature Gates Remaining)
 - capacity, edge, finops, multicloud, servicemesh, hypervisor
 - nlp_search, ai_troubleshoot, session_sharing
+- The `experimental` Cargo feature flag has been removed; all modules are included in default builds
 
 #### Web Dashboard
 - Security page with posture score and findings table
 - Monitoring page with Prometheus/Grafana detection and recommendations
 - Workloads page with Deployment/StatefulSet/DaemonSet listing
 
-#### API Handlers Wired to Real Kubernetes (11 new, 19 total)
-- **Snapshots** - Real VirtualMachineSnapshot CRD integration
-- **Templates** - Returns real 44 OS templates
-- **Migrations** - Lists/creates/cancels VirtualMachineInstanceMigration CRDs
-- **Storage** - Lists real StorageClasses and PVCs
-- **Disks** - Lists PVCs with KubeVirt labels, supports disk expansion
-- **Metrics** - Real Kubernetes Metrics Server (replaced `rand::thread_rng` fake data)
-- **Logs** - Real pod logs from virt-launcher pods
-- **Network** - Real VMI interfaces (IP, MAC)
-- **Health** - Real K8s connectivity + KubeVirt availability checks
-- **Topology** - Real node-to-VM placement graph
-- **Dependencies** - Real VM dependency graph from annotations
+#### All API Handlers Wired to Real Kubernetes (49 total, zero stubs)
+- All 49 API handlers return real data from the Kubernetes API
+- Previously 19 handlers were wired with 31 stubs returning HTTP 501; now all stubs have been replaced with real implementations
+- **VNC Console** uses direct K8s API WebSocket (no virtctl timeout)
 
 #### New Capabilities
 - **WebSocket metrics streaming** - Live metrics via `/api/v1/ws/metrics`
@@ -118,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Web Dashboard
 - Full-featured web dashboard embedded in binary (single HTML, no build tools)
-- **VNC Console** - Browser-based VM console via bundled noVNC (284KB), proxied through virtctl to KubeVirt VNC subresource
+- **VNC Console** - Browser-based VM console via bundled noVNC (284KB), using direct K8s API WebSocket (no virtctl timeout)
 - **VM Detail Panel** - Click any VM to expand inline: status, resources, network interfaces (IP/MAC), guest OS info, security posture
 - **VM Creation Modal** - Forge VMs from 43 templates with profile picker (8 profiles), CPU/memory/disk overrides, cloud-init editor, auto-start
 - **Security Posture** - Per-VM scoring (0-100) checking Secure Boot, TPM 2.0, RNG, eviction strategy, resource limits
@@ -150,8 +145,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/deploy-k8s.sh` - One-command K8s deploy (build/push/deploy/status/logs/delete)
 - `Dockerfile` - Scratch-based image (~75MB) with static musl binary + virtctl
 
-#### SSH Deployment
-- `scripts/deploy-ssh.sh` - Deploy to remote server via SCP + systemd
+#### Remote Deployment
+- `scripts/deploy-k8s-remote.sh` - Deploy to remote Kubernetes cluster via SSH (replaces systemd-based deploy)
+- `Dockerfile.deploy` - Quick image builds with virtctl included
 
 ### Fixed
 - **VM creation preserved containerDisk** - Templates with OS container images (quay.io/containerdisks/*) were being converted to blank disks; now preserves disk source type, cloud-init, RNG, clock, features, firmware, and labels
@@ -163,16 +159,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### Infrastructure
-- **31 stub handlers return HTTP 501** - Unimplemented API endpoints now return `501 Not Implemented` with a structured error body instead of silently returning empty data
+- **All 49 API handlers return real data** - Zero stub handlers remaining; all previously-501 endpoints now wired to real Kubernetes
 - **Structured API error types** - `VMRogueError` expanded with 6 new variants plus `IntoResponse` implementation for consistent error responses
 - **CI integration tests** - Added Kind + KubeVirt integration test suite
-- **8 scaffolding modules gated behind `experimental` feature flag** - New modules are opt-in until stabilized
+- **All experimental modules promoted** - The `experimental` Cargo feature flag has been removed; all modules included in default builds
 - **Consolidated K8s quantity parsers** - Unified quantity parsing utilities in `utils` module
 - **CRDPolicyRule `value` field** - Policy rules now carry a `value` field for threshold-based enforcement
+- **K8s-only deployment** - Deployment is Kubernetes-native via `scripts/deploy-k8s-remote.sh`; systemd-based SSH deployment removed
 
 #### Statistics
-- **Tests**: 1,781 (1,709 unit + 64 integration + 8 doc)
-- **API handlers wired to real K8s**: 19 (up from 8)
+- **Tests**: 2,433 (all passing)
+- **API handlers**: 49 (all returning real data)
+- **TUI views**: 31 (all rendering live data)
 
 ### Security
 
