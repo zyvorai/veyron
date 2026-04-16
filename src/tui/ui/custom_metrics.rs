@@ -10,7 +10,24 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+/// Format a history buffer into a trend string (change from previous to latest)
+fn trend_from_history(history: &[u64]) -> (String, bool) {
+    if history.len() < 2 {
+        return ("--".to_string(), false);
+    }
+    let prev = history[history.len() - 2] as i64;
+    let curr = *history.last().unwrap() as i64;
+    let diff = curr - prev;
+    if diff > 0 {
+        (format!("+{}%", diff), true)
+    } else if diff < 0 {
+        (format!("{}%", diff), false)
+    } else {
+        ("0%".to_string(), false)
+    }
+}
+
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +38,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -63,40 +79,56 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let metrics = vec![
-        ("vm_cpu_utilization", "52.3", "%", "+2.1%", "OK"),
-        ("vm_memory_pressure", "67.8", "%", "+0.5%", "OK"),
-        ("vm_disk_iops", "4,521", "ops/s", "-12.3%", "OK"),
-        ("vm_network_throughput", "248.5", "MiB/s", "+8.7%", "OK"),
-        ("vm_boot_time_avg", "18.2", "sec", "+1.4s", "WARN"),
-        ("vm_migration_success", "98.5", "%", "-0.2%", "OK"),
-        ("snapshot_create_time", "12.8", "sec", "+3.1s", "WARN"),
-        ("api_latency_p99", "142", "ms", "+22ms", "ALERT"),
-        ("storage_iops_avg", "8,240", "ops/s", "-5.1%", "OK"),
-        ("network_packet_loss", "0.02", "%", "+0.01%", "OK"),
+    let stats = state.get_stats();
+    let cpu_val = state.cpu_history.last().copied().unwrap_or(0);
+    let mem_val = state.memory_history.last().copied().unwrap_or(0);
+    let disk_val = state.disk_history.last().copied().unwrap_or(0);
+    let net_val = state.network_history.last().copied().unwrap_or(0);
+
+    let (cpu_trend, cpu_up) = trend_from_history(&state.cpu_history);
+    let (mem_trend, mem_up) = trend_from_history(&state.memory_history);
+    let (disk_trend, disk_up) = trend_from_history(&state.disk_history);
+    let (net_trend, net_up) = trend_from_history(&state.network_history);
+
+    let cpu_alert = if cpu_val > 80 { "WARN" } else { "OK" };
+    let mem_alert = if mem_val > 80 { "WARN" } else { "OK" };
+    let disk_alert = if disk_val > 80 { "WARN" } else { "OK" };
+    let net_alert = if net_val > 80 { "WARN" } else { "OK" };
+
+    let metrics: Vec<(&str, String, &str, String, bool, &str)> = vec![
+        ("vm_cpu_utilization", format!("{}", cpu_val), "%", cpu_trend, cpu_up, cpu_alert),
+        ("vm_memory_pressure", format!("{}", mem_val), "%", mem_trend, mem_up, mem_alert),
+        ("vm_disk_io", format!("{}", disk_val), "%", disk_trend, disk_up, disk_alert),
+        ("vm_network_throughput", format!("{}", net_val), "%", net_trend, net_up, net_alert),
+        ("vm_total_count", format!("{}", stats.total), "vms", "--".to_string(), false, "OK"),
+        ("vm_running_count", format!("{}", stats.running), "vms", "--".to_string(), false, if stats.running < stats.total { "WARN" } else { "OK" }),
+        ("vm_failed_count", format!("{}", stats.failed), "vms", "--".to_string(), false, if stats.failed > 0 { "ALERT" } else { "OK" }),
+        ("vm_stopped_count", format!("{}", stats.stopped), "vms", "--".to_string(), false, "OK"),
+        ("node_count", format!("{}", state.nodes.len()), "nodes", "--".to_string(), false, "OK"),
+        ("snapshot_count", format!("{}", state.snapshots.len()), "snaps", "--".to_string(), false, "OK"),
     ];
 
-    let rows = metrics.iter().map(|(name, val, unit, trend, alert)| {
+    let rows: Vec<Row> = metrics.iter().map(|(name, val, unit, trend, is_up, alert)| {
         let alert_color = match *alert {
             "OK" => Color::Rgb(50, 205, 50),
             "WARN" => Color::Rgb(255, 200, 0),
             "ALERT" => Color::Rgb(220, 50, 47),
             _ => Color::Gray,
         };
-        let trend_color = if trend.starts_with('+') {
+        let trend_color = if *is_up {
             Color::Rgb(255, 200, 0)
         } else {
             Color::Rgb(50, 205, 50)
         };
         Row::new(vec![
             Cell::from(*name).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(*val).style(
+            Cell::from(val.as_str()).style(
                 Style::default()
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD),
             ),
             Cell::from(*unit),
-            Cell::from(*trend).style(Style::default().fg(trend_color)),
+            Cell::from(trend.as_str()).style(Style::default().fg(trend_color)),
             Cell::from(*alert).style(
                 Style::default()
                     .fg(alert_color)
@@ -104,7 +136,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
             ),
         ])
         .height(1)
-    });
+    }).collect();
 
     let widths = [
         Constraint::Percentage(30),
@@ -130,27 +162,48 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .column_spacing(1);
     f.render_widget(table, content_chunks[0]);
 
-    // Metric configuration
+    // Metric configuration - show history sparklines as text
+    let cpu_spark: String = state.cpu_history.iter().rev().take(10).rev()
+        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+        .collect();
+    let mem_spark: String = state.memory_history.iter().rev().take(10).rev()
+        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+        .collect();
+    let disk_spark: String = state.disk_history.iter().rev().take(10).rev()
+        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+        .collect();
+    let net_spark: String = state.network_history.iter().rev().take(10).rev()
+        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+        .collect();
+
     let config_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Active Dashboards",
+            "  Trend History (last 10)",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  [1] ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("VM Performance Overview", Style::default().fg(Color::White)),
+            Span::styled("  CPU:  [", Style::default().fg(Color::Gray)),
+            Span::styled(cpu_spark, Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled("]", Style::default().fg(Color::Gray)),
         ]),
         Line::from(vec![
-            Span::styled("  [2] ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("Storage Analytics", Style::default().fg(Color::White)),
+            Span::styled("  Mem:  [", Style::default().fg(Color::Gray)),
+            Span::styled(mem_spark, Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled("]", Style::default().fg(Color::Gray)),
         ]),
         Line::from(vec![
-            Span::styled("  [3] ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("Network Metrics", Style::default().fg(Color::White)),
+            Span::styled("  Disk: [", Style::default().fg(Color::Gray)),
+            Span::styled(disk_spark, Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("]", Style::default().fg(Color::Gray)),
+        ]),
+        Line::from(vec![
+            Span::styled("  Net:  [", Style::default().fg(Color::Gray)),
+            Span::styled(net_spark, Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled("]", Style::default().fg(Color::Gray)),
         ]),
         Line::from(""),
         Line::from(Span::styled(
@@ -162,39 +215,47 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         Line::from(""),
         Line::from(vec![
             Span::styled(
-                "  api_latency_p99 > 100ms  ",
+                format!("  CPU > 80%        (now: {}%)  ", cpu_val),
                 Style::default().fg(Color::White),
             ),
             Span::styled(
-                "TRIGGERED",
+                if cpu_val > 80 { "TRIGGERED" } else { "OK" },
                 Style::default()
-                    .fg(Color::Rgb(220, 50, 47))
+                    .fg(if cpu_val > 80 { Color::Rgb(220, 50, 47) } else { Color::Rgb(50, 205, 50) })
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
         Line::from(vec![
             Span::styled(
-                "  vm_boot_time_avg > 15s   ",
+                format!("  Memory > 80%     (now: {}%)  ", mem_val),
                 Style::default().fg(Color::White),
             ),
             Span::styled(
-                "TRIGGERED",
+                if mem_val > 80 { "TRIGGERED" } else { "OK" },
                 Style::default()
-                    .fg(Color::Rgb(220, 50, 47))
+                    .fg(if mem_val > 80 { Color::Rgb(220, 50, 47) } else { Color::Rgb(50, 205, 50) })
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
         Line::from(vec![
             Span::styled(
-                "  vm_cpu_utilization > 80% ",
+                format!("  Failed VMs > 0   (now: {})   ", stats.failed),
                 Style::default().fg(Color::White),
             ),
-            Span::styled("OK", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled(
+                if stats.failed > 0 { "TRIGGERED" } else { "OK" },
+                Style::default()
+                    .fg(if stats.failed > 0 { Color::Rgb(220, 50, 47) } else { Color::Rgb(50, 205, 50) })
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]),
         Line::from(""),
         Line::from(vec![
             Span::styled("  Refresh: ", Style::default().fg(Color::Gray)),
-            Span::styled("every 30s", Style::default().fg(Color::White)),
+            Span::styled(
+                format!("every {}s", state.refresh_interval),
+                Style::default().fg(Color::White),
+            ),
         ]),
     ];
     let config_widget = Paragraph::new(config_lines).block(

@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -22,7 +22,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -44,7 +43,33 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         );
     f.render_widget(header, chunks[0]);
 
-    // Issue description input
+    // Find problematic VMs
+    let failed_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| vm.status == "Failed" || vm.status == "Error")
+        .map(|vm| vm.name.as_str())
+        .collect();
+    let not_ready_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| !vm.ready && vm.status != "Stopped")
+        .map(|vm| vm.name.as_str())
+        .collect();
+    let no_ip_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| (vm.ip == "N/A" || vm.ip.is_empty()) && vm.status == "Running")
+        .map(|vm| vm.name.as_str())
+        .collect();
+    let no_node_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| (vm.node == "N/A" || vm.node.is_empty()) && vm.status != "Stopped")
+        .map(|vm| vm.name.as_str())
+        .collect();
+
+    let total_issues = failed_vms.len() + not_ready_vms.len() + no_ip_vms.len() + no_node_vms.len();
+
+    // Issue description
+    let issue_text = if total_issues > 0 {
+        format!("Detected {} issue(s) across {} VM(s)", total_issues, state.vms.len())
+    } else {
+        format!("All {} VM(s) appear healthy", state.vms.len())
+    };
+
     let input_lines = vec![
         Line::from(""),
         Line::from(vec![
@@ -55,7 +80,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                "VM db-primary is experiencing high latency and intermittent connection drops",
+                issue_text,
                 Style::default().fg(Color::White),
             ),
         ]),
@@ -65,7 +90,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
-                " Describe the Issue ",
+                " Automated Diagnosis ",
                 Style::default()
                     .fg(Color::Rgb(222, 115, 86))
                     .add_modifier(Modifier::BOLD),
@@ -79,7 +104,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chunks[2]);
 
-    let diagnosis = vec![
+    let mut diagnosis = vec![
         Line::from(""),
         Line::from(Span::styled(
             "  Diagnostic Analysis",
@@ -94,80 +119,149 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
         )),
-        Line::from(vec![
+    ];
+
+    // Check: failed VMs
+    if failed_vms.is_empty() {
+        diagnosis.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled(
-                "VM is running and responsive",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled(
-                "Node resources are adequate",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
-            Span::styled(
-                "Disk I/O wait time elevated (12%)",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
+            Span::styled("No VMs in failed state", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        diagnosis.push(Line::from(vec![
             Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                "Network packet loss detected (2.3%)",
+                format!("{} VM(s) failed: {}", failed_vms.len(), failed_vms.join(", ")),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
+        ]));
+    }
+
+    // Check: not ready VMs
+    if not_ready_vms.is_empty() {
+        diagnosis.push(Line::from(vec![
+            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("All active VMs are ready", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        diagnosis.push(Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                "Memory pressure: 89% utilized",
+                format!("{} VM(s) not ready: {}", not_ready_vms.len(), not_ready_vms.join(", ")),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
+        ]));
+    }
+
+    // Check: no IP
+    if no_ip_vms.is_empty() {
+        diagnosis.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("All running VMs have IPs", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        diagnosis.push(Line::from(vec![
+            Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                "No recent migrations or restarts",
+                format!("{} running VM(s) without IP: {}", no_ip_vms.len(), no_ip_vms.join(", ")),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Root Cause Assessment",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
+        ]));
+    }
+
+    // Check: no node
+    if no_node_vms.is_empty() {
+        diagnosis.push(Line::from(vec![
+            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("All active VMs assigned to nodes", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        diagnosis.push(Line::from(vec![
+            Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                format!("{} VM(s) unassigned: {}", no_node_vms.len(), no_node_vms.join(", ")),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+    }
+
+    // Check: node health
+    let unhealthy_nodes: Vec<&str> = state.nodes.iter()
+        .filter(|n| n.status != "Ready")
+        .map(|n| n.name.as_str())
+        .collect();
+    if unhealthy_nodes.is_empty() && !state.nodes.is_empty() {
+        diagnosis.push(Line::from(vec![
+            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("All nodes healthy", Style::default().fg(Color::White)),
+        ]));
+    } else if !unhealthy_nodes.is_empty() {
+        diagnosis.push(Line::from(vec![
+            Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
+            Span::styled(
+                format!("{} unhealthy node(s): {}", unhealthy_nodes.len(), unhealthy_nodes.join(", ")),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+    }
+
+    diagnosis.push(Line::from(""));
+    diagnosis.push(Line::from(Span::styled(
+        "  Root Cause Assessment",
+        Style::default()
+            .fg(Color::Rgb(222, 115, 86))
+            .add_modifier(Modifier::BOLD),
+    )));
+    diagnosis.push(Line::from(""));
+
+    if total_issues == 0 {
+        diagnosis.push(Line::from(vec![
             Span::styled("  Confidence: ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "87%",
+                "100%",
                 Style::default()
                     .fg(Color::Rgb(50, 205, 50))
                     .add_modifier(Modifier::BOLD),
             ),
-        ]),
-        Line::from(vec![
-            Span::styled("  Likely cause: ", Style::default().fg(Color::Gray)),
+        ]));
+        diagnosis.push(Line::from(vec![
+            Span::styled("  Result: ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "Network congestion on node-2",
-                Style::default().fg(Color::Rgb(220, 50, 47)),
+                "No issues detected",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
             ),
-        ]),
-        Line::from(vec![
-            Span::styled("  Contributing: ", Style::default().fg(Color::Gray)),
+        ]));
+    } else {
+        let confidence = if !failed_vms.is_empty() { "High" } else { "Medium" };
+        diagnosis.push(Line::from(vec![
+            Span::styled("  Confidence: ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "Memory pressure causing swap I/O",
-                Style::default().fg(Color::Rgb(255, 200, 0)),
+                confidence,
+                Style::default()
+                    .fg(Color::Rgb(255, 200, 0))
+                    .add_modifier(Modifier::BOLD),
             ),
-        ]),
-    ];
+        ]));
+        if !failed_vms.is_empty() {
+            diagnosis.push(Line::from(vec![
+                Span::styled("  Likely cause: ", Style::default().fg(Color::Gray)),
+                Span::styled(
+                    format!("VM failure in {}", failed_vms[0]),
+                    Style::default().fg(Color::Rgb(220, 50, 47)),
+                ),
+            ]));
+        }
+        if !not_ready_vms.is_empty() {
+            diagnosis.push(Line::from(vec![
+                Span::styled("  Contributing: ", Style::default().fg(Color::Gray)),
+                Span::styled(
+                    format!("{} VM(s) not ready", not_ready_vms.len()),
+                    Style::default().fg(Color::Rgb(255, 200, 0)),
+                ),
+            ]));
+        }
+    }
+
     let diagnosis_widget = Paragraph::new(diagnosis).block(
         Block::default()
             .borders(Borders::ALL)
@@ -181,7 +275,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
     );
     f.render_widget(diagnosis_widget, content_chunks[0]);
 
-    let remediation = vec![
+    // Remediation suggestions
+    let mut remediation = vec![
         Line::from(""),
         Line::from(Span::styled(
             "  Recommended Actions",
@@ -190,81 +285,82 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(vec![
+    ];
+
+    let mut action_num = 1;
+
+    if !failed_vms.is_empty() {
+        for vm_name in &failed_vms {
+            remediation.push(Line::from(vec![
+                Span::styled(
+                    format!("  {}. ", action_num),
+                    Style::default()
+                        .fg(Color::Rgb(220, 50, 47))
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!("[URGENT] Restart failed VM: {}", vm_name),
+                    Style::default().fg(Color::White),
+                ),
+            ]));
+            action_num += 1;
+        }
+        remediation.push(Line::from(""));
+    }
+
+    if !no_ip_vms.is_empty() {
+        remediation.push(Line::from(vec![
             Span::styled(
-                "  1. ",
-                Style::default()
-                    .fg(Color::Rgb(220, 50, 47))
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                "[URGENT] Migrate to less congested node",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     ", Style::default()),
-            Span::styled(
-                "Migrate db-primary from node-2 to node-3",
-                Style::default().fg(Color::Gray),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "~30s downtime during migration",
-                Style::default().fg(Color::Rgb(255, 200, 0)),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  2. ",
+                format!("  {}. ", action_num),
                 Style::default()
                     .fg(Color::Rgb(255, 200, 0))
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                "[HIGH] Increase VM memory allocation",
+                format!("[HIGH] Check networking for {} VM(s) without IP", no_ip_vms.len()),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
-            Span::styled("     ", Style::default()),
+        ]));
+        action_num += 1;
+        remediation.push(Line::from(""));
+    }
+
+    if !not_ready_vms.is_empty() {
+        remediation.push(Line::from(vec![
             Span::styled(
-                "Increase from 32Gi to 48Gi",
-                Style::default().fg(Color::Gray),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled(
-                "  3. ",
+                format!("  {}. ", action_num),
                 Style::default()
                     .fg(Color::Rgb(100, 150, 255))
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                "[INFO] Review network policies on node-2",
+                format!("[INFO] Investigate {} not-ready VM(s)", not_ready_vms.len()),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
-            Span::styled("     ", Style::default()),
+        ]));
+        remediation.push(Line::from(""));
+    }
+
+    if total_issues == 0 {
+        remediation.push(Line::from(vec![
+            Span::styled("  ", Style::default()),
             Span::styled(
-                "Check for bandwidth throttling rules",
-                Style::default().fg(Color::Gray),
+                "No actions needed - all VMs healthy",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
             ),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Auto-Remediation",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
+        ]));
+        remediation.push(Line::from(""));
+    }
+
+    remediation.push(Line::from(Span::styled(
+        "  Auto-Remediation",
+        Style::default()
+            .fg(Color::Rgb(222, 115, 86))
+            .add_modifier(Modifier::BOLD),
+    )));
+    remediation.push(Line::from(""));
+    if total_issues > 0 {
+        remediation.push(Line::from(vec![
             Span::styled("  Press ", Style::default().fg(Color::Gray)),
             Span::styled(
                 "Enter",
@@ -276,8 +372,16 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 " to apply action #1 automatically",
                 Style::default().fg(Color::Gray),
             ),
-        ]),
-    ];
+        ]));
+    } else {
+        remediation.push(Line::from(vec![
+            Span::styled(
+                "  No remediation needed",
+                Style::default().fg(Color::Gray),
+            ),
+        ]));
+    }
+
     let remediation_widget = Paragraph::new(remediation).block(
         Block::default()
             .borders(Borders::ALL)

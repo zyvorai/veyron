@@ -2,6 +2,7 @@
 
 use crate::tui::colors::gradient;
 use crate::tui::state::AppState;
+use std::collections::HashMap;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -10,7 +11,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +22,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -49,8 +49,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chunks[1]);
 
-    // Roles table
-    let role_header = ["Role", "Type", "Namespace", "Rules"].iter().map(|h| {
+    // Node access table: show nodes with VM counts
+    let role_header = ["Node", "Role", "Status", "VMs"].iter().map(|h| {
         Cell::from(*h).style(
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
@@ -61,29 +61,34 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let roles = [
-        ("vm-admin", "ClusterRole", "*", "12"),
-        ("vm-operator", "ClusterRole", "*", "8"),
-        ("vm-viewer", "Role", "production", "3"),
-        ("snapshot-mgr", "Role", "default", "5"),
-        ("migration-exec", "ClusterRole", "*", "6"),
-        ("network-admin", "Role", "kube-system", "9"),
-    ];
+    // Count VMs per node
+    let mut vms_per_node: HashMap<String, usize> = HashMap::new();
+    for vm in &state.vms {
+        if vm.node != "N/A" && !vm.node.is_empty() {
+            *vms_per_node.entry(vm.node.clone()).or_insert(0) += 1;
+        }
+    }
 
-    let role_rows = roles.iter().map(|(name, rtype, ns, rules)| {
-        let type_color = if *rtype == "ClusterRole" {
+    let role_rows: Vec<Row> = state.nodes.iter().map(|node| {
+        let status_color = if node.status == "Ready" {
+            Color::Rgb(50, 205, 50)
+        } else {
+            Color::Rgb(220, 50, 47)
+        };
+        let role_color = if node.role.contains("control-plane") || node.role.contains("master") {
             Color::Rgb(222, 115, 86)
         } else {
             Color::Rgb(100, 150, 255)
         };
+        let vm_count = vms_per_node.get(&node.name).copied().unwrap_or(0);
         Row::new(vec![
-            Cell::from(*name),
-            Cell::from(*rtype).style(Style::default().fg(type_color)),
-            Cell::from(*ns),
-            Cell::from(*rules),
+            Cell::from(node.name.as_str()),
+            Cell::from(node.role.as_str()).style(Style::default().fg(role_color)),
+            Cell::from(node.status.as_str()).style(Style::default().fg(status_color)),
+            Cell::from(format!("{}", vm_count)),
         ])
         .height(1)
-    });
+    }).collect();
 
     let role_widths = [
         Constraint::Percentage(30),
@@ -99,7 +104,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Roles ",
+                    format!(" Nodes ({}) ", state.nodes.len()),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),
@@ -108,86 +113,116 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .column_spacing(1);
     f.render_widget(role_table, main_chunks[0]);
 
-    // Bindings and subjects
-    let binding_lines = vec![
+    // Access overview from VM data
+    let stats = state.get_stats();
+    let unassigned_vms = state.vms.iter().filter(|vm| vm.node == "N/A" || vm.node.is_empty()).count();
+    let nodes_with_vms = vms_per_node.len();
+
+    let mut binding_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Role Bindings",
+            "  Resource Overview",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(vec![Span::styled(
-            "  vm-admin-binding",
-            Style::default().fg(Color::White),
-        )]),
         Line::from(vec![
-            Span::styled("    Role:     ", Style::default().fg(Color::Gray)),
-            Span::styled("vm-admin", Style::default().fg(Color::Rgb(222, 115, 86))),
-        ]),
-        Line::from(vec![
-            Span::styled("    Subjects: ", Style::default().fg(Color::Gray)),
-            Span::styled("admin-group (Group)", Style::default().fg(Color::White)),
-        ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  vm-operator-binding",
-            Style::default().fg(Color::White),
-        )]),
-        Line::from(vec![
-            Span::styled("    Role:     ", Style::default().fg(Color::Gray)),
-            Span::styled("vm-operator", Style::default().fg(Color::Rgb(222, 115, 86))),
-        ]),
-        Line::from(vec![
-            Span::styled("    Subjects: ", Style::default().fg(Color::Gray)),
+            Span::styled("  Total VMs:      ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "ops-team (Group), svc-deployer (SA)",
+                format!("{}", stats.total),
                 Style::default().fg(Color::White),
             ),
         ]),
-        Line::from(""),
-        Line::from(vec![Span::styled(
-            "  vm-viewer-binding",
-            Style::default().fg(Color::White),
-        )]),
         Line::from(vec![
-            Span::styled("    Role:     ", Style::default().fg(Color::Gray)),
-            Span::styled("vm-viewer", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled("  Running:        ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}", stats.running),
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
         ]),
         Line::from(vec![
-            Span::styled("    Subjects: ", Style::default().fg(Color::Gray)),
-            Span::styled("dev-team (Group)", Style::default().fg(Color::White)),
+            Span::styled("  Nodes w/ VMs:   ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}", nodes_with_vms),
+                Style::default().fg(Color::White),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("  Unassigned VMs: ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}", unassigned_vms),
+                Style::default().fg(if unassigned_vms > 0 { Color::Rgb(255, 200, 0) } else { Color::Rgb(50, 205, 50) }),
+            ),
         ]),
         Line::from(""),
         Line::from(Span::styled(
-            "  Warnings",
+            "  Node Capacity",
             Style::default()
-                .fg(Color::Rgb(255, 200, 0))
+                .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(vec![
-            Span::styled("  [!] ", Style::default().fg(Color::Rgb(255, 200, 0))),
-            Span::styled(
-                "vm-admin has wildcard verb access",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  [!] ", Style::default().fg(Color::Rgb(255, 200, 0))),
-            Span::styled(
-                "2 unused service accounts found",
-                Style::default().fg(Color::White),
-            ),
-        ]),
     ];
+
+    for node in &state.nodes {
+        binding_lines.push(Line::from(vec![
+            Span::styled(format!("  {}: ", node.name), Style::default().fg(Color::White)),
+            Span::styled(format!("CPU={}", node.cpu_capacity), Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(format!(" Mem={}", node.memory_capacity), Style::default().fg(Color::Rgb(100, 150, 255))),
+        ]));
+    }
+
+    if state.nodes.is_empty() {
+        binding_lines.push(Line::from(Span::styled(
+            "  No node data available",
+            Style::default().fg(Color::Gray),
+        )));
+    }
+
+    binding_lines.push(Line::from(""));
+    binding_lines.push(Line::from(Span::styled(
+        "  Warnings",
+        Style::default()
+            .fg(Color::Rgb(255, 200, 0))
+            .add_modifier(Modifier::BOLD),
+    )));
+    binding_lines.push(Line::from(""));
+
+    if stats.failed > 0 {
+        binding_lines.push(Line::from(vec![
+            Span::styled("  [!] ", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                format!("{} VM(s) in failed state", stats.failed),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+    }
+    if unassigned_vms > 0 {
+        binding_lines.push(Line::from(vec![
+            Span::styled("  [!] ", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                format!("{} VM(s) not assigned to any node", unassigned_vms),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+    }
+    if stats.failed == 0 && unassigned_vms == 0 {
+        binding_lines.push(Line::from(vec![
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                "No warnings",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
+        ]));
+    }
+
     let bindings_widget = Paragraph::new(binding_lines).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
-                " Bindings & Subjects ",
+                " Access Overview ",
                 Style::default()
                     .fg(Color::Rgb(222, 115, 86))
                     .add_modifier(Modifier::BOLD),

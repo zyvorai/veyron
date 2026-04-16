@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +21,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -49,8 +48,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(chunks[1]);
 
-    // Pending changes table
-    let header_cells = ["ID", "Type", "Description", "Requester", "Status"]
+    // Build change requests from recent_activity
+    let header_cells = ["#", "Action", "VM", "Elapsed", "Status"]
         .iter()
         .map(|h| {
             Cell::from(*h).style(
@@ -63,85 +62,29 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let changes = [
-        (
-            "CR-042",
-            "Scale",
-            "Scale worker pool 3->5",
-            "ops-user",
-            "Pending",
-        ),
-        (
-            "CR-041",
-            "Config",
-            "Update VM memory limits",
-            "dev-lead",
-            "Approved",
-        ),
-        (
-            "CR-040",
-            "Delete",
-            "Remove stale snapshots",
-            "ci-bot",
-            "Pending",
-        ),
-        (
-            "CR-039",
-            "Migrate",
-            "Migrate db-primary to node-3",
-            "ops-user",
-            "Pending",
-        ),
-        (
-            "CR-038",
-            "Create",
-            "New staging environment",
-            "dev-lead",
-            "Approved",
-        ),
-        (
-            "CR-037",
-            "Update",
-            "Patch KubeVirt to v1.2.1",
-            "admin",
-            "Rejected",
-        ),
-        (
-            "CR-036",
-            "Scale",
-            "Scale API gateway replicas",
-            "ops-user",
-            "Executed",
-        ),
-    ];
-
-    let rows = changes.iter().map(|(id, ctype, desc, req, status)| {
-        let status_color = match *status {
-            "Pending" => Color::Rgb(255, 200, 0),
-            "Approved" => Color::Rgb(50, 205, 50),
-            "Rejected" => Color::Rgb(220, 50, 47),
-            "Executed" => Color::Rgb(100, 150, 255),
-            _ => Color::Gray,
-        };
+    let rows: Vec<Row> = state.recent_activity.iter().rev().enumerate().map(|(i, event)| {
+        let elapsed = event.elapsed_display();
+        let status = "Pending";
+        let status_color = Color::Rgb(255, 200, 0);
         Row::new(vec![
-            Cell::from(*id).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(*ctype),
-            Cell::from(*desc),
-            Cell::from(*req),
-            Cell::from(*status).style(
+            Cell::from(format!("CR-{:03}", i + 1)).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+            Cell::from(event.action.as_str()),
+            Cell::from(event.vm_name.as_str()),
+            Cell::from(elapsed),
+            Cell::from(status).style(
                 Style::default()
                     .fg(status_color)
                     .add_modifier(Modifier::BOLD),
             ),
         ])
         .height(1)
-    });
+    }).collect();
 
     let widths = [
         Constraint::Percentage(12),
-        Constraint::Percentage(12),
-        Constraint::Percentage(36),
-        Constraint::Percentage(16),
+        Constraint::Percentage(20),
+        Constraint::Percentage(28),
+        Constraint::Percentage(18),
         Constraint::Percentage(16),
     ];
 
@@ -152,7 +95,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Change Requests ",
+                    format!(" Recent Changes ({}) ", state.recent_activity.len()),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),
@@ -161,70 +104,71 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .column_spacing(1);
     f.render_widget(table, content_chunks[0]);
 
-    // Selected change details
-    let details = vec![
+    // Details panel showing the first (most recent) activity or a summary
+    let mut details = vec![
         Line::from(""),
-        Line::from(Span::styled(
-            "  CR-042: Scale worker pool",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Type:       ", Style::default().fg(Color::Gray)),
-            Span::styled("Scale Operation", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Requester:  ", Style::default().fg(Color::Gray)),
-            Span::styled("ops-user", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Created:    ", Style::default().fg(Color::Gray)),
-            Span::styled("2h ago", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Priority:   ", Style::default().fg(Color::Gray)),
-            Span::styled("Medium", Style::default().fg(Color::Rgb(255, 200, 0))),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Impact Analysis",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(vec![
-            Span::styled("  CPU:        ", Style::default().fg(Color::Gray)),
-            Span::styled("+8 cores requested", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Memory:     ", Style::default().fg(Color::Gray)),
-            Span::styled("+16 GiB requested", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Available:  ", Style::default().fg(Color::Gray)),
-            Span::styled("Sufficient", Style::default().fg(Color::Rgb(50, 205, 50))),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Approvals (1/2 required)",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(vec![
-            Span::styled("  [x] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("admin (approved 1h ago)", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  [ ] ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "security-team (pending)",
-                Style::default().fg(Color::Rgb(255, 200, 0)),
-            ),
-        ]),
     ];
+
+    if let Some(latest) = state.recent_activity.last() {
+        details.push(Line::from(Span::styled(
+            format!("  CR-001: {} {}", latest.action, latest.vm_name),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        )));
+        details.push(Line::from(""));
+        details.push(Line::from(vec![
+            Span::styled("  Action:     ", Style::default().fg(Color::Gray)),
+            Span::styled(latest.action.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  VM:         ", Style::default().fg(Color::Gray)),
+            Span::styled(latest.vm_name.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Elapsed:    ", Style::default().fg(Color::Gray)),
+            Span::styled(latest.elapsed_display(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Icon:       ", Style::default().fg(Color::Gray)),
+            Span::styled(latest.icon.as_str(), Style::default().fg(Color::White)),
+        ]));
+    } else {
+        details.push(Line::from(Span::styled(
+            "  No recent activity",
+            Style::default().fg(Color::Gray),
+        )));
+    }
+
+    details.push(Line::from(""));
+    details.push(Line::from(Span::styled(
+        "  Summary",
+        Style::default()
+            .fg(Color::Rgb(222, 115, 86))
+            .add_modifier(Modifier::BOLD),
+    )));
+    details.push(Line::from(""));
+
+    let stats = state.get_stats();
+    details.push(Line::from(vec![
+        Span::styled("  Total VMs:  ", Style::default().fg(Color::Gray)),
+        Span::styled(format!("{}", stats.total), Style::default().fg(Color::White)),
+    ]));
+    details.push(Line::from(vec![
+        Span::styled("  Running:    ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", stats.running),
+            Style::default().fg(Color::Rgb(50, 205, 50)),
+        ),
+    ]));
+    details.push(Line::from(vec![
+        Span::styled("  Changes:    ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", state.recent_activity.len()),
+            Style::default().fg(Color::White),
+        ),
+    ]));
+
     let details_widget = Paragraph::new(details).block(
         Block::default()
             .borders(Borders::ALL)

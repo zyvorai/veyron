@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Gauge, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +21,10 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         ])
         .split(area);
 
+    let stats = state.get_stats();
+
     // Gradient brand header
+    let first_vm_name = state.vms.first().map(|v| v.name.as_str()).unwrap_or("N/A");
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -38,7 +41,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         Style::default().fg(Color::Rgb(128, 128, 128)),
     ));
     header_spans.push(Span::styled(
-        "VM: web-server-01",
+        format!("VM: {}", first_vm_name),
         Style::default().fg(Color::Rgb(222, 115, 86)),
     ));
     let header_text = Line::from(header_spans);
@@ -51,7 +54,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         );
     f.render_widget(header, chunks[0]);
 
-    // Resource gauges
+    // Resource gauges from history
     let gauge_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
@@ -62,11 +65,16 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         ])
         .split(chunks[1]);
 
+    let cpu_pct = state.cpu_history.last().copied().unwrap_or(0).min(100) as u16;
+    let mem_pct = state.memory_history.last().copied().unwrap_or(0).min(100) as u16;
+    let disk_pct = state.disk_history.last().copied().unwrap_or(0).min(100) as u16;
+    let net_pct = state.network_history.last().copied().unwrap_or(0).min(100) as u16;
+
     let gauges = [
-        ("CPU", 45, gradient::health().at(0.45)),
-        ("Memory", 62, Color::Rgb(100, 150, 255)),
-        ("Disk I/O", 28, Color::Rgb(50, 205, 50)),
-        ("Network", 51, Color::Rgb(255, 200, 0)),
+        ("CPU", cpu_pct, gradient::health().at(cpu_pct as f64 / 100.0)),
+        ("Memory", mem_pct, Color::Rgb(100, 150, 255)),
+        ("Disk I/O", disk_pct, Color::Rgb(50, 205, 50)),
+        ("Network", net_pct, Color::Rgb(255, 200, 0)),
     ];
 
     for (i, (name, pct, color)) in gauges.iter().enumerate() {
@@ -89,8 +97,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
         .split(chunks[2]);
 
-    // Process/thread table
-    let header_cells = ["Process", "CPU%", "Mem%", "Threads", "State"]
+    // Per-VM performance table
+    let header_cells = ["VM Name", "CPU", "Memory", "Status", "Node"]
         .iter()
         .map(|h| {
             Cell::from(*h).style(
@@ -103,31 +111,23 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let processes = [
-        ("nginx", "12.4", "8.2", "16", "Running"),
-        ("postgres", "18.6", "32.1", "24", "Running"),
-        ("node-exporter", "2.1", "1.8", "4", "Running"),
-        ("qemu-system", "8.3", "15.4", "8", "Running"),
-        ("systemd", "0.4", "1.2", "1", "Running"),
-        ("sshd", "0.1", "0.8", "2", "Sleeping"),
-        ("cron", "0.0", "0.3", "1", "Sleeping"),
-    ];
-
-    let rows = processes.iter().map(|(name, cpu, mem, threads, state)| {
-        let state_color = match *state {
+    let rows: Vec<Row> = state.vms.iter().map(|vm| {
+        let status_color = match vm.status.as_str() {
             "Running" => Color::Rgb(50, 205, 50),
-            "Sleeping" => Color::Gray,
-            _ => Color::Rgb(255, 200, 0),
+            "Stopped" => Color::Gray,
+            "Failed" | "Error" => Color::Rgb(220, 50, 47),
+            "Starting" | "Pending" => Color::Rgb(255, 200, 0),
+            _ => Color::Gray,
         };
         Row::new(vec![
-            Cell::from(*name),
-            Cell::from(*cpu),
-            Cell::from(*mem),
-            Cell::from(*threads),
-            Cell::from(*state).style(Style::default().fg(state_color)),
+            Cell::from(vm.name.as_str()),
+            Cell::from(vm.cpu.as_str()),
+            Cell::from(vm.memory.as_str()),
+            Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
+            Cell::from(vm.node.as_str()),
         ])
         .height(1)
-    });
+    }).collect();
 
     let widths = [
         Constraint::Percentage(28),
@@ -144,7 +144,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Processes ",
+                    format!(" VMs ({}) ", state.vms.len()),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),
@@ -153,7 +153,41 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .column_spacing(1);
     f.render_widget(table, main_chunks[0]);
 
-    // Performance insights
+    // Performance insights from real stats
+    let running_label = if stats.running == stats.total && stats.total > 0 {
+        ("  [INFO] ", Color::Rgb(100, 150, 255), format!("CPU: All {} VMs running, cluster healthy", stats.total))
+    } else if stats.failed > 0 {
+        ("  [WARN] ", Color::Rgb(255, 200, 0), format!("CPU: {} of {} VMs not running ({} failed)", stats.total - stats.running, stats.total, stats.failed))
+    } else {
+        ("  [INFO] ", Color::Rgb(100, 150, 255), format!("CPU: {} of {} VMs running", stats.running, stats.total))
+    };
+
+    let mem_label = if mem_pct > 80 {
+        ("  [WARN] ", Color::Rgb(255, 200, 0), format!("Memory: High utilization at {}%", mem_pct))
+    } else {
+        ("  [INFO] ", Color::Rgb(100, 150, 255), format!("Memory: Normal utilization at {}%", mem_pct))
+    };
+
+    let disk_label = if disk_pct > 80 {
+        ("  [WARN] ", Color::Rgb(255, 200, 0), format!("Disk: High I/O at {}%", disk_pct))
+    } else {
+        ("  [INFO] ", Color::Rgb(100, 150, 255), format!("Disk: Normal I/O at {}%", disk_pct))
+    };
+
+    let net_label = if net_pct > 80 {
+        ("  [WARN] ", Color::Rgb(255, 200, 0), format!("Network: High throughput at {}%", net_pct))
+    } else {
+        ("  [INFO] ", Color::Rgb(100, 150, 255), format!("Network: Steady throughput at {}%", net_pct))
+    };
+
+    let bottleneck = if stats.failed > 0 {
+        ("Failed VMs detected", Color::Rgb(220, 50, 47))
+    } else if mem_pct > 80 || cpu_pct > 80 {
+        ("Resource pressure detected", Color::Rgb(255, 200, 0))
+    } else {
+        ("None detected", Color::Rgb(50, 205, 50))
+    };
+
     let insights = vec![
         Line::from(""),
         Line::from(Span::styled(
@@ -164,30 +198,30 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         )),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  [INFO] ", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(running_label.0, Style::default().fg(running_label.1)),
             Span::styled(
-                "CPU: Normal utilization pattern",
+                running_label.2.clone(),
                 Style::default().fg(Color::White),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(mem_label.0, Style::default().fg(mem_label.1)),
             Span::styled(
-                "Memory: postgres using 32% of VM RAM",
+                mem_label.2.clone(),
                 Style::default().fg(Color::White),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  [INFO] ", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(disk_label.0, Style::default().fg(disk_label.1)),
             Span::styled(
-                "Disk: Low I/O wait time (0.8%)",
+                disk_label.2.clone(),
                 Style::default().fg(Color::White),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  [INFO] ", Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(net_label.0, Style::default().fg(net_label.1)),
             Span::styled(
-                "Network: Steady throughput",
+                net_label.2.clone(),
                 Style::default().fg(Color::White),
             ),
         ]),
@@ -202,15 +236,15 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         Line::from(vec![
             Span::styled("  Primary:   ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "None detected",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
+                bottleneck.0,
+                Style::default().fg(bottleneck.1),
             ),
         ]),
         Line::from(vec![
-            Span::styled("  Watch:     ", Style::default().fg(Color::Gray)),
+            Span::styled("  VMs Total: ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "Memory pressure from postgres",
-                Style::default().fg(Color::Rgb(255, 200, 0)),
+                format!("{} (R:{} S:{} F:{})", stats.total, stats.running, stats.stopped, stats.failed),
+                Style::default().fg(Color::White),
             ),
         ]),
         Line::from(""),
@@ -222,7 +256,10 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                     .fg(Color::Rgb(50, 205, 50))
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(" (5m window)", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!(" ({}s refresh)", state.refresh_interval),
+                Style::default().fg(Color::Gray),
+            ),
         ]),
     ];
     let insights_widget = Paragraph::new(insights).block(

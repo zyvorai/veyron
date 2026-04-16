@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +21,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -49,8 +48,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
         .split(chunks[1]);
 
-    // Active sessions table
-    let header_cells = ["Session ID", "Owner", "Participants", "View", "Duration"]
+    // VMs available for sharing
+    let header_cells = ["VM Name", "Status", "CPU", "Memory", "Node"]
         .iter()
         .map(|h| {
             Cell::from(*h).style(
@@ -63,29 +62,29 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let sessions = [
-        ("sess-a1b2", "admin", "3", "VM List", "1h 22m"),
-        ("sess-c3d4", "ops-user", "2", "Dashboard", "45m"),
-        ("sess-e5f6", "dev-lead", "1", "Topology", "12m"),
-        ("sess-g7h8", "admin", "4", "Migration", "2h 05m"),
-    ];
-
-    let rows = sessions.iter().map(|(id, owner, parts, view, dur)| {
+    let rows: Vec<Row> = state.vms.iter().map(|vm| {
+        let status_color = match vm.status.as_str() {
+            "Running" => Color::Rgb(50, 205, 50),
+            "Stopped" => Color::Gray,
+            "Failed" | "Error" => Color::Rgb(220, 50, 47),
+            "Starting" | "Pending" => Color::Rgb(255, 200, 0),
+            _ => Color::Gray,
+        };
         Row::new(vec![
-            Cell::from(*id).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(*owner),
-            Cell::from(*parts),
-            Cell::from(*view),
-            Cell::from(*dur),
+            Cell::from(vm.name.as_str()).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+            Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
+            Cell::from(vm.cpu.as_str()),
+            Cell::from(vm.memory.as_str()),
+            Cell::from(vm.node.as_str()),
         ])
         .height(1)
-    });
+    }).collect();
 
     let widths = [
-        Constraint::Percentage(20),
+        Constraint::Percentage(25),
         Constraint::Percentage(18),
         Constraint::Percentage(18),
-        Constraint::Percentage(22),
+        Constraint::Percentage(18),
         Constraint::Percentage(18),
     ];
 
@@ -96,7 +95,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Active Sessions ",
+                    format!(" VMs Available for Sharing ({}) ", state.vms.len()),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),
@@ -105,71 +104,89 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .column_spacing(1);
     f.render_widget(table, content_chunks[0]);
 
-    // Session details
-    let details = vec![
+    // Session details - show selected VM info
+    let mut details = vec![
         Line::from(""),
-        Line::from(Span::styled(
-            "  Session: sess-a1b2",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Owner:      ", Style::default().fg(Color::Gray)),
-            Span::styled("admin", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Mode:       ", Style::default().fg(Color::Gray)),
-            Span::styled("Read-Write", Style::default().fg(Color::Rgb(50, 205, 50))),
-        ]),
-        Line::from(vec![
-            Span::styled("  Started:    ", Style::default().fg(Color::Gray)),
-            Span::styled("1h 22m ago", Style::default().fg(Color::White)),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Participants",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  [RW] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("admin (owner)", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  [RO] ", Style::default().fg(Color::Rgb(100, 150, 255))),
-            Span::styled("ops-user", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  [RO] ", Style::default().fg(Color::Rgb(100, 150, 255))),
-            Span::styled("dev-lead", Style::default().fg(Color::White)),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Share Link",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(vec![Span::styled(
-            "  vmrogue://share/sess-a1b2",
-            Style::default().fg(Color::Rgb(100, 150, 255)),
-        )]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Expires: ", Style::default().fg(Color::Gray)),
-            Span::styled("in 4h 38m", Style::default().fg(Color::White)),
-        ]),
     ];
+
+    if let Some(vm) = state.vms.first() {
+        let status_color = match vm.status.as_str() {
+            "Running" => Color::Rgb(50, 205, 50),
+            "Stopped" => Color::Gray,
+            "Failed" | "Error" => Color::Rgb(220, 50, 47),
+            _ => Color::Rgb(255, 200, 0),
+        };
+
+        details.push(Line::from(Span::styled(
+            format!("  VM: {}", vm.name),
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        )));
+        details.push(Line::from(""));
+        details.push(Line::from(vec![
+            Span::styled("  Status:     ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.status.as_str(), Style::default().fg(status_color)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  CPU:        ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.cpu.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Memory:     ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.memory.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Node:       ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.node.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  IP:         ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.ip.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Age:        ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.age.as_str(), Style::default().fg(Color::White)),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Ready:      ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                if vm.ready { "Yes" } else { "No" },
+                Style::default().fg(if vm.ready { Color::Rgb(50, 205, 50) } else { Color::Rgb(255, 200, 0) }),
+            ),
+        ]));
+        details.push(Line::from(""));
+        details.push(Line::from(Span::styled(
+            "  Sharing Options",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        )));
+        details.push(Line::from(""));
+        details.push(Line::from(vec![
+            Span::styled("  Mode:       ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                if vm.status == "Running" { "Read-Write" } else { "Read-Only" },
+                Style::default().fg(if vm.status == "Running" { Color::Rgb(50, 205, 50) } else { Color::Rgb(100, 150, 255) }),
+            ),
+        ]));
+        details.push(Line::from(vec![
+            Span::styled("  Namespace:  ", Style::default().fg(Color::Gray)),
+            Span::styled(state.namespace.as_str(), Style::default().fg(Color::White)),
+        ]));
+    } else {
+        details.push(Line::from(Span::styled(
+            "  No VMs available",
+            Style::default().fg(Color::Gray),
+        )));
+    }
+
     let details_widget = Paragraph::new(details).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
             .title(Span::styled(
-                " Session Details ",
+                " VM Details ",
                 Style::default()
                     .fg(Color::Rgb(222, 115, 86))
                     .add_modifier(Modifier::BOLD),

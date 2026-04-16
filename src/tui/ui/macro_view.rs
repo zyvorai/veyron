@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -21,7 +21,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -49,8 +48,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
         .split(chunks[1]);
 
-    // Saved macros table
-    let header_cells = ["Name", "Steps", "Last Run", "Status"].iter().map(|h| {
+    // Recent actions as potential macro steps
+    let header_cells = ["Step", "VM", "Action", "Elapsed"].iter().map(|h| {
         Cell::from(*h).style(
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
@@ -61,40 +60,22 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let macros = [
-        ("deploy-web-stack", "8", "2h ago", "Ready"),
-        ("scale-workers", "4", "1d ago", "Ready"),
-        ("backup-all-vms", "12", "6h ago", "Ready"),
-        ("restart-services", "6", "3d ago", "Ready"),
-        ("health-check-all", "10", "30m ago", "Running"),
-        ("cleanup-snapshots", "5", "7d ago", "Ready"),
-    ];
-
-    let rows = macros.iter().map(|(name, steps, last_run, status)| {
-        let status_color = match *status {
-            "Ready" => Color::Rgb(50, 205, 50),
-            "Running" => Color::Rgb(255, 200, 0),
-            "Failed" => Color::Rgb(220, 50, 47),
-            _ => Color::Gray,
-        };
+    let rows: Vec<Row> = state.recent_activity.iter().rev().enumerate().map(|(i, event)| {
+        let elapsed = event.elapsed_display();
         Row::new(vec![
-            Cell::from(*name).style(Style::default().fg(Color::White)),
-            Cell::from(*steps),
-            Cell::from(*last_run),
-            Cell::from(*status).style(
-                Style::default()
-                    .fg(status_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
+            Cell::from(format!("{}", i + 1)).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+            Cell::from(event.vm_name.as_str()).style(Style::default().fg(Color::White)),
+            Cell::from(event.action.as_str()),
+            Cell::from(elapsed),
         ])
         .height(1)
-    });
+    }).collect();
 
     let widths = [
+        Constraint::Percentage(10),
         Constraint::Percentage(35),
-        Constraint::Percentage(15),
+        Constraint::Percentage(30),
         Constraint::Percentage(22),
-        Constraint::Percentage(20),
     ];
 
     let table = Table::new(rows, widths)
@@ -104,7 +85,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Saved Macros ",
+                    format!(" Recorded Actions ({}) ", state.recent_activity.len()),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),
@@ -113,79 +94,72 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .column_spacing(1);
     f.render_widget(table, content_chunks[0]);
 
-    // Macro details / recording
-    let detail_lines = vec![
+    // Macro details / summary
+    let mut detail_lines = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Selected: deploy-web-stack",
+            "  Macro Summary",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(Span::styled(
-            "  Steps:",
+    ];
+
+    if state.recent_activity.is_empty() {
+        detail_lines.push(Line::from(Span::styled(
+            "  No actions recorded yet.",
+            Style::default().fg(Color::Gray),
+        )));
+        detail_lines.push(Line::from(Span::styled(
+            "  Perform VM operations to record steps.",
+            Style::default().fg(Color::Gray),
+        )));
+    } else {
+        detail_lines.push(Line::from(Span::styled(
+            "  Recorded Steps:",
             Style::default()
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(vec![
-            Span::styled("  1. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "Create VM from template 'web-ubuntu'",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  2. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "Wait for VM ready (timeout: 120s)",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  3. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "Apply network policy 'web-allow'",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  4. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "Configure load balancer service",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  5. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("Run health check", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  6. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("Create initial snapshot", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  7. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("Enable monitoring", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  8. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "Send notification on completion",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Avg Duration: ", Style::default().fg(Color::Gray)),
-            Span::styled("3m 42s", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  Success Rate: ", Style::default().fg(Color::Gray)),
-            Span::styled("96%", Style::default().fg(Color::Rgb(50, 205, 50))),
-        ]),
-    ];
+        )));
+
+        for (i, event) in state.recent_activity.iter().rev().take(8).enumerate() {
+            detail_lines.push(Line::from(vec![
+                Span::styled(format!("  {}. ", i + 1), Style::default().fg(Color::Rgb(222, 115, 86))),
+                Span::styled(
+                    format!("{} {}", event.action, event.vm_name),
+                    Style::default().fg(Color::White),
+                ),
+            ]));
+        }
+
+        if state.recent_activity.len() > 8 {
+            detail_lines.push(Line::from(Span::styled(
+                format!("  ... and {} more", state.recent_activity.len() - 8),
+                Style::default().fg(Color::Gray),
+            )));
+        }
+
+        detail_lines.push(Line::from(""));
+        detail_lines.push(Line::from(vec![
+            Span::styled("  Total Steps:  ", Style::default().fg(Color::Gray)),
+            Span::styled(format!("{}", state.recent_activity.len()), Style::default().fg(Color::White)),
+        ]));
+
+        // Show distinct VMs involved
+        let mut unique_vms: Vec<&str> = state.recent_activity.iter().map(|e| e.vm_name.as_str()).collect();
+        unique_vms.sort();
+        unique_vms.dedup();
+        detail_lines.push(Line::from(vec![
+            Span::styled("  VMs Involved: ", Style::default().fg(Color::Gray)),
+            Span::styled(format!("{}", unique_vms.len()), Style::default().fg(Color::White)),
+        ]));
+        detail_lines.push(Line::from(vec![
+            Span::styled("  Status:       ", Style::default().fg(Color::Gray)),
+            Span::styled("Ready", Style::default().fg(Color::Rgb(50, 205, 50)).add_modifier(Modifier::BOLD)),
+        ]));
+    }
+
     let detail_widget = Paragraph::new(detail_lines).block(
         Block::default()
             .borders(Borders::ALL)
