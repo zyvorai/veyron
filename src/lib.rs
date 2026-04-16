@@ -1466,6 +1466,14 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                     "Configuration",
                     vec!["config-show", "config-init", "commands", "doctor"],
                 ),
+                (
+                    "Infrastructure",
+                    vec!["events", "nodes", "pods", "import", "clusters-list", "clusters-discover"],
+                ),
+                (
+                    "GitOps",
+                    vec!["gitops-export", "gitops-diff", "gitops-status"],
+                ),
             ];
 
             for (group_name, cmds) in &groups {
@@ -1489,6 +1497,41 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         // ========== GITOPS ==========
         Commands::GitopsExport { directory } => {
             handlers::gitops::handle_gitops_export(directory, &cli.namespace).await?;
+        }
+
+        Commands::GitopsDiff { directory } => {
+            handlers::gitops::handle_gitops_diff(directory, &cli.namespace).await?;
+        }
+
+        Commands::GitopsStatus => {
+            handlers::gitops::handle_gitops_status(&cli.namespace).await?;
+        }
+
+        // ========== MULTI-CLUSTER ==========
+        Commands::ClustersList { output } => {
+            handlers::vm::handle_clusters_list(output).await?;
+        }
+
+        Commands::ClustersDiscover => {
+            handlers::vm::handle_clusters_discover().await?;
+        }
+
+        // ========== IMPORT ==========
+        Commands::Import { file, start, dry_run } => {
+            handlers::vm::handle_import(file, start, dry_run, &cli.namespace).await?;
+        }
+
+        // ========== EVENTS, NODES, PODS (TOP-LEVEL) ==========
+        Commands::EventsList { limit, output } => {
+            handlers::vm::handle_events_list(limit, output, &cli.namespace).await?;
+        }
+
+        Commands::NodesList { output } => {
+            handlers::vm::handle_nodes_list(output, &cli.namespace).await?;
+        }
+
+        Commands::PodsList { output } => {
+            handlers::vm::handle_pods_list(output, &cli.namespace).await?;
         }
 
         // ========== OPERATOR CRD MANAGEMENT ==========

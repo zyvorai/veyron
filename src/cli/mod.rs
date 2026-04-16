@@ -2380,6 +2380,77 @@ pub enum Commands {
         /// Action name
         name: String,
     },
+
+    // ========== GITOPS (EXTENDED) ==========
+    /// Show GitOps sync diff between local and cluster state
+    #[command(name = "gitops-diff")]
+    GitopsDiff {
+        /// Directory containing manifests
+        #[arg(short, long, default_value = ".")]
+        directory: String,
+    },
+
+    /// Show GitOps sync status
+    #[command(name = "gitops-status")]
+    GitopsStatus,
+
+    // ========== MULTI-CLUSTER ==========
+    /// List all known Kubernetes clusters
+    #[command(name = "clusters-list")]
+    ClustersList {
+        /// Output format (table, yaml, json)
+        #[arg(short, long, default_value = "table")]
+        output: String,
+    },
+
+    /// Discover clusters from kubeconfig
+    #[command(name = "clusters-discover")]
+    ClustersDiscover,
+
+    // ========== IMPORT ==========
+    /// Import a VM from a KubeVirt YAML manifest
+    #[command(name = "import")]
+    Import {
+        /// Path to YAML/JSON file
+        file: String,
+
+        /// Start the VM after import
+        #[arg(long)]
+        start: bool,
+
+        /// Dry run (don't create, just validate)
+        #[arg(long)]
+        dry_run: bool,
+    },
+
+    // ========== EVENTS & NODES (TOP-LEVEL) ==========
+    /// List Kubernetes events
+    #[command(name = "events")]
+    EventsList {
+        /// Limit number of events
+        #[arg(short, long, default_value = "50")]
+        limit: usize,
+
+        /// Output format (table, yaml, json)
+        #[arg(short, long, default_value = "table")]
+        output: String,
+    },
+
+    /// List Kubernetes nodes
+    #[command(name = "nodes")]
+    NodesList {
+        /// Output format (table, yaml, json)
+        #[arg(short, long, default_value = "table")]
+        output: String,
+    },
+
+    /// List pods in the namespace
+    #[command(name = "pods")]
+    PodsList {
+        /// Output format (table, yaml, json)
+        #[arg(short, long, default_value = "table")]
+        output: String,
+    },
 }
 
 #[cfg(test)]
