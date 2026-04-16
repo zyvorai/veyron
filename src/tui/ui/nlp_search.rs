@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -22,7 +22,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -55,8 +54,8 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                "show me all VMs using more than 4 cores that are running",
-                Style::default().fg(Color::White),
+                "Type to filter VMs...",
+                Style::default().fg(Color::Gray),
             ),
             Span::styled(
                 "_",
@@ -85,69 +84,57 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(chunks[2]);
 
-    let results = vec![
+    // Build results from state.vms
+    let mut results = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Search Results (3 matches)",
+            format!("  Search Results ({} VMs)", state.vms.len()),
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(vec![
-            Span::styled("  1. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "db-primary",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Status: ", Style::default().fg(Color::Gray)),
-            Span::styled("Running", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("  CPU: ", Style::default().fg(Color::Gray)),
-            Span::styled("8 cores", Style::default().fg(Color::White)),
-            Span::styled("  Mem: ", Style::default().fg(Color::Gray)),
-            Span::styled("32Gi", Style::default().fg(Color::White)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  2. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "api-gateway",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Status: ", Style::default().fg(Color::Gray)),
-            Span::styled("Running", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("  CPU: ", Style::default().fg(Color::Gray)),
-            Span::styled("6 cores", Style::default().fg(Color::White)),
-            Span::styled("  Mem: ", Style::default().fg(Color::Gray)),
-            Span::styled("16Gi", Style::default().fg(Color::White)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  3. ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled(
-                "worker-node-01",
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Status: ", Style::default().fg(Color::Gray)),
-            Span::styled("Running", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("  CPU: ", Style::default().fg(Color::Gray)),
-            Span::styled("4 cores", Style::default().fg(Color::White)),
-            Span::styled("  Mem: ", Style::default().fg(Color::Gray)),
-            Span::styled("8Gi", Style::default().fg(Color::White)),
-        ]),
     ];
+
+    for (i, vm) in state.vms.iter().enumerate() {
+        let status_color = match vm.status.as_str() {
+            "Running" => Color::Rgb(50, 205, 50),
+            "Stopped" => Color::Gray,
+            "Failed" | "Error" => Color::Rgb(220, 50, 47),
+            "Starting" | "Pending" => Color::Rgb(255, 200, 0),
+            _ => Color::Gray,
+        };
+
+        results.push(Line::from(vec![
+            Span::styled(
+                format!("  {}. ", i + 1),
+                Style::default().fg(Color::Rgb(222, 115, 86)),
+            ),
+            Span::styled(
+                vm.name.as_str(),
+                Style::default()
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]));
+        results.push(Line::from(vec![
+            Span::styled("     Status: ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.status.as_str(), Style::default().fg(status_color)),
+            Span::styled("  CPU: ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.cpu.as_str(), Style::default().fg(Color::White)),
+            Span::styled("  Mem: ", Style::default().fg(Color::Gray)),
+            Span::styled(vm.memory.as_str(), Style::default().fg(Color::White)),
+        ]));
+        results.push(Line::from(""));
+    }
+
+    if state.vms.is_empty() {
+        results.push(Line::from(Span::styled(
+            "  No VMs found",
+            Style::default().fg(Color::Gray),
+        )));
+    }
+
     let results_widget = Paragraph::new(results).block(
         Block::default()
             .borders(Borders::ALL)
@@ -162,28 +149,36 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
     f.render_widget(results_widget, content_chunks[0]);
 
     // Parsed query and suggestions
+    let stats = state.get_stats();
     let parsed = vec![
         Line::from(""),
         Line::from(Span::styled(
-            "  Parsed Query",
+            "  VM Summary",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  Resource: ", Style::default().fg(Color::Gray)),
-            Span::styled("VirtualMachine", Style::default().fg(Color::White)),
+            Span::styled("  Total:    ", Style::default().fg(Color::Gray)),
+            Span::styled(format!("{}", stats.total), Style::default().fg(Color::White)),
         ]),
         Line::from(vec![
-            Span::styled("  Filter:   ", Style::default().fg(Color::Gray)),
-            Span::styled("cpu >= 4", Style::default().fg(Color::Rgb(222, 115, 86))),
-        ]),
-        Line::from(vec![
-            Span::styled("  Filter:   ", Style::default().fg(Color::Gray)),
+            Span::styled("  Running:  ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "status = Running",
-                Style::default().fg(Color::Rgb(222, 115, 86)),
+                format!("{}", stats.running),
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
+        ]),
+        Line::from(vec![
+            Span::styled("  Stopped:  ", Style::default().fg(Color::Gray)),
+            Span::styled(format!("{}", stats.stopped), Style::default().fg(Color::Gray)),
+        ]),
+        Line::from(vec![
+            Span::styled("  Failed:   ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}", stats.failed),
+                Style::default().fg(if stats.failed > 0 { Color::Rgb(220, 50, 47) } else { Color::Gray }),
             ),
         ]),
         Line::from(""),
@@ -204,21 +199,21 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "\"failed migrations this week\"",
+                "\"failed or stopped VMs\"",
                 Style::default().fg(Color::Rgb(100, 150, 255)),
             ),
         ]),
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "\"snapshots older than 7 days\"",
+                "\"VMs without IP address\"",
                 Style::default().fg(Color::Rgb(100, 150, 255)),
             ),
         ]),
         Line::from(vec![
             Span::styled("  - ", Style::default().fg(Color::Gray)),
             Span::styled(
-                "\"nodes with most pods\"",
+                "\"running VMs on specific node\"",
                 Style::default().fg(Color::Rgb(100, 150, 255)),
             ),
         ]),

@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Gauge, Paragraph},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -22,7 +22,6 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(area);
 
     // Header
-    // Gradient brand header
     let mut header_spans = gradient::brand().text("VMRogue");
     header_spans.push(Span::styled(
         " | ",
@@ -44,6 +43,31 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         );
     f.render_widget(header, chunks[0]);
 
+    // Analyze VMs for security posture
+    let stats = state.get_stats();
+    let total_vms = stats.total.max(1);
+
+    // Compute security scores from real VM data
+    let vms_with_ip = state.vms.iter().filter(|vm| vm.ip != "N/A" && !vm.ip.is_empty()).count();
+    let vms_ready = state.vms.iter().filter(|vm| vm.ready).count();
+    let vms_on_node = state.vms.iter().filter(|vm| vm.node != "N/A" && !vm.node.is_empty()).count();
+
+    // Network score: VMs with IP assigned (network connectivity)
+    let network_score = if total_vms > 0 { (vms_with_ip * 100 / total_vms) as u16 } else { 0 };
+    // Identity score: VMs in ready state (properly configured)
+    let identity_score = if total_vms > 0 { (vms_ready * 100 / total_vms) as u16 } else { 0 };
+    // Workload score: VMs assigned to nodes
+    let workload_score = if total_vms > 0 { (vms_on_node * 100 / total_vms) as u16 } else { 0 };
+    // Data score: VMs not in failed state
+    let healthy_vms = stats.total - stats.failed;
+    let data_score = if total_vms > 0 { (healthy_vms * 100 / total_vms) as u16 } else { 0 };
+
+    fn score_color(pct: u16) -> Color {
+        if pct >= 80 { Color::Rgb(50, 205, 50) }
+        else if pct >= 50 { Color::Rgb(255, 200, 0) }
+        else { Color::Rgb(220, 50, 47) }
+    }
+
     // Category gauges
     let gauge_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -56,10 +80,10 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(chunks[1]);
 
     let categories = [
-        ("Network", 75, Color::Rgb(255, 200, 0)),
-        ("Identity", 90, Color::Rgb(50, 205, 50)),
-        ("Workload", 68, Color::Rgb(255, 200, 0)),
-        ("Data", 85, Color::Rgb(50, 205, 50)),
+        ("Network", network_score.min(100), score_color(network_score)),
+        ("Identity", identity_score.min(100), score_color(identity_score)),
+        ("Workload", workload_score.min(100), score_color(workload_score)),
+        ("Data", data_score.min(100), score_color(data_score)),
     ];
 
     for (i, (name, pct, color)) in categories.iter().enumerate() {
@@ -82,7 +106,25 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(chunks[2]);
 
-    let network_lines = vec![
+    // Build control checks from VM data
+    let no_ip_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| vm.ip == "N/A" || vm.ip.is_empty())
+        .map(|vm| vm.name.as_str())
+        .collect();
+    let not_ready_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| !vm.ready)
+        .map(|vm| vm.name.as_str())
+        .collect();
+    let failed_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| vm.status == "Failed" || vm.status == "Error")
+        .map(|vm| vm.name.as_str())
+        .collect();
+    let no_node_vms: Vec<&str> = state.vms.iter()
+        .filter(|vm| vm.node == "N/A" || vm.node.is_empty())
+        .map(|vm| vm.name.as_str())
+        .collect();
+
+    let mut checks = vec![
         Line::from(""),
         Line::from(Span::styled(
             "  Network Security",
@@ -91,69 +133,94 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(vec![
+    ];
+
+    if no_ip_vms.is_empty() {
+        checks.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled(
-                "Network policies enforced",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("Ingress TLS termination", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
+            Span::styled("All VMs have IP addresses", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        checks.push(Line::from(vec![
             Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                "Default deny egress missing",
+                format!("{} VM(s) without IP address", no_ip_vms.len()),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
+        ]));
+    }
+
+    if state.nodes.iter().all(|n| n.status == "Ready") && !state.nodes.is_empty() {
+        checks.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled(
-                "Service mesh mTLS enabled",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Workload Security",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled(
-                "Pod security standards enforced",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
+            Span::styled("All nodes are Ready", Style::default().fg(Color::White)),
+        ]));
+    } else if !state.nodes.is_empty() {
+        let not_ready = state.nodes.iter().filter(|n| n.status != "Ready").count();
+        checks.push(Line::from(vec![
             Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                "3 containers run as root",
+                format!("{} node(s) not Ready", not_ready),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
+        ]));
+    }
+
+    checks.push(Line::from(""));
+    checks.push(Line::from(Span::styled(
+        "  Workload Security",
+        Style::default()
+            .fg(Color::Rgb(222, 115, 86))
+            .add_modifier(Modifier::BOLD),
+    )));
+    checks.push(Line::from(""));
+
+    if not_ready_vms.is_empty() {
+        checks.push(Line::from(vec![
+            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("All VMs are in Ready state", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        checks.push(Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                "5 pods without resource limits",
+                format!("{} VM(s) not ready", not_ready_vms.len()),
                 Style::default().fg(Color::White),
             ),
-        ]),
-        Line::from(vec![
+        ]));
+    }
+
+    if failed_vms.is_empty() {
+        checks.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("No VMs in failed state", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        checks.push(Line::from(vec![
+            Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                "Image pull policy: Always",
+                format!("{} VM(s) in failed state", failed_vms.len()),
                 Style::default().fg(Color::White),
             ),
-        ]),
-    ];
-    let network_widget = Paragraph::new(network_lines).block(
+        ]));
+    }
+
+    if no_node_vms.is_empty() {
+        checks.push(Line::from(vec![
+            Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+            Span::styled("All VMs assigned to nodes", Style::default().fg(Color::White)),
+        ]));
+    } else {
+        checks.push(Line::from(vec![
+            Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                format!("{} VM(s) not assigned to a node", no_node_vms.len()),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+    }
+
+    let network_widget = Paragraph::new(checks).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
@@ -166,7 +233,10 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
     );
     f.render_widget(network_widget, detail_chunks[0]);
 
-    let recommendations = vec![
+    // Recommendations based on findings
+    let overall_score = (network_score as u32 + identity_score as u32 + workload_score as u32 + data_score as u32) / 4;
+
+    let mut recommendations = vec![
         Line::from(""),
         Line::from(Span::styled(
             "  Recommendations",
@@ -175,61 +245,83 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .add_modifier(Modifier::BOLD),
         )),
         Line::from(""),
-        Line::from(vec![
-            Span::styled("  1. ", Style::default().fg(Color::Rgb(220, 50, 47))),
-            Span::styled(
-                "Add default-deny egress NetworkPolicy",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "+5 posture score",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  2. ", Style::default().fg(Color::Rgb(220, 50, 47))),
-            Span::styled(
-                "Set runAsNonRoot for 3 containers",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "+4 posture score",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  3. ", Style::default().fg(Color::Rgb(255, 200, 0))),
-            Span::styled(
-                "Define resource limits on 5 pods",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "+3 posture score",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
-            ),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Total potential: ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "82 -> 94 (+12)",
-                Style::default()
-                    .fg(Color::Rgb(50, 205, 50))
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ]),
     ];
+
+    let mut rec_num = 1;
+    let mut potential_gain: u32 = 0;
+
+    if !failed_vms.is_empty() {
+        recommendations.push(Line::from(vec![
+            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(220, 50, 47))),
+            Span::styled(
+                format!("Investigate {} failed VM(s)", failed_vms.len()),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+        recommendations.push(Line::from(vec![
+            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
+            Span::styled("+5 posture score", Style::default().fg(Color::Rgb(50, 205, 50))),
+        ]));
+        recommendations.push(Line::from(""));
+        rec_num += 1;
+        potential_gain += 5;
+    }
+
+    if !no_ip_vms.is_empty() {
+        recommendations.push(Line::from(vec![
+            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(220, 50, 47))),
+            Span::styled(
+                format!("Assign IPs to {} VM(s)", no_ip_vms.len()),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+        recommendations.push(Line::from(vec![
+            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
+            Span::styled("+4 posture score", Style::default().fg(Color::Rgb(50, 205, 50))),
+        ]));
+        recommendations.push(Line::from(""));
+        rec_num += 1;
+        potential_gain += 4;
+    }
+
+    if !not_ready_vms.is_empty() {
+        recommendations.push(Line::from(vec![
+            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                format!("Fix {} not-ready VM(s)", not_ready_vms.len()),
+                Style::default().fg(Color::White),
+            ),
+        ]));
+        recommendations.push(Line::from(vec![
+            Span::styled("     Impact: ", Style::default().fg(Color::Gray)),
+            Span::styled("+3 posture score", Style::default().fg(Color::Rgb(50, 205, 50))),
+        ]));
+        recommendations.push(Line::from(""));
+        potential_gain += 3;
+    }
+
+    if rec_num == 1 {
+        recommendations.push(Line::from(vec![
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                "No issues found - posture is healthy",
+                Style::default().fg(Color::Rgb(50, 205, 50)),
+            ),
+        ]));
+    }
+
+    recommendations.push(Line::from(""));
+    let new_score = (overall_score + potential_gain).min(100);
+    recommendations.push(Line::from(vec![
+        Span::styled("  Total potential: ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{} -> {} (+{})", overall_score, new_score, potential_gain),
+            Style::default()
+                .fg(Color::Rgb(50, 205, 50))
+                .add_modifier(Modifier::BOLD),
+        ),
+    ]));
+
     let rec_widget = Paragraph::new(recommendations).block(
         Block::default()
             .borders(Borders::ALL)
