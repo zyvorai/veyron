@@ -94,10 +94,27 @@ pub mod web {
         }
     }
 
+    /// API key role for RBAC enforcement.
+    #[derive(Debug, Clone, PartialEq)]
+    pub enum ApiRole {
+        Admin,    // Full access
+        Write,    // Read + mutating operations
+        ReadOnly, // GET only
+    }
+
+    /// An API key with an associated role.
+    #[derive(Debug, Clone)]
+    pub struct ApiKeyEntry {
+        pub key: String,
+        pub role: ApiRole,
+        pub name: String,
+    }
+
     pub struct WebState {
         pub namespace: String,
         pub kube_client: KubeClient,
         pub api_key: Option<String>,
+        pub api_keys: Vec<ApiKeyEntry>,
         rate_limiter: RateLimiterState,
     }
 
@@ -112,17 +129,57 @@ pub mod web {
                      Set VMROGUE_API_KEY to enable access."
                 );
             }
+
+            // Load additional API keys with roles from VMROGUE_API_KEYS
+            // Format: "name1:key1:admin,name2:key2:readonly,name3:key3:write"
+            let mut api_keys = Vec::new();
+            if let Some(ref primary) = api_key {
+                api_keys.push(ApiKeyEntry {
+                    key: primary.clone(),
+                    role: ApiRole::Admin,
+                    name: "primary".to_string(),
+                });
+            }
+            if let Ok(keys_str) = std::env::var("VMROGUE_API_KEYS") {
+                for entry in keys_str.split(',') {
+                    let parts: Vec<&str> = entry.trim().split(':').collect();
+                    if parts.len() >= 2 {
+                        let name = parts[0].to_string();
+                        let key = parts[1].to_string();
+                        let role = match parts.get(2).map(|s| *s) {
+                            Some("admin") => ApiRole::Admin,
+                            Some("write") => ApiRole::Write,
+                            Some("readonly") | Some("read") => ApiRole::ReadOnly,
+                            _ => ApiRole::ReadOnly,
+                        };
+                        api_keys.push(ApiKeyEntry { key, role, name });
+                    }
+                }
+            }
+
             let kube_client = KubeClient::new().await?;
             Ok(Self {
                 namespace,
                 kube_client,
                 api_key,
+                api_keys,
                 rate_limiter: RateLimiterState::new(rate_limit_per_minute, 60),
             })
         }
 
         pub fn client(&self) -> &KubeClient {
             &self.kube_client
+        }
+
+        /// Authenticate an API key and return its role.
+        pub fn authenticate(&self, key: &str) -> Option<&ApiRole> {
+            self.api_keys.iter().find_map(|entry| {
+                if constant_time_eq(key.as_bytes(), entry.key.as_bytes()) {
+                    Some(&entry.role)
+                } else {
+                    None
+                }
+            })
         }
     }
 
@@ -247,9 +304,55 @@ pub mod web {
 
         match provided_key {
             Some(key) if constant_time_eq(key.as_bytes(), expected_key.as_bytes()) => {
+                // Primary key — check RBAC via multi-key table
+                let s2 = state.read().await;
+                if let Some(role) = s2.authenticate(&key) {
+                    // Read-only keys cannot make mutating requests
+                    if *role == ApiRole::ReadOnly
+                        && request.method() != axum::http::Method::GET
+                        && request.method() != axum::http::Method::HEAD
+                    {
+                        drop(s2);
+                        let (status, json) = err_json(
+                            403,
+                            "FORBIDDEN",
+                            "Read-only API key cannot perform mutating operations",
+                        );
+                        return (status, json).into_response();
+                    }
+                }
+                drop(s2);
                 next.run(request).await.into_response()
             }
-            _ => {
+            Some(key) => {
+                // Check multi-key table for additional keys
+                let s2 = state.read().await;
+                match s2.authenticate(&key) {
+                    Some(role) => {
+                        if *role == ApiRole::ReadOnly
+                            && request.method() != axum::http::Method::GET
+                            && request.method() != axum::http::Method::HEAD
+                        {
+                            drop(s2);
+                            let (status, json) = err_json(
+                                403,
+                                "FORBIDDEN",
+                                "Read-only API key cannot perform mutating operations",
+                            );
+                            return (status, json).into_response();
+                        }
+                        drop(s2);
+                        next.run(request).await.into_response()
+                    }
+                    None => {
+                        drop(s2);
+                        let (status, json) =
+                            err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
+                        (status, json).into_response()
+                    }
+                }
+            }
+            None => {
                 let (status, json) = err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
                 (status, json).into_response()
             }
