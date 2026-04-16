@@ -1,0 +1,46 @@
+---
+# ServiceMonitor for VMRogue API server
+# Requires Prometheus Operator (prometheus-operator.dev)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vmrogue-api
+  namespace: vmrogue-system
+  labels:
+    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/component: api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vmrogue
+  namespaceSelector:
+    matchNames:
+      - vmrogue-system
+  endpoints:
+    - port: https
+      path: /api/v1/health
+      interval: 30s
+      scheme: https
+      tlsConfig:
+        insecureSkipVerify: true
+---
+# ServiceMonitor for VMRogue Operator
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vmrogue-operator
+  namespace: vmrogue-system
+  labels:
+    app.kubernetes.io/name: vmrogue-operator
+    app.kubernetes.io/component: operator
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vmrogue-operator
+  namespaceSelector:
+    matchNames:
+      - vmrogue-system
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
