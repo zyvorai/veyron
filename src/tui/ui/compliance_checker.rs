@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Gauge, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -44,6 +44,49 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         );
     f.render_widget(header, chunks[0]);
 
+    // --- Derive compliance checks from state.vms ---
+    let total_vms = state.vms.len();
+
+    // Check each VM for compliance issues
+    let mut has_resource_limits = 0usize;
+    let mut has_eviction_strategy = 0usize; // VMs that are Running considered compliant
+    let mut has_rng_device = 0usize; // VMs with disk info (non-"None") considered compliant
+    let mut has_node_assignment = 0usize;
+
+    for vm in &state.vms {
+        // Resource limits: VM has explicit CPU and memory set (not defaults)
+        if vm.cpu != "1 core" || vm.memory != "Unknown" {
+            has_resource_limits += 1;
+        }
+        // Eviction strategy: Running or Stopped VMs are considered to have one
+        if vm.status == "Running" || vm.status == "Stopped" {
+            has_eviction_strategy += 1;
+        }
+        // RNG device proxy: VMs with disk info beyond "None"
+        if vm.disk != "None" {
+            has_rng_device += 1;
+        }
+        // Node assignment
+        if vm.node != "N/A" && !vm.node.is_empty() {
+            has_node_assignment += 1;
+        }
+    }
+
+    let safe_div = |num: usize, den: usize| -> u16 {
+        if den == 0 { 100 } else { ((num as f64 / den as f64) * 100.0).round() as u16 }
+    };
+
+    let resource_pct = safe_div(has_resource_limits, total_vms);
+    let eviction_pct = safe_div(has_eviction_strategy, total_vms);
+    let rng_pct = safe_div(has_rng_device, total_vms);
+    let node_pct = safe_div(has_node_assignment, total_vms);
+
+    let gauge_color = |pct: u16| -> Color {
+        if pct >= 90 { Color::Rgb(50, 205, 50) }
+        else if pct >= 70 { Color::Rgb(255, 200, 0) }
+        else { Color::Rgb(220, 50, 47) }
+    };
+
     // Framework gauges
     let gauge_chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -56,10 +99,10 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .split(chunks[1]);
 
     let frameworks = [
-        ("CIS K8s", 78, Color::Rgb(255, 200, 0)),
-        ("PCI DSS", 91, Color::Rgb(50, 205, 50)),
-        ("SOC 2", 85, Color::Rgb(50, 205, 50)),
-        ("HIPAA", 73, Color::Rgb(255, 200, 0)),
+        ("Resource Limits", resource_pct, gauge_color(resource_pct)),
+        ("Eviction Strategy", eviction_pct, gauge_color(eviction_pct)),
+        ("Storage Config", rng_pct, gauge_color(rng_pct)),
+        ("Node Placement", node_pct, gauge_color(node_pct)),
     ];
 
     for (i, (name, pct, color)) in frameworks.iter().enumerate() {
@@ -76,13 +119,13 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         f.render_widget(gauge, gauge_chunks[i]);
     }
 
-    // Controls table
+    // Controls table - one row per VM with compliance findings
     let header_cells = [
-        "Control ID",
-        "Framework",
-        "Description",
+        "VM Name",
         "Status",
-        "Severity",
+        "Resource Limits",
+        "Eviction",
+        "Storage",
     ]
     .iter()
     .map(|h| {
@@ -96,106 +139,65 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let controls = vec![
-        (
-            "CIS-5.2.1",
-            "CIS K8s",
-            "Minimize admission of privileged containers",
-            "FAIL",
-            "HIGH",
-        ),
-        (
-            "CIS-5.2.3",
-            "CIS K8s",
-            "Minimize containers with added capabilities",
-            "PASS",
-            "MED",
-        ),
-        (
-            "CIS-5.3.2",
-            "CIS K8s",
-            "Ensure NetworkPolicy for every namespace",
-            "FAIL",
-            "HIGH",
-        ),
-        (
-            "PCI-2.2.1",
-            "PCI DSS",
-            "Implement only one primary function per server",
-            "PASS",
-            "HIGH",
-        ),
-        (
-            "PCI-6.5.1",
-            "PCI DSS",
-            "Address common coding vulnerabilities",
-            "PASS",
-            "CRIT",
-        ),
-        (
-            "SOC-CC6.1",
-            "SOC 2",
-            "Logical and physical access controls",
-            "PASS",
-            "HIGH",
-        ),
-        (
-            "SOC-CC7.2",
-            "SOC 2",
-            "Monitor system components for anomalies",
-            "WARN",
-            "MED",
-        ),
-        (
-            "HIPAA-164.312a",
-            "HIPAA",
-            "Access control - unique user identification",
-            "PASS",
-            "CRIT",
-        ),
-        (
-            "HIPAA-164.312e",
-            "HIPAA",
-            "Transmission security",
-            "FAIL",
-            "CRIT",
-        ),
-    ];
+    let rows: Vec<Row> = state.vms.iter().map(|vm| {
+        let has_limits = vm.cpu != "1 core" || vm.memory != "Unknown";
+        let has_eviction = vm.status == "Running" || vm.status == "Stopped";
+        let has_storage = vm.disk != "None";
 
-    let rows = controls.iter().map(|(id, fw, desc, status, sev)| {
-        let status_color = match *status {
-            "PASS" => Color::Rgb(50, 205, 50),
-            "FAIL" => Color::Rgb(220, 50, 47),
-            "WARN" => Color::Rgb(255, 200, 0),
+        let pass_fail = |ok: bool| -> (&str, Color) {
+            if ok {
+                ("PASS", Color::Rgb(50, 205, 50))
+            } else {
+                ("FAIL", Color::Rgb(220, 50, 47))
+            }
+        };
+
+        let (limits_text, limits_color) = pass_fail(has_limits);
+        let (eviction_text, eviction_color) = pass_fail(has_eviction);
+        let (storage_text, storage_color) = pass_fail(has_storage);
+
+        let status_color = match vm.status.as_str() {
+            "Running" => Color::Rgb(50, 205, 50),
+            "Stopped" => Color::Rgb(255, 200, 0),
+            "Failed" | "Error" => Color::Rgb(220, 50, 47),
             _ => Color::Gray,
         };
-        let sev_color = match *sev {
-            "CRIT" => Color::Rgb(220, 50, 47),
-            "HIGH" => Color::Rgb(255, 165, 0),
-            "MED" => Color::Rgb(255, 200, 0),
-            _ => Color::Rgb(100, 150, 255),
-        };
+
         Row::new(vec![
-            Cell::from(*id).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(*fw),
-            Cell::from(*desc),
-            Cell::from(*status).style(
+            Cell::from(vm.name.as_str()).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+            Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
+            Cell::from(limits_text).style(
                 Style::default()
-                    .fg(status_color)
+                    .fg(limits_color)
                     .add_modifier(Modifier::BOLD),
             ),
-            Cell::from(*sev).style(Style::default().fg(sev_color)),
+            Cell::from(eviction_text).style(
+                Style::default()
+                    .fg(eviction_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Cell::from(storage_text).style(
+                Style::default()
+                    .fg(storage_color)
+                    .add_modifier(Modifier::BOLD),
+            ),
         ])
         .height(1)
-    });
+    }).collect();
 
     let widths = [
-        Constraint::Percentage(14),
-        Constraint::Percentage(12),
-        Constraint::Percentage(44),
-        Constraint::Percentage(12),
-        Constraint::Percentage(12),
+        Constraint::Percentage(25),
+        Constraint::Percentage(15),
+        Constraint::Percentage(20),
+        Constraint::Percentage(20),
+        Constraint::Percentage(20),
     ];
+
+    let overall_score = if total_vms == 0 {
+        100
+    } else {
+        (resource_pct as u32 + eviction_pct as u32 + rng_pct as u32 + node_pct as u32) as u32 / 4
+    };
 
     let table = Table::new(rows, widths)
         .header(table_header)
@@ -204,7 +206,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Compliance Controls ",
+                    format!(" Compliance Controls ({} VMs, Score: {}%) ", total_vms, overall_score),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),

@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -43,83 +43,86 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         );
     f.render_widget(header, chunks[0]);
 
-    // Dependency graph (ASCII art representation)
+    // Dependency graph - show VMs grouped by node
     let content_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(60), Constraint::Percentage(40)])
         .split(chunks[1]);
 
-    let graph_lines = vec![
-        Line::from(""),
-        Line::from(Span::styled(
-            "                   [load-balancer]",
-            Style::default()
-                .fg(Color::Rgb(50, 205, 50))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            "                    /           \\",
+    // --- Build node -> VM mapping from state.vms ---
+    use std::collections::BTreeMap;
+    let mut node_vms: BTreeMap<String, Vec<(&str, &str, Color)>> = BTreeMap::new();
+
+    for vm in &state.vms {
+        let node_name = if vm.node == "N/A" || vm.node.is_empty() {
+            "unassigned".to_string()
+        } else {
+            vm.node.clone()
+        };
+        let status_color = match vm.status.as_str() {
+            "Running" => Color::Rgb(50, 205, 50),
+            "Stopped" => Color::Rgb(255, 200, 0),
+            "Starting" | "Pending" => Color::Rgb(100, 150, 255),
+            "Failed" | "Error" => Color::Rgb(220, 50, 47),
+            _ => Color::Gray,
+        };
+        node_vms
+            .entry(node_name)
+            .or_default()
+            .push((&vm.name, &vm.status, status_color));
+    }
+
+    let mut graph_lines: Vec<Line> = Vec::new();
+    graph_lines.push(Line::from(""));
+
+    if state.vms.is_empty() {
+        graph_lines.push(Line::from(Span::styled(
+            "  No VMs discovered",
             Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "                   v             v",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(vec![
-            Span::styled(
-                "           [web-server-01]",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
-            ),
-            Span::styled(
-                "   [web-server-02]",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
-            ),
-        ]),
-        Line::from(Span::styled(
-            "                   \\           /",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "                    v         v",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "                  [api-gateway]",
+        )));
+    } else {
+        // Show cluster topology: nodes with their VMs
+        graph_lines.push(Line::from(Span::styled(
+            "                    [cluster]",
             Style::default()
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(Span::styled(
-            "                   /         \\",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "                  v           v",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(vec![
-            Span::styled(
-                "           [db-primary]",
-                Style::default().fg(Color::Rgb(100, 150, 255)),
-            ),
-            Span::styled(
-                "      [cache-server]",
-                Style::default().fg(Color::Rgb(255, 200, 0)),
-            ),
-        ]),
-        Line::from(Span::styled(
-            "                  |",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "                  v",
-            Style::default().fg(Color::Gray),
-        )),
-        Line::from(Span::styled(
-            "             [db-replica]",
-            Style::default().fg(Color::Rgb(100, 150, 255)),
-        )),
-    ];
+        )));
+
+        for (node_name, vms) in &node_vms {
+            graph_lines.push(Line::from(Span::styled(
+                "                       |",
+                Style::default().fg(Color::Gray),
+            )));
+            graph_lines.push(Line::from(Span::styled(
+                "                       v",
+                Style::default().fg(Color::Gray),
+            )));
+
+            let node_color = if node_name == "unassigned" {
+                Color::Rgb(255, 200, 0)
+            } else {
+                Color::Rgb(100, 150, 255)
+            };
+            graph_lines.push(Line::from(Span::styled(
+                format!("               [{}]", node_name),
+                Style::default()
+                    .fg(node_color)
+                    .add_modifier(Modifier::BOLD),
+            )));
+
+            for (vm_name, _status, color) in vms {
+                graph_lines.push(Line::from(vec![
+                    Span::styled("                  +-- ", Style::default().fg(Color::Gray)),
+                    Span::styled(
+                        format!("[{}]", vm_name),
+                        Style::default().fg(*color),
+                    ),
+                ]));
+            }
+        }
+    }
+
     let graph_widget = Paragraph::new(graph_lines).block(
         Block::default()
             .borders(Borders::ALL)
@@ -134,61 +137,82 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
     f.render_widget(graph_widget, content_chunks[0]);
 
     // Legend and details
-    let legend = vec![
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Legend",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  [*] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("Running / Healthy", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  [*] ", Style::default().fg(Color::Rgb(100, 150, 255))),
-            Span::styled("Database tier", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  [*] ", Style::default().fg(Color::Rgb(255, 200, 0))),
-            Span::styled("Cache tier", Style::default().fg(Color::White)),
-        ]),
-        Line::from(vec![
-            Span::styled("  [*] ", Style::default().fg(Color::Rgb(222, 115, 86))),
-            Span::styled("API tier", Style::default().fg(Color::White)),
-        ]),
-        Line::from(""),
-        Line::from(Span::styled(
-            "  Selected: api-gateway",
-            Style::default()
-                .fg(Color::Rgb(222, 115, 86))
-                .add_modifier(Modifier::BOLD),
-        )),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  Depends on:  ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "db-primary, cache-server",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  Required by: ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "web-server-01, web-server-02",
-                Style::default().fg(Color::White),
-            ),
-        ]),
-        Line::from(vec![
-            Span::styled("  Impact:      ", Style::default().fg(Color::Gray)),
-            Span::styled(
-                "Stopping affects 4 VMs",
-                Style::default().fg(Color::Rgb(255, 200, 0)),
-            ),
-        ]),
-    ];
+    let stats = state.get_stats();
+    let unique_nodes = node_vms.len();
+
+    let mut legend: Vec<Line> = Vec::new();
+    legend.push(Line::from(""));
+    legend.push(Line::from(Span::styled(
+        "  Legend",
+        Style::default()
+            .fg(Color::Rgb(222, 115, 86))
+            .add_modifier(Modifier::BOLD),
+    )));
+    legend.push(Line::from(""));
+    legend.push(Line::from(vec![
+        Span::styled("  [*] ", Style::default().fg(Color::Rgb(50, 205, 50))),
+        Span::styled("Running", Style::default().fg(Color::White)),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  [*] ", Style::default().fg(Color::Rgb(255, 200, 0))),
+        Span::styled("Stopped / Unassigned", Style::default().fg(Color::White)),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  [*] ", Style::default().fg(Color::Rgb(100, 150, 255))),
+        Span::styled("Node / Starting", Style::default().fg(Color::White)),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  [*] ", Style::default().fg(Color::Rgb(220, 50, 47))),
+        Span::styled("Failed / Error", Style::default().fg(Color::White)),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  [*] ", Style::default().fg(Color::Rgb(222, 115, 86))),
+        Span::styled("Cluster root", Style::default().fg(Color::White)),
+    ]));
+    legend.push(Line::from(""));
+    legend.push(Line::from(Span::styled(
+        "  Cluster Summary",
+        Style::default()
+            .fg(Color::Rgb(222, 115, 86))
+            .add_modifier(Modifier::BOLD),
+    )));
+    legend.push(Line::from(""));
+    legend.push(Line::from(vec![
+        Span::styled("  Total VMs:   ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", stats.total),
+            Style::default().fg(Color::White),
+        ),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  Running:     ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", stats.running),
+            Style::default().fg(Color::Rgb(50, 205, 50)),
+        ),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  Stopped:     ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", stats.stopped),
+            Style::default().fg(Color::Rgb(255, 200, 0)),
+        ),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  Failed:      ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", stats.failed),
+            Style::default().fg(Color::Rgb(220, 50, 47)),
+        ),
+    ]));
+    legend.push(Line::from(vec![
+        Span::styled("  Nodes used:  ", Style::default().fg(Color::Gray)),
+        Span::styled(
+            format!("{}", unique_nodes),
+            Style::default().fg(Color::White),
+        ),
+    ]));
+
     let legend_widget = Paragraph::new(legend).block(
         Block::default()
             .borders(Borders::ALL)
