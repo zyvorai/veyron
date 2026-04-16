@@ -1,0 +1,27 @@
+# Quick deployment Dockerfile — uses pre-compiled binary (glibc)
+# For full multi-stage build from source, use Dockerfile instead.
+#
+# Usage:
+#   cargo build --release
+#   cp target/release/vmrogue /tmp/vmrogue-binary
+#   docker build -t vmrogue:latest -f Dockerfile.deploy /tmp
+#
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install virtctl for VNC console proxy
+ARG VIRTCTL_VERSION=v1.4.0
+RUN curl -sL "https://github.com/kubevirt/kubevirt/releases/download/${VIRTCTL_VERSION}/virtctl-${VIRTCTL_VERSION}-linux-amd64" \
+    -o /usr/local/bin/virtctl \
+    && chmod +x /usr/local/bin/virtctl
+
+COPY vmrogue-binary /usr/local/bin/vmrogue
+RUN chmod +x /usr/local/bin/vmrogue
+
+USER 10001
+
+ENTRYPOINT ["vmrogue"]
+CMD ["api-serve", "--port", "5151", "--host", "0.0.0.0"]
