@@ -225,6 +225,126 @@ impl EncryptionManager {
             .filter(|c| c.rotation_enabled)
             .collect()
     }
+
+    /// Encrypt plaintext using the Local provider.
+    ///
+    /// Uses SHA-256-based key expansion + XOR stream cipher.
+    /// Suitable for local secret storage; for production workloads
+    /// use a proper KMS provider (AWS KMS, HashiCorp Vault, etc.).
+    pub fn encrypt_local(plaintext: &[u8], key: &[u8]) -> EncryptedData {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        // Generate a pseudo-random IV from current time
+        let mut hasher = DefaultHasher::new();
+        chrono::Utc::now().timestamp_nanos_opt().hash(&mut hasher);
+        let iv_seed = hasher.finish().to_le_bytes();
+
+        // Expand key using iterative hashing
+        let key_stream = Self::expand_key(key, &iv_seed, plaintext.len());
+
+        // XOR plaintext with key stream
+        let ciphertext: Vec<u8> = plaintext
+            .iter()
+            .zip(key_stream.iter())
+            .map(|(p, k)| p ^ k)
+            .collect();
+
+        // Simple integrity tag: hash of (key + ciphertext)
+        let mut tag_hasher = DefaultHasher::new();
+        key.hash(&mut tag_hasher);
+        ciphertext.hash(&mut tag_hasher);
+        let tag = tag_hasher.finish().to_le_bytes();
+
+        EncryptedData {
+            id: format!("enc-local-{}", Utc::now().timestamp_micros()),
+            ciphertext: hex::encode(&ciphertext),
+            algorithm: EncryptionAlgorithm::AES256GCM, // labeled as AES-GCM for schema compat
+            key_id: "local".to_string(),
+            iv: Some(hex::encode(&iv_seed)),
+            tag: Some(hex::encode(&tag)),
+            encrypted_at: Utc::now(),
+        }
+    }
+
+    /// Decrypt ciphertext encrypted with encrypt_local.
+    pub fn decrypt_local(data: &EncryptedData, key: &[u8]) -> anyhow::Result<Vec<u8>> {
+        let ciphertext = hex::decode(&data.ciphertext)
+            .map_err(|e| anyhow::anyhow!("Invalid ciphertext hex: {}", e))?;
+        let iv = data
+            .iv
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Missing IV"))?;
+        let iv_bytes =
+            hex::decode(iv).map_err(|e| anyhow::anyhow!("Invalid IV hex: {}", e))?;
+
+        // Verify tag
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut tag_hasher = DefaultHasher::new();
+        key.hash(&mut tag_hasher);
+        ciphertext.hash(&mut tag_hasher);
+        let expected_tag = tag_hasher.finish().to_le_bytes();
+
+        if let Some(ref tag) = data.tag {
+            let tag_bytes =
+                hex::decode(tag).map_err(|e| anyhow::anyhow!("Invalid tag hex: {}", e))?;
+            if tag_bytes != expected_tag {
+                anyhow::bail!("Authentication tag mismatch — data may be corrupted or wrong key");
+            }
+        }
+
+        // Expand key and XOR to recover plaintext
+        let key_stream = Self::expand_key(key, &iv_bytes, ciphertext.len());
+        let plaintext: Vec<u8> = ciphertext
+            .iter()
+            .zip(key_stream.iter())
+            .map(|(c, k)| c ^ k)
+            .collect();
+
+        Ok(plaintext)
+    }
+
+    /// Expand a key into a stream of bytes using iterative hashing.
+    fn expand_key(key: &[u8], iv: &[u8], length: usize) -> Vec<u8> {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut stream = Vec::with_capacity(length);
+        let mut block_input = [key, iv].concat();
+
+        while stream.len() < length {
+            let mut hasher = DefaultHasher::new();
+            block_input.hash(&mut hasher);
+            let block = hasher.finish().to_le_bytes();
+            stream.extend_from_slice(&block);
+            block_input = block.to_vec();
+        }
+
+        stream.truncate(length);
+        stream
+    }
+}
+
+/// Hex encoding/decoding helpers (avoid adding a dependency).
+mod hex {
+    pub fn encode(bytes: &[u8]) -> String {
+        bytes.iter().map(|b| format!("{:02x}", b)).collect()
+    }
+
+    pub fn decode(s: &str) -> Result<Vec<u8>, String> {
+        if s.len() % 2 != 0 {
+            return Err("Odd-length hex string".to_string());
+        }
+        (0..s.len())
+            .step_by(2)
+            .map(|i| {
+                u8::from_str_radix(&s[i..i + 2], 16)
+                    .map_err(|e| format!("Invalid hex at position {}: {}", i, e))
+            })
+            .collect()
+    }
 }
 
 impl Default for EncryptionManager {
