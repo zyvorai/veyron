@@ -2467,6 +2467,34 @@ pub enum Commands {
         /// VM name to troubleshoot
         name: String,
     },
+
+    // ========== CAPACITY & PLACEMENT ==========
+    /// Analyze cluster capacity and VM resource allocation
+    #[command(name = "capacity")]
+    Capacity {
+        /// Show detailed per-node breakdown
+        #[arg(long)]
+        detailed: bool,
+
+        /// Output format (table, yaml, json)
+        #[arg(short, long, default_value = "table")]
+        output: String,
+    },
+
+    /// Recommend optimal node placement for a VM
+    #[command(name = "placement")]
+    Placement {
+        /// VM name to find placement for
+        name: String,
+
+        /// Placement strategy (spread, binpack, leastloaded)
+        #[arg(long, default_value = "leastloaded")]
+        strategy: String,
+    },
+
+    /// List VMs in JSON Lines format (for scripting)
+    #[command(name = "list-json")]
+    ListJson,
 }
 
 #[cfg(test)]
