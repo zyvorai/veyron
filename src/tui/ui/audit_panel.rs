@@ -10,7 +10,7 @@ use ratatui::{
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
 
-pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
+pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
@@ -43,6 +43,60 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         );
     f.render_widget(header, chunks[0]);
 
+    // --- Build audit entries from state.events and state.recent_activity ---
+
+    // Collect entries: combine K8s events + recent activity into a unified audit log
+    struct AuditEntry {
+        timestamp: String,
+        user: String,
+        action: String,
+        resource: String,
+        result: String,
+        details: String,
+    }
+
+    let mut entries: Vec<AuditEntry> = Vec::new();
+
+    // Add recent_activity entries (newest last in the vec, we reverse for display)
+    for activity in state.recent_activity.iter().rev() {
+        let action = activity.action.to_uppercase();
+        let result_str = if activity.action.contains("fail") {
+            "Failed"
+        } else {
+            "Success"
+        };
+        entries.push(AuditEntry {
+            timestamp: activity.elapsed_display(),
+            user: "system".to_string(),
+            action,
+            resource: format!("VM/{}", activity.vm_name),
+            result: result_str.to_string(),
+            details: format!("{} {}", activity.icon, activity.action),
+        });
+    }
+
+    // Add K8s events as audit entries
+    for event in &state.events {
+        let action = event.reason.to_uppercase();
+        let result_str = match event.event_type.as_str() {
+            "Warning" => "Warning",
+            "Normal" => "Success",
+            _ => "Info",
+        };
+        entries.push(AuditEntry {
+            timestamp: event.time.clone(),
+            user: "k8s".to_string(),
+            action,
+            resource: event.object.clone(),
+            result: result_str.to_string(),
+            details: if event.message.len() > 50 {
+                format!("{}...", &event.message[..47])
+            } else {
+                event.message.clone()
+            },
+        });
+    }
+
     // Audit log table
     let header_cells = [
         "Timestamp",
@@ -64,119 +118,40 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let entries = vec![
-        (
-            "14:32:05",
-            "admin",
-            "CREATE",
-            "VM/web-server-03",
-            "Success",
-            "From template ubuntu-22",
-        ),
-        (
-            "14:28:12",
-            "admin",
-            "START",
-            "VM/web-server-01",
-            "Success",
-            "Cold boot",
-        ),
-        (
-            "14:15:44",
-            "ci-bot",
-            "SNAPSHOT",
-            "VM/db-primary",
-            "Success",
-            "Auto backup",
-        ),
-        (
-            "13:58:21",
-            "ops-user",
-            "MIGRATE",
-            "VM/worker-01",
-            "Success",
-            "node-1 -> node-3",
-        ),
-        (
-            "13:45:03",
-            "admin",
-            "DELETE",
-            "Snapshot/old-snap-12",
-            "Success",
-            "Cleanup",
-        ),
-        (
-            "13:30:18",
-            "dev-user",
-            "STOP",
-            "VM/test-vm-alpha",
-            "Success",
-            "Graceful shutdown",
-        ),
-        (
-            "13:12:55",
-            "ci-bot",
-            "SCALE",
-            "VMPool/workers",
-            "Success",
-            "Replicas 3 -> 5",
-        ),
-        (
-            "12:58:30",
-            "ops-user",
-            "UPDATE",
-            "VM/api-gateway",
-            "Failed",
-            "Insufficient resources",
-        ),
-        (
-            "12:45:11",
-            "admin",
-            "RBAC",
-            "Role/vm-viewer",
-            "Success",
-            "Added read permissions",
-        ),
-        (
-            "12:30:02",
-            "system",
-            "ALERT",
-            "Node/node-4",
-            "Warning",
-            "Unreachable",
-        ),
-    ];
-
-    let rows = entries
+    let rows: Vec<Row> = entries
         .iter()
-        .map(|(ts, user, action, resource, result, details)| {
-            let result_color = match *result {
+        .map(|entry| {
+            let result_color = match entry.result.as_str() {
                 "Success" => Color::Rgb(50, 205, 50),
                 "Failed" => Color::Rgb(220, 50, 47),
                 "Warning" => Color::Rgb(255, 200, 0),
                 _ => Color::Gray,
             };
-            let action_color = match *action {
-                "CREATE" | "START" => Color::Rgb(50, 205, 50),
-                "DELETE" | "STOP" => Color::Rgb(220, 50, 47),
-                "MIGRATE" | "UPDATE" | "SCALE" => Color::Rgb(255, 200, 0),
-                "SNAPSHOT" => Color::Rgb(100, 150, 255),
+            let action_color = match entry.action.as_str() {
+                "CREATED" | "STARTED" | "DISCOVERED" => Color::Rgb(50, 205, 50),
+                "DELETED" | "STOPPED" | "REMOVED" | "KILLING" => Color::Rgb(220, 50, 47),
+                "MIGRATED" | "UPDATED" | "SCALED" | "SCHEDULED" | "PULLED" => {
+                    Color::Rgb(255, 200, 0)
+                }
+                "SNAPSHOT" | "SUCCESSFULCREATE" => Color::Rgb(100, 150, 255),
                 _ => Color::Rgb(222, 115, 86),
             };
             Row::new(vec![
-                Cell::from(*ts),
-                Cell::from(*user).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-                Cell::from(*action).style(
+                Cell::from(entry.timestamp.as_str()),
+                Cell::from(entry.user.as_str())
+                    .style(Style::default().fg(Color::Rgb(222, 115, 86))),
+                Cell::from(entry.action.as_str()).style(
                     Style::default()
                         .fg(action_color)
                         .add_modifier(Modifier::BOLD),
                 ),
-                Cell::from(*resource),
-                Cell::from(*result).style(Style::default().fg(result_color)),
-                Cell::from(*details),
+                Cell::from(entry.resource.as_str()),
+                Cell::from(entry.result.as_str()).style(Style::default().fg(result_color)),
+                Cell::from(entry.details.as_str()),
             ])
             .height(1)
-        });
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(12),
@@ -187,6 +162,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
         Constraint::Percentage(26),
     ];
 
+    let entry_count = entries.len();
     let table = Table::new(rows, widths)
         .header(table_header)
         .block(
@@ -194,7 +170,7 @@ pub fn render(f: &mut Frame, area: Rect, _state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    " Audit Log ",
+                    format!(" Audit Log ({} entries) ", entry_count),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),
