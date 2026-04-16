@@ -228,6 +228,18 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             handlers::vm::handle_restart(name, &cli.namespace).await?;
         }
 
+        Commands::Pause { name } => {
+            handlers::vm::handle_pause(name, &cli.namespace).await?;
+        }
+
+        Commands::Unpause { name } => {
+            handlers::vm::handle_unpause(name, &cli.namespace).await?;
+        }
+
+        Commands::Resize { name, cpus, memory } => {
+            handlers::vm::handle_resize(name, cpus, memory, &cli.namespace).await?;
+        }
+
         Commands::Console { name } => {
             handlers::vm::handle_console(name, &cli.namespace).await?;
         }
@@ -1238,6 +1250,9 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                         "start",
                         "stop",
                         "restart",
+                        "pause",
+                        "unpause",
+                        "resize",
                         "console",
                         "ssh",
                         "vnc",

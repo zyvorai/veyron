@@ -1,5 +1,7 @@
 // Notifications - In-app notification system
 
+pub mod delivery;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 

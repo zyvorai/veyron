@@ -704,6 +704,68 @@ pub async fn handle_restart(name: String, namespace: &str) -> Result<()> {
     Ok(())
 }
 
+pub async fn handle_pause(name: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::spinner::spinner;
+
+    let sp = spinner(&format!("Pausing VM '{}'...", name));
+    let client = kube::KubeClient::new().await?;
+    client.pause_vm(namespace, &name).await?;
+    sp.finish_and_clear();
+    println!("{}", color::success(&format!("VM '{}' paused", name)));
+    Ok(())
+}
+
+pub async fn handle_unpause(name: String, namespace: &str) -> Result<()> {
+    use crate::kube;
+    use crate::output::spinner::spinner;
+
+    let sp = spinner(&format!("Unpausing VM '{}'...", name));
+    let client = kube::KubeClient::new().await?;
+    client.unpause_vm(namespace, &name).await?;
+    sp.finish_and_clear();
+    println!("{}", color::success(&format!("VM '{}' unpaused", name)));
+    Ok(())
+}
+
+pub async fn handle_resize(
+    name: String,
+    cpus: Option<u32>,
+    memory: Option<String>,
+    namespace: &str,
+) -> Result<()> {
+    use crate::kube;
+    use crate::output::spinner::spinner;
+
+    if cpus.is_none() && memory.is_none() {
+        anyhow::bail!("At least one of --cpus or --memory must be specified");
+    }
+
+    let sp = spinner(&format!("Resizing VM '{}'...", name));
+    let client = kube::KubeClient::new().await?;
+    client
+        .update_vm_resources(namespace, &name, cpus, memory.as_deref())
+        .await?;
+    sp.finish_and_clear();
+
+    let mut changes = Vec::new();
+    if let Some(c) = cpus {
+        changes.push(format!("CPUs: {}", c));
+    }
+    if let Some(ref m) = memory {
+        changes.push(format!("Memory: {}", m));
+    }
+    println!(
+        "{}",
+        color::success(&format!("VM '{}' resized ({})", name, changes.join(", ")))
+    );
+    println!(
+        "  {}",
+        color::muted("Note: Changes take effect after VM restart")
+    );
+    Ok(())
+}
+
 pub async fn handle_console(name: String, namespace: &str) -> Result<()> {
     use std::process::Command;
 

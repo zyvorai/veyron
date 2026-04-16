@@ -152,6 +152,32 @@ pub enum Commands {
         name: String,
     },
 
+    /// Pause a running VM
+    Pause {
+        /// VM name
+        name: String,
+    },
+
+    /// Unpause a paused VM
+    Unpause {
+        /// VM name
+        name: String,
+    },
+
+    /// Resize VM CPU and/or memory (requires restart to take effect)
+    Resize {
+        /// VM name
+        name: String,
+
+        /// Number of CPU cores
+        #[arg(long)]
+        cpus: Option<u32>,
+
+        /// Memory size (e.g., 4Gi, 8Gi)
+        #[arg(long)]
+        memory: Option<String>,
+    },
+
     /// Attach to a VM's serial console
     Console {
         /// VM name
@@ -2490,6 +2516,39 @@ mod tests {
 
         let cli = parse(&["vmrogue", "restart", "vm1"]).unwrap();
         assert!(matches!(*cli.command, Commands::Restart { name } if name == "vm1"));
+    }
+
+    #[test]
+    fn test_pause_unpause() {
+        let cli = parse(&["vmrogue", "pause", "vm1"]).unwrap();
+        assert!(matches!(*cli.command, Commands::Pause { name } if name == "vm1"));
+
+        let cli = parse(&["vmrogue", "unpause", "vm1"]).unwrap();
+        assert!(matches!(*cli.command, Commands::Unpause { name } if name == "vm1"));
+    }
+
+    #[test]
+    fn test_resize_command() {
+        let cli = parse(&["vmrogue", "resize", "vm1", "--cpus", "4", "--memory", "8Gi"]).unwrap();
+        match *cli.command {
+            Commands::Resize { name, cpus, memory } => {
+                assert_eq!(name, "vm1");
+                assert_eq!(cpus, Some(4));
+                assert_eq!(memory, Some("8Gi".to_string()));
+            }
+            _ => panic!("Expected Resize command"),
+        }
+
+        // Test with only cpus
+        let cli = parse(&["vmrogue", "resize", "vm1", "--cpus", "2"]).unwrap();
+        match *cli.command {
+            Commands::Resize { name, cpus, memory } => {
+                assert_eq!(name, "vm1");
+                assert_eq!(cpus, Some(2));
+                assert!(memory.is_none());
+            }
+            _ => panic!("Expected Resize command"),
+        }
     }
 
     #[test]

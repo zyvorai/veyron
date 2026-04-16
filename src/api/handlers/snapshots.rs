@@ -144,10 +144,30 @@ async fn delete_snapshot(
 #[cfg(feature = "web")]
 async fn restore_snapshot(
     State(state): State<SharedState>,
-    Path(_id): Path<String>,
-    Json(_req): Json<RestoreSnapshotRequest>,
+    Path(id): Path<String>,
+    Json(req): Json<RestoreSnapshotRequest>,
 ) -> StatusCode {
-    let _s = state.read().await;
-    // Restore requires VirtualMachineRestore CRD - not yet wired
-    StatusCode::NOT_IMPLEMENTED
+    use crate::snapshots::restore::RestoreManager;
+
+    let s = state.read().await;
+    let restore_mgr = RestoreManager::from_client(s.client().client(), &s.namespace);
+
+    let result = if let Some(target_vm) = req.target_vm {
+        restore_mgr.restore_to_new_vm(&id, &target_vm, false).await
+    } else {
+        // Look up the snapshot to find the original VM name
+        let snap_mgr = SnapshotManager::from_client(s.client().client(), &s.namespace);
+        match snap_mgr.get_snapshot(&id).await {
+            Ok(info) => restore_mgr.restore_in_place(&info.vm_name, &id).await,
+            Err(_) => return StatusCode::NOT_FOUND,
+        }
+    };
+
+    match result {
+        Ok(_) => StatusCode::OK,
+        Err(e) => {
+            log::error!("Failed to restore snapshot '{}': {}", id, e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }

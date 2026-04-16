@@ -1,8 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Router, response::IntoResponse, routing::get};
+use axum::{Json, Router, extract::State, routing::get};
 use serde::{Deserialize, Serialize};
+
 #[cfg(feature = "web")]
-use super::not_implemented;
+use crate::api::http_server::web::SharedState;
 
 /// Audit trail entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,18 +30,69 @@ pub struct AuditStats {
 }
 
 #[cfg(feature = "web")]
-pub fn router() -> Router {
+pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/audit/trail", get(list_audit_trail))
         .route("/audit/stats", get(get_audit_stats))
+        .with_state(state)
+}
+
+/// Build audit entries from K8s events (VM-related events serve as audit trail).
+#[cfg(feature = "web")]
+async fn list_audit_trail(State(state): State<SharedState>) -> Json<Vec<AuditEntry>> {
+    let s = state.read().await;
+    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
+
+    let results: Vec<AuditEntry> = events
+        .iter()
+        .map(|event| {
+            let meta = &event.metadata;
+            let uid = meta.uid.clone().unwrap_or_default();
+            let involved = &event.involved_object;
+            let resource_type = involved.kind.clone().unwrap_or_default();
+            let resource_name = involved.name.clone().unwrap_or_default();
+
+            AuditEntry {
+                id: uid,
+                timestamp: event
+                    .last_timestamp
+                    .as_ref()
+                    .or(meta.creation_timestamp.as_ref())
+                    .map(|t| t.0.to_rfc3339())
+                    .unwrap_or_default(),
+                user: event.reporting_component.clone().unwrap_or_else(|| "system".to_string()),
+                action: event.reason.clone().unwrap_or_default(),
+                resource_type,
+                resource_name,
+                namespace: meta.namespace.clone().unwrap_or_default(),
+                outcome: event.type_.clone().unwrap_or_else(|| "Normal".to_string()),
+                details: event.message.clone(),
+            }
+        })
+        .collect();
+
+    Json(results)
 }
 
 #[cfg(feature = "web")]
-async fn list_audit_trail() -> impl IntoResponse {
-    not_implemented("Audit trail")
-}
+async fn get_audit_stats(State(state): State<SharedState>) -> Json<AuditStats> {
+    let entries = list_audit_trail(State(state)).await.0;
 
-#[cfg(feature = "web")]
-async fn get_audit_stats() -> impl IntoResponse {
-    not_implemented("Audit statistics")
+    let mut by_action: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+    let mut by_user: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+    let mut by_outcome: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+
+    for entry in &entries {
+        *by_action.entry(entry.action.clone()).or_insert(0) += 1;
+        *by_user.entry(entry.user.clone()).or_insert(0) += 1;
+        *by_outcome.entry(entry.outcome.clone()).or_insert(0) += 1;
+    }
+
+    Json(AuditStats {
+        total_events: entries.len() as u64,
+        by_action,
+        by_user,
+        by_outcome,
+        period: "all".to_string(),
+    })
 }
