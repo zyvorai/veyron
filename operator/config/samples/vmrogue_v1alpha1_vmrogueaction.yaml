@@ -1,0 +1,15 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRogueAction
+metadata:
+  name: scale-prod-db
+  namespace: default
+spec:
+  actionType: ScaleResources
+  vmRef: sample-ubuntu
+  insightRef: high-cpu-prod-db
+  description: "Scale up CPU to address sustained high utilization"
+  approved: false
+  autoApprove: false
+  parameters:
+    cpu: "4"
+    memory: "8Gi"

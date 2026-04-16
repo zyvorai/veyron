@@ -1,0 +1,22 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRogueInsight
+metadata:
+  name: high-cpu-prod-db
+  namespace: default
+spec:
+  insightType: Performance
+  severity: High
+  vmRef: sample-ubuntu
+  title: "High CPU utilization detected"
+  description: "VM sample-ubuntu has sustained CPU usage above 90% for the last 15 minutes"
+  source: metrics
+  data:
+    topProcess: postgres
+    duration: "15m"
+  metrics:
+    - name: cpu_usage_percent
+      value: 92.5
+      unit: percent
+    - name: memory_usage_percent
+      value: 68.2
+      unit: percent

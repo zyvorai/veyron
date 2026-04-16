@@ -1,0 +1,287 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vmroguevms.vmrogue.io
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.0
+spec:
+  group: vmrogue.io
+  names:
+    kind: VMRogueVM
+    listKind: VMRogueVMList
+    plural: vmroguevms
+    singular: vmroguevm
+    shortNames:
+      - vrvm
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: VM
+          type: string
+          jsonPath: .status.kubevirtVMName
+        - name: Node
+          type: string
+          jsonPath: .status.nodeName
+        - name: IP
+          type: string
+          jsonPath: .status.ipAddress
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required: ["cpu", "memory"]
+              properties:
+                template:
+                  type: string
+                profile:
+                  type: string
+                cpu:
+                  type: object
+                  required: ["cores"]
+                  properties:
+                    cores:
+                      type: integer
+                      format: int32
+                      minimum: 1
+                    sockets:
+                      type: integer
+                      format: int32
+                      default: 1
+                    threads:
+                      type: integer
+                      format: int32
+                      default: 1
+                    model:
+                      type: string
+                    dedicatedCpuPlacement:
+                      type: boolean
+                    isolateEmulatorThread:
+                      type: boolean
+                memory:
+                  type: object
+                  required: ["size"]
+                  properties:
+                    size:
+                      type: string
+                    hugepagesPageSize:
+                      type: string
+                    maxGuest:
+                      type: string
+                disks:
+                  type: array
+                  items:
+                    type: object
+                    required: ["name", "size", "source"]
+                    properties:
+                      name:
+                        type: string
+                      size:
+                        type: string
+                      storageClass:
+                        type: string
+                      bootOrder:
+                        type: integer
+                        format: int32
+                      source:
+                        type: object
+                        required: ["type"]
+                        properties:
+                          type:
+                            type: string
+                            enum: ["blank", "pvc", "containerDisk", "dataVolume"]
+                          name:
+                            type: string
+                          image:
+                            type: string
+                      deviceType:
+                        type: string
+                        enum: ["disk", "cdrom", "lun"]
+                        default: disk
+                      bus:
+                        type: string
+                      cache:
+                        type: string
+                      io:
+                        type: string
+                interfaces:
+                  type: array
+                  items:
+                    type: object
+                    required: ["name", "network", "networkType"]
+                    properties:
+                      name:
+                        type: string
+                      network:
+                        type: string
+                      model:
+                        type: string
+                        default: virtio
+                      networkType:
+                        type: object
+                        required: ["type"]
+                        properties:
+                          type:
+                            type: string
+                            enum: ["pod", "bridge", "multus", "sriov"]
+                          name:
+                            type: string
+                      macAddress:
+                        type: string
+                cloudInit:
+                  type: object
+                  required: ["userData"]
+                  properties:
+                    userData:
+                      type: string
+                    networkData:
+                      type: string
+                features:
+                  type: object
+                  properties:
+                    acpi:
+                      type: boolean
+                      default: true
+                    apic:
+                      type: boolean
+                    hyperv:
+                      type: object
+                      properties:
+                        relaxed:
+                          type: boolean
+                        vapic:
+                          type: boolean
+                        spinlocks:
+                          type: integer
+                          format: int32
+                        vpindex:
+                          type: boolean
+                        runtime:
+                          type: boolean
+                        synic:
+                          type: boolean
+                        stimer:
+                          type: boolean
+                        reset:
+                          type: boolean
+                        frequencies:
+                          type: boolean
+                        reenlightenment:
+                          type: boolean
+                        tlbflush:
+                          type: boolean
+                        ipi:
+                          type: boolean
+                    kvmHidden:
+                      type: boolean
+                    smm:
+                      type: boolean
+                firmware:
+                  type: object
+                  required: ["bootloader"]
+                  properties:
+                    bootloader:
+                      type: string
+                      enum: ["bios", "efi"]
+                    secureBoot:
+                      type: boolean
+                    persistent:
+                      type: boolean
+                clock:
+                  type: object
+                  properties:
+                    utc:
+                      type: boolean
+                      default: true
+                    timezone:
+                      type: string
+                    timers:
+                      type: object
+                      properties:
+                        hpetPresent:
+                          type: boolean
+                        pitTickPolicy:
+                          type: string
+                        rtcTickPolicy:
+                          type: string
+                        hypervPresent:
+                          type: boolean
+                evictionStrategy:
+                  type: string
+                terminationGracePeriod:
+                  type: integer
+                  format: int64
+                enableTpm:
+                  type: boolean
+                enableRng:
+                  type: boolean
+                machineType:
+                  type: string
+                running:
+                  type: boolean
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: string
+                annotations:
+                  type: object
+                  additionalProperties:
+                    type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: ["Pending", "Creating", "Running", "Stopped", "Failed", "Deleting", "Unknown"]
+                kubevirtVMName:
+                  type: string
+                nodeName:
+                  type: string
+                ipAddress:
+                  type: string
+                guestOS:
+                  type: string
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required: ["type", "status", "lastTransitionTime", "reason", "message"]
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                      observedGeneration:
+                        type: integer
+                        format: int64
+                lastReconciled:
+                  type: string
+                  format: date-time
+                observedGeneration:
+                  type: integer
+                  format: int64
