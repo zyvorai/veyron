@@ -150,3 +150,99 @@ async fn get_template(
         None => Err(StatusCode::NOT_FOUND),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_os_type_detection() {
+        assert_eq!(os_type_from_name("ubuntu-24.04"), "ubuntu");
+        assert_eq!(os_type_from_name("fedora-41"), "fedora");
+        assert_eq!(os_type_from_name("windows-server-2022"), "windows");
+        assert_eq!(os_type_from_name("freebsd-14"), "freebsd");
+        assert_eq!(os_type_from_name("alpine-3.20"), "alpine");
+        assert_eq!(os_type_from_name("unknown-os"), "linux");
+    }
+
+    #[test]
+    fn test_description_generation() {
+        let desc = description_from_name("ubuntu-24.04");
+        assert!(desc.contains("Ubuntu"));
+        assert!(desc.contains("24.04"));
+
+        let desc = description_from_name("fedora");
+        assert!(desc.contains("Fedora"));
+    }
+
+    #[test]
+    fn test_tags_generation() {
+        let tags = tags_from_os("ubuntu");
+        assert!(tags.contains(&"linux".to_string()));
+        assert!(tags.contains(&"debian-family".to_string()));
+
+        let tags = tags_from_os("windows");
+        assert!(tags.contains(&"windows".to_string()));
+
+        let tags = tags_from_os("flatcar");
+        assert!(tags.contains(&"container-os".to_string()));
+    }
+
+    #[test]
+    fn test_capitalize() {
+        assert_eq!(capitalize("ubuntu"), "Ubuntu");
+        assert_eq!(capitalize(""), "");
+        assert_eq!(capitalize("a"), "A");
+    }
+
+    #[test]
+    fn test_template_response_serialization() {
+        let resp = TemplateResponse {
+            name: "test-vm".to_string(),
+            description: "Test VM".to_string(),
+            os_type: "linux".to_string(),
+            default_cpus: 2,
+            default_memory: "4Gi".to_string(),
+            default_disk_size: "20Gi".to_string(),
+            tags: vec!["linux".to_string()],
+        };
+        let json = serde_json::to_string(&resp).unwrap();
+        assert!(json.contains("test-vm"));
+        assert!(json.contains("4Gi"));
+
+        let deserialized: TemplateResponse = serde_json::from_str(&json).unwrap();
+        assert_eq!(deserialized.name, "test-vm");
+        assert_eq!(deserialized.default_cpus, 2);
+    }
+
+    #[tokio::test]
+    async fn test_list_templates_handler() {
+        let result = list_templates().await;
+        let templates = result.0;
+        assert!(!templates.is_empty());
+
+        // Verify all templates have required fields
+        for t in &templates {
+            assert!(!t.name.is_empty());
+            assert!(!t.os_type.is_empty());
+            assert!(t.default_cpus > 0);
+            assert!(!t.default_memory.is_empty());
+            assert!(!t.tags.is_empty());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_get_template_found() {
+        let result = get_template(axum::extract::Path("ubuntu-24.04".to_string())).await;
+        assert!(result.is_ok());
+        let template = result.unwrap().0;
+        assert_eq!(template.name, "ubuntu-24.04");
+        assert_eq!(template.os_type, "ubuntu");
+    }
+
+    #[tokio::test]
+    async fn test_get_template_not_found() {
+        let result = get_template(axum::extract::Path("nonexistent".to_string())).await;
+        assert!(result.is_err());
+    }
+}
