@@ -1104,111 +1104,122 @@ pub mod web {
             .into_response()
     }
 
-    async fn vnc_proxy(mut client_ws: WebSocket, _kube_client: KubeClient, ns: String, name: String) {
-        use tokio::io::{AsyncReadExt, AsyncWriteExt};
-        use tokio::net::TcpStream;
+    /// VNC proxy: connects browser WebSocket directly to KubeVirt API WebSocket.
+    /// Same approach as v9s console-proxy — no virtctl needed, no timeout issues.
+    async fn vnc_proxy(mut client_ws: WebSocket, kube_client: KubeClient, ns: String, name: String) {
+        use futures_util::{SinkExt, StreamExt};
 
-        // Find a free port for virtctl proxy
-        let port = {
-            let listener = match tokio::net::TcpListener::bind("127.0.0.1:0").await {
-                Ok(l) => l,
-                Err(e) => {
-                    log::error!("Failed to bind ephemeral port: {}", e);
-                    return;
-                }
-            };
-            listener.local_addr().unwrap().port()
-        };
-
-        // Spawn virtctl vnc --proxy-only
-        let mut child = match tokio::process::Command::new("virtctl")
-            .args(["vnc", &name, "-n", &ns, "--proxy-only", "--port", &port.to_string()])
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .kill_on_drop(true)
-            .spawn()
-        {
+        // Build KubeVirt VNC subresource WebSocket URL
+        let config = match kube::Config::infer().await {
             Ok(c) => c,
             Err(e) => {
-                log::error!("Failed to spawn virtctl: {}", e);
-                let _ = client_ws
-                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
-                        code: 1011,
-                        reason: "virtctl not available".into(),
-                    })))
-                    .await;
+                log::error!("Failed to infer kube config: {}", e);
+                let _ = client_ws.send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                    code: 1011,
+                    reason: "Failed to get cluster config".into(),
+                }))).await;
                 return;
             }
         };
 
-        // Wait for virtctl to start listening, then connect
-        // Important: virtctl accepts only one connection, so we must use the
-        // successful connect attempt directly — don't probe then reconnect.
-        let mut stream = None;
-        for _ in 0..20 {
-            tokio::time::sleep(std::time::Duration::from_millis(300)).await;
-            match TcpStream::connect(format!("127.0.0.1:{}", port)).await {
-                Ok(s) => {
-                    stream = Some(s);
-                    break;
-                }
-                Err(_) => continue,
-            }
+        let api_url = config.cluster_url.to_string().trim_end_matches('/').to_string();
+        let vnc_path = format!(
+            "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/vnc",
+            ns, name
+        );
+        let ws_url = api_url.replace("https://", "wss://").replace("http://", "ws://") + &vnc_path;
+
+        log::info!("VNC proxy connecting to K8s API: {}", vnc_path);
+
+        // Build TLS connector that trusts the K8s CA (self-signed)
+        let tls_connector = {
+            let mut tls_config = rustls::ClientConfig::builder()
+                .dangerous()
+                .with_custom_certificate_verifier(std::sync::Arc::new(AcceptAllVerifier))
+                .with_no_client_auth();
+            let connector = tokio_tungstenite::Connector::Rustls(std::sync::Arc::new(tls_config));
+            Some(connector)
+        };
+
+        // Build auth headers
+        let mut request = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(ws_url.as_str())
+            .unwrap_or_else(|_| {
+                tokio_tungstenite::tungstenite::handshake::client::Request::get(&ws_url)
+                    .body(())
+                    .unwrap()
+            });
+
+        // Add service account token
+        let sa_token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+        if let Ok(token) = std::fs::read_to_string(sa_token_path) {
+            request.headers_mut().insert(
+                "Authorization",
+                format!("Bearer {}", token.trim()).parse().unwrap(),
+            );
         }
 
-        let stream = match stream {
-            Some(s) => s,
-            None => {
-                log::error!("virtctl VNC proxy did not start on port {}", port);
-                child.kill().await.ok();
-                let _ = client_ws
-                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
-                        code: 1011,
-                        reason: "VNC proxy failed to start".into(),
-                    })))
-                    .await;
+        // Connect to KubeVirt API WebSocket
+        let k8s_ws = match tokio_tungstenite::connect_async_tls_with_config(
+            request,
+            None,
+            false,
+            tls_connector,
+        ).await {
+            Ok((ws, _)) => ws,
+            Err(e) => {
+                log::error!("Failed to connect to KubeVirt VNC API: {}", e);
+                let _ = client_ws.send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                    code: 1011,
+                    reason: "Failed to connect to VNC".into(),
+                }))).await;
                 return;
             }
         };
 
-        let (mut tcp_read, mut tcp_write) = stream.into_split();
+        log::info!("VNC proxy connected to K8s API for {}/{}", ns, name);
 
-        log::info!("VNC proxy connected for {}/{} on port {}", ns, name, port);
+        let (mut k8s_sink, mut k8s_stream) = k8s_ws.split();
 
-        // Bidirectional proxy: WebSocket ↔ TCP
-        let mut buf = vec![0u8; 65536];
+        // Bidirectional proxy: Browser WebSocket ↔ K8s API WebSocket
         loop {
             tokio::select! {
-                // Browser → VNC (WebSocket → TCP)
+                // Browser → K8s
                 msg = client_ws.recv() => {
                     match msg {
                         Some(Ok(Message::Binary(data))) => {
-                            if tcp_write.write_all(&data).await.is_err() { break; }
+                            if k8s_sink.send(tokio_tungstenite::tungstenite::Message::Binary(data.to_vec())).await.is_err() {
+                                break;
+                            }
                         }
                         Some(Ok(Message::Text(text))) => {
-                            if tcp_write.write_all(text.as_bytes()).await.is_err() { break; }
+                            if k8s_sink.send(tokio_tungstenite::tungstenite::Message::Text(text.to_string())).await.is_err() {
+                                break;
+                            }
                         }
                         Some(Ok(Message::Close(_))) | None => break,
                         _ => {}
                     }
                 }
-                // VNC → Browser (TCP → WebSocket)
-                result = tcp_read.read(&mut buf) => {
-                    match result {
-                        Ok(0) => break, // EOF
-                        Ok(n) => {
-                            if client_ws.send(Message::Binary(buf[..n].to_vec().into())).await.is_err() {
+                // K8s → Browser
+                msg = k8s_stream.next() => {
+                    match msg {
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Binary(data))) => {
+                            if client_ws.send(Message::Binary(data.into())).await.is_err() {
                                 break;
                             }
                         }
-                        Err(_) => break,
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Text(text))) => {
+                            if client_ws.send(Message::Text(text.into())).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Close(_))) | None => break,
+                        _ => {}
                     }
                 }
             }
         }
 
-        // Cleanup
-        child.kill().await.ok();
         let _ = client_ws.send(Message::Close(None)).await;
         log::info!("VNC proxy closed for {}/{}", ns, name);
     }
