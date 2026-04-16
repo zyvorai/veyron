@@ -1,5 +1,5 @@
 # Multi-stage build for minimal production image
-FROM rust:1.86-slim-bookworm AS builder
+FROM rust:1.94-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y musl-tools curl && rm -rf /var/lib/apt/lists/*
 RUN rustup target add x86_64-unknown-linux-musl
