@@ -127,7 +127,8 @@ pub fn all_routes(
         .merge(custom_resources::router(state.clone()))
         .merge(chaos_engineering::router(state.clone()))
         .merge(slo::router(state.clone()))
+        // RDP (VM discovery + config, proxy requires external gateway)
+        .merge(rdp::router(state.clone()))
         // Static handlers
         .merge(templates::router())
-        .merge(rdp::router())
 }
