@@ -53,7 +53,9 @@ async fn list_slo_objectives(State(state): State<SharedState>) -> Json<Vec<SloOb
     };
 
     let target = 99.9;
-    let error_budget = target - availability;
+    // Error budget remaining: how much downtime is left before SLO breach
+    // Positive = budget remaining, negative = budget exhausted
+    let error_budget = (100.0 - target) - (100.0 - availability);
 
     let status = if availability >= target {
         "met"
