@@ -1,0 +1,52 @@
+domain: vmrogue.io
+layout:
+- go.kubebuilder.io/v4
+projectName: vmrogue-operator
+repo: github.com/ssahani/vmrogue/operator
+version: "3"
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vmrogue.io
+  group: vmrogue
+  kind: VMRogueVM
+  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vmrogue.io
+  group: vmrogue
+  kind: VMRogueBlueprint
+  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vmrogue.io
+  group: vmrogue
+  kind: VMRoguePolicy
+  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vmrogue.io
+  group: vmrogue
+  kind: VMRogueInsight
+  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: vmrogue.io
+  group: vmrogue
+  kind: VMRogueAction
+  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  version: v1alpha1

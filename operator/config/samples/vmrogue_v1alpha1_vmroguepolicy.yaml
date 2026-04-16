@@ -1,0 +1,24 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRoguePolicy
+metadata:
+  name: prod-security-baseline
+  namespace: default
+spec:
+  description: "Production VMs must have TPM and minimum 2 CPU cores"
+  enabled: true
+  enforcementAction: Deny
+  severity: High
+  framework: NIST
+  selector:
+    matchLabels:
+      environment: production
+  rules:
+    - name: require-tpm
+      condition: "spec.enableTpm == true"
+      message: "Production VMs must have TPM 2.0 enabled"
+    - name: minimum-cpu
+      condition: "spec.cpu.cores >= 2"
+      message: "Production VMs must have at least 2 CPU cores"
+    - name: require-rng
+      condition: "spec.enableRng == true"
+      message: "Production VMs must have virtio-rng enabled"

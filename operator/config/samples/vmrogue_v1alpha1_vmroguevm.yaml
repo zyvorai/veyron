@@ -1,0 +1,37 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRogueVM
+metadata:
+  name: sample-ubuntu
+  namespace: default
+spec:
+  template: ubuntu-22.04
+  cpu:
+    cores: 2
+    sockets: 1
+    threads: 1
+  memory:
+    size: 4Gi
+  disks:
+    - name: rootdisk
+      size: 20Gi
+      bootOrder: 1
+      source:
+        type: containerDisk
+        image: quay.io/containerdisks/ubuntu:22.04
+  interfaces:
+    - name: default
+      network: default
+      model: virtio
+      networkType:
+        type: pod
+  cloudInit:
+    userData: |
+      #cloud-config
+      hostname: sample-ubuntu
+      ssh_pwauth: true
+      users:
+        - name: vmrogue
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          shell: /bin/bash
+  enableRng: true
+  running: true

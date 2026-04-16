@@ -1,0 +1,28 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRogueBlueprint
+metadata:
+  name: lamp-stack
+  namespace: default
+spec:
+  description: "LAMP stack: Linux + Apache + MySQL + PHP"
+  vms:
+    - name: db
+      template: ubuntu-22.04
+      profile: database
+      cpu: 4
+      memory: 8Gi
+      labels:
+        tier: database
+    - name: web
+      template: ubuntu-22.04
+      profile: web
+      cpu: 2
+      memory: 4Gi
+      dependsOn:
+        - db
+      labels:
+        tier: frontend
+  tags:
+    - lamp
+    - web
+    - database

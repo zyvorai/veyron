@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vmrogue-operator
+  namespace: vmrogue-system
+  labels:
+    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/component: operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vmrogue
+      app.kubernetes.io/component: operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vmrogue
+        app.kubernetes.io/component: operator
+    spec:
+      serviceAccountName: vmrogue-operator
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: manager
+          image: docker.io/library/vmrogue-operator:latest
+          imagePullPolicy: Never
+          args:
+            - --leader-elect
+          env:
+            - name: NATS_URL
+              value: "nats://nats.vmrogue-system.svc:4222"
+          ports:
+            - containerPort: 8081
+              name: health
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

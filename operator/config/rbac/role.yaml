@@ -1,0 +1,63 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vmrogue-operator
+rules:
+  # VMRogue CRDs - full control
+  - apiGroups: ["vmrogue.io"]
+    resources:
+      - vmroguevms
+      - vmroguevms/status
+      - vmroguevms/finalizers
+      - vmrogueblueprints
+      - vmrogueblueprints/status
+      - vmrogueblueprints/finalizers
+      - vmroguepolicies
+      - vmroguepolicies/status
+      - vmrogueinsights
+      - vmrogueinsights/status
+      - vmrogueactions
+      - vmrogueactions/status
+      - vmrogueactions/finalizers
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # KubeVirt VirtualMachines - create and manage
+  - apiGroups: ["kubevirt.io"]
+    resources:
+      - virtualmachines
+      - virtualmachineinstances
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # KubeVirt VM subresources
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - virtualmachineinstances/vnc
+      - virtualmachineinstances/console
+      - virtualmachines/start
+      - virtualmachines/stop
+      - virtualmachines/restart
+      - virtualmachines/migrate
+    verbs: ["get", "update"]
+
+  # KubeVirt Snapshots - for action controller
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinerestores
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # Core Kubernetes resources
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

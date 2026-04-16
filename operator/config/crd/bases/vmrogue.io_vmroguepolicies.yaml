@@ -1,0 +1,142 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vmroguepolicies.vmrogue.io
+spec:
+  group: vmrogue.io
+  names:
+    kind: VMRoguePolicy
+    listKind: VMRoguePolicyList
+    plural: vmroguepolicies
+    singular: vmroguepolicy
+    shortNames:
+      - vrpol
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Enforcement
+          type: string
+          jsonPath: .spec.enforcementAction
+        - name: Severity
+          type: string
+          jsonPath: .spec.severity
+        - name: Enabled
+          type: boolean
+          jsonPath: .spec.enabled
+        - name: Violations
+          type: integer
+          jsonPath: .status.violatingVMs
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            apiVersion:
+              type: string
+            kind:
+              type: string
+            metadata:
+              type: object
+            spec:
+              type: object
+              required: ["enabled", "enforcementAction", "severity", "rules"]
+              properties:
+                description:
+                  type: string
+                enabled:
+                  type: boolean
+                enforcementAction:
+                  type: string
+                  enum: ["Allow", "Deny", "Warn", "Audit"]
+                severity:
+                  type: string
+                  enum: ["Critical", "High", "Medium", "Low", "Info"]
+                framework:
+                  type: string
+                  enum: ["SOC2", "HIPAA", "PCI-DSS", "GDPR", "ISO27001", "NIST", "CIS", "FedRAMP", "Custom"]
+                selector:
+                  type: object
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        required: ["key", "operator"]
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                          values:
+                            type: array
+                            items:
+                              type: string
+                rules:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: ["name", "condition", "message"]
+                    properties:
+                      name:
+                        type: string
+                      condition:
+                        type: string
+                      message:
+                        type: string
+            status:
+              type: object
+              properties:
+                matchingVMs:
+                  type: integer
+                compliantVMs:
+                  type: integer
+                violatingVMs:
+                  type: integer
+                violations:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      vmName:
+                        type: string
+                      namespace:
+                        type: string
+                      ruleName:
+                        type: string
+                      message:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    required: ["type", "status", "lastTransitionTime", "reason", "message"]
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+                lastEvaluated:
+                  type: string
+                  format: date-time
