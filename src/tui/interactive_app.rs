@@ -345,80 +345,61 @@ impl InteractiveApp {
                 Self::render_preview_badge(f, content_area);
             }
             View::MigrationWizard => {
-                ui::migration_wizard::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::migration_wizard::render(f, content_area, &self.state);
             }
             View::SecurityDashboard => {
-                ui::security_dashboard::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::security_dashboard::render(f, content_area, &self.state);
             }
             View::CostAnalytics => {
-                ui::cost_analytics::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::cost_analytics::render(f, content_area, &self.state);
             }
             View::Compliance => {
-                ui::compliance_checker::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::compliance_checker::render(f, content_area, &self.state);
             }
             View::VulnerabilityScanner => {
-                ui::vulnerability_scanner::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::vulnerability_scanner::render(f, content_area, &self.state);
             }
             View::AuditTrail => {
-                ui::audit_panel::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::audit_panel::render(f, content_area, &self.state);
             }
             View::Timeline => {
-                ui::timeline::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::timeline::render(f, content_area, &self.state);
             }
             View::PerformanceProfiler => {
-                ui::performance_profiler::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::performance_profiler::render(f, content_area, &self.state);
             }
             View::NlpSearch => {
-                ui::nlp_search::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::nlp_search::render(f, content_area, &self.state);
             }
             View::DependencyGraph => {
-                ui::dependency_graph::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::dependency_graph::render(f, content_area, &self.state);
             }
             View::ForecastDashboard => {
-                ui::forecast_dashboard::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::forecast_dashboard::render(f, content_area, &self.state);
             }
             View::RbacVisualizer => {
-                ui::rbac_visualizer::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::rbac_visualizer::render(f, content_area, &self.state);
             }
             View::CustomMetrics => {
-                ui::custom_metrics::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::custom_metrics::render(f, content_area, &self.state);
             }
             View::Autoscaler => {
-                ui::autoscaler::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::autoscaler::render(f, content_area, &self.state);
             }
             View::SecurityPosture => {
-                ui::security_posture::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::security_posture::render(f, content_area, &self.state);
             }
             View::AiTroubleshoot => {
-                ui::ai_troubleshoot::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::ai_troubleshoot::render(f, content_area, &self.state);
             }
             View::ChangeApproval => {
-                ui::change_approval::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::change_approval::render(f, content_area, &self.state);
             }
             View::MacroView => {
-                ui::macro_view::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::macro_view::render(f, content_area, &self.state);
             }
             View::SessionSharing => {
-                ui::session_sharing::render(f, content_area);
-                Self::render_preview_badge(f, content_area);
+                ui::session_sharing::render(f, content_area, &self.state);
             }
         }
 
