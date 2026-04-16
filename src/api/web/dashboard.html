@@ -1179,7 +1179,7 @@ function navigate(page) {
   if (page === 'insights') fetchInsights();
   if (page === 'actions') fetchActions();
   if (page === 'costs') fetchCosts();
-  if (page === 'security') fetchSecurity();
+  if (page === 'security') fetchSecurityPage();
   if (page === 'monitoring') fetchMonitoring();
   if (page === 'workloads') fetchWorkloads();
 }
@@ -2392,8 +2392,8 @@ window.addEventListener('load', async () => {
   });
 });
 
-// Security page
-async function fetchSecurity() {
+// Security page (global posture view)
+async function fetchSecurityPage() {
   try {
     const [posture, findings] = await Promise.all([
       apiFetch('api/v1/security/posture').then(r => r.json()),
@@ -2459,7 +2459,6 @@ async function fetchWorkloads() {
     }
   } catch(e) { console.error('Workloads fetch error:', e); }
 }
-});
 </script>
 </body>
 </html>
