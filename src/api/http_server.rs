@@ -275,6 +275,28 @@ pub mod web {
         constant_time_eq(&computed, &expected_sig[..8.min(expected_sig.len())])
     }
 
+    /// URL percent-decode (e.g., %40 → @, %20 → space).
+    fn percent_decode(input: &str) -> String {
+        let mut result = String::with_capacity(input.len());
+        let mut chars = input.chars();
+        while let Some(c) = chars.next() {
+            if c == '%' {
+                let hex: String = chars.by_ref().take(2).collect();
+                if let Ok(byte) = u8::from_str_radix(&hex, 16) {
+                    result.push(byte as char);
+                } else {
+                    result.push('%');
+                    result.push_str(&hex);
+                }
+            } else if c == '+' {
+                result.push(' ');
+            } else {
+                result.push(c);
+            }
+        }
+        result
+    }
+
     /// Decode a base64url-encoded string (no padding).
     fn base64url_decode(input: &str) -> Option<Vec<u8>> {
         let mut s = input.replace('-', "+").replace('_', "/");
@@ -402,7 +424,12 @@ pub mod web {
                     .query()
                     .and_then(|q| {
                         q.split('&')
-                            .find_map(|p| p.strip_prefix("token=").map(|s| s.to_string()))
+                            .find_map(|p| {
+                                p.strip_prefix("token=").map(|s| {
+                                    // URL-decode the token (e.g., %40 → @)
+                                    percent_decode(s)
+                                })
+                            })
                     })
             });
 
