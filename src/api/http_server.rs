@@ -192,13 +192,18 @@ pub mod web {
         request: axum::extract::Request,
         next: middleware::Next,
     ) -> impl IntoResponse {
-        // Allow health, dashboard, and static assets without auth
-        if request.uri().path() == "/api/v1/health"
-            || request.uri().path() == "/dashboard"
-            || request.uri().path().starts_with("/assets/")
+        // Allow health, dashboard, static assets, and dashboard-originated API calls without auth
+        let path = request.uri().path();
+        if path == "/api/v1/health"
+            || path == "/dashboard"
+            || path.starts_with("/assets/")
         {
             return next.run(request).await.into_response();
         }
+
+        // Dashboard API calls must include the API key like any other client.
+        // The dashboard login stores the key in localStorage and sends it
+        // via the X-API-Key header on every fetch call.
 
         // Allow CORS preflight (OPTIONS) requests without auth
         if request.method() == axum::http::Method::OPTIONS {
@@ -287,6 +292,77 @@ pub mod web {
         next.run(request).await.into_response()
     }
 
+    // ── WebSocket Metrics Streaming ──────────────────────────────
+
+    async fn metrics_websocket_handler(
+        ws: WebSocketUpgrade,
+        State(state): State<SharedState>,
+    ) -> impl IntoResponse {
+        ws.on_upgrade(move |socket| metrics_stream(socket, state))
+    }
+
+    async fn metrics_stream(mut socket: WebSocket, state: SharedState) {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(5));
+
+        loop {
+            interval.tick().await;
+
+            // Clone client outside the lock to avoid holding it during K8s calls
+            let client = {
+                let s = state.read().await;
+                s.client().clone()
+            };
+
+            let metrics = {
+                let vms = client.list_all_vms().await.unwrap_or_default();
+                let nodes = client.list_nodes().await.unwrap_or_default();
+
+                let total_vms = vms.len() as u32;
+                let running_vms = vms
+                    .iter()
+                    .filter(|vm| {
+                        vm.status
+                            .as_ref()
+                            .and_then(|s| s.printable_status.as_deref())
+                            .map(|s| s == "Running")
+                            .unwrap_or(false)
+                    })
+                    .count() as u32;
+
+                let mut total_cpu: u32 = 0;
+                let mut total_mem: u64 = 0;
+                for node in &nodes {
+                    if let Some(cap) = node.status.as_ref().and_then(|s| s.capacity.as_ref()) {
+                        if let Some(cpu) = cap.get("cpu") {
+                            total_cpu += cpu.0.parse::<u32>().unwrap_or(0);
+                        }
+                        if let Some(mem) = cap.get("memory") {
+                            total_mem += crate::utils::parse_memory_bytes(&mem.0);
+                        }
+                    }
+                }
+
+                serde_json::json!({
+                    "type": "cluster_metrics",
+                    "timestamp": chrono::Utc::now().to_rfc3339(),
+                    "total_vms": total_vms,
+                    "running_vms": running_vms,
+                    "total_cpu_cores": total_cpu,
+                    "total_memory_bytes": total_mem,
+                    "node_count": nodes.len(),
+                })
+            };
+
+            if socket
+                .send(Message::Text(metrics.to_string().into()))
+                .await
+                .is_err()
+            {
+                break; // Client disconnected
+            }
+        }
+    }
+
     // ── Security headers middleware ─────────────────────────────
 
     /// Middleware that adds security headers to every response.
@@ -357,6 +433,8 @@ pub mod web {
             // VM endpoints
             .route("/api/v1/vms", get(list_vms_handler))
             .route("/api/v1/vms", post(create_vm_handler))
+            // Batch must be before parameterized :ns/:name routes to avoid ambiguity
+            .route("/api/v1/vms/batch", post(batch_vm_handler))
             .route("/api/v1/vms/:ns/:name", get(get_vm_handler))
             .route("/api/v1/vms/:ns/:name", delete(delete_vm_handler))
             // Templates
@@ -370,6 +448,7 @@ pub mod web {
             .route("/api/v1/vms/:ns/:name/migrate", post(migrate_vm_handler))
             .route("/api/v1/vms/:ns/:name", axum::routing::put(update_vm_handler))
             .route("/api/v1/vms/:ns/:name/vnc", get(vnc_websocket_handler))
+            .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
             .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
             .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
             // Snapshots
@@ -410,6 +489,9 @@ pub mod web {
             // Health
             .route("/api/v1/health", get(health_handler))
             .with_state(state.clone())
+            // Merge handler sub-routers (real K8s data + stubs)
+            // Merged after .with_state() because handler routers manage their own state
+            .merge(crate::api::handlers::all_routes(state.clone()))
             // Layers applied in reverse order (outermost = last .layer() call)
             .layer(middleware::from_fn(security_headers_middleware))
             .layer(middleware::from_fn_with_state(
@@ -454,8 +536,50 @@ pub mod web {
             let rustls_config =
                 axum_server::tls_rustls::RustlsConfig::from_pem_file(&tls.cert_path, &tls.key_path)
                     .await?;
-            let addr: std::net::SocketAddr = addr.parse()?;
-            axum_server::bind_rustls(addr, rustls_config)
+            let tls_addr: std::net::SocketAddr = addr.parse()?;
+
+            // Start HTTP→HTTPS redirect on port 80 (or port-1 if port != 443)
+            let redirect_port = if port == 443 { 80 } else { port.saturating_sub(1) };
+            let redirect_host = host.to_string();
+            let https_port = port;
+            tokio::spawn(async move {
+                let redirect_addr = format!("{}:{}", redirect_host, redirect_port);
+                log::info!(
+                    "Starting HTTP→HTTPS redirect on {} → port {}",
+                    redirect_addr,
+                    https_port
+                );
+                let redirect_app = Router::new().fallback(
+                    move |req: axum::extract::Request| async move {
+                        let host = req
+                            .headers()
+                            .get("host")
+                            .and_then(|h| h.to_str().ok())
+                            .unwrap_or("localhost");
+                        // Strip port from host header if present
+                        let hostname = host.split(':').next().unwrap_or(host);
+                        let path = req.uri().path_and_query()
+                            .map(|pq| pq.as_str())
+                            .unwrap_or("/");
+                        let https_url = if https_port == 443 {
+                            format!("https://{}{}", hostname, path)
+                        } else {
+                            format!("https://{}:{}{}", hostname, https_port, path)
+                        };
+                        axum::response::Redirect::temporary(&https_url).into_response()
+                    },
+                );
+                match tokio::net::TcpListener::bind(&redirect_addr).await {
+                    Ok(listener) => {
+                        let _ = axum::serve(listener, redirect_app).await;
+                    }
+                    Err(e) => {
+                        log::warn!("Could not start HTTP redirect server on {}: {}", redirect_addr, e);
+                    }
+                }
+            });
+
+            axum_server::bind_rustls(tls_addr, rustls_config)
                 .serve(app.into_make_service())
                 .await?;
         } else {
@@ -484,6 +608,88 @@ pub mod web {
 
     /// Sanitize internal error details before sending to clients.
     ///
+    // ── Policy Enforcement ──────────────────────────────────────
+
+    struct PolicyViolation {
+        policy_name: String,
+        enforcement: String,
+        message: String,
+    }
+
+    async fn check_policies(
+        client: &KubeClient,
+        config: &crate::config::VMConfig,
+    ) -> anyhow::Result<Vec<PolicyViolation>> {
+        use crate::operator_crds::VMRoguePolicy;
+
+        let api: kube::Api<VMRoguePolicy> =
+            kube::Api::namespaced(client.client(), &config.namespace);
+
+        let policies = match api.list(&kube::api::ListParams::default()).await {
+            Ok(list) => list.items,
+            Err(e) => {
+                let msg = e.to_string();
+                // CRDs not installed or no permission — skip policy check
+                if msg.contains("not found") || msg.contains("NotFound") || msg.contains("the server could not find") {
+                    return Ok(vec![]);
+                }
+                log::warn!("Policy check failed: {}", msg);
+                return Ok(vec![]); // fail-open but log the error
+            }
+        };
+
+        let mut violations = Vec::new();
+
+        for policy in &policies {
+            if !policy.spec.enabled {
+                continue;
+            }
+
+            for rule in &policy.spec.rules {
+                let violated = match rule.condition.as_str() {
+                    "max_cpu_cores" => {
+                        if let Some(max) = rule.value {
+                            config.cpu.cores > max as u32
+                        } else {
+                            false
+                        }
+                    }
+                    "min_memory_gib" | "min_memory" => {
+                        if let Some(min_gib) = rule.value {
+                            let mem_gib = crate::utils::parse_memory_gib(&config.memory.size);
+                            mem_gib < min_gib
+                        } else {
+                            false
+                        }
+                    }
+                    "max_disk_gib" => {
+                        if let Some(max) = rule.value {
+                            let total: f64 = config.disks.iter()
+                                .map(|d| crate::utils::parse_memory_gib(&d.size))
+                                .sum();
+                            total > max
+                        } else {
+                            false
+                        }
+                    }
+                    "require_cloud_init" => config.cloud_init.is_none(),
+                    "require_network" => config.interfaces.is_empty(),
+                    _ => false,
+                };
+
+                if violated {
+                    violations.push(PolicyViolation {
+                        policy_name: policy.metadata.name.clone().unwrap_or_default(),
+                        enforcement: policy.spec.enforcement_action.clone(),
+                        message: rule.message.clone(),
+                    });
+                }
+            }
+        }
+
+        Ok(violations)
+    }
+
     /// Maps known error types to safe user-facing messages.
     /// For anything else, returns a generic message to avoid leaking internals.
     fn sanitize_error(e: &dyn std::fmt::Display) -> String {
@@ -681,6 +887,7 @@ pub mod web {
             }
         }
 
+        log::info!("VNC WebSocket upgrade requested for {}/{}", ns, name);
         ws.protocols(["binary"])
             .on_upgrade(move |socket| vnc_proxy(socket, client, ns, name))
             .into_response()
@@ -1163,6 +1370,91 @@ pub mod web {
         }
     }
 
+    // ── Batch VM Operations ─────────────────────────────────────
+
+    #[derive(Deserialize)]
+    struct BatchVmRequest {
+        action: String,
+        vms: Vec<BatchVmTarget>,
+    }
+
+    #[derive(Deserialize)]
+    struct BatchVmTarget {
+        namespace: String,
+        name: String,
+    }
+
+    async fn batch_vm_handler(
+        State(state): State<SharedState>,
+        Json(req): Json<BatchVmRequest>,
+    ) -> impl IntoResponse {
+        // Limit batch size to prevent K8s API abuse
+        const MAX_BATCH_SIZE: usize = 50;
+        if req.vms.len() > MAX_BATCH_SIZE {
+            return err_json(
+                400,
+                "BATCH_TOO_LARGE",
+                &format!("Batch size {} exceeds maximum of {}", req.vms.len(), MAX_BATCH_SIZE),
+            );
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        let mut results = Vec::new();
+
+        for vm in &req.vms {
+            if !is_valid_k8s_name(&vm.name) || !is_valid_k8s_name(&vm.namespace) {
+                results.push(serde_json::json!({
+                    "name": vm.name,
+                    "namespace": vm.namespace,
+                    "status": "error",
+                    "message": "Invalid Kubernetes name"
+                }));
+                continue;
+            }
+
+            let result: Result<(), anyhow::Error> = match req.action.as_str() {
+                "start" => client.start_vm(&vm.namespace, &vm.name).await.map(|_| ()),
+                "stop" => client.stop_vm(&vm.namespace, &vm.name).await.map(|_| ()),
+                "restart" => client.restart_vm(&vm.namespace, &vm.name).await.map(|_| ()),
+                "delete" => client.delete_vm(&vm.namespace, &vm.name).await,
+                _ => {
+                    results.push(serde_json::json!({
+                        "name": vm.name,
+                        "namespace": vm.namespace,
+                        "status": "error",
+                        "message": format!("Unknown action: {}", req.action)
+                    }));
+                    continue;
+                }
+            };
+
+            match result {
+                Ok(()) => results.push(serde_json::json!({
+                    "name": vm.name,
+                    "namespace": vm.namespace,
+                    "status": "success",
+                    "message": format!("VM '{}' {}ed", vm.name, req.action)
+                })),
+                Err(e) => results.push(serde_json::json!({
+                    "name": vm.name,
+                    "namespace": vm.namespace,
+                    "status": "error",
+                    "message": sanitize_error(&e)
+                })),
+            }
+        }
+
+        let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/batch");
+        ok_json(&ApiResponse::success(
+            &serde_json::json!({"results": results}),
+            &ctx.request_id,
+        ))
+    }
+
     // ── Create VM Endpoint ────────────────────────────────────────
 
     #[derive(Deserialize)]
@@ -1284,6 +1576,31 @@ pub mod web {
             let s = state.read().await;
             s.kube_client.clone()
         };
+
+        // Evaluate VMRoguePolicy CRDs before creation
+        if let Ok(violations) = check_policies(&client, &config).await {
+            if !violations.is_empty() {
+                let deny_violations: Vec<_> = violations
+                    .iter()
+                    .filter(|v| v.enforcement == "Deny")
+                    .collect();
+                if !deny_violations.is_empty() {
+                    let messages: Vec<String> = deny_violations
+                        .iter()
+                        .map(|v| format!("[{}] {}", v.policy_name, v.message))
+                        .collect();
+                    return err_json(
+                        403,
+                        "POLICY_VIOLATION",
+                        &messages.join("; "),
+                    );
+                }
+                // Warn-level violations are logged but don't block creation
+                for v in violations.iter().filter(|v| v.enforcement == "Warn") {
+                    log::warn!("Policy warning for VM '{}': [{}] {}", req.name, v.policy_name, v.message);
+                }
+            }
+        }
 
         match client.create_vm(&config).await {
             Ok(_) => {

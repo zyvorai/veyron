@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Helm release response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +23,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_helm_releases() -> Json<Vec<HelmReleaseResponse>> {
-    Json(vec![])
+async fn list_helm_releases() -> impl IntoResponse {
+    not_implemented("Helm releases")
 }

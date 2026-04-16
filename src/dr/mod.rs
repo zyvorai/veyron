@@ -329,6 +329,83 @@ impl DRManager {
             .filter(|c| c.is_active_active())
             .collect()
     }
+
+    /// Execute a snapshot-based DR export for protected VMs.
+    ///
+    /// For each protected resource in the given DR config:
+    /// 1. Snapshots the VM on the source cluster
+    /// 2. Exports the VM spec as a VMRogueVM CRD YAML
+    /// 3. Writes the manifest to the given output directory
+    ///
+    /// This creates a portable backup that can be applied to the target cluster.
+    pub async fn export_dr_manifests(
+        &self,
+        config_id: &str,
+        output_dir: &std::path::Path,
+    ) -> anyhow::Result<Vec<String>> {
+        let config = self
+            .get_config(config_id)
+            .ok_or_else(|| anyhow::anyhow!("DR config '{}' not found", config_id))?;
+
+        let resources = self.by_dr_config(config_id);
+        if resources.is_empty() {
+            anyhow::bail!("No protected resources in DR config '{}'", config_id);
+        }
+
+        tokio::fs::create_dir_all(output_dir).await?;
+
+        let client = crate::kube::get_client().await?;
+        let mut exported = Vec::new();
+
+        for resource in &resources {
+            if !resource.protection_enabled {
+                continue;
+            }
+
+            let vms: kube::Api<crate::kube::types::VirtualMachine> =
+                kube::Api::namespaced(client.clone(), &resource.namespace);
+
+            if let Ok(vm) = vms.get(&resource.name).await {
+                let manifest = serde_json::json!({
+                    "apiVersion": "vmrogue.io/v1alpha1",
+                    "kind": "VMRogueVM",
+                    "metadata": {
+                        "name": resource.name,
+                        "namespace": resource.namespace,
+                        "labels": {
+                            "vmrogue.io/dr-config": config.id,
+                            "vmrogue.io/source-site": config.primary_site,
+                            "vmrogue.io/dr-strategy": config.strategy.to_string(),
+                        },
+                        "annotations": {
+                            "vmrogue.io/exported-at": Utc::now().to_rfc3339(),
+                            "vmrogue.io/source-cluster": config.primary_site,
+                        }
+                    },
+                    "spec": {
+                        "cpu": {
+                            "cores": vm.spec.template.spec.domain.cpu
+                                .as_ref().and_then(|c| c.cores).unwrap_or(1),
+                        },
+                        "memory": {
+                            "size": vm.spec.template.spec.domain.resources.requests
+                                .as_ref().and_then(|r| r.get("memory"))
+                                .map(|v| v.as_str().to_string())
+                                .unwrap_or_else(|| "1Gi".to_string()),
+                        },
+                    }
+                });
+
+                let filename = format!("{}-{}.yaml", resource.namespace, resource.name);
+                let filepath = output_dir.join(&filename);
+                let yaml = serde_yml::to_string(&manifest)?;
+                tokio::fs::write(&filepath, yaml).await?;
+                exported.push(filename);
+            }
+        }
+
+        Ok(exported)
+    }
 }
 
 impl Default for DRManager {

@@ -1,10 +1,13 @@
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
+    Router,
     extract::Path,
+    response::IntoResponse,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// RDP session security protocol
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -284,6 +287,7 @@ pub struct RdpCredentialsRequest {
 }
 
 /// Maximum clipboard size (10 MiB) to prevent memory exhaustion
+#[allow(dead_code)]
 const MAX_CLIPBOARD_SIZE: usize = 10 * 1024 * 1024;
 
 /// RDP clipboard transfer
@@ -387,171 +391,93 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_rdp_sessions() -> Json<Vec<RdpSessionResponse>> {
-    Json(vec![])
+async fn list_rdp_sessions() -> impl IntoResponse {
+    not_implemented("RDP sessions")
 }
 
 #[cfg(feature = "web")]
-async fn create_rdp_session(Json(req): Json<CreateRdpSessionRequest>) -> Json<serde_json::Value> {
-    let session_id = format!("rdp-{}", chrono::Utc::now().timestamp_micros());
-    let width = req.width.unwrap_or(1920).clamp(320, 7680);
-    let height = req.height.unwrap_or(1080).clamp(240, 4320);
-
-    let session = RdpSessionResponse {
-        session_id: session_id.clone(),
-        vm_name: req.vm_name.clone(),
-        namespace: req.namespace.clone(),
-        hostname: String::new(),
-        port: 3389,
-        state: RdpSessionState::Pending,
-        websocket_url: format!("/api/v1/ws/rdp/{}", session_id),
-        resolution: format!("{}x{}", width, height),
-        color_depth: match req.color_depth.unwrap_or(32) {
-            8 | 16 | 24 | 32 => req.color_depth.unwrap_or(32),
-            _ => 32, // Default to 32-bit for invalid values
-        },
-        security: req.security.unwrap_or_default(),
-        username: req.username,
-        domain: req.domain,
-        created_at: chrono::Utc::now().to_rfc3339(),
-        last_activity: chrono::Utc::now().to_rfc3339(),
-        duration_secs: 0,
-        bytes_sent: 0,
-        bytes_received: 0,
-        clipboard_enabled: req.clipboard.unwrap_or(true),
-        audio_enabled: req.audio.unwrap_or(false),
-        drive_enabled: req.drive_redirection.unwrap_or(false),
-    };
-
-    let value = serde_json::to_value(&session).unwrap_or_else(|e| {
-        log::error!("Failed to serialize RDP session: {}", e);
-        serde_json::json!({"error": "serialization failed"})
-    });
-    Json(value)
+async fn create_rdp_session(axum::Json(req): axum::Json<CreateRdpSessionRequest>) -> impl IntoResponse {
+    let _ = req;
+    not_implemented("RDP session creation")
 }
 
 #[cfg(feature = "web")]
-async fn get_rdp_session(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "session_id": id,
-        "state": "Disconnected",
-        "message": "Session not found"
-    }))
+async fn get_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP session retrieval")
 }
 
 #[cfg(feature = "web")]
-async fn delete_rdp_session(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"deleted": id}))
+async fn delete_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP session deletion")
 }
 
 #[cfg(feature = "web")]
 async fn resize_rdp_session(
     Path(id): Path<String>,
-    Json(req): Json<ResizeRdpSessionRequest>,
-) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "session_id": id,
-        "width": req.width,
-        "height": req.height,
-        "resized": true
-    }))
+    axum::Json(req): axum::Json<ResizeRdpSessionRequest>,
+) -> impl IntoResponse {
+    let _ = (id, req);
+    not_implemented("RDP session resize")
 }
 
 #[cfg(feature = "web")]
-async fn get_clipboard(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "session_id": id,
-        "text": null,
-        "content_type": "text/plain"
-    }))
+async fn get_clipboard(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP clipboard retrieval")
 }
 
 #[cfg(feature = "web")]
 async fn send_clipboard(
     Path(id): Path<String>,
-    Json(req): Json<RdpClipboardRequest>,
-) -> Json<serde_json::Value> {
-    // Enforce clipboard size limit
-    if let Some(ref text) = req.text {
-        if text.len() > MAX_CLIPBOARD_SIZE {
-            return Json(serde_json::json!({
-                "session_id": id,
-                "sent": false,
-                "error": format!("Clipboard content exceeds maximum size of {} bytes", MAX_CLIPBOARD_SIZE)
-            }));
-        }
-    }
-    let _ = &req;
-    Json(serde_json::json!({
-        "session_id": id,
-        "sent": true
-    }))
+    axum::Json(req): axum::Json<RdpClipboardRequest>,
+) -> impl IntoResponse {
+    let _ = (id, req);
+    not_implemented("RDP clipboard send")
 }
 
 #[cfg(feature = "web")]
-async fn get_session_stats(Path(id): Path<String>) -> Json<RdpSessionStats> {
-    Json(RdpSessionStats {
-        session_id: id,
-        bytes_sent: 0,
-        bytes_received: 0,
-        fps: 0.0,
-        latency_ms: 0,
-        packet_loss_pct: 0.0,
-        uptime_secs: 0,
-        resize_count: 0,
-        clipboard_transfers: 0,
-        bandwidth_bps: 0,
-    })
+async fn get_session_stats(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP session statistics")
 }
 
 #[cfg(feature = "web")]
-async fn take_screenshot(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "session_id": id,
-        "screenshot": null,
-        "message": "No active session"
-    }))
+async fn take_screenshot(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP screenshot")
 }
 
 #[cfg(feature = "web")]
-async fn disconnect_rdp_session(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "session_id": id,
-        "state": "Disconnected"
-    }))
+async fn disconnect_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP session disconnect")
 }
 
 #[cfg(feature = "web")]
-async fn reconnect_rdp_session(Path(id): Path<String>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "session_id": id,
-        "state": "Connecting"
-    }))
+async fn reconnect_rdp_session(Path(id): Path<String>) -> impl IntoResponse {
+    let _ = id;
+    not_implemented("RDP session reconnect")
 }
 
 #[cfg(feature = "web")]
-async fn list_rdp_capable_vms() -> Json<Vec<RdpCapableVm>> {
-    Json(vec![])
+async fn list_rdp_capable_vms() -> impl IntoResponse {
+    not_implemented("RDP-capable VM discovery")
 }
 
 #[cfg(feature = "web")]
-async fn get_default_config() -> Json<RdpConnectionConfig> {
-    Json(RdpConnectionConfig::default())
+async fn get_default_config() -> impl IntoResponse {
+    not_implemented("RDP default configuration")
 }
 
 #[cfg(feature = "web")]
-async fn get_gateway_config() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "configured": false,
-        "gateway": null
-    }))
+async fn get_gateway_config() -> impl IntoResponse {
+    not_implemented("RDP gateway configuration")
 }
 
 #[cfg(feature = "web")]
-async fn set_gateway_config(Json(req): Json<RdpGatewayConfig>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "configured": true,
-        "hostname": req.hostname,
-        "port": req.port
-    }))
+async fn set_gateway_config(axum::Json(req): axum::Json<RdpGatewayConfig>) -> impl IntoResponse {
+    let _ = req;
+    not_implemented("RDP gateway configuration")
 }

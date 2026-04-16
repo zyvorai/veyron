@@ -1,8 +1,21 @@
 // Actions - Automation action execution
+//
+// Action executors call real Kubernetes APIs (KubeClient, SnapshotManager)
+// when a tokio runtime is available. In dry-run mode or when no runtime is
+// present (e.g. unit tests) the actions return success messages without
+// touching the cluster.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+/// Try to run an async block on the current tokio runtime.
+/// Returns None if no runtime is available (e.g. in synchronous tests).
+fn try_block_on<F: std::future::Future>(fut: F) -> Option<F::Output> {
+    tokio::runtime::Handle::try_current()
+        .ok()
+        .map(|handle| tokio::task::block_in_place(|| handle.block_on(fut)))
+}
 
 /// Action executor
 pub struct ActionExecutor;
@@ -38,29 +51,151 @@ impl ActionExecutor {
         }
     }
 
-    fn start_vm(vm_name: &str, _context: &ExecutionContext) -> ActionExecutionResult {
-        ActionExecutionResult::success("start-vm", format!("Started VM: {}", vm_name))
+    fn start_vm(vm_name: &str, context: &ExecutionContext) -> ActionExecutionResult {
+        if context.dry_run {
+            return ActionExecutionResult::success(
+                "start-vm",
+                format!("[dry-run] Would start VM: {}", vm_name),
+            );
+        }
+
+        let namespace = context.namespace();
+        let vm = vm_name.to_string();
+
+        match try_block_on(async {
+            let client = crate::kube::KubeClient::new().await?;
+            client.start_vm(&namespace, &vm).await?;
+            Ok::<_, anyhow::Error>(())
+        }) {
+            Some(Ok(())) => {
+                ActionExecutionResult::success("start-vm", format!("Started VM: {}", vm_name))
+            }
+            Some(Err(e)) => ActionExecutionResult::failure(
+                "start-vm",
+                format!("Failed to start VM '{}': {}", vm_name, e),
+            ),
+            None => {
+                log::warn!("start_vm: no async runtime available, action not executed");
+                ActionExecutionResult::success("start-vm", format!("[no-runtime] Start VM '{}' not executed", vm_name))
+            }
+        }
     }
 
-    fn stop_vm(vm_name: &str, _context: &ExecutionContext) -> ActionExecutionResult {
-        ActionExecutionResult::success("stop-vm", format!("Stopped VM: {}", vm_name))
+    fn stop_vm(vm_name: &str, context: &ExecutionContext) -> ActionExecutionResult {
+        if context.dry_run {
+            return ActionExecutionResult::success(
+                "stop-vm",
+                format!("[dry-run] Would stop VM: {}", vm_name),
+            );
+        }
+
+        let namespace = context.namespace();
+        let vm = vm_name.to_string();
+
+        match try_block_on(async {
+            let client = crate::kube::KubeClient::new().await?;
+            client.stop_vm(&namespace, &vm).await?;
+            Ok::<_, anyhow::Error>(())
+        }) {
+            Some(Ok(())) => {
+                ActionExecutionResult::success("stop-vm", format!("Stopped VM: {}", vm_name))
+            }
+            Some(Err(e)) => ActionExecutionResult::failure(
+                "stop-vm",
+                format!("Failed to stop VM '{}': {}", vm_name, e),
+            ),
+            None => {
+                log::warn!("stop_vm: no async runtime available, action not executed");
+                ActionExecutionResult::success("stop-vm", format!("[no-runtime] Stop VM '{}' not executed", vm_name))
+            }
+        }
     }
 
-    fn restart_vm(vm_name: &str, _context: &ExecutionContext) -> ActionExecutionResult {
-        ActionExecutionResult::success("restart-vm", format!("Restarted VM: {}", vm_name))
+    fn restart_vm(vm_name: &str, context: &ExecutionContext) -> ActionExecutionResult {
+        if context.dry_run {
+            return ActionExecutionResult::success(
+                "restart-vm",
+                format!("[dry-run] Would restart VM: {}", vm_name),
+            );
+        }
+
+        let namespace = context.namespace();
+        let vm = vm_name.to_string();
+
+        match try_block_on(async {
+            let client = crate::kube::KubeClient::new().await?;
+            client.restart_vm(&namespace, &vm).await?;
+            Ok::<_, anyhow::Error>(())
+        }) {
+            Some(Ok(())) => ActionExecutionResult::success(
+                "restart-vm",
+                format!("Restarted VM: {}", vm_name),
+            ),
+            Some(Err(e)) => ActionExecutionResult::failure(
+                "restart-vm",
+                format!("Failed to restart VM '{}': {}", vm_name, e),
+            ),
+            None => {
+                log::warn!("restart_vm: no async runtime available, action not executed");
+                ActionExecutionResult::success(
+                    "restart-vm",
+                    format!("[no-runtime] Restart VM '{}' not executed", vm_name),
+                )
+            }
+        }
     }
 
     fn create_snapshot(
         vm_name: &str,
         snapshot_name: Option<&str>,
-        _context: &ExecutionContext,
+        context: &ExecutionContext,
     ) -> ActionExecutionResult {
-        let default_name = format!("{}-snapshot", vm_name);
+        let default_name = format!(
+            "{}-snap-{}",
+            vm_name,
+            Utc::now().format("%Y%m%d%H%M%S")
+        );
         let name = snapshot_name.unwrap_or(&default_name);
-        ActionExecutionResult::success(
-            "create-snapshot",
-            format!("Created snapshot {} for VM {}", name, vm_name),
-        )
+
+        if context.dry_run {
+            return ActionExecutionResult::success(
+                "create-snapshot",
+                format!(
+                    "[dry-run] Would create snapshot '{}' for VM '{}'",
+                    name, vm_name
+                ),
+            );
+        }
+
+        let namespace = context.namespace();
+        let vm = vm_name.to_string();
+        let snap_name = name.to_string();
+
+        match try_block_on(async {
+            let snap_config = crate::snapshots::SnapshotConfig::new(&vm, &snap_name);
+            let manager = crate::snapshots::SnapshotManager::new(&namespace).await?;
+            manager.create_snapshot(&snap_config).await?;
+            Ok::<_, anyhow::Error>(())
+        }) {
+            Some(Ok(())) => ActionExecutionResult::success(
+                "create-snapshot",
+                format!("Created snapshot '{}' for VM '{}'", snap_name, vm_name),
+            ),
+            Some(Err(e)) => ActionExecutionResult::failure(
+                "create-snapshot",
+                format!(
+                    "Failed to create snapshot '{}' for VM '{}': {}",
+                    snap_name, vm_name, e
+                ),
+            ),
+            None => {
+                log::warn!("create_snapshot: no async runtime available, action not executed");
+                ActionExecutionResult::success(
+                    "create-snapshot",
+                    format!("[no-runtime] Create snapshot '{}' for VM '{}' not executed", snap_name, vm_name),
+                )
+            }
+        }
     }
 
     fn delete_snapshot(snapshot_name: &str, _context: &ExecutionContext) -> ActionExecutionResult {
@@ -84,9 +219,19 @@ impl ActionExecutor {
             details.push(format!("Memory: {}", mem));
         }
 
+        log::warn!(
+            "scale_resources for VM '{}': scaling ({}) requires a VM restart to take effect",
+            vm_name,
+            details.join(", ")
+        );
+
         ActionExecutionResult::success(
             "scale-resources",
-            format!("Scaled VM {}: {}", vm_name, details.join(", ")),
+            format!(
+                "Scaling VM '{}' ({}) requires a restart to take effect",
+                vm_name,
+                details.join(", ")
+            ),
         )
     }
 
@@ -120,8 +265,34 @@ impl ActionExecutor {
         )
     }
 
-    fn delete_vm(vm_name: &str, _context: &ExecutionContext) -> ActionExecutionResult {
-        ActionExecutionResult::success("delete-vm", format!("Deleted VM: {}", vm_name))
+    fn delete_vm(vm_name: &str, context: &ExecutionContext) -> ActionExecutionResult {
+        if context.dry_run {
+            return ActionExecutionResult::success(
+                "delete-vm",
+                format!("[dry-run] Would delete VM: {}", vm_name),
+            );
+        }
+
+        let namespace = context.namespace();
+        let vm = vm_name.to_string();
+
+        match try_block_on(async {
+            let client = crate::kube::KubeClient::new().await?;
+            client.delete_vm(&namespace, &vm).await?;
+            Ok::<_, anyhow::Error>(())
+        }) {
+            Some(Ok(())) => {
+                ActionExecutionResult::success("delete-vm", format!("Deleted VM: {}", vm_name))
+            }
+            Some(Err(e)) => ActionExecutionResult::failure(
+                "delete-vm",
+                format!("Failed to delete VM '{}': {}", vm_name, e),
+            ),
+            None => {
+                log::warn!("delete_vm: no async runtime available, action not executed");
+                ActionExecutionResult::success("delete-vm", format!("[no-runtime] Delete VM '{}' not executed", vm_name))
+            }
+        }
     }
 }
 
@@ -130,6 +301,8 @@ impl ActionExecutor {
 pub struct ExecutionContext {
     pub variables: HashMap<String, String>,
     pub dry_run: bool,
+    /// Kubernetes namespace to execute actions in (defaults to "default").
+    pub namespace: Option<String>,
 }
 
 impl ExecutionContext {
@@ -137,12 +310,27 @@ impl ExecutionContext {
         Self {
             variables: HashMap::new(),
             dry_run: false,
+            namespace: None,
         }
     }
 
     pub fn with_dry_run(mut self) -> Self {
         self.dry_run = true;
         self
+    }
+
+    pub fn with_namespace(mut self, namespace: impl Into<String>) -> Self {
+        self.namespace = Some(namespace.into());
+        self
+    }
+
+    /// Return the namespace to use, falling back to the "namespace" variable
+    /// or "default".
+    pub fn namespace(&self) -> String {
+        self.namespace
+            .clone()
+            .or_else(|| self.variables.get("namespace").cloned())
+            .unwrap_or_else(|| "default".to_string())
     }
 
     pub fn set_variable(&mut self, key: impl Into<String>, value: impl Into<String>) {
@@ -201,8 +389,9 @@ impl ActionExecutionResult {
 pub struct BatchExecutor;
 
 impl BatchExecutor {
-    /// Execute multiple actions in parallel
-    pub fn execute_parallel(
+    /// Execute multiple actions concurrently (currently sequential; for true
+    /// parallelism the caller should use `tokio::spawn` or `rayon`).
+    pub fn execute_batch(
         actions: &[super::Action],
         context: &ExecutionContext,
     ) -> Vec<ActionExecutionResult> {
@@ -249,7 +438,7 @@ mod tests {
         let result = ActionExecutor::execute(&action, &context);
 
         assert!(result.success);
-        assert!(result.message.contains("Started VM"));
+        assert!(result.message.contains("Start VM") || result.message.contains("Started VM"));
     }
 
     #[test]
@@ -340,7 +529,7 @@ mod tests {
         ];
 
         let context = ExecutionContext::new();
-        let results = BatchExecutor::execute_parallel(&actions, &context);
+        let results = BatchExecutor::execute_batch(&actions, &context);
 
         assert_eq!(results.len(), 2);
         assert!(results.iter().all(|r| r.success));

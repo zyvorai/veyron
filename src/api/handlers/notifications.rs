@@ -1,9 +1,12 @@
 #[cfg(feature = "web")]
 use axum::{
-    Json, Router,
+    Router,
+    response::IntoResponse,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Notification response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,11 +33,12 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_notifications() -> Json<Vec<NotificationResponse>> {
-    Json(vec![])
+async fn list_notifications() -> impl IntoResponse {
+    not_implemented("Notifications")
 }
 
 #[cfg(feature = "web")]
-async fn mark_notifications_read(Json(req): Json<MarkReadRequest>) -> Json<serde_json::Value> {
-    Json(serde_json::json!({"marked_read": req.notification_ids.len()}))
+async fn mark_notifications_read(axum::Json(req): axum::Json<MarkReadRequest>) -> impl IntoResponse {
+    let _ = req;
+    not_implemented("Notification mark-read")
 }

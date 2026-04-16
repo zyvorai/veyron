@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Audit trail entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,17 +36,11 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_audit_trail() -> Json<Vec<AuditEntry>> {
-    Json(vec![])
+async fn list_audit_trail() -> impl IntoResponse {
+    not_implemented("Audit trail")
 }
 
 #[cfg(feature = "web")]
-async fn get_audit_stats() -> Json<AuditStats> {
-    Json(AuditStats {
-        total_events: 0,
-        by_action: std::collections::HashMap::new(),
-        by_user: std::collections::HashMap::new(),
-        by_outcome: std::collections::HashMap::new(),
-        period: "all".to_string(),
-    })
+async fn get_audit_stats() -> impl IntoResponse {
+    not_implemented("Audit statistics")
 }

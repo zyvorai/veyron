@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Forecast prediction
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +23,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_predictions() -> Json<Vec<ForecastPrediction>> {
-    Json(vec![])
+async fn list_predictions() -> impl IntoResponse {
+    not_implemented("Forecasting predictions")
 }

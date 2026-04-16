@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Recommendation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,6 +24,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_recommendations() -> Json<Vec<Recommendation>> {
-    Json(vec![])
+async fn list_recommendations() -> impl IntoResponse {
+    not_implemented("Recommendations")
 }

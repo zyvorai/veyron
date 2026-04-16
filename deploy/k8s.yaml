@@ -53,6 +53,23 @@ rules:
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]
     verbs: ["get", "list", "watch"]
+  # VMRogue CRDs (operator integration)
+  - apiGroups: ["vmrogue.io"]
+    resources:
+      - "vmroguevms"
+      - "vmrogueblueprints"
+      - "vmroguepolicies"
+      - "vmrogueinsights"
+      - "vmrogueactions"
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["vmrogue.io"]
+    resources:
+      - "vmroguevms/status"
+      - "vmrogueblueprints/status"
+      - "vmroguepolicies/status"
+      - "vmrogueinsights/status"
+      - "vmrogueactions/status"
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -88,24 +105,48 @@ spec:
         app.kubernetes.io/component: api
     spec:
       serviceAccountName: vmrogue
+      initContainers:
+        - name: gen-cert
+          image: alpine/openssl:3.3.2
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              openssl req -x509 -nodes -days 3650 \
+                -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+                -keyout /certs/tls.key -out /certs/tls.crt \
+                -subj "/CN=vmrogue/O=vmrogue" \
+                -addext "subjectAltName=DNS:vmrogue-api,DNS:vmrogue-api.vmrogue-system.svc,DNS:localhost,IP:127.0.0.1"
+              chmod 600 /certs/tls.key && chmod 644 /certs/tls.crt
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /certs
       containers:
         - name: vmrogue
-          image: ghcr.io/ssahani/vmrogue:latest
-          args: ["api-serve", "--port", "5151", "--host", "0.0.0.0"]
+          image: docker.io/library/vmrogue:latest
+          imagePullPolicy: Never
+          args: ["api-serve", "--port", "5151", "--host", "0.0.0.0", "--tls", "--tls-cert", "/certs/tls.crt", "--tls-key", "/certs/tls.key"]
           ports:
             - containerPort: 5151
-              name: http
+              name: https
+              protocol: TCP
+            - containerPort: 5150
+              name: http-redirect
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /api/v1/health
-              port: http
+              port: https
+              scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /api/v1/health
-              port: http
+              port: https
+              scheme: HTTPS
             initialDelaySeconds: 3
             periodSeconds: 5
           env:
@@ -114,6 +155,8 @@ spec:
                 secretKeyRef:
                   name: vmrogue-api-key
                   key: api-key
+            - name: RUST_LOG
+              value: "info"
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
@@ -130,6 +173,13 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /certs
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -145,8 +195,13 @@ spec:
     app.kubernetes.io/name: vmrogue
     app.kubernetes.io/component: api
   ports:
-    - port: 5151
-      targetPort: http
+    - port: 443
+      targetPort: https
       protocol: TCP
-      name: http
+      name: https
       nodePort: 30151
+    - port: 80
+      targetPort: http-redirect
+      protocol: TCP
+      name: http-redirect
+      nodePort: 30150

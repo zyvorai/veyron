@@ -57,3 +57,45 @@ templates: build ## List available templates
 
 profiles: build ## List resource profiles
 	./target/debug/vmrogue profiles --details
+
+# ============================================================================
+# Operator targets (Go)
+# ============================================================================
+
+operator-build: ## Build Go operator binary
+	cd operator && go build -o bin/manager main.go
+
+operator-test: ## Run operator tests
+	cd operator && go test ./... -v
+
+operator-fmt: ## Format operator code
+	cd operator && go fmt ./...
+
+operator-vet: ## Run go vet on operator
+	cd operator && go vet ./...
+
+operator-docker: ## Build operator Docker image
+	docker build -t ghcr.io/ssahani/vmrogue-operator:latest -f operator/Dockerfile operator/
+
+operator-install: ## Install CRDs into cluster
+	kubectl apply -f operator/config/crd/bases/
+
+operator-uninstall: ## Remove CRDs from cluster
+	kubectl delete -f operator/config/crd/bases/
+
+operator-deploy: operator-install ## Deploy operator + CRDs to cluster
+	kubectl apply -f operator/config/rbac/
+	kubectl apply -f operator/config/manager/
+
+operator-undeploy: ## Remove operator from cluster
+	kubectl delete -f operator/config/manager/ || true
+	kubectl delete -f operator/config/rbac/ || true
+	kubectl delete -f operator/config/crd/bases/ || true
+
+operator-samples: ## Deploy sample CRs
+	kubectl apply -f operator/config/samples/
+
+nats-deploy: ## Deploy NATS event bus
+	kubectl apply -f operator/config/nats/
+
+ci-all: ci operator-vet operator-test ## Full CI for Rust + Go

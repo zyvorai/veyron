@@ -64,6 +64,7 @@ base64 = { version = "0.22", optional = true }
 [features]
 default = ["web"]
 web = ["axum", "axum-server", "rustls", "tower-http", "tokio-tungstenite", "futures-util", "rustls-pemfile", "base64"]
+experimental = []
 
 [dev-dependencies]
 tempfile = "3.8"

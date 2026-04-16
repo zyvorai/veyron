@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Security posture
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,19 +37,11 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_security_posture() -> Json<SecurityPosture> {
-    Json(SecurityPosture {
-        overall_score: 0,
-        risk_level: "unknown".to_string(),
-        total_findings: 0,
-        critical_findings: 0,
-        high_findings: 0,
-        medium_findings: 0,
-        low_findings: 0,
-    })
+async fn get_security_posture() -> impl IntoResponse {
+    not_implemented("Security posture")
 }
 
 #[cfg(feature = "web")]
-async fn list_security_findings() -> Json<Vec<SecurityFinding>> {
-    Json(vec![])
+async fn list_security_findings() -> impl IntoResponse {
+    not_implemented("Security findings")
 }

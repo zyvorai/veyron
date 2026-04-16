@@ -171,6 +171,135 @@ impl MultiClusterManager {
             region.vm_count += cluster.vm_count;
         }
     }
+
+    /// Infer cluster environment from context name using word-boundary matching
+    /// to avoid false positives (e.g. "reproduce" matching "prod").
+    fn infer_environment(name: &str) -> ClusterEnvironment {
+        let lower = name.to_lowercase();
+        let words: Vec<&str> = lower.split(|c: char| c == '-' || c == '_' || c == '.').collect();
+
+        if words.iter().any(|w| *w == "prod" || *w == "production") {
+            ClusterEnvironment::Production
+        } else if words.iter().any(|w| *w == "stag" || *w == "staging") {
+            ClusterEnvironment::Staging
+        } else if words.iter().any(|w| *w == "dev" || *w == "development") {
+            ClusterEnvironment::Development
+        } else if words.iter().any(|w| *w == "test" || *w == "testing") {
+            ClusterEnvironment::Testing
+        } else {
+            ClusterEnvironment::Custom(name.to_string())
+        }
+    }
+
+    /// Resolve the kubeconfig file path from `KUBECONFIG` env or default location.
+    fn kubeconfig_path() -> String {
+        std::env::var("KUBECONFIG").unwrap_or_else(|_| {
+            dirs::home_dir()
+                .map(|h| h.join(".kube/config").to_string_lossy().into_owned())
+                .unwrap_or_default()
+        })
+    }
+
+    /// Discover clusters from the current kubeconfig file.
+    ///
+    /// Reads all contexts from `~/.kube/config` (or KUBECONFIG) and creates
+    /// a `ClusterInfo` entry for each. No K8s API calls are made during
+    /// discovery — call `sync_cluster` to populate live metrics.
+    pub async fn discover_from_kubeconfig(&mut self) -> anyhow::Result<usize> {
+        let kubeconfig_path = Self::kubeconfig_path();
+
+        if kubeconfig_path.is_empty() || !std::path::Path::new(&kubeconfig_path).exists() {
+            return Ok(0);
+        }
+
+        let kubeconfig = kube::config::Kubeconfig::read_from(&kubeconfig_path)?;
+        let mut added = 0;
+
+        for ctx in &kubeconfig.contexts {
+            let ctx_name = &ctx.name;
+
+            // Skip excluded contexts
+            if self.config.excluded_contexts.contains(ctx_name) {
+                continue;
+            }
+
+            // Skip if already known
+            if self.clusters.iter().any(|c| c.context == *ctx_name) {
+                continue;
+            }
+
+            let env = Self::infer_environment(ctx_name);
+
+            let is_primary = kubeconfig
+                .current_context
+                .as_ref()
+                .map(|c| c == ctx_name)
+                .unwrap_or(false);
+
+            self.add_cluster(ClusterInfo {
+                name: ctx_name.clone(),
+                context: ctx_name.clone(),
+                environment: env,
+                region: "unknown".to_string(),
+                health: ClusterHealth::Unknown,
+                vm_count: 0,
+                node_count: 0,
+                cpu_usage_percent: 0.0,
+                memory_usage_percent: 0.0,
+                last_synced: Utc::now(),
+                is_primary,
+            });
+            added += 1;
+        }
+
+        Ok(added)
+    }
+
+    /// Sync live data for a single cluster by connecting to its K8s API.
+    pub async fn sync_cluster(&mut self, cluster_name: &str) -> anyhow::Result<()> {
+        let ctx = match self.clusters.iter().find(|c| c.name == cluster_name) {
+            Some(c) => c.context.clone(),
+            None => anyhow::bail!("Cluster '{}' not found", cluster_name),
+        };
+
+        // Build a client for this specific context
+        let kubeconfig = kube::config::Kubeconfig::read_from(&Self::kubeconfig_path())?;
+        let opts = kube::config::KubeConfigOptions {
+            context: Some(ctx),
+            ..Default::default()
+        };
+        let config = kube::Config::from_custom_kubeconfig(kubeconfig, &opts).await?;
+        let client = kube::Client::try_from(config)?;
+
+        // Count nodes
+        let nodes: kube::Api<k8s_openapi::api::core::v1::Node> = kube::Api::all(client.clone());
+        let node_list = nodes.list(&kube::api::ListParams::default()).await?;
+        let node_count = node_list.items.len();
+
+        // Count VMs
+        let vms: kube::Api<crate::kube::types::VirtualMachine> =
+            kube::Api::all(client);
+        let vm_count = vms
+            .list(&kube::api::ListParams::default())
+            .await
+            .map(|l| l.items.len())
+            .unwrap_or(0);
+
+        // Update cluster info
+        if let Some(cluster) = self.clusters.iter_mut().find(|c| c.name == cluster_name) {
+            cluster.node_count = node_count;
+            cluster.vm_count = vm_count;
+            cluster.health = if node_count > 0 {
+                ClusterHealth::Healthy
+            } else {
+                ClusterHealth::Degraded
+            };
+            cluster.last_synced = Utc::now();
+        }
+
+        self.update_aggregated_metrics();
+        Ok(())
+    }
 }
 
 impl Default for MultiClusterManager {

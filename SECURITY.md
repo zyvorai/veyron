@@ -106,10 +106,15 @@ VMRogue implements the following security measures:
 - API error responses do not leak internal details
 - API key authentication via `X-API-Key` header, `Authorization: Bearer`, or `?token=` query param
 - Constant-time API key comparison prevents timing attacks
+- **Auth bypass removed (v0.2.x)**: A previous referer-based dashboard bypass (requests with a `Referer` header containing "/dashboard" skipped API key authentication) has been removed. The dashboard now sends the API key via the `X-API-Key` header like any other client, ensuring uniform authentication for all API requests.
 - Security headers on all responses (CSP, X-Frame-Options DENY, HSTS, no-sniff, no-referrer)
 - Rate limiting (configurable per minute, dashboard endpoints exempt)
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
 - VNC WebSocket proxy authenticates to K8s API via client certificate (mTLS)
+- **VMRoguePolicy CRD enforcement**: VM creation evaluates VMRoguePolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.
+- **Structured error types**: The API returns proper HTTP status codes (e.g., 401 for auth failures, 409 for conflicts, 501 for stub endpoints) instead of returning 200 with empty data. This prevents information leakage by ensuring error responses are explicit and do not expose internal state.
+- **Input validation on batch operations**: Batch VM operations validate Kubernetes names (RFC 1123) before processing. Budget creation ensures the `vmrogue-system` namespace exists before writing resources.
+- **CRDPolicyRule structured value field**: Policy conditions use a structured `value` field for thresholds instead of parsing values from message strings, which was fragile and potentially exploitable via crafted input.
 
 #### Dashboard Security
 - API key stored in localStorage (opt-in "Remember me") or sessionStorage
@@ -117,8 +122,20 @@ VMRogue implements the following security measures:
 - CSP restricts scripts to `'self'` only (no external CDN dependencies)
 - noVNC bundled locally (no runtime CDN fetches)
 - Dashboard page served without auth; all API calls require valid key
+- **501 Not Implemented for stub endpoints**: Scaffolding-only endpoints return `501 Not Implemented` with a clear message instead of silently returning empty/misleading data. This prevents clients from assuming a feature is functional when it is not yet implemented.
+
+#### Feature Gating
+- **Experimental feature flag**: 8 scaffolding-only modules (e.g., operator CRDs, experimental handlers) are gated behind the `experimental` Cargo feature flag. Default builds exclude these modules entirely, reducing the attack surface for production deployments.
+
+#### Metrics Security
+- **Real Kubernetes metrics**: Replaced random number generation (`rand::thread_rng`) with real data from the Kubernetes Metrics Server. When the Metrics Server is unavailable, the API returns allocation-only metrics (zeros) instead of fabricated random numbers, preventing misleading resource reporting.
 
 ### 🚨 Known Security Considerations
+
+> **Note (v0.2.x):** Several previous security considerations have been addressed:
+> the referer-based auth bypass has been removed, random metric generation has been
+> replaced with real Metrics Server data, and scaffolding modules are now gated
+> behind a feature flag. See the "Security Hardening" section above for details.
 
 #### Kubernetes Access
 - vmrogue requires access to Kubernetes API

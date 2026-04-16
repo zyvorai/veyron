@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Scheduling status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,12 +20,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_scheduling_status() -> Json<SchedulingStatus> {
-    Json(SchedulingStatus {
-        pending_pods: 0,
-        scheduled_pods: 0,
-        unschedulable_nodes: vec![],
-        scheduling_latency_ms: 0.0,
-        preemptions: 0,
-    })
+async fn get_scheduling_status() -> impl IntoResponse {
+    not_implemented("Scheduling status")
 }

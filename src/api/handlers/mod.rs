@@ -47,44 +47,69 @@ pub mod vmis;
 pub mod webhooks;
 pub mod workloads;
 
+/// VMRogue CRD management handlers (vmrogue.io/v1alpha1).
+pub mod crds;
+
+/// Helper for stub handlers that are not yet implemented.
+/// Returns HTTP 501 with a JSON body describing the unimplemented feature.
+#[cfg(feature = "web")]
+pub fn not_implemented(feature: &str) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (
+        axum::http::StatusCode::NOT_IMPLEMENTED,
+        axum::Json(serde_json::json!({
+            "error": "NOT_IMPLEMENTED",
+            "message": format!("{} is not yet implemented", feature),
+            "feature": feature
+        })),
+    )
+}
+
 /// Build the combined API router from all handler sub-routers.
+///
+/// Handlers that have been wired to real Kubernetes data receive SharedState.
+/// Remaining handlers return placeholder data until wired in future phases.
 ///
 /// NOTE: Authentication is NOT applied here. The parent router (see
 /// `http_server::web::build_router`) is responsible for layering the
 /// `auth_middleware` so that all merged routes are protected uniformly.
 #[cfg(feature = "web")]
-pub fn all_routes() -> axum::Router {
+pub fn all_routes(
+    state: std::sync::Arc<tokio::sync::RwLock<crate::api::http_server::web::WebState>>,
+) -> axum::Router {
     axum::Router::new()
-        .merge(vmis::router())
-        .merge(pods::router())
-        .merge(nodes::router())
-        .merge(events::router())
-        .merge(snapshots::router())
+        // Real K8s data handlers (wired to KubeClient via SharedState)
+        .merge(vmis::router(state.clone()))
+        .merge(pods::router(state.clone()))
+        .merge(nodes::router(state.clone()))
+        .merge(events::router(state.clone()))
+        .merge(namespaces::router(state.clone()))
+        .merge(metrics::router(state.clone()))
+        .merge(costs::router(state.clone()))
+        .merge(crds::router(state.clone()))
+        .merge(snapshots::router(state.clone()))
+        .merge(logs::router(state.clone()))
+        .merge(migrations::router(state.clone()))
+        .merge(storage::router(state.clone()))
+        .merge(disks::router(state.clone()))
+        .merge(network::router(state.clone()))
+        .merge(health::router(state.clone()))
+        .merge(topology::router(state.clone()))
+        .merge(dependencies::router(state.clone()))
+        // Handlers that still return static/placeholder data
         .merge(clones::router())
-        .merge(disks::router())
         .merge(templates::router())
-        .merge(migrations::router())
-        .merge(namespaces::router())
         .merge(quotas::router())
-        .merge(metrics::router())
-        .merge(health::router())
-        .merge(logs::router())
-        .merge(costs::router())
         .merge(security::router())
         .merge(rbac::router())
         .merge(compliance::router())
         .merge(autoscaler::router())
-        .merge(topology::router())
-        .merge(dependencies::router())
         .merge(forecasting::router())
         .merge(alerts::router())
         .merge(audit::router())
         .merge(notifications::router())
         .merge(gitops::router())
         .merge(backups::router())
-        .merge(network::router())
         .merge(network_policies::router())
-        .merge(storage::router())
         .merge(workloads::router())
         .merge(scheduling::router())
         .merge(hpa::router())

@@ -2173,6 +2173,187 @@ pub enum Commands {
     /// Diagnose environment and connectivity
     #[command(name = "doctor", visible_alias = "doc")]
     Doctor,
+
+    // ========== GITOPS ==========
+    /// Export all VMs as VMRogueVM CRD manifests to a directory
+    #[command(name = "gitops-export")]
+    GitopsExport {
+        /// Output directory for YAML manifests
+        #[arg(short, long, default_value = ".")]
+        directory: String,
+    },
+
+    // ========== OPERATOR CRD MANAGEMENT (vmrogue.io/v1alpha1) ==========
+
+    /// List VMRogueVM custom resources
+    #[command(name = "vrvm-list")]
+    VrvmList,
+
+    /// Get a VMRogueVM custom resource
+    #[command(name = "vrvm-get")]
+    VrvmGet {
+        /// VM name
+        name: String,
+    },
+
+    /// Create a VMRogueVM custom resource with full hardware configuration
+    #[command(name = "vrvm-create")]
+    VrvmCreate {
+        /// VM name
+        name: String,
+
+        /// OS template (e.g. ubuntu-22.04, fedora-41, windows-11)
+        #[arg(short, long)]
+        template: Option<String>,
+
+        /// CPU cores
+        #[arg(long, default_value = "2")]
+        cpus: u32,
+
+        /// Memory (e.g. 4Gi, 8Gi, 16Gi)
+        #[arg(long, default_value = "4Gi")]
+        memory: String,
+
+        /// Disk specification (repeatable). Format: name=X,size=Y,source=Z[,image=I][,boot=N][,bus=B]
+        /// Sources: blank, containerDisk, pvc, dataVolume
+        /// Examples:
+        ///   --disk name=root,size=20Gi,source=containerDisk,image=quay.io/containerdisks/ubuntu:22.04,boot=1
+        ///   --disk name=data,size=50Gi,source=blank
+        ///   --disk name=existing,source=pvc,pvc=my-pvc
+        #[arg(long, num_args = 1)]
+        disk: Vec<String>,
+
+        /// Attach CDROM from container disk image
+        #[arg(long)]
+        cdrom: Option<String>,
+
+        /// Network interface (repeatable). Format: type=X[,name=Y]
+        /// Types: pod (default), multus, bridge, sriov
+        /// Examples:
+        ///   --network type=pod
+        ///   --network type=multus,name=br-net
+        ///   --network type=sriov,name=sriov-net1
+        #[arg(long, num_args = 1)]
+        network: Vec<String>,
+
+        /// Path to cloud-init user-data file
+        #[arg(long)]
+        cloud_init: Option<String>,
+
+        /// Firmware type: bios or efi
+        #[arg(long)]
+        firmware: Option<String>,
+
+        /// Enable UEFI Secure Boot (implies --firmware efi)
+        #[arg(long)]
+        secure_boot: bool,
+
+        /// Enable TPM 2.0
+        #[arg(long)]
+        tpm: bool,
+
+        /// Disable virtio-rng (enabled by default)
+        #[arg(long)]
+        no_rng: bool,
+
+        /// Machine type (e.g. q35)
+        #[arg(long)]
+        machine_type: Option<String>,
+
+        /// Eviction strategy (LiveMigrate, LiveMigrateIfPossible)
+        #[arg(long)]
+        eviction_strategy: Option<String>,
+
+        /// Labels (repeatable, format: key=value)
+        #[arg(short, long, num_args = 1)]
+        label: Vec<String>,
+
+        /// Load full VMRogueVMSpec from YAML file
+        #[arg(short, long)]
+        from_file: Option<String>,
+
+        /// Print YAML instead of creating
+        #[arg(long)]
+        dry_run: bool,
+
+        /// Start VM after creation
+        #[arg(long)]
+        start: bool,
+    },
+
+    /// Apply a VMRogueVM from a YAML manifest file
+    #[command(name = "vrvm-apply")]
+    VrvmApply {
+        /// Path to YAML manifest file
+        #[arg(short, long)]
+        file: String,
+
+        /// Print diff instead of applying
+        #[arg(long)]
+        dry_run: bool,
+    },
+
+    /// Delete a VMRogueVM custom resource
+    #[command(name = "vrvm-delete")]
+    VrvmDelete {
+        /// VM name
+        name: String,
+
+        /// Skip confirmation
+        #[arg(short, long)]
+        yes: bool,
+    },
+
+    /// List VMRogueBlueprint custom resources
+    #[command(name = "vrbp-list")]
+    VrbpList,
+
+    /// Get a VMRogueBlueprint custom resource
+    #[command(name = "vrbp-get")]
+    VrbpGet {
+        /// Blueprint name
+        name: String,
+    },
+
+    /// Delete a VMRogueBlueprint custom resource
+    #[command(name = "vrbp-delete")]
+    VrbpDelete {
+        /// Blueprint name
+        name: String,
+    },
+
+    /// List VMRoguePolicy custom resources
+    #[command(name = "vrpol-list")]
+    VrpolList,
+
+    /// Get a VMRoguePolicy custom resource
+    #[command(name = "vrpol-get")]
+    VrpolGet {
+        /// Policy name
+        name: String,
+    },
+
+    /// Delete a VMRoguePolicy custom resource
+    #[command(name = "vrpol-delete")]
+    VrpolDelete {
+        /// Policy name
+        name: String,
+    },
+
+    /// List VMRogueInsight custom resources
+    #[command(name = "vrin-list")]
+    VrinList,
+
+    /// List VMRogueAction custom resources
+    #[command(name = "vract-list")]
+    VractList,
+
+    /// Approve a VMRogueAction
+    #[command(name = "vract-approve")]
+    VractApprove {
+        /// Action name
+        name: String,
+    },
 }
 
 #[cfg(test)]

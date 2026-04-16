@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Monitoring status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,15 +23,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_monitoring_status() -> Json<MonitoringStatus> {
-    Json(MonitoringStatus {
-        prometheus_available: false,
-        grafana_available: false,
-        alertmanager_available: false,
-        metrics_collection_interval: "30s".to_string(),
-        retention_period: "15d".to_string(),
-        active_alerts: 0,
-        total_targets: 0,
-        healthy_targets: 0,
-    })
+async fn get_monitoring_status() -> impl IntoResponse {
+    not_implemented("Monitoring status")
 }

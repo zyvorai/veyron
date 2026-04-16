@@ -458,9 +458,15 @@ VMRogue's innovative features provide:
 
 ✅ **8 Resource Profiles** - Optimized for different workloads
 ✅ **5 Multi-VM Blueprints** - Deploy complete stacks
-✅ **Automated Health Checks** - Proactive diagnostics
+✅ **Automated Health Checks** - Real K8s connectivity and KubeVirt API probes
 ✅ **Smart Recommendations** - AI-like resource suggestions
-✅ **Dependency Management** - Automatic VM ordering
+✅ **Dependency Management** - Automatic VM ordering with real annotation-based graph
+✅ **Policy Enforcement** - VMRoguePolicy CRDs block non-compliant VM creation
+✅ **GitOps Export** - Export VMs as CRD manifests for ArgoCD/Flux
+✅ **Cost Budgets** - Namespace spending limits with anomaly detection
+✅ **Real Metrics** - Live data from Kubernetes Metrics Server (no fake data)
+✅ **Multi-Cluster** - Discover and sync across kubeconfig contexts
+✅ **WebSocket Streaming** - Real-time cluster metrics via `/api/v1/ws/metrics`
 ✅ **All with Themed CLI** - Beautiful colored output
 
-**No other KubeVirt CLI tool offers these capabilities!** 🚀
+**No other KubeVirt CLI tool offers these capabilities!**

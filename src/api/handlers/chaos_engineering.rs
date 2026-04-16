@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Chaos experiment response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +33,6 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_experiments() -> Json<Vec<ChaosExperiment>> {
-    Json(vec![])
+async fn list_experiments() -> impl IntoResponse {
+    not_implemented("Chaos experiments")
 }

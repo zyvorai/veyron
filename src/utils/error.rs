@@ -16,4 +16,61 @@ pub enum VMRogueError {
 
     #[error("Operation timed out: {0}")]
     Timeout(String),
+
+    #[error("Feature not implemented: {0}")]
+    NotImplemented(String),
+
+    #[error("Unauthorized: {0}")]
+    Unauthorized(String),
+
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
+    #[error("Resource conflict: {0}")]
+    ResourceConflict(String),
+
+    #[error("Service unavailable: {0}")]
+    ServiceUnavailable(String),
+
+    #[error("Kubernetes API error: {0}")]
+    KubeError(String),
+}
+
+#[cfg(feature = "web")]
+impl axum::response::IntoResponse for VMRogueError {
+    fn into_response(self) -> axum::response::Response {
+        use axum::http::StatusCode;
+        use axum::response::Json;
+
+        let (status, error_code) = match &self {
+            VMRogueError::VmNotFound(_) => (StatusCode::NOT_FOUND, "VM_NOT_FOUND"),
+            VMRogueError::VmExists(_) => (StatusCode::CONFLICT, "VM_EXISTS"),
+            VMRogueError::ValidationError(_) => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR"),
+            VMRogueError::ConfigError(_) => (StatusCode::BAD_REQUEST, "CONFIG_ERROR"),
+            VMRogueError::Timeout(_) => (StatusCode::GATEWAY_TIMEOUT, "TIMEOUT"),
+            VMRogueError::NotImplemented(_) => (StatusCode::NOT_IMPLEMENTED, "NOT_IMPLEMENTED"),
+            VMRogueError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED"),
+            VMRogueError::Forbidden(_) => (StatusCode::FORBIDDEN, "FORBIDDEN"),
+            VMRogueError::ResourceConflict(_) => (StatusCode::CONFLICT, "RESOURCE_CONFLICT"),
+            VMRogueError::ServiceUnavailable(_) => {
+                (StatusCode::SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE")
+            }
+            VMRogueError::KubeError(_) => {
+                (StatusCode::BAD_GATEWAY, "KUBERNETES_ERROR")
+            }
+        };
+
+        // Sanitize KubeError to avoid leaking internal K8s API details
+        let message = match &self {
+            VMRogueError::KubeError(_) => "Kubernetes API error".to_string(),
+            _ => self.to_string(),
+        };
+
+        let body = serde_json::json!({
+            "error": error_code,
+            "message": message,
+        });
+
+        (status, Json(body)).into_response()
+    }
 }

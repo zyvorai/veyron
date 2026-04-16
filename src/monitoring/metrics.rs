@@ -187,29 +187,21 @@ impl MetricsCollector {
         Ok(results)
     }
 
-    /// Collect historical metrics based on real allocations with simulated usage
+    /// Collect historical metrics for a VM.
+    ///
+    /// Returns only the current data point since real time-series storage is
+    /// not yet implemented. Callers should not expect a full history — the
+    /// single-element vec distinguishes "VM exists but no history" from an
+    /// error.
     pub async fn collect_historical(
         &self,
         vm_name: &str,
-        duration_seconds: u64,
+        _duration_seconds: u64,
     ) -> Result<Vec<VMMetrics>> {
-        let points = (duration_seconds / 60).min(100); // One point per minute, max 100
-        let mut metrics = Vec::new();
-
-        // Get real allocations once, then generate history with simulated usage
-        let base = self.collect(vm_name).await?;
-
-        for i in 0..points {
-            let mut m = self.create_simulated_metrics_with_allocations(
-                base.cpu.cores_allocated,
-                base.memory.total_bytes,
-                base.disk.total_bytes,
-            );
-            m.timestamp = Utc::now() - chrono::TimeDelta::seconds((points - i) as i64 * 60);
-            metrics.push(m);
-        }
-
-        Ok(metrics)
+        // Return the current snapshot as a single data point.
+        // Real historical storage (Prometheus integration) is a future task.
+        let current = self.collect(vm_name).await?;
+        Ok(vec![current])
     }
 
     /// Create metrics from real K8s VM spec
@@ -276,71 +268,179 @@ impl MetricsCollector {
             })
             .unwrap_or(20 * 1024 * 1024 * 1024);
 
-        Ok(self.create_simulated_metrics_with_allocations(
-            cores_allocated,
-            total_memory_bytes,
-            total_disk_bytes,
-        ))
+        Ok(self
+            .collect_real_pod_metrics(vm_name, cores_allocated, total_memory_bytes, total_disk_bytes)
+            .await)
     }
 
-    /// Create metrics with real allocations but simulated usage percentages
-    fn create_simulated_metrics_with_allocations(
+    /// Collect real metrics from Kubernetes Metrics Server for the virt-launcher pod.
+    ///
+    /// Falls back to allocation-only metrics (usage = 0) if the Metrics Server
+    /// is unavailable, rather than generating random data.
+    async fn collect_real_pod_metrics(
+        &self,
+        vm_name: &str,
+        cores_allocated: u32,
+        total_memory_bytes: u64,
+        total_disk_bytes: u64,
+    ) -> VMMetrics {
+        use k8s_openapi::api::core::v1::Pod;
+
+        // Try to find the virt-launcher pod for this VM
+        let client = match crate::kube::get_client().await {
+            Ok(c) => c,
+            Err(_) => {
+                return self.create_allocation_only_metrics(
+                    cores_allocated,
+                    total_memory_bytes,
+                    total_disk_bytes,
+                );
+            }
+        };
+
+        let pods: Api<Pod> = Api::namespaced(client.clone(), &self.namespace);
+        let label = format!("kubevirt.io/domain={}", vm_name);
+        let lp = kube::api::ListParams::default().labels(&label);
+
+        let pod_name = match pods.list(&lp).await {
+            Ok(list) => list
+                .items
+                .first()
+                .and_then(|p| p.metadata.name.clone()),
+            Err(_) => None,
+        };
+
+        // Try querying the Metrics Server API (metrics.k8s.io/v1beta1)
+        if let Some(ref pod) = pod_name {
+            if let Ok(metrics) = self.fetch_pod_metrics(&client, pod).await {
+                let (cpu_nano, mem_bytes) = metrics;
+                let cpu_usage_cores = cpu_nano as f64 / 1_000_000_000.0;
+                let cpu_percent = if cores_allocated > 0 {
+                    (cpu_usage_cores / cores_allocated as f64 * 100.0).min(100.0)
+                } else {
+                    0.0
+                };
+                let mem_percent = if total_memory_bytes > 0 {
+                    (mem_bytes as f64 / total_memory_bytes as f64 * 100.0).min(100.0)
+                } else {
+                    0.0
+                };
+
+                return VMMetrics {
+                    timestamp: Utc::now(),
+                    cpu: CPUMetrics {
+                        usage_percent: cpu_percent,
+                        cores_allocated,
+                        cores_used: cpu_usage_cores,
+                        system_percent: 0.0,
+                        user_percent: cpu_percent,
+                        idle_percent: 100.0 - cpu_percent,
+                    },
+                    memory: MemoryMetrics {
+                        usage_percent: mem_percent,
+                        used_bytes: mem_bytes,
+                        available_bytes: total_memory_bytes.saturating_sub(mem_bytes),
+                        total_bytes: total_memory_bytes,
+                        cache_bytes: 0,
+                        swap_used_bytes: 0,
+                    },
+                    disk: DiskMetrics {
+                        usage_percent: 0.0,
+                        used_bytes: 0,
+                        total_bytes: total_disk_bytes,
+                        ..Default::default()
+                    },
+                    network: NetworkMetrics::default(),
+                };
+            }
+        }
+
+        // Metrics Server unavailable: return allocation-only data (no random numbers)
+        self.create_allocation_only_metrics(cores_allocated, total_memory_bytes, total_disk_bytes)
+    }
+
+    /// Fetch CPU (nanocores) and memory (bytes) from the Kubernetes Metrics Server
+    /// using a dynamic API request.
+    async fn fetch_pod_metrics(
+        &self,
+        client: &kube::Client,
+        pod_name: &str,
+    ) -> Result<(u64, u64)> {
+        // Use kube's dynamic API to fetch PodMetrics
+        let gvk = kube::api::GroupVersionKind::gvk("metrics.k8s.io", "v1beta1", "PodMetrics");
+        let ar = kube::api::ApiResource::from_gvk(&gvk);
+        let api: kube::Api<kube::api::DynamicObject> =
+            kube::Api::namespaced_with(client.clone(), &self.namespace, &ar);
+
+        let pod_metrics = api
+            .get(pod_name)
+            .await
+            .context("Metrics Server unavailable or pod not found")?;
+
+        // Parse from dynamic object data
+        let containers = pod_metrics
+            .data
+            .get("containers")
+            .and_then(|c| c.as_array())
+            .context("No containers in metrics response")?;
+
+        let mut total_cpu: u64 = 0;
+        let mut total_mem: u64 = 0;
+
+        for container in containers {
+            if let Some(usage) = container.get("usage") {
+                if let Some(cpu_str) = usage.get("cpu").and_then(|v| v.as_str()) {
+                    total_cpu += parse_k8s_cpu_nanocores(cpu_str);
+                }
+                if let Some(mem_str) = usage.get("memory").and_then(|v| v.as_str()) {
+                    total_mem += parse_k8s_memory_bytes(mem_str);
+                }
+            }
+        }
+
+        Ok((total_cpu, total_mem))
+    }
+
+    /// Create metrics showing only allocations with zero usage.
+    /// Used when the Metrics Server is unavailable.
+    fn create_allocation_only_metrics(
         &self,
         cores_allocated: u32,
         total_memory_bytes: u64,
         total_disk_bytes: u64,
     ) -> VMMetrics {
-        use rand::Rng;
-        let mut rng = rand::thread_rng();
-
-        let cpu_usage: f64 = rng.gen_range(30.0..85.0);
-        let system_upper = cpu_usage.clamp(6.0, 15.0); // Ensure range is at least 5.0..6.0
-        let system_pct: f64 = rng.gen_range(5.0..system_upper);
-        let user_pct: f64 = cpu_usage - system_pct;
-        let mem_usage: f64 = rng.gen_range(50.0..80.0);
-        let disk_usage: f64 = rng.gen_range(40.0..75.0);
-
-        let used_memory = (total_memory_bytes as f64 * mem_usage / 100.0) as u64;
-        let used_disk = (total_disk_bytes as f64 * disk_usage / 100.0) as u64;
-
         VMMetrics {
             timestamp: Utc::now(),
             cpu: CPUMetrics {
-                usage_percent: cpu_usage,
+                usage_percent: 0.0,
                 cores_allocated,
-                cores_used: cores_allocated as f64 * cpu_usage / 100.0,
-                system_percent: system_pct,
-                user_percent: user_pct,
-                idle_percent: 100.0 - cpu_usage,
+                cores_used: 0.0,
+                system_percent: 0.0,
+                user_percent: 0.0,
+                idle_percent: 100.0,
             },
             memory: MemoryMetrics {
-                usage_percent: mem_usage,
-                used_bytes: used_memory,
-                available_bytes: total_memory_bytes - used_memory,
+                usage_percent: 0.0,
+                used_bytes: 0,
+                available_bytes: total_memory_bytes,
                 total_bytes: total_memory_bytes,
-                cache_bytes: rng.gen_range(500_000_000..2_000_000_000),
-                swap_used_bytes: rng.gen_range(0..500_000_000),
+                cache_bytes: 0,
+                swap_used_bytes: 0,
             },
             disk: DiskMetrics {
-                read_bytes_per_sec: rng.gen_range(5_000_000..50_000_000),
-                write_bytes_per_sec: rng.gen_range(2_000_000..20_000_000),
-                read_ops_per_sec: rng.gen_range(100..1000),
-                write_ops_per_sec: rng.gen_range(50..500),
-                usage_percent: disk_usage,
-                used_bytes: used_disk,
+                usage_percent: 0.0,
+                used_bytes: 0,
                 total_bytes: total_disk_bytes,
+                ..Default::default()
             },
-            network: NetworkMetrics {
-                rx_bytes_per_sec: rng.gen_range(500_000..5_000_000),
-                tx_bytes_per_sec: rng.gen_range(1_000_000..8_000_000),
-                rx_packets_per_sec: rng.gen_range(500..5000),
-                tx_packets_per_sec: rng.gen_range(800..6000),
-                rx_errors: 0,
-                tx_errors: 0,
-            },
+            network: NetworkMetrics::default(),
         }
     }
 }
+
+// Re-use consolidated K8s quantity parsers from crate::utils
+use crate::utils::parse_cpu_nanocores as parse_k8s_cpu_nanocores;
+use crate::utils::parse_memory_bytes as parse_k8s_memory_bytes;
 
 #[cfg(test)]
 mod tests {

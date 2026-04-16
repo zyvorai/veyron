@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Webhook response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,12 +33,12 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_webhooks() -> Json<Vec<WebhookResponse>> {
-    Json(vec![])
+async fn list_webhooks() -> impl IntoResponse {
+    not_implemented("Webhooks")
 }
 
 #[cfg(feature = "web")]
-async fn create_webhook(Json(req): Json<CreateWebhookRequest>) -> Json<Option<WebhookResponse>> {
+async fn create_webhook(axum::Json(req): axum::Json<CreateWebhookRequest>) -> impl IntoResponse {
     let _ = req;
-    Json(None)
+    not_implemented("Webhook creation")
 }

@@ -3,16 +3,18 @@
 ## Project Statistics
 
 - **Lines of Code**: ~120,000
-- **Modules**: 37 public modules + 11 handler modules
-- **Templates**: 43 OS templates (with containerDisk images)
+- **Modules**: 37 public modules + 11 handler modules + 8 experimental modules
+- **Templates**: 44 OS templates (with containerDisk images)
 - **CLI Commands**: 169
 - **Resource Profiles**: 8 built-in
 - **Deployment Blueprints**: 5 built-in
 - **API Endpoints**: 30+ (REST + WebSocket)
+- **API Handlers Wired to Real K8s**: 19 (up from 8)
 - **Dashboard Pages**: 6 (Dashboard, VMs, Snapshots, Nodes, Pods, Events)
-- **Tests**: 2,388 (all passing)
+- **Tests**: 1,781 (1,709 unit + 64 integration + 8 doc)
 - **Compiler Warnings**: 0
 - **Dependencies**: 30 core + 1 dev
+- **Stub Handlers**: 31 return HTTP 501 Not Implemented
 
 ## Architecture
 
@@ -50,11 +52,15 @@ src/
 ├── observability/      (logs, metrics, alerts, insights)
 ├── multitenancy/       (tenants, RBAC, quotas)
 ├── api/                (REST API, OpenAPI, webhooks)
-│   ├── http_server.rs  (axum web server, 30+ handlers)
+│   ├── http_server.rs  (axum web server, 19 real K8s handlers + 31 stubs)
 │   ├── web/            (dashboard HTML, noVNC bundle)
 │   └── handlers/       (47 endpoint handler modules)
 ├── devexp/             (completions, config templates, diff, init)
+├── operator_crds/      (VMRoguePolicy and other operator CRDs)
 └── [12 more modules]   (networking, finops, edge, secrets, etc.)
+
+# 8 experimental modules are gated behind the `experimental` feature flag.
+# Build with: cargo build --features experimental
 ```
 
 ## Completed Features
@@ -68,20 +74,31 @@ src/
 - [x] 43 OS templates with containerDisk images (Ubuntu, Fedora, CentOS, Debian, RHEL, Windows, etc.)
 - [x] Builder pattern for VMConfig
 - [x] YAML/JSON output formatting
+- [x] Policy enforcement on VM creation (VMRoguePolicy CRDs)
+- [x] Multi-cluster management (kubeconfig context discovery)
+- [x] GitOps export (`vmrogue gitops-export` command)
 
 ### Web Dashboard & API
 - [x] Single-file HTML dashboard embedded in binary (Inter + JetBrains Mono fonts, dark theme)
 - [x] 30+ REST API endpoints with API key auth, rate limiting, security headers
+- [x] 19 API handlers wired to real Kubernetes (snapshots, templates, migrations, storage, disks, metrics, logs, network, health, topology, dependencies)
 - [x] VNC console via bundled noVNC (284KB) + virtctl WebSocket proxy
 - [x] VM detail panels with status, resources, network interfaces, guest OS, security posture
-- [x] VM creation from templates (43) with profile picker (8), cloud-init, auto-start
+- [x] VM creation from templates (44) with profile picker (8), cloud-init, auto-start
 - [x] Snapshot create/restore/delete from UI
 - [x] Nodes and Pods pages with auto-refresh
 - [x] Real cluster capacity gauges (CPU, memory, nodes from K8s API)
+- [x] Real Kubernetes Metrics Server integration (replaced fake random data)
+- [x] WebSocket metrics streaming (`/api/v1/ws/metrics`)
+- [x] Batch VM operations (`POST /api/v1/vms/batch`)
+- [x] Cost dashboard with namespace breakdown and forecast
+- [x] Cost budget alerts (ConfigMap-based, `POST/GET /costs/budgets`)
 - [x] Search/filter on VMs page
 - [x] API key login modal with remember me (localStorage)
 - [x] Kubernetes deployment with RBAC, NodePort, scratch Docker image (~75MB)
 - [x] SSH deployment script
+- [x] 31 stub handlers return HTTP 501 Not Implemented (clear contract for unimplemented endpoints)
+- [x] Structured API error types (`VMRogueError` with 6 new variants + `IntoResponse`)
 
 ### Resource Profiles & Blueprints
 - [x] 8 built-in profiles (minimal, dev, test, web, prod, database, microservice, high-perf)
@@ -133,6 +150,7 @@ src/
 - [x] Multi-step workflows with templates
 - [x] Scheduled task management
 - [x] Workflow execution tracking
+- [x] Automation execution engine (real K8s API calls)
 
 ### Observability
 - [x] Log querying with filtering
@@ -165,7 +183,7 @@ src/
 - [x] FinOps (allocation, budgets, optimization, waste, reports)
 - [x] Advanced networking (IPAM, BGP, DNS, QoS, topology)
 - [x] Service mesh integration
-- [x] Disaster recovery (failover, HA, replication)
+- [x] Disaster recovery (failover, HA, replication, cross-cluster DR via `export_dr_manifests`)
 - [x] Edge computing (nodes, sync, telemetry)
 - [x] Secrets management (encryption, rotation, zeroization via `zeroize` crate)
 - [x] Multi-cloud (providers, federation, connectivity, portability)
@@ -180,6 +198,10 @@ src/
 - [x] SSRF prevention with DNS rebinding protection and CGNAT blocking
 - [x] Secret memory zeroization on drop/rotate/revoke
 - [x] Restrictive file permissions (0600) on persisted data
+- [x] Auth bypass removed (referer-based authentication bypass eliminated)
+- [x] CI integration tests with Kind + KubeVirt
+- [x] Consolidated K8s quantity parsers in `utils`
+- [x] 8 scaffolding modules gated behind `experimental` feature flag
 
 ## Quick Test Commands
 
@@ -227,3 +249,5 @@ cargo run -- tui --interactive
 8. **Centralized persistence**: All stores use `utils::data_dir()` and `utils::atomic_write()` for consistent, crash-safe file I/O
 9. **Client caching**: Kubeconfig parsed once and cached; `kube::get_client()` provides cheap client creation
 10. **Defense in depth**: SSRF prevention with DNS resolution + IP validation + connection pinning; secret zeroization on all code paths
+11. **501 Not Implemented pattern**: Stub handlers return `501` with a structured error body instead of fake data, making the API contract explicit
+12. **Experimental feature flag**: New modules are gated behind `--features experimental` to keep the default build stable

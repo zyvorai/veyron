@@ -1,6 +1,8 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, routing::get};
+use axum::{Router, response::IntoResponse, routing::get};
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "web")]
+use super::not_implemented;
 
 /// Cilium status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,18 +34,11 @@ pub fn router() -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_cilium_status() -> Json<CiliumStatus> {
-    Json(CiliumStatus {
-        version: String::new(),
-        agent_count: 0,
-        healthy_agents: 0,
-        cluster_mesh_enabled: false,
-        hubble_enabled: false,
-        encryption_enabled: false,
-    })
+async fn get_cilium_status() -> impl IntoResponse {
+    not_implemented("Cilium status")
 }
 
 #[cfg(feature = "web")]
-async fn list_cilium_policies() -> Json<Vec<CiliumPolicy>> {
-    Json(vec![])
+async fn list_cilium_policies() -> impl IntoResponse {
+    not_implemented("Cilium policies")
 }
