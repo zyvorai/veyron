@@ -14,6 +14,9 @@
 .DS_Store
 Thumbs.db
 
+# Operator build artifacts
+operator/bin/
+
 # Local configs
 *.local.yaml
 *.local.json
