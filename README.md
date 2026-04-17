@@ -116,7 +116,7 @@ Open `http://localhost:5151/dashboard` in your browser. The dashboard will promp
 ./scripts/deploy-k8s.sh delete   # Remove everything
 ```
 
-The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresources, snapshots), a NodePort service on port 30151, and automatic API key secret creation. See `deploy/k8s.yaml` for the full manifest.
+The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresources, snapshots), a NodePort service, and automatic API key secret creation. The pod uses `hostPort: 5151` so the dashboard is always reachable at `http://<node-ip>:5151` — a constant, predictable port with no NodePort range indirection. See `deploy/k8s.yaml` for the full manifest.
 
 ### Deploy to a remote Kubernetes cluster via SSH
 
