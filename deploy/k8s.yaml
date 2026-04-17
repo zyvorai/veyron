@@ -131,9 +131,11 @@ spec:
           args: ["api-serve", "--port", "5151", "--host", "0.0.0.0", "--tls", "--tls-cert", "/certs/tls.crt", "--tls-key", "/certs/tls.key"]
           ports:
             - containerPort: 5151
+              hostPort: 5151
               name: https
               protocol: TCP
             - containerPort: 5150
+              hostPort: 5150
               name: http-redirect
               protocol: TCP
           livenessProbe:
