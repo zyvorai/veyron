@@ -1,323 +1,171 @@
-# VMRogue Quick Reference Card
+# VMRogue Quick Reference
 
-## 🎯 Common Commands
+This file is aligned to the current CLI in [`src/cli/mod.rs`](/Users/ssahani/tt/VMRogue/src/cli/mod.rs:1). Use `vmrogue commands` and `vmrogue <command> --help` for the full surface.
 
-### VM Snapshots & Backup
+## Core VM Lifecycle
+
 ```bash
-vmrogue snapshot-create my-vm --name backup-20260205
-vmrogue snapshot-list my-vm          # List snapshots for VM
-vmrogue snapshot-list                # List all snapshots
-vmrogue snapshot-get backup-20260205 # Get snapshot details
-vmrogue snapshot-restore backup-20260205 --target restored-vm
-vmrogue snapshot-restore backup-20260205 --in-place  # Overwrite existing
-vmrogue snapshot-delete old-snapshot
-```
-
-### VM Profiles
-```bash
-vmrogue profiles                  # List all profiles
-vmrogue profiles --details        # Detailed profile info
-vmrogue profile database          # View specific profile
-```
-
-### Multi-VM Blueprints
-```bash
-vmrogue blueprints                # List all blueprints
-vmrogue blueprints --tag web      # Filter by tag
-vmrogue blueprint lamp            # View blueprint details
-vmrogue deploy lamp --dry-run     # Preview deployment
-vmrogue deploy lamp --prefix prod # Deploy with custom prefix
-vmrogue deploy lamp --start       # Deploy and start VMs
-```
-
-### Resource Recommendations
-```bash
-vmrogue recommend database        # Database workload
-vmrogue recommend web             # Web server workload
-vmrogue recommend ml              # Machine learning workload
-```
-
-### Health Checks
-```bash
-vmrogue health my-vm              # Check VM health
-vmrogue health my-vm --detailed   # Detailed checks
-```
-
-### VM Operations
-```bash
-vmrogue create myvm --template ubuntu --profile prod
-vmrogue list                      # List all VMs
-vmrogue list-json                 # JSON Lines output for scripting
-vmrogue get myvm                  # Get VM details
-vmrogue start myvm                # Start VM
-vmrogue stop myvm                 # Stop VM
-vmrogue pause myvm                # Pause VM
-vmrogue unpause myvm              # Unpause VM
-vmrogue delete myvm               # Delete VM
-vmrogue status myvm               # Detailed status
-vmrogue clone source target       # Clone VM
-vmrogue resize myvm --cpus 4 --memory 16Gi  # Resize VM
-vmrogue import vm-manifest.yaml   # Import from KubeVirt YAML
-```
-
-### Templates
-```bash
-vmrogue templates                 # List all templates
-vmrogue template ubuntu-22.04     # View template details
-```
-
-### Cluster Operations
-```bash
-vmrogue nodes                     # List cluster nodes
-vmrogue pods                      # List pods
-vmrogue events                    # List K8s events
-vmrogue capacity                  # Cluster capacity analysis
-vmrogue placement myvm --strategy spread  # Node recommendation
-```
-
-### Search & Diagnostics
-```bash
-vmrogue search "running vms in production"  # Natural language search
-vmrogue troubleshoot myvm         # AI-assisted diagnostics
-```
-
-### Multi-Cluster & GitOps
-```bash
-vmrogue clusters-list             # List configured clusters
-vmrogue clusters-discover         # Discover from kubeconfig
-vmrogue gitops-diff --namespace production  # Compare manifests
-vmrogue gitops-status             # Check sync status
-```
-
-### Web Dashboard & API
-```bash
-# Start API server with RBAC
-export VMROGUE_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
-vmrogue api-serve --port 5151     # Dashboard at /dashboard
-
-# Key API endpoints
-# GET  /api/v1/vms                # List VMs
-# POST /api/v1/vms/batch          # Batch start/stop/restart/delete
-# WS   /api/v1/ws/metrics         # WebSocket metrics (5s interval)
-# GET  /api/v1/costs/budgets      # View cost budgets
-# POST /api/v1/costs/budgets      # Set cost budgets
-# GET  /api/v1/health             # Health check (K8s + KubeVirt)
-# GET  /api/v1/metrics            # Real cluster metrics
-# GET  /api/v1/snapshots          # List snapshots (real CRDs)
-# GET  /api/v1/migrations         # List migrations (real CRDs)
-# GET  /api/v1/storage            # StorageClasses + PVCs
-# GET  /api/v1/topology           # Node-to-VM placement graph
-# GET  /api/v1/logs/{vm}          # Real virt-launcher pod logs
-
-# Deploy to Kubernetes
-./scripts/deploy-k8s.sh deploy    # Full K8s deployment
-./scripts/deploy-k8s.sh status    # Check deployment
-./scripts/deploy-k8s.sh logs      # Tail logs
-
-# Deploy to remote K8s cluster
-./scripts/deploy-k8s-remote.sh HOST USER
-
-# Deploy with Helm
-helm install vmrogue ./charts/vmrogue --set apiKeys="admin:key"
-helm install vmrogue-operator ./charts/vmrogue-operator
-
-# Deploy with Kustomize
-kubectl apply -k deploy/kustomize/overlays/dev   # Dev
-kubectl apply -k deploy/kustomize/overlays/prod  # Prod
-```
-
-### GitOps Export
-```bash
-vmrogue gitops-export --namespace production --output gitops/
-vmrogue gitops-export my-vm --output gitops/my-vm.yaml
-```
-
-### Batch VM Operations (API)
-```bash
-# Start multiple VMs
-curl -X POST http://localhost:5151/api/v1/vms/batch \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "start", "vms": ["vm-1", "vm-2", "vm-3"]}'
-
-# Supported actions: start, stop, restart, delete
-```
-
-### Cost Budgets (API)
-```bash
-# Set a namespace budget
-curl -X POST http://localhost:5151/api/v1/costs/budgets \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"namespace": "production", "monthly_budget": 500.0}'
-
-# View budgets
-curl http://localhost:5151/api/v1/costs/budgets \
-  -H "X-API-Key: $VMROGUE_API_KEY"
-```
-
-### Migrations (API)
-```bash
-# List migrations
-curl http://localhost:5151/api/v1/migrations \
-  -H "X-API-Key: $VMROGUE_API_KEY"
-
-# Create a migration
-curl -X POST http://localhost:5151/api/v1/migrations \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"vm_name": "my-vm"}'
-
-# Cancel a migration
-curl -X DELETE http://localhost:5151/api/v1/migrations/my-migration \
-  -H "X-API-Key: $VMROGUE_API_KEY"
-```
-
-### Advanced
-```bash
-vmrogue wizard                    # Interactive wizard
-vmrogue batch config.yaml         # Batch operations
-vmrogue export myvm               # Export config
-vmrogue validate config.yaml      # Validate config
-```
-
----
-
-## 📦 Available Profiles
-
-| Profile | CPU | RAM | Disk | Use Case |
-|---------|-----|-----|------|----------|
-| minimal | 1 | 512Mi | 5Gi | DNS, agents |
-| dev | 1 | 2Gi | 10Gi | Development |
-| test | 2 | 4Gi | 20Gi | CI/CD |
-| web | 4 | 8Gi | 40Gi | Web servers |
-| prod | 4 | 8Gi | 40Gi | Production |
-| database | 6 | 16Gi | 200Gi | Databases |
-| microservice | 2 | 4Gi | 20Gi | Containers |
-| high-perf | 8 | 16Gi | 100Gi | ML, big data |
-
----
-
-## 🏗️ Available Blueprints
-
-| Blueprint | VMs | Description |
-|-----------|-----|-------------|
-| lamp | 2 | MySQL + Apache |
-| k8s-cluster | 3 | K8s control + workers |
-| 3tier | 3 | Web + App + DB |
-| cicd | 3 | GitLab + Jenkins + Registry |
-| dev-stack | 3 | DB + Cache + Workspace |
-
----
-
-## 🐧 OS Templates (44 total)
-
-### Linux
-- **Ubuntu**: 18.04, 20.04, 22.04, 24.04, latest
-- **Fedora**: 38, 39, 40, latest
-- **CentOS**: stream9, 7, latest
-- **Debian**: 11, 12, latest
-- **RHEL**: 8, 9, latest
-- **AlmaLinux**: 8, 9, latest
-- **Rocky**: 8, 9, latest
-- **OpenSUSE**: leap, tumbleweed, latest
-- **Alpine**: 3.18, latest
-- **Arch**: latest
-- **Oracle**: 8, 9, latest
-
-### BSD
-- **FreeBSD**: 13, 14, latest
-
-### Container
-- **Flatcar**: stable
-- **Talos**: latest
-
-### Windows
-- 2k19, 2k22, 10, 11, latest
-
----
-
-## 🎨 Status Symbols
-
-- ● Green = Running
-- ◐ Yellow = Pending/Starting
-- ○ Gray = Stopped
-- ✗ Red = Failed
-- ⟳ Blue = Restarting
-- ⏸ Yellow = Paused
-
----
-
-## 💡 Quick Examples
-
-### Create Development VM
-```bash
-vmrogue create dev-vm --template ubuntu --profile dev
-vmrogue start dev-vm
-```
-
-### Create Production Database
-```bash
-vmrogue recommend database
-vmrogue create prod-db --template almalinux --profile database
-vmrogue health prod-db
-vmrogue start prod-db
-```
-
-### Deploy LAMP Stack
-```bash
-vmrogue blueprint lamp
-vmrogue deploy lamp --prefix myapp --start
+vmrogue doctor
+vmrogue create my-vm --template ubuntu-22.04 --cpus 4 --memory 8Gi
+vmrogue create my-vm --from-file examples/basic-vm.yaml --dry-run
 vmrogue list
+vmrogue ls -A
+vmrogue get my-vm -o yaml
+vmrogue status my-vm --watch
+vmrogue start my-vm
+vmrogue stop my-vm
+vmrogue restart my-vm
+vmrogue pause my-vm
+vmrogue unpause my-vm
+vmrogue resize my-vm --cpus 8 --memory 16Gi
+vmrogue clone source-vm cloned-vm --start
+vmrogue delete my-vm --yes
 ```
 
-### Deploy Kubernetes Cluster
+## Templates, Profiles, and Blueprints
+
 ```bash
-vmrogue blueprint k8s-cluster
-vmrogue deploy k8s-cluster --prefix prod --start
+vmrogue templates
+vmrogue template ubuntu-22.04
+
+vmrogue profiles
+vmrogue profiles --details
+vmrogue profile database
+vmrogue recommend database --alternatives
+
+vmrogue blueprints
+vmrogue blueprints --tag web --details
+vmrogue blueprint lamp
+vmrogue deploy lamp --prefix prod --dry-run
+vmrogue deploy lamp --prefix prod --start
 ```
 
-### Check VM Health
+## Snapshots and Backup
+
+```bash
+vmrogue snapshot-create my-vm --name backup-20260417
+vmrogue snapshot-list
+vmrogue snapshot-list my-vm
+vmrogue snapshot-get backup-20260417
+vmrogue snapshot-restore backup-20260417 --target restored-vm --start
+vmrogue snapshot-delete backup-20260417 --yes
+
+vmrogue backup-create my-vm --name nightly-001
+vmrogue backup-list
+vmrogue backup-get nightly-001
+vmrogue backup-verify nightly-001 --verification-type full
+vmrogue backup-restore nightly-001 --target restored-vm --start
+vmrogue backup-delete nightly-001 --yes
+```
+
+## Migration, Disk, and Network
+
+```bash
+vmrogue migrate my-vm --plan
+vmrogue migration-status my-vm --watch
+vmrogue migration-list -A
+vmrogue ha-config my-vm --enable --priority critical --eviction-strategy live-migrate
+vmrogue evacuate-node worker-01 --plan
+
+vmrogue disk-expand my-vm rootdisk 100Gi --plan
+vmrogue disk-health my-vm --detailed
+vmrogue disk-script --filesystem lvm --device /dev/vda
+vmrogue disk-usage
+
+vmrogue network-list my-vm
+vmrogue network-get my-vm eth0
+vmrogue network-bandwidth my-vm --watch
+vmrogue network-traffic my-vm --period 1h
+vmrogue network-policies -A
+```
+
+## Security, Cost, and Observability
+
 ```bash
 vmrogue health my-vm --detailed
+vmrogue security-scan my-vm --scan-type standard
+vmrogue security-assess my-vm
+vmrogue security-harden my-vm --profile cis --verify-only
+vmrogue compliance-check my-vm --framework cis
+vmrogue audit-list my-vm
+
+vmrogue cost-analyze --period 30d
+vmrogue cost-summary --group-by namespace
+vmrogue cost-report --report-type monthly --format json
+vmrogue budget-list
+vmrogue budget-create team-a --amount 500 --period monthly --scope namespace:production
+
+vmrogue logs-query --level error --search timeout
+vmrogue metrics-collect my-vm
+vmrogue alerts-list
+vmrogue insights-generate my-vm
+vmrogue recommendations --category cost --with-savings
+vmrogue trends-analyze cpu_usage --window 24
 ```
 
-### Export VMs for GitOps
+## API, Dashboard, and TUI
+
 ```bash
-vmrogue gitops-export --namespace default --output gitops/
+export VMROGUE_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
+
+vmrogue api-serve --host 0.0.0.0 --port 5151
+vmrogue api-status
+vmrogue api-routes
+vmrogue api-spec --format yaml --output openapi.yaml
+
+vmrogue api-key-list
+vmrogue api-key-create dev --permissions read,write
+vmrogue webhook-list
+
+vmrogue tui
+vmrogue tui --basic
+vmrogue tui --no-splash --theme dark
 ```
 
----
+Dashboard URL after `api-serve`:
 
-## 🔧 Configuration
+```text
+http://localhost:5151/dashboard
+```
 
-Theme config: `~/.config/vmrogue/tui.toml`
+## GitOps, Import, and Cluster Views
 
-Environment variables:
 ```bash
-export VMROGUE_NAMESPACE=default
-export KUBECONFIG=~/.kube/config
-export VMROGUE_API_KEYS="admin:key,write:devkey,readonly:viewkey"
-# Or legacy single key:
-export VMROGUE_API_KEY=your-key
+vmrogue gitops-export --directory gitops/
+vmrogue gitops-diff --directory gitops/
+vmrogue gitops-status
+
+vmrogue import examples/web-server.kubevirt.yaml --dry-run
+vmrogue import examples/web-server.kubevirt.yaml --start
+
+vmrogue clusters-list
+vmrogue clusters-discover
+vmrogue events --limit 25
+vmrogue nodes
+vmrogue pods
+vmrogue capacity --detailed
+vmrogue placement my-vm --strategy leastloaded
+vmrogue list-json
 ```
 
----
+## Developer Helpers
 
-## 📊 Statistics
+```bash
+vmrogue commands
+vmrogue info --detailed
+vmrogue config-show
+vmrogue config-init
+vmrogue completions zsh
+vmrogue generate my-vm --template fedora-40 --kubevirt
+vmrogue validate examples/basic-vm.yaml
+vmrogue wizard my-vm
+vmrogue batch some-batch.yaml --dry-run
+```
 
-- **2,433 tests** (all passing)
-- **49 API handlers** all returning real data (zero stubs)
-- **31 TUI views** all rendering live data
-- **44 OS templates**, **8 profiles**, **5 blueprints**
-- **15 dashboard pages** (including Security, Monitoring, Workloads)
-- **All modules promoted** (zero experimental feature gates)
+## Notes
 
----
-
-## 📚 More Info
-
-- `INNOVATIVE_FEATURES.md` - Complete feature guide
-- `OS_TEMPLATES.md` - All OS templates
-- `THEME_DESIGN.md` - Theme documentation
-- `README.md` - Main documentation
+- `vmrogue list` has the visible alias `vmrogue ls`.
+- `vmrogue delete` has the visible alias `vmrogue rm`.
+- `vmrogue generate` has the visible alias `vmrogue gen`.
+- `vmrogue status` has the visible alias `vmrogue stat`.
+- `vmrogue wizard` has the visible alias `vmrogue wiz`.
