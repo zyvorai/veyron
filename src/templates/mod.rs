@@ -97,10 +97,9 @@ impl TemplateManager {
         templates.insert("ubuntu-18.04".to_string(), ubuntu_1804_template());
 
         // Fedora variants
-        templates.insert("fedora".to_string(), fedora_41_template());
-        templates.insert("fedora-41".to_string(), fedora_41_template());
-        templates.insert("fedora-40".to_string(), fedora_40_template());
-        templates.insert("fedora-39".to_string(), fedora_39_template());
+        templates.insert("fedora".to_string(), fedora_43_template());
+        templates.insert("fedora-43".to_string(), fedora_43_template());
+        templates.insert("fedora-42".to_string(), fedora_42_template());
 
         // CentOS variants
         templates.insert("centos".to_string(), centos_stream9_template());
@@ -314,48 +313,32 @@ fn ubuntu_1804_template() -> VMConfig {
 // Fedora Templates
 // ============================================================================
 
-fn fedora_41_template() -> VMConfig {
+fn fedora_43_template() -> VMConfig {
     VMConfigBuilder::new("fedora-vm")
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:41", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:43", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "fedora")
-        .label("os.version", "41")
+        .label("os.version", "43")
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
         .build()
 }
 
-fn fedora_40_template() -> VMConfig {
+fn fedora_42_template() -> VMConfig {
     VMConfigBuilder::new("fedora-vm")
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:40", 1)
+        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:42", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "fedora")
-        .label("os.version", "40")
-        .cloud_init(default_cloud_init())
-        .enable_rng()
-        .clock(linux_clock())
-        .build()
-}
-
-fn fedora_39_template() -> VMConfig {
-    VMConfigBuilder::new("fedora-vm")
-        .namespace("default")
-        .cpu(2, 1, 1)
-        .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:39", 1)
-        .add_blank_disk("datadisk", "20Gi", 2)
-        .add_pod_network("default")
-        .label("os", "fedora")
-        .label("os.version", "39")
+        .label("os.version", "42")
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())

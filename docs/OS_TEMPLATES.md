@@ -22,12 +22,11 @@ ubuntu-18.04    # Bionic Beaver (2 CPU, 4GB RAM)
 ```
 **Credentials**: `ubuntu` / `ubuntu`
 
-### Fedora (4 templates)
+### Fedora (2 templates)
 ```bash
-fedora          # Latest (41) - Cutting edge
-fedora-41       # Latest stable (2 CPU, 4GB RAM)
-fedora-40       # Previous release (2 CPU, 4GB RAM)
-fedora-39       # Older stable (2 CPU, 4GB RAM)
+fedora          # Latest (43) - Cutting edge
+fedora-43       # Latest stable (2 CPU, 4GB RAM)
+fedora-42       # Previous release (2 CPU, 4GB RAM)
 ```
 **Credentials**: `vmrogue` / `vmrogue`
 
@@ -148,7 +147,7 @@ talos           # Latest - Kubernetes-native (2 CPU, 4GB RAM)
 vmrogue create my-ubuntu --template ubuntu-24.04 --cpus 4 --memory 8Gi
 
 # Fedora 41 (latest)
-vmrogue create my-fedora --template fedora-41 --cpus 2 --memory 4Gi
+vmrogue create my-fedora --template fedora-43 --cpus 2 --memory 4Gi
 
 # AlmaLinux (RHEL alternative)
 vmrogue create my-alma --template almalinux --cpus 4 --memory 16Gi
@@ -212,7 +211,7 @@ vmrogue templates
 | alpine | 1 | 512Mi | 10Gi | alpine/alpine | Microservices, minimal |
 | almalinux | 2 | 4Gi | 20Gi | vmrogue/vmrogue | RHEL alternative, free |
 | rocky | 2 | 4Gi | 20Gi | vmrogue/vmrogue | RHEL alternative, enterprise |
-| fedora-41 | 2 | 4Gi | 20Gi | vmrogue/vmrogue | Latest features |
+| fedora-43 | 2 | 4Gi | 20Gi | vmrogue/vmrogue | Latest features |
 | arch | 2 | 2Gi | 20Gi | vmrogue/vmrogue | Bleeding edge |
 | opensuse-leap | 2 | 4Gi | 20Gi | vmrogue/vmrogue | Enterprise stability |
 | freebsd-14 | 2 | 2Gi | 20Gi | - | BSD Unix, ZFS |
@@ -255,7 +254,7 @@ oracle          # Oracle ecosystem
 
 ### For Development:
 ```bash
-fedora-41       # Latest packages
+fedora-43       # Latest packages
 arch            # Bleeding edge
 ubuntu-24.04    # Modern tools
 ```
@@ -285,7 +284,7 @@ windows-2019    # Stable server
 Most templates use **containerdisks** from `quay.io/containerdisks/`:
 
 - `ubuntu:22.04`, `ubuntu:20.04`, etc.
-- `fedora:41`, `fedora:40`, etc.
+- `fedora:43`, `fedora:42`, etc.
 - `centos-stream:9`, `centos-stream:8`
 - `debian:12`, `debian:11`
 - `almalinux:9`, `almalinux:8`
