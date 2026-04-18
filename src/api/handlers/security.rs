@@ -43,29 +43,43 @@ async fn get_security_posture(State(state): State<SharedState>) -> Json<Security
     let s = state.read().await;
     let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
 
-    let critical = 0u32;
+    let mut critical = 0u32;
     let mut high = 0u32;
     let mut medium = 0u32;
     let mut low = 0u32;
 
     for vm in &vms {
-        let domain = &vm.spec.template.spec.domain;
+        let vmi_spec = &vm.spec.template.spec;
+        let domain = &vmi_spec.domain;
         let devices = domain.devices.as_ref();
 
-        // Check for common security issues
-        let has_rng = devices.and_then(|d| d.rng.as_ref()).is_some();
-        let has_tpm = devices.and_then(|d| d.tpm.as_ref()).is_some();
+        // Critical: privileged access via host networking, hostPID, or hostIPC
+        let uses_host_network = vmi_spec
+            .networks
+            .as_ref()
+            .map(|nets| nets.iter().any(|n| n.name == "host"))
+            .unwrap_or(false);
+        if uses_host_network {
+            critical += 1;
+        }
+
+        // High: no resource limits (resource exhaustion risk)
         let has_resources = domain.resources.requests.as_ref().map(|m| !m.is_empty()).unwrap_or(false)
             || domain.resources.limits.as_ref().map(|m| !m.is_empty()).unwrap_or(false);
-
-        if !has_rng {
-            low += 1;
+        if !has_resources {
+            high += 1;
         }
+
+        // Medium: no TPM device
+        let has_tpm = devices.and_then(|d| d.tpm.as_ref()).is_some();
         if !has_tpm {
             medium += 1;
         }
-        if !has_resources {
-            high += 1;
+
+        // Low: no RNG device
+        let has_rng = devices.and_then(|d| d.rng.as_ref()).is_some();
+        if !has_rng {
+            low += 1;
         }
     }
 
@@ -106,8 +120,29 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
 
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
-        let domain = &vm.spec.template.spec.domain;
+        let vmi_spec = &vm.spec.template.spec;
+        let domain = &vmi_spec.domain;
         let devices = domain.devices.as_ref();
+
+        // Critical: host network access
+        let uses_host_network = vmi_spec
+            .networks
+            .as_ref()
+            .map(|nets| nets.iter().any(|n| n.name == "host"))
+            .unwrap_or(false);
+        if uses_host_network {
+            id_counter += 1;
+            findings.push(SecurityFinding {
+                id: format!("SEC-{:04}", id_counter),
+                severity: "Critical".to_string(),
+                category: "Network".to_string(),
+                title: "Host network access enabled".to_string(),
+                description: format!("VM '{}' uses the host network, bypassing network isolation", vm_name),
+                resource: format!("{}/{}", s.namespace, vm_name),
+                recommendation: "Remove host network binding and use a dedicated VM network interface".to_string(),
+                detected_at: now.clone(),
+            });
+        }
 
         if devices.and_then(|d| d.rng.as_ref()).is_none() {
             id_counter += 1;

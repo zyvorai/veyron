@@ -61,6 +61,8 @@ pub struct CreateBudgetRequest {
 const CPU_RATE: f64 = 0.048;
 const MEMORY_RATE: f64 = 0.006;
 const STORAGE_RATE: f64 = 0.0001;
+/// Flat network egress cost per VM per month (GiB assumed egress × $/GiB)
+const NETWORK_RATE_PER_VM: f64 = 0.50;
 const HOURS_PER_MONTH: f64 = 730.0;
 
 #[cfg(feature = "web")]
@@ -104,7 +106,9 @@ async fn list_costs(State(state): State<SharedState>) -> Json<Vec<CostEntry>> {
                 .map(|v| parse_memory_gib(v.as_str()))
                 .unwrap_or(20.0); // default 20Gi if no storage in requests
             let storage_cost = total_disk_gib * STORAGE_RATE * HOURS_PER_MONTH;
-            let total_cost = cpu_cost + memory_cost + storage_cost;
+            // Flat per-VM network egress estimate; refined when live metrics are available
+            let network_cost = NETWORK_RATE_PER_VM;
+            let total_cost = cpu_cost + memory_cost + storage_cost + network_cost;
 
             CostEntry {
                 vm_name: name,
@@ -112,7 +116,7 @@ async fn list_costs(State(state): State<SharedState>) -> Json<Vec<CostEntry>> {
                 cpu_cost: round2(cpu_cost),
                 memory_cost: round2(memory_cost),
                 storage_cost: round2(storage_cost),
-                network_cost: 0.0,
+                network_cost: round2(network_cost),
                 total_cost: round2(total_cost),
                 currency: "USD".to_string(),
                 period: "monthly".to_string(),
@@ -132,18 +136,21 @@ async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary>
     let mut cpu_total = 0.0;
     let mut mem_total = 0.0;
     let mut storage_total = 0.0;
+    let mut network_total = 0.0;
 
     for c in &costs {
         *by_namespace.entry(c.namespace.clone()).or_default() += c.total_cost;
         cpu_total += c.cpu_cost;
         mem_total += c.memory_cost;
         storage_total += c.storage_cost;
+        network_total += c.network_cost;
     }
 
     let mut by_resource_type = std::collections::HashMap::new();
     by_resource_type.insert("cpu".to_string(), round2(cpu_total));
     by_resource_type.insert("memory".to_string(), round2(mem_total));
     by_resource_type.insert("storage".to_string(), round2(storage_total));
+    by_resource_type.insert("network".to_string(), round2(network_total));
 
     Json(CostSummary {
         total_cost: round2(total),

@@ -67,13 +67,59 @@ async fn get_cilium_status(State(state): State<SharedState>) -> Json<CiliumStatu
         }
     }
 
+    // Detect Hubble via hubble-relay Deployment
+    let mut hubble_enabled = false;
+    // Detect ClusterMesh via clustermesh-apiserver Deployment
+    let mut cluster_mesh_enabled = false;
+    {
+        use k8s_openapi::api::apps::v1::Deployment;
+        let dep_api: kube::api::Api<Deployment> =
+            kube::api::Api::namespaced(client.clone(), cilium_ns);
+        if let Ok(deps) = dep_api.list(&kube::api::ListParams::default()).await {
+            for dep in &deps.items {
+                let name = dep.metadata.name.as_deref().unwrap_or("");
+                if name.contains("hubble-relay") || name.contains("hubble-ui") {
+                    hubble_enabled = true;
+                }
+                if name.contains("clustermesh-apiserver") || name.contains("clustermesh") {
+                    cluster_mesh_enabled = true;
+                }
+            }
+        }
+    }
+
+    // Detect encryption via Cilium ConfigMap key or WireGuard DaemonSet
+    let mut encryption_enabled = false;
+    {
+        use k8s_openapi::api::core::v1::ConfigMap;
+        let cm_api: kube::api::Api<ConfigMap> =
+            kube::api::Api::namespaced(client.clone(), cilium_ns);
+        if let Ok(cms) = cm_api.list(&kube::api::ListParams::default()).await {
+            for cm in &cms.items {
+                let name = cm.metadata.name.as_deref().unwrap_or("");
+                if name == "cilium-config" {
+                    if let Some(data) = cm.data.as_ref() {
+                        let ipsec = data.get("enable-ipsec").map(|v| v == "true").unwrap_or(false);
+                        let wg = data
+                            .get("enable-wireguard")
+                            .map(|v| v == "true")
+                            .unwrap_or(false);
+                        if ipsec || wg {
+                            encryption_enabled = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Json(CiliumStatus {
         version,
         agent_count,
         healthy_agents,
-        cluster_mesh_enabled: false,
-        hubble_enabled: false,
-        encryption_enabled: false,
+        cluster_mesh_enabled,
+        hubble_enabled,
+        encryption_enabled,
     })
 }
 

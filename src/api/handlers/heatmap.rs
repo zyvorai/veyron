@@ -81,15 +81,33 @@ async fn get_resource_heatmap(State(state): State<SharedState>) -> Json<Resource
             let mem_util = ((mem_cap - mem_alloc) / mem_cap * 100.0).max(0.0);
             let vm_count = vmi_per_node.get(&name).copied().unwrap_or(0);
 
-            // Heat score: weighted average of utilization metrics
-            let heat_score = cpu_util * 0.4 + mem_util * 0.4 + (vm_count as f64 * 5.0).min(20.0);
+            // Disk utilization from ephemeral storage capacity vs allocatable
+            let disk_cap = capacity
+                .and_then(|c| c.get("ephemeral-storage"))
+                .map(|v| crate::utils::parse_memory_bytes(&v.0))
+                .unwrap_or(0) as f64;
+            let disk_alloc = allocatable
+                .and_then(|a| a.get("ephemeral-storage"))
+                .map(|v| crate::utils::parse_memory_bytes(&v.0))
+                .unwrap_or(disk_cap as u64) as f64;
+            let disk_util = if disk_cap > 0.0 {
+                ((disk_cap - disk_alloc) / disk_cap * 100.0).max(0.0)
+            } else {
+                0.0
+            };
+
+            // Network utilization estimated from VM density (each VM ≈ 2% of node bandwidth)
+            let network_util = (vm_count as f64 * 2.0).min(100.0);
+
+            // Heat score: weighted average of all utilization metrics
+            let heat_score = cpu_util * 0.35 + mem_util * 0.35 + disk_util * 0.15 + network_util * 0.15;
 
             NodeHeatmapEntry {
                 node_name: name,
                 cpu_utilization: (cpu_util * 10.0).round() / 10.0,
                 memory_utilization: (mem_util * 10.0).round() / 10.0,
-                disk_utilization: 0.0,
-                network_utilization: 0.0,
+                disk_utilization: (disk_util * 10.0).round() / 10.0,
+                network_utilization: (network_util * 10.0).round() / 10.0,
                 vm_count,
                 heat_score: (heat_score * 10.0).round() / 10.0,
             }

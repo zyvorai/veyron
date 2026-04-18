@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{Json, Router, extract::{Query, State}, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -28,6 +28,11 @@ pub struct CreateWebhookRequest {
     pub secret: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct WebhookQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -37,12 +42,16 @@ pub fn router(state: SharedState) -> Router {
 
 /// List configured webhooks from ConfigMaps labeled `vmrogue.io/type=webhook`.
 #[cfg(feature = "web")]
-async fn list_webhooks(State(state): State<SharedState>) -> Json<Vec<WebhookResponse>> {
+async fn list_webhooks(
+    State(state): State<SharedState>,
+    Query(query): Query<WebhookQuery>,
+) -> Json<Vec<WebhookResponse>> {
     use k8s_openapi::api::core::v1::ConfigMap;
 
     let s = state.read().await;
+    let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+        kube::api::Api::namespaced(s.client().client(), &namespace);
     let params = kube::api::ListParams::default().labels("vmrogue.io/type=webhook");
 
     let cms = match api.list(&params).await {
@@ -86,6 +95,7 @@ async fn list_webhooks(State(state): State<SharedState>) -> Json<Vec<WebhookResp
 #[cfg(feature = "web")]
 async fn create_webhook(
     State(state): State<SharedState>,
+    Query(query): Query<WebhookQuery>,
     Json(req): Json<CreateWebhookRequest>,
 ) -> (axum::http::StatusCode, Json<serde_json::Value>) {
     use k8s_openapi::api::core::v1::ConfigMap;
@@ -102,8 +112,9 @@ async fn create_webhook(
     }
 
     let s = state.read().await;
+    let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+        kube::api::Api::namespaced(s.client().client(), &namespace);
 
     let mut data = std::collections::BTreeMap::new();
     data.insert("name".to_string(), req.name.clone());
@@ -122,7 +133,7 @@ async fn create_webhook(
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
             name: Some(cm_name),
-            namespace: Some(s.namespace.clone()),
+            namespace: Some(namespace),
             labels: Some(
                 [("vmrogue.io/type".to_string(), "webhook".to_string())]
                     .into_iter()

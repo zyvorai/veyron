@@ -20,6 +20,22 @@ fn test_template_to_kubevirt_conversion() {
 }
 
 #[test]
+fn test_windows_11_template_uses_lab_sized_memory_default() {
+    let template = TEMPLATES
+        .get("windows-11")
+        .expect("windows-11 template exists");
+
+    assert_eq!(template.memory.size, "4Gi");
+    assert!(template.enable_tpm);
+
+    let vm = vm_config_to_kubevirt(&template).unwrap();
+    assert_eq!(
+        vm.spec.template.spec.domain.memory.as_ref().unwrap().guest,
+        Some("4Gi".to_string())
+    );
+}
+
+#[test]
 fn test_complex_vm_build() {
     let config = VMConfigBuilder::new("complex-vm")
         .namespace("production")

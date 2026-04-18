@@ -416,6 +416,14 @@ impl KubeClient {
         Ok(event_list.items)
     }
 
+    /// List events across all namespaces
+    pub async fn list_all_events(&self) -> Result<Vec<k8s_openapi::api::core::v1::Event>> {
+        let events: Api<k8s_openapi::api::core::v1::Event> = Api::all(self.client.clone());
+        let lp = ListParams::default();
+        let event_list = events.list(&lp).await?;
+        Ok(event_list.items)
+    }
+
     /// List all namespaces
     pub async fn list_namespaces(
         &self,

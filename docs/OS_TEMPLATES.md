@@ -113,10 +113,10 @@ arch            # Rolling release (2 CPU, 2GB RAM)
 windows         # Latest (Server 2022)
 windows-2022    # Windows Server 2022 (4 CPU, 8GB RAM, 60GB disk)
 windows-2019    # Windows Server 2019 (4 CPU, 8GB RAM, 60GB disk)
-windows-11      # Windows 11 (4 CPU dual socket, 8GB RAM, 80GB disk)
+windows-11      # Windows 11 (4 CPU dual socket, 4GB RAM, 80GB disk)
 windows-10      # Windows 10 (4 CPU, 8GB RAM, 60GB disk)
 ```
-**Note**: Requires Windows license and installation media
+**Note**: Requires Windows license and installation media. The built-in templates attach the `virtio-win` driver disk, but they do not bundle a Windows installer ISO or preinstalled OS image.
 
 ### FreeBSD (3 templates) 🆕
 ```bash
@@ -178,7 +178,7 @@ vmrogue create k8s-node --template talos --cpus 4 --memory 8Gi
 vmrogue create win-server --template windows-2022 --cpus 8 --memory 16Gi
 
 # Windows 11
-vmrogue create win11-vm --template windows-11 --cpus 4 --memory 16Gi
+vmrogue create win11-vm --template windows-11 --cpus 4 --memory 8Gi
 ```
 
 ### View Template Details:
@@ -219,7 +219,7 @@ vmrogue templates
 | flatcar | 2 | 2Gi | 20Gi | vmrogue/vmrogue | Containers |
 | talos | 2 | 4Gi | 20Gi | - | Kubernetes nodes |
 | windows-2022 | 4 | 8Gi | 60Gi | - | Windows Server |
-| windows-11 | 4 | 8Gi | 80Gi | - | Windows Desktop |
+| windows-11 | 4 | 4Gi | 80Gi | - | Windows Desktop |
 
 ## 🎯 Use Case Guide
 

@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{Json, Router, extract::{Query, State}, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -26,6 +26,11 @@ pub struct IngressRule {
     pub service_port: u16,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct IngressQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -34,12 +39,19 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_ingress(State(state): State<SharedState>) -> Json<Vec<IngressResponse>> {
+async fn list_ingress(
+    State(state): State<SharedState>,
+    Query(query): Query<IngressQuery>,
+) -> Json<Vec<IngressResponse>> {
     use k8s_openapi::api::networking::v1::Ingress;
 
     let s = state.read().await;
-    let api: kube::api::Api<Ingress> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let client = s.client().client();
+    let api: kube::api::Api<Ingress> = match query.namespace.as_deref() {
+        Some("all") => kube::api::Api::all(client),
+        Some(ns) => kube::api::Api::namespaced(client, ns),
+        None => kube::api::Api::namespaced(client, &s.namespace),
+    };
     let ingresses = match api.list(&kube::api::ListParams::default()).await {
         Ok(list) => list,
         Err(_) => return Json(vec![]),
