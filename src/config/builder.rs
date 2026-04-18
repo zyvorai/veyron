@@ -113,6 +113,27 @@ impl VMConfigBuilder {
         self
     }
 
+    /// Add an empty (blank) disk on the SATA bus — required for Windows VMs (no VirtIO storage driver).
+    pub fn add_blank_disk_sata(
+        mut self,
+        name: impl Into<String>,
+        size: impl Into<String>,
+        boot_order: u32,
+    ) -> Self {
+        self.config.disks.push(DiskConfig {
+            name: name.into(),
+            size: size.into(),
+            storage_class: None,
+            boot_order,
+            source: DiskSource::Blank,
+            device_type: DiskDeviceType::default(),
+            bus: Some("sata".to_string()),
+            cache: None,
+            io: None,
+        });
+        self
+    }
+
     /// Add a container disk from an OCI image (e.g., `quay.io/containerdisks/fedora:39`).
     pub fn add_container_disk(
         mut self,
@@ -148,6 +169,18 @@ impl VMConfigBuilder {
             name: name.into(),
             network: "default".to_string(),
             model: "virtio".to_string(),
+            network_type: NetworkType::Pod,
+            mac_address: None,
+        });
+        self
+    }
+
+    /// Add a pod network interface using e1000e — required for Windows VMs without VirtIO NIC driver.
+    pub fn add_windows_network(mut self, name: impl Into<String>) -> Self {
+        self.config.interfaces.push(InterfaceConfig {
+            name: name.into(),
+            network: "default".to_string(),
+            model: "e1000e".to_string(),
             network_type: NetworkType::Pod,
             mac_address: None,
         });
