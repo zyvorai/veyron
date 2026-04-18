@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{Json, Router, extract::{Query, State}, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -18,6 +18,11 @@ pub struct SloObjective {
     pub status: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct SloQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -27,9 +32,17 @@ pub fn router(state: SharedState) -> Router {
 
 /// Derive SLO status from VM availability in the namespace.
 #[cfg(feature = "web")]
-async fn list_slo_objectives(State(state): State<SharedState>) -> Json<Vec<SloObjective>> {
+async fn list_slo_objectives(
+    State(state): State<SharedState>,
+    Query(query): Query<SloQuery>,
+) -> Json<Vec<SloObjective>> {
     let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
+    let vms = if namespace == "all" {
+        s.client().list_all_vms().await.unwrap_or_default()
+    } else {
+        s.client().list_vms(&namespace).await.unwrap_or_default()
+    };
 
     if vms.is_empty() {
         return Json(vec![]);
@@ -66,7 +79,7 @@ async fn list_slo_objectives(State(state): State<SharedState>) -> Json<Vec<SloOb
     };
 
     Json(vec![SloObjective {
-        name: format!("{}-vm-availability", s.namespace),
+        name: format!("{}-vm-availability", namespace),
         service: "kubevirt-vms".to_string(),
         sli_type: "availability".to_string(),
         target,

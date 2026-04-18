@@ -42,23 +42,75 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<Storag
     let s = state.read().await;
     let storage_classes = s.client().list_storage_classes().await.unwrap_or_default();
 
+    // Aggregate PVC capacities per StorageClass across all namespaces
+    let all_pvcs = {
+        use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+        let api: kube::api::Api<PersistentVolumeClaim> =
+            kube::api::Api::all(s.client().client());
+        api.list(&kube::api::ListParams::default())
+            .await
+            .map(|l| l.items)
+            .unwrap_or_default()
+    };
+
+    // Build map: storage_class_name → (total_bytes, volume_count)
+    let mut sc_stats: std::collections::HashMap<String, (u64, u32)> =
+        std::collections::HashMap::new();
+    for pvc in &all_pvcs {
+        let sc = pvc
+            .spec
+            .as_ref()
+            .and_then(|s| s.storage_class_name.as_deref())
+            .unwrap_or("")
+            .to_string();
+        let cap = pvc
+            .status
+            .as_ref()
+            .and_then(|s| s.capacity.as_ref())
+            .and_then(|c| c.get("storage"))
+            .map(|q| crate::utils::parse_memory_bytes(&q.0))
+            .unwrap_or(0);
+        let entry = sc_stats.entry(sc).or_insert((0, 0));
+        entry.0 += cap;
+        entry.1 += 1;
+    }
+
     let results: Vec<StoragePool> = storage_classes
         .iter()
         .map(|sc| {
             let meta = &sc.metadata;
+            let sc_name = meta.name.clone().unwrap_or_default();
+            let (total_bytes, volume_count) =
+                sc_stats.get(&sc_name).copied().unwrap_or((0, 0));
+            let total_str = format_bytes(total_bytes);
             StoragePool {
-                name: meta.name.clone().unwrap_or_default(),
-                storage_class: meta.name.clone().unwrap_or_default(),
+                name: sc_name.clone(),
+                storage_class: sc_name,
                 provisioner: sc.provisioner.clone(),
-                total_capacity: String::new(),
-                used_capacity: String::new(),
-                available_capacity: String::new(),
-                volume_count: 0,
+                total_capacity: total_str.clone(),
+                used_capacity: total_str,  // PVC capacity = allocated/used
+                available_capacity: "N/A".to_string(), // requires storage-level API
+                volume_count,
             }
         })
         .collect();
 
     Json(results)
+}
+
+fn format_bytes(bytes: u64) -> String {
+    if bytes == 0 {
+        return "0".to_string();
+    }
+    if bytes >= 1 << 40 {
+        format!("{:.1} TiB", bytes as f64 / (1u64 << 40) as f64)
+    } else if bytes >= 1 << 30 {
+        format!("{:.1} GiB", bytes as f64 / (1u64 << 30) as f64)
+    } else if bytes >= 1 << 20 {
+        format!("{:.0} MiB", bytes as f64 / (1u64 << 20) as f64)
+    } else {
+        format!("{} KiB", bytes / 1024)
+    }
 }
 
 #[cfg(feature = "web")]

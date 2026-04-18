@@ -774,6 +774,30 @@ body>*{position:relative;z-index:1}
       <button class="nav-link" data-page="security" onclick="navigate('security')">Security</button>
       <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
       <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
+      <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts</button>
+      <button class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
+      <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
+      <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
+      <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
+      <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
+      <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
+      <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
+      <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
+      <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
+      <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
+      <button class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
+      <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
+      <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
+      <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
+      <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
+      <button class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
+      <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
+      <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
+      <button class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
+      <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
+      <button class="nav-link" data-page="observability" onclick="navigate('observability')">Observability</button>
+      <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
+      <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
     </div>
   </div>
   <div class="navbar-right">
@@ -985,6 +1009,211 @@ body>*{position:relative;z-index:1}
 </div>
 </div>
 
+<div class="page" id="page-alerts">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Active Alerts</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-audit">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div></div>
+  <div id="audit-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Audit Trail</span></div>
+  <table class="table"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Type</th><th>Resource</th><th>Outcome</th></tr></thead><tbody id="audit-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-notifications">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Notifications</span></div>
+  <table class="table"><thead><tr><th>Title</th><th>Severity</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifications-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-helm">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Helm Releases</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-operators">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Operators</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-custom-resources">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Custom Resources</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-slo">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>SLO</h1><p>Availability objectives and error budgets</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">SLO Objectives</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Service</th><th>SLI</th><th>Target</th><th>Current</th><th>Error Budget</th><th>Status</th></tr></thead><tbody id="slo-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-chaos">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-rbac">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div></div>
+  <div id="rbac-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Roles</span></div>
+    <table class="table"><thead><tr><th>Name</th><th>Scope</th><th>Rules</th><th>Resources</th></tr></thead><tbody id="rbac-roles-body"></tbody></table></div>
+    <div class="card"><div class="card-header"><span class="card-title">Bindings</span></div>
+    <table class="table"><thead><tr><th>Name</th><th>Role</th><th>Subjects</th></tr></thead><tbody id="rbac-bindings-body"></tbody></table></div>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-quotas">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Resource Quotas</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>CPU Used / Limit</th><th>Memory Used / Limit</th><th>VMs</th></tr></thead><tbody id="quotas-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-ingress">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Ingress Resources</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-hpa">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-backups">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Backups</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-metrics">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div></div>
+  <div id="metrics-summary" class="grid-4"></div>
+</div>
+</div>
+
+<div class="page" id="page-topology">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div></div>
+  <div id="topology-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Topology Edges</span></div>
+  <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-dependencies">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div></div>
+  <div id="dependencies-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Dependency Edges</span></div>
+  <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-autoscaler">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-forecasting">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Predictions</span></div>
+  <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-gitops">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div></div>
+  <div id="gitops-summary" class="grid-4"></div>
+</div>
+</div>
+
+<div class="page" id="page-scheduling">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div></div>
+  <div id="scheduling-summary" class="grid-4"></div>
+</div>
+</div>
+
+<div class="page" id="page-cilium">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Cilium</h1><p>Cilium status and policy fallback view</p></div></div>
+  <div id="cilium-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-observability">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div></div>
+  <div id="observability-summary" class="grid-4"></div>
+</div>
+</div>
+
+<div class="page" id="page-performance">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Profiles</span></div>
+  <table class="table"><thead><tr><th>VM</th><th>CPU P95</th><th>Memory P95</th><th>Read IOPS</th><th>Write IOPS</th><th>Collected</th></tr></thead><tbody id="performance-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-webhooks">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Webhooks</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
+</div>
+</div>
+
 <!-- CRD CREATE MODAL -->
 <div class="modal-overlay" id="crd-create-modal" style="display:none">
   <div class="modal" style="max-width:700px">
@@ -1169,6 +1398,10 @@ function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
+  loadPageData(page);
+}
+
+function loadPageData(page) {
   if (page === 'snapshots') fetchSnapshots();
   if (page === 'events') fetchEvents(true);
   if (page === 'nodes') fetchNodes();
@@ -1182,6 +1415,30 @@ function navigate(page) {
   if (page === 'security') fetchSecurityPage();
   if (page === 'monitoring') fetchMonitoring();
   if (page === 'workloads') fetchWorkloads();
+  if (page === 'alerts') fetchAlerts();
+  if (page === 'audit') fetchAudit();
+  if (page === 'notifications') fetchNotifications();
+  if (page === 'helm') fetchHelm();
+  if (page === 'operators') fetchOperators();
+  if (page === 'custom-resources') fetchCustomResources();
+  if (page === 'slo') fetchSlo();
+  if (page === 'chaos') fetchChaos();
+  if (page === 'rbac') fetchRbac();
+  if (page === 'quotas') fetchQuotas();
+  if (page === 'ingress') fetchIngress();
+  if (page === 'hpa') fetchHpa();
+  if (page === 'backups') fetchBackups();
+  if (page === 'metrics') fetchMetrics();
+  if (page === 'topology') fetchTopology();
+  if (page === 'dependencies') fetchDependencies();
+  if (page === 'autoscaler') fetchAutoscaler();
+  if (page === 'forecasting') fetchForecasting();
+  if (page === 'gitops') fetchGitOps();
+  if (page === 'scheduling') fetchScheduling();
+  if (page === 'cilium') fetchCilium();
+  if (page === 'observability') fetchObservability();
+  if (page === 'performance') fetchPerformance();
+  if (page === 'webhooks') fetchWebhooks();
 }
 
 // Toast notifications
@@ -1982,7 +2239,7 @@ async function fetchSecurity(ns, name) {
 }
 
 // ── Namespace Selector ──
-let currentNamespace = localStorage.getItem('vmrogue_ns') || 'default';
+let currentNamespace = localStorage.getItem('vmrogue_ns') || 'all';
 
 async function fetchNamespaces() {
   try {
@@ -1990,7 +2247,8 @@ async function fetchNamespaces() {
     const j = await r.json();
     if (j.success && j.data) {
       const sel = document.getElementById('ns-selector');
-      sel.innerHTML = j.data.map(ns =>
+      const namespaces = ['all'].concat(j.data);
+      sel.innerHTML = namespaces.map(ns =>
         '<option value="' + esc(ns) + '"' + (ns === currentNamespace ? ' selected' : '') + '>' + esc(ns) + '</option>'
       ).join('');
     }
@@ -2001,10 +2259,24 @@ function setNamespace(ns) {
   currentNamespace = ns;
   localStorage.setItem('vmrogue_ns', ns);
   refresh();
+  loadPageData(currentPage);
 }
 
 function nsParam() {
-  return currentNamespace !== 'default' ? '?namespace=' + encodeURIComponent(currentNamespace) : '';
+  return '?namespace=' + encodeURIComponent(currentNamespace || 'all');
+}
+
+function fmtBytes(v) {
+  const n = Number(v || 0);
+  if (!Number.isFinite(n) || n <= 0) return '0 B';
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+  let value = n;
+  let idx = 0;
+  while (value >= 1024 && idx < units.length - 1) {
+    value /= 1024;
+    idx += 1;
+  }
+  return (value >= 10 || idx === 0 ? value.toFixed(0) : value.toFixed(1)) + ' ' + units[idx];
 }
 
 // ── Clone, Resize, Pause, Migrate ──
@@ -2371,6 +2643,9 @@ function refresh() {
   if (currentPage==='nodes') fetchNodes();
   if (currentPage==='pods') fetchPods();
   if (currentPage==='storage') fetchStorage();
+  if (!['dashboard', 'vms', 'events', 'snapshots', 'nodes', 'pods', 'storage'].includes(currentPage)) {
+    loadPageData(currentPage);
+  }
   document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
 }
 
@@ -2396,8 +2671,8 @@ window.addEventListener('load', async () => {
 async function fetchSecurityPage() {
   try {
     const [posture, findings] = await Promise.all([
-      apiFetch('api/v1/security/posture').then(r => r.json()),
-      apiFetch('api/v1/security/findings').then(r => r.json()),
+      apiFetch('/api/v1/security/posture' + nsParam()).then(r => r.json()),
+      apiFetch('/api/v1/security/findings' + nsParam()).then(r => r.json()),
     ]);
     const sum = document.getElementById('security-summary');
     if (sum) {
@@ -2423,8 +2698,8 @@ async function fetchSecurityPage() {
 async function fetchMonitoring() {
   try {
     const [status, recs] = await Promise.all([
-      apiFetch('api/v1/monitoring/status').then(r => r.json()),
-      apiFetch('api/v1/recommendations').then(r => r.json()),
+      apiFetch('/api/v1/monitoring/status' + nsParam()).then(r => r.json()),
+      apiFetch('/api/v1/recommendations' + nsParam()).then(r => r.json()),
     ]);
     const sum = document.getElementById('monitoring-status');
     if (sum) {
@@ -2448,7 +2723,7 @@ async function fetchMonitoring() {
 // Workloads page
 async function fetchWorkloads() {
   try {
-    const data = await apiFetch('api/v1/workloads').then(r => r.json());
+    const data = await apiFetch('/api/v1/workloads' + nsParam()).then(r => r.json());
     const tb = document.getElementById('workloads-body');
     if (tb) {
       tb.innerHTML = data.map(w => {
@@ -2458,6 +2733,329 @@ async function fetchWorkloads() {
       }).join('') || '<tr><td colspan="6" style="text-align:center">No workloads found</td></tr>';
     }
   } catch(e) { console.error('Workloads fetch error:', e); }
+}
+
+async function fetchAlerts() {
+  try {
+    const alerts = await apiFetch('/api/v1/alerts' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('alerts-body');
+    if (!tb) return;
+    tb.innerHTML = alerts.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.severity)}</td><td>${esc(a.status)}</td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No active alerts</td></tr>';
+  } catch (e) { console.error('Alerts fetch error:', e); }
+}
+
+async function fetchAudit() {
+  try {
+    const [trail, stats] = await Promise.all([
+      apiFetch('/api/v1/audit/trail' + nsParam()).then(r => r.json()),
+      apiFetch('/api/v1/audit/stats' + nsParam()).then(r => r.json()),
+    ]);
+    const sum = document.getElementById('audit-summary');
+    if (sum) {
+      sum.innerHTML =
+        '<div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">' + (stats.total_events || 0) + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Actions</div><div class="stat-value">' + Object.keys(stats.by_action || {}).length + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Users</div><div class="stat-value">' + Object.keys(stats.by_user || {}).length + '</div></div>' +
+        '<div class="stat-card"><div class="stat-label">Outcomes</div><div class="stat-value">' + Object.keys(stats.by_outcome || {}).length + '</div></div>';
+    }
+    const tb = document.getElementById('audit-body');
+    if (!tb) return;
+    tb.innerHTML = trail.map(a => `<tr><td>${fmtTime(a.timestamp)}</td><td>${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.resource_type)}</td><td>${esc(a.namespace)}/${esc(a.resource_name)}</td><td>${esc(a.outcome)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No audit entries</td></tr>';
+  } catch (e) { console.error('Audit fetch error:', e); }
+}
+
+async function fetchNotifications() {
+  try {
+    const items = await apiFetch('/api/v1/notifications' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('notifications-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(n => `<tr><td>${esc(n.title)}</td><td>${esc(n.severity)}</td><td>${esc(n.message)}</td><td>${n.read ? 'Yes' : 'No'}</td><td>${fmtTime(n.created_at)}</td></tr>`).join('')
+      || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No notifications</td></tr>';
+  } catch (e) { console.error('Notifications fetch error:', e); }
+}
+
+async function fetchHelm() {
+  try {
+    const items = await apiFetch('/api/v1/helm/releases').then(r => r.json());
+    const tb = document.getElementById('helm-body');
+    if (!tb) return;
+    const filtered = currentNamespace === 'all' ? items : items.filter(h => h.namespace === currentNamespace);
+    tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td>${esc(h.status)}</td><td>${h.revision}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Helm releases found</td></tr>';
+  } catch (e) { console.error('Helm fetch error:', e); }
+}
+
+async function fetchOperators() {
+  try {
+    const items = await apiFetch('/api/v1/operators').then(r => r.json());
+    const tb = document.getElementById('operators-body');
+    if (!tb) return;
+    const filtered = currentNamespace === 'all' ? items : items.filter(o => o.namespace === currentNamespace);
+    tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td>${esc(o.status)}</td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No operators found</td></tr>';
+  } catch (e) { console.error('Operators fetch error:', e); }
+}
+
+async function fetchCustomResources() {
+  try {
+    const items = await apiFetch('/api/v1/custom-resources').then(r => r.json());
+    const tb = document.getElementById('custom-resources-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(cr => `<tr><td>${esc(cr.name)}</td><td>${esc(cr.group)}</td><td>${esc(cr.version)}</td><td>${esc(cr.kind)}</td><td>${esc(cr.scope)}</td><td>${cr.instance_count}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No custom resources found</td></tr>';
+  } catch (e) { console.error('Custom resources fetch error:', e); }
+}
+
+async function fetchSlo() {
+  try {
+    const items = await apiFetch('/api/v1/slo/objectives' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('slo-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td>${esc(s.status)}</td></tr>`).join('')
+      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO objectives found</td></tr>';
+  } catch (e) { console.error('SLO fetch error:', e); }
+}
+
+async function fetchChaos() {
+  try {
+    const items = await apiFetch('/api/v1/chaos/experiments').then(r => r.json());
+    const tb = document.getElementById('chaos-body');
+    if (!tb) return;
+    const filtered = currentNamespace === 'all' ? items : items.filter(c => c.namespace === currentNamespace);
+    tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td>${esc(c.status)}</td><td>${esc(c.duration)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
+  } catch (e) { console.error('Chaos fetch error:', e); }
+}
+
+async function fetchRbac() {
+  try {
+    const [roles, bindings] = await Promise.all([
+      apiFetch('/api/v1/rbac/roles').then(r => r.json()),
+      apiFetch('/api/v1/rbac/bindings').then(r => r.json()),
+    ]);
+    const summary = document.getElementById('rbac-summary');
+    if (summary) {
+      const subjects = bindings.reduce((count, b) => count + (b.subjects || []).length, 0);
+      summary.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Cluster Roles</div><div class="stat-value">${roles.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Bindings</div><div class="stat-value">${bindings.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Subjects</div><div class="stat-value">${subjects}</div></div>
+        <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">Cluster</div></div>`;
+    }
+    const rolesBody = document.getElementById('rbac-roles-body');
+    if (rolesBody) {
+      rolesBody.innerHTML = roles.map(role => {
+        const resources = [...new Set((role.rules || []).flatMap(rule => rule.resources || []))].slice(0, 4);
+        return `<tr><td>${esc(role.name)}</td><td>${role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')}</td><td>${(role.rules || []).length}</td><td>${esc(resources.join(', ') || '-')}</td></tr>`;
+      }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No roles found</td></tr>';
+    }
+    const bindingsBody = document.getElementById('rbac-bindings-body');
+    if (bindingsBody) {
+      bindingsBody.innerHTML = bindings.map(binding => `<tr><td>${esc(binding.name)}</td><td>${esc(binding.role_name)}</td><td>${esc((binding.subjects || []).map(s => s.kind + ':' + s.name).join(', ') || '-')}</td></tr>`).join('')
+        || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No bindings found</td></tr>';
+    }
+  } catch (e) { console.error('RBAC fetch error:', e); }
+}
+
+async function fetchQuotas() {
+  try {
+    const items = await apiFetch('/api/v1/quotas' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('quotas-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(q => `<tr><td>${esc(q.name)}</td><td>${esc(q.namespace)}</td><td>${esc(q.cpu_used || '0')} / ${esc(q.cpu_limit || '-')}</td><td>${esc(q.memory_used || '0')} / ${esc(q.memory_limit || '-')}</td><td>${q.vm_count}${q.vm_limit ? ' / ' + q.vm_limit : ''}</td></tr>`).join('')
+      || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No quotas found</td></tr>';
+  } catch (e) { console.error('Quota fetch error:', e); }
+}
+
+async function fetchIngress() {
+  try {
+    const items = await apiFetch('/api/v1/ingress' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('ingress-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(ing => `<tr><td>${esc(ing.name)}</td><td>${esc(ing.namespace)}</td><td>${esc(ing.class_name || '-')}</td><td>${esc((ing.hosts || []).join(', ') || '-')}</td><td>${ing.tls ? 'Yes' : 'No'}</td><td>${esc((ing.rules || []).map(r => (r.host || '*') + r.path + ' -> ' + r.service_name).join(', ') || '-')}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ingress resources found</td></tr>';
+  } catch (e) { console.error('Ingress fetch error:', e); }
+}
+
+async function fetchHpa() {
+  try {
+    const items = await apiFetch('/api/v1/hpa' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('hpa-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.target_kind)}/${esc(h.target_name)}</td><td>${h.min_replicas}</td><td>${h.current_replicas}</td><td>${h.desired_replicas}</td><td>${h.max_replicas}</td></tr>`).join('')
+      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No HPAs found</td></tr>';
+  } catch (e) { console.error('HPA fetch error:', e); }
+}
+
+async function fetchBackups() {
+  try {
+    const items = await apiFetch('/api/v1/backups' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('backups-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td>${esc(b.status)}</td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
+  } catch (e) { console.error('Backups fetch error:', e); }
+}
+
+async function fetchMetrics() {
+  try {
+    const metrics = await apiFetch('/api/v1/metrics').then(r => r.json());
+    const summary = document.getElementById('metrics-summary');
+    if (!summary) return;
+    summary.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total VMs</div><div class="stat-value">${metrics.total_vms || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Running VMs</div><div class="stat-value">${metrics.running_vms || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">CPU Capacity</div><div class="stat-value">${metrics.total_cpu_cores || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Memory Capacity</div><div class="stat-value">${fmtBytes(metrics.total_memory_bytes)}</div></div>`;
+  } catch (e) { console.error('Metrics fetch error:', e); }
+}
+
+async function fetchTopology() {
+  try {
+    const map = await apiFetch('/api/v1/topology/map' + nsParam()).then(r => r.json());
+    const summary = document.getElementById('topology-summary');
+    const tb = document.getElementById('topology-body');
+    const nodes = map.nodes || [];
+    const edges = map.edges || [];
+    const nodeCount = nodes.filter(n => n.kind === 'Node').length;
+    const vmCount = nodes.filter(n => n.kind === 'VirtualMachine').length;
+    if (summary) {
+      summary.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${nodeCount}</div></div>
+        <div class="stat-card"><div class="stat-label">VM Nodes</div><div class="stat-value">${vmCount}</div></div>
+        <div class="stat-card"><div class="stat-label">Edges</div><div class="stat-value">${edges.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Namespace</div><div class="stat-value">${esc(currentNamespace || 'default')}</div></div>`;
+    }
+    if (tb) {
+      tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.source)}</td><td>${esc(edge.relation)}</td><td>${esc(edge.target)}</td></tr>`).join('')
+        || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No topology edges found</td></tr>';
+    }
+  } catch (e) { console.error('Topology fetch error:', e); }
+}
+
+async function fetchDependencies() {
+  try {
+    const graph = await apiFetch('/api/v1/dependencies/graph').then(r => r.json());
+    const nodes = (graph.nodes || []).filter(n => currentNamespace === 'all' || n.namespace === currentNamespace);
+    const nodeIds = new Set(nodes.map(n => n.id));
+    const edges = (graph.edges || []).filter(e => nodeIds.has(e.from) || nodeIds.has(e.to));
+    const summary = document.getElementById('dependencies-summary');
+    if (summary) {
+      summary.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Resources</div><div class="stat-value">${nodes.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Edges</div><div class="stat-value">${edges.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Namespaces</div><div class="stat-value">${new Set(nodes.map(n => n.namespace)).size}</div></div>
+        <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">${esc(currentNamespace || 'default')}</div></div>`;
+    }
+    const tb = document.getElementById('dependencies-body');
+    if (tb) {
+      tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.from)}</td><td>${esc(edge.dependency_type)}</td><td>${esc(edge.to)}</td></tr>`).join('')
+        || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No dependencies found</td></tr>';
+    }
+  } catch (e) { console.error('Dependencies fetch error:', e); }
+}
+
+async function fetchAutoscaler() {
+  try {
+    const items = await apiFetch('/api/v1/autoscaler/policies' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('autoscaler-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.namespace)}</td><td>${esc(a.target_kind)}/${esc(a.target_name)}</td><td>${a.min_replicas}</td><td>${a.current_replicas}</td><td>${a.max_replicas}</td><td>${a.enabled ? 'Yes' : 'No'}</td></tr>`).join('')
+      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No autoscaler policies found</td></tr>';
+  } catch (e) { console.error('Autoscaler fetch error:', e); }
+}
+
+async function fetchForecasting() {
+  try {
+    const items = await apiFetch('/api/v1/forecasting/predictions' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('forecasting-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(f => `<tr><td>${esc(f.metric)}</td><td>${f.current_value}</td><td>${f.predicted_value}</td><td>${esc(f.prediction_window)}</td><td>${esc(f.trend)}</td><td>${Math.round((f.confidence || 0) * 100)}%</td><td>${esc(f.estimated_breach || '-')}</td></tr>`).join('')
+      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No predictions available</td></tr>';
+  } catch (e) { console.error('Forecasting fetch error:', e); }
+}
+
+async function fetchGitOps() {
+  try {
+    const status = await apiFetch('/api/v1/gitops/status' + nsParam()).then(r => r.json());
+    const summary = document.getElementById('gitops-summary');
+    if (!summary) return;
+    summary.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Repo</div><div class="stat-value">${esc(status.repo_url || 'Not configured')}</div></div>
+      <div class="stat-card"><div class="stat-label">Branch</div><div class="stat-value">${esc(status.branch || '-')}</div></div>
+      <div class="stat-card"><div class="stat-label">Sync</div><div class="stat-value">${esc(status.sync_status || 'unknown')}</div></div>
+      <div class="stat-card"><div class="stat-label">Drift</div><div class="stat-value">${status.drift_detected ? 'Detected' : 'Clear'}</div></div>`;
+  } catch (e) { console.error('GitOps fetch error:', e); }
+}
+
+async function fetchScheduling() {
+  try {
+    const status = await apiFetch('/api/v1/scheduling/status' + nsParam()).then(r => r.json());
+    const summary = document.getElementById('scheduling-summary');
+    if (!summary) return;
+    summary.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Pending Pods</div><div class="stat-value">${status.pending_pods || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Scheduled Pods</div><div class="stat-value">${status.scheduled_pods || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Unschedulable Nodes</div><div class="stat-value">${(status.unschedulable_nodes || []).length}</div></div>
+      <div class="stat-card"><div class="stat-label">Preemptions</div><div class="stat-value">${status.preemptions || 0}</div></div>`;
+  } catch (e) { console.error('Scheduling fetch error:', e); }
+}
+
+async function fetchCilium() {
+  try {
+    const [status, items] = await Promise.all([
+      apiFetch('/api/v1/cilium/status').then(r => r.json()),
+      apiFetch('/api/v1/cilium/policies').then(r => r.json()),
+    ]);
+    const summary = document.getElementById('cilium-summary');
+    if (summary) {
+      summary.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Version</div><div class="stat-value">${esc(status.version || '-')}</div></div>
+        <div class="stat-card"><div class="stat-label">Agents</div><div class="stat-value">${status.healthy_agents || 0}/${status.agent_count || 0}</div></div>
+        <div class="stat-card"><div class="stat-label">Hubble</div><div class="stat-value">${status.hubble_enabled ? 'Enabled' : 'Off'}</div></div>
+        <div class="stat-card"><div class="stat-label">Encryption</div><div class="stat-value">${status.encryption_enabled ? 'Enabled' : 'Off'}</div></div>`;
+    }
+    const tb = document.getElementById('cilium-body');
+    if (!tb) return;
+    const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace);
+    tb.innerHTML = filtered.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
+      || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Cilium policies found</td></tr>';
+  } catch (e) { console.error('Cilium fetch error:', e); }
+}
+
+async function fetchObservability() {
+  try {
+    const overview = await apiFetch('/api/v1/observability/overview' + nsParam()).then(r => r.json());
+    const summary = document.getElementById('observability-summary');
+    if (!summary) return;
+    summary.innerHTML = `
+      <div class="stat-card"><div class="stat-label">Metrics</div><div class="stat-value">${esc(overview.metrics_status)}</div></div>
+      <div class="stat-card"><div class="stat-label">Logs</div><div class="stat-value">${esc(overview.logs_status)}</div></div>
+      <div class="stat-card"><div class="stat-label">Log Entries</div><div class="stat-value">${overview.total_log_entries || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Metric Series</div><div class="stat-value">${overview.total_metric_series || 0}</div></div>`;
+  } catch (e) { console.error('Observability fetch error:', e); }
+}
+
+async function fetchPerformance() {
+  try {
+    const items = await apiFetch('/api/v1/performance/profiles' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('performance-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(p => `<tr><td>${esc(p.vm_name)}</td><td>${p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95}%</td><td>${p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95}%</td><td>${p.iops_read}</td><td>${p.iops_write}</td><td>${fmtTime(p.collected_at)}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No performance profiles found</td></tr>';
+  } catch (e) { console.error('Performance fetch error:', e); }
+}
+
+async function fetchWebhooks() {
+  try {
+    const items = await apiFetch('/api/v1/webhooks' + nsParam()).then(r => r.json());
+    const tb = document.getElementById('webhooks-body');
+    if (!tb) return;
+    tb.innerHTML = items.map(w => `<tr><td>${esc(w.name)}</td><td>${esc(w.url)}</td><td>${esc((w.events || []).join(', ') || '-')}</td><td>${w.active ? 'Yes' : 'No'}</td><td>${w.secret_configured ? 'Yes' : 'No'}</td><td>${w.failure_count}</td></tr>`).join('')
+      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No webhooks found</td></tr>';
+  } catch (e) { console.error('Webhooks fetch error:', e); }
 }
 </script>
 </body>

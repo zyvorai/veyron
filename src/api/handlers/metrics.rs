@@ -70,13 +70,47 @@ async fn get_cluster_metrics(State(state): State<SharedState>) -> Json<ClusterMe
         }
     }
 
+    let used_cpu_cores: f64 = vms
+        .iter()
+        .filter(|vm| {
+            vm.status
+                .as_ref()
+                .and_then(|s| s.printable_status.as_deref())
+                .map(|s| s == "Running")
+                .unwrap_or(false)
+        })
+        .filter_map(|vm| {
+            vm.spec.template.spec.domain.cpu
+                .as_ref()
+                .and_then(|c| c.cores)
+                .map(|c| c as f64)
+        })
+        .sum();
+
+    let used_memory_bytes: u64 = vms
+        .iter()
+        .filter(|vm| {
+            vm.status
+                .as_ref()
+                .and_then(|s| s.printable_status.as_deref())
+                .map(|s| s == "Running")
+                .unwrap_or(false)
+        })
+        .filter_map(|vm| {
+            vm.spec.template.spec.domain.resources.requests
+                .as_ref()
+                .and_then(|r| r.get("memory"))
+                .map(|v| parse_k8s_memory(v))
+        })
+        .sum();
+
     Json(ClusterMetrics {
         total_vms,
         running_vms,
         total_cpu_cores: total_cpu,
-        used_cpu_cores: 0.0,
+        used_cpu_cores,
         total_memory_bytes: total_mem,
-        used_memory_bytes: 0,
+        used_memory_bytes,
     })
 }
 

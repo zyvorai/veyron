@@ -63,24 +63,28 @@ async fn list_dashboards(State(state): State<SharedState>) -> Json<Vec<Dashboard
         .iter()
         .filter_map(|cm| {
             let data = cm.data.as_ref()?;
+            // Parse panels from JSON stored in the "panels" key
+            let panels: Vec<DashboardPanel> = data
+                .get("panels")
+                .and_then(|json_str| serde_json::from_str(json_str).ok())
+                .unwrap_or_default();
+            let ts = cm
+                .metadata
+                .creation_timestamp
+                .as_ref()
+                .map(|t| t.0.to_rfc3339())
+                .unwrap_or_default();
             Some(DashboardResponse {
                 id: cm.metadata.uid.clone().unwrap_or_default(),
                 name: data.get("name").cloned().unwrap_or_default(),
                 description: data.get("description").cloned().unwrap_or_default(),
-                panels: Vec::new(),
-                created_by: data.get("created_by").cloned().unwrap_or_else(|| "system".to_string()),
-                created_at: cm
-                    .metadata
-                    .creation_timestamp
-                    .as_ref()
-                    .map(|t| t.0.to_rfc3339())
-                    .unwrap_or_default(),
-                updated_at: cm
-                    .metadata
-                    .creation_timestamp
-                    .as_ref()
-                    .map(|t| t.0.to_rfc3339())
-                    .unwrap_or_default(),
+                panels,
+                created_by: data
+                    .get("created_by")
+                    .cloned()
+                    .unwrap_or_else(|| "system".to_string()),
+                created_at: ts.clone(),
+                updated_at: data.get("updated_at").cloned().unwrap_or(ts),
             })
         })
         .collect();

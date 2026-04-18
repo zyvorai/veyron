@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{Json, Router, extract::{Query, State}, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -30,6 +30,11 @@ pub struct TopologyEdge {
     pub relation: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct TopologyQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -38,7 +43,12 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_topology_map(State(state): State<SharedState>) -> Json<TopologyMap> {
+async fn get_topology_map(
+    State(state): State<SharedState>,
+    Query(query): Query<TopologyQuery>,
+) -> Json<TopologyMap> {
+    use kube::api::{Api, ListParams};
+
     let s = state.read().await;
 
     let mut nodes = Vec::new();
@@ -85,7 +95,15 @@ async fn get_topology_map(State(state): State<SharedState>) -> Json<TopologyMap>
     }
 
     // List VMIs
-    if let Ok(vmis) = s.client().list_vmis(&s.namespace).await {
+    let client = s.client().client();
+    let vmi_api: Api<crate::kube::VirtualMachineInstance> = match query.namespace.as_deref() {
+        Some("all") => Api::all(client),
+        Some(ns) => Api::namespaced(client, ns),
+        None => Api::namespaced(client, &s.namespace),
+    };
+
+    if let Ok(vmi_list) = vmi_api.list(&ListParams::default()).await {
+        let vmis = vmi_list.items;
         for vmi in &vmis {
             let vmi_name = vmi.metadata.name.clone().unwrap_or_default();
             let vmi_status = vmi

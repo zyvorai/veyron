@@ -89,24 +89,41 @@ async fn get_bandwidth(
     };
 
     let now = chrono::Utc::now().to_rfc3339();
-    let results: Vec<BandwidthResponse> = vmis
-        .iter()
-        .filter_map(|vmi| {
-            let status = vmi.status.as_ref()?;
-            Some(BandwidthResponse {
-                interface: status
-                    .interfaces
-                    .first()
-                    .and_then(|i| i.interface_name.clone())
-                    .unwrap_or_else(|| "eth0".to_string()),
-                rx_bytes_per_sec: 0,
-                tx_bytes_per_sec: 0,
-                rx_packets_per_sec: 0,
-                tx_packets_per_sec: 0,
-                timestamp: now.clone(),
-            })
-        })
-        .collect();
+    let mut results: Vec<BandwidthResponse> = Vec::new();
+
+    for vmi in &vmis {
+        let status = match vmi.status.as_ref() {
+            Some(s) => s,
+            None => continue,
+        };
+        let vm_name = vmi.metadata.name.as_deref().unwrap_or("unknown");
+        let iface_name = status
+            .interfaces
+            .first()
+            .and_then(|i| i.interface_name.clone())
+            .unwrap_or_else(|| "eth0".to_string());
+
+        let collector = crate::monitoring::metrics::MetricsCollector::new(s.namespace.clone());
+        let (rx, tx, rx_pkt, tx_pkt) = if let Ok(m) = collector.collect(vm_name).await {
+            (
+                m.network.rx_bytes_per_sec,
+                m.network.tx_bytes_per_sec,
+                m.network.rx_packets_per_sec,
+                m.network.tx_packets_per_sec,
+            )
+        } else {
+            (0, 0, 0, 0)
+        };
+
+        results.push(BandwidthResponse {
+            interface: iface_name,
+            rx_bytes_per_sec: rx,
+            tx_bytes_per_sec: tx,
+            rx_packets_per_sec: rx_pkt,
+            tx_packets_per_sec: tx_pkt,
+            timestamp: now.clone(),
+        });
+    }
 
     Json(results)
 }

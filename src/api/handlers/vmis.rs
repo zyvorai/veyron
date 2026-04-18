@@ -54,8 +54,24 @@ async fn list_vmis(State(state): State<SharedState>) -> Json<Vec<VmiResponse>> {
                 phase,
                 node_name,
                 ip_address,
-                cpu_cores: 0, // VMI spec is flattened BTreeMap, not easily accessible
-                memory: String::new(),
+                cpu_cores: vmi.spec.extra.get("domain")
+                    .and_then(|d| d.get("cpu"))
+                    .and_then(|c| c.get("cores"))
+                    .and_then(|v| v.as_u64())
+                    .map(|c| c as u32)
+                    .unwrap_or(0),
+                memory: vmi.spec.extra.get("domain")
+                    .and_then(|d| d.get("resources"))
+                    .and_then(|r| r.get("requests"))
+                    .and_then(|req| req.get("memory"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .or_else(|| vmi.spec.extra.get("domain")
+                        .and_then(|d| d.get("memory"))
+                        .and_then(|m| m.get("guest"))
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()))
+                    .unwrap_or_default(),
                 created_at: meta
                     .creation_timestamp
                     .as_ref()
@@ -90,8 +106,24 @@ async fn get_vmi(
                 ip_address: status
                     .and_then(|s| s.interfaces.first())
                     .and_then(|i| i.ip_address.clone()),
-                cpu_cores: 0,
-                memory: String::new(),
+                cpu_cores: vmi.spec.extra.get("domain")
+                    .and_then(|d| d.get("cpu"))
+                    .and_then(|c| c.get("cores"))
+                    .and_then(|v| v.as_u64())
+                    .map(|c| c as u32)
+                    .unwrap_or(0),
+                memory: vmi.spec.extra.get("domain")
+                    .and_then(|d| d.get("resources"))
+                    .and_then(|r| r.get("requests"))
+                    .and_then(|req| req.get("memory"))
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .or_else(|| vmi.spec.extra.get("domain")
+                        .and_then(|d| d.get("memory"))
+                        .and_then(|m| m.get("guest"))
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string()))
+                    .unwrap_or_default(),
                 created_at: meta
                     .creation_timestamp
                     .as_ref()

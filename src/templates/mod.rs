@@ -694,7 +694,9 @@ fn windows_11_template() -> VMConfig {
     VMConfigBuilder::new("windows-vm")
         .namespace("default")
         .cpu(4, 2, 1)
-        .memory("8Gi")
+        // Keep the default guest small enough to schedule on single-node lab clusters.
+        // Users can still override this upward for production-grade Windows 11 guests.
+        .memory("4Gi")
         .add_blank_disk("rootdisk", "80Gi", 1)
         .add_cdrom("virtio-drivers", "quay.io/containerdisks/virtio-win", 2)
         .add_pod_network("default")

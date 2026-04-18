@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+#[cfg(feature = "web")]
+use kube::{
+    Api,
+    api::{ApiResource, DynamicObject, GroupVersionKind, ListParams},
+};
 
 /// Custom resource response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -30,35 +35,100 @@ async fn list_custom_resources(State(state): State<SharedState>) -> Json<Vec<Cus
     use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 
     let s = state.read().await;
-    let api: kube::api::Api<CustomResourceDefinition> = kube::api::Api::all(s.client().client());
+    let client = s.client().client();
+    let api: Api<CustomResourceDefinition> = Api::all(client.clone());
 
     let crds = match api.list(&kube::api::ListParams::default()).await {
         Ok(list) => list,
         Err(_) => return Json(vec![]),
     };
 
-    let results: Vec<CustomResourceResponse> = crds
-        .items
-        .iter()
-        .map(|crd| {
-            let spec = &crd.spec;
-            let version = spec
-                .versions
-                .first()
-                .map(|v| v.name.clone())
-                .unwrap_or_default();
+    let mut results = Vec::with_capacity(crds.items.len());
+    for crd in &crds.items {
+        let spec = &crd.spec;
+        let version = preferred_crd_version(&spec.versions);
+        let instance_count = count_crd_instances(
+            client.clone(),
+            &spec.group,
+            &version,
+            &spec.names.kind,
+            &spec.names.plural,
+        )
+        .await;
 
-            CustomResourceResponse {
-                name: crd.metadata.name.clone().unwrap_or_default(),
-                group: spec.group.clone(),
-                version,
-                kind: spec.names.kind.clone(),
-                namespace: None,
-                scope: spec.scope.clone(),
-                instance_count: 0,
-            }
-        })
-        .collect();
+        results.push(CustomResourceResponse {
+            name: crd.metadata.name.clone().unwrap_or_default(),
+            group: spec.group.clone(),
+            version,
+            kind: spec.names.kind.clone(),
+            namespace: if spec.scope == "Namespaced" {
+                Some("*".to_string())
+            } else {
+                None
+            },
+            scope: spec.scope.clone(),
+            instance_count,
+        });
+    }
 
     Json(results)
+}
+
+#[cfg(feature = "web")]
+fn preferred_crd_version(
+    versions: &[k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinitionVersion],
+) -> String {
+    versions
+        .iter()
+        .find(|v| v.storage)
+        .or_else(|| versions.iter().find(|v| v.served))
+        .or_else(|| versions.first())
+        .map(|v| v.name.clone())
+        .unwrap_or_default()
+}
+
+#[cfg(feature = "web")]
+async fn count_crd_instances(
+    client: kube::Client,
+    group: &str,
+    version: &str,
+    kind: &str,
+    plural: &str,
+) -> u32 {
+    let gvk = GroupVersionKind::gvk(group, version, kind);
+    let mut resource = ApiResource::from_gvk(&gvk);
+    resource.plural = plural.to_string();
+    resource.api_version = format!("{}/{}", group, version);
+
+    let api: Api<DynamicObject> = Api::all_with(client, &resource);
+    match api.list(&ListParams::default()).await {
+        Ok(list) => list.items.len() as u32,
+        Err(_) => 0,
+    }
+}
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+    use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinitionVersion;
+
+    #[test]
+    fn preferred_crd_version_prefers_storage_then_served() {
+        let versions = vec![
+            CustomResourceDefinitionVersion {
+                name: "v1beta1".to_string(),
+                served: true,
+                storage: false,
+                ..Default::default()
+            },
+            CustomResourceDefinitionVersion {
+                name: "v1".to_string(),
+                served: true,
+                storage: true,
+                ..Default::default()
+            },
+        ];
+
+        assert_eq!(preferred_crd_version(&versions), "v1");
+    }
 }

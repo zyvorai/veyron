@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{Json, Router, extract::{Query, State}, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -29,6 +29,11 @@ pub struct AuditStats {
     pub period: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct AuditQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -37,13 +42,24 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
-/// Build audit entries from K8s events (VM-related events serve as audit trail).
 #[cfg(feature = "web")]
-async fn list_audit_trail(State(state): State<SharedState>) -> Json<Vec<AuditEntry>> {
+async fn list_audit_trail(
+    State(state): State<SharedState>,
+    Query(query): Query<AuditQuery>,
+) -> Json<Vec<AuditEntry>> {
     let s = state.read().await;
-    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
+    let events = match query.namespace.as_deref() {
+        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
+        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
+        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+    };
 
-    let results: Vec<AuditEntry> = events
+    Json(map_audit_entries(&events))
+}
+
+#[cfg(feature = "web")]
+fn map_audit_entries(events: &[k8s_openapi::api::core::v1::Event]) -> Vec<AuditEntry> {
+    events
         .iter()
         .map(|event| {
             let meta = &event.metadata;
@@ -69,14 +85,15 @@ async fn list_audit_trail(State(state): State<SharedState>) -> Json<Vec<AuditEnt
                 details: event.message.clone(),
             }
         })
-        .collect();
-
-    Json(results)
+        .collect()
 }
 
 #[cfg(feature = "web")]
-async fn get_audit_stats(State(state): State<SharedState>) -> Json<AuditStats> {
-    let entries = list_audit_trail(State(state)).await.0;
+async fn get_audit_stats(
+    State(state): State<SharedState>,
+    Query(query): Query<AuditQuery>,
+) -> Json<AuditStats> {
+    let entries = list_audit_trail(State(state), Query(query)).await.0;
 
     let mut by_action: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
     let mut by_user: std::collections::HashMap<String, u64> = std::collections::HashMap::new();

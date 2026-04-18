@@ -72,7 +72,19 @@ async fn list_migrations(State(state): State<SharedState>) -> Json<Vec<Migration
 
                     let progress = match phase.as_str() {
                         "Succeeded" => 100,
-                        "Running" => 50,
+                        "Failed" => 0,
+                        "Running" => {
+                            // Use target_node_address presence as a proxy for ~75% progress
+                            if migration_state
+                                .and_then(|ms| ms.target_node_address.as_ref())
+                                .is_some()
+                            {
+                                75
+                            } else {
+                                25
+                            }
+                        }
+                        "Preparing" | "Scheduling" => 10,
                         _ => 0,
                     };
 
@@ -108,16 +120,25 @@ async fn create_migration(
     Json(req): Json<CreateMigrationRequest>,
 ) -> Result<Json<MigrationResponse>, StatusCode> {
     let s = state.read().await;
+    // Look up the current node of the VMI before triggering migration
+    let source_node = s
+        .client()
+        .get_vmi(&s.namespace, &req.vm_name)
+        .await
+        .ok()
+        .and_then(|vmi| vmi.status.as_ref().and_then(|st| st.node_name.clone()))
+        .unwrap_or_default();
+
     match s.client().migrate_vm(&s.namespace, &req.vm_name).await {
         Ok(()) => Ok(Json(MigrationResponse {
-            id: format!("{}-migration", req.vm_name),
+            id: format!("{}-migration-{}", req.vm_name, chrono::Utc::now().format("%Y%m%d%H%M%S")),
             vm_name: req.vm_name,
-            source_node: String::new(),
+            source_node,
             target_node: req.target_node.unwrap_or_default(),
             status: "Pending".to_string(),
             migration_type: req.migration_type.unwrap_or_else(|| "LiveMigration".to_string()),
             progress_percent: 0,
-            started_at: None,
+            started_at: Some(chrono::Utc::now().to_rfc3339()),
             completed_at: None,
         })),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),

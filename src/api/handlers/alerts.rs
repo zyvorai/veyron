@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, State}, http::StatusCode, routing::{get, put}};
+use axum::{Json, Router, extract::{Path, Query, State}, http::StatusCode, routing::{get, put}};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -29,6 +29,11 @@ pub struct CreateAlertRequest {
     pub duration: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct AlertQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -39,9 +44,16 @@ pub fn router(state: SharedState) -> Router {
 
 /// List alerts derived from Warning events in the namespace.
 #[cfg(feature = "web")]
-async fn list_alerts(State(state): State<SharedState>) -> Json<Vec<AlertResponse>> {
+async fn list_alerts(
+    State(state): State<SharedState>,
+    Query(query): Query<AlertQuery>,
+) -> Json<Vec<AlertResponse>> {
     let s = state.read().await;
-    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
+    let events = match query.namespace.as_deref() {
+        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
+        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
+        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+    };
 
     let results: Vec<AlertResponse> = events
         .iter()
@@ -74,39 +86,108 @@ async fn list_alerts(State(state): State<SharedState>) -> Json<Vec<AlertResponse
 
 #[cfg(feature = "web")]
 async fn create_alert(
-    State(_state): State<SharedState>,
+    State(state): State<SharedState>,
     Json(req): Json<CreateAlertRequest>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    // Store alert rule as a log entry (full Alertmanager integration is external)
-    log::info!(
-        "Alert rule created: name={}, severity={}, metric={} {} {}",
-        req.name, req.severity, req.metric, req.operator, req.threshold
-    );
+    use k8s_openapi::api::core::v1::ConfigMap;
 
-    (
-        StatusCode::CREATED,
-        Json(serde_json::json!({
-            "status": "created",
-            "name": req.name,
-            "severity": req.severity,
-            "note": "Alert rule logged. For persistent alert rules, configure Prometheus Alertmanager with the PrometheusRule CRDs in deploy/monitoring/"
-        })),
-    )
+    let s = state.read().await;
+    let api: kube::api::Api<ConfigMap> =
+        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+
+    let cm_name = format!(
+        "vmrogue-alert-{}",
+        req.name.to_lowercase().replace(' ', "-")
+    );
+    let mut data = std::collections::BTreeMap::new();
+    data.insert("name".to_string(), req.name.clone());
+    data.insert("severity".to_string(), req.severity.clone());
+    data.insert("metric".to_string(), req.metric.clone());
+    data.insert("operator".to_string(), req.operator.clone());
+    data.insert("threshold".to_string(), req.threshold.to_string());
+    if let Some(ref dur) = req.duration {
+        data.insert("duration".to_string(), dur.clone());
+    }
+    data.insert("status".to_string(), "active".to_string());
+    data.insert("created_at".to_string(), chrono::Utc::now().to_rfc3339());
+
+    let cm = ConfigMap {
+        metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
+            name: Some(cm_name),
+            namespace: Some(s.namespace.clone()),
+            labels: Some(
+                [("vmrogue.io/type".to_string(), "alert-rule".to_string())]
+                    .into_iter()
+                    .collect(),
+            ),
+            ..Default::default()
+        },
+        data: Some(data),
+        ..Default::default()
+    };
+
+    match api.create(&kube::api::PostParams::default(), &cm).await {
+        Ok(_) => (
+            StatusCode::CREATED,
+            Json(serde_json::json!({
+                "status": "created",
+                "name": req.name,
+                "severity": req.severity,
+            })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": "CREATE_FAILED",
+                "message": format!("Failed to persist alert rule: {}", e)
+            })),
+        ),
+    }
 }
 
 #[cfg(feature = "web")]
 async fn resolve_alert(
-    State(_state): State<SharedState>,
+    State(state): State<SharedState>,
     Path(id): Path<String>,
 ) -> (StatusCode, Json<serde_json::Value>) {
-    log::info!("Alert resolved: id={}", id);
+    use k8s_openapi::api::core::v1::ConfigMap;
 
+    let s = state.read().await;
+    let now = chrono::Utc::now().to_rfc3339();
+
+    // Persist resolved state in a ConfigMap keyed by alert id
+    let cm_name = format!("vmrogue-resolved-{}", id);
+    let mut data = std::collections::BTreeMap::new();
+    data.insert("alert_id".to_string(), id.clone());
+    data.insert("resolved_at".to_string(), now.clone());
+    data.insert("status".to_string(), "resolved".to_string());
+
+    let cm = ConfigMap {
+        metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
+            name: Some(cm_name),
+            namespace: Some(s.namespace.clone()),
+            labels: Some(
+                [("vmrogue.io/type".to_string(), "alert-resolved".to_string())]
+                    .into_iter()
+                    .collect(),
+            ),
+            ..Default::default()
+        },
+        data: Some(data),
+        ..Default::default()
+    };
+
+    let api: kube::api::Api<ConfigMap> =
+        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let _ = api.create(&kube::api::PostParams::default(), &cm).await;
+
+    log::info!("Alert resolved: id={}", id);
     (
         StatusCode::OK,
         Json(serde_json::json!({
             "status": "resolved",
             "id": id,
-            "note": "Alert marked as resolved. K8s Warning events are immutable; this acknowledges the alert."
+            "resolved_at": now,
         })),
     )
 }

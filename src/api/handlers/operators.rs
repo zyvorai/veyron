@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+#[cfg(feature = "web")]
+use k8s_openapi::{
+    api::apps::v1::Deployment,
+    apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition,
+};
 
 /// Operator response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,11 +31,15 @@ pub fn router(state: SharedState) -> Router {
 /// Discover operators by listing Deployments with common operator name patterns.
 #[cfg(feature = "web")]
 async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorResponse>> {
-    use k8s_openapi::api::apps::v1::Deployment;
-
     let s = state.read().await;
     let client = s.client().client();
     let mut results = Vec::new();
+    let crd_api: kube::api::Api<CustomResourceDefinition> = kube::api::Api::all(client.clone());
+    let crds = crd_api
+        .list(&kube::api::ListParams::default())
+        .await
+        .map(|l| l.items)
+        .unwrap_or_default();
 
     // Check common operator namespaces
     let namespaces = ["kubevirt", "olm", "operators", "vmrogue-system", &s.namespace];
@@ -52,18 +61,13 @@ async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorRe
                     results.push(OperatorResponse {
                         name: name.to_string(),
                         namespace: ns.to_string(),
-                        version: d
-                            .metadata
-                            .labels
-                            .as_ref()
-                            .and_then(|l| l.get("app.kubernetes.io/version").cloned())
-                            .unwrap_or_default(),
+                        version: infer_operator_version(d),
                         status: if ready >= desired {
                             "Running".to_string()
                         } else {
                             "Degraded".to_string()
                         },
-                        managed_resources: Vec::new(),
+                        managed_resources: infer_managed_resources(name, &crds),
                         installed_at: d
                             .metadata
                             .creation_timestamp
@@ -77,4 +81,105 @@ async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorRe
     }
 
     Json(results)
+}
+
+#[cfg(feature = "web")]
+fn infer_operator_version(deployment: &Deployment) -> String {
+    if let Some(labels) = deployment.metadata.labels.as_ref() {
+        for key in ["app.kubernetes.io/version", "version"] {
+            if let Some(version) = labels.get(key) {
+                return version.clone();
+            }
+        }
+    }
+
+    deployment
+        .spec
+        .as_ref()
+        .and_then(|s| s.template.spec.as_ref())
+        .and_then(|spec| spec.containers.first())
+        .and_then(|container| container.image.as_deref())
+        .and_then(extract_image_tag)
+        .unwrap_or_default()
+}
+
+#[cfg(feature = "web")]
+fn extract_image_tag(image: &str) -> Option<String> {
+    let without_digest = image.split('@').next().unwrap_or(image);
+    let last_segment = without_digest.rsplit('/').next().unwrap_or(without_digest);
+    let colon_count = last_segment.matches(':').count();
+    if colon_count == 1 {
+        return last_segment
+            .rsplit_once(':')
+            .map(|(_, tag)| tag.to_string())
+            .filter(|tag| !tag.is_empty());
+    }
+    None
+}
+
+#[cfg(feature = "web")]
+fn infer_managed_resources(
+    operator_name: &str,
+    crds: &[CustomResourceDefinition],
+) -> Vec<String> {
+    let tokens = operator_tokens(operator_name);
+    let mut managed = Vec::new();
+
+    for crd in crds {
+        let spec = &crd.spec;
+        let haystacks = [
+            crd.metadata.name.as_deref().unwrap_or(""),
+            spec.group.as_str(),
+            spec.names.kind.as_str(),
+            spec.names.plural.as_str(),
+        ];
+
+        if tokens
+            .iter()
+            .any(|token| haystacks.iter().any(|h| h.to_lowercase().contains(token)))
+        {
+            managed.push(spec.names.kind.clone());
+        }
+    }
+
+    managed.sort();
+    managed.dedup();
+    managed
+}
+
+#[cfg(feature = "web")]
+fn operator_tokens(name: &str) -> Vec<String> {
+    let ignored = [
+        "operator",
+        "controller",
+        "manager",
+        "deployment",
+        "system",
+        "app",
+        "cluster",
+    ];
+
+    name.split(|c: char| !c.is_ascii_alphanumeric())
+        .map(|part| part.to_lowercase())
+        .filter(|part| part.len() > 2 && !ignored.contains(&part.as_str()))
+        .collect()
+}
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_image_tag_reads_container_tag() {
+        assert_eq!(
+            extract_image_tag("quay.io/example/vmrogue-operator:v0.2.0"),
+            Some("v0.2.0".to_string())
+        );
+        assert_eq!(extract_image_tag("quay.io/example/image@sha256:deadbeef"), None);
+    }
+
+    #[test]
+    fn operator_tokens_drops_generic_words() {
+        assert_eq!(operator_tokens("vmrogue-operator-manager"), vec!["vmrogue"]);
+    }
 }

@@ -49,15 +49,20 @@ pub fn router(state: SharedState) -> Router {
 async fn get_compliance_status(
     State(state): State<SharedState>,
 ) -> Json<Vec<ComplianceStatus>> {
+    use k8s_openapi::api::networking::v1::NetworkPolicy;
+    use k8s_openapi::api::rbac::v1::RoleBinding;
+
     let s = state.read().await;
     let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
     let now = chrono::Utc::now().to_rfc3339();
+    let total_vms = vms.len() as u32;
 
-    // Run basic compliance checks across all VMs
+    // Per-VM compliance checks
     let mut resource_limits = 0u32;
     let mut eviction_strategy = 0u32;
     let mut rng_device = 0u32;
-    let total_vms = vms.len() as u32;
+    let mut no_host_network = 0u32;
+    let mut tpm_device = 0u32;
 
     for vm in &vms {
         let vmi_spec = &vm.spec.template.spec;
@@ -69,53 +74,101 @@ async fn get_compliance_status(
         if vmi_spec.eviction_strategy.is_some() {
             eviction_strategy += 1;
         }
-        if domain
-            .devices
-            .as_ref()
-            .and_then(|d| d.rng.as_ref())
-            .is_some()
-        {
+        if domain.devices.as_ref().and_then(|d| d.rng.as_ref()).is_some() {
             rng_device += 1;
+        }
+        if domain.devices.as_ref().and_then(|d| d.tpm.as_ref()).is_some() {
+            tpm_device += 1;
+        }
+        let uses_host_net = vmi_spec
+            .networks
+            .as_ref()
+            .map(|nets| nets.iter().any(|n| n.name == "host"))
+            .unwrap_or(false);
+        if !uses_host_net {
+            no_host_network += 1;
         }
     }
 
-    let total_controls = 3u32;
-
-    let check = |passing: u32| -> ComplianceStatus {
-        let failing = total_vms.saturating_sub(passing);
-        let score = if total_vms == 0 {
-            100
-        } else {
-            ((passing as f64 / total_vms as f64) * 100.0) as u8
-        };
-        ComplianceStatus {
-            framework: String::new(),
-            compliant: failing == 0,
-            score,
-            total_controls: total_vms,
-            passing_controls: passing,
-            failing_controls: failing,
-            last_checked: now.clone(),
-        }
+    // Namespace-level checks (count as pass/fail against total_vms for scoring)
+    let client = s.client().client();
+    let np_count = {
+        let np_api: kube::api::Api<NetworkPolicy> =
+            kube::api::Api::namespaced(client.clone(), &s.namespace);
+        np_api
+            .list(&kube::api::ListParams::default())
+            .await
+            .map(|l| l.items.len() as u32)
+            .unwrap_or(0)
     };
+    let has_network_policies = if np_count > 0 { total_vms } else { 0 };
 
-    // Provide a summary per "framework" style grouping
-    let mut cis = check(resource_limits.min(eviction_strategy).min(rng_device));
-    cis.framework = "CIS Benchmark".to_string();
-    let passing_all = [resource_limits, eviction_strategy, rng_device]
-        .iter()
-        .sum::<u32>();
-    cis.total_controls = total_controls * total_vms;
-    cis.passing_controls = passing_all;
-    cis.failing_controls = cis.total_controls.saturating_sub(passing_all);
-    cis.score = if cis.total_controls == 0 {
-        100
+    let rb_count = {
+        let rb_api: kube::api::Api<RoleBinding> =
+            kube::api::Api::namespaced(client.clone(), &s.namespace);
+        rb_api
+            .list(&kube::api::ListParams::default())
+            .await
+            .map(|l| l.items.len() as u32)
+            .unwrap_or(0)
+    };
+    let has_rbac = if rb_count > 0 { total_vms } else { 0 };
+
+    // CIS KubeVirt Benchmark: 7 controls
+    let cis_controls: &[(&str, u32)] = &[
+        ("resource-limits", resource_limits),
+        ("eviction-strategy", eviction_strategy),
+        ("rng-device", rng_device),
+        ("tpm-device", tpm_device),
+        ("no-host-network", no_host_network),
+        ("network-policies", has_network_policies),
+        ("rbac-configured", has_rbac),
+    ];
+    let cis_total = cis_controls.len() as u32 * total_vms.max(1);
+    let cis_passing: u32 = cis_controls.iter().map(|(_, p)| p).sum();
+    let cis_failing = cis_total.saturating_sub(cis_passing);
+    let cis_score = if cis_total == 0 {
+        100u8
     } else {
-        ((passing_all as f64 / (total_controls * total_vms) as f64) * 100.0) as u8
+        ((cis_passing as f64 / cis_total as f64) * 100.0) as u8
     };
-    cis.compliant = cis.failing_controls == 0;
 
-    Json(vec![cis])
+    // NIST SP 800-190 subset: resource isolation + network segmentation
+    let nist_controls: &[(&str, u32)] = &[
+        ("resource-limits", resource_limits),
+        ("no-host-network", no_host_network),
+        ("network-policies", has_network_policies),
+        ("rbac-configured", has_rbac),
+    ];
+    let nist_total = nist_controls.len() as u32 * total_vms.max(1);
+    let nist_passing: u32 = nist_controls.iter().map(|(_, p)| p).sum();
+    let nist_failing = nist_total.saturating_sub(nist_passing);
+    let nist_score = if nist_total == 0 {
+        100u8
+    } else {
+        ((nist_passing as f64 / nist_total as f64) * 100.0) as u8
+    };
+
+    Json(vec![
+        ComplianceStatus {
+            framework: "CIS Benchmark".to_string(),
+            compliant: cis_failing == 0,
+            score: cis_score,
+            total_controls: cis_total,
+            passing_controls: cis_passing,
+            failing_controls: cis_failing,
+            last_checked: now.clone(),
+        },
+        ComplianceStatus {
+            framework: "NIST SP 800-190".to_string(),
+            compliant: nist_failing == 0,
+            score: nist_score,
+            total_controls: nist_total,
+            passing_controls: nist_passing,
+            failing_controls: nist_failing,
+            last_checked: now.clone(),
+        },
+    ])
 }
 
 #[cfg(feature = "web")]

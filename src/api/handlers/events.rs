@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{Json, Router, extract::{Query, State}, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -18,6 +18,11 @@ pub struct EventResponse {
     pub count: u32,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct EventQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -27,11 +32,23 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_events(State(state): State<SharedState>) -> Json<Vec<EventResponse>> {
+async fn list_events(
+    State(state): State<SharedState>,
+    Query(query): Query<EventQuery>,
+) -> Json<Vec<EventResponse>> {
     let s = state.read().await;
-    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
+    let events = match query.namespace.as_deref() {
+        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
+        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
+        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+    };
 
-    let results: Vec<EventResponse> = events
+    Json(map_events(&events))
+}
+
+#[cfg(feature = "web")]
+fn map_events(events: &[k8s_openapi::api::core::v1::Event]) -> Vec<EventResponse> {
+    events
         .iter()
         .map(|event| {
             let meta = &event.metadata;
@@ -59,14 +76,15 @@ async fn list_events(State(state): State<SharedState>) -> Json<Vec<EventResponse
                 count: event.count.unwrap_or(1) as u32,
             }
         })
-        .collect();
-
-    Json(results)
+        .collect()
 }
 
 #[cfg(feature = "web")]
-async fn list_recent_events(State(state): State<SharedState>) -> Json<Vec<EventResponse>> {
-    let mut events = list_events(State(state)).await.0;
+async fn list_recent_events(
+    State(state): State<SharedState>,
+    Query(query): Query<EventQuery>,
+) -> Json<Vec<EventResponse>> {
+    let mut events = list_events(State(state), Query(query)).await.0;
     events.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
     events.truncate(50);
     Json(events)

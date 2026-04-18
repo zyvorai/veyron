@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::{get, post}};
+use axum::{Json, Router, extract::{Query, State}, routing::{get, post}};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -22,6 +22,11 @@ pub struct MarkReadRequest {
     pub notification_ids: Vec<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct NotificationQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -30,13 +35,49 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
-/// Build notifications from recent K8s events (Warning events = notifications).
 #[cfg(feature = "web")]
-async fn list_notifications(State(state): State<SharedState>) -> Json<Vec<NotificationResponse>> {
-    let s = state.read().await;
-    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
+async fn list_notifications(
+    State(state): State<SharedState>,
+    Query(query): Query<NotificationQuery>,
+) -> Json<Vec<NotificationResponse>> {
+    use k8s_openapi::api::core::v1::ConfigMap;
 
-    let results: Vec<NotificationResponse> = events
+    let s = state.read().await;
+    let namespace = query.namespace.clone().unwrap_or_else(|| s.namespace.clone());
+    let events = match query.namespace.as_deref() {
+        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
+        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
+        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+    };
+
+    // Load set of read notification IDs from ConfigMap
+    let read_ids: std::collections::HashSet<String> = {
+        let api: kube::api::Api<ConfigMap> =
+            kube::api::Api::namespaced(s.client().client(), &namespace);
+        api.get("vmrogue-notifications-read")
+            .await
+            .ok()
+            .and_then(|cm| cm.data)
+            .and_then(|d| d.get("ids").cloned())
+            .map(|ids| ids.split(',').map(|s| s.trim().to_string()).collect())
+            .unwrap_or_default()
+    };
+
+    let mut notifications = map_notifications(&events);
+    for n in &mut notifications {
+        if read_ids.contains(&n.id) {
+            n.read = true;
+        }
+    }
+
+    Json(notifications)
+}
+
+#[cfg(feature = "web")]
+fn map_notifications(
+    events: &[k8s_openapi::api::core::v1::Event],
+) -> Vec<NotificationResponse> {
+    events
         .iter()
         .filter_map(|event| {
             let event_type = event.type_.as_deref().unwrap_or("Normal");
@@ -68,19 +109,65 @@ async fn list_notifications(State(state): State<SharedState>) -> Json<Vec<Notifi
                     .unwrap_or_default(),
             })
         })
-        .collect();
-
-    Json(results)
+        .collect()
 }
 
 #[cfg(feature = "web")]
 async fn mark_notifications_read(
-    State(_state): State<SharedState>,
+    State(state): State<SharedState>,
     Json(req): Json<MarkReadRequest>,
 ) -> Json<serde_json::Value> {
-    // K8s events don't have a "read" state, so we acknowledge the request
+    use k8s_openapi::api::core::v1::ConfigMap;
+
+    let s = state.read().await;
+    let api: kube::api::Api<ConfigMap> =
+        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let cm_name = "vmrogue-notifications-read";
+
+    // Merge new IDs with any already stored
+    let existing_ids: std::collections::HashSet<String> = api
+        .get(cm_name)
+        .await
+        .ok()
+        .and_then(|cm| cm.data)
+        .and_then(|d| d.get("ids").cloned())
+        .map(|ids| ids.split(',').map(|s| s.trim().to_string()).collect())
+        .unwrap_or_default();
+
+    let mut all_ids: std::collections::HashSet<String> = existing_ids;
+    all_ids.extend(req.notification_ids.iter().cloned());
+    let ids_value = all_ids.iter().cloned().collect::<Vec<_>>().join(",");
+
+    let mut data = std::collections::BTreeMap::new();
+    data.insert("ids".to_string(), ids_value);
+
+    let cm = ConfigMap {
+        metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
+            name: Some(cm_name.to_string()),
+            namespace: Some(s.namespace.clone()),
+            labels: Some(
+                [("vmrogue.io/type".to_string(), "notification-state".to_string())]
+                    .into_iter()
+                    .collect(),
+            ),
+            ..Default::default()
+        },
+        data: Some(data),
+        ..Default::default()
+    };
+
+    // Apply (create or update)
+    let patch = serde_json::to_value(&cm).unwrap_or_default();
+    let _ = api
+        .patch(
+            cm_name,
+            &kube::api::PatchParams::apply("vmrogue"),
+            &kube::api::Patch::Apply(patch),
+        )
+        .await;
+
     Json(serde_json::json!({
         "marked_read": req.notification_ids.len(),
-        "status": "acknowledged"
+        "status": "ok",
     }))
 }

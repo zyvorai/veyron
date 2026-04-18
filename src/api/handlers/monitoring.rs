@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+#[cfg(feature = "web")]
+use k8s_openapi::api::core::v1::Event;
 
 /// Monitoring status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -32,6 +34,7 @@ async fn get_monitoring_status(State(state): State<SharedState>) -> Json<Monitor
 
     let s = state.read().await;
     let client = s.client().client();
+    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
 
     // Check for Prometheus, Grafana, Alertmanager across common namespaces
     let monitoring_namespaces = ["monitoring", "prometheus", "observability", &s.namespace];
@@ -70,15 +73,81 @@ async fn get_monitoring_status(State(state): State<SharedState>) -> Json<Monitor
                 .unwrap_or(false)
         })
         .count() as u32;
+    let active_alerts = count_active_alerts(&events);
+
+    // Try to read retention from a Prometheus ConfigMap
+    let retention_period = {
+        let mut found = None;
+        'outer: for ns in &monitoring_namespaces {
+            let cm_api: kube::api::Api<k8s_openapi::api::core::v1::ConfigMap> =
+                kube::api::Api::namespaced(client.clone(), ns);
+            if let Ok(cms) = cm_api.list(&kube::api::ListParams::default()).await {
+                for cm in &cms.items {
+                    let name = cm.metadata.name.as_deref().unwrap_or("");
+                    if name.contains("prometheus") {
+                        if let Some(data) = cm.data.as_ref() {
+                            for val in data.values() {
+                                if let Some(pos) = val.find("retention") {
+                                    let tail = &val[pos..];
+                                    if let Some(ret) = tail
+                                        .split_whitespace()
+                                        .nth(1)
+                                        .filter(|v| v.chars().any(|c| c.is_ascii_digit()))
+                                    {
+                                        found = Some(ret.to_string());
+                                        break 'outer;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        found.unwrap_or_else(|| "15d".to_string())
+    };
 
     Json(MonitoringStatus {
         prometheus_available: prometheus,
         grafana_available: grafana,
         alertmanager_available: alertmanager,
         metrics_collection_interval: "30s".to_string(),
-        retention_period: "15d".to_string(),
-        active_alerts: 0,
+        retention_period,
+        active_alerts,
         total_targets,
         healthy_targets,
     })
+}
+
+#[cfg(feature = "web")]
+fn count_active_alerts(events: &[Event]) -> u32 {
+    events
+        .iter()
+        .filter(|e| e.type_.as_deref() == Some("Warning"))
+        .count() as u32
+}
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn count_active_alerts_only_counts_warning_events() {
+        let events = vec![
+            Event {
+                type_: Some("Warning".to_string()),
+                ..Default::default()
+            },
+            Event {
+                type_: Some("Normal".to_string()),
+                ..Default::default()
+            },
+            Event {
+                type_: Some("Warning".to_string()),
+                ..Default::default()
+            },
+        ];
+
+        assert_eq!(count_active_alerts(&events), 2);
+    }
 }

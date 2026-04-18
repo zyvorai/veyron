@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, State}, http::StatusCode, routing::{get, post}};
+use axum::{Json, Router, extract::{Path, Query, State}, http::StatusCode, routing::{get, post}};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -31,6 +31,11 @@ pub struct CreateBackupRequest {
     pub encrypt: bool,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct BackupQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -41,33 +46,26 @@ pub fn router(state: SharedState) -> Router {
 
 /// Backups are implemented as VirtualMachineSnapshots with backup labels.
 #[cfg(feature = "web")]
-async fn list_backups(State(state): State<SharedState>) -> Json<Vec<BackupResponse>> {
-    use crate::snapshots::SnapshotManager;
+async fn list_backups(
+    State(state): State<SharedState>,
+    Query(query): Query<BackupQuery>,
+) -> Json<Vec<BackupResponse>> {
+    use crate::snapshots::crds::VirtualMachineSnapshot;
+    use kube::api::{Api, ListParams};
 
     let s = state.read().await;
-    let manager = SnapshotManager::from_client(s.client().client(), &s.namespace);
+    let client = s.client().client();
+    let api: Api<VirtualMachineSnapshot> = match query.namespace.as_deref() {
+        Some("all") => Api::all(client),
+        Some(ns) => Api::namespaced(client, ns),
+        None => Api::namespaced(client, &s.namespace),
+    };
 
-    let snapshots = manager.list_all_snapshots().await.unwrap_or_default();
-
-    let results: Vec<BackupResponse> = snapshots
-        .into_iter()
-        .map(|snap| BackupResponse {
-            id: snap.name.clone(),
-            name: snap.name,
-            vm_name: snap.vm_name,
-            namespace: snap.namespace,
-            backup_type: "snapshot".to_string(),
-            status: snap.status.to_string(),
-            size_bytes: None,
-            compressed: false,
-            encrypted: false,
-            created_at: snap
-                .created_at
-                .map(|t| t.to_rfc3339())
-                .unwrap_or_default(),
-            completed_at: snap.completed_at.map(|t| t.to_rfc3339()),
-        })
-        .collect();
+    let results = api
+        .list(&ListParams::default())
+        .await
+        .map(|list| list.items.into_iter().map(snapshot_to_backup).collect())
+        .unwrap_or_default();
 
     Json(results)
 }
@@ -137,5 +135,55 @@ async fn restore_backup(
             }
         },
         Err(_) => StatusCode::NOT_FOUND,
+    }
+}
+
+#[cfg(feature = "web")]
+fn snapshot_to_backup(snapshot: crate::snapshots::crds::VirtualMachineSnapshot) -> BackupResponse {
+    let created_at = snapshot
+        .status
+        .as_ref()
+        .and_then(|s| s.creation_time.clone())
+        .or_else(|| {
+            snapshot
+                .metadata
+                .creation_timestamp
+                .as_ref()
+                .map(|t| t.0.to_rfc3339())
+        })
+        .unwrap_or_default();
+
+    let ready_to_use = snapshot
+        .status
+        .as_ref()
+        .and_then(|s| s.ready_to_use)
+        .unwrap_or(false);
+
+    let status = snapshot
+        .status
+        .as_ref()
+        .and_then(|s| s.phase.clone())
+        .unwrap_or_else(|| "Unknown".to_string());
+
+    let vm_name = snapshot
+        .metadata
+        .labels
+        .as_ref()
+        .and_then(|labels| labels.get("vmrogue.io/vm"))
+        .cloned()
+        .unwrap_or_else(|| snapshot.spec.source.name.clone());
+
+    BackupResponse {
+        id: snapshot.metadata.name.clone().unwrap_or_default(),
+        name: snapshot.metadata.name.unwrap_or_default(),
+        vm_name,
+        namespace: snapshot.metadata.namespace.unwrap_or_default(),
+        backup_type: "snapshot".to_string(),
+        status,
+        size_bytes: None,
+        compressed: false,
+        encrypted: false,
+        created_at: created_at.clone(),
+        completed_at: ready_to_use.then_some(created_at),
     }
 }

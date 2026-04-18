@@ -66,7 +66,7 @@ async fn list_snapshots(
                     namespace: snap.namespace,
                     status: snap.status.to_string(),
                     ready_to_use: snap.ready_to_use,
-                    size_bytes: None,
+                    size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
                     created_at: snap
                         .created_at
                         .map(|t| t.to_rfc3339())
@@ -117,7 +117,7 @@ async fn create_snapshot(
             namespace: snap.namespace,
             status: snap.status.to_string(),
             ready_to_use: snap.ready_to_use,
-            size_bytes: None,
+            size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
             created_at: snap
                 .created_at
                 .map(|t| t.to_rfc3339())

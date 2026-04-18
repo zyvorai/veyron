@@ -1,5 +1,5 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::{get, post}};
+use axum::{Json, Router, extract::{Query, State}, routing::{get, post}};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -23,6 +23,11 @@ pub struct GitOpsSyncRequest {
     pub dry_run: bool,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct GitOpsQuery {
+    pub namespace: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -33,66 +38,122 @@ pub fn router(state: SharedState) -> Router {
 
 /// Report GitOps status by checking for ArgoCD or Flux applications.
 #[cfg(feature = "web")]
-async fn get_gitops_status(State(state): State<SharedState>) -> Json<GitOpsStatus> {
+async fn get_gitops_status(
+    State(state): State<SharedState>,
+    Query(query): Query<GitOpsQuery>,
+) -> Json<GitOpsStatus> {
     use k8s_openapi::api::core::v1::ConfigMap;
 
     let s = state.read().await;
+    let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
 
     // Check for vmrogue gitops config in ConfigMap
     let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+        kube::api::Api::namespaced(s.client().client(), &namespace);
     let params = kube::api::ListParams::default().labels("vmrogue.io/type=gitops");
 
-    let (repo_url, branch) = if let Ok(cms) = api.list(&params).await {
-        cms.items.first().and_then(|cm| {
-            let data = cm.data.as_ref()?;
-            Some((
-                data.get("repo_url").cloned().unwrap_or_default(),
-                data.get("branch").cloned().unwrap_or_else(|| "main".to_string()),
-            ))
-        }).unwrap_or_default()
+    let (repo_url, branch, last_commit, last_synced, stored_vm_count) =
+        if let Ok(cms) = api.list(&params).await {
+            cms.items.first().and_then(|cm| {
+                let data = cm.data.as_ref()?;
+                Some((
+                    data.get("repo_url").cloned().unwrap_or_default(),
+                    data.get("branch").cloned().unwrap_or_else(|| "main".to_string()),
+                    data.get("last_commit").cloned().unwrap_or_default(),
+                    data.get("last_synced").cloned(),
+                    data.get("vm_count").and_then(|v| v.parse::<usize>().ok()),
+                ))
+            })
+            .unwrap_or_default()
+        } else {
+            Default::default()
+        };
+
+    let vms = if namespace == "all" {
+        s.client().list_all_vms().await.unwrap_or_default()
     } else {
-        (String::new(), String::new())
+        s.client().list_vms(&namespace).await.unwrap_or_default()
     };
+
+    let drift_detected = stored_vm_count.map(|c| c != vms.len()).unwrap_or(false);
 
     let sync_status = if repo_url.is_empty() {
         "not_configured"
+    } else if drift_detected {
+        "out_of_sync"
+    } else if last_synced.is_some() {
+        "synced"
     } else {
-        "unknown"
+        "pending"
     };
 
     Json(GitOpsStatus {
         repo_url,
         branch,
-        last_commit: String::new(),
+        last_commit,
         sync_status: sync_status.to_string(),
-        last_synced: None,
-        drift_detected: false,
+        last_synced,
+        drift_detected,
     })
 }
 
 #[cfg(feature = "web")]
 async fn trigger_sync(
     State(state): State<SharedState>,
+    Query(query): Query<GitOpsQuery>,
     Json(req): Json<GitOpsSyncRequest>,
 ) -> (axum::http::StatusCode, Json<serde_json::Value>) {
+    use k8s_openapi::api::core::v1::ConfigMap;
+
     let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
+    let vms = if namespace == "all" {
+        s.client().list_all_vms().await.unwrap_or_default()
+    } else {
+        s.client().list_vms(&namespace).await.unwrap_or_default()
+    };
+    let now = chrono::Utc::now().to_rfc3339();
+
+    if !req.dry_run {
+        // Persist sync state back to the GitOps ConfigMap
+        let api: kube::api::Api<ConfigMap> =
+            kube::api::Api::namespaced(s.client().client(), &namespace);
+        let params = kube::api::ListParams::default().labels("vmrogue.io/type=gitops");
+        if let Ok(cms) = api.list(&params).await {
+            if let Some(cm) = cms.items.first() {
+                if let Some(name) = cm.metadata.name.as_deref() {
+                    let patch = serde_json::json!({
+                        "data": {
+                            "last_synced": now,
+                            "vm_count": vms.len().to_string(),
+                        }
+                    });
+                    let _ = api
+                        .patch(
+                            name,
+                            &kube::api::PatchParams::default(),
+                            &kube::api::Patch::Merge(patch),
+                        )
+                        .await;
+                }
+            }
+        }
+    }
 
     log::info!(
         "GitOps sync triggered: dry_run={}, force={}, namespace={}, vms={}",
-        req.dry_run, req.force, s.namespace, vms.len()
+        req.dry_run, req.force, namespace, vms.len()
     );
 
     (
         axum::http::StatusCode::OK,
         Json(serde_json::json!({
             "status": if req.dry_run { "dry_run" } else { "synced" },
-            "namespace": s.namespace,
+            "namespace": namespace,
             "vms_in_cluster": vms.len(),
+            "synced_at": if req.dry_run { serde_json::Value::Null } else { serde_json::Value::String(now) },
             "dry_run": req.dry_run,
             "force": req.force,
-            "note": "Use 'vmrogue gitops-export' to export manifests, then 'vmrogue gitops-diff' to compare with cluster state."
         })),
     )
 }
