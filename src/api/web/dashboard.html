@@ -155,7 +155,8 @@ body>*{position:relative;z-index:1}
   height:14px;
 }
 .nav-group:hover .nav-dropdown,
-.nav-group:focus-within .nav-dropdown{display:block}
+.nav-group:focus-within .nav-dropdown,
+.nav-group.nav-dropdown-open .nav-dropdown{display:block}
 .nav-dropdown .nav-link{
   display:block;width:100%;text-align:left;
   padding:7px 12px;border-radius:3px;font-size:.65em;white-space:nowrap;
@@ -772,8 +773,10 @@ body>*{position:relative;z-index:1}
 
 /* Mobile responsive */
 @media(max-width:768px){
-  .navbar{padding:0 12px;height:50px;flex-wrap:wrap}
-  .nav-links{gap:0;margin-left:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+  /* min-height + no fixed height: wrapped nav must not clip dropdowns */
+  .navbar{padding:0 12px;min-height:50px;height:auto;align-items:flex-start;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+  /* overflow-x:auto on .nav-links clips position:absolute dropdowns (submenus look empty) */
+  .nav-links{gap:0;margin-left:8px;flex-wrap:wrap;overflow:visible;row-gap:6px;max-width:min(100%,calc(100vw - 160px))}
   .nav-link{padding:6px 8px;font-size:.55em;white-space:nowrap}
   .nav-group-btn{padding:6px 10px;font-size:.55em}
   .nav-dropdown{min-width:130px}
@@ -900,6 +903,7 @@ body>*{position:relative;z-index:1}
   </div>
   <div class="navbar-right">
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Namespace">
+      <option value="all">all</option>
       <option value="default">default</option>
     </select>
     <select class="refresh-select" id="refresh-interval" onchange="setRefreshInterval(this.value)" title="Auto-refresh interval">
@@ -1793,6 +1797,70 @@ async function apiFetch(url, opts) {
   return resp;
 }
 
+/** Parse JSON from apiFetch; throws Error with server message when HTTP status is not OK */
+async function apiJson(url, opts) {
+  const resp = await apiFetch(url, opts);
+  const text = await resp.text();
+  let body = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      if (!resp.ok) throw new Error(text.trim().slice(0, 200) || ('HTTP ' + resp.status));
+      throw new Error('Invalid JSON from API');
+    }
+  }
+  if (!resp.ok) {
+    const msg =
+      (body && typeof body === 'object' &&
+        (body.error?.message ?? body.message ?? (typeof body.error === 'string' ? body.error : null))) ||
+      (text && text.trim().slice(0, 200)) ||
+      ('HTTP ' + resp.status);
+    throw new Error(String(msg));
+  }
+  // HTTP 200 but Rust ApiResponse.success === false
+  if (body && typeof body === 'object' && body.success === false) {
+    const msg =
+      body.error?.message ??
+      (typeof body.error === 'object' && body.error !== null ? body.error.message : null) ??
+      body.message ??
+      'Request failed';
+    throw new Error(String(msg));
+  }
+  return body;
+}
+
+/** Unwrap ApiResponse { success, data }; leave bare arrays/objects as-is (templates, costs, CRDs). */
+function unwrapData(j) {
+  if (j == null) return j;
+  if (typeof j === 'object' && Object.prototype.hasOwnProperty.call(j, 'success') && j.success === true &&
+      Object.prototype.hasOwnProperty.call(j, 'data'))
+    return j.data;
+  return j;
+}
+
+/** Normalize list payloads: envelope data, bare arrays, or CRD-style { items: [] }. */
+function asArray(j) {
+  const u = unwrapData(j);
+  if (u == null) return [];
+  if (Array.isArray(u)) return u;
+  if (typeof u === 'object') {
+    if (Array.isArray(u.data)) return u.data;
+    if (Array.isArray(u.items)) return u.items;
+  }
+  return [];
+}
+
+function tbodyError(colspan, msg) {
+  return '<tr><td colspan="' + colspan + '" style="text-align:center;color:var(--error);padding:14px;line-height:1.45">' +
+    esc(msg || 'Request failed') + '</td></tr>';
+}
+
+function summaryErrorHtml(msg) {
+  return '<div class="stat-card stat-card-red" style="grid-column:1/-1"><div class="stat-label">API error</div><div class="stat-value" style="font-size:.75em;line-height:1.45;color:var(--error);font-weight:500">' +
+    esc(msg || 'Request failed') + '</div></div>';
+}
+
 // Helpers
 function sc(status) { return status==='Running'?'running':status==='Stopped'?'stopped':(status==='Failed'||status==='Error')?'error':'other'; }
 function fmtTime(ts) {
@@ -1801,22 +1869,20 @@ function fmtTime(ts) {
 
 // VM Action
 async function vmAction(ns, name, action) {
-  const url = '/api/v1/vms/'+ns+'/'+name+'/'+action;
+  const url = '/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name)+'/'+encodeURIComponent(action);
   try {
-    const r = await apiFetch(url, {method:'POST'});
-    const j = await r.json();
-    if (j.success) { toast(name+' '+action+' initiated', 'success'); setTimeout(refresh, 1500); }
-    else toast('Failed: '+(j.error?.message||'Unknown'), 'error');
+    await apiJson(url, {method:'POST'});
+    toast(name+' '+action+' initiated', 'success');
+    setTimeout(refresh, 1500);
   } catch(e) { toast('Error: '+e.message, 'error'); }
 }
 
 async function vmDelete(ns, name) {
   if (!confirm('Delete VM "'+name+'"? This cannot be undone.')) return;
   try {
-    const r = await apiFetch('/api/v1/vms/'+ns+'/'+name, {method:'DELETE'});
-    const j = await r.json();
-    if (j.success) { toast(name+' deleted', 'success'); setTimeout(refresh, 1500); }
-    else toast('Failed: '+(j.error?.message||'Unknown'), 'error');
+    await apiJson('/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), {method:'DELETE'});
+    toast(name+' deleted', 'success');
+    setTimeout(refresh, 1500);
   } catch(e) { toast('Error: '+e.message, 'error'); }
 }
 
@@ -1840,10 +1906,9 @@ function vmRow(vm, showActions) {
 // Fetch VMs
 async function fetchVMs() {
   try {
-    const r = await apiFetch('/api/v1/vms');
-    const j = await r.json();
-    if (!j.success||!j.data) { updateHealth(false,'API error'); return; }
-    vmData = j.data;
+    const j = await apiJson('/api/v1/vms');
+    const list = asArray(j);
+    vmData = list;
     const total=vmData.length, running=vmData.filter(v=>v.status==='Running').length;
     const stopped=vmData.filter(v=>v.status==='Stopped').length;
     const failed=vmData.filter(v=>v.status==='Failed'||v.status==='Error').length;
@@ -1885,9 +1950,8 @@ async function fetchVMs() {
 // Fetch Events
 async function fetchEvents(full) {
   try {
-    const r = await apiFetch('/api/v1/events');
-    const j = await r.json();
-    const events = (j.success && j.data) ? j.data : [];
+    const j = await apiJson('/api/v1/events');
+    const events = asArray(j);
     const renderEvents = (items, target) => {
       if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#9889;</div><p>No signals intercepted</p></div>'; return; }
       target.innerHTML = items.map(e => {
@@ -1898,17 +1962,23 @@ async function fetchEvents(full) {
     };
     renderEvents(events.slice(0,5), document.getElementById('dash-event-list'));
     if (full) renderEvents(events, document.getElementById('events-full-list'));
-  } catch {}
+  } catch (e) {
+    const dash = document.getElementById('dash-event-list');
+    const fullEl = document.getElementById('events-full-list');
+    const msg = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+    if (dash) dash.innerHTML = msg;
+    if (full && fullEl) fullEl.innerHTML = msg;
+  }
 }
 
 // Fetch Snapshots
 async function fetchSnapshots() {
   try {
-    const r = await apiFetch('/api/v1/snapshots');
-    const j = await r.json();
+    const j = await apiJson('/api/v1/snapshots');
+    const snaps = asArray(j);
     const el = document.getElementById('snap-list');
-    if (!j.success||!j.data||j.data.length===0) { el.innerHTML='<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot from VM details</p></div>'; return; }
-    el.innerHTML = j.data.map(s => {
+    if (snaps.length === 0) { el.innerHTML='<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot from VM details</p></div>'; return; }
+    el.innerHTML = snaps.map(s => {
       const ready = s.ready;
       const safeName = s.name.replace(/'/g, "\\'");
       return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
@@ -1916,17 +1986,20 @@ async function fetchSnapshots() {
         '<button class="btn btn-delete" onclick="deleteSnapshot(\'default\',\''+safeName+'\')">&#10005;</button>' +
         '</div></div>';
     }).join('');
-  } catch(e) { document.getElementById('snap-list').innerHTML='<div class="empty-state"><p>Failed to load snapshots</p></div>'; }
+  } catch(e) {
+    const el = document.getElementById('snap-list');
+    if (el) el.innerHTML='<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+  }
 }
 
 // Fetch cluster overview for real resource bars
 async function fetchOverview() {
   try {
-    const r = await apiFetch('/api/v1/dashboard/overview');
-    const j = await r.json();
-    if (!j.success || !j.data) return;
-    const c = j.data.cluster;
-    const n = j.data.nodes;
+    const j = await apiJson('/api/v1/dashboard/overview');
+    const d = unwrapData(j);
+    if (!d || !d.cluster || !d.nodes) return;
+    const c = d.cluster;
+    const n = d.nodes;
 
     const cpuPct = n.total_cpu_allocatable > 0 ? Math.round((c.total_vcpus_allocated / n.total_cpu_allocatable) * 100) : 0;
     const memPct = n.total_memory_allocatable_gb > 0 ? Math.round((c.total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) : 0;
@@ -1946,7 +2019,9 @@ async function fetchOverview() {
     document.getElementById('mem-current').textContent=memPct+'%';
     drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
     drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');
-  } catch {}
+  } catch (e) {
+    console.error('Overview fetch error:', e);
+  }
 }
 
 // Helpers
@@ -1967,29 +2042,31 @@ let templateCache = [];
 
 async function fetchTemplates() {
   try {
-    const r = await apiFetch('/api/v1/templates');
-    const j = await r.json();
-    if (j.success && j.data) {
-      templateCache = j.data;
-      const sel = document.getElementById('vm-template');
-      sel.innerHTML = '<option value="">-- Select template --</option>';
-      j.data.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t.name;
-        opt.textContent = t.name + ' (' + t.cpu + ' CPU, ' + t.memory + ', ' + t.disk + ')';
-        sel.appendChild(opt);
-      });
-    }
-  } catch {}
+    const j = await apiJson('/api/v1/templates');
+    templateCache = asArray(j);
+    const sel = document.getElementById('vm-template');
+    sel.innerHTML = '<option value="">-- Select template --</option>';
+    templateCache.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t.name;
+      const cpu = t.default_cpus != null ? t.default_cpus : t.cpu;
+      const mem = t.default_memory || t.memory;
+      const disk = t.default_disk_size || t.disk;
+      opt.textContent = t.name + ' (' + cpu + ' CPU, ' + mem + ', ' + disk + ')';
+      sel.appendChild(opt);
+    });
+  } catch (e) {
+    console.error('Templates fetch error:', e);
+  }
 }
 
 function onTemplateChange() {
   const name = document.getElementById('vm-template').value;
   const tpl = templateCache.find(t => t.name === name);
   if (tpl) {
-    document.getElementById('vm-cpus').value = tpl.cpu;
-    document.getElementById('vm-memory').value = tpl.memory;
-    document.getElementById('vm-disk').value = tpl.disk;
+    document.getElementById('vm-cpus').value = tpl.default_cpus != null ? tpl.default_cpus : tpl.cpu;
+    document.getElementById('vm-memory').value = tpl.default_memory || tpl.memory;
+    document.getElementById('vm-disk').value = tpl.default_disk_size || tpl.disk;
   }
 }
 
@@ -1998,13 +2075,12 @@ let selectedProfile = '';
 
 async function fetchProfiles() {
   try {
-    const r = await apiFetch('/api/v1/profiles');
-    const j = await r.json();
-    if (j.success && j.data) {
-      profileCache = j.data;
-      renderProfilePicker();
-    }
-  } catch {}
+    const j = await apiJson('/api/v1/profiles');
+    profileCache = asArray(j);
+    renderProfilePicker();
+  } catch (e) {
+    console.error('Profiles fetch error:', e);
+  }
 }
 
 function renderProfilePicker() {
@@ -2067,19 +2143,14 @@ async function forgeVM() {
   };
 
   try {
-    const r = await apiFetch('/api/v1/vms', {
+    await apiJson('/api/v1/vms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    const j = await r.json();
-    if (j.success) {
-      toast('VM "' + name + '" forged successfully', 'success');
-      closeCreateModal();
-      setTimeout(refresh, 1500);
-    } else {
-      toast('Failed: ' + (j.error?.message || 'Unknown error'), 'error');
-    }
+    toast('VM "' + name + '" forged successfully', 'success');
+    closeCreateModal();
+    setTimeout(refresh, 1500);
   } catch (e) {
     toast('Error: ' + e.message, 'error');
   } finally {
@@ -2121,10 +2192,9 @@ function toggleVmDetail(ns, name) {
 
 async function fetchVmDetail(ns, name) {
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name);
-    const j = await r.json();
-    if (!j.success || !j.data) return;
-    const vm = j.data;
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    const vm = unwrapData(j);
+    if (!vm) return;
     const vmi = vm.vmi_status || {};
     const ifaces = vmi.interfaces || [];
     const guestOS = vmi.guest_os_info;
@@ -2207,7 +2277,7 @@ async function fetchVmDetail(ns, name) {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
     });
-  } catch (e) { toast('Failed to load VM details', 'error'); }
+  } catch (e) { toast('Failed to load VM details: ' + (e.message || String(e)), 'error'); }
 }
 
 function detailRow(label, value) {
@@ -2231,15 +2301,15 @@ function filterVMs() {
 // ── Nodes ──
 async function fetchNodes() {
   try {
-    const r = await apiFetch('/api/v1/nodes');
-    const j = await r.json();
+    const j = await apiJson('/api/v1/nodes');
+    const nodes = asArray(j);
     const el = document.getElementById('node-list');
-    if (!j.success || !j.data || j.data.length === 0) {
+    if (nodes.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
       return;
     }
-    document.getElementById('node-count').textContent = j.data.length + ' nodes';
-    el.innerHTML = j.data.map(n => {
+    document.getElementById('node-count').textContent = nodes.length + ' nodes';
+    el.innerHTML = nodes.map(n => {
       const statusCls = n.status === 'Ready' ? 'ready' : 'not-ready';
       const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
       return '<div class="table-row node-row" style="cursor:pointer" onclick="toggleNodeDetail(\'' + esc(n.name) + '\')">' +
@@ -2252,7 +2322,10 @@ async function fetchNodes() {
         '<span class="cell-mono" style="font-size:.85em">' + esc(n.os_image) + '</span>' +
         '</div>';
     }).join('');
-  } catch (e) { document.getElementById('node-list').innerHTML = '<div class="empty-state"><p>Failed to load nodes</p></div>'; }
+  } catch (e) {
+    const el = document.getElementById('node-list');
+    if (el) el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+  }
 }
 
 function parseMemK8s(s) {
@@ -2266,15 +2339,15 @@ function parseMemK8s(s) {
 // ── Pods ──
 async function fetchPods() {
   try {
-    const r = await apiFetch('/api/v1/pods');
-    const j = await r.json();
+    const j = await apiJson('/api/v1/pods');
+    const pods = asArray(j);
     const el = document.getElementById('pod-list');
-    if (!j.success || !j.data || j.data.length === 0) {
+    if (pods.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No pods found</p></div>';
       return;
     }
-    document.getElementById('pod-count').textContent = j.data.length + ' pods';
-    el.innerHTML = j.data.map(p => {
+    document.getElementById('pod-count').textContent = pods.length + ' pods';
+    el.innerHTML = pods.map(p => {
       const phaseCls = p.phase === 'Running' ? 'running' : p.phase === 'Pending' ? 'pending' : p.phase === 'Failed' ? 'failed' : 'succeeded';
       return '<div class="table-row pod-row">' +
         '<span class="cell-name">' + esc(p.name) + '</span>' +
@@ -2285,7 +2358,10 @@ async function fetchPods() {
         '<span class="cell-mono">' + esc(p.age) + '</span>' +
         '</div>';
     }).join('');
-  } catch (e) { document.getElementById('pod-list').innerHTML = '<div class="empty-state"><p>Failed to load pods</p></div>'; }
+  } catch (e) {
+    const el = document.getElementById('pod-list');
+    if (el) el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+  }
 }
 
 // ── Snapshot Create/Restore ──
@@ -2313,19 +2389,14 @@ async function createSnapshot() {
   const btn = document.getElementById('btn-create-snap');
   btn.disabled = true; btn.textContent = 'Creating...';
   try {
-    const r = await apiFetch('/api/v1/snapshots/' + snapNs + '/' + vmName + '/create', {
+    await apiJson('/api/v1/snapshots/' + encodeURIComponent(snapNs) + '/' + encodeURIComponent(vmName) + '/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ snapshot_name: snapName }),
     });
-    const j = await r.json();
-    if (j.success) {
-      toast('Snapshot created for ' + vmName, 'success');
-      closeSnapModal();
-      if (currentPage === 'snapshots') fetchSnapshots();
-    } else {
-      toast('Failed: ' + (j.error?.message || 'Unknown'), 'error');
-    }
+    toast('Snapshot created for ' + vmName, 'success');
+    closeSnapModal();
+    if (currentPage === 'snapshots') fetchSnapshots();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
   finally { btn.disabled = false; btn.textContent = 'Create Snapshot'; }
 }
@@ -2333,20 +2404,18 @@ async function createSnapshot() {
 async function deleteSnapshot(ns, snapName) {
   if (!confirm('Delete snapshot "' + snapName + '"? This cannot be undone.')) return;
   try {
-    const r = await apiFetch('/api/v1/snapshots/' + ns + '/' + snapName + '/delete', { method: 'POST' });
-    const j = await r.json();
-    if (j.success) { toast('Snapshot "' + snapName + '" deleted', 'success'); fetchSnapshots(); }
-    else toast('Failed: ' + (j.error?.message || 'Unknown'), 'error');
+    await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(snapName) + '/delete', { method: 'POST' });
+    toast('Snapshot "' + snapName + '" deleted', 'success');
+    fetchSnapshots();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function restoreSnapshot(ns, snapName) {
   if (!confirm('Restore snapshot "' + snapName + '"? The VM must be stopped.')) return;
   try {
-    const r = await apiFetch('/api/v1/snapshots/' + ns + '/' + snapName + '/restore', { method: 'POST' });
-    const j = await r.json();
-    if (j.success) { toast('Restore initiated for ' + snapName, 'success'); setTimeout(refresh, 2000); }
-    else toast('Failed: ' + (j.error?.message || 'Unknown'), 'error');
+    await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(snapName) + '/restore', { method: 'POST' });
+    toast('Restore initiated for ' + snapName, 'success');
+    setTimeout(refresh, 2000);
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
@@ -2443,10 +2512,9 @@ function toggleVncFullscreen() {
 // ── Security Posture ──
 async function fetchSecurity(ns, name) {
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/security');
-    const j = await r.json();
-    if (!j.success || !j.data) return '';
-    const d = j.data;
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/security');
+    const d = unwrapData(j);
+    if (!d) return '';
     const scoreColor = d.score >= 80 ? 'var(--success)' : d.score >= 50 ? 'var(--warning)' : 'var(--error)';
     let html = '<div class="detail-section"><div class="detail-section-title">Security Posture</div>';
     html += '<div class="detail-row"><span class="lbl">Score</span><span class="val" style="color:' + scoreColor + ';font-weight:700;font-size:1.1em">' + d.score + '/100</span></div>';
@@ -2459,21 +2527,28 @@ async function fetchSecurity(ns, name) {
   } catch { return ''; }
 }
 
+function crdItemsFromJson(j) {
+  if (!j || typeof j !== 'object') return { items: [], message: null };
+  const items = Array.isArray(j.items) ? j.items : [];
+  const message = j.message || null;
+  return { items, message };
+}
+
 // ── Namespace Selector ──
 let currentNamespace = localStorage.getItem('vmrogue_ns') || 'all';
 
 async function fetchNamespaces() {
   try {
-    const r = await apiFetch('/api/v1/namespaces');
-    const j = await r.json();
-    if (j.success && j.data) {
-      const sel = document.getElementById('ns-selector');
-      const namespaces = ['all'].concat(j.data);
-      sel.innerHTML = namespaces.map(ns =>
-        '<option value="' + esc(ns) + '"' + (ns === currentNamespace ? ' selected' : '') + '>' + esc(ns) + '</option>'
-      ).join('');
-    }
-  } catch {}
+    const j = await apiJson('/api/v1/namespaces');
+    const raw = asArray(j);
+    const sel = document.getElementById('ns-selector');
+    const namespaces = ['all'].concat(raw);
+    sel.innerHTML = namespaces.map(ns =>
+      '<option value="' + esc(ns) + '"' + (ns === currentNamespace ? ' selected' : '') + '>' + esc(ns) + '</option>'
+    ).join('');
+  } catch (e) {
+    console.error('Namespaces fetch error:', e);
+  }
 }
 
 function setNamespace(ns) {
@@ -2505,13 +2580,12 @@ async function cloneVM(ns, name) {
   const newName = prompt('Clone "' + name + '" — enter new VM name:');
   if (!newName) return;
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/clone', {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/clone', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({new_name: newName.trim()}),
     });
-    const j = await r.json();
-    if (j.success) { toast('Cloned to ' + newName, 'success'); setTimeout(refresh, 1500); }
-    else toast('Clone failed: ' + (j.error?.message || '?'), 'error');
+    toast('Cloned to ' + newName, 'success');
+    setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
@@ -2530,41 +2604,38 @@ async function submitResize() {
   const cpus = parseInt(document.getElementById('resize-cpus').value);
   const memory = document.getElementById('resize-memory').value.trim();
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name, {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {
       method: 'PUT', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({cpus, memory}),
     });
-    const j = await r.json();
-    if (j.success) { toast(name + ' resized (restart to apply)', 'success'); closeResizeModal(); setTimeout(refresh, 1500); }
-    else toast('Resize failed: ' + (j.error?.message || '?'), 'error');
+    toast(name + ' resized (restart to apply)', 'success');
+    closeResizeModal();
+    setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function pauseVM(ns, name) {
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/pause', {method:'POST'});
-    const j = await r.json();
-    if (j.success) { toast(name + ' paused', 'success'); setTimeout(refresh, 1500); }
-    else toast('Pause failed: ' + (j.error?.message || '?'), 'error');
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/pause', {method:'POST'});
+    toast(name + ' paused', 'success');
+    setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function unpauseVM(ns, name) {
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/unpause', {method:'POST'});
-    const j = await r.json();
-    if (j.success) { toast(name + ' unpaused', 'success'); setTimeout(refresh, 1500); }
-    else toast('Unpause failed: ' + (j.error?.message || '?'), 'error');
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/unpause', {method:'POST'});
+    toast(name + ' unpaused', 'success');
+    setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 async function migrateVM(ns, name) {
   if (!confirm('Migrate "' + name + '" to another node?')) return;
   try {
-    const r = await apiFetch('/api/v1/vms/' + ns + '/' + name + '/migrate', {method:'POST'});
-    const j = await r.json();
-    if (j.success) { toast(name + ' migration initiated', 'success'); setTimeout(refresh, 2000); }
-    else toast('Migration failed: ' + (j.error?.message || '?'), 'error');
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/migrate', {method:'POST'});
+    toast(name + ' migration initiated', 'success');
+    setTimeout(refresh, 2000);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
@@ -2596,14 +2667,20 @@ async function bulkAction(action) {
   if (selectedVMs.size === 0) return;
   if (action === 'delete' && !confirm('Delete ' + selectedVMs.size + ' VMs? This cannot be undone.')) return;
   const names = [...selectedVMs];
+  const errs = [];
   for (const name of names) {
-    if (action === 'delete') {
-      await apiFetch('/api/v1/vms/default/' + name, {method:'DELETE'}).catch(() => {});
-    } else {
-      await apiFetch('/api/v1/vms/default/' + name + '/' + action, {method:'POST'}).catch(() => {});
+    try {
+      if (action === 'delete') {
+        await apiJson('/api/v1/vms/default/' + encodeURIComponent(name), {method:'DELETE'});
+      } else {
+        await apiJson('/api/v1/vms/default/' + encodeURIComponent(name) + '/' + encodeURIComponent(action), {method:'POST'});
+      }
+    } catch (e) {
+      errs.push(name + ': ' + (e.message || e));
     }
   }
-  toast(names.length + ' VMs: ' + action, 'success');
+  if (errs.length) toast(errs.slice(0, 5).join(' · ') + (errs.length > 5 ? ' …' : ''), 'error');
+  else toast(names.length + ' VMs: ' + action, 'success');
   selectedVMs.clear();
   toggleBulkBar();
   setTimeout(refresh, 1500);
@@ -2611,87 +2688,99 @@ async function bulkAction(action) {
 
 // ── Storage ──
 async function fetchStorage() {
+  const pvcEl = document.getElementById('pvc-list');
+  const scEl = document.getElementById('sc-list');
   try {
-    const [pvcsR, scsR] = await Promise.all([
-      apiFetch('/api/v1/storage/pvcs' + nsParam()),
-      apiFetch('/api/v1/storage/classes'),
+    const [pj, sj] = await Promise.all([
+      apiJson('/api/v1/storage/pvcs' + nsParam()),
+      apiJson('/api/v1/storage/classes'),
     ]);
-    const pvcs = await pvcsR.json();
-    const scs = await scsR.json();
+    const pvcRows = asArray(pj);
+    const scRows = asArray(sj);
 
-    const pvcEl = document.getElementById('pvc-list');
-    if (pvcs.success && pvcs.data && pvcs.data.length > 0) {
-      pvcEl.innerHTML = pvcs.data.map(p =>
+    if (pvcRows.length > 0) {
+      pvcEl.innerHTML = pvcRows.map(p =>
         '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) + '</div><div class="snap-vm">' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div></div><div class="snap-status"><span class="vm-badge ' + (p.status==='Bound'?'running':'other') + '">' + esc(p.status) + '</span></div></div>'
       ).join('');
     } else {
       pvcEl.innerHTML = '<div class="empty-state"><p>No PVCs</p></div>';
     }
 
-    const scEl = document.getElementById('sc-list');
-    if (scs.success && scs.data && scs.data.length > 0) {
-      scEl.innerHTML = scs.data.map(s =>
+    if (scRows.length > 0) {
+      scEl.innerHTML = scRows.map(s =>
         '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(s.name) + (s.is_default ? ' (default)' : '') + '</div><div class="snap-vm">' + esc(s.provisioner) + ' &bull; ' + esc(s.reclaim_policy) + '</div></div></div>'
       ).join('');
     } else {
       scEl.innerHTML = '<div class="empty-state"><p>No storage classes</p></div>';
     }
-  } catch {}
+  } catch (e) {
+    const msg = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+    if (pvcEl) pvcEl.innerHTML = msg;
+    if (scEl) scEl.innerHTML = msg;
+  }
 }
 
 // ── CRD Pages ──
 async function fetchCRDs() {
+  const tb = document.getElementById('crds-body');
   try {
-    const r = await apiFetch('/api/v1/crds/vmroguevms');
-    const j = await r.json();
-    const items = j.items || [];
-    const tb = document.getElementById('crds-body');
-    if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, j); return; }
+    const j = await apiJson('/api/v1/crds/vmroguevms');
+    const { items, message } = crdItemsFromJson(j);
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
     tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="vm-badge ' + sc(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
-  } catch {}
+  } catch (e) {
+    tb.innerHTML = tbodyError(8, e.message || String(e));
+  }
 }
 
 async function fetchPolicies() {
+  const tb = document.getElementById('policies-body');
   try {
-    const r = await apiFetch('/api/v1/crds/policies');
-    const j = await r.json();
-    const items = j.items || [];
-    const tb = document.getElementById('policies-body');
-    if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, j); return; }
+    const j = await apiJson('/api/v1/crds/policies');
+    const { items, message } = crdItemsFromJson(j);
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
     tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="vm-badge ' + (p.severity==='Critical'?'error':p.severity==='High'?'error':'other') + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
-  } catch {}
+  } catch (e) {
+    tb.innerHTML = tbodyError(8, e.message || String(e));
+  }
 }
 
 async function fetchInsights() {
+  const tb = document.getElementById('insights-body');
   try {
-    const r = await apiFetch('/api/v1/crds/insights');
-    const j = await r.json();
-    const items = j.items || [];
-    const tb = document.getElementById('insights-body');
-    if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, j); return; }
+    const j = await apiJson('/api/v1/crds/insights');
+    const { items, message } = crdItemsFromJson(j);
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
     tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="vm-badge ' + (i.severity==='Critical'||i.severity==='High'?'error':'other') + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
-  } catch {}
+  } catch (e) {
+    tb.innerHTML = tbodyError(6, e.message || String(e));
+  }
 }
 
 async function fetchActions() {
+  const tb = document.getElementById('actions-body');
   try {
-    const r = await apiFetch('/api/v1/crds/actions');
-    const j = await r.json();
-    const items = j.items || [];
-    const tb = document.getElementById('actions-body');
-    if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, j); return; }
+    const j = await apiJson('/api/v1/crds/actions');
+    const { items, message } = crdItemsFromJson(j);
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
     tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="vm-badge running">Yes</span>':'<span class="vm-badge stopped">No</span>') + '</td><td><span class="vm-badge ' + sc(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
-  } catch {}
+  } catch (e) {
+    tb.innerHTML = tbodyError(6, e.message || String(e));
+  }
 }
 
 async function fetchCosts() {
+  const sumEl = document.getElementById('cost-summary');
+  const nsEl = document.getElementById('cost-by-namespace');
+  const fcEl = document.getElementById('cost-forecast');
+  const tb = document.getElementById('costs-body');
   try {
-    const cr = await apiFetch('/api/v1/costs');
-    const sr = await apiFetch('/api/v1/costs/summary');
-    const costs = await cr.json();
-    const summary = await sr.json();
+    const [costsRaw, summary] = await Promise.all([
+      apiJson('/api/v1/costs'),
+      apiJson('/api/v1/costs/summary'),
+    ]);
+    const costs = asArray(costsRaw);
 
-    const sumEl = document.getElementById('cost-summary');
     const total = summary.total_cost || 0;
     const costNote = summary.disclaimer ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(summary.disclaimer) + '</p>' : '';
     sumEl.innerHTML = '<div class="stat-card"><div class="stat-value">$' + total.toFixed(2) + '</div><div class="stat-label">Monthly Total</div></div>' +
@@ -2701,7 +2790,6 @@ async function fetchCosts() {
       costNote;
 
     // Namespace breakdown
-    const nsEl = document.getElementById('cost-by-namespace');
     const byNs = summary.by_namespace || {};
     const nsEntries = Object.entries(byNs).sort((a,b) => b[1]-a[1]);
     if (nsEntries.length) {
@@ -2713,18 +2801,21 @@ async function fetchCosts() {
     } else { nsEl.innerHTML = '<p style="color:var(--text-dim)">No namespace data</p>'; }
 
     // Forecast
-    const fcEl = document.getElementById('cost-forecast');
     try {
-      const fcR = await apiFetch('/api/v1/costs/forecast');
-      const fc = await fcR.json();
+      const fc = await apiJson('/api/v1/costs/forecast');
       fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'rgba(255,100,100,0.2);color:#ff6464' : 'rgba(100,255,100,0.2);color:#64ff64') + '">' + esc(fc.trend || 'stable') + '</div></div>';
-    } catch { fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>'; }
+    } catch {
+      fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
+    }
 
-    const tb = document.getElementById('costs-body');
     if (!costs.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No cost data</td></tr>'; return; }
     tb.innerHTML = costs.sort((a,b) => b.total_cost - a.total_cost).map(c => '<tr><td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + c.cpu_cost.toFixed(2) + '</td><td>$' + c.memory_cost.toFixed(2) + '</td><td>$' + c.storage_cost.toFixed(2) + '</td><td><strong>$' + c.total_cost.toFixed(2) + '</strong></td></tr>').join('');
   } catch(e) {
-    document.getElementById('costs-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Cost data unavailable</td></tr>';
+    const msg = e.message || String(e);
+    if (sumEl) sumEl.innerHTML = summaryErrorHtml(msg);
+    if (nsEl) nsEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
+    if (fcEl) fcEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
+    if (tb) tb.innerHTML = tbodyError(6, msg);
   }
 }
 
@@ -2734,12 +2825,11 @@ function openCrdCreateModal() {
   document.getElementById('crd-disks-list').innerHTML = '';
   addCrdDisk(); // Add one default disk row
   // Populate template selector
-  apiFetch('/api/v1/templates').then(r => r.json()).then(j => {
+  apiJson('/api/v1/templates').then(j => {
     const sel = document.getElementById('crd-vm-template');
     sel.innerHTML = '<option value="">-- None --</option>';
-    const templates = (j.success && j.data) ? j.data : [];
-    templates.forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
-  }).catch(() => {});
+    asArray(j).forEach(t => { const o = document.createElement('option'); o.value = t.name; o.textContent = t.name; sel.appendChild(o); });
+  }).catch(e => console.error('Templates (CRD modal):', e));
 }
 function closeCrdCreateModal() { document.getElementById('crd-create-modal').style.display = 'none'; }
 
@@ -2803,15 +2893,10 @@ async function submitCrdCreate() {
   };
 
   try {
-    const r = await apiFetch('/api/v1/crds/vmroguevms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) });
-    if (r.ok) {
-      toast('VMRogueVM created: ' + name, 'success');
-      closeCrdCreateModal();
-      fetchCRDs();
-    } else {
-      const j = await r.json().catch(() => ({}));
-      toast('Failed: ' + (j.message || r.statusText), 'error');
-    }
+    await apiJson('/api/v1/crds/vmroguevms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) });
+    toast('VMRogueVM created: ' + name, 'success');
+    closeCrdCreateModal();
+    fetchCRDs();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
 }
 
@@ -2822,9 +2907,9 @@ async function toggleNodeDetail(nodeName) {
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
 
   try {
-    const r = await apiFetch('/api/v1/pods?namespace=all');
-    const j = await r.json();
-    const nodePods = (j.success && j.data) ? j.data.filter(p => p.node_name === nodeName) : [];
+    const j = await apiJson('/api/v1/pods?namespace=all');
+    const pods = asArray(j);
+    const nodePods = pods.filter(p => p.node_name === nodeName);
 
     let html = '<div class="vm-detail" id="node-detail-' + nodeName + '"><div class="detail-grid">';
     html += '<div class="detail-section"><div class="detail-section-title">Pods on Node</div>';
@@ -2844,7 +2929,9 @@ async function toggleNodeDetail(nodeName) {
         break;
       }
     }
-  } catch {}
+  } catch (e) {
+    toast('Pods: ' + (e.message || String(e)), 'error');
+  }
 }
 
 // ── Refresh Interval ──
@@ -2892,12 +2979,14 @@ window.addEventListener('load', async () => {
 
 // Security page (global posture view)
 async function fetchSecurityPage() {
+  const sum = document.getElementById('security-summary');
+  const tb = document.getElementById('security-body');
   try {
-    const [posture, findings] = await Promise.all([
-      apiFetch('/api/v1/security/posture' + nsParam()).then(r => r.json()),
-      apiFetch('/api/v1/security/findings' + nsParam()).then(r => r.json()),
+    const [posture, findingsRaw] = await Promise.all([
+      apiJson('/api/v1/security/posture' + nsParam()),
+      apiJson('/api/v1/security/findings' + nsParam()),
     ]);
-    const sum = document.getElementById('security-summary');
+    const findings = asArray(findingsRaw);
     if (sum) {
       const sc = posture.overall_score || 0;
       const clr = sc >= 90 ? 'var(--success)' : sc >= 70 ? 'var(--warning)' : 'var(--error)';
@@ -2907,27 +2996,35 @@ async function fetchSecurityPage() {
         <div class="stat-card"><div class="stat-label">Total Findings</div><div class="stat-value">${posture.total_findings||0}</div></div>
         <div class="stat-card"><div class="stat-label">Critical</div><div class="stat-value" style="color:var(--error)">${posture.critical_findings||0}</div></div>`;
     }
-    const tb = document.getElementById('security-body');
     if (tb) {
       tb.innerHTML = findings.map(f => {
         const sclr = f.severity === 'Critical' ? 'var(--error)' : f.severity === 'High' ? 'var(--warning)' : 'var(--text-muted)';
         return `<tr><td style="color:${sclr};font-weight:600">${f.severity}</td><td>${f.category}</td><td>${f.title}</td><td><code>${f.resource}</code></td><td>${f.recommendation}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No security findings</td></tr>';
     }
-  } catch(e) { console.error('Security fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (sum) sum.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(5, msg);
+    console.error('Security fetch error:', e);
+  }
 }
 
 // Monitoring page
 async function fetchMonitoring() {
+  const sum = document.getElementById('monitoring-status');
+  const recTb = document.getElementById('recommendations-body');
+  const anTb = document.getElementById('anomalies-body');
+  const badge = document.getElementById('anomaly-count-badge');
   try {
-    const [status, recs, anomalies] = await Promise.all([
-      apiFetch('/api/v1/monitoring/status' + nsParam()).then(r => r.json()),
-      apiFetch('/api/v1/recommendations' + nsParam()).then(r => r.json()),
-      apiFetch('/api/v1/monitoring/anomalies' + nsParam()).then(r => r.json()).catch(() => []),
-    ]);
-    const recList = Array.isArray(recs) ? recs : [];
-    const anoList = Array.isArray(anomalies) ? anomalies : [];
-    const sum = document.getElementById('monitoring-status');
+    const status = await apiJson('/api/v1/monitoring/status' + nsParam());
+    const recList = asArray(await apiJson('/api/v1/recommendations' + nsParam()));
+    let anoList = [];
+    try {
+      anoList = asArray(await apiJson('/api/v1/monitoring/anomalies' + nsParam()));
+    } catch (_) {
+      anoList = [];
+    }
     if (sum) {
       const dot = (ok) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ok?'var(--success)':'var(--error)'};margin-right:6px"></span>`;
       sum.innerHTML = `
@@ -2936,7 +3033,6 @@ async function fetchMonitoring() {
         <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${status.healthy_targets}/${status.total_targets} healthy</div></div>
         <div class="stat-card ${anoList.some(a=>a.severity==='critical')?'stat-card-red':anoList.length?'stat-card-orange':''}"><div class="stat-label">Anomalies</div><div class="stat-value">${anoList.length}</div></div>`;
     }
-    const recTb = document.getElementById('recommendations-body');
     if (recTb) {
       const recEmpty = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No recommendations for this scope. Either no VMs matched the namespace filter, or existing VMs already have limits, virtio-rng, and eviction strategy where checked.</td></tr>';
       recTb.innerHTML = recList.map(r => {
@@ -2945,14 +3041,12 @@ async function fetchMonitoring() {
       }).join('') || recEmpty;
     }
     // Anomalies
-    const badge = document.getElementById('anomaly-count-badge');
     if (badge) {
       badge.textContent = anoList.length ? anoList.length + ' detected' : 'None';
       badge.style.background = anoList.some(a=>a.severity==='critical') ? 'var(--error-dim)' : anoList.length ? 'var(--warning-dim)' : 'var(--success-dim)';
       badge.style.color = anoList.some(a=>a.severity==='critical') ? 'var(--error)' : anoList.length ? 'var(--warning)' : 'var(--success)';
       badge.style.border = '1px solid ' + (anoList.some(a=>a.severity==='critical') ? 'rgba(255,34,68,.2)' : anoList.length ? 'rgba(255,170,0,.2)' : 'rgba(0,255,136,.15)');
     }
-    const anTb = document.getElementById('anomalies-body');
     if (anTb) {
       const anoEmpty = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);line-height:1.5">No anomalies in this scope. Breaches appear when CPU or memory usage stays above 85% (needs Metrics Server + running virt-launcher pod). Without live metrics, usage may read as 0%.</td></tr>';
       anTb.innerHTML = anoList.map(a => {
@@ -2962,14 +3056,25 @@ async function fetchMonitoring() {
       return `<tr><td>${esc(a.vm_name)}</td><td>${esc(a.metric)}</td><td>${valShow}</td><td>${thrShow}</td><td style="color:${sclr}">${a.deviation_percent}%</td><td style="color:${sclr};font-weight:600">${esc(a.severity)}</td><td>${fmtTime(a.detected_at)}</td></tr>`;
     }).join('') || anoEmpty;
     }
-  } catch(e) { console.error('Monitoring fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (sum) sum.innerHTML = summaryErrorHtml(msg);
+    if (recTb) recTb.innerHTML = tbodyError(5, msg);
+    if (anTb) anTb.innerHTML = tbodyError(7, msg);
+    if (badge) {
+      badge.textContent = 'Error';
+      badge.style.background = 'var(--error-dim)';
+      badge.style.color = 'var(--error)';
+    }
+    console.error('Monitoring fetch error:', e);
+  }
 }
 
 // Workloads page
 async function fetchWorkloads() {
+  const tb = document.getElementById('workloads-body');
   try {
-    const data = await apiFetch('/api/v1/workloads' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('workloads-body');
+    const data = asArray(await apiJson('/api/v1/workloads' + nsParam()));
     if (tb) {
       tb.innerHTML = data.map(w => {
         const ok = w.ready_replicas >= w.replicas;
@@ -2977,26 +3082,34 @@ async function fetchWorkloads() {
         return `<tr><td>${w.name}</td><td><span class="badge">${w.workload_type}</span></td><td>${w.replicas}</td><td style="color:${sclr}">${w.ready_replicas}</td><td style="color:${sclr}">${w.status}</td><td>${w.namespace}</td></tr>`;
       }).join('') || '<tr><td colspan="6" style="text-align:center">No workloads found</td></tr>';
     }
-  } catch(e) { console.error('Workloads fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Workloads fetch error:', e);
+  }
 }
 
 async function fetchAlerts() {
+  const tb = document.getElementById('alerts-body');
   try {
-    const alerts = await apiFetch('/api/v1/alerts' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('alerts-body');
+    const alerts = asArray(await apiJson('/api/v1/alerts' + nsParam()));
     if (!tb) return;
     tb.innerHTML = alerts.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.severity)}</td><td>${esc(a.status)}</td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No active alerts</td></tr>';
-  } catch (e) { console.error('Alerts fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Alerts fetch error:', e);
+  }
 }
 
 async function fetchAudit() {
+  const sum = document.getElementById('audit-summary');
+  const tb = document.getElementById('audit-body');
   try {
-    const [trail, stats] = await Promise.all([
-      apiFetch('/api/v1/audit/trail' + nsParam()).then(r => r.json()),
-      apiFetch('/api/v1/audit/stats' + nsParam()).then(r => r.json()),
+    const [trailRaw, stats] = await Promise.all([
+      apiJson('/api/v1/audit/trail' + nsParam()),
+      apiJson('/api/v1/audit/stats' + nsParam()),
     ]);
-    const sum = document.getElementById('audit-summary');
+    const trail = asArray(trailRaw);
     if (sum) {
       sum.innerHTML =
         '<div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">' + (stats.total_events || 0) + '</div></div>' +
@@ -3004,62 +3117,82 @@ async function fetchAudit() {
         '<div class="stat-card"><div class="stat-label">Users</div><div class="stat-value">' + Object.keys(stats.by_user || {}).length + '</div></div>' +
         '<div class="stat-card"><div class="stat-label">Outcomes</div><div class="stat-value">' + Object.keys(stats.by_outcome || {}).length + '</div></div>';
     }
-    const tb = document.getElementById('audit-body');
     if (!tb) return;
     tb.innerHTML = trail.map(a => `<tr><td>${fmtTime(a.timestamp)}</td><td>${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.resource_type)}</td><td>${esc(a.namespace)}/${esc(a.resource_name)}</td><td>${esc(a.outcome)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No audit entries</td></tr>';
-  } catch (e) { console.error('Audit fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (sum) sum.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(6, msg);
+    console.error('Audit fetch error:', e);
+  }
 }
 
 async function fetchNotifications() {
+  const tb = document.getElementById('notifications-body');
   try {
-    const items = await apiFetch('/api/v1/notifications' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('notifications-body');
+    const items = asArray(await apiJson('/api/v1/notifications' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(n => `<tr><td>${esc(n.title)}</td><td>${esc(n.severity)}</td><td>${esc(n.message)}</td><td>${n.read ? 'Yes' : 'No'}</td><td>${fmtTime(n.created_at)}</td></tr>`).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No notifications</td></tr>';
-  } catch (e) { console.error('Notifications fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
+    console.error('Notifications fetch error:', e);
+  }
 }
 
 async function fetchHelm() {
+  const tb = document.getElementById('helm-body');
   try {
-    const items = await apiFetch('/api/v1/helm/releases').then(r => r.json());
-    const tb = document.getElementById('helm-body');
+    const items = asArray(await apiJson('/api/v1/helm/releases'));
     if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(h => h.namespace === currentNamespace);
     tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td>${esc(h.status)}</td><td>${h.revision}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Helm releases found</td></tr>';
-  } catch (e) { console.error('Helm fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Helm fetch error:', e);
+  }
 }
 
 async function fetchOperators() {
+  const tb = document.getElementById('operators-body');
   try {
-    const items = await apiFetch('/api/v1/operators').then(r => r.json());
-    const tb = document.getElementById('operators-body');
+    const items = asArray(await apiJson('/api/v1/operators'));
     if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(o => o.namespace === currentNamespace);
     tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td>${esc(o.status)}</td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No operators found</td></tr>';
-  } catch (e) { console.error('Operators fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Operators fetch error:', e);
+  }
 }
 
 async function fetchCustomResources() {
+  const tb = document.getElementById('custom-resources-body');
   try {
-    const items = await apiFetch('/api/v1/custom-resources').then(r => r.json());
-    const tb = document.getElementById('custom-resources-body');
+    const items = asArray(await apiJson('/api/v1/custom-resources'));
     if (!tb) return;
     tb.innerHTML = items.map(cr => `<tr><td>${esc(cr.name)}</td><td>${esc(cr.group)}</td><td>${esc(cr.version)}</td><td>${esc(cr.kind)}</td><td>${esc(cr.scope)}</td><td>${cr.instance_count}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No custom resources found</td></tr>';
-  } catch (e) { console.error('Custom resources fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Custom resources fetch error:', e);
+  }
 }
 
 async function fetchSlo() {
+  const tb = document.getElementById('slo-body');
+  const burnTb = document.getElementById('slo-burn-body');
   try {
-    const [items, burnRates] = await Promise.all([
-      apiFetch('/api/v1/slo/objectives' + nsParam()).then(r => r.json()),
-      apiFetch('/api/v1/slo/burn-rate' + nsParam()).then(r => r.json()).catch(() => []),
-    ]);
-    const tb = document.getElementById('slo-body');
+    const items = asArray(await apiJson('/api/v1/slo/objectives' + nsParam()));
+    let burnRates = [];
+    try {
+      burnRates = asArray(await apiJson('/api/v1/slo/burn-rate' + nsParam()));
+    } catch (_) {
+      burnRates = [];
+    }
     if (tb) tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td><span class="stat-badge ${s.status==='met'?'badge-green':'badge-muted'}">${esc(s.status)}</span></td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO objectives found</td></tr>';
 
@@ -3075,33 +3208,44 @@ async function fetchSlo() {
         <div class="stat-card ${br.status==='healthy'?'stat-card-green':'stat-card-red'}"><div class="stat-label">Status</div><div class="stat-value" style="font-size:1.2em">${esc(br.status)}</div></div>`;
     }
 
-    const burnTb = document.getElementById('slo-burn-body');
     if (burnTb) burnTb.innerHTML = burnRates.map(br => {
       const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
       const sColor = {healthy:'badge-green',at_risk:'badge-muted',burning_fast:'',exhausted:''}[br.status] || '';
       return `<tr><td>${esc(br.slo_name)}</td><td>${br.budget_total_percent}%</td><td>${br.budget_consumed_percent}%</td><td>${br.burn_rate_1h}x</td><td>${br.burn_rate_24h}x</td><td>${ttl}</td><td><span class="stat-badge ${sColor}">${esc(br.status)}</span></td></tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO data</td></tr>';
-  } catch (e) { console.error('SLO fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (tb) tb.innerHTML = tbodyError(7, msg);
+    if (burnTb) burnTb.innerHTML = tbodyError(7, msg);
+    console.error('SLO fetch error:', e);
+  }
 }
 
 async function fetchChaos() {
+  const tb = document.getElementById('chaos-body');
   try {
-    const items = await apiFetch('/api/v1/chaos/experiments').then(r => r.json());
-    const tb = document.getElementById('chaos-body');
+    const items = asArray(await apiJson('/api/v1/chaos/experiments'));
     if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(c => c.namespace === currentNamespace);
     tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td>${esc(c.status)}</td><td>${esc(c.duration)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
-  } catch (e) { console.error('Chaos fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Chaos fetch error:', e);
+  }
 }
 
 async function fetchRbac() {
+  const summary = document.getElementById('rbac-summary');
+  const rolesBody = document.getElementById('rbac-roles-body');
+  const bindingsBody = document.getElementById('rbac-bindings-body');
   try {
-    const [roles, bindings] = await Promise.all([
-      apiFetch('/api/v1/rbac/roles').then(r => r.json()),
-      apiFetch('/api/v1/rbac/bindings').then(r => r.json()),
+    const [rRaw, bRaw] = await Promise.all([
+      apiJson('/api/v1/rbac/roles'),
+      apiJson('/api/v1/rbac/bindings'),
     ]);
-    const summary = document.getElementById('rbac-summary');
+    const roles = asArray(rRaw);
+    const bindings = asArray(bRaw);
     if (summary) {
       const subjects = bindings.reduce((count, b) => count + (b.subjects || []).length, 0);
       summary.innerHTML = `
@@ -3110,79 +3254,98 @@ async function fetchRbac() {
         <div class="stat-card"><div class="stat-label">Subjects</div><div class="stat-value">${subjects}</div></div>
         <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">Cluster</div></div>`;
     }
-    const rolesBody = document.getElementById('rbac-roles-body');
     if (rolesBody) {
       rolesBody.innerHTML = roles.map(role => {
         const resources = [...new Set((role.rules || []).flatMap(rule => rule.resources || []))].slice(0, 4);
         return `<tr><td>${esc(role.name)}</td><td>${role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')}</td><td>${(role.rules || []).length}</td><td>${esc(resources.join(', ') || '-')}</td></tr>`;
       }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No roles found</td></tr>';
     }
-    const bindingsBody = document.getElementById('rbac-bindings-body');
     if (bindingsBody) {
       bindingsBody.innerHTML = bindings.map(binding => `<tr><td>${esc(binding.name)}</td><td>${esc(binding.role_name)}</td><td>${esc((binding.subjects || []).map(s => s.kind + ':' + s.name).join(', ') || '-')}</td></tr>`).join('')
         || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No bindings found</td></tr>';
     }
-  } catch (e) { console.error('RBAC fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (summary) summary.innerHTML = summaryErrorHtml(msg);
+    if (rolesBody) rolesBody.innerHTML = tbodyError(4, msg);
+    if (bindingsBody) bindingsBody.innerHTML = tbodyError(3, msg);
+    console.error('RBAC fetch error:', e);
+  }
 }
 
 async function fetchQuotas() {
+  const tb = document.getElementById('quotas-body');
   try {
-    const items = await apiFetch('/api/v1/quotas' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('quotas-body');
+    const items = asArray(await apiJson('/api/v1/quotas' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(q => `<tr><td>${esc(q.name)}</td><td>${esc(q.namespace)}</td><td>${esc(q.cpu_used || '0')} / ${esc(q.cpu_limit || '-')}</td><td>${esc(q.memory_used || '0')} / ${esc(q.memory_limit || '-')}</td><td>${q.vm_count}${q.vm_limit ? ' / ' + q.vm_limit : ''}</td></tr>`).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No quotas found</td></tr>';
-  } catch (e) { console.error('Quota fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
+    console.error('Quota fetch error:', e);
+  }
 }
 
 async function fetchIngress() {
+  const tb = document.getElementById('ingress-body');
   try {
-    const items = await apiFetch('/api/v1/ingress' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('ingress-body');
+    const items = asArray(await apiJson('/api/v1/ingress' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(ing => `<tr><td>${esc(ing.name)}</td><td>${esc(ing.namespace)}</td><td>${esc(ing.class_name || '-')}</td><td>${esc((ing.hosts || []).join(', ') || '-')}</td><td>${ing.tls ? 'Yes' : 'No'}</td><td>${esc((ing.rules || []).map(r => (r.host || '*') + r.path + ' -> ' + r.service_name).join(', ') || '-')}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ingress resources found</td></tr>';
-  } catch (e) { console.error('Ingress fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Ingress fetch error:', e);
+  }
 }
 
 async function fetchHpa() {
+  const tb = document.getElementById('hpa-body');
   try {
-    const items = await apiFetch('/api/v1/hpa' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('hpa-body');
+    const items = asArray(await apiJson('/api/v1/hpa' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.target_kind)}/${esc(h.target_name)}</td><td>${h.min_replicas}</td><td>${h.current_replicas}</td><td>${h.desired_replicas}</td><td>${h.max_replicas}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No HPAs found</td></tr>';
-  } catch (e) { console.error('HPA fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    console.error('HPA fetch error:', e);
+  }
 }
 
 async function fetchBackups() {
+  const tb = document.getElementById('backups-body');
   try {
-    const items = await apiFetch('/api/v1/backups' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('backups-body');
+    const items = asArray(await apiJson('/api/v1/backups' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td>${esc(b.status)}</td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
-  } catch (e) { console.error('Backups fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Backups fetch error:', e);
+  }
 }
 
 async function fetchMetrics() {
+  const summary = document.getElementById('metrics-summary');
   try {
-    const metrics = await apiFetch('/api/v1/metrics').then(r => r.json());
-    const summary = document.getElementById('metrics-summary');
+    const metrics = await apiJson('/api/v1/metrics');
     if (!summary) return;
     summary.innerHTML = `
       <div class="stat-card"><div class="stat-label">Total VMs</div><div class="stat-value">${metrics.total_vms || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Running VMs</div><div class="stat-value">${metrics.running_vms || 0}</div></div>
       <div class="stat-card"><div class="stat-label">CPU Capacity</div><div class="stat-value">${metrics.total_cpu_cores || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Memory Capacity</div><div class="stat-value">${fmtBytes(metrics.total_memory_bytes)}</div></div>`;
-  } catch (e) { console.error('Metrics fetch error:', e); }
+  } catch (e) {
+    if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
+    console.error('Metrics fetch error:', e);
+  }
 }
 
 async function fetchTopology() {
+  const summary = document.getElementById('topology-summary');
+  const tb = document.getElementById('topology-body');
   try {
-    const map = await apiFetch('/api/v1/topology/map' + nsParam()).then(r => r.json());
-    const summary = document.getElementById('topology-summary');
-    const tb = document.getElementById('topology-body');
+    const map = await apiJson('/api/v1/topology/map' + nsParam());
     const nodes = map.nodes || [];
     const edges = map.edges || [];
     const nodeCount = nodes.filter(n => n.kind === 'Node').length;
@@ -3198,16 +3361,22 @@ async function fetchTopology() {
       tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.source)}</td><td>${esc(edge.relation)}</td><td>${esc(edge.target)}</td></tr>`).join('')
         || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No topology edges found</td></tr>';
     }
-  } catch (e) { console.error('Topology fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (summary) summary.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(3, msg);
+    console.error('Topology fetch error:', e);
+  }
 }
 
 async function fetchDependencies() {
+  const summary = document.getElementById('dependencies-summary');
+  const tb = document.getElementById('dependencies-body');
   try {
-    const graph = await apiFetch('/api/v1/dependencies/graph').then(r => r.json());
+    const graph = await apiJson('/api/v1/dependencies/graph');
     const nodes = (graph.nodes || []).filter(n => currentNamespace === 'all' || n.namespace === currentNamespace);
     const nodeIds = new Set(nodes.map(n => n.id));
     const edges = (graph.edges || []).filter(e => nodeIds.has(e.from) || nodeIds.has(e.to));
-    const summary = document.getElementById('dependencies-summary');
     if (summary) {
       summary.innerHTML = `
         <div class="stat-card"><div class="stat-label">Resources</div><div class="stat-value">${nodes.length}</div></div>
@@ -3215,38 +3384,48 @@ async function fetchDependencies() {
         <div class="stat-card"><div class="stat-label">Namespaces</div><div class="stat-value">${new Set(nodes.map(n => n.namespace)).size}</div></div>
         <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">${esc(currentNamespace || 'default')}</div></div>`;
     }
-    const tb = document.getElementById('dependencies-body');
     if (tb) {
       tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.from)}</td><td>${esc(edge.dependency_type)}</td><td>${esc(edge.to)}</td></tr>`).join('')
         || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No dependencies found</td></tr>';
     }
-  } catch (e) { console.error('Dependencies fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (summary) summary.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(3, msg);
+    console.error('Dependencies fetch error:', e);
+  }
 }
 
 async function fetchAutoscaler() {
+  const tb = document.getElementById('autoscaler-body');
   try {
-    const items = await apiFetch('/api/v1/autoscaler/policies' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('autoscaler-body');
+    const items = asArray(await apiJson('/api/v1/autoscaler/policies' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.namespace)}</td><td>${esc(a.target_kind)}/${esc(a.target_name)}</td><td>${a.min_replicas}</td><td>${a.current_replicas}</td><td>${a.max_replicas}</td><td>${a.enabled ? 'Yes' : 'No'}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No autoscaler policies found</td></tr>';
-  } catch (e) { console.error('Autoscaler fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    console.error('Autoscaler fetch error:', e);
+  }
 }
 
 async function fetchForecasting() {
+  const tb = document.getElementById('forecasting-body');
   try {
-    const items = await apiFetch('/api/v1/forecasting/predictions' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('forecasting-body');
+    const items = asArray(await apiJson('/api/v1/forecasting/predictions' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(f => `<tr><td>${esc(f.metric)}</td><td>${f.current_value}</td><td>${f.predicted_value}</td><td>${esc(f.prediction_window)}</td><td>${esc(f.trend)}</td><td>${Math.round((f.confidence || 0) * 100)}%</td><td>${esc(f.estimated_breach || '-')}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No predictions available</td></tr>';
-  } catch (e) { console.error('Forecasting fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    console.error('Forecasting fetch error:', e);
+  }
 }
 
 async function fetchGitOps() {
+  const summary = document.getElementById('gitops-summary');
   try {
-    const status = await apiFetch('/api/v1/gitops/status' + nsParam()).then(r => r.json());
-    const summary = document.getElementById('gitops-summary');
+    const status = await apiJson('/api/v1/gitops/status' + nsParam());
     if (!summary) return;
     const note = status.note ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(status.note) + '</p>' : '';
     summary.innerHTML = `
@@ -3254,30 +3433,42 @@ async function fetchGitOps() {
       <div class="stat-card"><div class="stat-label">Branch</div><div class="stat-value">${esc(status.branch || '-')}</div></div>
       <div class="stat-card"><div class="stat-label">Sync</div><div class="stat-value">${esc(status.sync_status || 'unknown')}</div></div>
       <div class="stat-card"><div class="stat-label">Drift</div><div class="stat-value">${status.drift_detected ? 'Detected' : 'Clear'}</div></div>` + note;
-  } catch (e) { console.error('GitOps fetch error:', e); }
+  } catch (e) {
+    if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
+    console.error('GitOps fetch error:', e);
+  }
 }
 
 async function fetchScheduling() {
+  const summary = document.getElementById('scheduling-summary');
   try {
-    const status = await apiFetch('/api/v1/scheduling/status' + nsParam()).then(r => r.json());
-    const summary = document.getElementById('scheduling-summary');
+    const status = await apiJson('/api/v1/scheduling/status' + nsParam());
     if (!summary) return;
     summary.innerHTML = `
       <div class="stat-card"><div class="stat-label">Pending Pods</div><div class="stat-value">${status.pending_pods || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Scheduled Pods</div><div class="stat-value">${status.scheduled_pods || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Unschedulable Nodes</div><div class="stat-value">${(status.unschedulable_nodes || []).length}</div></div>
       <div class="stat-card"><div class="stat-label">Preemptions</div><div class="stat-value">${status.preemptions || 0}</div></div>`;
-  } catch (e) { console.error('Scheduling fetch error:', e); }
+  } catch (e) {
+    if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
+    console.error('Scheduling fetch error:', e);
+  }
 }
 
 async function fetchCilium() {
+  const summary = document.getElementById('cilium-summary');
+  const tb = document.getElementById('cilium-body');
+  const flowStats = document.getElementById('flow-stats');
+  const flowsTb = document.getElementById('flows-body');
   try {
-    const [status, items, flowData] = await Promise.all([
-      apiFetch('/api/v1/cilium/status').then(r => r.json()),
-      apiFetch('/api/v1/cilium/policies').then(r => r.json()),
-      apiFetch('/api/v1/cilium/flows').then(r => r.json()).catch(() => ({ total_flows: 0, allowed: 0, denied: 0, flows: [] })),
-    ]);
-    const summary = document.getElementById('cilium-summary');
+    const status = await apiJson('/api/v1/cilium/status');
+    const items = asArray(await apiJson('/api/v1/cilium/policies'));
+    let flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [] };
+    try {
+      flowData = await apiJson('/api/v1/cilium/flows');
+    } catch (_) {
+      flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [] };
+    }
     if (summary) {
       summary.innerHTML = `
         <div class="stat-card"><div class="stat-label">Version</div><div class="stat-value">${esc(status.version || '-')}</div></div>
@@ -3285,16 +3476,13 @@ async function fetchCilium() {
         <div class="stat-card"><div class="stat-label">Hubble</div><div class="stat-value">${status.hubble_enabled ? 'Enabled' : 'Off'}</div></div>
         <div class="stat-card"><div class="stat-label">Encryption</div><div class="stat-value">${status.encryption_enabled ? 'Enabled' : 'Off'}</div></div>`;
     }
-    const tb = document.getElementById('cilium-body');
     if (tb) {
       const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace);
       tb.innerHTML = filtered.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
         || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Cilium policies found</td></tr>';
     }
     // Network flows
-    const flowStats = document.getElementById('flow-stats');
     if (flowStats) flowStats.innerHTML = `<span style="color:var(--success)">Allowed: ${flowData.allowed}</span> <span style="color:var(--error)">Denied: ${flowData.denied}</span> <span style="color:var(--text-muted)">Total: ${flowData.total_flows}</span>`;
-    const flowsTb = document.getElementById('flows-body');
     if (flowsTb) {
       flowsTb.innerHTML = (flowData.flows || []).map(f => `<tr>
         <td>${esc(f.source)}</td><td>${esc(f.destination)}</td>
@@ -3302,31 +3490,44 @@ async function fetchCilium() {
         <td><span style="color:${f.verdict==='allowed'?'var(--success)':'var(--error)'};font-weight:600">${esc(f.verdict)}</span></td>
       </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No flow data — Hubble not connected</td></tr>';
     }
-  } catch (e) { console.error('Cilium fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (summary) summary.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(5, msg);
+    if (flowStats) flowStats.innerHTML = '<span style="color:var(--error)">' + esc(msg) + '</span>';
+    if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg);
+    console.error('Cilium fetch error:', e);
+  }
 }
 
 async function fetchObservability() {
+  const summary = document.getElementById('observability-summary');
   try {
-    const overview = await apiFetch('/api/v1/observability/overview' + nsParam()).then(r => r.json());
-    const summary = document.getElementById('observability-summary');
+    const overview = await apiJson('/api/v1/observability/overview' + nsParam());
     if (!summary) return;
     summary.innerHTML = `
       <div class="stat-card"><div class="stat-label">Metrics</div><div class="stat-value">${esc(overview.metrics_status)}</div></div>
       <div class="stat-card"><div class="stat-label">Logs</div><div class="stat-value">${esc(overview.logs_status)}</div></div>
       <div class="stat-card"><div class="stat-label">Log Entries</div><div class="stat-value">${overview.total_log_entries || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Metric Series</div><div class="stat-value">${overview.total_metric_series || 0}</div></div>`;
-  } catch (e) { console.error('Observability fetch error:', e); }
+  } catch (e) {
+    if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
+    console.error('Observability fetch error:', e);
+  }
 }
 
 let _flamegraphData = [];
 
 async function fetchPerformance() {
+  const tb = document.getElementById('performance-body');
   try {
-    const [items, graphs] = await Promise.all([
-      apiFetch('/api/v1/performance/profiles' + nsParam()).then(r => r.json()),
-      apiFetch('/api/v1/performance/flamegraph' + nsParam()).then(r => r.json()).catch(() => []),
-    ]);
-    const tb = document.getElementById('performance-body');
+    const items = asArray(await apiJson('/api/v1/performance/profiles' + nsParam()));
+    let graphs = [];
+    try {
+      graphs = asArray(await apiJson('/api/v1/performance/flamegraph' + nsParam()));
+    } catch (_) {
+      graphs = [];
+    }
     if (tb) tb.innerHTML = items.map(p => `<tr><td>${esc(p.vm_name)}</td><td>${p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95}%</td><td>${p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95}%</td><td>${p.iops_read}</td><td>${p.iops_write}</td><td>${fmtTime(p.collected_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No performance profiles found</td></tr>';
     _flamegraphData = graphs;
@@ -3338,7 +3539,10 @@ async function fetchPerformance() {
       });
       if (sel.value && graphs.find(g => g.vm_name === sel.value)) renderFlamegraph();
     }
-  } catch (e) { console.error('Performance fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Performance fetch error:', e);
+  }
 }
 
 function renderFlamegraph() {
@@ -3373,25 +3577,28 @@ function renderFlamegraph() {
 }
 
 async function fetchWebhooks() {
+  const tb = document.getElementById('webhooks-body');
   try {
-    const items = await apiFetch('/api/v1/webhooks' + nsParam()).then(r => r.json());
-    const tb = document.getElementById('webhooks-body');
+    const items = asArray(await apiJson('/api/v1/webhooks' + nsParam()));
     if (!tb) return;
     tb.innerHTML = items.map(w => `<tr><td>${esc(w.name)}</td><td>${esc(w.url)}</td><td>${esc((w.events || []).join(', ') || '-')}</td><td>${w.active ? 'Yes' : 'No'}</td><td>${w.secret_configured ? 'Yes' : 'No'}</td><td>${w.failure_count}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No webhooks found</td></tr>';
-  } catch (e) { console.error('Webhooks fetch error:', e); }
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Webhooks fetch error:', e);
+  }
 }
 
 async function fetchTraces() {
+  const stats = document.getElementById('traces-stats');
+  const tb = document.getElementById('traces-body');
   try {
-    const data = await apiFetch('/api/v1/traces' + nsParam()).then(r => r.json());
-    const stats = document.getElementById('traces-stats');
+    const data = await apiJson('/api/v1/traces' + nsParam());
     if (stats) stats.innerHTML = `
       <div class="stat-card stat-card-blue"><div class="stat-label">Total Traces</div><div class="stat-value">${data.total_traces || 0}</div></div>
       <div class="stat-card stat-card-green"><div class="stat-label">Success Rate</div><div class="stat-value">${data.success_rate != null ? data.success_rate.toFixed(1) + '%' : 'N/A'}</div></div>
       <div class="stat-card stat-card-orange"><div class="stat-label">P99 Latency</div><div class="stat-value">${data.p99_ms != null ? data.p99_ms + 'ms' : 'N/A'}</div></div>
       <div class="stat-card stat-card-red"><div class="stat-label">Errors (1h)</div><div class="stat-value">${data.errors_1h || 0}</div></div>`;
-    const tb = document.getElementById('traces-body');
     if (!tb) return;
     const items = data.traces || [];
     tb.innerHTML = items.map(t => `<tr>
@@ -3402,8 +3609,10 @@ async function fetchTraces() {
       <td>${fmtTime(t.started_at)}</td>
     </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No traces — connect an OpenTelemetry collector</td></tr>';
   } catch (e) {
-    const tb = document.getElementById('traces-body');
-    if (tb) tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Traces endpoint not available</td></tr>';
+    const msg = e.message || String(e);
+    if (stats) stats.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(7, msg);
+    console.error('Traces fetch error:', e);
   }
 }
 
@@ -3415,18 +3624,18 @@ function filterTraces() {
 }
 
 async function fetchLogs() {
+  const stats = document.getElementById('logs-stats');
+  const stream = document.getElementById('logs-stream');
   try {
     const level = document.getElementById('logs-level-filter')?.value || '';
     const q = document.getElementById('logs-search')?.value || '';
     const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '');
-    const data = await apiFetch('/api/v1/logs' + params).then(r => r.json());
-    const stats = document.getElementById('logs-stats');
+    const data = await apiJson('/api/v1/logs' + params);
     if (stats) stats.innerHTML = `
       <div class="stat-card stat-card-red"><div class="stat-label">Errors</div><div class="stat-value">${data.error_count || 0}</div></div>
       <div class="stat-card stat-card-orange"><div class="stat-label">Warnings</div><div class="stat-value">${data.warn_count || 0}</div></div>
       <div class="stat-card stat-card-blue"><div class="stat-label">Info</div><div class="stat-value">${data.info_count || 0}</div></div>
       <div class="stat-card"><div class="stat-label">Total (1h)</div><div class="stat-value">${data.total_1h || 0}</div></div>`;
-    const stream = document.getElementById('logs-stream');
     if (!stream) return;
     const lines = data.lines || [];
     if (!lines.length) {
@@ -3440,23 +3649,25 @@ async function fetchLogs() {
     }).join('');
     stream.scrollTop = stream.scrollHeight;
   } catch (e) {
-    const stream = document.getElementById('logs-stream');
-    if (stream) stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">Logs endpoint not available</div>';
+    const msg = e.message || String(e);
+    if (stats) stats.innerHTML = summaryErrorHtml(msg);
+    if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px;line-height:1.45">' + esc(msg) + '</div>';
+    console.error('Logs fetch error:', e);
   }
 }
 
 async function fetchIncidents() {
+  const stats = document.getElementById('incidents-stats');
+  const tb = document.getElementById('incidents-body');
   try {
     const sev = document.getElementById('incident-severity-filter')?.value || '';
     const kind = document.getElementById('incident-kind-filter')?.value || '';
-    const data = await apiFetch('/api/v1/incidents/timeline' + nsParam()).then(r => r.json());
-    const stats = document.getElementById('incidents-stats');
+    const data = await apiJson('/api/v1/incidents/timeline' + nsParam());
     if (stats) stats.innerHTML = `
       <div class="stat-card stat-card-red"><div class="stat-label">Critical</div><div class="stat-value">${data.critical || 0}</div></div>
       <div class="stat-card stat-card-orange"><div class="stat-label">Warning</div><div class="stat-value">${data.warning || 0}</div></div>
       <div class="stat-card stat-card-blue"><div class="stat-label">Open</div><div class="stat-value">${data.open_incidents || 0}</div></div>
       <div class="stat-card stat-card-green"><div class="stat-label">Resolved (24h)</div><div class="stat-value">${data.resolved_last_24h || 0}</div></div>`;
-    const tb = document.getElementById('incidents-body');
     if (!tb) return;
     let events = data.events || [];
     if (sev) events = events.filter(e => e.severity === sev);
@@ -3475,7 +3686,12 @@ async function fetchIncidents() {
         <td><span class="stat-badge ${e.resolved ? 'badge-green' : 'badge-muted'}">${e.resolved ? 'resolved' : 'open'}</span></td>
       </tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
-  } catch (e) { console.error('Incidents fetch error:', e); }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (stats) stats.innerHTML = summaryErrorHtml(msg);
+    if (tb) tb.innerHTML = tbodyError(7, msg);
+    console.error('Incidents fetch error:', e);
+  }
 }
 </script>
 </body>
