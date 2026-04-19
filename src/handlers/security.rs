@@ -780,6 +780,7 @@ mod tests {
                             clock: None,
                             firmware: None,
                             machine: None,
+                            io_threads_policy: None,
                         },
                         volumes: None,
                         networks: None,

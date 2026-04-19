@@ -94,6 +94,12 @@ metadata:
     app.kubernetes.io/component: api
 spec:
   replicas: 1
+  # Avoid two pods during rollout: hostPort binds would collide on a single node.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: vmrogue

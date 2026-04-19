@@ -26,6 +26,43 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
+/// Monthly USD estimate from the same reference rates as `handlers/costs.rs` (CPU + memory only).
+#[cfg(feature = "web")]
+fn vm_monthly_cost_estimate(vm: &crate::kube::VirtualMachine) -> f64 {
+    const CPU_RATE: f64 = 0.048;
+    const MEMORY_RATE: f64 = 0.006;
+    const HOURS_PER_MONTH: f64 = 730.0;
+    let cpu_cores = vm
+        .spec
+        .template
+        .spec
+        .domain
+        .cpu
+        .as_ref()
+        .map(|c| c.cores.unwrap_or(1) as f64)
+        .unwrap_or(1.0);
+    let memory_str = vm
+        .spec
+        .template
+        .spec
+        .domain
+        .resources
+        .requests
+        .as_ref()
+        .and_then(|r| r.get("memory"))
+        .map(|v| v.as_str())
+        .unwrap_or("0");
+    let memory_gib = crate::utils::parse_memory_gib(memory_str);
+    let cpu_cost = cpu_cores * CPU_RATE * HOURS_PER_MONTH;
+    let memory_cost = memory_gib * MEMORY_RATE * HOURS_PER_MONTH;
+    round2(cpu_cost + memory_cost)
+}
+
+#[cfg(feature = "web")]
+fn round2(v: f64) -> f64 {
+    (v * 100.0).round() / 100.0
+}
+
 /// Generate recommendations by analyzing live VM configurations.
 #[cfg(feature = "web")]
 async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Recommendation>> {
@@ -40,6 +77,9 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
         let devices = domain.devices.as_ref();
 
         // Check for missing resource limits
+        let monthly = vm_monthly_cost_estimate(vm);
+
+        // Check for missing resource limits
         if domain.resources.limits.is_none() {
             id_counter += 1;
             recs.push(Recommendation {
@@ -52,7 +92,7 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
                     vm_name
                 ),
                 resource: format!("{}/{}", s.namespace, vm_name),
-                estimated_savings: None,
+                estimated_savings: Some(round2(monthly * 0.12)),
                 impact: "High".to_string(),
                 effort: "Low".to_string(),
             });
@@ -71,7 +111,7 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
                     vm_name
                 ),
                 resource: format!("{}/{}", s.namespace, vm_name),
-                estimated_savings: None,
+                estimated_savings: Some(round2((monthly * 0.02).max(4.0))),
                 impact: "Medium".to_string(),
                 effort: "Low".to_string(),
             });
@@ -90,7 +130,7 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
                     vm_name
                 ),
                 resource: format!("{}/{}", s.namespace, vm_name),
-                estimated_savings: None,
+                estimated_savings: Some(round2(monthly * 0.08)),
                 impact: "High".to_string(),
                 effort: "Low".to_string(),
             });

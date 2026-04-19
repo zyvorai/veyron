@@ -53,8 +53,8 @@ pub mod crds;
 
 /// Build the combined API router from all handler sub-routers.
 ///
-/// Handlers that have been wired to real Kubernetes data receive SharedState.
-/// Remaining handlers return placeholder data until wired in future phases.
+/// Handlers receive SharedState and call into `KubeClient`. Some domains return
+/// heuristic analytics (costs, forecasting, observability); core VM lifecycle data is live K8s.
 ///
 /// NOTE: Authentication is NOT applied here. The parent router (see
 /// `http_server::web::build_router`) is responsible for layering the

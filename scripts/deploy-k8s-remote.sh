@@ -4,6 +4,9 @@
 # ============================================================================
 # Rsync source, build binary, build container image, deploy to K8s.
 # No systemd — pure Kubernetes deployment.
+# The API is served with HTTPS (self-signed cert via initContainer openssl).
+# To use your own cert: create a TLS Secret in vmrogue-system and patch the
+# Deployment to mount it at /certs (tls.crt, tls.key) instead of the generated pair.
 #
 # Usage:
 #   ./scripts/deploy-k8s-remote.sh <host> [user]
@@ -32,8 +35,8 @@ echo "  ============================================"
 echo ""
 echo "  Host:      ${USER}@${HOST}"
 echo "  Namespace: ${NS}"
-echo "  NodePort:  ${NODE_PORT}"
-echo "  API Key:   ${API_KEY}"
+echo "  HTTPS NodePort: ${NODE_PORT} (Service targets TLS :5151 in the pod)"
+echo "  API Key:        ${API_KEY}"
 echo ""
 
 # ── Step 1: Rsync ──
@@ -65,6 +68,11 @@ ssh "${USER}@${HOST}" "
 info "Container image built and imported"
 
 # ── Step 4: Deploy to K8s ──
+# Bump pod template every run so apply triggers a rollout even when the image ref
+# stays localhost/vmrogue:latest with imagePullPolicy: Never (otherwise old pods
+# keep running the previous image layers).
+DEPLOY_STAMP="$(date +%s)-${RANDOM}"
+
 step "Step 4/5: Deploying to Kubernetes"
 ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
@@ -153,6 +161,13 @@ metadata:
   namespace: ${NS}
 spec:
   replicas: 1
+  # One replica + default rolling params can schedule a second pod during rollout; on a
+  # tight node the new pod stays Pending and rollout times out. Never surge: replace in place.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: vmrogue-api
@@ -160,13 +175,34 @@ spec:
     metadata:
       labels:
         app: vmrogue-api
+      annotations:
+        vmrogue.io/deployed-at: '${DEPLOY_STAMP}'
     spec:
       serviceAccountName: vmrogue
+      initContainers:
+        - name: gen-cert
+          image: alpine/openssl:3.3.2
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              openssl req -x509 -nodes -days 3650 \
+                -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
+                -keyout /certs/tls.key -out /certs/tls.crt \
+                -subj "/CN=vmrogue/O=vmrogue" \
+                -addext "subjectAltName=DNS:vmrogue-api,DNS:vmrogue-api.${NS}.svc,DNS:localhost,IP:127.0.0.1"
+              chown 10001:10001 /certs/tls.key /certs/tls.crt
+              chmod 600 /certs/tls.key && chmod 644 /certs/tls.crt
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /certs
       containers:
         - name: vmrogue
           image: localhost/vmrogue:latest
           imagePullPolicy: Never
-          args: ['api-serve', '--port', '5151', '--host', '0.0.0.0']
+          args: ['api-serve', '--port', '5151', '--host', '0.0.0.0', '--tls', '--tls-cert', '/certs/tls.crt', '--tls-key', '/certs/tls.key']
           env:
             - name: VMROGUE_API_KEY
               valueFrom:
@@ -177,7 +213,31 @@ spec:
               value: info
           ports:
             - containerPort: 5151
-              name: http
+              name: https
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
           resources:
             requests:
               cpu: 50m
@@ -185,18 +245,13 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
-          livenessProbe:
-            httpGet:
-              path: /api/v1/health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 30
-          readinessProbe:
-            httpGet:
-              path: /api/v1/health
-              port: http
-            initialDelaySeconds: 3
-            periodSeconds: 10
+          volumeMounts:
+            - name: tls-certs
+              mountPath: /certs
+              readOnly: true
+      volumes:
+        - name: tls-certs
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -208,9 +263,10 @@ spec:
   selector:
     app: vmrogue-api
   ports:
-    - name: http
-      port: 5151
-      targetPort: 5151
+    - name: https
+      port: 443
+      targetPort: https
+      protocol: TCP
       nodePort: ${NODE_PORT}
 YAML
 "
@@ -218,23 +274,29 @@ info "K8s resources applied"
 
 # ── Step 5: Verify ──
 step "Step 5/5: Verifying deployment"
+# Chain with && so a failed rollout is not masked by a later kubectl (ssh exits 0 on last cmd).
 ssh "${USER}@${HOST}" "
-    ${K} -n ${NS} rollout status deployment/vmrogue-api --timeout=60s
-    echo ''
-    ${K} -n ${NS} get pods -l app=vmrogue-api -o wide
-    echo ''
+    ${K} -n ${NS} rollout status deployment/vmrogue-api --timeout=180s &&
+    echo '' &&
+    ${K} -n ${NS} get pods -l app=vmrogue-api -o wide &&
+    echo '' &&
     ${K} -n ${NS} get svc vmrogue-api
-"
+" || error "Deployment rollout failed (on host: ${K} -n ${NS} describe pod -l app=vmrogue-api)"
 info "Deployment verified"
+
+# Live Service NodePort for the https port (see port name in manifest).
+DISPLAY_NODE_PORT=$(ssh "${USER}@${HOST}" "${K} -n ${NS} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || true)
+DISPLAY_NODE_PORT="${DISPLAY_NODE_PORT:-${NODE_PORT}}"
 
 echo ""
 echo "  ============================================"
 echo "  Deployment complete: ${USER}@${HOST}"
 echo "  ============================================"
 echo ""
-echo "  Dashboard:  http://${HOST}:${NODE_PORT}/dashboard"
+echo "  Dashboard:  https://${HOST}:${DISPLAY_NODE_PORT}/dashboard"
+echo "  Health:     https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
+echo "  TLS:        Self-signed in-cluster (browser warning) unless you replace /certs from a Secret"
 echo "  API Key:    ${API_KEY}"
-echo "  Health:     http://${HOST}:${NODE_PORT}/api/v1/health"
 echo ""
 echo "  kubectl:"
 echo "    ${K} -n ${NS} logs deployment/vmrogue-api -f"

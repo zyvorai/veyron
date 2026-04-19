@@ -118,7 +118,7 @@ VMRogue implements the following security measures:
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
 - VNC WebSocket proxy uses direct K8s API WebSocket with client certificate authentication (mTLS)
 - **VMRoguePolicy CRD enforcement**: VM creation evaluates VMRoguePolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.
-- **Structured error types**: The API returns proper HTTP status codes (e.g., 401 for auth failures, 409 for conflicts) instead of returning 200 with empty data. All 49 API handlers return real data (zero stubs).
+- **Structured error types**: The API returns proper HTTP status codes (e.g., 401 for auth failures, 409 for conflicts) instead of returning 200 with silent failures where feasible. VM lifecycle routes use Kubernetes directly; analytics routes may return heuristic projections labeled in JSON where applicable.
 - **Input validation on batch operations**: Batch VM operations validate Kubernetes names (RFC 1123) before processing. Budget creation ensures the `vmrogue-system` namespace exists before writing resources.
 - **CRDPolicyRule structured value field**: Policy conditions use a structured `value` field for thresholds instead of parsing values from message strings, which was fragile and potentially exploitable via crafted input.
 
@@ -128,7 +128,7 @@ VMRogue implements the following security measures:
 - CSP restricts scripts to `'self'` only (no external CDN dependencies)
 - noVNC bundled locally (no runtime CDN fetches)
 - Dashboard page served without auth; all API calls require valid key
-- All 49 API endpoints return real data from Kubernetes; no stub or scaffolding endpoints remain.
+- Core endpoints return cluster-backed data; auxiliary endpoints document estimate/disclaimer fields where values are not sourced from billing or external SaaS.
 
 #### Operator Security
 - **CEL policy expressions**: The VMRogue Operator supports CEL (Common Expression Language) policy expressions for custom compliance rules, evaluated safely in a sandboxed environment.

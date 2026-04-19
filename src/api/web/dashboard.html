@@ -141,14 +141,21 @@ body>*{position:relative;z-index:1}
 }
 .nav-group-btn.active::after{opacity:.8}
 .nav-dropdown{
-  position:absolute;top:calc(100% + 6px);left:0;
+  /* top:100% only — no gap; a gap breaks hover because .nav-group's hit box is only as tall as the row button */
+  position:absolute;top:100%;left:0;
   background:linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,18,.99));
   border:1px solid var(--border-hot);border-radius:6px;
-  padding:5px;min-width:154px;z-index:200;
+  padding:10px 5px 6px;min-width:154px;z-index:200;
   box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 20px rgba(255,69,0,.06);
   display:none;backdrop-filter:blur(20px);
 }
-.nav-group:hover .nav-dropdown{display:block}
+/* Invisible hover bridge above menu — keeps submenu open while moving pointer from label to items */
+.nav-dropdown::before{
+  content:'';position:absolute;left:0;right:0;bottom:100%;
+  height:14px;
+}
+.nav-group:hover .nav-dropdown,
+.nav-group:focus-within .nav-dropdown{display:block}
 .nav-dropdown .nav-link{
   display:block;width:100%;text-align:left;
   padding:7px 12px;border-radius:3px;font-size:.65em;white-space:nowrap;
@@ -1764,6 +1771,11 @@ document.addEventListener('keydown', e => {
   }
 });
 
+function crdEmptyRow(colspan, payload) {
+  const hint = payload && payload.message ? esc(payload.message) : 'No resources found.';
+  return '<tr><td colspan="'+colspan+'" style="text-align:center;color:var(--text-dim);max-width:720px">' + hint + '</td></tr>';
+}
+
 async function apiFetch(url, opts) {
   let key = getApiKey();
   if (!key) key = await requireApiKey();
@@ -2634,7 +2646,7 @@ async function fetchCRDs() {
     const j = await r.json();
     const items = j.items || [];
     const tb = document.getElementById('crds-body');
-    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No VMRogueVM resources</td></tr>'; return; }
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, j); return; }
     tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="vm-badge ' + sc(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
   } catch {}
 }
@@ -2645,7 +2657,7 @@ async function fetchPolicies() {
     const j = await r.json();
     const items = j.items || [];
     const tb = document.getElementById('policies-body');
-    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No policies</td></tr>'; return; }
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, j); return; }
     tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="vm-badge ' + (p.severity==='Critical'?'error':p.severity==='High'?'error':'other') + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
   } catch {}
 }
@@ -2656,7 +2668,7 @@ async function fetchInsights() {
     const j = await r.json();
     const items = j.items || [];
     const tb = document.getElementById('insights-body');
-    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No insights</td></tr>'; return; }
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, j); return; }
     tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="vm-badge ' + (i.severity==='Critical'||i.severity==='High'?'error':'other') + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
   } catch {}
 }
@@ -2667,7 +2679,7 @@ async function fetchActions() {
     const j = await r.json();
     const items = j.items || [];
     const tb = document.getElementById('actions-body');
-    if (items.length === 0) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No actions</td></tr>'; return; }
+    if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, j); return; }
     tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="vm-badge running">Yes</span>':'<span class="vm-badge stopped">No</span>') + '</td><td><span class="vm-badge ' + sc(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
   } catch {}
 }
@@ -2681,10 +2693,12 @@ async function fetchCosts() {
 
     const sumEl = document.getElementById('cost-summary');
     const total = summary.total_cost || 0;
+    const costNote = summary.disclaimer ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(summary.disclaimer) + '</p>' : '';
     sumEl.innerHTML = '<div class="stat-card"><div class="stat-value">$' + total.toFixed(2) + '</div><div class="stat-label">Monthly Total</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + (costs.length||0) + '</div><div class="stat-label">VMs Tracked</div></div>' +
       '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.cpu||0).toFixed(2) + '</div><div class="stat-label">CPU Cost</div></div>' +
-      '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.memory||0).toFixed(2) + '</div><div class="stat-label">Memory Cost</div></div>';
+      '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.memory||0).toFixed(2) + '</div><div class="stat-label">Memory Cost</div></div>' +
+      costNote;
 
     // Namespace breakdown
     const nsEl = document.getElementById('cost-by-namespace');
@@ -3226,11 +3240,12 @@ async function fetchGitOps() {
     const status = await apiFetch('/api/v1/gitops/status' + nsParam()).then(r => r.json());
     const summary = document.getElementById('gitops-summary');
     if (!summary) return;
+    const note = status.note ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(status.note) + '</p>' : '';
     summary.innerHTML = `
       <div class="stat-card"><div class="stat-label">Repo</div><div class="stat-value">${esc(status.repo_url || 'Not configured')}</div></div>
       <div class="stat-card"><div class="stat-label">Branch</div><div class="stat-value">${esc(status.branch || '-')}</div></div>
       <div class="stat-card"><div class="stat-label">Sync</div><div class="stat-value">${esc(status.sync_status || 'unknown')}</div></div>
-      <div class="stat-card"><div class="stat-label">Drift</div><div class="stat-value">${status.drift_detected ? 'Detected' : 'Clear'}</div></div>`;
+      <div class="stat-card"><div class="stat-label">Drift</div><div class="stat-value">${status.drift_detected ? 'Detected' : 'Clear'}</div></div>` + note;
   } catch (e) { console.error('GitOps fetch error:', e); }
 }
 

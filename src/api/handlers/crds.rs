@@ -24,11 +24,35 @@ use kube::{
 use crate::operator_crds::*;
 use rand::Rng;
 
-/// Generic CRD list response.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Generic CRD list response (API responses only — dashboard consumes JSON).
+#[derive(Debug, Clone, Serialize)]
 pub struct CrdListResponse<T: Serialize> {
     pub items: Vec<T>,
     pub total: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+#[cfg(feature = "web")]
+fn crd_list_failure_message(err: &kube::Error) -> String {
+    match err {
+        kube::Error::Api(e) if e.code == 404 => {
+            "vmrogue.io CustomResourceDefinitions are not installed on this cluster. Install operator CRDs (see deploy/operator) and retry.".to_string()
+        }
+        kube::Error::Api(e) if e.code == 403 => {
+            "Forbidden listing vmrogue.io resources — extend RBAC for the VMRogue service account.".to_string()
+        }
+        _ => format!("Could not list VMRogue resources: {err}"),
+    }
+}
+
+#[cfg(feature = "web")]
+fn crd_list_err<T: Serialize>(err: kube::Error) -> Json<CrdListResponse<T>> {
+    Json(CrdListResponse {
+        items: vec![],
+        total: 0,
+        message: Some(crd_list_failure_message(&err)),
+    })
 }
 
 /// VMRogueVM summary for API responses.
@@ -181,12 +205,13 @@ async fn list_vmrogue_vms(
                 })
                 .collect();
             let total = items.len();
-            Json(CrdListResponse { items, total })
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
         }
-        Err(_) => Json(CrdListResponse {
-            items: vec![],
-            total: 0,
-        }),
+        Err(e) => crd_list_err(e),
     }
 }
 
@@ -307,12 +332,13 @@ async fn list_blueprints(
                 })
                 .collect();
             let total = items.len();
-            Json(CrdListResponse { items, total })
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
         }
-        Err(_) => Json(CrdListResponse {
-            items: vec![],
-            total: 0,
-        }),
+        Err(e) => crd_list_err(e),
     }
 }
 
@@ -420,12 +446,13 @@ async fn list_policies(
                 })
                 .collect();
             let total = items.len();
-            Json(CrdListResponse { items, total })
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
         }
-        Err(_) => Json(CrdListResponse {
-            items: vec![],
-            total: 0,
-        }),
+        Err(e) => crd_list_err(e),
     }
 }
 
@@ -534,12 +561,13 @@ async fn list_insights(
                 })
                 .collect();
             let total = items.len();
-            Json(CrdListResponse { items, total })
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
         }
-        Err(_) => Json(CrdListResponse {
-            items: vec![],
-            total: 0,
-        }),
+        Err(e) => crd_list_err(e),
     }
 }
 
@@ -614,12 +642,13 @@ async fn list_actions(
                 })
                 .collect();
             let total = items.len();
-            Json(CrdListResponse { items, total })
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
         }
-        Err(_) => Json(CrdListResponse {
-            items: vec![],
-            total: 0,
-        }),
+        Err(e) => crd_list_err(e),
     }
 }
 

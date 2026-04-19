@@ -1691,6 +1691,7 @@ mod tests {
                             clock: None,
                             firmware: None,
                             machine: None,
+                            io_threads_policy: None,
                         },
                         volumes: None,
                         networks: None,
@@ -1852,6 +1853,7 @@ mod tests {
             inputs: None,
             watchdog: None,
             autoattach_graphics_device: None,
+            autoattach_mem_balloon: None,
             network_interface_multiqueue: None,
         });
         vm.spec.template.spec.networks = Some(vec![Network {
@@ -1887,6 +1889,7 @@ mod tests {
             inputs: None,
             watchdog: None,
             autoattach_graphics_device: None,
+            autoattach_mem_balloon: None,
             network_interface_multiqueue: None,
         });
         vm.spec.template.spec.networks = Some(vec![Network {
