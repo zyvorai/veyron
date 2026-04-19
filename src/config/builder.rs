@@ -277,6 +277,32 @@ impl VMConfigBuilder {
         self
     }
 
+    /// Enable USB tablet input for accurate absolute mouse positioning over VNC.
+    pub fn usb_tablet(mut self) -> Self {
+        self.config.usb_tablet = true;
+        self
+    }
+
+    /// Disable virtio-balloon to eliminate memory reclaim latency jitter.
+    pub fn disable_balloon(mut self) -> Self {
+        self.config.disable_balloon = true;
+        self
+    }
+
+    /// Set ioThreadsPolicy ("shared" or "auto") for better disk IO throughput.
+    pub fn io_threads_policy(mut self, policy: impl Into<String>) -> Self {
+        self.config.io_threads_policy = Some(policy.into());
+        self
+    }
+
+    /// Set the cache mode on a named disk ("none", "writethrough", "writeback").
+    pub fn set_disk_cache(mut self, disk_name: &str, cache: impl Into<String>) -> Self {
+        if let Some(d) = self.config.disks.iter_mut().find(|d| d.name == disk_name) {
+            d.cache = Some(cache.into());
+        }
+        self
+    }
+
     /// Set the eviction strategy (e.g., "LiveMigrate").
     pub fn eviction_strategy(mut self, strategy: impl Into<String>) -> Self {
         self.config.eviction_strategy = Some(strategy.into());

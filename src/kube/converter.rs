@@ -279,12 +279,15 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
     } else {
         None
     };
-    // Add tablet input for better mouse support
-    let inputs = Some(vec![InputDevice {
-        input_type: "tablet".to_string(),
-        name: "tablet0".to_string(),
-        bus: Some("usb".to_string()),
-    }]);
+    let inputs = if config.usb_tablet {
+        Some(vec![InputDevice {
+            input_type: "tablet".to_string(),
+            name: "tablet0".to_string(),
+            bus: Some("usb".to_string()),
+        }])
+    } else {
+        None
+    };
 
     let termination_grace_period = config.termination_grace_period.unwrap_or(30);
 
@@ -325,12 +328,18 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         inputs,
                         watchdog: None,
                         autoattach_graphics_device: None,
+                        autoattach_mem_balloon: if config.disable_balloon {
+                            Some(false)
+                        } else {
+                            None
+                        },
                         network_interface_multiqueue: None,
                     }),
                     features,
                     clock,
                     firmware,
                     machine,
+                    io_threads_policy: config.io_threads_policy.clone(),
                 },
                 volumes: Some(volumes),
                 networks: Some(networks),

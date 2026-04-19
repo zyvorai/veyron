@@ -27,11 +27,32 @@ pub struct CiliumPolicy {
     pub egress_rules: u32,
 }
 
+/// A network flow observed or inferred from NetworkPolicies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetworkFlow {
+    pub source: String,
+    pub destination: String,
+    pub namespace: String,
+    pub protocol: String,
+    pub port: u16,
+    pub verdict: String,
+}
+
+/// Summary of network flows
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NetworkFlowSummary {
+    pub total_flows: u32,
+    pub allowed: u32,
+    pub denied: u32,
+    pub flows: Vec<NetworkFlow>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/cilium/status", get(get_cilium_status))
         .route("/cilium/policies", get(list_cilium_policies))
+        .route("/cilium/flows", get(list_network_flows))
         .with_state(state)
 }
 
@@ -164,4 +185,86 @@ async fn list_cilium_policies(State(state): State<SharedState>) -> Json<Vec<Cili
         .collect();
 
     Json(results)
+}
+
+/// Derive network flows from K8s NetworkPolicies.
+/// Shows allowed/denied flows based on policy ingress/egress rules.
+#[cfg(feature = "web")]
+async fn list_network_flows(State(state): State<SharedState>) -> Json<NetworkFlowSummary> {
+    use k8s_openapi::api::networking::v1::NetworkPolicy;
+
+    let s = state.read().await;
+    let ns = &s.namespace;
+    let api: kube::api::Api<NetworkPolicy> =
+        kube::api::Api::namespaced(s.client().client(), ns);
+
+    let policies = match api.list(&kube::api::ListParams::default()).await {
+        Ok(list) => list,
+        Err(_) => return Json(NetworkFlowSummary { total_flows: 0, allowed: 0, denied: 0, flows: vec![] }),
+    };
+
+    let mut flows = Vec::new();
+    for np in &policies.items {
+        let np_name = np.metadata.name.as_deref().unwrap_or("unknown");
+        let np_ns = np.metadata.namespace.as_deref().unwrap_or(ns.as_str());
+        let spec = match np.spec.as_ref() { Some(s) => s, None => continue };
+
+        // Each ingress rule with ports → allowed ingress flow
+        if let Some(ingress_rules) = spec.ingress.as_ref() {
+            for rule in ingress_rules {
+                let ports = rule.ports.as_deref().unwrap_or(&[]);
+                if ports.is_empty() {
+                    flows.push(NetworkFlow {
+                        source: "any".to_string(),
+                        destination: np_name.to_string(),
+                        namespace: np_ns.to_string(),
+                        protocol: "TCP".to_string(),
+                        port: 0,
+                        verdict: "allowed".to_string(),
+                    });
+                }
+                for port_spec in ports {
+                    let port_num = port_spec.port.as_ref()
+                        .and_then(|p| if let k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(n) = p { Some(*n as u16) } else { None })
+                        .unwrap_or(0);
+                    let proto = port_spec.protocol.as_deref().unwrap_or("TCP").to_string();
+                    flows.push(NetworkFlow {
+                        source: "policy-allowed".to_string(),
+                        destination: np_name.to_string(),
+                        namespace: np_ns.to_string(),
+                        protocol: proto,
+                        port: port_num,
+                        verdict: "allowed".to_string(),
+                    });
+                }
+            }
+        }
+
+        // Any egress rule → allowed egress flow
+        if let Some(egress_rules) = spec.egress.as_ref() {
+            for rule in egress_rules {
+                let ports = rule.ports.as_deref().unwrap_or(&[]);
+                for port_spec in ports {
+                    let port_num = port_spec.port.as_ref()
+                        .and_then(|p| if let k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(n) = p { Some(*n as u16) } else { None })
+                        .unwrap_or(0);
+                    let proto = port_spec.protocol.as_deref().unwrap_or("TCP").to_string();
+                    flows.push(NetworkFlow {
+                        source: np_name.to_string(),
+                        destination: "policy-allowed".to_string(),
+                        namespace: np_ns.to_string(),
+                        protocol: proto,
+                        port: port_num,
+                        verdict: "allowed".to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    let allowed = flows.iter().filter(|f| f.verdict == "allowed").count() as u32;
+    let denied = flows.iter().filter(|f| f.verdict == "denied").count() as u32;
+    let total = flows.len() as u32;
+
+    Json(NetworkFlowSummary { total_flows: total, allowed, denied, flows })
 }

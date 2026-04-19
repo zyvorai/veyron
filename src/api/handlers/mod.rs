@@ -18,6 +18,7 @@ pub mod health;
 pub mod heatmap;
 pub mod helm;
 pub mod hpa;
+pub mod incidents;
 pub mod ingress;
 pub mod logs;
 pub mod metrics;
@@ -113,6 +114,7 @@ pub fn all_routes(
         .merge(custom_resources::router(state.clone()))
         .merge(chaos_engineering::router(state.clone()))
         .merge(slo::router(state.clone()))
+        .merge(incidents::router(state.clone()))
         // RDP (VM discovery + config, proxy requires external gateway)
         .merge(rdp::router(state.clone()))
         // Static handlers
