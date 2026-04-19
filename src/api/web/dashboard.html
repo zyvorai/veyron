@@ -123,6 +123,43 @@ body>*{position:relative;z-index:1}
 .nav-dot.err{background:var(--error);box-shadow:0 0 10px rgba(255,34,68,.4)}
 .refresh-text{font-size:.65em;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
 
+/* Dropdown nav groups */
+.nav-group{position:relative;display:inline-flex}
+.nav-group-btn{
+  padding:8px 14px;border-radius:4px;
+  font-family:'Inter',sans-serif;font-size:.65em;font-weight:500;
+  color:var(--text-muted);cursor:pointer;
+  transition:all .2s;border:1px solid transparent;background:none;
+  letter-spacing:1.5px;text-transform:uppercase;
+  display:flex;align-items:center;gap:4px;white-space:nowrap;
+}
+.nav-group-btn::after{content:'▾';font-size:.85em;opacity:.45;margin-left:1px}
+.nav-group-btn:hover,.nav-group-btn.active{
+  background:rgba(255,69,0,.08);color:var(--ember);
+  border-color:rgba(255,69,0,.2);
+  text-shadow:0 0 10px rgba(255,69,0,.3);
+}
+.nav-group-btn.active::after{opacity:.8}
+.nav-dropdown{
+  position:absolute;top:calc(100% + 6px);left:0;
+  background:linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,18,.99));
+  border:1px solid var(--border-hot);border-radius:6px;
+  padding:5px;min-width:154px;z-index:200;
+  box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 20px rgba(255,69,0,.06);
+  display:none;backdrop-filter:blur(20px);
+}
+.nav-group:hover .nav-dropdown{display:block}
+.nav-dropdown .nav-link{
+  display:block;width:100%;text-align:left;
+  padding:7px 12px;border-radius:3px;font-size:.65em;white-space:nowrap;
+}
+.nav-dropdown-sep{height:1px;background:var(--border);margin:4px 3px}
+.nav-tag-new{
+  font-size:.6em;padding:1px 5px;border-radius:2px;vertical-align:middle;margin-left:4px;
+  background:rgba(0,180,255,.12);color:var(--spark);border:1px solid rgba(0,180,255,.2);
+  letter-spacing:.5px;font-weight:600;
+}
+
 /* ═══════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════ */
@@ -729,8 +766,10 @@ body>*{position:relative;z-index:1}
 /* Mobile responsive */
 @media(max-width:768px){
   .navbar{padding:0 12px;height:50px;flex-wrap:wrap}
-  .nav-links{gap:0;margin-left:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .nav-links{gap:0;margin-left:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
   .nav-link{padding:6px 8px;font-size:.55em;white-space:nowrap}
+  .nav-group-btn{padding:6px 10px;font-size:.55em}
+  .nav-dropdown{min-width:130px}
   .navbar-right{gap:8px}
   .container{padding:12px}
   .page-header{flex-direction:column;align-items:flex-start;gap:8px}
@@ -760,44 +799,96 @@ body>*{position:relative;z-index:1}
     <span class="navbar-brand" onclick="navigate('dashboard')">VMRogue</span>
     <div class="nav-links">
       <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</button>
-      <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
-      <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
-      <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
-      <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
-      <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
-      <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
-      <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
-      <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
-      <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
-      <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
-      <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
-      <button class="nav-link" data-page="security" onclick="navigate('security')">Security</button>
-      <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
-      <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
-      <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts</button>
-      <button class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
-      <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
-      <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
-      <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
-      <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
-      <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
-      <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
-      <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
-      <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
-      <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
-      <button class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
-      <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
-      <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
-      <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
-      <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
-      <button class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
-      <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
-      <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
-      <button class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
-      <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
-      <button class="nav-link" data-page="observability" onclick="navigate('observability')">Observability</button>
-      <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
-      <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Compute</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
+          <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
+          <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
+          <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
+          <button class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
+          <button class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
+          <button class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Storage</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
+          <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
+          <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Network</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
+          <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
+          <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
+          <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Observe</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
+          <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
+          <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts</button>
+          <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
+          <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
+          <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
+          <button class="nav-link" data-page="observability" onclick="navigate('observability')">Overview</button>
+          <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
+          <div class="nav-dropdown-sep"></div>
+          <button class="nav-link" data-page="traces" onclick="navigate('traces')">Traces <span class="nav-tag-new">NEW</span></button>
+          <button class="nav-link" data-page="logs" onclick="navigate('logs')">Logs <span class="nav-tag-new">NEW</span></button>
+          <button class="nav-link" data-page="incidents" onclick="navigate('incidents')">Incidents <span class="nav-tag-new">NEW</span></button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Security</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
+          <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
+          <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
+          <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
+          <button class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Platform</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
+          <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
+          <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
+          <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
+          <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
+          <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">FinOps</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
+          <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn">Ops</button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
+          <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
+          <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="navbar-right">
@@ -992,10 +1083,19 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-monitoring">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Monitoring</h1><p>Cluster monitoring stack status</p></div></div>
+  <div class="page-header"><div><h1>Monitoring</h1><p>Cluster monitoring stack status and anomaly detection</p></div></div>
   <div id="monitoring-status" class="grid-4" style="margin-bottom:16px"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Recommendations</span></div>
-  <table class="table" id="recommendations-table"><thead><tr><th>Priority</th><th>Category</th><th>Title</th><th>Resource</th><th>Impact</th></tr></thead><tbody id="recommendations-body"></tbody></table>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Recommendations</span></div>
+    <table class="table" id="recommendations-table"><thead><tr><th>Priority</th><th>Category</th><th>Title</th><th>Resource</th><th>Impact</th></tr></thead><tbody id="recommendations-body"></tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Anomaly Detection</span>
+        <span id="anomaly-count-badge" style="font-size:.65em;padding:3px 10px;border-radius:3px"></span>
+      </div>
+      <table class="table"><thead><tr><th>VM</th><th>Metric</th><th>Value</th><th>Threshold</th><th>Deviation</th><th>Severity</th><th>Detected</th></tr></thead><tbody id="anomalies-body"></tbody></table>
+    </div>
   </div>
 </div>
 </div>
@@ -1066,9 +1166,17 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-slo">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>SLO</h1><p>Availability objectives and error budgets</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">SLO Objectives</span></div>
-  <table class="table"><thead><tr><th>Name</th><th>Service</th><th>SLI</th><th>Target</th><th>Current</th><th>Error Budget</th><th>Status</th></tr></thead><tbody id="slo-body"></tbody></table>
+  <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div></div>
+  <div id="slo-burn-stats" class="grid-4"></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span class="card-title">SLO Objectives</span></div>
+      <table class="table"><thead><tr><th>Name</th><th>Service</th><th>SLI</th><th>Target</th><th>Current</th><th>Error Budget</th><th>Status</th></tr></thead><tbody id="slo-body"></tbody></table>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Error Budget Burn Rate</span></div>
+      <table class="table"><thead><tr><th>SLO</th><th>Budget Total</th><th>Consumed</th><th>Burn 1h</th><th>Burn 24h</th><th>TTL</th><th>Status</th></tr></thead><tbody id="slo-burn-body"></tbody></table>
+    </div>
   </div>
 </div>
 </div>
@@ -1184,10 +1292,19 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-cilium">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cilium</h1><p>Cilium status and policy fallback view</p></div></div>
+  <div class="page-header"><div><h1>Cilium</h1><p>Cilium status, policies, and network flow visualization</p></div></div>
   <div id="cilium-summary" class="grid-4" style="margin-bottom:16px"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
-  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+    <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Network Flows</span>
+        <div id="flow-stats" style="display:flex;gap:12px;font-size:.7em;font-family:'JetBrains Mono',monospace"></div>
+      </div>
+      <table class="table"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th></tr></thead><tbody id="flows-body"></tbody></table>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -1200,9 +1317,21 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-performance">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles</p></div></div>
+  <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Profiles</span></div>
   <table class="table"><thead><tr><th>VM</th><th>CPU P95</th><th>Memory P95</th><th>Read IOPS</th><th>Write IOPS</th><th>Collected</th></tr></thead><tbody id="performance-body"></tbody></table></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">CPU Flamegraph</span>
+      <select id="flamegraph-vm-select" class="input" style="padding:5px 10px;font-size:.75em" onchange="renderFlamegraph()">
+        <option value="">Select VM…</option>
+      </select>
+    </div>
+    <div id="flamegraph-container" style="padding:18px">
+      <div id="flamegraph-canvas-wrap" style="overflow-x:auto"></div>
+      <div id="flamegraph-empty" style="text-align:center;color:var(--text-dim);font-size:.8em;padding:40px;font-family:'JetBrains Mono',monospace">Select a VM to view its CPU flamegraph</div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -1211,6 +1340,79 @@ body>*{position:relative;z-index:1}
   <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Webhooks</span></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page" id="page-traces">
+<div class="space-y animate-fade-in">
+  <div class="page-header">
+    <div><h1>Traces</h1><p>Distributed trace explorer — OpenTelemetry spans across VMs and services</p></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="traces-search" class="input" style="width:220px;padding:6px 10px;font-size:.75em" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
+    </div>
+  </div>
+  <div id="traces-stats" class="grid-4"></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Recent Traces</span></div>
+    <table class="table"><thead><tr><th>Trace ID</th><th>Service</th><th>Operation</th><th>Duration</th><th>Spans</th><th>Status</th><th>Started</th></tr></thead><tbody id="traces-body"></tbody></table>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:'JetBrains Mono',monospace">Connect OpenTelemetry collector to populate</div></div>
+    <div class="card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:'JetBrains Mono',monospace">Connect OpenTelemetry collector to populate</div></div>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-logs">
+<div class="space-y animate-fade-in">
+  <div class="page-header">
+    <div><h1>Log Explorer</h1><p>Structured log stream from VMs and system components</p></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="logs-level-filter" class="input" style="padding:6px 10px;font-size:.75em" onchange="fetchLogs()">
+        <option value="">All Levels</option>
+        <option value="error">Error</option>
+        <option value="warn">Warn</option>
+        <option value="info">Info</option>
+        <option value="debug">Debug</option>
+      </select>
+      <input id="logs-search" class="input" style="width:240px;padding:6px 10px;font-size:.75em" placeholder="Search logs…" oninput="fetchLogs()">
+    </div>
+  </div>
+  <div id="logs-stats" class="grid-4"></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Log Stream</span>
+      <span style="font-size:.65em;padding:3px 10px;border-radius:3px;background:var(--success-dim);color:var(--success);border:1px solid rgba(0,255,136,.15)">● LIVE</span>
+    </div>
+    <div id="logs-stream" style="font-family:'JetBrains Mono',monospace;font-size:.72em;max-height:480px;overflow-y:auto;padding:12px 18px;line-height:1.8;color:var(--text)">
+      <div style="color:var(--text-dim);text-align:center;padding:40px">Connect log aggregator or wire up VM serial console to stream logs</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="page" id="page-incidents">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Incidents</h1><p>Correlated timeline — K8s events, SLO breaches, and alert fires</p></div></div>
+  <div id="incidents-stats" class="grid-4"></div>
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Incident Timeline</span>
+      <div style="display:flex;gap:8px">
+        <select id="incident-severity-filter" class="input" style="padding:5px 10px;font-size:.75em" onchange="fetchIncidents()">
+          <option value="">All Severities</option>
+          <option value="critical">Critical</option>
+          <option value="warning">Warning</option>
+        </select>
+        <select id="incident-kind-filter" class="input" style="padding:5px 10px;font-size:.75em" onchange="fetchIncidents()">
+          <option value="">All Types</option>
+          <option value="k8s-event">K8s Event</option>
+          <option value="slo-breach">SLO Breach</option>
+        </select>
+      </div>
+    </div>
+    <table class="table"><thead><tr><th>Time</th><th>Type</th><th>Severity</th><th>Title</th><th>VM</th><th>Namespace</th><th>State</th></tr></thead><tbody id="incidents-body"></tbody></table>
+  </div>
 </div>
 </div>
 
@@ -1398,6 +1600,10 @@ function navigate(page) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
+  document.querySelectorAll('.nav-group-btn').forEach(b => {
+    const grp = b.closest('.nav-group');
+    b.classList.toggle('active', !!(grp && grp.querySelector('.nav-link.active')));
+  });
   loadPageData(page);
 }
 
@@ -1439,6 +1645,9 @@ function loadPageData(page) {
   if (page === 'observability') fetchObservability();
   if (page === 'performance') fetchPerformance();
   if (page === 'webhooks') fetchWebhooks();
+  if (page === 'traces') fetchTraces();
+  if (page === 'logs') fetchLogs();
+  if (page === 'incidents') fetchIncidents();
 }
 
 // Toast notifications
@@ -2697,9 +2906,10 @@ async function fetchSecurityPage() {
 // Monitoring page
 async function fetchMonitoring() {
   try {
-    const [status, recs] = await Promise.all([
+    const [status, recs, anomalies] = await Promise.all([
       apiFetch('/api/v1/monitoring/status' + nsParam()).then(r => r.json()),
       apiFetch('/api/v1/recommendations' + nsParam()).then(r => r.json()),
+      apiFetch('/api/v1/monitoring/anomalies' + nsParam()).then(r => r.json()).catch(() => []),
     ]);
     const sum = document.getElementById('monitoring-status');
     if (sum) {
@@ -2708,15 +2918,28 @@ async function fetchMonitoring() {
         <div class="stat-card"><div class="stat-label">Prometheus</div><div class="stat-value">${dot(status.prometheus_available)}${status.prometheus_available?'Available':'Not Found'}</div></div>
         <div class="stat-card"><div class="stat-label">Grafana</div><div class="stat-value">${dot(status.grafana_available)}${status.grafana_available?'Available':'Not Found'}</div></div>
         <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${status.healthy_targets}/${status.total_targets} healthy</div></div>
-        <div class="stat-card"><div class="stat-label">Alerts</div><div class="stat-value">${status.active_alerts}</div></div>`;
+        <div class="stat-card ${anomalies.some(a=>a.severity==='critical')?'stat-card-red':anomalies.length?'stat-card-orange':''}"><div class="stat-label">Anomalies</div><div class="stat-value">${anomalies.length}</div></div>`;
     }
-    const tb = document.getElementById('recommendations-body');
-    if (tb) {
-      tb.innerHTML = recs.map(r => {
+    const recTb = document.getElementById('recommendations-body');
+    if (recTb) {
+      recTb.innerHTML = recs.map(r => {
         const pclr = r.priority === 'High' ? 'var(--error)' : r.priority === 'Medium' ? 'var(--warning)' : 'var(--text-muted)';
         return `<tr><td style="color:${pclr};font-weight:600">${r.priority}</td><td>${r.category}</td><td>${r.title}</td><td><code>${r.resource}</code></td><td>${r.impact}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No recommendations</td></tr>';
     }
+    // Anomalies
+    const badge = document.getElementById('anomaly-count-badge');
+    if (badge) {
+      badge.textContent = anomalies.length ? anomalies.length + ' detected' : 'None';
+      badge.style.background = anomalies.some(a=>a.severity==='critical') ? 'var(--error-dim)' : anomalies.length ? 'var(--warning-dim)' : 'var(--success-dim)';
+      badge.style.color = anomalies.some(a=>a.severity==='critical') ? 'var(--error)' : anomalies.length ? 'var(--warning)' : 'var(--success)';
+      badge.style.border = '1px solid ' + (anomalies.some(a=>a.severity==='critical') ? 'rgba(255,34,68,.2)' : anomalies.length ? 'rgba(255,170,0,.2)' : 'rgba(0,255,136,.15)');
+    }
+    const anTb = document.getElementById('anomalies-body');
+    if (anTb) anTb.innerHTML = anomalies.map(a => {
+      const sclr = a.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
+      return `<tr><td>${esc(a.vm_name)}</td><td>${esc(a.metric)}</td><td>${a.current_value}%</td><td>${a.threshold}%</td><td style="color:${sclr}">${a.deviation_percent}%</td><td style="color:${sclr};font-weight:600">${esc(a.severity)}</td><td>${fmtTime(a.detected_at)}</td></tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No anomalies detected</td></tr>';
   } catch(e) { console.error('Monitoring fetch error:', e); }
 }
 
@@ -2810,11 +3033,32 @@ async function fetchCustomResources() {
 
 async function fetchSlo() {
   try {
-    const items = await apiFetch('/api/v1/slo/objectives' + nsParam()).then(r => r.json());
+    const [items, burnRates] = await Promise.all([
+      apiFetch('/api/v1/slo/objectives' + nsParam()).then(r => r.json()),
+      apiFetch('/api/v1/slo/burn-rate' + nsParam()).then(r => r.json()).catch(() => []),
+    ]);
     const tb = document.getElementById('slo-body');
-    if (!tb) return;
-    tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td>${esc(s.status)}</td></tr>`).join('')
+    if (tb) tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td><span class="stat-badge ${s.status==='met'?'badge-green':'badge-muted'}">${esc(s.status)}</span></td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO objectives found</td></tr>';
+
+    // Burn rate stats
+    const stats = document.getElementById('slo-burn-stats');
+    if (stats && burnRates.length) {
+      const br = burnRates[0];
+      const statusColor = {healthy:'badge-green',at_risk:'badge-muted',burning_fast:'',exhausted:''}[br.status] || '';
+      stats.innerHTML = `
+        <div class="stat-card stat-card-blue"><div class="stat-label">Budget Total</div><div class="stat-value">${br.budget_total_percent}%</div></div>
+        <div class="stat-card ${br.budget_consumed_percent > 80 ? 'stat-card-red' : 'stat-card-orange'}"><div class="stat-label">Consumed</div><div class="stat-value">${br.budget_consumed_percent}%</div></div>
+        <div class="stat-card stat-card-orange"><div class="stat-label">Burn Rate 1h</div><div class="stat-value">${br.burn_rate_1h}x</div></div>
+        <div class="stat-card ${br.status==='healthy'?'stat-card-green':'stat-card-red'}"><div class="stat-label">Status</div><div class="stat-value" style="font-size:1.2em">${esc(br.status)}</div></div>`;
+    }
+
+    const burnTb = document.getElementById('slo-burn-body');
+    if (burnTb) burnTb.innerHTML = burnRates.map(br => {
+      const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
+      const sColor = {healthy:'badge-green',at_risk:'badge-muted',burning_fast:'',exhausted:''}[br.status] || '';
+      return `<tr><td>${esc(br.slo_name)}</td><td>${br.budget_total_percent}%</td><td>${br.budget_consumed_percent}%</td><td>${br.burn_rate_1h}x</td><td>${br.burn_rate_24h}x</td><td>${ttl}</td><td><span class="stat-badge ${sColor}">${esc(br.status)}</span></td></tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO data</td></tr>';
   } catch (e) { console.error('SLO fetch error:', e); }
 }
 
@@ -3005,9 +3249,10 @@ async function fetchScheduling() {
 
 async function fetchCilium() {
   try {
-    const [status, items] = await Promise.all([
+    const [status, items, flowData] = await Promise.all([
       apiFetch('/api/v1/cilium/status').then(r => r.json()),
       apiFetch('/api/v1/cilium/policies').then(r => r.json()),
+      apiFetch('/api/v1/cilium/flows').then(r => r.json()).catch(() => ({ total_flows: 0, allowed: 0, denied: 0, flows: [] })),
     ]);
     const summary = document.getElementById('cilium-summary');
     if (summary) {
@@ -3018,10 +3263,22 @@ async function fetchCilium() {
         <div class="stat-card"><div class="stat-label">Encryption</div><div class="stat-value">${status.encryption_enabled ? 'Enabled' : 'Off'}</div></div>`;
     }
     const tb = document.getElementById('cilium-body');
-    if (!tb) return;
-    const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace);
-    tb.innerHTML = filtered.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
-      || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Cilium policies found</td></tr>';
+    if (tb) {
+      const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace);
+      tb.innerHTML = filtered.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
+        || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Cilium policies found</td></tr>';
+    }
+    // Network flows
+    const flowStats = document.getElementById('flow-stats');
+    if (flowStats) flowStats.innerHTML = `<span style="color:var(--success)">Allowed: ${flowData.allowed}</span> <span style="color:var(--error)">Denied: ${flowData.denied}</span> <span style="color:var(--text-muted)">Total: ${flowData.total_flows}</span>`;
+    const flowsTb = document.getElementById('flows-body');
+    if (flowsTb) {
+      flowsTb.innerHTML = (flowData.flows || []).map(f => `<tr>
+        <td>${esc(f.source)}</td><td>${esc(f.destination)}</td>
+        <td>${esc(f.protocol)}</td><td>${f.port || '-'}</td>
+        <td><span style="color:${f.verdict==='allowed'?'var(--success)':'var(--error)'};font-weight:600">${esc(f.verdict)}</span></td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No flow data — Hubble not connected</td></tr>';
+    }
   } catch (e) { console.error('Cilium fetch error:', e); }
 }
 
@@ -3038,14 +3295,58 @@ async function fetchObservability() {
   } catch (e) { console.error('Observability fetch error:', e); }
 }
 
+let _flamegraphData = [];
+
 async function fetchPerformance() {
   try {
-    const items = await apiFetch('/api/v1/performance/profiles' + nsParam()).then(r => r.json());
+    const [items, graphs] = await Promise.all([
+      apiFetch('/api/v1/performance/profiles' + nsParam()).then(r => r.json()),
+      apiFetch('/api/v1/performance/flamegraph' + nsParam()).then(r => r.json()).catch(() => []),
+    ]);
     const tb = document.getElementById('performance-body');
-    if (!tb) return;
-    tb.innerHTML = items.map(p => `<tr><td>${esc(p.vm_name)}</td><td>${p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95}%</td><td>${p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95}%</td><td>${p.iops_read}</td><td>${p.iops_write}</td><td>${fmtTime(p.collected_at)}</td></tr>`).join('')
+    if (tb) tb.innerHTML = items.map(p => `<tr><td>${esc(p.vm_name)}</td><td>${p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95}%</td><td>${p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95}%</td><td>${p.iops_read}</td><td>${p.iops_write}</td><td>${fmtTime(p.collected_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No performance profiles found</td></tr>';
+    _flamegraphData = graphs;
+    const sel = document.getElementById('flamegraph-vm-select');
+    if (sel && graphs.length) {
+      const existing = new Set(Array.from(sel.options).map(o => o.value));
+      graphs.forEach(g => {
+        if (!existing.has(g.vm_name)) sel.add(new Option(g.vm_name, g.vm_name));
+      });
+      if (sel.value && graphs.find(g => g.vm_name === sel.value)) renderFlamegraph();
+    }
   } catch (e) { console.error('Performance fetch error:', e); }
+}
+
+function renderFlamegraph() {
+  const sel = document.getElementById('flamegraph-vm-select');
+  const empty = document.getElementById('flamegraph-empty');
+  const wrap = document.getElementById('flamegraph-canvas-wrap');
+  if (!sel || !wrap) return;
+  const graph = _flamegraphData.find(g => g.vm_name === sel.value);
+  if (!graph) { if (empty) empty.style.display=''; wrap.innerHTML=''; return; }
+  if (empty) empty.style.display='none';
+  const W = wrap.parentElement.offsetWidth - 36 || 600;
+  const ROW = 22, PAD = 2;
+  function calcDepth(frames, d=0) { return frames.reduce((mx, f) => Math.max(mx, f.children.length ? calcDepth(f.children, d+1) : d), d); }
+  const depth = calcDepth(graph.frames) + 1;
+  const H = (depth + 1) * (ROW + PAD) + 10;
+  let html = `<svg width="${W}" height="${H}" style="font-family:'JetBrains Mono',monospace;cursor:pointer">`;
+  function drawFrames(frames, y, totalW, x=0) {
+    const total = frames.reduce((s, f) => s + f.value, 0) || 1;
+    frames.forEach(f => {
+      const fw = Math.max((f.value / total) * totalW - 1, 0);
+      if (fw < 2) { x += fw + 1; return; }
+      html += `<g><rect x="${x.toFixed(1)}" y="${y}" width="${fw.toFixed(1)}" height="${ROW}" fill="${f.color}" rx="2" opacity=".9"/>`;
+      if (fw > 30) html += `<text x="${(x + fw/2).toFixed(1)}" y="${y + ROW - 7}" text-anchor="middle" font-size="10" fill="#fff" opacity=".85">${esc(f.name.length > 14 ? f.name.slice(0,13)+'…' : f.name)}</text>`;
+      html += `<title>${esc(f.name)}: ${f.value} samples</title></g>`;
+      if (f.children.length) drawFrames(f.children, y + ROW + PAD, fw, x);
+      x += fw + 1;
+    });
+  }
+  drawFrames(graph.frames, 10, W);
+  html += '</svg>';
+  wrap.innerHTML = html;
 }
 
 async function fetchWebhooks() {
@@ -3056,6 +3357,102 @@ async function fetchWebhooks() {
     tb.innerHTML = items.map(w => `<tr><td>${esc(w.name)}</td><td>${esc(w.url)}</td><td>${esc((w.events || []).join(', ') || '-')}</td><td>${w.active ? 'Yes' : 'No'}</td><td>${w.secret_configured ? 'Yes' : 'No'}</td><td>${w.failure_count}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No webhooks found</td></tr>';
   } catch (e) { console.error('Webhooks fetch error:', e); }
+}
+
+async function fetchTraces() {
+  try {
+    const data = await apiFetch('/api/v1/traces' + nsParam()).then(r => r.json());
+    const stats = document.getElementById('traces-stats');
+    if (stats) stats.innerHTML = `
+      <div class="stat-card stat-card-blue"><div class="stat-label">Total Traces</div><div class="stat-value">${data.total_traces || 0}</div></div>
+      <div class="stat-card stat-card-green"><div class="stat-label">Success Rate</div><div class="stat-value">${data.success_rate != null ? data.success_rate.toFixed(1) + '%' : 'N/A'}</div></div>
+      <div class="stat-card stat-card-orange"><div class="stat-label">P99 Latency</div><div class="stat-value">${data.p99_ms != null ? data.p99_ms + 'ms' : 'N/A'}</div></div>
+      <div class="stat-card stat-card-red"><div class="stat-label">Errors (1h)</div><div class="stat-value">${data.errors_1h || 0}</div></div>`;
+    const tb = document.getElementById('traces-body');
+    if (!tb) return;
+    const items = data.traces || [];
+    tb.innerHTML = items.map(t => `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.8em">${esc((t.trace_id||'').slice(0,16))}…</td>
+      <td>${esc(t.service)}</td><td>${esc(t.operation)}</td>
+      <td>${t.duration_ms}ms</td><td>${t.span_count}</td>
+      <td><span class="stat-badge ${t.status==='ok'?'badge-green':'badge-muted'}">${esc(t.status)}</span></td>
+      <td>${fmtTime(t.started_at)}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No traces — connect an OpenTelemetry collector</td></tr>';
+  } catch (e) {
+    const tb = document.getElementById('traces-body');
+    if (tb) tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Traces endpoint not available</td></tr>';
+  }
+}
+
+function filterTraces() {
+  const q = (document.getElementById('traces-search')?.value || '').toLowerCase();
+  document.querySelectorAll('#traces-body tr').forEach(r => {
+    r.style.display = !q || r.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+async function fetchLogs() {
+  try {
+    const level = document.getElementById('logs-level-filter')?.value || '';
+    const q = document.getElementById('logs-search')?.value || '';
+    const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '');
+    const data = await apiFetch('/api/v1/logs' + params).then(r => r.json());
+    const stats = document.getElementById('logs-stats');
+    if (stats) stats.innerHTML = `
+      <div class="stat-card stat-card-red"><div class="stat-label">Errors</div><div class="stat-value">${data.error_count || 0}</div></div>
+      <div class="stat-card stat-card-orange"><div class="stat-label">Warnings</div><div class="stat-value">${data.warn_count || 0}</div></div>
+      <div class="stat-card stat-card-blue"><div class="stat-label">Info</div><div class="stat-value">${data.info_count || 0}</div></div>
+      <div class="stat-card"><div class="stat-label">Total (1h)</div><div class="stat-value">${data.total_1h || 0}</div></div>`;
+    const stream = document.getElementById('logs-stream');
+    if (!stream) return;
+    const lines = data.lines || [];
+    if (!lines.length) {
+      stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No log entries — connect log aggregator or select a VM</div>';
+      return;
+    }
+    const lvlColor = {error:'var(--error)',warn:'var(--warning)',info:'var(--spark)',debug:'var(--text-dim)'};
+    stream.innerHTML = lines.map(l => {
+      const c = lvlColor[l.level] || 'var(--text)';
+      return `<div><span style="color:var(--text-dim)">${fmtTime(l.ts)}</span> <span style="color:${c};font-weight:600">${esc(l.level?.toUpperCase().padEnd(5,' '))}</span> <span style="color:var(--text-muted)">${esc(l.source)}</span> ${esc(l.msg)}</div>`;
+    }).join('');
+    stream.scrollTop = stream.scrollHeight;
+  } catch (e) {
+    const stream = document.getElementById('logs-stream');
+    if (stream) stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">Logs endpoint not available</div>';
+  }
+}
+
+async function fetchIncidents() {
+  try {
+    const sev = document.getElementById('incident-severity-filter')?.value || '';
+    const kind = document.getElementById('incident-kind-filter')?.value || '';
+    const data = await apiFetch('/api/v1/incidents/timeline' + nsParam()).then(r => r.json());
+    const stats = document.getElementById('incidents-stats');
+    if (stats) stats.innerHTML = `
+      <div class="stat-card stat-card-red"><div class="stat-label">Critical</div><div class="stat-value">${data.critical || 0}</div></div>
+      <div class="stat-card stat-card-orange"><div class="stat-label">Warning</div><div class="stat-value">${data.warning || 0}</div></div>
+      <div class="stat-card stat-card-blue"><div class="stat-label">Open</div><div class="stat-value">${data.open_incidents || 0}</div></div>
+      <div class="stat-card stat-card-green"><div class="stat-label">Resolved (24h)</div><div class="stat-value">${data.resolved_last_24h || 0}</div></div>`;
+    const tb = document.getElementById('incidents-body');
+    if (!tb) return;
+    let events = data.events || [];
+    if (sev) events = events.filter(e => e.severity === sev);
+    if (kind) events = events.filter(e => e.kind === kind);
+    const kindColor = {'slo-breach':'var(--error)','k8s-event':'var(--warning)','action':'var(--spark)'};
+    tb.innerHTML = events.map(e => {
+      const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
+      const kc = kindColor[e.kind] || 'var(--text-muted)';
+      return `<tr>
+        <td style="font-family:'JetBrains Mono',monospace;font-size:.75em;white-space:nowrap">${fmtTime(e.timestamp)}</td>
+        <td><span style="color:${kc};font-size:.75em;font-weight:600">${esc(e.kind)}</span></td>
+        <td style="color:${sc};font-weight:600">${esc(e.severity)}</td>
+        <td>${esc(e.title)}</td>
+        <td>${e.vm_name ? esc(e.vm_name) : '<span style="color:var(--text-dim)">—</span>'}</td>
+        <td>${esc(e.namespace)}</td>
+        <td><span class="stat-badge ${e.resolved ? 'badge-green' : 'badge-muted'}">${e.resolved ? 'resolved' : 'open'}</span></td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
+  } catch (e) { console.error('Incidents fetch error:', e); }
 }
 </script>
 </body>

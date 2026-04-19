@@ -70,6 +70,8 @@ pub struct DomainSpec {
     pub firmware: Option<Firmware>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub machine: Option<Machine>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub io_threads_policy: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -130,6 +132,8 @@ pub struct Devices {
     pub watchdog: Option<WatchdogDevice>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub autoattach_graphics_device: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub autoattach_mem_balloon: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_interface_multiqueue: Option<bool>,
 }

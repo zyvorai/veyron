@@ -37,6 +37,15 @@ pub struct VMConfig {
     /// Enable RNG (virtio-rng) device
     #[serde(default)]
     pub enable_rng: bool,
+    /// Enable USB tablet input device for accurate mouse positioning over VNC
+    #[serde(default)]
+    pub usb_tablet: bool,
+    /// Disable virtio-balloon memory reclaim to avoid latency jitter
+    #[serde(default)]
+    pub disable_balloon: bool,
+    /// KubeVirt ioThreadsPolicy: "shared" or "auto" for better disk IO
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub io_threads_policy: Option<String>,
     /// Machine type (e.g., "q35")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub machine_type: Option<String>,
