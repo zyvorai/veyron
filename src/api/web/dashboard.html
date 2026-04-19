@@ -1090,7 +1090,7 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-monitoring">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Monitoring</h1><p>Cluster monitoring stack status and anomaly detection</p></div></div>
+  <div class="page-header"><div><h1>Monitoring</h1><p>Cluster monitoring stack detection and VM-level heuristic checks. Recommendations honor the namespace selector above. Anomalies require running VMs and the Kubernetes Metrics Server; otherwise usage may stay at zero and no breaches appear.</p></div></div>
   <div id="monitoring-status" class="grid-4" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card"><div class="card-header"><span class="card-title">Recommendations</span></div>
@@ -2925,6 +2925,8 @@ async function fetchMonitoring() {
       apiFetch('/api/v1/recommendations' + nsParam()).then(r => r.json()),
       apiFetch('/api/v1/monitoring/anomalies' + nsParam()).then(r => r.json()).catch(() => []),
     ]);
+    const recList = Array.isArray(recs) ? recs : [];
+    const anoList = Array.isArray(anomalies) ? anomalies : [];
     const sum = document.getElementById('monitoring-status');
     if (sum) {
       const dot = (ok) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ok?'var(--success)':'var(--error)'};margin-right:6px"></span>`;
@@ -2932,28 +2934,34 @@ async function fetchMonitoring() {
         <div class="stat-card"><div class="stat-label">Prometheus</div><div class="stat-value">${dot(status.prometheus_available)}${status.prometheus_available?'Available':'Not Found'}</div></div>
         <div class="stat-card"><div class="stat-label">Grafana</div><div class="stat-value">${dot(status.grafana_available)}${status.grafana_available?'Available':'Not Found'}</div></div>
         <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${status.healthy_targets}/${status.total_targets} healthy</div></div>
-        <div class="stat-card ${anomalies.some(a=>a.severity==='critical')?'stat-card-red':anomalies.length?'stat-card-orange':''}"><div class="stat-label">Anomalies</div><div class="stat-value">${anomalies.length}</div></div>`;
+        <div class="stat-card ${anoList.some(a=>a.severity==='critical')?'stat-card-red':anoList.length?'stat-card-orange':''}"><div class="stat-label">Anomalies</div><div class="stat-value">${anoList.length}</div></div>`;
     }
     const recTb = document.getElementById('recommendations-body');
     if (recTb) {
-      recTb.innerHTML = recs.map(r => {
+      const recEmpty = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No recommendations for this scope. Either no VMs matched the namespace filter, or existing VMs already have limits, virtio-rng, and eviction strategy where checked.</td></tr>';
+      recTb.innerHTML = recList.map(r => {
         const pclr = r.priority === 'High' ? 'var(--error)' : r.priority === 'Medium' ? 'var(--warning)' : 'var(--text-muted)';
         return `<tr><td style="color:${pclr};font-weight:600">${r.priority}</td><td>${r.category}</td><td>${r.title}</td><td><code>${r.resource}</code></td><td>${r.impact}</td></tr>`;
-      }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No recommendations</td></tr>';
+      }).join('') || recEmpty;
     }
     // Anomalies
     const badge = document.getElementById('anomaly-count-badge');
     if (badge) {
-      badge.textContent = anomalies.length ? anomalies.length + ' detected' : 'None';
-      badge.style.background = anomalies.some(a=>a.severity==='critical') ? 'var(--error-dim)' : anomalies.length ? 'var(--warning-dim)' : 'var(--success-dim)';
-      badge.style.color = anomalies.some(a=>a.severity==='critical') ? 'var(--error)' : anomalies.length ? 'var(--warning)' : 'var(--success)';
-      badge.style.border = '1px solid ' + (anomalies.some(a=>a.severity==='critical') ? 'rgba(255,34,68,.2)' : anomalies.length ? 'rgba(255,170,0,.2)' : 'rgba(0,255,136,.15)');
+      badge.textContent = anoList.length ? anoList.length + ' detected' : 'None';
+      badge.style.background = anoList.some(a=>a.severity==='critical') ? 'var(--error-dim)' : anoList.length ? 'var(--warning-dim)' : 'var(--success-dim)';
+      badge.style.color = anoList.some(a=>a.severity==='critical') ? 'var(--error)' : anoList.length ? 'var(--warning)' : 'var(--success)';
+      badge.style.border = '1px solid ' + (anoList.some(a=>a.severity==='critical') ? 'rgba(255,34,68,.2)' : anoList.length ? 'rgba(255,170,0,.2)' : 'rgba(0,255,136,.15)');
     }
     const anTb = document.getElementById('anomalies-body');
-    if (anTb) anTb.innerHTML = anomalies.map(a => {
+    if (anTb) {
+      const anoEmpty = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);line-height:1.5">No anomalies in this scope. Breaches appear when CPU or memory usage stays above 85% (needs Metrics Server + running virt-launcher pod). Without live metrics, usage may read as 0%.</td></tr>';
+      anTb.innerHTML = anoList.map(a => {
       const sclr = a.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
-      return `<tr><td>${esc(a.vm_name)}</td><td>${esc(a.metric)}</td><td>${a.current_value}%</td><td>${a.threshold}%</td><td style="color:${sclr}">${a.deviation_percent}%</td><td style="color:${sclr};font-weight:600">${esc(a.severity)}</td><td>${fmtTime(a.detected_at)}</td></tr>`;
-    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No anomalies detected</td></tr>';
+      const valShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.current_value : (a.current_value+'%');
+      const thrShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.threshold : (a.threshold+'%');
+      return `<tr><td>${esc(a.vm_name)}</td><td>${esc(a.metric)}</td><td>${valShow}</td><td>${thrShow}</td><td style="color:${sclr}">${a.deviation_percent}%</td><td style="color:${sclr};font-weight:600">${esc(a.severity)}</td><td>${fmtTime(a.detected_at)}</td></tr>`;
+    }).join('') || anoEmpty;
+    }
   } catch(e) { console.error('Monitoring fetch error:', e); }
 }
 
