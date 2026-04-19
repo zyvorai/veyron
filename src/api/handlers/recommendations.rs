@@ -1,9 +1,19 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+/// Dashboard passes `?namespace=all` or a specific namespace.
+#[derive(Debug, Deserialize)]
+pub struct RecommendationQuery {
+    pub namespace: Option<String>,
+}
 
 /// Recommendation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,14 +75,30 @@ fn round2(v: f64) -> f64 {
 
 /// Generate recommendations by analyzing live VM configurations.
 #[cfg(feature = "web")]
-async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Recommendation>> {
+async fn list_recommendations(
+    State(state): State<SharedState>,
+    Query(query): Query<RecommendationQuery>,
+) -> Json<Vec<Recommendation>> {
     let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let scope = query
+        .namespace
+        .clone()
+        .unwrap_or_else(|| s.namespace.clone());
+    let vms = if scope == "all" {
+        s.client().list_all_vms().await.unwrap_or_default()
+    } else {
+        s.client().list_vms(&scope).await.unwrap_or_default()
+    };
     let mut recs = Vec::new();
     let mut id_counter = 0u32;
 
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
+        let vm_ns = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| scope.clone());
         let domain = &vm.spec.template.spec.domain;
         let devices = domain.devices.as_ref();
 
@@ -91,7 +117,7 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
                     "VM '{}' has no CPU/memory limits set, risking resource contention",
                     vm_name
                 ),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 estimated_savings: Some(round2(monthly * 0.12)),
                 impact: "High".to_string(),
                 effort: "Low".to_string(),
@@ -110,7 +136,7 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
                     "VM '{}' lacks a virtio-rng device for secure random number generation",
                     vm_name
                 ),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 estimated_savings: Some(round2((monthly * 0.02).max(4.0))),
                 impact: "Medium".to_string(),
                 effort: "Low".to_string(),
@@ -129,7 +155,7 @@ async fn list_recommendations(State(state): State<SharedState>) -> Json<Vec<Reco
                     "VM '{}' has no eviction strategy; it may be killed during node maintenance",
                     vm_name
                 ),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 estimated_savings: Some(round2(monthly * 0.08)),
                 impact: "High".to_string(),
                 effort: "Low".to_string(),
