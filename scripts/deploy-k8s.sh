@@ -288,7 +288,7 @@ cmd_status() {
     # Show access info
     local node_ip pod_port
     node_ip=$(${KUBECTL} get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
-    pod_port=$(${KUBECTL} -n "${NAMESPACE}" get svc vmrogue-api -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo "")
+    pod_port=$(${KUBECTL} -n "${NAMESPACE}" get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}' 2>/dev/null || echo "")
 
     if [ -n "${pod_port}" ]; then
         echo "  Dashboard: https://${node_ip}:${pod_port}/dashboard"

@@ -27,6 +27,9 @@ pub struct CostSummary {
     pub period: String,
     pub by_namespace: std::collections::HashMap<String, f64>,
     pub by_resource_type: std::collections::HashMap<String, f64>,
+    /// How these numbers are produced (not cloud billing).
+    pub pricing_model: String,
+    pub disclaimer: String,
 }
 
 /// Cost forecast
@@ -158,6 +161,8 @@ async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary>
         period: "monthly".to_string(),
         by_namespace,
         by_resource_type,
+        pricing_model: "static_reference_rates".to_string(),
+        disclaimer: "CPU/memory/storage costs are internal estimates from static $/unit rates; not provider billing or OpenCost data.".to_string(),
     })
 }
 

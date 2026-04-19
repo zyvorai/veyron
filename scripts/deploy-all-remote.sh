@@ -209,12 +209,12 @@ echo "✅ CRDs + NATS + RBAC deployed"
 echo ""
 echo "🚀 [5/7] Deploying VMRogue API + Operator"
 
-# Tear down existing deployments for clean rollout
+# Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
+# --wait ensures objects are gone before apply (avoid races with stale pods).
 ssh "${REMOTE}" "
-    kubectl -n ${NAMESPACE} delete deployment vmrogue-api --ignore-not-found 2>/dev/null
-    kubectl -n ${NAMESPACE} delete deployment vmrogue-operator --ignore-not-found 2>/dev/null
-    kubectl -n ${NAMESPACE} delete secret vmrogue-api-key --ignore-not-found 2>/dev/null
-    sleep 2
+    kubectl -n ${NAMESPACE} delete deployment vmrogue-api vmrogue-operator \
+        --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
+    kubectl -n ${NAMESPACE} delete secret vmrogue-api-key --ignore-not-found --wait=false 2>/dev/null || true
 " 2>&1
 
 # Create API key secret
@@ -229,8 +229,11 @@ ssh "${REMOTE}" "kubectl apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
 # Apply Operator deployment
 ssh "${REMOTE}" "kubectl apply -f ${DEPLOY_DIR}/operator/config/manager/manager.yaml" 2>&1
 
-echo "  ⏳ Waiting for rollouts..."
+# Same image tags + imagePullPolicy: Never: replacing the Deployment can still leave
+# kubelet using a cached layer unless pods are recreated after image import.
+echo "  🔄 Recycling API + operator pods for new images..."
 ssh "${REMOTE}" "
+    kubectl -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
     kubectl -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
     kubectl -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
 " 2>&1 || true
@@ -255,13 +258,20 @@ ssh "${REMOTE}" "
     kubectl -n ${NAMESPACE} get svc
 " 2>&1
 
-NODE_PORT=$(ssh "${REMOTE}" "kubectl -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null" || echo "30151")
+# Do not use ports[0]: API order may list http-redirect (30150) before https (30151).
+NODE_PORT=$(ssh "${REMOTE}" "kubectl -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
+HTTP_REDIRECT_PORT=$(ssh "${REMOTE}" "kubectl -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
 
 echo ""
 echo "════════════════════════════════════════"
 echo "  ✅ Deployment complete"
 echo "════════════════════════════════════════"
 echo "  🌐 Dashboard:  https://${HOST}:${NODE_PORT}/dashboard"
+echo "  💚 Health:     https://${HOST}:${NODE_PORT}/api/v1/health"
+if [ -n "${HTTP_REDIRECT_PORT}" ]; then
+    echo "  ↪️  HTTP→HTTPS redirect also on node port ${HTTP_REDIRECT_PORT}"
+fi
+echo "  📓 Pod logs show :5151 (container); use NodePort ${NODE_PORT} in the browser"
 echo "  🔑 API Key:    ${API_KEY}"
 echo "  📋 API Logs:   kubectl -n ${NAMESPACE} logs -l app.kubernetes.io/component=api -f"
 echo "  📋 Op Logs:    kubectl -n ${NAMESPACE} logs -l app.kubernetes.io/component=operator -f"

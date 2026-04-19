@@ -183,7 +183,7 @@ docker build -f Dockerfile.deploy -t vmrogue:latest .
 | `/api/v1/compliance` | GET | CIS benchmark compliance checking |
 | `/api/v1/audit` | GET | Persistent audit trail |
 
-All 49 API handlers return real data from the Kubernetes API. See the OpenAPI spec for the full endpoint list.
+All API handlers are implemented against Kubernetes (and ConfigMaps where persistence is used). Analytics routes (costs, forecasting, etc.) use documented heuristics, not cloud billing APIs. See `docs/FEATURE_MATRIX.md`.
 
 ## Quick Start
 
@@ -608,7 +608,7 @@ fn main() -> anyhow::Result<()> {
 
 **Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands (including pause, unpause, resize, events, nodes, pods, import, search, troubleshoot, capacity, placement, list-json, clusters-list, clusters-discover, gitops-diff, gitops-status), configuration validation, YAML/JSON output, cloud-init support. 2,433 tests passing. All modules promoted (zero experimental feature gates).
 
-**Kubernetes** - Full CRUD, VM lifecycle management (including pause/unpause and resize), KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types. All 49 API handlers return real data from the Kubernetes API (zero stubs remaining).
+**Kubernetes** - Full CRUD, VM lifecycle management (including pause/unpause and resize), KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types. Handlers return live cluster data; some dashboard analytics endpoints use estimates (see `docs/FEATURE_MATRIX.md`).
 
 **TUI** - All 31 TUI views render live data from the cluster. Interactive terminal UI with ratatui covering VM management, security dashboard, cost analytics, compliance, performance profiling, RBAC visualization, migration wizard, and more.
 

@@ -23,7 +23,7 @@ Status legend:
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Actions | `page-actions` | `/api/v1/crds/actions` | `handlers/crds.rs` | Working | Uses operator CRDs |
-| Costs | `page-costs` | `/api/v1/costs`, `/summary`, `/forecast` | `handlers/costs.rs` | Partial | Costs are estimates, not billing-integrated |
+| Costs | `page-costs` | `/api/v1/costs`, `/summary`, `/forecast` | `handlers/costs.rs` | Partial | Summary JSON includes `pricing_model`, `disclaimer`; not billing-integrated |
 | Security | `page-security` | `/api/v1/security/posture`, `/findings` | `handlers/security.rs` | Partial | Rule set is basic VM config analysis |
 | Monitoring | `page-monitoring` | `/api/v1/monitoring/status`, `/api/v1/recommendations` | `handlers/monitoring.rs`, `handlers/recommendations.rs` | Partial | Stack detection is heuristic, alert count now real |
 | Workloads | `page-workloads` | `/api/v1/workloads` | `handlers/workloads.rs` | Working | CPU/memory request aggregation now populated |

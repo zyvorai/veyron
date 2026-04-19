@@ -1133,7 +1133,7 @@ pub mod web {
 
     /// VNC proxy: connects browser WebSocket directly to KubeVirt API WebSocket.
     /// Same approach as v9s console-proxy — no virtctl needed, no timeout issues.
-    async fn vnc_proxy(mut client_ws: WebSocket, kube_client: KubeClient, ns: String, name: String) {
+    async fn vnc_proxy(mut client_ws: WebSocket, _kube_client: KubeClient, ns: String, name: String) {
         use futures_util::{SinkExt, StreamExt};
 
         // Build KubeVirt VNC subresource WebSocket URL
@@ -1160,7 +1160,7 @@ pub mod web {
 
         // Build TLS connector that trusts the K8s CA (self-signed)
         let tls_connector = {
-            let mut tls_config = rustls::ClientConfig::builder()
+            let tls_config = rustls::ClientConfig::builder()
                 .dangerous()
                 .with_custom_certificate_verifier(std::sync::Arc::new(AcceptAllVerifier))
                 .with_no_client_auth();

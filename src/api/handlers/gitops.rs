@@ -14,6 +14,8 @@ pub struct GitOpsStatus {
     pub sync_status: String,
     pub last_synced: Option<String>,
     pub drift_detected: bool,
+    /// Explains that VMRogue does not drive Argo CD / Flux APIs.
+    pub note: String,
 }
 
 /// GitOps sync request
@@ -94,6 +96,7 @@ async fn get_gitops_status(
         sync_status: sync_status.to_string(),
         last_synced,
         drift_detected,
+        note: "Derived from VMRogue GitOps ConfigMaps and live VM counts. POST /gitops/sync updates timestamps in that ConfigMap only — it does not invoke Argo CD or Flux.".to_string(),
     })
 }
 
@@ -154,6 +157,7 @@ async fn trigger_sync(
             "synced_at": if req.dry_run { serde_json::Value::Null } else { serde_json::Value::String(now) },
             "dry_run": req.dry_run,
             "force": req.force,
+            "note": "Updates the vmrogue GitOps ConfigMap timestamp when present; does not trigger Argo CD or Flux reconciliation.",
         })),
     )
 }
