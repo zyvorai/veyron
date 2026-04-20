@@ -82,12 +82,16 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 |---|---|
 | `src/config/` | `VMConfig` schema, `VMConfigBuilder` fluent API, `AppConfig` (~/.config/vmrogue/config.toml) |
 | `src/templates/mod.rs` | 44 OS templates (Ubuntu, CentOS, Windows, RHEL, etc.) with pre-set CPU/memory/firmware |
+| `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` | Windows golden image + Cloudbase-Init + Sysprep runbook (operator steps; not fully encoded in templates) |
+| `docs/client-presentations/06-windows-kubevirt-production.html` | Short printable deck linking to the Windows production doc |
 | `src/monitoring/` | `MetricsCollector` (collect VM CPU/memory/disk/network), `PerformanceAnalyzer`, `MonitoringReporter` |
 | `src/snapshots/` | `SnapshotManager`, `RestoreManager`, `RetentionEnforcer`, KubeVirt snapshot CRD types |
 | `src/backup/` | Full/incremental/delta backup types, backup orchestration |
 | `src/tui/` | Full ratatui-based TUI; `AppState` (VMs, namespaces, selection), `interactive_app.rs`, theming |
 | `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
 | `src/operator_crds/` | VMRogue CRD types under `vmrogue.io/v1alpha1` |
+
+**Windows templates in code** (`windows*` in `src/templates/mod.rs`): Hyper-V feature set, `windows_clock()`, UEFI, virtio driver CDROM, blank SATA disk, virtio NIC, RNG, USB tablet, IO threads, TPM on 2022/11. **No** embedded Cloudbase-Init config or `cloudInitConfigDrive` userData (guest image / your YAML). See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
 ### Feature flags
 
