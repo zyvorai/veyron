@@ -52,7 +52,7 @@
       <tr><td>Hyper-V timers / enlightenments</td><td>Yes (<code>windows_features</code>, <code>windows_clock</code>)</td><td>Tune if platform requires</td></tr>
       <tr><td>VirtIO driver CDROM</td><td>Yes (container disk)</td><td>—</td></tr>
       <tr><td>RNG, USB tablet, IO threads</td><td>Yes</td><td>—</td></tr>
-      <tr><td>TPM / Secure Boot (Win11)</td><td>Template defaults</td><td>Match compliance needs</td></tr>
+      <tr><td>TPM / Secure Boot</td><td>2022 + 11: TPM; 11 only: Secure Boot UEFI</td><td>2019/10: no TPM in default template</td></tr>
       <tr><td>Cloudbase-Init.conf</td><td>No</td><td>Guest file</td></tr>
       <tr><td>Sysprep / golden capture</td><td>No</td><td>Your pipeline</td></tr>
       <tr><td><code>cloudInitConfigDrive</code> passwords</td><td>No</td><td>GitOps / secrets</td></tr>
