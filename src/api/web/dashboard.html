@@ -1630,6 +1630,11 @@ function navigate(page) {
 }
 
 function loadPageData(page) {
+  if (page === 'dashboard') {
+    fetchVMs();
+    fetchEvents(false);
+  }
+  if (page === 'vms') fetchVMs();
   if (page === 'snapshots') fetchSnapshots();
   if (page === 'events') fetchEvents(true);
   if (page === 'nodes') fetchNodes();
@@ -2021,7 +2026,7 @@ async function fetchVMs() {
 // Fetch Events
 async function fetchEvents(full) {
   try {
-    const j = await apiJson('/api/v1/events');
+    const j = await apiJson('/api/v1/events' + nsParam());
     const events = asArray(j);
     const renderEvents = (items, target) => {
       if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#9889;</div><p>No signals intercepted</p></div>'; return; }
@@ -2045,16 +2050,15 @@ async function fetchEvents(full) {
 // Fetch Snapshots
 async function fetchSnapshots() {
   try {
-    const j = await apiJson('/api/v1/snapshots');
+    const j = await apiJson('/api/v1/snapshots' + nsParam());
     const snaps = asArray(j);
     const el = document.getElementById('snap-list');
     if (snaps.length === 0) { el.innerHTML='<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot from VM details</p></div>'; return; }
     el.innerHTML = snaps.map(s => {
       const ready = s.ready;
-      const safeName = s.name.replace(/'/g, "\\'");
       return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
-        (ready ? '<button class="btn btn-restart" onclick="restoreSnapshot(\'default\',\''+safeName+'\')">Restore</button>' : '') +
-        '<button class="btn btn-delete" onclick="deleteSnapshot(\'default\',\''+safeName+'\')">&#10005;</button>' +
+        (ready ? '<button class="btn btn-restart" onclick="restoreSnapshot(' + JSON.stringify(s.namespace || 'default') + ',' + JSON.stringify(s.name) + ')">Restore</button>' : '') +
+        '<button class="btn btn-delete" onclick="deleteSnapshot(' + JSON.stringify(s.namespace || 'default') + ',' + JSON.stringify(s.name) + ')">&#10005;</button>' +
         '</div></div>';
     }).join('');
   } catch(e) {
@@ -2745,10 +2749,12 @@ async function bulkAction(action) {
   const errs = [];
   for (const name of names) {
     try {
+      const vm = vmData.find(v => v.name === name);
+      const ns = (vm && vm.namespace) ? vm.namespace : 'default';
       if (action === 'delete') {
-        await apiJson('/api/v1/vms/default/' + encodeURIComponent(name), {method:'DELETE'});
+        await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {method:'DELETE'});
       } else {
-        await apiJson('/api/v1/vms/default/' + encodeURIComponent(name) + '/' + encodeURIComponent(action), {method:'POST'});
+        await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/' + encodeURIComponent(action), {method:'POST'});
       }
     } catch (e) {
       errs.push(name + ': ' + (e.message || e));
@@ -3682,7 +3688,7 @@ async function fetchTraces() {
       <td>${t.duration_ms}ms</td><td>${t.span_count}</td>
       <td><span class="stat-badge ${t.status==='ok'?'badge-green':'badge-muted'}">${esc(t.status)}</span></td>
       <td>${fmtTime(t.started_at)}</td>
-    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No traces — connect an OpenTelemetry collector</td></tr>';
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No recent cluster events to show as traces</td></tr>';
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
@@ -3714,7 +3720,7 @@ async function fetchLogs() {
     if (!stream) return;
     const lines = data.lines || [];
     if (!lines.length) {
-      stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No log entries — connect log aggregator or select a VM</div>';
+      stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No virt-launcher pod logs in scope (pick a namespace with running VMs, or use <code>?vm=</code> via the query API)</div>';
       return;
     }
     const lvlColor = {error:'var(--error)',warn:'var(--warning)',info:'var(--spark)',debug:'var(--text-dim)'};
