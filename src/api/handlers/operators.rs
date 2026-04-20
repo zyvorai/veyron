@@ -42,7 +42,13 @@ async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorRe
         .unwrap_or_default();
 
     // Check common operator namespaces
-    let namespaces = ["kubevirt", "olm", "operators", "vmrogue-system", &s.namespace];
+    let namespaces = [
+        "kubevirt",
+        "olm",
+        "operators",
+        "vmrogue-system",
+        &s.namespace,
+    ];
 
     for ns in &namespaces {
         let api: kube::api::Api<Deployment> = kube::api::Api::namespaced(client.clone(), ns);
@@ -50,7 +56,10 @@ async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorRe
             for d in &deploys.items {
                 let name = d.metadata.name.as_deref().unwrap_or("");
                 // Heuristic: operators typically have "operator", "controller", or "manager" in name
-                if name.contains("operator") || name.contains("controller") || name.contains("manager") {
+                if name.contains("operator")
+                    || name.contains("controller")
+                    || name.contains("manager")
+                {
                     let ready = d
                         .status
                         .as_ref()
@@ -118,10 +127,7 @@ fn extract_image_tag(image: &str) -> Option<String> {
 }
 
 #[cfg(feature = "web")]
-fn infer_managed_resources(
-    operator_name: &str,
-    crds: &[CustomResourceDefinition],
-) -> Vec<String> {
+fn infer_managed_resources(operator_name: &str, crds: &[CustomResourceDefinition]) -> Vec<String> {
     let tokens = operator_tokens(operator_name);
     let mut managed = Vec::new();
 
@@ -175,7 +181,10 @@ mod tests {
             extract_image_tag("quay.io/example/vmrogue-operator:v0.2.0"),
             Some("v0.2.0".to_string())
         );
-        assert_eq!(extract_image_tag("quay.io/example/image@sha256:deadbeef"), None);
+        assert_eq!(
+            extract_image_tag("quay.io/example/image@sha256:deadbeef"),
+            None
+        );
     }
 
     #[test]

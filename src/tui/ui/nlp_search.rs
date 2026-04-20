@@ -53,10 +53,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                     .fg(Color::Rgb(222, 115, 86))
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(
-                "Type to filter VMs...",
-                Style::default().fg(Color::Gray),
-            ),
+            Span::styled("Type to filter VMs...", Style::default().fg(Color::Gray)),
             Span::styled(
                 "_",
                 Style::default()
@@ -161,7 +158,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         Line::from(""),
         Line::from(vec![
             Span::styled("  Total:    ", Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}", stats.total), Style::default().fg(Color::White)),
+            Span::styled(
+                format!("{}", stats.total),
+                Style::default().fg(Color::White),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  Running:  ", Style::default().fg(Color::Gray)),
@@ -172,13 +172,20 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         ]),
         Line::from(vec![
             Span::styled("  Stopped:  ", Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}", stats.stopped), Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}", stats.stopped),
+                Style::default().fg(Color::Gray),
+            ),
         ]),
         Line::from(vec![
             Span::styled("  Failed:   ", Style::default().fg(Color::Gray)),
             Span::styled(
                 format!("{}", stats.failed),
-                Style::default().fg(if stats.failed > 0 { Color::Rgb(220, 50, 47) } else { Color::Gray }),
+                Style::default().fg(if stats.failed > 0 {
+                    Color::Rgb(220, 50, 47)
+                } else {
+                    Color::Gray
+                }),
             ),
         ]),
         Line::from(""),

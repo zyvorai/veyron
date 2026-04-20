@@ -176,7 +176,9 @@ impl MultiClusterManager {
     /// to avoid false positives (e.g. "reproduce" matching "prod").
     fn infer_environment(name: &str) -> ClusterEnvironment {
         let lower = name.to_lowercase();
-        let words: Vec<&str> = lower.split(|c: char| c == '-' || c == '_' || c == '.').collect();
+        let words: Vec<&str> = lower
+            .split(|c: char| c == '-' || c == '_' || c == '.')
+            .collect();
 
         if words.iter().any(|w| *w == "prod" || *w == "production") {
             ClusterEnvironment::Production
@@ -277,8 +279,7 @@ impl MultiClusterManager {
         let node_count = node_list.items.len();
 
         // Count VMs
-        let vms: kube::Api<crate::kube::types::VirtualMachine> =
-            kube::Api::all(client);
+        let vms: kube::Api<crate::kube::types::VirtualMachine> = kube::Api::all(client);
         let vm_count = vms
             .list(&kube::api::ListParams::default())
             .await

@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -107,9 +111,7 @@ async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>>
             let kubelet_version = node_info
                 .map(|i| i.kubelet_version.clone())
                 .unwrap_or_default();
-            let os_image = node_info
-                .map(|i| i.os_image.clone())
-                .unwrap_or_default();
+            let os_image = node_info.map(|i| i.os_image.clone()).unwrap_or_default();
             let kernel_version = node_info
                 .map(|i| i.kernel_version.clone())
                 .unwrap_or_default();

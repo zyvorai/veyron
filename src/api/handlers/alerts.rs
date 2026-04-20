@@ -1,5 +1,10 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, Query, State}, http::StatusCode, routing::{get, put}};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    routing::{get, put},
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -52,7 +57,11 @@ async fn list_alerts(
     let events = match query.namespace.as_deref() {
         Some("all") => s.client().list_all_events().await.unwrap_or_default(),
         Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+        None => s
+            .client()
+            .list_events(&s.namespace)
+            .await
+            .unwrap_or_default(),
     };
 
     let results: Vec<AlertResponse> = events

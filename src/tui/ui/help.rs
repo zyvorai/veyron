@@ -54,10 +54,7 @@ pub fn render(f: &mut Frame, _config: &TuiConfig) {
 
     // Footer
     let footer_text = Line::from(vec![
-        Span::styled(
-            "Press any key to return",
-            Style::default().fg(colors::TEXT),
-        ),
+        Span::styled("Press any key to return", Style::default().fg(colors::TEXT)),
         Span::styled(" | ", Style::default().fg(colors::TEXT_MUTED)),
         Span::styled(
             "Ctrl+P",
@@ -105,9 +102,7 @@ fn key_line_colored<'a>(key: &'a str, desc: &'a str, color: ratatui::style::Colo
     Line::from(vec![
         Span::styled(
             format!("  {:<16}", key),
-            Style::default()
-                .fg(color)
-                .add_modifier(Modifier::BOLD),
+            Style::default().fg(color).add_modifier(Modifier::BOLD),
         ),
         Span::raw(desc),
     ])

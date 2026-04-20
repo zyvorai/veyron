@@ -31,7 +31,9 @@ pub fn router(state: SharedState) -> Router {
 
 /// Discover CRDs installed in the cluster via the apiextensions API.
 #[cfg(feature = "web")]
-async fn list_custom_resources(State(state): State<SharedState>) -> Json<Vec<CustomResourceResponse>> {
+async fn list_custom_resources(
+    State(state): State<SharedState>,
+) -> Json<Vec<CustomResourceResponse>> {
     use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 
     let s = state.read().await;

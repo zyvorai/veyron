@@ -641,7 +641,11 @@ fn windows_2022_template() -> VMConfig {
         .memory("8Gi")
         .add_blank_disk_sata("rootdisk", "60Gi", 1)
         .set_disk_cache("rootdisk", "none")
-        .add_cdrom("virtio-drivers", "quay.io/kubevirt/virtio-container-disk:v1.8.1", 2)
+        .add_cdrom(
+            "virtio-drivers",
+            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+            2,
+        )
         .add_windows_network("default")
         .label("os", "windows")
         .label("os.version", "2022")
@@ -665,7 +669,11 @@ fn windows_2019_template() -> VMConfig {
         .memory("8Gi")
         .add_blank_disk_sata("rootdisk", "60Gi", 1)
         .set_disk_cache("rootdisk", "none")
-        .add_cdrom("virtio-drivers", "quay.io/kubevirt/virtio-container-disk:v1.8.1", 2)
+        .add_cdrom(
+            "virtio-drivers",
+            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+            2,
+        )
         .add_windows_network("default")
         .label("os", "windows")
         .label("os.version", "2019")
@@ -688,7 +696,11 @@ fn windows_11_template() -> VMConfig {
         .memory("4Gi")
         .add_blank_disk_sata("rootdisk", "16Gi", 1)
         .set_disk_cache("rootdisk", "none")
-        .add_cdrom("virtio-drivers", "quay.io/kubevirt/virtio-container-disk:v1.8.1", 2)
+        .add_cdrom(
+            "virtio-drivers",
+            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+            2,
+        )
         .add_windows_network("default")
         .label("os", "windows")
         .label("os.version", "11")
@@ -712,7 +724,11 @@ fn windows_10_template() -> VMConfig {
         .memory("8Gi")
         .add_blank_disk_sata("rootdisk", "60Gi", 1)
         .set_disk_cache("rootdisk", "none")
-        .add_cdrom("virtio-drivers", "quay.io/kubevirt/virtio-container-disk:v1.8.1", 2)
+        .add_cdrom(
+            "virtio-drivers",
+            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+            2,
+        )
         .add_windows_network("default")
         .label("os", "windows")
         .label("os.version", "10")

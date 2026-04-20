@@ -38,7 +38,11 @@ async fn create_clone(
     let s = state.read().await;
     let ns = req.namespace.as_deref().unwrap_or(&s.namespace);
 
-    match s.client().clone_vm(ns, &req.source_vm, &req.target_name).await {
+    match s
+        .client()
+        .clone_vm(ns, &req.source_vm, &req.target_name)
+        .await
+    {
         Ok(_) => Ok(Json(CloneResponse {
             name: req.target_name,
             source_vm: req.source_vm,

@@ -75,6 +75,9 @@ impl ActivityEvent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VmInfo {
     pub name: String,
+    /// Kubernetes namespace containing the VirtualMachine
+    #[serde(default)]
+    pub namespace: String,
     pub status: String,
     pub cpu: String,
     pub memory: String,
@@ -88,6 +91,11 @@ pub struct VmInfo {
 impl VmInfo {
     pub fn from_vm(vm: &crate::kube::types::VirtualMachine) -> Self {
         let name = vm.metadata.name.clone().unwrap_or_default();
+        let namespace = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| "default".to_string());
 
         let status = vm
             .status
@@ -191,6 +199,7 @@ impl VmInfo {
 
         Self {
             name,
+            namespace,
             status,
             cpu,
             memory,
@@ -436,10 +445,7 @@ impl AppState {
         let mut vm_infos = Vec::with_capacity(vm_list.len());
         for vm in &vm_list {
             let vm_name = vm.metadata.name.clone().unwrap_or_default();
-            let (ip, node) = match client
-                .get_vm_ip_and_node(&self.namespace, &vm_name)
-                .await
-            {
+            let (ip, node) = match client.get_vm_ip_and_node(&self.namespace, &vm_name).await {
                 Ok(result) => result,
                 Err(e) => {
                     log::debug!("Failed to get VMI data for VM '{}': {}", vm_name, e);
@@ -928,16 +934,13 @@ impl AppState {
                     .as_ref()
                     .and_then(|s| {
                         s.conditions.as_ref().and_then(|conds| {
-                            conds
-                                .iter()
-                                .find(|c| c.type_ == "Ready")
-                                .map(|c| {
-                                    if c.status == "True" {
-                                        "Ready"
-                                    } else {
-                                        "NotReady"
-                                    }
-                                })
+                            conds.iter().find(|c| c.type_ == "Ready").map(|c| {
+                                if c.status == "True" {
+                                    "Ready"
+                                } else {
+                                    "NotReady"
+                                }
+                            })
                         })
                     })
                     .unwrap_or("Unknown")
@@ -1106,10 +1109,7 @@ impl AppState {
                     .name
                     .clone()
                     .unwrap_or_else(|| "?".to_string());
-                let message = event
-                    .message
-                    .clone()
-                    .unwrap_or_else(|| "".to_string());
+                let message = event.message.clone().unwrap_or_else(|| "".to_string());
 
                 EventInfo {
                     time,

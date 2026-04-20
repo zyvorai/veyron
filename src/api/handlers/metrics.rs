@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -80,7 +84,11 @@ async fn get_cluster_metrics(State(state): State<SharedState>) -> Json<ClusterMe
                 .unwrap_or(false)
         })
         .filter_map(|vm| {
-            vm.spec.template.spec.domain.cpu
+            vm.spec
+                .template
+                .spec
+                .domain
+                .cpu
                 .as_ref()
                 .and_then(|c| c.cores)
                 .map(|c| c as f64)
@@ -97,7 +105,12 @@ async fn get_cluster_metrics(State(state): State<SharedState>) -> Json<ClusterMe
                 .unwrap_or(false)
         })
         .filter_map(|vm| {
-            vm.spec.template.spec.domain.resources.requests
+            vm.spec
+                .template
+                .spec
+                .domain
+                .resources
+                .requests
                 .as_ref()
                 .and_then(|r| r.get("memory"))
                 .map(|v| parse_k8s_memory(v))

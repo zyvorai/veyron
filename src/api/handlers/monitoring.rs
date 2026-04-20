@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -54,7 +58,11 @@ async fn get_monitoring_status(State(state): State<SharedState>) -> Json<Monitor
 
     let s = state.read().await;
     let client = s.client().client();
-    let events = s.client().list_events(&s.namespace).await.unwrap_or_default();
+    let events = s
+        .client()
+        .list_events(&s.namespace)
+        .await
+        .unwrap_or_default();
 
     // Check for Prometheus, Grafana, Alertmanager across common namespaces
     let monitoring_namespaces = ["monitoring", "prometheus", "observability", &s.namespace];
@@ -147,7 +155,10 @@ async fn list_anomalies(
     Query(query): Query<AnomalyQuery>,
 ) -> Json<Vec<Anomaly>> {
     let s = state.read().await;
-    let namespace = query.namespace.clone().unwrap_or_else(|| s.namespace.clone());
+    let namespace = query
+        .namespace
+        .clone()
+        .unwrap_or_else(|| s.namespace.clone());
     let vms = if namespace == "all" {
         s.client().list_all_vms().await.unwrap_or_default()
     } else {
@@ -158,7 +169,11 @@ async fn list_anomalies(
 
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
-        let vm_ns = vm.metadata.namespace.clone().unwrap_or_else(|| namespace.clone());
+        let vm_ns = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| namespace.clone());
         let collector = crate::monitoring::metrics::MetricsCollector::new(vm_ns.clone());
         let metrics = match collector.collect(vm_name).await {
             Ok(m) => m,
@@ -172,7 +187,11 @@ async fn list_anomalies(
 
         for (metric, value, warn_threshold) in checks {
             if *value >= *warn_threshold {
-                let severity = if *value >= 95.0 { "critical" } else { "warning" };
+                let severity = if *value >= 95.0 {
+                    "critical"
+                } else {
+                    "warning"
+                };
                 let deviation = (value - warn_threshold) / warn_threshold * 100.0;
                 anomalies.push(Anomaly {
                     vm_name: vm_name.to_string(),
@@ -201,7 +220,12 @@ async fn list_anomalies(
                 current_value: (write_mb * 100.0).round() / 100.0,
                 threshold: 100.0,
                 deviation_percent: ((write_mb - 100.0) / 100.0 * 100.0 * 100.0).round() / 100.0,
-                severity: if write_mb > 250.0 { "critical" } else { "warning" }.to_string(),
+                severity: if write_mb > 250.0 {
+                    "critical"
+                } else {
+                    "warning"
+                }
+                .to_string(),
                 detected_at: now.clone(),
                 description: format!("{} disk write is {:.1} MB/s", vm_name, write_mb),
             });

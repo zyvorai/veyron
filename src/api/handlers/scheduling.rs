@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -85,7 +89,9 @@ async fn get_scheduling_status(
         .filter(|e| {
             e.reason
                 .as_deref()
-                .map(|r| r.eq_ignore_ascii_case("Preempting") || r.eq_ignore_ascii_case("Preempted"))
+                .map(|r| {
+                    r.eq_ignore_ascii_case("Preempting") || r.eq_ignore_ascii_case("Preempted")
+                })
                 .unwrap_or(false)
         })
         .count() as u32;

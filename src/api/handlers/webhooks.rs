@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -125,10 +129,7 @@ async fn create_webhook(
         data.insert("secret".to_string(), secret.clone());
     }
 
-    let cm_name = format!(
-        "webhook-{}",
-        req.name.to_lowercase().replace(' ', "-")
-    );
+    let cm_name = format!("webhook-{}", req.name.to_lowercase().replace(' ', "-"));
 
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {

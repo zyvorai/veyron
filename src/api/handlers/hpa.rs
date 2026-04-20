@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -29,9 +33,7 @@ pub struct HpaQuery {
 
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
-    Router::new()
-        .route("/hpa", get(list_hpa))
-        .with_state(state)
+    Router::new().route("/hpa", get(list_hpa)).with_state(state)
 }
 
 #[cfg(feature = "web")]
@@ -61,30 +63,36 @@ async fn list_hpa(
             let status = hpa.status.as_ref();
 
             let target_ref = spec.map(|s| &s.scale_target_ref);
-            let target_kind = target_ref
-                .map(|t| t.kind.clone())
-                .unwrap_or_default();
-            let target_name = target_ref
-                .map(|t| t.name.clone())
-                .unwrap_or_default();
+            let target_kind = target_ref.map(|t| t.kind.clone()).unwrap_or_default();
+            let target_name = target_ref.map(|t| t.name.clone()).unwrap_or_default();
 
             // Extract resource metric targets from spec
             let cpu_utilization_target = spec
                 .and_then(|s| s.metrics.as_ref())
-                .and_then(|metrics| metrics.iter().find(|m| {
-                    m.type_ == "Resource"
-                        && m.resource.as_ref().map(|r| r.name == "cpu").unwrap_or(false)
-                }))
+                .and_then(|metrics| {
+                    metrics.iter().find(|m| {
+                        m.type_ == "Resource"
+                            && m.resource
+                                .as_ref()
+                                .map(|r| r.name == "cpu")
+                                .unwrap_or(false)
+                    })
+                })
                 .and_then(|m| m.resource.as_ref())
                 .and_then(|r| r.target.average_utilization)
                 .map(|v| v as u32);
 
             let memory_utilization_target = spec
                 .and_then(|s| s.metrics.as_ref())
-                .and_then(|metrics| metrics.iter().find(|m| {
-                    m.type_ == "Resource"
-                        && m.resource.as_ref().map(|r| r.name == "memory").unwrap_or(false)
-                }))
+                .and_then(|metrics| {
+                    metrics.iter().find(|m| {
+                        m.type_ == "Resource"
+                            && m.resource
+                                .as_ref()
+                                .map(|r| r.name == "memory")
+                                .unwrap_or(false)
+                    })
+                })
                 .and_then(|m| m.resource.as_ref())
                 .and_then(|r| r.target.average_utilization)
                 .map(|v| v as u32);
@@ -92,20 +100,30 @@ async fn list_hpa(
             // Extract current utilization from status
             let cpu_utilization_current = status
                 .and_then(|s| s.current_metrics.as_ref())
-                .and_then(|metrics| metrics.iter().find(|m| {
-                    m.type_ == "Resource"
-                        && m.resource.as_ref().map(|r| r.name == "cpu").unwrap_or(false)
-                }))
+                .and_then(|metrics| {
+                    metrics.iter().find(|m| {
+                        m.type_ == "Resource"
+                            && m.resource
+                                .as_ref()
+                                .map(|r| r.name == "cpu")
+                                .unwrap_or(false)
+                    })
+                })
                 .and_then(|m| m.resource.as_ref())
                 .and_then(|r| r.current.average_utilization)
                 .map(|v| v as u32);
 
             let memory_utilization_current = status
                 .and_then(|s| s.current_metrics.as_ref())
-                .and_then(|metrics| metrics.iter().find(|m| {
-                    m.type_ == "Resource"
-                        && m.resource.as_ref().map(|r| r.name == "memory").unwrap_or(false)
-                }))
+                .and_then(|metrics| {
+                    metrics.iter().find(|m| {
+                        m.type_ == "Resource"
+                            && m.resource
+                                .as_ref()
+                                .map(|r| r.name == "memory")
+                                .unwrap_or(false)
+                    })
+                })
                 .and_then(|m| m.resource.as_ref())
                 .and_then(|r| r.current.average_utilization)
                 .map(|v| v as u32);

@@ -106,18 +106,13 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             };
             graph_lines.push(Line::from(Span::styled(
                 format!("               [{}]", node_name),
-                Style::default()
-                    .fg(node_color)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(node_color).add_modifier(Modifier::BOLD),
             )));
 
             for (vm_name, _status, color) in vms {
                 graph_lines.push(Line::from(vec![
                     Span::styled("                  +-- ", Style::default().fg(Color::Gray)),
-                    Span::styled(
-                        format!("[{}]", vm_name),
-                        Style::default().fg(*color),
-                    ),
+                    Span::styled(format!("[{}]", vm_name), Style::default().fg(*color)),
                 ]));
             }
         }

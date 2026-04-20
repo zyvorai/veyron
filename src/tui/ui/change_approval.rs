@@ -49,36 +49,41 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .split(chunks[1]);
 
     // Build change requests from recent_activity
-    let header_cells = ["#", "Action", "VM", "Elapsed", "Status"]
-        .iter()
-        .map(|h| {
-            Cell::from(*h).style(
-                Style::default()
-                    .fg(Color::Rgb(222, 115, 86))
-                    .add_modifier(Modifier::BOLD),
-            )
-        });
+    let header_cells = ["#", "Action", "VM", "Elapsed", "Status"].iter().map(|h| {
+        Cell::from(*h).style(
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        )
+    });
     let table_header = Row::new(header_cells)
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let rows: Vec<Row> = state.recent_activity.iter().rev().enumerate().map(|(i, event)| {
-        let elapsed = event.elapsed_display();
-        let status = "Pending";
-        let status_color = Color::Rgb(255, 200, 0);
-        Row::new(vec![
-            Cell::from(format!("CR-{:03}", i + 1)).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(event.action.as_str()),
-            Cell::from(event.vm_name.as_str()),
-            Cell::from(elapsed),
-            Cell::from(status).style(
-                Style::default()
-                    .fg(status_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ])
-        .height(1)
-    }).collect();
+    let rows: Vec<Row> = state
+        .recent_activity
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(i, event)| {
+            let elapsed = event.elapsed_display();
+            let status = "Pending";
+            let status_color = Color::Rgb(255, 200, 0);
+            Row::new(vec![
+                Cell::from(format!("CR-{:03}", i + 1))
+                    .style(Style::default().fg(Color::Rgb(222, 115, 86))),
+                Cell::from(event.action.as_str()),
+                Cell::from(event.vm_name.as_str()),
+                Cell::from(elapsed),
+                Cell::from(status).style(
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(12),
@@ -105,9 +110,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(table, content_chunks[0]);
 
     // Details panel showing the first (most recent) activity or a summary
-    let mut details = vec![
-        Line::from(""),
-    ];
+    let mut details = vec![Line::from("")];
 
     if let Some(latest) = state.recent_activity.last() {
         details.push(Line::from(Span::styled(
@@ -152,7 +155,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let stats = state.get_stats();
     details.push(Line::from(vec![
         Span::styled("  Total VMs:  ", Style::default().fg(Color::Gray)),
-        Span::styled(format!("{}", stats.total), Style::default().fg(Color::White)),
+        Span::styled(
+            format!("{}", stats.total),
+            Style::default().fg(Color::White),
+        ),
     ]));
     details.push(Line::from(vec![
         Span::styled("  Running:    ", Style::default().fg(Color::Gray)),

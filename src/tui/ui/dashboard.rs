@@ -532,7 +532,12 @@ fn render_quick_actions(f: &mut Frame, _state: &AppState, area: Rect) {
         nav_line("0", "🗺️", "Topology"),
         Line::from(""),
         Line::from(vec![
-            Span::styled(" Ctrl+P ", Style::default().fg(colors::LIGHT_ORANGE).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                " Ctrl+P ",
+                Style::default()
+                    .fg(colors::LIGHT_ORANGE)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled("All views", Style::default().fg(colors::TEXT_MUTED)),
         ]),
     ];

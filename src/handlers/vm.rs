@@ -747,7 +747,10 @@ pub async fn handle_resize(
             .map(|re| re.is_match(mem))
             .unwrap_or(false);
         if !valid {
-            anyhow::bail!("Invalid memory format '{}'. Use Kubernetes quantities like '4Gi', '512Mi'", mem);
+            anyhow::bail!(
+                "Invalid memory format '{}'. Use Kubernetes quantities like '4Gi', '512Mi'",
+                mem
+            );
         }
     }
 
@@ -1999,13 +2002,19 @@ pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
                         let status_lower = status.to_lowercase();
                         match s {
                             crate::nlp_search::StatusFilter::Running => {
-                                if !status_lower.contains("running") { return false; }
+                                if !status_lower.contains("running") {
+                                    return false;
+                                }
                             }
                             crate::nlp_search::StatusFilter::Stopped => {
-                                if !status_lower.contains("stop") { return false; }
+                                if !status_lower.contains("stop") {
+                                    return false;
+                                }
                             }
                             crate::nlp_search::StatusFilter::Failed => {
-                                if !status_lower.contains("fail") { return false; }
+                                if !status_lower.contains("fail") {
+                                    return false;
+                                }
                             }
                             crate::nlp_search::StatusFilter::Any => {}
                         }
@@ -2076,7 +2085,10 @@ pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
         ]);
     }
 
-    println!("  {} VM(s) found", color::value(&filtered.len().to_string()));
+    println!(
+        "  {} VM(s) found",
+        color::value(&filtered.len().to_string())
+    );
     println!();
     table.print();
     Ok(())
@@ -2085,7 +2097,10 @@ pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
 pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
     use crate::kube;
 
-    println!("{}", color::header(&format!("Troubleshooting VM: {}", name)));
+    println!(
+        "{}",
+        color::header(&format!("Troubleshooting VM: {}", name))
+    );
     println!();
 
     let client = kube::KubeClient::new().await?;
@@ -2094,7 +2109,13 @@ pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
     let vm = match client.get_vm(namespace, &name).await {
         Ok(vm) => vm,
         Err(_) => {
-            println!("{}", color::error(&format!("VM '{}' not found in namespace '{}'", name, namespace)));
+            println!(
+                "{}",
+                color::error(&format!(
+                    "VM '{}' not found in namespace '{}'",
+                    name, namespace
+                ))
+            );
             return Ok(());
         }
     };
@@ -2108,15 +2129,32 @@ pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
     let running = vm.spec.running.unwrap_or(false);
 
     println!("  Status:  {}", color::vm_status(status_str));
-    println!("  Running: {}", if running { color::success("true") } else { color::warning("false") });
-    println!("  Ready:   {}", if ready { color::success("true") } else { color::warning("false") });
+    println!(
+        "  Running: {}",
+        if running {
+            color::success("true")
+        } else {
+            color::warning("false")
+        }
+    );
+    println!(
+        "  Ready:   {}",
+        if ready {
+            color::success("true")
+        } else {
+            color::warning("false")
+        }
+    );
     println!();
 
     // Diagnose issues
     let mut issues = Vec::new();
 
     if running && !ready {
-        issues.push(("HIGH", "VM is running but not ready — may be booting or stuck"));
+        issues.push((
+            "HIGH",
+            "VM is running but not ready — may be booting or stuck",
+        ));
     }
 
     if !running && status_str.contains("Failed") {
@@ -2151,13 +2189,19 @@ pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
                 if status.node_name.is_none() {
                     issues.push(("HIGH", "VM is not scheduled to any node"));
                 } else {
-                    println!("  Node: {}", status.node_name.as_deref().unwrap_or("unknown"));
+                    println!(
+                        "  Node: {}",
+                        status.node_name.as_deref().unwrap_or("unknown")
+                    );
                 }
             }
         }
         Err(_) => {
             if running {
-                issues.push(("HIGH", "VM is set to running but no VMI found — instance may have failed to start"));
+                issues.push((
+                    "HIGH",
+                    "VM is set to running but no VMI found — instance may have failed to start",
+                ));
             }
         }
     }
@@ -2195,7 +2239,10 @@ pub async fn handle_troubleshoot(name: String, namespace: &str) -> Result<()> {
 
     println!();
     if issues.is_empty() {
-        println!("  {}", color::success("No issues detected — VM appears healthy"));
+        println!(
+            "  {}",
+            color::success("No issues detected — VM appears healthy")
+        );
     } else {
         println!("  {} issue(s) found:", issues.len());
         for (severity, description) in &issues {
@@ -2235,21 +2282,27 @@ pub async fn handle_events_list(limit: usize, output: String, namespace: &str) -
     for event in events.iter().take(limit) {
         let event_type = event.type_.as_deref().unwrap_or("Normal");
         let reason = event.reason.as_deref().unwrap_or("");
-        let obj = event
-            .involved_object
-            .name
+        let obj = event.involved_object.name.as_deref().unwrap_or("");
+        let message = event
+            .message
             .as_deref()
-            .unwrap_or("");
-        let message = event.message.as_deref().unwrap_or("").chars().take(60).collect::<String>();
+            .unwrap_or("")
+            .chars()
+            .take(60)
+            .collect::<String>();
         let age = event
             .last_timestamp
             .as_ref()
             .or(event.metadata.creation_timestamp.as_ref())
             .map(|t| {
                 let secs = (chrono::Utc::now() - t.0).num_seconds();
-                if secs < 60 { format!("{}s", secs) }
-                else if secs < 3600 { format!("{}m", secs / 60) }
-                else { format!("{}h", secs / 3600) }
+                if secs < 60 {
+                    format!("{}s", secs)
+                } else if secs < 3600 {
+                    format!("{}m", secs / 60)
+                } else {
+                    format!("{}h", secs / 3600)
+                }
             })
             .unwrap_or_default();
 
@@ -2286,24 +2339,45 @@ pub async fn handle_nodes_list(output: String, namespace: &str) -> Result<()> {
     let mut table = CliTable::new(vec!["Name", "Status", "Roles", "Version", "CPU", "Memory"]);
     for node in &nodes {
         let name = node.metadata.name.as_deref().unwrap_or("");
-        let status = node.status.as_ref()
+        let status = node
+            .status
+            .as_ref()
             .and_then(|s| s.conditions.as_ref())
             .and_then(|c| c.iter().find(|c| c.type_ == "Ready"))
-            .map(|c| if c.status == "True" { "Ready" } else { "NotReady" })
+            .map(|c| {
+                if c.status == "True" {
+                    "Ready"
+                } else {
+                    "NotReady"
+                }
+            })
             .unwrap_or("Unknown");
-        let roles: Vec<String> = node.metadata.labels.as_ref()
-            .map(|l| l.keys().filter_map(|k| k.strip_prefix("node-role.kubernetes.io/").map(String::from)).collect())
+        let roles: Vec<String> = node
+            .metadata
+            .labels
+            .as_ref()
+            .map(|l| {
+                l.keys()
+                    .filter_map(|k| k.strip_prefix("node-role.kubernetes.io/").map(String::from))
+                    .collect()
+            })
             .unwrap_or_default();
-        let version = node.status.as_ref()
+        let version = node
+            .status
+            .as_ref()
             .and_then(|s| s.node_info.as_ref())
             .map(|i| i.kubelet_version.as_str())
             .unwrap_or("");
-        let cpu = node.status.as_ref()
+        let cpu = node
+            .status
+            .as_ref()
             .and_then(|s| s.capacity.as_ref())
             .and_then(|c| c.get("cpu"))
             .map(|v| v.0.clone())
             .unwrap_or_default();
-        let memory = node.status.as_ref()
+        let memory = node
+            .status
+            .as_ref()
             .and_then(|s| s.capacity.as_ref())
             .and_then(|c| c.get("memory"))
             .map(|v| v.0.clone())
@@ -2312,7 +2386,11 @@ pub async fn handle_nodes_list(output: String, namespace: &str) -> Result<()> {
         table.add_row(vec![
             name.to_string(),
             status.to_string(),
-            if roles.is_empty() { "<none>".to_string() } else { roles.join(",") },
+            if roles.is_empty() {
+                "<none>".to_string()
+            } else {
+                roles.join(",")
+            },
             version.to_string(),
             cpu,
             memory,
@@ -2342,26 +2420,42 @@ pub async fn handle_pods_list(output: String, namespace: &str) -> Result<()> {
     let mut table = CliTable::new(vec!["Name", "Status", "Node", "IP", "Restarts", "Age"]);
     for pod in &pods {
         let name = pod.metadata.name.as_deref().unwrap_or("");
-        let phase = pod.status.as_ref()
+        let phase = pod
+            .status
+            .as_ref()
             .and_then(|s| s.phase.as_deref())
             .unwrap_or("Unknown");
-        let node = pod.spec.as_ref()
+        let node = pod
+            .spec
+            .as_ref()
             .and_then(|s| s.node_name.as_deref())
             .unwrap_or("");
-        let ip = pod.status.as_ref()
+        let ip = pod
+            .status
+            .as_ref()
             .and_then(|s| s.pod_ip.as_deref())
             .unwrap_or("");
-        let restarts: i32 = pod.status.as_ref()
+        let restarts: i32 = pod
+            .status
+            .as_ref()
             .and_then(|s| s.container_statuses.as_ref())
             .map(|cs| cs.iter().map(|c| c.restart_count).sum())
             .unwrap_or(0);
-        let age = pod.metadata.creation_timestamp.as_ref()
+        let age = pod
+            .metadata
+            .creation_timestamp
+            .as_ref()
             .map(|t| {
                 let secs = (chrono::Utc::now() - t.0).num_seconds();
-                if secs < 60 { format!("{}s", secs) }
-                else if secs < 3600 { format!("{}m", secs / 60) }
-                else if secs < 86400 { format!("{}h", secs / 3600) }
-                else { format!("{}d", secs / 86400) }
+                if secs < 60 {
+                    format!("{}s", secs)
+                } else if secs < 3600 {
+                    format!("{}m", secs / 60)
+                } else if secs < 86400 {
+                    format!("{}h", secs / 3600)
+                } else {
+                    format!("{}d", secs / 86400)
+                }
             })
             .unwrap_or_default();
 
@@ -2378,7 +2472,12 @@ pub async fn handle_pods_list(output: String, namespace: &str) -> Result<()> {
     Ok(())
 }
 
-pub async fn handle_import(file: String, start: bool, dry_run: bool, namespace: &str) -> Result<()> {
+pub async fn handle_import(
+    file: String,
+    start: bool,
+    dry_run: bool,
+    namespace: &str,
+) -> Result<()> {
     use crate::kube;
     use crate::output::spinner::spinner;
 
@@ -2387,7 +2486,11 @@ pub async fn handle_import(file: String, start: bool, dry_run: bool, namespace: 
         .map_err(|e| anyhow::anyhow!("Cannot read file '{}': {}", file, e))?;
     const MAX_FILE_SIZE: u64 = 10 * 1024 * 1024; // 10 MB
     if metadata.len() > MAX_FILE_SIZE {
-        anyhow::bail!("File too large ({} bytes, max {} bytes)", metadata.len(), MAX_FILE_SIZE);
+        anyhow::bail!(
+            "File too large ({} bytes, max {} bytes)",
+            metadata.len(),
+            MAX_FILE_SIZE
+        );
     }
 
     let content = std::fs::read_to_string(&file)?;
@@ -2421,7 +2524,10 @@ pub async fn handle_import(file: String, start: bool, dry_run: bool, namespace: 
     api.create(&::kube::api::PostParams::default(), &vm).await?;
     sp.finish_and_clear();
 
-    println!("{}", color::success(&format!("VM '{}' imported successfully", vm_name)));
+    println!(
+        "{}",
+        color::success(&format!("VM '{}' imported successfully", vm_name))
+    );
 
     if start {
         client.start_vm(namespace, vm_name).await?;
@@ -2450,11 +2556,23 @@ pub async fn handle_clusters_list(output: String) -> Result<()> {
     println!();
 
     if manager.clusters.is_empty() {
-        println!("  {}", color::muted("No clusters configured. Run 'vmrogue clusters-discover' to scan kubeconfig."));
+        println!(
+            "  {}",
+            color::muted(
+                "No clusters configured. Run 'vmrogue clusters-discover' to scan kubeconfig."
+            )
+        );
         return Ok(());
     }
 
-    let mut table = CliTable::new(vec!["Name", "Context", "Environment", "Region", "Health", "Primary"]);
+    let mut table = CliTable::new(vec![
+        "Name",
+        "Context",
+        "Environment",
+        "Region",
+        "Health",
+        "Primary",
+    ]);
     for cluster in &manager.clusters {
         table.add_row(vec![
             cluster.name.clone(),
@@ -2476,9 +2594,13 @@ pub async fn handle_clusters_discover() -> Result<()> {
     let mut manager = crate::multi_cluster::MultiClusterManager::new();
     match manager.discover_from_kubeconfig().await {
         Ok(count) => {
-            println!("{}", color::success(&format!("Discovered {} cluster(s):", count)));
+            println!(
+                "{}",
+                color::success(&format!("Discovered {} cluster(s):", count))
+            );
             for cluster in &manager.clusters {
-                println!("  {} ({}) - {:?}",
+                println!(
+                    "  {} ({}) - {:?}",
                     color::vm_name(&cluster.name),
                     color::muted(&cluster.context),
                     cluster.environment,
@@ -2486,7 +2608,10 @@ pub async fn handle_clusters_discover() -> Result<()> {
             }
         }
         Err(e) => {
-            println!("{}", color::error(&format!("Failed to discover clusters: {}", e)));
+            println!(
+                "{}",
+                color::error(&format!("Failed to discover clusters: {}", e))
+            );
         }
     }
     Ok(())
@@ -2517,7 +2642,10 @@ pub async fn handle_capacity(detailed: bool, output: String, namespace: &str) ->
     println!("  Nodes: {}", color::value(&nodes.len().to_string()));
     println!("  VMs:   {}", color::value(&vms.len().to_string()));
 
-    let running_count = vms.iter().filter(|v| v.spec.running.unwrap_or(false)).count();
+    let running_count = vms
+        .iter()
+        .filter(|v| v.spec.running.unwrap_or(false))
+        .count();
     println!("  Running: {}", color::value(&running_count.to_string()));
     println!();
 
@@ -2525,7 +2653,10 @@ pub async fn handle_capacity(detailed: bool, output: String, namespace: &str) ->
     let mut total_mem_gi = 0f64;
     for node in &nodes {
         let cap = node.status.as_ref().and_then(|s| s.capacity.as_ref());
-        if let Some(cpu) = cap.and_then(|c| c.get("cpu")).and_then(|v| v.0.parse::<u64>().ok()) {
+        if let Some(cpu) = cap
+            .and_then(|c| c.get("cpu"))
+            .and_then(|v| v.0.parse::<u64>().ok())
+        {
             total_cpu += cpu;
         }
         if let Some(mem) = cap.and_then(|c| c.get("memory")).map(|v| &v.0) {
@@ -2546,34 +2677,69 @@ pub async fn handle_capacity(detailed: bool, output: String, namespace: &str) ->
         }
     }
 
-    let cpu_pct = if total_cpu > 0 { (vm_cpu as f64 / total_cpu as f64 * 100.0).round() } else { 0.0 };
-    let mem_pct = if total_mem_gi > 0.0 { (vm_mem_gi / total_mem_gi * 100.0).round() } else { 0.0 };
+    let cpu_pct = if total_cpu > 0 {
+        (vm_cpu as f64 / total_cpu as f64 * 100.0).round()
+    } else {
+        0.0
+    };
+    let mem_pct = if total_mem_gi > 0.0 {
+        (vm_mem_gi / total_mem_gi * 100.0).round()
+    } else {
+        0.0
+    };
 
-    println!("  CPU:    {}/{} cores allocated ({:.0}%)", vm_cpu, total_cpu, cpu_pct);
-    println!("  Memory: {:.1}/{:.1} GiB allocated ({:.0}%)", vm_mem_gi, total_mem_gi, mem_pct);
+    println!(
+        "  CPU:    {}/{} cores allocated ({:.0}%)",
+        vm_cpu, total_cpu, cpu_pct
+    );
+    println!(
+        "  Memory: {:.1}/{:.1} GiB allocated ({:.0}%)",
+        vm_mem_gi, total_mem_gi, mem_pct
+    );
 
     if detailed {
         println!();
         let mut table = CliTable::new(vec!["Node", "Status", "CPU", "Memory", "Roles"]);
         for node in &nodes {
             let name = node.metadata.name.as_deref().unwrap_or("");
-            let status = node.status.as_ref()
+            let status = node
+                .status
+                .as_ref()
                 .and_then(|s| s.conditions.as_ref())
                 .and_then(|c| c.iter().find(|c| c.type_ == "Ready"))
-                .map(|c| if c.status == "True" { "Ready" } else { "NotReady" })
+                .map(|c| {
+                    if c.status == "True" {
+                        "Ready"
+                    } else {
+                        "NotReady"
+                    }
+                })
                 .unwrap_or("Unknown");
-            let cpu = node.status.as_ref()
+            let cpu = node
+                .status
+                .as_ref()
                 .and_then(|s| s.capacity.as_ref())
                 .and_then(|c| c.get("cpu"))
                 .map(|v| v.0.clone())
                 .unwrap_or_default();
-            let mem = node.status.as_ref()
+            let mem = node
+                .status
+                .as_ref()
                 .and_then(|s| s.capacity.as_ref())
                 .and_then(|c| c.get("memory"))
                 .map(|v| v.0.clone())
                 .unwrap_or_default();
-            let roles: Vec<String> = node.metadata.labels.as_ref()
-                .map(|l| l.keys().filter_map(|k| k.strip_prefix("node-role.kubernetes.io/").map(String::from)).collect())
+            let roles: Vec<String> = node
+                .metadata
+                .labels
+                .as_ref()
+                .map(|l| {
+                    l.keys()
+                        .filter_map(|k| {
+                            k.strip_prefix("node-role.kubernetes.io/").map(String::from)
+                        })
+                        .collect()
+                })
                 .unwrap_or_default();
 
             table.add_row(vec![
@@ -2581,7 +2747,11 @@ pub async fn handle_capacity(detailed: bool, output: String, namespace: &str) ->
                 status.to_string(),
                 cpu,
                 mem,
-                if roles.is_empty() { "<none>".to_string() } else { roles.join(",") },
+                if roles.is_empty() {
+                    "<none>".to_string()
+                } else {
+                    roles.join(",")
+                },
             ]);
         }
         table.print();
@@ -2610,19 +2780,27 @@ pub async fn handle_placement(name: String, strategy: String, namespace: &str) -
         .iter()
         .filter_map(|node| {
             let node_name = node.metadata.name.as_deref()?;
-            let is_ready = node.status.as_ref()
+            let is_ready = node
+                .status
+                .as_ref()
                 .and_then(|s| s.conditions.as_ref())
                 .and_then(|c| c.iter().find(|c| c.type_ == "Ready"))
                 .map(|c| c.status == "True")
                 .unwrap_or(false);
-            if !is_ready { return None; }
+            if !is_ready {
+                return None;
+            }
 
-            let cpu_cap = node.status.as_ref()
+            let cpu_cap = node
+                .status
+                .as_ref()
                 .and_then(|s| s.capacity.as_ref())
                 .and_then(|c| c.get("cpu"))
                 .and_then(|v| v.0.parse::<f64>().ok())
                 .unwrap_or(0.0);
-            let cpu_alloc = node.status.as_ref()
+            let cpu_alloc = node
+                .status
+                .as_ref()
                 .and_then(|s| s.allocatable.as_ref())
                 .and_then(|a| a.get("cpu"))
                 .and_then(|v| v.0.parse::<f64>().ok())
@@ -2643,7 +2821,13 @@ pub async fn handle_placement(name: String, strategy: String, namespace: &str) -
     println!("  Recommended placement (ranked):");
     for (i, (node_name, score, reason)) in scored.iter().enumerate() {
         let prefix = if i == 0 { "  → " } else { "    " };
-        println!("{}{} (score: {:.1}) — {}", prefix, color::vm_name(node_name), score, color::muted(reason));
+        println!(
+            "{}{} (score: {:.1}) — {}",
+            prefix,
+            color::vm_name(node_name),
+            score,
+            color::muted(reason)
+        );
     }
 
     Ok(())
@@ -2658,7 +2842,9 @@ pub async fn handle_list_json(namespace: &str) -> Result<()> {
     for vm in &vms {
         let name = vm.metadata.name.as_deref().unwrap_or("");
         let ns = vm.metadata.namespace.as_deref().unwrap_or("");
-        let status = vm.status.as_ref()
+        let status = vm
+            .status
+            .as_ref()
             .and_then(|s| s.printable_status.as_deref())
             .unwrap_or("Unknown");
         let running = vm.spec.running.unwrap_or(false);

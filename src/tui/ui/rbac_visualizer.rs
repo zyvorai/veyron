@@ -2,7 +2,6 @@
 
 use crate::tui::colors::gradient;
 use crate::tui::state::AppState;
-use std::collections::HashMap;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -10,6 +9,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
 };
+use std::collections::HashMap;
 
 pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let chunks = Layout::default()
@@ -69,26 +69,31 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         }
     }
 
-    let role_rows: Vec<Row> = state.nodes.iter().map(|node| {
-        let status_color = if node.status == "Ready" {
-            Color::Rgb(50, 205, 50)
-        } else {
-            Color::Rgb(220, 50, 47)
-        };
-        let role_color = if node.role.contains("control-plane") || node.role.contains("master") {
-            Color::Rgb(222, 115, 86)
-        } else {
-            Color::Rgb(100, 150, 255)
-        };
-        let vm_count = vms_per_node.get(&node.name).copied().unwrap_or(0);
-        Row::new(vec![
-            Cell::from(node.name.as_str()),
-            Cell::from(node.role.as_str()).style(Style::default().fg(role_color)),
-            Cell::from(node.status.as_str()).style(Style::default().fg(status_color)),
-            Cell::from(format!("{}", vm_count)),
-        ])
-        .height(1)
-    }).collect();
+    let role_rows: Vec<Row> = state
+        .nodes
+        .iter()
+        .map(|node| {
+            let status_color = if node.status == "Ready" {
+                Color::Rgb(50, 205, 50)
+            } else {
+                Color::Rgb(220, 50, 47)
+            };
+            let role_color = if node.role.contains("control-plane") || node.role.contains("master")
+            {
+                Color::Rgb(222, 115, 86)
+            } else {
+                Color::Rgb(100, 150, 255)
+            };
+            let vm_count = vms_per_node.get(&node.name).copied().unwrap_or(0);
+            Row::new(vec![
+                Cell::from(node.name.as_str()),
+                Cell::from(node.role.as_str()).style(Style::default().fg(role_color)),
+                Cell::from(node.status.as_str()).style(Style::default().fg(status_color)),
+                Cell::from(format!("{}", vm_count)),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let role_widths = [
         Constraint::Percentage(30),
@@ -115,7 +120,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
 
     // Access overview from VM data
     let stats = state.get_stats();
-    let unassigned_vms = state.vms.iter().filter(|vm| vm.node == "N/A" || vm.node.is_empty()).count();
+    let unassigned_vms = state
+        .vms
+        .iter()
+        .filter(|vm| vm.node == "N/A" || vm.node.is_empty())
+        .count();
     let nodes_with_vms = vms_per_node.len();
 
     let mut binding_lines = vec![
@@ -152,7 +161,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled("  Unassigned VMs: ", Style::default().fg(Color::Gray)),
             Span::styled(
                 format!("{}", unassigned_vms),
-                Style::default().fg(if unassigned_vms > 0 { Color::Rgb(255, 200, 0) } else { Color::Rgb(50, 205, 50) }),
+                Style::default().fg(if unassigned_vms > 0 {
+                    Color::Rgb(255, 200, 0)
+                } else {
+                    Color::Rgb(50, 205, 50)
+                }),
             ),
         ]),
         Line::from(""),
@@ -167,9 +180,18 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
 
     for node in &state.nodes {
         binding_lines.push(Line::from(vec![
-            Span::styled(format!("  {}: ", node.name), Style::default().fg(Color::White)),
-            Span::styled(format!("CPU={}", node.cpu_capacity), Style::default().fg(Color::Rgb(100, 150, 255))),
-            Span::styled(format!(" Mem={}", node.memory_capacity), Style::default().fg(Color::Rgb(100, 150, 255))),
+            Span::styled(
+                format!("  {}: ", node.name),
+                Style::default().fg(Color::White),
+            ),
+            Span::styled(
+                format!("CPU={}", node.cpu_capacity),
+                Style::default().fg(Color::Rgb(100, 150, 255)),
+            ),
+            Span::styled(
+                format!(" Mem={}", node.memory_capacity),
+                Style::default().fg(Color::Rgb(100, 150, 255)),
+            ),
         ]));
     }
 
@@ -210,10 +232,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if stats.failed == 0 && unassigned_vms == 0 {
         binding_lines.push(Line::from(vec![
             Span::styled("  ", Style::default()),
-            Span::styled(
-                "No warnings",
-                Style::default().fg(Color::Rgb(50, 205, 50)),
-            ),
+            Span::styled("No warnings", Style::default().fg(Color::Rgb(50, 205, 50))),
         ]));
     }
 

@@ -80,16 +80,28 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         })
         .collect();
 
-    vm_costs.sort_by(|a, b| b.total.partial_cmp(&a.total).unwrap_or(std::cmp::Ordering::Equal));
+    vm_costs.sort_by(|a, b| {
+        b.total
+            .partial_cmp(&a.total)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     let total_monthly: f64 = vm_costs.iter().map(|c| c.total).sum();
     let daily_avg = total_monthly / 30.0;
-    let stopped_vms = state.vms.iter().filter(|v| v.status.contains("Stop")).count();
+    let stopped_vms = state
+        .vms
+        .iter()
+        .filter(|v| v.status.contains("Stop"))
+        .count();
     let stopped_savings: f64 = vm_costs
         .iter()
         .enumerate()
         .filter(|(i, _)| {
-            state.vms.get(*i).map(|v| v.status.contains("Stop")).unwrap_or(false)
+            state
+                .vms
+                .get(*i)
+                .map(|v| v.status.contains("Stop"))
+                .unwrap_or(false)
         })
         .map(|(_, c)| c.total)
         .sum();
@@ -214,8 +226,9 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .height(1);
 
     let rows: Vec<Row> = if vm_costs.is_empty() {
-        vec![Row::new(vec![Cell::from("  No VMs to analyze")
-            .style(Style::default().fg(Color::Gray))])]
+        vec![Row::new(vec![
+            Cell::from("  No VMs to analyze").style(Style::default().fg(Color::Gray)),
+        ])]
     } else {
         vm_costs
             .iter()

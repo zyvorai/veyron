@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -54,7 +58,10 @@ async fn get_observability_overview(
                 if name.contains("prometheus") || name.contains("metrics") {
                     metrics_available = true;
                 }
-                if name.contains("loki") || name.contains("elasticsearch") || name.contains("fluentd") {
+                if name.contains("loki")
+                    || name.contains("elasticsearch")
+                    || name.contains("fluentd")
+                {
                     logs_available = true;
                 }
             }
@@ -122,8 +129,18 @@ async fn get_observability_overview(
     };
 
     Json(ObservabilityOverview {
-        metrics_status: if metrics_available { "active" } else { "unavailable" }.to_string(),
-        logs_status: if logs_available { "active" } else { "unavailable" }.to_string(),
+        metrics_status: if metrics_available {
+            "active"
+        } else {
+            "unavailable"
+        }
+        .to_string(),
+        logs_status: if logs_available {
+            "active"
+        } else {
+            "unavailable"
+        }
+        .to_string(),
         traces_status: "unavailable".to_string(),
         total_log_entries: events.len() as u64,
         total_metric_series: vms.len() as u64 * 4,

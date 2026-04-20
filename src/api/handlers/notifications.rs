@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::{get, post}};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -43,11 +47,18 @@ async fn list_notifications(
     use k8s_openapi::api::core::v1::ConfigMap;
 
     let s = state.read().await;
-    let namespace = query.namespace.clone().unwrap_or_else(|| s.namespace.clone());
+    let namespace = query
+        .namespace
+        .clone()
+        .unwrap_or_else(|| s.namespace.clone());
     let events = match query.namespace.as_deref() {
         Some("all") => s.client().list_all_events().await.unwrap_or_default(),
         Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+        None => s
+            .client()
+            .list_events(&s.namespace)
+            .await
+            .unwrap_or_default(),
     };
 
     // Load set of read notification IDs from ConfigMap
@@ -74,9 +85,7 @@ async fn list_notifications(
 }
 
 #[cfg(feature = "web")]
-fn map_notifications(
-    events: &[k8s_openapi::api::core::v1::Event],
-) -> Vec<NotificationResponse> {
+fn map_notifications(events: &[k8s_openapi::api::core::v1::Event]) -> Vec<NotificationResponse> {
     events
         .iter()
         .filter_map(|event| {
@@ -146,9 +155,12 @@ async fn mark_notifications_read(
             name: Some(cm_name.to_string()),
             namespace: Some(s.namespace.clone()),
             labels: Some(
-                [("vmrogue.io/type".to_string(), "notification-state".to_string())]
-                    .into_iter()
-                    .collect(),
+                [(
+                    "vmrogue.io/type".to_string(),
+                    "notification-state".to_string(),
+                )]
+                .into_iter()
+                .collect(),
             ),
             ..Default::default()
         },

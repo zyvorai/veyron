@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -63,11 +67,8 @@ async fn list_workloads(
     };
 
     let lp = kube::api::ListParams::default();
-    let (deploy_result, sts_result, ds_result) = tokio::join!(
-        deploy_api.list(&lp),
-        sts_api.list(&lp),
-        ds_api.list(&lp),
-    );
+    let (deploy_result, sts_result, ds_result) =
+        tokio::join!(deploy_api.list(&lp), sts_api.list(&lp), ds_api.list(&lp),);
 
     // Deployments
     if let Ok(deploys) = deploy_result {
@@ -168,7 +169,11 @@ fn summarize_container_requests(containers: &[Container]) -> (String, String) {
     let mut memory_bytes = 0u64;
 
     for container in containers {
-        if let Some(requests) = container.resources.as_ref().and_then(|r| r.requests.as_ref()) {
+        if let Some(requests) = container
+            .resources
+            .as_ref()
+            .and_then(|r| r.requests.as_ref())
+        {
             if let Some(cpu) = requests.get("cpu") {
                 cpu_millis += parse_cpu_to_millis(cpu.0.as_str());
             }

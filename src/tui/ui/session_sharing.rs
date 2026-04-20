@@ -62,23 +62,27 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let rows: Vec<Row> = state.vms.iter().map(|vm| {
-        let status_color = match vm.status.as_str() {
-            "Running" => Color::Rgb(50, 205, 50),
-            "Stopped" => Color::Gray,
-            "Failed" | "Error" => Color::Rgb(220, 50, 47),
-            "Starting" | "Pending" => Color::Rgb(255, 200, 0),
-            _ => Color::Gray,
-        };
-        Row::new(vec![
-            Cell::from(vm.name.as_str()).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
-            Cell::from(vm.cpu.as_str()),
-            Cell::from(vm.memory.as_str()),
-            Cell::from(vm.node.as_str()),
-        ])
-        .height(1)
-    }).collect();
+    let rows: Vec<Row> = state
+        .vms
+        .iter()
+        .map(|vm| {
+            let status_color = match vm.status.as_str() {
+                "Running" => Color::Rgb(50, 205, 50),
+                "Stopped" => Color::Gray,
+                "Failed" | "Error" => Color::Rgb(220, 50, 47),
+                "Starting" | "Pending" => Color::Rgb(255, 200, 0),
+                _ => Color::Gray,
+            };
+            Row::new(vec![
+                Cell::from(vm.name.as_str()).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+                Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
+                Cell::from(vm.cpu.as_str()),
+                Cell::from(vm.memory.as_str()),
+                Cell::from(vm.node.as_str()),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(25),
@@ -105,9 +109,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(table, content_chunks[0]);
 
     // Session details - show selected VM info
-    let mut details = vec![
-        Line::from(""),
-    ];
+    let mut details = vec![Line::from("")];
 
     if let Some(vm) = state.vms.first() {
         let status_color = match vm.status.as_str() {
@@ -152,7 +154,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled("  Ready:      ", Style::default().fg(Color::Gray)),
             Span::styled(
                 if vm.ready { "Yes" } else { "No" },
-                Style::default().fg(if vm.ready { Color::Rgb(50, 205, 50) } else { Color::Rgb(255, 200, 0) }),
+                Style::default().fg(if vm.ready {
+                    Color::Rgb(50, 205, 50)
+                } else {
+                    Color::Rgb(255, 200, 0)
+                }),
             ),
         ]));
         details.push(Line::from(""));
@@ -166,8 +172,16 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         details.push(Line::from(vec![
             Span::styled("  Mode:       ", Style::default().fg(Color::Gray)),
             Span::styled(
-                if vm.status == "Running" { "Read-Write" } else { "Read-Only" },
-                Style::default().fg(if vm.status == "Running" { Color::Rgb(50, 205, 50) } else { Color::Rgb(100, 150, 255) }),
+                if vm.status == "Running" {
+                    "Read-Write"
+                } else {
+                    "Read-Only"
+                },
+                Style::default().fg(if vm.status == "Running" {
+                    Color::Rgb(50, 205, 50)
+                } else {
+                    Color::Rgb(100, 150, 255)
+                }),
             ),
         ]));
         details.push(Line::from(vec![

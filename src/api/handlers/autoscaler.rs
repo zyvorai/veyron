@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -39,7 +43,10 @@ pub struct AutoscalerQuery {
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
-        .route("/autoscaler/policies", get(list_policies).post(create_policy))
+        .route(
+            "/autoscaler/policies",
+            get(list_policies).post(create_policy),
+        )
         .with_state(state)
 }
 
@@ -72,20 +79,30 @@ async fn list_policies(
 
             let cpu_threshold = spec
                 .and_then(|s| s.metrics.as_ref())
-                .and_then(|metrics| metrics.iter().find(|m| {
-                    m.type_ == "Resource"
-                        && m.resource.as_ref().map(|r| r.name == "cpu").unwrap_or(false)
-                }))
+                .and_then(|metrics| {
+                    metrics.iter().find(|m| {
+                        m.type_ == "Resource"
+                            && m.resource
+                                .as_ref()
+                                .map(|r| r.name == "cpu")
+                                .unwrap_or(false)
+                    })
+                })
                 .and_then(|m| m.resource.as_ref())
                 .and_then(|r| r.target.average_utilization)
                 .map(|v| v as u8);
 
             let memory_threshold = spec
                 .and_then(|s| s.metrics.as_ref())
-                .and_then(|metrics| metrics.iter().find(|m| {
-                    m.type_ == "Resource"
-                        && m.resource.as_ref().map(|r| r.name == "memory").unwrap_or(false)
-                }))
+                .and_then(|metrics| {
+                    metrics.iter().find(|m| {
+                        m.type_ == "Resource"
+                            && m.resource
+                                .as_ref()
+                                .map(|r| r.name == "memory")
+                                .unwrap_or(false)
+                    })
+                })
                 .and_then(|m| m.resource.as_ref())
                 .and_then(|r| r.target.average_utilization)
                 .map(|v| v as u8);
@@ -101,9 +118,7 @@ async fn list_policies(
                     .unwrap_or_default(),
                 min_replicas: spec.and_then(|s| s.min_replicas).unwrap_or(1) as u32,
                 max_replicas: spec.map(|s| s.max_replicas).unwrap_or(1) as u32,
-                current_replicas: status
-                    .and_then(|s| s.current_replicas)
-                    .unwrap_or(0) as u32,
+                current_replicas: status.and_then(|s| s.current_replicas).unwrap_or(0) as u32,
                 cpu_threshold,
                 memory_threshold,
                 enabled: true,
@@ -179,7 +194,11 @@ async fn create_policy(
             },
             min_replicas: Some(req.min_replicas as i32),
             max_replicas: req.max_replicas as i32,
-            metrics: if metrics.is_empty() { None } else { Some(metrics) },
+            metrics: if metrics.is_empty() {
+                None
+            } else {
+                Some(metrics)
+            },
             ..Default::default()
         }),
         ..Default::default()

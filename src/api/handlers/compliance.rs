@@ -46,9 +46,7 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_compliance_status(
-    State(state): State<SharedState>,
-) -> Json<Vec<ComplianceStatus>> {
+async fn get_compliance_status(State(state): State<SharedState>) -> Json<Vec<ComplianceStatus>> {
     use k8s_openapi::api::networking::v1::NetworkPolicy;
     use k8s_openapi::api::rbac::v1::RoleBinding;
 
@@ -68,16 +66,32 @@ async fn get_compliance_status(
         let vmi_spec = &vm.spec.template.spec;
         let domain = &vmi_spec.domain;
 
-        if domain.resources.limits.as_ref().map(|m| !m.is_empty()).unwrap_or(false) {
+        if domain
+            .resources
+            .limits
+            .as_ref()
+            .map(|m| !m.is_empty())
+            .unwrap_or(false)
+        {
             resource_limits += 1;
         }
         if vmi_spec.eviction_strategy.is_some() {
             eviction_strategy += 1;
         }
-        if domain.devices.as_ref().and_then(|d| d.rng.as_ref()).is_some() {
+        if domain
+            .devices
+            .as_ref()
+            .and_then(|d| d.rng.as_ref())
+            .is_some()
+        {
             rng_device += 1;
         }
-        if domain.devices.as_ref().and_then(|d| d.tpm.as_ref()).is_some() {
+        if domain
+            .devices
+            .as_ref()
+            .and_then(|d| d.tpm.as_ref())
+            .is_some()
+        {
             tpm_device += 1;
         }
         let uses_host_net = vmi_spec
@@ -172,16 +186,17 @@ async fn get_compliance_status(
 }
 
 #[cfg(feature = "web")]
-async fn list_compliance_reports(
-    State(state): State<SharedState>,
-) -> Json<Vec<ComplianceReport>> {
+async fn list_compliance_reports(State(state): State<SharedState>) -> Json<Vec<ComplianceReport>> {
     let statuses = get_compliance_status(State(state)).await.0;
     let now = chrono::Utc::now().to_rfc3339();
 
     let reports: Vec<ComplianceReport> = statuses
         .into_iter()
         .map(|status| ComplianceReport {
-            id: format!("report-{}", status.framework.to_lowercase().replace(' ', "-")),
+            id: format!(
+                "report-{}",
+                status.framework.to_lowercase().replace(' ', "-")
+            ),
             framework: status.framework.clone(),
             generated_at: now.clone(),
             summary: status,

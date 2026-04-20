@@ -401,8 +401,8 @@ async fn list_rdp_capable_vms(State(state): State<SharedState>) -> Json<Vec<RdpC
             .unwrap_or_default();
 
         // Detect Windows VMs by template name or labels
-        let is_windows = template.to_lowercase().contains("windows")
-            || template.to_lowercase().contains("win");
+        let is_windows =
+            template.to_lowercase().contains("windows") || template.to_lowercase().contains("win");
 
         let ip = vmis.as_ref().and_then(|list| {
             list.items.iter().find_map(|vmi| {

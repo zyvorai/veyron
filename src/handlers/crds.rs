@@ -1,5 +1,8 @@
 use anyhow::Result;
-use kube::{Api, Client, api::{ListParams, PostParams, DeleteParams}};
+use kube::{
+    Api, Client,
+    api::{DeleteParams, ListParams, PostParams},
+};
 
 use crate::operator_crds::*;
 
@@ -13,14 +16,36 @@ pub async fn handle_vrvm_list(namespace: &str) -> Result<()> {
         return Ok(());
     }
 
-    println!("{:<25} {:<12} {:<20} {:<15} {:<15}", "NAME", "PHASE", "VM", "NODE", "IP");
+    println!(
+        "{:<25} {:<12} {:<20} {:<15} {:<15}",
+        "NAME", "PHASE", "VM", "NODE", "IP"
+    );
     for vm in &list.items {
         let name = vm.metadata.name.as_deref().unwrap_or("");
-        let phase = vm.status.as_ref().and_then(|s| s.phase.as_deref()).unwrap_or("-");
-        let kv_vm = vm.status.as_ref().and_then(|s| s.kubevirt_vm_name.as_deref()).unwrap_or("-");
-        let node = vm.status.as_ref().and_then(|s| s.node_name.as_deref()).unwrap_or("-");
-        let ip = vm.status.as_ref().and_then(|s| s.ip_address.as_deref()).unwrap_or("-");
-        println!("{:<25} {:<12} {:<20} {:<15} {:<15}", name, phase, kv_vm, node, ip);
+        let phase = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.phase.as_deref())
+            .unwrap_or("-");
+        let kv_vm = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.kubevirt_vm_name.as_deref())
+            .unwrap_or("-");
+        let node = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.node_name.as_deref())
+            .unwrap_or("-");
+        let ip = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.ip_address.as_deref())
+            .unwrap_or("-");
+        println!(
+            "{:<25} {:<12} {:<20} {:<15} {:<15}",
+            name, phase, kv_vm, node, ip
+        );
     }
 
     Ok(())
@@ -32,7 +57,10 @@ pub async fn handle_vrvm_get(namespace: &str, name: &str) -> Result<()> {
     let vm = api.get(name).await?;
 
     println!("Name:       {}", vm.metadata.name.as_deref().unwrap_or(""));
-    println!("Namespace:  {}", vm.metadata.namespace.as_deref().unwrap_or(""));
+    println!(
+        "Namespace:  {}",
+        vm.metadata.namespace.as_deref().unwrap_or("")
+    );
     println!("Template:   {}", vm.spec.template.as_deref().unwrap_or("-"));
     println!("CPU:        {} cores", vm.spec.cpu.cores);
     println!("Memory:     {}", vm.spec.memory.size);
@@ -42,9 +70,15 @@ pub async fn handle_vrvm_get(namespace: &str, name: &str) -> Result<()> {
     if let Some(status) = &vm.status {
         println!("\nStatus:");
         println!("  Phase:    {}", status.phase.as_deref().unwrap_or("-"));
-        println!("  VM:       {}", status.kubevirt_vm_name.as_deref().unwrap_or("-"));
+        println!(
+            "  VM:       {}",
+            status.kubevirt_vm_name.as_deref().unwrap_or("-")
+        );
         println!("  Node:     {}", status.node_name.as_deref().unwrap_or("-"));
-        println!("  IP:       {}", status.ip_address.as_deref().unwrap_or("-"));
+        println!(
+            "  IP:       {}",
+            status.ip_address.as_deref().unwrap_or("-")
+        );
     }
 
     Ok(())
@@ -90,24 +124,60 @@ pub async fn handle_vrvm_create(namespace: &str, name: &str, args: VrvmCreateArg
     let api: Api<VMRogueVM> = Api::namespaced(client, namespace);
     let vm = VMRogueVM::new(name, spec);
     let created = api.create(&PostParams::default(), &vm).await?;
-    println!("VMRogueVM '{}' created in namespace '{}'", created.metadata.name.unwrap_or_default(), namespace);
+    println!(
+        "VMRogueVM '{}' created in namespace '{}'",
+        created.metadata.name.unwrap_or_default(),
+        namespace
+    );
 
     // Print hardware summary
     let s = &created.spec;
     println!("  CPU:    {} cores", s.cpu.cores);
     println!("  Memory: {}", s.memory.size);
-    println!("  Disks:  {}", if s.disks.is_empty() { "none (template default)".to_string() } else { s.disks.iter().map(|d| format!("{}({})", d.name, d.size)).collect::<Vec<_>>().join(", ") });
-    println!("  NICs:   {}", s.interfaces.iter().map(|i| format!("{}({})", i.name, i.network_type.net_type)).collect::<Vec<_>>().join(", "));
-    if s.enable_tpm { println!("  TPM:    enabled"); }
-    if let Some(fw) = &s.firmware { println!("  Firmware: {}{}", fw.bootloader, if fw.secure_boot { " + SecureBoot" } else { "" }); }
-    if args.start { println!("  Status: starting (operator will reconcile)"); }
+    println!(
+        "  Disks:  {}",
+        if s.disks.is_empty() {
+            "none (template default)".to_string()
+        } else {
+            s.disks
+                .iter()
+                .map(|d| format!("{}({})", d.name, d.size))
+                .collect::<Vec<_>>()
+                .join(", ")
+        }
+    );
+    println!(
+        "  NICs:   {}",
+        s.interfaces
+            .iter()
+            .map(|i| format!("{}({})", i.name, i.network_type.net_type))
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    if s.enable_tpm {
+        println!("  TPM:    enabled");
+    }
+    if let Some(fw) = &s.firmware {
+        println!(
+            "  Firmware: {}{}",
+            fw.bootloader,
+            if fw.secure_boot { " + SecureBoot" } else { "" }
+        );
+    }
+    if args.start {
+        println!("  Status: starting (operator will reconcile)");
+    }
 
     Ok(())
 }
 
 fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSpec> {
     // Parse disks
-    let mut disks: Vec<CRDDiskSpec> = args.disks.iter().map(|s| parse_disk_spec(s)).collect::<Result<Vec<_>>>()?;
+    let mut disks: Vec<CRDDiskSpec> = args
+        .disks
+        .iter()
+        .map(|s| parse_disk_spec(s))
+        .collect::<Result<Vec<_>>>()?;
 
     // Add CDROM if specified
     if let Some(ref image) = args.cdrom {
@@ -116,7 +186,11 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
             size: "0".to_string(),
             storage_class: None,
             boot_order: 2,
-            source: CRDDiskSource { source_type: "containerDisk".to_string(), name: None, image: Some(image.clone()) },
+            source: CRDDiskSource {
+                source_type: "containerDisk".to_string(),
+                name: None,
+                image: Some(image.clone()),
+            },
             device_type: "cdrom".to_string(),
             bus: Some("sata".to_string()),
             cache: None,
@@ -128,30 +202,44 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
     if disks.is_empty() {
         if let Some(ref tmpl_name) = args.template {
             if let Some(tmpl_config) = crate::templates::TEMPLATES.get(tmpl_name) {
-                disks = tmpl_config.disks.iter().map(|d| {
-                    let (source_type, src_name, image) = match &d.source {
-                        crate::config::DiskSource::Blank => ("blank".to_string(), None, None),
-                        crate::config::DiskSource::PVC { name } => ("pvc".to_string(), Some(name.clone()), None),
-                        crate::config::DiskSource::ContainerDisk { image } => ("containerDisk".to_string(), None, Some(image.clone())),
-                        crate::config::DiskSource::DataVolume { name } => ("dataVolume".to_string(), Some(name.clone()), None),
-                    };
-                    let dt = match d.device_type {
-                        crate::config::DiskDeviceType::Disk => "disk",
-                        crate::config::DiskDeviceType::CDROM => "cdrom",
-                        crate::config::DiskDeviceType::LUN => "lun",
-                    };
-                    CRDDiskSpec {
-                        name: d.name.clone(),
-                        size: d.size.clone(),
-                        storage_class: d.storage_class.clone(),
-                        boot_order: d.boot_order,
-                        source: CRDDiskSource { source_type, name: src_name, image },
-                        device_type: dt.to_string(),
-                        bus: d.bus.clone(),
-                        cache: d.cache.clone(),
-                        io: d.io.clone(),
-                    }
-                }).collect();
+                disks = tmpl_config
+                    .disks
+                    .iter()
+                    .map(|d| {
+                        let (source_type, src_name, image) = match &d.source {
+                            crate::config::DiskSource::Blank => ("blank".to_string(), None, None),
+                            crate::config::DiskSource::PVC { name } => {
+                                ("pvc".to_string(), Some(name.clone()), None)
+                            }
+                            crate::config::DiskSource::ContainerDisk { image } => {
+                                ("containerDisk".to_string(), None, Some(image.clone()))
+                            }
+                            crate::config::DiskSource::DataVolume { name } => {
+                                ("dataVolume".to_string(), Some(name.clone()), None)
+                            }
+                        };
+                        let dt = match d.device_type {
+                            crate::config::DiskDeviceType::Disk => "disk",
+                            crate::config::DiskDeviceType::CDROM => "cdrom",
+                            crate::config::DiskDeviceType::LUN => "lun",
+                        };
+                        CRDDiskSpec {
+                            name: d.name.clone(),
+                            size: d.size.clone(),
+                            storage_class: d.storage_class.clone(),
+                            boot_order: d.boot_order,
+                            source: CRDDiskSource {
+                                source_type,
+                                name: src_name,
+                                image,
+                            },
+                            device_type: dt.to_string(),
+                            bus: d.bus.clone(),
+                            cache: d.cache.clone(),
+                            io: d.io.clone(),
+                        }
+                    })
+                    .collect();
             }
         }
     }
@@ -162,17 +250,27 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
             name: "default".to_string(),
             network: "default".to_string(),
             model: "virtio".to_string(),
-            network_type: CRDNetworkType { net_type: "pod".to_string(), name: None },
+            network_type: CRDNetworkType {
+                net_type: "pod".to_string(),
+                name: None,
+            },
             mac_address: None,
         }]
     } else {
-        args.networks.iter().enumerate().map(|(i, s)| parse_network_spec(s, i)).collect::<Result<Vec<_>>>()?
+        args.networks
+            .iter()
+            .enumerate()
+            .map(|(i, s)| parse_network_spec(s, i))
+            .collect::<Result<Vec<_>>>()?
     };
 
     // Read cloud-init from file
     let cloud_init = if let Some(ref path) = args.cloud_init {
         let data = std::fs::read_to_string(path)?;
-        Some(CRDCloudInitSpec { user_data: data, network_data: None })
+        Some(CRDCloudInitSpec {
+            user_data: data,
+            network_data: None,
+        })
     } else if args.template.is_some() {
         // Auto-generate basic cloud-init with hostname
         Some(CRDCloudInitSpec {
@@ -185,7 +283,11 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
 
     // Firmware
     let firmware = if args.secure_boot {
-        Some(CRDFirmwareSpec { bootloader: "efi".to_string(), secure_boot: true, persistent: true })
+        Some(CRDFirmwareSpec {
+            bootloader: "efi".to_string(),
+            secure_boot: true,
+            persistent: true,
+        })
     } else {
         args.firmware.as_ref().map(|f| CRDFirmwareSpec {
             bootloader: f.clone(),
@@ -259,7 +361,10 @@ fn parse_disk_spec(spec: &str) -> Result<CRDDiskSpec> {
                 "size" => size = v.to_string(),
                 "source" => source_type = v.to_string(),
                 "image" => image = Some(v.to_string()),
-                "pvc" => { pvc_name = Some(v.to_string()); source_type = "pvc".to_string(); },
+                "pvc" => {
+                    pvc_name = Some(v.to_string());
+                    source_type = "pvc".to_string();
+                }
                 "boot" => boot_order = v.parse().unwrap_or(0),
                 "bus" => bus = Some(v.to_string()),
                 "type" => device_type = v.to_string(),
@@ -277,7 +382,11 @@ fn parse_disk_spec(spec: &str) -> Result<CRDDiskSpec> {
         size,
         storage_class: None,
         boot_order,
-        source: CRDDiskSource { source_type, name: pvc_name, image },
+        source: CRDDiskSource {
+            source_type,
+            name: pvc_name,
+            image,
+        },
         device_type,
         bus,
         cache: None,
@@ -300,14 +409,25 @@ fn parse_network_spec(spec: &str, index: usize) -> Result<CRDInterfaceSpec> {
         }
     }
 
-    let iface_name = if index == 0 { "default".to_string() } else { format!("net{}", index) };
-    let network_name = if index == 0 { "default".to_string() } else { net_name.clone().unwrap_or_else(|| format!("net{}", index)) };
+    let iface_name = if index == 0 {
+        "default".to_string()
+    } else {
+        format!("net{}", index)
+    };
+    let network_name = if index == 0 {
+        "default".to_string()
+    } else {
+        net_name.clone().unwrap_or_else(|| format!("net{}", index))
+    };
 
     Ok(CRDInterfaceSpec {
         name: iface_name,
         network: network_name,
         model: "virtio".to_string(),
-        network_type: CRDNetworkType { net_type, name: net_name },
+        network_type: CRDNetworkType {
+            net_type,
+            name: net_name,
+        },
         mac_address: None,
     })
 }
@@ -316,8 +436,16 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
     let content = std::fs::read_to_string(file)?;
     let vm: VMRogueVM = serde_yml::from_str(&content)?;
 
-    let name = vm.metadata.name.clone().unwrap_or_else(|| "unnamed".to_string());
-    let ns = vm.metadata.namespace.clone().unwrap_or_else(|| namespace.to_string());
+    let name = vm
+        .metadata
+        .name
+        .clone()
+        .unwrap_or_else(|| "unnamed".to_string());
+    let ns = vm
+        .metadata
+        .namespace
+        .clone()
+        .unwrap_or_else(|| namespace.to_string());
 
     if dry_run {
         println!("{}", serde_yml::to_string(&vm)?);
@@ -358,18 +486,31 @@ pub async fn handle_vrbp_list(namespace: &str) -> Result<()> {
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
-        println!("No VMRogueBlueprint resources found in namespace '{}'", namespace);
+        println!(
+            "No VMRogueBlueprint resources found in namespace '{}'",
+            namespace
+        );
         return Ok(());
     }
 
-    println!("{:<25} {:<12} {:<6} {:<6} {:<30}", "NAME", "PHASE", "VMs", "READY", "TAGS");
+    println!(
+        "{:<25} {:<12} {:<6} {:<6} {:<30}",
+        "NAME", "PHASE", "VMs", "READY", "TAGS"
+    );
     for bp in &list.items {
         let name = bp.metadata.name.as_deref().unwrap_or("");
-        let phase = bp.status.as_ref().and_then(|s| s.phase.as_deref()).unwrap_or("-");
+        let phase = bp
+            .status
+            .as_ref()
+            .and_then(|s| s.phase.as_deref())
+            .unwrap_or("-");
         let total = bp.spec.vms.len();
         let ready = bp.status.as_ref().and_then(|s| s.ready_vms).unwrap_or(0);
         let tags = bp.spec.tags.join(", ");
-        println!("{:<25} {:<12} {:<6} {:<6} {:<30}", name, phase, total, ready, tags);
+        println!(
+            "{:<25} {:<12} {:<6} {:<6} {:<30}",
+            name, phase, total, ready, tags
+        );
     }
 
     Ok(())
@@ -381,18 +522,29 @@ pub async fn handle_vrbp_get(namespace: &str, name: &str) -> Result<()> {
     let bp = api.get(name).await?;
 
     println!("Name:        {}", bp.metadata.name.as_deref().unwrap_or(""));
-    println!("Description: {}", bp.spec.description.as_deref().unwrap_or("-"));
+    println!(
+        "Description: {}",
+        bp.spec.description.as_deref().unwrap_or("-")
+    );
     println!("Tags:        {}", bp.spec.tags.join(", "));
     println!("\nVMs:");
     for vm in &bp.spec.vms {
-        let deps = if vm.depends_on.is_empty() { "-".to_string() } else { vm.depends_on.join(", ") };
+        let deps = if vm.depends_on.is_empty() {
+            "-".to_string()
+        } else {
+            vm.depends_on.join(", ")
+        };
         println!("  {} (template: {}, deps: {})", vm.name, vm.template, deps);
     }
 
     if let Some(status) = &bp.status {
         println!("\nStatus:");
         println!("  Phase: {}", status.phase.as_deref().unwrap_or("-"));
-        println!("  Ready: {}/{}", status.ready_vms.unwrap_or(0), status.total_vms.unwrap_or(0));
+        println!(
+            "  Ready: {}/{}",
+            status.ready_vms.unwrap_or(0),
+            status.total_vms.unwrap_or(0)
+        );
     }
 
     Ok(())
@@ -412,17 +564,29 @@ pub async fn handle_vrpol_list(namespace: &str) -> Result<()> {
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
-        println!("No VMRoguePolicy resources found in namespace '{}'", namespace);
+        println!(
+            "No VMRoguePolicy resources found in namespace '{}'",
+            namespace
+        );
         return Ok(());
     }
 
-    println!("{:<25} {:<10} {:<10} {:<10} {:<8} {:<10}", "NAME", "ACTION", "SEVERITY", "RULES", "ENABLED", "VIOLATIONS");
+    println!(
+        "{:<25} {:<10} {:<10} {:<10} {:<8} {:<10}",
+        "NAME", "ACTION", "SEVERITY", "RULES", "ENABLED", "VIOLATIONS"
+    );
     for p in &list.items {
         let name = p.metadata.name.as_deref().unwrap_or("");
         let violations = p.status.as_ref().and_then(|s| s.violating_vms).unwrap_or(0);
-        println!("{:<25} {:<10} {:<10} {:<10} {:<8} {:<10}",
-            name, p.spec.enforcement_action, p.spec.severity,
-            p.spec.rules.len(), p.spec.enabled, violations);
+        println!(
+            "{:<25} {:<10} {:<10} {:<10} {:<8} {:<10}",
+            name,
+            p.spec.enforcement_action,
+            p.spec.severity,
+            p.spec.rules.len(),
+            p.spec.enabled,
+            violations
+        );
     }
 
     Ok(())
@@ -437,7 +601,10 @@ pub async fn handle_vrpol_get(namespace: &str, name: &str) -> Result<()> {
     println!("Enabled:     {}", p.spec.enabled);
     println!("Enforcement: {}", p.spec.enforcement_action);
     println!("Severity:    {}", p.spec.severity);
-    println!("Framework:   {}", p.spec.framework.as_deref().unwrap_or("-"));
+    println!(
+        "Framework:   {}",
+        p.spec.framework.as_deref().unwrap_or("-")
+    );
     println!("\nRules:");
     for rule in &p.spec.rules {
         println!("  {} — {} ({})", rule.name, rule.message, rule.condition);
@@ -467,17 +634,29 @@ pub async fn handle_vrin_list(namespace: &str) -> Result<()> {
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
-        println!("No VMRogueInsight resources found in namespace '{}'", namespace);
+        println!(
+            "No VMRogueInsight resources found in namespace '{}'",
+            namespace
+        );
         return Ok(());
     }
 
-    println!("{:<25} {:<12} {:<10} {:<20} {:<10} {:<30}", "NAME", "TYPE", "SEVERITY", "VM", "STATE", "TITLE");
+    println!(
+        "{:<25} {:<12} {:<10} {:<20} {:<10} {:<30}",
+        "NAME", "TYPE", "SEVERITY", "VM", "STATE", "TITLE"
+    );
     for i in &list.items {
         let name = i.metadata.name.as_deref().unwrap_or("");
-        let state = i.status.as_ref().and_then(|s| s.state.as_deref()).unwrap_or("-");
+        let state = i
+            .status
+            .as_ref()
+            .and_then(|s| s.state.as_deref())
+            .unwrap_or("-");
         let vm = i.spec.vm_ref.as_deref().unwrap_or("-");
-        println!("{:<25} {:<12} {:<10} {:<20} {:<10} {:<30}",
-            name, i.spec.insight_type, i.spec.severity, vm, state, i.spec.title);
+        println!(
+            "{:<25} {:<12} {:<10} {:<20} {:<10} {:<30}",
+            name, i.spec.insight_type, i.spec.severity, vm, state, i.spec.title
+        );
     }
 
     Ok(())
@@ -489,17 +668,29 @@ pub async fn handle_vract_list(namespace: &str) -> Result<()> {
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
-        println!("No VMRogueAction resources found in namespace '{}'", namespace);
+        println!(
+            "No VMRogueAction resources found in namespace '{}'",
+            namespace
+        );
         return Ok(());
     }
 
-    println!("{:<25} {:<15} {:<20} {:<10} {:<10}", "NAME", "ACTION", "VM", "APPROVED", "PHASE");
+    println!(
+        "{:<25} {:<15} {:<20} {:<10} {:<10}",
+        "NAME", "ACTION", "VM", "APPROVED", "PHASE"
+    );
     for a in &list.items {
         let name = a.metadata.name.as_deref().unwrap_or("");
         let vm = a.spec.vm_ref.as_deref().unwrap_or("-");
-        let phase = a.status.as_ref().and_then(|s| s.phase.as_deref()).unwrap_or("-");
-        println!("{:<25} {:<15} {:<20} {:<10} {:<10}",
-            name, a.spec.action_type, vm, a.spec.approved, phase);
+        let phase = a
+            .status
+            .as_ref()
+            .and_then(|s| s.phase.as_deref())
+            .unwrap_or("-");
+        println!(
+            "{:<25} {:<15} {:<20} {:<10} {:<10}",
+            name, a.spec.action_type, vm, a.spec.approved, phase
+        );
     }
 
     Ok(())

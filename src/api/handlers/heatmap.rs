@@ -100,7 +100,8 @@ async fn get_resource_heatmap(State(state): State<SharedState>) -> Json<Resource
             let network_util = (vm_count as f64 * 2.0).min(100.0);
 
             // Heat score: weighted average of all utilization metrics
-            let heat_score = cpu_util * 0.35 + mem_util * 0.35 + disk_util * 0.15 + network_util * 0.15;
+            let heat_score =
+                cpu_util * 0.35 + mem_util * 0.35 + disk_util * 0.15 + network_util * 0.15;
 
             NodeHeatmapEntry {
                 node_name: name,

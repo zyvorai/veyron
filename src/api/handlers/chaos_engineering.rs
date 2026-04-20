@@ -54,10 +54,7 @@ async fn list_experiments(State(state): State<SharedState>) -> Json<Vec<ChaosExp
         Err(_) => return Json(vec![]),
     };
 
-    let chaos_crds: Vec<_> = crds
-        .into_iter()
-        .filter(is_chaos_crd)
-        .collect();
+    let chaos_crds: Vec<_> = crds.into_iter().filter(is_chaos_crd).collect();
 
     let mut experiments = Vec::new();
     for crd in chaos_crds {
@@ -93,9 +90,8 @@ fn is_chaos_crd(
     let group = crd.spec.group.to_lowercase();
     let kind = crd.spec.names.kind.to_lowercase();
 
-    let is_chaos_family = group.contains("chaos-mesh")
-        || group.contains("litmuschaos")
-        || name.contains("chaos");
+    let is_chaos_family =
+        group.contains("chaos-mesh") || group.contains("litmuschaos") || name.contains("chaos");
     let is_experiment_like =
         kind.contains("chaos") || kind.contains("experiment") || kind.contains("engine");
 
@@ -209,7 +205,10 @@ mod tests {
 
     #[test]
     fn extract_status_prefers_phase() {
-        assert_eq!(extract_status(&json!({"phase":"Running"})), Some("Running".to_string()));
+        assert_eq!(
+            extract_status(&json!({"phase":"Running"})),
+            Some("Running".to_string())
+        );
     }
 
     #[test]

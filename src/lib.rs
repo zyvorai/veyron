@@ -97,7 +97,10 @@ pub mod topology;
 pub use config::{VMConfig, VMConfigBuilder};
 pub use kube::converter::vm_config_to_kubevirt;
 pub use output::{OutputFormat, format_output, to_json, to_yaml};
-pub use utils::{VMRogueError, format_bytes, generate_id, parse_cpu_nanocores, parse_memory_bytes, parse_memory_gib, percent_to_u8};
+pub use utils::{
+    VMRogueError, format_bytes, generate_id, parse_cpu_nanocores, parse_memory_bytes,
+    parse_memory_gib, percent_to_u8,
+};
 
 use anyhow::Result;
 use cli::{Cli, Commands};
@@ -1159,9 +1162,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             no_splash,
             theme,
             basic,
-        } => {
-            handlers::api::handle_tui(cli.namespace.clone(), theme, basic, no_splash).await?
-        }
+        } => handlers::api::handle_tui(cli.namespace.clone(), theme, basic, no_splash).await?,
 
         // ========== CONFIGURATION ==========
         Commands::ConfigShow { path } => {
@@ -1459,7 +1460,14 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 ),
                 (
                     "Infrastructure",
-                    vec!["events", "nodes", "pods", "import", "clusters-list", "clusters-discover"],
+                    vec![
+                        "events",
+                        "nodes",
+                        "pods",
+                        "import",
+                        "clusters-list",
+                        "clusters-discover",
+                    ],
                 ),
                 (
                     "GitOps",
@@ -1508,7 +1516,11 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         }
 
         // ========== IMPORT ==========
-        Commands::Import { file, start, dry_run } => {
+        Commands::Import {
+            file,
+            start,
+            dry_run,
+        } => {
             handlers::vm::handle_import(file, start, dry_run, &cli.namespace).await?;
         }
 
@@ -1555,20 +1567,49 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             handlers::crds::handle_vrvm_get(&cli.namespace, &name).await?;
         }
         Commands::VrvmCreate {
-            name, template, cpus, memory, disk, cdrom, network,
-            cloud_init, firmware, secure_boot, tpm, no_rng,
-            machine_type, eviction_strategy, label, from_file,
-            dry_run, start,
+            name,
+            template,
+            cpus,
+            memory,
+            disk,
+            cdrom,
+            network,
+            cloud_init,
+            firmware,
+            secure_boot,
+            tpm,
+            no_rng,
+            machine_type,
+            eviction_strategy,
+            label,
+            from_file,
+            dry_run,
+            start,
         } => {
             handlers::crds::handle_vrvm_create(
-                &cli.namespace, &name,
+                &cli.namespace,
+                &name,
                 handlers::crds::VrvmCreateArgs {
-                    template, cpus, memory, disks: disk, cdrom, networks: network,
-                    cloud_init, firmware, secure_boot, tpm, no_rng,
-                    machine_type, eviction_strategy, labels: label,
-                    from_file, dry_run, start,
+                    template,
+                    cpus,
+                    memory,
+                    disks: disk,
+                    cdrom,
+                    networks: network,
+                    cloud_init,
+                    firmware,
+                    secure_boot,
+                    tpm,
+                    no_rng,
+                    machine_type,
+                    eviction_strategy,
+                    labels: label,
+                    from_file,
+                    dry_run,
+                    start,
                 },
-            ).await?;
+            )
+            .await?;
         }
         Commands::VrvmApply { file, dry_run } => {
             handlers::crds::handle_vrvm_apply(&cli.namespace, &file, dry_run).await?;
@@ -1580,7 +1621,9 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                     .with_prompt(format!("Delete VMRogueVM '{}'?", name))
                     .default(false)
                     .interact()?;
-                if !confirmed { return Ok(()); }
+                if !confirmed {
+                    return Ok(());
+                }
             }
             handlers::crds::handle_vrvm_delete(&cli.namespace, &name).await?;
         }

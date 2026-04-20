@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -72,12 +76,7 @@ async fn list_slo_objectives(
     let total = vms.len() as f64;
     let running = vms
         .iter()
-        .filter(|vm| {
-            vm.status
-                .as_ref()
-                .and_then(|s| s.ready)
-                .unwrap_or(false)
-        })
+        .filter(|vm| vm.status.as_ref().and_then(|s| s.ready).unwrap_or(false))
         .count() as f64;
 
     let availability = if total > 0.0 {
@@ -132,10 +131,15 @@ async fn list_slo_burn_rates(
     }
 
     let total = vms.len() as f64;
-    let running = vms.iter()
+    let running = vms
+        .iter()
         .filter(|vm| vm.status.as_ref().and_then(|s| s.ready).unwrap_or(false))
         .count() as f64;
-    let availability = if total > 0.0 { running / total * 100.0 } else { 100.0 };
+    let availability = if total > 0.0 {
+        running / total * 100.0
+    } else {
+        100.0
+    };
 
     let target = 99.9_f64;
     let budget_total = 100.0 - target;

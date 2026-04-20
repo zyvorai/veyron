@@ -44,7 +44,9 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(header, chunks[0]);
 
     // Eligible VMs for migration (running VMs)
-    let running_vms: Vec<&crate::tui::state::VmInfo> = state.vms.iter()
+    let running_vms: Vec<&crate::tui::state::VmInfo> = state
+        .vms
+        .iter()
         .filter(|vm| vm.status == "Running")
         .collect();
 
@@ -58,7 +60,13 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         ("4. Confirm", false),
         ("5. Migrate", false),
     ];
-    let current_step = if has_vms && has_nodes { 2 } else if has_vms { 1 } else { 0 };
+    let current_step = if has_vms && has_nodes {
+        2
+    } else if has_vms {
+        1
+    } else {
+        0
+    };
 
     let step_spans: Vec<Span> = steps
         .iter()
@@ -179,13 +187,13 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(vm_widget, content_chunks[0]);
 
     // Right panel: migration details for first running VM
-    let mut details = vec![
-        Line::from(""),
-    ];
+    let mut details = vec![Line::from("")];
 
     if let Some(vm) = running_vms.first() {
         // Find a target node different from the VM's current node
-        let target_node = state.nodes.iter()
+        let target_node = state
+            .nodes
+            .iter()
             .find(|n| n.name != vm.node && n.status == "Ready")
             .map(|n| n.name.as_str())
             .unwrap_or("N/A");
@@ -230,7 +238,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled("  Ready:       ", Style::default().fg(Color::Gray)),
             Span::styled(
                 if vm.ready { "Yes" } else { "No" },
-                Style::default().fg(if vm.ready { Color::Rgb(50, 205, 50) } else { Color::Rgb(255, 200, 0) }),
+                Style::default().fg(if vm.ready {
+                    Color::Rgb(50, 205, 50)
+                } else {
+                    Color::Rgb(255, 200, 0)
+                }),
             ),
         ]));
 
@@ -252,7 +264,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         } else {
             details.push(Line::from(vec![
                 Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
-                Span::styled("No alternative target node", Style::default().fg(Color::White)),
+                Span::styled(
+                    "No alternative target node",
+                    Style::default().fg(Color::White),
+                ),
             ]));
         }
 

@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -57,7 +61,11 @@ async fn list_predictions(
 
     // Use running ratio as a proxy for growth pressure:
     // high ratio → more VMs likely to be provisioned → higher growth rate estimate.
-    let running_ratio = if total_vms > 0.0 { running_vms / total_vms } else { 0.0 };
+    let running_ratio = if total_vms > 0.0 {
+        running_vms / total_vms
+    } else {
+        0.0
+    };
     let growth_rate = if running_ratio > 0.9 {
         1.20 // cluster under pressure, fast growth expected
     } else if running_ratio > 0.7 {
@@ -121,9 +129,18 @@ async fn list_predictions(
             predicted_value: ((running_ratio * growth_rate).min(1.0) * 100.0 * 10.0).round() / 10.0,
             confidence: 0.80,
             prediction_window: "24h".to_string(),
-            trend: if running_ratio > 0.85 { "increasing" } else { "stable" }.to_string(),
+            trend: if running_ratio > 0.85 {
+                "increasing"
+            } else {
+                "stable"
+            }
+            .to_string(),
             alert_threshold: Some(90.0),
-            estimated_breach: if running_ratio > 0.85 { Some("~24h".to_string()) } else { None },
+            estimated_breach: if running_ratio > 0.85 {
+                Some("~24h".to_string())
+            } else {
+                None
+            },
         },
     ];
 

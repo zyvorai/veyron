@@ -275,8 +275,7 @@ impl EncryptionManager {
             .iv
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Missing IV"))?;
-        let iv_bytes =
-            hex::decode(iv).map_err(|e| anyhow::anyhow!("Invalid IV hex: {}", e))?;
+        let iv_bytes = hex::decode(iv).map_err(|e| anyhow::anyhow!("Invalid IV hex: {}", e))?;
 
         // Verify tag
         use std::collections::hash_map::DefaultHasher;

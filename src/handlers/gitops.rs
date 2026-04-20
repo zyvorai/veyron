@@ -32,16 +32,8 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
     let mut exported_files = Vec::new();
 
     for vm in &vms {
-        let vm_name = vm
-            .metadata
-            .name
-            .as_deref()
-            .unwrap_or("unknown");
-        let vm_namespace = vm
-            .metadata
-            .namespace
-            .as_deref()
-            .unwrap_or(namespace);
+        let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
+        let vm_namespace = vm.metadata.namespace.as_deref().unwrap_or(namespace);
 
         // Extract CPU cores from the VM spec
         let cpu_cores = vm
@@ -123,9 +115,7 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
                             if vol.container_disk.is_some() {
                                 (
                                     "containerDisk".to_string(),
-                                    vol.container_disk
-                                        .as_ref()
-                                        .map(|cd| cd.image.clone()),
+                                    vol.container_disk.as_ref().map(|cd| cd.image.clone()),
                                 )
                             } else if vol.persistent_volume_claim.is_some() {
                                 ("pvc".to_string(), None)
@@ -144,9 +134,7 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
                             .and_then(|v| v.empty_disk.as_ref().map(|e| e.capacity.clone()))
                             .unwrap_or_else(|| "20Gi".to_string());
 
-                        let boot_order = d
-                            .boot_order
-                            .unwrap_or(0);
+                        let boot_order = d.boot_order.unwrap_or(0);
 
                         CRDDiskSpec {
                             name: disk_name,
@@ -223,7 +211,10 @@ pub async fn handle_gitops_diff(directory: String, namespace: &str) -> Result<()
     let dir_path = std::path::Path::new(&directory);
 
     if !dir_path.exists() {
-        println!("  {}", color::warning("Directory does not exist. Run 'vmrogue gitops-export' first."));
+        println!(
+            "  {}",
+            color::warning("Directory does not exist. Run 'vmrogue gitops-export' first.")
+        );
         return Ok(());
     }
 
@@ -242,7 +233,11 @@ pub async fn handle_gitops_diff(directory: String, namespace: &str) -> Result<()
     if let Ok(entries) = std::fs::read_dir(dir_path) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map(|e| e == "yaml" || e == "yml").unwrap_or(false) {
+            if path
+                .extension()
+                .map(|e| e == "yaml" || e == "yml")
+                .unwrap_or(false)
+            {
                 if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
                     dir_names.insert(stem.to_string());
                 }
@@ -265,13 +260,25 @@ pub async fn handle_gitops_diff(directory: String, namespace: &str) -> Result<()
 
     println!("  Synced:       {} VMs", in_both);
     if !in_cluster_only.is_empty() {
-        println!("  {}", color::warning(&format!("Cluster only: {} VMs (not exported)", in_cluster_only.len())));
+        println!(
+            "  {}",
+            color::warning(&format!(
+                "Cluster only: {} VMs (not exported)",
+                in_cluster_only.len()
+            ))
+        );
         for name in &in_cluster_only {
             println!("    + {}", color::vm_name(name));
         }
     }
     if !in_dir_only.is_empty() {
-        println!("  {}", color::warning(&format!("Directory only: {} manifests (not in cluster)", in_dir_only.len())));
+        println!(
+            "  {}",
+            color::warning(&format!(
+                "Directory only: {} manifests (not in cluster)",
+                in_dir_only.len()
+            ))
+        );
         for name in &in_dir_only {
             println!("    - {}", name);
         }

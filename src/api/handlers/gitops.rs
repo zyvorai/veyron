@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::{get, post}};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -56,17 +60,21 @@ async fn get_gitops_status(
 
     let (repo_url, branch, last_commit, last_synced, stored_vm_count) =
         if let Ok(cms) = api.list(&params).await {
-            cms.items.first().and_then(|cm| {
-                let data = cm.data.as_ref()?;
-                Some((
-                    data.get("repo_url").cloned().unwrap_or_default(),
-                    data.get("branch").cloned().unwrap_or_else(|| "main".to_string()),
-                    data.get("last_commit").cloned().unwrap_or_default(),
-                    data.get("last_synced").cloned(),
-                    data.get("vm_count").and_then(|v| v.parse::<usize>().ok()),
-                ))
-            })
-            .unwrap_or_default()
+            cms.items
+                .first()
+                .and_then(|cm| {
+                    let data = cm.data.as_ref()?;
+                    Some((
+                        data.get("repo_url").cloned().unwrap_or_default(),
+                        data.get("branch")
+                            .cloned()
+                            .unwrap_or_else(|| "main".to_string()),
+                        data.get("last_commit").cloned().unwrap_or_default(),
+                        data.get("last_synced").cloned(),
+                        data.get("vm_count").and_then(|v| v.parse::<usize>().ok()),
+                    ))
+                })
+                .unwrap_or_default()
         } else {
             Default::default()
         };
@@ -145,7 +153,10 @@ async fn trigger_sync(
 
     log::info!(
         "GitOps sync triggered: dry_run={}, force={}, namespace={}, vms={}",
-        req.dry_run, req.force, namespace, vms.len()
+        req.dry_run,
+        req.force,
+        namespace,
+        vms.len()
     );
 
     (

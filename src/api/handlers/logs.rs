@@ -80,7 +80,10 @@ fn parse_log_line(line: &str, source: &str) -> LogEntry {
             } else {
                 token.to_string()
             };
-            message = message[token.len()..].trim_start_matches(&[' ', ':', '-'][..]).trim_start().to_string();
+            message = message[token.len()..]
+                .trim_start_matches(&[' ', ':', '-'][..])
+                .trim_start()
+                .to_string();
             break;
         }
     }

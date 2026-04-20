@@ -73,7 +73,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     }
 
     let safe_div = |num: usize, den: usize| -> u16 {
-        if den == 0 { 100 } else { ((num as f64 / den as f64) * 100.0).round() as u16 }
+        if den == 0 {
+            100
+        } else {
+            ((num as f64 / den as f64) * 100.0).round() as u16
+        }
     };
 
     let resource_pct = safe_div(has_resource_limits, total_vms);
@@ -82,9 +86,13 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let node_pct = safe_div(has_node_assignment, total_vms);
 
     let gauge_color = |pct: u16| -> Color {
-        if pct >= 90 { Color::Rgb(50, 205, 50) }
-        else if pct >= 70 { Color::Rgb(255, 200, 0) }
-        else { Color::Rgb(220, 50, 47) }
+        if pct >= 90 {
+            Color::Rgb(50, 205, 50)
+        } else if pct >= 70 {
+            Color::Rgb(255, 200, 0)
+        } else {
+            Color::Rgb(220, 50, 47)
+        }
     };
 
     // Framework gauges
@@ -139,51 +147,55 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let rows: Vec<Row> = state.vms.iter().map(|vm| {
-        let has_limits = vm.cpu != "1 core" || vm.memory != "Unknown";
-        let has_eviction = vm.status == "Running" || vm.status == "Stopped";
-        let has_storage = vm.disk != "None";
+    let rows: Vec<Row> = state
+        .vms
+        .iter()
+        .map(|vm| {
+            let has_limits = vm.cpu != "1 core" || vm.memory != "Unknown";
+            let has_eviction = vm.status == "Running" || vm.status == "Stopped";
+            let has_storage = vm.disk != "None";
 
-        let pass_fail = |ok: bool| -> (&str, Color) {
-            if ok {
-                ("PASS", Color::Rgb(50, 205, 50))
-            } else {
-                ("FAIL", Color::Rgb(220, 50, 47))
-            }
-        };
+            let pass_fail = |ok: bool| -> (&str, Color) {
+                if ok {
+                    ("PASS", Color::Rgb(50, 205, 50))
+                } else {
+                    ("FAIL", Color::Rgb(220, 50, 47))
+                }
+            };
 
-        let (limits_text, limits_color) = pass_fail(has_limits);
-        let (eviction_text, eviction_color) = pass_fail(has_eviction);
-        let (storage_text, storage_color) = pass_fail(has_storage);
+            let (limits_text, limits_color) = pass_fail(has_limits);
+            let (eviction_text, eviction_color) = pass_fail(has_eviction);
+            let (storage_text, storage_color) = pass_fail(has_storage);
 
-        let status_color = match vm.status.as_str() {
-            "Running" => Color::Rgb(50, 205, 50),
-            "Stopped" => Color::Rgb(255, 200, 0),
-            "Failed" | "Error" => Color::Rgb(220, 50, 47),
-            _ => Color::Gray,
-        };
+            let status_color = match vm.status.as_str() {
+                "Running" => Color::Rgb(50, 205, 50),
+                "Stopped" => Color::Rgb(255, 200, 0),
+                "Failed" | "Error" => Color::Rgb(220, 50, 47),
+                _ => Color::Gray,
+            };
 
-        Row::new(vec![
-            Cell::from(vm.name.as_str()).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
-            Cell::from(limits_text).style(
-                Style::default()
-                    .fg(limits_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Cell::from(eviction_text).style(
-                Style::default()
-                    .fg(eviction_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Cell::from(storage_text).style(
-                Style::default()
-                    .fg(storage_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ])
-        .height(1)
-    }).collect();
+            Row::new(vec![
+                Cell::from(vm.name.as_str()).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+                Cell::from(vm.status.as_str()).style(Style::default().fg(status_color)),
+                Cell::from(limits_text).style(
+                    Style::default()
+                        .fg(limits_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Cell::from(eviction_text).style(
+                    Style::default()
+                        .fg(eviction_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Cell::from(storage_text).style(
+                    Style::default()
+                        .fg(storage_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(25),
@@ -206,7 +218,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(Span::styled(
-                    format!(" Compliance Controls ({} VMs, Score: {}%) ", total_vms, overall_score),
+                    format!(
+                        " Compliance Controls ({} VMs, Score: {}%) ",
+                        total_vms, overall_score
+                    ),
                     Style::default()
                         .fg(Color::Rgb(222, 115, 86))
                         .add_modifier(Modifier::BOLD),

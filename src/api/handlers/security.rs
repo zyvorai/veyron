@@ -64,8 +64,18 @@ async fn get_security_posture(State(state): State<SharedState>) -> Json<Security
         }
 
         // High: no resource limits (resource exhaustion risk)
-        let has_resources = domain.resources.requests.as_ref().map(|m| !m.is_empty()).unwrap_or(false)
-            || domain.resources.limits.as_ref().map(|m| !m.is_empty()).unwrap_or(false);
+        let has_resources = domain
+            .resources
+            .requests
+            .as_ref()
+            .map(|m| !m.is_empty())
+            .unwrap_or(false)
+            || domain
+                .resources
+                .limits
+                .as_ref()
+                .map(|m| !m.is_empty())
+                .unwrap_or(false);
         if !has_resources {
             high += 1;
         }
@@ -137,9 +147,14 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
                 severity: "Critical".to_string(),
                 category: "Network".to_string(),
                 title: "Host network access enabled".to_string(),
-                description: format!("VM '{}' uses the host network, bypassing network isolation", vm_name),
+                description: format!(
+                    "VM '{}' uses the host network, bypassing network isolation",
+                    vm_name
+                ),
                 resource: format!("{}/{}", s.namespace, vm_name),
-                recommendation: "Remove host network binding and use a dedicated VM network interface".to_string(),
+                recommendation:
+                    "Remove host network binding and use a dedicated VM network interface"
+                        .to_string(),
                 detected_at: now.clone(),
             });
         }
@@ -172,7 +187,12 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
             });
         }
 
-        let has_limits = domain.resources.limits.as_ref().map(|m| !m.is_empty()).unwrap_or(false);
+        let has_limits = domain
+            .resources
+            .limits
+            .as_ref()
+            .map(|m| !m.is_empty())
+            .unwrap_or(false);
         if !has_limits {
             id_counter += 1;
             findings.push(SecurityFinding {

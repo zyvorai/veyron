@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Path, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -96,7 +100,8 @@ async fn get_pod_logs(
     use kube::api::LogParams;
 
     let s = state.read().await;
-    let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let pods_api: kube::api::Api<Pod> =
+        kube::api::Api::namespaced(s.client().client(), &s.namespace);
 
     let params = LogParams {
         tail_lines: Some(100),

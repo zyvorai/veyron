@@ -55,7 +55,12 @@ async fn list_namespaces(State(state): State<SharedState>) -> Json<Vec<Namespace
                     .as_ref()
                     .map(|t| t.0.to_rfc3339())
                     .unwrap_or_default(),
-                labels: meta.labels.clone().unwrap_or_default().into_iter().collect(),
+                labels: meta
+                    .labels
+                    .clone()
+                    .unwrap_or_default()
+                    .into_iter()
+                    .collect(),
             }
         })
         .collect();

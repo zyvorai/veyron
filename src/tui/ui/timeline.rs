@@ -89,9 +89,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                     "Killing" | "Deleted" | "FailedCreate" => {
                         (Color::Rgb(220, 50, 47), Color::Rgb(220, 50, 47))
                     }
-                    "Scheduled" | "Pulled" | "Pulling" => {
-                        (Color::Rgb(100, 150, 255), Color::White)
-                    }
+                    "Scheduled" | "Pulled" | "Pulling" => (Color::Rgb(100, 150, 255), Color::White),
                     _ => (Color::Rgb(222, 115, 86), Color::White),
                 },
             };
@@ -159,9 +157,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled("  Type:     ", Style::default().fg(Color::Gray)),
             Span::styled(
                 event.event_type.as_str(),
-                Style::default()
-                    .fg(type_color)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(type_color).add_modifier(Modifier::BOLD),
             ),
         ]));
         details.push(Line::from(vec![
