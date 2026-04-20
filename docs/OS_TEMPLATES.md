@@ -112,8 +112,8 @@ arch            # Rolling release (2 CPU, 2GB RAM)
 windows         # Latest (Server 2022)
 windows-2022    # Windows Server 2022 (4 CPU, 8GB RAM, 60GB disk)
 windows-2019    # Windows Server 2019 (4 CPU, 8GB RAM, 60GB disk)
-windows-11      # Windows 11 (4 CPU dual socket, 4GB RAM, 80GB disk)
-windows-10      # Windows 10 (4 CPU, 8GB RAM, 60GB disk)
+windows-11      # Windows 11 (8 vCPU = 4 cores × 2 sockets, 4GB RAM, 16GB disk — lab defaults; increase for production)
+windows-10      # Windows 10 (4 vCPU, 8GB RAM, 60GB disk)
 ```
 **Note**: Requires Windows license and installation media. The built-in templates attach the `virtio-win` driver disk, but they do not bundle a Windows installer ISO or preinstalled OS image.
 
@@ -217,8 +217,10 @@ vmrogue templates
 | freebsd-14 | 2 | 2Gi | 20Gi | - | BSD Unix, ZFS |
 | flatcar | 2 | 2Gi | 20Gi | vmrogue/vmrogue | Containers |
 | talos | 2 | 4Gi | 20Gi | - | Kubernetes nodes |
-| windows-2022 | 4 | 8Gi | 60Gi | - | Windows Server |
-| windows-11 | 4 | 4Gi | 80Gi | - | Windows Desktop |
+| windows-2022 | 4 | 8Gi | 60Gi | - | Windows Server; TPM in template |
+| windows-2019 | 4 | 8Gi | 60Gi | - | Windows Server |
+| windows-10 | 4 | 8Gi | 60Gi | - | Windows desktop |
+| windows-11 | 8 (4×2×1) | 4Gi | 16Gi | - | Win11; Secure Boot + TPM; **raise RAM/disk** for real installs |
 
 ## 🎯 Use Case Guide
 

@@ -24,6 +24,22 @@ The `windows`, `windows-2022`, `windows-2019`, `windows-11`, and `windows-10` en
 
 **Not in VMRogue source** (by design — guest or pipeline work): Audit Mode / **Sysprep**, **Cloudbase‑Init** `cloudbase-init.conf`, **`cloudInitConfigDrive`** `userData` snippets, **KMS/slmgr** automation, registry driver‑block lists, **`host-passthrough`** / **`dedicatedCpuPlacement`** defaults for Windows (you can still set CPU model / sockets in `VMConfig` / YAML when you generate manifests). Use this document and your GitOps for those layers.
 
+### Built-in template names: Server 2022 / 2019, Windows 11 / 10
+
+All of the following use the same **`windows_features()`** and **`windows_clock()`** presets, virtio **driver CDROM**, virtio **NIC**, **RNG**, **USB tablet**, **balloon off**, **`io_threads_policy("shared")`**, **`q35`**, and **SATA** blank root disk — only the columns below differ (`src/templates/mod.rs`).
+
+| Template key | Guest OS | vCPU layout `(cores, sockets, threads)` | RAM | Root disk | UEFI Secure Boot | vTPM |
+|--------------|-----------|------------------------------------------|-----|------------|------------------|------|
+| `windows` | alias → 2022 | 4, 1, 1 | 8Gi | 60Gi | off (`uefi_firmware`) | yes |
+| `windows-2022` | Windows Server 2022 | 4, 1, 1 | 8Gi | 60Gi | off | yes |
+| `windows-2019` | Windows Server 2019 | 4, 1, 1 | 8Gi | 60Gi | off | no |
+| `windows-10` | Windows 10 | 4, 1, 1 | 8Gi | 60Gi | off | no |
+| `windows-11` | Windows 11 | 4, 2, 1 → **8** logical CPUs | **4Gi** | **16Gi** | **on** (`uefi_secure_boot_firmware`, persistent) | yes |
+
+**Windows 11 template note:** Defaults are intentionally **small** (4Gi RAM, 16Gi disk) for CI/lab-style VMs. For real desktops, override at create time (e.g. `vmrogue create … --memory 8Gi` and a larger disk/PVC) or fork the template — Microsoft’s own minimums are higher than 4Gi/16Gi for comfortable installs.
+
+**Windows 10 vs 2019 vs 2022:** Same shape as each other except **2022** adds **`enable_tpm()`** in the builder chain; **2019** and **10** omit TPM in the default template (you can still enable TPM in YAML if your platform supports it for those SKUs).
+
 ---
 
 ## Part 1: Prerequisites and planning
