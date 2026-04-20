@@ -727,9 +727,12 @@ pub mod web {
             // Health
             .route("/api/v1/health", get(health_handler))
             .with_state(state.clone())
-            // Merge handler sub-routers (real K8s data + stubs)
-            // Merged after .with_state() because handler routers manage their own state
-            .merge(crate::api::handlers::all_routes(state.clone()))
+            // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
+            // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.
+            .merge(Router::new().nest(
+                "/api/v1",
+                crate::api::handlers::all_routes(state.clone()),
+            ))
             // Layers applied in reverse order (outermost = last .layer() call)
             .layer(middleware::from_fn(security_headers_middleware))
             .layer(middleware::from_fn_with_state(
