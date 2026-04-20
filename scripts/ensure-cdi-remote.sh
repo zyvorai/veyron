@@ -3,6 +3,7 @@
 # ensure-cdi-remote.sh — Install CDI on a remote cluster when DataVolume CRD is missing
 # ============================================================================
 # Invoked over SSH; requires outbound HTTPS to GitHub for release manifests.
+# Works on k3s and on generic Kubernetes nodes where kubectl reaches the cluster API.
 #
 # Usage:
 #   ./scripts/ensure-cdi-remote.sh <user@host> [cdi-version]

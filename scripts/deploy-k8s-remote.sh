@@ -15,6 +15,7 @@
 # Optional environment (local):
 #   VMROGUE_SKIP_CDI=1       — do not install CDI when the DataVolume CRD is missing
 #   VMROGUE_CDI_VERSION=v1.65.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
+#   VMROGUE_CONTAINER_RUNTIME_IMPORT — full shell command that reads OCI/docker tar on stdin (default: k3s ctr import, or ctr -n k8s.io for plain kubectl)
 # ============================================================================
 
 set -euo pipefail
@@ -34,7 +35,31 @@ info()  { echo "  [✓] $*"; }
 step()  { echo ""; echo "  --- $*"; }
 error() { echo "  [✗] $*"; exit 1; }
 
-K="sudo /usr/local/bin/k3s kubectl"
+# Remote cluster: k3s (bundled kubectl + ctr) vs generic Kubernetes (kubectl + containerd ctr).
+REMOTE_K8S_FLAVOR=$(ssh "${USER}@${HOST}" '
+  if [ -x /usr/local/bin/k3s ]; then echo k3s_std
+  elif command -v k3s >/dev/null 2>&1; then echo k3s_path
+  elif command -v kubectl >/dev/null 2>&1; then echo kubectl
+  else echo none
+  fi' | tr -d '\r')
+case "${REMOTE_K8S_FLAVOR}" in
+  k3s_std)
+    K="sudo /usr/local/bin/k3s kubectl"
+    IMPORT_DEFAULT="sudo /usr/local/bin/k3s ctr images import -"
+    ;;
+  k3s_path)
+    K="sudo k3s kubectl"
+    IMPORT_DEFAULT="sudo k3s ctr images import -"
+    ;;
+  kubectl)
+    K="kubectl"
+    IMPORT_DEFAULT="sudo ctr -n k8s.io images import -"
+    ;;
+  *)
+    error "Neither k3s nor kubectl found on ${USER}@${HOST} (install a cluster CLI or use a registry-based image flow)"
+    ;;
+esac
+IMPORT_CMD="${VMROGUE_CONTAINER_RUNTIME_IMPORT:-${IMPORT_DEFAULT}}"
 
 echo ""
 echo "  ============================================"
@@ -42,6 +67,8 @@ echo "    VMRogue K8s Deployment"
 echo "  ============================================"
 echo ""
 echo "  Host:      ${USER}@${HOST}"
+echo "  Cluster:   ${REMOTE_K8S_FLAVOR} (kubectl: ${K})"
+echo "  Image import pipe:  ${IMPORT_CMD}"
 echo "  Namespace: ${NS}"
 echo "  HTTPS NodePort: ${NODE_PORT} (Service targets TLS :5151 in the pod)"
 echo "  API Key:        ${API_KEY}"
@@ -71,12 +98,12 @@ ssh "${USER}@${HOST}" "
     cd ${REMOTE_DIR}
     cp target/release/vmrogue /tmp/vmrogue-binary
     podman build --format docker -t localhost/vmrogue:latest -f Dockerfile.deploy /tmp 2>&1 | tail -3
-    podman save localhost/vmrogue:latest | sudo /usr/local/bin/k3s ctr images import - 2>&1
-"
+    podman save localhost/vmrogue:latest | ${IMPORT_CMD} 2>&1
+" || error "Image import failed (non-k3s: install containerd ctr, set VMROGUE_CONTAINER_RUNTIME_IMPORT, or push to a registry and adjust the Deployment image / pullPolicy)"
 info "Container image built and imported"
 
 # ── Step 4: CDI (DataVolume / import) when missing ──
-# KubeVirt disk pipelines and examples often need CDI; installing it here avoids a separate manual step on fresh k3s nodes.
+# KubeVirt disk pipelines and examples often need CDI; installing it here avoids a separate manual step on fresh clusters.
 step "Step 4/6: Ensuring CDI (containerized-data-importer)"
 if [[ "${SKIP_CDI}" == "1" ]]; then
   info "Skipped CDI install (VMROGUE_SKIP_CDI=1)"
