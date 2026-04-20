@@ -65,21 +65,17 @@ pub fn all_routes(
 ) -> axum::Router {
     axum::Router::new()
         // Real K8s data handlers (wired to KubeClient via SharedState)
+        // NOTE: pods, nodes, events, namespaces, snapshots, templates are served from
+        // `http_server.rs` under `/api/v1/...` (ApiResponse envelope); do not merge here or routes duplicate after nest.
         .merge(vmis::router(state.clone()))
-        .merge(pods::router(state.clone()))
-        .merge(nodes::router(state.clone()))
-        .merge(events::router(state.clone()))
-        .merge(namespaces::router(state.clone()))
         .merge(metrics::router(state.clone()))
         .merge(costs::router(state.clone()))
         .merge(crds::router(state.clone()))
-        .merge(snapshots::router(state.clone()))
         .merge(logs::router(state.clone()))
         .merge(migrations::router(state.clone()))
         .merge(storage::router(state.clone()))
         .merge(disks::router(state.clone()))
         .merge(network::router(state.clone()))
-        .merge(health::router(state.clone()))
         .merge(topology::router(state.clone()))
         .merge(dependencies::router(state.clone()))
         // K8s-wired handlers (Phase 2)
@@ -117,6 +113,4 @@ pub fn all_routes(
         .merge(incidents::router(state.clone()))
         // RDP (VM discovery + config, proxy requires external gateway)
         .merge(rdp::router(state.clone()))
-        // Static handlers
-        .merge(templates::router())
 }
