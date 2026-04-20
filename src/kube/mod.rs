@@ -399,6 +399,14 @@ impl KubeClient {
         Ok(pod_list.items)
     }
 
+    /// List pods in all namespaces (for `namespace=all` dashboards).
+    pub async fn list_all_pods(&self) -> Result<Vec<k8s_openapi::api::core::v1::Pod>> {
+        let pods: Api<k8s_openapi::api::core::v1::Pod> = Api::all(self.client.clone());
+        let lp = ListParams::default();
+        let pod_list = pods.list(&lp).await?;
+        Ok(pod_list.items)
+    }
+
     /// List events in a namespace
     pub async fn list_events(
         &self,
