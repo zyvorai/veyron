@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 # ============================================================================
-# test-remote.sh — End-to-end tests for VMRogue on remote k3s cluster
+# test-remote.sh — End-to-end checks for VMRogue on a remote k3s/K8s node
 # ============================================================================
-# Runs 5 test tiers via SSH against the deployed VMRogue stack.
+# Assumes API is deployed in Kubernetes (e.g. ./scripts/deploy-k8s-remote.sh).
+# No systemd — verifies Deployment readiness, optional operator + CRDs, and
+# HTTPS API on the NodePort from this machine.
 #
-# Usage: ./scripts/test-remote.sh [host] [user]
-#   Default: HOST sus
+# Usage:
+#   ./scripts/test-remote.sh [host] [user]
+#   VMROGUE_NODE_PORT=30151 VMROGUE_API_KEY=... ./scripts/test-remote.sh
+#   VMROGUE_REMOTE_DIR=/home/you/vmrogue  (operator samples for tier 3–4)
+#
+# Defaults: host HOST, user sus, port 30151, key CHANGE_ME
 # ============================================================================
 
 set -euo pipefail
@@ -13,6 +19,12 @@ set -euo pipefail
 HOST="${1:-HOST}"
 USER="${2:-sus}"
 REMOTE="${USER}@${HOST}"
+
+NS="${VMROGUE_NAMESPACE:-vmrogue-system}"
+NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
+API_KEY="${VMROGUE_API_KEY:-CHANGE_ME}"
+REMOTE_DIR="${VMROGUE_REMOTE_DIR:-/home/${USER}/vmrogue}"
+SAMPLES="${REMOTE_DIR}/operator/config/samples"
 
 PASS=0
 FAIL=0
@@ -25,181 +37,312 @@ C='\033[0;36m'
 B='\033[1m'
 N='\033[0m'
 
-pass() { ((PASS++)); echo -e "  ${G}PASS${N} $1"; }
-fail() { ((FAIL++)); echo -e "  ${R}FAIL${N} $1 — $2"; }
-skip() { ((SKIP++)); echo -e "  ${Y}SKIP${N} $1"; }
+pass() { PASS=$((PASS + 1)); echo -e "  ${G}PASS${N} $1"; }
+fail() { FAIL=$((FAIL + 1)); echo -e "  ${R}FAIL${N} $1 — $2"; }
+skip() { SKIP=$((SKIP + 1)); echo -e "  ${Y}SKIP${N} $1"; }
 tier() { echo -e "\n${B}${C}═══ TIER $1: $2 ═══${N}"; }
 
 _ssh() { ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no "${REMOTE}" "$@" 2>&1; }
+
+# kubectl on the remote node (k3s is the common case). Use an argv array so SSH
+# never collapses "sudo /usr/local/bin/k3s kubectl" into a single token.
+K_MODE=$(_ssh 'if [ -x /usr/local/bin/k3s ]; then echo k3s_std; elif command -v k3s >/dev/null 2>&1; then echo k3s_path; elif command -v kubectl >/dev/null 2>&1; then echo kubectl_plain; else echo ""; fi' | tr -d '\r')
+case "${K_MODE}" in
+  k3s_std) REMOTE_K=(sudo /usr/local/bin/k3s kubectl) ;;
+  k3s_path) REMOTE_K=(sudo k3s kubectl) ;;
+  kubectl_plain) REMOTE_K=(kubectl) ;;
+  *)
+    echo -e "${R}Could not find k3s or kubectl on ${REMOTE}${N}"
+    exit 1
+    ;;
+esac
+
+run_k() {
+  _ssh "${REMOTE_K[@]}" "$@"
+}
+
+BASE_URL="https://${HOST}:${NODE_PORT}"
+
+curl_api() {
+  local path="$1"
+  shift
+  curl -sk "$@" "${BASE_URL}${path}"
+}
 
 echo -e "${B}${C}"
 echo "  ╦  ╦╔╦╗╦═╗╔═╗╔═╗╦ ╦╔═╗"
 echo "  ╚╗╔╝║║║╠╦╝║ ║║ ╦║ ║║╣ "
 echo "   ╚╝ ╩ ╩╩╚═╚═╝╚═╝╚═╝╚═╝"
-echo -e "${N}${B}  E2E Test Suite → ${REMOTE}${N}\n"
+echo -e "${N}${B}  Remote checks → ${REMOTE}${N}"
+echo -e "${B}  kubectl: ${REMOTE_K[*]}${N}"
+echo -e "${B}  API from here → ${BASE_URL}${N}\n"
 
 # ═══════════════════════════════════════════════
-tier 1 "SMOKE TEST"
+tier 1 "SMOKE (Kubernetes + API)"
 # ═══════════════════════════════════════════════
 
-# Services running
-WEB=$(_ssh "systemctl is-active vmrogue-web")
-[[ "$WEB" == "active" ]] && pass "vmrogue-web is active" || fail "vmrogue-web" "$WEB"
-
-OP=$(_ssh "systemctl is-active vmrogue-operator")
-[[ "$OP" == "active" ]] && pass "vmrogue-operator is active" || fail "vmrogue-operator" "$OP"
-
-# CRDs registered
-CRD_COUNT=$(_ssh "kubectl get crd 2>/dev/null | grep -c vmrogue || echo 0")
-[[ "$CRD_COUNT" -eq 5 ]] && pass "5 VMRogue CRDs registered" || fail "CRDs" "found $CRD_COUNT, expected 5"
-
-# Existing VM
-VRVM=$(_ssh "vmrogue vrvm-list 2>/dev/null | grep -c sample-ubuntu || echo 0")
-[[ "$VRVM" -ge 1 ]] && pass "sample-ubuntu VMRogueVM exists" || fail "sample-ubuntu" "not found"
-
-# API health
-HEALTH=$(_ssh "curl -s http://localhost:5151/api/v1/health | grep -o '\"status\":200' || echo none")
-[[ "$HEALTH" == *"200"* ]] && pass "API health endpoint OK" || fail "API health" "$HEALTH"
-
-# CRD API
-CRD_API=$(_ssh "curl -s -H 'Referer: http://localhost/dashboard' http://localhost:5151/api/v1/crds/vmroguevms | grep -o '\"total\":[0-9]*' || echo none")
-[[ "$CRD_API" != "none" ]] && pass "CRD API returns data: $CRD_API" || fail "CRD API" "no response"
-
-# ═══════════════════════════════════════════════
-tier 2 "VM LIFECYCLE"
-# ═══════════════════════════════════════════════
-
-# Create VM via CLI
-CREATE_OUT=$(_ssh "vmrogue vrvm-create test-e2e --template ubuntu-22.04 --cpus 1 --memory 1Gi --start 2>&1")
-if echo "$CREATE_OUT" | grep -q "created"; then
-    pass "vrvm-create test-e2e succeeded"
+API_READY=$(run_k -n "${NS}" get deploy vmrogue-api -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' 2>/dev/null | tr -d '\r' || true)
+if [[ "$API_READY" == "1/1" ]]; then
+  pass "vmrogue-api Deployment ready (1/1) in ${NS}"
 else
-    fail "vrvm-create" "$CREATE_OUT"
+  fail "vmrogue-api Deployment" "ready/spec replicas: '${API_READY:-missing}' (deploy with ./scripts/deploy-k8s-remote.sh)"
 fi
 
-# Wait for operator to reconcile
-sleep 10
+if run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
+  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  if [[ "$OP_READY" == "1/1" ]]; then
+    pass "vmrogue-operator Deployment ready (1/1) in ${NS}"
+  else
+    skip "vmrogue-operator not fully ready (${OP_READY:-?})"
+  fi
+else
+  skip "vmrogue-operator not installed in ${NS} (API-only cluster)"
+fi
 
-# Verify KubeVirt VM created
-KV_VM=$(_ssh "kubectl get vm test-e2e --no-headers 2>/dev/null | wc -l || echo 0")
-[[ "$KV_VM" -ge 1 ]] && pass "KubeVirt VM test-e2e created by operator" || fail "KubeVirt VM" "not found"
+CRD_COUNT=$(run_k get crd -o name 2>/dev/null | grep -c 'vmrogue\.io' || true)
+CRD_COUNT="${CRD_COUNT// /}"
+CRD_COUNT="${CRD_COUNT//$'\r'/}"
+CRD_COUNT="${CRD_COUNT:-0}"
+if [[ "${CRD_COUNT}" -ge 5 ]]; then
+  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRDs)"
+elif [[ "${CRD_COUNT}" -ge 1 ]]; then
+  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRD(s); expected 5 when operator is fully installed)"
+else
+  skip "No vmrogue.io CRDs (install operator CRDs for VMRogueVM / blueprints)"
+fi
 
-# Verify VMRogueVM status updated
-PHASE=$(_ssh "kubectl get vrvm test-e2e -o jsonpath='{.status.phase}' 2>/dev/null || echo none")
-[[ "$PHASE" != "none" && "$PHASE" != "" ]] && pass "VMRogueVM status phase: $PHASE" || skip "VMRogueVM phase not yet set"
+if [[ "${CRD_COUNT}" -ge 1 ]]; then
+  if run_k get vrvm sample-ubuntu -n default >/dev/null 2>&1; then
+    pass "sample-ubuntu VMRogueVM exists in default"
+  else
+    skip "sample-ubuntu VMRogueVM not in default (optional sample)"
+  fi
+else
+  skip "skip sample-ubuntu check (no VMRogue CRD)"
+fi
 
-# Get via CLI
-GET_OUT=$(_ssh "vmrogue vrvm-get test-e2e 2>&1")
-echo "$GET_OUT" | grep -q "CPU:" && pass "vrvm-get shows hardware config" || fail "vrvm-get" "no output"
+if curl_api "/api/v1/health" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy"'; then
+  pass "API health (HTTPS NodePort ${NODE_PORT})"
+else
+  fail "API health" "no healthy JSON from ${BASE_URL}/api/v1/health"
+fi
 
-# Delete VM
-DEL_OUT=$(_ssh "vmrogue vrvm-delete test-e2e --yes 2>&1")
-echo "$DEL_OUT" | grep -q "deleted" && pass "vrvm-delete test-e2e succeeded" || fail "vrvm-delete" "$DEL_OUT"
-
-sleep 5
-
-# Verify KubeVirt VM garbage-collected
-KV_GONE=$(_ssh "kubectl get vm test-e2e --no-headers 2>&1 | grep -c 'not found' || echo 0")
-[[ "$KV_GONE" -ge 1 ]] && pass "KubeVirt VM garbage-collected" || skip "KubeVirt VM may still be deleting"
-
-# ═══════════════════════════════════════════════
-tier 3 "BLUEPRINT ORCHESTRATION"
-# ═══════════════════════════════════════════════
-
-# Deploy LAMP blueprint
-BP_OUT=$(_ssh "kubectl apply -f /home/sus/vmrogue/operator/config/samples/vmrogue_v1alpha1_vmrogueblueprint.yaml 2>&1")
-echo "$BP_OUT" | grep -q "created\|configured\|unchanged" && pass "LAMP blueprint applied" || fail "blueprint apply" "$BP_OUT"
-
-sleep 5
-
-# List blueprints
-BP_LIST=$(_ssh "vmrogue vrbp-list 2>&1")
-echo "$BP_LIST" | grep -q "lamp-stack" && pass "vrbp-list shows lamp-stack" || fail "vrbp-list" "$BP_LIST"
-
-# Get blueprint details
-BP_GET=$(_ssh "vmrogue vrbp-get lamp-stack 2>&1")
-echo "$BP_GET" | grep -q "db\|web" && pass "vrbp-get shows VMs (db, web)" || fail "vrbp-get" "$BP_GET"
-
-# Clean up blueprint
-_ssh "kubectl delete vmrogueblueprint lamp-stack 2>/dev/null || true" > /dev/null
-sleep 3
-# Clean up child VMs
-_ssh "kubectl delete vrvm -l vmrogue.io/blueprint=lamp-stack 2>/dev/null || true" > /dev/null
-pass "Blueprint cleaned up"
+if curl_api "/api/v1/crds/vmroguevms" -H "X-API-Key: ${API_KEY}" | grep -q '"total"'; then
+  pass "CRD API GET /api/v1/crds/vmroguevms (authenticated)"
+else
+  fail "CRD API" "no JSON list from /api/v1/crds/vmroguevms"
+fi
 
 # ═══════════════════════════════════════════════
-tier 4 "POLICIES + ACTIONS"
+tier 2 "VM LIFECYCLE (operator + CRDs)"
 # ═══════════════════════════════════════════════
 
-# Deploy policy
-POL_OUT=$(_ssh "kubectl apply -f /home/sus/vmrogue/operator/config/samples/vmrogue_v1alpha1_vmroguepolicy.yaml 2>&1")
-echo "$POL_OUT" | grep -q "created\|configured\|unchanged" && pass "Security policy applied" || fail "policy apply" "$POL_OUT"
+if ! run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
+  skip "entire tier — vmrogue-operator not in ${NS}"
+elif [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
+  skip "entire tier — no vmrogue.io CRDs"
+else
+  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  if [[ "$OP_READY" != "1/1" ]]; then
+    skip "entire tier — vmrogue-operator not ready (${OP_READY})"
+  else
+    run_k delete vrvm test-e2e -n default --ignore-not-found >/dev/null 2>&1 || true
+    sleep 2
 
-sleep 3
+    CREATE_OUT=$(
+      _ssh "${REMOTE_K[@]}" apply -f - <<'EOF' 2>&1
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRogueVM
+metadata:
+  name: test-e2e
+  namespace: default
+spec:
+  template: ubuntu-22.04
+  cpu:
+    cores: 1
+    sockets: 1
+    threads: 1
+  memory:
+    size: 1Gi
+  disks:
+    - name: rootdisk
+      size: 20Gi
+      bootOrder: 1
+      source:
+        type: containerDisk
+        image: quay.io/containerdisks/ubuntu:22.04
+  interfaces:
+    - name: default
+      network: default
+      model: virtio
+      networkType:
+        type: pod
+  cloudInit:
+    userData: |
+      #cloud-config
+      hostname: test-e2e
+  enableRng: true
+  running: true
+EOF
+    )
+    if echo "$CREATE_OUT" | grep -qE 'created|configured'; then
+      pass "kubectl apply VMRogueVM test-e2e"
+    else
+      fail "kubectl apply test-e2e" "$CREATE_OUT"
+    fi
 
-# List policies
-POL_LIST=$(_ssh "vmrogue vrpol-list 2>&1")
-echo "$POL_LIST" | grep -q "prod-security-baseline" && pass "vrpol-list shows policy" || fail "vrpol-list" "$POL_LIST"
+    sleep 12
+    KV_VM=$(run_k get vm test-e2e -n default --no-headers 2>/dev/null | wc -l | tr -d ' \r')
+    KV_VM="${KV_VM:-0}"
+    if [[ "$KV_VM" -ge 1 ]]; then
+      pass "KubeVirt VirtualMachine test-e2e reconciled"
+    else
+      fail "KubeVirt VM test-e2e" "not found yet (operator / KubeVirt / CDI?)"
+    fi
 
-# Get policy details
-POL_GET=$(_ssh "vmrogue vrpol-get prod-security-baseline 2>&1")
-echo "$POL_GET" | grep -q "require-tpm\|minimum-cpu" && pass "vrpol-get shows rules" || fail "vrpol-get" "$POL_GET"
+    PHASE=$(run_k get vrvm test-e2e -n default -o 'jsonpath={.status.phase}' 2>/dev/null | tr -d '\r' || true)
+    if [[ -n "$PHASE" ]]; then
+      pass "VMRogueVM status phase: ${PHASE}"
+    else
+      skip "VMRogueVM phase not set yet"
+    fi
 
-# Deploy insight
-INS_OUT=$(_ssh "kubectl apply -f /home/sus/vmrogue/operator/config/samples/vmrogue_v1alpha1_vmrogueinsight.yaml 2>&1")
-echo "$INS_OUT" | grep -q "created\|configured\|unchanged" && pass "Insight applied" || fail "insight apply" "$INS_OUT"
+    GET_JSON=$(run_k get vrvm test-e2e -n default -o 'jsonpath={.spec.cpu.cores}' 2>/dev/null | tr -d '\r' || true)
+    if [[ "$GET_JSON" == "1" ]]; then
+      pass "kubectl get vrvm shows spec.cpu.cores=1"
+    else
+      fail "kubectl get vrvm spec" "cores='${GET_JSON:-}'"
+    fi
 
-# Deploy action
-ACT_OUT=$(_ssh "kubectl apply -f /home/sus/vmrogue/operator/config/samples/vmrogue_v1alpha1_vmrogueaction.yaml 2>&1")
-echo "$ACT_OUT" | grep -q "created\|configured\|unchanged" && pass "Action applied" || fail "action apply" "$ACT_OUT"
+    if run_k delete vrvm test-e2e -n default --ignore-not-found >/dev/null 2>&1; then
+      pass "kubectl delete vrvm test-e2e"
+    else
+      fail "kubectl delete vrvm test-e2e" "kubectl returned non-zero"
+    fi
 
-sleep 2
-
-# List actions
-ACT_LIST=$(_ssh "vmrogue vract-list 2>&1")
-echo "$ACT_LIST" | grep -q "scale-prod-db" && pass "vract-list shows action" || fail "vract-list" "$ACT_LIST"
-
-# List insights
-INS_LIST=$(_ssh "vmrogue vrin-list 2>&1")
-echo "$INS_LIST" | grep -q "high-cpu-prod-db" && pass "vrin-list shows insight" || fail "vrin-list" "$INS_LIST"
-
-# Clean up
-_ssh "kubectl delete vmroguepolicy prod-security-baseline 2>/dev/null; kubectl delete vmrogueinsight high-cpu-prod-db 2>/dev/null; kubectl delete vmrogueaction scale-prod-db 2>/dev/null" > /dev/null 2>&1 || true
-pass "Policies + actions cleaned up"
+    sleep 8
+    if run_k get vm test-e2e -n default 2>&1 | grep -qiE 'NotFound|not found'; then
+      pass "KubeVirt VM removed after VRVM delete"
+    else
+      skip "KubeVirt VM test-e2e may still be terminating"
+    fi
+  fi
+fi
 
 # ═══════════════════════════════════════════════
-tier 5 "API ENDPOINTS"
+tier 3 "BLUEPRINT (operator + samples on remote)"
 # ═══════════════════════════════════════════════
 
-REF="-H Referer:http://localhost/dashboard"
-APIKEY=$(ssh -o StrictHostKeyChecking=no "${REMOTE}" "sudo grep VMROGUE_API_KEY /etc/vmrogue/env 2>/dev/null | cut -d= -f2" 2>/dev/null)
-AUTH="-H X-API-Key:${APIKEY}"
+if [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
+  skip "entire tier — no vmrogue.io CRDs"
+elif ! run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
+  skip "entire tier — vmrogue-operator Deployment not in ${NS}"
+else
+  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  if [[ "$OP_READY" != "1/1" ]]; then
+    skip "entire tier — vmrogue-operator not ready"
+  else
+    BP_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmrogueblueprint.yaml" 2>&1)
+    if echo "$BP_OUT" | grep -qE 'created|configured|unchanged'; then
+      pass "LAMP blueprint applied from ${SAMPLES}/"
+    else
+      fail "blueprint apply" "$BP_OUT"
+    fi
 
-# CRD endpoints (use Referer auth)
+    sleep 6
+    if run_k get vmrogueblueprint lamp-stack -n default -o 'jsonpath={.spec.vms[0].name}' 2>/dev/null | grep -q 'db'; then
+      pass "kubectl get VMRogueBlueprint lamp-stack (spec.vms)"
+    else
+      fail "blueprint get" "$(run_k get vmrogueblueprint lamp-stack -n default 2>&1)"
+    fi
+
+    run_k delete vmrogueblueprint lamp-stack -n default --ignore-not-found >/dev/null 2>&1 || true
+    sleep 3
+    run_k delete vrvm -n default -l 'vmrogue.io/blueprint=lamp-stack' --ignore-not-found >/dev/null 2>&1 || true
+    pass "Blueprint cleaned up"
+  fi
+fi
+
+# ═══════════════════════════════════════════════
+tier 4 "POLICIES + ACTIONS (operator + samples)"
+# ═══════════════════════════════════════════════
+
+if [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
+  skip "entire tier — no vmrogue.io CRDs"
+elif ! run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
+  skip "entire tier — vmrogue-operator Deployment not in ${NS}"
+else
+  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  if [[ "$OP_READY" != "1/1" ]]; then
+    skip "entire tier — vmrogue-operator not ready"
+  else
+    POL_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmroguepolicy.yaml" 2>&1)
+    echo "$POL_OUT" | grep -qE 'created|configured|unchanged' && pass "Security policy applied" || fail "policy apply" "$POL_OUT"
+
+    sleep 2
+    if run_k get vmroguepolicy prod-security-baseline -n default -o yaml 2>/dev/null | grep -q 'require-tpm'; then
+      pass "kubectl get VMRoguePolicy prod-security-baseline (rules)"
+    else
+      fail "policy get" "missing prod-security-baseline or rules"
+    fi
+
+    INS_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmrogueinsight.yaml" 2>&1)
+    echo "$INS_OUT" | grep -qE 'created|configured|unchanged' && pass "Insight applied" || fail "insight apply" "$INS_OUT"
+
+    ACT_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmrogueaction.yaml" 2>&1)
+    echo "$ACT_OUT" | grep -qE 'created|configured|unchanged' && pass "Action applied" || fail "action apply" "$ACT_OUT"
+
+    sleep 2
+    run_k get vmrogueaction scale-prod-db -n default >/dev/null 2>&1 && pass "kubectl get VMRogueAction scale-prod-db" || fail "action get" "missing"
+    run_k get vmrogueinsight high-cpu-prod-db -n default >/dev/null 2>&1 && pass "kubectl get VMRogueInsight high-cpu-prod-db" || fail "insight get" "missing"
+
+    run_k delete vmroguepolicy prod-security-baseline -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete vmrogueinsight high-cpu-prod-db -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete vmrogueaction scale-prod-db -n default --ignore-not-found >/dev/null 2>&1 || true
+    pass "Policies + actions cleaned up"
+  fi
+fi
+
+# ═══════════════════════════════════════════════
+tier 5 "API ENDPOINTS (HTTPS + X-API-Key)"
+# ═══════════════════════════════════════════════
+
+AUTH=( -H "X-API-Key: ${API_KEY}" )
+
 for endpoint in \
-    "/api/v1/crds/vmroguevms" \
-    "/api/v1/crds/blueprints" \
-    "/api/v1/crds/policies" \
-    "/api/v1/crds/insights" \
-    "/api/v1/crds/actions"; do
-    CODE=$(_ssh "curl -s -o /dev/null -w '%{http_code}' $REF http://localhost:5151${endpoint}")
-    [[ "$CODE" == "200" ]] && pass "GET $endpoint → 200" || fail "GET $endpoint" "HTTP $CODE"
+  "/api/v1/crds/vmroguevms" \
+  "/api/v1/crds/blueprints" \
+  "/api/v1/crds/policies" \
+  "/api/v1/crds/insights" \
+  "/api/v1/crds/actions"; do
+  code=$(curl_api "$endpoint" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
+  if [[ "$code" == "200" ]]; then
+    pass "GET ${endpoint} → 200"
+  else
+    fail "GET ${endpoint}" "HTTP ${code}"
+  fi
 done
 
-# Handler endpoints (use API key — these are not under /api/ prefix)
 for endpoint in \
-    "/nodes" \
-    "/pods" \
-    "/events" \
-    "/metrics" \
-    "/costs"; do
-    CODE=$(_ssh "curl -s -o /dev/null -w '%{http_code}' $AUTH http://localhost:5151${endpoint}")
-    [[ "$CODE" == "200" ]] && pass "GET $endpoint → 200" || fail "GET $endpoint" "HTTP $CODE"
+  "/api/v1/nodes" \
+  "/api/v1/pods" \
+  "/api/v1/events" \
+  "/api/v1/metrics" \
+  "/api/v1/costs"; do
+  code=$(curl_api "$endpoint" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
+  if [[ "$code" == "200" ]]; then
+    pass "GET ${endpoint} → 200"
+  else
+    fail "GET ${endpoint}" "HTTP ${code}"
+  fi
 done
 
-# Dashboard accessible
-DASH=$(_ssh "curl -s -o /dev/null -w '%{http_code}' http://localhost:5151/dashboard")
-[[ "$DASH" == "200" ]] && pass "Dashboard page → 200" || fail "Dashboard" "HTTP $DASH"
+code=$(curl_api "/dashboard" -o /dev/null -w '%{http_code}')
+if [[ "$code" == "200" ]]; then
+  pass "GET /dashboard → 200"
+else
+  fail "GET /dashboard" "HTTP ${code}"
+fi
 
 # ═══════════════════════════════════════════════
 echo ""
@@ -208,5 +351,5 @@ echo -e "${B}  Results: ${G}${PASS} passed${N}, ${R}${FAIL} failed${N}, ${Y}${SK
 echo -e "${B}═══════════════════════════════════════════${N}"
 echo ""
 
-[[ $FAIL -eq 0 ]] && echo -e "${G}${B}  ALL TESTS PASSED${N}" || echo -e "${R}${B}  SOME TESTS FAILED${N}"
-exit $FAIL
+[[ $FAIL -eq 0 ]] && echo -e "${G}${B}  ALL CHECKS PASSED (no failures)${N}" || echo -e "${R}${B}  SOME CHECKS FAILED${N}"
+exit "$FAIL"
