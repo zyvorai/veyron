@@ -124,7 +124,7 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ./scripts/deploy-k8s-remote.sh HOST sus
 ```
 
-Builds the container image, pushes to the remote node, and applies K8s manifests via SSH. No systemd required.
+Builds the container image, imports it into the remote node’s container runtime, and applies manifests via SSH. Detects **k3s** (`k3s kubectl` / `k3s ctr`) vs **generic Kubernetes** (`kubectl` + `ctr -n k8s.io`); override the import pipe with `VMROGUE_CONTAINER_RUNTIME_IMPORT` if your runtime differs. No systemd required.
 
 ### Deploy with Helm
 

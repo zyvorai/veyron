@@ -28,7 +28,7 @@ make ci
 ## Deployment
 
 ```bash
-# Build image, import into k3s, deploy to vmrogue-system namespace (installs CDI when the DataVolume CRD is missing; VMROGUE_SKIP_CDI=1 to skip)
+# Build image, import into the node runtime, deploy to vmrogue-system (auto-detects k3s vs kubectl; installs CDI if DataVolume CRD missing — VMROGUE_SKIP_CDI=1 to skip; VMROGUE_CONTAINER_RUNTIME_IMPORT overrides image import)
 ./scripts/deploy-k8s-remote.sh HOST sus
 
 # Full deployment (builds both API + operator images)
