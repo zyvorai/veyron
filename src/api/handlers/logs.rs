@@ -27,8 +27,10 @@ pub struct LogEntry {
 /// Log query parameters
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogQueryParams {
+    pub namespace: Option<String>,
     pub level: Option<String>,
     pub source: Option<String>,
+    #[serde(alias = "q")]
     pub search: Option<String>,
     pub limit: Option<u32>,
     pub start: Option<String>,
@@ -45,6 +47,24 @@ pub fn router(state: SharedState) -> Router {
         .route("/logs", get(list_logs))
         .route("/logs/query", get(query_logs))
         .with_state(state)
+}
+
+/// Dashboard-friendly log bundle (virt-launcher pod logs + simple counters).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogDashboardResponse {
+    pub error_count: u32,
+    pub warn_count: u32,
+    pub info_count: u32,
+    pub total_1h: u32,
+    pub lines: Vec<LogLineDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogLineDto {
+    pub ts: String,
+    pub level: String,
+    pub source: String,
+    pub msg: String,
 }
 
 /// Parse a single log line into a LogEntry.
@@ -97,10 +117,11 @@ fn parse_log_line(line: &str, source: &str) -> LogEntry {
     }
 }
 
-/// Fetch logs from virt-launcher pods in the namespace.
+/// Fetch logs from virt-launcher pods (`kubevirt.io/domain` label).
 #[cfg(feature = "web")]
 async fn fetch_pod_logs(
     state: &SharedState,
+    namespace_scope: &str,
     vm_filter: Option<&str>,
     tail_lines: Option<i64>,
     since_seconds: Option<i64>,
@@ -108,9 +129,12 @@ async fn fetch_pod_logs(
 ) -> Vec<LogEntry> {
     let s = state.read().await;
     let client = s.client().client();
-    let namespace = &s.namespace;
 
-    let pods: Api<Pod> = Api::namespaced(client, namespace);
+    let pods: Api<Pod> = if namespace_scope == "all" {
+        Api::all(client.clone())
+    } else {
+        Api::namespaced(client.clone(), namespace_scope)
+    };
     let lp = ListParams::default().labels("kubevirt.io/domain");
 
     let pod_list = match pods.list(&lp).await {
@@ -169,9 +193,20 @@ async fn fetch_pod_logs(
 }
 
 #[cfg(feature = "web")]
-async fn list_logs(State(state): State<SharedState>) -> Json<Vec<LogEntry>> {
-    let entries = fetch_pod_logs(&state, None, Some(100), None, None).await;
-    Json(entries)
+async fn list_logs(
+    State(state): State<SharedState>,
+    Query(params): Query<LogQueryParams>,
+) -> Json<LogDashboardResponse> {
+    let ns = {
+        let s = state.read().await;
+        params
+            .namespace
+            .clone()
+            .unwrap_or_else(|| s.namespace.clone())
+    };
+    let mut entries = fetch_pod_logs(&state, &ns, None, Some(500), None, None).await;
+    apply_log_filters(&mut entries, &params);
+    Json(build_log_dashboard(entries))
 }
 
 #[cfg(feature = "web")]
@@ -179,9 +214,17 @@ async fn query_logs(
     State(state): State<SharedState>,
     Query(params): Query<LogQueryParams>,
 ) -> Json<Vec<LogEntry>> {
+    let ns = {
+        let s = state.read().await;
+        params
+            .namespace
+            .clone()
+            .unwrap_or_else(|| s.namespace.clone())
+    };
     let tail = params.tail.or(params.limit.map(|l| l as i64));
     let mut entries = fetch_pod_logs(
         &state,
+        &ns,
         params.vm.as_deref(),
         tail,
         params.since,
@@ -189,7 +232,13 @@ async fn query_logs(
     )
     .await;
 
-    // Apply client-side filters
+    apply_log_filters(&mut entries, &params);
+
+    Json(entries)
+}
+
+#[cfg(feature = "web")]
+fn apply_log_filters(entries: &mut Vec<LogEntry>, params: &LogQueryParams) {
     if let Some(ref level_filter) = params.level {
         let uf = level_filter.to_uppercase();
         entries.retain(|e| e.level == uf);
@@ -203,6 +252,35 @@ async fn query_logs(
         let s = search.to_lowercase();
         entries.retain(|e| e.message.to_lowercase().contains(&s));
     }
+}
 
-    Json(entries)
+#[cfg(feature = "web")]
+fn entry_to_dto(e: LogEntry) -> LogLineDto {
+    LogLineDto {
+        ts: if e.timestamp.is_empty() {
+            "-".to_string()
+        } else {
+            e.timestamp
+        },
+        level: e.level,
+        source: e.source,
+        msg: e.message,
+    }
+}
+
+#[cfg(feature = "web")]
+fn build_log_dashboard(entries: Vec<LogEntry>) -> LogDashboardResponse {
+    let error_count = entries.iter().filter(|e| e.level == "ERROR").count() as u32;
+    let warn_count = entries.iter().filter(|e| e.level == "WARN").count() as u32;
+    let info_count = entries.iter().filter(|e| e.level == "INFO").count() as u32;
+    let total_1h = entries.len() as u32;
+    let lines: Vec<LogLineDto> = entries.into_iter().map(entry_to_dto).collect();
+
+    LogDashboardResponse {
+        error_count,
+        warn_count,
+        info_count,
+        total_1h,
+        lines,
+    }
 }

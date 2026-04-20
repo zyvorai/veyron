@@ -48,6 +48,7 @@ async fn get_observability_overview(
     // Check for observability stack services
     let mut metrics_available = false;
     let mut logs_available = false;
+    let mut traces_available = false;
 
     let namespaces = ["monitoring", "logging", "observability", namespace.as_str()];
     for ns in &namespaces {
@@ -63,6 +64,13 @@ async fn get_observability_overview(
                     || name.contains("fluentd")
                 {
                     logs_available = true;
+                }
+                if name.contains("jaeger")
+                    || name.contains("tempo")
+                    || name.contains("otel")
+                    || name.contains("opentelemetry")
+                {
+                    traces_available = true;
                 }
             }
         }
@@ -141,7 +149,12 @@ async fn get_observability_overview(
             "unavailable"
         }
         .to_string(),
-        traces_status: "unavailable".to_string(),
+        traces_status: if traces_available {
+            "active"
+        } else {
+            "derived"
+        }
+        .to_string(),
         total_log_entries: events.len() as u64,
         total_metric_series: vms.len() as u64 * 4,
         total_trace_spans: 0,

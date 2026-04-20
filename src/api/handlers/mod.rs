@@ -44,6 +44,7 @@ pub mod snapshots;
 pub mod storage;
 pub mod templates;
 pub mod topology;
+pub mod traces;
 pub mod vmis;
 pub mod webhooks;
 pub mod workloads;
@@ -111,6 +112,7 @@ pub fn all_routes(
         .merge(chaos_engineering::router(state.clone()))
         .merge(slo::router(state.clone()))
         .merge(incidents::router(state.clone()))
+        .merge(traces::router(state.clone()))
         // RDP (VM discovery + config, proxy requires external gateway)
         .merge(rdp::router(state.clone()))
 }

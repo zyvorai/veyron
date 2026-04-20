@@ -2039,6 +2039,7 @@ pub mod web {
         match crate::snapshots::SnapshotManager::new(&namespace).await {
             Ok(manager) => match manager.list_all_snapshots().await {
                 Ok(snapshots) => {
+                    let ns_for_items = namespace.clone();
                     let items: Vec<SnapshotItem> = snapshots
                         .into_iter()
                         .map(|s| {
@@ -2047,6 +2048,7 @@ pub mod web {
                             SnapshotItem {
                                 name: s.name,
                                 vm_name: s.vm_name,
+                                namespace: ns_for_items.clone(),
                                 status,
                                 ready: s.ready_to_use,
                                 age,
@@ -2080,6 +2082,7 @@ pub mod web {
                             SnapshotItem {
                                 name: s.name,
                                 vm_name: s.vm_name,
+                                namespace: ns.clone(),
                                 status,
                                 ready: s.ready_to_use,
                                 age,
@@ -2122,13 +2125,14 @@ pub mod web {
     #[derive(Deserialize)]
     pub struct EventsQuery {
         pub limit: Option<u32>,
+        pub namespace: Option<String>,
     }
 
     async fn list_events_handler(
         State(state): State<SharedState>,
         Query(query): Query<EventsQuery>,
     ) -> impl IntoResponse {
-        let (client, namespace) = {
+        let (client, default_ns) = {
             let s = state.read().await;
             (s.kube_client.clone(), s.namespace.clone())
         };
@@ -2137,9 +2141,21 @@ pub mod web {
 
         use k8s_openapi::api::core::v1::Event;
         use kube::Api;
-        let events_api: Api<Event> = Api::namespaced(client.client(), &namespace);
-        let lp = kube::api::ListParams::default().limit(limit);
-        match events_api.list(&lp).await {
+        let list_result = if query.namespace.as_deref() == Some("all") {
+            let events_api: Api<Event> = Api::all(client.client());
+            let lp = kube::api::ListParams::default().limit(limit);
+            events_api.list(&lp).await
+        } else {
+            let ns = query
+                .namespace
+                .clone()
+                .unwrap_or_else(|| default_ns.clone());
+            let events_api: Api<Event> = Api::namespaced(client.client(), &ns);
+            let lp = kube::api::ListParams::default().limit(limit);
+            events_api.list(&lp).await
+        };
+
+        match list_result {
             Ok(event_list) => {
                 let items: Vec<EventItem> = event_list
                     .items
@@ -2164,17 +2180,32 @@ pub mod web {
         }
     }
 
-    async fn recent_events_handler(State(state): State<SharedState>) -> impl IntoResponse {
-        let (client, namespace) = {
+    async fn recent_events_handler(
+        State(state): State<SharedState>,
+        Query(query): Query<EventsQuery>,
+    ) -> impl IntoResponse {
+        let (client, default_ns) = {
             let s = state.read().await;
             (s.kube_client.clone(), s.namespace.clone())
         };
 
         use k8s_openapi::api::core::v1::Event;
         use kube::Api;
-        let events_api: Api<Event> = Api::namespaced(client.client(), &namespace);
-        let lp = kube::api::ListParams::default().limit(500);
-        match events_api.list(&lp).await {
+        let list_result = if query.namespace.as_deref() == Some("all") {
+            let events_api: Api<Event> = Api::all(client.client());
+            let lp = kube::api::ListParams::default().limit(500);
+            events_api.list(&lp).await
+        } else {
+            let ns = query
+                .namespace
+                .clone()
+                .unwrap_or_else(|| default_ns.clone());
+            let events_api: Api<Event> = Api::namespaced(client.client(), &ns);
+            let lp = kube::api::ListParams::default().limit(500);
+            events_api.list(&lp).await
+        };
+
+        match list_result {
             Ok(event_list) => {
                 let one_hour_ago = chrono::Utc::now() - chrono::TimeDelta::hours(1);
                 let items: Vec<EventItem> = event_list
@@ -2667,6 +2698,7 @@ pub mod web {
     struct SnapshotItem {
         name: String,
         vm_name: String,
+        namespace: String,
         status: String,
         ready: bool,
         age: String,
