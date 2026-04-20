@@ -2415,7 +2415,13 @@ pub mod web {
         };
         let ns = query.namespace.as_deref().unwrap_or(&namespace);
 
-        match client.list_pods(ns).await {
+        let pods_result = if ns == "all" {
+            client.list_all_pods().await
+        } else {
+            client.list_pods(ns).await
+        };
+
+        match pods_result {
             Ok(pods) => {
                 let items: Vec<PodItem> = pods
                     .iter()

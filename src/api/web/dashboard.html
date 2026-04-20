@@ -2418,7 +2418,7 @@ function parseMemK8s(s) {
 // ── Pods ──
 async function fetchPods() {
   try {
-    const j = await apiJson('/api/v1/pods');
+    const j = await apiJson('/api/v1/pods' + nsParam());
     const pods = asArray(j);
     const el = document.getElementById('pod-list');
     if (pods.length === 0) {
@@ -2448,8 +2448,16 @@ let snapNs = 'default';
 
 function openSnapModalPick() {
   if (vmData.length === 0) { toast('No VMs available', 'error'); return; }
-  const name = prompt('Enter VM name to snapshot:\n\nAvailable: ' + vmData.map(v => v.name).join(', '));
-  if (name) openSnapModalFor('default', name.trim());
+  const name = prompt('Enter VM name to snapshot:\n\nAvailable: ' + vmData.map(v => (v.namespace || 'default') + '/' + v.name).join(', '));
+  if (!name) return;
+  const trimmed = name.trim();
+  const slash = trimmed.indexOf('/');
+  if (slash > 0) {
+    openSnapModalFor(trimmed.slice(0, slash), trimmed.slice(slash + 1));
+    return;
+  }
+  const vm = vmData.find(v => v.name === trimmed);
+  openSnapModalFor((vm && vm.namespace) || 'default', trimmed);
 }
 
 function openSnapModalFor(ns, vmName) {
@@ -3029,7 +3037,8 @@ function setRefreshInterval(val) {
 // Main refresh loop
 function refresh() {
   fetchVMs();
-  fetchEvents(currentPage==='events');
+  if (currentPage === 'events') fetchEvents(true);
+  else fetchEvents(false);
   if (currentPage==='snapshots') fetchSnapshots();
   if (currentPage==='nodes') fetchNodes();
   if (currentPage==='pods') fetchPods();
