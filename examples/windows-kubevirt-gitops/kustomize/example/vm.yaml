@@ -1,5 +1,5 @@
 # Example VirtualMachine: golden disk + cloudInitConfigDrive (Cloudbase-Init friendly).
-# Apply after the DataVolume succeeds: kubectl apply -k ../overlays/example
+# Apply after the DataVolume succeeds: kubectl apply -k kustomize/example
 apiVersion: kubevirt.io/v1
 kind: VirtualMachine
 metadata:

@@ -176,8 +176,8 @@ Publish `win11-golden.final.qcow2` to **HTTPS**, **S3**, or an **internal artifa
 
 See **`examples/windows-kubevirt-gitops/kustomize/`**:
 
-- `base/datavolume.yaml` — HTTP import template.
-- `overlays/example/vm.yaml` — **`cloudInitConfigDrive`** with `#ps1_sysnative` userData (Cloudbase-Init–friendly).
+- `kustomize/example/datavolume.yaml` — HTTP import template.
+- `kustomize/example/vm.yaml` — **`cloudInitConfigDrive`** with `#ps1_sysnative` userData (Cloudbase-Init–friendly).
 
 **Important:** `userData` for Windows + Cloudbase-Init is usually **PowerShell** with a `#ps1_sysnative` shebang, not Linux **`#cloud-config`**. If you use Cloudbase’s multi-part MIME features, generate that payload in CI.
 
