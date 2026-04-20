@@ -707,6 +707,7 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 - **[docs/DISK_MANAGEMENT.md](docs/DISK_MANAGEMENT.md)** - Disk operations guide
 - **[docs/NETWORK_MANAGEMENT.md](docs/NETWORK_MANAGEMENT.md)** - Network management guide
 - **[docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md)** - Developer SSH / `virtctl` access to KubeVirt VMs
+- **[docs/WINDOWS_KUBEVIRT_PRODUCTION.md](docs/WINDOWS_KUBEVIRT_PRODUCTION.md)** - Windows golden images, Cloudbase-Init, Sysprep, and production VM YAML on KubeVirt
 - **[docs/INTERACTIVE_TUI.md](docs/INTERACTIVE_TUI.md)** - Interactive TUI guide
 - **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
 
