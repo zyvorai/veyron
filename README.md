@@ -708,6 +708,8 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 - **[docs/NETWORK_MANAGEMENT.md](docs/NETWORK_MANAGEMENT.md)** - Network management guide
 - **[docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md)** - Developer SSH / `virtctl` access to KubeVirt VMs
 - **[docs/WINDOWS_KUBEVIRT_PRODUCTION.md](docs/WINDOWS_KUBEVIRT_PRODUCTION.md)** - Windows golden images, Cloudbase-Init, Sysprep, production VM YAML, and **automation** (Packer/GitOps/CDI vs VMRogue `cloud_init` NoCloud) ([printable summary](docs/client-presentations/06-windows-kubevirt-production.html))
+- **[docs/WINDOWS_PACKER_GITOPS_PIPELINE.md](docs/WINDOWS_PACKER_GITOPS_PIPELINE.md)** - Packer + QEMU → QCOW2 → CDI → Kustomize / **`vmrogue generate --kubevirt`** + **`cloudInitConfigDrive`** patch
+- **`examples/windows-kubevirt-gitops/`** - Sample DataVolume + VM manifests and `scripts/patch_kubevirt_configdrive.py`
 - **[docs/INTERACTIVE_TUI.md](docs/INTERACTIVE_TUI.md)** - Interactive TUI guide
 - **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
 
