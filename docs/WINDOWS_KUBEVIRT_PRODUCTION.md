@@ -42,6 +42,55 @@ All of the following use the same **`windows_features()`** and **`windows_clock(
 
 ---
 
+## Automating Windows (golden image → cluster → day two)
+
+Automation splits into **three** layers. VMRogue helps most at **layers 2–3** today; **layer 1** is almost always external CI or a dedicated image factory.
+
+### Layer 1 — Build the generalized disk (outside the cluster or in a builder VM)
+
+Goal: a **sysprep’d** QCOW2/VHDX (or containerdisk) with VirtIO + Cloudbase-Init already baked in.
+
+| Approach | How it runs | Typical outputs |
+|----------|-------------|-----------------|
+| **Packer** + QEMU/KVM | CI runner (Linux) with nested virt or a beefy agent | QCOW2 → upload to S3/OCI → **CDI DataVolume** import URL |
+| **Dedicated “image factory” VM** | Long-lived VM or one-shot **Kubernetes Job** with `/dev/kvm` | Same as above; good when nested virt is awkward |
+| **Manual once + snapshot** | Engineer performs Audit Mode steps; you snapshot PVC / export | Golden PVC name consumed by GitOps |
+
+Automate with: versioned **ISO URLs**, checksums, **Chocolatey/winget** scripts in Audit Mode, and **Pester** tests before Sysprep. Store artifacts in an **OCI registry** or **object storage** your `DataVolume` can import.
+
+### Layer 2 — Declarative VM + volumes on the cluster (GitOps / CI)
+
+- **GitOps (recommended):** Store `VirtualMachine` + `DataVolume`/`PVC` YAML in Git; **Argo CD** / **Flux** applies changes. First-boot **`cloudInitConfigDrive`** `userData` can be rendered from **Helm** values or **Kustomize** `secretGenerator` (never commit passwords).
+- **Secrets:** Use **External Secrets Operator**, **Sealed Secrets**, or CI-injected **short-lived** files that render into `userData` at deploy time only.
+- **VMRogue CLI:** Use **`vmrogue generate`** from a template to bootstrap a manifest, then **patch** in your golden PVC name and a `cloudInitConfigDrive` volume (see example earlier in this doc). **`vmrogue create -f`** applies the final YAML. The **HTTP API** and **batch** routes can drive fleet creates once manifests are templated.
+
+### Layer 3 — Runtime configuration and validation
+
+- **Node selectors / CPU pinning:** Add to generated YAML when you need `dedicatedCpuPlacement` or `host-model` for migration.
+- **Smoke tests:** CI job that waits for **VMI Ready**, then runs **`virtctl ssh`** or an **RDP** probe from a jump namespace.
+- **VMRogue dashboard / API:** Use for visibility (IP, VNC), not for building the golden image itself.
+
+### VMRogue limitation today (important for automation design)
+
+When you set **`cloud_init`** on a `VMConfig`, **`src/kube/converter.rs`** emits **`cloudInitNoCloud`** — ideal for **Linux** cloud-init.
+
+**Windows + Cloudbase-Init** in KubeVirt is commonly paired with **`cloudInitConfigDrive`** (see YAML examples above). That volume type is **not** emitted by the current `VMConfig` schema, so **fully automated “`vmrogue create --template windows-11` + PowerShell userData config drive”** requires either:
+
+1. **Post-process** generated YAML (CI script / Kustomize patch) to swap or add the `cloudInitConfigDrive` volume and disk, or  
+2. A **future VMRogue enhancement** (e.g. optional `cloud_init_config_drive` / Windows-specific volume in `VMConfig`) — contributors welcome.
+
+Until then, treat **config-drive userData** as **GitOps-managed YAML**, not something the Rust templates alone express.
+
+### Minimal automation sketch (GitOps + CDI)
+
+1. Pipeline builds golden QCOW2 → pushes to `https://artifacts.example.com/windows-2022-golden.qcow2`.  
+2. `DataVolume` references that URL; import completes.  
+3. Kustomize sets `spec.template.spec.volumes[].persistentVolumeClaim.claimName` to the imported PVC.  
+4. Same overlay adds `cloudInitConfigDrive` with `userData` from a **Secret** mount or `envsubst` in CI.  
+5. Argo CD syncs; VMRogue can still **list / console / snapshot** those VMs without owning the pipeline.
+
+---
+
 ## Part 1: Prerequisites and planning
 
 - **KubeVirt**: Healthy cluster on a supported release (check your vendor matrix; treat `v1.0+` as a planning baseline, not a substitute for reading release notes).
