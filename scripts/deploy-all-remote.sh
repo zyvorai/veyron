@@ -10,10 +10,12 @@
 #   1. Rsync source to remote ~/.deployment/vmrogue
 #   2. Build VMRogue + Operator container images
 #   3. Import images into K8s container runtime
-#   4. Install CRDs + NATS + RBAC
+#   4. Ensure CDI (if DataVolume CRD missing) + install CRDs + NATS + RBAC
 #   5. Deploy VMRogue API + Operator pods (API key: CHANGE_ME)
 #   6. Clean up source
 #   7. Verify
+#
+# CDI: uses scripts/ensure-cdi-remote.sh (VMROGUE_SKIP_CDI=1, VMROGUE_CDI_VERSION=…)
 #
 # Usage:
 #   ./scripts/deploy-all-remote.sh [host] [user]
@@ -191,9 +193,13 @@ else
     echo "✅ Images imported"
 fi
 
-# ── Step 4: Install CRDs + NATS + RBAC ──
+# ── Step 4: CDI (if missing) + CRDs + NATS + RBAC ──
 echo ""
-echo "📋 [4/7] Installing CRDs, NATS, and RBAC"
+echo "📋 [4/7] CDI (if missing), CRDs, NATS, and RBAC"
+"${REPO_DIR}/scripts/ensure-cdi-remote.sh" "${REMOTE}" || {
+  echo "❌ CDI ensure failed (set VMROGUE_SKIP_CDI=1 to skip on air-gapped clusters)"
+  exit 1
+}
 ssh "${REMOTE}" "
     kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
     for f in ${DEPLOY_DIR}/operator/config/crd/bases/*.yaml; do

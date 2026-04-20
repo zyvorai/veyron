@@ -11,9 +11,15 @@
 # Usage:
 #   ./scripts/deploy-k8s-remote.sh <host> [user]
 #   ./scripts/deploy-k8s-remote.sh HOST sus
+#
+# Optional environment (local):
+#   VMROGUE_SKIP_CDI=1       — do not install CDI when the DataVolume CRD is missing
+#   VMROGUE_CDI_VERSION=v1.65.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
 # ============================================================================
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 HOST="${1:?Usage: $0 <host> [user]}"
 USER="${2:-root}"
@@ -21,6 +27,8 @@ REMOTE_DIR="/home/${USER}/vmrogue"
 API_KEY="${VMROGUE_API_KEY:-CHANGE_ME}"
 NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
 NS="vmrogue-system"
+CDI_VERSION="${VMROGUE_CDI_VERSION:-v1.65.0}"
+SKIP_CDI="${VMROGUE_SKIP_CDI:-0}"
 
 info()  { echo "  [✓] $*"; }
 step()  { echo ""; echo "  --- $*"; }
@@ -40,14 +48,14 @@ echo "  API Key:        ${API_KEY}"
 echo ""
 
 # ── Step 1: Rsync ──
-step "Step 1/5: Syncing source to ${HOST}"
+step "Step 1/6: Syncing source to ${HOST}"
 rsync -az --delete \
     --exclude target/ --exclude .git/ --exclude operator/bin/ \
     . "${USER}@${HOST}:${REMOTE_DIR}/"
 info "Source synced"
 
 # ── Step 2: Build binary ──
-step "Step 2/5: Building release binary"
+step "Step 2/6: Building release binary"
 ssh "${USER}@${HOST}" "
     source \$HOME/.cargo/env 2>/dev/null || true
     cd ${REMOTE_DIR}
@@ -58,7 +66,7 @@ ssh "${USER}@${HOST}" "
 info "Binary built"
 
 # ── Step 3: Build container image ──
-step "Step 3/5: Building container image"
+step "Step 3/6: Building container image"
 ssh "${USER}@${HOST}" "
     cd ${REMOTE_DIR}
     cp target/release/vmrogue /tmp/vmrogue-binary
@@ -67,13 +75,24 @@ ssh "${USER}@${HOST}" "
 "
 info "Container image built and imported"
 
-# ── Step 4: Deploy to K8s ──
+# ── Step 4: CDI (DataVolume / import) when missing ──
+# KubeVirt disk pipelines and examples often need CDI; installing it here avoids a separate manual step on fresh k3s nodes.
+step "Step 4/6: Ensuring CDI (containerized-data-importer)"
+if [[ "${SKIP_CDI}" == "1" ]]; then
+  info "Skipped CDI install (VMROGUE_SKIP_CDI=1)"
+else
+  "${SCRIPT_DIR}/ensure-cdi-remote.sh" "${USER}@${HOST}" "${CDI_VERSION}" ||
+    error "CDI install or wait failed (set VMROGUE_SKIP_CDI=1 to skip, or fix cluster network / storage)"
+  info "CDI available for DataVolume workflows"
+fi
+
+# ── Step 5: Deploy to K8s ──
 # Bump pod template every run so apply triggers a rollout even when the image ref
 # stays localhost/vmrogue:latest with imagePullPolicy: Never (otherwise old pods
 # keep running the previous image layers).
 DEPLOY_STAMP="$(date +%s)-${RANDOM}"
 
-step "Step 4/5: Deploying to Kubernetes"
+step "Step 5/6: Deploying to Kubernetes"
 ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
 
@@ -272,8 +291,8 @@ YAML
 "
 info "K8s resources applied"
 
-# ── Step 5: Verify ──
-step "Step 5/5: Verifying deployment"
+# ── Step 6: Verify ──
+step "Step 6/6: Verifying deployment"
 # Chain with && so a failed rollout is not masked by a later kubectl (ssh exits 0 on last cmd).
 ssh "${USER}@${HOST}" "
     ${K} -n ${NS} rollout status deployment/vmrogue-api --timeout=180s &&
