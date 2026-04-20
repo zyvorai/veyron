@@ -83,6 +83,8 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/config/` | `VMConfig` schema, `VMConfigBuilder` fluent API, `AppConfig` (~/.config/vmrogue/config.toml) |
 | `src/templates/mod.rs` | 44 OS templates (Ubuntu, CentOS, Windows, RHEL, etc.) with pre-set CPU/memory/firmware |
 | `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` | Windows golden image + Cloudbase-Init + Sysprep runbook (operator steps; not fully encoded in templates) |
+| `docs/WINDOWS_PACKER_GITOPS_PIPELINE.md` | Packer/QEMU → QCOW2 → CDI; Kustomize + `vmrogue generate --kubevirt` + config-drive patch |
+| `examples/windows-kubevirt-gitops/` | Reference manifests + `patch_kubevirt_configdrive.py` for Windows `cloudInitConfigDrive` |
 | `docs/client-presentations/06-windows-kubevirt-production.html` | Short printable deck linking to the Windows production doc |
 | `src/monitoring/` | `MetricsCollector` (collect VM CPU/memory/disk/network), `PerformanceAnalyzer`, `MonitoringReporter` |
 | `src/snapshots/` | `SnapshotManager`, `RestoreManager`, `RetentionEnforcer`, KubeVirt snapshot CRD types |

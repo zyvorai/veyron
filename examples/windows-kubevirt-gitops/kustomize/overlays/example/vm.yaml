@@ -1,0 +1,43 @@
+# Example VirtualMachine: golden disk + cloudInitConfigDrive (Cloudbase-Init friendly).
+# Apply after the DataVolume succeeds: kubectl apply -k ../overlays/example
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: win11-vm
+spec:
+  runStrategy: Halted
+  template:
+    metadata:
+      labels:
+        kubevirt.io/domain: win11-vm
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        memory:
+          guest: 8Gi
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+            - name: cloudinitdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              model: virtio
+              masquerade: {}
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: win11-golden-dv
+        - name: cloudinitdisk
+          cloudInitConfigDrive:
+            userData: |
+              #ps1_sysnative
+              New-Item -ItemType Directory -Force C:\bootstrap | Out-Null
+              Set-Content -Path C:\bootstrap\hello.txt -Value "KubeVirt config-drive bootstrap"

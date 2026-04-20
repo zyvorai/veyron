@@ -81,6 +81,8 @@ When you set **`cloud_init`** on a `VMConfig`, **`src/kube/converter.rs`** emits
 
 Until then, treat **config-drive userData** as **GitOps-managed YAML**, not something the Rust templates alone express.
 
+**Full walkthrough (Packer, QCOW2 shrink, CDI, Kustomize, `vmrogue generate` + patch):** [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md) and the **`examples/windows-kubevirt-gitops/`** directory in this repository.
+
 ### Minimal automation sketch (GitOps + CDI)
 
 1. Pipeline builds golden QCOW2 → pushes to `https://artifacts.example.com/windows-2022-golden.qcow2`.  

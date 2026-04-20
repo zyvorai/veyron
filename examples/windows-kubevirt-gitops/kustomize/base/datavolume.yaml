@@ -1,0 +1,17 @@
+# CDI DataVolume: import a golden Windows QCOW2 from HTTP(S).
+# Replace URL and storageClassName before apply.
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: win11-golden-dv
+spec:
+  source:
+    http:
+      url: "https://REPLACE.example.com/images/win11-golden.qcow2"
+  pvc:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 64Gi
+    storageClassName: fast
