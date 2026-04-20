@@ -102,7 +102,8 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let score = if total == 0 {
         100u16
     } else {
-        let deductions = critical as u16 * 20 + high as u16 * 10 + medium as u16 * 5 + low as u16 * 2;
+        let deductions =
+            critical as u16 * 20 + high as u16 * 10 + medium as u16 * 5 + low as u16 * 2;
         100u16.saturating_sub(deductions)
     };
     let score_label = match score {
@@ -131,11 +132,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                 .border_style(Style::default().fg(Color::Rgb(222, 115, 86)))
                 .title(" Security Posture Score "),
         )
-        .gauge_style(
-            Style::default()
-                .fg(gauge_color)
-                .bg(Color::Rgb(40, 35, 55)),
-        )
+        .gauge_style(Style::default().fg(gauge_color).bg(Color::Rgb(40, 35, 55)))
         .percent(score)
         .label(format!("{}/100 - {}", score, score_label));
     f.render_widget(score_gauge, score_chunks[0]);
@@ -218,8 +215,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     });
 
     let empty_msg = if findings.is_empty() {
-        vec![Row::new(vec![Cell::from("  No security findings - all VMs healthy")
-            .style(Style::default().fg(Color::Rgb(50, 205, 50)))])]
+        vec![Row::new(vec![
+            Cell::from("  No security findings - all VMs healthy")
+                .style(Style::default().fg(Color::Rgb(50, 205, 50))),
+        ])]
     } else {
         vec![]
     };

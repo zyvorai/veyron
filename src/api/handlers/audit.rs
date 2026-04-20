@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -51,7 +55,11 @@ async fn list_audit_trail(
     let events = match query.namespace.as_deref() {
         Some("all") => s.client().list_all_events().await.unwrap_or_default(),
         Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+        None => s
+            .client()
+            .list_events(&s.namespace)
+            .await
+            .unwrap_or_default(),
     };
 
     Json(map_audit_entries(&events))
@@ -76,7 +84,10 @@ fn map_audit_entries(events: &[k8s_openapi::api::core::v1::Event]) -> Vec<AuditE
                     .or(meta.creation_timestamp.as_ref())
                     .map(|t| t.0.to_rfc3339())
                     .unwrap_or_default(),
-                user: event.reporting_component.clone().unwrap_or_else(|| "system".to_string()),
+                user: event
+                    .reporting_component
+                    .clone()
+                    .unwrap_or_else(|| "system".to_string()),
                 action: event.reason.clone().unwrap_or_default(),
                 resource_type,
                 resource_name,

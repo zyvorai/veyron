@@ -43,15 +43,13 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(header, chunks[0]);
 
     // Table
-    let header_cells = ["Name", "Phase", "Node", "IP"]
-        .iter()
-        .map(|h| {
-            Cell::from(*h).style(
-                Style::default()
-                    .fg(Color::Rgb(222, 115, 86))
-                    .add_modifier(Modifier::BOLD),
-            )
-        });
+    let header_cells = ["Name", "Phase", "Node", "IP"].iter().map(|h| {
+        Cell::from(*h).style(
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        )
+    });
     let table_header = Row::new(header_cells)
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);

@@ -127,9 +127,7 @@ async fn list_templates() -> Json<Vec<TemplateResponse>> {
 }
 
 #[cfg(feature = "web")]
-async fn get_template(
-    Path(name): Path<String>,
-) -> Result<Json<TemplateResponse>, StatusCode> {
+async fn get_template(Path(name): Path<String>) -> Result<Json<TemplateResponse>, StatusCode> {
     match TEMPLATES.get(&name) {
         Some(config) => {
             let os = os_type_from_name(&name);

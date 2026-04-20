@@ -1027,10 +1027,7 @@ impl InteractiveApp {
                     let snap_name = snap.name.clone();
                     let dialog = Dialog::confirm(
                         "Delete Snapshot",
-                        format!(
-                            "Delete snapshot '{}'? This cannot be undone!",
-                            snap_name
-                        ),
+                        format!("Delete snapshot '{}'? This cannot be undone!", snap_name),
                     );
                     self.dialog_vm_name = Some(snap_name);
                     self.mode = InteractiveMode::Dialog(dialog);
@@ -1043,10 +1040,7 @@ impl InteractiveApp {
                     let vm_name = snap.vm_name.clone();
                     let dialog = Dialog::confirm(
                         "Restore Snapshot",
-                        format!(
-                            "Restore VM '{}' from snapshot '{}'?",
-                            vm_name, snap_name
-                        ),
+                        format!("Restore VM '{}' from snapshot '{}'?", vm_name, snap_name),
                     );
                     self.dialog_vm_name = Some(snap_name);
                     self.mode = InteractiveMode::Dialog(dialog);
@@ -1341,13 +1335,12 @@ impl InteractiveApp {
             height: 1,
         };
         f.render_widget(Clear, badge_area);
-        let badge = Paragraph::new(" PREVIEW ")
-            .style(
-                Style::default()
-                    .fg(Color::Black)
-                    .bg(Color::Rgb(255, 200, 0))
-                    .add_modifier(Modifier::BOLD),
-            );
+        let badge = Paragraph::new(" PREVIEW ").style(
+            Style::default()
+                .fg(Color::Black)
+                .bg(Color::Rgb(255, 200, 0))
+                .add_modifier(Modifier::BOLD),
+        );
         f.render_widget(badge, badge_area);
     }
 
@@ -1402,21 +1395,19 @@ impl InteractiveApp {
             .info(format!("Restoring '{}' from snapshot...", vm_name));
 
         match crate::snapshots::restore::RestoreManager::new(&self.state.namespace).await {
-            Ok(manager) => {
-                match manager.restore_in_place(&vm_name, snapshot_name).await {
-                    Ok(_) => {
-                        self.state
-                            .record_activity("♻ ", &vm_name, "restored from snapshot");
-                        self.notifications
-                            .success(format!("Restored '{}' from snapshot", vm_name));
-                        let _ = self.refresh_data().await;
-                    }
-                    Err(e) => {
-                        self.notifications
-                            .error(format!("Failed to restore: {}", e));
-                    }
+            Ok(manager) => match manager.restore_in_place(&vm_name, snapshot_name).await {
+                Ok(_) => {
+                    self.state
+                        .record_activity("♻ ", &vm_name, "restored from snapshot");
+                    self.notifications
+                        .success(format!("Restored '{}' from snapshot", vm_name));
+                    let _ = self.refresh_data().await;
                 }
-            }
+                Err(e) => {
+                    self.notifications
+                        .error(format!("Failed to restore: {}", e));
+                }
+            },
             Err(e) => {
                 self.notifications
                     .error(format!("Failed to connect to cluster: {}", e));

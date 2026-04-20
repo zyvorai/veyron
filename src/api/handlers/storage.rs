@@ -45,8 +45,7 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<Storag
     // Aggregate PVC capacities per StorageClass across all namespaces
     let all_pvcs = {
         use k8s_openapi::api::core::v1::PersistentVolumeClaim;
-        let api: kube::api::Api<PersistentVolumeClaim> =
-            kube::api::Api::all(s.client().client());
+        let api: kube::api::Api<PersistentVolumeClaim> = kube::api::Api::all(s.client().client());
         api.list(&kube::api::ListParams::default())
             .await
             .map(|l| l.items)
@@ -80,15 +79,14 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<Storag
         .map(|sc| {
             let meta = &sc.metadata;
             let sc_name = meta.name.clone().unwrap_or_default();
-            let (total_bytes, volume_count) =
-                sc_stats.get(&sc_name).copied().unwrap_or((0, 0));
+            let (total_bytes, volume_count) = sc_stats.get(&sc_name).copied().unwrap_or((0, 0));
             let total_str = format_bytes(total_bytes);
             StoragePool {
                 name: sc_name.clone(),
                 storage_class: sc_name,
                 provisioner: sc.provisioner.clone(),
                 total_capacity: total_str.clone(),
-                used_capacity: total_str,  // PVC capacity = allocated/used
+                used_capacity: total_str, // PVC capacity = allocated/used
                 available_capacity: "N/A".to_string(), // requires storage-level API
                 volume_count,
             }
@@ -135,14 +133,11 @@ async fn get_storage_usage(State(state): State<SharedState>) -> Json<Vec<Storage
                 .map(|q| q.0.clone())
                 .unwrap_or_default();
 
-            let bound_to_vm = meta
-                .labels
-                .as_ref()
-                .and_then(|l| {
-                    l.get("kubevirt.io/vm")
-                        .or_else(|| l.get("kubevirt.io/created-by"))
-                        .cloned()
-                });
+            let bound_to_vm = meta.labels.as_ref().and_then(|l| {
+                l.get("kubevirt.io/vm")
+                    .or_else(|| l.get("kubevirt.io/created-by"))
+                    .cloned()
+            });
 
             let phase = status.and_then(|s| s.phase.as_deref()).unwrap_or("");
 

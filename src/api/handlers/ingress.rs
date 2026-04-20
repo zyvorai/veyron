@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -84,11 +88,8 @@ async fn list_ingress(
                                 .service
                                 .as_ref()
                                 .map(|svc| {
-                                    let port = svc
-                                        .port
-                                        .as_ref()
-                                        .and_then(|p| p.number)
-                                        .unwrap_or(0) as u16;
+                                    let port = svc.port.as_ref().and_then(|p| p.number).unwrap_or(0)
+                                        as u16;
                                     (svc.name.clone(), port)
                                 })
                                 .unwrap_or_default();

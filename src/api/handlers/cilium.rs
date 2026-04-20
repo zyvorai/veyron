@@ -120,7 +120,10 @@ async fn get_cilium_status(State(state): State<SharedState>) -> Json<CiliumStatu
                 let name = cm.metadata.name.as_deref().unwrap_or("");
                 if name == "cilium-config" {
                     if let Some(data) = cm.data.as_ref() {
-                        let ipsec = data.get("enable-ipsec").map(|v| v == "true").unwrap_or(false);
+                        let ipsec = data
+                            .get("enable-ipsec")
+                            .map(|v| v == "true")
+                            .unwrap_or(false);
                         let wg = data
                             .get("enable-wireguard")
                             .map(|v| v == "true")
@@ -195,19 +198,28 @@ async fn list_network_flows(State(state): State<SharedState>) -> Json<NetworkFlo
 
     let s = state.read().await;
     let ns = &s.namespace;
-    let api: kube::api::Api<NetworkPolicy> =
-        kube::api::Api::namespaced(s.client().client(), ns);
+    let api: kube::api::Api<NetworkPolicy> = kube::api::Api::namespaced(s.client().client(), ns);
 
     let policies = match api.list(&kube::api::ListParams::default()).await {
         Ok(list) => list,
-        Err(_) => return Json(NetworkFlowSummary { total_flows: 0, allowed: 0, denied: 0, flows: vec![] }),
+        Err(_) => {
+            return Json(NetworkFlowSummary {
+                total_flows: 0,
+                allowed: 0,
+                denied: 0,
+                flows: vec![],
+            });
+        }
     };
 
     let mut flows = Vec::new();
     for np in &policies.items {
         let np_name = np.metadata.name.as_deref().unwrap_or("unknown");
         let np_ns = np.metadata.namespace.as_deref().unwrap_or(ns.as_str());
-        let spec = match np.spec.as_ref() { Some(s) => s, None => continue };
+        let spec = match np.spec.as_ref() {
+            Some(s) => s,
+            None => continue,
+        };
 
         // Each ingress rule with ports → allowed ingress flow
         if let Some(ingress_rules) = spec.ingress.as_ref() {
@@ -224,8 +236,19 @@ async fn list_network_flows(State(state): State<SharedState>) -> Json<NetworkFlo
                     });
                 }
                 for port_spec in ports {
-                    let port_num = port_spec.port.as_ref()
-                        .and_then(|p| if let k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(n) = p { Some(*n as u16) } else { None })
+                    let port_num = port_spec
+                        .port
+                        .as_ref()
+                        .and_then(|p| {
+                            if let k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                                n,
+                            ) = p
+                            {
+                                Some(*n as u16)
+                            } else {
+                                None
+                            }
+                        })
                         .unwrap_or(0);
                     let proto = port_spec.protocol.as_deref().unwrap_or("TCP").to_string();
                     flows.push(NetworkFlow {
@@ -245,8 +268,19 @@ async fn list_network_flows(State(state): State<SharedState>) -> Json<NetworkFlo
             for rule in egress_rules {
                 let ports = rule.ports.as_deref().unwrap_or(&[]);
                 for port_spec in ports {
-                    let port_num = port_spec.port.as_ref()
-                        .and_then(|p| if let k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(n) = p { Some(*n as u16) } else { None })
+                    let port_num = port_spec
+                        .port
+                        .as_ref()
+                        .and_then(|p| {
+                            if let k8s_openapi::apimachinery::pkg::util::intstr::IntOrString::Int(
+                                n,
+                            ) = p
+                            {
+                                Some(*n as u16)
+                            } else {
+                                None
+                            }
+                        })
                         .unwrap_or(0);
                     let proto = port_spec.protocol.as_deref().unwrap_or("TCP").to_string();
                     flows.push(NetworkFlow {
@@ -266,5 +300,10 @@ async fn list_network_flows(State(state): State<SharedState>) -> Json<NetworkFlo
     let denied = flows.iter().filter(|f| f.verdict == "denied").count() as u32;
     let total = flows.len() as u32;
 
-    Json(NetworkFlowSummary { total_flows: total, allowed, denied, flows })
+    Json(NetworkFlowSummary {
+        total_flows: total,
+        allowed,
+        denied,
+        flows,
+    })
 }

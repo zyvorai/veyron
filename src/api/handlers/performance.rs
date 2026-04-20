@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -98,8 +102,10 @@ async fn list_performance_profiles(
             let mem_p99 = (mem * 1.35).min(100.0);
             // Estimate average I/O latency: throughput / (IOPS × sector size).
             // Clamp to a plausible range; returns 0 when no I/O is observed.
-            let total_iops = (metrics.disk.read_ops_per_sec + metrics.disk.write_ops_per_sec) as f64;
-            let total_bytes = (metrics.disk.read_bytes_per_sec + metrics.disk.write_bytes_per_sec) as f64;
+            let total_iops =
+                (metrics.disk.read_ops_per_sec + metrics.disk.write_ops_per_sec) as f64;
+            let total_bytes =
+                (metrics.disk.read_bytes_per_sec + metrics.disk.write_bytes_per_sec) as f64;
             let latency_avg_ms = if total_iops > 0.0 {
                 (total_bytes / total_iops / 512.0).clamp(0.1, 500.0)
             } else {
@@ -133,7 +139,10 @@ async fn get_flamegraph(
     Query(query): Query<FlameGraphQuery>,
 ) -> Json<Vec<FlameGraph>> {
     let s = state.read().await;
-    let namespace = query.namespace.clone().unwrap_or_else(|| s.namespace.clone());
+    let namespace = query
+        .namespace
+        .clone()
+        .unwrap_or_else(|| s.namespace.clone());
     let vms = if namespace == "all" {
         s.client().list_all_vms().await.unwrap_or_default()
     } else {
@@ -145,9 +154,15 @@ async fn get_flamegraph(
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
         if let Some(ref filter) = query.vm {
-            if filter != vm_name { continue; }
+            if filter != vm_name {
+                continue;
+            }
         }
-        let vm_ns = vm.metadata.namespace.clone().unwrap_or_else(|| namespace.clone());
+        let vm_ns = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| namespace.clone());
         let collector = crate::monitoring::metrics::MetricsCollector::new(vm_ns);
         let metrics = match collector.collect(vm_name).await {
             Ok(m) => m,
@@ -171,8 +186,18 @@ async fn get_flamegraph(
                     value: hypervisor,
                     color: "#ff4500".to_string(),
                     children: vec![
-                        FlameFrame { name: "kvm-exits".to_string(), value: (hypervisor * 7 / 10), color: "#ff6a00".to_string(), children: vec![] },
-                        FlameFrame { name: "virt-io".to_string(), value: hypervisor - (hypervisor * 7 / 10), color: "#ff8c00".to_string(), children: vec![] },
+                        FlameFrame {
+                            name: "kvm-exits".to_string(),
+                            value: (hypervisor * 7 / 10),
+                            color: "#ff6a00".to_string(),
+                            children: vec![],
+                        },
+                        FlameFrame {
+                            name: "virt-io".to_string(),
+                            value: hypervisor - (hypervisor * 7 / 10),
+                            color: "#ff8c00".to_string(),
+                            children: vec![],
+                        },
                     ],
                 },
                 FlameFrame {
@@ -180,9 +205,24 @@ async fn get_flamegraph(
                     value: kernel,
                     color: "#4488ff".to_string(),
                     children: vec![
-                        FlameFrame { name: "syscalls".to_string(), value: (kernel * 4 / 10), color: "#5599ff".to_string(), children: vec![] },
-                        FlameFrame { name: "disk-io".to_string(), value: (kernel * 3 / 10), color: "#66aaff".to_string(), children: vec![] },
-                        FlameFrame { name: "net-io".to_string(), value: kernel - (kernel * 4 / 10) - (kernel * 3 / 10), color: "#77bbff".to_string(), children: vec![] },
+                        FlameFrame {
+                            name: "syscalls".to_string(),
+                            value: (kernel * 4 / 10),
+                            color: "#5599ff".to_string(),
+                            children: vec![],
+                        },
+                        FlameFrame {
+                            name: "disk-io".to_string(),
+                            value: (kernel * 3 / 10),
+                            color: "#66aaff".to_string(),
+                            children: vec![],
+                        },
+                        FlameFrame {
+                            name: "net-io".to_string(),
+                            value: kernel - (kernel * 4 / 10) - (kernel * 3 / 10),
+                            color: "#77bbff".to_string(),
+                            children: vec![],
+                        },
                     ],
                 },
                 FlameFrame {
@@ -190,9 +230,24 @@ async fn get_flamegraph(
                     value: user,
                     color: "#00b4ff".to_string(),
                     children: vec![
-                        FlameFrame { name: "application".to_string(), value: (user * 7 / 10), color: "#00ccff".to_string(), children: vec![] },
-                        FlameFrame { name: "runtime".to_string(), value: (user * 2 / 10), color: "#00aadd".to_string(), children: vec![] },
-                        FlameFrame { name: "idle".to_string(), value: user - (user * 7 / 10) - (user * 2 / 10), color: "#008899".to_string(), children: vec![] },
+                        FlameFrame {
+                            name: "application".to_string(),
+                            value: (user * 7 / 10),
+                            color: "#00ccff".to_string(),
+                            children: vec![],
+                        },
+                        FlameFrame {
+                            name: "runtime".to_string(),
+                            value: (user * 2 / 10),
+                            color: "#00aadd".to_string(),
+                            children: vec![],
+                        },
+                        FlameFrame {
+                            name: "idle".to_string(),
+                            value: user - (user * 7 / 10) - (user * 2 / 10),
+                            color: "#008899".to_string(),
+                            children: vec![],
+                        },
                     ],
                 },
             ],

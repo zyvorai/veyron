@@ -2210,7 +2210,6 @@ pub enum Commands {
     },
 
     // ========== OPERATOR CRD MANAGEMENT (vmrogue.io/v1alpha1) ==========
-
     /// List VMRogueVM custom resources
     #[command(name = "vrvm-list")]
     VrvmList,
@@ -2903,7 +2902,11 @@ mod tests {
     fn test_import_command() {
         let cli = parse(&["vmrogue", "import", "vm.yaml", "--start", "--dry-run"]).unwrap();
         match *cli.command {
-            Commands::Import { ref file, start, dry_run } => {
+            Commands::Import {
+                ref file,
+                start,
+                dry_run,
+            } => {
                 assert_eq!(file, "vm.yaml");
                 assert!(start);
                 assert!(dry_run);
@@ -2945,7 +2948,10 @@ mod tests {
     fn test_placement_command() {
         let cli = parse(&["vmrogue", "placement", "my-vm", "--strategy", "binpack"]).unwrap();
         match *cli.command {
-            Commands::Placement { ref name, ref strategy } => {
+            Commands::Placement {
+                ref name,
+                ref strategy,
+            } => {
                 assert_eq!(name, "my-vm");
                 assert_eq!(strategy, "binpack");
             }

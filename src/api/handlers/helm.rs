@@ -70,12 +70,17 @@ async fn list_helm_releases(State(state): State<SharedState>) -> Json<Vec<HelmRe
         let app_version = labels
             .and_then(|l| l.get("app.kubernetes.io/version"))
             .cloned()
-            .or_else(|| annotations.and_then(|a| a.get("app.kubernetes.io/version")).cloned())
+            .or_else(|| {
+                annotations
+                    .and_then(|a| a.get("app.kubernetes.io/version"))
+                    .cloned()
+            })
             .unwrap_or_default();
 
         // Keep only the latest revision per release name
-        let entry = releases.entry(name.clone()).or_insert_with(|| {
-            HelmReleaseResponse {
+        let entry = releases
+            .entry(name.clone())
+            .or_insert_with(|| HelmReleaseResponse {
                 name: name.clone(),
                 namespace: secret.metadata.namespace.clone().unwrap_or_default(),
                 chart: chart.clone(),
@@ -89,8 +94,7 @@ async fn list_helm_releases(State(state): State<SharedState>) -> Json<Vec<HelmRe
                     .as_ref()
                     .map(|t| t.0.to_rfc3339())
                     .unwrap_or_default(),
-            }
-        });
+            });
 
         if version > entry.revision {
             entry.revision = version;

@@ -381,10 +381,7 @@ pub async fn deliver_webhook(
         }
     }
 
-    let output = cmd
-        .args(&args)
-        .output()
-        .await?;
+    let output = cmd.args(&args).output().await?;
 
     let status_code = String::from_utf8_lossy(&output.stdout);
     let success = status_code.starts_with('2');

@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -69,7 +73,11 @@ async fn get_incident_timeline(
         let msg = event.message.as_deref().unwrap_or("");
         let obj = event.involved_object.name.as_deref().unwrap_or("unknown");
         let obj_kind = event.involved_object.kind.as_deref().unwrap_or("Object");
-        let ev_ns = event.metadata.namespace.as_deref().unwrap_or(namespace.as_str());
+        let ev_ns = event
+            .metadata
+            .namespace
+            .as_deref()
+            .unwrap_or(namespace.as_str());
 
         let ts = event
             .last_timestamp
@@ -99,12 +107,7 @@ async fn get_incident_timeline(
         // Consider events older than 1h as resolved (simplified heuristic)
         let resolved = age_hours > 1;
 
-        let id = format!(
-            "{}-{}-{}",
-            ev_ns,
-            obj,
-            ts.timestamp()
-        );
+        let id = format!("{}-{}-{}", ev_ns, obj, ts.timestamp());
 
         incidents.push(IncidentEvent {
             id,
@@ -127,7 +130,8 @@ async fn get_incident_timeline(
     };
     if !vms.is_empty() {
         let total = vms.len() as f64;
-        let running = vms.iter()
+        let running = vms
+            .iter()
             .filter(|vm| vm.status.as_ref().and_then(|s| s.ready).unwrap_or(false))
             .count() as f64;
         let availability = running / total * 100.0;
@@ -136,8 +140,16 @@ async fn get_incident_timeline(
                 id: format!("slo-breach-{}", namespace),
                 timestamp: now.to_rfc3339(),
                 kind: "slo-breach".to_string(),
-                severity: if availability < 99.0 { "critical" } else { "warning" }.to_string(),
-                title: format!("SLO breach — VM availability {:.1}% < 99.9% target", availability),
+                severity: if availability < 99.0 {
+                    "critical"
+                } else {
+                    "warning"
+                }
+                .to_string(),
+                title: format!(
+                    "SLO breach — VM availability {:.1}% < 99.9% target",
+                    availability
+                ),
                 description: format!(
                     "{} of {} VMs running in namespace {}",
                     running as u32, total as u32, namespace
@@ -155,7 +167,10 @@ async fn get_incident_timeline(
     let total = incidents.len() as u32;
     let open = incidents.iter().filter(|e| !e.resolved).count() as u32;
     let resolved_24h = incidents.iter().filter(|e| e.resolved).count() as u32;
-    let critical = incidents.iter().filter(|e| e.severity == "critical").count() as u32;
+    let critical = incidents
+        .iter()
+        .filter(|e| e.severity == "critical")
+        .count() as u32;
     let warning = incidents.iter().filter(|e| e.severity == "warning").count() as u32;
 
     Json(IncidentTimeline {

@@ -90,11 +90,24 @@ async fn list_costs(State(state): State<SharedState>) -> Json<Vec<CostEntry>> {
             let name = meta.name.clone().unwrap_or_default();
             let namespace = meta.namespace.clone().unwrap_or_default();
 
-            let cpu_cores = vm.spec.template.spec.domain.cpu.as_ref()
+            let cpu_cores = vm
+                .spec
+                .template
+                .spec
+                .domain
+                .cpu
+                .as_ref()
                 .map(|c| c.cores.unwrap_or(1) as f64)
                 .unwrap_or(1.0);
 
-            let memory_str = vm.spec.template.spec.domain.resources.requests.as_ref()
+            let memory_str = vm
+                .spec
+                .template
+                .spec
+                .domain
+                .resources
+                .requests
+                .as_ref()
                 .and_then(|r| r.get("memory"))
                 .map(|v| v.as_str())
                 .unwrap_or("0");
@@ -104,7 +117,14 @@ async fn list_costs(State(state): State<SharedState>) -> Json<Vec<CostEntry>> {
             let cpu_cost = cpu_cores * CPU_RATE * HOURS_PER_MONTH;
             let memory_cost = memory_gib * MEMORY_RATE * HOURS_PER_MONTH;
             // Sum actual disk sizes from VM spec
-            let total_disk_gib: f64 = vm.spec.template.spec.domain.resources.requests.as_ref()
+            let total_disk_gib: f64 = vm
+                .spec
+                .template
+                .spec
+                .domain
+                .resources
+                .requests
+                .as_ref()
                 .and_then(|r| r.get("storage"))
                 .map(|v| parse_memory_gib(v.as_str()))
                 .unwrap_or(20.0); // default 20Gi if no storage in requests

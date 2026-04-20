@@ -87,7 +87,7 @@ Open `http://localhost:5151/dashboard` in your browser. The dashboard will promp
 
 ### Dashboard features
 - **Dashboard** - Real-time VM fleet overview with live CPU/memory utilization charts (from Kubernetes Metrics Server), real cluster capacity gauges (CPU, memory, nodes), VM summary, and event feed
-- **VMs** - Full VM list with search/filter, clickable detail panels showing status, resources, network interfaces (IP/MAC), guest OS info, and security posture scoring
+- **VMs** - Full VM list with search/filter, clickable detail panels showing status, resources, network interfaces (IP/MAC), guest OS info, security posture scoring, and **SSH / remote access** hints (TCP `ssh` and `virtctl ssh` with copy buttons; namespace-aware list). See [docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md).
 - **Batch Operations** - Select multiple VMs and start, stop, restart, or delete them in a single action
 - **VNC Console** - Browser-based VM console via bundled noVNC with Ctrl+Alt+Del, fullscreen toggle, and reconnect
 - **VM Creation** - Forge VMs from 44 OS templates with profile picker (8 profiles), CPU/memory/disk overrides, cloud-init editor, and auto-start; policy enforcement blocks Deny violations
@@ -706,6 +706,7 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 - **[docs/SNAPSHOTS.md](docs/SNAPSHOTS.md)** - Snapshot and backup management
 - **[docs/DISK_MANAGEMENT.md](docs/DISK_MANAGEMENT.md)** - Disk operations guide
 - **[docs/NETWORK_MANAGEMENT.md](docs/NETWORK_MANAGEMENT.md)** - Network management guide
+- **[docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md)** - Developer SSH / `virtctl` access to KubeVirt VMs
 - **[docs/INTERACTIVE_TUI.md](docs/INTERACTIVE_TUI.md)** - Interactive TUI guide
 - **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
 

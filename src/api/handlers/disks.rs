@@ -49,8 +49,7 @@ pub fn router(state: SharedState) -> Router {
 #[cfg(feature = "web")]
 async fn list_disks(State(state): State<SharedState>) -> Json<Vec<DiskResponse>> {
     let s = state.read().await;
-    let api: Api<PersistentVolumeClaim> =
-        Api::namespaced(s.client().client(), &s.namespace);
+    let api: Api<PersistentVolumeClaim> = Api::namespaced(s.client().client(), &s.namespace);
 
     let lp = ListParams::default();
     match api.list(&lp).await {
@@ -81,8 +80,7 @@ async fn list_disks(State(state): State<SharedState>) -> Json<Vec<DiskResponse>>
                         .map(|q| q.0.clone())
                         .unwrap_or_default();
 
-                    let storage_class = spec
-                        .and_then(|s| s.storage_class_name.clone());
+                    let storage_class = spec.and_then(|s| s.storage_class_name.clone());
 
                     let access_mode = spec
                         .and_then(|s| s.access_modes.as_ref())
@@ -119,17 +117,24 @@ async fn expand_disk(
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
     // Validate input
     if req.disk_name.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": "disk_name is required"}))));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({"error": "disk_name is required"})),
+        ));
     }
     // Validate new_size is a valid K8s quantity (e.g. "10Gi", "500Mi")
     let size_bytes = crate::utils::parse_memory_bytes(&req.new_size);
     if size_bytes == 0 {
-        return Err((StatusCode::BAD_REQUEST, Json(serde_json::json!({"error": "new_size must be a valid K8s quantity (e.g. '10Gi')"}))));
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(
+                serde_json::json!({"error": "new_size must be a valid K8s quantity (e.g. '10Gi')"}),
+            ),
+        ));
     }
 
     let s = state.read().await;
-    let api: Api<PersistentVolumeClaim> =
-        Api::namespaced(s.client().client(), &s.namespace);
+    let api: Api<PersistentVolumeClaim> = Api::namespaced(s.client().client(), &s.namespace);
 
     let patch = serde_json::json!({
         "spec": {
@@ -142,7 +147,11 @@ async fn expand_disk(
     });
 
     match api
-        .patch(&req.disk_name, &PatchParams::default(), &Patch::Merge(&patch))
+        .patch(
+            &req.disk_name,
+            &PatchParams::default(),
+            &Patch::Merge(&patch),
+        )
         .await
     {
         Ok(_) => Ok(Json(serde_json::json!({
@@ -150,6 +159,9 @@ async fn expand_disk(
             "disk_name": req.disk_name,
             "new_size": req.new_size
         }))),
-        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(serde_json::json!({"error": format!("Failed to expand disk: {}", e)})))),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({"error": format!("Failed to expand disk: {}", e)})),
+        )),
     }
 }

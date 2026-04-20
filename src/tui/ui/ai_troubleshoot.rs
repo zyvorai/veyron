@@ -44,19 +44,27 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(header, chunks[0]);
 
     // Find problematic VMs
-    let failed_vms: Vec<&str> = state.vms.iter()
+    let failed_vms: Vec<&str> = state
+        .vms
+        .iter()
         .filter(|vm| vm.status == "Failed" || vm.status == "Error")
         .map(|vm| vm.name.as_str())
         .collect();
-    let not_ready_vms: Vec<&str> = state.vms.iter()
+    let not_ready_vms: Vec<&str> = state
+        .vms
+        .iter()
         .filter(|vm| !vm.ready && vm.status != "Stopped")
         .map(|vm| vm.name.as_str())
         .collect();
-    let no_ip_vms: Vec<&str> = state.vms.iter()
+    let no_ip_vms: Vec<&str> = state
+        .vms
+        .iter()
         .filter(|vm| (vm.ip == "N/A" || vm.ip.is_empty()) && vm.status == "Running")
         .map(|vm| vm.name.as_str())
         .collect();
-    let no_node_vms: Vec<&str> = state.vms.iter()
+    let no_node_vms: Vec<&str> = state
+        .vms
+        .iter()
         .filter(|vm| (vm.node == "N/A" || vm.node.is_empty()) && vm.status != "Stopped")
         .map(|vm| vm.name.as_str())
         .collect();
@@ -65,7 +73,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
 
     // Issue description
     let issue_text = if total_issues > 0 {
-        format!("Detected {} issue(s) across {} VM(s)", total_issues, state.vms.len())
+        format!(
+            "Detected {} issue(s) across {} VM(s)",
+            total_issues,
+            state.vms.len()
+        )
     } else {
         format!("All {} VM(s) appear healthy", state.vms.len())
     };
@@ -79,10 +91,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                     .fg(Color::Rgb(222, 115, 86))
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(
-                issue_text,
-                Style::default().fg(Color::White),
-            ),
+            Span::styled(issue_text, Style::default().fg(Color::White)),
         ]),
     ];
     let input_widget = Paragraph::new(input_lines).block(
@@ -131,7 +140,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         diagnosis.push(Line::from(vec![
             Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                format!("{} VM(s) failed: {}", failed_vms.len(), failed_vms.join(", ")),
+                format!(
+                    "{} VM(s) failed: {}",
+                    failed_vms.len(),
+                    failed_vms.join(", ")
+                ),
                 Style::default().fg(Color::White),
             ),
         ]));
@@ -141,13 +154,20 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if not_ready_vms.is_empty() {
         diagnosis.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("All active VMs are ready", Style::default().fg(Color::White)),
+            Span::styled(
+                "All active VMs are ready",
+                Style::default().fg(Color::White),
+            ),
         ]));
     } else {
         diagnosis.push(Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                format!("{} VM(s) not ready: {}", not_ready_vms.len(), not_ready_vms.join(", ")),
+                format!(
+                    "{} VM(s) not ready: {}",
+                    not_ready_vms.len(),
+                    not_ready_vms.join(", ")
+                ),
                 Style::default().fg(Color::White),
             ),
         ]));
@@ -157,13 +177,20 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if no_ip_vms.is_empty() {
         diagnosis.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("All running VMs have IPs", Style::default().fg(Color::White)),
+            Span::styled(
+                "All running VMs have IPs",
+                Style::default().fg(Color::White),
+            ),
         ]));
     } else {
         diagnosis.push(Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                format!("{} running VM(s) without IP: {}", no_ip_vms.len(), no_ip_vms.join(", ")),
+                format!(
+                    "{} running VM(s) without IP: {}",
+                    no_ip_vms.len(),
+                    no_ip_vms.join(", ")
+                ),
                 Style::default().fg(Color::White),
             ),
         ]));
@@ -173,20 +200,29 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if no_node_vms.is_empty() {
         diagnosis.push(Line::from(vec![
             Span::styled("  [PASS] ", Style::default().fg(Color::Rgb(50, 205, 50))),
-            Span::styled("All active VMs assigned to nodes", Style::default().fg(Color::White)),
+            Span::styled(
+                "All active VMs assigned to nodes",
+                Style::default().fg(Color::White),
+            ),
         ]));
     } else {
         diagnosis.push(Line::from(vec![
             Span::styled("  [WARN] ", Style::default().fg(Color::Rgb(255, 200, 0))),
             Span::styled(
-                format!("{} VM(s) unassigned: {}", no_node_vms.len(), no_node_vms.join(", ")),
+                format!(
+                    "{} VM(s) unassigned: {}",
+                    no_node_vms.len(),
+                    no_node_vms.join(", ")
+                ),
                 Style::default().fg(Color::White),
             ),
         ]));
     }
 
     // Check: node health
-    let unhealthy_nodes: Vec<&str> = state.nodes.iter()
+    let unhealthy_nodes: Vec<&str> = state
+        .nodes
+        .iter()
         .filter(|n| n.status != "Ready")
         .map(|n| n.name.as_str())
         .collect();
@@ -199,7 +235,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         diagnosis.push(Line::from(vec![
             Span::styled("  [FAIL] ", Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                format!("{} unhealthy node(s): {}", unhealthy_nodes.len(), unhealthy_nodes.join(", ")),
+                format!(
+                    "{} unhealthy node(s): {}",
+                    unhealthy_nodes.len(),
+                    unhealthy_nodes.join(", ")
+                ),
                 Style::default().fg(Color::White),
             ),
         ]));
@@ -232,7 +272,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             ),
         ]));
     } else {
-        let confidence = if !failed_vms.is_empty() { "High" } else { "Medium" };
+        let confidence = if !failed_vms.is_empty() {
+            "High"
+        } else {
+            "Medium"
+        };
         diagnosis.push(Line::from(vec![
             Span::styled("  Confidence: ", Style::default().fg(Color::Gray)),
             Span::styled(
@@ -317,7 +361,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                format!("[HIGH] Check networking for {} VM(s) without IP", no_ip_vms.len()),
+                format!(
+                    "[HIGH] Check networking for {} VM(s) without IP",
+                    no_ip_vms.len()
+                ),
                 Style::default().fg(Color::White),
             ),
         ]));
@@ -374,12 +421,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             ),
         ]));
     } else {
-        remediation.push(Line::from(vec![
-            Span::styled(
-                "  No remediation needed",
-                Style::default().fg(Color::Gray),
-            ),
-        ]));
+        remediation.push(Line::from(vec![Span::styled(
+            "  No remediation needed",
+            Style::default().fg(Color::Gray),
+        )]));
     }
 
     let remediation_widget = Paragraph::new(remediation).block(

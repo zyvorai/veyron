@@ -12,13 +12,17 @@ pub mod web {
     use crate::tui::state::VmInfo;
     use axum::{
         Router,
-        extract::{DefaultBodyLimit, Path, Query, State, WebSocketUpgrade, ws::{Message, WebSocket}},
+        extract::{
+            DefaultBodyLimit, Path, Query, State, WebSocketUpgrade,
+            ws::{Message, WebSocket},
+        },
         http::{HeaderMap, StatusCode, header},
         middleware,
         response::{Html, IntoResponse, Json},
         routing::{delete, get, post},
     };
     use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
     use std::sync::Arc;
     use tokio::sync::RwLock;
     use tower_http::cors::{AllowOrigin, CorsLayer};
@@ -207,7 +211,11 @@ pub mod web {
             // Verify HMAC-SHA256 signature
             let signing_input = format!("{}.{}", parts[0], parts[1]);
             let signature_bytes = base64url_decode(parts[2])?;
-            if !verify_hmac_sha256(signing_input.as_bytes(), secret.as_bytes(), &signature_bytes) {
+            if !verify_hmac_sha256(
+                signing_input.as_bytes(),
+                secret.as_bytes(),
+                &signature_bytes,
+            ) {
                 log::debug!("JWT signature verification failed");
                 return None;
             }
@@ -228,13 +236,17 @@ pub mod web {
             // Check issuer
             let iss = payload.get("iss").and_then(|v| v.as_str()).unwrap_or("");
             if iss != expected_issuer {
-                log::debug!("JWT issuer mismatch: got '{}', expected '{}'", iss, expected_issuer);
+                log::debug!(
+                    "JWT issuer mismatch: got '{}', expected '{}'",
+                    iss,
+                    expected_issuer
+                );
                 return None;
             }
 
             // Extract role from claim
-            let role_claim = std::env::var("VMROGUE_JWT_ROLE_CLAIM")
-                .unwrap_or_else(|_| "role".to_string());
+            let role_claim =
+                std::env::var("VMROGUE_JWT_ROLE_CLAIM").unwrap_or_else(|_| "role".to_string());
             let role_str = payload
                 .get(&role_claim)
                 .and_then(|v| v.as_str())
@@ -377,10 +389,7 @@ pub mod web {
     ) -> impl IntoResponse {
         // Allow health, dashboard, static assets, and dashboard-originated API calls without auth
         let path = request.uri().path();
-        if path == "/api/v1/health"
-            || path == "/dashboard"
-            || path.starts_with("/assets/")
-        {
+        if path == "/api/v1/health" || path == "/dashboard" || path.starts_with("/assets/") {
             return next.run(request).await.into_response();
         }
 
@@ -419,18 +428,14 @@ pub mod web {
                     .and_then(|v| v.strip_prefix("Bearer ").map(|s| s.to_string()))
             })
             .or_else(|| {
-                request
-                    .uri()
-                    .query()
-                    .and_then(|q| {
-                        q.split('&')
-                            .find_map(|p| {
-                                p.strip_prefix("token=").map(|s| {
-                                    // URL-decode the token (e.g., %40 → @)
-                                    percent_decode(s)
-                                })
-                            })
+                request.uri().query().and_then(|q| {
+                    q.split('&').find_map(|p| {
+                        p.strip_prefix("token=").map(|s| {
+                            // URL-decode the token (e.g., %40 → @)
+                            percent_decode(s)
+                        })
                     })
+                })
             });
 
         match provided_key {
@@ -684,7 +689,10 @@ pub mod web {
             .route("/api/v1/vms/:ns/:name/pause", post(pause_vm_handler))
             .route("/api/v1/vms/:ns/:name/unpause", post(unpause_vm_handler))
             .route("/api/v1/vms/:ns/:name/migrate", post(migrate_vm_handler))
-            .route("/api/v1/vms/:ns/:name", axum::routing::put(update_vm_handler))
+            .route(
+                "/api/v1/vms/:ns/:name",
+                axum::routing::put(update_vm_handler),
+            )
             .route("/api/v1/vms/:ns/:name/vnc", get(vnc_websocket_handler))
             .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
             .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
@@ -729,10 +737,7 @@ pub mod web {
             .with_state(state.clone())
             // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
             // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.
-            .merge(Router::new().nest(
-                "/api/v1",
-                crate::api::handlers::all_routes(state.clone()),
-            ))
+            .merge(Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())))
             // Layers applied in reverse order (outermost = last .layer() call)
             .layer(middleware::from_fn(security_headers_middleware))
             .layer(middleware::from_fn_with_state(
@@ -780,7 +785,11 @@ pub mod web {
             let tls_addr: std::net::SocketAddr = addr.parse()?;
 
             // Start HTTP→HTTPS redirect on port 80 (or port-1 if port != 443)
-            let redirect_port = if port == 443 { 80 } else { port.saturating_sub(1) };
+            let redirect_port = if port == 443 {
+                80
+            } else {
+                port.saturating_sub(1)
+            };
             let redirect_host = host.to_string();
             let https_port = port;
             tokio::spawn(async move {
@@ -790,8 +799,8 @@ pub mod web {
                     redirect_addr,
                     https_port
                 );
-                let redirect_app = Router::new().fallback(
-                    move |req: axum::extract::Request| async move {
+                let redirect_app =
+                    Router::new().fallback(move |req: axum::extract::Request| async move {
                         let host = req
                             .headers()
                             .get("host")
@@ -799,7 +808,9 @@ pub mod web {
                             .unwrap_or("localhost");
                         // Strip port from host header if present
                         let hostname = host.split(':').next().unwrap_or(host);
-                        let path = req.uri().path_and_query()
+                        let path = req
+                            .uri()
+                            .path_and_query()
                             .map(|pq| pq.as_str())
                             .unwrap_or("/");
                         let https_url = if https_port == 443 {
@@ -808,14 +819,17 @@ pub mod web {
                             format!("https://{}:{}{}", hostname, https_port, path)
                         };
                         axum::response::Redirect::temporary(&https_url).into_response()
-                    },
-                );
+                    });
                 match tokio::net::TcpListener::bind(&redirect_addr).await {
                     Ok(listener) => {
                         let _ = axum::serve(listener, redirect_app).await;
                     }
                     Err(e) => {
-                        log::warn!("Could not start HTTP redirect server on {}: {}", redirect_addr, e);
+                        log::warn!(
+                            "Could not start HTTP redirect server on {}: {}",
+                            redirect_addr,
+                            e
+                        );
                     }
                 }
             });
@@ -871,7 +885,10 @@ pub mod web {
             Err(e) => {
                 let msg = e.to_string();
                 // CRDs not installed or no permission — skip policy check
-                if msg.contains("not found") || msg.contains("NotFound") || msg.contains("the server could not find") {
+                if msg.contains("not found")
+                    || msg.contains("NotFound")
+                    || msg.contains("the server could not find")
+                {
                     return Ok(vec![]);
                 }
                 log::warn!("Policy check failed: {}", msg);
@@ -905,7 +922,9 @@ pub mod web {
                     }
                     "max_disk_gib" => {
                         if let Some(max) = rule.value {
-                            let total: f64 = config.disks.iter()
+                            let total: f64 = config
+                                .disks
+                                .iter()
                                 .map(|d| crate::utils::parse_memory_gib(&d.size))
                                 .sum();
                             total > max
@@ -961,20 +980,72 @@ pub mod web {
         pub namespace: Option<String>,
     }
 
+    /// First guest IP + node name from VMI status (VMI name matches VM name in KubeVirt).
+    async fn vmi_ip_node_index(
+        client: &KubeClient,
+        scope_ns: &str,
+    ) -> HashMap<(String, String), (Option<String>, Option<String>)> {
+        let vmis = if scope_ns == "all" {
+            client.list_all_vmis().await.unwrap_or_default()
+        } else {
+            client.list_vmis(scope_ns).await.unwrap_or_default()
+        };
+        let mut m = HashMap::with_capacity(vmis.len());
+        for vmi in vmis {
+            let ns = vmi.metadata.namespace.clone().unwrap_or_default();
+            let name = vmi.metadata.name.clone().unwrap_or_default();
+            if ns.is_empty() || name.is_empty() {
+                continue;
+            }
+            let ip = vmi.status.as_ref().and_then(|s| {
+                s.interfaces.iter().find_map(|iface| {
+                    iface
+                        .ip_address
+                        .as_ref()
+                        .filter(|ip| !ip.is_empty())
+                        .cloned()
+                })
+            });
+            let node = vmi.status.as_ref().and_then(|s| s.node_name.clone());
+            m.insert((ns, name), (ip, node));
+        }
+        m
+    }
+
     async fn list_vms_handler(
         State(state): State<SharedState>,
-        Query(_query): Query<VmQuery>,
+        Query(query): Query<VmQuery>,
     ) -> impl IntoResponse {
-        let (client, namespace) = {
+        let (client, default_namespace) = {
             let s = state.read().await;
             (s.kube_client.clone(), s.namespace.clone())
         };
 
-        match client.list_vms(&namespace).await {
+        let scope_ns = query
+            .namespace
+            .as_deref()
+            .unwrap_or(default_namespace.as_str());
+
+        let vms_result = if scope_ns == "all" {
+            client.list_all_vms().await
+        } else {
+            client.list_vms(scope_ns).await
+        };
+
+        match vms_result {
             Ok(vms) => {
+                let vmi_index = vmi_ip_node_index(&client, scope_ns).await;
                 let vm_infos: Vec<VmInfo> = vms
                     .iter()
-                    .map(|vm| VmInfo::from_vm_with_ip(vm, None))
+                    .map(|vm| {
+                        let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+                        let name = vm.metadata.name.as_deref().unwrap_or("");
+                        let (ip, node) = vmi_index
+                            .get(&(ns.to_string(), name.to_string()))
+                            .cloned()
+                            .unwrap_or((None, None));
+                        VmInfo::from_vm_with_vmi_data(vm, ip, node)
+                    })
                     .collect();
                 let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms");
                 ok_json(&ApiResponse::success(&vm_infos, &ctx.request_id))
@@ -998,8 +1069,11 @@ pub mod web {
 
         match client.get_vm(&ns, &name).await {
             Ok(vm) => {
-                let ip = client.get_vm_ip(&ns, &name).await.unwrap_or(None);
-                let info = VmInfo::from_vm_with_ip(&vm, ip);
+                let (ip, node) = client
+                    .get_vm_ip_and_node(&ns, &name)
+                    .await
+                    .unwrap_or((None, None));
+                let info = VmInfo::from_vm_with_vmi_data(&vm, ip, node);
 
                 // Also fetch VMI details if running
                 let vmi_detail = client.get_vmi(&ns, &name).await.ok();
@@ -1113,11 +1187,7 @@ pub mod web {
         match client.is_running(&ns, &name).await {
             Ok(true) => {}
             Ok(false) => {
-                return (
-                    StatusCode::BAD_REQUEST,
-                    "VM is not running",
-                )
-                    .into_response();
+                return (StatusCode::BAD_REQUEST, "VM is not running").into_response();
             }
             Err(_) => {
                 return (
@@ -1136,7 +1206,12 @@ pub mod web {
 
     /// VNC proxy: connects browser WebSocket directly to KubeVirt API WebSocket.
     /// Same approach as v9s console-proxy — no virtctl needed, no timeout issues.
-    async fn vnc_proxy(mut client_ws: WebSocket, _kube_client: KubeClient, ns: String, name: String) {
+    async fn vnc_proxy(
+        mut client_ws: WebSocket,
+        _kube_client: KubeClient,
+        ns: String,
+        name: String,
+    ) {
         use futures_util::{SinkExt, StreamExt};
 
         // Build KubeVirt VNC subresource WebSocket URL
@@ -1144,20 +1219,29 @@ pub mod web {
             Ok(c) => c,
             Err(e) => {
                 log::error!("Failed to infer kube config: {}", e);
-                let _ = client_ws.send(Message::Close(Some(axum::extract::ws::CloseFrame {
-                    code: 1011,
-                    reason: "Failed to get cluster config".into(),
-                }))).await;
+                let _ = client_ws
+                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                        code: 1011,
+                        reason: "Failed to get cluster config".into(),
+                    })))
+                    .await;
                 return;
             }
         };
 
-        let api_url = config.cluster_url.to_string().trim_end_matches('/').to_string();
+        let api_url = config
+            .cluster_url
+            .to_string()
+            .trim_end_matches('/')
+            .to_string();
         let vnc_path = format!(
             "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/vnc",
             ns, name
         );
-        let ws_url = api_url.replace("https://", "wss://").replace("http://", "ws://") + &vnc_path;
+        let ws_url = api_url
+            .replace("https://", "wss://")
+            .replace("http://", "ws://")
+            + &vnc_path;
 
         log::info!("VNC proxy connecting to K8s API: {}", vnc_path);
 
@@ -1172,7 +1256,10 @@ pub mod web {
         };
 
         // Build auth headers
-        let mut request = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(ws_url.as_str())
+        let mut request =
+            tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(
+                ws_url.as_str(),
+            )
             .unwrap_or_else(|_| {
                 tokio_tungstenite::tungstenite::handshake::client::Request::get(&ws_url)
                     .body(())
@@ -1194,14 +1281,18 @@ pub mod web {
             None,
             false,
             tls_connector,
-        ).await {
+        )
+        .await
+        {
             Ok((ws, _)) => ws,
             Err(e) => {
                 log::error!("Failed to connect to KubeVirt VNC API: {}", e);
-                let _ = client_ws.send(Message::Close(Some(axum::extract::ws::CloseFrame {
-                    code: 1011,
-                    reason: "Failed to connect to VNC".into(),
-                }))).await;
+                let _ = client_ws
+                    .send(Message::Close(Some(axum::extract::ws::CloseFrame {
+                        code: 1011,
+                        reason: "Failed to connect to VNC".into(),
+                    })))
+                    .await;
                 return;
             }
         };
@@ -1378,7 +1469,11 @@ pub mod web {
         Path((ns, name)): Path<(String, String)>,
         Json(req): Json<CloneRequest>,
     ) -> impl IntoResponse {
-        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name), ("new_name", &req.new_name)]) {
+        if let Some(resp) = validate_k8s_params(&[
+            ("namespace", &ns),
+            ("name", &name),
+            ("new_name", &req.new_name),
+        ]) {
             return resp;
         }
         let client = { state.read().await.kube_client.clone() };
@@ -1472,7 +1567,10 @@ pub mod web {
             return resp;
         }
         let client = { state.read().await.kube_client.clone() };
-        match client.update_vm_resources(&ns, &name, req.cpus, req.memory.as_deref()).await {
+        match client
+            .update_vm_resources(&ns, &name, req.cpus, req.memory.as_deref())
+            .await
+        {
             Ok(_) => {
                 let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name");
                 ok_json(&ApiResponse::success(
@@ -1509,7 +1607,8 @@ pub mod web {
                         message: e.message.unwrap_or_default(),
                         namespace: e.metadata.namespace.unwrap_or_default(),
                         involved_object: e.involved_object.name.unwrap_or_default(),
-                        timestamp: e.last_timestamp
+                        timestamp: e
+                            .last_timestamp
                             .map(|t| t.0.to_rfc3339())
                             .or_else(|| e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339()))
                             .unwrap_or_default(),
@@ -1646,7 +1745,11 @@ pub mod web {
             return err_json(
                 400,
                 "BATCH_TOO_LARGE",
-                &format!("Batch size {} exceeds maximum of {}", req.vms.len(), MAX_BATCH_SIZE),
+                &format!(
+                    "Batch size {} exceeds maximum of {}",
+                    req.vms.len(),
+                    MAX_BATCH_SIZE
+                ),
             );
         }
 
@@ -1740,7 +1843,11 @@ pub mod web {
             if let Some(tpl_config) = TEMPLATES.get(tpl_name) {
                 let mut b = VMConfigBuilder::new(&req.name);
                 b = b.namespace(ns);
-                b = b.cpu(tpl_config.cpu.cores, tpl_config.cpu.sockets, tpl_config.cpu.threads);
+                b = b.cpu(
+                    tpl_config.cpu.cores,
+                    tpl_config.cpu.sockets,
+                    tpl_config.cpu.threads,
+                );
                 b = b.memory(&tpl_config.memory.size);
                 // Preserve disk types from template (containerDisk, blank, etc.)
                 for disk in &tpl_config.disks {
@@ -1770,7 +1877,11 @@ pub mod web {
                 b = b.labels(tpl_config.labels.clone());
                 b
             } else {
-                return err_json(400, "INVALID_TEMPLATE", &format!("Template '{}' not found", tpl_name));
+                return err_json(
+                    400,
+                    "INVALID_TEMPLATE",
+                    &format!("Template '{}' not found", tpl_name),
+                );
             }
         } else {
             let mut b = VMConfigBuilder::new(&req.name);
@@ -1784,7 +1895,8 @@ pub mod web {
         if let Some(ref profile_name) = req.profile {
             if let Ok(profiles) = PROFILES.read() {
                 if let Some(profile) = profiles.get(profile_name) {
-                    builder = builder.cpu(profile.cpu_cores, profile.cpu_sockets, profile.cpu_threads);
+                    builder =
+                        builder.cpu(profile.cpu_cores, profile.cpu_sockets, profile.cpu_threads);
                     builder = builder.memory(&profile.memory);
                     // Profile disk size applied below via config.disks
                 }
@@ -1841,15 +1953,16 @@ pub mod web {
                         .iter()
                         .map(|v| format!("[{}] {}", v.policy_name, v.message))
                         .collect();
-                    return err_json(
-                        403,
-                        "POLICY_VIOLATION",
-                        &messages.join("; "),
-                    );
+                    return err_json(403, "POLICY_VIOLATION", &messages.join("; "));
                 }
                 // Warn-level violations are logged but don't block creation
                 for v in violations.iter().filter(|v| v.enforcement == "Warn") {
-                    log::warn!("Policy warning for VM '{}': [{}] {}", req.name, v.policy_name, v.message);
+                    log::warn!(
+                        "Policy warning for VM '{}': [{}] {}",
+                        req.name,
+                        v.policy_name,
+                        v.message
+                    );
                 }
             }
         }
@@ -1876,7 +1989,11 @@ pub mod web {
             Err(e) => {
                 let msg = sanitize_error(&e);
                 if msg.contains("already exists") || msg.contains("conflict") {
-                    err_json(409, "VM_EXISTS", &format!("VM '{}' already exists", req.name))
+                    err_json(
+                        409,
+                        "VM_EXISTS",
+                        &format!("VM '{}' already exists", req.name),
+                    )
                 } else {
                     err_json(500, "CREATE_FAILED", &msg)
                 }
@@ -2153,8 +2270,7 @@ pub mod web {
                     .unwrap_or_else(|| name.clone());
                 match manager.restore_in_place(&vm_name, &name).await {
                     Ok(info) => {
-                        let ctx =
-                            req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:name/restore");
+                        let ctx = req_ctx(HttpMethod::POST, "/api/v1/snapshots/:ns/:name/restore");
                         ok_json(&ApiResponse::success(
                             &serde_json::json!({
                                 "message": format!("Restore '{}' initiated", info.name),
@@ -2201,32 +2317,20 @@ pub mod web {
                             .as_ref()
                             .and_then(|s| s.conditions.as_ref())
                             .and_then(|conds| {
-                                conds
-                                    .iter()
-                                    .find(|c| c.type_ == "Ready")
-                                    .map(|c| {
-                                        if c.status == "True" {
-                                            "Ready"
-                                        } else {
-                                            "NotReady"
-                                        }
-                                    })
+                                conds.iter().find(|c| c.type_ == "Ready").map(|c| {
+                                    if c.status == "True" {
+                                        "Ready"
+                                    } else {
+                                        "NotReady"
+                                    }
+                                })
                             })
                             .unwrap_or("Unknown")
                             .to_string();
 
-                        let capacity = node
-                            .status
-                            .as_ref()
-                            .and_then(|s| s.capacity.as_ref());
-                        let allocatable = node
-                            .status
-                            .as_ref()
-                            .and_then(|s| s.allocatable.as_ref());
-                        let node_info = node
-                            .status
-                            .as_ref()
-                            .and_then(|s| s.node_info.as_ref());
+                        let capacity = node.status.as_ref().and_then(|s| s.capacity.as_ref());
+                        let allocatable = node.status.as_ref().and_then(|s| s.allocatable.as_ref());
+                        let node_info = node.status.as_ref().and_then(|s| s.node_info.as_ref());
 
                         NodeItem {
                             name,
@@ -2251,9 +2355,7 @@ pub mod web {
                             kubelet_version: node_info
                                 .map(|i| i.kubelet_version.clone())
                                 .unwrap_or_default(),
-                            os_image: node_info
-                                .map(|i| i.os_image.clone())
-                                .unwrap_or_default(),
+                            os_image: node_info.map(|i| i.os_image.clone()).unwrap_or_default(),
                             kernel_version: node_info
                                 .map(|i| i.kernel_version.clone())
                                 .unwrap_or_default(),
@@ -2382,11 +2484,7 @@ pub mod web {
                     .items
                     .into_iter()
                     .filter(|e| {
-                        let kind = e
-                            .involved_object
-                            .kind
-                            .as_deref()
-                            .unwrap_or("");
+                        let kind = e.involved_object.kind.as_deref().unwrap_or("");
                         kind == "VirtualMachine"
                             || kind == "VirtualMachineInstance"
                             || kind == "VirtualMachineSnapshot"
@@ -2400,9 +2498,7 @@ pub mod web {
                         timestamp: e
                             .last_timestamp
                             .map(|t| t.0.to_rfc3339())
-                            .or_else(|| {
-                                e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339())
-                            })
+                            .or_else(|| e.metadata.creation_timestamp.map(|t| t.0.to_rfc3339()))
                             .unwrap_or_default(),
                     })
                     .collect();
@@ -2500,22 +2596,14 @@ pub mod web {
                             .get("cpu")
                             .map(|v| v.0.parse::<u64>().unwrap_or(0))
                             .unwrap_or(0);
-                        cap_mem += cap
-                            .get("memory")
-                            .map(|v| parse_memory(&v.0))
-                            .unwrap_or(0);
+                        cap_mem += cap.get("memory").map(|v| parse_memory(&v.0)).unwrap_or(0);
                     }
-                    if let Some(alloc) =
-                        node.status.as_ref().and_then(|s| s.allocatable.as_ref())
-                    {
+                    if let Some(alloc) = node.status.as_ref().and_then(|s| s.allocatable.as_ref()) {
                         alloc_cpu += alloc
                             .get("cpu")
                             .map(|v| v.0.parse::<u64>().unwrap_or(0))
                             .unwrap_or(0);
-                        alloc_mem += alloc
-                            .get("memory")
-                            .map(|v| parse_memory(&v.0))
-                            .unwrap_or(0);
+                        alloc_mem += alloc.get("memory").map(|v| parse_memory(&v.0)).unwrap_or(0);
                     }
                 }
                 NodeSummary {
@@ -2524,8 +2612,7 @@ pub mod web {
                     total_cpu_capacity: cap_cpu,
                     total_memory_capacity_gb: (cap_mem as f64) / (1024.0 * 1024.0 * 1024.0),
                     total_cpu_allocatable: alloc_cpu,
-                    total_memory_allocatable_gb: (alloc_mem as f64)
-                        / (1024.0 * 1024.0 * 1024.0),
+                    total_memory_allocatable_gb: (alloc_mem as f64) / (1024.0 * 1024.0 * 1024.0),
                 }
             }
             Err(_) => NodeSummary {
@@ -2779,9 +2866,7 @@ pub mod web {
                         // Parse PEM cert
                         let mut certs = Vec::new();
                         let mut cursor = &cert_pem[..];
-                        while let Ok(Some(item)) =
-                            rustls_pemfile::read_one(&mut cursor)
-                        {
+                        while let Ok(Some(item)) = rustls_pemfile::read_one(&mut cursor) {
                             if let rustls_pemfile::Item::X509Certificate(cert) = item {
                                 certs.push(cert);
                             }
@@ -2790,17 +2875,13 @@ pub mod web {
                         // Parse PEM key
                         let mut key_cursor = &key_pem[..];
                         let private_key =
-                            rustls_pemfile::private_key(&mut key_cursor)
-                                .ok()
-                                .flatten();
+                            rustls_pemfile::private_key(&mut key_cursor).ok().flatten();
 
                         if !certs.is_empty() {
                             if let Some(key) = private_key {
                                 if let Ok(cfg) = rustls::ClientConfig::builder()
                                     .dangerous()
-                                    .with_custom_certificate_verifier(Arc::new(
-                                        AcceptAllVerifier,
-                                    ))
+                                    .with_custom_certificate_verifier(Arc::new(AcceptAllVerifier))
                                     .with_client_auth_cert(certs, key)
                                 {
                                     log::info!("VNC proxy: using client certificate auth");

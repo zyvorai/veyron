@@ -383,9 +383,7 @@ impl KubeClient {
     }
 
     /// List all nodes in the cluster
-    pub async fn list_nodes(
-        &self,
-    ) -> Result<Vec<k8s_openapi::api::core::v1::Node>> {
+    pub async fn list_nodes(&self) -> Result<Vec<k8s_openapi::api::core::v1::Node>> {
         let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(self.client.clone());
         let lp = ListParams::default();
         let node_list = nodes.list(&lp).await?;
@@ -393,10 +391,7 @@ impl KubeClient {
     }
 
     /// List pods in a namespace
-    pub async fn list_pods(
-        &self,
-        namespace: &str,
-    ) -> Result<Vec<k8s_openapi::api::core::v1::Pod>> {
+    pub async fn list_pods(&self, namespace: &str) -> Result<Vec<k8s_openapi::api::core::v1::Pod>> {
         let pods: Api<k8s_openapi::api::core::v1::Pod> =
             Api::namespaced(self.client.clone(), namespace);
         let lp = ListParams::default();
@@ -425,9 +420,7 @@ impl KubeClient {
     }
 
     /// List all namespaces
-    pub async fn list_namespaces(
-        &self,
-    ) -> Result<Vec<k8s_openapi::api::core::v1::Namespace>> {
+    pub async fn list_namespaces(&self) -> Result<Vec<k8s_openapi::api::core::v1::Namespace>> {
         let ns: Api<k8s_openapi::api::core::v1::Namespace> = Api::all(self.client.clone());
         let lp = ListParams::default();
         let ns_list = ns.list(&lp).await?;
@@ -435,12 +428,16 @@ impl KubeClient {
     }
 
     /// List all VMIs in a namespace
-    pub async fn list_vmis(
-        &self,
-        namespace: &str,
-    ) -> Result<Vec<VirtualMachineInstance>> {
-        let vmis: Api<VirtualMachineInstance> =
-            Api::namespaced(self.client.clone(), namespace);
+    pub async fn list_vmis(&self, namespace: &str) -> Result<Vec<VirtualMachineInstance>> {
+        let vmis: Api<VirtualMachineInstance> = Api::namespaced(self.client.clone(), namespace);
+        let lp = ListParams::default();
+        let vmi_list = vmis.list(&lp).await?;
+        Ok(vmi_list.items)
+    }
+
+    /// List all VMIs cluster-wide (same VM name + namespace keys as namespaced list)
+    pub async fn list_all_vmis(&self) -> Result<Vec<VirtualMachineInstance>> {
+        let vmis: Api<VirtualMachineInstance> = Api::all(self.client.clone());
         let lp = ListParams::default();
         let vmi_list = vmis.list(&lp).await?;
         Ok(vmi_list.items)
@@ -510,7 +507,11 @@ impl KubeClient {
         let migrations: Api<VirtualMachineInstanceMigration> =
             Api::namespaced(self.client.clone(), namespace);
 
-        let migration_name = format!("{}-migration-{}", name, chrono::Utc::now().format("%Y%m%d%H%M%S"));
+        let migration_name = format!(
+            "{}-migration-{}",
+            name,
+            chrono::Utc::now().format("%Y%m%d%H%M%S")
+        );
         let migration = VirtualMachineInstanceMigration {
             metadata: kube::api::ObjectMeta {
                 name: Some(migration_name),
@@ -543,7 +544,8 @@ impl KubeClient {
             patch["spec"]["template"]["spec"]["domain"]["cpu"]["cores"] = json!(cores);
         }
         if let Some(mem) = memory {
-            patch["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] = json!(mem);
+            patch["spec"]["template"]["spec"]["domain"]["resources"]["requests"]["memory"] =
+                json!(mem);
         }
 
         let pp = PatchParams::default();
@@ -552,12 +554,8 @@ impl KubeClient {
     }
 
     /// List PVCs in a namespace
-    pub async fn list_pvcs(
-        &self,
-        namespace: &str,
-    ) -> Result<Vec<PersistentVolumeClaim>> {
-        let pvcs: Api<PersistentVolumeClaim> =
-            Api::namespaced(self.client.clone(), namespace);
+    pub async fn list_pvcs(&self, namespace: &str) -> Result<Vec<PersistentVolumeClaim>> {
+        let pvcs: Api<PersistentVolumeClaim> = Api::namespaced(self.client.clone(), namespace);
         let lp = ListParams::default();
         let list = pvcs.list(&lp).await?;
         Ok(list.items)
@@ -567,8 +565,7 @@ impl KubeClient {
     pub async fn list_storage_classes(
         &self,
     ) -> Result<Vec<k8s_openapi::api::storage::v1::StorageClass>> {
-        let scs: Api<k8s_openapi::api::storage::v1::StorageClass> =
-            Api::all(self.client.clone());
+        let scs: Api<k8s_openapi::api::storage::v1::StorageClass> = Api::all(self.client.clone());
         let lp = ListParams::default();
         let list = scs.list(&lp).await?;
         Ok(list.items)

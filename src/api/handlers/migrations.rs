@@ -100,10 +100,8 @@ async fn list_migrations(State(state): State<SharedState>) -> Json<Vec<Migration
                         status: phase,
                         migration_type: "LiveMigration".to_string(),
                         progress_percent: progress,
-                        started_at: migration_state
-                            .and_then(|ms| ms.start_timestamp.clone()),
-                        completed_at: migration_state
-                            .and_then(|ms| ms.end_timestamp.clone()),
+                        started_at: migration_state.and_then(|ms| ms.start_timestamp.clone()),
+                        completed_at: migration_state.and_then(|ms| ms.end_timestamp.clone()),
                     }
                 })
                 .collect();
@@ -131,12 +129,18 @@ async fn create_migration(
 
     match s.client().migrate_vm(&s.namespace, &req.vm_name).await {
         Ok(()) => Ok(Json(MigrationResponse {
-            id: format!("{}-migration-{}", req.vm_name, chrono::Utc::now().format("%Y%m%d%H%M%S")),
+            id: format!(
+                "{}-migration-{}",
+                req.vm_name,
+                chrono::Utc::now().format("%Y%m%d%H%M%S")
+            ),
             vm_name: req.vm_name,
             source_node,
             target_node: req.target_node.unwrap_or_default(),
             status: "Pending".to_string(),
-            migration_type: req.migration_type.unwrap_or_else(|| "LiveMigration".to_string()),
+            migration_type: req
+                .migration_type
+                .unwrap_or_else(|| "LiveMigration".to_string()),
             progress_percent: 0,
             started_at: Some(chrono::Utc::now().to_rfc3339()),
             completed_at: None,

@@ -60,16 +60,23 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let rows: Vec<Row> = state.recent_activity.iter().rev().enumerate().map(|(i, event)| {
-        let elapsed = event.elapsed_display();
-        Row::new(vec![
-            Cell::from(format!("{}", i + 1)).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(event.vm_name.as_str()).style(Style::default().fg(Color::White)),
-            Cell::from(event.action.as_str()),
-            Cell::from(elapsed),
-        ])
-        .height(1)
-    }).collect();
+    let rows: Vec<Row> = state
+        .recent_activity
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(i, event)| {
+            let elapsed = event.elapsed_display();
+            Row::new(vec![
+                Cell::from(format!("{}", i + 1))
+                    .style(Style::default().fg(Color::Rgb(222, 115, 86))),
+                Cell::from(event.vm_name.as_str()).style(Style::default().fg(Color::White)),
+                Cell::from(event.action.as_str()),
+                Cell::from(elapsed),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(10),
@@ -125,7 +132,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
 
         for (i, event) in state.recent_activity.iter().rev().take(8).enumerate() {
             detail_lines.push(Line::from(vec![
-                Span::styled(format!("  {}. ", i + 1), Style::default().fg(Color::Rgb(222, 115, 86))),
+                Span::styled(
+                    format!("  {}. ", i + 1),
+                    Style::default().fg(Color::Rgb(222, 115, 86)),
+                ),
                 Span::styled(
                     format!("{} {}", event.action, event.vm_name),
                     Style::default().fg(Color::White),
@@ -143,20 +153,35 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         detail_lines.push(Line::from(""));
         detail_lines.push(Line::from(vec![
             Span::styled("  Total Steps:  ", Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}", state.recent_activity.len()), Style::default().fg(Color::White)),
+            Span::styled(
+                format!("{}", state.recent_activity.len()),
+                Style::default().fg(Color::White),
+            ),
         ]));
 
         // Show distinct VMs involved
-        let mut unique_vms: Vec<&str> = state.recent_activity.iter().map(|e| e.vm_name.as_str()).collect();
+        let mut unique_vms: Vec<&str> = state
+            .recent_activity
+            .iter()
+            .map(|e| e.vm_name.as_str())
+            .collect();
         unique_vms.sort();
         unique_vms.dedup();
         detail_lines.push(Line::from(vec![
             Span::styled("  VMs Involved: ", Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}", unique_vms.len()), Style::default().fg(Color::White)),
+            Span::styled(
+                format!("{}", unique_vms.len()),
+                Style::default().fg(Color::White),
+            ),
         ]));
         detail_lines.push(Line::from(vec![
             Span::styled("  Status:       ", Style::default().fg(Color::Gray)),
-            Span::styled("Ready", Style::default().fg(Color::Rgb(50, 205, 50)).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "Ready",
+                Style::default()
+                    .fg(Color::Rgb(50, 205, 50))
+                    .add_modifier(Modifier::BOLD),
+            ),
         ]));
     }
 

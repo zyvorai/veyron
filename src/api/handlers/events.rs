@@ -1,5 +1,9 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Query, State}, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -40,7 +44,11 @@ async fn list_events(
     let events = match query.namespace.as_deref() {
         Some("all") => s.client().list_all_events().await.unwrap_or_default(),
         Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s.client().list_events(&s.namespace).await.unwrap_or_default(),
+        None => s
+            .client()
+            .list_events(&s.namespace)
+            .await
+            .unwrap_or_default(),
     };
 
     Json(map_events(&events))
@@ -69,9 +77,7 @@ fn map_events(events: &[k8s_openapi::api::core::v1::Event]) -> Vec<EventResponse
                     .last_timestamp
                     .as_ref()
                     .map(|t| t.0.to_rfc3339())
-                    .or_else(|| {
-                        meta.creation_timestamp.as_ref().map(|t| t.0.to_rfc3339())
-                    })
+                    .or_else(|| meta.creation_timestamp.as_ref().map(|t| t.0.to_rfc3339()))
                     .unwrap_or_default(),
                 count: event.count.unwrap_or(1) as u32,
             }

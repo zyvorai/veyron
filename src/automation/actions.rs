@@ -76,7 +76,10 @@ impl ActionExecutor {
             ),
             None => {
                 log::warn!("start_vm: no async runtime available, action not executed");
-                ActionExecutionResult::success("start-vm", format!("[no-runtime] Start VM '{}' not executed", vm_name))
+                ActionExecutionResult::success(
+                    "start-vm",
+                    format!("[no-runtime] Start VM '{}' not executed", vm_name),
+                )
             }
         }
     }
@@ -106,7 +109,10 @@ impl ActionExecutor {
             ),
             None => {
                 log::warn!("stop_vm: no async runtime available, action not executed");
-                ActionExecutionResult::success("stop-vm", format!("[no-runtime] Stop VM '{}' not executed", vm_name))
+                ActionExecutionResult::success(
+                    "stop-vm",
+                    format!("[no-runtime] Stop VM '{}' not executed", vm_name),
+                )
             }
         }
     }
@@ -127,10 +133,9 @@ impl ActionExecutor {
             client.restart_vm(&namespace, &vm).await?;
             Ok::<_, anyhow::Error>(())
         }) {
-            Some(Ok(())) => ActionExecutionResult::success(
-                "restart-vm",
-                format!("Restarted VM: {}", vm_name),
-            ),
+            Some(Ok(())) => {
+                ActionExecutionResult::success("restart-vm", format!("Restarted VM: {}", vm_name))
+            }
             Some(Err(e)) => ActionExecutionResult::failure(
                 "restart-vm",
                 format!("Failed to restart VM '{}': {}", vm_name, e),
@@ -150,11 +155,7 @@ impl ActionExecutor {
         snapshot_name: Option<&str>,
         context: &ExecutionContext,
     ) -> ActionExecutionResult {
-        let default_name = format!(
-            "{}-snap-{}",
-            vm_name,
-            Utc::now().format("%Y%m%d%H%M%S")
-        );
+        let default_name = format!("{}-snap-{}", vm_name, Utc::now().format("%Y%m%d%H%M%S"));
         let name = snapshot_name.unwrap_or(&default_name);
 
         if context.dry_run {
@@ -192,7 +193,10 @@ impl ActionExecutor {
                 log::warn!("create_snapshot: no async runtime available, action not executed");
                 ActionExecutionResult::success(
                     "create-snapshot",
-                    format!("[no-runtime] Create snapshot '{}' for VM '{}' not executed", snap_name, vm_name),
+                    format!(
+                        "[no-runtime] Create snapshot '{}' for VM '{}' not executed",
+                        snap_name, vm_name
+                    ),
                 )
             }
         }
@@ -290,7 +294,10 @@ impl ActionExecutor {
             ),
             None => {
                 log::warn!("delete_vm: no async runtime available, action not executed");
-                ActionExecutionResult::success("delete-vm", format!("[no-runtime] Delete VM '{}' not executed", vm_name))
+                ActionExecutionResult::success(
+                    "delete-vm",
+                    format!("[no-runtime] Delete VM '{}' not executed", vm_name),
+                )
             }
         }
     }

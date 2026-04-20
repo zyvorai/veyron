@@ -1,5 +1,10 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::{Path, Query, State}, http::StatusCode, routing::{get, post}};
+use axum::{
+    Json, Router,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    routing::{get, post},
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -101,10 +106,7 @@ async fn create_backup(
             size_bytes: None,
             compressed: req.compress,
             encrypted: req.encrypt,
-            created_at: snap
-                .created_at
-                .map(|t| t.to_rfc3339())
-                .unwrap_or_default(),
+            created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
             completed_at: None,
         })),
         Err(e) => {
@@ -115,12 +117,9 @@ async fn create_backup(
 }
 
 #[cfg(feature = "web")]
-async fn restore_backup(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
-) -> StatusCode {
-    use crate::snapshots::restore::RestoreManager;
+async fn restore_backup(State(state): State<SharedState>, Path(id): Path<String>) -> StatusCode {
     use crate::snapshots::SnapshotManager;
+    use crate::snapshots::restore::RestoreManager;
 
     let s = state.read().await;
     let snap_mgr = SnapshotManager::from_client(s.client().client(), &s.namespace);

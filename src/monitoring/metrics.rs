@@ -269,7 +269,12 @@ impl MetricsCollector {
             .unwrap_or(20 * 1024 * 1024 * 1024);
 
         Ok(self
-            .collect_real_pod_metrics(vm_name, cores_allocated, total_memory_bytes, total_disk_bytes)
+            .collect_real_pod_metrics(
+                vm_name,
+                cores_allocated,
+                total_memory_bytes,
+                total_disk_bytes,
+            )
             .await)
     }
 
@@ -303,10 +308,7 @@ impl MetricsCollector {
         let lp = kube::api::ListParams::default().labels(&label);
 
         let pod_name = match pods.list(&lp).await {
-            Ok(list) => list
-                .items
-                .first()
-                .and_then(|p| p.metadata.name.clone()),
+            Ok(list) => list.items.first().and_then(|p| p.metadata.name.clone()),
             Err(_) => None,
         };
 
@@ -361,11 +363,7 @@ impl MetricsCollector {
 
     /// Fetch CPU (nanocores) and memory (bytes) from the Kubernetes Metrics Server
     /// using a dynamic API request.
-    async fn fetch_pod_metrics(
-        &self,
-        client: &kube::Client,
-        pod_name: &str,
-    ) -> Result<(u64, u64)> {
+    async fn fetch_pod_metrics(&self, client: &kube::Client, pod_name: &str) -> Result<(u64, u64)> {
         // Use kube's dynamic API to fetch PodMetrics
         let gvk = kube::api::GroupVersionKind::gvk("metrics.k8s.io", "v1beta1", "PodMetrics");
         let ar = kube::api::ApiResource::from_gvk(&gvk);

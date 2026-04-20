@@ -119,8 +119,8 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         }
         let mid = history.len() / 2;
         let first_half: f64 = history[..mid].iter().map(|&v| v as f64).sum::<f64>() / mid as f64;
-        let second_half: f64 = history[mid..].iter().map(|&v| v as f64).sum::<f64>()
-            / (history.len() - mid) as f64;
+        let second_half: f64 =
+            history[mid..].iter().map(|&v| v as f64).sum::<f64>() / (history.len() - mid) as f64;
         second_half - first_half
     };
 
@@ -135,15 +135,23 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     };
 
     let forecast_color = |pct: u16| -> Color {
-        if pct >= 90 { Color::Rgb(220, 50, 47) }
-        else if pct >= 75 { Color::Rgb(255, 200, 0) }
-        else { Color::White }
+        if pct >= 90 {
+            Color::Rgb(220, 50, 47)
+        } else if pct >= 75 {
+            Color::Rgb(255, 200, 0)
+        } else {
+            Color::White
+        }
     };
 
     let delta_color = |delta: i16| -> Color {
-        if delta >= 15 { Color::Rgb(220, 50, 47) }
-        else if delta >= 5 { Color::Rgb(255, 200, 0) }
-        else { Color::White }
+        if delta >= 15 {
+            Color::Rgb(220, 50, 47)
+        } else if delta >= 5 {
+            Color::Rgb(255, 200, 0)
+        } else {
+            Color::White
+        }
     };
 
     // Forecast details
@@ -179,12 +187,22 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             .fg(Color::White)
             .add_modifier(Modifier::BOLD),
     )));
-    for (label, val, base) in [("7 days", cpu_7, cpu_now), ("30 days", cpu_30, cpu_now), ("90 days", cpu_90, cpu_now)] {
+    for (label, val, base) in [
+        ("7 days", cpu_7, cpu_now),
+        ("30 days", cpu_30, cpu_now),
+        ("90 days", cpu_90, cpu_now),
+    ] {
         let delta = val as i16 - base as i16;
         let warning = if val >= 90 { " CAPACITY WARNING" } else { "" };
         predictions.push(Line::from(vec![
-            Span::styled(format!("    {:<7} ", label), Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}%", val), Style::default().fg(forecast_color(val))),
+            Span::styled(
+                format!("    {:<7} ", label),
+                Style::default().fg(Color::Gray),
+            ),
+            Span::styled(
+                format!("{}%", val),
+                Style::default().fg(forecast_color(val)),
+            ),
             Span::styled(
                 format!(" ({:+}%){}", delta, warning),
                 Style::default().fg(delta_color(delta)),
@@ -201,12 +219,22 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             .fg(Color::White)
             .add_modifier(Modifier::BOLD),
     )));
-    for (label, val, base) in [("7 days", mem_7, mem_now), ("30 days", mem_30, mem_now), ("90 days", mem_90, mem_now)] {
+    for (label, val, base) in [
+        ("7 days", mem_7, mem_now),
+        ("30 days", mem_30, mem_now),
+        ("90 days", mem_90, mem_now),
+    ] {
         let delta = val as i16 - base as i16;
         let warning = if val >= 90 { " CAPACITY WARNING" } else { "" };
         predictions.push(Line::from(vec![
-            Span::styled(format!("    {:<7} ", label), Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}%", val), Style::default().fg(forecast_color(val))),
+            Span::styled(
+                format!("    {:<7} ", label),
+                Style::default().fg(Color::Gray),
+            ),
+            Span::styled(
+                format!("{}%", val),
+                Style::default().fg(forecast_color(val)),
+            ),
             Span::styled(
                 format!(" ({:+}%){}", delta, warning),
                 Style::default().fg(delta_color(delta)),
@@ -223,12 +251,22 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             .fg(Color::White)
             .add_modifier(Modifier::BOLD),
     )));
-    for (label, val, base) in [("7 days", disk_7, disk_now), ("30 days", disk_30, disk_now), ("90 days", disk_90, disk_now)] {
+    for (label, val, base) in [
+        ("7 days", disk_7, disk_now),
+        ("30 days", disk_30, disk_now),
+        ("90 days", disk_90, disk_now),
+    ] {
         let delta = val as i16 - base as i16;
         let warning = if val >= 90 { " CRITICAL" } else { "" };
         predictions.push(Line::from(vec![
-            Span::styled(format!("    {:<7} ", label), Style::default().fg(Color::Gray)),
-            Span::styled(format!("{}%", val), Style::default().fg(forecast_color(val))),
+            Span::styled(
+                format!("    {:<7} ", label),
+                Style::default().fg(Color::Gray),
+            ),
+            Span::styled(
+                format!("{}%", val),
+                Style::default().fg(forecast_color(val)),
+            ),
             Span::styled(
                 format!(" ({:+}%){}", delta, warning),
                 Style::default().fg(delta_color(delta)),
@@ -265,7 +303,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if disk_90 >= 90 {
         rec_num += 1;
         recommendations.push(Line::from(vec![
-            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(220, 50, 47))),
+            Span::styled(
+                format!("  {}. ", rec_num),
+                Style::default().fg(Color::Rgb(220, 50, 47)),
+            ),
             Span::styled(
                 "Expand storage capacity soon",
                 Style::default().fg(Color::White),
@@ -281,7 +322,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if cpu_90 >= 85 {
         rec_num += 1;
         recommendations.push(Line::from(vec![
-            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(255, 200, 0))),
+            Span::styled(
+                format!("  {}. ", rec_num),
+                Style::default().fg(Color::Rgb(255, 200, 0)),
+            ),
             Span::styled(
                 "Plan CPU capacity increase",
                 Style::default().fg(Color::White),
@@ -297,11 +341,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if stats.stopped > 0 {
         rec_num += 1;
         recommendations.push(Line::from(vec![
-            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(100, 150, 255))),
             Span::styled(
-                "Review stopped VMs",
-                Style::default().fg(Color::White),
+                format!("  {}. ", rec_num),
+                Style::default().fg(Color::Rgb(100, 150, 255)),
             ),
+            Span::styled("Review stopped VMs", Style::default().fg(Color::White)),
         ]));
         recommendations.push(Line::from(vec![Span::styled(
             format!("     {} VMs are stopped, consider cleanup", stats.stopped),
@@ -313,11 +357,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     if stats.failed > 0 {
         rec_num += 1;
         recommendations.push(Line::from(vec![
-            Span::styled(format!("  {}. ", rec_num), Style::default().fg(Color::Rgb(220, 50, 47))),
             Span::styled(
-                "Investigate failed VMs",
-                Style::default().fg(Color::White),
+                format!("  {}. ", rec_num),
+                Style::default().fg(Color::Rgb(220, 50, 47)),
             ),
+            Span::styled("Investigate failed VMs", Style::default().fg(Color::White)),
         ]));
         recommendations.push(Line::from(vec![Span::styled(
             format!("     {} VMs in failed state need attention", stats.failed),
@@ -345,7 +389,9 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         Span::styled("  Current VMs: ", Style::default().fg(Color::Gray)),
         Span::styled(
             format!("{}", stats.total),
-            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD),
         ),
     ]));
     recommendations.push(Line::from(vec![

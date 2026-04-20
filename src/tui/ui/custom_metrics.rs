@@ -96,47 +96,124 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     let net_alert = if net_val > 80 { "WARN" } else { "OK" };
 
     let metrics: Vec<(&str, String, &str, String, bool, &str)> = vec![
-        ("vm_cpu_utilization", format!("{}", cpu_val), "%", cpu_trend, cpu_up, cpu_alert),
-        ("vm_memory_pressure", format!("{}", mem_val), "%", mem_trend, mem_up, mem_alert),
-        ("vm_disk_io", format!("{}", disk_val), "%", disk_trend, disk_up, disk_alert),
-        ("vm_network_throughput", format!("{}", net_val), "%", net_trend, net_up, net_alert),
-        ("vm_total_count", format!("{}", stats.total), "vms", "--".to_string(), false, "OK"),
-        ("vm_running_count", format!("{}", stats.running), "vms", "--".to_string(), false, if stats.running < stats.total { "WARN" } else { "OK" }),
-        ("vm_failed_count", format!("{}", stats.failed), "vms", "--".to_string(), false, if stats.failed > 0 { "ALERT" } else { "OK" }),
-        ("vm_stopped_count", format!("{}", stats.stopped), "vms", "--".to_string(), false, "OK"),
-        ("node_count", format!("{}", state.nodes.len()), "nodes", "--".to_string(), false, "OK"),
-        ("snapshot_count", format!("{}", state.snapshots.len()), "snaps", "--".to_string(), false, "OK"),
+        (
+            "vm_cpu_utilization",
+            format!("{}", cpu_val),
+            "%",
+            cpu_trend,
+            cpu_up,
+            cpu_alert,
+        ),
+        (
+            "vm_memory_pressure",
+            format!("{}", mem_val),
+            "%",
+            mem_trend,
+            mem_up,
+            mem_alert,
+        ),
+        (
+            "vm_disk_io",
+            format!("{}", disk_val),
+            "%",
+            disk_trend,
+            disk_up,
+            disk_alert,
+        ),
+        (
+            "vm_network_throughput",
+            format!("{}", net_val),
+            "%",
+            net_trend,
+            net_up,
+            net_alert,
+        ),
+        (
+            "vm_total_count",
+            format!("{}", stats.total),
+            "vms",
+            "--".to_string(),
+            false,
+            "OK",
+        ),
+        (
+            "vm_running_count",
+            format!("{}", stats.running),
+            "vms",
+            "--".to_string(),
+            false,
+            if stats.running < stats.total {
+                "WARN"
+            } else {
+                "OK"
+            },
+        ),
+        (
+            "vm_failed_count",
+            format!("{}", stats.failed),
+            "vms",
+            "--".to_string(),
+            false,
+            if stats.failed > 0 { "ALERT" } else { "OK" },
+        ),
+        (
+            "vm_stopped_count",
+            format!("{}", stats.stopped),
+            "vms",
+            "--".to_string(),
+            false,
+            "OK",
+        ),
+        (
+            "node_count",
+            format!("{}", state.nodes.len()),
+            "nodes",
+            "--".to_string(),
+            false,
+            "OK",
+        ),
+        (
+            "snapshot_count",
+            format!("{}", state.snapshots.len()),
+            "snaps",
+            "--".to_string(),
+            false,
+            "OK",
+        ),
     ];
 
-    let rows: Vec<Row> = metrics.iter().map(|(name, val, unit, trend, is_up, alert)| {
-        let alert_color = match *alert {
-            "OK" => Color::Rgb(50, 205, 50),
-            "WARN" => Color::Rgb(255, 200, 0),
-            "ALERT" => Color::Rgb(220, 50, 47),
-            _ => Color::Gray,
-        };
-        let trend_color = if *is_up {
-            Color::Rgb(255, 200, 0)
-        } else {
-            Color::Rgb(50, 205, 50)
-        };
-        Row::new(vec![
-            Cell::from(*name).style(Style::default().fg(Color::Rgb(222, 115, 86))),
-            Cell::from(val.as_str()).style(
-                Style::default()
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Cell::from(*unit),
-            Cell::from(trend.as_str()).style(Style::default().fg(trend_color)),
-            Cell::from(*alert).style(
-                Style::default()
-                    .fg(alert_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-        ])
-        .height(1)
-    }).collect();
+    let rows: Vec<Row> = metrics
+        .iter()
+        .map(|(name, val, unit, trend, is_up, alert)| {
+            let alert_color = match *alert {
+                "OK" => Color::Rgb(50, 205, 50),
+                "WARN" => Color::Rgb(255, 200, 0),
+                "ALERT" => Color::Rgb(220, 50, 47),
+                _ => Color::Gray,
+            };
+            let trend_color = if *is_up {
+                Color::Rgb(255, 200, 0)
+            } else {
+                Color::Rgb(50, 205, 50)
+            };
+            Row::new(vec![
+                Cell::from(*name).style(Style::default().fg(Color::Rgb(222, 115, 86))),
+                Cell::from(val.as_str()).style(
+                    Style::default()
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Cell::from(*unit),
+                Cell::from(trend.as_str()).style(Style::default().fg(trend_color)),
+                Cell::from(*alert).style(
+                    Style::default()
+                        .fg(alert_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(30),
@@ -163,17 +240,77 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
     f.render_widget(table, content_chunks[0]);
 
     // Metric configuration - show history sparklines as text
-    let cpu_spark: String = state.cpu_history.iter().rev().take(10).rev()
-        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+    let cpu_spark: String = state
+        .cpu_history
+        .iter()
+        .rev()
+        .take(10)
+        .rev()
+        .map(|v| {
+            if *v > 75 {
+                '#'
+            } else if *v > 50 {
+                '='
+            } else if *v > 25 {
+                '-'
+            } else {
+                '.'
+            }
+        })
         .collect();
-    let mem_spark: String = state.memory_history.iter().rev().take(10).rev()
-        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+    let mem_spark: String = state
+        .memory_history
+        .iter()
+        .rev()
+        .take(10)
+        .rev()
+        .map(|v| {
+            if *v > 75 {
+                '#'
+            } else if *v > 50 {
+                '='
+            } else if *v > 25 {
+                '-'
+            } else {
+                '.'
+            }
+        })
         .collect();
-    let disk_spark: String = state.disk_history.iter().rev().take(10).rev()
-        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+    let disk_spark: String = state
+        .disk_history
+        .iter()
+        .rev()
+        .take(10)
+        .rev()
+        .map(|v| {
+            if *v > 75 {
+                '#'
+            } else if *v > 50 {
+                '='
+            } else if *v > 25 {
+                '-'
+            } else {
+                '.'
+            }
+        })
         .collect();
-    let net_spark: String = state.network_history.iter().rev().take(10).rev()
-        .map(|v| if *v > 75 { '#' } else if *v > 50 { '=' } else if *v > 25 { '-' } else { '.' })
+    let net_spark: String = state
+        .network_history
+        .iter()
+        .rev()
+        .take(10)
+        .rev()
+        .map(|v| {
+            if *v > 75 {
+                '#'
+            } else if *v > 50 {
+                '='
+            } else if *v > 25 {
+                '-'
+            } else {
+                '.'
+            }
+        })
         .collect();
 
     let config_lines = vec![
@@ -221,7 +358,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled(
                 if cpu_val > 80 { "TRIGGERED" } else { "OK" },
                 Style::default()
-                    .fg(if cpu_val > 80 { Color::Rgb(220, 50, 47) } else { Color::Rgb(50, 205, 50) })
+                    .fg(if cpu_val > 80 {
+                        Color::Rgb(220, 50, 47)
+                    } else {
+                        Color::Rgb(50, 205, 50)
+                    })
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
@@ -233,7 +374,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled(
                 if mem_val > 80 { "TRIGGERED" } else { "OK" },
                 Style::default()
-                    .fg(if mem_val > 80 { Color::Rgb(220, 50, 47) } else { Color::Rgb(50, 205, 50) })
+                    .fg(if mem_val > 80 {
+                        Color::Rgb(220, 50, 47)
+                    } else {
+                        Color::Rgb(50, 205, 50)
+                    })
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
@@ -245,7 +390,11 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             Span::styled(
                 if stats.failed > 0 { "TRIGGERED" } else { "OK" },
                 Style::default()
-                    .fg(if stats.failed > 0 { Color::Rgb(220, 50, 47) } else { Color::Rgb(50, 205, 50) })
+                    .fg(if stats.failed > 0 {
+                        Color::Rgb(220, 50, 47)
+                    } else {
+                        Color::Rgb(50, 205, 50)
+                    })
                     .add_modifier(Modifier::BOLD),
             ),
         ]),

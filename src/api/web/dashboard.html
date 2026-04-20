@@ -403,6 +403,16 @@ body>*{position:relative;z-index:1}
 .vm-badge.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(255,34,68,.15)}
 .vm-badge.other{background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
 .vm-meta{font-size:.7em;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.vm-right-stack{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0;flex:1;max-width:min(100%,560px)}
+.vm-right-stack .vm-right{flex-wrap:wrap;justify-content:flex-end}
+.vm-ssh-line{font-size:.62em;color:var(--text-dim);font-family:'JetBrains Mono',monospace;text-align:right;line-height:1.4;max-width:100%;word-break:break-word}
+.vm-ssh-line code{font-size:1em}
+.vm-ssh-line .ssh-actions{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+.vm-ssh-line .ssh-block-title{margin-bottom:2px;font-size:.72em;color:var(--text-bright);letter-spacing:.03em}
+.vm-ssh-line .ssh-kind{display:block;margin-top:8px;margin-bottom:3px;font-size:.65em;font-weight:600;color:var(--spark);letter-spacing:.04em}
+.vm-ssh-line .ssh-block-title + .ssh-kind{margin-top:6px}
+.btn-mini{padding:3px 9px;font-size:.65em;border-radius:2px;cursor:pointer;border:1px solid rgba(0,180,255,.22);background:rgba(0,180,255,.07);color:var(--spark);font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0}
+.btn-mini:hover{background:rgba(0,180,255,.14)}
 
 /* ═══════════════════════════════════════════════════
    ACTION BUTTONS — Forged Controls
@@ -786,6 +796,7 @@ body>*{position:relative;z-index:1}
   .grid-4,.grid-3{grid-template-columns:1fr 1fr}
   .grid-2{grid-template-columns:1fr}
   .vm-row{flex-direction:column;align-items:flex-start;gap:8px}
+  .vm-right-stack{align-items:flex-start;max-width:100%}
   .vm-right{flex-wrap:wrap}
   .detail-grid{grid-template-columns:1fr}
   .table-row.node-row,.table-row.pod-row{grid-template-columns:1fr 1fr;gap:4px;font-size:.75em}
@@ -1886,6 +1897,64 @@ async function vmDelete(ns, name) {
   } catch(e) { toast('Error: '+e.message, 'error'); }
 }
 
+// ── SSH / remote shell hints (guest IP from VMI; user is a best-effort guess) ──
+function guessSshUser(vmName) {
+  const n = (vmName || '').toLowerCase();
+  if (n.indexOf('win') !== -1) return null;
+  if (n.indexOf('ubuntu') !== -1) return 'ubuntu';
+  if (n.indexOf('debian') !== -1) return 'debian';
+  if (n.indexOf('fedora') !== -1) return 'fedora';
+  if (n.indexOf('coreos') !== -1 || n.indexOf('fcos') !== -1) return 'core';
+  return 'root';
+}
+
+function copyToClipboard(text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(function() {
+    toast('Copied to clipboard', 'success');
+  }).catch(function() {
+    toast('Could not copy — check browser clipboard permission', 'error');
+  });
+}
+
+function vmSshBlock(vm, showActions) {
+  if (vm.status !== 'Running') return '';
+  const ns = vm.namespace || 'default';
+  const ip = vm.ip;
+  const ipOk = ip && ip !== 'N/A';
+  const virtFallback = 'virtctl ssh --user root ' + vm.name + ' -n ' + ns;
+  if (!ipOk) {
+    return '<div class="vm-ssh-line">' +
+      '<div class="ssh-block-title"><strong>SSH</strong> <span style="font-weight:400;opacity:.8">(KubeVirt / virtctl)</span></div>' +
+      '<div style="margin-top:6px;line-height:1.45">Guest IP not reported on the VMI yet. On any machine with <code>kubectl</code> and <code>virtctl</code>:</div>' +
+      '<div style="margin-top:6px"><code>' + esc(virtFallback) + '</code>' +
+      (showActions ? ' <button type="button" class="btn-mini" onclick="event.stopPropagation();copyToClipboard(' + JSON.stringify(virtFallback) + ')">Copy SSH command</button>' : '') +
+      '</div></div>';
+  }
+  const u = guessSshUser(vm.name);
+  if (!u) {
+    return '<div class="vm-ssh-line"><div class="ssh-block-title"><strong>Remote desktop</strong> <span style="font-weight:400;opacity:.8">(Windows — not SSH)</span></div>' +
+      '<div style="margin-top:6px">Use <strong>VNC</strong> above, or RDP from a host that can reach the guest network.</div></div>';
+  }
+  const ssh = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ' + u + '@' + ip;
+  const virt = 'virtctl ssh --user ' + u + ' ' + vm.name + ' -n ' + ns;
+  let html = '<div class="vm-ssh-line">' +
+    '<div class="ssh-block-title"><strong>SSH</strong> <span style="font-weight:400;opacity:.8">— secure shell</span></div>' +
+    '<span class="ssh-kind">A. TCP to the guest (standard OpenSSH)</span>' +
+    '<div><code>' + esc(ssh) + '</code></div>' +
+    '<span class="ssh-kind">B. Through the Kubernetes API (virtctl)</span>' +
+    '<div><code>' + esc(virt) + '</code></div>' +
+    '<div style="margin-top:8px;opacity:.82;font-size:.95em;line-height:1.45"><strong>A</strong> works only if your machine can route to <code>' + esc(ip) + '</code> (same LAN, VPN, load balancer, etc.). <strong>B</strong> works wherever <code>kubectl</code> works; install the KubeVirt <code>virtctl</code> client.</div>';
+  if (showActions) {
+    html += '<div class="ssh-actions">' +
+      '<button type="button" class="btn-mini" onclick="event.stopPropagation();copyToClipboard(' + JSON.stringify(ssh) + ')">Copy SSH (TCP)</button>' +
+      '<button type="button" class="btn-mini" onclick="event.stopPropagation();copyToClipboard(' + JSON.stringify(virt) + ')">Copy SSH (virtctl)</button>' +
+      '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
 // Render VM row
 function vmRow(vm, showActions) {
   const cls = sc(vm.status);
@@ -1900,13 +1969,15 @@ function vmRow(vm, showActions) {
     '</div>' : '';
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" onclick="event.stopPropagation();toggleVMSelect(\''+vm.name+'\',this.checked)"' + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
   const clickAttr = showActions ? ' onclick="toggleVmDetail(\''+ns+'\',\''+vm.name+'\')" style="cursor:pointer"' : '';
-  return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+vm.name+'</div><div class="vm-ns">'+ns+'</div></div></div><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+vm.ip:'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div></div>';
+  const sshBlock = vmSshBlock(vm, showActions);
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div><div class="vm-ns">'+esc(ns)+'</div></div></div>'+rightCol+'</div>';
 }
 
 // Fetch VMs
 async function fetchVMs() {
   try {
-    const j = await apiJson('/api/v1/vms');
+    const j = await apiJson('/api/v1/vms' + nsParam());
     const list = asArray(j);
     vmData = list;
     const total=vmData.length, running=vmData.filter(v=>v.status==='Running').length;
@@ -2208,6 +2279,10 @@ async function fetchVmDetail(ns, name) {
     html += detailRow('Node', vm.node || 'N/A');
     html += detailRow('Age', vm.age || 'N/A');
     html += detailRow('IP', vm.ip || 'N/A');
+    html += '</div>';
+
+    html += '<div class="detail-section"><div class="detail-section-title">Remote access (SSH)</div>';
+    html += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
     html += '</div>';
 
     // Resources section

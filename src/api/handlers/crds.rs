@@ -18,7 +18,7 @@ use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use kube::{
     Api,
-    api::{ListParams, PostParams, DeleteParams},
+    api::{DeleteParams, ListParams, PostParams},
 };
 
 use crate::operator_crds::*;
@@ -161,10 +161,7 @@ pub fn router(state: SharedState) -> Router {
             "/crds/actions/{ns}/{name}",
             get(get_action).delete(delete_action),
         )
-        .route(
-            "/crds/actions/{ns}/{name}/approve",
-            post(approve_action),
-        )
+        .route("/crds/actions/{ns}/{name}/approve", post(approve_action))
         .with_state(state)
 }
 
@@ -190,10 +187,7 @@ async fn list_vmrogue_vms(
                     cpu_cores: vm.spec.cpu.cores,
                     memory: vm.spec.memory.size.clone(),
                     phase: vm.status.as_ref().and_then(|s| s.phase.clone()),
-                    kubevirt_vm: vm
-                        .status
-                        .as_ref()
-                        .and_then(|s| s.kubevirt_vm_name.clone()),
+                    kubevirt_vm: vm.status.as_ref().and_then(|s| s.kubevirt_vm_name.clone()),
                     node: vm.status.as_ref().and_then(|s| s.node_name.clone()),
                     ip: vm.status.as_ref().and_then(|s| s.ip_address.clone()),
                     created_at: vm
@@ -231,10 +225,7 @@ async fn get_vmrogue_vm(
             cpu_cores: vm.spec.cpu.cores,
             memory: vm.spec.memory.size.clone(),
             phase: vm.status.as_ref().and_then(|s| s.phase.clone()),
-            kubevirt_vm: vm
-                .status
-                .as_ref()
-                .and_then(|s| s.kubevirt_vm_name.clone()),
+            kubevirt_vm: vm.status.as_ref().and_then(|s| s.kubevirt_vm_name.clone()),
             node: vm.status.as_ref().and_then(|s| s.node_name.clone()),
             ip: vm.status.as_ref().and_then(|s| s.ip_address.clone()),
             created_at: vm
@@ -733,10 +724,7 @@ async fn approve_action(
     match api.get(&name).await {
         Ok(mut action) => {
             action.spec.approved = true;
-            match api
-                .replace(&name, &PostParams::default(), &action)
-                .await
-            {
+            match api.replace(&name, &PostParams::default(), &action).await {
                 Ok(_) => StatusCode::OK,
                 Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
             }

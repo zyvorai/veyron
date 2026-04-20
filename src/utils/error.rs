@@ -55,9 +55,7 @@ impl axum::response::IntoResponse for VMRogueError {
             VMRogueError::ServiceUnavailable(_) => {
                 (StatusCode::SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE")
             }
-            VMRogueError::KubeError(_) => {
-                (StatusCode::BAD_GATEWAY, "KUBERNETES_ERROR")
-            }
+            VMRogueError::KubeError(_) => (StatusCode::BAD_GATEWAY, "KUBERNETES_ERROR"),
         };
 
         // Sanitize KubeError to avoid leaking internal K8s API details

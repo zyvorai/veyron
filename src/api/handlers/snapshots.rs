@@ -67,10 +67,7 @@ async fn list_snapshots(
                     status: snap.status.to_string(),
                     ready_to_use: snap.ready_to_use,
                     size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
-                    created_at: snap
-                        .created_at
-                        .map(|t| t.to_rfc3339())
-                        .unwrap_or_default(),
+                    created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
                 })
                 .collect();
             Ok(Json(results))
@@ -96,15 +93,13 @@ async fn create_snapshot(
     let s = state.read().await;
     let manager = SnapshotManager::from_client(s.client().client(), &s.namespace);
 
-    let snapshot_name = req
-        .name
-        .unwrap_or_else(|| {
-            format!(
-                "snap-{}-{}",
-                req.vm_name,
-                chrono::Utc::now().format("%Y%m%d%H%M%S")
-            )
-        });
+    let snapshot_name = req.name.unwrap_or_else(|| {
+        format!(
+            "snap-{}-{}",
+            req.vm_name,
+            chrono::Utc::now().format("%Y%m%d%H%M%S")
+        )
+    });
 
     let config = SnapshotConfig::new(&req.vm_name, &snapshot_name)
         .with_description(req.description.unwrap_or_default());
@@ -118,20 +113,14 @@ async fn create_snapshot(
             status: snap.status.to_string(),
             ready_to_use: snap.ready_to_use,
             size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
-            created_at: snap
-                .created_at
-                .map(|t| t.to_rfc3339())
-                .unwrap_or_default(),
+            created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
         })),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
 #[cfg(feature = "web")]
-async fn delete_snapshot(
-    State(state): State<SharedState>,
-    Path(id): Path<String>,
-) -> StatusCode {
+async fn delete_snapshot(State(state): State<SharedState>, Path(id): Path<String>) -> StatusCode {
     let s = state.read().await;
     let manager = SnapshotManager::from_client(s.client().client(), &s.namespace);
 

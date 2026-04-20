@@ -134,31 +134,39 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .style(Style::default().bg(Color::Rgb(40, 35, 55)))
         .height(1);
 
-    let rows: Vec<Row> = state.vms.iter().map(|vm| {
-        let status_color = match vm.status.as_str() {
-            "Running" => Color::Rgb(50, 205, 50),
-            "Stopped" => Color::Gray,
-            "Starting" | "Pending" => Color::Rgb(255, 200, 0),
-            "Failed" | "Error" => Color::Rgb(220, 50, 47),
-            _ => Color::Gray,
-        };
-        let ready_text = if vm.ready { "Yes" } else { "No" };
-        let ready_color = if vm.ready { Color::Rgb(50, 205, 50) } else { Color::Rgb(220, 50, 47) };
+    let rows: Vec<Row> = state
+        .vms
+        .iter()
+        .map(|vm| {
+            let status_color = match vm.status.as_str() {
+                "Running" => Color::Rgb(50, 205, 50),
+                "Stopped" => Color::Gray,
+                "Starting" | "Pending" => Color::Rgb(255, 200, 0),
+                "Failed" | "Error" => Color::Rgb(220, 50, 47),
+                _ => Color::Gray,
+            };
+            let ready_text = if vm.ready { "Yes" } else { "No" };
+            let ready_color = if vm.ready {
+                Color::Rgb(50, 205, 50)
+            } else {
+                Color::Rgb(220, 50, 47)
+            };
 
-        Row::new(vec![
-            Cell::from(vm.name.as_str()).style(Style::default().fg(Color::White)),
-            Cell::from(vm.status.as_str()).style(
-                Style::default()
-                    .fg(status_color)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Cell::from(vm.cpu.as_str()),
-            Cell::from(vm.memory.as_str()),
-            Cell::from(vm.node.as_str()),
-            Cell::from(ready_text).style(Style::default().fg(ready_color)),
-        ])
-        .height(1)
-    }).collect();
+            Row::new(vec![
+                Cell::from(vm.name.as_str()).style(Style::default().fg(Color::White)),
+                Cell::from(vm.status.as_str()).style(
+                    Style::default()
+                        .fg(status_color)
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Cell::from(vm.cpu.as_str()),
+                Cell::from(vm.memory.as_str()),
+                Cell::from(vm.node.as_str()),
+                Cell::from(ready_text).style(Style::default().fg(ready_color)),
+            ])
+            .height(1)
+        })
+        .collect();
 
     let widths = [
         Constraint::Percentage(24),

@@ -37,9 +37,7 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_interfaces(
-    State(state): State<SharedState>,
-) -> Json<Vec<NetworkInterfaceResponse>> {
+async fn list_interfaces(State(state): State<SharedState>) -> Json<Vec<NetworkInterfaceResponse>> {
     let s = state.read().await;
     let vmis = s.client().list_vmis(&s.namespace).await.unwrap_or_default();
 
@@ -48,9 +46,7 @@ async fn list_interfaces(
     for vmi in &vmis {
         let vm_name = vmi.metadata.name.clone().unwrap_or_default();
         let status = vmi.status.as_ref();
-        let phase = status
-            .and_then(|s| s.phase.as_deref())
-            .unwrap_or("Unknown");
+        let phase = status.and_then(|s| s.phase.as_deref()).unwrap_or("Unknown");
 
         if let Some(st) = status {
             for iface in &st.interfaces {
@@ -75,9 +71,7 @@ async fn list_interfaces(
 }
 
 #[cfg(feature = "web")]
-async fn get_bandwidth(
-    State(state): State<SharedState>,
-) -> Json<Vec<BandwidthResponse>> {
+async fn get_bandwidth(State(state): State<SharedState>) -> Json<Vec<BandwidthResponse>> {
     use crate::kube::types::VirtualMachineInstance;
 
     let s = state.read().await;
