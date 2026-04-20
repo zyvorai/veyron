@@ -2,6 +2,28 @@
 
 This guide consolidates **golden image** preparation (Audit Mode, Sysprep), **VirtIO** and **Cloudbase-Init** setup for KubeVirt’s config drive, **YAML** deployment patterns, and day‑two operations (licensing, drivers, tuning). It complements VMRogue’s built‑in Windows templates in `src/templates/mod.rs`—validate every field against your **KubeVirt** and **Kubernetes** versions before production use.
 
+### What is already in VMRogue’s Rust templates
+
+The `windows`, `windows-2022`, `windows-2019`, `windows-11`, and `windows-10` entries in **`src/templates/mod.rs`** (via `VMConfigBuilder` and **`src/kube/converter.rs`**) encode:
+
+| Area | In code? | Where |
+|------|-----------|--------|
+| Hyper‑V enlightenments (relaxed, vAPIC, spinlocks, synic, timers, …) | Yes | `windows_features()` |
+| SMM enabled alongside firmware choices | Yes | `windows_features()` + `FirmwareConfig` |
+| Hyper‑V **timer** / clock policy | Yes | `windows_clock()` |
+| UEFI (Secure Boot on for Win11 template) | Yes | `uefi_firmware()` / `uefi_secure_boot_firmware()` |
+| `q35` machine type | Yes | `.machine_type("q35")` |
+| VirtIO **driver** CDROM (`virtio-container-disk`) | Yes | `.add_cdrom("virtio-drivers", …)` |
+| VirtIO **NIC** (Windows path) | Yes | `.add_windows_network(...)` |
+| virtio‑rng | Yes | `.enable_rng()` |
+| USB tablet (VNC pointer) | Yes | `.usb_tablet()` |
+| virtio balloon disabled | Yes | `.disable_balloon()` |
+| IOThreads policy | Yes | `.io_threads_policy("shared")` |
+| TPM (selected SKUs) | Yes | `.enable_tpm()` on 2022 and 11 |
+| Blank install disk (SATA) | Yes | `.add_blank_disk_sata(...)` — **not** the same as a generalized golden PVC; that remains your image pipeline |
+
+**Not in VMRogue source** (by design — guest or pipeline work): Audit Mode / **Sysprep**, **Cloudbase‑Init** `cloudbase-init.conf`, **`cloudInitConfigDrive`** `userData` snippets, **KMS/slmgr** automation, registry driver‑block lists, **`host-passthrough`** / **`dedicatedCpuPlacement`** defaults for Windows (you can still set CPU model / sockets in `VMConfig` / YAML when you generate manifests). Use this document and your GitOps for those layers.
+
 ---
 
 ## Part 1: Prerequisites and planning
