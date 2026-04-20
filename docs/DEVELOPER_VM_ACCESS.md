@@ -21,7 +21,7 @@ On **Virtual Machines**, each running Linux VM includes an **SSH** block (fleet 
 - `GET /api/v1/vms?namespace=<ns>|all` — VM list includes **guest IP and node** when a matching **VirtualMachineInstance** exists (merged in one pass; no per-VM N+1 probe for IPs in the list handler).
 - `GET /api/v1/vms/:ns/:name` — VM detail includes the same plus **VMI status** (interfaces, etc.).
 
-Windows guests are not SSH targets in the UI; use **VNC** from the dashboard or **RDP** from a host that can reach the guest network.
+Windows guests are not SSH targets in the UI; use **VNC** from the dashboard or **RDP** from a host that can reach the guest network. For building and operating production Windows images (VirtIO, Cloudbase-Init, Sysprep, example manifests), see [WINDOWS_KUBEVIRT_PRODUCTION.md](./WINDOWS_KUBEVIRT_PRODUCTION.md).
 
 ---
 
