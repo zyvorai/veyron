@@ -2,8 +2,8 @@
 
 This example shows:
 
-1. **CDI `DataVolume`** importing a QCOW2 over HTTP(S) (`kustomize/base/`).
-2. A **`VirtualMachine`** using that disk plus **`cloudInitConfigDrive`** (`kustomize/overlays/example/`).
+1. **CDI `DataVolume`** importing a QCOW2 over HTTP(S) (`kustomize/example/datavolume.yaml`).
+2. A **`VirtualMachine`** using that disk plus **`cloudInitConfigDrive`** (`kustomize/example/vm.yaml`).
 
 It does **not** run Packer (that runs on a CI worker or image factory). See the repo guide:
 
@@ -13,8 +13,9 @@ It does **not** run Packer (that runs on a CI worker or image factory). See the 
 
 ```bash
 kubectl create namespace kubevirt-vms --dry-run=client -o yaml | kubectl apply -f -
-# Edit kustomize/base/datavolume.yaml — set URL, storage class, size
-kubectl apply -k kustomize/overlays/example/
+# Edit kustomize/example/datavolume.yaml — set URL, storage class, size
+kubectl kustomize kustomize/example/   # dry-run: validate YAML
+kubectl apply -k kustomize/example/
 ```
 
 Wait until the DataVolume reaches `Succeeded`, then start the VM:
