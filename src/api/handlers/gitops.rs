@@ -9,9 +9,12 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// GitOps status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GitOpsStatus {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub repo_url: String,
     pub branch: String,
     pub last_commit: String,
@@ -98,6 +101,7 @@ async fn get_gitops_status(
     };
 
     Json(GitOpsStatus {
+        vmrogue_context: VmrogueFeatureContext::gitops_status(),
         repo_url,
         branch,
         last_commit,
@@ -169,6 +173,7 @@ async fn trigger_sync(
             "dry_run": req.dry_run,
             "force": req.force,
             "note": "Updates the vmrogue GitOps ConfigMap timestamp when present; does not trigger Argo CD or Flux reconciliation.",
+            "vmrogue_context": serde_json::to_value(VmrogueFeatureContext::gitops_status()).unwrap_or(serde_json::Value::Null),
         })),
     )
 }

@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// Forecast prediction
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForecastPrediction {
@@ -27,6 +29,12 @@ pub struct ForecastQuery {
     pub namespace: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ForecastPredictionsResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub predictions: Vec<ForecastPrediction>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -39,7 +47,7 @@ pub fn router(state: SharedState) -> Router {
 async fn list_predictions(
     State(state): State<SharedState>,
     Query(query): Query<ForecastQuery>,
-) -> Json<Vec<ForecastPrediction>> {
+) -> Json<ForecastPredictionsResponse> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let vms = if namespace == "all" {
@@ -193,5 +201,8 @@ async fn list_predictions(
         });
     }
 
-    Json(predictions)
+    Json(ForecastPredictionsResponse {
+        vmrogue_context: VmrogueFeatureContext::forecasting_predictions(),
+        predictions,
+    })
 }

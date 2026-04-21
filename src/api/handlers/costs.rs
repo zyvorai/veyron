@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// Cost entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostEntry {
@@ -19,9 +21,16 @@ pub struct CostEntry {
     pub period: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostsListResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub costs: Vec<CostEntry>,
+}
+
 /// Cost summary
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostSummary {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub total_cost: f64,
     pub currency: String,
     pub period: String,
@@ -35,6 +44,7 @@ pub struct CostSummary {
 /// Cost forecast
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostForecast {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub current_monthly: f64,
     pub projected_monthly: f64,
     pub trend: String,
@@ -79,11 +89,11 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_costs(State(state): State<SharedState>) -> Json<Vec<CostEntry>> {
+async fn compute_cost_entries(state: &SharedState) -> Vec<CostEntry> {
     let s = state.read().await;
     let vms = s.client().list_all_vms().await.unwrap_or_default();
 
-    let results: Vec<CostEntry> = vms
+    vms
         .iter()
         .map(|vm| {
             let meta = &vm.metadata;
@@ -145,14 +155,21 @@ async fn list_costs(State(state): State<SharedState>) -> Json<Vec<CostEntry>> {
                 period: "monthly".to_string(),
             }
         })
-        .collect();
+        .collect()
+}
 
-    Json(results)
+#[cfg(feature = "web")]
+async fn list_costs(State(state): State<SharedState>) -> Json<CostsListResponse> {
+    let costs = compute_cost_entries(&state).await;
+    Json(CostsListResponse {
+        vmrogue_context: VmrogueFeatureContext::costs_list(),
+        costs,
+    })
 }
 
 #[cfg(feature = "web")]
 async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary> {
-    let costs = list_costs(State(state)).await.0;
+    let costs = compute_cost_entries(&state).await;
 
     let total: f64 = costs.iter().map(|c| c.total_cost).sum();
     let mut by_namespace: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
@@ -176,6 +193,7 @@ async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary>
     by_resource_type.insert("network".to_string(), round2(network_total));
 
     Json(CostSummary {
+        vmrogue_context: VmrogueFeatureContext::costs_summary(),
         total_cost: round2(total),
         currency: "USD".to_string(),
         period: "monthly".to_string(),
@@ -188,10 +206,11 @@ async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary>
 
 #[cfg(feature = "web")]
 async fn get_cost_forecast(State(state): State<SharedState>) -> Json<CostForecast> {
-    let costs = list_costs(State(state)).await.0;
+    let costs = compute_cost_entries(&state).await;
     let current: f64 = costs.iter().map(|c| c.total_cost).sum();
 
     Json(CostForecast {
+        vmrogue_context: VmrogueFeatureContext::costs_forecast(),
         current_monthly: round2(current),
         projected_monthly: round2(current * 1.05),
         trend: if current > 0.0 { "growing" } else { "stable" }.to_string(),

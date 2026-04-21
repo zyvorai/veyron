@@ -878,6 +878,21 @@ body>*{position:relative;z-index:1}
 }
 .theme-select:focus{border-color:var(--ember)}
 
+.vmrogue-cap-banner{
+  font-size:.72em;line-height:1.5;color:var(--text-muted);
+  padding:10px 14px;margin-bottom:14px;border-radius:var(--radius);
+  border:1px solid var(--border);background:var(--bg-tertiary);
+}
+.vmrogue-cap-banner .vmrogue-cap-label{
+  display:block;font-weight:600;color:var(--text-bright);margin-bottom:6px;
+  font-size:.95em;letter-spacing:.02em;
+}
+.vmrogue-cap-banner .vmrogue-cap-ds{
+  font-family:var(--font-mono);font-size:.9em;color:var(--spark);margin-right:6px;
+}
+.vmrogue-cap-banner .vmrogue-cap-scope{display:block;margin:4px 0 2px;color:var(--text)}
+.vmrogue-cap-banner .vmrogue-cap-lim{display:block;margin-top:6px;color:var(--text-dim)}
+
 /* Bulk operations */
 .bulk-bar{
   display:none;padding:10px 24px;background:rgba(59,130,246,.08);
@@ -1373,6 +1388,7 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div></div>
+  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim">Filesystem usage inside volumes and CSI pool &quot;free&quot; space are not available here without metrics integrations. See <code>GET /api/v1/storage/pools</code> and <code>GET /api/v1/storage/usage</code> for VMRogue rollups (fields include <code>vmrogue_context</code>).</span></div>
   <div class="grid-2">
     <div class="card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span></div><div id="pvc-list"></div></div>
     <div class="card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
@@ -1428,6 +1444,7 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-costs">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Cost Analysis</h1><p>Per-VM cost breakdown and namespace budgets (estimated monthly USD)</p></div></div>
+  <div id="cost-cap-banner"></div>
   <div id="cost-summary" class="grid-4" style="margin-bottom:16px"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
     <div class="card"><div class="card-header"><span class="card-title">Cost by Namespace</span></div>
@@ -1657,6 +1674,7 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-forecasting">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div></div>
+  <div id="forecasting-cap-banner"></div>
   <div class="card"><div class="card-header"><span class="card-title">Predictions</span></div>
   <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
 </div>
@@ -1665,6 +1683,7 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-gitops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div></div>
+  <div id="gitops-cap-banner"></div>
   <div id="gitops-summary" class="grid-4"></div>
 </div>
 </div>
@@ -1704,6 +1723,7 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-performance">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div></div>
+  <div id="performance-cap-banner"></div>
   <div class="card"><div class="card-header"><span class="card-title">Profiles</span></div>
   <table class="table"><thead><tr><th>VM</th><th>CPU P95</th><th>Memory P95</th><th>Read IOPS</th><th>Write IOPS</th><th>Collected</th></tr></thead><tbody id="performance-body"></tbody></table></div>
   <div class="card">
@@ -1732,19 +1752,20 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-traces">
 <div class="space-y animate-fade-in">
   <div class="page-header">
-    <div><h1>Traces</h1><p>Distributed trace explorer — OpenTelemetry spans across VMs and services</p></div>
+    <div><h1>Traces</h1><p>Cluster activity shaped as trace rows from Kubernetes Events (not a Jaeger/OTel backend)</p></div>
     <div style="display:flex;gap:8px;align-items:center">
       <input id="traces-search" class="input" style="width:220px;padding:6px 10px;font-size:.75em" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
     </div>
   </div>
+  <div id="traces-cap-banner"></div>
   <div id="traces-stats" class="grid-4"></div>
   <div class="card">
     <div class="card-header"><span class="card-title">Recent Traces</span></div>
     <table class="table"><thead><tr><th>Trace ID</th><th>Service</th><th>Operation</th><th>Duration</th><th>Spans</th><th>Status</th><th>Started</th></tr></thead><tbody id="traces-body"></tbody></table>
   </div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono)">Connect OpenTelemetry collector to populate</div></div>
-    <div class="card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono)">Connect OpenTelemetry collector to populate</div></div>
+    <div class="card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono);padding:12px;text-align:center;line-height:1.45">Not populated — this page uses Kubernetes Events, not OpenTelemetry. Wire a collector and extend VMRogue to chart real span latency if needed.</div></div>
+    <div class="card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono);padding:12px;text-align:center;line-height:1.45">Not populated — error counts above come from Event-shaped rows. OTel-backed charts would require a separate integration.</div></div>
   </div>
 </div>
 </div>
@@ -1752,7 +1773,7 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-logs">
 <div class="space-y animate-fade-in">
   <div class="page-header">
-    <div><h1>Log Explorer</h1><p>Structured log stream from VMs and system components</p></div>
+    <div><h1>Log Explorer</h1><p>Virt-launcher pod logs (kubevirt.io/domain) — not a full cluster Loki/ELK view</p></div>
     <div style="display:flex;gap:8px;align-items:center">
       <select id="logs-level-filter" class="input" style="padding:6px 10px;font-size:.75em" onchange="fetchLogs()">
         <option value="">All Levels</option>
@@ -1764,6 +1785,7 @@ html[data-theme="steel"] .vm-detail{
       <input id="logs-search" class="input" style="width:240px;padding:6px 10px;font-size:.75em" placeholder="Search logs…" oninput="fetchLogs()">
     </div>
   </div>
+  <div id="logs-cap-banner"></div>
   <div id="logs-stats" class="grid-4"></div>
   <div class="card">
     <div class="card-header">
@@ -1779,7 +1801,8 @@ html[data-theme="steel"] .vm-detail{
 
 <div class="page" id="page-incidents">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Incidents</h1><p>Correlated timeline — K8s events, SLO breaches, and alert fires</p></div></div>
+  <div class="page-header"><div><h1>Incidents</h1><p>Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p></div></div>
+  <div id="incidents-cap-banner"></div>
   <div id="incidents-stats" class="grid-4"></div>
   <div class="card">
     <div class="card-header">
@@ -2518,6 +2541,22 @@ function statCard(color,icon,label,value,badge) {
 }
 function resBar(label,pct,color) {
   return '<div class="resource-bar"><div class="res-header"><span class="lbl">'+label+'</span><span class="pct">'+pct+'%</span></div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></div>';
+}
+function vmrogueFeatureBanner(ctx) {
+  if (!ctx || typeof ctx !== 'object') return '';
+  const ds = ctx.data_source != null ? String(ctx.data_source) : '';
+  const sc = ctx.scope != null ? String(ctx.scope) : '';
+  const lim = ctx.limitations != null ? String(ctx.limitations) : '';
+  if (!ds && !sc && !lim) return '';
+  return '<div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span>' +
+    (ds ? ' <code class="vmrogue-cap-ds">' + esc(ds) + '</code>' : '') +
+    (sc ? '<span class="vmrogue-cap-scope">' + esc(sc) + '</span>' : '') +
+    (lim ? '<span class="vmrogue-cap-lim">' + esc(lim) + '</span>' : '') +
+    '</div>';
+}
+function setCapBanner(id, ctx) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = vmrogueFeatureBanner(ctx);
 }
 function esc(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
 function updateHealth(ok,msg) {
@@ -3338,7 +3377,8 @@ async function fetchCosts() {
       apiJson('/api/v1/costs'),
       apiJson('/api/v1/costs/summary'),
     ]);
-    const costs = asArray(costsRaw);
+    setCapBanner('cost-cap-banner', summary.vmrogue_context);
+    const costs = costsRaw && costsRaw.costs != null ? costsRaw.costs : asArray(costsRaw);
 
     const total = summary.total_cost || 0;
     const costNote = summary.disclaimer ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(summary.disclaimer) + '</p>' : '';
@@ -3362,7 +3402,8 @@ async function fetchCosts() {
     // Forecast
     try {
       const fc = await apiJson('/api/v1/costs/forecast');
-      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'var(--error-dim);color:var(--error)' : 'var(--success-dim);color:var(--success)') + '">' + esc(fc.trend || 'stable') + '</div></div>';
+      const fcCap = fc.vmrogue_context && fc.vmrogue_context.limitations ? '<p style="font-size:.68em;color:var(--text-dim);margin-top:10px;line-height:1.4">' + esc(fc.vmrogue_context.limitations) + '</p>' : '';
+      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'var(--error-dim);color:var(--error)' : 'var(--success-dim);color:var(--success)') + '">' + esc(fc.trend || 'stable') + '</div>' + fcCap + '</div>';
     } catch {
       fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
     }
@@ -4044,7 +4085,9 @@ async function fetchAutoscaler() {
 async function fetchForecasting() {
   const tb = document.getElementById('forecasting-body');
   try {
-    const items = asArray(await apiJson('/api/v1/forecasting/predictions' + nsParam()));
+    const predRes = await apiJson('/api/v1/forecasting/predictions' + nsParam());
+    setCapBanner('forecasting-cap-banner', predRes.vmrogue_context);
+    const items = predRes && predRes.predictions != null ? predRes.predictions : asArray(predRes);
     if (!tb) return;
     tb.innerHTML = items.map(f => `<tr><td>${esc(f.metric)}</td><td>${f.current_value}</td><td>${f.predicted_value}</td><td>${esc(f.prediction_window)}</td><td>${esc(f.trend)}</td><td>${Math.round((f.confidence || 0) * 100)}%</td><td>${esc(f.estimated_breach || '-')}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No predictions available</td></tr>';
@@ -4059,6 +4102,7 @@ async function fetchGitOps() {
   try {
     const status = await apiJson('/api/v1/gitops/status' + nsParam());
     if (!summary) return;
+    setCapBanner('gitops-cap-banner', status.vmrogue_context);
     const note = status.note ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(status.note) + '</p>' : '';
     summary.innerHTML = `
       <div class="stat-card"><div class="stat-label">Repo</div><div class="stat-value">${esc(status.repo_url || 'Not configured')}</div></div>
@@ -4165,10 +4209,13 @@ let _flamegraphData = [];
 async function fetchPerformance() {
   const tb = document.getElementById('performance-body');
   try {
-    const items = asArray(await apiJson('/api/v1/performance/profiles' + nsParam()));
+    const profRes = await apiJson('/api/v1/performance/profiles' + nsParam());
+    setCapBanner('performance-cap-banner', profRes.vmrogue_context);
+    const items = profRes && profRes.profiles != null ? profRes.profiles : asArray(profRes);
     let graphs = [];
     try {
-      graphs = asArray(await apiJson('/api/v1/performance/flamegraph' + nsParam()));
+      const fgRes = await apiJson('/api/v1/performance/flamegraph' + nsParam());
+      graphs = fgRes && fgRes.flamegraphs != null ? fgRes.flamegraphs : asArray(fgRes);
     } catch (_) {
       graphs = [];
     }
@@ -4238,6 +4285,7 @@ async function fetchTraces() {
   const tb = document.getElementById('traces-body');
   try {
     const data = await apiJson('/api/v1/traces' + nsParam());
+    setCapBanner('traces-cap-banner', data.vmrogue_context);
     if (stats) stats.innerHTML = `
       <div class="stat-card stat-card-blue"><div class="stat-label">Total Traces</div><div class="stat-value">${data.total_traces || 0}</div></div>
       <div class="stat-card stat-card-green"><div class="stat-label">Success Rate</div><div class="stat-value">${data.success_rate != null ? data.success_rate.toFixed(1) + '%' : 'N/A'}</div></div>
@@ -4275,6 +4323,7 @@ async function fetchLogs() {
     const q = document.getElementById('logs-search')?.value || '';
     const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '');
     const data = await apiJson('/api/v1/logs' + params);
+    setCapBanner('logs-cap-banner', data.vmrogue_context);
     if (stats) stats.innerHTML = `
       <div class="stat-card stat-card-red"><div class="stat-label">Errors</div><div class="stat-value">${data.error_count || 0}</div></div>
       <div class="stat-card stat-card-orange"><div class="stat-label">Warnings</div><div class="stat-value">${data.warn_count || 0}</div></div>
@@ -4307,11 +4356,12 @@ async function fetchIncidents() {
     const sev = document.getElementById('incident-severity-filter')?.value || '';
     const kind = document.getElementById('incident-kind-filter')?.value || '';
     const data = await apiJson('/api/v1/incidents/timeline' + nsParam());
+    setCapBanner('incidents-cap-banner', data.vmrogue_context);
     if (stats) stats.innerHTML = `
       <div class="stat-card stat-card-red"><div class="stat-label">Critical</div><div class="stat-value">${data.critical || 0}</div></div>
       <div class="stat-card stat-card-orange"><div class="stat-label">Warning</div><div class="stat-value">${data.warning || 0}</div></div>
       <div class="stat-card stat-card-blue"><div class="stat-label">Open</div><div class="stat-value">${data.open_incidents || 0}</div></div>
-      <div class="stat-card stat-card-green"><div class="stat-label">Resolved (24h)</div><div class="stat-value">${data.resolved_last_24h || 0}</div></div>`;
+      <div class="stat-card stat-card-green"><div class="stat-label">Resolved (heuristic)</div><div class="stat-value">${data.resolved_last_24h || 0}</div></div>`;
     if (!tb) return;
     let events = data.events || [];
     if (sev) events = events.filter(e => e.severity === sev);

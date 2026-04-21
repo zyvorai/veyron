@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// Performance profile
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PerformanceProfile {
@@ -55,6 +57,18 @@ pub struct FlameGraphQuery {
     pub vm: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PerformanceProfilesResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub profiles: Vec<PerformanceProfile>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FlameGraphListResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub flamegraphs: Vec<FlameGraph>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
@@ -68,7 +82,7 @@ pub fn router(state: SharedState) -> Router {
 async fn list_performance_profiles(
     State(state): State<SharedState>,
     Query(query): Query<PerformanceQuery>,
-) -> Json<Vec<PerformanceProfile>> {
+) -> Json<PerformanceProfilesResponse> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let vms = if namespace == "all" {
@@ -128,7 +142,10 @@ async fn list_performance_profiles(
         }
     }
 
-    Json(profiles)
+    Json(PerformanceProfilesResponse {
+        vmrogue_context: VmrogueFeatureContext::performance_profiles(),
+        profiles,
+    })
 }
 
 /// Build a synthetic flamegraph from live CPU metrics.
@@ -137,7 +154,7 @@ async fn list_performance_profiles(
 async fn get_flamegraph(
     State(state): State<SharedState>,
     Query(query): Query<FlameGraphQuery>,
-) -> Json<Vec<FlameGraph>> {
+) -> Json<FlameGraphListResponse> {
     let s = state.read().await;
     let namespace = query
         .namespace
@@ -254,5 +271,8 @@ async fn get_flamegraph(
         });
     }
 
-    Json(graphs)
+    Json(FlameGraphListResponse {
+        vmrogue_context: VmrogueFeatureContext::performance_flamegraph(),
+        flamegraphs: graphs,
+    })
 }

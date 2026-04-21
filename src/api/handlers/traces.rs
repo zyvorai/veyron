@@ -35,6 +35,7 @@ pub struct TraceRow {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TracesResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
     pub total_traces: u32,
     pub success_rate: f64,
     pub p99_ms: Option<f64>,
@@ -143,6 +144,7 @@ async fn list_traces(
     };
 
     Json(TracesResponse {
+        vmrogue_context: super::feature_context::VmrogueFeatureContext::traces(),
         total_traces: total,
         success_rate,
         p99_ms: None,
