@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 #[cfg(feature = "web")]
 use k8s_openapi::api::core::v1::Pod;
 #[cfg(feature = "web")]
@@ -52,11 +54,19 @@ pub fn router(state: SharedState) -> Router {
 /// Dashboard-friendly log bundle (virt-launcher pod logs + simple counters).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogDashboardResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub error_count: u32,
     pub warn_count: u32,
     pub info_count: u32,
     pub total_1h: u32,
     pub lines: Vec<LogLineDto>,
+}
+
+/// Same log lines as [`LogDashboardResponse`] for the query endpoint, with capability metadata.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LogQueryResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub entries: Vec<LogEntry>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -213,7 +223,7 @@ async fn list_logs(
 async fn query_logs(
     State(state): State<SharedState>,
     Query(params): Query<LogQueryParams>,
-) -> Json<Vec<LogEntry>> {
+) -> Json<LogQueryResponse> {
     let ns = {
         let s = state.read().await;
         params
@@ -234,7 +244,10 @@ async fn query_logs(
 
     apply_log_filters(&mut entries, &params);
 
-    Json(entries)
+    Json(LogQueryResponse {
+        vmrogue_context: VmrogueFeatureContext::logs_dashboard(),
+        entries,
+    })
 }
 
 #[cfg(feature = "web")]
@@ -277,6 +290,7 @@ fn build_log_dashboard(entries: Vec<LogEntry>) -> LogDashboardResponse {
     let lines: Vec<LogLineDto> = entries.into_iter().map(entry_to_dto).collect();
 
     LogDashboardResponse {
+        vmrogue_context: VmrogueFeatureContext::logs_dashboard(),
         error_count,
         warn_count,
         info_count,

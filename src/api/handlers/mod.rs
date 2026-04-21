@@ -12,6 +12,7 @@ pub mod custom_resources;
 pub mod dependencies;
 pub mod disks;
 pub mod events;
+pub mod feature_context;
 pub mod forecasting;
 pub mod gitops;
 pub mod health;

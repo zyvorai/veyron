@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// One entry in the incident timeline
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IncidentEvent {
@@ -26,6 +28,7 @@ pub struct IncidentEvent {
 /// Full incident timeline response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IncidentTimeline {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub total_incidents: u32,
     pub open_incidents: u32,
     pub resolved_last_24h: u32,
@@ -174,6 +177,7 @@ async fn get_incident_timeline(
     let warning = incidents.iter().filter(|e| e.severity == "warning").count() as u32;
 
     Json(IncidentTimeline {
+        vmrogue_context: VmrogueFeatureContext::incidents(),
         total_incidents: total,
         open_incidents: open,
         resolved_last_24h: resolved_24h,

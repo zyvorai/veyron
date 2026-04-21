@@ -12,6 +12,8 @@ use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use super::namespace_scope::{self, DashboardNamespaceQuery};
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// Storage pool
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoragePool {
@@ -22,6 +24,18 @@ pub struct StoragePool {
     pub used_capacity: String,
     pub available_capacity: String,
     pub volume_count: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StoragePoolsResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub pools: Vec<StoragePool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StorageUsageResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub usage: Vec<StorageUsage>,
 }
 
 /// Storage usage
@@ -45,7 +59,7 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<StoragePool>> {
+async fn list_storage_pools(State(state): State<SharedState>) -> Json<StoragePoolsResponse> {
     let s = state.read().await;
     let storage_classes = s.client().list_storage_classes().await.unwrap_or_default();
 
@@ -93,7 +107,10 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<Storag
         })
         .collect();
 
-    Json(results)
+    Json(StoragePoolsResponse {
+        vmrogue_context: VmrogueFeatureContext::storage_pools(),
+        pools: results,
+    })
 }
 
 fn format_bytes(bytes: u64) -> String {
@@ -115,7 +132,7 @@ fn format_bytes(bytes: u64) -> String {
 async fn get_storage_usage(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
-) -> Json<Vec<StorageUsage>> {
+) -> Json<StorageUsageResponse> {
     let s = state.read().await;
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
     let pvcs = s.client().list_pvcs_for_scope(&scope).await;
@@ -165,5 +182,8 @@ async fn get_storage_usage(
         })
         .collect();
 
-    Json(results)
+    Json(StorageUsageResponse {
+        vmrogue_context: VmrogueFeatureContext::storage_usage(),
+        usage: results,
+    })
 }

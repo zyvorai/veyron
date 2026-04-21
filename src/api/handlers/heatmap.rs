@@ -5,9 +5,12 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// Resource heatmap
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceHeatmap {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub nodes: Vec<NodeHeatmapEntry>,
     pub timestamp: String,
 }
@@ -116,6 +119,7 @@ async fn get_resource_heatmap(State(state): State<SharedState>) -> Json<Resource
         .collect();
 
     Json(ResourceHeatmap {
+        vmrogue_context: VmrogueFeatureContext::heatmap(),
         nodes: entries,
         timestamp: chrono::Utc::now().to_rfc3339(),
     })
