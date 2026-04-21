@@ -1,0 +1,61 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "datasource": { "type": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Total VMs",
+      "type": "stat",
+      "targets": [{ "expr": "count(kubevirt_vmi_info) or vector(0)", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "Running VMs",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "count(kubevirt_vmi_phase_count{phase=\"Running\"}) or vector(0)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 3,
+      "title": "VM CPU usage",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "rate(kubevirt_vmi_cpu_usage_seconds_total[5m])",
+          "legendFormat": "{{ name }}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 4,
+      "title": "VM memory usage",
+      "type": "timeseries",
+      "fieldConfig": { "defaults": { "unit": "bytes" } },
+      "targets": [
+        {
+          "expr": "kubevirt_vmi_memory_resident_bytes",
+          "legendFormat": "{{ name }}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "tags": ["vmrogue", "kubevirt"],
+  "title": "VMRogue overview",
+  "uid": "vmrogue-overview"
+}

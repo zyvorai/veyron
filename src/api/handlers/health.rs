@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Health response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,8 +67,12 @@ async fn health_check(State(state): State<SharedState>) -> Json<HealthResponse> 
 }
 
 #[cfg(feature = "web")]
-async fn readiness_check(State(state): State<SharedState>) -> Json<ProbeResponse> {
+async fn readiness_check(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<ProbeResponse> {
     let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
 
     // Check K8s API connectivity
     let k8s_check = match s.client().list_nodes().await {
@@ -77,18 +88,33 @@ async fn readiness_check(State(state): State<SharedState>) -> Json<ProbeResponse
         },
     };
 
-    // Check KubeVirt API availability
-    let kubevirt_check = match s.client().list_vms(&s.namespace).await {
-        Ok(_) => HealthCheck {
-            name: "kubevirt".into(),
-            status: "healthy".into(),
-            message: None,
-        },
-        Err(_) => HealthCheck {
-            name: "kubevirt".into(),
-            status: "unhealthy".into(),
-            message: Some("KubeVirt API unavailable".into()),
-        },
+    // Check KubeVirt API availability (cluster-scoped list when `namespace=all`)
+    let kubevirt_check = if namespace_scope::is_all_namespaces(&scope) {
+        match s.client().list_all_vms().await {
+            Ok(_) => HealthCheck {
+                name: "kubevirt".into(),
+                status: "healthy".into(),
+                message: None,
+            },
+            Err(_) => HealthCheck {
+                name: "kubevirt".into(),
+                status: "unhealthy".into(),
+                message: Some("KubeVirt API unavailable".into()),
+            },
+        }
+    } else {
+        match s.client().list_vms(&scope).await {
+            Ok(_) => HealthCheck {
+                name: "kubevirt".into(),
+                status: "healthy".into(),
+                message: None,
+            },
+            Err(_) => HealthCheck {
+                name: "kubevirt".into(),
+                status: "unhealthy".into(),
+                message: Some("KubeVirt API unavailable".into()),
+            },
+        }
     };
 
     let all_healthy = k8s_check.status == "healthy" && kubevirt_check.status == "healthy";

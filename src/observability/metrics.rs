@@ -114,8 +114,7 @@ impl MetricCollector {
     pub fn latest_value(&self, name: &str) -> Option<f64> {
         self.metrics
             .iter()
-            .filter(|m| m.name == name)
-            .next_back()
+            .rfind(|m| m.name == name)
             .map(|m| m.value)
     }
 }

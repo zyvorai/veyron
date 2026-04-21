@@ -50,18 +50,40 @@ async fn get_observability_overview(
     let mut logs_available = false;
     let mut traces_available = false;
 
-    let namespaces = ["monitoring", "logging", "observability", namespace.as_str()];
+    let namespaces = [
+        "monitoring",
+        "logging",
+        "observability",
+        "kube-system",
+        "cilium-system",
+        "vmrogue-system",
+        namespace.as_str(),
+    ];
     for ns in &namespaces {
         let svc_api: kube::api::Api<Service> = kube::api::Api::namespaced(client.clone(), ns);
         if let Ok(svcs) = svc_api.list(&kube::api::ListParams::default()).await {
             for svc in &svcs.items {
-                let name = svc.metadata.name.as_deref().unwrap_or("");
-                if name.contains("prometheus") || name.contains("metrics") {
+                let name = svc.metadata.name.as_deref().unwrap_or("").to_lowercase();
+                if name.contains("prometheus")
+                    || name.contains("metrics-server")
+                    || name.contains("thanos")
+                    || name.contains("victoria")
+                    || name.contains("vminsert")
+                    || name.contains("vmselect")
+                    || name.contains("mimir")
+                    || name.contains("kube-state-metrics")
+                    || name.contains("cadvisor")
+                {
                     metrics_available = true;
                 }
                 if name.contains("loki")
                     || name.contains("elasticsearch")
                     || name.contains("fluentd")
+                    || name.contains("fluent-bit")
+                    || name.contains("vector")
+                    || name.contains("promtail")
+                    || name.contains("grafana-agent")
+                    || name.contains("opensearch")
                 {
                     logs_available = true;
                 }
@@ -69,6 +91,7 @@ async fn get_observability_overview(
                     || name.contains("tempo")
                     || name.contains("otel")
                     || name.contains("opentelemetry")
+                    || name.contains("zipkin")
                 {
                     traces_available = true;
                 }
@@ -156,7 +179,13 @@ async fn get_observability_overview(
         }
         .to_string(),
         total_log_entries: events.len() as u64,
-        total_metric_series: vms.len() as u64 * 4,
+        total_metric_series: if metrics_available {
+            (events.len() as u64)
+                .saturating_mul(2)
+                .saturating_add(vms.len() as u64 * 8)
+        } else {
+            vms.len() as u64 * 4
+        },
         total_trace_spans: 0,
         data_ingestion_rate: ingestion_rate,
         storage_used,

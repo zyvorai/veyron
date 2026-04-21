@@ -6,7 +6,7 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     routing::{get, post},
 };
@@ -16,9 +16,12 @@ use serde::{Deserialize, Serialize};
 use crate::api::http_server::web::SharedState;
 
 #[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
+
+#[cfg(feature = "web")]
 use kube::{
     Api,
-    api::{DeleteParams, ListParams, PostParams},
+    api::{DeleteParams, PostParams},
 };
 
 use crate::operator_crds::*;
@@ -170,15 +173,15 @@ pub fn router(state: SharedState) -> Router {
 #[cfg(feature = "web")]
 async fn list_vmrogue_vms(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<CrdListResponse<VMRogueVMSummary>> {
     let s = state.read().await;
     let client = s.client().client();
-    let api: Api<VMRogueVM> = Api::namespaced(client.clone(), &s.namespace);
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
 
-    match api.list(&ListParams::default()).await {
+    match namespace_scope::list_namespaced_resource::<VMRogueVM>(&client, &scope).await {
         Ok(list) => {
             let items: Vec<VMRogueVMSummary> = list
-                .items
                 .iter()
                 .map(|vm| VMRogueVMSummary {
                     name: vm.metadata.name.clone().unwrap_or_default(),
@@ -297,14 +300,15 @@ async fn delete_vmrogue_vm(
 #[cfg(feature = "web")]
 async fn list_blueprints(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<CrdListResponse<VMRogueBlueprintSummary>> {
     let s = state.read().await;
-    let api: Api<VMRogueBlueprint> = Api::namespaced(s.client().client().clone(), &s.namespace);
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
 
-    match api.list(&ListParams::default()).await {
+    match namespace_scope::list_namespaced_resource::<VMRogueBlueprint>(&client, &scope).await {
         Ok(list) => {
             let items: Vec<VMRogueBlueprintSummary> = list
-                .items
                 .iter()
                 .map(|bp| VMRogueBlueprintSummary {
                     name: bp.metadata.name.clone().unwrap_or_default(),
@@ -409,14 +413,15 @@ async fn delete_blueprint(
 #[cfg(feature = "web")]
 async fn list_policies(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<CrdListResponse<VMRoguePolicySummary>> {
     let s = state.read().await;
-    let api: Api<VMRoguePolicy> = Api::namespaced(s.client().client().clone(), &s.namespace);
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
 
-    match api.list(&ListParams::default()).await {
+    match namespace_scope::list_namespaced_resource::<VMRoguePolicy>(&client, &scope).await {
         Ok(list) => {
             let items: Vec<VMRoguePolicySummary> = list
-                .items
                 .iter()
                 .map(|p| VMRoguePolicySummary {
                     name: p.metadata.name.clone().unwrap_or_default(),
@@ -526,14 +531,15 @@ async fn delete_policy(
 #[cfg(feature = "web")]
 async fn list_insights(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<CrdListResponse<VMRogueInsightSummary>> {
     let s = state.read().await;
-    let api: Api<VMRogueInsight> = Api::namespaced(s.client().client().clone(), &s.namespace);
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
 
-    match api.list(&ListParams::default()).await {
+    match namespace_scope::list_namespaced_resource::<VMRogueInsight>(&client, &scope).await {
         Ok(list) => {
             let items: Vec<VMRogueInsightSummary> = list
-                .items
                 .iter()
                 .map(|i| VMRogueInsightSummary {
                     name: i.metadata.name.clone().unwrap_or_default(),
@@ -607,14 +613,15 @@ async fn delete_insight(
 #[cfg(feature = "web")]
 async fn list_actions(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<CrdListResponse<VMRogueActionSummary>> {
     let s = state.read().await;
-    let api: Api<VMRogueAction> = Api::namespaced(s.client().client().clone(), &s.namespace);
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
 
-    match api.list(&ListParams::default()).await {
+    match namespace_scope::list_namespaced_resource::<VMRogueAction>(&client, &scope).await {
         Ok(list) => {
             let items: Vec<VMRogueActionSummary> = list
-                .items
                 .iter()
                 .map(|a| VMRogueActionSummary {
                     name: a.metadata.name.clone().unwrap_or_default(),

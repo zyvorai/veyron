@@ -126,6 +126,29 @@ impl KubeClient {
         Ok(vm_list.items)
     }
 
+    /// List VMs in one namespace, or cluster-wide when `scope` is `"all"`.
+    /// Falls back to per-namespace listing if cluster-scoped `list` is not permitted.
+    pub async fn list_vms_for_scope(&self, scope: &str) -> Vec<VirtualMachine> {
+        if scope == "all" {
+            match self.list_all_vms().await {
+                Ok(v) => v,
+                Err(_) => {
+                    let mut out = Vec::new();
+                    if let Ok(namespaces) = self.list_namespaces().await {
+                        for ns in namespaces.into_iter().filter_map(|n| n.metadata.name) {
+                            if let Ok(mut vms) = self.list_vms(&ns).await {
+                                out.append(&mut vms);
+                            }
+                        }
+                    }
+                    out
+                }
+            }
+        } else {
+            self.list_vms(scope).await.unwrap_or_default()
+        }
+    }
+
     /// Get a specific VM
     pub async fn get_vm(&self, namespace: &str, name: &str) -> Result<VirtualMachine> {
         let vms: Api<VirtualMachine> = self.vm_api(namespace);
@@ -628,6 +651,28 @@ impl KubeClient {
         Ok(pod_list.items)
     }
 
+    /// List pods in one namespace or cluster-wide (`scope == "all"`), with RBAC-safe fan-out.
+    pub async fn list_pods_for_scope(&self, scope: &str) -> Vec<k8s_openapi::api::core::v1::Pod> {
+        if scope == "all" {
+            match self.list_all_pods().await {
+                Ok(pods) => pods,
+                Err(_) => {
+                    let mut out = Vec::new();
+                    if let Ok(namespaces) = self.list_namespaces().await {
+                        for ns in namespaces.into_iter().filter_map(|n| n.metadata.name) {
+                            if let Ok(mut pods) = self.list_pods(&ns).await {
+                                out.append(&mut pods);
+                            }
+                        }
+                    }
+                    out
+                }
+            }
+        } else {
+            self.list_pods(scope).await.unwrap_or_default()
+        }
+    }
+
     /// List events in a namespace
     pub async fn list_events(
         &self,
@@ -646,6 +691,31 @@ impl KubeClient {
         let lp = ListParams::default();
         let event_list = events.list(&lp).await?;
         Ok(event_list.items)
+    }
+
+    /// Events in one namespace or cluster-wide (`scope == "all"`), with fan-out fallback.
+    pub async fn list_events_for_scope(
+        &self,
+        scope: &str,
+    ) -> Vec<k8s_openapi::api::core::v1::Event> {
+        if scope == "all" {
+            match self.list_all_events().await {
+                Ok(events) => events,
+                Err(_) => {
+                    let mut out = Vec::new();
+                    if let Ok(namespaces) = self.list_namespaces().await {
+                        for ns in namespaces.into_iter().filter_map(|n| n.metadata.name) {
+                            if let Ok(mut ev) = self.list_events(&ns).await {
+                                out.append(&mut ev);
+                            }
+                        }
+                    }
+                    out
+                }
+            }
+        } else {
+            self.list_events(scope).await.unwrap_or_default()
+        }
     }
 
     /// List all namespaces
@@ -670,6 +740,28 @@ impl KubeClient {
         let lp = ListParams::default();
         let vmi_list = vmis.list(&lp).await?;
         Ok(vmi_list.items)
+    }
+
+    /// VMIs in one namespace or cluster-wide (`scope == "all"`), with fan-out fallback.
+    pub async fn list_vmis_for_scope(&self, scope: &str) -> Vec<VirtualMachineInstance> {
+        if scope == "all" {
+            match self.list_all_vmis().await {
+                Ok(vmis) => vmis,
+                Err(_) => {
+                    let mut out = Vec::new();
+                    if let Ok(namespaces) = self.list_namespaces().await {
+                        for ns in namespaces.into_iter().filter_map(|n| n.metadata.name) {
+                            if let Ok(mut vmis) = self.list_vmis(&ns).await {
+                                out.append(&mut vmis);
+                            }
+                        }
+                    }
+                    out
+                }
+            }
+        } else {
+            self.list_vmis(scope).await.unwrap_or_default()
+        }
     }
 
     /// Clone a VM by copying its spec and creating a new VM with a different name
@@ -788,6 +880,39 @@ impl KubeClient {
         let lp = ListParams::default();
         let list = pvcs.list(&lp).await?;
         Ok(list.items)
+    }
+
+    /// List PVCs cluster-wide (`Api::all`), with per-namespace fan-out if cluster-scoped list is forbidden.
+    pub async fn list_all_pvcs(&self) -> Result<Vec<PersistentVolumeClaim>> {
+        let lp = ListParams::default();
+        let pvcs: Api<PersistentVolumeClaim> = Api::all(self.client.clone());
+        match pvcs.list(&lp).await {
+            Ok(list) => Ok(list.items),
+            Err(_) => {
+                use k8s_openapi::api::core::v1::Namespace;
+                let ns_api: Api<Namespace> = Api::all(self.client.clone());
+                let mut out = Vec::new();
+                if let Ok(ns_list) = ns_api.list(&lp).await {
+                    for ns in ns_list.items.into_iter().filter_map(|n| n.metadata.name) {
+                        let napi: Api<PersistentVolumeClaim> =
+                            Api::namespaced(self.client.clone(), &ns);
+                        if let Ok(pl) = napi.list(&lp).await {
+                            out.extend(pl.items);
+                        }
+                    }
+                }
+                Ok(out)
+            }
+        }
+    }
+
+    /// PVCs in one namespace or cluster-wide (`scope == "all"`).
+    pub async fn list_pvcs_for_scope(&self, scope: &str) -> Vec<PersistentVolumeClaim> {
+        if scope == "all" {
+            self.list_all_pvcs().await.unwrap_or_default()
+        } else {
+            self.list_pvcs(scope).await.unwrap_or_default()
+        }
     }
 
     /// List storage classes

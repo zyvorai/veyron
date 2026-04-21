@@ -1,0 +1,65 @@
+# Default install: monitoring namespace matches VMRogue UI stack discovery.
+# After install: kubectl -n monitoring port-forward svc/<release>-grafana 3000:3000
+#
+# Override Grafana admin password (do not use default in production):
+#   helm upgrade ... --set kps.grafana.adminPassword='...'
+
+kps:
+  enabled: true
+  # Cluster-wide ServiceMonitor / PrometheusRule discovery so resources in
+  # vmrogue-system (and kubevirt) are picked up without Helm release labels.
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      retention: 15d
+      scrapeInterval: 30s
+      evaluationInterval: 30s
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector: {}
+      podMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelector: {}
+      podMonitorNamespaceSelector: {}
+      ruleSelectorNilUsesHelmValues: false
+      ruleSelector: {}
+      ruleNamespaceSelector: {}
+  alertmanager:
+    enabled: true
+  grafana:
+    enabled: true
+    defaultDashboardsEnabled: true
+    adminPassword: changeme
+    # Service listens on 3000 instead of 80 so port-forward avoids :80.
+    service:
+      port: 3000
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        labelValue: "1"
+      datasources:
+        defaultDatasourceEnabled: true
+  kubeStateMetrics:
+    enabled: true
+  nodeExporter:
+    enabled: true
+  kubeApiServer:
+    enabled: true
+  kubeControllerManager:
+    enabled: true
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: true
+  kubeProxy:
+    enabled: true
+
+# VMRogue API / operator scrape (namespace must match API deployment).
+vmrogue:
+  namespace: vmrogue-system
+  serviceMonitor:
+    enabled: true
+  prometheusRule:
+    enabled: true
+  grafanaDashboard:
+    enabled: true

@@ -9,6 +9,12 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
+# ClusterIP port numbers only (container still listens on 8080/8081).
+# Avoids 8080/8081 on the Service, which often clash with hostPort/NodePort conventions.
+service:
+  metricsPort: 9280
+  healthPort: 9281
+
 serviceAccount:
   create: true
   name: ""

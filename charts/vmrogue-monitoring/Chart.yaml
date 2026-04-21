@@ -1,0 +1,24 @@
+apiVersion: v2
+name: vmrogue-monitoring
+description: Optional Prometheus, Grafana, and Alertmanager stack curated for VMRogue
+type: application
+version: 0.1.0
+appVersion: "0.2.0"
+kubeVersion: ">=1.25.0-0"
+keywords:
+  - vmrogue
+  - kubevirt
+  - prometheus
+  - grafana
+home: https://github.com/ssahani/VMRogue
+sources:
+  - https://github.com/ssahani/VMRogue
+maintainers:
+  - name: Susant Sahani
+    url: https://github.com/ssahani
+dependencies:
+  - name: kube-prometheus-stack
+    version: 83.6.0
+    repository: https://prometheus-community.github.io/helm-charts
+    alias: kps
+    condition: kps.enabled

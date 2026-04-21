@@ -1,14 +1,12 @@
+{{- if and .Values.kps.enabled .Values.vmrogue.serviceMonitor.enabled }}
 ---
-# ServiceMonitor for VMRogue API server (use when Prometheus Operator already exists).
-# For a full stack, prefer: ./scripts/install-vmrogue-monitoring.sh (charts/vmrogue-monitoring).
-# Requires Prometheus Operator (prometheus-operator.dev)
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vmrogue-api
-  namespace: vmrogue-system
+  name: {{ .Release.Name }}-vmrogue-api
+  namespace: {{ .Values.vmrogue.namespace }}
   labels:
-    app.kubernetes.io/name: vmrogue
+    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
     app.kubernetes.io/component: api
 spec:
   selector:
@@ -16,7 +14,7 @@ spec:
       app.kubernetes.io/name: vmrogue
   namespaceSelector:
     matchNames:
-      - vmrogue-system
+      - {{ .Values.vmrogue.namespace | quote }}
   endpoints:
     - port: https
       path: /api/v1/health
@@ -25,14 +23,13 @@ spec:
       tlsConfig:
         insecureSkipVerify: true
 ---
-# ServiceMonitor for VMRogue Operator
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vmrogue-operator
-  namespace: vmrogue-system
+  name: {{ .Release.Name }}-vmrogue-operator
+  namespace: {{ .Values.vmrogue.namespace }}
   labels:
-    app.kubernetes.io/name: vmrogue-operator
+    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
     app.kubernetes.io/component: operator
 spec:
   selector:
@@ -40,8 +37,9 @@ spec:
       app.kubernetes.io/name: vmrogue-operator
   namespaceSelector:
     matchNames:
-      - vmrogue-system
+      - {{ .Values.vmrogue.namespace | quote }}
   endpoints:
     - port: metrics
       path: /metrics
       interval: 30s
+{{- end }}

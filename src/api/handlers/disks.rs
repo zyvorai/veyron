@@ -1,7 +1,7 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::State,
+    extract::{Query, State},
     http::StatusCode,
     routing::{get, post},
 };
@@ -11,12 +11,15 @@ use serde::{Deserialize, Serialize};
 use crate::api::http_server::web::SharedState;
 
 #[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
+
+#[cfg(feature = "web")]
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 
 #[cfg(feature = "web")]
 use kube::{
     Api,
-    api::{ListParams, Patch, PatchParams},
+    api::{Patch, PatchParams},
 };
 
 /// Disk response
@@ -33,6 +36,9 @@ pub struct DiskResponse {
 /// Expand disk request
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ExpandDiskRequest {
+    /// Target namespace for the PVC (defaults to API default namespace).
+    #[serde(default)]
+    pub namespace: Option<String>,
     pub vm_name: String,
     pub disk_name: String,
     pub new_size: String,
@@ -47,67 +53,64 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_disks(State(state): State<SharedState>) -> Json<Vec<DiskResponse>> {
+async fn list_disks(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<DiskResponse>> {
     let s = state.read().await;
-    let api: Api<PersistentVolumeClaim> = Api::namespaced(s.client().client(), &s.namespace);
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let pvcs = s.client().list_pvcs_for_scope(&scope).await;
 
-    let lp = ListParams::default();
-    match api.list(&lp).await {
-        Ok(list) => {
-            let results: Vec<DiskResponse> = list
-                .items
-                .iter()
-                .map(|pvc| {
-                    let meta = &pvc.metadata;
-                    let spec = pvc.spec.as_ref();
-                    let pvc_status = pvc.status.as_ref();
+    let results: Vec<DiskResponse> = pvcs
+        .iter()
+        .map(|pvc| {
+            let meta = &pvc.metadata;
+            let spec = pvc.spec.as_ref();
+            let pvc_status = pvc.status.as_ref();
 
-                    let vm_name = meta
-                        .labels
+            let vm_name = meta
+                .labels
+                .as_ref()
+                .and_then(|l| l.get("kubevirt.io/vm").cloned())
+                .or_else(|| {
+                    meta.labels
                         .as_ref()
-                        .and_then(|l| l.get("kubevirt.io/vm").cloned())
-                        .or_else(|| {
-                            meta.labels
-                                .as_ref()
-                                .and_then(|l| l.get("kubevirt.io/created-by").cloned())
-                        })
-                        .unwrap_or_default();
-
-                    let size = spec
-                        .and_then(|s| s.resources.as_ref())
-                        .and_then(|r| r.requests.as_ref())
-                        .and_then(|req| req.get("storage"))
-                        .map(|q| q.0.clone())
-                        .unwrap_or_default();
-
-                    let storage_class = spec.and_then(|s| s.storage_class_name.clone());
-
-                    let access_mode = spec
-                        .and_then(|s| s.access_modes.as_ref())
-                        .and_then(|modes| modes.first())
-                        .cloned()
-                        .unwrap_or_else(|| "ReadWriteOnce".to_string());
-
-                    let status = pvc_status
-                        .and_then(|s| s.phase.as_deref())
-                        .unwrap_or("Unknown")
-                        .to_string();
-
-                    DiskResponse {
-                        name: meta.name.clone().unwrap_or_default(),
-                        vm_name,
-                        size,
-                        storage_class,
-                        access_mode,
-                        status,
-                    }
+                        .and_then(|l| l.get("kubevirt.io/created-by").cloned())
                 })
-                .collect();
+                .unwrap_or_default();
 
-            Json(results)
-        }
-        Err(_) => Json(vec![]),
-    }
+            let size = spec
+                .and_then(|s| s.resources.as_ref())
+                .and_then(|r| r.requests.as_ref())
+                .and_then(|req| req.get("storage"))
+                .map(|q| q.0.clone())
+                .unwrap_or_default();
+
+            let storage_class = spec.and_then(|s| s.storage_class_name.clone());
+
+            let access_mode = spec
+                .and_then(|s| s.access_modes.as_ref())
+                .and_then(|modes| modes.first())
+                .cloned()
+                .unwrap_or_else(|| "ReadWriteOnce".to_string());
+
+            let status = pvc_status
+                .and_then(|s| s.phase.as_deref())
+                .unwrap_or("Unknown")
+                .to_string();
+
+            DiskResponse {
+                name: meta.name.clone().unwrap_or_default(),
+                vm_name,
+                size,
+                storage_class,
+                access_mode,
+                status,
+            }
+        })
+        .collect();
+
+    Json(results)
 }
 
 #[cfg(feature = "web")]
@@ -134,7 +137,8 @@ async fn expand_disk(
     }
 
     let s = state.read().await;
-    let api: Api<PersistentVolumeClaim> = Api::namespaced(s.client().client(), &s.namespace);
+    let ns = namespace_scope::resolve_opt(req.namespace.clone(), &s.namespace);
+    let api: Api<PersistentVolumeClaim> = Api::namespaced(s.client().client(), &ns);
 
     let patch = serde_json::json!({
         "spec": {

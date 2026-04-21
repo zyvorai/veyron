@@ -8,6 +8,9 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 #[cfg(feature = "web")]
 use k8s_openapi::api::core::v1::Event;
 
@@ -53,24 +56,46 @@ pub fn router(state: SharedState) -> Router {
 
 /// Detect monitoring stack availability by checking for well-known services.
 #[cfg(feature = "web")]
-async fn get_monitoring_status(State(state): State<SharedState>) -> Json<MonitoringStatus> {
+async fn get_monitoring_status(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<MonitoringStatus> {
     use k8s_openapi::api::core::v1::Service;
 
     let s = state.read().await;
-    let client = s.client().client();
-    let events = s
-        .client()
-        .list_events(&s.namespace)
-        .await
-        .unwrap_or_default();
+    let kube = s.client();
+    let client = kube.client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let events = kube.list_events_for_scope(&scope).await;
 
-    // Check for Prometheus, Grafana, Alertmanager across common namespaces
-    let monitoring_namespaces = ["monitoring", "prometheus", "observability", &s.namespace];
+    // Check for Prometheus, Grafana, Alertmanager across relevant namespaces
+    let scan_namespaces: Vec<String> = if namespace_scope::is_all_namespaces(&scope) {
+        let mut ns = vec![
+            "monitoring".to_string(),
+            "prometheus".to_string(),
+            "observability".to_string(),
+        ];
+        if let Ok(all) = kube.list_namespaces().await {
+            for n in all.into_iter().filter_map(|n| n.metadata.name) {
+                if !ns.contains(&n) {
+                    ns.push(n);
+                }
+            }
+        }
+        ns
+    } else {
+        vec![
+            "monitoring".to_string(),
+            "prometheus".to_string(),
+            "observability".to_string(),
+            scope.clone(),
+        ]
+    };
     let mut prometheus = false;
     let mut grafana = false;
     let mut alertmanager = false;
 
-    for ns in &monitoring_namespaces {
+    for ns in &scan_namespaces {
         let svc_api: kube::api::Api<Service> = kube::api::Api::namespaced(client.clone(), ns);
         if let Ok(svcs) = svc_api.list(&kube::api::ListParams::default()).await {
             for svc in &svcs.items {
@@ -88,7 +113,7 @@ async fn get_monitoring_status(State(state): State<SharedState>) -> Json<Monitor
         }
     }
 
-    let nodes = s.client().list_nodes().await.unwrap_or_default();
+    let nodes = kube.list_nodes().await.unwrap_or_default();
     let total_targets = nodes.len() as u32;
     let healthy_targets = nodes
         .iter()
@@ -106,7 +131,7 @@ async fn get_monitoring_status(State(state): State<SharedState>) -> Json<Monitor
     // Try to read retention from a Prometheus ConfigMap
     let retention_period = {
         let mut found = None;
-        'outer: for ns in &monitoring_namespaces {
+        'outer: for ns in &scan_namespaces {
             let cm_api: kube::api::Api<k8s_openapi::api::core::v1::ConfigMap> =
                 kube::api::Api::namespaced(client.clone(), ns);
             if let Ok(cms) = cm_api.list(&kube::api::ListParams::default()).await {
@@ -155,15 +180,8 @@ async fn list_anomalies(
     Query(query): Query<AnomalyQuery>,
 ) -> Json<Vec<Anomaly>> {
     let s = state.read().await;
-    let namespace = query
-        .namespace
-        .clone()
-        .unwrap_or_else(|| s.namespace.clone());
-    let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
-    } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+    let namespace = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
+    let vms = s.client().list_vms_for_scope(&namespace).await;
     let now = chrono::Utc::now().to_rfc3339();
     let mut anomalies = Vec::new();
 

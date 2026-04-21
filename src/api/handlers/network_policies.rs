@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Network policy response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,19 +34,23 @@ pub fn router(state: SharedState) -> Router {
 #[cfg(feature = "web")]
 async fn list_network_policies(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<NetworkPolicyResponse>> {
     use k8s_openapi::api::networking::v1::NetworkPolicy;
 
     let s = state.read().await;
-    let api: kube::api::Api<NetworkPolicy> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
-    let policies = match api.list(&kube::api::ListParams::default()).await {
-        Ok(list) => list,
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let policies = match namespace_scope::list_namespaced_resource::<NetworkPolicy>(
+        &s.client().client(),
+        &scope,
+    )
+    .await
+    {
+        Ok(items) => items,
         Err(_) => return Json(vec![]),
     };
 
     let results: Vec<NetworkPolicyResponse> = policies
-        .items
         .iter()
         .map(|np| {
             let spec = np.spec.as_ref();

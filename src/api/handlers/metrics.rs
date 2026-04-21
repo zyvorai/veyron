@@ -1,13 +1,16 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::get,
 };
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Metrics response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -131,9 +134,22 @@ async fn get_cluster_metrics(State(state): State<SharedState>) -> Json<ClusterMe
 async fn get_vm_metrics(
     State(state): State<SharedState>,
     Path(vm): Path<String>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Option<MetricsResponse>> {
     let s = state.read().await;
-    let collector = crate::monitoring::metrics::MetricsCollector::new(s.namespace.clone());
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let metrics_ns = if namespace_scope::is_all_namespaces(&scope) {
+        s.client()
+            .list_vms_for_scope("all")
+            .await
+            .into_iter()
+            .find(|v| v.metadata.name.as_deref() == Some(vm.as_str()))
+            .and_then(|v| v.metadata.namespace)
+            .unwrap_or_else(|| s.namespace.clone())
+    } else {
+        scope
+    };
+    let collector = crate::monitoring::metrics::MetricsCollector::new(metrics_ns);
 
     match collector.collect(&vm).await {
         Ok(m) => Json(Some(MetricsResponse {
