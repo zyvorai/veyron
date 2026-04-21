@@ -154,6 +154,10 @@ spec:
                       type: string
                     networkData:
                       type: string
+                    delivery:
+                      type: string
+                      description: |
+                        Empty or 'nocloud' for cloud-init NoCloud volume; 'configdrive' for cloudInitConfigDrive / Cloudbase-Init.
                 features:
                   type: object
                   properties:

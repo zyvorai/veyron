@@ -3,8 +3,10 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -41,6 +43,7 @@ type VMRogueVMReconciler struct {
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachineinstances,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -71,6 +74,17 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if vm.Spec.CloudInit != nil {
+		d := strings.ToLower(strings.TrimSpace(vm.Spec.CloudInit.Delivery))
+		if d == "configdrive" || d == "config_drive" {
+			if err := r.ensureConfigDriveSecret(ctx, &vm); err != nil {
+				logger.Error(err, "failed to reconcile config-drive Secret")
+				r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("config-drive secret: %v", err))
+				return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+			}
+		}
 	}
 
 	// Convert VMRogueVM spec to KubeVirt VirtualMachine
@@ -167,6 +181,30 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 }
 
+func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) error {
+	name := converter.ConfigDriveSecretName(vm.Name)
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: vm.Namespace,
+		},
+	}
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, sec, func() error {
+		if sec.StringData == nil {
+			sec.StringData = make(map[string]string)
+		}
+		sec.StringData["userdata"] = vm.Spec.CloudInit.UserData
+		sec.Type = corev1.SecretTypeOpaque
+		if sec.Labels == nil {
+			sec.Labels = map[string]string{}
+		}
+		sec.Labels["vmrogue.io/managed-by"] = "vmrogue-operator"
+		sec.Labels["vmrogue.io/configdrive-userdata"] = "true"
+		return controllerutil.SetControllerReference(vm, sec, r.Scheme)
+	})
+	return err
+}
+
 func (r *VMRogueVMReconciler) handleDeletion(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -188,6 +226,22 @@ func (r *VMRogueVMReconciler) handleDeletion(ctx context.Context, vm *vmroguev1a
 			logger.Info("deleting KubeVirt VirtualMachine", "name", vm.Name)
 			if err := r.Delete(ctx, kvVM); err != nil && !errors.IsNotFound(err) {
 				return ctrl.Result{}, err
+			}
+		}
+
+		if vm.Spec.CloudInit != nil {
+			d := strings.ToLower(strings.TrimSpace(vm.Spec.CloudInit.Delivery))
+			if d == "configdrive" || d == "config_drive" {
+				sec := &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      converter.ConfigDriveSecretName(vm.Name),
+						Namespace: vm.Namespace,
+					},
+				}
+				if err := r.Delete(ctx, sec); err != nil && !errors.IsNotFound(err) {
+					logger.Error(err, "failed to delete config-drive Secret")
+					return ctrl.Result{}, err
+				}
 			}
 		}
 

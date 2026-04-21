@@ -5,7 +5,7 @@
 #[cfg(feature = "web")]
 pub mod web {
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
-    use crate::config::VMConfigBuilder;
+    use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
     use crate::kube::KubeClient;
     use crate::profiles::PROFILES;
     use crate::templates::TEMPLATES;
@@ -516,6 +516,7 @@ pub mod web {
             || path.starts_with("/api/v1/nodes")
             || path.starts_with("/api/v1/pods")
             || path.starts_with("/api/v1/snapshots")
+            || path.starts_with("/api/v1/snapshot-schedules")
             || path.starts_with("/api/v1/dashboard")
             || path.starts_with("/api/v1/templates")
             || path.starts_with("/api/v1/profiles")
@@ -713,6 +714,18 @@ pub mod web {
                 "/api/v1/snapshots/:ns/:name/restore",
                 post(restore_snapshot_handler),
             )
+            .route(
+                "/api/v1/snapshot-schedules",
+                get(list_snapshot_schedules_handler),
+            )
+            .route(
+                "/api/v1/snapshot-schedules",
+                post(create_snapshot_schedule_handler),
+            )
+            .route(
+                "/api/v1/snapshot-schedules/:ns/:cm_name",
+                delete(delete_snapshot_schedule_handler),
+            )
             // Events
             .route("/api/v1/events", get(list_events_handler))
             .route("/api/v1/events/recent", get(recent_events_handler))
@@ -770,6 +783,23 @@ pub mod web {
         let state = Arc::new(RwLock::new(
             WebState::new(namespace, rate_limit_per_minute).await?,
         ));
+        let schedule_state = state.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+            interval.tick().await;
+            loop {
+                interval.tick().await;
+                let client = {
+                    let s = schedule_state.read().await;
+                    s.kube_client.client()
+                };
+                if let Err(e) =
+                    crate::snapshots::vm_snapshot_schedule::snapshot_schedule_tick(client).await
+                {
+                    log::warn!("snapshot schedule tick: {}", e);
+                }
+            }
+        });
         let app = build_router(state);
         let addr = format!("{}:{}", host, port);
 
@@ -1823,6 +1853,28 @@ pub mod web {
         disk_size: Option<String>,
         cloud_init: Option<String>,
         start: Option<bool>,
+        /// `nocloud` (default) or `configdrive` for `cloudInitConfigDrive` + Cloudbase-Init.
+        #[serde(default)]
+        cloud_init_delivery: Option<String>,
+        #[serde(default)]
+        expose: Option<CreateVmExposeReq>,
+    }
+
+    #[derive(Deserialize)]
+    struct CreateVmExposeReq {
+        #[serde(default)]
+        enabled: bool,
+        service_type: Option<String>,
+        #[serde(default)]
+        ports: Vec<CreateVmExposePortReq>,
+    }
+
+    #[derive(Deserialize)]
+    struct CreateVmExposePortReq {
+        name: Option<String>,
+        port: i32,
+        target_port: Option<i32>,
+        protocol: Option<String>,
     }
 
     async fn create_vm_handler(
@@ -1933,6 +1985,43 @@ pub mod web {
                         disk.size = profile.disk_size.clone();
                     }
                 }
+            }
+        }
+
+        if let Some(ref d) = req.cloud_init_delivery {
+            if let Some(ref mut ci) = config.cloud_init {
+                ci.delivery = match d.to_ascii_lowercase().as_str() {
+                    "configdrive" | "config_drive" => CloudInitDelivery::ConfigDrive,
+                    _ => CloudInitDelivery::NoCloud,
+                };
+            }
+        }
+
+        if let Some(ex) = req.expose {
+            if ex.enabled {
+                let mut ports: Vec<VmExposePort> = ex
+                    .ports
+                    .into_iter()
+                    .map(|p| VmExposePort {
+                        name: p.name,
+                        port: p.port,
+                        target_port: p.target_port.unwrap_or(p.port),
+                        protocol: p.protocol.unwrap_or_else(|| "TCP".to_string()),
+                    })
+                    .collect();
+                if ports.is_empty() {
+                    ports.push(VmExposePort {
+                        name: Some("ssh".to_string()),
+                        port: 22,
+                        target_port: 22,
+                        protocol: "TCP".to_string(),
+                    });
+                }
+                config.expose = Some(VmExposeConfig {
+                    enabled: true,
+                    service_type: ex.service_type.unwrap_or_else(|| "ClusterIP".to_string()),
+                    ports,
+                });
             }
         }
 
@@ -2314,6 +2403,144 @@ pub mod web {
                 }
             }
             Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct SnapshotScheduleQuery {
+        namespace: Option<String>,
+    }
+
+    #[derive(Deserialize)]
+    struct SnapshotScheduleCreateReq {
+        namespace: Option<String>,
+        vm_name: String,
+        cron: String,
+        snapshot_prefix: Option<String>,
+        #[serde(default = "default_true")]
+        enabled: bool,
+    }
+
+    fn default_true() -> bool {
+        true
+    }
+
+    async fn list_snapshot_schedules_handler(
+        State(state): State<SharedState>,
+        Query(q): Query<SnapshotScheduleQuery>,
+    ) -> impl IntoResponse {
+        let filter_ns = q.namespace.clone();
+        let (default_ns, client) = {
+            let s = state.read().await;
+            (s.namespace.clone(), s.kube_client.client())
+        };
+
+        match crate::snapshots::vm_snapshot_schedule::list_schedule_configmaps(client).await {
+            Ok(mut cms) => {
+                if filter_ns.as_deref() != Some("all") {
+                    let ns = filter_ns.unwrap_or(default_ns);
+                    cms.retain(|c| c.metadata.namespace.as_deref() == Some(ns.as_str()));
+                }
+                let rows: Vec<serde_json::Value> = cms
+                    .into_iter()
+                    .filter_map(|cm| {
+                        let data = cm.data?;
+                        let raw =
+                            data.get(crate::snapshots::vm_snapshot_schedule::SCHEDULE_CM_DATA_KEY)?;
+                        let rec: crate::snapshots::vm_snapshot_schedule::SnapshotScheduleRecord =
+                            serde_json::from_str(raw).ok()?;
+                        Some(serde_json::json!({
+                            "name": cm.metadata.name,
+                            "namespace": cm.metadata.namespace,
+                            "vm_name": rec.vm_name,
+                            "cron": rec.cron,
+                            "enabled": rec.enabled,
+                            "snapshot_prefix": rec.snapshot_prefix,
+                            "last_run": rec.last_run.map(|t| t.to_rfc3339()),
+                        }))
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/snapshot-schedules");
+                ok_json(&ApiResponse::success(&rows, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn create_snapshot_schedule_handler(
+        State(state): State<SharedState>,
+        Json(req): Json<SnapshotScheduleCreateReq>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("vm_name", &req.vm_name)]) {
+            return resp;
+        }
+        let ns = if let Some(ref n) = req.namespace {
+            n.clone()
+        } else {
+            let s = state.read().await;
+            s.namespace.clone()
+        };
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns)]) {
+            return resp;
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.client()
+        };
+
+        match crate::snapshots::vm_snapshot_schedule::upsert_schedule_cm(
+            client,
+            &ns,
+            &req.vm_name,
+            &req.cron,
+            req.snapshot_prefix.as_deref(),
+            req.enabled,
+        )
+        .await
+        {
+            Ok(cm_name) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/snapshot-schedules");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({
+                        "message": "Snapshot schedule created",
+                        "name": cm_name,
+                        "namespace": ns,
+                    }),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(400, "INVALID_SCHEDULE", &sanitize_error(&e)),
+        }
+    }
+
+    async fn delete_snapshot_schedule_handler(
+        State(state): State<SharedState>,
+        Path((ns, cm_name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &cm_name)]) {
+            return resp;
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.client()
+        };
+
+        match crate::snapshots::vm_snapshot_schedule::delete_schedule_cm(client, &ns, &cm_name)
+            .await
+        {
+            Ok(()) => {
+                let ctx = req_ctx(
+                    HttpMethod::DELETE,
+                    "/api/v1/snapshot-schedules/:ns/:cm_name",
+                );
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({ "message": "Schedule deleted" }),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
         }
     }
 

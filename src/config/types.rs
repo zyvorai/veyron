@@ -49,6 +49,9 @@ pub struct VMConfig {
     /// Machine type (e.g., "q35")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub machine_type: Option<String>,
+    /// When set, VMRogue creates a Kubernetes Service targeting the virt-launcher pod (`kubevirt.io/domain`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expose: Option<VmExposeConfig>,
 }
 
 /// CPU configuration
@@ -198,12 +201,55 @@ pub enum NetworkType {
     },
 }
 
+/// How cloud-init / Cloudbase-Init user data is delivered (`NoCloud` vs ISO config-drive).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum CloudInitDelivery {
+    /// Linux cloud-init via `cloudInitNoCloud`.
+    #[default]
+    NoCloud,
+    /// Config-drive ISO (`cloudInitConfigDrive`), e.g. Cloudbase-Init on Windows.
+    ConfigDrive,
+}
+
 /// Cloud-init configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CloudInitConfig {
     pub user_data: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_data: Option<String>,
+    #[serde(default)]
+    pub delivery: CloudInitDelivery,
+}
+
+/// Opt-in Kubernetes Service to reach guest ports via the VM pod network.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmExposeConfig {
+    #[serde(default)]
+    pub enabled: bool,
+    /// `ClusterIP`, `NodePort`, or `LoadBalancer`.
+    #[serde(default = "default_expose_service_type")]
+    pub service_type: String,
+    #[serde(default)]
+    pub ports: Vec<VmExposePort>,
+}
+
+fn default_expose_service_type() -> String {
+    "ClusterIP".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmExposePort {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub port: i32,
+    pub target_port: i32,
+    #[serde(default = "default_tcp_protocol")]
+    pub protocol: String,
+}
+
+fn default_tcp_protocol() -> String {
+    "TCP".to_string()
 }
 
 // ============================================================================

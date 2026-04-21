@@ -212,6 +212,10 @@ type CloudInitSpec struct {
 	// Cloud-init network data.
 	// +optional
 	NetworkData *string `json:"networkData,omitempty"`
+
+	// Delivery mechanism: empty or "nocloud" (default), or "configdrive" for Cloudbase-Init / Windows.
+	// +optional
+	Delivery string `json:"delivery,omitempty"`
 }
 
 // FeaturesSpec mirrors Rust FeaturesConfig.

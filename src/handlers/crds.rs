@@ -270,12 +270,14 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
         Some(CRDCloudInitSpec {
             user_data: data,
             network_data: None,
+            delivery: None,
         })
     } else if args.template.is_some() {
         // Auto-generate basic cloud-init with hostname
         Some(CRDCloudInitSpec {
             user_data: format!("#cloud-config\nhostname: {}\n", name),
             network_data: None,
+            delivery: None,
         })
     } else {
         None

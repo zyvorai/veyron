@@ -1,6 +1,6 @@
 use crate::config::{
-    BootloaderType, ClockConfig, DiskDeviceType, DiskSource, FeaturesConfig, FirmwareConfig,
-    NetworkType, VMConfig,
+    BootloaderType, ClockConfig, CloudInitDelivery, DiskDeviceType, DiskSource, FeaturesConfig,
+    FirmwareConfig, NetworkType, VMConfig,
 };
 use crate::kube::types::*;
 use anyhow::Result;
@@ -58,6 +58,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 persistent_volume_claim: None,
                 data_volume: None,
                 cloud_init_no_cloud: None,
+                cloud_init_config_drive: None,
             },
             DiskSource::PVC { name } => Volume {
                 name: disk.name.clone(),
@@ -68,6 +69,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 container_disk: None,
                 data_volume: None,
                 cloud_init_no_cloud: None,
+                cloud_init_config_drive: None,
             },
             DiskSource::ContainerDisk { image } => Volume {
                 name: disk.name.clone(),
@@ -79,6 +81,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 persistent_volume_claim: None,
                 data_volume: None,
                 cloud_init_no_cloud: None,
+                cloud_init_config_drive: None,
             },
             DiskSource::DataVolume { name } => Volume {
                 name: disk.name.clone(),
@@ -87,24 +90,45 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 container_disk: None,
                 persistent_volume_claim: None,
                 cloud_init_no_cloud: None,
+                cloud_init_config_drive: None,
             },
         };
         volumes.push(volume);
     }
 
-    // Add cloud-init volume if present
+    // Add cloud-init volume if present (`NoCloud` vs config-drive / Cloudbase-Init).
     if let Some(cloud_init) = &config.cloud_init {
-        volumes.push(Volume {
-            name: "cloudinitdisk".to_string(),
-            cloud_init_no_cloud: Some(CloudInitNoCloudSource {
-                user_data: Some(cloud_init.user_data.clone()),
-                network_data: cloud_init.network_data.clone(),
-            }),
-            empty_disk: None,
-            container_disk: None,
-            persistent_volume_claim: None,
-            data_volume: None,
-        });
+        match cloud_init.delivery {
+            CloudInitDelivery::NoCloud => {
+                volumes.push(Volume {
+                    name: "cloudinitdisk".to_string(),
+                    cloud_init_no_cloud: Some(CloudInitNoCloudSource {
+                        user_data: Some(cloud_init.user_data.clone()),
+                        network_data: cloud_init.network_data.clone(),
+                    }),
+                    cloud_init_config_drive: None,
+                    empty_disk: None,
+                    container_disk: None,
+                    persistent_volume_claim: None,
+                    data_volume: None,
+                });
+            }
+            CloudInitDelivery::ConfigDrive => {
+                volumes.push(Volume {
+                    name: "cloudinitdisk".to_string(),
+                    cloud_init_no_cloud: None,
+                    cloud_init_config_drive: Some(CloudInitConfigDriveSource {
+                        user_data_secret_ref: Some(UserDataSecretRef {
+                            name: crate::kube::cloudinit_configdrive_secret_name(&config.name),
+                        }),
+                    }),
+                    empty_disk: None,
+                    container_disk: None,
+                    persistent_volume_claim: None,
+                    data_volume: None,
+                });
+            }
+        }
     }
 
     // Build disks
@@ -169,7 +193,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         }
     }
 
-    // Add cloud-init disk if present
+    // Add cloud-init disk if present (same disk attachment for NoCloud or config-drive volume).
     if config.cloud_init.is_some() {
         disks.push(Disk {
             name: "cloudinitdisk".to_string(),

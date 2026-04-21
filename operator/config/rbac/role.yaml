@@ -46,6 +46,11 @@ rules:
       - virtualmachinerestores
     verbs: ["get", "list", "watch", "create", "delete"]
 
+  # Secrets (config-drive userdata for Windows / Cloudbase-Init)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
   # Core Kubernetes resources
   - apiGroups: [""]
     resources: ["events"]
