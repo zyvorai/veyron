@@ -57,20 +57,20 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .split(chunks[1]);
 
     // --- Build timeline from state.events ---
-    let mut timeline_events: Vec<Line> = Vec::new();
-    timeline_events.push(Line::from(""));
-    // Time axis header
-    timeline_events.push(Line::from(Span::styled(
-        "  Time          Event",
-        Style::default()
-            .fg(Color::Rgb(222, 115, 86))
-            .add_modifier(Modifier::BOLD),
-    )));
-    timeline_events.push(Line::from(Span::styled(
-        "  ----          -----",
-        Style::default().fg(Color::Gray),
-    )));
-    timeline_events.push(Line::from(""));
+    let mut timeline_events: Vec<Line> = vec![
+        Line::from(""),
+        Line::from(Span::styled(
+            "  Time          Event",
+            Style::default()
+                .fg(Color::Rgb(222, 115, 86))
+                .add_modifier(Modifier::BOLD),
+        )),
+        Line::from(Span::styled(
+            "  ----          -----",
+            Style::default().fg(Color::Gray),
+        )),
+        Line::from(""),
+    ];
 
     if state.events.is_empty() {
         timeline_events.push(Line::from(Span::styled(

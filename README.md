@@ -83,6 +83,13 @@ export VMROGUE_API_KEY="your-secret-key"
 vmrogue api-serve --port 5151 --host 0.0.0.0
 ```
 
+Optional **snapshot schedule** tuning (built-in cron snapshots use a Kubernetes Lease so only one replica runs the worker when the API is scaled horizontally):
+
+```bash
+export VMROGUE_SCHEDULER_LEASE_NAMESPACE=vmrogue-system   # Lease object namespace (defaults to VM default ns)
+export VMROGUE_SCHEDULER_LEASE_DISABLED=1                   # Skip lease — use only single-replica / dev
+```
+
 Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load (with a "Remember me" option). JWT Bearer tokens with HMAC-SHA256 signature verification are also supported.
 
 ### Dashboard features

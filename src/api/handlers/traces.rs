@@ -61,7 +61,7 @@ fn event_to_row(e: &k8s_openapi::api::core::v1::Event) -> TraceRow {
     let service = format!("{kind}/{name}");
 
     let operation = e.reason.clone().unwrap_or_else(|| "Event".to_string());
-    let span_count = e.count.unwrap_or(1).max(1).min(9999) as u32;
+    let span_count = e.count.unwrap_or(1).clamp(1, 9999) as u32;
 
     let is_normal = e.type_.as_deref() == Some("Normal");
     let status = if is_normal { "ok" } else { "error" }.to_string();

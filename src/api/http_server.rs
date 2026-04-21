@@ -150,7 +150,7 @@ pub mod web {
                     if parts.len() >= 2 {
                         let name = parts[0].to_string();
                         let key = parts[1].to_string();
-                        let role = match parts.get(2).map(|s| *s) {
+                        let role = match parts.get(2).copied() {
                             Some("admin") => ApiRole::Admin,
                             Some("write") => ApiRole::Write,
                             Some("readonly") | Some("read") => ApiRole::ReadOnly,
@@ -598,7 +598,7 @@ pub mod web {
             };
 
             if socket
-                .send(Message::Text(metrics.to_string().into()))
+                .send(Message::Text(metrics.to_string()))
                 .await
                 .is_err()
             {
@@ -922,10 +922,8 @@ pub mod web {
         RequestContext::new(method, path)
     }
 
-    /// Sanitize internal error details before sending to clients.
-    ///
     // ── Policy Enforcement ──────────────────────────────────────
-
+    /// Internal error sanitize helper context (policy violation payload).
     struct PolicyViolation {
         policy_name: String,
         enforcement: String,
@@ -1386,12 +1384,12 @@ pub mod web {
                 msg = k8s_stream.next() => {
                     match msg {
                         Some(Ok(tokio_tungstenite::tungstenite::Message::Binary(data))) => {
-                            if client_ws.send(Message::Binary(data.into())).await.is_err() {
+                            if client_ws.send(Message::Binary(data)).await.is_err() {
                                 break;
                             }
                         }
                         Some(Ok(tokio_tungstenite::tungstenite::Message::Text(text))) => {
-                            if client_ws.send(Message::Text(text.into())).await.is_err() {
+                            if client_ws.send(Message::Text(text)).await.is_err() {
                                 break;
                             }
                         }
@@ -3126,8 +3124,6 @@ pub mod web {
     /// Supports client certificate auth (k3s/kubeadm) and falls back to no client auth.
     #[allow(dead_code)]
     fn build_k8s_tls_config() -> rustls::ClientConfig {
-        #![allow(unused_imports)]
-
         // Try reading client cert/key from kubeconfig
         if let Ok(kubeconfig_path) = std::env::var("KUBECONFIG") {
             if let Ok(contents) = std::fs::read_to_string(&kubeconfig_path) {

@@ -117,6 +117,8 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `VMROGUE_API_KEY` | Single API key for the web server |
 | `VMROGUE_API_KEYS` | Multi-key RBAC: `"admin:key1,write:key2,readonly:key3"` |
 | `VMROGUE_NAMESPACE` | Default namespace |
+| `VMROGUE_SCHEDULER_LEASE_NAMESPACE` | Namespace for the snapshot-scheduler **Lease** (`coordination.k8s.io`); defaults to `VMROGUE_NAMESPACE` / API default namespace |
+| `VMROGUE_SCHEDULER_LEASE_DISABLED` | Set to `1` or `true` to skip Lease acquisition so every API replica runs the snapshot tick — **only for single-replica/dev** (duplicate snapshots if scaled) |
 | `KUBECONFIG` | Kubeconfig path (also `--kubeconfig` flag) |
 | `RUST_MIN_STACK` | Set to `8388608` when running tests |
 | `RUST_LOG` | Log level: error/warn/info/debug/trace |
