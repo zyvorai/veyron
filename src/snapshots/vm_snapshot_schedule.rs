@@ -7,7 +7,7 @@ use cron::Schedule;
 use k8s_openapi::api::core::v1::ConfigMap;
 use kube::{
     Api, Client,
-    api::{DeleteParams, ListParams, Patch, PatchParams, PostParams},
+    api::{DeleteParams, ListParams, PostParams},
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -42,6 +42,42 @@ fn store_schedule_json(rec: &SnapshotScheduleRecord) -> Result<BTreeMap<String, 
     let s = serde_json::to_string_pretty(rec)?;
     data.insert(SCHEDULE_CM_DATA_KEY.to_string(), s);
     Ok(data)
+}
+
+/// Best-effort: detect Kubernetes **409 Conflict** through an `anyhow` error chain (e.g. wrapped by `SnapshotManager`).
+fn kube_is_conflict(err: &anyhow::Error) -> bool {
+    err.chain().any(|c| {
+        c.downcast_ref::<kube::Error>()
+            .is_some_and(|ke| matches!(ke, kube::Error::Api(ae) if ae.code == 409))
+    })
+}
+
+/// Update `schedule.json` with **optimistic concurrency** (`get` → edit → `replace`, retry on 409).
+async fn persist_schedule_cm(
+    client: Client,
+    ns: &str,
+    name: &str,
+    rec: &SnapshotScheduleRecord,
+) -> Result<()> {
+    let new_data = store_schedule_json(rec)?;
+    let cms_ns: Api<ConfigMap> = Api::namespaced(client.clone(), ns);
+    let pp = PostParams::default();
+
+    for _ in 0u8..8 {
+        let mut cm = cms_ns.get(name).await?;
+        cm.data = Some(new_data.clone());
+        match cms_ns.replace(name, &pp, &cm).await {
+            Ok(_) => return Ok(()),
+            Err(kube::Error::Api(ae)) if ae.code == 409 => continue,
+            Err(e) => return Err(e.into()),
+        }
+    }
+
+    anyhow::bail!(
+        "ConfigMap replace conflict retries exhausted for {}/{}",
+        ns,
+        name
+    );
 }
 
 /// List snapshot schedules across the cluster.
@@ -145,7 +181,7 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
             cm.metadata
                 .creation_timestamp
                 .as_ref()
-                .map(|t| t.0.clone())
+                .map(|t| t.0)
                 .unwrap_or_else(|| Utc.timestamp_opt(0, 0).unwrap())
         });
 
@@ -169,41 +205,44 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
             "{}-{}-{}",
             rec.snapshot_prefix,
             rec.vm_name,
-            now.format("%Y%m%d%H%M%S")
+            now.format("%Y%m%d%H%M")
         );
         let cfg = crate::snapshots::SnapshotConfig::new(&rec.vm_name, &snap_name)
             .with_description("VMRogue scheduled snapshot");
 
-        match mgr.create_snapshot(&cfg).await {
-            Ok(_) => {
-                rec.last_run = Some(now);
-                let new_data = match store_schedule_json(&rec) {
-                    Ok(d) => d,
-                    Err(e) => {
-                        log::warn!("serialize schedule {}: {}", name, e);
-                        continue;
-                    }
-                };
-                let patch = serde_json::json!({ "data": new_data });
-                let cms_ns: Api<ConfigMap> = Api::namespaced(client.clone(), ns);
-                let pp = PatchParams::default();
-                if let Err(e) = cms_ns.patch(name, &pp, &Patch::Merge(patch)).await {
-                    log::warn!("patch schedule CM {}: {}", name, e);
-                } else {
-                    log::info!(
-                        "scheduled snapshot '{}' for VM {}/{}",
-                        snap_name,
-                        ns,
-                        rec.vm_name
-                    );
-                }
+        let snapshot_ok = match mgr.create_snapshot(&cfg).await {
+            Ok(_) => true,
+            Err(e) if kube_is_conflict(&e) => {
+                log::debug!(
+                    "scheduled snapshot CR already exists (idempotent): {}/{} {}",
+                    ns,
+                    rec.vm_name,
+                    snap_name
+                );
+                true
             }
-            Err(e) => log::warn!(
-                "scheduled snapshot failed for VM {}/{}: {}",
-                ns,
-                rec.vm_name,
-                e
-            ),
+            Err(e) => {
+                log::warn!(
+                    "scheduled snapshot failed for VM {}/{}: {}",
+                    ns,
+                    rec.vm_name,
+                    e
+                );
+                false
+            }
+        };
+
+        if snapshot_ok {
+            rec.last_run = Some(now);
+            match persist_schedule_cm(client.clone(), ns, name, &rec).await {
+                Ok(_) => log::info!(
+                    "scheduled snapshot '{}' for VM {}/{}",
+                    snap_name,
+                    ns,
+                    rec.vm_name
+                ),
+                Err(e) => log::warn!("persist schedule CM {}: {}", name, e),
+            }
         }
     }
 

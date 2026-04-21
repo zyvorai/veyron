@@ -779,6 +779,17 @@ pub mod web {
             tls.validate()?;
         }
 
+        // Snapshot schedule worker: only one replica should run ticks (Kubernetes Lease).
+        let scheduler_lease_ns = std::env::var("VMROGUE_SCHEDULER_LEASE_NAMESPACE")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| namespace.clone());
+        let disable_scheduler_lease = std::env::var("VMROGUE_SCHEDULER_LEASE_DISABLED")
+            .ok()
+            .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+            .unwrap_or(false);
+        let scheduler_holder = crate::snapshots::scheduler_lease::scheduler_holder_identity();
+
         // Initialize kube client at startup instead of lazily per-request
         let state = Arc::new(RwLock::new(
             WebState::new(namespace, rate_limit_per_minute).await?,
@@ -793,6 +804,26 @@ pub mod web {
                     let s = schedule_state.read().await;
                     s.kube_client.client()
                 };
+                if !disable_scheduler_lease {
+                    match crate::snapshots::scheduler_lease::acquire_snapshot_scheduler_leader(
+                        client.clone(),
+                        &scheduler_lease_ns,
+                        &scheduler_holder,
+                    )
+                    .await
+                    {
+                        Ok(true) => {}
+                        Ok(false) => continue,
+                        Err(e) => {
+                            log::warn!(
+                                "snapshot scheduler lease (namespace={}): {}",
+                                scheduler_lease_ns,
+                                e
+                            );
+                            continue;
+                        }
+                    }
+                }
                 if let Err(e) =
                     crate::snapshots::vm_snapshot_schedule::snapshot_schedule_tick(client).await
                 {

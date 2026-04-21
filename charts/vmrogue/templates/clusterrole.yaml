@@ -33,11 +33,18 @@ rules:
     verbs: ["get", "update", "patch"]
   # Core K8s resources
   - apiGroups: [""]
-    resources: ["namespaces", "nodes", "pods", "pods/log", "events", "services", "persistentvolumeclaims", "configmaps", "secrets", "resourcequotas"]
+    resources: ["namespaces", "nodes", "pods", "pods/log", "events", "persistentvolumeclaims", "configmaps", "resourcequotas"]
     verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets", "services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["persistentvolumeclaims", "configmaps"]
     verbs: ["create", "update", "patch", "delete"]
+  # Leader election for the snapshot schedule worker (in-process Lease)
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
   # Storage
   - apiGroups: ["storage.k8s.io"]
     resources: ["storageclasses"]

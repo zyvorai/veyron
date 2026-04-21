@@ -5,7 +5,10 @@ use crate::templates::TEMPLATES;
 use crate::tui::colors::cli as color;
 use anyhow::{Result, anyhow};
 
-/// Convert a KubeVirt VirtualMachine to a VMConfig
+/// Convert a KubeVirt `VirtualMachine` into a [`VMConfig`].
+///
+/// **Limits:** userdata stored only in a referenced **Secret** (config-drive delivery) cannot be
+/// reconstructed from the VM spec; round-trips for that path require reading the Secret separately.
 fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
     let name = vm.metadata.name.clone().unwrap_or_default();
     let spec = &vm.spec.template.spec;
