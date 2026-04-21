@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<script>
+(function(){
+  try {
+    if (localStorage.getItem('vmrogue_theme') === 'steel') {
+      document.documentElement.setAttribute('data-theme','steel');
+    }
+  } catch (e) {}
+})();
+</script>
 <style>
 :root {
   /* Surfaces — slate + blue (v9s-style dark UI) */
@@ -861,6 +870,14 @@ body>*{position:relative;z-index:1}
 }
 .ns-select:focus{border-color:var(--ember)}
 
+.theme-select{
+  background:var(--steel);border:1px solid var(--border);
+  color:var(--text-bright);border-radius:4px;padding:4px 8px;
+  font-family:var(--font-sans);font-size:.68em;font-weight:500;
+  cursor:pointer;outline:none;max-width:120px;
+}
+.theme-select:focus{border-color:var(--ember)}
+
 /* Bulk operations */
 .bulk-bar{
   display:none;padding:10px 24px;background:rgba(59,130,246,.08);
@@ -902,6 +919,243 @@ body>*{position:relative;z-index:1}
   .grid-4,.grid-3{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
   .stat-value{font-size:1.4em}
+}
+
+/* ═══════════════════════════════════════════════════
+   THEME: Dark steel (top nav, industrial panels)
+   Toggle via <html data-theme="steel"> — default is slate (:root)
+   ═══════════════════════════════════════════════════ */
+html[data-theme="steel"]{
+  --bg:#0b1018;
+  --bg-deep:#06080d;
+  --bg-card:rgba(34,39,48,.94);
+  --bg-card-solid:#161b22;
+  --bg-tertiary:rgba(55,62,74,.52);
+  --steel:#141a22;
+  --steel-light:#1f2630;
+  --steel-bright:#2a313c;
+  --border:rgba(140,160,190,.18);
+  --border-hot:rgba(120,169,255,.38);
+  --border-cold:rgba(142,160,181,.24);
+  --text:#d7dde5;
+  --text-muted:#9aa8b8;
+  --text-dim:#7f8b99;
+  --text-bright:#eef3f8;
+  --accent:#5d90f7;
+  --molten:#78a9ff;
+  --ember:#9eb8e8;
+  --lava:#5d90f7;
+  --magma:#b8cce8;
+  --forge:#5d90f7;
+  --spark:#78a9ff;
+  --arc:#8ea0b5;
+  --plasma:#a8b8d0;
+  --chrome:#c5d0de;
+  --titanium:#9aa8b8;
+  --success:#2ed3a7;
+  --success-dim:rgba(46,211,167,.14);
+  --warning:#ffb347;
+  --warning-dim:rgba(255,179,71,.14);
+  --error:#f87171;
+  --error-dim:rgba(248,113,113,.14);
+  --radius:1.125rem;
+  --glow-molten:0 20px 45px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+  --glow-spark:0 0 24px rgba(93,144,247,.14);
+  --glow-success:0 0 14px rgba(46,211,167,.2);
+}
+
+html[data-theme="steel"] body{
+  background:#101722;
+  background-image:
+    radial-gradient(circle at top center,rgba(120,140,160,.15),transparent 30%),
+    linear-gradient(180deg,#06080d 0%,#0b1017 40%,#101722 70%,#0b1018 100%);
+}
+html[data-theme="steel"] body::before{opacity:.01}
+
+html[data-theme="steel"] ::-webkit-scrollbar-thumb{background:#3d4a5c}
+html[data-theme="steel"] ::-webkit-scrollbar-thumb:hover{background:#556274}
+
+html[data-theme="steel"] .navbar{
+  height:72px;
+  min-height:72px;
+  background:linear-gradient(180deg,#0f141a 0%,#1a222d 50%,#0c1117 100%);
+  border-bottom:1px solid rgba(140,160,190,.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 10px 30px rgba(0,0,0,.45);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+html[data-theme="steel"] .navbar::after{
+  bottom:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(142,160,181,.45),rgba(93,144,247,.55),transparent);
+  animation:none;
+}
+
+html[data-theme="steel"] .navbar-brand{
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+  font-weight:600;
+  font-size:1.05rem;
+  color:var(--text-bright);
+  background-image:none;
+  -webkit-text-fill-color:var(--text-bright);
+  background-clip:border-box;
+}
+html[data-theme="steel"] .navbar-brand::before{
+  width:38px;
+  height:38px;
+  margin-right:0;
+  border-radius:12px;
+  background:linear-gradient(145deg,#2a3442,#121820);
+  border:1px solid rgba(170,190,220,.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.08),
+    0 6px 16px rgba(0,0,0,.4);
+}
+
+html[data-theme="steel"] .nav-links{gap:8px;margin-left:22px}
+html[data-theme="steel"] .nav-link,
+html[data-theme="steel"] .nav-group-btn{
+  position:relative;
+  text-transform:none;
+  letter-spacing:.02em;
+  font-size:.82rem;
+  font-weight:500;
+  border-radius:10px;
+  border-color:transparent;
+}
+html[data-theme="steel"] .nav-link:hover,
+html[data-theme="steel"] .nav-group-btn:hover{
+  background:rgba(42,49,60,.55);
+  color:var(--text-bright);
+  border-color:transparent;
+}
+html[data-theme="steel"] .nav-link.active{
+  background:transparent;
+  color:var(--text-bright);
+  border-color:transparent;
+  box-shadow:none;
+}
+html[data-theme="steel"] .nav-link.active::after{
+  content:'';
+  position:absolute;
+  left:10px;
+  right:10px;
+  bottom:10px;
+  height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg,#8ea0b5,#5d90f7);
+}
+html[data-theme="steel"] .nav-dropdown .nav-link.active::after{display:none}
+html[data-theme="steel"] .nav-group-btn.active{
+  color:var(--text-bright);
+  border-color:transparent;
+  background:rgba(42,49,60,.4);
+}
+
+html[data-theme="steel"] .nav-dropdown{
+  background:linear-gradient(180deg,#161c24,#0e1319);
+  border:1px solid rgba(140,160,190,.2);
+  box-shadow:0 16px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+html[data-theme="steel"] .theme-select,
+html[data-theme="steel"] .ns-select,
+html[data-theme="steel"] .refresh-select{
+  border-radius:12px;
+  padding:8px 12px;
+  font-size:.72rem;
+  background:linear-gradient(180deg,#141a22,#0e141c);
+  border:1px solid rgba(140,160,190,.2);
+  color:var(--text);
+}
+
+html[data-theme="steel"] .stat-card,
+html[data-theme="steel"] .stat-card-blue,
+html[data-theme="steel"] .stat-card-purple,
+html[data-theme="steel"] .stat-card-orange,
+html[data-theme="steel"] .stat-card-green,
+html[data-theme="steel"] .stat-card-cyan,
+html[data-theme="steel"] .stat-card-red{
+  background:linear-gradient(145deg,#1a1f27 0%,#2a313c 50%,#161b22 100%);
+  border:1px solid rgba(160,180,210,.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.05),
+    0 12px 32px rgba(0,0,0,.35);
+}
+html[data-theme="steel"] .stat-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(170,190,220,.28);
+}
+html[data-theme="steel"] .stat-card::after{opacity:0}
+html[data-theme="steel"] .stat-card:hover::after{opacity:.35}
+
+html[data-theme="steel"] .stat-card.stat-card-neutral{
+  border-color:rgba(140,160,190,.2);
+  background:linear-gradient(145deg,#1a1f27 0%,#252d38 50%,#161b22 100%);
+}
+html[data-theme="steel"] .stat-card.stat-card-optional{
+  border-color:rgba(255,179,71,.22);
+  background:linear-gradient(145deg,#2a2418 0%,#2a313c 45%,#161b22 100%);
+}
+
+html[data-theme="steel"] .card,
+html[data-theme="steel"] .chart-card,
+html[data-theme="steel"] .resource-bar,
+html[data-theme="steel"] .monitor-cap{
+  background:linear-gradient(145deg,rgba(26,31,39,.92) 0%,rgba(42,49,60,.88) 50%,rgba(22,27,34,.95) 100%);
+  border:1px solid rgba(160,180,210,.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 12px 32px rgba(0,0,0,.32);
+}
+html[data-theme="steel"] .chart-card::before{
+  background:linear-gradient(90deg,transparent 20%,rgba(120,169,255,.25),transparent 80%);
+}
+html[data-theme="steel"] .card-header{
+  background:linear-gradient(90deg,rgba(93,144,247,.08),transparent);
+}
+html[data-theme="steel"] .card-title::before{
+  box-shadow:0 0 8px rgba(120,169,255,.3);
+}
+
+html[data-theme="steel"] .modal{
+  border:1px solid rgba(140,160,190,.22);
+  box-shadow:0 25px 80px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.04);
+}
+html[data-theme="steel"] .page-header-right{
+  background:rgba(93,144,247,.08);
+  border-radius:12px;
+}
+
+html[data-theme="steel"] .vm-row,
+html[data-theme="steel"] .event-row,
+html[data-theme="steel"] .snap-row{
+  border-bottom-color:rgba(140,160,190,.12);
+}
+html[data-theme="steel"] .vm-row:hover,
+html[data-theme="steel"] .event-row:hover,
+html[data-theme="steel"] .snap-row:hover{
+  background:rgba(42,49,60,.35);
+}
+html[data-theme="steel"] .table-row{
+  border-bottom-color:rgba(140,160,190,.12);
+}
+html[data-theme="steel"] .table-row:hover{
+  background:rgba(42,49,60,.38);
+  border-left-color:rgba(93,144,247,.85);
+}
+
+html[data-theme="steel"] .vm-detail{
+  background:rgba(12,16,22,.65);
+  border-bottom-color:rgba(140,160,190,.14);
+}
+
+@media(max-width:768px){
+  html[data-theme="steel"] .navbar{min-height:56px}
 }
 </style>
 </head>
@@ -1005,6 +1259,10 @@ body>*{position:relative;z-index:1}
     </div>
   </div>
   <div class="navbar-right">
+    <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
+      <option value="slate">Slate</option>
+      <option value="steel">Steel</option>
+    </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Namespace">
       <option value="all">all</option>
       <option value="default">default</option>
@@ -1727,6 +1985,46 @@ let vmData = [];
 let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
+const THEME_KEY = 'vmrogue_theme';
+
+function applyTheme(theme, writeStorage) {
+  const t = theme === 'steel' ? 'steel' : 'slate';
+  if (t === 'steel') {
+    document.documentElement.setAttribute('data-theme', 'steel');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+  if (writeStorage !== false) {
+    try {
+      localStorage.setItem(THEME_KEY, t);
+    } catch (e) {}
+  }
+  const sel = document.getElementById('theme-selector');
+  if (sel) {
+    sel.value = t;
+  }
+  try {
+    if (typeof drawChart === 'function' && document.getElementById('cpu-chart')) {
+      drawChart('cpu-chart', cpuHistory, '#38bdf8', 'rgba(56,189,248,.4)');
+      drawChart('mem-chart', memHistory, '#3b82f6', 'rgba(59,130,246,.4)');
+    }
+  } catch (e) {}
+}
+
+function setTheme(theme) {
+  applyTheme(theme, true);
+}
+
+function initTheme() {
+  let t = 'slate';
+  try {
+    t = localStorage.getItem(THEME_KEY) || 'slate';
+  } catch (e) {}
+  if (t !== 'steel' && t !== 'slate') {
+    t = 'slate';
+  }
+  applyTheme(t, false);
+}
 
 // Navigation
 function navigate(page) {
@@ -3222,6 +3520,8 @@ function refresh() {
 }
 
 window.addEventListener('load', async () => {
+  initTheme();
+
   // Set saved refresh interval
   const sel = document.getElementById('refresh-interval');
   sel.value = refreshInterval || '5000';
