@@ -46,8 +46,7 @@ async fn list_workloads(
 
     let s = state.read().await;
     let client = s.client().client();
-    let namespace =
-        super::namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
+    let namespace = super::namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
 
     if namespace == "all" {
         let (d, st, ds) = tokio::join!(

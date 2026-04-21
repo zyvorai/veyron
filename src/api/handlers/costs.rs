@@ -93,8 +93,7 @@ async fn compute_cost_entries(state: &SharedState) -> Vec<CostEntry> {
     let s = state.read().await;
     let vms = s.client().list_all_vms().await.unwrap_or_default();
 
-    vms
-        .iter()
+    vms.iter()
         .map(|vm| {
             let meta = &vm.metadata;
             let name = meta.name.clone().unwrap_or_default();
