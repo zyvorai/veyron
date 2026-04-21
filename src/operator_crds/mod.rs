@@ -191,6 +191,9 @@ pub struct CRDCloudInitSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "networkData")]
     pub network_data: Option<String>,
+    /// `nocloud` (default) or `configdrive` for Cloudbase-Init / Windows.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub delivery: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -569,6 +572,12 @@ impl From<&crate::config::VMConfig> for VMRogueVMSpec {
             cloud_init: config.cloud_init.as_ref().map(|ci| CRDCloudInitSpec {
                 user_data: ci.user_data.clone(),
                 network_data: ci.network_data.clone(),
+                delivery: match ci.delivery {
+                    crate::config::CloudInitDelivery::NoCloud => None,
+                    crate::config::CloudInitDelivery::ConfigDrive => {
+                        Some("configdrive".to_string())
+                    }
+                },
             }),
             features: config.features.as_ref().map(|f| CRDFeaturesSpec {
                 acpi: f.acpi,

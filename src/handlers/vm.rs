@@ -339,6 +339,7 @@ fn apply_cli_overrides(config: &mut VMConfig, overrides: CliOverrides) -> Result
         config.cloud_init = Some(crate::config::CloudInitConfig {
             user_data,
             network_data: None,
+            delivery: crate::config::CloudInitDelivery::NoCloud,
         });
     }
     Ok(())
@@ -1759,6 +1760,7 @@ mod tests {
             persistent_volume_claim: None,
             empty_disk: None,
             cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
             data_volume: None,
         }]);
 
@@ -1784,6 +1786,7 @@ mod tests {
                 capacity: "50Gi".to_string(),
             }),
             cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
             data_volume: None,
         }]);
 
@@ -1804,6 +1807,7 @@ mod tests {
             }),
             empty_disk: None,
             cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
             data_volume: None,
         }]);
 
@@ -1827,6 +1831,7 @@ mod tests {
                 user_data: Some("#cloud-config\npackages:\n  - vim\n".to_string()),
                 network_data: None,
             }),
+            cloud_init_config_drive: None,
             data_volume: None,
         }]);
 

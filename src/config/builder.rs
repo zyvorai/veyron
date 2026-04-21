@@ -256,12 +256,31 @@ impl VMConfigBuilder {
         self
     }
 
-    /// Set cloud-init user data for VM initialization.
+    /// Set cloud-init user data for VM initialization (`cloudInitNoCloud`).
     pub fn cloud_init(mut self, user_data: impl Into<String>) -> Self {
         self.config.cloud_init = Some(CloudInitConfig {
             user_data: user_data.into(),
             network_data: None,
+            delivery: crate::config::CloudInitDelivery::NoCloud,
         });
+        self
+    }
+
+    /// User data delivered via config-drive ISO (`cloudInitConfigDrive`), e.g. Cloudbase-Init on Windows.
+    ///
+    /// VMRogue creates a Secret with userdata and references it from the volume (see API create VM path).
+    pub fn cloud_init_config_drive(mut self, user_data: impl Into<String>) -> Self {
+        self.config.cloud_init = Some(CloudInitConfig {
+            user_data: user_data.into(),
+            network_data: None,
+            delivery: crate::config::CloudInitDelivery::ConfigDrive,
+        });
+        self
+    }
+
+    /// Create a Kubernetes Service targeting this VM's virt-launcher (`kubevirt.io/domain` selector).
+    pub fn expose(mut self, expose: crate::config::VmExposeConfig) -> Self {
+        self.config.expose = Some(expose);
         self
     }
 

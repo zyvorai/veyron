@@ -6,6 +6,7 @@ pub mod manager;
 pub mod restore;
 pub mod retention;
 pub mod types;
+pub mod vm_snapshot_schedule;
 
 pub use crds::{VirtualMachineRestore, VirtualMachineSnapshot};
 pub use manager::SnapshotManager;

@@ -2,15 +2,19 @@ pub mod converter;
 pub mod status;
 pub mod types;
 
-use crate::config::VMConfig;
+use crate::config::{CloudInitDelivery, VMConfig};
 use crate::utils::VMRogueError;
 use anyhow::Result;
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+use k8s_openapi::api::core::v1::{Secret, Service, ServicePort, ServiceSpec};
+use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
+use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
 use kube::{
     Client, Config,
     api::{Api, DeleteParams, ListParams, Patch, PatchParams, PostParams},
 };
 use serde_json::json;
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
 pub use converter::vm_config_to_kubevirt;
@@ -140,12 +144,46 @@ impl KubeClient {
             Err(e) => return Err(e.into()), // Propagate other errors (network, auth, etc.)
         }
 
+        if let Some(ci) = &config.cloud_init {
+            if ci.delivery == CloudInitDelivery::ConfigDrive {
+                self.ensure_configdrive_userdata_secret(
+                    &config.namespace,
+                    &cloudinit_configdrive_secret_name(&config.name),
+                    &ci.user_data,
+                )
+                .await?;
+            }
+        }
+
         // Convert VMConfig to KubeVirt VirtualMachine
         let vm = vm_config_to_kubevirt(config)?;
 
         // Create the VM
         let pp = PostParams::default();
-        let created = vms.create(&pp, &vm).await?;
+        let created = match vms.create(&pp, &vm).await {
+            Ok(c) => c,
+            Err(e) => {
+                let _ = self
+                    .delete_secret_ignore(
+                        &config.namespace,
+                        &cloudinit_configdrive_secret_name(&config.name),
+                    )
+                    .await;
+                return Err(e.into());
+            }
+        };
+
+        if let Some(exp) = &config.expose {
+            if exp.enabled {
+                if let Err(err) = self.ensure_vm_expose_service(config, exp).await {
+                    log::warn!(
+                        "VM '{}' created but expose Service failed: {}",
+                        config.name,
+                        err
+                    );
+                }
+            }
+        }
 
         Ok(created)
     }
@@ -166,7 +204,141 @@ impl KubeClient {
         let dp = DeleteParams::default();
         vms.delete(name, &dp).await?;
 
+        self.delete_secret_ignore(namespace, &cloudinit_configdrive_secret_name(name))
+            .await;
+        self.delete_service_ignore(namespace, &vm_expose_service_name(name))
+            .await;
+
         Ok(())
+    }
+
+    async fn ensure_configdrive_userdata_secret(
+        &self,
+        namespace: &str,
+        name: &str,
+        userdata: &str,
+    ) -> Result<()> {
+        let secrets: Api<Secret> = Api::namespaced(self.client.clone(), namespace);
+        let mut string_data = BTreeMap::new();
+        string_data.insert("userdata".to_string(), userdata.to_string());
+        let secret = Secret {
+            metadata: ObjectMeta {
+                name: Some(name.to_string()),
+                namespace: Some(namespace.to_string()),
+                labels: Some(BTreeMap::from([
+                    ("vmrogue.io/managed-by".to_string(), "vmrogue".to_string()),
+                    (
+                        "vmrogue.io/configdrive-userdata".to_string(),
+                        "true".to_string(),
+                    ),
+                ])),
+                ..Default::default()
+            },
+            string_data: Some(string_data),
+            type_: Some("Opaque".to_string()),
+            ..Default::default()
+        };
+
+        match secrets.create(&PostParams::default(), &secret).await {
+            Ok(_) => Ok(()),
+            Err(kube::Error::Api(ae)) if ae.code == 409 => {
+                secrets
+                    .replace(name, &PostParams::default(), &secret)
+                    .await?;
+                Ok(())
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    async fn ensure_vm_expose_service(
+        &self,
+        config: &VMConfig,
+        expose: &crate::config::VmExposeConfig,
+    ) -> Result<()> {
+        let svc_api: Api<Service> = Api::namespaced(self.client.clone(), &config.namespace);
+        let svc_name = vm_expose_service_name(&config.name);
+
+        let mut selector = BTreeMap::new();
+        selector.insert("kubevirt.io/domain".to_string(), config.name.clone());
+
+        let type_str = match expose.service_type.to_ascii_lowercase().as_str() {
+            "nodeport" => "NodePort",
+            "loadbalancer" => "LoadBalancer",
+            _ => "ClusterIP",
+        };
+
+        let ports_src = if expose.ports.is_empty() {
+            vec![crate::config::VmExposePort {
+                name: Some("ssh".to_string()),
+                port: 22,
+                target_port: 22,
+                protocol: "TCP".to_string(),
+            }]
+        } else {
+            expose.ports.clone()
+        };
+
+        let ports: Vec<ServicePort> = ports_src
+            .iter()
+            .enumerate()
+            .map(|(i, p)| {
+                let mut port = ServicePort::default();
+                port.name = Some(p.name.clone().unwrap_or_else(|| format!("port{}", i)));
+                port.port = p.port;
+                port.protocol = Some(p.protocol.clone());
+                port.target_port = Some(IntOrString::Int(p.target_port));
+                port
+            })
+            .collect();
+
+        let svc = Service {
+            metadata: ObjectMeta {
+                name: Some(svc_name.clone()),
+                namespace: Some(config.namespace.clone()),
+                labels: Some(BTreeMap::from([
+                    ("vmrogue.io/managed-by".to_string(), "vmrogue".to_string()),
+                    ("vmrogue.io/expose-for-vm".to_string(), config.name.clone()),
+                ])),
+                ..Default::default()
+            },
+            spec: Some(ServiceSpec {
+                selector: Some(selector),
+                ports: Some(ports),
+                type_: Some(type_str.to_string()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+
+        match svc_api.create(&PostParams::default(), &svc).await {
+            Ok(_) => Ok(()),
+            Err(kube::Error::Api(ae)) if ae.code == 409 => {
+                svc_api
+                    .replace(&svc_name, &PostParams::default(), &svc)
+                    .await?;
+                Ok(())
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    async fn delete_secret_ignore(&self, namespace: &str, name: &str) {
+        let secrets: Api<Secret> = Api::namespaced(self.client.clone(), namespace);
+        match secrets.delete(name, &DeleteParams::default()).await {
+            Ok(_) => {}
+            Err(kube::Error::Api(ae)) if ae.code == 404 => {}
+            Err(e) => log::debug!("Secret delete {}: {}", name, e),
+        }
+    }
+
+    async fn delete_service_ignore(&self, namespace: &str, name: &str) {
+        let svcs: Api<Service> = Api::namespaced(self.client.clone(), namespace);
+        match svcs.delete(name, &DeleteParams::default()).await {
+            Ok(_) => {}
+            Err(kube::Error::Api(ae)) if ae.code == 404 => {}
+            Err(e) => log::debug!("Service delete {}: {}", name, e),
+        }
     }
 
     /// Start a VM (set running: true)
@@ -578,6 +750,24 @@ impl KubeClient {
         let list = scs.list(&lp).await?;
         Ok(list.items)
     }
+}
+
+/// Kubernetes name for the Secret referenced by `cloudInitConfigDrive.userDataSecretRef`.
+/// Keep consistent with `operator/internal/controller` helpers.
+pub fn cloudinit_configdrive_secret_name(vm_name: &str) -> String {
+    truncate_k8s_dns_subdomain(format!("{vm_name}-vmrogue-cfgdrv"), 253)
+}
+
+/// Kubernetes Service name for VMRogue-created exposed Services.
+pub fn vm_expose_service_name(vm_name: &str) -> String {
+    truncate_k8s_dns_subdomain(format!("{vm_name}-vmrogue-xp"), 63)
+}
+
+fn truncate_k8s_dns_subdomain(mut s: String, max: usize) -> String {
+    while s.len() > max {
+        s.pop();
+    }
+    s
 }
 
 #[cfg(test)]

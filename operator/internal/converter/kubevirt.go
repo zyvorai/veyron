@@ -3,6 +3,8 @@
 package converter
 
 import (
+	"strings"
+
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -31,7 +33,7 @@ func VMRogueVMToKubeVirt(vm *vmroguev1alpha1.VMRogueVM) (*unstructured.Unstructu
 	}
 
 	// Build volumes
-	volumes := buildVolumes(spec)
+	volumes := buildVolumes(vm.Name, spec)
 
 	// Build disks
 	disks := buildDisks(spec)
@@ -172,7 +174,7 @@ func VMRogueVMToKubeVirt(vm *vmroguev1alpha1.VMRogueVM) (*unstructured.Unstructu
 	return kvVM, nil
 }
 
-func buildVolumes(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
+func buildVolumes(vmName string, spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
 	var volumes []interface{}
 
 	for _, disk := range spec.Disks {
@@ -203,21 +205,45 @@ func buildVolumes(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
 		volumes = append(volumes, vol)
 	}
 
-	// Cloud-init volume
+	// Cloud-init volume (NoCloud vs config-drive / Cloudbase-Init)
 	if spec.CloudInit != nil {
-		ciVol := map[string]interface{}{
-			"name": "cloudinitdisk",
-			"cloudInitNoCloud": map[string]interface{}{
-				"userData": spec.CloudInit.UserData,
-			},
+		d := strings.ToLower(strings.TrimSpace(spec.CloudInit.Delivery))
+		if d == "configdrive" || d == "config_drive" {
+			secretName := ConfigDriveSecretName(vmName)
+			volumes = append(volumes, map[string]interface{}{
+				"name": "cloudinitdisk",
+				"cloudInitConfigDrive": map[string]interface{}{
+					"userDataSecretRef": map[string]interface{}{
+						"name": secretName,
+					},
+				},
+			})
+		} else {
+			ciVol := map[string]interface{}{
+				"name": "cloudinitdisk",
+				"cloudInitNoCloud": map[string]interface{}{
+					"userData": spec.CloudInit.UserData,
+				},
+			}
+			if spec.CloudInit.NetworkData != nil {
+				ciVol["cloudInitNoCloud"].(map[string]interface{})["networkData"] = *spec.CloudInit.NetworkData
+			}
+			volumes = append(volumes, ciVol)
 		}
-		if spec.CloudInit.NetworkData != nil {
-			ciVol["cloudInitNoCloud"].(map[string]interface{})["networkData"] = *spec.CloudInit.NetworkData
-		}
-		volumes = append(volumes, ciVol)
 	}
 
 	return volumes
+}
+
+// ConfigDriveSecretName matches Rust kube::cloudinit_configdrive_secret_name.
+func ConfigDriveSecretName(vmName string) string {
+	s := vmName + "-vmrogue-cfgdrv"
+	runes := []rune(s)
+	const maxKubeName = 253
+	if len(runes) <= maxKubeName {
+		return s
+	}
+	return string(runes[:maxKubeName])
 }
 
 func buildDisks(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {

@@ -220,6 +220,8 @@ pub struct Volume {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cloud_init_no_cloud: Option<CloudInitNoCloudSource>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub cloud_init_config_drive: Option<CloudInitConfigDriveSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub empty_disk: Option<EmptyDiskSource>,
 }
 
@@ -250,6 +252,19 @@ pub struct CloudInitNoCloudSource {
     pub user_data: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_data: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct CloudInitConfigDriveSource {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_data_secret_ref: Option<UserDataSecretRef>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserDataSecretRef {
+    pub name: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
