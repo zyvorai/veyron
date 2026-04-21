@@ -71,22 +71,45 @@ body{
   font-family:var(--font-sans);
   font-size:1rem;
   line-height:1.5;
-  background:var(--bg);
+  background:var(--bg-deep);
   color:var(--text);
   min-height:100vh;
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,130,246,.14), transparent 55%),
-    radial-gradient(ellipse 55% 40% at 100% 40%, rgba(167,139,250,.07), transparent 50%),
-    radial-gradient(ellipse 45% 35% at 0% 90%, rgba(56,189,248,.06), transparent 45%);
+  overflow-x:hidden;
 }
 
-/* Noise overlay */
+/* Animated aurora / plasma field (under UI) */
 body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.018;
+  content:'';position:fixed;inset:-20%;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 10%, rgba(59,130,246,.32), transparent 52%),
+    radial-gradient(ellipse 45% 40% at 85% 15%, rgba(167,139,250,.22), transparent 48%),
+    radial-gradient(ellipse 50% 55% at 70% 85%, rgba(56,189,248,.18), transparent 50%),
+    radial-gradient(ellipse 35% 30% at 10% 70%, rgba(99,102,241,.15), transparent 45%),
+    radial-gradient(ellipse 100% 80% at 50% 120%, rgba(14,165,233,.08), transparent 55%);
+  animation:aurora-shift 22s ease-in-out infinite alternate,aurora-hue 28s linear infinite;
+  will-change:transform,filter;
+}
+
+/* Film grain on top of aurora */
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.022;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 body>*{position:relative;z-index:1}
+
+/* Moving cyber grid (very subtle, behind cards) */
+.container::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.04;
+  background-image:
+    linear-gradient(rgba(59,130,246,.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,.25) 1px, transparent 1px);
+  background-size:48px 48px;
+  animation:grid-drift 40s linear infinite;
+  mask-image:radial-gradient(ellipse 85% 70% at 50% 40%, black 10%, transparent 72%);
+}
+.container{position:relative}
+.container>*{position:relative;z-index:1}
 
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -104,7 +127,52 @@ body>*{position:relative;z-index:1}
 @keyframes metal-shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes heat-wave{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(15deg)}}
 @keyframes border-run{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+@keyframes aurora-shift{
+  0%{transform:translate(0,0) rotate(0deg) scale(1)}
+  25%{transform:translate(4%,2%) rotate(1.5deg) scale(1.04)}
+  50%{transform:translate(-3%,4%) rotate(-1deg) scale(1.06)}
+  75%{transform:translate(2%,-3%) rotate(.8deg) scale(1.02)}
+  100%{transform:translate(-2%,0) rotate(0deg) scale(1)}
+}
+@keyframes aurora-hue{
+  0%{filter:hue-rotate(0deg) saturate(1.05)}
+  50%{filter:hue-rotate(25deg) saturate(1.12)}
+  100%{filter:hue-rotate(-15deg) saturate(1.08)}
+}
+@keyframes grid-drift{
+  0%{background-position:0 0,0 0}
+  100%{background-position:480px 240px,-360px 180px}
+}
+@keyframes stat-shimmer-bg{
+  0%{background-position:0 0,-60% 0}
+  100%{background-position:0 0,160% 0}
+}
+@keyframes nav-pulse-line{
+  0%,100%{opacity:.55;transform:scaleX(.92)}
+  50%{opacity:1;transform:scaleX(1)}
+}
+@keyframes brand-glow{
+  0%,100%{filter:drop-shadow(0 0 8px rgba(59,130,246,.35))}
+  50%{filter:drop-shadow(0 0 18px rgba(167,139,250,.5)) drop-shadow(0 0 28px rgba(56,189,248,.25))}
+}
+@keyframes page-orbit{
+  0%{opacity:.35;transform:rotate(0deg) scale(1)}
+  100%{opacity:.45;transform:rotate(360deg) scale(1.02)}
+}
+@keyframes stat-breathe{
+  0%,100%{box-shadow:0 4px 24px rgba(0,0,0,.2),0 0 0 0 rgba(59,130,246,0)}
+  50%{box-shadow:0 8px 32px rgba(0,0,0,.28),0 0 28px rgba(59,130,246,.12)}
+}
+@keyframes chart-border-glow{
+  0%,100%{border-color:var(--border);box-shadow:0 0 0 rgba(59,130,246,0)}
+  50%{border-color:rgba(59,130,246,.42);box-shadow:0 0 32px rgba(59,130,246,.1),inset 0 0 20px rgba(56,189,248,.04)}
+}
+
 .animate-fade-in{animation:fade-in .5s cubic-bezier(.16,1,.3,1)}
+
+@media(prefers-reduced-motion:reduce){
+  body::before,body::after,.container::before,.stat-card,.stat-card::before,.stat-card::after,.navbar::after,.navbar-brand,.chart-card,.chart-card::before{animation:none!important}
+}
 
 /* ═══════════════════════════════════════════════════
    NAVBAR — v9s-style top bar (slate + blue)
@@ -120,18 +188,21 @@ body>*{position:relative;z-index:1}
   box-shadow:0 1px 0 rgba(15,23,42,.9),0 8px 28px rgba(0,0,0,.22);
 }
 .navbar::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(59,130,246,.45),transparent);
-  opacity:.9;
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(56,189,248,.7),rgba(167,139,250,.85),rgba(59,130,246,.75),transparent);
+  background-size:200% 100%;
+  opacity:.85;
+  animation:nav-pulse-line 3.8s ease-in-out infinite,metal-shimmer 6s linear infinite;
+  transform-origin:center bottom;
 }
 
 .navbar-brand{
   font-family:var(--font-sans);font-size:1.15rem;font-weight:800;
   letter-spacing:-0.02em;cursor:pointer;text-transform:none;
   background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 45%,#34d399 100%);
+  background-size:220% auto;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation:none;
-  filter:none;
+  animation:metal-shimmer 10s linear infinite,brand-glow 5s ease-in-out infinite;
 }
 .navbar-brand::before{
   content:'';display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:2px;
@@ -246,23 +317,35 @@ body>*{position:relative;z-index:1}
   border-radius:var(--radius);padding:22px;
   border:1px solid var(--border);
   position:relative;overflow:hidden;
-  transition:all .3s cubic-bezier(.16,1,.3,1);
+  transition:border-color .3s,box-shadow .35s,transform .35s cubic-bezier(.16,1,.3,1);
+  animation:stat-breathe 7s ease-in-out infinite;
 }
+.stat-card:nth-child(4n+1){animation-delay:0s}
+.stat-card:nth-child(4n+2){animation-delay:1.2s}
+.stat-card:nth-child(4n+3){animation-delay:2.4s}
+.stat-card:nth-child(4n+4){animation-delay:3.6s}
 .stat-card::before{
-  content:'';position:absolute;inset:0;opacity:.04;
-  background:repeating-linear-gradient(
-    0deg,transparent,transparent 1px,rgba(255,255,255,.03) 1px,rgba(255,255,255,.03) 2px
-  );pointer-events:none;
+  content:'';position:absolute;inset:0;opacity:.06;
+  background:
+    repeating-linear-gradient(
+      0deg,transparent,transparent 1px,rgba(255,255,255,.04) 1px,rgba(255,255,255,.04) 2px
+    ),
+    linear-gradient(105deg,transparent 35%,rgba(255,255,255,.14) 50%,transparent 65%);
+  background-size:auto,220% 100%;
+  pointer-events:none;
+  animation:stat-shimmer-bg 6.5s ease-in-out infinite;
 }
 .stat-card::after{
   content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--molten),transparent);
+  background:linear-gradient(90deg,transparent,var(--molten),var(--plasma),var(--spark),transparent);
+  background-size:200% 100%;
   opacity:0;transition:opacity .3s;
+  animation:metal-shimmer 4s linear infinite;
 }
 .stat-card:hover{
-  transform:translateY(-2px);
+  transform:translateY(-4px) scale(1.01);
   border-color:var(--border-hot);
-  box-shadow:var(--glow-molten);
+  box-shadow:var(--glow-molten),0 0 0 1px rgba(59,130,246,.12);
 }
 .stat-card:hover::after{opacity:1}
 
@@ -346,10 +429,14 @@ body>*{position:relative;z-index:1}
 .chart-card{
   background:var(--bg-card);border-radius:var(--radius);padding:22px;
   border:1px solid var(--border);position:relative;overflow:hidden;
+  transition:border-color .4s,box-shadow .4s;
+  animation:chart-border-glow 10s ease-in-out infinite;
 }
 .chart-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent 20%,rgba(0,180,255,.3),transparent 80%);
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent 15%,rgba(56,189,248,.55),rgba(167,139,250,.5),rgba(59,130,246,.55),transparent 85%);
+  background-size:200% 100%;
+  animation:metal-shimmer 5s linear infinite;
 }
 .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .chart-title{
@@ -980,12 +1067,24 @@ html[data-theme="steel"]{
 }
 
 html[data-theme="steel"] body{
-  background:#101722;
-  background-image:
-    radial-gradient(circle at top center,rgba(120,140,160,.15),transparent 30%),
-    linear-gradient(180deg,#06080d 0%,#0b1017 40%,#101722 70%,#0b1018 100%);
+  background:#06080d;
+  background-image:none;
 }
-html[data-theme="steel"] body::before{opacity:.01}
+html[data-theme="steel"] body::before{
+  background:
+    radial-gradient(ellipse 50% 40% at 25% 5%,rgba(120,140,160,.28),transparent 50%),
+    radial-gradient(ellipse 45% 38% at 90% 25%,rgba(93,144,247,.2),transparent 48%),
+    radial-gradient(ellipse 55% 50% at 55% 95%,rgba(142,160,181,.12),transparent 52%);
+  animation:aurora-shift 26s ease-in-out infinite alternate,aurora-hue 32s linear infinite;
+  opacity:1;
+}
+html[data-theme="steel"] body::after{opacity:.025}
+html[data-theme="steel"] .container::before{
+  background-image:
+    linear-gradient(rgba(142,160,181,.3) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(93,144,247,.22) 1px,transparent 1px);
+  opacity:.055;
+}
 
 html[data-theme="steel"] ::-webkit-scrollbar-thumb{background:#3d4a5c}
 html[data-theme="steel"] ::-webkit-scrollbar-thumb:hover{background:#556274}
@@ -1003,9 +1102,10 @@ html[data-theme="steel"] .navbar{
 }
 html[data-theme="steel"] .navbar::after{
   bottom:0;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(142,160,181,.45),rgba(93,144,247,.55),transparent);
-  animation:none;
+  height:2px;
+  background:linear-gradient(90deg,transparent,rgba(142,160,181,.55),rgba(93,144,247,.75),rgba(120,169,255,.65),transparent);
+  background-size:200% 100%;
+  animation:nav-pulse-line 4.2s ease-in-out infinite,metal-shimmer 7s linear infinite;
 }
 
 html[data-theme="steel"] .navbar-brand{
@@ -1015,9 +1115,11 @@ html[data-theme="steel"] .navbar-brand{
   font-weight:600;
   font-size:1.05rem;
   color:var(--text-bright);
-  background-image:none;
-  -webkit-text-fill-color:var(--text-bright);
-  background-clip:border-box;
+  background-image:linear-gradient(135deg,#eef3f8 0%,#b8cce8 40%,#9eb8e8 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:metal-shimmer 12s linear infinite,brand-glow 6s ease-in-out infinite;
 }
 html[data-theme="steel"] .navbar-brand::before{
   width:38px;
@@ -1128,7 +1230,10 @@ html[data-theme="steel"] .monitor-cap{
     0 12px 32px rgba(0,0,0,.32);
 }
 html[data-theme="steel"] .chart-card::before{
-  background:linear-gradient(90deg,transparent 20%,rgba(120,169,255,.25),transparent 80%);
+  height:2px;
+  background:linear-gradient(90deg,transparent 12%,rgba(142,160,181,.5),rgba(93,144,247,.65),rgba(120,169,255,.55),transparent 88%);
+  background-size:200% 100%;
+  animation:metal-shimmer 6s linear infinite;
 }
 html[data-theme="steel"] .card-header{
   background:linear-gradient(90deg,rgba(93,144,247,.08),transparent);
