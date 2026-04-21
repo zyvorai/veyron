@@ -5,6 +5,7 @@ pub mod crds;
 pub mod manager;
 pub mod restore;
 pub mod retention;
+pub mod scheduler_lease;
 pub mod types;
 pub mod vm_snapshot_schedule;
 

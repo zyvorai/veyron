@@ -251,6 +251,9 @@ impl KubeClient {
         }
     }
 
+    /// Creates or updates a `Service` whose selector targets the **virt-launcher pod**
+    /// (`kubevirt.io/domain=<vm>`). That forwards to the VM’s network namespace when the guest is
+    /// running; it does **not** guarantee the guest OS is listening on the exposed ports.
     async fn ensure_vm_expose_service(
         &self,
         config: &VMConfig,
@@ -325,6 +328,29 @@ impl KubeClient {
 
     async fn delete_secret_ignore(&self, namespace: &str, name: &str) {
         let secrets: Api<Secret> = Api::namespaced(self.client.clone(), namespace);
+        match secrets.get(name).await {
+            Ok(s) => {
+                let managed = s
+                    .metadata
+                    .labels
+                    .as_ref()
+                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .map(|v| v.as_str())
+                    == Some("vmrogue");
+                if !managed {
+                    log::debug!(
+                        "skip delete Secret {}: not labeled vmrogue.io/managed-by=vmrogue",
+                        name
+                    );
+                    return;
+                }
+            }
+            Err(kube::Error::Api(ae)) if ae.code == 404 => return,
+            Err(e) => {
+                log::debug!("Secret get {} before delete: {}", name, e);
+                return;
+            }
+        }
         match secrets.delete(name, &DeleteParams::default()).await {
             Ok(_) => {}
             Err(kube::Error::Api(ae)) if ae.code == 404 => {}
@@ -334,6 +360,29 @@ impl KubeClient {
 
     async fn delete_service_ignore(&self, namespace: &str, name: &str) {
         let svcs: Api<Service> = Api::namespaced(self.client.clone(), namespace);
+        match svcs.get(name).await {
+            Ok(s) => {
+                let managed = s
+                    .metadata
+                    .labels
+                    .as_ref()
+                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .map(|v| v.as_str())
+                    == Some("vmrogue");
+                if !managed {
+                    log::debug!(
+                        "skip delete Service {}: not labeled vmrogue.io/managed-by=vmrogue",
+                        name
+                    );
+                    return;
+                }
+            }
+            Err(kube::Error::Api(ae)) if ae.code == 404 => return,
+            Err(e) => {
+                log::debug!("Service get {} before delete: {}", name, e);
+                return;
+            }
+        }
         match svcs.delete(name, &DeleteParams::default()).await {
             Ok(_) => {}
             Err(kube::Error::Api(ae)) if ae.code == 404 => {}
