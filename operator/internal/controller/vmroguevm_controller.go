@@ -198,6 +198,8 @@ func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *v
 		if sec.Labels == nil {
 			sec.Labels = map[string]string{}
 		}
+		// Distinct from API-created Secrets (`vmrogue.io/managed-by=vmrogue`) so the HTTP API’s
+		// VM delete path never removes operator-owned objects by mistake.
 		sec.Labels["vmrogue.io/managed-by"] = "vmrogue-operator"
 		sec.Labels["vmrogue.io/configdrive-userdata"] = "true"
 		return controllerutil.SetControllerReference(vm, sec, r.Scheme)

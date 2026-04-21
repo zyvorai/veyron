@@ -1109,7 +1109,7 @@ impl AppState {
                     .name
                     .clone()
                     .unwrap_or_else(|| "?".to_string());
-                let message = event.message.clone().unwrap_or_else(|| "".to_string());
+                let message = event.message.clone().unwrap_or_default();
 
                 EventInfo {
                     time,

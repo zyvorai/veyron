@@ -121,8 +121,6 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
                                 ("pvc".to_string(), None)
                             } else if vol.data_volume.is_some() {
                                 ("dataVolume".to_string(), None)
-                            } else if vol.empty_disk.is_some() {
-                                ("blank".to_string(), None)
                             } else {
                                 ("blank".to_string(), None)
                             }
@@ -327,13 +325,4 @@ pub async fn handle_gitops_status(namespace: &str) -> Result<()> {
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_handler_module_compiles() {
-        // Verify the module compiles correctly
-        assert!(true);
-    }
 }

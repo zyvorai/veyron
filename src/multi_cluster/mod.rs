@@ -176,9 +176,7 @@ impl MultiClusterManager {
     /// to avoid false positives (e.g. "reproduce" matching "prod").
     fn infer_environment(name: &str) -> ClusterEnvironment {
         let lower = name.to_lowercase();
-        let words: Vec<&str> = lower
-            .split(|c: char| c == '-' || c == '_' || c == '.')
-            .collect();
+        let words: Vec<&str> = lower.split(['-', '_', '.']).collect();
 
         if words.iter().any(|w| *w == "prod" || *w == "production") {
             ClusterEnvironment::Production
@@ -265,7 +263,7 @@ impl MultiClusterManager {
         };
 
         // Build a client for this specific context
-        let kubeconfig = kube::config::Kubeconfig::read_from(&Self::kubeconfig_path())?;
+        let kubeconfig = kube::config::Kubeconfig::read_from(Self::kubeconfig_path())?;
         let opts = kube::config::KubeConfigOptions {
             context: Some(ctx),
             ..Default::default()

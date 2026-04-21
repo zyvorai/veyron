@@ -1640,339 +1640,6 @@ pub async fn handle_doctor(namespace: &str) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::{DiskSource, NetworkType};
-    use crate::kube::types::*;
-    use std::collections::BTreeMap;
-
-    /// Helper to build a minimal VirtualMachine for testing vm_to_config
-    fn build_test_vm(
-        name: &str,
-        cores: u32,
-        sockets: u32,
-        threads: u32,
-        memory: &str,
-    ) -> VirtualMachine {
-        VirtualMachine {
-            metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
-                name: Some(name.to_string()),
-                namespace: Some("test-ns".to_string()),
-                labels: None,
-                annotations: None,
-                ..Default::default()
-            },
-            spec: VirtualMachineSpec {
-                running: Some(false),
-                run_strategy: None,
-                template: VirtualMachineInstanceTemplateSpec {
-                    metadata: None,
-                    spec: VirtualMachineInstanceSpec {
-                        domain: DomainSpec {
-                            resources: ResourceRequirements {
-                                requests: Some({
-                                    let mut m = BTreeMap::new();
-                                    m.insert("memory".to_string(), memory.to_string());
-                                    m
-                                }),
-                                limits: None,
-                            },
-                            cpu: Some(CPU {
-                                cores: Some(cores),
-                                sockets: Some(sockets),
-                                threads: Some(threads),
-                                model: Some("host-passthrough".to_string()),
-                                dedicated_cpu_placement: None,
-                                isolate_emulator_thread: None,
-                                numa: None,
-                                realtime: None,
-                            }),
-                            memory: Some(Memory {
-                                guest: Some(memory.to_string()),
-                                hugepages: None,
-                                max_guest: None,
-                            }),
-                            devices: None,
-                            features: None,
-                            clock: None,
-                            firmware: None,
-                            machine: None,
-                            io_threads_policy: None,
-                        },
-                        volumes: None,
-                        networks: None,
-                        termination_grace_period_seconds: None,
-                        eviction_strategy: None,
-                        node_selector: None,
-                    },
-                },
-            },
-            status: None,
-        }
-    }
-
-    #[test]
-    fn test_vm_to_config_basic() {
-        let vm = build_test_vm("my-vm", 4, 2, 2, "8Gi");
-        let config = vm_to_config(&vm, "production");
-
-        assert_eq!(config.name, "my-vm");
-        assert_eq!(config.namespace, "production");
-        assert_eq!(config.cpu.cores, 4);
-        assert_eq!(config.cpu.sockets, 2);
-        assert_eq!(config.cpu.threads, 2);
-        assert_eq!(config.memory.size, "8Gi");
-    }
-
-    #[test]
-    fn test_vm_to_config_cpu_model() {
-        let vm = build_test_vm("model-vm", 2, 1, 1, "4Gi");
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.cpu.model, Some("host-passthrough".to_string()));
-    }
-
-    #[test]
-    fn test_vm_to_config_no_cpu_defaults_to_1() {
-        let mut vm = build_test_vm("no-cpu", 1, 1, 1, "2Gi");
-        vm.spec.template.spec.domain.cpu = None;
-        let config = vm_to_config(&vm, "default");
-
-        assert_eq!(config.cpu.cores, 1);
-        assert_eq!(config.cpu.sockets, 1);
-        assert_eq!(config.cpu.threads, 1);
-    }
-
-    #[test]
-    fn test_vm_to_config_memory_from_resources() {
-        let mut vm = build_test_vm("mem-vm", 1, 1, 1, "16Gi");
-        vm.spec.template.spec.domain.memory = None;
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.memory.size, "16Gi");
-    }
-
-    #[test]
-    fn test_vm_to_config_with_container_disk() {
-        let mut vm = build_test_vm("disk-vm", 2, 1, 1, "4Gi");
-        vm.spec.template.spec.volumes = Some(vec![Volume {
-            name: "boot".to_string(),
-            container_disk: Some(ContainerDiskSource {
-                image: "quay.io/kubevirt/fedora:latest".to_string(),
-                image_pull_policy: None,
-            }),
-            persistent_volume_claim: None,
-            empty_disk: None,
-            cloud_init_no_cloud: None,
-            cloud_init_config_drive: None,
-            data_volume: None,
-        }]);
-
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.disks.len(), 1);
-        assert_eq!(config.disks[0].name, "boot");
-        match &config.disks[0].source {
-            DiskSource::ContainerDisk { image } => {
-                assert_eq!(image, "quay.io/kubevirt/fedora:latest");
-            }
-            other => panic!("Expected ContainerDisk, got {:?}", other),
-        }
-    }
-
-    #[test]
-    fn test_vm_to_config_with_empty_disk() {
-        let mut vm = build_test_vm("empty-vm", 2, 1, 1, "4Gi");
-        vm.spec.template.spec.volumes = Some(vec![Volume {
-            name: "data".to_string(),
-            container_disk: None,
-            persistent_volume_claim: None,
-            empty_disk: Some(EmptyDiskSource {
-                capacity: "50Gi".to_string(),
-            }),
-            cloud_init_no_cloud: None,
-            cloud_init_config_drive: None,
-            data_volume: None,
-        }]);
-
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.disks.len(), 1);
-        assert_eq!(config.disks[0].name, "data");
-        assert_eq!(config.disks[0].source, DiskSource::Blank);
-    }
-
-    #[test]
-    fn test_vm_to_config_with_pvc() {
-        let mut vm = build_test_vm("pvc-vm", 2, 1, 1, "4Gi");
-        vm.spec.template.spec.volumes = Some(vec![Volume {
-            name: "root".to_string(),
-            container_disk: None,
-            persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
-                claim_name: "my-pvc".to_string(),
-            }),
-            empty_disk: None,
-            cloud_init_no_cloud: None,
-            cloud_init_config_drive: None,
-            data_volume: None,
-        }]);
-
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.disks.len(), 1);
-        match &config.disks[0].source {
-            DiskSource::PVC { name } => assert_eq!(name, "my-pvc"),
-            other => panic!("Expected PVC, got {:?}", other),
-        }
-    }
-
-    #[test]
-    fn test_vm_to_config_with_cloud_init() {
-        let mut vm = build_test_vm("cloud-vm", 2, 1, 1, "4Gi");
-        vm.spec.template.spec.volumes = Some(vec![Volume {
-            name: "cloudinitdisk".to_string(),
-            container_disk: None,
-            persistent_volume_claim: None,
-            empty_disk: None,
-            cloud_init_no_cloud: Some(CloudInitNoCloudSource {
-                user_data: Some("#cloud-config\npackages:\n  - vim\n".to_string()),
-                network_data: None,
-            }),
-            cloud_init_config_drive: None,
-            data_volume: None,
-        }]);
-
-        let config = vm_to_config(&vm, "default");
-        assert!(config.cloud_init.is_some());
-        let ci = config.cloud_init.as_ref().unwrap();
-        assert!(ci.user_data.contains("vim"));
-    }
-
-    #[test]
-    fn test_vm_to_config_with_pod_network() {
-        let mut vm = build_test_vm("net-vm", 2, 1, 1, "4Gi");
-        vm.spec.template.spec.domain.devices = Some(Devices {
-            disks: None,
-            interfaces: Some(vec![Interface {
-                name: "default".to_string(),
-                model: Some("virtio".to_string()),
-                mac_address: None,
-                masquerade: None,
-                bridge: None,
-                sriov: None,
-                ports: None,
-                boot_order: None,
-            }]),
-            tpm: None,
-            rng: None,
-            inputs: None,
-            watchdog: None,
-            autoattach_graphics_device: None,
-            autoattach_mem_balloon: None,
-            network_interface_multiqueue: None,
-        });
-        vm.spec.template.spec.networks = Some(vec![Network {
-            name: "default".to_string(),
-            pod: Some(BTreeMap::new()),
-            multus: None,
-        }]);
-
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.interfaces.len(), 1);
-        assert_eq!(config.interfaces[0].name, "default");
-        assert_eq!(config.interfaces[0].model, "virtio");
-        assert_eq!(config.interfaces[0].network_type, NetworkType::Pod);
-    }
-
-    #[test]
-    fn test_vm_to_config_with_multus_network() {
-        let mut vm = build_test_vm("multus-vm", 2, 1, 1, "4Gi");
-        vm.spec.template.spec.domain.devices = Some(Devices {
-            disks: None,
-            interfaces: Some(vec![Interface {
-                name: "data-net".to_string(),
-                model: Some("virtio".to_string()),
-                mac_address: None,
-                masquerade: None,
-                bridge: None,
-                sriov: None,
-                ports: None,
-                boot_order: None,
-            }]),
-            tpm: None,
-            rng: None,
-            inputs: None,
-            watchdog: None,
-            autoattach_graphics_device: None,
-            autoattach_mem_balloon: None,
-            network_interface_multiqueue: None,
-        });
-        vm.spec.template.spec.networks = Some(vec![Network {
-            name: "data-net".to_string(),
-            pod: None,
-            multus: Some(MultusNetwork {
-                network_name: "nad-data".to_string(),
-            }),
-        }]);
-
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.interfaces.len(), 1);
-        match &config.interfaces[0].network_type {
-            NetworkType::Multus { name } => assert_eq!(name, "nad-data"),
-            other => panic!("Expected Multus, got {:?}", other),
-        }
-    }
-
-    #[test]
-    fn test_vm_to_config_with_labels() {
-        let mut vm = build_test_vm("labeled-vm", 2, 1, 1, "4Gi");
-        let mut labels = std::collections::BTreeMap::new();
-        labels.insert("app".to_string(), "database".to_string());
-        labels.insert("env".to_string(), "staging".to_string());
-        vm.metadata.labels = Some(labels);
-
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.labels.get("app"), Some(&"database".to_string()));
-        assert_eq!(config.labels.get("env"), Some(&"staging".to_string()));
-    }
-
-    #[test]
-    fn test_vm_to_config_no_name_defaults_empty() {
-        let mut vm = build_test_vm("", 1, 1, 1, "2Gi");
-        vm.metadata.name = None;
-        let config = vm_to_config(&vm, "default");
-        assert_eq!(config.name, "");
-    }
-
-    #[test]
-    fn test_load_or_create_config_default() {
-        let config = load_or_create_config("test-vm", "staging", None, None).unwrap();
-        assert_eq!(config.name, "test-vm");
-        assert_eq!(config.namespace, "staging");
-        assert_eq!(config.cpu.cores, 2);
-        assert_eq!(config.memory.size, "4Gi");
-        assert!(!config.disks.is_empty());
-        assert!(!config.interfaces.is_empty());
-    }
-
-    #[test]
-    fn test_load_or_create_config_from_template() {
-        let config =
-            load_or_create_config("my-ubuntu", "prod", Some("ubuntu".to_string()), None).unwrap();
-        assert_eq!(config.name, "my-ubuntu");
-        assert_eq!(config.namespace, "prod");
-    }
-
-    #[test]
-    fn test_load_or_create_config_unknown_template() {
-        let result = load_or_create_config(
-            "vm",
-            "default",
-            Some("nonexistent-template-xyz".to_string()),
-            None,
-        );
-        assert!(result.is_err());
-        let err_msg = result.unwrap_err().to_string();
-        assert!(err_msg.contains("Template not found"));
-    }
-}
-
 // ========== SEARCH & TROUBLESHOOT ==========
 
 pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
@@ -2866,4 +2533,337 @@ pub async fn handle_list_json(namespace: &str) -> Result<()> {
         println!("{}", serde_json::to_string(&line)?);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::{DiskSource, NetworkType};
+    use crate::kube::types::*;
+    use std::collections::BTreeMap;
+
+    /// Helper to build a minimal VirtualMachine for testing vm_to_config
+    fn build_test_vm(
+        name: &str,
+        cores: u32,
+        sockets: u32,
+        threads: u32,
+        memory: &str,
+    ) -> VirtualMachine {
+        VirtualMachine {
+            metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
+                name: Some(name.to_string()),
+                namespace: Some("test-ns".to_string()),
+                labels: None,
+                annotations: None,
+                ..Default::default()
+            },
+            spec: VirtualMachineSpec {
+                running: Some(false),
+                run_strategy: None,
+                template: VirtualMachineInstanceTemplateSpec {
+                    metadata: None,
+                    spec: VirtualMachineInstanceSpec {
+                        domain: DomainSpec {
+                            resources: ResourceRequirements {
+                                requests: Some({
+                                    let mut m = BTreeMap::new();
+                                    m.insert("memory".to_string(), memory.to_string());
+                                    m
+                                }),
+                                limits: None,
+                            },
+                            cpu: Some(CPU {
+                                cores: Some(cores),
+                                sockets: Some(sockets),
+                                threads: Some(threads),
+                                model: Some("host-passthrough".to_string()),
+                                dedicated_cpu_placement: None,
+                                isolate_emulator_thread: None,
+                                numa: None,
+                                realtime: None,
+                            }),
+                            memory: Some(Memory {
+                                guest: Some(memory.to_string()),
+                                hugepages: None,
+                                max_guest: None,
+                            }),
+                            devices: None,
+                            features: None,
+                            clock: None,
+                            firmware: None,
+                            machine: None,
+                            io_threads_policy: None,
+                        },
+                        volumes: None,
+                        networks: None,
+                        termination_grace_period_seconds: None,
+                        eviction_strategy: None,
+                        node_selector: None,
+                    },
+                },
+            },
+            status: None,
+        }
+    }
+
+    #[test]
+    fn test_vm_to_config_basic() {
+        let vm = build_test_vm("my-vm", 4, 2, 2, "8Gi");
+        let config = vm_to_config(&vm, "production");
+
+        assert_eq!(config.name, "my-vm");
+        assert_eq!(config.namespace, "production");
+        assert_eq!(config.cpu.cores, 4);
+        assert_eq!(config.cpu.sockets, 2);
+        assert_eq!(config.cpu.threads, 2);
+        assert_eq!(config.memory.size, "8Gi");
+    }
+
+    #[test]
+    fn test_vm_to_config_cpu_model() {
+        let vm = build_test_vm("model-vm", 2, 1, 1, "4Gi");
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.cpu.model, Some("host-passthrough".to_string()));
+    }
+
+    #[test]
+    fn test_vm_to_config_no_cpu_defaults_to_1() {
+        let mut vm = build_test_vm("no-cpu", 1, 1, 1, "2Gi");
+        vm.spec.template.spec.domain.cpu = None;
+        let config = vm_to_config(&vm, "default");
+
+        assert_eq!(config.cpu.cores, 1);
+        assert_eq!(config.cpu.sockets, 1);
+        assert_eq!(config.cpu.threads, 1);
+    }
+
+    #[test]
+    fn test_vm_to_config_memory_from_resources() {
+        let mut vm = build_test_vm("mem-vm", 1, 1, 1, "16Gi");
+        vm.spec.template.spec.domain.memory = None;
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.memory.size, "16Gi");
+    }
+
+    #[test]
+    fn test_vm_to_config_with_container_disk() {
+        let mut vm = build_test_vm("disk-vm", 2, 1, 1, "4Gi");
+        vm.spec.template.spec.volumes = Some(vec![Volume {
+            name: "boot".to_string(),
+            container_disk: Some(ContainerDiskSource {
+                image: "quay.io/kubevirt/fedora:latest".to_string(),
+                image_pull_policy: None,
+            }),
+            persistent_volume_claim: None,
+            empty_disk: None,
+            cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
+            data_volume: None,
+        }]);
+
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.disks.len(), 1);
+        assert_eq!(config.disks[0].name, "boot");
+        match &config.disks[0].source {
+            DiskSource::ContainerDisk { image } => {
+                assert_eq!(image, "quay.io/kubevirt/fedora:latest");
+            }
+            other => panic!("Expected ContainerDisk, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_vm_to_config_with_empty_disk() {
+        let mut vm = build_test_vm("empty-vm", 2, 1, 1, "4Gi");
+        vm.spec.template.spec.volumes = Some(vec![Volume {
+            name: "data".to_string(),
+            container_disk: None,
+            persistent_volume_claim: None,
+            empty_disk: Some(EmptyDiskSource {
+                capacity: "50Gi".to_string(),
+            }),
+            cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
+            data_volume: None,
+        }]);
+
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.disks.len(), 1);
+        assert_eq!(config.disks[0].name, "data");
+        assert_eq!(config.disks[0].source, DiskSource::Blank);
+    }
+
+    #[test]
+    fn test_vm_to_config_with_pvc() {
+        let mut vm = build_test_vm("pvc-vm", 2, 1, 1, "4Gi");
+        vm.spec.template.spec.volumes = Some(vec![Volume {
+            name: "root".to_string(),
+            container_disk: None,
+            persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
+                claim_name: "my-pvc".to_string(),
+            }),
+            empty_disk: None,
+            cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
+            data_volume: None,
+        }]);
+
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.disks.len(), 1);
+        match &config.disks[0].source {
+            DiskSource::PVC { name } => assert_eq!(name, "my-pvc"),
+            other => panic!("Expected PVC, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_vm_to_config_with_cloud_init() {
+        let mut vm = build_test_vm("cloud-vm", 2, 1, 1, "4Gi");
+        vm.spec.template.spec.volumes = Some(vec![Volume {
+            name: "cloudinitdisk".to_string(),
+            container_disk: None,
+            persistent_volume_claim: None,
+            empty_disk: None,
+            cloud_init_no_cloud: Some(CloudInitNoCloudSource {
+                user_data: Some("#cloud-config\npackages:\n  - vim\n".to_string()),
+                network_data: None,
+            }),
+            cloud_init_config_drive: None,
+            data_volume: None,
+        }]);
+
+        let config = vm_to_config(&vm, "default");
+        assert!(config.cloud_init.is_some());
+        let ci = config.cloud_init.as_ref().unwrap();
+        assert!(ci.user_data.contains("vim"));
+    }
+
+    #[test]
+    fn test_vm_to_config_with_pod_network() {
+        let mut vm = build_test_vm("net-vm", 2, 1, 1, "4Gi");
+        vm.spec.template.spec.domain.devices = Some(Devices {
+            disks: None,
+            interfaces: Some(vec![Interface {
+                name: "default".to_string(),
+                model: Some("virtio".to_string()),
+                mac_address: None,
+                masquerade: None,
+                bridge: None,
+                sriov: None,
+                ports: None,
+                boot_order: None,
+            }]),
+            tpm: None,
+            rng: None,
+            inputs: None,
+            watchdog: None,
+            autoattach_graphics_device: None,
+            autoattach_mem_balloon: None,
+            network_interface_multiqueue: None,
+        });
+        vm.spec.template.spec.networks = Some(vec![Network {
+            name: "default".to_string(),
+            pod: Some(BTreeMap::new()),
+            multus: None,
+        }]);
+
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.interfaces.len(), 1);
+        assert_eq!(config.interfaces[0].name, "default");
+        assert_eq!(config.interfaces[0].model, "virtio");
+        assert_eq!(config.interfaces[0].network_type, NetworkType::Pod);
+    }
+
+    #[test]
+    fn test_vm_to_config_with_multus_network() {
+        let mut vm = build_test_vm("multus-vm", 2, 1, 1, "4Gi");
+        vm.spec.template.spec.domain.devices = Some(Devices {
+            disks: None,
+            interfaces: Some(vec![Interface {
+                name: "data-net".to_string(),
+                model: Some("virtio".to_string()),
+                mac_address: None,
+                masquerade: None,
+                bridge: None,
+                sriov: None,
+                ports: None,
+                boot_order: None,
+            }]),
+            tpm: None,
+            rng: None,
+            inputs: None,
+            watchdog: None,
+            autoattach_graphics_device: None,
+            autoattach_mem_balloon: None,
+            network_interface_multiqueue: None,
+        });
+        vm.spec.template.spec.networks = Some(vec![Network {
+            name: "data-net".to_string(),
+            pod: None,
+            multus: Some(MultusNetwork {
+                network_name: "nad-data".to_string(),
+            }),
+        }]);
+
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.interfaces.len(), 1);
+        match &config.interfaces[0].network_type {
+            NetworkType::Multus { name } => assert_eq!(name, "nad-data"),
+            other => panic!("Expected Multus, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_vm_to_config_with_labels() {
+        let mut vm = build_test_vm("labeled-vm", 2, 1, 1, "4Gi");
+        let mut labels = std::collections::BTreeMap::new();
+        labels.insert("app".to_string(), "database".to_string());
+        labels.insert("env".to_string(), "staging".to_string());
+        vm.metadata.labels = Some(labels);
+
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.labels.get("app"), Some(&"database".to_string()));
+        assert_eq!(config.labels.get("env"), Some(&"staging".to_string()));
+    }
+
+    #[test]
+    fn test_vm_to_config_no_name_defaults_empty() {
+        let mut vm = build_test_vm("", 1, 1, 1, "2Gi");
+        vm.metadata.name = None;
+        let config = vm_to_config(&vm, "default");
+        assert_eq!(config.name, "");
+    }
+
+    #[test]
+    fn test_load_or_create_config_default() {
+        let config = load_or_create_config("test-vm", "staging", None, None).unwrap();
+        assert_eq!(config.name, "test-vm");
+        assert_eq!(config.namespace, "staging");
+        assert_eq!(config.cpu.cores, 2);
+        assert_eq!(config.memory.size, "4Gi");
+        assert!(!config.disks.is_empty());
+        assert!(!config.interfaces.is_empty());
+    }
+
+    #[test]
+    fn test_load_or_create_config_from_template() {
+        let config =
+            load_or_create_config("my-ubuntu", "prod", Some("ubuntu".to_string()), None).unwrap();
+        assert_eq!(config.name, "my-ubuntu");
+        assert_eq!(config.namespace, "prod");
+    }
+
+    #[test]
+    fn test_load_or_create_config_unknown_template() {
+        let result = load_or_create_config(
+            "vm",
+            "default",
+            Some("nonexistent-template-xyz".to_string()),
+            None,
+        );
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("Template not found"));
+    }
 }
