@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 #[cfg(feature = "web")]
 use k8s_openapi::{
     api::apps::v1::Deployment,
@@ -30,8 +37,12 @@ pub fn router(state: SharedState) -> Router {
 
 /// Discover operators by listing Deployments with common operator name patterns.
 #[cfg(feature = "web")]
-async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorResponse>> {
+async fn list_operators(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<OperatorResponse>> {
     let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
     let client = s.client().client();
     let mut results = Vec::new();
     let crd_api: kube::api::Api<CustomResourceDefinition> = kube::api::Api::all(client.clone());
@@ -41,17 +52,34 @@ async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorRe
         .map(|l| l.items)
         .unwrap_or_default();
 
-    // Check common operator namespaces
-    let namespaces = [
-        "kubevirt",
-        "olm",
-        "operators",
-        "vmrogue-system",
-        &s.namespace,
-    ];
+    let namespaces: Vec<String> = if namespace_scope::is_all_namespaces(&scope) {
+        let mut ns = vec![
+            "kubevirt".to_string(),
+            "olm".to_string(),
+            "operators".to_string(),
+            "vmrogue-system".to_string(),
+        ];
+        if let Ok(all) = s.client().list_namespaces().await {
+            for n in all.into_iter().filter_map(|n| n.metadata.name) {
+                if !ns.contains(&n) {
+                    ns.push(n);
+                }
+            }
+        }
+        ns
+    } else {
+        vec![
+            "kubevirt".to_string(),
+            "olm".to_string(),
+            "operators".to_string(),
+            "vmrogue-system".to_string(),
+            scope.clone(),
+        ]
+    };
 
     for ns in &namespaces {
-        let api: kube::api::Api<Deployment> = kube::api::Api::namespaced(client.clone(), ns);
+        let api: kube::api::Api<Deployment> =
+            kube::api::Api::namespaced(client.clone(), ns.as_str());
         if let Ok(deploys) = api.list(&kube::api::ListParams::default()).await {
             for d in &deploys.items {
                 let name = d.metadata.name.as_deref().unwrap_or("");
@@ -69,7 +97,7 @@ async fn list_operators(State(state): State<SharedState>) -> Json<Vec<OperatorRe
 
                     results.push(OperatorResponse {
                         name: name.to_string(),
-                        namespace: ns.to_string(),
+                        namespace: ns.clone(),
                         version: infer_operator_version(d),
                         status: if ready >= desired {
                             "Running".to_string()

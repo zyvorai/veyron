@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Storage pool
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,14 +50,7 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<Vec<Storag
     let storage_classes = s.client().list_storage_classes().await.unwrap_or_default();
 
     // Aggregate PVC capacities per StorageClass across all namespaces
-    let all_pvcs = {
-        use k8s_openapi::api::core::v1::PersistentVolumeClaim;
-        let api: kube::api::Api<PersistentVolumeClaim> = kube::api::Api::all(s.client().client());
-        api.list(&kube::api::ListParams::default())
-            .await
-            .map(|l| l.items)
-            .unwrap_or_default()
-    };
+    let all_pvcs = s.client().list_all_pvcs().await.unwrap_or_default();
 
     // Build map: storage_class_name → (total_bytes, volume_count)
     let mut sc_stats: std::collections::HashMap<String, (u64, u32)> =
@@ -112,9 +112,13 @@ fn format_bytes(bytes: u64) -> String {
 }
 
 #[cfg(feature = "web")]
-async fn get_storage_usage(State(state): State<SharedState>) -> Json<Vec<StorageUsage>> {
+async fn get_storage_usage(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<StorageUsage>> {
     let s = state.read().await;
-    let pvcs = s.client().list_pvcs(&s.namespace).await.unwrap_or_default();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let pvcs = s.client().list_pvcs_for_scope(&scope).await;
 
     let results: Vec<StorageUsage> = pvcs
         .iter()

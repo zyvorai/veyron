@@ -46,121 +46,189 @@ async fn list_workloads(
 
     let s = state.read().await;
     let client = s.client().client();
-    let mut results: Vec<WorkloadResponse> = Vec::new();
-    let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
+    let namespace =
+        super::namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
 
-    // Fetch all workload types concurrently
-    let deploy_api: kube::api::Api<Deployment> = if namespace == "all" {
-        kube::api::Api::all(client.clone())
-    } else {
-        kube::api::Api::namespaced(client.clone(), &namespace)
-    };
-    let sts_api: kube::api::Api<StatefulSet> = if namespace == "all" {
-        kube::api::Api::all(client.clone())
-    } else {
-        kube::api::Api::namespaced(client.clone(), &namespace)
-    };
-    let ds_api: kube::api::Api<DaemonSet> = if namespace == "all" {
-        kube::api::Api::all(client.clone())
-    } else {
-        kube::api::Api::namespaced(client.clone(), &namespace)
-    };
+    if namespace == "all" {
+        let (d, st, ds) = tokio::join!(
+            list_deployments_resolved(&client),
+            list_statefulsets_resolved(&client),
+            list_daemonsets_resolved(&client),
+        );
+        let mut results = d;
+        results.extend(st);
+        results.extend(ds);
+        return Json(results);
+    }
 
+    let deploy_api: kube::api::Api<Deployment> =
+        kube::api::Api::namespaced(client.clone(), &namespace);
+    let sts_api: kube::api::Api<StatefulSet> =
+        kube::api::Api::namespaced(client.clone(), &namespace);
+    let ds_api: kube::api::Api<DaemonSet> = kube::api::Api::namespaced(client.clone(), &namespace);
     let lp = kube::api::ListParams::default();
     let (deploy_result, sts_result, ds_result) =
         tokio::join!(deploy_api.list(&lp), sts_api.list(&lp), ds_api.list(&lp),);
 
-    // Deployments
+    let mut results: Vec<WorkloadResponse> = Vec::new();
     if let Ok(deploys) = deploy_result {
-        for d in &deploys.items {
-            let status = d.status.as_ref();
-            let containers = d
-                .spec
-                .as_ref()
-                .and_then(|s| s.template.spec.as_ref())
-                .map(|spec| spec.containers.as_slice())
-                .unwrap_or(&[]);
-            let (cpu_request, memory_request) = summarize_container_requests(containers);
-            results.push(WorkloadResponse {
-                name: d.metadata.name.clone().unwrap_or_default(),
-                namespace: d.metadata.namespace.clone().unwrap_or_default(),
-                workload_type: "Deployment".to_string(),
-                replicas: d.spec.as_ref().and_then(|s| s.replicas).unwrap_or(1) as u32,
-                ready_replicas: status.and_then(|s| s.ready_replicas).unwrap_or(0) as u32,
-                cpu_request,
-                memory_request,
-                status: if status.and_then(|s| s.ready_replicas).unwrap_or(0)
-                    >= d.spec.as_ref().and_then(|s| s.replicas).unwrap_or(1)
-                {
-                    "Ready".to_string()
-                } else {
-                    "Progressing".to_string()
-                },
-            });
-        }
+        results.extend(deploys.items.iter().map(deployment_to_workload));
     }
-
-    // StatefulSets
     if let Ok(stss) = sts_result {
-        for s in &stss.items {
-            let status = s.status.as_ref();
-            let containers = s
-                .spec
-                .as_ref()
-                .and_then(|sp| sp.template.spec.as_ref())
-                .map(|spec| spec.containers.as_slice())
-                .unwrap_or(&[]);
-            let (cpu_request, memory_request) = summarize_container_requests(containers);
-            results.push(WorkloadResponse {
-                name: s.metadata.name.clone().unwrap_or_default(),
-                namespace: s.metadata.namespace.clone().unwrap_or_default(),
-                workload_type: "StatefulSet".to_string(),
-                replicas: s.spec.as_ref().and_then(|sp| sp.replicas).unwrap_or(1) as u32,
-                ready_replicas: status.and_then(|st| st.ready_replicas).unwrap_or(0) as u32,
-                cpu_request,
-                memory_request,
-                status: if status.and_then(|st| st.ready_replicas).unwrap_or(0)
-                    >= s.spec.as_ref().and_then(|sp| sp.replicas).unwrap_or(1)
-                {
-                    "Ready".to_string()
-                } else {
-                    "Progressing".to_string()
-                },
-            });
-        }
+        results.extend(stss.items.iter().map(statefulset_to_workload));
     }
-
-    // DaemonSets
     if let Ok(dss) = ds_result {
-        for d in &dss.items {
-            let status = d.status.as_ref();
-            let desired = status.map(|s| s.desired_number_scheduled).unwrap_or(0);
-            let ready = status.map(|s| s.number_ready).unwrap_or(0);
-            let containers = d
-                .spec
-                .as_ref()
-                .and_then(|sp| sp.template.spec.as_ref())
-                .map(|spec| spec.containers.as_slice())
-                .unwrap_or(&[]);
-            let (cpu_request, memory_request) = summarize_container_requests(containers);
-            results.push(WorkloadResponse {
-                name: d.metadata.name.clone().unwrap_or_default(),
-                namespace: d.metadata.namespace.clone().unwrap_or_default(),
-                workload_type: "DaemonSet".to_string(),
-                replicas: desired as u32,
-                ready_replicas: ready as u32,
-                cpu_request,
-                memory_request,
-                status: if ready >= desired {
-                    "Ready".to_string()
-                } else {
-                    "Progressing".to_string()
-                },
-            });
-        }
+        results.extend(dss.items.iter().map(daemonset_to_workload));
     }
 
     Json(results)
+}
+
+#[cfg(feature = "web")]
+async fn list_deployments_resolved(client: &kube::Client) -> Vec<WorkloadResponse> {
+    use k8s_openapi::api::apps::v1::Deployment;
+    let lp = kube::api::ListParams::default();
+    let api: kube::api::Api<Deployment> = kube::api::Api::all(client.clone());
+    match api.list(&lp).await {
+        Ok(list) => list.items.iter().map(deployment_to_workload).collect(),
+        Err(_) => {
+            let mut out = Vec::new();
+            for ns in super::namespace_scope::kubernetes_namespace_names(client).await {
+                let napi: kube::api::Api<Deployment> =
+                    kube::api::Api::namespaced(client.clone(), &ns);
+                if let Ok(list) = napi.list(&lp).await {
+                    out.extend(list.items.iter().map(deployment_to_workload));
+                }
+            }
+            out
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+async fn list_statefulsets_resolved(client: &kube::Client) -> Vec<WorkloadResponse> {
+    use k8s_openapi::api::apps::v1::StatefulSet;
+    let lp = kube::api::ListParams::default();
+    let api: kube::api::Api<StatefulSet> = kube::api::Api::all(client.clone());
+    match api.list(&lp).await {
+        Ok(list) => list.items.iter().map(statefulset_to_workload).collect(),
+        Err(_) => {
+            let mut out = Vec::new();
+            for ns in super::namespace_scope::kubernetes_namespace_names(client).await {
+                let napi: kube::api::Api<StatefulSet> =
+                    kube::api::Api::namespaced(client.clone(), &ns);
+                if let Ok(list) = napi.list(&lp).await {
+                    out.extend(list.items.iter().map(statefulset_to_workload));
+                }
+            }
+            out
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+async fn list_daemonsets_resolved(client: &kube::Client) -> Vec<WorkloadResponse> {
+    use k8s_openapi::api::apps::v1::DaemonSet;
+    let lp = kube::api::ListParams::default();
+    let api: kube::api::Api<DaemonSet> = kube::api::Api::all(client.clone());
+    match api.list(&lp).await {
+        Ok(list) => list.items.iter().map(daemonset_to_workload).collect(),
+        Err(_) => {
+            let mut out = Vec::new();
+            for ns in super::namespace_scope::kubernetes_namespace_names(client).await {
+                let napi: kube::api::Api<DaemonSet> =
+                    kube::api::Api::namespaced(client.clone(), &ns);
+                if let Ok(list) = napi.list(&lp).await {
+                    out.extend(list.items.iter().map(daemonset_to_workload));
+                }
+            }
+            out
+        }
+    }
+}
+
+#[cfg(feature = "web")]
+fn deployment_to_workload(d: &k8s_openapi::api::apps::v1::Deployment) -> WorkloadResponse {
+    let status = d.status.as_ref();
+    let containers = d
+        .spec
+        .as_ref()
+        .and_then(|s| s.template.spec.as_ref())
+        .map(|spec| spec.containers.as_slice())
+        .unwrap_or(&[]);
+    let (cpu_request, memory_request) = summarize_container_requests(containers);
+    WorkloadResponse {
+        name: d.metadata.name.clone().unwrap_or_default(),
+        namespace: d.metadata.namespace.clone().unwrap_or_default(),
+        workload_type: "Deployment".to_string(),
+        replicas: d.spec.as_ref().and_then(|s| s.replicas).unwrap_or(1) as u32,
+        ready_replicas: status.and_then(|s| s.ready_replicas).unwrap_or(0) as u32,
+        cpu_request,
+        memory_request,
+        status: if status.and_then(|s| s.ready_replicas).unwrap_or(0)
+            >= d.spec.as_ref().and_then(|s| s.replicas).unwrap_or(1)
+        {
+            "Ready".to_string()
+        } else {
+            "Progressing".to_string()
+        },
+    }
+}
+
+#[cfg(feature = "web")]
+fn statefulset_to_workload(s: &k8s_openapi::api::apps::v1::StatefulSet) -> WorkloadResponse {
+    let status = s.status.as_ref();
+    let containers = s
+        .spec
+        .as_ref()
+        .and_then(|sp| sp.template.spec.as_ref())
+        .map(|spec| spec.containers.as_slice())
+        .unwrap_or(&[]);
+    let (cpu_request, memory_request) = summarize_container_requests(containers);
+    WorkloadResponse {
+        name: s.metadata.name.clone().unwrap_or_default(),
+        namespace: s.metadata.namespace.clone().unwrap_or_default(),
+        workload_type: "StatefulSet".to_string(),
+        replicas: s.spec.as_ref().and_then(|sp| sp.replicas).unwrap_or(1) as u32,
+        ready_replicas: status.and_then(|st| st.ready_replicas).unwrap_or(0) as u32,
+        cpu_request,
+        memory_request,
+        status: if status.and_then(|st| st.ready_replicas).unwrap_or(0)
+            >= s.spec.as_ref().and_then(|sp| sp.replicas).unwrap_or(1)
+        {
+            "Ready".to_string()
+        } else {
+            "Progressing".to_string()
+        },
+    }
+}
+
+#[cfg(feature = "web")]
+fn daemonset_to_workload(d: &k8s_openapi::api::apps::v1::DaemonSet) -> WorkloadResponse {
+    let status = d.status.as_ref();
+    let desired = status.map(|st| st.desired_number_scheduled).unwrap_or(0);
+    let ready = status.map(|st| st.number_ready).unwrap_or(0);
+    let containers = d
+        .spec
+        .as_ref()
+        .and_then(|sp| sp.template.spec.as_ref())
+        .map(|spec| spec.containers.as_slice())
+        .unwrap_or(&[]);
+    let (cpu_request, memory_request) = summarize_container_requests(containers);
+    WorkloadResponse {
+        name: d.metadata.name.clone().unwrap_or_default(),
+        namespace: d.metadata.namespace.clone().unwrap_or_default(),
+        workload_type: "DaemonSet".to_string(),
+        replicas: desired as u32,
+        ready_replicas: ready as u32,
+        cpu_request,
+        memory_request,
+        status: if ready >= desired {
+            "Ready".to_string()
+        } else {
+            "Progressing".to_string()
+        },
+    }
 }
 
 #[cfg(feature = "web")]

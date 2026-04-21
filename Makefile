@@ -34,6 +34,11 @@ install: ## Install to ~/.cargo/bin
 
 ci: fmt-check clippy test ## Run full CI pipeline locally
 
+helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
+	helm dependency build charts/vmrogue-monitoring
+	helm template vmrogue-monitoring-ci charts/vmrogue-monitoring -n monitoring >/dev/null
+	@echo "helm template vmrogue-monitoring: OK"
+
 docker: ## Build Docker image
 	./scripts/build-deploy.sh docker
 

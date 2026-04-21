@@ -4,55 +4,90 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VMRogue // Forged in Rust</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:#0a0a0f;--bg-deep:#060609;--bg-card:rgba(18,18,28,.85);--bg-card-solid:#12121c;
-  --steel:#1a1a2e;--steel-light:#252540;--steel-bright:#353560;
-  --border:rgba(255,100,0,.12);--border-hot:rgba(255,60,0,.25);--border-cold:rgba(100,140,255,.15);
-  --text:#c8c8d8;--text-muted:#707088;--text-dim:#484860;--text-bright:#eeeef4;
-  --molten:#ff4500;--ember:#ff6a00;--lava:#ff2200;--magma:#ff8c00;
-  --forge:#ff5722;--spark:#00b4ff;--arc:#4488ff;--plasma:#7b68ee;
-  --chrome:#b0b0c8;--titanium:#8888a8;
-  --success:#00ff88;--success-dim:rgba(0,255,136,.12);
-  --warning:#ffaa00;--warning-dim:rgba(255,170,0,.12);
-  --error:#ff2244;--error-dim:rgba(255,34,68,.12);
-  --radius:.5rem;
-  --glow-molten:0 0 20px rgba(255,69,0,.3),0 0 60px rgba(255,69,0,.1);
-  --glow-spark:0 0 15px rgba(0,180,255,.25),0 0 45px rgba(0,180,255,.08);
-  --glow-success:0 0 15px rgba(0,255,136,.2);
+  /* Surfaces — slate + blue (v9s-style dark UI) */
+  --bg:#0f172a;
+  --bg-deep:#020617;
+  --bg-card:rgba(30,41,59,.82);
+  --bg-card-solid:#1e293b;
+  --bg-tertiary:rgba(51,65,85,.45);
+  --steel:#1e293b;
+  --steel-light:#334155;
+  --steel-bright:#475569;
+  --border:rgba(51,65,85,.55);
+  --border-hot:rgba(59,130,246,.38);
+  --border-cold:rgba(96,165,250,.22);
+  --text:#e2e8f0;
+  --text-muted:#94a3b8;
+  --text-dim:#64748b;
+  --text-bright:#f8fafc;
+  /* Accent — primary blue (Tailwind blue-500 family, v9s dashboard) */
+  --accent:#3b82f6;
+  --molten:#3b82f6;
+  --ember:#60a5fa;
+  --lava:#2563eb;
+  --magma:#93c5fd;
+  --forge:#3b82f6;
+  --spark:#38bdf8;
+  --arc:#60a5fa;
+  --plasma:#a78bfa;
+  --chrome:#cbd5e1;
+  --titanium:#94a3b8;
+  --success:#22c55e;
+  --success-dim:rgba(34,197,94,.16);
+  --warning:#eab308;
+  --warning-dim:rgba(234,179,8,.16);
+  --error:#ef4444;
+  --error-dim:rgba(239,68,68,.16);
+  --radius:0.75rem;
+  --glow-molten:0 0 20px rgba(59,130,246,.22),0 0 48px rgba(59,130,246,.08);
+  --glow-spark:0 0 16px rgba(56,189,248,.18),0 0 40px rgba(56,189,248,.06);
+  --glow-success:0 0 12px rgba(34,197,94,.2);
+  /* Typography — v9s/ui/src/index.css */
+  --font-sans:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
 
+html{
+  font-size:16px;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
 body{
-  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-family:var(--font-sans);
+  font-size:1rem;
+  line-height:1.5;
   background:var(--bg);
   color:var(--text);
   min-height:100vh;
   background-image:
-    radial-gradient(ellipse at 20% 50%, rgba(255,69,0,.03) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 20%, rgba(0,180,255,.02) 0%, transparent 50%),
-    radial-gradient(ellipse at 50% 100%, rgba(123,104,238,.02) 0%, transparent 40%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59,130,246,.14), transparent 55%),
+    radial-gradient(ellipse 55% 40% at 100% 40%, rgba(167,139,250,.07), transparent 50%),
+    radial-gradient(ellipse 45% 35% at 0% 90%, rgba(56,189,248,.06), transparent 45%);
 }
 
 /* Noise overlay */
 body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.03;
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.018;
   background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 body>*{position:relative;z-index:1}
 
 ::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg-deep)}
-::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--molten),var(--lava));border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:var(--ember)}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#475569}
 
 /* Keyframes */
 @keyframes fade-in{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes forge-pulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.6;filter:brightness(1.3)}}
-@keyframes ember-glow{0%,100%{box-shadow:0 0 8px rgba(255,69,0,.2)}50%{box-shadow:0 0 20px rgba(255,69,0,.4),0 0 40px rgba(255,69,0,.1)}}
+@keyframes ember-glow{0%,100%{box-shadow:0 0 8px rgba(59,130,246,.2)}50%{box-shadow:0 0 20px rgba(59,130,246,.35),0 0 40px rgba(59,130,246,.1)}}
 @keyframes spark-trail{0%{opacity:0;transform:translateX(-10px)}20%{opacity:1}100%{opacity:0;transform:translateX(10px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes lightning{0%,90%,100%{opacity:0}92%,98%{opacity:.6}95%{opacity:1}}
@@ -63,71 +98,70 @@ body>*{position:relative;z-index:1}
 .animate-fade-in{animation:fade-in .5s cubic-bezier(.16,1,.3,1)}
 
 /* ═══════════════════════════════════════════════════
-   NAVBAR — Industrial Chrome Bar
+   NAVBAR — v9s-style top bar (slate + blue)
    ═══════════════════════════════════════════════════ */
 .navbar{
   position:sticky;top:0;z-index:50;
-  background:linear-gradient(180deg,rgba(18,18,28,.95),rgba(10,10,15,.98));
-  backdrop-filter:blur(20px);
-  border-bottom:1px solid var(--border-hot);
+  background:rgba(15,23,42,.92);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(51,65,85,.55);
   padding:0 28px;height:60px;
   display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 4px 30px rgba(255,69,0,.08),0 1px 0 rgba(255,100,0,.15) inset;
+  box-shadow:0 1px 0 rgba(15,23,42,.9),0 8px 28px rgba(0,0,0,.22);
 }
 .navbar::after{
-  content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--molten),var(--ember),var(--molten),transparent);
-  animation:metal-shimmer 4s linear infinite;
-  background-size:200% 100%;
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(59,130,246,.45),transparent);
+  opacity:.9;
 }
 
 .navbar-brand{
-  font-family:'Inter',sans-serif;font-size:1.3em;font-weight:900;
-  letter-spacing:1px;text-transform:uppercase;cursor:pointer;
-  background:linear-gradient(135deg,var(--ember),var(--molten),var(--magma),var(--ember));
-  background-size:300% 100%;
+  font-family:var(--font-sans);font-size:1.15rem;font-weight:800;
+  letter-spacing:-0.02em;cursor:pointer;text-transform:none;
+  background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 45%,#34d399 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  animation:metal-shimmer 3s ease-in-out infinite;
-  text-shadow:0 0 30px rgba(255,69,0,.5);
-  filter:drop-shadow(0 0 8px rgba(255,69,0,.3));
+  animation:none;
+  filter:none;
 }
 .navbar-brand::before{
-  content:'';display:inline-block;width:12px;height:12px;margin-right:8px;
-  background:var(--molten);clip-path:polygon(50% 0%,0% 100%,100% 100%);
-  filter:drop-shadow(0 0 4px var(--molten));
+  content:'';display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:2px;
+  background:linear-gradient(135deg,#3b82f6,#6366f1);
   vertical-align:middle;
+  clip-path:none;
+  filter:none;
 }
 
 .nav-links{display:flex;gap:2px;margin-left:28px}
 .nav-link{
   padding:8px 16px;border-radius:4px;
-  font-family:'Inter',sans-serif;font-size:.65em;font-weight:500;
+  font-family:var(--font-sans);font-size:.65em;font-weight:500;
   color:var(--text-muted);text-decoration:none;cursor:pointer;
   transition:all .2s;border:1px solid transparent;background:none;
   letter-spacing:1.5px;text-transform:uppercase;
 }
 .nav-link:hover{
-  background:rgba(255,69,0,.08);color:var(--ember);
-  border-color:rgba(255,69,0,.2);
-  text-shadow:0 0 10px rgba(255,69,0,.3);
+  background:rgba(51,65,85,.4);color:var(--text-bright);
+  border-color:rgba(59,130,246,.25);
+  text-shadow:none;
 }
 .nav-link.active{
-  background:rgba(255,69,0,.12);color:var(--ember);
-  border-color:rgba(255,69,0,.3);
-  box-shadow:0 0 15px rgba(255,69,0,.1),inset 0 0 15px rgba(255,69,0,.05);
+  background:rgba(59,130,246,.14);color:var(--ember);
+  border-color:rgba(59,130,246,.35);
+  box-shadow:none;
 }
 .navbar-right{display:flex;align-items:center;gap:18px}
-.nav-status{display:flex;align-items:center;gap:8px;font-size:.8em;color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:.7em}
+.nav-status{display:flex;align-items:center;gap:8px;font-size:.8em;color:var(--text-muted);font-family:var(--font-mono);font-size:.7em}
 .nav-dot{width:8px;height:8px;border-radius:50%}
 .nav-dot.ok{background:var(--success);box-shadow:var(--glow-success);animation:forge-pulse 2.5s ease-in-out infinite}
 .nav-dot.err{background:var(--error);box-shadow:0 0 10px rgba(255,34,68,.4)}
-.refresh-text{font-size:.65em;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.refresh-text{font-size:.65em;color:var(--text-dim);font-family:var(--font-mono)}
 
 /* Dropdown nav groups */
 .nav-group{position:relative;display:inline-flex}
 .nav-group-btn{
   padding:8px 14px;border-radius:4px;
-  font-family:'Inter',sans-serif;font-size:.65em;font-weight:500;
+  font-family:var(--font-sans);font-size:.65em;font-weight:500;
   color:var(--text-muted);cursor:pointer;
   transition:all .2s;border:1px solid transparent;background:none;
   letter-spacing:1.5px;text-transform:uppercase;
@@ -135,19 +169,20 @@ body>*{position:relative;z-index:1}
 }
 .nav-group-btn::after{content:'▾';font-size:.85em;opacity:.45;margin-left:1px}
 .nav-group-btn:hover,.nav-group-btn.active{
-  background:rgba(255,69,0,.08);color:var(--ember);
-  border-color:rgba(255,69,0,.2);
-  text-shadow:0 0 10px rgba(255,69,0,.3);
+  background:rgba(51,65,85,.4);color:var(--text-bright);
+  border-color:rgba(59,130,246,.25);
+  text-shadow:none;
 }
+.nav-group-btn.active{color:var(--ember)}
 .nav-group-btn.active::after{opacity:.8}
 .nav-dropdown{
   /* top:100% only — no gap; a gap breaks hover because .nav-group's hit box is only as tall as the row button */
   position:absolute;top:100%;left:0;
-  background:linear-gradient(180deg,rgba(22,22,34,.98),rgba(12,12,18,.99));
-  border:1px solid var(--border-hot);border-radius:6px;
+  background:rgba(30,41,59,.98);
+  border:1px solid rgba(51,65,85,.65);border-radius:var(--radius);
   padding:10px 5px 6px;min-width:154px;z-index:200;
-  box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 20px rgba(255,69,0,.06);
-  display:none;backdrop-filter:blur(20px);
+  box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 1px rgba(59,130,246,.06);
+  display:none;backdrop-filter:blur(16px);
 }
 /* Invisible hover bridge above menu — keeps submenu open while moving pointer from label to items */
 .nav-dropdown::before{
@@ -175,17 +210,17 @@ body>*{position:relative;z-index:1}
 .space-y>*+*{margin-top:22px}
 .page-header{display:flex;align-items:center;justify-content:space-between}
 .page-header h1{
-  font-family:'Inter',sans-serif;font-size:1.6em;font-weight:700;
-  color:var(--text-bright);letter-spacing:2px;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:1.35rem;font-weight:700;
+  color:var(--text-bright);letter-spacing:-0.02em;text-transform:none;
 }
 .page-header h1::before{
-  content:'//';color:var(--molten);margin-right:10px;font-weight:400;opacity:.6;
+  content:'//';color:var(--molten);margin-right:10px;font-weight:500;opacity:.55;
 }
 .page-header p{font-size:.8em;color:var(--text-muted);margin-top:4px;letter-spacing:1px}
 .page-header-right{
-  font-size:.7em;color:var(--text-dim);font-family:'JetBrains Mono',monospace;
+  font-size:.7em;color:var(--text-dim);font-family:var(--font-mono);
   padding:6px 14px;border:1px solid var(--border);border-radius:4px;
-  background:rgba(255,69,0,.04);
+  background:rgba(59,130,246,.06);
 }
 
 /* Grids */
@@ -196,7 +231,7 @@ body>*{position:relative;z-index:1}
 @media(max-width:800px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
 
 /* ═══════════════════════════════════════════════════
-   STAT CARDS — Forged Steel Panels
+   STAT CARDS — v9s / virtspawn gradients
    ═══════════════════════════════════════════════════ */
 .stat-card{
   border-radius:var(--radius);padding:22px;
@@ -222,12 +257,12 @@ body>*{position:relative;z-index:1}
 }
 .stat-card:hover::after{opacity:1}
 
-.stat-card-blue{background:linear-gradient(145deg,rgba(0,40,80,.4),var(--bg-card))}
-.stat-card-purple{background:linear-gradient(145deg,rgba(60,20,100,.3),var(--bg-card))}
-.stat-card-orange{background:linear-gradient(145deg,rgba(80,30,0,.4),var(--bg-card))}
-.stat-card-green{background:linear-gradient(145deg,rgba(0,60,30,.3),var(--bg-card))}
-.stat-card-cyan{background:linear-gradient(145deg,rgba(0,50,70,.3),var(--bg-card))}
-.stat-card-red{background:linear-gradient(145deg,rgba(80,10,10,.3),var(--bg-card))}
+.stat-card-blue{background:linear-gradient(135deg,#1e3a5f 0%,#1e293b 100%)}
+.stat-card-purple{background:linear-gradient(135deg,#2d1f5e 0%,#1e293b 100%)}
+.stat-card-orange{background:linear-gradient(135deg,#5f3a1e 0%,#1e293b 100%)}
+.stat-card-green{background:linear-gradient(135deg,#1e5f3a 0%,#1e293b 100%)}
+.stat-card-cyan{background:linear-gradient(135deg,#1e4f5f 0%,#1e293b 100%)}
+.stat-card-red{background:linear-gradient(135deg,#5f1e1e 0%,#1e293b 100%)}
 
 .stat-top{display:flex;align-items:flex-start;justify-content:space-between}
 .stat-icon{
@@ -242,12 +277,12 @@ body>*{position:relative;z-index:1}
 }
 .stat-icon.blue{background:rgba(0,180,255,.12);color:var(--spark);border:1px solid rgba(0,180,255,.2)}
 .stat-icon.purple{background:rgba(123,104,238,.12);color:var(--plasma);border:1px solid rgba(123,104,238,.2)}
-.stat-icon.orange{background:rgba(255,100,0,.12);color:var(--ember);border:1px solid rgba(255,100,0,.2)}
-.stat-icon.green{background:rgba(0,255,136,.1);color:var(--success);border:1px solid rgba(0,255,136,.15)}
+.stat-icon.orange{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(234,179,8,.22)}
+.stat-icon.green{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.2)}
 
 .stat-body{margin-top:14px}
 .stat-value{
-  font-family:'Inter',sans-serif;font-size:2em;font-weight:700;
+  font-family:var(--font-sans);font-size:2em;font-weight:700;
   color:var(--text-bright);
   text-shadow:0 0 20px rgba(255,255,255,.1);
 }
@@ -256,7 +291,7 @@ body>*{position:relative;z-index:1}
   letter-spacing:1.5px;text-transform:uppercase;font-weight:500;
 }
 .stat-badge{font-size:.65em;padding:3px 10px;border-radius:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
-.badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(0,255,136,.15)}
+.badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
 .badge-muted{color:var(--text-dim)}
 
 /* ═══════════════════════════════════════════════════
@@ -271,11 +306,11 @@ body>*{position:relative;z-index:1}
 .res-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.75em}
 .res-header .lbl{
   color:var(--text-muted);flex:1;letter-spacing:1px;text-transform:uppercase;
-  font-family:'Inter',sans-serif;font-size:.85em;
+  font-family:var(--font-sans);font-size:.85em;
 }
 .res-header .pct{
   font-weight:700;color:var(--text-bright);
-  font-family:'JetBrains Mono',monospace;
+  font-family:var(--font-mono);
 }
 .bar-track{
   width:100%;height:6px;background:var(--steel);border-radius:3px;
@@ -309,14 +344,14 @@ body>*{position:relative;z-index:1}
 }
 .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .chart-title{
-  font-family:'Inter',sans-serif;font-size:.75em;font-weight:600;
+  font-family:var(--font-sans);font-size:.75em;font-weight:600;
   color:var(--text-bright);display:flex;align-items:center;gap:10px;
   letter-spacing:1px;text-transform:uppercase;
 }
 .chart-current{
-  font-size:.85em;color:var(--ember);font-family:'JetBrains Mono',monospace;
+  font-size:.85em;color:var(--ember);font-family:var(--font-mono);
   font-weight:700;
-  text-shadow:0 0 10px rgba(255,69,0,.3);
+  text-shadow:0 0 12px rgba(59,130,246,.25);
 }
 .chart-area{width:100%;height:165px}
 .chart-area canvas{width:100%;height:100%}
@@ -339,17 +374,17 @@ body>*{position:relative;z-index:1}
   padding:16px 24px;
   border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
-  background:linear-gradient(90deg,rgba(255,69,0,.03),transparent);
+  background:linear-gradient(90deg,rgba(59,130,246,.06),transparent);
 }
 .card-title{
-  font-family:'Inter',sans-serif;font-size:.8em;font-weight:600;
+  font-family:var(--font-sans);font-size:.8em;font-weight:600;
   color:var(--text-bright);display:flex;align-items:center;gap:10px;
   letter-spacing:1.5px;text-transform:uppercase;
 }
 .card-title::before{
   content:'';display:inline-block;width:4px;height:16px;
   background:var(--molten);border-radius:1px;
-  box-shadow:0 0 8px rgba(255,69,0,.4);
+  box-shadow:0 0 8px rgba(59,130,246,.35);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -357,7 +392,7 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .vm-row{
   display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;border-bottom:1px solid rgba(255,100,0,.06);
+  padding:14px 24px;border-bottom:1px solid rgba(51,65,85,.45);
   transition:all .2s;cursor:default;position:relative;
 }
 .vm-row::before{
@@ -365,7 +400,7 @@ body>*{position:relative;z-index:1}
   background:var(--molten);transition:width .2s;
 }
 .vm-row:hover{
-  background:rgba(255,69,0,.04);
+  background:rgba(51,65,85,.28);
 }
 .vm-row:hover::before{width:3px}
 .vm-row:last-child{border-bottom:none}
@@ -380,38 +415,38 @@ body>*{position:relative;z-index:1}
 }
 .vm-dot.running{
   background:var(--success);
-  box-shadow:0 0 8px rgba(0,255,136,.4);
+  box-shadow:0 0 8px rgba(34,197,94,.35);
   animation:forge-pulse 2.5s infinite;
 }
-.vm-dot.running::after{border-color:rgba(0,255,136,.15)}
+.vm-dot.running::after{border-color:rgba(34,197,94,.2)}
 .vm-dot.stopped{background:var(--text-dim);box-shadow:none}
 .vm-dot.error{background:var(--error);box-shadow:0 0 8px rgba(255,34,68,.4)}
 .vm-dot.other{background:var(--spark);box-shadow:0 0 8px rgba(0,180,255,.3)}
 .vm-name{
   font-weight:600;color:var(--text-bright);font-size:.95em;
-  font-family:'JetBrains Mono',monospace;letter-spacing:.5px;
+  font-family:var(--font-mono);letter-spacing:.5px;
 }
-.vm-ns{font-size:.7em;color:var(--text-dim);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.vm-ns{font-size:.7em;color:var(--text-dim);margin-top:2px;font-family:var(--font-mono)}
 .vm-right{display:flex;align-items:center;gap:12px}
 .vm-badge{
   padding:4px 12px;border-radius:3px;
-  font-family:'Inter',sans-serif;font-size:.6em;font-weight:600;
+  font-family:var(--font-sans);font-size:.6em;font-weight:600;
   letter-spacing:1px;text-transform:uppercase;
 }
-.vm-badge.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(0,255,136,.15)}
+.vm-badge.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
 .vm-badge.stopped{background:rgba(100,100,120,.15);color:var(--text-muted);border:1px solid rgba(100,100,120,.15)}
 .vm-badge.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(255,34,68,.15)}
 .vm-badge.other{background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
-.vm-meta{font-size:.7em;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+.vm-meta{font-size:.7em;color:var(--text-dim);font-family:var(--font-mono)}
 .vm-right-stack{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0;flex:1;max-width:min(100%,560px)}
 .vm-right-stack .vm-right{flex-wrap:wrap;justify-content:flex-end}
-.vm-ssh-line{font-size:.62em;color:var(--text-dim);font-family:'JetBrains Mono',monospace;text-align:right;line-height:1.4;max-width:100%;word-break:break-word}
+.vm-ssh-line{font-size:.62em;color:var(--text-dim);font-family:var(--font-mono);text-align:right;line-height:1.4;max-width:100%;word-break:break-word}
 .vm-ssh-line code{font-size:1em}
 .vm-ssh-line .ssh-actions{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
 .vm-ssh-line .ssh-block-title{margin-bottom:2px;font-size:.72em;color:var(--text-bright);letter-spacing:.03em}
 .vm-ssh-line .ssh-kind{display:block;margin-top:8px;margin-bottom:3px;font-size:.65em;font-weight:600;color:var(--spark);letter-spacing:.04em}
 .vm-ssh-line .ssh-block-title + .ssh-kind{margin-top:6px}
-.btn-mini{padding:3px 9px;font-size:.65em;border-radius:2px;cursor:pointer;border:1px solid rgba(0,180,255,.22);background:rgba(0,180,255,.07);color:var(--spark);font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0}
+.btn-mini{padding:3px 9px;font-size:.65em;border-radius:2px;cursor:pointer;border:1px solid rgba(0,180,255,.22);background:rgba(0,180,255,.07);color:var(--spark);font-family:var(--font-sans);text-transform:none;letter-spacing:0}
 .btn-mini:hover{background:rgba(0,180,255,.14)}
 
 /* ═══════════════════════════════════════════════════
@@ -419,15 +454,15 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .btn{
   padding:6px 14px;border-radius:3px;
-  font-family:'Inter',sans-serif;font-size:.6em;font-weight:500;
+  font-family:var(--font-sans);font-size:.6em;font-weight:500;
   border:1px solid transparent;cursor:pointer;
   transition:all .2s;display:inline-flex;align-items:center;gap:5px;
   letter-spacing:.5px;text-transform:uppercase;
 }
 .btn-start{
-  background:var(--success-dim);color:var(--success);border-color:rgba(0,255,136,.15);
+  background:var(--success-dim);color:var(--success);border-color:rgba(34,197,94,.2);
 }
-.btn-start:hover{background:rgba(0,255,136,.2);box-shadow:0 0 12px rgba(0,255,136,.15)}
+.btn-start:hover{background:rgba(34,197,94,.18);box-shadow:0 0 12px rgba(34,197,94,.12)}
 .btn-stop{
   background:var(--warning-dim);color:var(--warning);border-color:rgba(255,170,0,.15);
 }
@@ -448,10 +483,10 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .event-row{
   display:flex;align-items:flex-start;gap:14px;
-  padding:14px 24px;border-bottom:1px solid rgba(255,100,0,.06);
+  padding:14px 24px;border-bottom:1px solid rgba(51,65,85,.45);
 }
 .event-row:last-child{border-bottom:none}
-.event-row:hover{background:rgba(255,69,0,.02)}
+.event-row:hover{background:rgba(51,65,85,.22)}
 .event-dot{
   width:8px;height:8px;border-radius:50%;margin-top:7px;flex-shrink:0;
 }
@@ -460,27 +495,27 @@ body>*{position:relative;z-index:1}
 .event-dot.error{background:var(--error);box-shadow:0 0 6px rgba(255,34,68,.3)}
 .event-body{flex:1;min-width:0}
 .event-msg{font-size:.85em;font-weight:500;color:var(--text)}
-.event-meta{font-size:.7em;color:var(--text-dim);margin-top:4px;display:flex;gap:14px;font-family:'JetBrains Mono',monospace}
+.event-meta{font-size:.7em;color:var(--text-dim);margin-top:4px;display:flex;gap:14px;font-family:var(--font-mono)}
 .event-badge{
   padding:3px 10px;border-radius:3px;
-  font-family:'Inter',sans-serif;font-size:.55em;font-weight:600;
+  font-family:var(--font-sans);font-size:.55em;font-weight:600;
   flex-shrink:0;letter-spacing:1px;text-transform:uppercase;
 }
 .event-badge.warn{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)}
 .event-badge.info{background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
-.event-time{font-size:.7em;color:var(--text-dim);white-space:nowrap;flex-shrink:0;font-family:'JetBrains Mono',monospace}
+.event-time{font-size:.7em;color:var(--text-dim);white-space:nowrap;flex-shrink:0;font-family:var(--font-mono)}
 
 /* ═══════════════════════════════════════════════════
    SNAPSHOTS
    ═══════════════════════════════════════════════════ */
 .snap-row{
   display:flex;align-items:center;justify-content:space-between;
-  padding:14px 24px;border-bottom:1px solid rgba(255,100,0,.06);
+  padding:14px 24px;border-bottom:1px solid rgba(51,65,85,.45);
 }
-.snap-row:hover{background:rgba(255,69,0,.02)}.snap-row:last-child{border-bottom:none}
+.snap-row:hover{background:rgba(51,65,85,.22)}.snap-row:last-child{border-bottom:none}
 .snap-info{flex:1}
-.snap-name{font-weight:600;color:var(--text-bright);font-size:.9em;font-family:'JetBrains Mono',monospace}
-.snap-vm{font-size:.7em;color:var(--text-dim);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.snap-name{font-weight:600;color:var(--text-bright);font-size:.9em;font-family:var(--font-mono)}
+.snap-vm{font-size:.7em;color:var(--text-dim);margin-top:2px;font-family:var(--font-mono)}
 .snap-status{display:flex;align-items:center;gap:10px}
 
 /* ═══════════════════════════════════════════════════
@@ -490,6 +525,62 @@ body>*{position:relative;z-index:1}
 .empty-state .icon{font-size:2.5em;margin-bottom:14px;opacity:.2;filter:grayscale(.5)}
 .empty-state p{font-size:.9em;letter-spacing:1px}
 .empty-state .sub{font-size:.8em;margin-top:6px;color:var(--text-dim)}
+
+/* Monitoring page — capability strip + stack cards */
+.monitor-capabilities{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:4px;
+}
+@media(max-width:1100px){.monitor-capabilities{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.monitor-capabilities{grid-template-columns:1fr}}
+.monitor-cap{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;display:flex;gap:12px;align-items:flex-start;
+  transition:border-color .2s,box-shadow .2s;
+}
+.monitor-cap:hover{border-color:var(--border-cold);box-shadow:0 0 20px rgba(0,180,255,.06)}
+.monitor-cap-icon{
+  width:36px;height:36px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.05em;line-height:1;
+  background:rgba(0,180,255,.1);border:1px solid rgba(0,180,255,.18);color:var(--spark);
+}
+.monitor-cap h3{
+  font-size:.68em;font-weight:600;color:var(--text-bright);letter-spacing:1.2px;text-transform:uppercase;margin:0 0 5px;
+}
+.monitor-cap p{font-size:.74em;color:var(--text-muted);line-height:1.5;margin:0}
+.monitor-overview{display:flex;flex-direction:column;gap:18px;margin-bottom:4px}
+.monitor-stack-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.monitor-stack-row{grid-template-columns:1fr}}
+.monitor-stack-sub{
+  font-size:.72em;color:var(--text-muted);margin-top:10px;line-height:1.45;letter-spacing:.2px;
+}
+.stat-card.stat-card-neutral{
+  border-color:rgba(100,140,255,.14);
+  background:linear-gradient(145deg,rgba(25,35,55,.45),var(--bg-card));
+}
+.stat-card.stat-card-optional{
+  border-color:rgba(234,179,8,.18);
+  background:linear-gradient(145deg,rgba(55,48,26,.35),var(--bg-card));
+}
+.monitor-stat-note{font-size:.65em;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);letter-spacing:.3px}
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
+.table-scroll .table{min-width:560px}
+.monitor-empty{padding:26px 16px 32px;text-align:center}
+.monitor-empty .me-icon{font-size:2.1em;opacity:.32;margin-bottom:10px;line-height:1}
+.monitor-empty h4{
+  font-size:.82em;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;font-weight:600;
+}
+.monitor-empty p{font-size:.78em;color:var(--text-muted);max-width:460px;margin:0 auto;line-height:1.55}
+.monitor-empty ul{
+  text-align:left;max-width:440px;margin:14px auto 0;padding:12px 14px 12px 28px;
+  border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,.2);
+  color:var(--text-muted);font-size:.74em;line-height:1.65;
+}
+.rec-count-badge,.anom-count-badge{
+  font-size:.62em;padding:4px 11px;border-radius:3px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;
+  font-family:var(--font-sans);
+}
+
 .spinner{
   width:22px;height:22px;
   border:2px solid var(--steel-light);border-top-color:var(--molten);
@@ -502,15 +593,15 @@ body>*{position:relative;z-index:1}
 .toast-container{position:fixed;top:72px;right:20px;z-index:100;display:flex;flex-direction:column;gap:8px}
 .toast{
   padding:14px 18px;border-radius:var(--radius);
-  font-size:.8em;font-weight:500;font-family:'Inter',sans-serif;
+  font-size:.8em;font-weight:500;font-family:var(--font-sans);
   animation:fade-in .3s cubic-bezier(.16,1,.3,1);
   display:flex;align-items:center;gap:10px;min-width:300px;
   letter-spacing:.5px;
 }
 .toast-success{
-  background:rgba(0,30,15,.95);color:var(--success);
-  border:1px solid rgba(0,255,136,.2);
-  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(0,255,136,.08);
+  background:rgba(6,40,24,.95);color:var(--success);
+  border:1px solid rgba(34,197,94,.22);
+  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(34,197,94,.08);
 }
 .toast-error{
   background:rgba(40,5,5,.95);color:var(--error);
@@ -532,7 +623,7 @@ body>*{position:relative;z-index:1}
 .footer-bar{
   margin-top:40px;padding:16px 0;text-align:center;
   border-top:1px solid var(--border);
-  font-family:'Inter',sans-serif;font-size:.6em;
+  font-family:var(--font-sans);font-size:.6em;
   color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
 }
 .footer-bar span{color:var(--molten);font-weight:700}
@@ -542,15 +633,15 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .btn-create{
   padding:8px 18px;border-radius:4px;
-  font-family:'Inter',sans-serif;font-size:.65em;font-weight:600;
+  font-family:var(--font-sans);font-size:.65em;font-weight:600;
   letter-spacing:1.5px;text-transform:uppercase;
   background:linear-gradient(135deg,var(--molten),var(--ember));
   color:#fff;border:none;cursor:pointer;
   transition:all .2s;
-  box-shadow:0 0 15px rgba(255,69,0,.2);
+  box-shadow:0 0 16px rgba(59,130,246,.22);
 }
 .btn-create:hover{
-  box-shadow:0 0 25px rgba(255,69,0,.4),0 0 50px rgba(255,69,0,.15);
+  box-shadow:0 0 28px rgba(59,130,246,.35),0 0 48px rgba(59,130,246,.12);
   transform:translateY(-1px);
 }
 
@@ -567,7 +658,7 @@ body>*{position:relative;z-index:1}
   background:var(--bg-card-solid);border:1px solid var(--border-hot);
   border-radius:var(--radius);width:520px;max-width:90vw;max-height:85vh;
   overflow-y:auto;position:relative;
-  box-shadow:0 25px 80px rgba(0,0,0,.6),0 0 40px rgba(255,69,0,.1);
+  box-shadow:0 25px 80px rgba(0,0,0,.6),0 0 40px rgba(59,130,246,.1);
   animation:fade-in .25s cubic-bezier(.16,1,.3,1);
 }
 .modal::before{
@@ -579,7 +670,7 @@ body>*{position:relative;z-index:1}
   border-bottom:1px solid var(--border);
 }
 .modal-header h2{
-  font-family:'Inter',sans-serif;font-size:.9em;font-weight:700;
+  font-family:var(--font-sans);font-size:.9em;font-weight:700;
   color:var(--text-bright);letter-spacing:2px;text-transform:uppercase;
 }
 .modal-close{
@@ -596,22 +687,22 @@ body>*{position:relative;z-index:1}
 }
 .form-group{margin-bottom:16px}
 .form-label{
-  display:block;font-family:'Inter',sans-serif;font-size:.6em;font-weight:500;
+  display:block;font-family:var(--font-sans);font-size:.6em;font-weight:500;
   color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;
   margin-bottom:6px;
 }
 .form-input,.form-select{
   width:100%;padding:10px 14px;border-radius:4px;
   background:var(--steel);border:1px solid var(--border);
-  color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:.85em;
+  color:var(--text-bright);font-family:var(--font-mono);font-size:.85em;
   transition:border-color .15s;outline:none;
 }
-.form-input:focus,.form-select:focus{border-color:var(--ember);box-shadow:0 0 10px rgba(255,69,0,.1)}
+.form-input:focus,.form-select:focus{border-color:var(--ember);box-shadow:0 0 10px rgba(59,130,246,.12)}
 .form-select option{background:var(--bg-card-solid);color:var(--text)}
 .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .btn-cancel{
   padding:8px 18px;border-radius:4px;
-  font-family:'Inter',sans-serif;font-size:.6em;font-weight:500;
+  font-family:var(--font-sans);font-size:.6em;font-weight:500;
   letter-spacing:1px;text-transform:uppercase;
   background:var(--steel);border:1px solid var(--border);
   color:var(--text-muted);cursor:pointer;transition:all .15s;
@@ -619,12 +710,12 @@ body>*{position:relative;z-index:1}
 .btn-cancel:hover{border-color:var(--text-muted);color:var(--text)}
 .btn-forge{
   padding:8px 24px;border-radius:4px;
-  font-family:'Inter',sans-serif;font-size:.6em;font-weight:600;
+  font-family:var(--font-sans);font-size:.6em;font-weight:600;
   letter-spacing:1.5px;text-transform:uppercase;
   background:linear-gradient(135deg,var(--molten),var(--ember));
   color:#fff;border:none;cursor:pointer;transition:all .15s;
 }
-.btn-forge:hover{box-shadow:0 0 20px rgba(255,69,0,.3)}
+.btn-forge:hover{box-shadow:0 0 20px rgba(59,130,246,.28)}
 .btn-forge:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
 /* ═══════════════════════════════════════════════════
@@ -632,8 +723,8 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .vm-detail{
   padding:18px 24px 18px 48px;
-  border-bottom:1px solid rgba(255,100,0,.08);
-  background:rgba(10,10,20,.5);
+  border-bottom:1px solid rgba(51,65,85,.5);
+  background:rgba(15,23,42,.55);
   animation:fade-in .25s cubic-bezier(.16,1,.3,1);
 }
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
@@ -642,7 +733,7 @@ body>*{position:relative;z-index:1}
   border:1px solid var(--border);
 }
 .detail-section-title{
-  font-family:'Inter',sans-serif;font-size:.55em;font-weight:600;
+  font-family:var(--font-sans);font-size:.55em;font-weight:600;
   color:var(--ember);letter-spacing:2px;text-transform:uppercase;
   margin-bottom:10px;display:flex;align-items:center;gap:6px;
 }
@@ -656,7 +747,7 @@ body>*{position:relative;z-index:1}
 }
 .detail-row .lbl{color:var(--text-muted);font-size:.85em}
 .detail-row .val{
-  color:var(--text-bright);font-family:'JetBrains Mono',monospace;font-size:.85em;
+  color:var(--text-bright);font-family:var(--font-mono);font-size:.85em;
 }
 .detail-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
 
@@ -673,25 +764,26 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .table-row{
   display:grid;align-items:center;
-  padding:12px 24px;border-bottom:1px solid rgba(255,100,0,.06);
-  font-size:.82em;transition:background .15s;
+  padding:12px 24px;border-bottom:1px solid rgba(51,65,85,.45);
+  font-size:.82em;transition:background .15s,border-color .15s;
+  border-left:2px solid transparent;
 }
-.table-row:hover{background:rgba(255,69,0,.03)}
+.table-row:hover{background:rgba(51,65,85,.28);border-left-color:var(--accent)}
 .table-row:last-child{border-bottom:none}
 .table-header{
   padding:10px 24px;border-bottom:1px solid var(--border);
-  font-family:'Inter',sans-serif;font-size:.6em;font-weight:600;
+  font-family:var(--font-sans);font-size:.6em;font-weight:600;
   color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;
 }
 .table-row.node-row{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr}
 .table-header.node-header{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr;display:grid}
 .table-row.pod-row{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr}
 .table-header.pod-header{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr;display:grid}
-.cell-name{font-family:'JetBrains Mono',monospace;color:var(--text-bright);font-weight:500}
-.cell-mono{font-family:'JetBrains Mono',monospace;color:var(--text)}
+.cell-name{font-family:var(--font-mono);color:var(--text-bright);font-weight:500}
+.cell-mono{font-family:var(--font-mono);color:var(--text)}
 .cell-badge{
   display:inline-block;padding:2px 8px;border-radius:3px;
-  font-family:'Inter',sans-serif;font-size:.8em;font-weight:500;
+  font-family:var(--font-sans);font-size:.8em;font-weight:500;
   letter-spacing:.5px;
 }
 .cell-badge.ready{background:var(--success-dim);color:var(--success)}
@@ -706,14 +798,14 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .iface-table{width:100%;font-size:.8em;border-collapse:collapse}
 .iface-table th{
-  font-family:'Inter',sans-serif;font-size:.7em;font-weight:500;
+  font-family:var(--font-sans);font-size:.7em;font-weight:500;
   color:var(--text-dim);text-align:left;padding:4px 8px;
   letter-spacing:1px;text-transform:uppercase;
   border-bottom:1px solid var(--border);
 }
 .iface-table td{
   padding:4px 8px;color:var(--text);
-  font-family:'JetBrains Mono',monospace;font-size:.9em;
+  font-family:var(--font-mono);font-size:.9em;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -722,7 +814,7 @@ body>*{position:relative;z-index:1}
 .refresh-select{
   background:var(--steel);border:1px solid var(--border);
   color:var(--text-muted);border-radius:3px;padding:2px 6px;
-  font-family:'JetBrains Mono',monospace;font-size:.65em;
+  font-family:var(--font-mono);font-size:.65em;
   cursor:pointer;outline:none;
 }
 .refresh-select:focus{border-color:var(--ember)}
@@ -735,13 +827,13 @@ body>*{position:relative;z-index:1}
   background:var(--steel);border:1px solid var(--border);
   transition:all .15s;min-width:80px;text-align:center;
 }
-.profile-card:hover{border-color:var(--ember);background:rgba(255,69,0,.05)}
-.profile-card.selected{border-color:var(--molten);background:rgba(255,69,0,.1);box-shadow:0 0 10px rgba(255,69,0,.1)}
+.profile-card:hover{border-color:var(--ember);background:rgba(59,130,246,.08)}
+.profile-card.selected{border-color:var(--molten);background:rgba(59,130,246,.12);box-shadow:0 0 12px rgba(59,130,246,.12)}
 .profile-card .pc-name{
-  font-family:'Inter',sans-serif;font-size:.55em;font-weight:600;
+  font-family:var(--font-sans);font-size:.55em;font-weight:600;
   color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;
 }
-.profile-card .pc-spec{font-size:.65em;color:var(--text-dim);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.profile-card .pc-spec{font-size:.65em;color:var(--text-dim);margin-top:2px;font-family:var(--font-mono)}
 
 /* ═══════════════════════════════════════════════════
    API KEY INPUT
@@ -764,14 +856,14 @@ body>*{position:relative;z-index:1}
 .ns-select{
   background:var(--steel);border:1px solid var(--border);
   color:var(--text-bright);border-radius:4px;padding:4px 8px;
-  font-family:'JetBrains Mono',monospace;font-size:.7em;
+  font-family:var(--font-mono);font-size:.7em;
   cursor:pointer;outline:none;max-width:140px;
 }
 .ns-select:focus{border-color:var(--ember)}
 
 /* Bulk operations */
 .bulk-bar{
-  display:none;padding:10px 24px;background:rgba(255,69,0,.06);
+  display:none;padding:10px 24px;background:rgba(59,130,246,.08);
   border-bottom:1px solid var(--border);align-items:center;gap:10px;
   font-size:.8em;
 }
@@ -1105,18 +1197,32 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-monitoring">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Monitoring</h1><p>Cluster monitoring stack detection and VM-level heuristic checks. Recommendations honor the namespace selector above. Anomalies require running VMs and the Kubernetes Metrics Server; otherwise usage may stay at zero and no breaches appear.</p></div></div>
-  <div id="monitoring-status" class="grid-4" style="margin-bottom:16px"></div>
+  <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div></div>
+  <div class="monitor-capabilities">
+    <div class="monitor-cap"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code style="font-size:.9em">monitoring</code>, <code style="font-size:.9em">prometheus</code>, <code style="font-size:.9em">observability</code>, and the active namespace.</p></div></div>
+    <div class="monitor-cap"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
+    <div class="monitor-cap"><div class="monitor-cap-icon" style="background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
+    <div class="monitor-cap"><div class="monitor-cap-icon" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--success)">&#8866;</div><div><h3>Also in VMRogue</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
+  </div>
+  <div id="monitoring-status" class="monitor-overview"></div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Recommendations</span></div>
-    <table class="table" id="recommendations-table"><thead><tr><th>Priority</th><th>Category</th><th>Title</th><th>Resource</th><th>Impact</th></tr></thead><tbody id="recommendations-body"></tbody></table>
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
+        <span class="card-title">Recommendations</span>
+        <span id="recommendations-count-badge" class="rec-count-badge badge-muted" style="display:none"></span>
+      </div>
+      <div class="table-scroll">
+      <table class="table" id="recommendations-table"><thead><tr><th>Priority</th><th>Category</th><th>Title</th><th>Resource</th><th>Impact</th></tr></thead><tbody id="recommendations-body"></tbody></table>
+      </div>
     </div>
     <div class="card">
-      <div class="card-header">
-        <span class="card-title">Anomaly Detection</span>
-        <span id="anomaly-count-badge" style="font-size:.65em;padding:3px 10px;border-radius:3px"></span>
+      <div class="card-header" style="flex-wrap:wrap;gap:8px">
+        <span class="card-title">Anomaly detection</span>
+        <span id="anomaly-count-badge" class="anom-count-badge"></span>
       </div>
+      <div class="table-scroll">
       <table class="table"><thead><tr><th>VM</th><th>Metric</th><th>Value</th><th>Threshold</th><th>Deviation</th><th>Severity</th><th>Detected</th></tr></thead><tbody id="anomalies-body"></tbody></table>
+      </div>
     </div>
   </div>
 </div>
@@ -1314,15 +1420,15 @@ body>*{position:relative;z-index:1}
 
 <div class="page" id="page-cilium">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cilium</h1><p>Cilium status, policies, and network flow visualization</p></div></div>
+  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div></div>
   <div id="cilium-summary" class="grid-4" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
-    <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
+    <table class="table"><thead><tr><th>Kind</th><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
     <div class="card">
       <div class="card-header">
         <span class="card-title">Network Flows</span>
-        <div id="flow-stats" style="display:flex;gap:12px;font-size:.7em;font-family:'JetBrains Mono',monospace"></div>
+        <div id="flow-stats" style="display:flex;gap:12px;font-size:.7em;font-family:var(--font-mono)"></div>
       </div>
       <table class="table"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th></tr></thead><tbody id="flows-body"></tbody></table>
     </div>
@@ -1351,7 +1457,7 @@ body>*{position:relative;z-index:1}
     </div>
     <div id="flamegraph-container" style="padding:18px">
       <div id="flamegraph-canvas-wrap" style="overflow-x:auto"></div>
-      <div id="flamegraph-empty" style="text-align:center;color:var(--text-dim);font-size:.8em;padding:40px;font-family:'JetBrains Mono',monospace">Select a VM to view its CPU flamegraph</div>
+      <div id="flamegraph-empty" style="text-align:center;color:var(--text-dim);font-size:.8em;padding:40px;font-family:var(--font-mono)">Select a VM to view its CPU flamegraph</div>
     </div>
   </div>
 </div>
@@ -1379,8 +1485,8 @@ body>*{position:relative;z-index:1}
     <table class="table"><thead><tr><th>Trace ID</th><th>Service</th><th>Operation</th><th>Duration</th><th>Spans</th><th>Status</th><th>Started</th></tr></thead><tbody id="traces-body"></tbody></table>
   </div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:'JetBrains Mono',monospace">Connect OpenTelemetry collector to populate</div></div>
-    <div class="card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:'JetBrains Mono',monospace">Connect OpenTelemetry collector to populate</div></div>
+    <div class="card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono)">Connect OpenTelemetry collector to populate</div></div>
+    <div class="card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono)">Connect OpenTelemetry collector to populate</div></div>
   </div>
 </div>
 </div>
@@ -1404,9 +1510,9 @@ body>*{position:relative;z-index:1}
   <div class="card">
     <div class="card-header">
       <span class="card-title">Log Stream</span>
-      <span style="font-size:.65em;padding:3px 10px;border-radius:3px;background:var(--success-dim);color:var(--success);border:1px solid rgba(0,255,136,.15)">● LIVE</span>
+      <span style="font-size:.65em;padding:3px 10px;border-radius:3px;background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)">● LIVE</span>
     </div>
-    <div id="logs-stream" style="font-family:'JetBrains Mono',monospace;font-size:.72em;max-height:480px;overflow-y:auto;padding:12px 18px;line-height:1.8;color:var(--text)">
+    <div id="logs-stream" style="font-family:var(--font-mono);font-size:.72em;max-height:480px;overflow-y:auto;padding:12px 18px;line-height:1.8;color:var(--text)">
       <div style="color:var(--text-dim);text-align:center;padding:40px">Connect log aggregator or wire up VM serial console to stream logs</div>
     </div>
   </div>
@@ -1546,9 +1652,13 @@ body>*{position:relative;z-index:1}
       <button class="modal-close" onclick="closeSnapModal()">&#10005;</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
+      <div class="form-group" id="snap-vm-fixed-group">
         <label class="form-label">VM Name</label>
         <input type="text" class="form-input" id="snap-vm-name" readonly>
+      </div>
+      <div class="form-group" id="snap-vm-select-group" style="display:none">
+        <label class="form-label">Target VM</label>
+        <select class="form-input" id="snap-vm-select" title="Choose which VM to snapshot"></select>
       </div>
       <div class="form-group">
         <label class="form-label">Snapshot Name (optional)</label>
@@ -1593,7 +1703,7 @@ body>*{position:relative;z-index:1}
     <div class="modal-header">
       <h2 id="vnc-title">Console: --</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <span id="vnc-status" style="font-size:.7em;color:var(--text-dim);font-family:'JetBrains Mono',monospace">Disconnected</span>
+        <span id="vnc-status" style="font-size:.7em;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
         <button class="btn btn-restart" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
         <button class="btn btn-start" onclick="toggleVncFullscreen()">Fullscreen</button>
         <button class="btn btn-stop" onclick="reconnectVnc()">Reconnect</button>
@@ -1601,7 +1711,7 @@ body>*{position:relative;z-index:1}
       </div>
     </div>
     <div id="vnc-container" style="width:100%;height:calc(100% - 56px);background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden">
-      <div id="vnc-placeholder" style="color:var(--text-dim);font-family:'Inter',sans-serif;font-size:.8em;letter-spacing:2px">Loading VNC...</div>
+      <div id="vnc-placeholder" style="color:var(--text-dim);font-family:var(--font-sans);font-size:.8em;letter-spacing:2px">Loading VNC...</div>
     </div>
   </div>
 </div>
@@ -1613,6 +1723,8 @@ body>*{position:relative;z-index:1}
 // State
 let currentPage = 'dashboard';
 let vmData = [];
+/** Last VM the user expanded on the VMs page or chose for snapshot (ns + name). */
+let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 
@@ -1635,7 +1747,7 @@ function loadPageData(page) {
     fetchEvents(false);
   }
   if (page === 'vms') fetchVMs();
-  if (page === 'snapshots') fetchSnapshots();
+  if (page === 'snapshots') { fetchVMs(); fetchSnapshots(); }
   if (page === 'events') fetchEvents(true);
   if (page === 'nodes') fetchNodes();
   if (page === 'pods') fetchPods();
@@ -1701,7 +1813,7 @@ function drawChart(id, data, color, glowColor) {
   ctx.clearRect(0, 0, W, H);
 
   // Grid lines — subtle steel
-  ctx.strokeStyle = 'rgba(255,100,0,.06)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(59,130,246,.08)'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = pad.t + cH*i/4;
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
@@ -2053,7 +2165,10 @@ async function fetchSnapshots() {
     const j = await apiJson('/api/v1/snapshots' + nsParam());
     const snaps = asArray(j);
     const el = document.getElementById('snap-list');
-    if (snaps.length === 0) { el.innerHTML='<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot from VM details</p></div>'; return; }
+    if (snaps.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="btn btn-start" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
+      return;
+    }
     el.innerHTML = snaps.map(s => {
       const ready = s.ready;
       return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
@@ -2092,8 +2207,8 @@ async function fetchOverview() {
     memHistory.push(memPct); if(memHistory.length>MAX_PTS)memHistory.shift();
     document.getElementById('cpu-current').textContent=cpuPct+'%';
     document.getElementById('mem-current').textContent=memPct+'%';
-    drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
-    drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');
+    drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
+    drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
   } catch (e) {
     console.error('Overview fetch error:', e);
   }
@@ -2262,6 +2377,7 @@ function toggleVmDetail(ns, name) {
   // Collapse any other open detail
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
   expandedVm = key;
+  rememberVmForSnap(ns, name);
   fetchVmDetail(ns, name);
 }
 
@@ -2334,7 +2450,7 @@ async function fetchVmDetail(ns, name) {
     }
     html += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
     html += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" onclick="event.stopPropagation();cloneVM(\'' + ns + '\',\'' + name + '\')">&#10697; Clone</button>';
-    html += '<button class="btn" style="background:rgba(255,100,0,.08);color:var(--ember);border:1px solid rgba(255,100,0,.12)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
+    html += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
     html += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
     html += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
     html += '</div>';
@@ -2446,32 +2562,88 @@ async function fetchPods() {
 // ── Snapshot Create/Restore ──
 let snapNs = 'default';
 
-function openSnapModalPick() {
+function snapVmSelectEncode(ns, name) {
+  return encodeURIComponent(ns) + '/' + encodeURIComponent(name);
+}
+function snapVmSelectDecode(val) {
+  const i = val.indexOf('/');
+  return { ns: decodeURIComponent(val.slice(0, i)), name: decodeURIComponent(val.slice(i + 1)) };
+}
+
+function rememberVmForSnap(ns, name) {
+  lastVmForSnap = { namespace: ns || 'default', name: name };
+}
+
+async function openSnapModalPick() {
+  try {
+    await fetchVMs();
+  } catch (_) { /* fetchVMs updates vmData or leaves stale */ }
   if (vmData.length === 0) { toast('No VMs available', 'error'); return; }
-  const name = prompt('Enter VM name to snapshot:\n\nAvailable: ' + vmData.map(v => (v.namespace || 'default') + '/' + v.name).join(', '));
-  if (!name) return;
-  const trimmed = name.trim();
-  const slash = trimmed.indexOf('/');
-  if (slash > 0) {
-    openSnapModalFor(trimmed.slice(0, slash), trimmed.slice(slash + 1));
+  const fixed = document.getElementById('snap-vm-fixed-group');
+  const pick = document.getElementById('snap-vm-select-group');
+  const sel = document.getElementById('snap-vm-select');
+  if (vmData.length === 1) {
+    const v = vmData[0];
+    openSnapModalFor(v.namespace || 'default', v.name);
     return;
   }
-  const vm = vmData.find(v => v.name === trimmed);
-  openSnapModalFor((vm && vm.namespace) || 'default', trimmed);
+  let defaultKey = null;
+  if (lastVmForSnap && lastVmForSnap.name) {
+    const found = vmData.find(v => v.name === lastVmForSnap.name && (v.namespace || 'default') === (lastVmForSnap.namespace || 'default'));
+    if (found) defaultKey = snapVmSelectEncode(found.namespace || 'default', found.name);
+  }
+  if (!defaultKey) {
+    const run = vmData.find(v => v.status === 'Running');
+    const v = run || vmData[0];
+    defaultKey = snapVmSelectEncode(v.namespace || 'default', v.name);
+  }
+  sel.innerHTML = vmData.map(v => {
+    const ns = v.namespace || 'default';
+    const val = snapVmSelectEncode(ns, v.name);
+    const selAttr = val === defaultKey ? ' selected' : '';
+    return '<option value="' + esc(val) + '"' + selAttr + '>' + esc(ns) + '/' + esc(v.name) + ' (' + esc(v.status || '') + ')</option>';
+  }).join('');
+  fixed.style.display = 'none';
+  pick.style.display = 'block';
+  const parsed = snapVmSelectDecode(sel.value);
+  snapNs = parsed.ns;
+  document.getElementById('snap-name').value = '';
+  document.getElementById('snap-create-modal').classList.add('open');
+  sel.onchange = function () {
+    const p = snapVmSelectDecode(this.value);
+    snapNs = p.ns;
+    rememberVmForSnap(p.ns, p.name);
+  };
 }
 
 function openSnapModalFor(ns, vmName) {
+  rememberVmForSnap(ns, vmName);
   snapNs = ns;
+  document.getElementById('snap-vm-fixed-group').style.display = 'block';
+  document.getElementById('snap-vm-select-group').style.display = 'none';
   document.getElementById('snap-vm-name').value = vmName;
   document.getElementById('snap-name').value = '';
   document.getElementById('snap-create-modal').classList.add('open');
 }
 function closeSnapModal() {
   document.getElementById('snap-create-modal').classList.remove('open');
+  document.getElementById('snap-vm-fixed-group').style.display = 'block';
+  document.getElementById('snap-vm-select-group').style.display = 'none';
+  const sel = document.getElementById('snap-vm-select');
+  if (sel) sel.onchange = null;
 }
 
 async function createSnapshot() {
-  const vmName = document.getElementById('snap-vm-name').value;
+  let vmName;
+  const pickVisible = document.getElementById('snap-vm-select-group').style.display !== 'none';
+  if (pickVisible) {
+    const parsed = snapVmSelectDecode(document.getElementById('snap-vm-select').value);
+    snapNs = parsed.ns;
+    vmName = parsed.name;
+    rememberVmForSnap(snapNs, vmName);
+  } else {
+    vmName = document.getElementById('snap-vm-name').value;
+  }
   const snapName = document.getElementById('snap-name').value.trim() || null;
   const btn = document.getElementById('btn-create-snap');
   btn.disabled = true; btn.textContent = 'Creating...';
@@ -2892,7 +3064,7 @@ async function fetchCosts() {
     // Forecast
     try {
       const fc = await apiJson('/api/v1/costs/forecast');
-      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'rgba(255,100,100,0.2);color:#ff6464' : 'rgba(100,255,100,0.2);color:#64ff64') + '">' + esc(fc.trend || 'stable') + '</div></div>';
+      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'var(--error-dim);color:var(--error)' : 'var(--success-dim);color:var(--success)') + '">' + esc(fc.trend || 'stable') + '</div></div>';
     } catch {
       fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
     }
@@ -3062,8 +3234,8 @@ window.addEventListener('load', async () => {
   fetchNamespaces();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   window.addEventListener('resize', () => {
-    drawChart('cpu-chart',cpuHistory,'#00b4ff','rgba(0,180,255,.4)');
-    drawChart('mem-chart',memHistory,'#ff4500','rgba(255,69,0,.4)');
+    drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
+    drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
   });
 });
 
@@ -3106,6 +3278,7 @@ async function fetchMonitoring() {
   const recTb = document.getElementById('recommendations-body');
   const anTb = document.getElementById('anomalies-body');
   const badge = document.getElementById('anomaly-count-badge');
+  const recBadge = document.getElementById('recommendations-count-badge');
   try {
     const status = await apiJson('/api/v1/monitoring/status' + nsParam());
     const recList = asArray(await apiJson('/api/v1/recommendations' + nsParam()));
@@ -3116,29 +3289,95 @@ async function fetchMonitoring() {
       anoList = [];
     }
     if (sum) {
-      const dot = (ok) => `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${ok?'var(--success)':'var(--error)'};margin-right:6px"></span>`;
+      const stackCard = (label, available, blurbOn, blurbOff) => {
+        const cardClass = available ? 'stat-card stat-card-green' : 'stat-card stat-card-neutral';
+        const head = available ? 'In cluster' : 'Not detected';
+        const sub = available ? blurbOn : blurbOff;
+        return `<div class="${cardClass}"><div class="stat-label">${label}</div><div class="stat-value" style="font-size:1.22em">${head}</div><div class="monitor-stack-sub">${sub}</div></div>`;
+      };
+      const promOn = 'Service name contains <strong>prometheus</strong> under a scanned namespace.';
+      const promOff = 'No prometheus Service found yet. Optional — install a chart such as kube-prometheus-stack; live VM charts on VM detail still work via their own data path.';
+      const grafOn = 'Service name contains <strong>grafana</strong> under a scanned namespace.';
+      const grafOff = 'No grafana Service found. Link out from your platform docs when you add Grafana.';
+      const amOn = 'Service name contains <strong>alertmanager</strong> under a scanned namespace.';
+      const amOff = 'No alertmanager Service found. Use the Alerts and Notifications pages for cluster signals in VMRogue.';
+      const anoCardClass = anoList.some(a => a.severity === 'critical') ? 'stat-card-red' : anoList.length ? 'stat-card-orange' : '';
+      const alerts = status.active_alerts != null ? status.active_alerts : 0;
+      const interval = status.metrics_collection_interval || '30s';
+      const retention = status.retention_period || '—';
       sum.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Prometheus</div><div class="stat-value">${dot(status.prometheus_available)}${status.prometheus_available?'Available':'Not Found'}</div></div>
-        <div class="stat-card"><div class="stat-label">Grafana</div><div class="stat-value">${dot(status.grafana_available)}${status.grafana_available?'Available':'Not Found'}</div></div>
-        <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${status.healthy_targets}/${status.total_targets} healthy</div></div>
-        <div class="stat-card ${anoList.some(a=>a.severity==='critical')?'stat-card-red':anoList.length?'stat-card-orange':''}"><div class="stat-label">Anomalies</div><div class="stat-value">${anoList.length}</div></div>`;
+        <div class="monitor-stack-row">
+          ${stackCard('Prometheus', !!status.prometheus_available, promOn, promOff)}
+          ${stackCard('Grafana', !!status.grafana_available, grafOn, grafOff)}
+          ${stackCard('Alertmanager', !!status.alertmanager_available, amOn, amOff)}
+        </div>
+        <div class="grid-4">
+          <div class="stat-card stat-card-cyan"><div class="stat-label">Nodes ready</div><div class="stat-value" style="font-size:1.45em">${status.healthy_targets}/${status.total_targets}</div><div class="monitor-stat-note">Kubernetes Ready condition</div></div>
+          <div class="stat-card ${anoCardClass}"><div class="stat-label">Anomalies</div><div class="stat-value" style="font-size:1.45em">${anoList.length}</div><div class="monitor-stat-note">Threshold breaches in scope</div></div>
+          <div class="stat-card ${alerts > 0 ? 'stat-card-orange' : ''}"><div class="stat-label">Warning events</div><div class="stat-value" style="font-size:1.45em">${alerts}</div><div class="monitor-stat-note">In the API server's configured namespace</div></div>
+          <div class="stat-card stat-card-purple"><div class="stat-label">Retention hint</div><div class="stat-value" style="font-size:1.1em;font-family:var(--font-mono)">${esc(String(retention))}</div><div class="monitor-stat-note">Scrape window label · ${esc(String(interval))}</div></div>
+        </div>`;
+    }
+    if (recBadge) {
+      if (!recList.length) {
+        recBadge.style.display = 'none';
+        recBadge.textContent = '';
+      } else {
+        recBadge.style.display = 'inline';
+        const highs = recList.filter(r => r.priority === 'High').length;
+        recBadge.textContent = recList.length + ' hint' + (recList.length === 1 ? '' : 's');
+        recBadge.className = 'rec-count-badge ' + (highs ? 'event-badge.warn' : 'badge-green');
+      }
     }
     if (recTb) {
-      const recEmpty = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No recommendations for this scope. Either no VMs matched the namespace filter, or existing VMs already have limits, virtio-rng, and eviction strategy where checked.</td></tr>';
+      const recEmpty = `<tr><td colspan="5" style="padding:0;border:none;background:transparent">
+        <div class="monitor-empty">
+          <div class="me-icon">&#10003;</div>
+          <h4>Nothing to tune here</h4>
+          <p>No heuristic recommendations for the current namespace filter. VMs may already satisfy checks, or no VirtualMachines matched this scope.</p>
+          <ul>
+            <li>Try <strong>all</strong> namespaces if you expect fleet-wide hints.</li>
+            <li>Hints cover limits, virtio RNG, eviction strategy, and related spec patterns.</li>
+          </ul>
+        </div></td></tr>`;
       recTb.innerHTML = recList.map(r => {
         const pclr = r.priority === 'High' ? 'var(--error)' : r.priority === 'Medium' ? 'var(--warning)' : 'var(--text-muted)';
-        return `<tr><td style="color:${pclr};font-weight:600">${r.priority}</td><td>${r.category}</td><td>${r.title}</td><td><code>${r.resource}</code></td><td>${r.impact}</td></tr>`;
+        return `<tr><td style="color:${pclr};font-weight:600">${r.priority}</td><td>${esc(r.category)}</td><td>${esc(r.title)}</td><td><code>${esc(r.resource)}</code></td><td>${esc(r.impact)}</td></tr>`;
       }).join('') || recEmpty;
     }
-    // Anomalies
     if (badge) {
-      badge.textContent = anoList.length ? anoList.length + ' detected' : 'None';
-      badge.style.background = anoList.some(a=>a.severity==='critical') ? 'var(--error-dim)' : anoList.length ? 'var(--warning-dim)' : 'var(--success-dim)';
-      badge.style.color = anoList.some(a=>a.severity==='critical') ? 'var(--error)' : anoList.length ? 'var(--warning)' : 'var(--success)';
-      badge.style.border = '1px solid ' + (anoList.some(a=>a.severity==='critical') ? 'rgba(255,34,68,.2)' : anoList.length ? 'rgba(255,170,0,.2)' : 'rgba(0,255,136,.15)');
+      badge.className = 'anom-count-badge';
+      if (anoList.length) {
+        badge.textContent = anoList.length + ' open';
+        const crit = anoList.some(a => a.severity === 'critical');
+        if (crit) {
+          badge.style.background = 'var(--error-dim)';
+          badge.style.color = 'var(--error)';
+          badge.style.border = '1px solid rgba(255,34,68,.2)';
+        } else {
+          badge.style.background = 'var(--warning-dim)';
+          badge.style.color = 'var(--warning)';
+          badge.style.border = '1px solid rgba(255,170,0,.2)';
+        }
+      } else {
+        badge.textContent = 'Clear';
+        badge.style.background = 'var(--success-dim)';
+        badge.style.color = 'var(--success)';
+        badge.style.border = '1px solid rgba(34,197,94,.2)';
+      }
     }
     if (anTb) {
-      const anoEmpty = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim);line-height:1.5">No anomalies in this scope. Breaches appear when CPU or memory usage stays above 85% (needs Metrics Server + running virt-launcher pod). Without live metrics, usage may read as 0%.</td></tr>';
+      const anoEmpty = `<tr><td colspan="7" style="padding:0;border:none;background:transparent">
+        <div class="monitor-empty">
+          <div class="me-icon">&#9675;</div>
+          <h4>No threshold breaches</h4>
+          <p>Anomalies appear when CPU or memory stays above policy thresholds. Without live pod metrics, values can read as zero and nothing will breach.</p>
+          <ul>
+            <li>Install and configure <strong>metrics-server</strong> on the cluster.</li>
+            <li>Ensure target VMs are <strong>running</strong> (virt-launcher pod scheduling metrics).</li>
+            <li>Open a VM and use <strong>live charts</strong> for immediate utilization context.</li>
+          </ul>
+        </div></td></tr>`;
       anTb.innerHTML = anoList.map(a => {
       const sclr = a.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
       const valShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.current_value : (a.current_value+'%');
@@ -3153,9 +3392,12 @@ async function fetchMonitoring() {
     if (anTb) anTb.innerHTML = tbodyError(7, msg);
     if (badge) {
       badge.textContent = 'Error';
+      badge.className = 'anom-count-badge';
       badge.style.background = 'var(--error-dim)';
       badge.style.color = 'var(--error)';
+      badge.style.border = '1px solid rgba(255,34,68,.2)';
     }
+    if (recBadge) { recBadge.style.display = 'none'; }
     console.error('Monitoring fetch error:', e);
   }
 }
@@ -3170,7 +3412,7 @@ async function fetchWorkloads() {
         const ok = w.ready_replicas >= w.replicas;
         const sclr = ok ? 'var(--success)' : 'var(--warning)';
         return `<tr><td>${w.name}</td><td><span class="badge">${w.workload_type}</span></td><td>${w.replicas}</td><td style="color:${sclr}">${w.ready_replicas}</td><td style="color:${sclr}">${w.status}</td><td>${w.namespace}</td></tr>`;
-      }).join('') || '<tr><td colspan="6" style="text-align:center">No workloads found</td></tr>';
+      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);line-height:1.55">No Deployments, StatefulSets, or DaemonSets in <code>' + esc(currentNamespace) + '</code>. Try the <strong>all</strong> namespace filter if system workloads live elsewhere (cluster-wide listing falls back per-namespace when RBAC blocks <code>list</code> on all namespaces at once).</td></tr>';
     }
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -3552,38 +3794,50 @@ async function fetchCilium() {
   const flowsTb = document.getElementById('flows-body');
   try {
     const status = await apiJson('/api/v1/cilium/status');
-    const items = asArray(await apiJson('/api/v1/cilium/policies'));
-    let flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [] };
+    const items = asArray(await apiJson('/api/v1/cilium/policies' + nsParam()));
+    let flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [], flow_source: 'none' };
     try {
-      flowData = await apiJson('/api/v1/cilium/flows');
+      flowData = await apiJson('/api/v1/cilium/flows' + nsParam());
     } catch (_) {
-      flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [] };
+      flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [], flow_source: 'none' };
     }
     if (summary) {
+      const insNs = status.installation_namespace ? '<div class="monitor-stat-note">' + esc(status.installation_namespace) + '</div>' : '';
       summary.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Version</div><div class="stat-value">${esc(status.version || '-')}</div></div>
+        <div class="stat-card"><div class="stat-label">Version</div><div class="stat-value">${esc(status.version || '-')}${insNs}</div></div>
         <div class="stat-card"><div class="stat-label">Agents</div><div class="stat-value">${status.healthy_agents || 0}/${status.agent_count || 0}</div></div>
         <div class="stat-card"><div class="stat-label">Hubble</div><div class="stat-value">${status.hubble_enabled ? 'Enabled' : 'Off'}</div></div>
         <div class="stat-card"><div class="stat-label">Encryption</div><div class="stat-value">${status.encryption_enabled ? 'Enabled' : 'Off'}</div></div>`;
     }
     if (tb) {
-      const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace);
-      tb.innerHTML = filtered.map(p => `<tr><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
-        || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Cilium policies found</td></tr>';
+      const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace || p.policy_kind === 'CCNP');
+      tb.innerHTML = filtered.map(p => `<tr><td><span class="badge">${esc(p.policy_kind || '—')}</span></td><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
+        || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies in this scope (install Cilium CRDs for CNP/CCNP, or add Kubernetes NetworkPolicies)</td></tr>';
     }
-    // Network flows
-    if (flowStats) flowStats.innerHTML = `<span style="color:var(--success)">Allowed: ${flowData.allowed}</span> <span style="color:var(--error)">Denied: ${flowData.denied}</span> <span style="color:var(--text-muted)">Total: ${flowData.total_flows}</span>`;
+    // Network flows (derived from Kubernetes NetworkPolicies, not live Hubble gRPC)
+    const flowSrcTag = (flowData.flow_source || '') === 'kubernetes_network_policies'
+      ? '<span style="color:var(--text-dim);font-size:.65em;margin-right:10px">Source: NetworkPolicy</span>'
+      : '';
+    if (flowStats) {
+      flowStats.innerHTML = flowSrcTag + `<span style="color:var(--success)">Allowed: ${flowData.allowed}</span> <span style="color:var(--error)">Denied: ${flowData.denied}</span> <span style="color:var(--text-muted)">Total: ${flowData.total_flows}</span>`;
+    }
     if (flowsTb) {
+      const src = flowData.flow_source || 'none';
+      const emptyMsg = (flowData.flows || []).length ? '' : (
+        src === 'kubernetes_network_policies'
+          ? '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or install Hubble for live flows (not wired to this API yet).</td></tr>'
+          : '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No NetworkPolicy–derived rows. Live Hubble flows require a Hubble Relay integration (gRPC); this table shows policy-shaped hints only.</td></tr>'
+      );
       flowsTb.innerHTML = (flowData.flows || []).map(f => `<tr>
         <td>${esc(f.source)}</td><td>${esc(f.destination)}</td>
         <td>${esc(f.protocol)}</td><td>${f.port || '-'}</td>
         <td><span style="color:${f.verdict==='allowed'?'var(--success)':'var(--error)'};font-weight:600">${esc(f.verdict)}</span></td>
-      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No flow data — Hubble not connected</td></tr>';
+      </tr>`).join('') || emptyMsg;
     }
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(5, msg);
+    if (tb) tb.innerHTML = tbodyError(6, msg);
     if (flowStats) flowStats.innerHTML = '<span style="color:var(--error)">' + esc(msg) + '</span>';
     if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg);
     console.error('Cilium fetch error:', e);
@@ -3648,7 +3902,7 @@ function renderFlamegraph() {
   function calcDepth(frames, d=0) { return frames.reduce((mx, f) => Math.max(mx, f.children.length ? calcDepth(f.children, d+1) : d), d); }
   const depth = calcDepth(graph.frames) + 1;
   const H = (depth + 1) * (ROW + PAD) + 10;
-  let html = `<svg width="${W}" height="${H}" style="font-family:'JetBrains Mono',monospace;cursor:pointer">`;
+  let html = `<svg width="${W}" height="${H}" style="font-family:var(--font-mono);cursor:pointer">`;
   function drawFrames(frames, y, totalW, x=0) {
     const total = frames.reduce((s, f) => s + f.value, 0) || 1;
     frames.forEach(f => {
@@ -3692,7 +3946,7 @@ async function fetchTraces() {
     if (!tb) return;
     const items = data.traces || [];
     tb.innerHTML = items.map(t => `<tr>
-      <td style="font-family:'JetBrains Mono',monospace;font-size:.8em">${esc((t.trace_id||'').slice(0,16))}…</td>
+      <td style="font-family:var(--font-mono);font-size:.8em">${esc((t.trace_id||'').slice(0,16))}…</td>
       <td>${esc(t.service)}</td><td>${esc(t.operation)}</td>
       <td>${t.duration_ms}ms</td><td>${t.span_count}</td>
       <td><span class="stat-badge ${t.status==='ok'?'badge-green':'badge-muted'}">${esc(t.status)}</span></td>
@@ -3767,7 +4021,7 @@ async function fetchIncidents() {
       const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
       const kc = kindColor[e.kind] || 'var(--text-muted)';
       return `<tr>
-        <td style="font-family:'JetBrains Mono',monospace;font-size:.75em;white-space:nowrap">${fmtTime(e.timestamp)}</td>
+        <td style="font-family:var(--font-mono);font-size:.75em;white-space:nowrap">${fmtTime(e.timestamp)}</td>
         <td><span style="color:${kc};font-size:.75em;font-weight:600">${esc(e.kind)}</span></td>
         <td style="color:${sc};font-weight:600">${esc(e.severity)}</td>
         <td>${esc(e.title)}</td>

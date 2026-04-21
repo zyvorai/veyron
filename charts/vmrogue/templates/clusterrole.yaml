@@ -22,8 +22,8 @@ rules:
     verbs: ["update"]
   # Snapshots
   - apiGroups: ["snapshot.kubevirt.io"]
-    resources: ["virtualmachinesnapshots", "virtualmachinerestores"]
-    verbs: ["get", "list", "watch", "create", "update", "delete"]
+    resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # VMRogue CRDs
   - apiGroups: ["vmrogue.io"]
     resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions"]
@@ -52,6 +52,10 @@ rules:
   # Networking
   - apiGroups: ["networking.k8s.io"]
     resources: ["networkpolicies", "ingresses"]
+    verbs: ["get", "list", "watch"]
+  # Cilium (optional — policy list when Cilium is installed)
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumnetworkpolicies", "ciliumclusterwidenetworkpolicies"]
     verbs: ["get", "list", "watch"]
   # RBAC (read-only for visualization)
   - apiGroups: ["rbac.authorization.k8s.io"]

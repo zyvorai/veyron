@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+#[cfg(feature = "web")]
+use super::namespace_scope;
+
 /// Audit trail entry
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuditEntry {
@@ -52,15 +55,8 @@ async fn list_audit_trail(
     Query(query): Query<AuditQuery>,
 ) -> Json<Vec<AuditEntry>> {
     let s = state.read().await;
-    let events = match query.namespace.as_deref() {
-        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
-        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s
-            .client()
-            .list_events(&s.namespace)
-            .await
-            .unwrap_or_default(),
-    };
+    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
+    let events = s.client().list_events_for_scope(&scope).await;
 
     Json(map_audit_entries(&events))
 }

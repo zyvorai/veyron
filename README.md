@@ -144,9 +144,13 @@ helm install vmrogue ./charts/vmrogue \
 # Install VMRogue Operator
 helm install vmrogue-operator ./charts/vmrogue-operator \
   --namespace vmrogue-system
+
+# Optional: bundled Prometheus + Grafana + Alertmanager (kube-prometheus-stack)
+./scripts/install-vmrogue-monitoring.sh monitoring
+# Uses chart charts/vmrogue-monitoring; set GRAFANA_ADMIN_PASSWORD for a non-default Grafana admin password.
 ```
 
-The Helm charts include full RBAC, TLS, NetworkPolicy, Prometheus ServiceMonitor, and Grafana dashboard ConfigMap.
+The VMRogue and operator Helm charts include RBAC, TLS, and NetworkPolicy. For clusters **without** an existing Prometheus stack, `charts/vmrogue-monitoring` installs kube-prometheus-stack plus VMRogue ServiceMonitors, PrometheusRules, and a Grafana dashboard. The standalone manifests under `deploy/monitoring/` remain useful when you already run kube-prometheus-stack and only need VMRogue scrape rules and the dashboard ConfigMap.
 
 ### Deploy with Kustomize
 

@@ -1,0 +1,69 @@
+{{- if and .Values.kps.enabled .Values.vmrogue.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Name }}-vmrogue-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
+    role: alert-rules
+spec:
+  groups:
+    - name: vmrogue.vm.rules
+      rules:
+        - alert: VMRogueVMFailed
+          expr: kubevirt_vmi_phase_count{phase="Failed"} > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "KubeVirt VM in Failed state"
+            description: "VM {{ "{{" }} $labels.name {{ "}}" }} in namespace {{ "{{" }} $labels.namespace {{ "}}" }} has been in Failed state for more than 5 minutes."
+
+        - alert: VMRogueVMHighCPU
+          expr: rate(kubevirt_vmi_cpu_usage_seconds_total[5m]) > 0.9
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "VM CPU usage above 90%"
+            description: "VM {{ "{{" }} $labels.name {{ "}}" }} CPU usage is {{ "{{ $value | humanizePercentage }}" }} for more than 10 minutes."
+
+        - alert: VMRogueVMHighMemory
+          expr: kubevirt_vmi_memory_resident_bytes / kubevirt_vmi_memory_available_bytes > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "VM memory usage above 85%"
+            description: "VM {{ "{{" }} $labels.name {{ "}}" }} memory usage is high for more than 10 minutes."
+
+        - alert: VMRogueVMMigrationStuck
+          expr: kubevirt_vmi_migration_phase_transition_time_from_creation_seconds_count{phase!="Succeeded"} > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "VM migration not completing"
+            description: "A VM migration has been running for more than 15 minutes without completing."
+
+    - name: vmrogue.cluster.rules
+      rules:
+        - alert: VMRogueNodeNotReady
+          expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Kubernetes node not ready"
+            description: "Node {{ "{{" }} $labels.node {{ "}}" }} has been NotReady for more than 5 minutes. VMs on this node may be affected."
+
+        - alert: VMRogueHighVMDensity
+          expr: count(kubevirt_vmi_info) by (node) > 20
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High VM density on node"
+            description: "Node {{ "{{" }} $labels.node {{ "}}" }} is running {{ "{{ $value }}" }} VMs, which exceeds the recommended density of 20."
+{{- end }}

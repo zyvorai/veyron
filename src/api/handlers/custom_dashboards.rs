@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Dashboard response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,21 +52,42 @@ pub fn router(state: SharedState) -> Router {
 
 /// List dashboards stored as ConfigMaps labeled `vmrogue.io/type=dashboard`.
 #[cfg(feature = "web")]
-async fn list_dashboards(State(state): State<SharedState>) -> Json<Vec<DashboardResponse>> {
+async fn list_dashboards(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<DashboardResponse>> {
     use k8s_openapi::api::core::v1::ConfigMap;
 
     let s = state.read().await;
-    let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let client = s.client().client();
     let params = kube::api::ListParams::default().labels("vmrogue.io/type=dashboard");
 
-    let cms = match api.list(&params).await {
-        Ok(list) => list,
-        Err(_) => return Json(vec![]),
+    let cms = if namespace_scope::is_all_namespaces(&scope) {
+        let api: kube::api::Api<ConfigMap> = kube::api::Api::all(client.clone());
+        match api.list(&params).await {
+            Ok(list) => list.items,
+            Err(_) => {
+                let mut out = Vec::new();
+                for ns in namespace_scope::kubernetes_namespace_names(&client).await {
+                    let api: kube::api::Api<ConfigMap> =
+                        kube::api::Api::namespaced(client.clone(), &ns);
+                    if let Ok(l) = api.list(&params).await {
+                        out.extend(l.items);
+                    }
+                }
+                out
+            }
+        }
+    } else {
+        let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(client.clone(), &scope);
+        match api.list(&params).await {
+            Ok(list) => list.items,
+            Err(_) => return Json(vec![]),
+        }
     };
 
     let results: Vec<DashboardResponse> = cms
-        .items
         .iter()
         .filter_map(|cm| {
             let data = cm.data.as_ref()?;

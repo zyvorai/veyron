@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Compliance status
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -46,12 +53,15 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_compliance_status(State(state): State<SharedState>) -> Json<Vec<ComplianceStatus>> {
+async fn compute_compliance_statuses(
+    client: &crate::kube::KubeClient,
+    scope: &str,
+) -> Vec<ComplianceStatus> {
     use k8s_openapi::api::networking::v1::NetworkPolicy;
     use k8s_openapi::api::rbac::v1::RoleBinding;
 
-    let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let kube = client.client();
+    let vms = client.list_vms_for_scope(scope).await;
     let now = chrono::Utc::now().to_rfc3339();
     let total_vms = vms.len() as u32;
 
@@ -105,10 +115,15 @@ async fn get_compliance_status(State(state): State<SharedState>) -> Json<Vec<Com
     }
 
     // Namespace-level checks (count as pass/fail against total_vms for scoring)
-    let client = s.client().client();
-    let np_count = {
-        let np_api: kube::api::Api<NetworkPolicy> =
-            kube::api::Api::namespaced(client.clone(), &s.namespace);
+    let np_count = if namespace_scope::is_all_namespaces(scope) {
+        let np_api: kube::api::Api<NetworkPolicy> = kube::api::Api::all(kube.clone());
+        np_api
+            .list(&kube::api::ListParams::default())
+            .await
+            .map(|l| l.items.len() as u32)
+            .unwrap_or(0)
+    } else {
+        let np_api: kube::api::Api<NetworkPolicy> = kube::api::Api::namespaced(kube.clone(), scope);
         np_api
             .list(&kube::api::ListParams::default())
             .await
@@ -117,9 +132,15 @@ async fn get_compliance_status(State(state): State<SharedState>) -> Json<Vec<Com
     };
     let has_network_policies = if np_count > 0 { total_vms } else { 0 };
 
-    let rb_count = {
-        let rb_api: kube::api::Api<RoleBinding> =
-            kube::api::Api::namespaced(client.clone(), &s.namespace);
+    let rb_count = if namespace_scope::is_all_namespaces(scope) {
+        let rb_api: kube::api::Api<RoleBinding> = kube::api::Api::all(kube.clone());
+        rb_api
+            .list(&kube::api::ListParams::default())
+            .await
+            .map(|l| l.items.len() as u32)
+            .unwrap_or(0)
+    } else {
+        let rb_api: kube::api::Api<RoleBinding> = kube::api::Api::namespaced(kube.clone(), scope);
         rb_api
             .list(&kube::api::ListParams::default())
             .await
@@ -163,7 +184,7 @@ async fn get_compliance_status(State(state): State<SharedState>) -> Json<Vec<Com
         ((nist_passing as f64 / nist_total as f64) * 100.0) as u8
     };
 
-    Json(vec![
+    vec![
         ComplianceStatus {
             framework: "CIS Benchmark".to_string(),
             compliant: cis_failing == 0,
@@ -182,12 +203,27 @@ async fn get_compliance_status(State(state): State<SharedState>) -> Json<Vec<Com
             failing_controls: nist_failing,
             last_checked: now.clone(),
         },
-    ])
+    ]
 }
 
 #[cfg(feature = "web")]
-async fn list_compliance_reports(State(state): State<SharedState>) -> Json<Vec<ComplianceReport>> {
-    let statuses = get_compliance_status(State(state)).await.0;
+async fn get_compliance_status(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<ComplianceStatus>> {
+    let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    Json(compute_compliance_statuses(s.client(), &scope).await)
+}
+
+#[cfg(feature = "web")]
+async fn list_compliance_reports(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<ComplianceReport>> {
+    let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let statuses = compute_compliance_statuses(s.client(), &scope).await;
     let now = chrono::Utc::now().to_rfc3339();
 
     let reports: Vec<ComplianceReport> = statuses

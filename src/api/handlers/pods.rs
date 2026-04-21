@@ -1,13 +1,16 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::get,
 };
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Pod response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,45 +43,55 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_pods(State(state): State<SharedState>) -> Json<Vec<PodResponse>> {
+async fn list_pods_resolved(
+    client: &crate::kube::KubeClient,
+    scope: &str,
+) -> Vec<k8s_openapi::api::core::v1::Pod> {
+    client.list_pods_for_scope(scope).await
+}
+
+#[cfg(feature = "web")]
+fn pod_to_response(pod: &k8s_openapi::api::core::v1::Pod) -> PodResponse {
+    let meta = &pod.metadata;
+    let spec = pod.spec.as_ref();
+    let status = pod.status.as_ref();
+
+    let containers: Vec<String> = spec
+        .map(|s| s.containers.iter().map(|c| c.name.clone()).collect())
+        .unwrap_or_default();
+
+    let restart_count: u32 = status
+        .and_then(|s| s.container_statuses.as_ref())
+        .map(|cs| cs.iter().map(|c| c.restart_count as u32).sum())
+        .unwrap_or(0);
+
+    PodResponse {
+        name: meta.name.clone().unwrap_or_default(),
+        namespace: meta.namespace.clone().unwrap_or_default(),
+        phase: status
+            .and_then(|s| s.phase.clone())
+            .unwrap_or_else(|| "Unknown".to_string()),
+        node_name: spec.and_then(|s| s.node_name.clone()),
+        ip: status.and_then(|s| s.pod_ip.clone()),
+        containers,
+        restart_count,
+        created_at: meta
+            .creation_timestamp
+            .as_ref()
+            .map(|t| t.0.to_rfc3339())
+            .unwrap_or_default(),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn list_pods(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<PodResponse>> {
     let s = state.read().await;
-    let pods = s.client().list_pods(&s.namespace).await.unwrap_or_default();
-
-    let results: Vec<PodResponse> = pods
-        .iter()
-        .map(|pod| {
-            let meta = &pod.metadata;
-            let spec = pod.spec.as_ref();
-            let status = pod.status.as_ref();
-
-            let containers: Vec<String> = spec
-                .map(|s| s.containers.iter().map(|c| c.name.clone()).collect())
-                .unwrap_or_default();
-
-            let restart_count: u32 = status
-                .and_then(|s| s.container_statuses.as_ref())
-                .map(|cs| cs.iter().map(|c| c.restart_count as u32).sum())
-                .unwrap_or(0);
-
-            PodResponse {
-                name: meta.name.clone().unwrap_or_default(),
-                namespace: meta.namespace.clone().unwrap_or_default(),
-                phase: status
-                    .and_then(|s| s.phase.clone())
-                    .unwrap_or_else(|| "Unknown".to_string()),
-                node_name: spec.and_then(|s| s.node_name.clone()),
-                ip: status.and_then(|s| s.pod_ip.clone()),
-                containers,
-                restart_count,
-                created_at: meta
-                    .creation_timestamp
-                    .as_ref()
-                    .map(|t| t.0.to_rfc3339())
-                    .unwrap_or_default(),
-            }
-        })
-        .collect();
-
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let pods = list_pods_resolved(s.client(), &scope).await;
+    let results: Vec<PodResponse> = pods.iter().map(pod_to_response).collect();
     Json(results)
 }
 
@@ -86,22 +99,37 @@ async fn list_pods(State(state): State<SharedState>) -> Json<Vec<PodResponse>> {
 async fn get_pod(
     State(state): State<SharedState>,
     Path(name): Path<String>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Option<PodResponse>> {
-    let pods = list_pods(State(state)).await.0;
-    Json(pods.into_iter().find(|p| p.name == name))
+    let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let pods = list_pods_resolved(s.client(), &scope).await;
+    Json(pods.iter().map(pod_to_response).find(|p| p.name == name))
 }
 
 #[cfg(feature = "web")]
 async fn get_pod_logs(
     State(state): State<SharedState>,
     Path(name): Path<String>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<PodLogEntry>> {
     use k8s_openapi::api::core::v1::Pod;
     use kube::api::LogParams;
 
     let s = state.read().await;
-    let pods_api: kube::api::Api<Pod> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let pod_ns = if namespace_scope::is_all_namespaces(&scope) {
+        list_pods_resolved(s.client(), &scope)
+            .await
+            .into_iter()
+            .find(|p| p.metadata.name.as_deref() == Some(name.as_str()))
+            .and_then(|p| p.metadata.namespace)
+            .unwrap_or_else(|| s.namespace.clone())
+    } else {
+        scope
+    };
+
+    let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(s.client().client(), &pod_ns);
 
     let params = LogParams {
         tail_lines: Some(100),

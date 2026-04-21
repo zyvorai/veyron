@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+#[cfg(feature = "web")]
+use super::namespace_scope;
+
 /// Notification response
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NotificationResponse {
@@ -47,24 +50,20 @@ async fn list_notifications(
     use k8s_openapi::api::core::v1::ConfigMap;
 
     let s = state.read().await;
-    let namespace = query
-        .namespace
-        .clone()
-        .unwrap_or_else(|| s.namespace.clone());
-    let events = match query.namespace.as_deref() {
-        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
-        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s
-            .client()
-            .list_events(&s.namespace)
-            .await
-            .unwrap_or_default(),
+    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
+    let events = s.client().list_events_for_scope(&scope).await;
+
+    // Read-state ConfigMap lives in the API default namespace when viewing cluster-wide.
+    let read_cm_ns = if namespace_scope::is_all_namespaces(&scope) {
+        s.namespace.clone()
+    } else {
+        scope.clone()
     };
 
     // Load set of read notification IDs from ConfigMap
     let read_ids: std::collections::HashSet<String> = {
         let api: kube::api::Api<ConfigMap> =
-            kube::api::Api::namespaced(s.client().client(), &namespace);
+            kube::api::Api::namespaced(s.client().client(), &read_cm_ns);
         api.get("vmrogue-notifications-read")
             .await
             .ok()

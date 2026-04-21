@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Helm chart `charts/vmrogue-monitoring`** — optional install of Prometheus, Grafana, and Alertmanager (kube-prometheus-stack dependency) plus VMRogue ServiceMonitors, PrometheusRules, and Grafana dashboard provisioning; `scripts/install-vmrogue-monitoring.sh` and `make helm-monitoring-validate`.
+- **vmrogue-operator Service** — ClusterIP `metrics` / `health` ports so Prometheus `ServiceMonitor` scrapes can reach the operator manager.
+
 #### All 49 API Handlers Now Return Real Data
 - **RBAC** - Lists ClusterRoles and ClusterRoleBindings from K8s API
 - **Quotas** - Lists ResourceQuotas with CPU/memory limits and usage

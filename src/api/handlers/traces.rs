@@ -14,6 +14,9 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+#[cfg(feature = "web")]
+use super::namespace_scope;
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct TraceQuery {
     pub namespace: Option<String>,
@@ -97,15 +100,8 @@ async fn list_traces(
     use chrono::{Duration as ChronoDuration, Utc};
 
     let s = state.read().await;
-    let mut events = match query.namespace.as_deref() {
-        Some("all") => s.client().list_all_events().await.unwrap_or_default(),
-        Some(ns) => s.client().list_events(ns).await.unwrap_or_default(),
-        None => s
-            .client()
-            .list_events(&s.namespace)
-            .await
-            .unwrap_or_default(),
-    };
+    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
+    let mut events = s.client().list_events_for_scope(&scope).await;
 
     events.sort_by(|a, b| {
         let ta = a

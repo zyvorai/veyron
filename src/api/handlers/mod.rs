@@ -24,6 +24,7 @@ pub mod logs;
 pub mod metrics;
 pub mod migrations;
 pub mod monitoring;
+pub mod namespace_scope;
 pub mod namespaces;
 pub mod network;
 pub mod network_policies;

@@ -20,6 +20,9 @@ Thumbs.db
 # Operator build artifacts
 operator/bin/
 
+# Helm dependency packages (reproducible via Chart.lock + helm dependency build)
+charts/*/charts/*.tgz
+
 # Local configs
 *.local.yaml
 *.local.json

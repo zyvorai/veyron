@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Security posture
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -39,9 +46,13 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_security_posture(State(state): State<SharedState>) -> Json<SecurityPosture> {
+async fn get_security_posture(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<SecurityPosture> {
     let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let vms = s.client().list_vms_for_scope(&scope).await;
 
     let mut critical = 0u32;
     let mut high = 0u32;
@@ -121,15 +132,20 @@ async fn get_security_posture(State(state): State<SharedState>) -> Json<Security
 }
 
 #[cfg(feature = "web")]
-async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<SecurityFinding>> {
+async fn list_security_findings(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<SecurityFinding>> {
     let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let vms = s.client().list_vms_for_scope(&scope).await;
     let now = chrono::Utc::now().to_rfc3339();
     let mut findings = Vec::new();
     let mut id_counter = 0u32;
 
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
+        let vm_ns = vm.metadata.namespace.as_deref().unwrap_or(scope.as_str());
         let vmi_spec = &vm.spec.template.spec;
         let domain = &vmi_spec.domain;
         let devices = domain.devices.as_ref();
@@ -151,7 +167,7 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
                     "VM '{}' uses the host network, bypassing network isolation",
                     vm_name
                 ),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 recommendation:
                     "Remove host network binding and use a dedicated VM network interface"
                         .to_string(),
@@ -167,7 +183,7 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
                 category: "Configuration".to_string(),
                 title: "No RNG device configured".to_string(),
                 description: format!("VM '{}' does not have a virtio-rng device", vm_name),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 recommendation: "Add an RNG device for secure random number generation".to_string(),
                 detected_at: now.clone(),
             });
@@ -181,7 +197,7 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
                 category: "Configuration".to_string(),
                 title: "No TPM device configured".to_string(),
                 description: format!("VM '{}' does not have a TPM device", vm_name),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 recommendation: "Add a TPM device for enhanced security".to_string(),
                 detected_at: now.clone(),
             });
@@ -204,7 +220,7 @@ async fn list_security_findings(State(state): State<SharedState>) -> Json<Vec<Se
                     "VM '{}' has no resource limits, risking resource exhaustion",
                     vm_name
                 ),
-                resource: format!("{}/{}", s.namespace, vm_name),
+                resource: format!("{}/{}", vm_ns, vm_name),
                 recommendation: "Set CPU and memory limits to prevent resource exhaustion"
                     .to_string(),
                 detected_at: now.clone(),

@@ -1,7 +1,7 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     routing::get,
 };
@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// RDP session security protocol
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
@@ -369,23 +372,20 @@ pub fn router(state: SharedState) -> Router {
 
 /// List RDP-capable VMs by finding Windows VMs with IP addresses.
 #[cfg(feature = "web")]
-async fn list_rdp_capable_vms(State(state): State<SharedState>) -> Json<Vec<RdpCapableVm>> {
-    use crate::kube::types::VirtualMachineInstance;
-
+async fn list_rdp_capable_vms(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<Vec<RdpCapableVm>> {
     let s = state.read().await;
-    let vms = s.client().list_vms(&s.namespace).await.unwrap_or_default();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let vms = s.client().list_vms_for_scope(&scope).await;
     let mut results = Vec::new();
 
-    // Check VMIs for IP addresses
-    let vmis_api: ::kube::api::Api<VirtualMachineInstance> =
-        ::kube::api::Api::namespaced(s.client().client(), &s.namespace);
-    let vmis = vmis_api
-        .list(&::kube::api::ListParams::default())
-        .await
-        .ok();
+    let vmis = s.client().list_vmis_for_scope(&scope).await;
 
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("");
+        let vm_ns = vm.metadata.namespace.as_deref().unwrap_or(scope.as_str());
         let template = vm
             .metadata
             .labels
@@ -404,18 +404,18 @@ async fn list_rdp_capable_vms(State(state): State<SharedState>) -> Json<Vec<RdpC
         let is_windows =
             template.to_lowercase().contains("windows") || template.to_lowercase().contains("win");
 
-        let ip = vmis.as_ref().and_then(|list| {
-            list.items.iter().find_map(|vmi| {
-                if vmi.metadata.name.as_deref() == Some(vm_name) {
-                    vmi.status.as_ref().and_then(|st| {
-                        st.interfaces
-                            .iter()
-                            .find_map(|iface| iface.ip_address.clone())
-                    })
-                } else {
-                    None
-                }
-            })
+        let ip = vmis.iter().find_map(|vmi| {
+            if vmi.metadata.name.as_deref() == Some(vm_name)
+                && vmi.metadata.namespace.as_deref() == Some(vm_ns)
+            {
+                vmi.status.as_ref().and_then(|st| {
+                    st.interfaces
+                        .iter()
+                        .find_map(|iface| iface.ip_address.clone())
+                })
+            } else {
+                None
+            }
         });
 
         let os_type = if is_windows {

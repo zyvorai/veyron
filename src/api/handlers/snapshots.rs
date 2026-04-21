@@ -1,7 +1,7 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     routing::{delete, get, post},
 };
@@ -9,8 +9,13 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 #[cfg(feature = "web")]
 use crate::snapshots::{SnapshotConfig, SnapshotManager};
+#[cfg(feature = "web")]
+use kube;
 
 /// Snapshot response
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -28,6 +33,9 @@ pub struct SnapshotResponse {
 /// Create snapshot request
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateSnapshotRequest {
+    /// Namespace containing the VM (required when API default is `all`).
+    #[serde(default)]
+    pub namespace: Option<String>,
     pub vm_name: String,
     pub name: Option<String>,
     pub description: Option<String>,
@@ -37,6 +45,24 @@ pub struct CreateSnapshotRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RestoreSnapshotRequest {
     pub target_vm: Option<String>,
+}
+
+#[cfg(feature = "web")]
+async fn resolve_snapshot_op_namespace(
+    client: &kube::Client,
+    query_scope: &str,
+    snapshot_id: &str,
+) -> Option<String> {
+    if !namespace_scope::is_all_namespaces(query_scope) {
+        return Some(query_scope.to_string());
+    }
+    for ns in namespace_scope::kubernetes_namespace_names(client).await {
+        let mgr = SnapshotManager::from_client(client.clone(), &ns);
+        if mgr.get_snapshot(snapshot_id).await.is_ok() {
+            return Some(ns);
+        }
+    }
+    None
 }
 
 #[cfg(feature = "web")]
@@ -51,47 +77,64 @@ pub fn router(state: SharedState) -> Router {
 #[cfg(feature = "web")]
 async fn list_snapshots(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
 ) -> Result<Json<Vec<SnapshotResponse>>, (StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
-    let manager = SnapshotManager::from_client(s.client().client(), &s.namespace);
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let client = s.client().client();
 
-    match manager.list_all_snapshots().await {
-        Ok(snapshots) => {
-            let results: Vec<SnapshotResponse> = snapshots
-                .into_iter()
-                .map(|snap| SnapshotResponse {
-                    id: snap.name.clone(),
-                    name: snap.name,
-                    vm_name: snap.vm_name,
-                    namespace: snap.namespace,
-                    status: snap.status.to_string(),
-                    ready_to_use: snap.ready_to_use,
-                    size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
-                    created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
-                })
-                .collect();
-            Ok(Json(results))
+    let snapshots = if namespace_scope::is_all_namespaces(&scope) {
+        let mut merged = Vec::new();
+        for ns in namespace_scope::kubernetes_namespace_names(&client).await {
+            let manager = SnapshotManager::from_client(client.clone(), &ns);
+            if let Ok(mut snaps) = manager.list_all_snapshots().await {
+                merged.append(&mut snaps);
+            }
         }
-        Err(e) => {
+        merged
+    } else {
+        let manager = SnapshotManager::from_client(client.clone(), &scope);
+        manager.list_all_snapshots().await.map_err(|e| {
             log::error!("Failed to list snapshots: {}", e);
-            Err((
+            (
                 StatusCode::BAD_GATEWAY,
                 Json(serde_json::json!({
                     "error": "KUBERNETES_ERROR",
                     "message": "Failed to list snapshots from cluster"
                 })),
-            ))
-        }
-    }
+            )
+        })?
+    };
+
+    let results: Vec<SnapshotResponse> = snapshots
+        .into_iter()
+        .map(|snap| SnapshotResponse {
+            id: snap.name.clone(),
+            name: snap.name,
+            vm_name: snap.vm_name,
+            namespace: snap.namespace,
+            status: snap.status.to_string(),
+            ready_to_use: snap.ready_to_use,
+            size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
+            created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
+        })
+        .collect();
+    Ok(Json(results))
 }
 
 #[cfg(feature = "web")]
 async fn create_snapshot(
     State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
     Json(req): Json<CreateSnapshotRequest>,
 ) -> Result<Json<SnapshotResponse>, StatusCode> {
     let s = state.read().await;
-    let manager = SnapshotManager::from_client(s.client().client(), &s.namespace);
+    let ns =
+        namespace_scope::resolve_opt(req.namespace.clone().or(q.namespace.clone()), &s.namespace);
+    if namespace_scope::is_all_namespaces(&ns) {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+    let manager = SnapshotManager::from_client(s.client().client(), &ns);
 
     let snapshot_name = req.name.unwrap_or_else(|| {
         format!(
@@ -120,9 +163,18 @@ async fn create_snapshot(
 }
 
 #[cfg(feature = "web")]
-async fn delete_snapshot(State(state): State<SharedState>, Path(id): Path<String>) -> StatusCode {
+async fn delete_snapshot(
+    State(state): State<SharedState>,
+    Path(id): Path<String>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> StatusCode {
     let s = state.read().await;
-    let manager = SnapshotManager::from_client(s.client().client(), &s.namespace);
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let Some(ns) = resolve_snapshot_op_namespace(&client, &scope, &id).await else {
+        return StatusCode::NOT_FOUND;
+    };
+    let manager = SnapshotManager::from_client(client, &ns);
 
     match manager.delete_snapshot(&id).await {
         Ok(_) => StatusCode::OK,
@@ -134,18 +186,24 @@ async fn delete_snapshot(State(state): State<SharedState>, Path(id): Path<String
 async fn restore_snapshot(
     State(state): State<SharedState>,
     Path(id): Path<String>,
+    Query(q): Query<DashboardNamespaceQuery>,
     Json(req): Json<RestoreSnapshotRequest>,
 ) -> StatusCode {
     use crate::snapshots::restore::RestoreManager;
 
     let s = state.read().await;
-    let restore_mgr = RestoreManager::from_client(s.client().client(), &s.namespace);
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let Some(snap_ns) = resolve_snapshot_op_namespace(&client, &scope, &id).await else {
+        return StatusCode::NOT_FOUND;
+    };
+    let restore_mgr = RestoreManager::from_client(client.clone(), &snap_ns);
 
     let result = if let Some(target_vm) = req.target_vm {
         restore_mgr.restore_to_new_vm(&id, &target_vm, false).await
     } else {
         // Look up the snapshot to find the original VM name
-        let snap_mgr = SnapshotManager::from_client(s.client().client(), &s.namespace);
+        let snap_mgr = SnapshotManager::from_client(client.clone(), &snap_ns);
         match snap_mgr.get_snapshot(&id).await {
             Ok(info) => restore_mgr.restore_in_place(&info.vm_name, &id).await,
             Err(_) => return StatusCode::NOT_FOUND,

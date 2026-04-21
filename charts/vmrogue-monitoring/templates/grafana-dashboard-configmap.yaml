@@ -1,0 +1,13 @@
+{{- if and .Values.kps.enabled .Values.vmrogue.grafanaDashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-vmrogue-grafana-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  vmrogue-overview.json: |-
+{{ .Files.Get "files/vmrogue-overview.json" | nindent 4 }}
+{{- end }}
