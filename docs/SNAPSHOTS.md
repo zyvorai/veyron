@@ -471,8 +471,8 @@ Planned features for future releases:
 
 - [INNOVATIVE_FEATURES.md](INNOVATIVE_FEATURES.md) - All innovative features
 - [OS_TEMPLATES.md](OS_TEMPLATES.md) - OS template catalog
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Quick reference card
-- [README.md](README.md) - Main documentation
+- [../QUICK_REFERENCE.md](../QUICK_REFERENCE.md) - Quick reference card
+- [../README.md](../README.md) - Main documentation
 
 ---
 

@@ -1,6 +1,11 @@
-# 🚀 VMRogue Innovative Features
+# VMRogue Innovative Features
 
-VMRogue includes cutting-edge features that make VM management easier, smarter, and more efficient!
+VMRogue includes higher-level workflows that reduce manual VM orchestration effort.
+
+## Prerequisites
+
+- KubeVirt cluster access from your local environment
+- `vmrogue` binary installed and authenticated to the cluster
 
 ## 📊 Feature Overview
 
@@ -44,7 +49,7 @@ vmrogue profiles --details
 # View specific profile
 vmrogue profile database
 
-# Create VM with profile (coming soon)
+# Create VM with profile
 vmrogue create mydb --template ubuntu --profile database
 ```
 
@@ -447,8 +452,8 @@ Coming soon:
 
 - `INNOVATIVE_FEATURES.md` - This file
 - `OS_TEMPLATES.md` - Complete OS template catalog
-- `THEME_DESIGN.md` - Theme system documentation
-- `README.md` - Project overview
+- `THEME.md` - Theme system documentation
+- `../README.md` - Project overview
 
 ---
 

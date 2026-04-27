@@ -24,6 +24,49 @@
 
 set -euo pipefail
 
+timestamp() {
+    date +"%H:%M:%S"
+}
+
+now_epoch() {
+    date +%s
+}
+
+format_duration() {
+    local total="$1"
+    local mins=$((total / 60))
+    local secs=$((total % 60))
+    printf "%02dm %02ds" "${mins}" "${secs}"
+}
+
+log_step() {
+    echo "[$(timestamp)] $*"
+}
+
+STEP_STARTED_AT=0
+STEP_NAME=""
+RUN_STARTED_AT="$(now_epoch)"
+
+start_phase() {
+    STEP_NAME="$1"
+    STEP_STARTED_AT="$(now_epoch)"
+    log_step "▶ ${STEP_NAME}"
+}
+
+end_phase() {
+    local ended_at
+    local elapsed
+    ended_at="$(now_epoch)"
+    elapsed=$((ended_at - STEP_STARTED_AT))
+    log_step "✔ ${STEP_NAME} finished in $(format_duration "${elapsed}")"
+}
+
+stream_remote() {
+    local label="$1"
+    local cmd="$2"
+    ssh "${REMOTE}" "${cmd}" 2>&1 | sed -e "s/^/  [${label}] /"
+}
+
 QUICK=false
 POSITIONAL=()
 for arg in "$@"; do
@@ -57,32 +100,33 @@ DEPLOY_DIR="${REMOTE_HOME}/.deployment/vmrogue"
 SUDO=""
 [ "$USER" != "root" ] && SUDO="sudo"
 
-# Detect build tool
-CTR_BUILD=$(ssh "${REMOTE}" "
-    if command -v podman &>/dev/null; then echo podman
-    elif command -v docker &>/dev/null; then echo docker
-    elif command -v nerdctl &>/dev/null; then echo nerdctl
-    else echo none; fi
-")
+# Detect build tool (single-quoted remote script — avoids nested-quote parse issues)
+CTR_BUILD=$(ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; elif command -v nerdctl >/dev/null 2>&1; then echo nerdctl; else echo none; fi')
 
-# Detect K8s runtime for image import
-K8S_RUNTIME=$(ssh "${REMOTE}" "
-    if [ -x /usr/local/bin/k3s ] || command -v k3s &>/dev/null 2>&1; then echo k3s
-    elif [ -x /usr/local/bin/rke2 ] || command -v rke2 &>/dev/null 2>&1; then echo rke2
-    elif command -v microk8s &>/dev/null; then echo microk8s
-    elif command -v kind &>/dev/null; then echo kind
-    elif command -v minikube &>/dev/null; then echo minikube
-    elif command -v docker &>/dev/null && docker info 2>/dev/null | grep -q 'kubernetes'; then echo docker-desktop
-    elif ${SUDO:-} ctr version &>/dev/null 2>&1; then echo containerd
-    elif ${SUDO:-} crictl version &>/dev/null 2>&1; then echo cri
-    else echo generic; fi
-")
+# Detect K8s runtime for image import (heredoc + explicit bash — robust across shells)
+K8S_RUNTIME=$(ssh "${REMOTE}" env "SUDO=${SUDO:-}" bash -s <<'REMOTE_K8S_RUNTIME'
+if [ -x /usr/local/bin/k3s ] || command -v k3s >/dev/null 2>&1; then echo k3s
+elif [ -x /usr/local/bin/rke2 ] || command -v rke2 >/dev/null 2>&1; then echo rke2
+elif command -v microk8s >/dev/null 2>&1; then echo microk8s
+elif command -v kind >/dev/null 2>&1; then echo kind
+elif command -v minikube >/dev/null 2>&1; then echo minikube
+elif command -v docker >/dev/null 2>&1 && docker info 2>/dev/null | grep -q kubernetes; then echo docker-desktop
+elif [ -n "${SUDO}" ] && ${SUDO} ctr version >/dev/null 2>&1; then echo containerd
+elif [ -n "${SUDO}" ] && ${SUDO} crictl version >/dev/null 2>&1; then echo cri
+else echo generic; fi
+REMOTE_K8S_RUNTIME
+)
+
+# Cluster flavor (kubeadm vs k3s vs generic kubectl) — separate from import path above
+CLUSTER_FLAVOR=$(ssh "${REMOTE}" 'if [ -x /usr/local/bin/k3s ] || command -v k3s >/dev/null 2>&1; then echo k3s; elif [ -x /usr/local/bin/rke2 ] || command -v rke2 >/dev/null 2>&1; then echo rke2; elif command -v kubeadm >/dev/null 2>&1; then echo kubeadm; elif command -v kubectl >/dev/null 2>&1; then echo kubernetes; else echo unknown; fi')
 
 echo ""
 echo "  🔥 VMRogue Full K8s Deploy"
 echo "  📡 Target:    ${REMOTE}"
 echo "  🐳 Builder:   ${CTR_BUILD}"
 echo "  ☸️  Runtime:   ${K8S_RUNTIME}"
+echo "  🧭 Cluster:   ${CLUSTER_FLAVOR}"
+echo "  🕒 Started:   $(timestamp)"
 echo ""
 
 if [ "$CTR_BUILD" = "none" ] && ! $QUICK; then
@@ -90,38 +134,53 @@ if [ "$CTR_BUILD" = "none" ] && ! $QUICK; then
     exit 1
 fi
 
+# ── Step 0: Remote diagnostics ──
+start_phase "🩺 [0/7] Remote system and cluster diagnostics"
+stream_remote "sysinfo" "set -o pipefail; uname -a; echo ''; cat /etc/os-release 2>/dev/null | sed -n '1,6p'; echo ''; echo \"CPU: \$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo unknown) cores\"; echo \"Memory:\"; free -h 2>/dev/null || vm_stat 2>/dev/null || true; echo ''; echo 'Disk:'; df -h / 2>/dev/null || true"
+stream_remote "k8s-info" "set -o pipefail; printf '%s\n' \"Cluster flavor: ${CLUSTER_FLAVOR}\" \"Runtime import path: ${K8S_RUNTIME}\"; if command -v kubectl >/dev/null 2>&1; then printf '%s\n' ''; kubectl version --short 2>/dev/null || kubectl version 2>/dev/null || true; printf '%s\n' '' 'Nodes:'; kubectl get nodes -o wide 2>/dev/null || true; printf '%s\n' '' 'All namespaces:'; kubectl get ns 2>/dev/null || true; printf '%s\n' '' 'All pods cluster-wide:'; kubectl get pods -A -o wide 2>/dev/null || true; else printf '%s\n' 'kubectl not found on remote host'; fi"
+end_phase
+
 # ── Step 1: Rsync source ──
-echo "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
+start_phase "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
 ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -avz --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \
     --exclude='*.qcow2' --exclude='*.vmdk' --exclude='*.iso' \
     -e "ssh -o StrictHostKeyChecking=no" \
-    "$REPO_DIR/" "${REMOTE}:${DEPLOY_DIR}/" 2>&1 | tail -3
-echo "✅ Source synced"
+    "$REPO_DIR/" "${REMOTE}:${DEPLOY_DIR}/" 2>&1 | sed -e 's/^/  [rsync] /'
+end_phase
 
 # ── Step 2: Build images ──
 echo ""
 if $QUICK; then
-    echo "⏭️  [2/7] Skipping image builds (--quick)"
+    log_step "⏭️  [2/7] Skipping image builds (--quick)"
 else
-    echo "🐳 [2/7] Building container images on remote"
+    start_phase "🐳 [2/7] Building container images on remote"
 
-    echo "  📦 VMRogue API image..."
-    ssh "${REMOTE}" "cd ${DEPLOY_DIR} && ${CTR_BUILD} build --no-cache -t ${VMROGUE_IMAGE} ." 2>&1 | tail -3
+    API_BUILD_CMD="cd ${DEPLOY_DIR} && ${CTR_BUILD} build --no-cache -t ${VMROGUE_IMAGE} ."
+    OP_BUILD_CMD="cd ${DEPLOY_DIR}/operator && ${CTR_BUILD} build -t ${OPERATOR_IMAGE} ."
+    if [ "${CTR_BUILD}" = "docker" ]; then
+        API_BUILD_CMD="cd ${DEPLOY_DIR} && DOCKER_BUILDKIT=1 docker build --progress=plain --no-cache -t ${VMROGUE_IMAGE} ."
+        OP_BUILD_CMD="cd ${DEPLOY_DIR}/operator && DOCKER_BUILDKIT=1 docker build --progress=plain -t ${OPERATOR_IMAGE} ."
+    fi
 
-    echo "  📦 Operator image..."
-    ssh "${REMOTE}" "cd ${DEPLOY_DIR}/operator && ${CTR_BUILD} build -t ${OPERATOR_IMAGE} ." 2>&1 | tail -3
+    log_step "  📦 VMRogue API image build started"
+    stream_remote "api-build" "${API_BUILD_CMD}"
+    log_step "  ✅ VMRogue API image build complete"
 
-    echo "✅ Both images built"
+    log_step "  📦 Operator image build started"
+    stream_remote "operator-build" "${OP_BUILD_CMD}"
+    log_step "  ✅ Operator image build complete"
+
+    end_phase
 fi
 
 # ── Step 3: Import images into K8s runtime ──
 echo ""
 if $QUICK; then
-    echo "⏭️  [3/7] Skipping image import (--quick)"
+    log_step "⏭️  [3/7] Skipping image import (--quick)"
 else
-    echo "📥 [3/7] Importing images into ${K8S_RUNTIME} runtime"
+    start_phase "📥 [3/7] Importing images into ${K8S_RUNTIME} runtime"
 
     case "${K8S_RUNTIME}" in
         k3s)
@@ -190,12 +249,12 @@ else
             ;;
     esac
 
-    echo "✅ Images imported"
+    end_phase
 fi
 
 # ── Step 4: CDI (if missing) + CRDs + NATS + RBAC ──
 echo ""
-echo "📋 [4/7] CDI (if missing), CRDs, NATS, and RBAC"
+start_phase "📋 [4/7] CDI (if missing), CRDs, NATS, and RBAC"
 "${REPO_DIR}/scripts/ensure-cdi-remote.sh" "${REMOTE}" || {
   echo "❌ CDI ensure failed (set VMROGUE_SKIP_CDI=1 to skip on air-gapped clusters)"
   exit 1
@@ -209,11 +268,11 @@ ssh "${REMOTE}" "
     kubectl apply -f ${DEPLOY_DIR}/operator/config/rbac/role.yaml
     kubectl apply -f ${DEPLOY_DIR}/operator/config/nats/nats-deployment.yaml
 " 2>&1
-echo "✅ CRDs + NATS + RBAC deployed"
+end_phase
 
 # ── Step 5: Deploy VMRogue API + Operator ──
 echo ""
-echo "🚀 [5/7] Deploying VMRogue API + Operator"
+start_phase "🚀 [5/7] Deploying VMRogue API + Operator"
 
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
@@ -237,23 +296,23 @@ ssh "${REMOTE}" "kubectl apply -f ${DEPLOY_DIR}/operator/config/manager/manager.
 
 # Same image tags + imagePullPolicy: Never: replacing the Deployment can still leave
 # kubelet using a cached layer unless pods are recreated after image import.
-echo "  🔄 Recycling API + operator pods for new images..."
+log_step "  🔄 Recycling API + operator pods for new images..."
 ssh "${REMOTE}" "
     kubectl -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
     kubectl -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
     kubectl -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
 " 2>&1 || true
-echo "✅ Deployed"
+end_phase
 
 # ── Step 6: Clean up source ──
 echo ""
-echo "🧹 [6/7] Cleaning up build directory"
+start_phase "🧹 [6/7] Cleaning up build directory"
 ssh "${REMOTE}" "rm -rf ${DEPLOY_DIR}"
-echo "✅ Source removed"
+end_phase
 
 # ── Step 7: Verify ──
 echo ""
-echo "🔍 [7/7] Verifying"
+start_phase "🔍 [7/7] Verifying"
 sleep 3
 ssh "${REMOTE}" "
     echo ''
@@ -263,6 +322,7 @@ ssh "${REMOTE}" "
     echo '  Services:'
     kubectl -n ${NAMESPACE} get svc
 " 2>&1
+end_phase
 
 # Do not use ports[0]: API order may list http-redirect (30150) before https (30151).
 NODE_PORT=$(ssh "${REMOTE}" "kubectl -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
@@ -272,6 +332,7 @@ echo ""
 echo "════════════════════════════════════════"
 echo "  ✅ Deployment complete"
 echo "════════════════════════════════════════"
+echo "  ⏱️  Total time: $(format_duration "$(( $(now_epoch) - RUN_STARTED_AT ))")"
 echo "  🌐 Dashboard:  https://${HOST}:${NODE_PORT}/dashboard"
 echo "  💚 Health:     https://${HOST}:${NODE_PORT}/api/v1/health"
 if [ -n "${HTTP_REDIRECT_PORT}" ]; then

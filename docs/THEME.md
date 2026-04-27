@@ -16,7 +16,7 @@ vmrogue/
 │   └── tui.toml            # Sample configuration file
 ├── scripts/
 │   └── test_theme.sh       # Terminal color test script
-└── THEME_DESIGN.md         # Complete design specification
+└── docs/THEME.md           # Theme implementation guide
 
 Total: ~800 lines of theme infrastructure code
 ```
@@ -395,8 +395,7 @@ let gauge = Gauge::default()
 
 ## Documentation
 
-- **THEME_DESIGN.md**: Complete design specification (600+ lines)
-- **THEME_IMPLEMENTATION.md**: This file - implementation guide
+- **docs/THEME.md**: Theme implementation guide
 - **examples/tui.toml**: Sample configuration with comments
 - **src/tui/theme.rs**: API documentation in code comments
 - **src/tui/config.rs**: Configuration structure documentation
@@ -412,7 +411,7 @@ let gauge = Gauge::default()
 ## Support
 
 For questions or issues:
-1. Check THEME_DESIGN.md for design decisions
+1. Check `docs/THEME.md` and `src/tui/theme.rs` for design decisions
 2. Run `test_theme.sh` to verify color rendering
 3. Review examples in this guide
 4. Check unit tests in theme.rs, config.rs, colors.rs
