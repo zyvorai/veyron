@@ -50,6 +50,10 @@ The deployed pod serves HTTPS on `hostPort: 5151` with a self-signed cert genera
 
 VMRogue is a dual-mode binary: a **CLI tool** and an **HTTP API + dashboard** for managing KubeVirt VMs on Kubernetes.
 
+### Kubernetes operator (`operator/`)
+
+A separate **Go** service (controller-runtime) runs **inside the cluster**. It watches **`vmrogue.io/v1alpha1` custom resources** and reconciles real API objects—mainly converting a **`VMRogueVM`** spec into a **KubeVirt `VirtualMachine`** (`operator/internal/converter`), then creating/updating that VM, handling **finalizers**, **status**, and optional **config-drive Secrets**. The same manager registers reconcilers for **VMRogueBlueprint**, **VMRoguePolicy**, **VMRogueInsight**, and **VMRogueAction** (`operator/main.go`). An optional **`NATS_URL`** connects **`operator/internal/eventbus`** for outbound events. **Rust** `src/operator_crds/` holds serde models of those CRDs for CLI/API use; it does not embed the Go controller. See `DEVELOPMENT.md` § Operator Architecture and `charts/vmrogue-operator`.
+
 ### Entry points
 
 - `src/main.rs` — parses CLI via clap, calls `vmrogue::run(cli)`

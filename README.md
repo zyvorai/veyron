@@ -52,6 +52,15 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **Persistent Audit Trail** - Disk-backed audit log for all operations
 - **Local Secrets Encryption** - Key expansion and integrity tag for at-rest secret protection
 
+## Architecture
+
+VMRogue is two cooperating deliverables:
+
+1. **Rust `vmrogue`** — CLI, library, and (by default) HTTPS **API + embedded dashboard**. Uses `kube-rs` against the cluster API; can create KubeVirt VMs directly from `VMConfig` / YAML.
+2. **Go VMRogue Operator (`operator/`)** — **In-cluster** controller-runtime **operator** for **GitOps-style CRs** (`VMRogueVM`, blueprints, policies, insights, actions under `vmrogue.io/v1alpha1`). The main loop turns each **`VMRogueVM`** into a **KubeVirt `VirtualMachine`**, keeps it updated, and writes CR **status** (see `operator/internal/controller/vmroguevm_controller.go`). Deploy it with **`charts/vmrogue-operator`** or the scripts that build both API and operator images (`./scripts/deploy-remote.sh` / `deploy-all-remote.sh`).
+
+For day-to-day imperative use you only need the Rust binary; for **declarative CR-driven** VMs, install the operator and apply `VMRogueVM` manifests (e.g. from `vmrogue gitops-export`).
+
 ## Installation
 
 ```bash
