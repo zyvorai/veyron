@@ -1,0 +1,120 @@
+/* Air Inuit Typography System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  /* Air Inuit Color Palette */
+  --color-orange: #f0583a;
+  --color-orange-dark: #d94b32;
+  --color-grey-light: #f0f2f7;
+  --color-charcoal: #222324;
+  --color-black: #000;
+  --color-white: #fff;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.5;
+
+  /* Transitions */
+  --transition-smooth: 0.25s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--color-black);
+  background-color: var(--color-grey-light);
+}
+
+/* Responsive Font Scaling (Air Inuit pattern) */
+@media (max-width: 699px) {
+  :root {
+    --font-size-base: 16px;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 999px) {
+  :root {
+    --font-size-base: 14px;
+  }
+}
+
+@media (min-width: 1000px) and (max-width: 1199px) {
+  :root {
+    --font-size-base: 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --font-size-base: 18px;
+  }
+}
+
+@media (min-width: 2400px) {
+  :root {
+    --font-size-base: 22px;
+  }
+}
+
+/* Typography Classes */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+a {
+  color: var(--color-charcoal);
+  text-decoration: none;
+  transition: color var(--transition-smooth);
+}
+
+a:hover {
+  color: var(--color-orange);
+}
+
+button {
+  font-family: var(--font-family);
+}
+
+input, select, textarea {
+  font-family: var(--font-family);
+}
+
+/* Focus States */
+*:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: -2px;
+}
+
+/* Loading Spinner (Air Inuit pattern) */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* In-page anchors (HyperPageTabs sticky header) */
+#dashboard,
+#jobs,
+#manage {
+  scroll-margin-top: 72px;
+}

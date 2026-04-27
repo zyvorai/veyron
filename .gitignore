@@ -2,6 +2,7 @@
 /target/
 **/*.rs.bk
 *.pdb
+/vmrogue
 
 # IDE
 .idea/
@@ -26,3 +27,12 @@ charts/*/charts/*.tgz
 # Local configs
 *.local.yaml
 *.local.json
+
+# e2e / front-end (install deps locally)
+e2e/node_modules/
+
+# Next-gen dashboard (Vite / npm)
+web/**/node_modules/
+web/**/dist/
+web/**/test-results/
+web/**/.vite/
