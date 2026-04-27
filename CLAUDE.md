@@ -29,13 +29,15 @@ make ci
 
 ```bash
 # Build image, import into the node runtime, deploy to vmrogue-system (auto-detects k3s vs kubectl; installs CDI if DataVolume CRD missing — VMROGUE_SKIP_CDI=1 to skip; VMROGUE_CONTAINER_RUNTIME_IMPORT overrides image import)
-./scripts/deploy-k8s-remote.sh 185.165.240.5 sus
+./scripts/deploy-k8s-remote.sh HOST USER
 
-# Full deployment (builds both API + operator images)
-./scripts/deploy-all-remote.sh [host] [user] [--quick]
+# Full deployment (builds both API + operator images; streams remote build logs + preflight diagnostics)
+./scripts/deploy-all.sh HOST USER
+# same as:
+./scripts/deploy-all-remote.sh HOST USER [--quick]
 
 # --quick skips image builds and only re-applies manifests
-./scripts/deploy-all-remote.sh 185.165.240.5 sus --quick
+./scripts/deploy-all-remote.sh HOST USER --quick
 
 # Optional Prometheus + Grafana + Alertmanager (Helm umbrella chart over kube-prometheus-stack)
 ./scripts/install-vmrogue-monitoring.sh monitoring

@@ -5,15 +5,15 @@ This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue comman
 ## Remote Deployment Helpers
 
 ```bash
-# Full remote deployment (API + operator)
-./scripts/deploy-all.sh 185.165.240.5 sus
-./scripts/deploy-all-remote.sh 185.165.240.5 sus
+# Full remote deployment (API + operator); HOST USER = SSH target (node + login)
+./scripts/deploy-all.sh HOST USER
+./scripts/deploy-all-remote.sh HOST USER
 
 # Quick mode (skip image build/import)
-./scripts/deploy-all-remote.sh 185.165.240.5 sus --quick
+./scripts/deploy-all-remote.sh HOST USER --quick
 
 # API-only remote deploy
-./scripts/deploy-k8s-remote.sh 185.165.240.5 sus
+./scripts/deploy-k8s-remote.sh HOST USER
 ```
 
 ## Core VM Lifecycle

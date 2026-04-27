@@ -1,5 +1,7 @@
 # Security Policy
 
+**Related documentation:** [README.md](README.md) (TLS, API keys), [docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md) (cluster access patterns).
+
 ## Supported Versions
 
 We release patches for security vulnerabilities for the following versions:

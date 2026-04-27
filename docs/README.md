@@ -1,12 +1,17 @@
 # Documentation Index
 
-This directory contains focused guides for VMRogue features and operations.
+This directory contains focused guides for VMRogue features and operations. Start here when looking for a specific topic.
+
+**Repository layout:** default development branch is **`main`** (Rust CLI + web API). The historical Go-era tree is preserved on branch **`main-go`** for reference only.
 
 ## Getting Started
 
 - [`../README.md`](../README.md): project overview, install, API/dashboard, deployment options
 - [`../QUICK_REFERENCE.md`](../QUICK_REFERENCE.md): high-signal command cheatsheet
 - [`../DEVELOPMENT.md`](../DEVELOPMENT.md): architecture map and contributor workflows
+- [`../CONTRIBUTING.md`](../CONTRIBUTING.md): pull requests, style, and CI expectations
+- [`../SECURITY.md`](../SECURITY.md): vulnerability reporting
+- [`../CHANGELOG.md`](../CHANGELOG.md): release notes
 
 ## Core Operations
 
@@ -33,4 +38,10 @@ This directory contains focused guides for VMRogue features and operations.
 
 - [`WINDOWS_KUBEVIRT_PRODUCTION.md`](WINDOWS_KUBEVIRT_PRODUCTION.md): production runbook (golden image, cloudbase-init, sysprep)
 - [`WINDOWS_PACKER_GITOPS_PIPELINE.md`](WINDOWS_PACKER_GITOPS_PIPELINE.md): image pipeline with Packer, CDI, and GitOps integration
+
+## Helm and monitoring
+
+- [`../charts/vmrogue-monitoring/README.md`](../charts/vmrogue-monitoring/README.md): optional Prometheus/Grafana/Alertmanager umbrella chart
+
+When you add or change user-visible behavior, update this index if you introduce a new top-level guide under `docs/`.
 

@@ -1,5 +1,7 @@
 # Production-ready Windows VMs on KubeVirt
 
+**See also:** [Documentation index](README.md), [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md) for the Packer/CDI pipeline.
+
 This guide consolidates **golden image** preparation (Audit Mode, Sysprep), **VirtIO** and **Cloudbase-Init** setup for KubeVirt’s config drive, **YAML** deployment patterns, and day‑two operations (licensing, drivers, tuning). It complements VMRogue’s built‑in Windows templates in `src/templates/mod.rs`—validate every field against your **KubeVirt** and **Kubernetes** versions before production use.
 
 ### What is already in VMRogue’s Rust templates

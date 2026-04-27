@@ -1,5 +1,7 @@
 # 🎯 VMRogue OS Templates - Complete Catalog
 
+**See also:** [Documentation index](README.md).
+
 VMRogue now includes **44 OS templates** across **15 operating system families**!
 
 ## 📊 Template Statistics
@@ -14,7 +16,7 @@ VMRogue now includes **44 OS templates** across **15 operating system families**
 
 ### Ubuntu (5 templates)
 ```bash
-ubuntu          # Latest (22.04) - Default choice
+ubuntu          # Default template (Jammy-era image; see `src/templates/mod.rs`)
 ubuntu-24.04    # Noble Numbat (2 CPU, 4GB RAM)
 ubuntu-22.04    # Jammy Jellyfish (2 CPU, 4GB RAM)
 ubuntu-20.04    # Focal Fossa (2 CPU, 4GB RAM)
@@ -26,9 +28,9 @@ ubuntu-18.04    # Bionic Beaver (2 CPU, 4GB RAM)
 
 ### Fedora (2 templates)
 ```bash
-fedora          # Latest (43) - Cutting edge
-fedora-43       # Latest stable (2 CPU, 4GB RAM)
-fedora-42       # Previous release (2 CPU, 4GB RAM)
+fedora          # Fedora Cloud (containerdisks `fedora:latest`)
+fedora-43       # Template key “43”; root disk uses tested `quay.io/containerdisks/fedora:latest`
+fedora-42       # Template key “42”; same tested image as `fedora-43` (version-specific tags are not pinned)
 ```
 **Credentials**: `vmrogue` / `vmrogue`
 
@@ -36,7 +38,7 @@ fedora-42       # Previous release (2 CPU, 4GB RAM)
 ```bash
 centos              # Latest (Stream 9)
 centos-stream-9     # Current stable (2 CPU, 4GB RAM)
-centos-stream-8     # Previous version (2 CPU, 4GB RAM)
+centos-stream-8     # Template key “stream-8”; root disk uses tested `quay.io/containerdisks/centos-stream:9`
 ```
 **Credentials**: `vmrogue` / `vmrogue`
 
@@ -44,7 +46,7 @@ centos-stream-8     # Previous version (2 CPU, 4GB RAM)
 ```bash
 debian          # Latest (12 Bookworm)
 debian-12       # Bookworm (2 CPU, 4GB RAM)
-debian-11       # Bullseye (2 CPU, 4GB RAM)
+debian-11       # Template key “11”; root disk uses tested `quay.io/containerdisks/debian:12`
 ```
 **Credentials**: `vmrogue` / `vmrogue`
 

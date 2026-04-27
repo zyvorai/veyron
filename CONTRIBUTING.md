@@ -26,7 +26,7 @@ We welcome feature suggestions! Please create an issue with:
 1. **Fork the repository**
    ```bash
    git clone git@github.com:ssahani/VMRogue.git
-   cd vmrogue
+   cd VMRogue
    ```
 
 2. **Create a feature branch**
@@ -38,7 +38,7 @@ We welcome feature suggestions! Please create an issue with:
    - Write clear, documented code
    - Follow the existing code style
    - Add tests for new functionality
-   - Update documentation as needed
+   - Update documentation as needed — for user-facing behavior, touch [`docs/README.md`](docs/README.md) if you add a new top-level guide under `docs/`
 
 4. **Run tests**
    ```bash
@@ -285,7 +285,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone repository
 git clone git@github.com:ssahani/VMRogue.git
-cd vmrogue
+cd VMRogue
 
 # Build and test
 cargo build

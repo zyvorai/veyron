@@ -1,5 +1,7 @@
 # VMRogue Interactive TUI - Complete Feature Demo
 
+**See also:** [Documentation index](README.md) for related guides.
+
 ## 🎨 Design Overview
 
 The VMRogue Interactive TUI is a modern, user-friendly terminal interface with:
