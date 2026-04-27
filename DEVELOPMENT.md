@@ -146,7 +146,8 @@ cargo run -- config-show
 
 ## Documentation Pointers
 
+- Documentation index: `docs/README.md`
 - User-facing overview: `README.md`
 - Command examples: `QUICK_REFERENCE.md`
-- Feature-specific docs: `docs/`
+- Feature-specific guides: `docs/*.md`
 - Contribution workflow: `CONTRIBUTING.md`

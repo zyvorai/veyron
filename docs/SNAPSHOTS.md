@@ -1,5 +1,7 @@
 # 📸 VM Snapshots & Backup System
 
+**See also:** [Documentation index](README.md), [DISK_MANAGEMENT.md](DISK_MANAGEMENT.md) for storage workflows.
+
 VMRogue's VM Snapshots & Backup System provides production-grade snapshot management for disaster recovery and VM lifecycle management.
 
 ---

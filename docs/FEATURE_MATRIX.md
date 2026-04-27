@@ -1,5 +1,7 @@
 # VMRogue Feature Matrix
 
+**See also:** [Documentation index](README.md) for the full set of guides.
+
 This matrix maps the current dashboard surface to its backend routes and implementation status.
 
 Status legend:

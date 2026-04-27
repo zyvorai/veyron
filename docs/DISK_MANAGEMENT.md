@@ -1,5 +1,7 @@
 # Disk Management
 
+**See also:** [Documentation index](README.md), [SNAPSHOTS.md](SNAPSHOTS.md) for snapshot-based recovery.
+
 VMRogue provides comprehensive disk management capabilities for KubeVirt VMs, including PVC expansion, health monitoring, and automated filesystem resizing.
 
 ## Prerequisites

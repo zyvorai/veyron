@@ -1,5 +1,7 @@
 # ✨ VMRogue Interactive TUI - Feature Complete
 
+**See also:** [Documentation index](README.md) for the full doc map.
+
 ## 🎉 What Was Built
 
 A fully interactive Terminal User Interface (TUI) with modern UI patterns including dialogs, forms, menus, notifications, and real-time updates for managing KubeVirt VMs.

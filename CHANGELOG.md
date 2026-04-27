@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- Refreshed `docs/README.md` as the canonical index (branch note: `main` vs `main-go`, monitoring chart, CONTRIBUTING/SECURITY links).
+- Cross-linked guides (TUI, snapshots, disk, network, Windows, feature matrix) and normalized deploy examples to `HOST USER` placeholders in README, QUICK_REFERENCE, and `CLAUDE.md`.
+- CONTRIBUTING clone path uses `VMRogue` directory name.
+
 ### Added
 
 - **Helm chart `charts/vmrogue-monitoring`** — optional install of Prometheus, Grafana, and Alertmanager (kube-prometheus-stack dependency) plus VMRogue ServiceMonitors, PrometheusRules, and Grafana dashboard provisioning; `scripts/install-vmrogue-monitoring.sh` and `make helm-monitoring-validate`.

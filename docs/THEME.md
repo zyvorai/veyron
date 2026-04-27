@@ -1,5 +1,7 @@
 # VMRogue Theme Implementation Guide
 
+**See also:** [Documentation index](README.md), [INTERACTIVE_TUI.md](INTERACTIVE_TUI.md).
+
 This document provides implementation details for the VMRogue TUI and CLI theme system, inspired by GuestKit's design patterns.
 
 ## File Structure

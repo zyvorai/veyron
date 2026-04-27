@@ -128,17 +128,18 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ### Deploy to a remote Kubernetes cluster via SSH
 
 ```bash
-# Full API + operator deployment (build, import, CRDs/RBAC, deploy, verify)
-./scripts/deploy-all.sh HOST sus
+# Full API + operator deployment (build, import, CRDs/RBAC, deploy, verify).
+# Replace HOST and USER with the SSH target that can reach kubectl and your builder (podman/docker).
+./scripts/deploy-all.sh HOST USER
 
 # Equivalent explicit script
-./scripts/deploy-all-remote.sh HOST sus
+./scripts/deploy-all-remote.sh HOST USER
 
 # Fast redeploy: skip image rebuild/import
-./scripts/deploy-all-remote.sh HOST sus --quick
+./scripts/deploy-all-remote.sh HOST USER --quick
 
 # API-only deployment helper
-./scripts/deploy-k8s-remote.sh HOST sus
+./scripts/deploy-k8s-remote.sh HOST USER
 ```
 
 `deploy-all-remote.sh` now runs with detailed, timestamped logs and phase timings. During image builds it streams full remote output (including Cargo `Compiling ...` lines), so long Rust builds do not look stuck.
@@ -729,6 +730,7 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 
 - **[docs/README.md](docs/README.md)** - Documentation index (quick map of all guides)
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development status and architecture
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - How to contribute and run CI locally
 - **[SECURITY.md](SECURITY.md)** - Security policy and hardening details
 - **[CHANGELOG.md](CHANGELOG.md)** - Release changelog
 - **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick reference card

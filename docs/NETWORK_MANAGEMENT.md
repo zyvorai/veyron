@@ -1,5 +1,7 @@
 # Network Management & Monitoring
 
+**See also:** [Documentation index](README.md), [DEVELOPER_VM_ACCESS.md](DEVELOPER_VM_ACCESS.md) for SSH and `virtctl` access.
+
 VMRogue provides comprehensive network management capabilities for KubeVirt VMs, including interface management, bandwidth monitoring, traffic analysis, and advanced Cilium-based network policies.
 
 ## Prerequisites

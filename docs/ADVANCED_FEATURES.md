@@ -1,5 +1,7 @@
 # Advanced Features Guide
 
+**See also:** [Documentation index](README.md), [INNOVATIVE_FEATURES.md](INNOVATIVE_FEATURES.md).
+
 This guide covers advanced VM workflows in `vmrogue`, with practical CLI/API examples.
 
 ## Prerequisites

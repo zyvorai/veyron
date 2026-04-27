@@ -1,5 +1,7 @@
 # vmrogue-monitoring
 
+**See also:** [Documentation index](../../docs/README.md) in the repo root for the full doc map.
+
 Optional **Prometheus + Grafana + Alertmanager** stack for VMRogue clusters, packaged as a thin Helm umbrella over [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack).
 
 ## What you get

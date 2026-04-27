@@ -1,5 +1,7 @@
 # VMRogue Interactive TUI Guide
 
+**See also:** [Documentation index](README.md) for related guides (theme, quick reference, deployment).
+
 ## Overview
 
 VMRogue provides a fully interactive Terminal User Interface (TUI) with dialogs, forms, context menus, and real-time notifications for managing KubeVirt VMs.

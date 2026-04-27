@@ -1,5 +1,7 @@
 # Windows golden image (Packer) → QCOW2 → CDI → GitOps / VMRogue
 
+**See also:** [Documentation index](README.md).
+
 This document is the **operational companion** to [WINDOWS_KUBEVIRT_PRODUCTION.md](./WINDOWS_KUBEVIRT_PRODUCTION.md). It describes a **production-style** pipeline: **HashiCorp Packer** + **QEMU/KVM**, Windows **Audit Mode** / **Sysprep**, artifact **QCOW2**, **CDI** import, and **Kubernetes** manifests — including **Kustomize** and a **VMRogue** `generate` + patch workflow.
 
 **Repo examples:** `examples/windows-kubevirt-gitops/` (DataVolume + VM YAML + `patch_kubevirt_configdrive.py`).

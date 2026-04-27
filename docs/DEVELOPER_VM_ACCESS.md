@@ -1,5 +1,7 @@
 # Developer access to KubeVirt VMs (SSH and consoles)
 
+**See also:** [Documentation index](README.md), [NETWORK_MANAGEMENT.md](NETWORK_MANAGEMENT.md).
+
 This guide explains how **application developers** and **platform engineers** typically reach guest shells on VMs managed by VMRogue, and how that relates to **VMRogue’s dashboard** and **API**.
 
 ## What VMRogue shows today
