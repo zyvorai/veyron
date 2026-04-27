@@ -94,15 +94,25 @@ The crate also exposes many domain modules directly from `src/lib.rs`, including
 
 ## Operator Architecture
 
-The Go operator is a standard controller-runtime application.
+The Go operator is a standard **controller-runtime** application (`operator/main.go` registers all reconcilers with one manager).
 
 - CRD type definitions: `operator/api/v1alpha1`
 - Reconcilers: `operator/internal/controller`
 - KubeVirt conversion logic: `operator/internal/converter/kubevirt.go`
-- Optional event bus integration: `operator/internal/eventbus`
+- Optional event bus integration: `operator/internal/eventbus` (enable with **`NATS_URL`** env or `-nats-url` flag)
 - Metrics: `operator/internal/metrics/metrics.go`
 
-The main reconciler flow for VM CRs is in `operator/internal/controller/vmroguevm_controller.go`:
+**Registered controllers** (each watches its own `vmrogue.io` kind):
+
+| Reconciler | File (typical) | Role |
+|------------|----------------|------|
+| `VMRogueVM` | `vmroguevm_controller.go` | **Primary:** `VMRogueVM` → KubeVirt `VirtualMachine`; finalizers; config-drive Secret when requested; status from VMI |
+| `VMRogueBlueprint` | `vmrogueblueprint_controller.go` | Multi-VM / blueprint CRs |
+| `VMRoguePolicy` | `vmroguepolicy_controller.go` | Policy CRs |
+| `VMRogueInsight` | `vmrogueinsight_controller.go` | Insight CRs |
+| `VMRogueAction` | `vmrogueaction_controller.go` | Action CRs |
+
+The main VM reconciler flow in `vmroguevm_controller.go`:
 
 - fetch `VMRogueVM`
 - add finalizer

@@ -16,6 +16,10 @@ This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue comman
 ./scripts/deploy-k8s-remote.sh HOST USER
 ```
 
+## In-cluster operator (CRDs / GitOps)
+
+`VMRogueVM` and related **`vmrogue.io/v1alpha1`** objects are reconciled by the **Go operator** in `operator/` (controller-runtime): it materializes **KubeVirt `VirtualMachine`** objects from `VMRogueVM` specs, manages finalizers/status, and runs sibling controllers for blueprints, policies, insights, and actions. Rust `src/operator_crds/` mirrors CRD shapes for CLI/API only. See **`DEVELOPMENT.md`** (Operator Architecture) and **`charts/vmrogue-operator`**. Export manifests with `vmrogue gitops-export`.
+
 ## Core VM Lifecycle
 
 ```bash
