@@ -14,33 +14,33 @@ This document is a current codebase map for contributors. It avoids roadmap-styl
 Current source footprint from the repository tree:
 
 - `343` Rust/Go source files under `src/` and `operator/`
-- `57` top-level public Rust modules exported from [`src/lib.rs`](/Users/ssahani/tt/VMRogue/src/lib.rs:1)
-- `49` API handler modules declared in [`src/api/handlers/mod.rs`](/Users/ssahani/tt/VMRogue/src/api/handlers/mod.rs:1)
-- `186` command dispatch arms in [`src/lib.rs`](/Users/ssahani/tt/VMRogue/src/lib.rs:1)
+- `57` top-level public Rust modules exported from `src/lib.rs`
+- `49` API handler modules declared in `src/api/handlers/mod.rs`
+- `186` command dispatch arms in `src/lib.rs`
 
 ## Entry Points
 
 ### Rust binary
 
-- [`src/main.rs`](/Users/ssahani/tt/VMRogue/src/main.rs:1) parses CLI args and calls `vmrogue::run`.
-- [`src/lib.rs`](/Users/ssahani/tt/VMRogue/src/lib.rs:1) is the central dispatch layer for the CLI and the public library surface.
+- `src/main.rs` parses CLI args and calls `vmrogue::run`.
+- `src/lib.rs` is the central dispatch layer for the CLI and the public library surface.
 
 ### Operator
 
-- [`operator/main.go`](/Users/ssahani/tt/VMRogue/operator/main.go:1) starts the controller-runtime manager.
-- Reconcilers live in [`operator/internal/controller`](/Users/ssahani/tt/VMRogue/operator/internal/controller).
+- `operator/main.go` starts the controller-runtime manager.
+- Reconcilers live in `operator/internal/controller`.
 
 ## Rust Architecture
 
 ### Command surface
 
-- [`src/cli/mod.rs`](/Users/ssahani/tt/VMRogue/src/cli/mod.rs:1) defines the full `clap` command tree.
+- `src/cli/mod.rs` defines the full `clap` command tree.
 - Commands are grouped around VM lifecycle, snapshots, backup, migration, networking, security, cost, observability, multitenancy, API server, GitOps, and operator CRDs.
 
 ### Dispatch and handlers
 
-- [`src/lib.rs`](/Users/ssahani/tt/VMRogue/src/lib.rs:97) loads config, initializes logging, and matches on the CLI command.
-- [`src/handlers/mod.rs`](/Users/ssahani/tt/VMRogue/src/handlers/mod.rs:1) groups the higher-level command handlers:
+- `src/lib.rs` loads config, initializes logging, and matches on the CLI command.
+- `src/handlers/mod.rs` groups the higher-level command handlers:
   - `vm`
   - `profiles`
   - `backup`
@@ -56,35 +56,35 @@ Current source footprint from the repository tree:
 
 ### Kubernetes and KubeVirt integration
 
-- [`src/kube/mod.rs`](/Users/ssahani/tt/VMRogue/src/kube/mod.rs:1) owns client creation, kubeconfig resolution, and common VM operations.
-- [`src/kube/converter.rs`](/Users/ssahani/tt/VMRogue/src/kube/converter.rs:1) converts `VMConfig` into KubeVirt manifests.
-- [`src/kube/types.rs`](/Users/ssahani/tt/VMRogue/src/kube/types.rs:1) contains KubeVirt-compatible Rust types.
+- `src/kube/mod.rs` owns client creation, kubeconfig resolution, and common VM operations.
+- `src/kube/converter.rs` converts `VMConfig` into KubeVirt manifests.
+- `src/kube/types.rs` contains KubeVirt-compatible Rust types.
 
 ### Configuration model
 
-- [`src/config/types.rs`](/Users/ssahani/tt/VMRogue/src/config/types.rs:1) defines the VM configuration schema.
-- [`src/config/builder.rs`](/Users/ssahani/tt/VMRogue/src/config/builder.rs:1) provides the fluent builder API.
-- [`src/config/validator.rs`](/Users/ssahani/tt/VMRogue/src/config/validator.rs:1) contains config validation rules.
-- [`src/config/app_config.rs`](/Users/ssahani/tt/VMRogue/src/config/app_config.rs:1) handles user config loading and defaults.
+- `src/config/types.rs` defines the VM configuration schema.
+- `src/config/builder.rs` provides the fluent builder API.
+- `src/config/validator.rs` contains config validation rules.
+- `src/config/app_config.rs` handles user config loading and defaults.
 
 ### API server
 
-- [`src/api/http_server.rs`](/Users/ssahani/tt/VMRogue/src/api/http_server.rs:1) contains the Axum server wiring.
-- [`src/api/handlers`](/Users/ssahani/tt/VMRogue/src/api/handlers) contains endpoint handlers for the web dashboard and REST API.
-- [`src/api/openapi.rs`](/Users/ssahani/tt/VMRogue/src/api/openapi.rs:1) builds the OpenAPI document.
-- [`src/api/websocket`](/Users/ssahani/tt/VMRogue/src/api/websocket) contains WebSocket handlers for console, metrics, watch, and RDP flows.
-- Static dashboard assets are under [`src/api/web`](/Users/ssahani/tt/VMRogue/src/api/web).
+- `src/api/http_server.rs` contains the Axum server wiring.
+- `src/api/handlers` contains endpoint handlers for the web dashboard and REST API.
+- `src/api/openapi.rs` builds the OpenAPI document.
+- `src/api/websocket` contains WebSocket handlers for console, metrics, watch, and RDP flows.
+- Static dashboard assets are under `src/api/web`.
 
 ### TUI
 
-- [`src/tui/app.rs`](/Users/ssahani/tt/VMRogue/src/tui/app.rs:1) is the TUI state machine and event loop.
-- [`src/tui/state.rs`](/Users/ssahani/tt/VMRogue/src/tui/state.rs:1) stores shared UI state.
-- [`src/tui/ui`](/Users/ssahani/tt/VMRogue/src/tui/ui) contains screen renderers.
-- [`src/tui/widgets`](/Users/ssahani/tt/VMRogue/src/tui/widgets) contains reusable UI components.
+- `src/tui/app.rs` is the TUI state machine and event loop.
+- `src/tui/state.rs` stores shared UI state.
+- `src/tui/ui` contains screen renderers.
+- `src/tui/widgets` contains reusable UI components.
 
 ### Feature modules
 
-The crate also exposes many domain modules directly from [`src/lib.rs`](/Users/ssahani/tt/VMRogue/src/lib.rs:1), including:
+The crate also exposes many domain modules directly from `src/lib.rs`, including:
 
 - `snapshots`, `backup`, `migration`, `security`, `cost`, `automation`, `observability`
 - `profiles`, `blueprints`, `health`, `monitoring`
@@ -96,13 +96,13 @@ The crate also exposes many domain modules directly from [`src/lib.rs`](/Users/s
 
 The Go operator is a standard controller-runtime application.
 
-- CRD type definitions: [`operator/api/v1alpha1`](/Users/ssahani/tt/VMRogue/operator/api/v1alpha1)
-- Reconcilers: [`operator/internal/controller`](/Users/ssahani/tt/VMRogue/operator/internal/controller)
-- KubeVirt conversion logic: [`operator/internal/converter/kubevirt.go`](/Users/ssahani/tt/VMRogue/operator/internal/converter/kubevirt.go:1)
-- Optional event bus integration: [`operator/internal/eventbus`](/Users/ssahani/tt/VMRogue/operator/internal/eventbus)
-- Metrics: [`operator/internal/metrics/metrics.go`](/Users/ssahani/tt/VMRogue/operator/internal/metrics/metrics.go:1)
+- CRD type definitions: `operator/api/v1alpha1`
+- Reconcilers: `operator/internal/controller`
+- KubeVirt conversion logic: `operator/internal/converter/kubevirt.go`
+- Optional event bus integration: `operator/internal/eventbus`
+- Metrics: `operator/internal/metrics/metrics.go`
 
-The main reconciler flow for VM CRs is in [`operator/internal/controller/vmroguevm_controller.go`](/Users/ssahani/tt/VMRogue/operator/internal/controller/vmroguevm_controller.go:1):
+The main reconciler flow for VM CRs is in `operator/internal/controller/vmroguevm_controller.go`:
 
 - fetch `VMRogueVM`
 - add finalizer
@@ -146,7 +146,7 @@ cargo run -- config-show
 
 ## Documentation Pointers
 
-- User-facing overview: [README.md](/Users/ssahani/tt/VMRogue/README.md:1)
-- Command examples: [QUICK_REFERENCE.md](/Users/ssahani/tt/VMRogue/QUICK_REFERENCE.md:1)
-- Feature-specific docs: [`docs/`](/Users/ssahani/tt/VMRogue/docs)
-- Contribution workflow: [CONTRIBUTING.md](/Users/ssahani/tt/VMRogue/CONTRIBUTING.md:1)
+- User-facing overview: `README.md`
+- Command examples: `QUICK_REFERENCE.md`
+- Feature-specific docs: `docs/`
+- Contribution workflow: `CONTRIBUTING.md`

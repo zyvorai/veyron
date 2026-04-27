@@ -128,10 +128,28 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ### Deploy to a remote Kubernetes cluster via SSH
 
 ```bash
+# Full API + operator deployment (build, import, CRDs/RBAC, deploy, verify)
+./scripts/deploy-all.sh HOST sus
+
+# Equivalent explicit script
+./scripts/deploy-all-remote.sh HOST sus
+
+# Fast redeploy: skip image rebuild/import
+./scripts/deploy-all-remote.sh HOST sus --quick
+
+# API-only deployment helper
 ./scripts/deploy-k8s-remote.sh HOST sus
 ```
 
-Builds the container image, imports it into the remote node’s container runtime, and applies manifests via SSH. Detects **k3s** (`k3s kubectl` / `k3s ctr`) vs **generic Kubernetes** (`kubectl` + `ctr -n k8s.io`); override the import pipe with `VMROGUE_CONTAINER_RUNTIME_IMPORT` if your runtime differs. No systemd required.
+`deploy-all-remote.sh` now runs with detailed, timestamped logs and phase timings. During image builds it streams full remote output (including Cargo `Compiling ...` lines), so long Rust builds do not look stuck.
+
+Preflight diagnostics are printed before deployment:
+
+- remote OS/kernel, CPU, memory, and root disk information
+- detected cluster flavor (`k3s`, `rke2`, `kubeadm`, generic Kubernetes, or unknown)
+- Kubernetes client/server version, nodes, namespaces, and cluster-wide pod list
+
+Runtime import handling auto-detects `k3s`, `rke2`, `microk8s`, `kind`, `minikube`, `containerd`, and `docker-desktop` paths.
 
 ### Deploy with Helm
 
@@ -508,7 +526,7 @@ vmrogue templates             # List all templates
 vmrogue template ubuntu-22.04 # View template details
 ```
 
-See [OS_TEMPLATES.md](OS_TEMPLATES.md) for complete catalog.
+See [docs/OS_TEMPLATES.md](docs/OS_TEMPLATES.md) for complete catalog.
 
 ## Configuration File Format
 
@@ -709,6 +727,7 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 
 ## Documentation
 
+- **[docs/README.md](docs/README.md)** - Documentation index (quick map of all guides)
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development status and architecture
 - **[SECURITY.md](SECURITY.md)** - Security policy and hardening details
 - **[CHANGELOG.md](CHANGELOG.md)** - Release changelog

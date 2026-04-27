@@ -2,6 +2,12 @@
 
 VMRogue provides comprehensive network management capabilities for KubeVirt VMs, including interface management, bandwidth monitoring, traffic analysis, and advanced Cilium-based network policies.
 
+## Prerequisites
+
+- Kubernetes cluster with KubeVirt VMs running
+- `vmrogue` configured against the target cluster
+- Optional: Cilium + Hubble installed for advanced policy and flow observability
+
 ## Features
 
 ### 1. Network Interface Management (`network-list`, `network-get`)
@@ -726,9 +732,4 @@ GET /network/bandwidth
 
 ## Examples
 
-See the [examples/network/](examples/network/) directory for:
-- Multi-network VM setup
-- Bandwidth monitoring scripts
-- Traffic analysis automation
-- Cilium policy templates
-- Service mesh integration
+Use this guide’s YAML and command snippets as a starting point for runbooks and automation scripts in your environment.

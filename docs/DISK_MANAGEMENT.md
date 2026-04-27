@@ -2,6 +2,12 @@
 
 VMRogue provides comprehensive disk management capabilities for KubeVirt VMs, including PVC expansion, health monitoring, and automated filesystem resizing.
 
+## Prerequisites
+
+- StorageClass with `allowVolumeExpansion: true`
+- `vmrogue` access to the target VM namespace
+- Guest OS access (root/sudo) for in-guest filesystem expansion
+
 ## Features
 
 ### 1. Disk Expansion (`disk-expand`)
@@ -547,7 +553,4 @@ impl ScriptGenerator {
 
 ## Examples
 
-See [examples/](examples/) directory for complete examples:
-- [disk-expansion-workflow.sh](examples/disk-expansion-workflow.sh)
-- [health-monitoring.sh](examples/health-monitoring.sh)
-- [automated-expansion.sh](examples/automated-expansion.sh)
+Use the command snippets in this guide as reusable building blocks for your own expansion/monitoring automation.

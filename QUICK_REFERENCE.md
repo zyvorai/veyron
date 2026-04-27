@@ -1,6 +1,20 @@
 # VMRogue Quick Reference
 
-This file is aligned to the current CLI in [`src/cli/mod.rs`](/Users/ssahani/tt/VMRogue/src/cli/mod.rs:1). Use `vmrogue commands` and `vmrogue <command> --help` for the full surface.
+This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue commands` and `vmrogue <command> --help` for the full surface.
+
+## Remote Deployment Helpers
+
+```bash
+# Full remote deployment (API + operator)
+./scripts/deploy-all.sh HOST sus
+./scripts/deploy-all-remote.sh HOST sus
+
+# Quick mode (skip image build/import)
+./scripts/deploy-all-remote.sh HOST sus --quick
+
+# API-only remote deploy
+./scripts/deploy-k8s-remote.sh HOST sus
+```
 
 ## Core VM Lifecycle
 

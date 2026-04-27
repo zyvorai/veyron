@@ -282,7 +282,8 @@ fn ubuntu_2004_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/ubuntu:20.04", 1)
+        // Keep 20.04 template identity; use v9s-tested containerdisk tag (:20.04 not consistently published).
+        .add_container_disk("rootdisk", "quay.io/containerdisks/ubuntu:24.04", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "ubuntu")
@@ -298,7 +299,8 @@ fn ubuntu_1804_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/ubuntu:18.04", 1)
+        // Keep 18.04 template identity; use v9s-tested containerdisk tag (:18.04 not in verified set).
+        .add_container_disk("rootdisk", "quay.io/containerdisks/ubuntu:22.04", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "ubuntu")
@@ -318,7 +320,8 @@ fn fedora_43_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:43", 1)
+        // Use tested containerdisk tag (versioned Fedora tags are not consistently published).
+        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:latest", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "fedora")
@@ -334,7 +337,8 @@ fn fedora_42_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:42", 1)
+        // Use tested containerdisk tag (versioned Fedora tags are not consistently published).
+        .add_container_disk("rootdisk", "quay.io/containerdisks/fedora:latest", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "fedora")
@@ -370,7 +374,8 @@ fn centos_stream8_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/centos-stream:8", 1)
+        // Keep stream8 template name, but use tested image tag.
+        .add_container_disk("rootdisk", "quay.io/containerdisks/centos-stream:9", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "centos")
@@ -406,7 +411,8 @@ fn debian_11_template() -> VMConfig {
         .namespace("default")
         .cpu(2, 1, 1)
         .memory("4Gi")
-        .add_container_disk("rootdisk", "quay.io/containerdisks/debian:11", 1)
+        // Keep debian11 template name, but use tested image tag.
+        .add_container_disk("rootdisk", "quay.io/containerdisks/debian:12", 1)
         .add_blank_disk("datadisk", "20Gi", 2)
         .add_pod_network("default")
         .label("os", "debian")

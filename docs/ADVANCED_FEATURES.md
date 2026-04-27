@@ -1,6 +1,12 @@
-# 🚀 Advanced Features Guide
+# Advanced Features Guide
 
-This document covers the advanced features added to **vmrogue** in the innovation phase.
+This guide covers advanced VM workflows in `vmrogue`, with practical CLI/API examples.
+
+## Prerequisites
+
+- A reachable Kubernetes cluster with KubeVirt installed
+- `vmrogue` configured with kubeconfig access
+- API server running for REST examples (`vmrogue api-serve --port 5151`)
 
 ---
 
@@ -488,7 +494,7 @@ Each VM is exported as a `{namespace}-{name}.yaml` file containing a `VMRogueVM`
 The REST API supports batch VM operations:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/vms/batch \
+curl -X POST http://localhost:5151/api/v1/vms/batch \
   -H "X-API-Key: $VMROGUE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -524,13 +530,13 @@ Set monthly spending limits per namespace:
 
 ```bash
 # Create a budget
-curl -X POST http://localhost:8080/costs/budgets \
+curl -X POST http://localhost:5151/api/v1/costs/budgets \
   -H "X-API-Key: $VMROGUE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "dev-budget", "namespace": "dev", "monthly_limit": 500.0}'
 
 # List budgets with status
-curl http://localhost:8080/costs/budgets -H "X-API-Key: $VMROGUE_API_KEY"
+curl http://localhost:5151/api/v1/costs/budgets -H "X-API-Key: $VMROGUE_API_KEY"
 ```
 
 Budget status: `healthy` (under threshold), `warning` (over alert threshold), `exceeded` (over limit).
@@ -556,4 +562,4 @@ Future enhancements planned:
 
 ---
 
-See the main [README.md](README.md) for basic usage and [DEVELOPMENT.md](DEVELOPMENT.md) for development details.
+See [../README.md](../README.md) for basic usage and [../DEVELOPMENT.md](../DEVELOPMENT.md) for development details.

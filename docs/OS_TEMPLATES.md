@@ -22,6 +22,8 @@ ubuntu-18.04    # Bionic Beaver (2 CPU, 4GB RAM)
 ```
 **Credentials**: `ubuntu` / `ubuntu`
 
+**Containerdisk**: `ubuntu-18.04` and `ubuntu-20.04` keep their template keys for compatibility; the default root disk uses the v9s-tested refs `quay.io/containerdisks/ubuntu:22.04` and `quay.io/containerdisks/ubuntu:24.04` respectively (not `:18.04` / `:20.04`, which are unreliable for pulls).
+
 ### Fedora (2 templates)
 ```bash
 fedora          # Latest (43) - Cutting edge
@@ -285,10 +287,10 @@ windows-2019    # Stable server
 
 Most templates use **containerdisks** from `quay.io/containerdisks/`:
 
-- `ubuntu:22.04`, `ubuntu:20.04`, etc.
-- `fedora:43`, `fedora:42`, etc.
-- `centos-stream:9`, `centos-stream:8`
-- `debian:12`, `debian:11`
+- `ubuntu:22.04`, `ubuntu:24.04`, `ubuntu:25.04` (tested); older template keys may map to these tags
+- `fedora:latest` (tested) for Fedora Cloud–style templates
+- `centos-stream:9` (tested); stream-8 template may map to `:9`
+- `debian:12`, `debian:13` (tested); debian-11 template may map to `:12`
 - `almalinux:9`, `almalinux:8`
 - `rockylinux:9`, `rockylinux:8`
 - `alpine:3.19`
