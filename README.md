@@ -130,7 +130,7 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ```bash
 # Full API + operator deployment (build, import, CRDs/RBAC, deploy, verify).
 # Replace HOST and USER with the SSH target that can reach kubectl and your builder (podman/docker).
-./scripts/deploy-all.sh HOST USER
+./scripts/deploy-remote.sh HOST USER
 
 # Equivalent explicit script
 ./scripts/deploy-all-remote.sh HOST USER

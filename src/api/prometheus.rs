@@ -1,0 +1,114 @@
+//! Optional Prometheus instant-query helper for PVC volume usage (kubelet cAdvisor metrics).
+
+use anyhow::{Context, Result};
+use serde::Deserialize;
+use std::collections::HashMap;
+
+#[derive(Debug, Deserialize)]
+struct PromEnvelope {
+    status: Option<String>,
+    data: Option<PromData>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PromData {
+    result: Option<Vec<PromResult>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PromResult {
+    metric: Option<HashMap<String, String>>,
+    value: Option<(f64, String)>,
+}
+
+/// Run an instant Prometheus query. `base` is the full query-API prefix, e.g.
+/// `https://prometheus.example.com/api/v1/query`.
+pub async fn instant_query_vector(
+    base: &str,
+    query: &str,
+) -> Result<Vec<(HashMap<String, String>, f64)>> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .context("reqwest client")?;
+
+    let resp = client
+        .get(base.trim_end_matches('/'))
+        .query(&[("query", query)])
+        .send()
+        .await
+        .context("prometheus GET")?;
+    if !resp.status().is_success() {
+        anyhow::bail!("prometheus HTTP {}", resp.status());
+    }
+
+    let env: PromEnvelope = resp.json().await.context("prometheus json")?;
+    if env.status.as_deref() != Some("success") {
+        anyhow::bail!("prometheus status {:?}", env.status);
+    }
+
+    let mut out = Vec::new();
+    for r in env.data.and_then(|d| d.result).unwrap_or_default() {
+        if let Some((_, val)) = r.value {
+            if let Ok(v) = val.parse::<f64>() {
+                out.push((r.metric.unwrap_or_default(), v));
+            }
+        }
+    }
+    Ok(out)
+}
+
+/// Map `(namespace, pvc_name) -> used_bytes` from `kubelet_volume_stats_used_bytes` samples.
+pub fn index_pvc_used_bytes(
+    samples: Vec<(HashMap<String, String>, f64)>,
+) -> HashMap<(String, String), u64> {
+    let mut m = HashMap::new();
+    for (metric, v) in samples {
+        let ns = metric
+            .get("namespace")
+            .cloned()
+            .or_else(|| metric.get("exported_namespace").cloned());
+        let pvc = metric
+            .get("persistentvolumeclaim")
+            .cloned()
+            .or_else(|| metric.get("persistentvolume_claim").cloned());
+        if let (Some(ns), Some(pvc)) = (ns, pvc) {
+            let b = v.max(0.0) as u64;
+            m.entry((ns, pvc))
+                .and_modify(|e: &mut u64| *e = (*e).max(b))
+                .or_insert(b);
+        }
+    }
+    m
+}
+
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+
+    #[test]
+    fn index_pvc_used_bytes_parses_namespace_and_pvc() {
+        let mut m1 = HashMap::new();
+        m1.insert("namespace".to_string(), "ns1".to_string());
+        m1.insert("persistentvolumeclaim".to_string(), "data-disk".to_string());
+        let samples = vec![(m1, 1024.0)];
+        let m = index_pvc_used_bytes(samples);
+        assert_eq!(
+            m.get(&("ns1".to_string(), "data-disk".to_string())),
+            Some(&1024u64)
+        );
+    }
+
+    #[test]
+    fn index_pvc_used_bytes_takes_max_per_key() {
+        let mut a = HashMap::new();
+        a.insert("namespace".to_string(), "n".to_string());
+        a.insert("persistentvolumeclaim".to_string(), "p".to_string());
+        let mut b = HashMap::new();
+        b.insert("namespace".to_string(), "n".to_string());
+        b.insert("persistentvolumeclaim".to_string(), "p".to_string());
+        let m = index_pvc_used_bytes(vec![(a, 100.0), (b, 500.0)]);
+        assert_eq!(m.get(&("n".to_string(), "p".to_string())), Some(&500u64));
+    }
+}

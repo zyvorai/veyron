@@ -1493,7 +1493,8 @@ html[data-theme="steel"] .vm-detail{
 <div class="page" id="page-storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div></div>
-  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim">Filesystem usage inside volumes and CSI pool &quot;free&quot; space are not available here without metrics integrations. See <code>GET /api/v1/storage/pools</code> and <code>GET /api/v1/storage/usage</code> for VMRogue rollups (fields include <code>vmrogue_context</code>).</span></div>
+  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VMROGUE_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. In-guest filesystem usage still needs a guest agent or custom metrics.</span></div>
+  <p id="storage-prometheus-hint" style="display:none;margin:0 0 10px;font-size:.82em;color:var(--text-dim);font-family:var(--font-mono)"></p>
   <div class="grid-2">
     <div class="card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span></div><div id="pvc-list"></div></div>
     <div class="card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
@@ -2018,6 +2019,32 @@ html[data-theme="steel"] .vm-detail{
         <label class="form-label">Cloud-Init (optional)</label>
         <textarea class="form-input" id="vm-cloudinit" rows="4" placeholder="#cloud-config&#10;user: vmrogue&#10;password: changeme&#10;chpasswd: { expire: false }" style="font-size:.8em;resize:vertical"></textarea>
       </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85em;color:var(--text-muted)">
+          <input type="checkbox" id="vm-expose-enabled" style="accent-color:var(--molten)" onchange="document.getElementById('vm-expose-options').style.display=this.checked?'block':'none'">
+          <span>Expose guest port via Kubernetes Service (targets virt-launcher; forwards to VM when running)</span>
+        </label>
+        <div id="vm-expose-options" style="display:none;margin-top:8px;padding-left:10px;border-left:2px solid var(--border)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Service type</label>
+              <select class="form-select" id="vm-expose-type">
+                <option value="ClusterIP">ClusterIP</option>
+                <option value="NodePort">NodePort</option>
+                <option value="LoadBalancer">LoadBalancer</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Service port</label>
+              <input type="number" class="form-input" id="vm-expose-port" min="1" max="65535" value="22">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Target (guest) port</label>
+              <input type="number" class="form-input" id="vm-expose-target" min="1" max="65535" value="22">
+            </div>
+          </div>
+        </div>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
         <input type="checkbox" id="vm-autostart" style="accent-color:var(--molten)">
         <label for="vm-autostart" style="font-size:.8em;color:var(--text-muted);cursor:pointer">Start VM after creation</label>
@@ -2098,6 +2125,25 @@ html[data-theme="steel"] .vm-detail{
     </div>
     <div id="vnc-container" style="width:100%;height:calc(100% - 56px);background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden">
       <div id="vnc-placeholder" style="color:var(--text-dim);font-family:var(--font-sans);font-size:.8em;letter-spacing:2px">Loading VNC...</div>
+    </div>
+  </div>
+</div>
+
+<!-- SERIAL CONSOLE MODAL (KubeVirt /console WebSocket proxy) -->
+<div class="modal-overlay" id="serial-modal">
+  <div class="modal" style="width:92vw;max-width:960px;height:82vh;display:flex;flex-direction:column">
+    <div class="modal-header">
+      <h2 id="serial-title">Serial: --</h2>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="serial-status" style="font-size:.7em;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
+        <button class="btn btn-start" onclick="reconnectSerial()">Reconnect</button>
+        <button class="modal-close" onclick="closeSerialModal()">&#10005;</button>
+      </div>
+    </div>
+    <pre id="serial-output" style="flex:1;min-height:0;margin:0;padding:12px;overflow:auto;background:#0b0d12;color:#c8e6c9;font-family:var(--font-mono);font-size:13px;line-height:1.35;border:none"></pre>
+    <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border)">
+      <input id="serial-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type a line, press Enter to send (adds newline)" style="flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text)" onkeydown="if(event.key==='Enter'){event.preventDefault();sendSerialLine();}">
+      <button class="btn btn-forge" type="button" onclick="sendSerialLine()">Send</button>
     </div>
   </div>
 </div>
@@ -2504,7 +2550,8 @@ function vmRow(vm, showActions) {
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\''+ns+'\',\''+vm.name+'\')">VNC</button>' : '') +
+    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\''+ns+'\',\''+vm.name+'\')">VNC</button>' +
+    '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.18);font-size:.6em" onclick="event.stopPropagation();openSerialConsole(\''+ns+'\',\''+vm.name+'\')">Serial</button>' : '') +
     (!isRunning ? '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'start\')">&#9654;</button>' : '') +
     (isRunning ? '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'stop\')">&#9632;</button>' : '') +
     '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'restart\')">&#8635;</button>' +
@@ -2745,6 +2792,14 @@ function openCreateModal() {
   document.getElementById('vm-name').value = '';
   document.getElementById('vm-cloudinit').value = '';
   document.getElementById('vm-autostart').checked = false;
+  const exEn = document.getElementById('vm-expose-enabled');
+  if (exEn) {
+    exEn.checked = false;
+    document.getElementById('vm-expose-options').style.display = 'none';
+    document.getElementById('vm-expose-type').value = 'ClusterIP';
+    document.getElementById('vm-expose-port').value = '22';
+    document.getElementById('vm-expose-target').value = '22';
+  }
   document.getElementById('vm-name').focus();
   renderProfilePicker();
 }
@@ -2773,6 +2828,16 @@ async function forgeVM() {
     cloud_init: cloudInit || null,
     start: document.getElementById('vm-autostart').checked,
   };
+  if (document.getElementById('vm-expose-enabled').checked) {
+    const st = document.getElementById('vm-expose-type').value;
+    const port = parseInt(document.getElementById('vm-expose-port').value, 10) || 22;
+    const target = parseInt(document.getElementById('vm-expose-target').value, 10) || port;
+    body.expose = {
+      enabled: true,
+      service_type: st,
+      ports: [{ name: 'ssh', port: port, target_port: target, protocol: 'TCP' }]
+    };
+  }
 
   try {
     await apiJson('/api/v1/vms', {
@@ -2793,7 +2858,7 @@ async function forgeVM() {
 
 // Close modals on Escape or overlay click
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCreateModal(); closeSnapModal(); closeVncModal(); closeResizeModal(); }
+  if (e.key === 'Escape') { closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); }
 });
 document.getElementById('create-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCreateModal();
@@ -2803,6 +2868,9 @@ document.getElementById('snap-create-modal').addEventListener('click', e => {
 });
 document.getElementById('vnc-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeVncModal();
+});
+document.getElementById('serial-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSerialModal();
 });
 
 // ── VM Detail Panel ──
@@ -2873,6 +2941,8 @@ async function fetchVmDetail(ns, name) {
       html += '</div>';
     }
 
+    html += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading…</div></div>';
+
     html += '</div>';
 
     html += '</div>';
@@ -2880,7 +2950,8 @@ async function fetchVmDetail(ns, name) {
     // Action buttons
     html += '<div class="detail-actions">';
     if (vm.status === 'Running') {
-      html += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; Console</button>';
+      html += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; VNC</button>';
+      html += '<button class="btn" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.22)" onclick="event.stopPropagation();openSerialConsole(\'' + ns + '\',\'' + name + '\')">&#9618; Serial</button>';
       html += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" onclick="event.stopPropagation();pauseVM(\'' + ns + '\',\'' + name + '\')">&#10074;&#10074; Pause</button>';
       html += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
       html += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();migrateVM(\'' + ns + '\',\'' + name + '\')">&#8644; Migrate</button>';
@@ -2914,7 +2985,99 @@ async function fetchVmDetail(ns, name) {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
     });
+    loadExposePanel(ns, name);
   } catch (e) { toast('Failed to load VM details: ' + (e.message || String(e)), 'error'); }
+}
+
+async function loadExposePanel(ns, name) {
+  const el = document.getElementById('expose-panel-' + name);
+  if (!el) return;
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/expose');
+    const ex = unwrapData(j);
+    renderExposePanel(el, ns, name, ex);
+  } catch (e) {
+    el.innerHTML = '<div class="detail-row"><span class="lbl">Error</span><span class="val" style="color:var(--error)">' + esc(e.message || String(e)) + '</span></div>';
+  }
+}
+
+function renderExposePanel(container, ns, name, ex) {
+  const enabled = ex && ex.enabled;
+  const tid = 'expose-form-' + name.replace(/[^a-zA-Z0-9_-]/g, '_');
+  let inner = '';
+  if (enabled) {
+    inner += detailRow('Kubernetes Service', esc(String(ex.service_name || '')));
+    inner += detailRow('Type', esc(String(ex.service_type || '')));
+    inner += detailRow('Cluster IP', ex.cluster_ip && ex.cluster_ip !== 'None' ? esc(String(ex.cluster_ip)) : 'None');
+    if (ex.ports && ex.ports.length) {
+      inner += '<table class="iface-table"><thead><tr><th>Port</th><th>Target</th><th>NodePort</th><th>Proto</th></tr></thead><tbody>';
+      ex.ports.forEach(p => {
+        const tp = p.target_port != null ? String(p.target_port) : '-';
+        inner += '<tr><td>' + esc(String(p.port)) + '</td><td>' + esc(tp) + '</td><td>' + esc(p.node_port != null ? String(p.node_port) : '-') + '</td><td>' + esc(p.protocol || 'TCP') + '</td></tr>';
+      });
+      inner += '</tbody></table>';
+    }
+  } else {
+    inner += '<div class="detail-row"><span class="lbl">Status</span><span class="val">No expose Service. Create one to forward a Service port to the guest (via virt-launcher when the VM is running).</span></div>';
+  }
+  inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
+  inner += '<label class="form-label" style="margin:0;font-size:.75em;color:var(--text-muted)">Type<br><select id="' + tid + '-type" class="form-select" style="min-width:130px">';
+  inner += '<option value="ClusterIP">ClusterIP</option><option value="NodePort">NodePort</option><option value="LoadBalancer">LoadBalancer</option></select></label>';
+  inner += '<label class="form-label" style="margin:0;font-size:.75em;color:var(--text-muted)">Service port<br><input type="number" class="form-input" id="' + tid + '-port" min="1" max="65535" value="22" style="width:76px"></label>';
+  inner += '<label class="form-label" style="margin:0;font-size:.75em;color:var(--text-muted)">Target port<br><input type="number" class="form-input" id="' + tid + '-target" min="1" max="65535" value="22" style="width:76px"></label>';
+  inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();applyVmExpose(\'' + ns + '\',\'' + name + '\',\'' + tid + '\')">Apply</button>';
+  inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();removeVmExpose(\'' + ns + '\',\'' + name + '\')">Remove</button>';
+  inner += '</div>';
+  container.innerHTML = inner;
+  if (enabled) {
+    const sel = document.getElementById(tid + '-type');
+    if (sel && ex.service_type) {
+      const t = String(ex.service_type);
+      if ([...sel.options].some(o => o.value === t)) sel.value = t;
+    }
+    const pp = (ex.ports && ex.ports[0]) || {};
+    const pEl = document.getElementById(tid + '-port');
+    const tEl = document.getElementById(tid + '-target');
+    if (pEl && pp.port != null) pEl.value = pp.port;
+    if (tEl && pp.target_port != null) tEl.value = pp.target_port;
+  }
+}
+
+async function applyVmExpose(ns, name, tid) {
+  tid = tid || ('expose-form-' + name.replace(/[^a-zA-Z0-9_-]/g, '_'));
+  const typeEl = document.getElementById(tid + '-type');
+  const portEl = document.getElementById(tid + '-port');
+  const tgtEl = document.getElementById(tid + '-target');
+  if (!typeEl || !portEl || !tgtEl) { toast('Expose form not ready', 'error'); return; }
+  const type = typeEl.value;
+  const port = parseInt(portEl.value, 10) || 22;
+  const target = parseInt(tgtEl.value, 10) || port;
+  const body = {
+    enabled: true,
+    service_type: type,
+    ports: [{ name: 'app', port: port, target_port: target, protocol: 'TCP' }]
+  };
+  try {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/expose', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    toast('Expose service updated', 'success');
+    await loadExposePanel(ns, name);
+  } catch (e) { toast('Expose: ' + (e.message || String(e)), 'error'); }
+}
+
+async function removeVmExpose(ns, name) {
+  try {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/expose', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: false })
+    });
+    toast('Expose service removed', 'success');
+    await loadExposePanel(ns, name);
+  } catch (e) { toast('Expose: ' + (e.message || String(e)), 'error'); }
 }
 
 function detailRow(label, value) {
@@ -3210,6 +3373,107 @@ function toggleVncFullscreen() {
   else document.exitFullscreen?.();
 }
 
+// ── Serial console (KubeVirt /console WebSocket) ──
+let serialWs = null;
+let serialVmNs = '';
+let serialVmName = '';
+const SERIAL_OUT_MAX = 256000;
+
+function serialBufToText(buf) {
+  try {
+    return new TextDecoder('utf-8', { fatal: false }).decode(buf);
+  } catch (e) {
+    return '';
+  }
+}
+
+function openSerialConsole(ns, name) {
+  serialVmNs = ns;
+  serialVmName = name;
+  document.getElementById('serial-title').textContent = 'Serial: ' + name + ' (' + ns + ')';
+  document.getElementById('serial-modal').classList.add('open');
+  document.getElementById('serial-output').textContent = '';
+  document.getElementById('serial-status').textContent = 'Connecting...';
+  document.getElementById('serial-status').style.color = 'var(--text-dim)';
+  connectSerial();
+}
+
+function connectSerial() {
+  if (serialWs) {
+    serialWs.onopen = null;
+    serialWs.onclose = null;
+    serialWs.onmessage = null;
+    serialWs.onerror = null;
+    try { serialWs.close(); } catch (e) {}
+    serialWs = null;
+  }
+  const out = document.getElementById('serial-output');
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const apiKey = getApiKey();
+  const url = proto + '//' + location.host + '/api/v1/vms/' + encodeURIComponent(serialVmNs) + '/' + encodeURIComponent(serialVmName) + '/serial?token=' + encodeURIComponent(apiKey);
+
+  try {
+    serialWs = new WebSocket(url, ['binary']);
+  } catch (e) {
+    document.getElementById('serial-status').textContent = 'Failed: ' + e.message;
+    document.getElementById('serial-status').style.color = 'var(--error)';
+    return;
+  }
+
+  serialWs.binaryType = 'arraybuffer';
+
+  serialWs.onopen = function () {
+    document.getElementById('serial-status').textContent = 'Connected';
+    document.getElementById('serial-status').style.color = 'var(--success)';
+  };
+
+  serialWs.onmessage = function (ev) {
+    let chunk = '';
+    if (typeof ev.data === 'string') chunk = ev.data;
+    else if (ev.data instanceof ArrayBuffer) chunk = serialBufToText(new Uint8Array(ev.data));
+    if (!chunk) return;
+    out.textContent += chunk;
+    if (out.textContent.length > SERIAL_OUT_MAX) {
+      out.textContent = out.textContent.slice(-SERIAL_OUT_MAX);
+    }
+    out.scrollTop = out.scrollHeight;
+  };
+
+  serialWs.onerror = function () {
+    document.getElementById('serial-status').textContent = 'WebSocket error';
+    document.getElementById('serial-status').style.color = 'var(--error)';
+  };
+
+  serialWs.onclose = function () {
+    const st = document.getElementById('serial-status');
+    if (st.textContent === 'Connecting...' || st.textContent === 'Connected') {
+      st.textContent = 'Disconnected';
+      st.style.color = 'var(--text-dim)';
+    }
+  };
+}
+
+function sendSerialLine() {
+  const inp = document.getElementById('serial-input');
+  if (!serialWs || serialWs.readyState !== 1 || !inp) return;
+  const line = inp.value;
+  serialWs.send(new TextEncoder().encode(line + '\n'));
+  inp.value = '';
+}
+
+function reconnectSerial() {
+  document.getElementById('serial-status').textContent = 'Reconnecting...';
+  connectSerial();
+}
+
+function closeSerialModal() {
+  document.getElementById('serial-modal').classList.remove('open');
+  if (serialWs) {
+    try { serialWs.close(); } catch (e) {}
+    serialWs = null;
+  }
+}
+
 // ── Security Posture ──
 async function fetchSecurity(ns, name) {
   try {
@@ -3393,18 +3657,55 @@ async function bulkAction(action) {
 async function fetchStorage() {
   const pvcEl = document.getElementById('pvc-list');
   const scEl = document.getElementById('sc-list');
+  const promHint = document.getElementById('storage-prometheus-hint');
   try {
-    const [pj, sj] = await Promise.all([
+    const [pj, sj, ur] = await Promise.all([
       apiJson('/api/v1/storage/pvcs' + nsParam()),
       apiJson('/api/v1/storage/classes'),
+      apiJson('/api/v1/storage/usage' + nsParam()).catch(function (e) {
+        console.warn('storage/usage:', e);
+        return null;
+      }),
     ]);
     const pvcRows = asArray(pj);
     const scRows = asArray(sj);
+    const usageRows = (ur && Array.isArray(ur.usage)) ? ur.usage : [];
+    const usageMap = new Map();
+    for (let i = 0; i < usageRows.length; i++) {
+      const u = usageRows[i];
+      const k = (u.namespace || '') + '/' + (u.pvc_name || '');
+      usageMap.set(k, u);
+    }
+    if (promHint) {
+      if (ur && ur.prometheus_query_url) {
+        promHint.style.display = 'block';
+        promHint.textContent = 'PVC usage from Prometheus: ' + ur.prometheus_query_url;
+      } else {
+        promHint.style.display = 'none';
+        promHint.textContent = '';
+      }
+    }
 
     if (pvcRows.length > 0) {
-      pvcEl.innerHTML = pvcRows.map(p =>
-        '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) + '</div><div class="snap-vm">' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div></div><div class="snap-status"><span class="vm-badge ' + (p.status==='Bound'?'running':'other') + '">' + esc(p.status) + '</span></div></div>'
-      ).join('');
+      pvcEl.innerHTML = pvcRows.map(function (p) {
+        const k = (p.namespace || '') + '/' + (p.name || '');
+        const u = usageMap.get(k);
+        let usageLine = '';
+        if (u) {
+          const pct = (typeof u.usage_percent === 'number' && !isNaN(u.usage_percent))
+            ? u.usage_percent.toFixed(0) + '%'
+            : '';
+          const parts = [];
+          if (u.used && u.capacity) parts.push(esc(u.used) + ' / ' + esc(u.capacity) + (pct ? ' (' + pct + ')' : ''));
+          else if (u.capacity) parts.push(esc(u.capacity));
+          if (u.usage_basis) parts.push(esc(u.usage_basis));
+          if (u.csi_free_min_for_class) parts.push('CSI class free (min): ' + esc(u.csi_free_min_for_class));
+          if (parts.length) usageLine = '<div class="snap-vm" style="margin-top:4px;font-size:.82em;opacity:.9;line-height:1.35">' + parts.join(' · ') + '</div>';
+        }
+        return '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) +
+          '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
+          '</div><div class="snap-status"><span class="vm-badge ' + (p.status === 'Bound' ? 'running' : 'other') + '">' + esc(p.status) + '</span></div></div>';
+      }).join('');
     } else {
       pvcEl.innerHTML = '<div class="empty-state"><p>No PVCs</p></div>';
     }

@@ -174,6 +174,17 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
     // Extract disks from volumes
     if let Some(ref volumes) = spec.volumes {
         for (i, vol) in volumes.iter().enumerate() {
+            let skip_virtiofs = domain
+                .filesystems
+                .as_ref()
+                .map(|fss| {
+                    fss.iter()
+                        .any(|f| f.name == vol.name && f.virtiofs.is_some())
+                })
+                .unwrap_or(false);
+            if skip_virtiofs {
+                continue;
+            }
             if let Some(ref container_disk) = vol.container_disk {
                 builder = builder.add_container_disk(
                     &vol.name,
@@ -261,7 +272,80 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
         }
     }
 
-    builder.build()
+    let mut config = builder.build();
+    config.run_strategy = vm.spec.run_strategy.clone();
+    config.instancetype = vm
+        .spec
+        .instancetype
+        .as_ref()
+        .map(|m| crate::config::VmMatcherRef {
+            name: m.name.clone(),
+            kind: m.kind.clone(),
+        });
+    config.preference = vm
+        .spec
+        .preference
+        .as_ref()
+        .map(|m| crate::config::VmMatcherRef {
+            name: m.name.clone(),
+            kind: m.kind.clone(),
+        });
+    if spec.node_selector.is_some()
+        || spec.affinity.is_some()
+        || spec.tolerations.is_some()
+        || spec.topology_spread_constraints.is_some()
+        || spec.priority_class_name.is_some()
+        || spec.scheduler_name.is_some()
+    {
+        config.scheduling = Some(crate::config::VmScheduling {
+            node_selector: spec
+                .node_selector
+                .as_ref()
+                .map(|m| m.iter().map(|(k, v)| (k.clone(), v.clone())).collect()),
+            affinity: spec.affinity.clone(),
+            tolerations: spec.tolerations.clone(),
+            topology_spread_constraints: spec.topology_spread_constraints.clone(),
+            priority_class_name: spec.priority_class_name.clone(),
+            scheduler_name: spec.scheduler_name.clone(),
+        });
+    }
+    config.access_credentials = spec.access_credentials.clone().unwrap_or_default();
+    if let Some(ref dev) = domain.devices {
+        if let Some(ref wd) = dev.watchdog {
+            if let (Some(model), Some(action)) = (wd.model.as_ref(), wd.action.as_ref()) {
+                config.watchdog = Some(crate::config::VmWatchdogConfig {
+                    model: model.clone(),
+                    action: action.clone(),
+                });
+            }
+        }
+        if let Some(ref hosts) = dev.host_devices {
+            config.host_devices = hosts
+                .iter()
+                .map(|h| crate::config::VmHostDevice {
+                    name: h.name.clone(),
+                    resource_name: h.resource_name.clone(),
+                })
+                .collect();
+        }
+    }
+    if let Some(ref fss) = domain.filesystems {
+        for fs in fss {
+            if fs.virtiofs.is_some() {
+                if let Some(ref vols) = spec.volumes {
+                    if let Some(vol) = vols.iter().find(|v| v.name == fs.name) {
+                        if let Some(ref pvc) = vol.persistent_volume_claim {
+                            config.virtio_fs.push(crate::config::VmVirtioFs {
+                                name: fs.name.clone(),
+                                pvc_name: pvc.claim_name.clone(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+    config
 }
 
 /// CLI overrides that can be applied on top of a loaded VMConfig.
@@ -729,6 +813,75 @@ pub async fn handle_unpause(name: String, namespace: &str) -> Result<()> {
     client.unpause_vm(namespace, &name).await?;
     sp.finish_and_clear();
     println!("{}", color::success(&format!("VM '{}' unpaused", name)));
+    Ok(())
+}
+
+pub async fn handle_guest_freeze(name: String, namespace: &str) -> Result<()> {
+    let client = crate::kube::KubeClient::new().await?;
+    client.guest_freeze(namespace, &name).await?;
+    println!(
+        "{}",
+        color::success(&format!("Guest freeze requested for '{}'", name))
+    );
+    Ok(())
+}
+
+pub async fn handle_guest_unfreeze(name: String, namespace: &str) -> Result<()> {
+    let client = crate::kube::KubeClient::new().await?;
+    client.guest_unfreeze(namespace, &name).await?;
+    println!(
+        "{}",
+        color::success(&format!("Guest unfreeze requested for '{}'", name))
+    );
+    Ok(())
+}
+
+pub async fn handle_guest_softreboot(name: String, namespace: &str) -> Result<()> {
+    let client = crate::kube::KubeClient::new().await?;
+    client.guest_soft_reboot(namespace, &name).await?;
+    println!(
+        "{}",
+        color::success(&format!("Guest soft reboot requested for '{}'", name))
+    );
+    Ok(())
+}
+
+pub async fn handle_volume_add(
+    name: String,
+    volume_name: String,
+    pvc: String,
+    namespace: &str,
+) -> Result<()> {
+    let client = crate::kube::KubeClient::new().await?;
+    client
+        .add_vm_volume(namespace, &name, &volume_name, &pvc)
+        .await?;
+    println!(
+        "{}",
+        color::success(&format!(
+            "Hotplug volume '{}' (PVC {}) added to VM '{}'",
+            volume_name, pvc, name
+        ))
+    );
+    Ok(())
+}
+
+pub async fn handle_volume_remove(
+    name: String,
+    volume_name: String,
+    namespace: &str,
+) -> Result<()> {
+    let client = crate::kube::KubeClient::new().await?;
+    client
+        .remove_vm_volume(namespace, &name, &volume_name)
+        .await?;
+    println!(
+        "{}",
+        color::success(&format!(
+            "Hotplug volume '{}' removed from VM '{}'",
+            volume_name, name
+        ))
+    );
     Ok(())
 }
 
@@ -2561,6 +2714,8 @@ mod tests {
             spec: VirtualMachineSpec {
                 running: Some(false),
                 run_strategy: None,
+                instancetype: None,
+                preference: None,
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {
@@ -2589,6 +2744,7 @@ mod tests {
                                 max_guest: None,
                             }),
                             devices: None,
+                            filesystems: None,
                             features: None,
                             clock: None,
                             firmware: None,
@@ -2600,6 +2756,12 @@ mod tests {
                         termination_grace_period_seconds: None,
                         eviction_strategy: None,
                         node_selector: None,
+                        priority_class_name: None,
+                        affinity: None,
+                        tolerations: None,
+                        topology_spread_constraints: None,
+                        scheduler_name: None,
+                        access_credentials: None,
                     },
                 },
             },
@@ -2757,6 +2919,7 @@ mod tests {
             tpm: None,
             rng: None,
             inputs: None,
+            host_devices: None,
             watchdog: None,
             autoattach_graphics_device: None,
             autoattach_mem_balloon: None,
@@ -2793,6 +2956,7 @@ mod tests {
             tpm: None,
             rng: None,
             inputs: None,
+            host_devices: None,
             watchdog: None,
             autoattach_graphics_device: None,
             autoattach_mem_balloon: None,

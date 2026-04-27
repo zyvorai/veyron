@@ -218,6 +218,118 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         Endpoint::new("POST", "/api/v1/vms/:name/start", "Start a VM").with_auth(),
         Endpoint::new("POST", "/api/v1/vms/:name/stop", "Stop a VM").with_auth(),
         Endpoint::new("POST", "/api/v1/vms/:name/restart", "Restart a VM").with_auth(),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/expose",
+            "Get VMRogue-managed Service expose status",
+        ),
+        Endpoint::new(
+            "PUT",
+            "/api/v1/vms/:ns/:name/expose",
+            "Create or update VM Service expose (ClusterIP / NodePort / LoadBalancer)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "DELETE",
+            "/api/v1/vms/:ns/:name/expose",
+            "Delete VMRogue-managed Service expose",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/migrate",
+            "Live-migrate VM (optional JSON: targetHostname, addedNodeSelector, priority)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/migrations",
+            "List VirtualMachineInstanceMigrations for this VM",
+        ),
+        Endpoint::new(
+            "DELETE",
+            "/api/v1/vms/:ns/:name/migrations/:migname",
+            "Delete a migration object (cancel attempt)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/guest/freeze",
+            "Guest FS freeze (virtctl)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/guest/unfreeze",
+            "Guest FS unfreeze (virtctl)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/guest/softreboot",
+            "Guest soft reboot (virtctl)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/volumes/status",
+            "VMI volumeStatus (hotplug state)",
+        ),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/volumes/hotplug",
+            "Hotplug PVC (virtctl addvolume)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/volumes/hotremove",
+            "Remove hotplug volume (virtctl removevolume)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/console/serial",
+            "Serial console: virtctl/kubectl hints and WebSocket path",
+        ),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/serial",
+            "Serial console WebSocket proxy (subprotocol binary; ?token=)",
+        ),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/vnc",
+            "VNC WebSocket proxy (noVNC; ?token=)",
+        ),
+        Endpoint::new(
+            "GET",
+            "/api/v1/kubevirt/migration-policies",
+            "List KubeVirt MigrationPolicy CRs (bandwidth, post-copy, selectors)",
+        ),
+        Endpoint::new(
+            "POST",
+            "/api/v1/kubevirt/migration-policies",
+            "Create a MigrationPolicy (JSON body = full object)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "GET",
+            "/api/v1/kubevirt/migration-policies/:name",
+            "Get one MigrationPolicy",
+        ),
+        Endpoint::new(
+            "PUT",
+            "/api/v1/kubevirt/migration-policies/:name",
+            "Replace a MigrationPolicy",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "DELETE",
+            "/api/v1/kubevirt/migration-policies/:name",
+            "Delete a MigrationPolicy",
+        )
+        .with_auth(),
         // Templates
         Endpoint::new("GET", "/api/v1/templates", "List available templates"),
         Endpoint::new("GET", "/api/v1/templates/:name", "Get template details"),

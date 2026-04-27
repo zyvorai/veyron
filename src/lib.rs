@@ -230,6 +230,30 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             handlers::vm::handle_unpause(name, &cli.namespace).await?;
         }
 
+        Commands::GuestFreeze { name } => {
+            handlers::vm::handle_guest_freeze(name, &cli.namespace).await?;
+        }
+
+        Commands::GuestUnfreeze { name } => {
+            handlers::vm::handle_guest_unfreeze(name, &cli.namespace).await?;
+        }
+
+        Commands::GuestSoftreboot { name } => {
+            handlers::vm::handle_guest_softreboot(name, &cli.namespace).await?;
+        }
+
+        Commands::VolumeAdd {
+            name,
+            volume_name,
+            pvc,
+        } => {
+            handlers::vm::handle_volume_add(name, volume_name, pvc, &cli.namespace).await?;
+        }
+
+        Commands::VolumeRemove { name, volume_name } => {
+            handlers::vm::handle_volume_remove(name, volume_name, &cli.namespace).await?;
+        }
+
         Commands::Resize { name, cpus, memory } => {
             handlers::vm::handle_resize(name, cpus, memory, &cli.namespace).await?;
         }

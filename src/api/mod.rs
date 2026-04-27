@@ -8,6 +8,8 @@ pub mod middleware;
 pub mod openapi;
 pub mod pagination;
 pub mod pam_auth;
+#[cfg(feature = "web")]
+pub mod prometheus;
 pub mod routes;
 pub mod server;
 pub mod webhooks;
