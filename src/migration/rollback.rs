@@ -141,6 +141,7 @@ impl RollbackManager {
                 },
                 spec: crate::kube::types::VirtualMachineInstanceMigrationSpec {
                     vmi_name: Some(vm_name.clone()),
+                    ..Default::default()
                 },
                 status: None,
             };

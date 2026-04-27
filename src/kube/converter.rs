@@ -131,6 +131,20 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         }
     }
 
+    for fs in &config.virtio_fs {
+        volumes.push(Volume {
+            name: fs.name.clone(),
+            persistent_volume_claim: Some(PersistentVolumeClaimVolumeSource {
+                claim_name: fs.pvc_name.clone(),
+            }),
+            empty_disk: None,
+            container_disk: None,
+            data_volume: None,
+            cloud_init_no_cloud: None,
+            cloud_init_config_drive: None,
+        });
+    }
+
     // Build disks
     let mut disks = Vec::new();
     for disk in &config.disks {
@@ -313,11 +327,90 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         None
     };
 
+    let watchdog = config.watchdog.as_ref().map(|w| WatchdogDevice {
+        model: Some(w.model.clone()),
+        action: Some(w.action.clone()),
+    });
+
+    let host_devices = if config.host_devices.is_empty() {
+        None
+    } else {
+        Some(
+            config
+                .host_devices
+                .iter()
+                .map(|h| HostDevice {
+                    name: h.name.clone(),
+                    resource_name: h.resource_name.clone(),
+                })
+                .collect(),
+        )
+    };
+
+    let filesystems = if config.virtio_fs.is_empty() {
+        None
+    } else {
+        Some(
+            config
+                .virtio_fs
+                .iter()
+                .map(|f| Filesystem {
+                    name: f.name.clone(),
+                    virtiofs: Some(VirtiofsSource::default()),
+                })
+                .collect(),
+        )
+    };
+
+    let (
+        sched_node_selector,
+        priority_class_name,
+        affinity,
+        tolerations,
+        topology_spread_constraints,
+        scheduler_name,
+    ) = if let Some(ref sch) = config.scheduling {
+        (
+            sch.node_selector
+                .as_ref()
+                .map(|m| m.iter().map(|(k, v)| (k.clone(), v.clone())).collect()),
+            sch.priority_class_name.clone(),
+            sch.affinity.clone(),
+            sch.tolerations.clone(),
+            sch.topology_spread_constraints.clone(),
+            sch.scheduler_name.clone(),
+        )
+    } else {
+        (None, None, None, None, None, None)
+    };
+
+    let access_credentials = if config.access_credentials.is_empty() {
+        None
+    } else {
+        Some(config.access_credentials.clone())
+    };
+
+    let instancetype = config.instancetype.as_ref().map(|i| InstancetypeMatcher {
+        name: i.name.clone(),
+        kind: i.kind.clone(),
+    });
+    let preference = config.preference.as_ref().map(|i| InstancetypeMatcher {
+        name: i.name.clone(),
+        kind: i.kind.clone(),
+    });
+
+    let (running_field, run_strategy_field) = match &config.run_strategy {
+        Some(rs) => (None, Some(rs.clone())),
+        None => (Some(false), None),
+    };
+
     let termination_grace_period = config.termination_grace_period.unwrap_or(30);
 
     let spec = VirtualMachineSpec {
-        running: Some(false), // VMs are created in stopped state
-        run_strategy: None,
+        running: running_field,
+        run_strategy: run_strategy_field,
+        instancetype,
+        preference,
         template: VirtualMachineInstanceTemplateSpec {
             metadata: Some(ObjectMeta {
                 labels: Some(template_labels),
@@ -350,7 +443,8 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         tpm,
                         rng,
                         inputs,
-                        watchdog: None,
+                        host_devices,
+                        watchdog,
                         autoattach_graphics_device: None,
                         autoattach_mem_balloon: if config.disable_balloon {
                             Some(false)
@@ -359,6 +453,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         },
                         network_interface_multiqueue: None,
                     }),
+                    filesystems,
                     features,
                     clock,
                     firmware,
@@ -369,7 +464,13 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 networks: Some(networks),
                 termination_grace_period_seconds: Some(termination_grace_period),
                 eviction_strategy: config.eviction_strategy.clone(),
-                node_selector: None,
+                node_selector: sched_node_selector,
+                priority_class_name,
+                affinity,
+                tolerations,
+                topology_spread_constraints,
+                scheduler_name,
+                access_credentials,
             },
         },
     };

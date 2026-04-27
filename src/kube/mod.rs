@@ -2,7 +2,7 @@ pub mod converter;
 pub mod status;
 pub mod types;
 
-use crate::config::{CloudInitDelivery, VMConfig};
+use crate::config::{CloudInitDelivery, VMConfig, VmExposeConfig};
 use crate::utils::VMRogueError;
 use anyhow::Result;
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
@@ -70,6 +70,13 @@ pub async fn get_client() -> Result<Client> {
         anyhow::anyhow!("Failed to connect to Kubernetes: {}\n  Hint: {}", e, hint)
     })?;
     Ok(Client::try_from(config)?)
+}
+
+/// Options for [`KubeClient::migrate_vm`].
+#[derive(Debug, Clone, Default)]
+pub struct MigrateVmOptions {
+    pub added_node_selector: Option<BTreeMap<String, String>>,
+    pub priority: Option<String>,
 }
 
 /// Kubernetes client for managing KubeVirt VMs
@@ -198,7 +205,10 @@ impl KubeClient {
 
         if let Some(exp) = &config.expose {
             if exp.enabled {
-                if let Err(err) = self.ensure_vm_expose_service(config, exp).await {
+                if let Err(err) = self
+                    .upsert_vm_expose_service(&config.namespace, &config.name, exp)
+                    .await
+                {
                     log::warn!(
                         "VM '{}' created but expose Service failed: {}",
                         config.name,
@@ -277,16 +287,17 @@ impl KubeClient {
     /// Creates or updates a `Service` whose selector targets the **virt-launcher pod**
     /// (`kubevirt.io/domain=<vm>`). That forwards to the VM’s network namespace when the guest is
     /// running; it does **not** guarantee the guest OS is listening on the exposed ports.
-    async fn ensure_vm_expose_service(
+    pub async fn upsert_vm_expose_service(
         &self,
-        config: &VMConfig,
-        expose: &crate::config::VmExposeConfig,
+        namespace: &str,
+        vm_name: &str,
+        expose: &VmExposeConfig,
     ) -> Result<()> {
-        let svc_api: Api<Service> = Api::namespaced(self.client.clone(), &config.namespace);
-        let svc_name = vm_expose_service_name(&config.name);
+        let svc_api: Api<Service> = Api::namespaced(self.client.clone(), namespace);
+        let svc_name = vm_expose_service_name(vm_name);
 
         let mut selector = BTreeMap::new();
-        selector.insert("kubevirt.io/domain".to_string(), config.name.clone());
+        selector.insert("kubevirt.io/domain".to_string(), vm_name.to_string());
 
         let type_str = match expose.service_type.to_ascii_lowercase().as_str() {
             "nodeport" => "NodePort",
@@ -321,10 +332,10 @@ impl KubeClient {
         let svc = Service {
             metadata: ObjectMeta {
                 name: Some(svc_name.clone()),
-                namespace: Some(config.namespace.clone()),
+                namespace: Some(namespace.to_string()),
                 labels: Some(BTreeMap::from([
                     ("vmrogue.io/managed-by".to_string(), "vmrogue".to_string()),
-                    ("vmrogue.io/expose-for-vm".to_string(), config.name.clone()),
+                    ("vmrogue.io/expose-for-vm".to_string(), vm_name.to_string()),
                 ])),
                 ..Default::default()
             },
@@ -345,6 +356,63 @@ impl KubeClient {
                     .await?;
                 Ok(())
             }
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Returns the VMRogue-managed expose `Service` for this VM, if it exists.
+    pub async fn get_vm_expose_service(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<Option<Service>> {
+        let svc_name = vm_expose_service_name(vm_name);
+        let svc_api: Api<Service> = Api::namespaced(self.client.clone(), namespace);
+        match svc_api.get(&svc_name).await {
+            Ok(s) => {
+                let managed = s
+                    .metadata
+                    .labels
+                    .as_ref()
+                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .map(|v| v.as_str())
+                    == Some("vmrogue");
+                if !managed {
+                    return Ok(None);
+                }
+                Ok(Some(s))
+            }
+            Err(kube::Error::Api(ae)) if ae.code == 404 => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Deletes the VMRogue-managed expose `Service` for this VM (idempotent).
+    pub async fn delete_vm_expose_service(&self, namespace: &str, vm_name: &str) -> Result<()> {
+        let svc_name = vm_expose_service_name(vm_name);
+        let svc_api: Api<Service> = Api::namespaced(self.client.clone(), namespace);
+        match svc_api.get(&svc_name).await {
+            Ok(s) => {
+                let managed = s
+                    .metadata
+                    .labels
+                    .as_ref()
+                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .map(|v| v.as_str())
+                    == Some("vmrogue");
+                if !managed {
+                    return Err(anyhow::anyhow!(
+                        "Service {} exists but is not managed by VMRogue",
+                        svc_name
+                    ));
+                }
+            }
+            Err(kube::Error::Api(ae)) if ae.code == 404 => return Ok(()),
+            Err(e) => return Err(e.into()),
+        }
+        match svc_api.delete(&svc_name, &DeleteParams::default()).await {
+            Ok(_) => Ok(()),
+            Err(kube::Error::Api(ae)) if ae.code == 404 => Ok(()),
             Err(e) => Err(e.into()),
         }
     }
@@ -823,8 +891,13 @@ impl KubeClient {
         Ok(())
     }
 
-    /// Trigger live migration of a VM to another node
-    pub async fn migrate_vm(&self, namespace: &str, name: &str) -> Result<()> {
+    /// Trigger live migration of a VM to another node.
+    pub async fn migrate_vm(
+        &self,
+        namespace: &str,
+        name: &str,
+        opts: Option<MigrateVmOptions>,
+    ) -> Result<()> {
         let migrations: Api<VirtualMachineInstanceMigration> =
             Api::namespaced(self.client.clone(), namespace);
 
@@ -833,21 +906,174 @@ impl KubeClient {
             name,
             chrono::Utc::now().format("%Y%m%d%H%M%S")
         );
+        let mut spec = VirtualMachineInstanceMigrationSpec {
+            vmi_name: Some(name.to_string()),
+            ..Default::default()
+        };
+        if let Some(o) = opts {
+            spec.added_node_selector = o.added_node_selector;
+            spec.priority = o.priority;
+        }
         let migration = VirtualMachineInstanceMigration {
             metadata: kube::api::ObjectMeta {
                 name: Some(migration_name),
                 namespace: Some(namespace.to_string()),
                 ..Default::default()
             },
-            spec: VirtualMachineInstanceMigrationSpec {
-                vmi_name: Some(name.to_string()),
-            },
+            spec,
             status: None,
         };
 
         let pp = PostParams::default();
         migrations.create(&pp, &migration).await?;
         Ok(())
+    }
+
+    /// List `VirtualMachineInstanceMigration` objects for a given VMI name in a namespace.
+    pub async fn list_migrations_for_vmi(
+        &self,
+        namespace: &str,
+        vmi_name: &str,
+    ) -> Result<Vec<VirtualMachineInstanceMigration>> {
+        let migrations: Api<VirtualMachineInstanceMigration> =
+            Api::namespaced(self.client.clone(), namespace);
+        let list = migrations.list(&ListParams::default()).await?;
+        Ok(list
+            .items
+            .into_iter()
+            .filter(|m| {
+                m.spec
+                    .vmi_name
+                    .as_deref()
+                    .map(|n| n == vmi_name)
+                    .unwrap_or(false)
+            })
+            .collect())
+    }
+
+    /// Delete a migration object by name (best-effort cancel).
+    pub async fn delete_migration(&self, namespace: &str, migration_name: &str) -> Result<()> {
+        let migrations: Api<VirtualMachineInstanceMigration> =
+            Api::namespaced(self.client.clone(), namespace);
+        migrations
+            .delete(migration_name, &DeleteParams::default())
+            .await?;
+        Ok(())
+    }
+
+    /// Guest filesystem freeze via `virtctl` (QEMU guest agent).
+    pub async fn guest_freeze(&self, namespace: &str, vmi_name: &str) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args(["freeze", "vmi", vmi_name, "-n", namespace])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "virtctl freeze failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        Ok(())
+    }
+
+    /// Unfreeze guest filesystems via `virtctl`.
+    pub async fn guest_unfreeze(&self, namespace: &str, vmi_name: &str) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args(["unfreeze", "vmi", vmi_name, "-n", namespace])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "virtctl unfreeze failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        Ok(())
+    }
+
+    /// ACPI soft reboot via guest agent (`virtctl softreboot`).
+    pub async fn guest_soft_reboot(&self, namespace: &str, vmi_name: &str) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args(["softreboot", "vmi", vmi_name, "-n", namespace])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "virtctl softreboot failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        Ok(())
+    }
+
+    /// Hotplug a PVC volume onto a VM (`virtctl addvolume`).
+    pub async fn add_vm_volume(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        volume_name: &str,
+        pvc_name: &str,
+    ) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args([
+                "addvolume",
+                vm_name,
+                "--volume-name",
+                volume_name,
+                "--pvc",
+                pvc_name,
+                "-n",
+                namespace,
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "virtctl addvolume failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        Ok(())
+    }
+
+    /// Remove a hotplug volume (`virtctl removevolume`).
+    pub async fn remove_vm_volume(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        volume_name: &str,
+    ) -> Result<()> {
+        let output = tokio::process::Command::new("virtctl")
+            .args([
+                "removevolume",
+                vm_name,
+                "--volume-name",
+                volume_name,
+                "-n",
+                namespace,
+            ])
+            .output()
+            .await?;
+        if !output.status.success() {
+            return Err(anyhow::anyhow!(
+                "virtctl removevolume failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            ));
+        }
+        Ok(())
+    }
+
+    /// Return `status.volumeStatus` from the VMI (hotplug / volume health), if present.
+    pub async fn get_vmi_volume_status_json(
+        &self,
+        namespace: &str,
+        vmi_name: &str,
+    ) -> Result<serde_json::Value> {
+        let vmi = self.get_vmi(namespace, vmi_name).await?;
+        let v = serde_json::to_value(&vmi)?;
+        Ok(v.pointer("/status/volumeStatus")
+            .cloned()
+            .unwrap_or(serde_json::json!([])))
     }
 
     /// Update VM CPU and memory (requires VM to be stopped for changes to take effect)

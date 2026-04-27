@@ -6,7 +6,7 @@ This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue comman
 
 ```bash
 # Full remote deployment (API + operator); HOST USER = SSH target (node + login)
-./scripts/deploy-all.sh HOST USER
+./scripts/deploy-remote.sh HOST USER
 ./scripts/deploy-all-remote.sh HOST USER
 
 # Quick mode (skip image build/import)

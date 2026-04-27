@@ -9,6 +9,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+#[cfg(feature = "web")]
+use crate::kube::MigrateVmOptions;
 
 #[cfg(feature = "web")]
 use kube::{
@@ -127,7 +129,27 @@ async fn create_migration(
         .and_then(|vmi| vmi.status.as_ref().and_then(|st| st.node_name.clone()))
         .unwrap_or_default();
 
-    match s.client().migrate_vm(&s.namespace, &req.vm_name).await {
+    let mopts = if let Some(ref tn) = req.target_node {
+        if !tn.is_empty() {
+            Some(MigrateVmOptions {
+                added_node_selector: Some(std::collections::BTreeMap::from([(
+                    "kubernetes.io/hostname".to_string(),
+                    tn.clone(),
+                )])),
+                priority: None,
+            })
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    match s
+        .client()
+        .migrate_vm(&s.namespace, &req.vm_name, mopts)
+        .await
+    {
         Ok(()) => Ok(Json(MigrationResponse {
             id: format!(
                 "{}-migration-{}",

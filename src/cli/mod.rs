@@ -164,6 +164,40 @@ pub enum Commands {
         name: String,
     },
 
+    /// Freeze guest filesystems via QEMU guest agent (for consistent backups)
+    GuestFreeze {
+        /// VM / VMI name
+        name: String,
+    },
+    /// Unfreeze guest filesystems
+    GuestUnfreeze {
+        /// VM / VMI name
+        name: String,
+    },
+    /// ACPI soft reboot via guest agent
+    GuestSoftreboot {
+        /// VM / VMI name
+        name: String,
+    },
+    /// Hotplug a PVC onto a running VM (`virtctl addvolume`)
+    VolumeAdd {
+        /// VM name
+        name: String,
+        /// Volume name to attach in the VM spec
+        #[arg(long)]
+        volume_name: String,
+        /// Existing PVC name
+        #[arg(long)]
+        pvc: String,
+    },
+    /// Remove a hotplug volume (`virtctl removevolume`)
+    VolumeRemove {
+        /// VM name
+        name: String,
+        #[arg(long)]
+        volume_name: String,
+    },
+
     /// Resize VM CPU and/or memory (requires restart to take effect)
     Resize {
         /// VM name

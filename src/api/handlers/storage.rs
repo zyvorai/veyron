@@ -35,6 +35,8 @@ pub struct StoragePoolsResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageUsageResponse {
     pub vmrogue_context: VmrogueFeatureContext,
+    /// When set, PVC `used` / `usage_percent` may include kubelet volume stats from this query API.
+    pub prometheus_query_url: Option<String>,
     pub usage: Vec<StorageUsage>,
 }
 
@@ -47,6 +49,11 @@ pub struct StorageUsage {
     pub capacity: String,
     pub used: String,
     pub usage_percent: f64,
+    /// How `used` / `usage_percent` were derived (`pvc_allocated`, `kubelet_volume_stats`, or `unknown`).
+    pub usage_basis: String,
+    /// Minimum reported free capacity for this PVC's StorageClass from `CSIStorageCapacity` (cluster-wide hint), if available.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub csi_free_min_for_class: Option<String>,
     pub bound_to_vm: Option<String>,
 }
 
@@ -129,6 +136,39 @@ fn format_bytes(bytes: u64) -> String {
 }
 
 #[cfg(feature = "web")]
+async fn csi_min_free_by_storage_class(
+    client: &kube::Client,
+) -> std::collections::HashMap<String, u64> {
+    use k8s_openapi::api::storage::v1::CSIStorageCapacity;
+    use kube::api::ListParams;
+
+    let api: kube::Api<CSIStorageCapacity> = kube::Api::all(client.clone());
+    let Ok(list) = api.list(&ListParams::default().limit(5000)).await else {
+        return std::collections::HashMap::new();
+    };
+
+    let mut m: std::collections::HashMap<String, u64> = std::collections::HashMap::new();
+    for item in list.items {
+        let sc = item.storage_class_name.clone();
+        if sc.is_empty() {
+            continue;
+        }
+        let free = item
+            .capacity
+            .as_ref()
+            .map(|q| crate::utils::parse_memory_bytes(&q.0))
+            .unwrap_or(0);
+        if free == 0 {
+            continue;
+        }
+        m.entry(sc)
+            .and_modify(|e| *e = (*e).min(free))
+            .or_insert(free);
+    }
+    m
+}
+
+#[cfg(feature = "web")]
 async fn get_storage_usage(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
@@ -136,6 +176,24 @@ async fn get_storage_usage(
     let s = state.read().await;
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
     let pvcs = s.client().list_pvcs_for_scope(&scope).await;
+    let kc = s.client().client();
+
+    let prom_url = std::env::var("VMROGUE_PROMETHEUS_URL").ok();
+    let pvc_used_bytes = if let Some(ref base) = prom_url {
+        match crate::api::prometheus::instant_query_vector(base, "kubelet_volume_stats_used_bytes")
+            .await
+        {
+            Ok(rows) => Some(crate::api::prometheus::index_pvc_used_bytes(rows)),
+            Err(e) => {
+                log::warn!("Prometheus PVC usage query failed: {}", e);
+                None
+            }
+        }
+    } else {
+        None
+    };
+
+    let csi_free = csi_min_free_by_storage_class(&kc).await;
 
     let results: Vec<StorageUsage> = pvcs
         .iter()
@@ -161,22 +219,49 @@ async fn get_storage_usage(
             });
 
             let phase = status.and_then(|s| s.phase.as_deref()).unwrap_or("");
-
-            // K8s PVC API does not expose filesystem-level usage (requires kubelet metrics).
-            // For Bound PVCs the full capacity is allocated, so we report that as used.
-            let (used, usage_percent) = if phase == "Bound" && !capacity.is_empty() {
-                (capacity.clone(), 100.0)
+            let ns = meta.namespace.clone().unwrap_or_default();
+            let pname = meta.name.clone().unwrap_or_default();
+            let cap_bytes = if capacity.is_empty() {
+                0u64
             } else {
-                (String::new(), 0.0)
+                crate::utils::parse_memory_bytes(&capacity)
+            };
+
+            let key = (ns.clone(), pname.clone());
+            let prom_used = pvc_used_bytes.as_ref().and_then(|m| m.get(&key).copied());
+
+            let (used, usage_percent, usage_basis) = if let Some(u) = prom_used {
+                let pct = if cap_bytes > 0 {
+                    ((u as f64) / (cap_bytes as f64)) * 100.0_f64
+                } else {
+                    0.0
+                };
+                (
+                    format_bytes(u),
+                    pct.min(100.0),
+                    "kubelet_volume_stats".to_string(),
+                )
+            } else if phase == "Bound" && !capacity.is_empty() && cap_bytes > 0 {
+                (capacity.clone(), 100.0, "pvc_allocated".to_string())
+            } else {
+                (String::new(), 0.0, "unknown".to_string())
+            };
+
+            let csi_free_min_for_class = if !storage_class.is_empty() {
+                csi_free.get(&storage_class).copied().map(format_bytes)
+            } else {
+                None
             };
 
             StorageUsage {
-                pvc_name: meta.name.clone().unwrap_or_default(),
-                namespace: meta.namespace.clone().unwrap_or_default(),
+                pvc_name: pname,
+                namespace: ns,
                 storage_class,
                 capacity,
                 used,
                 usage_percent,
+                usage_basis,
+                csi_free_min_for_class,
                 bound_to_vm,
             }
         })
@@ -184,6 +269,7 @@ async fn get_storage_usage(
 
     Json(StorageUsageResponse {
         vmrogue_context: VmrogueFeatureContext::storage_usage(),
+        prometheus_query_url: prom_url,
         usage: results,
     })
 }

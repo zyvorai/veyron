@@ -20,7 +20,20 @@ use std::collections::BTreeMap;
 pub struct VirtualMachineSpec {
     pub running: Option<bool>,
     pub run_strategy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instancetype: Option<InstancetypeMatcher>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preference: Option<InstancetypeMatcher>,
     pub template: VirtualMachineInstanceTemplateSpec,
+}
+
+/// KubeVirt `VirtualMachineSpec.instancetype` / `preference` reference.
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct InstancetypeMatcher {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -50,6 +63,18 @@ pub struct VirtualMachineInstanceSpec {
     pub eviction_strategy: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub node_selector: Option<BTreeMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority_class_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub affinity: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tolerations: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub topology_spread_constraints: Option<Vec<serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scheduler_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub access_credentials: Option<Vec<serde_json::Value>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -63,6 +88,8 @@ pub struct DomainSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub devices: Option<Devices>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub filesystems: Option<Vec<Filesystem>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub features: Option<Features>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub clock: Option<Clock>,
@@ -73,6 +100,19 @@ pub struct DomainSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub io_threads_policy: Option<String>,
 }
+
+/// Virtio-FS filesystem definition (`spec.domain.filesystems`).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Filesystem {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub virtiofs: Option<VirtiofsSource>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct VirtiofsSource {}
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
@@ -128,6 +168,8 @@ pub struct Devices {
     pub rng: Option<RNGDevice>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inputs: Option<Vec<InputDevice>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host_devices: Option<Vec<HostDevice>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub watchdog: Option<WatchdogDevice>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -565,6 +607,14 @@ pub struct WatchdogDevice {
     pub action: Option<String>,
 }
 
+/// GPU / mediated device assignment (`spec.domain.devices.hostDevices`).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct HostDevice {
+    pub name: String,
+    pub resource_name: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct VirtualMachineStatus {
@@ -659,7 +709,7 @@ pub struct GuestOsInfo {
 }
 
 /// VirtualMachineInstanceMigration CRD for KubeVirt
-#[derive(CustomResource, Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(CustomResource, Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
 #[kube(
     group = "kubevirt.io",
     version = "v1",
@@ -673,6 +723,12 @@ pub struct GuestOsInfo {
 pub struct VirtualMachineInstanceMigrationSpec {
     /// Name of the VMI to migrate
     pub vmi_name: Option<String>,
+    /// Restrict migration targets (e.g. `kubernetes.io/hostname: worker-2`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub added_node_selector: Option<BTreeMap<String, String>>,
+    /// `system-critical`, `user-triggered`, or `system-maintenance`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]

@@ -6,21 +6,24 @@
 pub mod web {
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
-    use crate::kube::KubeClient;
+    use crate::kube::{KubeClient, MigrateVmOptions, vm_expose_service_name};
     use crate::profiles::PROFILES;
     use crate::templates::TEMPLATES;
     use crate::tui::state::VmInfo;
     use axum::{
-        Router,
+        Json, Router,
+        body::Bytes,
         extract::{
             DefaultBodyLimit, Path, Query, State, WebSocketUpgrade,
             ws::{Message, WebSocket},
         },
         http::{HeaderMap, StatusCode, header},
         middleware,
-        response::{Html, IntoResponse, Json},
-        routing::{delete, get, post},
+        response::{Html, IntoResponse},
+        routing::{delete, get, post, put},
     };
+    use k8s_openapi::api::core::v1::Service;
+    use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
     use std::sync::Arc;
@@ -691,6 +694,52 @@ pub mod web {
             .route("/api/v1/vms/:ns/:name/unpause", post(unpause_vm_handler))
             .route("/api/v1/vms/:ns/:name/migrate", post(migrate_vm_handler))
             .route(
+                "/api/v1/vms/:ns/:name/migrations",
+                get(list_vm_migrations_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/migrations/:migname",
+                delete(delete_vm_migration_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/guest/freeze",
+                post(guest_freeze_vm_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/guest/unfreeze",
+                post(guest_unfreeze_vm_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/guest/softreboot",
+                post(guest_softreboot_vm_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/volumes/status",
+                get(vm_volume_status_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/volumes/hotplug",
+                post(vm_hotplug_volume_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/volumes/hotremove",
+                post(vm_hotremove_volume_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/console/serial",
+                get(vm_serial_console_hint_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/serial",
+                get(serial_websocket_handler),
+            )
+            .route("/api/v1/vms/:ns/:name/expose", get(get_vm_expose_handler))
+            .route("/api/v1/vms/:ns/:name/expose", put(put_vm_expose_handler))
+            .route(
+                "/api/v1/vms/:ns/:name/expose",
+                delete(delete_vm_expose_handler),
+            )
+            .route(
                 "/api/v1/vms/:ns/:name",
                 axum::routing::put(update_vm_handler),
             )
@@ -1155,6 +1204,173 @@ pub mod web {
         }
     }
 
+    fn json_int_or_string(tp: &IntOrString) -> serde_json::Value {
+        match tp {
+            IntOrString::Int(i) => serde_json::json!(i),
+            IntOrString::String(s) => serde_json::json!(s),
+        }
+    }
+
+    /// Build API JSON for the VMRogue-managed expose `Service` (or disabled stub when absent).
+    fn vm_expose_status_json(svc: Option<&Service>, vm_name: &str) -> serde_json::Value {
+        let Some(svc) = svc else {
+            return serde_json::json!({
+                "enabled": false,
+                "service_name": vm_expose_service_name(vm_name),
+                "service_type": null,
+                "cluster_ip": null,
+                "ports": [],
+            });
+        };
+        let spec = svc.spec.as_ref();
+        let service_type = spec.and_then(|s| s.type_.clone());
+        let cluster_ip = spec.and_then(|s| s.cluster_ip.clone());
+        let ports_json: Vec<serde_json::Value> = spec
+            .and_then(|s| s.ports.as_ref())
+            .map(|ports| {
+                ports
+                    .iter()
+                    .map(|p| {
+                        let target_port = p
+                            .target_port
+                            .as_ref()
+                            .map(json_int_or_string)
+                            .unwrap_or(serde_json::Value::Null);
+                        serde_json::json!({
+                            "name": p.name,
+                            "port": p.port,
+                            "target_port": target_port,
+                            "node_port": p.node_port,
+                            "protocol": p.protocol,
+                        })
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        serde_json::json!({
+            "enabled": true,
+            "service_name": svc.metadata.name,
+            "service_type": service_type,
+            "cluster_ip": cluster_ip,
+            "ports": ports_json,
+        })
+    }
+
+    async fn get_vm_expose_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        match client.get_vm_expose_service(&ns, &name).await {
+            Ok(svc) => {
+                let body = vm_expose_status_json(svc.as_ref(), &name);
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/expose");
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn put_vm_expose_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<CreateVmExposeReq>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        if !req.enabled {
+            match client.delete_vm_expose_service(&ns, &name).await {
+                Ok(()) => {
+                    let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/expose");
+                    let body = vm_expose_status_json(None, &name);
+                    ok_json(&ApiResponse::success(&body, &ctx.request_id))
+                }
+                Err(e) => {
+                    let msg = sanitize_error(&e);
+                    if msg.contains("not managed by VMRogue") {
+                        err_json(409, "CONFLICT", &msg)
+                    } else {
+                        err_json(500, "INTERNAL_ERROR", &msg)
+                    }
+                }
+            }
+        } else {
+            match client.get_vm(&ns, &name).await {
+                Ok(_) => {}
+                Err(e) => {
+                    let msg = sanitize_error(&e);
+                    if msg.contains("NotFound") || msg.contains("not found") {
+                        return err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name));
+                    }
+                    return err_json(500, "INTERNAL_ERROR", &msg);
+                }
+            }
+            let Some(cfg) = vm_expose_from_api_req(req) else {
+                return err_json(
+                    400,
+                    "INVALID_REQUEST",
+                    "enabled=true requires a valid expose configuration",
+                );
+            };
+            match client.upsert_vm_expose_service(&ns, &name, &cfg).await {
+                Ok(()) => match client.get_vm_expose_service(&ns, &name).await {
+                    Ok(svc) => {
+                        let body = vm_expose_status_json(svc.as_ref(), &name);
+                        let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/expose");
+                        ok_json(&ApiResponse::success(&body, &ctx.request_id))
+                    }
+                    Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+                },
+                Err(e) => err_json(500, "EXPOSE_UPSERT_FAILED", &sanitize_error(&e)),
+            }
+        }
+    }
+
+    async fn delete_vm_expose_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        match client.delete_vm_expose_service(&ns, &name).await {
+            Ok(()) => {
+                let body = vm_expose_status_json(None, &name);
+                let ctx = req_ctx(HttpMethod::DELETE, "/api/v1/vms/:ns/:name/expose");
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                if msg.contains("not managed by VMRogue") {
+                    err_json(409, "CONFLICT", &msg)
+                } else {
+                    err_json(500, "INTERNAL_ERROR", &msg)
+                }
+            }
+        }
+    }
+
     async fn start_vm_handler(
         State(state): State<SharedState>,
         Path((ns, name)): Path<(String, String)>,
@@ -1237,13 +1453,13 @@ pub mod web {
         State(state): State<SharedState>,
         Path((ns, name)): Path<(String, String)>,
     ) -> impl IntoResponse {
-        let client = {
+        let running = {
             let s = state.read().await;
-            s.kube_client.clone()
+            s.kube_client.is_running(&ns, &name).await
         };
 
         // Check VM is running
-        match client.is_running(&ns, &name).await {
+        match running {
             Ok(true) => {}
             Ok(false) => {
                 return (StatusCode::BAD_REQUEST, "VM is not running").into_response();
@@ -1259,21 +1475,56 @@ pub mod web {
 
         log::info!("VNC WebSocket upgrade requested for {}/{}", ns, name);
         ws.protocols(["binary"])
-            .on_upgrade(move |socket| vnc_proxy(socket, client, ns, name))
+            .on_upgrade(move |socket| kubevirt_subresource_ws_proxy(socket, ns, name, "vnc", "VNC"))
             .into_response()
     }
 
-    /// VNC proxy: connects browser WebSocket directly to KubeVirt API WebSocket.
-    /// Same approach as v9s console-proxy — no virtctl needed, no timeout issues.
-    async fn vnc_proxy(
+    async fn serial_websocket_handler(
+        ws: WebSocketUpgrade,
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        let running = {
+            let s = state.read().await;
+            s.kube_client.is_running(&ns, &name).await
+        };
+
+        match running {
+            Ok(true) => {}
+            Ok(false) => {
+                return (StatusCode::BAD_REQUEST, "VM is not running").into_response();
+            }
+            Err(_) => {
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Failed to check VM status",
+                )
+                    .into_response();
+            }
+        }
+
+        log::info!(
+            "Serial console WebSocket upgrade requested for {}/{}",
+            ns,
+            name
+        );
+        ws.protocols(["binary"])
+            .on_upgrade(move |socket| {
+                kubevirt_subresource_ws_proxy(socket, ns, name, "console", "serial console")
+            })
+            .into_response()
+    }
+
+    /// Proxy browser WebSocket to KubeVirt VMI subresources (`vnc`, `console`, etc.).
+    async fn kubevirt_subresource_ws_proxy(
         mut client_ws: WebSocket,
-        _kube_client: KubeClient,
         ns: String,
         name: String,
+        subpath: &'static str,
+        label: &'static str,
     ) {
         use futures_util::{SinkExt, StreamExt};
 
-        // Build KubeVirt VNC subresource WebSocket URL
         let config = match kube::Config::infer().await {
             Ok(c) => c,
             Err(e) => {
@@ -1293,18 +1544,17 @@ pub mod web {
             .to_string()
             .trim_end_matches('/')
             .to_string();
-        let vnc_path = format!(
-            "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/vnc",
-            ns, name
+        let path = format!(
+            "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/{}",
+            ns, name, subpath
         );
         let ws_url = api_url
             .replace("https://", "wss://")
             .replace("http://", "ws://")
-            + &vnc_path;
+            + &path;
 
-        log::info!("VNC proxy connecting to K8s API: {}", vnc_path);
+        log::info!("{} proxy connecting to K8s API: {}", label, path);
 
-        // Build TLS connector that trusts the K8s CA (self-signed)
         let tls_connector = {
             let tls_config = rustls::ClientConfig::builder()
                 .dangerous()
@@ -1314,7 +1564,6 @@ pub mod web {
             Some(connector)
         };
 
-        // Build auth headers
         let mut request =
             tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(
                 ws_url.as_str(),
@@ -1325,7 +1574,6 @@ pub mod web {
                     .unwrap()
             });
 
-        // Add service account token
         let sa_token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
         if let Ok(token) = std::fs::read_to_string(sa_token_path) {
             request.headers_mut().insert(
@@ -1334,7 +1582,6 @@ pub mod web {
             );
         }
 
-        // Connect to KubeVirt API WebSocket
         let k8s_ws = match tokio_tungstenite::connect_async_tls_with_config(
             request,
             None,
@@ -1345,25 +1592,24 @@ pub mod web {
         {
             Ok((ws, _)) => ws,
             Err(e) => {
-                log::error!("Failed to connect to KubeVirt VNC API: {}", e);
+                log::error!("Failed to connect to KubeVirt {} API: {}", label, e);
+                let reason = format!("Failed to connect to {}", label);
                 let _ = client_ws
                     .send(Message::Close(Some(axum::extract::ws::CloseFrame {
                         code: 1011,
-                        reason: "Failed to connect to VNC".into(),
+                        reason: reason.into(),
                     })))
                     .await;
                 return;
             }
         };
 
-        log::info!("VNC proxy connected to K8s API for {}/{}", ns, name);
+        log::info!("{} proxy connected to K8s API for {}/{}", label, ns, name);
 
         let (mut k8s_sink, mut k8s_stream) = k8s_ws.split();
 
-        // Bidirectional proxy: Browser WebSocket ↔ K8s API WebSocket
         loop {
             tokio::select! {
-                // Browser → K8s
                 msg = client_ws.recv() => {
                     match msg {
                         Some(Ok(Message::Binary(data))) => {
@@ -1380,7 +1626,6 @@ pub mod web {
                         _ => {}
                     }
                 }
-                // K8s → Browser
                 msg = k8s_stream.next() => {
                     match msg {
                         Some(Ok(tokio_tungstenite::tungstenite::Message::Binary(data))) => {
@@ -1401,7 +1646,7 @@ pub mod web {
         }
 
         let _ = client_ws.send(Message::Close(None)).await;
-        log::info!("VNC proxy closed for {}/{}", ns, name);
+        log::info!("{} proxy closed for {}/{}", label, ns, name);
     }
 
     // ── VM Security Posture ──────────────────────────────────────
@@ -1591,15 +1836,45 @@ pub mod web {
         }
     }
 
+    #[derive(Deserialize, Default)]
+    struct MigrateVmRequestBody {
+        #[serde(default)]
+        target_hostname: Option<String>,
+        #[serde(default)]
+        added_node_selector: Option<std::collections::BTreeMap<String, String>>,
+        #[serde(default)]
+        priority: Option<String>,
+    }
+
     async fn migrate_vm_handler(
         State(state): State<SharedState>,
         Path((ns, name)): Path<(String, String)>,
+        body: Bytes,
     ) -> impl IntoResponse {
         if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
             return resp;
         }
+        let req: MigrateVmRequestBody = if body.is_empty() {
+            MigrateVmRequestBody::default()
+        } else {
+            serde_json::from_slice(&body).unwrap_or_default()
+        };
+        let mut opts = MigrateVmOptions {
+            added_node_selector: req.added_node_selector,
+            priority: req.priority,
+        };
+        if let Some(host) = req.target_hostname {
+            let mut m = opts.added_node_selector.take().unwrap_or_default();
+            m.insert("kubernetes.io/hostname".to_string(), host);
+            opts.added_node_selector = Some(m);
+        }
+        let mopts = if opts.added_node_selector.is_none() && opts.priority.is_none() {
+            None
+        } else {
+            Some(opts)
+        };
         let client = { state.read().await.kube_client.clone() };
-        match client.migrate_vm(&ns, &name).await {
+        match client.migrate_vm(&ns, &name, mopts).await {
             Ok(_) => {
                 let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/migrate");
                 ok_json(&ApiResponse::success(
@@ -1609,6 +1884,201 @@ pub mod web {
             }
             Err(e) => err_json(500, "MIGRATE_FAILED", &sanitize_error(&e)),
         }
+    }
+
+    async fn list_vm_migrations_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.list_migrations_for_vmi(&ns, &name).await {
+            Ok(list) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/migrations");
+                ok_json(&ApiResponse::success(&list, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    async fn delete_vm_migration_handler(
+        State(state): State<SharedState>,
+        Path((ns, name, migname)): Path<(String, String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) =
+            validate_k8s_params(&[("namespace", &ns), ("name", &name), ("migname", &migname)])
+        {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.delete_migration(&ns, &migname).await {
+            Ok(()) => {
+                let ctx = req_ctx(
+                    HttpMethod::DELETE,
+                    "/api/v1/vms/:ns/:name/migrations/:migname",
+                );
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"deleted": migname}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "DELETE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_freeze_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.guest_freeze(&ns, &name).await {
+            Ok(()) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/freeze");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": "Guest filesystem freeze requested"}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "GUEST_FREEZE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_unfreeze_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.guest_unfreeze(&ns, &name).await {
+            Ok(()) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/unfreeze");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": "Guest filesystem unfreeze requested"}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "GUEST_UNFREEZE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_softreboot_vm_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.guest_soft_reboot(&ns, &name).await {
+            Ok(()) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/softreboot");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": "Guest soft reboot requested"}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "GUEST_SOFTREBOOT_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn vm_volume_status_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.get_vmi_volume_status_json(&ns, &name).await {
+            Ok(v) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/volumes/status");
+                ok_json(&ApiResponse::success(&v, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct HotplugVolumeBody {
+        volume_name: String,
+        pvc_name: String,
+    }
+
+    async fn vm_hotplug_volume_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<HotplugVolumeBody>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client
+            .add_vm_volume(&ns, &name, &req.volume_name, &req.pvc_name)
+            .await
+        {
+            Ok(()) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/volumes/hotplug");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": "virtctl addvolume invoked"}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "HOTPLUG_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    #[derive(Deserialize)]
+    struct HotremoveVolumeBody {
+        volume_name: String,
+    }
+
+    async fn vm_hotremove_volume_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<HotremoveVolumeBody>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.remove_vm_volume(&ns, &name, &req.volume_name).await {
+            Ok(()) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/volumes/hotremove");
+                ok_json(&ApiResponse::success(
+                    &serde_json::json!({"message": "virtctl removevolume invoked"}),
+                    &ctx.request_id,
+                ))
+            }
+            Err(e) => err_json(500, "HOTREMOVE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn vm_serial_console_hint_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        let _ = state;
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/console/serial");
+        ok_json(&ApiResponse::success(
+            &serde_json::json!({
+                "virtctl": format!("virtctl console {} -n {}", name, ns),
+                "kubectl": format!("kubectl console -n {} vmi/{}  (if your cluster provides the kubectl console plugin)", ns, name),
+                "websocket": format!("/api/v1/vms/{}/{}/serial?token=<API key> (same host as dashboard; subprotocol binary)", ns, name),
+                "note": "Interactive serial uses the dashboard Serial button or this WebSocket URL; requires a running VMI."
+            }),
+            &ctx.request_id,
+        ))
     }
 
     #[derive(Deserialize)]
@@ -1906,6 +2376,36 @@ pub mod web {
         protocol: Option<String>,
     }
 
+    /// Maps dashboard/API expose payload to `VmExposeConfig` when enabled.
+    fn vm_expose_from_api_req(ex: CreateVmExposeReq) -> Option<VmExposeConfig> {
+        if !ex.enabled {
+            return None;
+        }
+        let mut ports: Vec<VmExposePort> = ex
+            .ports
+            .into_iter()
+            .map(|p| VmExposePort {
+                name: p.name,
+                port: p.port,
+                target_port: p.target_port.unwrap_or(p.port),
+                protocol: p.protocol.unwrap_or_else(|| "TCP".to_string()),
+            })
+            .collect();
+        if ports.is_empty() {
+            ports.push(VmExposePort {
+                name: Some("ssh".to_string()),
+                port: 22,
+                target_port: 22,
+                protocol: "TCP".to_string(),
+            });
+        }
+        Some(VmExposeConfig {
+            enabled: true,
+            service_type: ex.service_type.unwrap_or_else(|| "ClusterIP".to_string()),
+            ports,
+        })
+    }
+
     async fn create_vm_handler(
         State(state): State<SharedState>,
         Json(req): Json<CreateVmRequest>,
@@ -2027,30 +2527,8 @@ pub mod web {
         }
 
         if let Some(ex) = req.expose {
-            if ex.enabled {
-                let mut ports: Vec<VmExposePort> = ex
-                    .ports
-                    .into_iter()
-                    .map(|p| VmExposePort {
-                        name: p.name,
-                        port: p.port,
-                        target_port: p.target_port.unwrap_or(p.port),
-                        protocol: p.protocol.unwrap_or_else(|| "TCP".to_string()),
-                    })
-                    .collect();
-                if ports.is_empty() {
-                    ports.push(VmExposePort {
-                        name: Some("ssh".to_string()),
-                        port: 22,
-                        target_port: 22,
-                        protocol: "TCP".to_string(),
-                    });
-                }
-                config.expose = Some(VmExposeConfig {
-                    enabled: true,
-                    service_type: ex.service_type.unwrap_or_else(|| "ClusterIP".to_string()),
-                    ports,
-                });
+            if let Some(cfg) = vm_expose_from_api_req(ex) {
+                config.expose = Some(cfg);
             }
         }
 

@@ -32,7 +32,7 @@ make ci
 ./scripts/deploy-k8s-remote.sh HOST USER
 
 # Full deployment (builds both API + operator images; streams remote build logs + preflight diagnostics)
-./scripts/deploy-all.sh HOST USER
+./scripts/deploy-remote.sh HOST USER
 # same as:
 ./scripts/deploy-all-remote.sh HOST USER [--quick]
 
@@ -123,6 +123,7 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `VMROGUE_API_KEY` | Single API key for the web server |
 | `VMROGUE_API_KEYS` | Multi-key RBAC: `"admin:key1,write:key2,readonly:key3"` |
 | `VMROGUE_NAMESPACE` | Default namespace |
+| `VMROGUE_PROMETHEUS_URL` | Optional. Base URL for Prometheus instant queries, e.g. `http://prometheus:9090/api/v1/query`. When set, `GET /api/v1/storage/usage` joins `kubelet_volume_stats_used_bytes` by namespace + PVC. |
 | `VMROGUE_SCHEDULER_LEASE_NAMESPACE` | Namespace for the snapshot-scheduler **Lease** (`coordination.k8s.io`); defaults to `VMROGUE_NAMESPACE` / API default namespace |
 | `VMROGUE_SCHEDULER_LEASE_DISABLED` | Set to `1` or `true` to skip Lease acquisition so every API replica runs the snapshot tick — **only for single-replica/dev** (duplicate snapshots if scaled) |
 | `KUBECONFIG` | Kubeconfig path (also `--kubeconfig` flag) |

@@ -1,6 +1,54 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Pod-like scheduling for the virt-launcher / VMI (`affinity`, `tolerations`, etc.).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VmScheduling {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub node_selector: Option<HashMap<String, String>>,
+    /// Same JSON shape as `pod.spec.affinity`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub affinity: Option<serde_json::Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tolerations: Option<Vec<serde_json::Value>>,
+    /// Same as `pod.spec.topologySpreadConstraints`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub topology_spread_constraints: Option<Vec<serde_json::Value>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub priority_class_name: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scheduler_name: Option<String>,
+}
+
+/// KubeVirt `instancetype` / `preference` matcher (`kind` optional; defaults apply in KubeVirt).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmMatcherRef {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+}
+
+/// QEMU watchdog (`i6300esb`, `ib700`, …) and action (`poweroff`, `reset`, `pause`, …).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmWatchdogConfig {
+    pub model: String,
+    pub action: String,
+}
+
+/// Mediated device / GPU pool reference (`resourceName` from the device plugin).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmHostDevice {
+    pub name: String,
+    pub resource_name: String,
+}
+
+/// Virtio-FS mount backed by a PVC (requires KubeVirt + cluster support).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VmVirtioFs {
+    pub name: String,
+    pub pvc_name: String,
+}
+
 /// Main VM configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct VMConfig {
@@ -52,6 +100,24 @@ pub struct VMConfig {
     /// When set, VMRogue creates a Kubernetes Service targeting the virt-launcher pod (`kubevirt.io/domain`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expose: Option<VmExposeConfig>,
+    /// KubeVirt `runStrategy` (`Always`, `Manual`, `RerunOnFailure`, `Halted`). When set, `spec.running` is omitted.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub run_strategy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scheduling: Option<VmScheduling>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instancetype: Option<VmMatcherRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preference: Option<VmMatcherRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub watchdog: Option<VmWatchdogConfig>,
+    #[serde(default)]
+    pub host_devices: Vec<VmHostDevice>,
+    #[serde(default)]
+    pub virtio_fs: Vec<VmVirtioFs>,
+    /// Raw KubeVirt `accessCredentials` entries (password / SSH injection).
+    #[serde(default)]
+    pub access_credentials: Vec<serde_json::Value>,
 }
 
 /// CPU configuration

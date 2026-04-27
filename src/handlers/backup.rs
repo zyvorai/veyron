@@ -619,7 +619,7 @@ pub async fn handle_migrate(
         );
     }
     let request = MigrationRequest::new(&vm, source_node)
-        .to_node(target_node.unwrap_or_else(|| {
+        .to_node(target_node.clone().unwrap_or_else(|| {
             log::warn!("No target node specified, migration may not proceed correctly");
             "auto-select".to_string()
         }))
@@ -660,15 +660,25 @@ pub async fn handle_migrate(
             chrono::Utc::now().format("%Y%m%d%H%M%S")
         );
 
+        let mut mig_spec = crate::kube::types::VirtualMachineInstanceMigrationSpec {
+            vmi_name: Some(vm.clone()),
+            ..Default::default()
+        };
+        if let Some(ref tn) = target_node {
+            if !tn.is_empty() && tn != "auto-select" {
+                mig_spec.added_node_selector = Some(std::collections::BTreeMap::from([(
+                    "kubernetes.io/hostname".to_string(),
+                    tn.clone(),
+                )]));
+            }
+        }
         let migration = VirtualMachineInstanceMigration {
             metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
                 name: Some(migration_name.clone()),
                 namespace: Some(namespace.to_string()),
                 ..Default::default()
             },
-            spec: crate::kube::types::VirtualMachineInstanceMigrationSpec {
-                vmi_name: Some(vm.clone()),
-            },
+            spec: mig_spec,
             status: None,
         };
 
@@ -1261,6 +1271,7 @@ pub async fn handle_evacuate_node(
                         },
                         spec: crate::kube::types::VirtualMachineInstanceMigrationSpec {
                             vmi_name: Some(vm_name.to_string()),
+                            ..Default::default()
                         },
                         status: None,
                     };

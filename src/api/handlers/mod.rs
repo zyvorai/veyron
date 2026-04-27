@@ -23,6 +23,7 @@ pub mod incidents;
 pub mod ingress;
 pub mod logs;
 pub mod metrics;
+pub mod migration_policies;
 pub mod migrations;
 pub mod monitoring;
 pub mod namespace_scope;
@@ -76,6 +77,7 @@ pub fn all_routes(
         .merge(crds::router(state.clone()))
         .merge(logs::router(state.clone()))
         .merge(migrations::router(state.clone()))
+        .merge(migration_policies::router(state.clone()))
         .merge(storage::router(state.clone()))
         .merge(disks::router(state.clone()))
         .merge(network::router(state.clone()))

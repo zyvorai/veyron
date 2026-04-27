@@ -765,6 +765,8 @@ mod tests {
             spec: VirtualMachineSpec {
                 running: Some(false),
                 run_strategy: None,
+                instancetype: None,
+                preference: None,
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {
@@ -776,6 +778,7 @@ mod tests {
                             cpu: None,
                             memory: None,
                             devices: None,
+                            filesystems: None,
                             features: None,
                             clock: None,
                             firmware: None,
@@ -787,6 +790,12 @@ mod tests {
                         termination_grace_period_seconds: None,
                         eviction_strategy: None,
                         node_selector: None,
+                        priority_class_name: None,
+                        affinity: None,
+                        tolerations: None,
+                        topology_spread_constraints: None,
+                        scheduler_name: None,
+                        access_credentials: None,
                     },
                 },
             },
