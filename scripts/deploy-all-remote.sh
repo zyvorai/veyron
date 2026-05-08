@@ -119,6 +119,17 @@ REMOTE_K8S_RUNTIME
 
 # Cluster flavor (kubeadm vs k3s vs generic kubectl) — separate from import path above
 CLUSTER_FLAVOR=$(ssh "${REMOTE}" 'if [ -x /usr/local/bin/k3s ] || command -v k3s >/dev/null 2>&1; then echo k3s; elif [ -x /usr/local/bin/rke2 ] || command -v rke2 >/dev/null 2>&1; then echo rke2; elif command -v kubeadm >/dev/null 2>&1; then echo kubeadm; elif command -v kubectl >/dev/null 2>&1; then echo kubernetes; else echo unknown; fi')
+case "${CLUSTER_FLAVOR}" in
+    k3s)
+        K8S_CMD="sudo $(ssh "${REMOTE}" 'which k3s 2>/dev/null || echo /usr/local/bin/k3s') kubectl"
+        ;;
+    rke2)
+        K8S_CMD="sudo $(ssh "${REMOTE}" 'which rke2 2>/dev/null || echo /usr/local/bin/rke2') kubectl"
+        ;;
+    *)
+        K8S_CMD="kubectl"
+        ;;
+esac
 
 echo ""
 echo "  🔥 VMRogue Full K8s Deploy"
@@ -126,6 +137,7 @@ echo "  📡 Target:    ${REMOTE}"
 echo "  🐳 Builder:   ${CTR_BUILD}"
 echo "  ☸️  Runtime:   ${K8S_RUNTIME}"
 echo "  🧭 Cluster:   ${CLUSTER_FLAVOR}"
+echo "  📎 kubectl:   ${K8S_CMD}"
 echo "  🕒 Started:   $(timestamp)"
 echo ""
 
@@ -137,7 +149,7 @@ fi
 # ── Step 0: Remote diagnostics ──
 start_phase "🩺 [0/7] Remote system and cluster diagnostics"
 stream_remote "sysinfo" "set -o pipefail; uname -a; echo ''; cat /etc/os-release 2>/dev/null | sed -n '1,6p'; echo ''; echo \"CPU: \$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo unknown) cores\"; echo \"Memory:\"; free -h 2>/dev/null || vm_stat 2>/dev/null || true; echo ''; echo 'Disk:'; df -h / 2>/dev/null || true"
-stream_remote "k8s-info" "set -o pipefail; printf '%s\n' \"Cluster flavor: ${CLUSTER_FLAVOR}\" \"Runtime import path: ${K8S_RUNTIME}\"; if command -v kubectl >/dev/null 2>&1; then printf '%s\n' ''; kubectl version --short 2>/dev/null || kubectl version 2>/dev/null || true; printf '%s\n' '' 'Nodes:'; kubectl get nodes -o wide 2>/dev/null || true; printf '%s\n' '' 'All namespaces:'; kubectl get ns 2>/dev/null || true; printf '%s\n' '' 'All pods cluster-wide:'; kubectl get pods -A -o wide 2>/dev/null || true; else printf '%s\n' 'kubectl not found on remote host'; fi"
+stream_remote "k8s-info" "set -o pipefail; printf '%s\n' \"Cluster flavor: ${CLUSTER_FLAVOR}\" \"Runtime import path: ${K8S_RUNTIME}\" \"kubectl command: ${K8S_CMD}\"; if command -v kubectl >/dev/null 2>&1 || [ \"${CLUSTER_FLAVOR}\" = \"k3s\" ] || [ \"${CLUSTER_FLAVOR}\" = \"rke2\" ]; then printf '%s\n' ''; ${K8S_CMD} version --short 2>/dev/null || ${K8S_CMD} version 2>/dev/null || true; printf '%s\n' '' 'Nodes:'; ${K8S_CMD} get nodes -o wide 2>/dev/null || true; printf '%s\n' '' 'All namespaces:'; ${K8S_CMD} get ns 2>/dev/null || true; printf '%s\n' '' 'All pods cluster-wide:'; ${K8S_CMD} get pods -A -o wide 2>/dev/null || true; else printf '%s\n' 'kubectl not found on remote host'; fi"
 end_phase
 
 # ── Step 1: Rsync source ──
@@ -260,13 +272,13 @@ start_phase "📋 [4/7] CDI (if missing), CRDs, NATS, and RBAC"
   exit 1
 }
 ssh "${REMOTE}" "
-    kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -
+    ${K8S_CMD} create namespace ${NAMESPACE} --dry-run=client -o yaml | ${K8S_CMD} apply -f -
     for f in ${DEPLOY_DIR}/operator/config/crd/bases/*.yaml; do
-        kubectl apply -f \"\$f\"
+        ${K8S_CMD} apply -f \"\$f\"
     done
-    kubectl apply -f ${DEPLOY_DIR}/operator/config/rbac/service_account.yaml
-    kubectl apply -f ${DEPLOY_DIR}/operator/config/rbac/role.yaml
-    kubectl apply -f ${DEPLOY_DIR}/operator/config/nats/nats-deployment.yaml
+    ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/rbac/service_account.yaml
+    ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/rbac/role.yaml
+    ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/nats/nats-deployment.yaml
 " 2>&1
 end_phase
 
@@ -277,30 +289,30 @@ start_phase "🚀 [5/7] Deploying VMRogue API + Operator"
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
 ssh "${REMOTE}" "
-    kubectl -n ${NAMESPACE} delete deployment vmrogue-api vmrogue-operator \
+    ${K8S_CMD} -n ${NAMESPACE} delete deployment vmrogue-api vmrogue-operator \
         --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
-    kubectl -n ${NAMESPACE} delete secret vmrogue-api-key --ignore-not-found --wait=false 2>/dev/null || true
+    ${K8S_CMD} -n ${NAMESPACE} delete secret vmrogue-api-key --ignore-not-found --wait=false 2>/dev/null || true
 " 2>&1
 
 # Create API key secret
 ssh "${REMOTE}" "
-    kubectl -n ${NAMESPACE} create secret generic vmrogue-api-key \
+    ${K8S_CMD} -n ${NAMESPACE} create secret generic vmrogue-api-key \
         --from-literal=api-key='${API_KEY}'
 " 2>&1
 
 # Apply VMRogue API deployment
-ssh "${REMOTE}" "kubectl apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
+ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
 
 # Apply Operator deployment
-ssh "${REMOTE}" "kubectl apply -f ${DEPLOY_DIR}/operator/config/manager/manager.yaml" 2>&1
+ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/manager/manager.yaml" 2>&1
 
 # Same image tags + imagePullPolicy: Never: replacing the Deployment can still leave
 # kubelet using a cached layer unless pods are recreated after image import.
 log_step "  🔄 Recycling API + operator pods for new images..."
 ssh "${REMOTE}" "
-    kubectl -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
-    kubectl -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
-    kubectl -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
+    ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
+    ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
+    ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
 " 2>&1 || true
 end_phase
 
@@ -317,16 +329,16 @@ sleep 3
 ssh "${REMOTE}" "
     echo ''
     echo '  Pods:'
-    kubectl -n ${NAMESPACE} get pods -o wide
+    ${K8S_CMD} -n ${NAMESPACE} get pods -o wide
     echo ''
     echo '  Services:'
-    kubectl -n ${NAMESPACE} get svc
+    ${K8S_CMD} -n ${NAMESPACE} get svc
 " 2>&1
 end_phase
 
 # Do not use ports[0]: API order may list http-redirect (30150) before https (30151).
-NODE_PORT=$(ssh "${REMOTE}" "kubectl -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
-HTTP_REDIRECT_PORT=$(ssh "${REMOTE}" "kubectl -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
+NODE_PORT=$(ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
+HTTP_REDIRECT_PORT=$(ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
 
 echo ""
 echo "════════════════════════════════════════"
@@ -340,7 +352,7 @@ if [ -n "${HTTP_REDIRECT_PORT}" ]; then
 fi
 echo "  📓 Pod logs show :5151 (container); use NodePort ${NODE_PORT} in the browser"
 echo "  🔑 API Key:    ${API_KEY}"
-echo "  📋 API Logs:   kubectl -n ${NAMESPACE} logs -l app.kubernetes.io/component=api -f"
-echo "  📋 Op Logs:    kubectl -n ${NAMESPACE} logs -l app.kubernetes.io/component=operator -f"
+echo "  📋 API Logs:   ssh ${REMOTE} \"${K8S_CMD} -n ${NAMESPACE} logs -l app.kubernetes.io/component=api -f\""
+echo "  📋 Op Logs:    ssh ${REMOTE} \"${K8S_CMD} -n ${NAMESPACE} logs -l app.kubernetes.io/component=operator -f\""
 echo "════════════════════════════════════════"
 echo ""

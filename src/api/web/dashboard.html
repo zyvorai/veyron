@@ -4,59 +4,58 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VMRogue // Forged in Rust</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
   try {
-    if (localStorage.getItem('vmrogue_theme') === 'steel') {
-      document.documentElement.setAttribute('data-theme','steel');
+    const savedTheme = localStorage.getItem('vmrogue_theme');
+    if (savedTheme === 'zinc' || savedTheme === 'steel') {
+      document.documentElement.setAttribute('data-theme', savedTheme);
     }
   } catch (e) {}
 })();
 </script>
 <style>
 :root {
-  /* Surfaces — slate + blue (v9s-style dark UI) */
-  --bg:#0f172a;
-  --bg-deep:#020617;
-  --bg-card:rgba(30,41,59,.82);
-  --bg-card-solid:#1e293b;
-  --bg-tertiary:rgba(51,65,85,.45);
-  --steel:#1e293b;
-  --steel-light:#334155;
-  --steel-bright:#475569;
-  --border:rgba(51,65,85,.55);
-  --border-hot:rgba(59,130,246,.38);
-  --border-cold:rgba(96,165,250,.22);
-  --text:#e2e8f0;
-  --text-muted:#94a3b8;
-  --text-dim:#64748b;
-  --text-bright:#f8fafc;
-  /* Accent — primary blue (Tailwind blue-500 family, v9s dashboard) */
-  --accent:#3b82f6;
-  --molten:#3b82f6;
-  --ember:#60a5fa;
-  --lava:#2563eb;
-  --magma:#93c5fd;
-  --forge:#3b82f6;
-  --spark:#38bdf8;
-  --arc:#60a5fa;
-  --plasma:#a78bfa;
-  --chrome:#cbd5e1;
-  --titanium:#94a3b8;
+  --bg:#14171c;
+  --bg-deep:#090b0e;
+  --bg-card:rgba(31,36,43,.84);
+  --bg-card-solid:#181c22;
+  --bg-tertiary:rgba(57,66,78,.42);
+  --steel:#1b2027;
+  --steel-light:#313a45;
+  --steel-bright:#4e5966;
+  --border:rgba(120,132,148,.28);
+  --border-hot:rgba(160,176,198,.46);
+  --border-cold:rgba(116,130,149,.3);
+  --text:#dde3ea;
+  --text-muted:#a6b0bc;
+  --text-dim:#7d8793;
+  --text-bright:#f7f9fb;
+  --accent:#9fb0c4;
+  --molten:#c7d0db;
+  --ember:#9fb0c4;
+  --lava:#8795a7;
+  --magma:#dbe3ec;
+  --forge:#aab7c8;
+  --spark:#d6dde6;
+  --arc:#8d99a8;
+  --plasma:#b8c2ce;
+  --chrome:#eef2f6;
+  --titanium:#aab2bd;
   --success:#22c55e;
   --success-dim:rgba(34,197,94,.16);
   --warning:#eab308;
   --warning-dim:rgba(234,179,8,.16);
   --error:#ef4444;
   --error-dim:rgba(239,68,68,.16);
-  --radius:0.75rem;
-  --glow-molten:0 0 20px rgba(59,130,246,.22),0 0 48px rgba(59,130,246,.08);
-  --glow-spark:0 0 16px rgba(56,189,248,.18),0 0 40px rgba(56,189,248,.06);
+  --radius:1rem;
+  --glow-molten:0 0 20px rgba(199,208,219,.16),0 0 48px rgba(110,122,138,.08);
+  --glow-spark:0 0 16px rgba(214,221,230,.15),0 0 40px rgba(214,221,230,.06);
   --glow-success:0 0 12px rgba(34,197,94,.2);
-  /* Typography — v9s/ui/src/index.css */
-  --font-sans:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --font-sans:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-display:'Sora','Space Grotesk',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -70,7 +69,7 @@ html{
 body{
   font-family:var(--font-sans);
   font-size:1rem;
-  line-height:1.5;
+  line-height:1.55;
   background:var(--bg-deep);
   color:var(--text);
   min-height:100vh;
@@ -179,78 +178,92 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .navbar{
   position:sticky;top:0;z-index:50;
-  background:rgba(15,23,42,.92);
+  background:rgba(10,12,15,.92);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(51,65,85,.55);
-  padding:0 28px;height:60px;
+  border-bottom:1px solid rgba(120,132,148,.2);
+  padding:0 24px;height:72px;
   display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 1px 0 rgba(15,23,42,.9),0 8px 28px rgba(0,0,0,.22);
+  box-shadow:0 1px 0 rgba(255,255,255,.03),0 14px 36px rgba(0,0,0,.28);
 }
 .navbar::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,rgba(56,189,248,.7),rgba(167,139,250,.85),rgba(59,130,246,.75),transparent);
+  background:linear-gradient(90deg,transparent,rgba(214,221,230,.55),rgba(159,176,196,.85),rgba(199,208,219,.72),transparent);
   background-size:200% 100%;
   opacity:.85;
   animation:nav-pulse-line 3.8s ease-in-out infinite,metal-shimmer 6s linear infinite;
   transform-origin:center bottom;
 }
 
+.navbar-left{
+  display:flex;align-items:center;gap:18px;min-width:0;flex:1;
+}
+
 .navbar-brand{
-  font-family:var(--font-sans);font-size:1.15rem;font-weight:800;
-  letter-spacing:-0.02em;cursor:pointer;text-transform:none;
-  background:linear-gradient(135deg,#60a5fa 0%,#a78bfa 45%,#34d399 100%);
+  display:inline-flex;align-items:center;gap:12px;flex-shrink:0;
+  font-family:var(--font-display);font-size:1.2rem;font-weight:800;
+  letter-spacing:-0.03em;cursor:pointer;text-transform:none;
+  background:linear-gradient(135deg,#f7f9fb 0%,#d6dde6 40%,#9fb0c4 100%);
   background-size:220% auto;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   animation:metal-shimmer 10s linear infinite,brand-glow 5s ease-in-out infinite;
 }
 .navbar-brand::before{
-  content:'';display:inline-block;width:8px;height:8px;margin-right:10px;border-radius:2px;
-  background:linear-gradient(135deg,#3b82f6,#6366f1);
-  vertical-align:middle;
-  clip-path:none;
-  filter:none;
+  content:'◈';display:inline-flex;align-items:center;justify-content:center;
+  width:38px;height:38px;margin-right:0;border-radius:12px;
+  background:linear-gradient(145deg,#2b323b,#12161b);
+  color:#eef2f6;font-size:1rem;vertical-align:middle;
+  border:1px solid rgba(199,208,219,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 20px rgba(0,0,0,.3);
 }
 
-.nav-links{display:flex;gap:2px;margin-left:28px}
+.nav-links{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0;
+  padding:8px 10px;border-radius:18px;
+  background:rgba(20,24,30,.72);
+  border:1px solid rgba(120,132,148,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
 .nav-link{
-  padding:8px 16px;border-radius:4px;
-  font-family:var(--font-sans);font-size:.65em;font-weight:500;
+  padding:10px 14px;border-radius:12px;
+  font-family:var(--font-sans);font-size:.84rem;font-weight:700;
   color:var(--text-muted);text-decoration:none;cursor:pointer;
   transition:all .2s;border:1px solid transparent;background:none;
-  letter-spacing:1.5px;text-transform:uppercase;
+  letter-spacing:.01em;text-transform:none;
 }
 .nav-link:hover{
-  background:rgba(51,65,85,.4);color:var(--text-bright);
-  border-color:rgba(59,130,246,.25);
+  background:rgba(57,66,78,.42);color:var(--text-bright);
+  border-color:rgba(170,184,202,.24);
   text-shadow:none;
 }
 .nav-link.active{
-  background:rgba(59,130,246,.14);color:var(--ember);
-  border-color:rgba(59,130,246,.35);
+  background:linear-gradient(180deg,rgba(225,231,238,.12),rgba(159,176,196,.08));color:var(--text-bright);
+  border-color:rgba(199,208,219,.3);
   box-shadow:none;
 }
-.navbar-right{display:flex;align-items:center;gap:18px}
-.nav-status{display:flex;align-items:center;gap:8px;font-size:.8em;color:var(--text-muted);font-family:var(--font-mono);font-size:.7em}
+.nav-icon{font-size:1rem;line-height:1}
+.nav-label{display:inline-block}
+.navbar-right{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.nav-status{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-family:var(--font-mono);font-size:.8rem}
 .nav-dot{width:8px;height:8px;border-radius:50%}
 .nav-dot.ok{background:var(--success);box-shadow:var(--glow-success);animation:forge-pulse 2.5s ease-in-out infinite}
 .nav-dot.err{background:var(--error);box-shadow:0 0 10px rgba(255,34,68,.4)}
-.refresh-text{font-size:.65em;color:var(--text-dim);font-family:var(--font-mono)}
+.refresh-text{font-size:.78rem;color:var(--text-dim);font-family:var(--font-mono)}
 
 /* Dropdown nav groups */
 .nav-group{position:relative;display:inline-flex}
 .nav-group-btn{
-  padding:8px 14px;border-radius:4px;
-  font-family:var(--font-sans);font-size:.65em;font-weight:500;
+  padding:10px 14px;border-radius:12px;
+  font-family:var(--font-sans);font-size:.84rem;font-weight:700;
   color:var(--text-muted);cursor:pointer;
   transition:all .2s;border:1px solid transparent;background:none;
-  letter-spacing:1.5px;text-transform:uppercase;
-  display:flex;align-items:center;gap:4px;white-space:nowrap;
+  letter-spacing:.01em;text-transform:none;
+  display:flex;align-items:center;gap:8px;white-space:nowrap;
 }
 .nav-group-btn::after{content:'▾';font-size:.85em;opacity:.45;margin-left:1px}
 .nav-group-btn:hover,.nav-group-btn.active{
-  background:rgba(51,65,85,.4);color:var(--text-bright);
-  border-color:rgba(59,130,246,.25);
+  background:rgba(57,66,78,.42);color:var(--text-bright);
+  border-color:rgba(170,184,202,.24);
   text-shadow:none;
 }
 .nav-group-btn.active{color:var(--ember)}
@@ -258,10 +271,10 @@ body>*{position:relative;z-index:1}
 .nav-dropdown{
   /* top:100% only — no gap; a gap breaks hover because .nav-group's hit box is only as tall as the row button */
   position:absolute;top:100%;left:0;
-  background:rgba(30,41,59,.98);
-  border:1px solid rgba(51,65,85,.65);border-radius:var(--radius);
+  background:rgba(24,28,34,.98);
+  border:1px solid rgba(120,132,148,.32);border-radius:18px;
   padding:10px 5px 6px;min-width:154px;z-index:200;
-  box-shadow:0 12px 40px rgba(0,0,0,.45),0 0 0 1px rgba(59,130,246,.06);
+  box-shadow:0 18px 46px rgba(0,0,0,.45),0 0 0 1px rgba(199,208,219,.05);
   display:none;backdrop-filter:blur(16px);
 }
 /* Invisible hover bridge above menu — keeps submenu open while moving pointer from label to items */
@@ -274,13 +287,40 @@ body>*{position:relative;z-index:1}
 .nav-group.nav-dropdown-open .nav-dropdown{display:block}
 .nav-dropdown .nav-link{
   display:block;width:100%;text-align:left;
-  padding:7px 12px;border-radius:3px;font-size:.65em;white-space:nowrap;
+  padding:9px 12px;border-radius:10px;font-size:.82rem;white-space:nowrap;
 }
 .nav-dropdown-sep{height:1px;background:var(--border);margin:4px 3px}
 .nav-tag-new{
-  font-size:.6em;padding:1px 5px;border-radius:2px;vertical-align:middle;margin-left:4px;
-  background:rgba(0,180,255,.12);color:var(--spark);border:1px solid rgba(0,180,255,.2);
+  font-size:.62em;padding:2px 6px;border-radius:999px;vertical-align:middle;margin-left:6px;
+  background:rgba(214,221,230,.12);color:var(--spark);border:1px solid rgba(214,221,230,.2);
   letter-spacing:.5px;font-weight:600;
+}
+
+.page-context-bar{
+  padding:14px 24px 0;
+}
+.page-context-inner{
+  max-width:1440px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:14px 18px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(20,24,30,.72),rgba(20,24,30,.45));
+  border:1px solid rgba(120,132,148,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
+}
+.context-kicker{
+  font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--spark);
+}
+.context-breadcrumb{
+  font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--text-bright);margin-top:4px;
+}
+.context-tags{display:flex;gap:8px;flex-wrap:wrap}
+.context-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 10px;border-radius:999px;
+  border:1px solid rgba(120,132,148,.16);
+  background:rgba(57,66,78,.25);
+  color:var(--text-muted);
+  font-size:.76rem;font-weight:600;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -290,25 +330,121 @@ body>*{position:relative;z-index:1}
 .space-y>*+*{margin-top:22px}
 .page-header{display:flex;align-items:center;justify-content:space-between}
 .page-header h1{
-  font-family:var(--font-sans);font-size:1.35rem;font-weight:700;
+  font-family:var(--font-display);font-size:1.55rem;font-weight:700;
   color:var(--text-bright);letter-spacing:-0.02em;text-transform:none;
 }
 .page-header h1::before{
   content:'//';color:var(--molten);margin-right:10px;font-weight:500;opacity:.55;
 }
-.page-header p{font-size:.8em;color:var(--text-muted);margin-top:4px;letter-spacing:1px}
+.page-header p{font-size:.95rem;color:var(--text-muted);margin-top:6px;letter-spacing:.01em;max-width:88ch}
 .page-header-right{
-  font-size:.7em;color:var(--text-dim);font-family:var(--font-mono);
-  padding:6px 14px;border:1px solid var(--border);border-radius:4px;
-  background:rgba(59,130,246,.06);
+  font-size:.78rem;color:var(--text-dim);font-family:var(--font-mono);
+  padding:8px 14px;border:1px solid var(--border);border-radius:12px;
+  background:rgba(199,208,219,.06);
 }
 
 /* Grids */
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.dashboard-command-grid{display:grid;grid-template-columns:1.35fr .95fr;gap:22px}
+.dashboard-side-stack{display:grid;gap:22px}
 @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1080px){.dashboard-command-grid{grid-template-columns:1fr}}
 @media(max-width:800px){.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}}
+
+.command-hero,
+.command-priority{
+  background:linear-gradient(145deg,rgba(19,24,30,.95) 0%,rgba(33,39,47,.86) 48%,rgba(14,18,23,.96) 100%);
+}
+.command-hero{
+  padding:24px;border-radius:var(--radius);border:1px solid var(--border);position:relative;overflow:hidden;
+}
+.command-hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(circle at top right, rgba(214,221,230,.13), transparent 32%),
+    linear-gradient(120deg, transparent 0%, rgba(255,255,255,.04) 46%, transparent 54%);
+  pointer-events:none;
+}
+.command-hero-top{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;position:relative;z-index:1;
+}
+.command-kicker{
+  font-size:.76rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--spark);
+}
+.command-title{
+  margin-top:8px;font-family:var(--font-display);font-size:2rem;line-height:1.05;color:var(--text-bright);max-width:12ch;
+}
+.command-copy{
+  margin-top:10px;max-width:62ch;font-size:.96rem;line-height:1.6;color:var(--text-muted);
+}
+.command-badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;position:relative;z-index:1}
+.command-badge{
+  padding:8px 12px;border-radius:999px;border:1px solid rgba(120,132,148,.16);
+  background:rgba(255,255,255,.04);font-size:.76rem;font-weight:700;color:var(--text-muted);
+}
+.command-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;position:relative;z-index:1}
+.command-actions .btn,
+.command-actions .btn-create{min-width:150px;justify-content:center}
+.command-metrics{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px;position:relative;z-index:1;
+}
+.command-metric{
+  padding:14px 16px;border-radius:16px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(120,132,148,.14);
+}
+.command-metric-label{
+  font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);font-weight:700;
+}
+.command-metric-value{
+  margin-top:10px;font-family:var(--font-display);font-size:1.3rem;color:var(--text-bright);
+}
+.command-priority{
+  border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;
+}
+.priority-header{
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.priority-title{
+  font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--text-bright);
+}
+.priority-list{display:grid}
+.priority-item{
+  display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
+  padding:14px 20px;border-bottom:1px solid rgba(120,132,148,.12);
+}
+.priority-item:last-child{border-bottom:none}
+.priority-icon{
+  width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;background:rgba(255,255,255,.05);border:1px solid rgba(120,132,148,.12);
+}
+.priority-copy strong{display:block;font-size:.92rem;color:var(--text-bright)}
+.priority-copy span{display:block;margin-top:4px;font-size:.8rem;color:var(--text-muted);line-height:1.45}
+.priority-state{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+.priority-state.hot{color:var(--error)}
+.priority-state.warn{color:var(--warning)}
+.priority-state.good{color:var(--success)}
+
+.section-shell .page-header h1::before{transition:color .2s ease}
+body[data-section="compute"] .page-header h1::before{color:#8ab4ff}
+body[data-section="observe"] .page-header h1::before{color:#8ee8d9}
+body[data-section="storage"] .page-header h1::before{color:#e9d18b}
+body[data-section="network"] .page-header h1::before{color:#a4c8ff}
+body[data-section="security"] .page-header h1::before{color:#ff9e9e}
+body[data-section="platform"] .page-header h1::before{color:#d1b3ff}
+body[data-section="finops"] .page-header h1::before{color:#b5e48c}
+body[data-section="ops"] .page-header h1::before{color:#f4b183}
+body[data-section="dashboard"] .page-header h1::before{color:var(--molten)}
+body[data-section="compute"] .page.active .card-header{background:linear-gradient(90deg,rgba(138,180,255,.11),transparent)}
+body[data-section="observe"] .page.active .card-header{background:linear-gradient(90deg,rgba(142,232,217,.11),transparent)}
+body[data-section="storage"] .page.active .card-header{background:linear-gradient(90deg,rgba(233,209,139,.11),transparent)}
+body[data-section="network"] .page.active .card-header{background:linear-gradient(90deg,rgba(164,200,255,.11),transparent)}
+body[data-section="security"] .page.active .card-header{background:linear-gradient(90deg,rgba(255,158,158,.1),transparent)}
+body[data-section="platform"] .page.active .card-header{background:linear-gradient(90deg,rgba(209,179,255,.1),transparent)}
+body[data-section="finops"] .page.active .card-header{background:linear-gradient(90deg,rgba(181,228,140,.1),transparent)}
+body[data-section="ops"] .page.active .card-header{background:linear-gradient(90deg,rgba(244,177,131,.1),transparent)}
 
 /* ═══════════════════════════════════════════════════
    STAT CARDS — v9s / virtspawn gradients
@@ -374,15 +510,15 @@ body>*{position:relative;z-index:1}
 
 .stat-body{margin-top:14px}
 .stat-value{
-  font-family:var(--font-sans);font-size:2em;font-weight:700;
+  font-family:var(--font-display);font-size:2.2rem;font-weight:700;
   color:var(--text-bright);
   text-shadow:0 0 20px rgba(255,255,255,.1);
 }
 .stat-label{
-  font-size:.8em;color:var(--text-muted);margin-top:4px;
-  letter-spacing:1.5px;text-transform:uppercase;font-weight:500;
+  font-size:.86rem;color:var(--text-muted);margin-top:6px;
+  letter-spacing:.08em;text-transform:uppercase;font-weight:700;
 }
-.stat-badge{font-size:.65em;padding:3px 10px;border-radius:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.stat-badge{font-size:.72rem;padding:4px 10px;border-radius:999px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
 .badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
 .badge-muted{color:var(--text-dim)}
 
@@ -395,14 +531,14 @@ body>*{position:relative;z-index:1}
   transition:border-color .2s;
 }
 .resource-bar:hover{border-color:var(--border-hot)}
-.res-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.75em}
+.res-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .res-header .lbl{
-  color:var(--text-muted);flex:1;letter-spacing:1px;text-transform:uppercase;
-  font-family:var(--font-sans);font-size:.85em;
+  color:var(--text-muted);flex:1;letter-spacing:.08em;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:.95rem;font-weight:700;
 }
 .res-header .pct{
   font-weight:700;color:var(--text-bright);
-  font-family:var(--font-mono);
+  font-family:var(--font-mono);font-size:.95rem;
 }
 .bar-track{
   width:100%;height:6px;background:var(--steel);border-radius:3px;
@@ -440,12 +576,12 @@ body>*{position:relative;z-index:1}
 }
 .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .chart-title{
-  font-family:var(--font-sans);font-size:.75em;font-weight:600;
+  font-family:var(--font-sans);font-size:.92rem;font-weight:700;
   color:var(--text-bright);display:flex;align-items:center;gap:10px;
-  letter-spacing:1px;text-transform:uppercase;
+  letter-spacing:.08em;text-transform:uppercase;
 }
 .chart-current{
-  font-size:.85em;color:var(--ember);font-family:var(--font-mono);
+  font-size:.95rem;color:var(--ember);font-family:var(--font-mono);
   font-weight:700;
   text-shadow:0 0 12px rgba(59,130,246,.25);
 }
@@ -473,9 +609,9 @@ body>*{position:relative;z-index:1}
   background:linear-gradient(90deg,rgba(59,130,246,.06),transparent);
 }
 .card-title{
-  font-family:var(--font-sans);font-size:.8em;font-weight:600;
+  font-family:var(--font-sans);font-size:.95rem;font-weight:700;
   color:var(--text-bright);display:flex;align-items:center;gap:10px;
-  letter-spacing:1.5px;text-transform:uppercase;
+  letter-spacing:.08em;text-transform:uppercase;
 }
 .card-title::before{
   content:'';display:inline-block;width:4px;height:16px;
@@ -519,41 +655,41 @@ body>*{position:relative;z-index:1}
 .vm-dot.error{background:var(--error);box-shadow:0 0 8px rgba(255,34,68,.4)}
 .vm-dot.other{background:var(--spark);box-shadow:0 0 8px rgba(0,180,255,.3)}
 .vm-name{
-  font-weight:600;color:var(--text-bright);font-size:.95em;
+  font-weight:600;color:var(--text-bright);font-size:1rem;
   font-family:var(--font-mono);letter-spacing:.5px;
 }
-.vm-ns{font-size:.7em;color:var(--text-dim);margin-top:2px;font-family:var(--font-mono)}
+.vm-ns{font-size:.8rem;color:var(--text-dim);margin-top:3px;font-family:var(--font-mono)}
 .vm-right{display:flex;align-items:center;gap:12px}
 .vm-badge{
   padding:4px 12px;border-radius:3px;
-  font-family:var(--font-sans);font-size:.6em;font-weight:600;
-  letter-spacing:1px;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:.72rem;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
 }
 .vm-badge.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
 .vm-badge.stopped{background:rgba(100,100,120,.15);color:var(--text-muted);border:1px solid rgba(100,100,120,.15)}
 .vm-badge.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(255,34,68,.15)}
 .vm-badge.other{background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
-.vm-meta{font-size:.7em;color:var(--text-dim);font-family:var(--font-mono)}
+.vm-meta{font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)}
 .vm-right-stack{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0;flex:1;max-width:min(100%,560px)}
 .vm-right-stack .vm-right{flex-wrap:wrap;justify-content:flex-end}
-.vm-ssh-line{font-size:.62em;color:var(--text-dim);font-family:var(--font-mono);text-align:right;line-height:1.4;max-width:100%;word-break:break-word}
+.vm-ssh-line{font-size:.78rem;color:var(--text-dim);font-family:var(--font-mono);text-align:right;line-height:1.5;max-width:100%;word-break:break-word}
 .vm-ssh-line code{font-size:1em}
 .vm-ssh-line .ssh-actions{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
-.vm-ssh-line .ssh-block-title{margin-bottom:2px;font-size:.72em;color:var(--text-bright);letter-spacing:.03em}
-.vm-ssh-line .ssh-kind{display:block;margin-top:8px;margin-bottom:3px;font-size:.65em;font-weight:600;color:var(--spark);letter-spacing:.04em}
+.vm-ssh-line .ssh-block-title{margin-bottom:2px;font-size:.82rem;color:var(--text-bright);letter-spacing:.03em}
+.vm-ssh-line .ssh-kind{display:block;margin-top:8px;margin-bottom:3px;font-size:.74rem;font-weight:700;color:var(--spark);letter-spacing:.04em}
 .vm-ssh-line .ssh-block-title + .ssh-kind{margin-top:6px}
-.btn-mini{padding:3px 9px;font-size:.65em;border-radius:2px;cursor:pointer;border:1px solid rgba(0,180,255,.22);background:rgba(0,180,255,.07);color:var(--spark);font-family:var(--font-sans);text-transform:none;letter-spacing:0}
+.btn-mini{padding:5px 10px;font-size:.74rem;border-radius:8px;cursor:pointer;border:1px solid rgba(214,221,230,.22);background:rgba(214,221,230,.07);color:var(--spark);font-family:var(--font-sans);text-transform:none;letter-spacing:0}
 .btn-mini:hover{background:rgba(0,180,255,.14)}
 
 /* ═══════════════════════════════════════════════════
    ACTION BUTTONS — Forged Controls
    ═══════════════════════════════════════════════════ */
 .btn{
-  padding:6px 14px;border-radius:3px;
-  font-family:var(--font-sans);font-size:.6em;font-weight:500;
+  padding:8px 14px;border-radius:10px;
+  font-family:var(--font-sans);font-size:.74rem;font-weight:700;
   border:1px solid transparent;cursor:pointer;
   transition:all .2s;display:inline-flex;align-items:center;gap:5px;
-  letter-spacing:.5px;text-transform:uppercase;
+  letter-spacing:.04em;text-transform:uppercase;
 }
 .btn-start{
   background:var(--success-dim);color:var(--success);border-color:rgba(34,197,94,.2);
@@ -590,16 +726,16 @@ body>*{position:relative;z-index:1}
 .event-dot.info{background:var(--spark);box-shadow:0 0 6px rgba(0,180,255,.3)}
 .event-dot.error{background:var(--error);box-shadow:0 0 6px rgba(255,34,68,.3)}
 .event-body{flex:1;min-width:0}
-.event-msg{font-size:.85em;font-weight:500;color:var(--text)}
-.event-meta{font-size:.7em;color:var(--text-dim);margin-top:4px;display:flex;gap:14px;font-family:var(--font-mono)}
+.event-msg{font-size:.95rem;font-weight:500;color:var(--text)}
+.event-meta{font-size:.8rem;color:var(--text-dim);margin-top:6px;display:flex;gap:14px;font-family:var(--font-mono)}
 .event-badge{
   padding:3px 10px;border-radius:3px;
-  font-family:var(--font-sans);font-size:.55em;font-weight:600;
-  flex-shrink:0;letter-spacing:1px;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:.68rem;font-weight:700;
+  flex-shrink:0;letter-spacing:.06em;text-transform:uppercase;
 }
 .event-badge.warn{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)}
 .event-badge.info{background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
-.event-time{font-size:.7em;color:var(--text-dim);white-space:nowrap;flex-shrink:0;font-family:var(--font-mono)}
+.event-time{font-size:.8rem;color:var(--text-dim);white-space:nowrap;flex-shrink:0;font-family:var(--font-mono)}
 
 /* ═══════════════════════════════════════════════════
    SNAPSHOTS
@@ -610,17 +746,17 @@ body>*{position:relative;z-index:1}
 }
 .snap-row:hover{background:rgba(51,65,85,.22)}.snap-row:last-child{border-bottom:none}
 .snap-info{flex:1}
-.snap-name{font-weight:600;color:var(--text-bright);font-size:.9em;font-family:var(--font-mono)}
-.snap-vm{font-size:.7em;color:var(--text-dim);margin-top:2px;font-family:var(--font-mono)}
+.snap-name{font-weight:600;color:var(--text-bright);font-size:.95rem;font-family:var(--font-mono)}
+.snap-vm{font-size:.8rem;color:var(--text-dim);margin-top:4px;font-family:var(--font-mono)}
 .snap-status{display:flex;align-items:center;gap:10px}
 
 /* ═══════════════════════════════════════════════════
    EMPTY & LOADING
    ═══════════════════════════════════════════════════ */
-.empty-state{text-align:center;padding:50px 20px;color:var(--text-dim)}
-.empty-state .icon{font-size:2.5em;margin-bottom:14px;opacity:.2;filter:grayscale(.5)}
-.empty-state p{font-size:.9em;letter-spacing:1px}
-.empty-state .sub{font-size:.8em;margin-top:6px;color:var(--text-dim)}
+.empty-state{text-align:center;padding:54px 24px;color:var(--text-dim)}
+.empty-state .icon{font-size:2.8rem;margin-bottom:16px;opacity:.24;filter:grayscale(.35)}
+.empty-state p{font-size:.95rem;letter-spacing:.01em;line-height:1.55}
+.empty-state .sub{font-size:.82rem;margin-top:8px;color:var(--text-dim);max-width:48ch;margin-left:auto;margin-right:auto}
 
 /* Monitoring page — capability strip + stack cards */
 .monitor-capabilities{
@@ -641,9 +777,9 @@ body>*{position:relative;z-index:1}
   background:rgba(0,180,255,.1);border:1px solid rgba(0,180,255,.18);color:var(--spark);
 }
 .monitor-cap h3{
-  font-size:.68em;font-weight:600;color:var(--text-bright);letter-spacing:1.2px;text-transform:uppercase;margin:0 0 5px;
+  font-size:.8rem;font-weight:700;color:var(--text-bright);letter-spacing:.08em;text-transform:uppercase;margin:0 0 5px;
 }
-.monitor-cap p{font-size:.74em;color:var(--text-muted);line-height:1.5;margin:0}
+.monitor-cap p{font-size:.88rem;color:var(--text-muted);line-height:1.6;margin:0}
 .monitor-overview{display:flex;flex-direction:column;gap:18px;margin-bottom:4px}
 .monitor-stack-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 @media(max-width:900px){.monitor-stack-row{grid-template-columns:1fr}}
@@ -658,22 +794,50 @@ body>*{position:relative;z-index:1}
   border-color:rgba(234,179,8,.18);
   background:linear-gradient(145deg,rgba(55,48,26,.35),var(--bg-card));
 }
-.monitor-stat-note{font-size:.65em;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);letter-spacing:.3px}
+.monitor-stat-note{font-size:.76rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);letter-spacing:.02em}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
 .table-scroll .table{min-width:560px}
+.table-action-link{font-size:.88rem}
+.inline-scope-code{font-size:.94rem}
+.flow-stats{
+  display:flex;flex-wrap:wrap;gap:12px;
+  font-size:.8rem;font-family:var(--font-mono);
+  color:var(--text-muted);
+}
+.flow-source-tag{
+  color:var(--text-dim);font-size:.78rem;margin-right:10px;
+}
+.incident-time{
+  font-family:var(--font-mono);font-size:.82rem;white-space:nowrap;
+}
+.incident-kind{
+  font-size:.8rem;font-weight:700;letter-spacing:.02em;
+}
+.detail-value-compact{font-size:.9rem}
+.tiny-label{
+  margin:0;font-size:.82rem;color:var(--text-muted);
+}
+.compact-field{font-size:.92rem}
+.compact-number-input{width:84px}
+.crd-disk-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;
+  gap:8px;margin-bottom:6px;align-items:end;
+}
+.flow-empty-copy{line-height:1.55}
+.network-verdict{font-weight:700}
 .monitor-empty{padding:26px 16px 32px;text-align:center}
 .monitor-empty .me-icon{font-size:2.1em;opacity:.32;margin-bottom:10px;line-height:1}
 .monitor-empty h4{
-  font-size:.82em;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;margin:0 0 10px;font-weight:600;
+  font-size:.92rem;color:var(--text-bright);letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px;font-weight:700;
 }
-.monitor-empty p{font-size:.78em;color:var(--text-muted);max-width:460px;margin:0 auto;line-height:1.55}
+.monitor-empty p{font-size:.88rem;color:var(--text-muted);max-width:460px;margin:0 auto;line-height:1.6}
 .monitor-empty ul{
   text-align:left;max-width:440px;margin:14px auto 0;padding:12px 14px 12px 28px;
   border:1px solid var(--border);border-radius:var(--radius);background:rgba(0,0,0,.2);
-  color:var(--text-muted);font-size:.74em;line-height:1.65;
+  color:var(--text-muted);font-size:.86rem;line-height:1.7;
 }
 .rec-count-badge,.anom-count-badge{
-  font-size:.62em;padding:4px 11px;border-radius:3px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;
+  font-size:.7rem;padding:5px 11px;border-radius:999px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   font-family:var(--font-sans);
 }
 
@@ -719,8 +883,8 @@ body>*{position:relative;z-index:1}
 .footer-bar{
   margin-top:40px;padding:16px 0;text-align:center;
   border-top:1px solid var(--border);
-  font-family:var(--font-sans);font-size:.6em;
-  color:var(--text-dim);letter-spacing:3px;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:.78rem;
+  color:var(--text-dim);letter-spacing:.18em;text-transform:uppercase;
 }
 .footer-bar span{color:var(--molten);font-weight:700}
 
@@ -728,16 +892,16 @@ body>*{position:relative;z-index:1}
    CREATE VM BUTTON
    ═══════════════════════════════════════════════════ */
 .btn-create{
-  padding:8px 18px;border-radius:4px;
-  font-family:var(--font-sans);font-size:.65em;font-weight:600;
-  letter-spacing:1.5px;text-transform:uppercase;
+  padding:10px 18px;border-radius:12px;
+  font-family:var(--font-sans);font-size:.8rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
   background:linear-gradient(135deg,var(--molten),var(--ember));
-  color:#fff;border:none;cursor:pointer;
+  color:#0d1116;border:none;cursor:pointer;
   transition:all .2s;
-  box-shadow:0 0 16px rgba(59,130,246,.22);
+  box-shadow:0 0 16px rgba(199,208,219,.22);
 }
 .btn-create:hover{
-  box-shadow:0 0 28px rgba(59,130,246,.35),0 0 48px rgba(59,130,246,.12);
+  box-shadow:0 0 28px rgba(199,208,219,.3),0 0 48px rgba(159,176,196,.12);
   transform:translateY(-1px);
 }
 
@@ -766,8 +930,8 @@ body>*{position:relative;z-index:1}
   border-bottom:1px solid var(--border);
 }
 .modal-header h2{
-  font-family:var(--font-sans);font-size:.9em;font-weight:700;
-  color:var(--text-bright);letter-spacing:2px;text-transform:uppercase;
+  font-family:var(--font-display);font-size:1rem;font-weight:700;
+  color:var(--text-bright);letter-spacing:.08em;text-transform:uppercase;
 }
 .modal-close{
   background:none;border:1px solid var(--border);border-radius:4px;
@@ -783,35 +947,36 @@ body>*{position:relative;z-index:1}
 }
 .form-group{margin-bottom:16px}
 .form-label{
-  display:block;font-family:var(--font-sans);font-size:.6em;font-weight:500;
-  color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;
+  display:block;font-family:var(--font-sans);font-size:.75rem;font-weight:700;
+  color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;
   margin-bottom:6px;
 }
 .form-input,.form-select{
-  width:100%;padding:10px 14px;border-radius:4px;
+  width:100%;padding:12px 14px;border-radius:12px;
   background:var(--steel);border:1px solid var(--border);
-  color:var(--text-bright);font-family:var(--font-mono);font-size:.85em;
-  transition:border-color .15s;outline:none;
+  color:var(--text-bright);font-family:var(--font-mono);font-size:.9rem;
+  transition:border-color .15s, box-shadow .15s, transform .15s;outline:none;
 }
-.form-input:focus,.form-select:focus{border-color:var(--ember);box-shadow:0 0 10px rgba(59,130,246,.12)}
+.form-input::placeholder{color:var(--text-dim)}
+.form-input:focus,.form-select:focus{border-color:var(--ember);box-shadow:0 0 0 4px rgba(159,176,196,.12);transform:translateY(-1px)}
 .form-select option{background:var(--bg-card-solid);color:var(--text)}
 .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .btn-cancel{
-  padding:8px 18px;border-radius:4px;
-  font-family:var(--font-sans);font-size:.6em;font-weight:500;
-  letter-spacing:1px;text-transform:uppercase;
+  padding:10px 18px;border-radius:12px;
+  font-family:var(--font-sans);font-size:.74rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
   background:var(--steel);border:1px solid var(--border);
   color:var(--text-muted);cursor:pointer;transition:all .15s;
 }
 .btn-cancel:hover{border-color:var(--text-muted);color:var(--text)}
 .btn-forge{
-  padding:8px 24px;border-radius:4px;
-  font-family:var(--font-sans);font-size:.6em;font-weight:600;
-  letter-spacing:1.5px;text-transform:uppercase;
+  padding:10px 24px;border-radius:12px;
+  font-family:var(--font-sans);font-size:.74rem;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
   background:linear-gradient(135deg,var(--molten),var(--ember));
-  color:#fff;border:none;cursor:pointer;transition:all .15s;
+  color:#0d1116;border:none;cursor:pointer;transition:all .15s;
 }
-.btn-forge:hover{box-shadow:0 0 20px rgba(59,130,246,.28)}
+.btn-forge:hover{box-shadow:0 0 20px rgba(199,208,219,.28)}
 .btn-forge:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
 /* ═══════════════════════════════════════════════════
@@ -852,7 +1017,33 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .filter-bar .form-input,.filter-bar .form-select{
-  max-width:220px;padding:7px 12px;font-size:.8em;
+  max-width:240px;padding:10px 12px;font-size:.84rem;
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+.table thead th{
+  text-align:left;
+  padding:14px 16px;
+  font-size:.74rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  border-bottom:1px solid var(--border);
+  background:rgba(255,255,255,.02);
+}
+.table tbody td{
+  padding:14px 16px;
+  font-size:.9rem;
+  color:var(--text);
+  border-bottom:1px solid rgba(120,132,148,.12);
+  vertical-align:top;
+}
+.table tbody tr:hover td{
+  background:rgba(57,66,78,.18);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -868,8 +1059,8 @@ body>*{position:relative;z-index:1}
 .table-row:last-child{border-bottom:none}
 .table-header{
   padding:10px 24px;border-bottom:1px solid var(--border);
-  font-family:var(--font-sans);font-size:.6em;font-weight:600;
-  color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:.72rem;font-weight:700;
+  color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;
 }
 .table-row.node-row{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr}
 .table-header.node-header{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr;display:grid}
@@ -879,8 +1070,8 @@ body>*{position:relative;z-index:1}
 .cell-mono{font-family:var(--font-mono);color:var(--text)}
 .cell-badge{
   display:inline-block;padding:2px 8px;border-radius:3px;
-  font-family:var(--font-sans);font-size:.8em;font-weight:500;
-  letter-spacing:.5px;
+  font-family:var(--font-sans);font-size:.76rem;font-weight:700;
+  letter-spacing:.04em;
 }
 .cell-badge.ready{background:var(--success-dim);color:var(--success)}
 .cell-badge.not-ready{background:var(--error-dim);color:var(--error)}
@@ -892,16 +1083,16 @@ body>*{position:relative;z-index:1}
 /* ═══════════════════════════════════════════════════
    INTERFACE TABLE — in VM detail
    ═══════════════════════════════════════════════════ */
-.iface-table{width:100%;font-size:.8em;border-collapse:collapse}
+.iface-table{width:100%;font-size:.88rem;border-collapse:collapse}
 .iface-table th{
-  font-family:var(--font-sans);font-size:.7em;font-weight:500;
+  font-family:var(--font-sans);font-size:.72rem;font-weight:700;
   color:var(--text-dim);text-align:left;padding:4px 8px;
-  letter-spacing:1px;text-transform:uppercase;
+  letter-spacing:.08em;text-transform:uppercase;
   border-bottom:1px solid var(--border);
 }
 .iface-table td{
   padding:4px 8px;color:var(--text);
-  font-family:var(--font-mono);font-size:.9em;
+  font-family:var(--font-mono);font-size:.9rem;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -910,7 +1101,7 @@ body>*{position:relative;z-index:1}
 .refresh-select{
   background:var(--steel);border:1px solid var(--border);
   color:var(--text-muted);border-radius:3px;padding:2px 6px;
-  font-family:var(--font-mono);font-size:.65em;
+  font-family:var(--font-mono);font-size:.78rem;
   cursor:pointer;outline:none;
 }
 .refresh-select:focus{border-color:var(--ember)}
@@ -919,17 +1110,17 @@ body>*{position:relative;z-index:1}
    PROFILE PICKER CARDS
    ═══════════════════════════════════════════════════ */
 .profile-card{
-  padding:8px 12px;border-radius:4px;cursor:pointer;
+  padding:12px 14px;border-radius:14px;cursor:pointer;
   background:var(--steel);border:1px solid var(--border);
   transition:all .15s;min-width:80px;text-align:center;
 }
-.profile-card:hover{border-color:var(--ember);background:rgba(59,130,246,.08)}
-.profile-card.selected{border-color:var(--molten);background:rgba(59,130,246,.12);box-shadow:0 0 12px rgba(59,130,246,.12)}
+.profile-card:hover{border-color:var(--ember);background:rgba(159,176,196,.08);transform:translateY(-1px)}
+.profile-card.selected{border-color:var(--molten);background:rgba(159,176,196,.12);box-shadow:0 0 12px rgba(199,208,219,.12)}
 .profile-card .pc-name{
-  font-family:var(--font-sans);font-size:.55em;font-weight:600;
-  color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;
+  font-family:var(--font-sans);font-size:.74rem;font-weight:700;
+  color:var(--text-bright);letter-spacing:.06em;text-transform:uppercase;
 }
-.profile-card .pc-spec{font-size:.65em;color:var(--text-dim);margin-top:2px;font-family:var(--font-mono)}
+.profile-card .pc-spec{font-size:.74rem;color:var(--text-dim);margin-top:4px;font-family:var(--font-mono)}
 
 /* ═══════════════════════════════════════════════════
    API KEY INPUT
@@ -951,23 +1142,37 @@ body>*{position:relative;z-index:1}
 /* Namespace selector */
 .ns-select{
   background:var(--steel);border:1px solid var(--border);
-  color:var(--text-bright);border-radius:4px;padding:4px 8px;
-  font-family:var(--font-mono);font-size:.7em;
+  color:var(--text-bright);border-radius:12px;padding:8px 12px;
+  font-family:var(--font-mono);font-size:.78rem;
   cursor:pointer;outline:none;max-width:140px;
 }
 .ns-select:focus{border-color:var(--ember)}
 
 .theme-select{
   background:var(--steel);border:1px solid var(--border);
-  color:var(--text-bright);border-radius:4px;padding:4px 8px;
-  font-family:var(--font-sans);font-size:.68em;font-weight:500;
-  cursor:pointer;outline:none;max-width:120px;
+  color:var(--text-bright);border-radius:12px;padding:8px 12px;
+  font-family:var(--font-sans);font-size:.8rem;font-weight:700;
+  cursor:pointer;outline:none;max-width:160px;
 }
 .theme-select:focus{border-color:var(--ember)}
 
+.toolbar-input{
+  padding:10px 12px;border-radius:12px;border:1px solid var(--border);
+  background:var(--steel);color:var(--text-bright);
+  font-family:var(--font-mono);font-size:.84rem;outline:none;
+}
+.toolbar-input:focus{
+  border-color:var(--ember);
+  box-shadow:0 0 0 4px rgba(159,176,196,.12);
+}
+
+.section-subtitle{
+  font-size:1rem;color:var(--text-bright);margin-bottom:10px;font-weight:700;
+}
+
 .vmrogue-cap-banner{
-  font-size:.72em;line-height:1.5;color:var(--text-muted);
-  padding:10px 14px;margin-bottom:14px;border-radius:var(--radius);
+  font-size:.82rem;line-height:1.6;color:var(--text-muted);
+  padding:14px 16px;margin-bottom:14px;border-radius:var(--radius);
   border:1px solid var(--border);background:var(--bg-tertiary);
 }
 .vmrogue-cap-banner .vmrogue-cap-label{
@@ -982,9 +1187,9 @@ body>*{position:relative;z-index:1}
 
 /* Bulk operations */
 .bulk-bar{
-  display:none;padding:10px 24px;background:rgba(59,130,246,.08);
+  display:none;padding:12px 24px;background:rgba(159,176,196,.08);
   border-bottom:1px solid var(--border);align-items:center;gap:10px;
-  font-size:.8em;
+  font-size:.88rem;
 }
 .bulk-bar.visible{display:flex}
 .bulk-check{accent-color:var(--molten);cursor:pointer;width:16px;height:16px}
@@ -995,22 +1200,28 @@ body>*{position:relative;z-index:1}
 /* Mobile responsive */
 @media(max-width:768px){
   /* min-height + no fixed height: wrapped nav must not clip dropdowns */
-  .navbar{padding:0 12px;min-height:50px;height:auto;align-items:flex-start;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+  .navbar{padding:0 12px;min-height:58px;height:auto;align-items:flex-start;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+  .navbar-left{width:100%;flex-wrap:wrap;gap:10px}
+  .page-context-bar{padding:12px 12px 0}
+  .page-context-inner{padding:12px 14px}
+  .context-breadcrumb{font-size:.92rem}
   /* overflow-x:auto on .nav-links clips position:absolute dropdowns (submenus look empty) */
-  .nav-links{gap:0;margin-left:8px;flex-wrap:wrap;overflow:visible;row-gap:6px;max-width:min(100%,calc(100vw - 160px))}
-  .nav-link{padding:6px 8px;font-size:.55em;white-space:nowrap}
-  .nav-group-btn{padding:6px 10px;font-size:.55em}
+  .nav-links{gap:6px;margin-left:0;flex-wrap:wrap;overflow:visible;row-gap:6px;max-width:100%;padding:8px}
+  .nav-link{padding:8px 10px;font-size:.76rem;white-space:nowrap}
+  .nav-group-btn{padding:8px 10px;font-size:.76rem}
   .nav-dropdown{min-width:130px}
-  .navbar-right{gap:8px}
+  .navbar-right{gap:8px;width:100%;flex-wrap:wrap;padding-top:8px}
   .container{padding:12px}
   .page-header{flex-direction:column;align-items:flex-start;gap:8px}
+  .command-title{font-size:1.65rem}
+  .command-metrics{grid-template-columns:1fr}
   .grid-4,.grid-3{grid-template-columns:1fr 1fr}
   .grid-2{grid-template-columns:1fr}
   .vm-row{flex-direction:column;align-items:flex-start;gap:8px}
   .vm-right-stack{align-items:flex-start;max-width:100%}
   .vm-right{flex-wrap:wrap}
   .detail-grid{grid-template-columns:1fr}
-  .table-row.node-row,.table-row.pod-row{grid-template-columns:1fr 1fr;gap:4px;font-size:.75em}
+  .table-row.node-row,.table-row.pod-row{grid-template-columns:1fr 1fr;gap:6px;font-size:.82rem}
   .table-header{display:none!important}
   .filter-bar{flex-direction:column}
   .filter-bar .form-input,.filter-bar .form-select{max-width:100%}
@@ -1020,12 +1231,12 @@ body>*{position:relative;z-index:1}
 @media(max-width:480px){
   .grid-4,.grid-3{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
-  .stat-value{font-size:1.4em}
+  .stat-value{font-size:1.7rem}
 }
 
 /* ═══════════════════════════════════════════════════
    THEME: Dark steel (top nav, industrial panels)
-   Toggle via <html data-theme="steel"> — default is slate (:root)
+   Toggle via <html data-theme="steel">
    ═══════════════════════════════════════════════════ */
 html[data-theme="steel"]{
   --bg:#0b1018;
@@ -1133,7 +1344,7 @@ html[data-theme="steel"] .navbar-brand::before{
     0 6px 16px rgba(0,0,0,.4);
 }
 
-html[data-theme="steel"] .nav-links{gap:8px;margin-left:22px}
+html[data-theme="steel"] .nav-links{gap:8px;margin-left:0}
 html[data-theme="steel"] .nav-link,
 html[data-theme="steel"] .nav-group-btn{
   position:relative;
@@ -1277,18 +1488,99 @@ html[data-theme="steel"] .vm-detail{
 @media(max-width:768px){
   html[data-theme="steel"] .navbar{min-height:56px}
 }
+
+html[data-theme="zinc"]{
+  --bg:#17191d;
+  --bg-deep:#0d0f12;
+  --bg-card:rgba(36,39,44,.92);
+  --bg-card-solid:#1d2126;
+  --bg-tertiary:rgba(63,69,78,.4);
+  --steel:#242932;
+  --steel-light:#38404c;
+  --steel-bright:#596473;
+  --border:rgba(166,173,184,.22);
+  --border-hot:rgba(224,229,236,.34);
+  --border-cold:rgba(145,154,166,.24);
+  --text:#e5e7eb;
+  --text-muted:#b0b6bf;
+  --text-dim:#838c97;
+  --text-bright:#fafbfc;
+  --accent:#d4d8de;
+  --molten:#f2f4f7;
+  --ember:#c4ccd6;
+  --lava:#9ea7b3;
+  --magma:#ffffff;
+  --forge:#d7dde5;
+  --spark:#e8edf2;
+  --arc:#a4adb8;
+  --plasma:#ccd3db;
+  --chrome:#f5f7fa;
+  --titanium:#b4bbc4;
+  --success:#4ad1a4;
+  --warning:#f0ba74;
+  --error:#ee7f7f;
+  --glow-molten:0 0 24px rgba(255,255,255,.08),0 0 52px rgba(180,190,204,.08);
+  --glow-spark:0 0 16px rgba(255,255,255,.1),0 0 36px rgba(214,221,230,.06);
+}
+
+html[data-theme="zinc"] body{
+  background:#0d0f12;
+}
+html[data-theme="zinc"] body::before{
+  background:
+    radial-gradient(ellipse 48% 40% at 18% 8%, rgba(255,255,255,.08), transparent 52%),
+    radial-gradient(ellipse 55% 42% at 82% 18%, rgba(197,208,219,.16), transparent 50%),
+    radial-gradient(ellipse 52% 45% at 60% 86%, rgba(131,140,151,.14), transparent 55%);
+}
+html[data-theme="zinc"] .container::before{
+  background-image:
+    linear-gradient(rgba(166,173,184,.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(166,173,184,.12) 1px, transparent 1px);
+  opacity:.045;
+}
+html[data-theme="zinc"] .navbar{
+  background:linear-gradient(180deg,#16191d 0%,#242932 50%,#111418 100%);
+  border-bottom-color:rgba(166,173,184,.22);
+}
+html[data-theme="zinc"] .navbar::after{
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),rgba(214,221,230,.72),rgba(166,173,184,.48),transparent);
+}
+html[data-theme="zinc"] .nav-links{
+  background:rgba(29,33,38,.82);
+  border-color:rgba(166,173,184,.16);
+}
+html[data-theme="zinc"] .nav-link.active,
+html[data-theme="zinc"] .nav-group-btn.active{
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(214,221,230,.06));
+  color:var(--text-bright);
+  border-color:rgba(255,255,255,.18);
+}
+html[data-theme="zinc"] .stat-card,
+html[data-theme="zinc"] .stat-card-blue,
+html[data-theme="zinc"] .stat-card-purple,
+html[data-theme="zinc"] .stat-card-orange,
+html[data-theme="zinc"] .stat-card-green,
+html[data-theme="zinc"] .stat-card-cyan,
+html[data-theme="zinc"] .stat-card-red,
+html[data-theme="zinc"] .card,
+html[data-theme="zinc"] .chart-card,
+html[data-theme="zinc"] .resource-bar,
+html[data-theme="zinc"] .monitor-cap{
+  background:linear-gradient(145deg,rgba(40,44,50,.94) 0%,rgba(57,63,72,.88) 48%,rgba(25,28,33,.95) 100%);
+  border-color:rgba(166,173,184,.16);
+}
 </style>
 </head>
 <body>
 
 <nav class="navbar">
-  <div style="display:flex;align-items:center">
+  <div class="navbar-left">
     <span class="navbar-brand" onclick="navigate('dashboard')">VMRogue</span>
     <div class="nav-links">
-      <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')">Dashboard</button>
+      <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">◫</span><span class="nav-label">Dashboard</span></button>
 
       <div class="nav-group">
-        <button class="nav-group-btn">Compute</button>
+        <button class="nav-group-btn"><span class="nav-icon">◆</span><span class="nav-label">Compute</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
           <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
@@ -1301,26 +1593,7 @@ html[data-theme="steel"] .vm-detail{
       </div>
 
       <div class="nav-group">
-        <button class="nav-group-btn">Storage</button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
-          <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
-          <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn">Network</button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
-          <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
-          <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
-          <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn">Observe</button>
+        <button class="nav-group-btn"><span class="nav-icon">⬢</span><span class="nav-label">Observe</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
           <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
@@ -1338,7 +1611,26 @@ html[data-theme="steel"] .vm-detail{
       </div>
 
       <div class="nav-group">
-        <button class="nav-group-btn">Security</button>
+        <button class="nav-group-btn"><span class="nav-icon">▣</span><span class="nav-label">Storage</span></button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
+          <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
+          <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn"><span class="nav-icon">⟷</span><span class="nav-label">Network</span></button>
+        <div class="nav-dropdown">
+          <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
+          <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
+          <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
+          <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button class="nav-group-btn"><span class="nav-icon">⛨</span><span class="nav-label">Security</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
           <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
@@ -1349,7 +1641,7 @@ html[data-theme="steel"] .vm-detail{
       </div>
 
       <div class="nav-group">
-        <button class="nav-group-btn">Platform</button>
+        <button class="nav-group-btn"><span class="nav-icon">▦</span><span class="nav-label">Platform</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
           <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
@@ -1361,7 +1653,7 @@ html[data-theme="steel"] .vm-detail{
       </div>
 
       <div class="nav-group">
-        <button class="nav-group-btn">FinOps</button>
+        <button class="nav-group-btn"><span class="nav-icon">◌</span><span class="nav-label">FinOps</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
           <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
@@ -1369,7 +1661,7 @@ html[data-theme="steel"] .vm-detail{
       </div>
 
       <div class="nav-group">
-        <button class="nav-group-btn">Ops</button>
+        <button class="nav-group-btn"><span class="nav-icon">✦</span><span class="nav-label">Ops</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
           <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
@@ -1380,8 +1672,9 @@ html[data-theme="steel"] .vm-detail{
   </div>
   <div class="navbar-right">
     <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
-      <option value="slate">Slate</option>
+      <option value="slate">Slate Alloy</option>
       <option value="steel">Steel</option>
+      <option value="zinc">Zinc Metal</option>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Namespace">
       <option value="all">all</option>
@@ -1395,29 +1688,75 @@ html[data-theme="steel"] .vm-detail{
   </div>
 </nav>
 
+<div class="page-context-bar">
+  <div class="page-context-inner">
+    <div>
+      <div class="context-kicker" id="context-kicker">Dashboard</div>
+      <div class="context-breadcrumb" id="context-breadcrumb">Fleet overview and live command surface</div>
+    </div>
+    <div class="context-tags" id="context-tags">
+      <span class="context-chip">Live cluster</span>
+      <span class="context-chip">Theme aware</span>
+      <span class="context-chip">Action ready</span>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toasts"></div>
 
 <div class="container">
 
 <!-- DASHBOARD PAGE -->
-<div class="page active" id="page-dashboard">
+<div class="page active section-shell" id="page-dashboard" data-section="dashboard">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Dashboard</h1><p id="subtitle">Forging connections...</p></div></div>
+  <div class="dashboard-command-grid">
+    <div class="command-hero">
+      <div class="command-hero-top">
+        <div>
+          <div class="command-kicker">Fleet command</div>
+          <div class="command-title">Run the cluster from one decisive surface.</div>
+          <div class="command-copy" id="command-copy">Tracking VM capacity, live health, and operator signals across the active namespace.</div>
+        </div>
+        <div class="command-badges" id="command-badges">
+          <span class="command-badge">Live cluster</span>
+          <span class="command-badge">KubeVirt</span>
+          <span class="command-badge">Realtime refresh</span>
+        </div>
+      </div>
+      <div class="command-actions">
+        <button class="btn-create" onclick="openCreateModal()">Forge VM</button>
+        <button class="btn btn-restart" onclick="navigate('monitoring')">Open Monitoring</button>
+        <button class="btn btn-start" onclick="navigate('events')">Review Signals</button>
+        <button class="btn btn-stop" onclick="refresh()">Refresh Now</button>
+      </div>
+      <div class="command-metrics" id="command-metrics"></div>
+    </div>
+    <div class="command-priority">
+      <div class="priority-header">
+        <span class="priority-title">Priority Queue</span>
+        <button class="btn btn-restart" onclick="navigate('incidents')">Open Incidents</button>
+      </div>
+      <div class="priority-list" id="dash-priority-list"></div>
+    </div>
+  </div>
   <div class="grid-4" id="stat-cards"></div>
   <div class="grid-4" id="resource-bars"></div>
-  <div class="grid-2">
-    <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--spark)">&#9889;</span> CPU Usage</span><span class="chart-current" id="cpu-current">--</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
-    <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--molten)">&#9632;</span> Memory Usage</span><span class="chart-current" id="mem-current">--</span></div><div class="chart-area"><canvas id="mem-chart"></canvas></div></div>
-  </div>
-  <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Virtual Machines</span><button class="nav-link" onclick="navigate('vms')" style="font-size:.75em">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span><button class="nav-link" onclick="navigate('events')" style="font-size:.75em">View all &#8250;</button></div><div id="dash-event-list"></div></div>
+  <div class="dashboard-command-grid">
+    <div class="dashboard-side-stack">
+      <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--spark)">&#9889;</span> CPU Usage</span><span class="chart-current" id="cpu-current">--</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Virtual Machines</span><button class="nav-link table-action-link" onclick="navigate('vms')">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
+    </div>
+    <div class="dashboard-side-stack">
+      <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--molten)">&#9632;</span> Memory Usage</span><span class="chart-current" id="mem-current">--</span></div><div class="chart-area"><canvas id="mem-chart"></canvas></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span><button class="nav-link table-action-link" onclick="navigate('events')">View all &#8250;</button></div><div id="dash-event-list"></div></div>
+    </div>
   </div>
 </div>
 </div>
 
 <!-- VMS PAGE -->
-<div class="page" id="page-vms">
+<div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Virtual Machines</h1><p>KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button class="btn-create" onclick="openCreateModal()">+ Forge VM</button></div></div>
   <div class="card">
@@ -1458,7 +1797,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 
 <!-- SNAPSHOTS PAGE -->
-<div class="page" id="page-snapshots">
+<div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div><button class="btn-create" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
   <div class="card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
@@ -1466,7 +1805,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 
 <!-- NODES PAGE -->
-<div class="page" id="page-nodes">
+<div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div><div class="page-header-right" id="node-count"></div></div>
   <div class="card">
@@ -1478,7 +1817,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 
 <!-- PODS PAGE -->
-<div class="page" id="page-pods">
+<div class="page section-shell" id="page-pods" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div><div class="page-header-right" id="pod-count"></div></div>
   <div class="card">
@@ -1490,7 +1829,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 
 <!-- STORAGE PAGE -->
-<div class="page" id="page-storage">
+<div class="page section-shell" id="page-storage" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div></div>
   <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VMROGUE_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. In-guest filesystem usage still needs a guest agent or custom metrics.</span></div>
@@ -1503,7 +1842,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 
 <!-- EVENTS PAGE -->
-<div class="page" id="page-events">
+<div class="page section-shell" id="page-events" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Events</h1><p>Cluster signal intercepts</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span></div><div id="events-full-list"></div></div>
@@ -1511,7 +1850,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 
 <!-- CRD PAGES -->
-<div class="page" id="page-crds">
+<div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button class="btn" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
   <div class="card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
@@ -1520,7 +1859,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-policies">
+<div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Policies</h1><p>VMRoguePolicy compliance enforcement</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Active Policies</span></div>
@@ -1529,7 +1868,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-insights">
+<div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Active Insights</span></div>
@@ -1538,7 +1877,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-actions">
+<div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Actions</h1><p>VMRogueAction autopilot proposals</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Action Queue</span></div>
@@ -1547,7 +1886,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-costs">
+<div class="page section-shell" id="page-costs" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Cost Analysis</h1><p>Per-VM cost breakdown and namespace budgets (estimated monthly USD)</p></div></div>
   <div id="cost-cap-banner"></div>
@@ -1566,7 +1905,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-security">
+<div class="page section-shell" id="page-security" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Security</h1><p>Security posture and vulnerability findings</p></div></div>
   <div id="security-summary" class="grid-4" style="margin-bottom:16px"></div>
@@ -1576,11 +1915,11 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-monitoring">
+<div class="page section-shell" id="page-monitoring" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div></div>
   <div class="monitor-capabilities">
-    <div class="monitor-cap"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code style="font-size:.9em">monitoring</code>, <code style="font-size:.9em">prometheus</code>, <code style="font-size:.9em">observability</code>, and the active namespace.</p></div></div>
+    <div class="monitor-cap"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
     <div class="monitor-cap"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
     <div class="monitor-cap"><div class="monitor-cap-icon" style="background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
     <div class="monitor-cap"><div class="monitor-cap-icon" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--success)">&#8866;</div><div><h3>Also in VMRogue</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
@@ -1609,7 +1948,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-workloads">
+<div class="page section-shell" id="page-workloads" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Workloads</h1><p>Deployments, StatefulSets, and DaemonSets</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
@@ -1618,7 +1957,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-alerts">
+<div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Active Alerts</span></div>
@@ -1627,7 +1966,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-audit">
+<div class="page section-shell" id="page-audit" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div></div>
   <div id="audit-summary" class="grid-4" style="margin-bottom:16px"></div>
@@ -1637,7 +1976,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-notifications">
+<div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Notifications</span></div>
@@ -1646,7 +1985,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-helm">
+<div class="page section-shell" id="page-helm" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Helm Releases</span></div>
@@ -1655,7 +1994,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-operators">
+<div class="page section-shell" id="page-operators" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Operators</span></div>
@@ -1664,7 +2003,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-custom-resources">
+<div class="page section-shell" id="page-custom-resources" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Custom Resources</span></div>
@@ -1673,7 +2012,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-slo">
+<div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div></div>
   <div id="slo-burn-stats" class="grid-4"></div>
@@ -1690,7 +2029,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-chaos">
+<div class="page section-shell" id="page-chaos" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
@@ -1699,7 +2038,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-rbac">
+<div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div></div>
   <div id="rbac-summary" class="grid-4" style="margin-bottom:16px"></div>
@@ -1712,7 +2051,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-quotas">
+<div class="page section-shell" id="page-quotas" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Resource Quotas</span></div>
@@ -1720,7 +2059,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-ingress">
+<div class="page section-shell" id="page-ingress" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Ingress Resources</span></div>
@@ -1728,7 +2067,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-hpa">
+<div class="page section-shell" id="page-hpa" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
@@ -1736,7 +2075,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-backups">
+<div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Backups</span></div>
@@ -1744,14 +2083,14 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-metrics">
+<div class="page section-shell" id="page-metrics" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div></div>
   <div id="metrics-summary" class="grid-4"></div>
 </div>
 </div>
 
-<div class="page" id="page-topology">
+<div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div></div>
   <div id="topology-summary" class="grid-4" style="margin-bottom:16px"></div>
@@ -1760,7 +2099,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-dependencies">
+<div class="page section-shell" id="page-dependencies" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div></div>
   <div id="dependencies-summary" class="grid-4" style="margin-bottom:16px"></div>
@@ -1769,7 +2108,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-autoscaler">
+<div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
@@ -1777,7 +2116,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-forecasting">
+<div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div></div>
   <div id="forecasting-cap-banner"></div>
@@ -1786,7 +2125,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-gitops">
+<div class="page section-shell" id="page-gitops" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div></div>
   <div id="gitops-cap-banner"></div>
@@ -1794,14 +2133,14 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-scheduling">
+<div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div></div>
   <div id="scheduling-summary" class="grid-4"></div>
 </div>
 </div>
 
-<div class="page" id="page-cilium">
+<div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div></div>
   <div id="cilium-summary" class="grid-4" style="margin-bottom:16px"></div>
@@ -1811,7 +2150,7 @@ html[data-theme="steel"] .vm-detail{
     <div class="card">
       <div class="card-header">
         <span class="card-title">Network Flows</span>
-        <div id="flow-stats" style="display:flex;gap:12px;font-size:.7em;font-family:var(--font-mono)"></div>
+        <div id="flow-stats" class="flow-stats"></div>
       </div>
       <table class="table"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th></tr></thead><tbody id="flows-body"></tbody></table>
     </div>
@@ -1819,14 +2158,14 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-observability">
+<div class="page section-shell" id="page-observability" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div></div>
   <div id="observability-summary" class="grid-4"></div>
 </div>
 </div>
 
-<div class="page" id="page-performance">
+<div class="page section-shell" id="page-performance" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div></div>
   <div id="performance-cap-banner"></div>
@@ -1835,7 +2174,7 @@ html[data-theme="steel"] .vm-detail{
   <div class="card">
     <div class="card-header">
       <span class="card-title">CPU Flamegraph</span>
-      <select id="flamegraph-vm-select" class="input" style="padding:5px 10px;font-size:.75em" onchange="renderFlamegraph()">
+      <select id="flamegraph-vm-select" class="toolbar-input" onchange="renderFlamegraph()">
         <option value="">Select VM…</option>
       </select>
     </div>
@@ -1847,7 +2186,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-webhooks">
+<div class="page section-shell" id="page-webhooks" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div></div>
   <div class="card"><div class="card-header"><span class="card-title">Webhooks</span></div>
@@ -1855,12 +2194,12 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-traces">
+<div class="page section-shell" id="page-traces" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header">
     <div><h1>Traces</h1><p>Cluster activity shaped as trace rows from Kubernetes Events (not a Jaeger/OTel backend)</p></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <input id="traces-search" class="input" style="width:220px;padding:6px 10px;font-size:.75em" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
+      <input id="traces-search" class="toolbar-input" style="width:220px" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
     </div>
   </div>
   <div id="traces-cap-banner"></div>
@@ -1876,19 +2215,19 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-logs">
+<div class="page section-shell" id="page-logs" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header">
     <div><h1>Log Explorer</h1><p>Virt-launcher pod logs (kubevirt.io/domain) — not a full cluster Loki/ELK view</p></div>
     <div style="display:flex;gap:8px;align-items:center">
-      <select id="logs-level-filter" class="input" style="padding:6px 10px;font-size:.75em" onchange="fetchLogs()">
+      <select id="logs-level-filter" class="toolbar-input" onchange="fetchLogs()">
         <option value="">All Levels</option>
         <option value="error">Error</option>
         <option value="warn">Warn</option>
         <option value="info">Info</option>
         <option value="debug">Debug</option>
       </select>
-      <input id="logs-search" class="input" style="width:240px;padding:6px 10px;font-size:.75em" placeholder="Search logs…" oninput="fetchLogs()">
+      <input id="logs-search" class="toolbar-input" style="width:240px" placeholder="Search logs…" oninput="fetchLogs()">
     </div>
   </div>
   <div id="logs-cap-banner"></div>
@@ -1896,7 +2235,7 @@ html[data-theme="steel"] .vm-detail{
   <div class="card">
     <div class="card-header">
       <span class="card-title">Log Stream</span>
-      <span style="font-size:.65em;padding:3px 10px;border-radius:3px;background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)">● LIVE</span>
+      <span style="font-size:.74rem;padding:5px 10px;border-radius:999px;background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2);font-weight:700">● LIVE</span>
     </div>
     <div id="logs-stream" style="font-family:var(--font-mono);font-size:.72em;max-height:480px;overflow-y:auto;padding:12px 18px;line-height:1.8;color:var(--text)">
       <div style="color:var(--text-dim);text-align:center;padding:40px">Connect log aggregator or wire up VM serial console to stream logs</div>
@@ -1905,7 +2244,7 @@ html[data-theme="steel"] .vm-detail{
 </div>
 </div>
 
-<div class="page" id="page-incidents">
+<div class="page section-shell" id="page-incidents" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Incidents</h1><p>Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p></div></div>
   <div id="incidents-cap-banner"></div>
@@ -1914,12 +2253,12 @@ html[data-theme="steel"] .vm-detail{
     <div class="card-header">
       <span class="card-title">Incident Timeline</span>
       <div style="display:flex;gap:8px">
-        <select id="incident-severity-filter" class="input" style="padding:5px 10px;font-size:.75em" onchange="fetchIncidents()">
+        <select id="incident-severity-filter" class="toolbar-input" onchange="fetchIncidents()">
           <option value="">All Severities</option>
           <option value="critical">Critical</option>
           <option value="warning">Warning</option>
         </select>
-        <select id="incident-kind-filter" class="input" style="padding:5px 10px;font-size:.75em" onchange="fetchIncidents()">
+        <select id="incident-kind-filter" class="toolbar-input" onchange="fetchIncidents()">
           <option value="">All Types</option>
           <option value="k8s-event">K8s Event</option>
           <option value="slo-breach">SLO Breach</option>
@@ -1946,17 +2285,17 @@ html[data-theme="steel"] .vm-detail{
         <div class="form-group"><label class="form-label">Memory</label><input type="text" class="form-input" id="crd-vm-memory" value="4Gi"></div>
       </div>
       <hr style="border-color:var(--border);margin:12px 0">
-      <h3 style="font-size:.9em;color:var(--text-secondary);margin-bottom:8px">Disks</h3>
+      <h3 class="section-subtitle">Disks</h3>
       <div id="crd-disks-list"></div>
       <button class="btn btn-sm" onclick="addCrdDisk()" style="margin-top:4px">+ Add Disk</button>
       <hr style="border-color:var(--border);margin:12px 0">
-      <h3 style="font-size:.9em;color:var(--text-secondary);margin-bottom:8px">Network</h3>
+      <h3 class="section-subtitle">Network</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="crd-net-type"><option value="pod">Pod (masquerade)</option><option value="bridge">Bridge</option><option value="multus">Multus</option><option value="sriov">SR-IOV</option></select></div>
         <div class="form-group"><label class="form-label">Network Name</label><input type="text" class="form-input" id="crd-net-name" placeholder="(for multus/sriov)"></div>
       </div>
       <hr style="border-color:var(--border);margin:12px 0">
-      <h3 style="font-size:.9em;color:var(--text-secondary);margin-bottom:8px">Advanced</h3>
+      <h3 class="section-subtitle">Advanced</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
         <div class="form-group"><label class="form-label">Firmware</label><select class="form-select" id="crd-vm-firmware"><option value="">Default</option><option value="bios">BIOS</option><option value="efi">EFI (UEFI)</option></select></div>
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="crd-vm-secureboot"> Secure Boot</label>
@@ -2017,7 +2356,7 @@ html[data-theme="steel"] .vm-detail{
       </div>
       <div class="form-group">
         <label class="form-label">Cloud-Init (optional)</label>
-        <textarea class="form-input" id="vm-cloudinit" rows="4" placeholder="#cloud-config&#10;user: vmrogue&#10;password: changeme&#10;chpasswd: { expire: false }" style="font-size:.8em;resize:vertical"></textarea>
+        <textarea class="form-input" id="vm-cloudinit" rows="4" placeholder="#cloud-config&#10;user: vmrogue&#10;password: changeme&#10;chpasswd: { expire: false }" style="resize:vertical"></textarea>
       </div>
       <div class="form-group">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85em;color:var(--text-muted)">
@@ -2047,7 +2386,7 @@ html[data-theme="steel"] .vm-detail{
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
         <input type="checkbox" id="vm-autostart" style="accent-color:var(--molten)">
-        <label for="vm-autostart" style="font-size:.8em;color:var(--text-muted);cursor:pointer">Start VM after creation</label>
+        <label for="vm-autostart" style="font-size:.88rem;color:var(--text-muted);cursor:pointer">Start VM after creation</label>
       </div>
     </div>
     <div class="modal-footer">
@@ -2116,7 +2455,7 @@ html[data-theme="steel"] .vm-detail{
     <div class="modal-header">
       <h2 id="vnc-title">Console: --</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <span id="vnc-status" style="font-size:.7em;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
+        <span id="vnc-status" style="font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
         <button class="btn btn-restart" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
         <button class="btn btn-start" onclick="toggleVncFullscreen()">Fullscreen</button>
         <button class="btn btn-stop" onclick="reconnectVnc()">Reconnect</button>
@@ -2135,7 +2474,7 @@ html[data-theme="steel"] .vm-detail{
     <div class="modal-header">
       <h2 id="serial-title">Serial: --</h2>
       <div style="display:flex;gap:8px;align-items:center">
-        <span id="serial-status" style="font-size:.7em;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
+        <span id="serial-status" style="font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
         <button class="btn btn-start" onclick="reconnectSerial()">Reconnect</button>
         <button class="modal-close" onclick="closeSerialModal()">&#10005;</button>
       </div>
@@ -2160,11 +2499,58 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'vmrogue_theme';
+let lastOverview = null;
+let lastEvents = [];
+
+const PAGE_META = {
+  dashboard: {kicker:'Dashboard', title:'Fleet overview and live command surface', tags:['Live cluster','KubeVirt control','Realtime refresh']},
+  vms: {kicker:'Compute', title:'Virtual machine fleet command', tags:['Start stop resize','SSH and VNC','Bulk actions']},
+  monitoring: {kicker:'Observe', title:'Stack health, anomalies, and recommendations', tags:['Metrics aware','Prometheus hints','Namespace scoped']},
+  workloads: {kicker:'Compute', title:'Deployments, stateful services, and daemon workloads', tags:['Replica health','Workload types','Namespace view']},
+  alerts: {kicker:'Observe', title:'Active alerts and warning acknowledgement flow', tags:['Severity','Source tracking','Live signal']},
+  audit: {kicker:'Security', title:'Audit trail and event-derived accountability view', tags:['Actors','Outcomes','Trail summary']},
+  events: {kicker:'Observe', title:'Cluster signal feed and event flow', tags:['Recent events','Namespace scoped','Operational context']},
+  storage: {kicker:'Storage', title:'PVCs, classes, and capacity signals', tags:['Persistent volumes','Classes','Capacity hints']},
+  snapshots: {kicker:'Storage', title:'Point-in-time protection and restore readiness', tags:['Snapshots','Restore points','Recovery flow']},
+  backups: {kicker:'Storage', title:'Backup coverage and restore inventory', tags:['Retention','Restore points','Backup state']},
+  nodes: {kicker:'Compute', title:'Cluster nodes, capacity, and schedulability', tags:['Node health','Allocatable capacity','Placement base']},
+  pods: {kicker:'Compute', title:'Workload pods and runtime placement', tags:['Namespace scoped','Restarts','Phase visibility']},
+  security: {kicker:'Security', title:'Posture, RBAC, and hardening signals', tags:['Risk oriented','Audit ready','Policy aware']},
+  rbac: {kicker:'Security', title:'Roles, bindings, and subject reachability', tags:['Bindings','Roles','Subjects']},
+  quotas: {kicker:'Security', title:'Namespace quota pressure and policy bounds', tags:['Quota usage','CPU and memory','Namespace guardrails']},
+  policies: {kicker:'Security', title:'Policy enforcement and compliance control', tags:['Enforcement','Severity','Violations']},
+  costs: {kicker:'FinOps', title:'Spend, forecasts, and allocation visibility', tags:['Cost summary','Forecasting','Budgets']},
+  forecasting: {kicker:'FinOps', title:'Short-horizon cost and capacity forecasting', tags:['Trend view','Confidence','Breaches']},
+  operators: {kicker:'Platform', title:'Operators, CRDs, and platform control', tags:['Cluster services','Custom resources','Automation hooks']},
+  crds: {kicker:'Platform', title:'Operator-managed VMRogue resources', tags:['Custom resources','Templates','Spec state']},
+  helm: {kicker:'Platform', title:'Helm release inventory and version posture', tags:['Releases','Chart versions','Namespaces']},
+  'custom-resources': {kicker:'Platform', title:'Installed CRDs and live resource inventory', tags:['Kinds','Scope','Instance counts']},
+  gitops: {kicker:'Platform', title:'Sync status and drift across GitOps sources', tags:['Drift','Branch','Sync state']},
+  webhooks: {kicker:'Platform', title:'Outbound automation hooks and delivery controls', tags:['URLs','Events','Secrets']},
+  ingress: {kicker:'Network', title:'Routes, traffic edges, and exposure state', tags:['Ingress','Policies','Topology']},
+  topology: {kicker:'Network', title:'Placement and dependency mapping', tags:['Nodes and edges','Dependency graph','Scope aware']},
+  dependencies: {kicker:'Network', title:'Dependency edges between VM-facing resources', tags:['Edges','Labels','Annotations']},
+  cilium: {kicker:'Network', title:'Policy view and cluster network flow surface', tags:['Policies','Flow hints','Agent status']},
+  actions: {kicker:'Ops', title:'Approved actions and automation proposals', tags:['Operator actions','Execution trail','Change control']},
+  notifications: {kicker:'Ops', title:'Warnings, failures, and operational messages', tags:['Unread signals','Issue triage','Live updates']},
+  chaos: {kicker:'Ops', title:'Chaos experiments and controlled failure testing', tags:['Experiments','Targets','Duration']},
+  performance: {kicker:'Observe', title:'Performance profiles and hot-path visibility', tags:['Latency trends','Flamegraph','VM profiling']},
+  insights: {kicker:'Observe', title:'Observability insights and surfaced runtime signals', tags:['Severity','VM context','State tracking']},
+  metrics: {kicker:'Observe', title:'Cluster capacity and runtime metric totals', tags:['Totals','Capacity','Running state']},
+  observability: {kicker:'Observe', title:'Metrics, logs, and trace pipeline overview', tags:['Metric status','Log status','Series counts']},
+  traces: {kicker:'Observe', title:'Trace-like activity view shaped from cluster events', tags:['Trace rows','Services','Durations']},
+  slo: {kicker:'Observe', title:'Objectives, burn rate, and service health pressure', tags:['SLI/SLO','Error budgets','Burn rate']},
+  logs: {kicker:'Observe', title:'Virt-launcher log stream and severity view', tags:['Live stream','Searchable','Level filter']},
+  hpa: {kicker:'Compute', title:'Horizontal autoscaler target and replica pressure', tags:['Desired replicas','Bounds','Targets']},
+  autoscaler: {kicker:'Compute', title:'Autoscaler policy summary and scaling intent', tags:['Policies','Targets','Limits']},
+  scheduling: {kicker:'Compute', title:'Scheduling pressure and unschedulable signals', tags:['Pending pods','Preemption','Node pressure']},
+  incidents: {kicker:'Ops', title:'Incident timeline and heuristic response view', tags:['Critical first','Timeline','Resolution state']}
+};
 
 function applyTheme(theme, writeStorage) {
-  const t = theme === 'steel' ? 'steel' : 'slate';
-  if (t === 'steel') {
-    document.documentElement.setAttribute('data-theme', 'steel');
+  const t = (theme === 'steel' || theme === 'zinc') ? theme : 'slate';
+  if (t === 'steel' || t === 'zinc') {
+    document.documentElement.setAttribute('data-theme', t);
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
@@ -2189,12 +2575,24 @@ function setTheme(theme) {
   applyTheme(theme, true);
 }
 
+function updatePageContext(page) {
+  const meta = PAGE_META[page] || {kicker:'VMRogue', title:'Cluster command surface', tags:['Live cluster']};
+  const kicker = document.getElementById('context-kicker');
+  const breadcrumb = document.getElementById('context-breadcrumb');
+  const tags = document.getElementById('context-tags');
+  if (kicker) kicker.textContent = meta.kicker;
+  if (breadcrumb) breadcrumb.textContent = meta.title;
+  if (tags) {
+    tags.innerHTML = (meta.tags || []).map(tag => '<span class="context-chip">' + esc(tag) + '</span>').join('');
+  }
+}
+
 function initTheme() {
   let t = 'slate';
   try {
     t = localStorage.getItem(THEME_KEY) || 'slate';
   } catch (e) {}
-  if (t !== 'steel' && t !== 'slate') {
+  if (t !== 'steel' && t !== 'slate' && t !== 'zinc') {
     t = 'slate';
   }
   applyTheme(t, false);
@@ -2204,12 +2602,16 @@ function initTheme() {
 function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + page).classList.add('active');
+  const pageEl = document.getElementById('page-' + page);
+  pageEl.classList.add('active');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   document.querySelectorAll('.nav-group-btn').forEach(b => {
     const grp = b.closest('.nav-group');
     b.classList.toggle('active', !!(grp && grp.querySelector('.nav-link.active')));
   });
+  document.body.dataset.page = page;
+  document.body.dataset.section = pageEl.dataset.section || page;
+  updatePageContext(page);
   loadPageData(page);
 }
 
@@ -2289,7 +2691,7 @@ function drawChart(id, data, color, glowColor) {
   for (let i = 0; i <= 4; i++) {
     const y = pad.t + cH*i/4;
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
-    ctx.fillStyle = '#484860'; ctx.font = '10px JetBrains Mono,monospace'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#6b7280'; ctx.font = '10px IBM Plex Mono,monospace'; ctx.textAlign = 'right';
     ctx.fillText((100-i*25)+'%', pad.l-6, y+4);
   }
 
@@ -2457,7 +2859,7 @@ function tbodyError(colspan, msg) {
 }
 
 function summaryErrorHtml(msg) {
-  return '<div class="stat-card stat-card-red" style="grid-column:1/-1"><div class="stat-label">API error</div><div class="stat-value" style="font-size:.75em;line-height:1.45;color:var(--error);font-weight:500">' +
+  return '<div class="stat-card stat-card-red" style="grid-column:1/-1"><div class="stat-label">API error</div><div class="stat-value" style="font-size:.92rem;line-height:1.55;color:var(--error);font-weight:500">' +
     esc(msg || 'Request failed') + '</div></div>';
 }
 
@@ -2550,8 +2952,8 @@ function vmRow(vm, showActions) {
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.6em" onclick="event.stopPropagation();openVncConsole(\''+ns+'\',\''+vm.name+'\')">VNC</button>' +
-    '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.18);font-size:.6em" onclick="event.stopPropagation();openSerialConsole(\''+ns+'\',\''+vm.name+'\')">Serial</button>' : '') +
+    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.74rem" onclick="event.stopPropagation();openVncConsole(\''+ns+'\',\''+vm.name+'\')">VNC</button>' +
+    '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.18);font-size:.74rem" onclick="event.stopPropagation();openSerialConsole(\''+ns+'\',\''+vm.name+'\')">Serial</button>' : '') +
     (!isRunning ? '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'start\')">&#9654;</button>' : '') +
     (isRunning ? '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'stop\')">&#9632;</button>' : '') +
     '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'restart\')">&#8635;</button>' +
@@ -2588,6 +2990,7 @@ async function fetchVMs() {
       statCard('green','&#9733;','Fleet Health',(total>0?Math.round(running/total*100):0)+'%','');
 
     document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs under command';
+    renderDashboardCommandCenter();
 
     // Fetch real cluster capacity for resource bars
     fetchOverview();
@@ -2613,6 +3016,7 @@ async function fetchEvents(full) {
   try {
     const j = await apiJson('/api/v1/events' + nsParam());
     const events = asArray(j);
+    lastEvents = events;
     const renderEvents = (items, target) => {
       if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#9889;</div><p>No signals intercepted</p></div>'; return; }
       target.innerHTML = items.map(e => {
@@ -2623,6 +3027,7 @@ async function fetchEvents(full) {
     };
     renderEvents(events.slice(0,5), document.getElementById('dash-event-list'));
     if (full) renderEvents(events, document.getElementById('events-full-list'));
+    renderDashboardCommandCenter();
   } catch (e) {
     const dash = document.getElementById('dash-event-list');
     const fullEl = document.getElementById('events-full-list');
@@ -2661,6 +3066,7 @@ async function fetchOverview() {
     const j = await apiJson('/api/v1/dashboard/overview');
     const d = unwrapData(j);
     if (!d || !d.cluster || !d.nodes) return;
+    lastOverview = d;
     const c = d.cluster;
     const n = d.nodes;
 
@@ -2682,6 +3088,7 @@ async function fetchOverview() {
     document.getElementById('mem-current').textContent=memPct+'%';
     drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
     drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
+    renderDashboardCommandCenter();
   } catch (e) {
     console.error('Overview fetch error:', e);
   }
@@ -2714,6 +3121,63 @@ function esc(s) { const d=document.createElement('div');d.textContent=s||'';retu
 function updateHealth(ok,msg) {
   document.getElementById('health-dot').className='nav-dot '+(ok?'ok':'err');
   document.getElementById('health-text').textContent=ok?'Online':(msg||'Offline');
+}
+
+function renderDashboardCommandCenter() {
+  const metricEl = document.getElementById('command-metrics');
+  const priorityEl = document.getElementById('dash-priority-list');
+  const badgeEl = document.getElementById('command-badges');
+  const copyEl = document.getElementById('command-copy');
+  if (!metricEl || !priorityEl) return;
+
+  const running = vmData.filter(v => v.status === 'Running').length;
+  const failed = vmData.filter(v => v.status === 'Failed' || v.status === 'Error').length;
+  const stopped = vmData.filter(v => v.status === 'Stopped').length;
+  const warnings = lastEvents.filter(e => e.type === 'Warning').length;
+  const overview = lastOverview || {};
+  const nodes = overview.nodes || {};
+  const cluster = overview.cluster || {};
+  const readyNodes = nodes.ready_nodes != null && nodes.total_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : 'n/a';
+  const cpuAlloc = nodes.total_cpu_allocatable ? Math.round(((cluster.total_vcpus_allocated || 0) / nodes.total_cpu_allocatable) * 100) + '%' : 'n/a';
+
+  metricEl.innerHTML =
+    '<div class="command-metric"><div class="command-metric-label">Running fleet</div><div class="command-metric-value">' + running + ' / ' + vmData.length + '</div></div>' +
+    '<div class="command-metric"><div class="command-metric-label">Warning pressure</div><div class="command-metric-value">' + warnings + ' signals</div></div>' +
+    '<div class="command-metric"><div class="command-metric-label">Node readiness</div><div class="command-metric-value">' + readyNodes + '</div></div>';
+
+  if (badgeEl) {
+    badgeEl.innerHTML =
+      '<span class="command-badge">' + (failed ? failed + ' degraded workloads' : 'No degraded workloads') + '</span>' +
+      '<span class="command-badge">' + (stopped ? stopped + ' idle VMs' : 'Fleet actively engaged') + '</span>' +
+      '<span class="command-badge">' + (cpuAlloc !== 'n/a' ? cpuAlloc + ' CPU allocated' : 'Capacity pending') + '</span>';
+  }
+  if (copyEl) {
+    copyEl.textContent = failed
+      ? 'The fleet has degraded workloads. Prioritize recovery, then review hot nodes and recent warning signals before scaling further.'
+      : warnings
+        ? 'The fleet is healthy enough to operate, but warning signals are accumulating. Review the event stream before making broader changes.'
+        : 'The cluster is steady. Use this surface to launch capacity changes, inspect live health, and move quickly between compute, signals, and policy.'
+  }
+
+  const priorities = [
+    failed
+      ? {icon:'!', title:'Failed or error VMs detected', detail:failed + ' workloads need operator attention before more changes.', state:'hot'}
+      : {icon:'✓', title:'No failed VMs in scope', detail:'The active namespace is clear of degraded VM states.', state:'good'},
+    warnings
+      ? {icon:'⚑', title:'Warning events need triage', detail:warnings + ' warning events are visible in the signal feed.', state:warnings > 4 ? 'hot' : 'warn'}
+      : {icon:'◎', title:'Signal feed is quiet', detail:'No warning events are currently queued in scope.', state:'good'},
+    stopped
+      ? {icon:'◌', title:'Idle capacity is available', detail:stopped + ' VMs are stopped and can be restarted or reclaimed.', state:'warn'}
+      : {icon:'↗', title:'Fleet is fully engaged', detail:'No stopped VMs are currently sitting idle in scope.', state:'good'}
+  ];
+
+  priorityEl.innerHTML = priorities.map(item =>
+    '<div class="priority-item">' +
+      '<div class="priority-icon">' + item.icon + '</div>' +
+      '<div class="priority-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(item.detail) + '</span></div>' +
+      '<div class="priority-state ' + item.state + '">' + (item.state === 'hot' ? 'Critical' : item.state === 'warn' ? 'Watch' : 'Stable') + '</div>' +
+    '</div>'
+  ).join('');
 }
 
 // ── Create VM ──
@@ -3021,10 +3485,10 @@ function renderExposePanel(container, ns, name, ex) {
     inner += '<div class="detail-row"><span class="lbl">Status</span><span class="val">No expose Service. Create one to forward a Service port to the guest (via virt-launcher when the VM is running).</span></div>';
   }
   inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
-  inner += '<label class="form-label" style="margin:0;font-size:.75em;color:var(--text-muted)">Type<br><select id="' + tid + '-type" class="form-select" style="min-width:130px">';
+  inner += '<label class="form-label tiny-label">Type<br><select id="' + tid + '-type" class="form-select compact-field" style="min-width:130px">';
   inner += '<option value="ClusterIP">ClusterIP</option><option value="NodePort">NodePort</option><option value="LoadBalancer">LoadBalancer</option></select></label>';
-  inner += '<label class="form-label" style="margin:0;font-size:.75em;color:var(--text-muted)">Service port<br><input type="number" class="form-input" id="' + tid + '-port" min="1" max="65535" value="22" style="width:76px"></label>';
-  inner += '<label class="form-label" style="margin:0;font-size:.75em;color:var(--text-muted)">Target port<br><input type="number" class="form-input" id="' + tid + '-target" min="1" max="65535" value="22" style="width:76px"></label>';
+  inner += '<label class="form-label tiny-label">Service port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-port" min="1" max="65535" value="22"></label>';
+  inner += '<label class="form-label tiny-label">Target port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-target" min="1" max="65535" value="22"></label>';
   inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();applyVmExpose(\'' + ns + '\',\'' + name + '\',\'' + tid + '\')">Apply</button>';
   inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();removeVmExpose(\'' + ns + '\',\'' + name + '\')">Remove</button>';
   inner += '</div>';
@@ -3119,7 +3583,7 @@ async function fetchNodes() {
         '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
         '<span class="cell-mono">' + memGb + '</span>' +
         '<span class="cell-mono">' + esc(n.kubelet_version) + '</span>' +
-        '<span class="cell-mono" style="font-size:.85em">' + esc(n.os_image) + '</span>' +
+        '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
         '</div>';
     }).join('');
   } catch (e) {
@@ -3485,7 +3949,7 @@ async function fetchSecurity(ns, name) {
     html += '<div class="detail-row"><span class="lbl">Score</span><span class="val" style="color:' + scoreColor + ';font-weight:700;font-size:1.1em">' + d.score + '/100</span></div>';
     d.checks.forEach(c => {
       const icon = c.pass ? '<span style="color:var(--success)">&#10003;</span>' : '<span style="color:var(--error)">&#10007;</span>';
-      html += '<div class="detail-row"><span class="lbl">' + icon + ' ' + esc(c.name) + '</span><span class="val" style="font-size:.8em">' + esc(c.detail) + '</span></div>';
+      html += '<div class="detail-row"><span class="lbl">' + icon + ' ' + esc(c.name) + '</span><span class="val detail-value-compact">' + esc(c.detail) + '</span></div>';
     });
     html += '</div>';
     return html;
@@ -3808,8 +4272,8 @@ async function fetchCosts() {
     // Forecast
     try {
       const fc = await apiJson('/api/v1/costs/forecast');
-      const fcCap = fc.vmrogue_context && fc.vmrogue_context.limitations ? '<p style="font-size:.68em;color:var(--text-dim);margin-top:10px;line-height:1.4">' + esc(fc.vmrogue_context.limitations) + '</p>' : '';
-      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2em;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:4px">Projected Monthly</div><div style="margin-top:12px;padding:6px 12px;border-radius:6px;display:inline-block;background:' + (fc.trend === 'growing' ? 'var(--error-dim);color:var(--error)' : 'var(--success-dim);color:var(--success)') + '">' + esc(fc.trend || 'stable') + '</div>' + fcCap + '</div>';
+      const fcCap = fc.vmrogue_context && fc.vmrogue_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.vmrogue_context.limitations) + '</p>' : '';
+      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected Monthly</div><div style="margin-top:12px;padding:8px 12px;border-radius:999px;display:inline-block;font-size:.76rem;font-weight:700;background:' + (fc.trend === 'growing' ? 'var(--error-dim);color:var(--error)' : 'var(--success-dim);color:var(--success)') + '">' + esc(fc.trend || 'stable') + '</div>' + fcCap + '</div>';
     } catch {
       fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
     }
@@ -3843,12 +4307,12 @@ let crdDiskCount = 0;
 function addCrdDisk() {
   const n = crdDiskCount++;
   const el = document.createElement('div');
-  el.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr 1fr auto;gap:8px;margin-bottom:6px;align-items:end';
+  el.className = 'crd-disk-grid';
   el.id = 'crd-disk-' + n;
-  el.innerHTML = '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Name</label><input type="text" class="form-input" id="crd-disk-name-'+n+'" value="disk'+n+'" style="font-size:.85em"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Size</label><input type="text" class="form-input" id="crd-disk-size-'+n+'" value="20Gi" style="font-size:.85em"></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Source</label><select class="form-select" id="crd-disk-source-'+n+'" style="font-size:.85em"><option value="blank">Blank</option><option value="containerDisk">Container Disk</option><option value="pvc">PVC</option></select></div>' +
-    '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:.75em">Image / PVC</label><input type="text" class="form-input" id="crd-disk-ref-'+n+'" placeholder="image or pvc name" style="font-size:.85em"></div>' +
+  el.innerHTML = '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Name</label><input type="text" class="form-input compact-field" id="crd-disk-name-'+n+'" value="disk'+n+'"></div>' +
+    '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Size</label><input type="text" class="form-input compact-field" id="crd-disk-size-'+n+'" value="20Gi"></div>' +
+    '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Source</label><select class="form-select compact-field" id="crd-disk-source-'+n+'"><option value="blank">Blank</option><option value="containerDisk">Container Disk</option><option value="pvc">PVC</option></select></div>' +
+    '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Image / PVC</label><input type="text" class="form-input compact-field" id="crd-disk-ref-'+n+'" placeholder="image or pvc name"></div>' +
     '<button class="btn btn-sm" onclick="document.getElementById(\'crd-disk-'+n+'\').remove()" style="color:var(--ember)">X</button>';
   document.getElementById('crd-disks-list').appendChild(el);
 }
@@ -3968,6 +4432,9 @@ function refresh() {
 
 window.addEventListener('load', async () => {
   initTheme();
+  updatePageContext(currentPage);
+  document.body.dataset.page = currentPage;
+  document.body.dataset.section = document.getElementById('page-' + currentPage)?.dataset.section || currentPage;
 
   // Set saved refresh interval
   const sel = document.getElementById('refresh-interval');
@@ -4008,7 +4475,7 @@ async function fetchSecurityPage() {
     if (tb) {
       tb.innerHTML = findings.map(f => {
         const sclr = f.severity === 'Critical' ? 'var(--error)' : f.severity === 'High' ? 'var(--warning)' : 'var(--text-muted)';
-        return `<tr><td style="color:${sclr};font-weight:600">${f.severity}</td><td>${f.category}</td><td>${f.title}</td><td><code>${f.resource}</code></td><td>${f.recommendation}</td></tr>`;
+        return `<tr><td style="color:${sclr};font-weight:700">${f.severity}</td><td>${f.category}</td><td>${f.title}</td><td><code style="font-size:.84rem">${f.resource}</code></td><td>${f.recommendation}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No security findings</td></tr>';
     }
   } catch (e) {
@@ -4040,7 +4507,7 @@ async function fetchMonitoring() {
         const cardClass = available ? 'stat-card stat-card-green' : 'stat-card stat-card-neutral';
         const head = available ? 'In cluster' : 'Not detected';
         const sub = available ? blurbOn : blurbOff;
-        return `<div class="${cardClass}"><div class="stat-label">${label}</div><div class="stat-value" style="font-size:1.22em">${head}</div><div class="monitor-stack-sub">${sub}</div></div>`;
+        return `<div class="${cardClass}"><div class="stat-label">${label}</div><div class="stat-value" style="font-size:1.22rem">${head}</div><div class="monitor-stack-sub">${sub}</div></div>`;
       };
       const promOn = 'Service name contains <strong>prometheus</strong> under a scanned namespace.';
       const promOff = 'No prometheus Service found yet. Optional — install a chart such as kube-prometheus-stack; live VM charts on VM detail still work via their own data path.';
@@ -4059,10 +4526,10 @@ async function fetchMonitoring() {
           ${stackCard('Alertmanager', !!status.alertmanager_available, amOn, amOff)}
         </div>
         <div class="grid-4">
-          <div class="stat-card stat-card-cyan"><div class="stat-label">Nodes ready</div><div class="stat-value" style="font-size:1.45em">${status.healthy_targets}/${status.total_targets}</div><div class="monitor-stat-note">Kubernetes Ready condition</div></div>
-          <div class="stat-card ${anoCardClass}"><div class="stat-label">Anomalies</div><div class="stat-value" style="font-size:1.45em">${anoList.length}</div><div class="monitor-stat-note">Threshold breaches in scope</div></div>
-          <div class="stat-card ${alerts > 0 ? 'stat-card-orange' : ''}"><div class="stat-label">Warning events</div><div class="stat-value" style="font-size:1.45em">${alerts}</div><div class="monitor-stat-note">In the API server's configured namespace</div></div>
-          <div class="stat-card stat-card-purple"><div class="stat-label">Retention hint</div><div class="stat-value" style="font-size:1.1em;font-family:var(--font-mono)">${esc(String(retention))}</div><div class="monitor-stat-note">Scrape window label · ${esc(String(interval))}</div></div>
+          <div class="stat-card stat-card-cyan"><div class="stat-label">Nodes ready</div><div class="stat-value" style="font-size:1.45rem">${status.healthy_targets}/${status.total_targets}</div><div class="monitor-stat-note">Kubernetes Ready condition</div></div>
+          <div class="stat-card ${anoCardClass}"><div class="stat-label">Anomalies</div><div class="stat-value" style="font-size:1.45rem">${anoList.length}</div><div class="monitor-stat-note">Threshold breaches in scope</div></div>
+          <div class="stat-card ${alerts > 0 ? 'stat-card-orange' : ''}"><div class="stat-label">Warning events</div><div class="stat-value" style="font-size:1.45rem">${alerts}</div><div class="monitor-stat-note">In the API server's configured namespace</div></div>
+          <div class="stat-card stat-card-purple"><div class="stat-label">Retention hint</div><div class="stat-value" style="font-size:1.1rem;font-family:var(--font-mono)">${esc(String(retention))}</div><div class="monitor-stat-note">Scrape window label · ${esc(String(interval))}</div></div>
         </div>`;
     }
     if (recBadge) {
@@ -4284,7 +4751,7 @@ async function fetchSlo() {
         <div class="stat-card stat-card-blue"><div class="stat-label">Budget Total</div><div class="stat-value">${br.budget_total_percent}%</div></div>
         <div class="stat-card ${br.budget_consumed_percent > 80 ? 'stat-card-red' : 'stat-card-orange'}"><div class="stat-label">Consumed</div><div class="stat-value">${br.budget_consumed_percent}%</div></div>
         <div class="stat-card stat-card-orange"><div class="stat-label">Burn Rate 1h</div><div class="stat-value">${br.burn_rate_1h}x</div></div>
-        <div class="stat-card ${br.status==='healthy'?'stat-card-green':'stat-card-red'}"><div class="stat-label">Status</div><div class="stat-value" style="font-size:1.2em">${esc(br.status)}</div></div>`;
+        <div class="stat-card ${br.status==='healthy'?'stat-card-green':'stat-card-red'}"><div class="stat-label">Status</div><div class="stat-value" style="font-size:1.22rem">${esc(br.status)}</div></div>`;
     }
 
     if (burnTb) burnTb.innerHTML = burnRates.map(br => {
@@ -4566,7 +5033,7 @@ async function fetchCilium() {
     }
     // Network flows (derived from Kubernetes NetworkPolicies, not live Hubble gRPC)
     const flowSrcTag = (flowData.flow_source || '') === 'kubernetes_network_policies'
-      ? '<span style="color:var(--text-dim);font-size:.65em;margin-right:10px">Source: NetworkPolicy</span>'
+      ? '<span class="flow-source-tag">Source: NetworkPolicy</span>'
       : '';
     if (flowStats) {
       flowStats.innerHTML = flowSrcTag + `<span style="color:var(--success)">Allowed: ${flowData.allowed}</span> <span style="color:var(--error)">Denied: ${flowData.denied}</span> <span style="color:var(--text-muted)">Total: ${flowData.total_flows}</span>`;
@@ -4575,13 +5042,13 @@ async function fetchCilium() {
       const src = flowData.flow_source || 'none';
       const emptyMsg = (flowData.flows || []).length ? '' : (
         src === 'kubernetes_network_policies'
-          ? '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or install Hubble for live flows (not wired to this API yet).</td></tr>'
-          : '<tr><td colspan="5" style="text-align:center;color:var(--text-dim);line-height:1.5">No NetworkPolicy–derived rows. Live Hubble flows require a Hubble Relay integration (gRPC); this table shows policy-shaped hints only.</td></tr>'
+          ? '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or install Hubble for live flows (not wired to this API yet).</td></tr>'
+          : '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy-derived rows. Live Hubble flows require a Hubble Relay integration (gRPC); this table shows policy-shaped hints only.</td></tr>'
       );
       flowsTb.innerHTML = (flowData.flows || []).map(f => `<tr>
         <td>${esc(f.source)}</td><td>${esc(f.destination)}</td>
         <td>${esc(f.protocol)}</td><td>${f.port || '-'}</td>
-        <td><span style="color:${f.verdict==='allowed'?'var(--success)':'var(--error)'};font-weight:600">${esc(f.verdict)}</span></td>
+        <td><span class="network-verdict" style="color:${f.verdict==='allowed'?'var(--success)':'var(--error)'}">${esc(f.verdict)}</span></td>
       </tr>`).join('') || emptyMsg;
     }
   } catch (e) {
@@ -4777,8 +5244,8 @@ async function fetchIncidents() {
       const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
       const kc = kindColor[e.kind] || 'var(--text-muted)';
       return `<tr>
-        <td style="font-family:var(--font-mono);font-size:.75em;white-space:nowrap">${fmtTime(e.timestamp)}</td>
-        <td><span style="color:${kc};font-size:.75em;font-weight:600">${esc(e.kind)}</span></td>
+        <td class="incident-time">${fmtTime(e.timestamp)}</td>
+        <td><span class="incident-kind" style="color:${kc}">${esc(e.kind)}</span></td>
         <td style="color:${sc};font-weight:600">${esc(e.severity)}</td>
         <td>${esc(e.title)}</td>
         <td>${e.vm_name ? esc(e.vm_name) : '<span style="color:var(--text-dim)">—</span>'}</td>
