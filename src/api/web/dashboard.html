@@ -999,6 +999,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   background:rgba(15,23,42,.55);
   animation:fade-in .25s cubic-bezier(.16,1,.3,1);
 }
+.vm-detail .detail-loading{padding:14px 16px;color:var(--text-muted);font-size:.88rem}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .detail-section{
   background:var(--steel);border-radius:4px;padding:14px 16px;
@@ -3535,20 +3536,34 @@ let expandedVm = null;
 
 function toggleVmDetail(ns, name) {
   const key = ns + '/' + name;
-  const existing = document.getElementById('detail-' + name);
+  const detailId = 'detail-' + name;
+  const existing = document.getElementById(detailId);
   if (existing) {
     existing.remove();
     expandedVm = null;
     return;
   }
-  // Collapse any other open detail
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
   expandedVm = key;
   rememberVmForSnap(ns, name);
-  fetchVmDetail(ns, name);
+
+  // Insert placeholder synchronously so a second click cannot spawn duplicate panels before fetch completes.
+  const rows = document.querySelectorAll('#vm-full-list .vm-row');
+  for (const row of rows) {
+    if (row.querySelector('.vm-name')?.textContent === name) {
+      row.insertAdjacentHTML(
+        'afterend',
+        '<div class="vm-detail" id="' + detailId + '"><div class="detail-loading">Loading VM details\u2026</div></div>'
+      );
+      fetchVmDetail(ns, name);
+      return;
+    }
+  }
 }
 
 async function fetchVmDetail(ns, name) {
+  const holder = document.getElementById('detail-' + name);
+  if (!holder) return;
   try {
     const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
     const vm = unwrapData(j);
@@ -3557,93 +3572,83 @@ async function fetchVmDetail(ns, name) {
     const ifaces = vmi.interfaces || [];
     const guestOS = vmi.guest_os_info;
 
-    let html = '<div class="vm-detail" id="detail-' + name + '"><div class="detail-grid">';
+    let inner = '<div class="detail-grid">';
 
-    // Status section
-    html += '<div class="detail-section"><div class="detail-section-title">Status</div>';
-    html += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
-    html += detailRow('Ready', vm.ready ? 'Yes' : 'No');
-    html += detailRow('Node', vm.node || 'N/A');
-    html += detailRow('Age', vm.age || 'N/A');
-    html += detailRow('IP', vm.ip || 'N/A');
-    html += '</div>';
+    inner += '<div class="detail-section"><div class="detail-section-title">Status</div>';
+    inner += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
+    inner += detailRow('Ready', vm.ready ? 'Yes' : 'No');
+    inner += detailRow('Node', vm.node || 'N/A');
+    inner += detailRow('Age', vm.age || 'N/A');
+    inner += detailRow('IP', vm.ip || 'N/A');
+    inner += '</div>';
 
-    html += '<div class="detail-section"><div class="detail-section-title">Remote access (SSH)</div>';
-    html += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
-    html += '</div>';
+    inner += '<div class="detail-section"><div class="detail-section-title">Remote access (SSH)</div>';
+    inner += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
+    inner += '</div>';
 
-    // Resources section
-    html += '<div class="detail-section"><div class="detail-section-title">Resources</div>';
-    html += detailRow('CPU', vm.cpu || 'N/A');
-    html += detailRow('Memory', vm.memory || 'N/A');
-    html += detailRow('Disk', vm.disk || 'N/A');
-    html += '</div>';
+    inner += '<div class="detail-section"><div class="detail-section-title">Resources</div>';
+    inner += detailRow('CPU', vm.cpu || 'N/A');
+    inner += detailRow('Memory', vm.memory || 'N/A');
+    inner += detailRow('Disk', vm.disk || 'N/A');
+    inner += '</div>';
 
-    // Network interfaces
     if (ifaces.length > 0) {
-      html += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
-      html += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
+      inner += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
+      inner += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
       ifaces.forEach(i => {
-        html += '<tr><td>' + esc(i.interface_name || i.name || '-') + '</td><td>' + esc(i.ip_address || i.ip || '-') + '</td><td>' + esc(i.mac || '-') + '</td></tr>';
+        inner += '<tr><td>' + esc(i.interface_name || i.name || '-') + '</td><td>' + esc(i.ip_address || i.ip || '-') + '</td><td>' + esc(i.mac || '-') + '</td></tr>';
       });
-      html += '</tbody></table></div>';
+      inner += '</tbody></table></div>';
     }
 
-    // Guest OS
     if (guestOS) {
-      html += '<div class="detail-section"><div class="detail-section-title">Guest OS</div>';
-      html += detailRow('OS', guestOS.name || guestOS.id || 'Unknown');
-      if (guestOS.version) html += detailRow('Version', guestOS.version);
-      if (guestOS.kernel_release) html += detailRow('Kernel', guestOS.kernel_release);
-      html += '</div>';
+      inner += '<div class="detail-section"><div class="detail-section-title">Guest OS</div>';
+      inner += detailRow('OS', guestOS.name || guestOS.id || 'Unknown');
+      if (guestOS.version) inner += detailRow('Version', guestOS.version);
+      if (guestOS.kernel_release) inner += detailRow('Kernel', guestOS.kernel_release);
+      inner += '</div>';
     }
 
-    html += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading…</div></div>';
+    inner += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>';
 
-    html += '</div>';
+    inner += '</div>';
 
-    html += '</div>';
-
-    // Action buttons
-    html += '<div class="detail-actions">';
+    inner += '<div class="detail-actions">';
     if (vm.status === 'Running') {
-      html += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; VNC</button>';
-      html += '<button class="btn" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.22)" onclick="event.stopPropagation();openSerialConsole(\'' + ns + '\',\'' + name + '\')">&#9618; Serial</button>';
-      html += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" onclick="event.stopPropagation();pauseVM(\'' + ns + '\',\'' + name + '\')">&#10074;&#10074; Pause</button>';
-      html += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
-      html += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();migrateVM(\'' + ns + '\',\'' + name + '\')">&#8644; Migrate</button>';
+      inner += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; VNC</button>';
+      inner += '<button class="btn" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.22)" onclick="event.stopPropagation();openSerialConsole(\'' + ns + '\',\'' + name + '\')">&#9618; Serial</button>';
+      inner += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" onclick="event.stopPropagation();pauseVM(\'' + ns + '\',\'' + name + '\')">&#10074;&#10074; Pause</button>';
+      inner += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
+      inner += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();migrateVM(\'' + ns + '\',\'' + name + '\')">&#8644; Migrate</button>';
     } else {
-      html += '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'start\')">&#9654; Start</button>';
+      inner += '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'start\')">&#9654; Start</button>';
     }
     if (vmi.phase === 'Paused') {
-      html += '<button class="btn btn-start" onclick="event.stopPropagation();unpauseVM(\'' + ns + '\',\'' + name + '\')">&#9654; Unpause</button>';
+      inner += '<button class="btn btn-start" onclick="event.stopPropagation();unpauseVM(\'' + ns + '\',\'' + name + '\')">&#9654; Unpause</button>';
     }
-    html += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
-    html += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" onclick="event.stopPropagation();cloneVM(\'' + ns + '\',\'' + name + '\')">&#10697; Clone</button>';
-    html += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
-    html += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
-    html += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
-    html += '</div>';
+    inner += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
+    inner += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" onclick="event.stopPropagation();cloneVM(\'' + ns + '\',\'' + name + '\')">&#10697; Clone</button>';
+    inner += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
+    inner += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
+    inner += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
+    inner += '</div>';
 
-    // Security placeholder (loaded async)
-    html += '<div id="security-' + name + '"></div>';
-    html += '</div>';
+    inner += '<div id="security-' + name + '"></div>';
 
-    // Insert after the VM row
-    const rows = document.querySelectorAll('#vm-full-list .vm-row');
-    for (const row of rows) {
-      if (row.querySelector('.vm-name')?.textContent === name) {
-        row.insertAdjacentHTML('afterend', html);
-        break;
-      }
-    }
-    // Async load security posture
+    holder.innerHTML = inner;
+
     fetchSecurity(ns, name).then(secHtml => {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
     });
     loadExposePanel(ns, name);
-  } catch (e) { toast('Failed to load VM details: ' + (e.message || String(e)), 'error'); }
+  } catch (e) {
+    holder.innerHTML =
+      '<div class="detail-section"><div class="detail-section-title">Error</div><div class="detail-row"><span class="val" style="color:var(--error)">' +
+      esc(e.message || String(e)) +
+      '</span></div></div>';
+    toast('Failed to load VM details: ' + (e.message || String(e)), 'error');
+  }
 }
 
 async function loadExposePanel(ns, name) {
