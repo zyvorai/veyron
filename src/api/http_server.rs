@@ -1062,6 +1062,21 @@ pub mod web {
     /// For anything else, returns a generic message to avoid leaking internals.
     fn sanitize_error(e: &dyn std::fmt::Display) -> String {
         let msg = e.to_string();
+        let lower = msg.to_lowercase();
+
+        // Forge VM / CRUD: Kubernetes returns NotFound for missing namespaces and missing APIs —
+        // distinguish those instead of collapsing everything to "Resource not found".
+        if lower.contains("namespaces") && lower.contains("not found") {
+            return "Namespace not found — create the namespace first or use one that exists"
+                .to_string();
+        }
+        if lower.contains("could not find the requested resource")
+            || lower.contains("doesn't have a resource type")
+            || (lower.contains("kubevirt") && (lower.contains("not found") || lower.contains("could not find")))
+        {
+            return "KubeVirt API unavailable — install KubeVirt (VirtualMachine CRDs must exist on this cluster)"
+                .to_string();
+        }
 
         // Map known error patterns to safe, generic messages
         if msg.starts_with("NotFound") || msg.contains("not found") {
@@ -3396,6 +3411,8 @@ pub mod web {
             },
         };
 
+        let platform = client.platform_readiness().await;
+
         let overview = DashboardOverview {
             cluster: ClusterStats {
                 total_vms: total,
@@ -3407,6 +3424,7 @@ pub mod web {
                 total_snapshots: snapshot_count,
             },
             nodes: node_summary,
+            platform,
         };
 
         let ctx = req_ctx(HttpMethod::GET, "/api/v1/dashboard/overview");
@@ -3459,6 +3477,7 @@ pub mod web {
     struct DashboardOverview {
         cluster: ClusterStats,
         nodes: NodeSummary,
+        platform: crate::kube::PlatformReadiness,
     }
 
     #[derive(Serialize)]
