@@ -33,6 +33,9 @@ make ci
 
 # Full deployment (builds both API + operator images; streams remote build logs + preflight diagnostics)
 ./scripts/deploy-remote.sh HOST USER
+
+# Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VMROGUE_API_KEY)
+./scripts/verify-vmrogue-remote.sh HOST [30151]
 # same as:
 ./scripts/deploy-all-remote.sh HOST USER [--quick]
 

@@ -248,7 +248,18 @@ body>*{position:relative;z-index:1}
 .nav-dot{width:8px;height:8px;border-radius:50%}
 .nav-dot.ok{background:var(--success);box-shadow:var(--glow-success);animation:forge-pulse 2.5s ease-in-out infinite}
 .nav-dot.err{background:var(--error);box-shadow:0 0 10px rgba(255,34,68,.4)}
+.nav-dot.warn{background:var(--warning);box-shadow:0 0 8px rgba(245,158,11,.35)}
 .refresh-text{font-size:.78rem;color:var(--text-dim);font-family:var(--font-mono)}
+.platform-readiness-card{margin-top:18px}
+.platform-readiness-body{padding:6px 18px 16px;display:flex;flex-direction:column;gap:12px}
+.platform-row{display:flex;gap:12px;align-items:flex-start}
+.platform-dot{flex-shrink:0;width:10px;height:10px;border-radius:50%;margin-top:5px}
+.platform-dot.ok{background:var(--success);box-shadow:var(--glow-success)}
+.platform-dot.bad{background:var(--error);box-shadow:0 0 8px rgba(255,34,68,.35)}
+.platform-dot.warn{background:var(--warning)}
+.platform-label{font-weight:700;font-size:.88rem;color:var(--text-bright)}
+.platform-detail{font-size:.82rem;color:var(--text-muted);line-height:1.45;margin-top:2px}
+.platform-virtctl-note{font-size:.78rem;color:var(--text-dim);margin:4px 0 0;padding-top:10px;border-top:1px solid var(--border);line-height:1.5}
 
 /* Dropdown nav groups */
 .nav-group{position:relative;display:inline-flex}
@@ -1643,6 +1654,8 @@ html[data-theme="zinc"] .monitor-cap{
       <div class="nav-group">
         <button class="nav-group-btn"><span class="nav-icon">▦</span><span class="nav-label">Platform</span></button>
         <div class="nav-dropdown">
+          <button class="nav-link" type="button" onclick="openPlatformInstallModal();">Install KubeVirt stack&#8230;</button>
+          <div class="nav-dropdown-sep"></div>
           <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
           <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
           <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
@@ -1742,6 +1755,7 @@ html[data-theme="zinc"] .monitor-cap{
   </div>
   <div class="grid-4" id="stat-cards"></div>
   <div class="grid-4" id="resource-bars"></div>
+  <div class="card platform-readiness-card" id="platform-readiness-card" style="display:none"></div>
   <div class="dashboard-command-grid">
     <div class="dashboard-side-stack">
       <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--spark)">&#9889;</span> CPU Usage</span><span class="chart-current" id="cpu-current">--</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
@@ -2487,6 +2501,90 @@ html[data-theme="zinc"] .monitor-cap{
   </div>
 </div>
 
+<!-- Bootstrap KubeVirt + CDI + virtctl (run on admin workstation; not from browser) -->
+<script id="platform-install-raw" type="text/plain">
+#!/usr/bin/env bash
+set -euo pipefail
+
+ARCH="${ARCH:-amd64}"
+OS="${OS:-linux}"
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || { echo "Missing required command: $1" >&2; exit 1; }
+}
+
+need kubectl
+need curl
+need grep
+need sed
+
+echo "[1/6] Checking Kubernetes access..."
+kubectl cluster-info >/dev/null
+
+echo "[2/6] Detecting latest KubeVirt release..."
+KV_VERSION="${KV_VERSION:-$(curl -fsSL https://api.github.com/repos/kubevirt/kubevirt/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')}"
+echo "KubeVirt: ${KV_VERSION}"
+
+echo "[3/6] Installing KubeVirt operator + CR..."
+kubectl apply -f "https://github.com/kubevirt/kubevirt/releases/download/${KV_VERSION}/kubevirt-operator.yaml"
+kubectl apply -f "https://github.com/kubevirt/kubevirt/releases/download/${KV_VERSION}/kubevirt-cr.yaml"
+
+echo "[4/6] Waiting for KubeVirt..."
+kubectl wait -n kubevirt kv kubevirt --for=condition=Available --timeout=20m
+
+echo "[5/6] Installing virtctl (optional CLI for console/VNC; skip with SKIP_VIRTCTL=1)..."
+if [[ "${SKIP_VIRTCTL:-0}" != "1" ]]; then
+  TMP="$(mktemp -d)"
+  curl -fL \
+    "https://github.com/kubevirt/kubevirt/releases/download/${KV_VERSION}/virtctl-${KV_VERSION}-${OS}-${ARCH}" \
+    -o "${TMP}/virtctl"
+  chmod +x "${TMP}/virtctl"
+  if [[ "$(uname -s)" == "Darwin" ]] || [[ "$(uname -s)" == "Linux" ]]; then
+    mkdir -p "${HOME}/.local/bin"
+    sudo mv "${TMP}/virtctl" /usr/local/bin/virtctl 2>/dev/null || mv "${TMP}/virtctl" "${HOME}/.local/bin/virtctl"
+    echo "virtctl installed — ensure ~/.local/bin or /usr/local/bin is on PATH"
+  fi
+else
+  echo "Skipping virtctl"
+fi
+
+echo "[6/6] Installing CDI (Containerized Data Importer)..."
+CDI_VERSION="${CDI_VERSION:-$(curl -fsSL https://api.github.com/repos/kubevirt/containerized-data-importer/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')}"
+echo "CDI: ${CDI_VERSION}"
+kubectl apply -f "https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-operator.yaml"
+kubectl apply -f "https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-cr.yaml"
+
+kubectl wait -n cdi cdi cdi --for=condition=Available --timeout=20m || true
+
+echo ""
+echo "Done. Verify:"
+kubectl get pods -n kubevirt
+kubectl get pods -n cdi
+command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
+</script>
+
+<div class="modal-overlay" id="platform-install-modal">
+  <div class="modal" style="max-width:min(920px,96vw)">
+    <div class="modal-header">
+      <h2>Install KubeVirt stack</h2>
+      <button type="button" class="modal-close" onclick="closePlatformInstallModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p id="platform-install-hint" style="font-size:.88rem;color:var(--text-muted);line-height:1.55;margin-bottom:12px"></p>
+      <p style="font-size:.84rem;color:var(--text-dim);line-height:1.5">Copy the script and run it on a machine where <code>kubectl</code> points at this cluster <strong>with cluster-admin</strong>. VMRogue cannot apply operators from your browser for security reasons.</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0">
+        <button type="button" class="btn btn-primary" onclick="copyPlatformInstallScript()">Copy script</button>
+        <a class="btn btn-sm btn-restart" href="https://kubevirt.io/quickstart_cloud/" target="_blank" rel="noopener noreferrer">KubeVirt quickstart</a>
+        <a class="btn btn-sm btn-restart" href="https://github.com/kubevirt/containerized-data-importer" target="_blank" rel="noopener noreferrer">CDI</a>
+      </div>
+      <pre id="platform-install-pre" class="form-input" style="font-size:.76rem;max-height:min(52vh,560px);overflow:auto;white-space:pre-wrap;background:rgba(0,0,0,.28);padding:14px;border-radius:12px;margin:0;font-family:var(--font-mono);line-height:1.4"></pre>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closePlatformInstallModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="footer-bar">Forged with <span>Rust</span> &mdash; VMRogue v0.2.0</div>
 </div>
 
@@ -2992,8 +3090,8 @@ async function fetchVMs() {
     document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs under command';
     renderDashboardCommandCenter();
 
-    // Fetch real cluster capacity for resource bars
-    fetchOverview();
+    // Fetch real cluster capacity + platform readiness (updates nav health dot)
+    await fetchOverview();
 
     document.getElementById('dash-vm-list').innerHTML = vmData.length===0 ?
       '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>' :
@@ -3007,7 +3105,7 @@ async function fetchVMs() {
         vmData.map(v=>vmRow(v,true)).join('');
     }
 
-    updateHealth(true);
+    /* Platform / Forge readiness: fetchOverview → updateHealth */
   } catch(e) { updateHealth(false, e.message); }
 }
 
@@ -3089,6 +3187,21 @@ async function fetchOverview() {
     drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
     drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
     renderDashboardCommandCenter();
+    renderPlatformReadiness(d.platform);
+    const p = d.platform;
+    if (p && typeof p.forge_vm_ready === 'boolean') {
+      const cdOk = p.cdi_operator_ok;
+      const kvOk = p.kubevirt_api_ok && p.kubevirt_control_plane_ok;
+      if (p.forge_vm_ready) {
+        updateHealth(true, null, false);
+      } else if (kvOk && !cdOk) {
+        updateHealth(true, 'CDI incomplete — imports may fail', true);
+      } else {
+        updateHealth(false, 'KubeVirt not ready', false);
+      }
+    } else {
+      updateHealth(true, null, false);
+    }
   } catch (e) {
     console.error('Overview fetch error:', e);
   }
@@ -3118,9 +3231,83 @@ function setCapBanner(id, ctx) {
   if (el) el.innerHTML = vmrogueFeatureBanner(ctx);
 }
 function esc(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
-function updateHealth(ok,msg) {
-  document.getElementById('health-dot').className='nav-dot '+(ok?'ok':'err');
-  document.getElementById('health-text').textContent=ok?'Online':(msg||'Offline');
+function updateHealth(ok, msg, warn) {
+  const isWarn = warn === true;
+  const dot = document.getElementById('health-dot');
+  const cls = ok ? 'ok' : (isWarn ? 'warn' : 'err');
+  dot.className = 'nav-dot ' + cls;
+  document.getElementById('health-text').textContent = ok ? 'Online' : (msg || 'Offline');
+}
+
+function renderPlatformReadiness(platform) {
+  const card = document.getElementById('platform-readiness-card');
+  if (!card) return;
+  if (!platform || typeof platform !== 'object') {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  const row = function(ok, label, detail) {
+    return '<div class="platform-row"><span class="platform-dot ' + (ok ? 'ok' : 'bad') + '"></span><div><div class="platform-label">' +
+      esc(label) + '</div><div class="platform-detail">' + esc(detail || '') + '</div></div></div>';
+  };
+  const apiDetail = platform.kubevirt_api_ok
+    ? 'VirtualMachine API list succeeded (CRDs + RBAC).'
+    : (platform.kubevirt_api_message || 'Cannot list VirtualMachines — install KubeVirt or fix RBAC.');
+  const forgeDetail = platform.forge_vm_ready
+    ? 'Dashboard Forge VM can submit creates (KubeVirt API + virt-api / virt-controller Running).'
+    : 'Resolve KubeVirt API and control plane rows before forging VMs.';
+  let html = '<div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
+    '<span class="card-title">Platform readiness</span>' +
+    '<button type="button" class="btn btn-sm btn-restart" onclick="openPlatformInstallModal()">Install stack</button>' +
+    '</div><div class="platform-readiness-body">';
+  html += row(platform.kubevirt_api_ok, 'KubeVirt API', apiDetail);
+  html += row(platform.kubevirt_control_plane_ok, 'KubeVirt control plane (kubevirt namespace)', platform.kubevirt_detail || '');
+  html += row(platform.cdi_operator_ok, 'CDI operator (namespace cdi)', platform.cdi_detail || '');
+  html += row(platform.forge_vm_ready, 'Forge VM', forgeDetail);
+  html += '<p class="platform-virtctl-note">' + esc(platform.virtctl_note || '') + '</p>';
+  html += '</div>';
+  card.innerHTML = html;
+}
+
+function getPlatformInstallScript() {
+  const el = document.getElementById('platform-install-raw');
+  return el ? el.textContent.trim() : '';
+}
+
+function openPlatformInstallModal() {
+  const hint = document.getElementById('platform-install-hint');
+  const p = lastOverview && lastOverview.platform;
+  if (hint) {
+    if (p && typeof p === 'object') {
+      const gaps = [];
+      if (!p.kubevirt_api_ok || !p.kubevirt_control_plane_ok) gaps.push('KubeVirt API / control plane');
+      if (!p.cdi_operator_ok) gaps.push('CDI operator');
+      hint.innerHTML = gaps.length
+        ? '<strong>Detected gaps:</strong> ' + esc(gaps.join(', ')) + '. Run the script from a machine with cluster-admin kubectl, then refresh this dashboard.'
+        : '<strong>Readiness OK.</strong> Keep this script for new clusters, DR, or version bumps.';
+    } else {
+      hint.textContent = 'Bootstrap KubeVirt, optional virtctl, and CDI using cluster-admin kubectl on your workstation.';
+    }
+  }
+  const pre = document.getElementById('platform-install-pre');
+  if (pre) pre.textContent = getPlatformInstallScript();
+  const m = document.getElementById('platform-install-modal');
+  if (m) m.classList.add('open');
+}
+
+function closePlatformInstallModal() {
+  const m = document.getElementById('platform-install-modal');
+  if (m) m.classList.remove('open');
+}
+
+async function copyPlatformInstallScript() {
+  try {
+    await navigator.clipboard.writeText(getPlatformInstallScript());
+    toast('Install script copied to clipboard', 'success');
+  } catch (e) {
+    toast('Copy failed — select the script in the box below', 'error');
+  }
 }
 
 function renderDashboardCommandCenter() {
@@ -3322,7 +3509,10 @@ async function forgeVM() {
 
 // Close modals on Escape or overlay click
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); }
+  if (e.key === 'Escape') {
+    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
+    closePlatformInstallModal();
+  }
 });
 document.getElementById('create-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCreateModal();
@@ -3335,6 +3525,9 @@ document.getElementById('vnc-modal').addEventListener('click', e => {
 });
 document.getElementById('serial-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeSerialModal();
+});
+document.getElementById('platform-install-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closePlatformInstallModal();
 });
 
 // ── VM Detail Panel ──

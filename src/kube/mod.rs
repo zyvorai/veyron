@@ -13,6 +13,7 @@ use kube::{
     Client, Config,
     api::{Api, DeleteParams, ListParams, Patch, PatchParams, PostParams},
 };
+use serde::Serialize;
 use serde_json::json;
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
@@ -20,6 +21,24 @@ use std::sync::OnceLock;
 pub use converter::vm_config_to_kubevirt;
 pub use status::{ResourceSummary, VMStatus};
 pub use types::*;
+
+/// Dashboard: KubeVirt + CDI readiness from the cluster API (virtctl is workstation-only).
+#[derive(Debug, Clone, Serialize)]
+pub struct PlatformReadiness {
+    /// `VirtualMachine` list API responds (CRDs + RBAC).
+    pub kubevirt_api_ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kubevirt_api_message: Option<String>,
+    /// `virt-api` and `virt-controller` pods Running in `kubevirt` namespace.
+    pub kubevirt_control_plane_ok: bool,
+    pub kubevirt_detail: String,
+    /// `cdi-operator` pod Running in `cdi` namespace (DataVolume / import workflows).
+    pub cdi_operator_ok: bool,
+    pub cdi_detail: String,
+    /// Minimum for **Forge VM**: API + control plane (CDI optional for container disks).
+    pub forge_vm_ready: bool,
+    pub virtctl_note: &'static str,
+}
 
 pub(crate) static KUBECONFIG_PATH: OnceLock<String> = OnceLock::new();
 static CACHED_CONFIG: tokio::sync::OnceCell<Config> = tokio::sync::OnceCell::const_new();
@@ -1150,6 +1169,84 @@ impl KubeClient {
         let list = scs.list(&lp).await?;
         Ok(list.items)
     }
+
+    /// KubeVirt / CDI signals for the dashboard (no local `virtctl` required).
+    pub async fn platform_readiness(&self) -> PlatformReadiness {
+        const VIRTCTL: &str = "virtctl runs on your workstation — not inside the cluster. Optional for the dashboard; use for CLI console/VNC.";
+
+        let (kubevirt_api_ok, kubevirt_api_message) = match self.list_all_vms().await {
+            Ok(_) => (true, None),
+            Err(e) => {
+                let mut s = e.to_string();
+                if s.len() > 400 {
+                    s.truncate(400);
+                    s.push('…');
+                }
+                (false, Some(s))
+            }
+        };
+
+        let kv_pods = self.list_pods("kubevirt").await.unwrap_or_default();
+        let kv_running: Vec<_> = kv_pods.iter().filter(|p| pod_is_running(p)).collect();
+        let has_virt_api = kv_running
+            .iter()
+            .any(|p| pod_name_str(p).contains("virt-api"));
+        let has_virt_controller = kv_running
+            .iter()
+            .any(|p| pod_name_str(p).contains("virt-controller"));
+        let kubevirt_control_plane_ok = has_virt_api && has_virt_controller;
+        let kubevirt_detail = if kv_pods.is_empty() && kv_running.is_empty() {
+            "No pods listed in namespace kubevirt (missing namespace or RBAC).".to_string()
+        } else {
+            format!(
+                "kubevirt: {} Running pods — virt-api {}, virt-controller {}",
+                kv_running.len(),
+                if has_virt_api { "ok" } else { "missing" },
+                if has_virt_controller { "ok" } else { "missing" }
+            )
+        };
+
+        let cdi_pods = self.list_pods("cdi").await.unwrap_or_default();
+        let cdi_running: Vec<_> = cdi_pods.iter().filter(|p| pod_is_running(p)).collect();
+        let has_cdi_op = cdi_running
+            .iter()
+            .any(|p| pod_name_str(p).contains("cdi-operator"));
+        let cdi_operator_ok = has_cdi_op;
+        let cdi_detail = if cdi_pods.is_empty() {
+            "Namespace cdi: no pods (CDI not installed or no RBAC).".to_string()
+        } else {
+            format!(
+                "cdi: {} Running pods — cdi-operator {}",
+                cdi_running.len(),
+                if has_cdi_op { "ok" } else { "missing" }
+            )
+        };
+
+        let forge_vm_ready = kubevirt_api_ok && kubevirt_control_plane_ok;
+
+        PlatformReadiness {
+            kubevirt_api_ok,
+            kubevirt_api_message,
+            kubevirt_control_plane_ok,
+            kubevirt_detail,
+            cdi_operator_ok,
+            cdi_detail,
+            forge_vm_ready,
+            virtctl_note: VIRTCTL,
+        }
+    }
+}
+
+fn pod_is_running(p: &k8s_openapi::api::core::v1::Pod) -> bool {
+    p.status
+        .as_ref()
+        .and_then(|s| s.phase.as_ref())
+        .map(|ph| ph == "Running")
+        .unwrap_or(false)
+}
+
+fn pod_name_str(p: &k8s_openapi::api::core::v1::Pod) -> &str {
+    p.metadata.name.as_deref().unwrap_or("")
 }
 
 /// Kubernetes name for the Secret referenced by `cloudInitConfigDrive.userDataSecretRef`.

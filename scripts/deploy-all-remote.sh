@@ -20,6 +20,9 @@
 # Usage:
 #   ./scripts/deploy-all-remote.sh [host] [user]
 #   ./scripts/deploy-all-remote.sh [host] [user] --quick   # skip image builds
+#
+# Preferred wrapper (SSH preflight): ./scripts/deploy-remote.sh [host] [user] [--quick]
+# After deploy, smoke-test HTTPS API: ./scripts/verify-vmrogue-remote.sh <host> [node_port]
 # ============================================================================
 
 set -euo pipefail
@@ -352,6 +355,8 @@ if [ -n "${HTTP_REDIRECT_PORT}" ]; then
 fi
 echo "  📓 Pod logs show :5151 (container); use NodePort ${NODE_PORT} in the browser"
 echo "  🔑 API Key:    ${API_KEY}"
+echo "  🧪 Verify API: ${SCRIPT_DIR}/verify-vmrogue-remote.sh ${HOST} ${NODE_PORT}"
+echo "  🚀 Re-deploy:  ${SCRIPT_DIR}/deploy-remote.sh ${HOST} ${USER}"
 echo "  📋 API Logs:   ssh ${REMOTE} \"${K8S_CMD} -n ${NAMESPACE} logs -l app.kubernetes.io/component=api -f\""
 echo "  📋 Op Logs:    ssh ${REMOTE} \"${K8S_CMD} -n ${NAMESPACE} logs -l app.kubernetes.io/component=operator -f\""
 echo "════════════════════════════════════════"
