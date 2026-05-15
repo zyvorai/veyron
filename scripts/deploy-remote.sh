@@ -18,6 +18,7 @@
 #   DEPLOY_REMOTE_SKIP_CHECK=1    Skip SSH preflight (same as --no-preflight)
 #   DEPLOY_SSH_TIMEOUT            Seconds for SSH connect (default: 20)
 #   VMROGUE_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
+#   VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
 #
 # Examples:
 #   ./scripts/deploy-remote.sh 192.0.2.1 ubuntu
