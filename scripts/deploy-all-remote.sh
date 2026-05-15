@@ -10,12 +10,14 @@
 #   1. Rsync source to remote ~/.deployment/vmrogue
 #   2. Build VMRogue + Operator container images
 #   3. Import images into K8s container runtime
-#   4. Ensure CDI (if DataVolume CRD missing) + install CRDs + NATS + RBAC
+#   4. Ensure CDI (if DataVolume CRD missing) + install CRDs + NATS + RBAC + optional Cilium egress
 #   5. Deploy VMRogue API + Operator pods (API key: Admin@321)
 #   6. Clean up source
 #   7. Verify
 #
 # CDI: uses scripts/ensure-cdi-remote.sh (VMROGUE_SKIP_CDI=1, VMROGUE_CDI_VERSION=…)
+# Cilium: when CRD ciliumnetworkpolicies.cilium.io exists, applies deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
+#         so API/operator/NATS can reach kube-apiserver (default-egress + DNS-only CNPs).
 #
 # Usage:
 #   ./scripts/deploy-all-remote.sh [host] [user]
@@ -267,15 +269,21 @@ else
     end_phase
 fi
 
-# ── Step 4: CDI (if missing) + CRDs + NATS + RBAC ──
+# ── Step 4: CDI (if missing) + CRDs + NATS + RBAC + optional Cilium egress ──
 echo ""
-start_phase "📋 [4/7] CDI (if missing), CRDs, NATS, and RBAC"
+start_phase "📋 [4/7] CDI (if missing), CRDs, NATS, RBAC, and Cilium egress (if Cilium)"
 "${REPO_DIR}/scripts/ensure-cdi-remote.sh" "${REMOTE}" || {
   echo "❌ CDI ensure failed (set VMROGUE_SKIP_CDI=1 to skip on air-gapped clusters)"
   exit 1
 }
 ssh "${REMOTE}" "
     ${K8S_CMD} create namespace ${NAMESPACE} --dry-run=client -o yaml | ${K8S_CMD} apply -f -
+    if [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml ]; then
+        echo 'Applying Cilium egress policy for ${NAMESPACE} (vmrogue / nats workloads)...'
+        ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
+    else
+        echo 'Skipping Cilium vmrogue egress bootstrap (VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1, no Cilium CRD, or yaml missing)'
+    fi
     for f in ${DEPLOY_DIR}/operator/config/crd/bases/*.yaml; do
         ${K8S_CMD} apply -f \"\$f\"
     done
