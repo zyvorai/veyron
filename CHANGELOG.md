@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Windows RDP NodePort expose** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/rdp-expose` with per-VM NodePort (`33900`–`33999`), Service selector `kubevirt.io/vm`, and Windows spec/userdata bootstrap (`src/kube/windows_rdp.rs`, `src/kube/vm_rdp.rs`).
+- **Windows RDP NodePort expose** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/rdp-expose` with per-VM NodePort (`30100`–`30199`, valid range `30000`–`32767`), Service selector `kubevirt.io/vm`, and Windows spec/userdata bootstrap (`src/kube/windows_rdp.rs`, `src/kube/vm_rdp.rs`).
 - **Cilium virt-launcher clusterwide egress** — `deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml` applied by deploy scripts when CCNP CRD exists (guest internet on default-deny clusters).
 - **Per-VM internet egress API** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/network/internet` (`src/kube/vm_internet.rs`).
 
