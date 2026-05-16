@@ -19,6 +19,7 @@
 #   DEPLOY_SSH_TIMEOUT            Seconds for SSH connect (default: 20)
 #   VMROGUE_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
 #   VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
+#   VMROGUE_REQUIRE_KUBEVIRT=1               deploy-k8s-remote.sh: fail if KubeVirt CRD missing
 #
 # Examples:
 #   ./scripts/deploy-remote.sh 192.0.2.1 ubuntu

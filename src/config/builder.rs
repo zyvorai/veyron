@@ -314,6 +314,21 @@ impl VMConfigBuilder {
         self
     }
 
+    /// USB tablet, no virtio-balloon, and shared ioThreads — improves pointer tracking and reduces
+    /// latency jitter for browser VNC over KubeVirt.
+    pub fn interactive_console_defaults(mut self) -> Self {
+        self.config.usb_tablet = true;
+        self.config.disable_balloon = true;
+        self.config.io_threads_policy = Some("shared".into());
+        self
+    }
+
+    /// Set KubeVirt console video device type (`domain.devices.video`). See `kubevirt_video_type` on [`VMConfig`].
+    pub fn kubevirt_video_type(mut self, video_type: impl Into<String>) -> Self {
+        self.config.kubevirt_video_type = Some(video_type.into());
+        self
+    }
+
     /// Set the cache mode on a named disk ("none", "writethrough", "writeback").
     pub fn set_disk_cache(mut self, disk_name: &str, cache: impl Into<String>) -> Self {
         if let Some(d) = self.config.disks.iter_mut().find(|d| d.name == disk_name) {

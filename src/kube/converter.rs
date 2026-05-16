@@ -5,6 +5,7 @@ use crate::config::{
 use crate::kube::types::*;
 use anyhow::Result;
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
+use serde_json::json;
 use std::collections::BTreeMap;
 
 /// Convert a [`VMConfig`] to a KubeVirt `VirtualMachine` custom resource.
@@ -362,6 +363,13 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         )
     };
 
+    let video = config.kubevirt_video_type.as_ref().map(|t| {
+        vec![json!({
+            "name": "video0",
+            "type": t,
+        })]
+    });
+
     let (
         sched_node_selector,
         priority_class_name,
@@ -452,6 +460,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                             None
                         },
                         network_interface_multiqueue: None,
+                        video,
                     }),
                     filesystems,
                     features,
@@ -643,6 +652,27 @@ mod tests {
         assert_eq!(
             vmi_spec.domain.memory.as_ref().unwrap().guest,
             Some("4Gi".to_string())
+        );
+    }
+
+    #[test]
+    fn test_kubevirt_video_type_conversion() {
+        let config = VMConfigBuilder::new("vid-vm")
+            .namespace("default")
+            .cpu(2, 1, 1)
+            .memory("4Gi")
+            .add_blank_disk("rootdisk", "20Gi", 1)
+            .add_pod_network("default")
+            .kubevirt_video_type("virtio")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let dev = vm.spec.template.spec.domain.devices.as_ref().unwrap();
+        let video = dev.video.as_ref().expect("video");
+        assert_eq!(video.len(), 1);
+        assert_eq!(
+            video[0].get("type").and_then(|v| v.as_str()),
+            Some("virtio")
         );
     }
 
