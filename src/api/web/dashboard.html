@@ -2399,6 +2399,10 @@ html[data-theme="zinc"] .monitor-cap{
           </div>
         </div>
       </div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-top:8px">
+        <input type="checkbox" id="vm-allow-internet" checked style="accent-color:var(--molten);margin-top:2px">
+        <label for="vm-allow-internet" style="font-size:.85rem;color:var(--text-muted);cursor:pointer;line-height:1.35">Allow <strong>internet egress</strong> (CiliumNetworkPolicy, or Kubernetes NetworkPolicy if Cilium is unavailable). Matches virt-launcher pods with <code style="font-size:.8em">kubevirt.io/vm</code>. Turn off for air-gapped VMs.</label>
+      </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
         <input type="checkbox" id="vm-autostart" style="accent-color:var(--molten)">
         <label for="vm-autostart" style="font-size:.88rem;color:var(--text-muted);cursor:pointer">Start VM after creation</label>
@@ -2469,8 +2473,14 @@ html[data-theme="zinc"] .monitor-cap{
   <div class="modal" style="width:92vw;max-width:1280px;height:82vh">
     <div class="modal-header">
       <h2 id="vnc-title">Console: --</h2>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span id="vnc-status" style="font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
+        <label for="vnc-preset-select" style="font-size:.75rem;color:var(--text-dim);white-space:nowrap">Link quality</label>
+        <select id="vnc-preset-select" title="noVNC encoding preset (stored in browser)" style="padding:4px 8px;font-size:.75rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);min-width:9rem" onchange="onVncPresetChange(this.value)">
+          <option value="lan">LAN (fast)</option>
+          <option value="balanced">Balanced</option>
+          <option value="low">Low bandwidth</option>
+        </select>
         <button class="btn btn-restart" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
         <button class="btn btn-start" onclick="toggleVncFullscreen()">Fullscreen</button>
         <button class="btn btn-stop" onclick="reconnectVnc()">Reconnect</button>
@@ -3444,6 +3454,8 @@ function openCreateModal() {
   document.getElementById('vm-name').value = '';
   document.getElementById('vm-cloudinit').value = '';
   document.getElementById('vm-autostart').checked = false;
+  const inet = document.getElementById('vm-allow-internet');
+  if (inet) inet.checked = true;
   const exEn = document.getElementById('vm-expose-enabled');
   if (exEn) {
     exEn.checked = false;
@@ -3479,6 +3491,10 @@ async function forgeVM() {
     disk_size: document.getElementById('vm-disk').value.trim() || '10Gi',
     cloud_init: cloudInit || null,
     start: document.getElementById('vm-autostart').checked,
+    allow_internet: (() => {
+      const el = document.getElementById('vm-allow-internet');
+      return !el || el.checked;
+    })(),
   };
   if (document.getElementById('vm-expose-enabled').checked) {
     const st = document.getElementById('vm-expose-type').value;
@@ -3492,12 +3508,17 @@ async function forgeVM() {
   }
 
   try {
-    await apiJson('/api/v1/vms', {
+    const res = await apiJson('/api/v1/vms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    toast('VM "' + name + '" forged successfully', 'success');
+    const data = unwrapData(res);
+    if (data && data.internet && data.internet.error) {
+      toast('VM created; internet policy failed: ' + data.internet.error, 'error');
+    } else {
+      toast('VM "' + name + '" forged successfully', 'success');
+    }
     closeCreateModal();
     setTimeout(refresh, 1500);
   } catch (e) {
@@ -3611,6 +3632,8 @@ async function fetchVmDetail(ns, name) {
 
     inner += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>';
 
+    inner += '<div class="detail-section"><div class="detail-section-title">Internet egress</div><div id="internet-panel-' + name + '">Loading\u2026</div></div>';
+
     inner += '</div>';
 
     inner += '<div class="detail-actions">';
@@ -3642,6 +3665,7 @@ async function fetchVmDetail(ns, name) {
       if (el && secHtml) el.innerHTML = secHtml;
     });
     loadExposePanel(ns, name);
+    loadInternetPanel(ns, name);
   } catch (e) {
     holder.innerHTML =
       '<div class="detail-section"><div class="detail-section-title">Error</div><div class="detail-row"><span class="val" style="color:var(--error)">' +
@@ -3703,6 +3727,54 @@ function renderExposePanel(container, ns, name, ex) {
     if (pEl && pp.port != null) pEl.value = pp.port;
     if (tEl && pp.target_port != null) tEl.value = pp.target_port;
   }
+}
+
+async function loadInternetPanel(ns, name) {
+  const el = document.getElementById('internet-panel-' + name);
+  if (!el) return;
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/network/internet');
+    const st = unwrapData(j);
+    renderInternetPanel(el, ns, name, st);
+  } catch (e) {
+    el.innerHTML = '<div class="detail-row"><span class="lbl">Error</span><span class="val" style="color:var(--error)">' + esc(e.message || String(e)) + '</span></div>';
+  }
+}
+
+function renderInternetPanel(container, ns, name, st) {
+  const on = st && st.enabled;
+  const be = st && st.backend ? String(st.backend) : '';
+  const pol = st && st.policy_name ? String(st.policy_name) : '';
+  let inner = '';
+  if (on) {
+    const kind = be === 'cilium' ? 'CiliumNetworkPolicy' : (be === 'kubernetes' ? 'Kubernetes NetworkPolicy' : be);
+    inner += detailRow('Status', 'On (' + esc(kind) + ')');
+    if (pol) inner += detailRow('Policy name', esc(pol));
+  } else {
+    inner += '<div class="detail-row"><span class="lbl">Status</span><span class="val">Off — virt-launcher pods only get broad egress if your cluster default allows it, or you enable a policy here.</span></div>';
+  }
+  inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">';
+  inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();enableVmInternet(\'' + ns + '\',\'' + name + '\')">Enable internet</button>';
+  inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();disableVmInternet(\'' + ns + '\',\'' + name + '\')">Remove policy</button>';
+  inner += '</div>';
+  inner += '<p class="detail-hint" style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim);line-height:1.35">Selects pods with label <code>kubevirt.io/vm</code> = this VM. On default-deny Cilium clusters, this adds an explicit allow.</p>';
+  container.innerHTML = inner;
+}
+
+async function enableVmInternet(ns, name) {
+  try {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/network/internet', { method: 'PUT' });
+    toast('Internet egress enabled', 'success');
+    await loadInternetPanel(ns, name);
+  } catch (e) { toast('Internet: ' + (e.message || String(e)), 'error'); }
+}
+
+async function disableVmInternet(ns, name) {
+  try {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/network/internet', { method: 'DELETE' });
+    toast('Internet policy removed', 'success');
+    await loadInternetPanel(ns, name);
+  } catch (e) { toast('Internet: ' + (e.message || String(e)), 'error'); }
 }
 
 async function applyVmExpose(ns, name, tid) {
@@ -3949,12 +4021,38 @@ async function restoreSnapshot(ns, snapName) {
 let vncRfb = null;
 let vncVmNs = '', vncVmName = '';
 
+const VMROGUE_VNC_PRESET_KEY = 'vmrogue_vnc_preset';
+/** noVNC Tight encoding tuning: higher quality = more pixels; higher compression = less bandwidth (more CPU). */
+const VNC_ENCODE_PRESETS = {
+  lan: { qualityLevel: 9, compressionLevel: 2, clipViewport: true },
+  balanced: { qualityLevel: 6, compressionLevel: 5, clipViewport: true },
+  low: { qualityLevel: 3, compressionLevel: 8, clipViewport: true },
+};
+
+function vncPresetParams() {
+  const id = localStorage.getItem(VMROGUE_VNC_PRESET_KEY) || 'balanced';
+  return VNC_ENCODE_PRESETS[id] || VNC_ENCODE_PRESETS.balanced;
+}
+
+function syncVncPresetSelect() {
+  const sel = document.getElementById('vnc-preset-select');
+  if (!sel) return;
+  const v = localStorage.getItem(VMROGUE_VNC_PRESET_KEY) || 'balanced';
+  sel.value = (v === 'lan' || v === 'low' || v === 'balanced') ? v : 'balanced';
+}
+
+function onVncPresetChange(value) {
+  localStorage.setItem(VMROGUE_VNC_PRESET_KEY, value);
+  if (vncRfb) reconnectVnc();
+}
+
 function openVncConsole(ns, name) {
   vncVmNs = ns; vncVmName = name;
   document.getElementById('vnc-title').textContent = 'Console: ' + name;
   document.getElementById('vnc-modal').classList.add('open');
   document.getElementById('vnc-status').textContent = 'Connecting...';
   document.getElementById('vnc-placeholder').style.display = 'block';
+  syncVncPresetSelect();
   connectVnc();
 }
 
@@ -3987,11 +4085,16 @@ async function connectVnc() {
   container.querySelectorAll('canvas, div:not(#vnc-placeholder)').forEach(el => el.remove());
 
   try {
+    const enc = vncPresetParams();
     vncRfb = new window.RFB(container, url, {
       wsProtocols: ['binary'],
+      qualityLevel: enc.qualityLevel,
+      compressionLevel: enc.compressionLevel,
+      clipViewport: enc.clipViewport,
     });
     vncRfb.scaleViewport = true;
-    vncRfb.resizeSession = true;
+    // Plain RFB from KubeVirt; resizeSession can upset some stacks.
+    vncRfb.resizeSession = false;
     vncRfb.addEventListener('connect', () => {
       document.getElementById('vnc-status').textContent = 'Connected';
       document.getElementById('vnc-status').style.color = 'var(--success)';
@@ -4023,7 +4126,11 @@ function closeVncModal() {
   if (vncRfb) { vncRfb.disconnect(); vncRfb = null; }
 }
 
-function reconnectVnc() { connectVnc(); }
+function reconnectVnc() {
+  document.getElementById('vnc-status').textContent = 'Reconnecting...';
+  document.getElementById('vnc-status').style.color = 'var(--text-dim)';
+  connectVnc();
+}
 
 function sendCtrlAltDel() {
   if (vncRfb) vncRfb.sendCtrlAltDel();

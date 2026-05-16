@@ -723,6 +723,7 @@ mod tests {
                                 autoattach_graphics_device: None,
                                 autoattach_mem_balloon: None,
                                 network_interface_multiqueue: None,
+                                video: None,
                             }),
                             filesystems: None,
                             features: None,

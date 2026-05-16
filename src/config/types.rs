@@ -94,6 +94,10 @@ pub struct VMConfig {
     /// KubeVirt ioThreadsPolicy: "shared" or "auto" for better disk IO
     #[serde(skip_serializing_if = "Option::is_none")]
     pub io_threads_policy: Option<String>,
+    /// KubeVirt `spec.template.spec.domain.devices.video` device type (e.g. `virtio`, `bochs`).
+    /// Requires the cluster KubeVirt **VideoConfig** alpha feature gate when overriding defaults.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kubevirt_video_type: Option<String>,
     /// Machine type (e.g., "q35")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub machine_type: Option<String>,

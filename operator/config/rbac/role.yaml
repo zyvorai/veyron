@@ -46,6 +46,23 @@ rules:
       - virtualmachinerestores
     verbs: ["get", "list", "watch", "create", "delete"]
 
+  # CDI / upload / CSI snapshots / instance types / Multus (VM specs and storage workflows)
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["upload.cdi.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["instancetype.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources: ["network-attachment-definitions"]
+    verbs: ["get", "list", "watch"]
+
   # Secrets (config-drive userdata for Windows / Cloudbase-Init)
   - apiGroups: [""]
     resources: ["secrets"]

@@ -258,6 +258,7 @@ fn ubuntu_2404_template() -> VMConfig {
         .cloud_init(default_ubuntu_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -274,6 +275,7 @@ fn ubuntu_2204_template() -> VMConfig {
         .cloud_init(default_ubuntu_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -291,6 +293,7 @@ fn ubuntu_2004_template() -> VMConfig {
         .cloud_init(default_ubuntu_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -308,6 +311,7 @@ fn ubuntu_1804_template() -> VMConfig {
         .cloud_init(default_ubuntu_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -329,6 +333,7 @@ fn fedora_43_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -346,6 +351,7 @@ fn fedora_42_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -366,6 +372,7 @@ fn centos_stream9_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -383,6 +390,7 @@ fn centos_stream8_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -403,6 +411,7 @@ fn debian_12_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -420,6 +429,7 @@ fn debian_11_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -439,6 +449,7 @@ fn rhel_9_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -454,6 +465,7 @@ fn rhel_8_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -474,6 +486,7 @@ fn almalinux_9_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -490,6 +503,7 @@ fn almalinux_8_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -510,6 +524,7 @@ fn rocky_9_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -526,6 +541,7 @@ fn rocky_8_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -545,6 +561,7 @@ fn opensuse_leap_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -560,6 +577,7 @@ fn opensuse_tumbleweed_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -580,6 +598,7 @@ fn alpine_template() -> VMConfig {
         .cloud_init(alpine_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -599,6 +618,7 @@ fn arch_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -618,6 +638,7 @@ fn oracle_9_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -633,6 +654,7 @@ fn oracle_8_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -765,6 +787,7 @@ fn freebsd_14_template() -> VMConfig {
         .label("os.version", "14")
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -779,6 +802,7 @@ fn freebsd_13_template() -> VMConfig {
         .label("os.version", "13")
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -798,6 +822,7 @@ fn flatcar_template() -> VMConfig {
         .cloud_init(default_cloud_init())
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 
@@ -816,6 +841,7 @@ fn talos_template() -> VMConfig {
         .label("os.version", "latest")
         .enable_rng()
         .clock(linux_clock())
+        .interactive_console_defaults()
         .build()
 }
 

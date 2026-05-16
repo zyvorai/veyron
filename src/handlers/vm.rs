@@ -328,6 +328,15 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
                 })
                 .collect();
         }
+        if let Some(ref videos) = dev.video {
+            if let Some(first) = videos.first() {
+                if let Some(t) = first.get("type").and_then(|v| v.as_str()) {
+                    config.kubevirt_video_type = Some(t.to_string());
+                } else if let Some(m) = first.get("model").and_then(|v| v.as_str()) {
+                    config.kubevirt_video_type = Some(m.to_string());
+                }
+            }
+        }
     }
     if let Some(ref fss) = domain.filesystems {
         for fs in fss {
@@ -2924,6 +2933,7 @@ mod tests {
             autoattach_graphics_device: None,
             autoattach_mem_balloon: None,
             network_interface_multiqueue: None,
+            video: None,
         });
         vm.spec.template.spec.networks = Some(vec![Network {
             name: "default".to_string(),
@@ -2961,6 +2971,7 @@ mod tests {
             autoattach_graphics_device: None,
             autoattach_mem_balloon: None,
             network_interface_multiqueue: None,
+            video: None,
         });
         vm.spec.template.spec.networks = Some(vec![Network {
             name: "data-net".to_string(),

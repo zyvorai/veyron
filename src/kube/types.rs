@@ -2,6 +2,7 @@ use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use kube::CustomResource;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use std::collections::BTreeMap;
 
 /// VirtualMachine custom resource for KubeVirt
@@ -178,6 +179,9 @@ pub struct Devices {
     pub autoattach_mem_balloon: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_interface_multiqueue: Option<bool>,
+    /// KubeVirt `devices.video` entries (requires `VideoConfig` feature gate for custom types).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video: Option<Vec<JsonValue>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]

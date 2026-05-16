@@ -23,9 +23,33 @@ rules:
   - apiGroups: ["kubevirt.io"]
     resources: ["virtualmachineinstancemigrations"]
     verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - "virtualmachineinstances/vnc"
+      - "virtualmachineinstances/console"
+      - "virtualmachines/start"
+      - "virtualmachines/stop"
+      - "virtualmachines/restart"
+      - "virtualmachines/migrate"
+    verbs: ["get", "update"]
   - apiGroups: ["snapshot.kubevirt.io"]
-    resources: ["virtualmachinesnapshots"]
+    resources: ["virtualmachinesnapshots", "virtualmachinerestores"]
     verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["upload.cdi.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["instancetype.kubevirt.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["snapshot.storage.k8s.io"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["k8s.cni.cncf.io"]
+    resources: ["network-attachment-definitions"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "patch"]
