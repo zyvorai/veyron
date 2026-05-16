@@ -1,6 +1,7 @@
 pub mod converter;
 pub mod status;
 pub mod types;
+pub mod guest_os;
 pub mod vm_data_disk;
 pub mod vm_internet;
 pub mod vm_rdp;

@@ -1,4 +1,4 @@
-//! Create PVC + hot-plug data disk to a KubeVirt VM (Windows D:/E: workflow).
+//! Create PVC + hot-plug data disk to a KubeVirt VM (Windows D:/E: or Linux /mnt/data).
 
 use anyhow::{anyhow, Result};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 use std::time::Duration;
 use tokio::time::sleep;
 
-use super::windows_rdp::is_windows_guest;
+use super::guest_os::{detect_guest_os_family, GuestOsFamily};
 use super::KubeClient;
 
 #[derive(Debug, Deserialize)]
@@ -19,6 +19,8 @@ pub struct AddDataDiskRequest {
     pub storage_class: Option<String>,
     pub bus: Option<String>,
     pub drive_letter: Option<String>,
+    pub mount_path: Option<String>,
+    pub filesystem: Option<String>,
     #[serde(default = "default_true")]
     pub wait_bound: bool,
 }
@@ -35,6 +37,12 @@ pub struct GuestDiskInit {
     pub powershell: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub drive_letter: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shell_script: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mount_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filesystem: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -42,10 +50,15 @@ pub struct DataDiskDefaults {
     pub suggested_disk_name: String,
     pub suggested_pvc_name: String,
     pub suggested_bus: String,
+    pub guest_os: String,
     pub is_windows: bool,
+    pub is_linux: bool,
     pub root_disk_bus: Option<String>,
     pub storage_class: Option<String>,
     pub storage_classes: Vec<String>,
+    pub suggested_mount_path: Option<String>,
+    pub suggested_filesystem: Option<String>,
+    pub default_size_gi: u32,
 }
 
 #[derive(Debug, Serialize)]
@@ -56,41 +69,64 @@ pub struct AddDataDiskResponse {
     pub disk_name: String,
     pub bus: String,
     pub size: String,
+    pub guest_os: String,
     pub is_windows: bool,
+    pub is_linux: bool,
     pub guest_init: GuestDiskInit,
 }
 
-pub fn suggest_next_disk_name(existing: &[String]) -> String {
-    let letters = ['d', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
-    for letter in letters {
-        let candidate = format!("data-{}", letter);
-        if !existing.iter().any(|n| n == &candidate) {
-            return candidate;
+pub fn suggest_next_disk_name(family: GuestOsFamily, existing: &[String]) -> String {
+    match family {
+        GuestOsFamily::Linux => {
+            for n in 1..=99 {
+                let candidate = format!("data-{n}");
+                if !existing.iter().any(|name| name == &candidate) {
+                    return candidate;
+                }
+            }
+            "data-extra".into()
         }
-    }
-    let mut n = 2u32;
-    loop {
-        let candidate = format!("data-{}", n);
-        if !existing.iter().any(|name| name == &candidate) {
-            return candidate;
+        GuestOsFamily::Windows | GuestOsFamily::Unknown => {
+            let letters = ['d', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
+            for letter in letters {
+                let candidate = format!("data-{}", letter);
+                if !existing.iter().any(|n| n == &candidate) {
+                    return candidate;
+                }
+            }
+            let mut n = 2u32;
+            loop {
+                let candidate = format!("data-{}", n);
+                if !existing.iter().any(|name| name == &candidate) {
+                    return candidate;
+                }
+                n += 1;
+            }
         }
-        n += 1;
     }
 }
 
 impl KubeClient {
     pub async fn data_disk_defaults(&self, namespace: &str, vm_name: &str) -> Result<DataDiskDefaults> {
         let ctx = self.load_storage_context(namespace, vm_name).await?;
-        let suggested_disk_name = suggest_next_disk_name(&ctx.existing_volume_names);
+        let suggested_disk_name =
+            suggest_next_disk_name(ctx.guest_os, &ctx.existing_volume_names);
         let storage_classes = self.list_storage_class_names().await?;
+        let (suggested_mount_path, suggested_filesystem) =
+            linux_mount_defaults(ctx.guest_os, &suggested_disk_name);
         Ok(DataDiskDefaults {
             suggested_disk_name: suggested_disk_name.clone(),
             suggested_pvc_name: format!("{vm_name}-{suggested_disk_name}"),
             suggested_bus: ctx.suggested_bus.clone(),
-            is_windows: ctx.is_windows,
+            guest_os: ctx.guest_os.as_str().to_string(),
+            is_windows: ctx.guest_os == GuestOsFamily::Windows,
+            is_linux: ctx.guest_os == GuestOsFamily::Linux,
             root_disk_bus: ctx.root_disk_bus,
             storage_class: ctx.storage_class.clone(),
             storage_classes,
+            suggested_mount_path,
+            suggested_filesystem: suggested_filesystem.map(str::to_string),
+            default_size_gi: default_size_gi(ctx.guest_os),
         })
     }
 
@@ -111,7 +147,7 @@ impl KubeClient {
             .map(str::trim)
             .filter(|s| !s.is_empty())
             .map(str::to_string)
-            .unwrap_or_else(|| suggest_next_disk_name(&ctx.existing_volume_names));
+            .unwrap_or_else(|| suggest_next_disk_name(ctx.guest_os, &ctx.existing_volume_names));
 
         let pvc_name = req
             .pvc_name
@@ -154,8 +190,12 @@ impl KubeClient {
         self.patch_vm_hotplug_disk(namespace, vm_name, &disk_name, &pvc_name, &bus)
             .await?;
 
-        let drive_letter = req.drive_letter.filter(|l| !l.is_empty());
-        let guest_init = guest_init_hints(ctx.is_windows, drive_letter.as_deref());
+        let guest_init = guest_init_hints(
+            ctx.guest_os,
+            req.drive_letter.as_deref(),
+            req.mount_path.as_deref(),
+            req.filesystem.as_deref(),
+        );
 
         Ok(AddDataDiskResponse {
             success: true,
@@ -166,7 +206,9 @@ impl KubeClient {
             disk_name,
             bus,
             size,
-            is_windows: ctx.is_windows,
+            guest_os: ctx.guest_os.as_str().to_string(),
+            is_windows: ctx.guest_os == GuestOsFamily::Windows,
+            is_linux: ctx.guest_os == GuestOsFamily::Linux,
             guest_init,
         })
     }
@@ -196,14 +238,14 @@ impl KubeClient {
             .unwrap_or_default();
 
         let root_disk_bus = detect_root_disk_bus(&vm_json);
-        let is_windows = is_windows_guest(Some(&vm_json), vmi_json.as_ref());
-        let suggested_bus = bus_or_default(None, root_disk_bus.as_deref(), is_windows);
+        let guest_os = detect_guest_os_family(Some(&vm_json), vmi_json.as_ref());
+        let suggested_bus = bus_or_default(None, root_disk_bus.as_deref(), guest_os);
         let storage_class = root_pvc_storage_class(self, namespace, &vm_json).await;
 
         Ok(StorageContext {
             existing_volume_names,
             suggested_bus,
-            is_windows,
+            guest_os,
             root_disk_bus,
             storage_class,
         })
@@ -321,7 +363,7 @@ impl KubeClient {
 struct StorageContext {
     existing_volume_names: Vec<String>,
     suggested_bus: String,
-    is_windows: bool,
+    guest_os: GuestOsFamily,
     root_disk_bus: Option<String>,
     storage_class: Option<String>,
 }
@@ -338,17 +380,49 @@ fn detect_root_disk_bus(vm: &Value) -> Option<String> {
         .map(str::to_string)
 }
 
-fn bus_or_default(requested: Option<&str>, root_bus: Option<&str>, is_windows: bool) -> String {
+fn bus_or_default(
+    requested: Option<&str>,
+    root_bus: Option<&str>,
+    family: GuestOsFamily,
+) -> String {
     if let Some(b) = requested.filter(|s| !s.is_empty()) {
         return b.to_string();
     }
     if let Some(b) = root_bus.filter(|s| !s.is_empty()) {
         return b.to_string();
     }
-    if is_windows {
-        "sata".to_string()
+    match family {
+        GuestOsFamily::Windows => "sata".to_string(),
+        GuestOsFamily::Linux | GuestOsFamily::Unknown => "virtio".to_string(),
+    }
+}
+
+fn linux_mount_defaults(
+    family: GuestOsFamily,
+    disk_name: &str,
+) -> (Option<String>, Option<&'static str>) {
+    if family != GuestOsFamily::Linux {
+        return (None, None);
+    }
+    let mount = if disk_name == "data-1" {
+        "/mnt/data".to_string()
+    } else if let Some(n) = disk_name.strip_prefix("data-") {
+        if n.chars().all(|c| c.is_ascii_digit()) {
+            format!("/mnt/data{n}")
+        } else {
+            format!("/mnt/{disk_name}")
+        }
     } else {
-        "virtio".to_string()
+        format!("/mnt/{disk_name}")
+    };
+    (Some(mount), Some("ext4"))
+}
+
+fn default_size_gi(family: GuestOsFamily) -> u32 {
+    match family {
+        GuestOsFamily::Linux => 50,
+        GuestOsFamily::Windows => 100,
+        GuestOsFamily::Unknown => 50,
     }
 }
 
@@ -374,11 +448,17 @@ async fn root_pvc_storage_class(
         .and_then(|pvc| pvc.spec.and_then(|s| s.storage_class_name))
 }
 
-fn guest_init_hints(is_windows: bool, drive_letter: Option<&str>) -> GuestDiskInit {
-    if is_windows {
-        let letter = drive_letter.unwrap_or("D");
-        let ps = format!(
-            r##"# Run in elevated PowerShell after the new disk appears
+fn guest_init_hints(
+    family: GuestOsFamily,
+    drive_letter: Option<&str>,
+    mount_path: Option<&str>,
+    filesystem: Option<&str>,
+) -> GuestDiskInit {
+    match family {
+        GuestOsFamily::Windows => {
+            let letter = drive_letter.unwrap_or("D");
+            let ps = format!(
+                r##"# Run in elevated PowerShell after the new disk appears
 Get-Disk | Where-Object PartitionStyle -eq 'RAW' | Format-Table Number, Size, FriendlyName
 $disk = Get-Disk | Where-Object PartitionStyle -eq 'RAW' | Select-Object -First 1
 if ($disk) {{
@@ -387,32 +467,65 @@ if ($disk) {{
   Format-Volume -DriveLetter {letter} -FileSystem NTFS -NewFileSystemLabel ('Data-' + '{letter}') -Confirm:$false
 }}
 Get-Volume {letter}"##,
-            letter = letter
-        );
-        GuestDiskInit {
-            summary: format!(
-                "Disk attached in Kubernetes. In Windows (RDP), initialize and format as drive {letter}:."
-            ),
-            steps: vec![
-                "Open Disk Management (Win+X → Disk Management).".into(),
-                "Select the new disk → Initialize (GPT) → OK.".into(),
-                format!("New Simple Volume → assign drive letter {letter}: → NTFS quick format."),
-                "Or run the PowerShell snippet below in an elevated session.".into(),
-            ],
-            powershell: Some(ps),
-            drive_letter: Some(letter.to_string()),
+                letter = letter
+            );
+            GuestDiskInit {
+                summary: format!(
+                    "Disk attached in Kubernetes. In Windows (RDP), initialize and format as drive {letter}:."
+                ),
+                steps: vec![
+                    "Open Disk Management (Win+X → Disk Management).".into(),
+                    "Select the new disk → Initialize (GPT) → OK.".into(),
+                    format!("New Simple Volume → assign drive letter {letter}: → NTFS quick format."),
+                    "Or run the PowerShell snippet below in an elevated session.".into(),
+                ],
+                powershell: Some(ps),
+                drive_letter: Some(letter.to_string()),
+                shell_script: None,
+                mount_path: None,
+                filesystem: None,
+            }
         }
-    } else {
-        GuestDiskInit {
-            summary: "Disk attached. Partition and mount inside the Linux guest.".into(),
-            steps: vec![
-                "Run: lsblk".into(),
-                "Partition: sudo fdisk /dev/vdb (or growpart)".into(),
-                "Format: sudo mkfs.ext4 /dev/vdb1".into(),
-                "Mount: sudo mkdir -p /mnt/data && sudo mount /dev/vdb1 /mnt/data".into(),
-            ],
-            powershell: None,
-            drive_letter: None,
+        GuestOsFamily::Linux | GuestOsFamily::Unknown => {
+            let mount = mount_path.filter(|s| !s.is_empty()).unwrap_or("/mnt/data");
+            let fs = match filesystem.map(str::trim).filter(|s| !s.is_empty()) {
+                Some("xfs") | Some("XFS") => "xfs",
+                _ => "ext4",
+            };
+            let shell = format!(
+                r#"#!/bin/bash
+set -euo pipefail
+MOUNT={mount:?}
+FS={fs:?}
+DISK=$(lsblk -dpno NAME,TYPE | awk '$2=="disk" {{print $1}}' | tail -1)
+[ -b "$DISK" ] || {{ echo "No disk; set DISK=/dev/vdX" >&2; exit 1; }}
+parted -s "$DISK" mklabel gpt mkpart primary 0% 100%
+PART="${{DISK}}1"
+[[ "$DISK" == *"nvme"* ]] && PART="${{DISK}}p1"
+if [ "$FS" = "xfs" ]; then mkfs.xfs -f "$PART"; else mkfs.ext4 -F "$PART"; fi
+mkdir -p "$MOUNT"
+grep -q "$PART" /etc/fstab || echo "$PART $MOUNT $FS defaults 0 2" >> /etc/fstab
+mount "$PART" "$MOUNT"
+df -h "$MOUNT"
+"#,
+                mount = mount,
+                fs = fs
+            );
+            GuestDiskInit {
+                summary: format!(
+                    "Disk attached. SSH into the VM and run the script below to mount at {mount}."
+                ),
+                steps: vec![
+                    "Confirm the new disk: lsblk".into(),
+                    "Run the bash script below as root (or with sudo).".into(),
+                    format!("Verify: df -h {mount}"),
+                ],
+                powershell: None,
+                drive_letter: None,
+                shell_script: Some(shell),
+                mount_path: Some(mount.to_string()),
+                filesystem: Some(fs.to_string()),
+            }
         }
     }
 }
@@ -423,7 +536,17 @@ mod tests {
 
     #[test]
     fn suggests_data_d_then_e() {
-        assert_eq!(suggest_next_disk_name(&[]), "data-d");
-        assert_eq!(suggest_next_disk_name(&["data-d".into()]), "data-e");
+        assert_eq!(
+            suggest_next_disk_name(GuestOsFamily::Windows, &[]),
+            "data-d"
+        );
+    }
+
+    #[test]
+    fn suggests_data_1_for_linux() {
+        assert_eq!(
+            suggest_next_disk_name(GuestOsFamily::Linux, &[]),
+            "data-1"
+        );
     }
 }

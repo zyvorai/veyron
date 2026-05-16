@@ -55,10 +55,15 @@ export interface DataDiskDefaults {
   suggested_disk_name: string;
   suggested_pvc_name: string;
   suggested_bus: string;
+  guest_os: string;
   is_windows: boolean;
+  is_linux: boolean;
   root_disk_bus?: string | null;
   storage_class?: string | null;
   storage_classes: string[];
+  suggested_mount_path?: string | null;
+  suggested_filesystem?: string | null;
+  default_size_gi: number;
 }
 
 export interface AddDataDiskResponse {
@@ -68,12 +73,17 @@ export interface AddDataDiskResponse {
   disk_name: string;
   bus: string;
   size: string;
+  guest_os: string;
   is_windows: boolean;
+  is_linux: boolean;
   guest_init: {
     summary: string;
     steps: string[];
     powershell?: string;
+    shell_script?: string;
     drive_letter?: string;
+    mount_path?: string;
+    filesystem?: string;
   };
 }
 
@@ -90,6 +100,8 @@ export function addDataDisk(
     storage_class?: string;
     bus?: string;
     drive_letter?: string;
+    mount_path?: string;
+    filesystem?: string;
     wait_bound?: boolean;
   }
 ): Promise<AddDataDiskResponse> {
