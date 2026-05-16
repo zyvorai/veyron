@@ -62,6 +62,28 @@ fn looks_like_windows_text(s: &str) -> bool {
         || lower.contains(" win ")
 }
 
+pub fn vm_spec_has_rdp_port(vm: &Value) -> bool {
+    vm.pointer("/spec/template/spec/domain/devices/interfaces")
+        .and_then(|ifaces| ifaces.as_array())
+        .is_some_and(|ifaces| {
+            ifaces.iter().any(|iface| {
+                iface
+                    .get("ports")
+                    .and_then(|ports| ports.as_array())
+                    .is_some_and(|ports| {
+                        ports.iter().any(|p| {
+                            p.get("port")
+                                .and_then(|n| n.as_i64())
+                                .is_some_and(|n| n == i64::from(WINDOWS_RDP_PORT))
+                                || p.get("name")
+                                    .and_then(|n| n.as_str())
+                                    .is_some_and(|n| n.eq_ignore_ascii_case("rdp"))
+                        })
+                    })
+            })
+        })
+}
+
 fn vm_name_suggests_windows(name: &str) -> bool {
     let lower = name.to_lowercase();
     if looks_like_windows_text(&lower) {
@@ -186,6 +208,10 @@ pub fn is_windows_vm(vm: &Value) -> bool {
             })
         })
     {
+        return true;
+    }
+
+    if vm_spec_has_rdp_port(vm) {
         return true;
     }
 
