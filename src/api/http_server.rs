@@ -1494,7 +1494,7 @@ pub mod web {
         enabled: bool,
         #[serde(default)]
         service_type: Option<String>,
-        /// Required for NodePort / LoadBalancer (pick a unique port per VM, e.g. 33900–33999).
+        /// Required for NodePort / LoadBalancer (pick a unique port per VM, e.g. 30100–30199).
         node_port: Option<i32>,
     }
 
@@ -1645,7 +1645,7 @@ pub mod web {
                 return err_json(
                     400,
                     "INVALID_REQUEST",
-                    "node_port is required when enabling RDP exposure (use 33900–33999 per VM)",
+                    "node_port is required when enabling RDP exposure (use 30100–30199 per VM, within 30000–32767)",
                 );
             };
             if node_port < 30000 || node_port > 32767 {
