@@ -236,6 +236,40 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         )
         .with_auth(),
         Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/rdp-expose",
+            "Windows RDP NodePort exposure status (virt-launcher selector)",
+        ),
+        Endpoint::new(
+            "PUT",
+            "/api/v1/vms/:ns/:name/rdp-expose",
+            "Create or update RDP NodePort Service (requires node_port, e.g. 33900–33999)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "DELETE",
+            "/api/v1/vms/:ns/:name/rdp-expose",
+            "Delete VMRogue-managed RDP exposure Service",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "GET",
+            "/api/v1/vms/:ns/:name/network/internet",
+            "Per-VM internet egress policy status (Cilium or Kubernetes)",
+        ),
+        Endpoint::new(
+            "PUT",
+            "/api/v1/vms/:ns/:name/network/internet",
+            "Enable per-VM internet egress for virt-launcher pods",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "DELETE",
+            "/api/v1/vms/:ns/:name/network/internet",
+            "Remove per-VM internet egress policy",
+        )
+        .with_auth(),
+        Endpoint::new(
             "POST",
             "/api/v1/vms/:ns/:name/migrate",
             "Live-migrate VM (optional JSON: targetHostname, addedNodeSelector, priority)",

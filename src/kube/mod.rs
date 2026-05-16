@@ -1,6 +1,9 @@
 pub mod converter;
 pub mod status;
 pub mod types;
+pub mod vm_internet;
+pub mod vm_rdp;
+pub mod windows_rdp;
 
 use crate::config::{CloudInitDelivery, VMConfig, VmExposeConfig};
 use crate::utils::VMRogueError;
@@ -205,7 +208,19 @@ impl KubeClient {
         }
 
         // Convert VMConfig to KubeVirt VirtualMachine
-        let vm = vm_config_to_kubevirt(config)?;
+        let mut vm = vm_config_to_kubevirt(config)?;
+        if let Ok(mut v) = serde_json::to_value(&vm) {
+            let template_hint = config
+                .labels
+                .get("vmrogue.io/template")
+                .map(|s| s.as_str());
+            if windows_rdp::should_apply_windows_rdp(&v, template_hint) {
+                windows_rdp::merge_windows_rdp_defaults(&mut v);
+                if let Ok(parsed) = serde_json::from_value(v) {
+                    vm = parsed;
+                }
+            }
+        }
 
         // Create the VM
         let pp = PostParams::default();
@@ -259,6 +274,8 @@ impl KubeClient {
         self.delete_secret_ignore(namespace, &cloudinit_configdrive_secret_name(name))
             .await;
         self.delete_service_ignore(namespace, &vm_expose_service_name(name))
+            .await;
+        self.delete_service_ignore(namespace, &windows_rdp::vmrogue_rdp_service_name(name))
             .await;
 
         Ok(())
@@ -593,6 +610,44 @@ impl KubeClient {
         let vmis: Api<VirtualMachineInstance> = Api::namespaced(self.client.clone(), namespace);
         let vmi = vmis.get(name).await?;
         Ok(vmi)
+    }
+
+    /// Resolve the `VirtualMachineInstance` resource name for VNC/serial subresources.
+    ///
+    /// KubeVirt subresource URLs use the VMI name, which usually matches the VM name but not
+    /// always. Try `GET` by VM name first; on 404, list VMIs with `kubevirt.io/vm=<vm_name>`.
+    pub async fn resolve_vmi_name_for_console(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<String> {
+        let vmis: Api<VirtualMachineInstance> = Api::namespaced(self.client.clone(), namespace);
+        match vmis.get(vm_name).await {
+            Ok(vmi) => Ok(vmi.metadata.name.unwrap_or_else(|| vm_name.to_string())),
+            Err(kube::Error::Api(resp)) if resp.code == 404 => {
+                let selector = format!("kubevirt.io/vm={vm_name}");
+                let lp = ListParams::default().labels(&selector);
+                let list = vmis.list(&lp).await?;
+                let mut candidates: Vec<VirtualMachineInstance> = list
+                    .items
+                    .into_iter()
+                    .filter(|vmi| vmi.metadata.deletion_timestamp.is_none())
+                    .collect();
+                candidates.sort_by(|a, b| {
+                    let ar = a.status.as_ref().and_then(|s| s.phase.as_deref()) == Some("Running");
+                    let br = b.status.as_ref().and_then(|s| s.phase.as_deref()) == Some("Running");
+                    br.cmp(&ar)
+                        .then_with(|| a.metadata.name.cmp(&b.metadata.name))
+                });
+                let vmi = candidates.into_iter().next().ok_or_else(|| {
+                    anyhow::anyhow!("No VMI found for VM {vm_name} in namespace {namespace}")
+                })?;
+                vmi.metadata
+                    .name
+                    .ok_or_else(|| anyhow::anyhow!("VMI missing metadata.name"))
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 
     /// Get the IP address of a running VM via its VMI

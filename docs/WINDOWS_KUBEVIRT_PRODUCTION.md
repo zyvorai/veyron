@@ -42,6 +42,34 @@ All of the following use the same **`windows_features()`** and **`windows_clock(
 
 **Windows 10 vs 2019 vs 2022:** Same shape as each other except **2022** adds **`enable_tpm()`** in the builder chain; **2019** and **10** omit TPM in the default template (you can still enable TPM in YAML if your platform supports it for those SKUs).
 
+### VNC vs RDP and optional virtio video
+
+For **day-to-day interactive** work on a Windows desktop, prefer **Microsoft RDP** (or another remoting stack you control). The VMRogue dashboard **VNC** path (noVNC → API WebSocket → Kubernetes apiserver → QEMU) is ideal for **install / break-glass / BIOS** but inherits latency from every hop.
+
+The dashboard VNC modal **Link quality** control adjusts noVNC **Tight** encoding (`qualityLevel` / `compressionLevel`); the choice is stored in the browser as `vmrogue_vnc_preset`.
+
+On clusters where KubeVirt’s **`VideoConfig` alpha feature gate** is enabled, you can set **`kubevirt_video_type: virtio`** on `VMConfig` (or `.kubevirt_video_type("virtio")` in the builder) so manifests include **`spec.template.spec.domain.devices.video`** with a **virtio** model—typically faster than legacy VGA when the guest has virtio-gpu drivers installed.
+
+### RDP NodePort API (VMRogue)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/vms/{ns}/{name}/rdp-expose` | Guest IP, Windows detection, NodePort status, used/suggested ports (`33900`–`33999`) |
+| `PUT /api/v1/vms/{ns}/{name}/rdp-expose` | Body: `{ "enabled": true, "service_type": "NodePort", "node_port": 33901 }` — creates `rdp-<vm-name>` Service (`kubevirt.io/vm` selector) |
+| `DELETE /api/v1/vms/{ns}/{name}/rdp-expose` | Remove the RDP Service |
+
+**Requirements:** VM must be **Running**; guest must allow Remote Desktop (Pro/Enterprise/Server); each VM needs a **unique** NodePort. VM create merges masquerade port **3389** and first-boot userdata when the template is Windows (`src/kube/windows_rdp.rs`).
+
+**macOS client:**
+
+```bash
+sdl-freerdp /v:<node-ip>:<nodePort> /u:Administrator /p:'<password>' /cert:ignore /sec:nla /dynamic-resolution
+```
+
+**Guest internet (Cilium):** apply `deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml` on default-deny clusters, or use **`PUT /api/v1/vms/{ns}/{name}/network/internet`** for per-VM policies.
+
+**Note:** NodePort reaches virt-launcher; some clusters still need a node **`virtctl port-forward`** bridge for reliable external RDP. SSH expose (`PUT /expose`) uses a different selector (`kubevirt.io/domain`).
+
 ---
 
 ## Automating Windows (golden image → cluster → day two)

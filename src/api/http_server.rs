@@ -6,7 +6,9 @@
 pub mod web {
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
-    use crate::kube::{KubeClient, MigrateVmOptions, vm_expose_service_name};
+    use crate::kube::{
+        KubeClient, MigrateVmOptions, vm_expose_service_name, vm_internet, vm_rdp, windows_rdp,
+    };
     use crate::profiles::PROFILES;
     use crate::templates::TEMPLATES;
     use crate::tui::state::VmInfo;
@@ -25,6 +27,7 @@ pub mod web {
     use k8s_openapi::api::core::v1::Service;
     use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
     use serde::{Deserialize, Serialize};
+    use std::borrow::Cow;
     use std::collections::HashMap;
     use std::sync::Arc;
     use tokio::sync::RwLock;
@@ -515,6 +518,7 @@ pub mod web {
         if path == "/api/v1/health"
             || path == "/dashboard"
             || path.starts_with("/api/v1/vms")
+            || path.starts_with("/api/v1/ws")
             || path.starts_with("/api/v1/events")
             || path.starts_with("/api/v1/nodes")
             || path.starts_with("/api/v1/pods")
@@ -673,7 +677,23 @@ pub mod web {
     // ── Router ──────────────────────────────────────────────────
 
     pub fn build_router(state: SharedState) -> Router {
-        Router::new()
+        let request_timeout_secs = std::env::var("VMROGUE_HTTP_REQUEST_TIMEOUT_SECS")
+            .ok()
+            .and_then(|s| s.parse::<u64>().ok())
+            .filter(|&n| n > 0)
+            .unwrap_or(30);
+
+        // Long-lived WebSockets must not sit behind the global HTTP request timeout (often ~30s).
+        let long_lived_ws = Router::new()
+            .route("/api/v1/vms/:ns/:name/vnc", get(vnc_websocket_handler))
+            .route(
+                "/api/v1/vms/:ns/:name/serial",
+                get(serial_websocket_handler),
+            )
+            .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
+            .with_state(state.clone());
+
+        let timed_rest = Router::new()
             // Dashboard & static assets
             .route("/dashboard", get(dashboard_handler))
             .route("/assets/novnc.min.js", get(novnc_handler))
@@ -729,10 +749,6 @@ pub mod web {
                 "/api/v1/vms/:ns/:name/console/serial",
                 get(vm_serial_console_hint_handler),
             )
-            .route(
-                "/api/v1/vms/:ns/:name/serial",
-                get(serial_websocket_handler),
-            )
             .route("/api/v1/vms/:ns/:name/expose", get(get_vm_expose_handler))
             .route("/api/v1/vms/:ns/:name/expose", put(put_vm_expose_handler))
             .route(
@@ -740,11 +756,21 @@ pub mod web {
                 delete(delete_vm_expose_handler),
             )
             .route(
+                "/api/v1/vms/:ns/:name/network/internet",
+                get(vm_internet_get_handler)
+                    .put(vm_internet_put_handler)
+                    .delete(vm_internet_delete_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/rdp-expose",
+                get(get_vm_rdp_expose_handler)
+                    .put(put_vm_rdp_expose_handler)
+                    .delete(delete_vm_rdp_expose_handler),
+            )
+            .route(
                 "/api/v1/vms/:ns/:name",
                 axum::routing::put(update_vm_handler),
             )
-            .route("/api/v1/vms/:ns/:name/vnc", get(vnc_websocket_handler))
-            .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
             .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
             .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
             // Snapshots
@@ -800,6 +826,14 @@ pub mod web {
             // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
             // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.
             .merge(Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())))
+            .layer(TimeoutLayer::with_status_code(
+                StatusCode::REQUEST_TIMEOUT,
+                std::time::Duration::from_secs(request_timeout_secs),
+            ));
+
+        Router::new()
+            .merge(long_lived_ws)
+            .merge(timed_rest)
             // Layers applied in reverse order (outermost = last .layer() call)
             .layer(middleware::from_fn(security_headers_middleware))
             .layer(middleware::from_fn_with_state(
@@ -808,11 +842,6 @@ pub mod web {
             ))
             .layer(middleware::from_fn_with_state(state, auth_middleware))
             .layer(build_cors_layer())
-            // Request timeout: 30 seconds
-            .layer(TimeoutLayer::with_status_code(
-                StatusCode::REQUEST_TIMEOUT,
-                std::time::Duration::from_secs(30),
-            ))
             .layer(DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MiB
     }
 
@@ -1072,7 +1101,8 @@ pub mod web {
         }
         if lower.contains("could not find the requested resource")
             || lower.contains("doesn't have a resource type")
-            || (lower.contains("kubevirt") && (lower.contains("not found") || lower.contains("could not find")))
+            || (lower.contains("kubevirt")
+                && (lower.contains("not found") || lower.contains("could not find")))
         {
             return "KubeVirt API unavailable — install KubeVirt (VirtualMachine CRDs must exist on this cluster)"
                 .to_string();
@@ -1386,6 +1416,278 @@ pub mod web {
         }
     }
 
+    async fn vm_internet_get_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = {
+            let s = state.read().await;
+            s.kube_client.client()
+        };
+        let st = vm_internet::vm_internet_status(&client, &ns, &name).await;
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/network/internet");
+        ok_json(&ApiResponse::success(&st, &ctx.request_id))
+    }
+
+    async fn vm_internet_put_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        if let Err(e) = kube.get_vm(&ns, &name).await {
+            let msg = sanitize_error(&e);
+            if msg.contains("NotFound") || msg.contains("not found") {
+                return err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name));
+            }
+            return err_json(500, "INTERNAL_ERROR", &msg);
+        }
+        match vm_internet::ensure_vm_internet_egress(&kube.client(), &ns, &name).await {
+            Ok(st) => {
+                let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/network/internet");
+                ok_json(&ApiResponse::success(&st, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNET_POLICY_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn vm_internet_delete_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = {
+            let s = state.read().await;
+            s.kube_client.client()
+        };
+        match vm_internet::remove_vm_internet_egress(&client, &ns, &name).await {
+            Ok(()) => {
+                let ctx = req_ctx(HttpMethod::DELETE, "/api/v1/vms/:ns/:name/network/internet");
+                let body = vm_internet::vm_internet_status(&client, &ns, &name).await;
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNET_POLICY_DELETE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    #[derive(Debug, serde::Deserialize)]
+    struct PutRdpExposeReq {
+        #[serde(default = "default_true")]
+        enabled: bool,
+        #[serde(default)]
+        service_type: Option<String>,
+        /// Required for NodePort / LoadBalancer (pick a unique port per VM, e.g. 33900–33999).
+        node_port: Option<i32>,
+    }
+
+    async fn rdp_context_for_vm(
+        kube: &KubeClient,
+        ns: &str,
+        name: &str,
+    ) -> Result<vm_rdp::RdpAccessStatus, String> {
+        let vm = kube.get_vm(ns, name).await.map_err(|e| sanitize_error(&e))?;
+        let vm_json = serde_json::to_value(&vm).map_err(|e| e.to_string())?;
+        let is_windows = windows_rdp::is_windows_vm(&vm_json);
+        let spec_has_rdp = vm_json
+            .pointer("/spec/template/spec/domain/devices/interfaces")
+            .and_then(|i| i.as_array())
+            .is_some_and(|ifaces| {
+                ifaces.iter().any(|iface| {
+                    iface
+                        .get("ports")
+                        .and_then(|p| p.as_array())
+                        .is_some_and(|ports| {
+                            ports.iter().any(|p| {
+                                p.get("port")
+                                    .and_then(|n| n.as_i64())
+                                    .is_some_and(|n| n == 3389)
+                            })
+                        })
+                })
+            });
+
+        let guest_ip = kube
+            .list_vmis(ns)
+            .await
+            .ok()
+            .and_then(|vmis| {
+                vmis.into_iter()
+                    .find(|v| v.metadata.name.as_deref() == Some(name))
+                    .and_then(|vmi| {
+                        vmi.status.as_ref().and_then(|s| {
+                            s.interfaces.iter().find_map(|iface| {
+                                iface
+                                    .ip_address
+                                    .as_ref()
+                                    .filter(|ip| !ip.is_empty())
+                                    .cloned()
+                            })
+                        })
+                    })
+            });
+
+        let node_ips: Vec<String> = kube
+            .list_nodes()
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|n| {
+                n.status.as_ref().and_then(|st| {
+                    st.addresses.as_ref().and_then(|rows| {
+                        rows.iter().flat_map(|row| row.iter()).find_map(|a| {
+                            if a.type_ == "InternalIP" {
+                                Some(a.address.clone())
+                            } else {
+                                None
+                            }
+                        })
+                    })
+                })
+            })
+            .collect();
+
+        vm_rdp::assemble_rdp_access(
+            kube.client(),
+            ns,
+            name,
+            guest_ip,
+            is_windows,
+            spec_has_rdp,
+            node_ips,
+        )
+        .await
+        .map_err(|e| sanitize_error(&e))
+    }
+
+    async fn get_vm_rdp_expose_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match rdp_context_for_vm(&kube, &ns, &name).await {
+            Ok(body) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/rdp-expose");
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
+        }
+    }
+
+    async fn put_vm_rdp_expose_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<PutRdpExposeReq>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+
+        if !req.enabled {
+            match vm_rdp::delete_rdp_expose_service(kube.client(), &ns, &name).await {
+                Ok(()) => match rdp_context_for_vm(&kube, &ns, &name).await {
+                    Ok(body) => {
+                        let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/rdp-expose");
+                        ok_json(&ApiResponse::success(&body, &ctx.request_id))
+                    }
+                    Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
+                },
+                Err(e) => err_json(500, "RDP_EXPOSE_DELETE_FAILED", &sanitize_error(&e)),
+            }
+        } else if let Err(e) = kube.get_vm(&ns, &name).await {
+            let msg = sanitize_error(&e);
+            if msg.contains("NotFound") || msg.contains("not found") {
+                err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name))
+            } else {
+                err_json(500, "INTERNAL_ERROR", &msg)
+            }
+        } else {
+            let svc_type = req
+                .service_type
+                .as_deref()
+                .unwrap_or("NodePort");
+            let svc_type = match svc_type.to_ascii_lowercase().as_str() {
+                "loadbalancer" => "LoadBalancer",
+                "clusterip" => "ClusterIP",
+                _ => "NodePort",
+            };
+            let Some(node_port) = req.node_port else {
+                return err_json(
+                    400,
+                    "INVALID_REQUEST",
+                    "node_port is required when enabling RDP exposure (use 33900–33999 per VM)",
+                );
+            };
+            if node_port < 30000 || node_port > 32767 {
+                return err_json(
+                    400,
+                    "INVALID_REQUEST",
+                    "node_port must be in range 30000–32767",
+                );
+            }
+            match vm_rdp::upsert_rdp_expose_service(
+                kube.client(),
+                &ns,
+                &name,
+                svc_type,
+                node_port,
+            )
+            .await
+            {
+                Ok(()) => match rdp_context_for_vm(&kube, &ns, &name).await {
+                    Ok(body) => {
+                        let ctx = req_ctx(HttpMethod::PUT, "/api/v1/vms/:ns/:name/rdp-expose");
+                        ok_json(&ApiResponse::success(&body, &ctx.request_id))
+                    }
+                    Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
+                },
+                Err(e) => err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &sanitize_error(&e)),
+            }
+        }
+    }
+
+    async fn delete_vm_rdp_expose_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match vm_rdp::delete_rdp_expose_service(kube.client(), &ns, &name).await {
+            Ok(()) => match rdp_context_for_vm(&kube, &ns, &name).await {
+                Ok(body) => {
+                    let ctx = req_ctx(HttpMethod::DELETE, "/api/v1/vms/:ns/:name/rdp-expose");
+                    ok_json(&ApiResponse::success(&body, &ctx.request_id))
+                }
+                Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
+            },
+            Err(e) => err_json(500, "RDP_EXPOSE_DELETE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
     async fn start_vm_handler(
         State(state): State<SharedState>,
         Path((ns, name)): Path<(String, String)>,
@@ -1488,9 +1790,29 @@ pub mod web {
             }
         }
 
-        log::info!("VNC WebSocket upgrade requested for {}/{}", ns, name);
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        let vmi_name = match client.resolve_vmi_name_for_console(&ns, &name).await {
+            Ok(n) => n,
+            Err(e) => {
+                log::warn!("VNC: could not resolve VMI for {}/{}: {}", ns, name, e);
+                return (StatusCode::NOT_FOUND, format!("No VMI for VM {name}: {e}"))
+                    .into_response();
+            }
+        };
+
+        log::info!(
+            "VNC WebSocket upgrade requested for {}/{} (VMI {})",
+            ns,
+            name,
+            vmi_name
+        );
         ws.protocols(["binary"])
-            .on_upgrade(move |socket| kubevirt_subresource_ws_proxy(socket, ns, name, "vnc", "VNC"))
+            .on_upgrade(move |socket| {
+                kubevirt_subresource_ws_proxy(socket, ns, vmi_name, "vnc", "VNC")
+            })
             .into_response()
     }
 
@@ -1518,14 +1840,33 @@ pub mod web {
             }
         }
 
+        let client = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        let vmi_name = match client.resolve_vmi_name_for_console(&ns, &name).await {
+            Ok(n) => n,
+            Err(e) => {
+                log::warn!(
+                    "Serial console: could not resolve VMI for {}/{}: {}",
+                    ns,
+                    name,
+                    e
+                );
+                return (StatusCode::NOT_FOUND, format!("No VMI for VM {name}: {e}"))
+                    .into_response();
+            }
+        };
+
         log::info!(
-            "Serial console WebSocket upgrade requested for {}/{}",
+            "Serial console WebSocket upgrade requested for {}/{} (VMI {})",
             ns,
-            name
+            name,
+            vmi_name
         );
         ws.protocols(["binary"])
             .on_upgrade(move |socket| {
-                kubevirt_subresource_ws_proxy(socket, ns, name, "console", "serial console")
+                kubevirt_subresource_ws_proxy(socket, ns, vmi_name, "console", "serial console")
             })
             .into_response()
     }
@@ -1534,11 +1875,44 @@ pub mod web {
     async fn kubevirt_subresource_ws_proxy(
         mut client_ws: WebSocket,
         ns: String,
-        name: String,
+        vmi_name: String,
         subpath: &'static str,
         label: &'static str,
     ) {
         use futures_util::{SinkExt, StreamExt};
+        use tokio_tungstenite::tungstenite::protocol::CloseFrame as TsCloseFrame;
+        use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode as TsCloseCode;
+
+        fn truncate_close_reason(mut s: String) -> String {
+            const MAX: usize = 123;
+            if s.len() <= MAX {
+                return s;
+            }
+            let mut end = MAX;
+            while end > 0 && !s.is_char_boundary(end) {
+                end -= 1;
+            }
+            s.truncate(end);
+            s
+        }
+
+        fn ax_close_to_ts(
+            frame: Option<axum::extract::ws::CloseFrame>,
+        ) -> Option<TsCloseFrame<'static>> {
+            frame.map(|f| TsCloseFrame {
+                code: TsCloseCode::from(f.code),
+                reason: Cow::Owned(truncate_close_reason(f.reason.into_owned())),
+            })
+        }
+
+        fn ts_close_to_ax(
+            frame: Option<TsCloseFrame>,
+        ) -> Option<axum::extract::ws::CloseFrame<'static>> {
+            frame.map(|f| axum::extract::ws::CloseFrame {
+                code: u16::from(f.code),
+                reason: Cow::Owned(truncate_close_reason(f.reason.into_owned())),
+            })
+        }
 
         let config = match kube::Config::infer().await {
             Ok(c) => c,
@@ -1561,7 +1935,7 @@ pub mod web {
             .to_string();
         let path = format!(
             "/apis/subresources.kubevirt.io/v1/namespaces/{}/virtualmachineinstances/{}/{}",
-            ns, name, subpath
+            ns, vmi_name, subpath
         );
         let ws_url = api_url
             .replace("https://", "wss://")
@@ -1619,9 +1993,20 @@ pub mod web {
             }
         };
 
-        log::info!("{} proxy connected to K8s API for {}/{}", label, ns, name);
+        log::info!(
+            "{} proxy connected to K8s API for namespace {} VMI {}",
+            label,
+            ns,
+            vmi_name
+        );
 
         let (mut k8s_sink, mut k8s_stream) = k8s_ws.split();
+
+        // Apiserver / ingress often drop idle WebSockets; answer Ping and send periodic keepalives.
+        let mut keepalive = tokio::time::interval(std::time::Duration::from_secs(20));
+        keepalive.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+        let mut sent_client_close = false;
 
         loop {
             tokio::select! {
@@ -1637,8 +2022,18 @@ pub mod web {
                                 break;
                             }
                         }
-                        Some(Ok(Message::Close(_))) | None => break,
-                        _ => {}
+                        Some(Ok(Message::Ping(v))) => {
+                            if client_ws.send(Message::Pong(v)).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(Message::Pong(_))) => {}
+                        Some(Ok(Message::Close(frame))) => {
+                            let ts = ax_close_to_ts(frame);
+                            let _ = k8s_sink.send(tokio_tungstenite::tungstenite::Message::Close(ts)).await;
+                            break;
+                        }
+                        Some(Err(_)) | None => break,
                     }
                 }
                 msg = k8s_stream.next() => {
@@ -1653,15 +2048,58 @@ pub mod web {
                                 break;
                             }
                         }
-                        Some(Ok(tokio_tungstenite::tungstenite::Message::Close(_))) | None => break,
-                        _ => {}
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Ping(v))) => {
+                            if k8s_sink.send(tokio_tungstenite::tungstenite::Message::Pong(v)).await.is_err() {
+                                break;
+                            }
+                        }
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Pong(_))) => {}
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Frame(_))) => {}
+                        Some(Ok(tokio_tungstenite::tungstenite::Message::Close(frame))) => {
+                            match &frame {
+                                Some(cf) => log::info!(
+                                    "{} upstream close for {}/{}: code={} reason={}",
+                                    label,
+                                    ns,
+                                    vmi_name,
+                                    u16::from(cf.code),
+                                    cf.reason
+                                ),
+                                None => log::info!(
+                                    "{} upstream close for {}/{} (no frame)",
+                                    label,
+                                    ns,
+                                    vmi_name
+                                ),
+                            }
+                            let ax = ts_close_to_ax(frame);
+                            if client_ws.send(Message::Close(ax)).await.is_ok() {
+                                sent_client_close = true;
+                            }
+                            break;
+                        }
+                        Some(Err(_)) | None => break,
+                    }
+                }
+                _ = keepalive.tick() => {
+                    if client_ws.send(Message::Ping(Vec::new())).await.is_err() {
+                        break;
+                    }
+                    if k8s_sink
+                        .send(tokio_tungstenite::tungstenite::Message::Ping(Vec::new()))
+                        .await
+                        .is_err()
+                    {
+                        break;
                     }
                 }
             }
         }
 
-        let _ = client_ws.send(Message::Close(None)).await;
-        log::info!("{} proxy closed for {}/{}", label, ns, name);
+        if !sent_client_close {
+            let _ = client_ws.send(Message::Close(None)).await;
+        }
+        log::info!("{} proxy session ended for {}/{}", label, ns, vmi_name);
     }
 
     // ── VM Security Posture ──────────────────────────────────────
@@ -2367,11 +2805,18 @@ pub mod web {
         disk_size: Option<String>,
         cloud_init: Option<String>,
         start: Option<bool>,
+        /// When true (default), create a CiliumNetworkPolicy or Kubernetes NetworkPolicy so the VM's virt-launcher pods can egress broadly (internet-friendly under default-deny Cilium).
+        #[serde(default = "default_allow_internet")]
+        allow_internet: bool,
         /// `nocloud` (default) or `configdrive` for `cloudInitConfigDrive` + Cloudbase-Init.
         #[serde(default)]
         cloud_init_delivery: Option<String>,
         #[serde(default)]
         expose: Option<CreateVmExposeReq>,
+    }
+
+    fn default_allow_internet() -> bool {
+        true
     }
 
     #[derive(Deserialize)]
@@ -2586,6 +3031,26 @@ pub mod web {
                 } else {
                     false
                 };
+                let internet = if req.allow_internet {
+                    match vm_internet::ensure_vm_internet_egress(&client.client(), ns, &req.name)
+                        .await
+                    {
+                        Ok(st) => serde_json::to_value(&st).unwrap_or(serde_json::Value::Null),
+                        Err(e) => {
+                            log::warn!(
+                                "VM '{}' created but internet egress policy failed: {}",
+                                req.name,
+                                e
+                            );
+                            serde_json::json!({
+                                "applied": false,
+                                "error": sanitize_error(&e),
+                            })
+                        }
+                    }
+                } else {
+                    serde_json::json!({ "applied": false, "skipped": true })
+                };
                 let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms");
                 ok_json(&ApiResponse::success(
                     &serde_json::json!({
@@ -2593,6 +3058,7 @@ pub mod web {
                         "name": req.name,
                         "namespace": ns,
                         "started": started,
+                        "internet": internet,
                     }),
                     &ctx.request_id,
                 ))

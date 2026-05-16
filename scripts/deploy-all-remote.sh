@@ -284,6 +284,10 @@ ssh "${REMOTE}" "
     else
         echo 'Skipping Cilium vmrogue egress bootstrap (VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1, no Cilium CRD, or yaml missing)'
     fi
+    if [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]; then
+        echo 'Applying Cilium clusterwide egress for KubeVirt virt-launcher (VM guest internet)...'
+        ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml
+    fi
     for f in ${DEPLOY_DIR}/operator/config/crd/bases/*.yaml; do
         ${K8S_CMD} apply -f \"\$f\"
     done

@@ -424,12 +424,29 @@ async fn list_rdp_capable_vms(
             "Linux".to_string()
         };
 
+        let mut rdp_port: u16 = 3389;
+        let mut reachable = false;
+        if is_windows {
+            if let Ok(Some(svc)) = crate::kube::vm_rdp::get_rdp_expose_service(
+                s.kube_client.client(),
+                vm_ns,
+                vm_name,
+            )
+            .await
+            {
+                if let Some(np) = crate::kube::vm_rdp::rdp_node_port_from_service(&svc) {
+                    rdp_port = np.clamp(1, u16::MAX as i32) as u16;
+                    reachable = true;
+                }
+            }
+        }
+
         results.push(RdpCapableVm {
             name: vm_name.to_string(),
             namespace: vm.metadata.namespace.clone().unwrap_or_default(),
             ip_address: ip,
-            rdp_port: 3389,
-            reachable: false, // Would need actual TCP probe
+            rdp_port,
+            reachable,
             os_type,
             active_sessions: 0,
         });
