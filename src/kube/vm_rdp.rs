@@ -13,8 +13,9 @@ use std::collections::{BTreeMap, HashSet};
 
 use super::windows_rdp::{vmrogue_rdp_service_name, WINDOWS_RDP_PORT};
 
-pub const RDP_NODEPORT_RANGE_START: i32 = 33_900;
-pub const RDP_NODEPORT_RANGE_END: i32 = 33_999;
+/// Within Kubernetes NodePort range 30000–32767.
+pub const RDP_NODEPORT_RANGE_START: i32 = 30_100;
+pub const RDP_NODEPORT_RANGE_END: i32 = 30_199;
 
 const LABEL_RDP_EXPOSE: &str = "vmrogue.io/rdp-expose";
 const LABEL_VM_NAME: &str = "vmrogue.io/vm-name";
@@ -67,6 +68,17 @@ pub fn suggest_rdp_node_port(used: &HashSet<i32>) -> Option<i32> {
         }
     }
     None
+}
+
+/// Reject NodePorts outside the cluster-valid range.
+pub fn validate_node_port(np: i32) -> Result<()> {
+    if (30_000..=32_767).contains(&np) {
+        Ok(())
+    } else {
+        Err(anyhow!(
+            "node_port must be between 30000 and 32767 (got {np})"
+        ))
+    }
 }
 
 pub fn rdp_node_port_from_service(svc: &Service) -> Option<i32> {
@@ -163,6 +175,7 @@ async fn validate_node_ports_available(
     node_port: i32,
     existing: Option<&Service>,
 ) -> Result<()> {
+    validate_node_port(node_port)?;
     let mut own = HashSet::new();
     if let Some(svc) = existing {
         if let Some(np) = rdp_node_port_from_service(svc) {
