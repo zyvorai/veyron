@@ -54,7 +54,7 @@ On clusters where KubeVirt’s **`VideoConfig` alpha feature gate** is enabled, 
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/v1/vms/{ns}/{name}/rdp-expose` | Guest IP, Windows detection, NodePort status, used/suggested ports (`33900`–`33999`) |
+| `GET /api/v1/vms/{ns}/{name}/rdp-expose` | Guest IP, Windows detection, NodePort status, used/suggested ports (`30100`–`30199`) |
 | `PUT /api/v1/vms/{ns}/{name}/rdp-expose` | Body: `{ "enabled": true, "service_type": "NodePort", "node_port": 33901 }` — creates `rdp-<vm-name>` Service (`kubevirt.io/vm` selector) |
 | `DELETE /api/v1/vms/{ns}/{name}/rdp-expose` | Remove the RDP Service |
 

@@ -243,7 +243,7 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         Endpoint::new(
             "PUT",
             "/api/v1/vms/:ns/:name/rdp-expose",
-            "Create or update RDP NodePort Service (requires node_port, e.g. 33900–33999)",
+            "Create or update RDP NodePort Service (requires node_port, e.g. 30100–30199)",
         )
         .with_auth(),
         Endpoint::new(
