@@ -742,6 +742,14 @@ pub mod web {
                 post(vm_hotplug_volume_handler),
             )
             .route(
+                "/api/v1/vms/:ns/:name/storage/data-disk/defaults",
+                get(vm_data_disk_defaults_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/storage/data-disk",
+                post(vm_add_data_disk_handler),
+            )
+            .route(
                 "/api/v1/vms/:ns/:name/volumes/hotremove",
                 post(vm_hotremove_volume_handler),
             )
@@ -1497,7 +1505,6 @@ pub mod web {
     ) -> Result<vm_rdp::RdpAccessStatus, String> {
         let vm = kube.get_vm(ns, name).await.map_err(|e| sanitize_error(&e))?;
         let vm_json = serde_json::to_value(&vm).map_err(|e| e.to_string())?;
-        let is_windows = windows_rdp::is_windows_vm(&vm_json);
         let spec_has_rdp = vm_json
             .pointer("/spec/template/spec/domain/devices/interfaces")
             .and_then(|i| i.as_array())
@@ -1516,15 +1523,15 @@ pub mod web {
                 })
             });
 
-        let guest_ip = kube
+        let (guest_ip, vmi_json) = kube
             .list_vmis(ns)
             .await
             .ok()
             .and_then(|vmis| {
                 vmis.into_iter()
                     .find(|v| v.metadata.name.as_deref() == Some(name))
-                    .and_then(|vmi| {
-                        vmi.status.as_ref().and_then(|s| {
+                    .map(|vmi| {
+                        let ip = vmi.status.as_ref().and_then(|s| {
                             s.interfaces.iter().find_map(|iface| {
                                 iface
                                     .ip_address
@@ -1532,9 +1539,13 @@ pub mod web {
                                     .filter(|ip| !ip.is_empty())
                                     .cloned()
                             })
-                        })
+                        });
+                        let json = serde_json::to_value(&vmi).ok();
+                        (ip, json)
                     })
-            });
+            })
+            .unwrap_or((None, None));
+        let is_windows = windows_rdp::is_windows_guest(Some(&vm_json), vmi_json.as_ref());
 
         let node_ips: Vec<String> = kube
             .list_nodes()
@@ -1544,7 +1555,7 @@ pub mod web {
             .filter_map(|n| {
                 n.status.as_ref().and_then(|st| {
                     st.addresses.as_ref().and_then(|rows| {
-                        rows.iter().flat_map(|row| row.iter()).find_map(|a| {
+                        rows.iter().find_map(|a| {
                             if a.type_ == "InternalIP" {
                                 Some(a.address.clone())
                             } else {
@@ -2462,6 +2473,44 @@ pub mod web {
     struct HotplugVolumeBody {
         volume_name: String,
         pvc_name: String,
+    }
+
+    async fn vm_data_disk_defaults_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.data_disk_defaults(&ns, &name).await {
+            Ok(body) => {
+                let ctx = req_ctx(
+                    HttpMethod::GET,
+                    "/api/v1/vms/:ns/:name/storage/data-disk/defaults",
+                );
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "DATA_DISK_DEFAULTS_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn vm_add_data_disk_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(req): Json<crate::kube::vm_data_disk::AddDataDiskRequest>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let client = { state.read().await.kube_client.clone() };
+        match client.add_data_disk(&ns, &name, req).await {
+            Ok(body) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/storage/data-disk");
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "ADD_DATA_DISK_FAILED", &sanitize_error(&e)),
+        }
     }
 
     async fn vm_hotplug_volume_handler(

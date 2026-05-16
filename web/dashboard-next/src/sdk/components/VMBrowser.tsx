@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { fetchVmInventory } from "../../lib/api";
+import AddDataDiskPanel from "./AddDataDiskPanel";
 
 interface VM {
   id: string;
@@ -356,6 +357,19 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
             {selectedVM.datacenter && <div><strong>Datacenter:</strong> {selectedVM.datacenter}</div>}
             {selectedVM.cluster && <div><strong>Cluster:</strong> {selectedVM.cluster}</div>}
           </div>
+          {(() => {
+            const slash = selectedVM.id.indexOf("/");
+            if (slash < 1) return null;
+            const ns = selectedVM.id.slice(0, slash);
+            const vmName = selectedVM.id.slice(slash + 1);
+            return (
+              <AddDataDiskPanel
+                namespace={ns}
+                vmName={vmName}
+                onAttached={() => void discoverVMs()}
+              />
+            );
+          })()}
         </div>
       )}
     </div>

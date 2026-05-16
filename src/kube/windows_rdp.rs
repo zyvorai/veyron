@@ -22,7 +22,71 @@ pub fn should_apply_windows_rdp(vm: &Value, template_name_hint: Option<&str>) ->
     is_windows_vm(vm)
 }
 
+pub fn is_windows_guest(vm: Option<&Value>, vmi: Option<&Value>) -> bool {
+    vm.is_some_and(is_windows_vm) || vmi.is_some_and(is_windows_vmi)
+}
+
+pub fn is_windows_vmi(vmi: &Value) -> bool {
+    let info = vmi
+        .pointer("/status/guestOSInfo")
+        .or_else(|| vmi.get("guestOSInfo"));
+    let Some(info) = info else {
+        return false;
+    };
+    if info
+        .get("id")
+        .and_then(|v| v.as_str())
+        .is_some_and(|id| {
+            id.eq_ignore_ascii_case("mswindows")
+                || id.eq_ignore_ascii_case("windows")
+                || id.contains("win")
+        })
+    {
+        return true;
+    }
+    for key in ["name", "prettyName", "version", "versionId"] {
+        if let Some(s) = info.get(key).and_then(|v| v.as_str()) {
+            if looks_like_windows_text(s) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+fn looks_like_windows_text(s: &str) -> bool {
+    let lower = s.to_lowercase();
+    lower.contains("windows")
+        || lower.contains("microsoft")
+        || lower.starts_with("win ")
+        || lower.contains(" win ")
+}
+
+fn vm_name_suggests_windows(name: &str) -> bool {
+    let lower = name.to_lowercase();
+    if looks_like_windows_text(&lower) {
+        return true;
+    }
+    if lower.contains("legacy") {
+        return true;
+    }
+    lower.starts_with("win-")
+        || lower.starts_with("win_")
+        || lower.ends_with("-win")
+        || lower.contains("-win-")
+}
+
 pub fn is_windows_vm(vm: &Value) -> bool {
+    if let Some(name) = vm
+        .get("metadata")
+        .and_then(|m| m.get("name"))
+        .and_then(|n| n.as_str())
+    {
+        if vm_name_suggests_windows(name) {
+            return true;
+        }
+    }
+
     if let Some(labels) = vm
         .get("metadata")
         .and_then(|m| m.get("labels"))
@@ -35,6 +99,23 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         {
             return true;
         }
+
+        if labels
+            .get("vmrogue.io/rdp")
+            .and_then(|v| v.as_str())
+            .is_some_and(|v| !v.is_empty() && !v.eq_ignore_ascii_case("false"))
+        {
+            return true;
+        }
+
+        if labels
+            .get("hyper2kvm.io/migrated")
+            .and_then(|v| v.as_str())
+            .is_some_and(|v| v == "true" || v.eq_ignore_ascii_case("yes"))
+        {
+            return true;
+        }
+
         for (k, v) in labels {
             let kl = k.to_lowercase();
             let vl = v.as_str().unwrap_or("").to_lowercase();
@@ -60,6 +141,20 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         }
     }
 
+    if let Some(ann) = vm
+        .get("metadata")
+        .and_then(|m| m.get("annotations"))
+        .and_then(|a| a.as_object())
+    {
+        for (k, v) in ann {
+            let kl = k.to_lowercase();
+            let vl = v.as_str().unwrap_or("").to_lowercase();
+            if vl.contains("windows") && (kl.contains("os") || kl.contains("guest")) {
+                return true;
+            }
+        }
+    }
+
     if let Some(os_type) = vm
         .pointer("/spec/template/spec/domain/os/type")
         .and_then(|t| t.as_str())
@@ -74,6 +169,56 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         .is_some_and(|arr| arr.iter().any(|v| v.get("qxl").is_some()))
     {
         return true;
+    }
+
+    if vm.pointer("/spec/template/spec/domain/features/hyperv").is_some() {
+        return true;
+    }
+
+    if vm.pointer("/spec/template/spec/domain/clock/timer")
+        .and_then(|t| t.as_array())
+        .is_some_and(|timers| {
+            timers.iter().any(|timer| {
+                timer
+                    .get("name")
+                    .and_then(|n| n.as_str())
+                    .is_some_and(|n| n.eq_ignore_ascii_case("HypervClock"))
+            })
+        })
+    {
+        return true;
+    }
+
+    if let Some(volumes) = vm
+        .pointer("/spec/template/spec/volumes")
+        .and_then(|v| v.as_array())
+    {
+        for vol in volumes {
+            let path = vol
+                .pointer("/containerDisk/image")
+                .or_else(|| vol.pointer("/dataVolume/name"))
+                .or_else(|| vol.pointer("/persistentVolumeClaim/claimName"));
+            if let Some(s) = path.and_then(|p| p.as_str()) {
+                if s.to_lowercase().contains("windows") {
+                    return true;
+                }
+            }
+            for ci_key in ["cloudInitConfigDrive", "cloudInitNoCloud"] {
+                if let Some(ud) = vol
+                    .get(ci_key)
+                    .and_then(|ci| ci.get("userData"))
+                    .and_then(|u| u.as_str())
+                {
+                    let ud_l = ud.to_lowercase();
+                    if ud_l.contains("ps1_sysnative")
+                        || ud_l.contains("terminal server")
+                        || ud_l.contains("fdenytsconnections")
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
     }
 
     false
@@ -211,6 +356,37 @@ pub fn vmrogue_rdp_service_name(vm_name: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn detects_hyper2kvm_migrated_legacy_vm() {
+        let vm = json!({
+            "metadata": {
+                "name": "2025legacy-67790c6f",
+                "labels": { "hyper2kvm.io/migrated": "true" }
+            },
+            "spec": { "template": { "spec": {
+                "domain": { "devices": {
+                    "interfaces": [{ "name": "default", "masquerade": {} }]
+                }}
+            }}}
+        });
+        assert!(is_windows_vm(&vm));
+    }
+
+    #[test]
+    fn detects_windows_from_guest_os_info() {
+        let vmi = json!({
+            "status": {
+                "guestOSInfo": {
+                    "id": "mswindows",
+                    "prettyName": "Windows Server 2025 Datacenter Evaluation"
+                }
+            }
+        });
+        assert!(is_windows_vmi(&vmi));
+        assert!(is_windows_guest(None, Some(&vmi)));
+    }
 
     #[test]
     fn merges_rdp_port_on_masquerade() {
