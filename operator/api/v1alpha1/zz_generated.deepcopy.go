@@ -152,6 +152,11 @@ func (in *VMRogueVMSpec) DeepCopyInto(out *VMRogueVMSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.AllowInternet != nil {
+		in, out := &in.AllowInternet, &out.AllowInternet
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Labels != nil {
 		in, out := &in.Labels, &out.Labels
 		*out = make(map[string]string, len(*in))

@@ -91,6 +91,10 @@ pub enum Commands {
         #[arg(long)]
         cloud_init: Option<String>,
 
+        /// Do not apply VMRogue internet egress policy (CiliumNetworkPolicy / NetworkPolicy)
+        #[arg(long)]
+        no_internet: bool,
+
         /// Dry run (don't create, just show manifest)
         #[arg(long)]
         dry_run: bool,
@@ -2314,6 +2318,10 @@ pub enum Commands {
         /// Disable virtio-rng (enabled by default)
         #[arg(long)]
         no_rng: bool,
+
+        /// Do not apply internet egress policy (operator reconciles when enabled)
+        #[arg(long)]
+        no_internet: bool,
 
         /// Machine type (e.g. q35)
         #[arg(long)]

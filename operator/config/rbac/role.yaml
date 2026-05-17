@@ -79,6 +79,14 @@ rules:
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
 
+  # Per-VM internet egress (CiliumNetworkPolicy or NetworkPolicy)
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumnetworkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
   # Leader election
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]

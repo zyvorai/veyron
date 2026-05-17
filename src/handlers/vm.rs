@@ -512,6 +512,7 @@ pub async fn handle_create(
     storage_class: Option<String>,
     container_disk: Option<String>,
     cloud_init: Option<String>,
+    no_internet: bool,
     dry_run: bool,
     output: String,
     namespace: &str,
@@ -530,6 +531,9 @@ pub async fn handle_create(
             cloud_init,
         },
     )?;
+    if no_internet {
+        config.allow_internet = false;
+    }
     validate_vm_config(&config)?;
 
     let format = OutputFormat::parse_format(&output)

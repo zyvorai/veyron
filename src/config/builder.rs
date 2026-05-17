@@ -31,6 +31,7 @@ impl VMConfigBuilder {
             config: VMConfig {
                 name: name.into(),
                 namespace: "default".to_string(),
+                allow_internet: true,
                 ..Default::default()
             },
         }
@@ -326,6 +327,12 @@ impl VMConfigBuilder {
     /// Set KubeVirt console video device type (`domain.devices.video`). See `kubevirt_video_type` on [`VMConfig`].
     pub fn kubevirt_video_type(mut self, video_type: impl Into<String>) -> Self {
         self.config.kubevirt_video_type = Some(video_type.into());
+        self
+    }
+
+    /// Enable or disable VMRogue-managed internet egress policy for virt-launcher pods.
+    pub fn allow_internet(mut self, enabled: bool) -> Self {
+        self.config.allow_internet = enabled;
         self
     }
 
