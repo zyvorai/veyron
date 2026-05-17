@@ -254,6 +254,14 @@ impl KubeClient {
             }
         }
 
+        if let Err(err) = self.apply_vm_internet_egress(config).await {
+            log::warn!(
+                "VM '{}' created but internet egress policy failed: {}",
+                config.name,
+                err
+            );
+        }
+
         Ok(created)
     }
 
@@ -280,7 +288,35 @@ impl KubeClient {
         self.delete_service_ignore(namespace, &windows_rdp::vmrogue_rdp_service_name(name))
             .await;
 
+        if let Err(e) =
+            crate::kube::vm_internet::remove_vm_internet_egress(&self.client(), namespace, name).await
+        {
+            log::warn!(
+                "Failed to remove internet egress policy for {}/{}: {}",
+                namespace,
+                name,
+                e
+            );
+        }
+
         Ok(())
+    }
+
+    /// Apply internet egress policy when `config.allow_internet` is set.
+    pub async fn apply_vm_internet_egress(
+        &self,
+        config: &VMConfig,
+    ) -> Result<Option<vm_internet::VmInternetStatus>> {
+        if !config.allow_internet {
+            return Ok(None);
+        }
+        let st = vm_internet::ensure_vm_internet_egress(
+            &self.client(),
+            &config.namespace,
+            &config.name,
+        )
+        .await?;
+        Ok(Some(st))
     }
 
     async fn ensure_configdrive_userdata_secret(

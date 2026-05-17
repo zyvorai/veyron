@@ -101,6 +101,11 @@ pub struct VMRogueVMSpec {
     /// Annotations for the KubeVirt VM.
     #[serde(default, skip_serializing_if = "HashMap::is_empty")]
     pub annotations: HashMap<String, String>,
+
+    /// Apply internet egress policy for virt-launcher pods (default true).
+    #[serde(default = "default_true")]
+    #[serde(rename = "allowInternet")]
+    pub allow_internet: bool,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -631,6 +636,7 @@ impl From<&crate::config::VMConfig> for VMRogueVMSpec {
             running: None,
             labels: config.labels.clone(),
             annotations: config.annotations.clone(),
+            allow_internet: config.allow_internet,
         }
     }
 }

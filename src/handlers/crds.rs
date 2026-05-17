@@ -103,6 +103,7 @@ pub struct VrvmCreateArgs {
     pub from_file: Option<String>,
     pub dry_run: bool,
     pub start: bool,
+    pub no_internet: bool,
 }
 
 pub async fn handle_vrvm_create(namespace: &str, name: &str, args: VrvmCreateArgs) -> Result<()> {
@@ -342,6 +343,7 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
         running: Some(args.start),
         labels,
         annotations: std::collections::HashMap::new(),
+        allow_internet: !args.no_internet,
     })
 }
 

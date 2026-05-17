@@ -122,6 +122,14 @@ pub struct VMConfig {
     /// Raw KubeVirt `accessCredentials` entries (password / SSH injection).
     #[serde(default)]
     pub access_credentials: Vec<serde_json::Value>,
+    /// When true (default), apply CiliumNetworkPolicy or NetworkPolicy egress for virt-launcher pods.
+    #[serde(default = "default_allow_internet")]
+    pub allow_internet: bool,
+}
+
+/// Default for [`VMConfig::allow_internet`].
+pub fn default_allow_internet() -> bool {
+    true
 }
 
 /// CPU configuration

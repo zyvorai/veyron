@@ -69,6 +69,12 @@ type VMRogueVMSpec struct {
 	// +optional
 	Running *bool `json:"running,omitempty"`
 
+	// AllowInternet applies a CiliumNetworkPolicy or NetworkPolicy so virt-launcher pods
+	// for this VM can reach the internet (default true).
+	// +optional
+	// +kubebuilder:default=true
+	AllowInternet *bool `json:"allowInternet,omitempty"`
+
 	// Labels to apply to the KubeVirt VM.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`

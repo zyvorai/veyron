@@ -22,6 +22,7 @@ import (
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
 	"github.com/ssahani/vmrogue/operator/internal/converter"
 	"github.com/ssahani/vmrogue/operator/internal/eventbus"
+	"github.com/ssahani/vmrogue/operator/internal/network"
 	vmmetrics "github.com/ssahani/vmrogue/operator/internal/metrics"
 )
 
@@ -44,6 +45,8 @@ type VMRogueVMReconciler struct {
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachineinstances,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=cilium.io,resources=ciliumnetworkpolicies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
 func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -138,6 +141,11 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
+	if err := r.reconcileInternetEgress(ctx, &vm); err != nil {
+		logger.Error(err, "failed to reconcile internet egress policy")
+		r.Recorder.Eventf(&vm, "Warning", "InternetPolicyFailed", "Internet egress policy: %v", err)
+	}
+
 	// Re-fetch the VMRogueVM to get the latest ResourceVersion before status update
 	if err := r.Get(ctx, req.NamespacedName, &vm); err != nil {
 		return ctrl.Result{}, err
@@ -179,6 +187,14 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
+}
+
+func (r *VMRogueVMReconciler) reconcileInternetEgress(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) error {
+	if network.AllowInternetEnabled(&vm.Spec) {
+		_, err := network.EnsureVmInternetEgress(ctx, r.Client, vm.Namespace, vm.Name)
+		return err
+	}
+	return network.RemoveVmInternetEgress(ctx, r.Client, vm.Namespace, vm.Name)
 }
 
 func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) error {
@@ -245,6 +261,11 @@ func (r *VMRogueVMReconciler) handleDeletion(ctx context.Context, vm *vmroguev1a
 					return ctrl.Result{}, err
 				}
 			}
+		}
+
+		if err := network.RemoveVmInternetEgress(ctx, r.Client, vm.Namespace, vm.Name); err != nil {
+			logger.Error(err, "failed to remove internet egress policy")
+			return ctrl.Result{}, err
 		}
 
 		r.publishEvent(eventbus.SubjectVMDeleted, vm, "Deleted")
