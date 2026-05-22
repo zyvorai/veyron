@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VMRogue — one-command client install (run inside extracted tarball directory).
+# VMRogue — automatic client install (run inside extracted tarball directory).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
@@ -8,63 +8,37 @@ cd "$ROOT"
 
 _PKG_SESSION_START=${SECONDS}
 pkg_install_welcome "VMRogue"
-pkg_banner "VMRogue client install" "Kubernetes VM management · client bundle"
+pkg_banner "VMRogue" "Kubernetes VM management · client bundle"
 pkg_step_init 4
 
 pkg_step "System dependencies"
 if [[ -x ./install-client-deps.sh ]]; then
-  if ./install-client-deps.sh; then
-    pkg_step_done
-  else
-    pkg_warn "install-client-deps.sh had issues — continuing"
-    pkg_step_done
-  fi
+  ./install-client-deps.sh && pkg_step_done || { pkg_warn "install-client-deps.sh had issues"; pkg_step_done; }
 else
   pkg_skip "install-client-deps.sh not found"
   pkg_step_done
 fi
 
 pkg_step "Configuration"
-if [[ ! -f vmrogue.env ]] && [[ -f vmrogue.env.example ]]; then
-  cp vmrogue.env.example vmrogue.env
-  pkg_ok "Created vmrogue.env from example"
-  pkg_detail "Edit KUBECONFIG and VMROGUE_API_KEY before starting the API"
-elif [[ -f vmrogue.env ]]; then
-  pkg_ok "vmrogue.env already present (not overwritten)"
-else
-  pkg_warn "vmrogue.env.example missing — create vmrogue.env manually"
-fi
+pkg_env_bootstrap vmrogue.env.example vmrogue.env
+pkg_detail "Set KUBECONFIG and VMROGUE_API_KEY in vmrogue.env before starting the API"
 pkg_step_done
 
 pkg_step "Verify binaries"
-if [[ -x ./vmrogue ]]; then
-  if ./vmrogue --help >/dev/null 2>&1; then
-    pkg_ok "vmrogue binary ($(./vmrogue --version 2>/dev/null | head -1 || echo ready))"
-  else
-    pkg_fail "vmrogue --help failed"
-    exit 1
-  fi
+if [[ -x ./vmrogue ]] && ./vmrogue --help >/dev/null 2>&1; then
+  pkg_ok "vmrogue ($(./vmrogue --version 2>/dev/null | head -1 || echo ready))"
 else
   pkg_fail "./vmrogue missing or not executable"
   exit 1
 fi
-[[ -x ./virtctl ]] && pkg_ok "virtctl included (optional)"
+[[ -x ./virtctl ]] && pkg_ok "virtctl (optional)"
 pkg_step_done
 
 pkg_step "Smoke test"
-if [[ -x ./test-package.sh ]]; then
-  ./test-package.sh || pkg_warn "test-package.sh reported issues"
-else
-  pkg_skip "test-package.sh not found"
-fi
+[[ -x ./test-package.sh ]] && ./test-package.sh || pkg_warn "test-package.sh reported issues"
 pkg_step_done
 
-_vmrogue_ui=$(pkg_access_url http 5151)
-pkg_summary "Install complete"
-pkg_next_steps \
-  "https://zyvor.dev · © @zyvor 2026" \
-  "Cluster (once): export KUBECONFIG=… → ./install-cluster.sh → ./apply-cluster-network.sh" \
-  "Start client: set -a && source vmrogue.env && set +a" \
-  "Run API: ./vmrogue api-serve --host 0.0.0.0 --port 5151" \
-  "Dashboard: ${_vmrogue_ui}/dashboard ($(pkg_primary_host_label))" \
+pkg_install_finish "VMRogue" http 5151 "/dashboard" \
+  "Cluster (once): export KUBECONFIG=… → ./install-cluster.sh → deploy VMRogue in cluster" \
+  "Start API: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151" \
   "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt"

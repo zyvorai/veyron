@@ -199,10 +199,22 @@ cp "\${LIB}/package-client-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-
 cp "\${LIB}/package-client-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-package.sh"
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}/.package-lib"
 cp "\${LIB}/package-ui.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
+cp "\${LIB}/install-everything.sh" "\${OUT_DIR}/\${ARTIFACT}/"
 cp "\${LIB}/package-uninstall-lib.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
 cp "\${LIB}/package-uninstall.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
 chmod +x "\${OUT_DIR}/\${ARTIFACT}/install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh" \
-  "\${OUT_DIR}/\${ARTIFACT}/test-package.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
+  "\${OUT_DIR}/\${ARTIFACT}/test-package.sh" "\${OUT_DIR}/\${ARTIFACT}/install-everything.sh" \
+  "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
+cat > "\${OUT_DIR}/\${ARTIFACT}/.package-lib/product.meta" <<'META'
+PRODUCT_NAME=VMRogue
+ACCESS_SCHEME=http
+ACCESS_PORT=5151
+ACCESS_PATH=/dashboard
+AUTO_FULL_INSTALL=0
+FINISH_EXTRA_1=Cluster (once): ./install-cluster.sh then deploy VMRogue in the cluster
+FINISH_EXTRA_2=Start: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151
+FINISH_EXTRA_3=Docs: CLUSTER_SETUP.txt
+META
 
 CLUSTER_SRC="\${BUILD_DIR}/scripts/cluster"
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}/cluster/bootstrap"
@@ -234,7 +246,7 @@ CLUSTER FIRST (once per cluster — needs kubectl + admin kubeconfig)
 
 CLIENT ON THIS MACHINE
   1. tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
-  2. ./install.sh
+  2. ./install-everything.sh    (or ./install.sh then ./test-package.sh)
   3. nano vmrogue.env   (KUBECONFIG + VMROGUE_API_KEY)
   4. set -a && source vmrogue.env && set +a
   5. ./vmrogue api-serve --host 0.0.0.0 --port 5151
