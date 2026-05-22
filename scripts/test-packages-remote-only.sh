@@ -23,7 +23,7 @@ test_tarball() {
   local dir; dir=$(find "${work}" -maxdepth 1 -mindepth 1 -type d | head -1)
   cd "${dir}" || return 1
   log "  dir: ${dir}"
-  if ! timeout 180 ./install.sh </dev/null; then
+  if ! timeout 180 env ZYVOR_NONINTERACTIVE=1 ./install.sh </dev/null; then
     log "FAIL: install.sh (timeout 180s)"
     rm -rf "${work}"; ((FAIL++)); return 1
   fi

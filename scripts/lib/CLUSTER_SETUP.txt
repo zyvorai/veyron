@@ -11,7 +11,7 @@ WHAT MUST EXIST FOR VMROGUE TO WORK
   3. KubeVirt installed and phase=Deployed
   4. CDI (recommended) for disk import / DataVolumes
   5. Cilium (optional): only if your cluster uses Cilium CNI — then apply egress bootstrap
-  6. This client bundle: ./install.sh then vmrogue.env with KUBECONFIG + VMROGUE_API_KEY
+  6. This client bundle: ./install.sh (auto-detects kubeconfig; or --kubeconfig PATH) then set VMROGUE_API_KEY in vmrogue.env
 
 ORDER OF OPERATIONS (do not skip)
 ---------------------------------
