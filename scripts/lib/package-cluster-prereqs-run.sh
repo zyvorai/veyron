@@ -1,25 +1,19 @@
 #!/usr/bin/env bash
 # Install cluster prerequisites: Cilium (when applicable), metrics-server, KubeVirt, CDI.
-# Run from extracted tarball on a machine with kubectl + cluster-admin kubeconfig.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-
+# shellcheck source=/dev/null
+[[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
 # shellcheck source=/dev/null
 [[ -f "${ROOT}/cluster/env.sh" ]] && source "${ROOT}/cluster/env.sh"
 
 SCRIPT="${ROOT}/cluster/install-cluster-prereqs.sh"
-[[ -x "${SCRIPT}" ]] || SCRIPT="${ROOT}/cluster/install-cluster-prereqs.sh"
 [[ -f "${SCRIPT}" ]] || { echo "ERROR: missing ${SCRIPT}" >&2; exit 1; }
 
-# Map VMROGUE_* / V9S_* skip and version flags (install script uses V9S_* names).
 _map() {
-  local name="$1"
-  local v9s="V9S_${name}"
-  local vmr="VMROGUE_${name}"
-  if [[ -z "${!v9s:-}" && -n "${!vmr:-}" ]]; then
-    export "${v9s}=${!vmr}"
-  fi
+  local name="$1" v9s="V9S_${name}" vmr="VMROGUE_${name}"
+  [[ -z "${!v9s:-}" && -n "${!vmr:-}" ]] && export "${v9s}=${!vmr}"
 }
 for _v in SKIP_CILIUM SKIP_CDI SKIP_KUBEVIRT SKIP_METRICS_SERVER SKIP_MULTUS \
   CILIUM_CHART_VERSION KUBEVIRT_VERSION CDI_VERSION INSTALL_METRICS_SERVER \
@@ -27,12 +21,11 @@ for _v in SKIP_CILIUM SKIP_CDI SKIP_KUBEVIRT SKIP_METRICS_SERVER SKIP_MULTUS \
   _map "${_v}"
 done
 
-echo "== Cluster prerequisites (Cilium / KubeVirt / CDI) =="
-echo "  See CLUSTER_SETUP.txt for all flags (V9S_* and VMROGUE_* are equivalent)."
-echo "  Examples:"
-echo "    V9S_SKIP_CILIUM=1 ./install-cluster.sh"
-echo "    V9S_SKIP_CDI=1 ./install-cluster.sh"
-echo "    VMROGUE_CDI_VERSION=v1.65.0 ./install-cluster.sh"
+pkg_banner "${PRODUCT:-Cluster} prerequisites" "Cilium · metrics-server · KubeVirt · CDI"
+pkg_info "Flags: V9S_* and VMROGUE_* (see CLUSTER_SETUP.txt)"
+pkg_detail "Skip examples: V9S_SKIP_CILIUM=1 V9S_SKIP_CDI=1"
 echo ""
-
+pkg_phase "Installer"
+pkg_info "Running cluster/install-cluster-prereqs.sh (may take 10–20 minutes)…"
+echo ""
 exec bash "${SCRIPT}" "$@"
