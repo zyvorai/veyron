@@ -10,7 +10,28 @@ export const Footer: React.FC = () => {
       <div style={{
         maxWidth: '1400px',
         margin: '0 auto',
-        padding: '48px 24px 24px',
+        padding: '32px 24px 24px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '24px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        marginBottom: '32px',
+      }}>
+        <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" title="Zyvor — zyvor.dev">
+          <img src="/zyvor-logo.png" alt="Zyvor" style={{ height: 32, width: 'auto', display: 'block' }} />
+        </a>
+        <p style={{ margin: 0, fontSize: '13px', opacity: 0.85 }}>
+          <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: '#f97316', textDecoration: 'none' }}>
+            zyvor.dev
+          </a>
+          {' · '}© @zyvor 2026 · VMRogue
+        </p>
+      </div>
+      <div style={{
+        maxWidth: '1400px',
+        margin: '0 auto',
+        padding: '0 24px 24px',
       }}>
         {/* Footer Columns */}
         <div style={{
@@ -183,7 +204,7 @@ export const Footer: React.FC = () => {
             fontSize: '12px',
             opacity: 0.6,
           }}>
-            © {new Date().getFullYear()} VMRogue. UI layout from HyperSDK dashboard-react; data from the VMRogue API.
+            © @zyvor 2026 · <a href="https://zyvor.dev" style={{ color: '#f97316' }}>zyvor.dev</a> · VMRogue
           </p>
           <div style={{ display: 'flex', gap: '24px' }}>
             <a
