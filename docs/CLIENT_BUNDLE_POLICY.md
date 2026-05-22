@@ -47,14 +47,17 @@ forge bundles **minimal** `services/api-gateway/` (entry module) + full **venv**
 | IronWolf | A | No | `ironwolf-web` + `dashboard/dist` |
 | forge | C | No full tree | **`venv/`** + thin API tree + `ui/dist` |
 
-## `install.sh` vs `install-full.sh` (machina only)
+## Customer install scripts
 
 | Script | Purpose |
 |--------|---------|
-| `install.sh` | Lightweight: deps check, config template, verify bundled binaries |
-| `install-full.sh` | Production host: OS deps (mkosi, packer, …), systemd, `/usr/local/bin`, TLS — **uses bundle, no compile** |
+| **`install-everything.sh`** | **Recommended.** Runs `install.sh`, host tests, optional `install-full.sh`, smoke test — prints LAN URL |
+| `install.sh` | Automatic: deps, config from `.example`, verify binaries, tests; machina also runs `install-full.sh` |
+| `install-full.sh` | **Machina only:** production host (systemd, TLS, firewall). Called automatically unless `ZYVOR_AUTO_INSTALL=0` |
 
-Do not copy the repo `install.sh` into tarballs without **bundle mode** (machina commit `721537e+`).
+Tarballs include `.package-lib/product.meta` (scheme, port, finish hints) and `ZYVOR_INSTALL.txt`.
+
+Do not copy the repo root `install.sh` into tarballs without **bundle mode** (machina).
 
 ## Remote pack script naming
 
