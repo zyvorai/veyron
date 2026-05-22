@@ -1,0 +1,19 @@
+# Cilium: default-deny egress namespaces block general internet for virt-launcher pods
+# (guest NAT runs through the launcher). This clusterwide policy allows all
+# virt-launcher pods in any namespace to reach the cluster and the internet.
+#
+# Requires CRD: ciliumclusterwidenetworkpolicies.cilium.io
+# Applied by deploy-all-remote.sh / deploy-k8s-remote.sh when Cilium is present.
+# Per-VM egress: VMRogue API PUT /api/v1/vms/:ns/:name/network/internet
+---
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: allow-kubevirt-virt-launcher-egress
+spec:
+  endpointSelector:
+    matchLabels:
+      kubevirt.io: virt-launcher
+  egress:
+    - toEntities:
+        - all

@@ -35,6 +35,7 @@ REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 FETCH=false
 REUSE_IMAGE=false
 INCLUDE_VIRTCTL=true
+SKIP_DEPS=false
 POSITIONAL=()
 
 for arg in "$@"; do
@@ -42,6 +43,7 @@ for arg in "$@"; do
         --fetch) FETCH=true ;;
         --reuse-image) REUSE_IMAGE=true ;;
         --no-virtctl) INCLUDE_VIRTCTL=false ;;
+        --skip-deps) SKIP_DEPS=true ;;
         -h|--help)
             sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
@@ -98,17 +100,40 @@ if [[ "${VMROGUE_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
     log "SSH OK"
 fi
 
-CTR_BUILD=$(ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo none; fi')
-if [[ "${CTR_BUILD}" = "none" ]]; then
-    echo "Remote host needs podman or docker to build the package image." >&2
-    exit 1
-fi
-
 step "Sync source → ${HOST}:${BUILD_DIR}"
 ssh "${REMOTE}" "mkdir -p '${BUILD_DIR}'"
 rsync -az --delete "${RSYNC_EXCLUDES[@]}" \
     -e "ssh -o StrictHostKeyChecking=no" \
     "${REPO_DIR}/" "${REMOTE}:${BUILD_DIR}/"
+
+if ! $SKIP_DEPS; then
+    step "Install build dependencies on remote (podman/docker)"
+    ssh "${REMOTE}" bash -s <<'REMOTE_DEPS'
+set -euo pipefail
+SUDO=""
+[ "$(id -u)" -ne 0 ] && command -v sudo &>/dev/null && SUDO=sudo
+if command -v podman &>/dev/null || command -v docker &>/dev/null; then
+  echo "  container runtime: OK"
+  exit 0
+fi
+if command -v dnf &>/dev/null; then
+  $SUDO dnf install -y podman 2>&1 | tail -5
+elif command -v apt-get &>/dev/null; then
+  $SUDO apt-get update -qq
+  $SUDO apt-get install -y podman 2>&1 | tail -5 || $SUDO apt-get install -y docker.io 2>&1 | tail -5
+else
+  echo "Install podman or docker on the build host" >&2
+  exit 1
+fi
+echo "  build deps: OK"
+REMOTE_DEPS
+fi
+
+CTR_BUILD=$(ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo none; fi')
+if [[ "${CTR_BUILD}" = "none" ]]; then
+    echo "Remote host needs podman or docker (re-run without --skip-deps)." >&2
+    exit 1
+fi
 
 step "Build package image on remote (${CTR_BUILD})"
 BUILD_NEEDED=true
@@ -133,6 +158,7 @@ step "Extract binaries into ${OUT_DIR}"
 ssh "${REMOTE}" bash -s <<REMOTE_PACK
 set -euo pipefail
 OUT_DIR='${OUT_DIR}'
+BUILD_DIR='${BUILD_DIR}'
 IMAGE_TAG='${IMAGE_TAG}'
 INCLUDE_VIRTCTL='${INCLUDE_VIRTCTL}'
 ARTIFACT='${ARTIFACT}'
@@ -160,35 +186,100 @@ RUST_LOG=info
 VMROGUE_SCHEDULER_LEASE_DISABLED=1
 ENV_EOF
 
+LIB="\${BUILD_DIR}/scripts/lib"
+for f in package-install.sh package-client-install.sh package-client-test.sh; do
+  test -f "\${LIB}/\${f}" || { echo "missing \${LIB}/\${f}" >&2; exit 1; }
+done
+cp "\${LIB}/package-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install.sh"
+cp "\${LIB}/package-client-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh"
+cp "\${LIB}/package-client-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-package.sh"
+mkdir -p "\${OUT_DIR}/\${ARTIFACT}/.package-lib"
+cp "\${LIB}/package-uninstall-lib.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
+cp "\${LIB}/package-uninstall.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh" \
+  "\${OUT_DIR}/\${ARTIFACT}/test-package.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
+
+CLUSTER_SRC="\${BUILD_DIR}/scripts/cluster"
+mkdir -p "\${OUT_DIR}/\${ARTIFACT}/cluster/bootstrap"
+cp -a "\${CLUSTER_SRC}/." "\${OUT_DIR}/\${ARTIFACT}/cluster/"
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/cluster/install-cluster-prereqs.sh" 2>/dev/null || true
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/cluster/bootstrap/ensure-cilium-pod-egress.sh" 2>/dev/null || true
+cp "\${LIB}/CLUSTER_SETUP.txt" "\${LIB}/PREREQUISITES.txt" "\${OUT_DIR}/\${ARTIFACT}/"
+cp "\${LIB}/package-cluster-prereqs-run.sh" "\${OUT_DIR}/\${ARTIFACT}/install-cluster.sh"
+cp "\${LIB}/package-cluster-bootstrap.sh" "\${OUT_DIR}/\${ARTIFACT}/apply-cluster-network.sh"
+cp "\${LIB}/package-cluster-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-cluster.sh"
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/install-cluster.sh" "\${OUT_DIR}/\${ARTIFACT}/apply-cluster-network.sh" "\${OUT_DIR}/\${ARTIFACT}/test-cluster.sh"
+cat > "\${OUT_DIR}/\${ARTIFACT}/cluster/env.sh" <<'ENVSH'
+PRODUCT=VMRogue
+APP_NAMESPACE=vmrogue-system
+APP_PORT=5151
+ENV_PREFIX=VMROGUE
+ENVSH
+
+cat > "\${OUT_DIR}/\${ARTIFACT}/QUICKSTART.txt" <<'QEOF'
+VMRogue — install guide
+========================
+
+CLUSTER FIRST (once per cluster — needs kubectl + admin kubeconfig)
+  export KUBECONFIG=/path/to/kubeconfig
+  ./install-cluster.sh              # Cilium + KubeVirt + CDI (see CLUSTER_SETUP.txt for flags)
+  # Deploy VMRogue in-cluster (Helm/k8s from source repo)
+  ./apply-cluster-network.sh        # Cilium egress (skip: VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1)
+  ./test-cluster.sh
+
+CLIENT ON THIS MACHINE
+  1. tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
+  2. ./install.sh
+  3. nano vmrogue.env   (KUBECONFIG + VMROGUE_API_KEY)
+  4. set -a && source vmrogue.env && set +a
+  5. ./vmrogue api-serve --host 0.0.0.0 --port 5151
+  6. ./test-package.sh
+
+Checklist: PREREQUISITES.txt  |  Flags: CLUSTER_SETUP.txt
+Remove: ./uninstall.sh --yes [--remove-dir]
+QEOF
+
 cat > "\${OUT_DIR}/\${ARTIFACT}/README.txt" <<README_EOF
 VMRogue ${VERSION} — Linux amd64 client bundle
 =============================================
 
-Contents:
-  vmrogue              CLI + API server (embedded dashboard)
-  virtctl              Optional KubeVirt helper (if present)
-  vmrogue.env.example  Environment template
+WHAT IS IN THIS ARCHIVE
+  vmrogue, virtctl (optional)
+  install.sh / uninstall.sh     Client on this machine
+  install-cluster.sh            Cluster: Cilium + KubeVirt + CDI (kubectl admin)
+  apply-cluster-network.sh      Cilium egress bootstrap
+  test-cluster.sh / test-package.sh
+  CLUSTER_SETUP.txt             All flags and order of operations
+  PREREQUISITES.txt             Checklist
+  cluster/                      Prereq installer + bootstrap YAML
 
-Requirements:
-  - Kubernetes cluster with KubeVirt (and kubeconfig access)
-  - Linux x86_64
+WHAT MUST EXIST (read PREREQUISITES.txt)
+  - Kubernetes + KubeVirt (Deployed) + kubeconfig with VM RBAC
+  - CDI recommended (DataVolumes); skip with VMROGUE_SKIP_CDI=1
+  - Cilium: only if your CNI is Cilium — then run apply-cluster-network.sh
+  - VMRogue deployed IN the cluster (Helm/k8s — separate from this tarball)
 
-Quick start (API + dashboard):
-  export KUBECONFIG=/path/to/kubeconfig
-  export VMROGUE_API_KEY=your-secret
-  ./vmrogue api-serve --host 0.0.0.0 --port 5151
-  Open http://<this-host>:5151/dashboard
+ORDER: install-cluster.sh → deploy VMRogue in cluster → apply-cluster-network.sh
+      → install.sh → vmrogue.env → test-cluster.sh → api-serve
 
-CLI examples:
-  ./vmrogue list --namespace all
-  ./vmrogue create my-vm --template ubuntu-22.04
+CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
+  VMROGUE_SKIP_CILIUM=1  VMROGUE_SKIP_CDI=1  VMROGUE_SKIP_KUBEVIRT=1
+  VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1
+  VMROGUE_KUBEVIRT_VERSION / VMROGUE_CDI_VERSION / VMROGUE_CILIUM_CHART_VERSION
 
-HTTPS:
-  ./vmrogue api-serve --host 0.0.0.0 --port 5151 \\
-    --tls --tls-cert /path/to/tls.crt --tls-key /path/to/tls.key
+CLIENT
+  ./install.sh && nano vmrogue.env && ./vmrogue api-serve --host 0.0.0.0 --port 5151
+  http://<host>:5151/dashboard
 
-Full guide: docs/PACKAGE_BINARY_REMOTE.md (in the VMRogue source repo)
+UNINSTALL: ./uninstall.sh --yes [--remove-dir]
 README_EOF
+
+for req in install.sh uninstall.sh README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
+  install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
+  install-client-deps.sh vmrogue vmrogue.env.example; do
+  test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }
+done
+echo "Customer bundle OK (install.sh, README, QUICKSTART, test scripts, binary)"
 
 cd "\${OUT_DIR}"
 rm -f "\${ARTIFACT}.tar.gz" "\${ARTIFACT}.tar.gz.sha256"

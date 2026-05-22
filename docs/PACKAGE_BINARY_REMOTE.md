@@ -6,29 +6,67 @@ The build runs on a **Linux amd64 machine** you control (build server, k3s node,
 
 ## What you get
 
-After `./scripts/package-binary-remote.sh` completes, the remote host has:
+After `./scripts/package-binary-remote.sh` completes, the **tar.gz** contains everything a customer needs:
 
 ```
-~/vmrogue-dist/
-  vmrogue-0.2.0-linux-amd64/
-    vmrogue              # static Linux amd64 binary (~26 MB)
-    virtctl              # KubeVirt CLI helper (from image build)
-    vmrogue.env.example
-    README.txt
-  vmrogue-0.2.0-linux-amd64.tar.gz
-  vmrogue-0.2.0-linux-amd64.tar.gz.sha256
+vmrogue-0.2.0-linux-amd64/
+  vmrogue                  # binary
+  virtctl                  # optional
+  install.sh               # client on this machine
+  install-cluster.sh       # Cilium + KubeVirt + CDI (cluster admin)
+  apply-cluster-network.sh # Cilium egress bootstrap
+  test-cluster.sh          # verify cluster prerequisites
+  test-package.sh          # client smoke test
+  CLUSTER_SETUP.txt        # flags and order of operations
+  PREREQUISITES.txt        # checklist
+  cluster/                 # prereq installer + bootstrap YAML
+  vmrogue.env.example
+  README.txt / QUICKSTART.txt
 ```
+
+Checksum file: `vmrogue-0.2.0-linux-amd64.tar.gz.sha256`
 
 With `--fetch`, the `.tar.gz` and checksum are also copied to **`dist/`** in your local repo.
+
+### Customer install
+
+**Cluster (once per Kubernetes cluster):**
+
+```bash
+export KUBECONFIG=/path/to/kubeconfig
+./install-cluster.sh              # VMROGUE_SKIP_CDI=1 etc. — see CLUSTER_SETUP.txt
+# Deploy VMRogue in-cluster (Helm/k8s from source repo)
+./apply-cluster-network.sh        # if Cilium default-deny egress
+./test-cluster.sh
+```
+
+**Client on this machine:**
+
+```bash
+tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
+./install.sh
+nano vmrogue.env   # KUBECONFIG + API key
+./test-package.sh
+```
+
+### Customer uninstall
+
+```bash
+./uninstall.sh --yes                  # stop + remove config
+./uninstall.sh --yes --remove-dir     # also delete the extracted folder
+./uninstall.sh --yes --keep-config    # stop only, keep vmrogue.env
+```
 
 ## Prerequisites
 
 ### On the remote build host
 
+The package script **installs build dependencies automatically** (like `deploy-remote.sh`), unless you pass **`--skip-deps`**.
+
 | Requirement | Notes |
 |-------------|--------|
 | **Linux x86_64** | Same arch as the client binary |
-| **podman** or **docker** | Used to run the multi-stage `Dockerfile` (musl static binary) |
+| **podman** or **docker** | Installed via `dnf`/`apt` if missing; used for the musl static build |
 | **SSH access** | Your laptop can `ssh user@host` with key auth |
 | **Disk / RAM** | ~2 GB free disk; 4+ GB RAM recommended for Rust compile inside the image build |
 
@@ -62,6 +100,7 @@ First run typically takes **10–15 minutes** (Rust compile inside the container
 | `--fetch` | `scp` the tarball and `.sha256` into `./dist/` |
 | `--reuse-image` | Skip `podman build` if `vmrogue-package:<version>` already exists |
 | `--no-virtctl` | Smaller tarball without `virtctl` |
+| `--skip-deps` | Do not auto-install podman/docker on the build host |
 
 ### Environment
 
@@ -88,6 +127,20 @@ sha256sum -c vmrogue-0.2.0-linux-amd64.tar.gz.sha256
 
 Do **not** rely on deploy scripts for client installs unless you are also operating their cluster.
 
+## What is inside the tarball
+
+Every client bundle includes:
+
+| File | Purpose |
+|------|---------|
+| **`install.sh`** | **Start here** — deps + config + verify in one command |
+| **`uninstall.sh`** | Remove install from the customer machine (`--remove-dir` deletes folder) |
+| **`QUICKSTART.txt`** | Short numbered steps for copy-paste |
+| **`README.txt`** | Full install, deploy, test, troubleshooting |
+| **`install-client-deps.sh`** | OS/runtime packages on the client host |
+| **`test-package.sh`** | Smoke test after install |
+| **`*.env.example`** | Environment template |
+
 ## Client install and run
 
 On a **Linux x86_64** machine that can reach the Kubernetes API:
@@ -95,11 +148,14 @@ On a **Linux x86_64** machine that can reach the Kubernetes API:
 ```bash
 tar xzf vmrogue-0.2.0-linux-amd64.tar.gz
 cd vmrogue-0.2.0-linux-amd64
+sha256sum -c ../vmrogue-0.2.0-linux-amd64.tar.gz.sha256
+./install-client-deps.sh          # optional
 cp vmrogue.env.example vmrogue.env
 # Edit vmrogue.env: KUBECONFIG, VMROGUE_API_KEY
 
 set -a && source vmrogue.env && set +a
 ./vmrogue api-serve --host 0.0.0.0 --port 5151
+./test-package.sh
 ```
 
 Open **`http://<server-ip>:5151/dashboard`**, enter the API key.

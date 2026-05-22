@@ -1,0 +1,95 @@
+VMRogue — Cluster setup (Cilium, KubeVirt, CDI)
+================================================
+
+Run these steps ONCE on a machine that has kubectl and a cluster-admin kubeconfig
+(the same KUBECONFIG you put in vmrogue.env).
+
+WHAT MUST EXIST FOR VMROGUE TO WORK
+-----------------------------------
+  1. Kubernetes cluster (k3s, kubeadm, managed K8s, …)
+  2. kubectl access with permissions to manage KubeVirt VMs, CDI, Cilium policies
+  3. KubeVirt installed and phase=Deployed
+  4. CDI (recommended) for disk import / DataVolumes
+  5. Cilium (optional): only if your cluster uses Cilium CNI — then apply egress bootstrap
+  6. This client bundle: ./install.sh then vmrogue.env with KUBECONFIG + VMROGUE_API_KEY
+
+ORDER OF OPERATIONS (do not skip)
+---------------------------------
+  Step A  ./install-cluster.sh          # cluster: Cilium + KubeVirt + CDI (+ metrics-server)
+  Step B  Deploy VMRogue IN the cluster # Helm/k8s or your GitOps (not in this tarball)
+  Step C  ./apply-cluster-network.sh    # Cilium egress for vmrogue-system + virt-launcher
+  Step D  ./install.sh && edit vmrogue.env
+  Step E  ./test-cluster.sh && ./test-package.sh
+  Step F  Start client: ./vmrogue api-serve …
+
+STEP A — install-cluster.sh (automated cluster prerequisites)
+-------------------------------------------------------------
+  export KUBECONFIG=/path/to/kubeconfig
+
+  # Defaults: Cilium (if no Flannel/Calico), metrics-server, KubeVirt v1.4.0, CDI v1.59.0
+  ./install-cluster.sh
+
+  SKIP FLAGS (set before ./install-cluster.sh):
+    VMROGUE_SKIP_CILIUM=1          or V9S_SKIP_CILIUM=1
+    VMROGUE_SKIP_CDI=1             or V9S_SKIP_CDI=1
+    VMROGUE_SKIP_KUBEVIRT=1        or V9S_SKIP_KUBEVIRT=1
+    VMROGUE_SKIP_METRICS_SERVER=1  or V9S_SKIP_METRICS_SERVER=1
+
+  VERSION OVERRIDES:
+    VMROGUE_KUBEVIRT_VERSION=v1.4.0
+    VMROGUE_CDI_VERSION=v1.65.0
+    VMROGUE_CILIUM_CHART_VERSION=1.19.4
+
+  OPTIONAL INSTALL (off by default):
+    V9S_INSTALL_MULTUS=1
+    V9S_INSTALL_SNAPSHOT_CONTROLLER=1
+    V9S_INSTALL_METALLB=1
+    V9S_INSTALL_PROMETHEUS=1
+
+  Examples:
+    VMROGUE_SKIP_CILIUM=1 ./install-cluster.sh          # already have Calico/Flannel
+    VMROGUE_SKIP_CDI=1 ./install-cluster.sh             # air-gapped, no CDI
+    VMROGUE_CDI_VERSION=v1.65.0 ./install-cluster.sh
+
+STEP B — Deploy VMRogue inside the cluster
+------------------------------------------
+  This tarball is the CLIENT (API + dashboard on a host). You still deploy the
+  in-cluster API/operator separately, e.g.:
+    ./scripts/deploy-k8s-remote.sh <host> <user>     # from VMRogue source repo
+  Or Helm chart charts/vmrogue.
+
+  Deploy flags (source repo, not client tarball):
+    VMROGUE_SKIP_CDI=1
+    VMROGUE_CDI_VERSION=v1.65.0
+    VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1
+    VMROGUE_REQUIRE_KUBEVIRT=1
+
+STEP C — apply-cluster-network.sh (Cilium egress)
+-------------------------------------------------
+  Only when Cilium CRDs exist AND default-deny egress blocks API or VM internet:
+
+    export KUBECONFIG=...
+    ./apply-cluster-network.sh
+
+  Skip:
+    VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 ./apply-cluster-network.sh
+
+  Applies manifests in cluster/bootstrap/:
+    - vmrogue-system API egress
+    - virt-launcher clusterwide egress (guest NAT / internet)
+
+STEP D–F — Client install and test
+----------------------------------
+    ./install.sh
+    nano vmrogue.env    # KUBECONFIG, VMROGUE_API_KEY
+    ./test-cluster.sh   # cluster readiness
+    ./test-package.sh   # binary + optional API health
+
+TROUBLESHOOTING
+---------------
+  Empty VM list        → KUBECONFIG, RBAC, KubeVirt Deployed
+  VM no internet       → ./apply-cluster-network.sh (Cilium CCNP)
+  CDI import fails     → install CDI or VMROGUE_SKIP_CDI=1 if not using DataVolumes
+  Connection refused   → api-serve --host 0.0.0.0 --port 5151, firewall
+
+See PREREQUISITES.txt for a one-page checklist.

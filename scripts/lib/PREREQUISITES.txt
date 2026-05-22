@@ -1,0 +1,26 @@
+VMRogue — Prerequisites checklist
+=================================
+
+CLUSTER (Kubernetes)
+  [ ] kubectl works: kubectl cluster-info
+  [ ] KubeVirt: kubectl get kubevirt -n kubevirt → phase Deployed
+  [ ] CDI (recommended): kubectl get crd datavolumes.cdi.kubevirt.io
+  [ ] Cilium (if used): kubectl get crd ciliumnetworkpolicies.cilium.io
+  [ ] Ran ./install-cluster.sh OR cluster was pre-provisioned
+  [ ] Ran ./apply-cluster-network.sh if Cilium default-deny egress is enabled
+  [ ] VMRogue deployed in-cluster (Helm/k8s) — separate from this client tarball
+
+CLIENT MACHINE (this tarball)
+  [ ] Linux x86_64
+  [ ] ./install.sh completed
+  [ ] vmrogue.env: KUBECONFIG points to admin kubeconfig
+  [ ] vmrogue.env: VMROGUE_API_KEY set
+  [ ] ./test-cluster.sh passes
+  [ ] ./test-package.sh passes
+  [ ] ./vmrogue api-serve --host 0.0.0.0 --port 5151
+
+QUICK COMMANDS
+  ./install-cluster.sh
+  ./apply-cluster-network.sh
+  ./test-cluster.sh
+  ./test-package.sh
