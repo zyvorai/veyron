@@ -4,8 +4,10 @@ set -euo pipefail
 KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"  # …/VMRogue/scripts/zyvor-branding → repo root's parent (tt)
 
+# All ssahani + hypersdk products under ~/tt (see sync-zyvor-branding.sh for web paths).
 REPOS=(
   VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
+  vmspawn nightforge hypersdk-web hypercluster
 )
 
 vmrogue_root="$(cd "${KIT}/../.." && pwd)"
