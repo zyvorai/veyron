@@ -90,24 +90,27 @@ RSYNC_EXCLUDES=(
     --exclude='*.iso'
 )
 
-log() { printf '  %s\n' "$*"; }
-step() { echo ""; printf '── %s\n' "$*"; }
+# shellcheck source=lib/package-remote-ui.sh
+source "${SCRIPT_DIR}/lib/package-remote-ui.sh"
+
+pkg_remote_banner "VMRogue" "${VERSION}" "${REMOTE}" "${ARCH}"
 
 if [[ "${VMROGUE_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
-    step "Preflight: SSH (${REMOTE})"
+    pkg_remote_phase "Preflight"
     ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT}" -o StrictHostKeyChecking=accept-new \
         "${REMOTE}" "true"
-    log "SSH OK"
+    pkg_ok "SSH ${REMOTE}"
 fi
 
-step "Sync source → ${HOST}:${BUILD_DIR}"
+pkg_remote_phase "Sync source"
+pkg_remote_kv "Remote build dir" "${BUILD_DIR}"
 ssh "${REMOTE}" "mkdir -p '${BUILD_DIR}'"
 rsync -az --delete "${RSYNC_EXCLUDES[@]}" \
     -e "ssh -o StrictHostKeyChecking=no" \
     "${REPO_DIR}/" "${REMOTE}:${BUILD_DIR}/"
 
 if ! $SKIP_DEPS; then
-    step "Install build dependencies on remote (podman/docker)"
+    pkg_remote_phase "Build dependencies"
     ssh "${REMOTE}" bash -s <<'REMOTE_DEPS'
 set -euo pipefail
 SUDO=""
@@ -135,12 +138,12 @@ if [[ "${CTR_BUILD}" = "none" ]]; then
     exit 1
 fi
 
-step "Build package image on remote (${CTR_BUILD})"
+pkg_remote_phase "Container build (${CTR_BUILD})"
 BUILD_NEEDED=true
 if $REUSE_IMAGE; then
     if ssh "${REMOTE}" "${CTR_BUILD} image exists '${IMAGE_TAG}' >/dev/null 2>&1"; then
         BUILD_NEEDED=false
-        log "Reusing existing image ${IMAGE_TAG} (--reuse-image)"
+        pkg_ok "Reusing image ${IMAGE_TAG} (--reuse-image)"
     fi
 fi
 
@@ -149,12 +152,13 @@ if $BUILD_NEEDED; then
     if [[ "${CTR_BUILD}" = "docker" ]]; then
         BUILD_CMD="cd '${BUILD_DIR}' && DOCKER_BUILDKIT=1 docker build --progress=plain -t '${IMAGE_TAG}' ."
     fi
-    log "Building (this usually takes 10–15 minutes on first run)…"
+    pkg_info "First build often takes 10–15 minutes…"
     ssh "${REMOTE}" "${BUILD_CMD}" 2>&1 | sed 's/^/  [build] /'
-    log "Image ${IMAGE_TAG} ready"
+    pkg_ok "Image ${IMAGE_TAG} ready"
 fi
 
-step "Extract binaries into ${OUT_DIR}"
+pkg_remote_phase "Assemble customer bundle"
+pkg_remote_kv "Output" "${OUT_DIR}/${ARTIFACT}"
 ssh "${REMOTE}" bash -s <<REMOTE_PACK
 set -euo pipefail
 OUT_DIR='${OUT_DIR}'
@@ -194,6 +198,7 @@ cp "\${LIB}/package-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install.sh"
 cp "\${LIB}/package-client-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh"
 cp "\${LIB}/package-client-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-package.sh"
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}/.package-lib"
+cp "\${LIB}/package-ui.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
 cp "\${LIB}/package-uninstall-lib.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
 cp "\${LIB}/package-uninstall.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
 chmod +x "\${OUT_DIR}/\${ARTIFACT}/install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh" \
@@ -293,40 +298,19 @@ REMOTE_PACK
 REMOTE_TARBALL="${OUT_DIR}/${TARBALL}"
 REMOTE_CHECKSUM="${OUT_DIR}/${CHECKSUM}"
 
-step "Package ready on remote"
-log "Tarball:  ${REMOTE}:${REMOTE_TARBALL}"
-log "Checksum: ${REMOTE}:${REMOTE_CHECKSUM}"
-
 if $FETCH; then
-    step "Fetching tarball to ${LOCAL_DIST}/"
+    pkg_remote_phase "Fetch to laptop"
     mkdir -p "${LOCAL_DIST}"
     scp -o StrictHostKeyChecking=no \
         "${REMOTE}:${REMOTE_TARBALL}" \
         "${REMOTE}:${REMOTE_CHECKSUM}" \
         "${LOCAL_DIST}/"
-    log "Local: ${LOCAL_DIST}/${TARBALL}"
-    log "Local: ${LOCAL_DIST}/${CHECKSUM}"
+    pkg_ok "Local: ${LOCAL_DIST}/${TARBALL}"
     if command -v shasum >/dev/null 2>&1; then
-        (cd "${LOCAL_DIST}" && shasum -a 256 -c "${CHECKSUM}") && log "Checksum OK (shasum)"
+        (cd "${LOCAL_DIST}" && shasum -a 256 -c "${CHECKSUM}") && pkg_ok "Checksum verified"
     elif command -v sha256sum >/dev/null 2>&1; then
-        (cd "${LOCAL_DIST}" && sha256sum -c "${CHECKSUM}") && log "Checksum OK (sha256sum)"
+        (cd "${LOCAL_DIST}" && sha256sum -c "${CHECKSUM}") && pkg_ok "Checksum verified"
     fi
 fi
 
-echo ""
-echo "════════════════════════════════════════"
-echo "  Package complete"
-echo "════════════════════════════════════════"
-echo "  Remote:  ${USER}@${HOST}"
-echo "  Archive: ${REMOTE_TARBALL}"
-echo ""
-echo "  Download:"
-echo "    scp ${REMOTE}:${REMOTE_TARBALL} ."
-echo "    scp ${REMOTE}:${REMOTE_CHECKSUM} ."
-if $FETCH; then
-    echo ""
-    echo "  Fetched to: ${LOCAL_DIST}/${TARBALL}"
-fi
-echo ""
-echo "  Docs: docs/PACKAGE_BINARY_REMOTE.md"
-echo "════════════════════════════════════════"
+pkg_remote_done "VMRogue" "${REMOTE}:${REMOTE_TARBALL}" "${REMOTE}:${REMOTE_CHECKSUM}"

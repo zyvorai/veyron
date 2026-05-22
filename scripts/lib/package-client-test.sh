@@ -1,28 +1,52 @@
 #!/usr/bin/env bash
 # Smoke-test VMRogue client bundle after install.
-set -euo pipefail
+set -uo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
-echo "== VMRogue package test =="
-test -x ./vmrogue || { echo "FAIL: ./vmrogue missing"; exit 1; }
-./vmrogue --help >/dev/null && echo "  OK: vmrogue --help"
-if [ -x ./test-cluster.sh ] && [ -n "${KUBECONFIG:-}" ] && [ -f "${KUBECONFIG}" ]; then
-  ./test-cluster.sh || echo "  WARN: test-cluster.sh — fix cluster (see CLUSTER_SETUP.txt)"
-elif [ -x ./test-cluster.sh ]; then
-  echo "  SKIP: set KUBECONFIG in vmrogue.env then ./test-cluster.sh"
-fi
-if [ -n "${KUBECONFIG:-}" ] && [ -f "${KUBECONFIG}" ]; then
-  ./vmrogue doctor 2>&1 | head -20 && echo "  OK: vmrogue doctor (see output above)"
+# shellcheck source=/dev/null
+[[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
+
+_PKG_SESSION_START=${SECONDS}
+pkg_counters_reset
+pkg_banner "VMRogue package test" "Client binary · optional cluster · optional API"
+
+if [[ -x ./vmrogue ]]; then
+  ./vmrogue --help >/dev/null 2>&1 && pkg_ok "vmrogue --help" || pkg_fail "vmrogue --help"
 else
-  echo "  SKIP: set KUBECONFIG to run vmrogue doctor"
+  pkg_fail "./vmrogue missing"
 fi
-if [ -n "${VMROGUE_API_KEY:-}" ]; then
-  if curl -sf "http://127.0.0.1:${VMROGUE_PORT:-5151}/api/v1/health" >/dev/null 2>&1; then
-    echo "  OK: API health on :${VMROGUE_PORT:-5151}"
+
+if [[ -x ./test-cluster.sh ]] && [[ -n "${KUBECONFIG:-}" ]] && [[ -f "${KUBECONFIG}" ]]; then
+  if ./test-cluster.sh; then
+    pkg_ok "test-cluster.sh"
   else
-    echo "  SKIP: API not listening (start: ./vmrogue api-serve --host 0.0.0.0 --port ${VMROGUE_PORT:-5151})"
+    pkg_warn "test-cluster.sh — see CLUSTER_SETUP.txt"
+  fi
+elif [[ -x ./test-cluster.sh ]]; then
+  pkg_skip "test-cluster.sh (set KUBECONFIG in vmrogue.env)"
+else
+  pkg_skip "test-cluster.sh not in bundle"
+fi
+
+if [[ -n "${KUBECONFIG:-}" ]] && [[ -f "${KUBECONFIG}" ]]; then
+  if ./vmrogue doctor 2>&1 | head -15 | while read -r line; do pkg_detail "${line}"; done; then
+    pkg_ok "vmrogue doctor (see lines above)"
+  else
+    pkg_warn "vmrogue doctor"
   fi
 else
-  echo "  SKIP: set VMROGUE_API_KEY and start api-serve to test HTTP health"
+  pkg_skip "vmrogue doctor (set KUBECONFIG)"
 fi
-echo "Done."
+
+if [[ -n "${VMROGUE_API_KEY:-}" ]]; then
+  if curl -sf "http://127.0.0.1:${VMROGUE_PORT:-5151}/api/v1/health" >/dev/null 2>&1; then
+    pkg_ok "API health :${VMROGUE_PORT:-5151}"
+  else
+    pkg_skip "API not listening — start: ./vmrogue api-serve --host 0.0.0.0 --port ${VMROGUE_PORT:-5151}"
+  fi
+else
+  pkg_skip "HTTP health (set VMROGUE_API_KEY and start api-serve)"
+fi
+
+pkg_summary "Package test"
+[[ "${_PKG_COUNTERS_FAIL}" -eq 0 ]]

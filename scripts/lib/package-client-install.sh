@@ -1,18 +1,21 @@
 #!/usr/bin/env bash
 # Client-side runtime dependencies for VMRogue binary bundle.
-# Run on the target Linux host after extracting the tarball (sudo if installing kubectl).
 set -euo pipefail
-echo "== VMRogue client dependencies =="
+# shellcheck source=/dev/null
+[[ -f "$(dirname "$0")/package-ui.sh" ]] && source "$(dirname "$0")/package-ui.sh"
+[[ -f "$(dirname "$0")/.package-lib/package-ui.sh" ]] && source "$(dirname "$0")/.package-lib/package-ui.sh"
+
+pkg_banner "VMRogue client dependencies" "Optional kubectl for cluster checks"
 if command -v kubectl &>/dev/null; then
-  echo "  kubectl: $(kubectl version --client -o yaml 2>/dev/null | head -1 || kubectl version --client)"
+  pkg_ok "kubectl: $(kubectl version --client -o yaml 2>/dev/null | head -1 || kubectl version --client 2>/dev/null | head -1)"
 else
-  echo "  Installing kubectl (optional, for cluster checks)..."
+  pkg_info "Installing kubectl (optional)…"
   if command -v dnf &>/dev/null; then
-    sudo dnf install -y kubectl 2>/dev/null || true
+    sudo dnf install -y kubectl 2>/dev/null && pkg_ok "kubectl installed" || pkg_warn "kubectl install failed"
   elif command -v apt-get &>/dev/null; then
-    sudo apt-get update -qq && sudo apt-get install -y kubectl 2>/dev/null || true
+    sudo apt-get update -qq && sudo apt-get install -y kubectl 2>/dev/null && pkg_ok "kubectl installed" || pkg_warn "kubectl install failed"
   fi
 fi
-echo "  Cluster: Kubernetes + KubeVirt required (see README.txt)"
-echo "  Binary: static — no extra runtime libs for ./vmrogue"
-echo "Done."
+pkg_info "Cluster needs Kubernetes + KubeVirt (see CLUSTER_SETUP.txt)"
+pkg_ok "vmrogue binary is static — no extra runtime libs"
+pkg_summary "Dependencies"
