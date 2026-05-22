@@ -1,4 +1,5 @@
 import React from 'react';
+import { zyvorLogoSrc, ZYVOR_URL, ZYVOR_COPY } from './ZyvorBrand';
 
 export const Footer: React.FC = () => {
   return (
@@ -18,14 +19,14 @@ export const Footer: React.FC = () => {
         borderBottom: '1px solid rgba(255,255,255,0.08)',
         marginBottom: '32px',
       }}>
-        <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" title="Zyvor — zyvor.dev">
-          <img src="/zyvor-logo.png" alt="Zyvor" style={{ height: 32, width: 'auto', display: 'block' }} />
+        <a href={ZYVOR_URL} target="_blank" rel="noopener noreferrer" title="Zyvor — zyvor.dev" style={{ display: 'inline-flex', padding: '6px 12px', borderRadius: 8, background: 'rgba(255,255,255,0.96)' }}>
+          <img src={zyvorLogoSrc()} alt="Zyvor" style={{ height: 32, width: 'auto', display: 'block' }} />
         </a>
         <p style={{ margin: 0, fontSize: '13px', opacity: 0.85 }}>
-          <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: '#f97316', textDecoration: 'none' }}>
+          <a href={ZYVOR_URL} target="_blank" rel="noopener noreferrer" style={{ color: '#f97316', textDecoration: 'none' }}>
             zyvor.dev
           </a>
-          {' · '}© @zyvor 2026 · VMRogue
+          {' · '}{ZYVOR_COPY} · VMRogue
         </p>
       </div>
       <div style={{

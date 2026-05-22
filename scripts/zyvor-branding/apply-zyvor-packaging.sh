@@ -4,10 +4,28 @@ set -euo pipefail
 KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"  # …/VMRogue/scripts/zyvor-branding → repo root's parent (tt)
 
-# All ssahani + hypersdk products under ~/tt (see sync-zyvor-branding.sh for web paths).
 REPOS=(
   VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
   vmspawn nightforge hypersdk-web hypercluster
+)
+
+# repo → "public_dir:components_dir" (either may be empty)
+declare -A WEB_PUBLIC=(
+  [VMRogue]="web/dashboard-next/public:web/dashboard-next/src/sdk/components"
+  [v9s]="ui/public:ui/src/components"
+  [machina]="web/public:web/src/components"
+  [hypersdk-]="web/dashboard-react/public:web/dashboard-react/src/components"
+  [hyper2kvm-]="web/dashboard/public:web/dashboard/src/components"
+  [packetwolf]="web-ui/public:web-ui/src/components"
+  [ragnarok]="frontend/public:frontend/src/components"
+  [Aether]="web/dashboard/public:web/dashboard/src/components"
+  [IronWolf]="web/dashboard/public:web/dashboard/src/components"
+  [forge]="web-ui/public:web-ui/src/components"
+  [vmspawn]=".web/public:.web/src/components"
+  [hypersdk-web]="static/img:"
+  [hypercluster]=":"
+  [guestkit]=":"
+  [nightforge]=":"
 )
 
 vmrogue_root="$(cd "${KIT}/../.." && pwd)"
@@ -20,6 +38,27 @@ for repo in "${REPOS[@]}"; do
       "${root}/scripts/zyvor-branding/"
   fi
   cp -f "${KIT}/../lib/package-ui.sh" "${root}/scripts/lib/package-ui.sh" 2>/dev/null || true
+  cp -f "${KIT}/../lib/install-everything.sh" "${root}/scripts/lib/install-everything.sh" 2>/dev/null || true
+
+  pair="${WEB_PUBLIC[$repo]:-}"
+  if [[ -n "${pair}" ]]; then
+    pub="${pair%%:*}"
+    comp="${pair#*:}"
+    if [[ -n "${pub}" ]]; then
+      mkdir -p "${root}/${pub}"
+      cp -f "${KIT}/zyvor-logo.png" "${root}/${pub}/zyvor-logo.png"
+    fi
+    if [[ -n "${comp}" && -d "${root}/$(dirname "${comp}")" ]]; then
+      mkdir -p "${root}/${comp}"
+      cp -f "${KIT}/ZyvorBrand.tsx" "${root}/${comp}/ZyvorBrand.tsx"
+    fi
+  fi
+  # Embedded API dashboards (same folder as dashboard.html)
+  for embed in src/api/web; do
+    if [[ -d "${root}/${embed}" ]]; then
+      cp -f "${KIT}/zyvor-logo.png" "${root}/${embed}/zyvor-logo.png" 2>/dev/null || true
+    fi
+  done
   echo "assets → ${repo}"
 done
 
