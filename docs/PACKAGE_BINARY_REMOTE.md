@@ -2,6 +2,8 @@
 
 Use this flow when you want to **ship a client deliverable** (tarball with `vmrogue` + optional `virtctl`) without giving them Kubernetes deploy scripts or container manifests.
 
+**Policy:** customer tarballs are **binaries/artifacts only** — no git clone on the install host. See **`docs/CLIENT_BUNDLE_POLICY.md`** for all products (Rust/Go static vs Python `venv` bundles for hyper2kvm/forge).
+
 The build runs on a **Linux amd64 machine** you control (build server, k3s node, CI runner). You download the archive and hand it to the client.
 
 ## What you get
