@@ -59,11 +59,12 @@ else
 fi
 pkg_step_done
 
+_vmrogue_ui=$(pkg_access_url http 5151)
 pkg_summary "Install complete"
 pkg_next_steps \
   "https://zyvor.dev · © @zyvor 2026" \
   "Cluster (once): export KUBECONFIG=… → ./install-cluster.sh → ./apply-cluster-network.sh" \
   "Start client: set -a && source vmrogue.env && set +a" \
   "Run API: ./vmrogue api-serve --host 0.0.0.0 --port 5151" \
-  "Dashboard: http://<this-server>:5151/dashboard" \
+  "Dashboard: ${_vmrogue_ui}/dashboard ($(pkg_primary_host_label))" \
   "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt"
