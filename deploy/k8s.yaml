@@ -46,6 +46,14 @@ rules:
   - apiGroups: ["subresources.kubevirt.io"]
     resources: ["virtualmachineinstances/pause", "virtualmachineinstances/unpause"]
     verbs: ["update", "patch"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - "virtualmachineinstances/guest-exec"
+    verbs: ["get", "create", "update"]
+  - apiGroups: ["subresources.kubevirt.io"]
+    resources:
+      - "virtualmachineinstances/guest-exec-status"
+    verbs: ["get"]
   # Snapshots
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]

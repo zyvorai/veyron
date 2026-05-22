@@ -51,6 +51,78 @@ export async function fetchHealthSummary(): Promise<{ status: string }> {
   return apiJson<{ status: string }>(`/health`).catch(() => ({ status: "unknown" }));
 }
 
+export type RdpGuestAgentResult = {
+  success: boolean
+  guest_agent_connected: boolean
+  is_windows_vm: boolean
+  message: string
+  guest_exec: unknown
+  exit_code?: number | null
+  stdout?: string | null
+  stderr?: string | null
+}
+
+export type RdpExposeStatus = {
+  guest_ip?: string | null
+  is_windows_vm: boolean
+  exposed: boolean
+  node_port?: number | null
+  cluster_ip?: string | null
+  service_name: string
+  service_type?: string | null
+  rdp_via_nodeport_example?: string | null
+  vm_spec_has_rdp_port: boolean
+  suggested_node_port?: number | null
+}
+
+export type VmDetail = VmRecord & {
+  vmi_status?: {
+    phase?: string
+    conditions?: Array<{ type?: string; type_?: string; status?: string }>
+  }
+}
+
+export function fetchVmDetail(namespace: string, name: string): Promise<VmDetail> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`)
+}
+
+export function fetchRdpExpose(namespace: string, name: string): Promise<RdpExposeStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/rdp-expose`)
+}
+
+export function putRdpExpose(
+  namespace: string,
+  name: string,
+  body: { enabled: boolean; service_type?: string; node_port?: number }
+): Promise<RdpExposeStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/rdp-expose`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  })
+}
+
+/** Enable Windows RDP inside the guest via QEMU guest-agent (guest-exec). */
+export async function enableRdpViaGuestAgent(
+  namespace: string,
+  name: string
+): Promise<RdpGuestAgentResult> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/guest-agent/enable-rdp`, {
+    method: "POST",
+    body: "{}",
+  })
+}
+
+/** Disable Windows RDP inside the guest via QEMU guest-agent (guest-exec). */
+export async function disableRdpViaGuestAgent(
+  namespace: string,
+  name: string
+): Promise<RdpGuestAgentResult> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/guest-agent/disable-rdp`, {
+    method: "POST",
+    body: "{}",
+  })
+}
+
 export interface DataDiskDefaults {
   suggested_disk_name: string;
   suggested_pvc_name: string;

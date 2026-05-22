@@ -151,6 +151,20 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ./scripts/deploy-k8s-remote.sh HOST USER
 ```
 
+### Ship a Linux binary to clients (no deploy scripts)
+
+Build a **static linux/amd64 tarball** on a remote machine (podman/docker), then download and hand it to the client:
+
+```bash
+# Build on remote + fetch to ./dist/
+./scripts/package-binary-remote.sh HOST USER --fetch
+
+# Fast repackage when the image already exists
+./scripts/package-binary-remote.sh HOST USER --reuse-image --fetch
+```
+
+See **[docs/PACKAGE_BINARY_REMOTE.md](docs/PACKAGE_BINARY_REMOTE.md)** for client install, systemd, and troubleshooting.
+
 `deploy-all-remote.sh` now runs with detailed, timestamped logs and phase timings. During image builds it streams full remote output (including Cargo `Compiling ...` lines), so long Rust builds do not look stuck.
 
 Preflight diagnostics are printed before deployment:

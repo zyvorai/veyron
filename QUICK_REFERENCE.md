@@ -14,6 +14,10 @@ This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue comman
 
 # API-only remote deploy
 ./scripts/deploy-k8s-remote.sh HOST USER
+
+# Client tarball (linux/amd64 binary) — see docs/PACKAGE_BINARY_REMOTE.md
+./scripts/package-binary-remote.sh HOST USER --fetch
+./scripts/package-binary-remote.sh HOST USER --reuse-image --fetch   # skip rebuild if image exists
 ```
 
 ## In-cluster operator (CRDs / GitOps)

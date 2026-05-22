@@ -253,6 +253,18 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         )
         .with_auth(),
         Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/guest-agent/enable-rdp",
+            "Enable Windows Remote Desktop in the guest via QEMU guest-agent (guest-exec)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "POST",
+            "/api/v1/vms/:ns/:name/guest-agent/disable-rdp",
+            "Disable Windows Remote Desktop in the guest via QEMU guest-agent (guest-exec)",
+        )
+        .with_auth(),
+        Endpoint::new(
             "GET",
             "/api/v1/vms/:ns/:name/network/internet",
             "Per-VM internet egress policy status (Cilium or Kubernetes)",

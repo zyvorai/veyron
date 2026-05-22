@@ -36,6 +36,10 @@ make ci
 
 # Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VMROGUE_API_KEY)
 ./scripts/verify-vmrogue-remote.sh HOST [30151]
+
+# Client deliverable: static linux/amd64 tarball (remote podman build, no cluster deploy)
+./scripts/package-binary-remote.sh HOST USER --fetch   # → dist/vmrogue-<ver>-linux-amd64.tar.gz
+# See docs/PACKAGE_BINARY_REMOTE.md
 # same as:
 ./scripts/deploy-all-remote.sh HOST USER [--quick]
 
@@ -59,7 +63,7 @@ The in-cluster API runs as ServiceAccount **`vmrogue`** with **`ClusterRole` `vm
 
 The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/vmrogue-operator/templates/rbac.yaml`**): KubeVirt + VMRogue CRDs, VM subresources (VNC, start/stop/restart/migrate), snapshots/restores, **read-only** CDI / upload / instancetype / CSI `VolumeSnapshot` / Multus NADs, secrets, events, namespaces, pods, leases.
 
-**API `ClusterRole` (broad “platform admin” for the dashboard)** includes among others: KubeVirt (including **`subresources.kubevirt.io`** start/stop/restart/migrate and pause), **CDI** (`cdi.kubevirt.io/*`, `upload.cdi.kubevirt.io/*` full verbs), **CSI / snapshots** (`snapshot.storage.k8s.io`, `volumeattachments`, `CSIStorageCapacity`), **instancetype.kubevirt.io/***, **Multus** (`k8s.cni.cncf.io/network-attachment-definitions`), **Gateway API** (`gateway.networking.k8s.io/*`), **Chaos Mesh / Litmus** (`chaos-mesh.org`, `litmuschaos.io` — get/list/watch only), **Cilium** (`cilium.io/*` full verbs), **Kubernetes** NetworkPolicies and Ingresses (full verbs), **`pods/exec`**, **`pods/attach`**, **`pods/portforward`**, metrics, migration policies, HPAs, namespace create (budget bootstrap), leases, VMRogue CRDs, and RBAC read-only for visualization.
+**API `ClusterRole` (broad “platform admin” for the dashboard)** includes among others: KubeVirt (including **`subresources.kubevirt.io`** start/stop/restart/migrate, pause, and **`virtualmachineinstances/guest-exec`** + **`guest-exec-status`** for in-guest RDP), **CDI** (`cdi.kubevirt.io/*`, `upload.cdi.kubevirt.io/*` full verbs), **CSI / snapshots** (`snapshot.storage.k8s.io`, `volumeattachments`, `CSIStorageCapacity`), **instancetype.kubevirt.io/***, **Multus** (`k8s.cni.cncf.io/network-attachment-definitions`), **Gateway API** (`gateway.networking.k8s.io/*`), **Chaos Mesh / Litmus** (`chaos-mesh.org`, `litmuschaos.io` — get/list/watch only), **Cilium** (`cilium.io/*` full verbs), **Kubernetes** NetworkPolicies and Ingresses (full verbs), **`pods/exec`**, **`pods/attach`**, **`pods/portforward`**, metrics, migration policies, HPAs, namespace create (budget bootstrap), leases, VMRogue CRDs, and RBAC read-only for visualization.
 
 **Security:** this is intentionally powerful so one API key can drive GitOps-style CDI, Cilium, and CSI workflows. For locked-down clusters, trim rules (especially `cilium.io/*`, `gateway.networking.k8s.io/*`, and CDI `*`) and use a separate restricted `ClusterRole` + `ClusterRoleBinding` for read-only dashboards.
 
@@ -67,7 +71,7 @@ The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/vmrogu
 
 **Cilium default-deny egress:** when the `ciliumnetworkpolicies.cilium.io` CRD exists, `./scripts/deploy-all-remote.sh` and **`./scripts/deploy-k8s-remote.sh`** apply **`deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml`** (API/operator/NATS in `vmrogue-system`). When **`ciliumclusterwidenetworkpolicies.cilium.io`** exists, they also apply **`deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml`** so **virt-launcher** pods can reach the internet (guest NAT). Skip both with `VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1`. Per-VM egress: **`PUT /api/v1/vms/:ns/:name/network/internet`**. **`deploy-k8s-remote.sh`**: SSH preflight (`DEPLOY_SSH_TIMEOUT`), `VMROGUE_REMOTE_SKIP_SSH_CHECK=1`, `VMROGUE_REQUIRE_KUBEVIRT=1`, `--help`.
 
-**Windows RDP NodePort:** **`GET/PUT/DELETE /api/v1/vms/:ns/:name/rdp-expose`** creates a `Service` with selector **`kubevirt.io/vm`** (virt-launcher), port **3389**, and a **required** `node_port` per VM (suggested range **30100–30199** (Kubernetes **30000–32767**)). SSH-style expose at **`/expose`** uses **`kubevirt.io/domain`** and port **22**. On create, Windows templates get masquerade port **3389** and optional userdata to enable Remote Desktop (`src/kube/windows_rdp.rs`). Connect with **Microsoft RDP** or **`sdl-freerdp`** on macOS — see `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
+**Windows RDP NodePort:** **`GET/PUT/DELETE /api/v1/vms/:ns/:name/rdp-expose`** creates a `Service` with selector **`kubevirt.io/vm`** (virt-launcher), port **3389**, and a **required** `node_port` per VM (suggested range **30100–30199** (Kubernetes **30000–32767**)). **`POST /api/v1/vms/:ns/:name/guest-agent/enable-rdp`** and **`…/disable-rdp`** toggle Remote Desktop inside a running Windows guest via QEMU **guest-exec** (`src/kube/kubevirt_subresources.rs`, `src/kube/windows_rdp.rs`); requires **AgentConnected** and ClusterRole verbs on **`virtualmachineinstances/guest-exec`** and **`guest-exec-status`**. SSH-style expose at **`/expose`** uses **`kubevirt.io/domain`** and port **22**. On create, Windows templates get masquerade port **3389** and optional userdata to enable Remote Desktop. Connect with **Microsoft RDP** or **`sdl-freerdp`** on macOS — see `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
 ## Architecture
 

@@ -42,6 +42,8 @@ dialoguer = "0.11"
 indicatif = "0.17"
 rand = "0.8"
 zeroize = "1.8"
+base64 = "0.22"
+http = "1.1"
 
 # TUI dependencies
 ratatui = "0.28"
@@ -60,7 +62,6 @@ tower-http = { version = "0.6", features = ["cors", "timeout"], optional = true 
 tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots", "rustls-tls-native-roots"], optional = true }
 futures-util = { version = "0.3", optional = true }
 rustls-pemfile = { version = "2", optional = true }
-base64 = { version = "0.22", optional = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots"], optional = true }
 
 [features]
@@ -73,7 +74,6 @@ web = [
     "tokio-tungstenite",
     "futures-util",
     "rustls-pemfile",
-    "base64",
     "reqwest",
 ]
 experimental = []

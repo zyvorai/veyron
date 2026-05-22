@@ -15,7 +15,7 @@ Status legend:
 | Page | Frontend Page ID | Primary Routes | Backend Source | Status | Notes |
 |---|---|---|---|---|---|
 | Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview` | `http_server.rs` | Working | Overview cards and event feed are live |
-| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, VM actions | `http_server.rs` | Working | Main lifecycle page |
+| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | Main lifecycle page; RDP panel in embedded SPA and dashboard-next `VMBrowser` |
 | Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes | `http_server.rs` | Working | Uses direct handlers in `http_server.rs` |
 | Nodes | `page-nodes` | `/api/v1/nodes` | `http_server.rs`, `handlers/nodes.rs` | Working | Real allocatable/capacity data |
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |

@@ -3607,6 +3607,8 @@ async function fetchVmDetail(ns, name) {
     inner += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
     inner += '</div>';
 
+    inner += '<div class="detail-section"><div class="detail-section-title">Remote access (RDP)</div><div id="rdp-panel-' + name + '">Loading\u2026</div></div>';
+
     inner += '<div class="detail-section"><div class="detail-section-title">Resources</div>';
     inner += detailRow('CPU', vm.cpu || 'N/A');
     inner += detailRow('Memory', vm.memory || 'N/A');
@@ -3665,6 +3667,7 @@ async function fetchVmDetail(ns, name) {
       if (el && secHtml) el.innerHTML = secHtml;
     });
     loadExposePanel(ns, name);
+    loadRdpPanel(ns, name, vmi, vm);
     loadInternetPanel(ns, name);
   } catch (e) {
     holder.innerHTML =
@@ -3813,6 +3816,122 @@ async function removeVmExpose(ns, name) {
     await loadExposePanel(ns, name);
   } catch (e) { toast('Expose: ' + (e.message || String(e)), 'error'); }
 }
+
+function vmiGuestAgentConnected(vmi) {
+  const conds = (vmi && vmi.conditions) || [];
+  return conds.some(function(c) {
+    return (c.type === 'AgentConnected' || c.type_ === 'AgentConnected') && c.status === 'True';
+  });
+}
+
+async function loadRdpPanel(ns, name, vmi, vm) {
+  const el = document.getElementById('rdp-panel-' + name);
+  if (!el) return;
+  const agentUp = vmiGuestAgentConnected(vmi || {});
+  const running = (vm && (vm.status === 'Running' || (vmi && vmi.phase === 'Running')));
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/rdp-expose');
+    const st = unwrapData(j);
+    renderRdpPanel(el, ns, name, st, { agentUp: agentUp, running: running });
+  } catch (e) {
+    el.innerHTML = '<div class="detail-row"><span class="lbl">Error</span><span class="val" style="color:var(--error)">' + esc(e.message || String(e)) + '</span></div>';
+  }
+}
+
+function renderRdpPanel(container, ns, name, st, ctx) {
+  ctx = ctx || {};
+  const tid = 'rdp-form-' + name.replace(/[^a-zA-Z0-9_-]/g, '_');
+  let inner = '';
+  if (st && st.is_windows_vm === false) {
+    inner += '<div class="detail-row"><span class="lbl">Note</span><span class="val">VM is not detected as Windows; RDP still works if port 3389 listens in the guest.</span></div>';
+  }
+  inner += detailRow('Guest agent', ctx.agentUp ? 'Connected' : 'Not connected');
+  if (st && st.exposed) {
+    inner += detailRow('NodePort', st.node_port != null ? String(st.node_port) : '-');
+    if (st.rdp_via_nodeport_example) inner += detailRow('Connect', st.rdp_via_nodeport_example);
+    inner += detailRow('Service', esc(String(st.service_name || '')));
+  } else {
+    inner += '<div class="detail-row"><span class="lbl">Expose</span><span class="val">No RDP NodePort Service (virt-launcher selector, guest TCP 3389).</span></div>';
+  }
+  if (st && st.suggested_node_port != null) {
+    inner += detailRow('Suggested NodePort', String(st.suggested_node_port) + ' (range 30100–30199)');
+  }
+  inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
+  inner += '<label class="form-label tiny-label">NodePort<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-np" min="30000" max="32767" value="' + esc(String((st && st.suggested_node_port) || 30100)) + '"></label>';
+  inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();applyVmRdpExpose(\'' + ns + '\',\'' + name + '\',\'' + tid + '\')">Expose RDP</button>';
+  inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();removeVmRdpExpose(\'' + ns + '\',\'' + name + '\')">Remove</button>';
+  const enableDisabled = !(ctx.running && ctx.agentUp);
+  inner += '<button type="button" class="btn" style="background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.25)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' onclick="event.stopPropagation();enableGuestRdpInVm(\'' + ns + '\',\'' + name + '\')">Enable RDP in guest (agent)</button>';
+  inner += '<button type="button" class="btn" style="background:rgba(244,63,94,.12);color:#fda4af;border:1px solid rgba(244,63,94,.28)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' onclick="event.stopPropagation();disableGuestRdpInVm(\'' + ns + '\',\'' + name + '\')">Disable RDP in guest (agent)</button>';
+  inner += '</div>';
+  inner += '<div class="detail-row" style="margin-top:8px"><span class="lbl">Hint</span><span class="val" style="font-size:.82rem">Enable RDP inside Windows first, then expose NodePort. Requires Windows Pro/Enterprise/Server and cluster guest-exec support.</span></div>';
+  container.innerHTML = inner;
+}
+
+async function applyVmRdpExpose(ns, name, tid) {
+  tid = tid || ('rdp-form-' + name.replace(/[^a-zA-Z0-9_-]/g, '_'));
+  const np = parseInt(document.getElementById(tid + '-np')?.value, 10);
+  if (!Number.isInteger(np) || np < 30000 || np > 32767) {
+    toast('NodePort must be 30000–32767', 'error');
+    return;
+  }
+  try {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/rdp-expose', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: true, service_type: 'NodePort', node_port: np })
+    });
+    toast('RDP NodePort applied', 'success');
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    const vm = unwrapData(j);
+    await loadRdpPanel(ns, name, vm.vmi_status || {}, vm);
+  } catch (e) { toast('RDP expose: ' + (e.message || String(e)), 'error'); }
+}
+
+async function removeVmRdpExpose(ns, name) {
+  try {
+    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/rdp-expose', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: false })
+    });
+    toast('RDP exposure removed', 'success');
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    const vm = unwrapData(j);
+    await loadRdpPanel(ns, name, vm.vmi_status || {}, vm);
+  } catch (e) { toast('RDP expose: ' + (e.message || String(e)), 'error'); }
+}
+
+async function disableGuestRdpInVm(ns, name) {
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/guest-agent/disable-rdp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    const out = unwrapData(j);
+    toast((out && out.message) || 'Guest RDP disable finished', (out && out.success) ? 'success' : 'error');
+    const vmj = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    const vm = unwrapData(vmj);
+    await loadRdpPanel(ns, name, vm.vmi_status || {}, vm);
+  } catch (e) { toast('Disable RDP in guest: ' + (e.message || String(e)), 'error'); }
+}
+
+async function enableGuestRdpInVm(ns, name) {
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/guest-agent/enable-rdp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    const out = unwrapData(j);
+    toast((out && out.message) || 'Guest RDP enable finished', (out && out.success) ? 'success' : 'error');
+    const vmj = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    const vm = unwrapData(vmj);
+    await loadRdpPanel(ns, name, vm.vmi_status || {}, vm);
+  } catch (e) { toast('Enable RDP in guest: ' + (e.message || String(e)), 'error'); }
+}
+
 
 function detailRow(label, value) {
   return '<div class="detail-row"><span class="lbl">' + label + '</span><span class="val">' + esc(String(value)) + '</span></div>';

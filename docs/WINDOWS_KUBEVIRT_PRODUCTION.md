@@ -57,8 +57,10 @@ On clusters where KubeVirt’s **`VideoConfig` alpha feature gate** is enabled, 
 | `GET /api/v1/vms/{ns}/{name}/rdp-expose` | Guest IP, Windows detection, NodePort status, used/suggested ports (`30100`–`30199`) |
 | `PUT /api/v1/vms/{ns}/{name}/rdp-expose` | Body: `{ "enabled": true, "service_type": "NodePort", "node_port": 33901 }` — creates `rdp-<vm-name>` Service (`kubevirt.io/vm` selector) |
 | `DELETE /api/v1/vms/{ns}/{name}/rdp-expose` | Remove the RDP Service |
+| `POST /api/v1/vms/{ns}/{name}/guest-agent/enable-rdp` | Enable RDP in a **running** guest via QEMU guest-agent (`guest-exec` PowerShell) |
+| `POST /api/v1/vms/{ns}/{name}/guest-agent/disable-rdp` | Disable RDP in the guest via guest-agent |
 
-**Requirements:** VM must be **Running**; guest must allow Remote Desktop (Pro/Enterprise/Server); each VM needs a **unique** NodePort. VM create merges masquerade port **3389** and first-boot userdata when the template is Windows (`src/kube/windows_rdp.rs`).
+**Requirements:** VM must be **Running**; guest must allow Remote Desktop (Pro/Enterprise/Server); each VM needs a **unique** NodePort. Guest-agent endpoints require **AgentConnected** on the VMI and API RBAC on `subresources.kubevirt.io` **`virtualmachineinstances/guest-exec`** and **`guest-exec-status`**. VM create merges masquerade port **3389** and first-boot userdata when the template is Windows (`src/kube/windows_rdp.rs`). The embedded dashboard and **dashboard-next** VM browser expose these actions in the **Remote access (RDP)** panel.
 
 **macOS client:**
 
