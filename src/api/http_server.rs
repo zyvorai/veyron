@@ -697,6 +697,7 @@ pub mod web {
             // Dashboard & static assets
             .route("/dashboard", get(dashboard_handler))
             .route("/assets/novnc.min.js", get(novnc_handler))
+            .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
             // VM endpoints
             .route("/api/v1/vms", get(list_vms_handler))
             .route("/api/v1/vms", post(create_vm_handler))
@@ -1009,6 +1010,13 @@ pub mod web {
         (
             [(header::CONTENT_TYPE, "application/javascript")],
             include_str!("web/vendor/novnc.min.js"),
+        )
+    }
+
+    async fn zyvor_logo_handler() -> impl IntoResponse {
+        (
+            [(header::CONTENT_TYPE, "image/png")],
+            include_bytes!("web/zyvor-logo.png").as_ref(),
         )
     }
 

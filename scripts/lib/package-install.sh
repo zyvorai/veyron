@@ -7,6 +7,7 @@ cd "$ROOT"
 [[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
 
 _PKG_SESSION_START=${SECONDS}
+pkg_install_welcome "VMRogue"
 pkg_banner "VMRogue client install" "Kubernetes VM management · client bundle"
 pkg_step_init 4
 
@@ -60,9 +61,9 @@ pkg_step_done
 
 pkg_summary "Install complete"
 pkg_next_steps \
+  "https://zyvor.dev · © @zyvor 2026" \
   "Cluster (once): export KUBECONFIG=… → ./install-cluster.sh → ./apply-cluster-network.sh" \
   "Start client: set -a && source vmrogue.env && set +a" \
   "Run API: ./vmrogue api-serve --host 0.0.0.0 --port 5151" \
   "Dashboard: http://<this-server>:5151/dashboard" \
-  "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt" \
-  "Remove: ./uninstall.sh --yes [--remove-dir]"
+  "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt"
