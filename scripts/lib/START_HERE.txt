@@ -10,4 +10,4 @@ More docs in this folder:
   QUICKSTART.txt      copy-paste commands
   README.txt          what is in the archive
 
-Zyvor · https://zyvor.dev · © @zyvor 2026
+zyvor.dev · © @zyvor 2026
