@@ -3336,6 +3336,7 @@ dependencies = [
  "dirs",
  "env_logger",
  "futures-util",
+ "http",
  "indicatif",
  "k8s-openapi",
  "kube",

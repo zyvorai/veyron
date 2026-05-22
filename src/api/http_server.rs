@@ -776,6 +776,14 @@ pub mod web {
                     .delete(delete_vm_rdp_expose_handler),
             )
             .route(
+                "/api/v1/vms/:ns/:name/guest-agent/enable-rdp",
+                post(guest_agent_enable_rdp_handler),
+            )
+            .route(
+                "/api/v1/vms/:ns/:name/guest-agent/disable-rdp",
+                post(guest_agent_disable_rdp_handler),
+            )
+            .route(
                 "/api/v1/vms/:ns/:name",
                 axum::routing::put(update_vm_handler),
             )
@@ -1673,6 +1681,46 @@ pub mod web {
                 },
                 Err(e) => err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &sanitize_error(&e)),
             }
+        }
+    }
+
+    async fn guest_agent_enable_rdp_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.enable_rdp_via_guest_agent(&ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest-agent/enable-rdp");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_ENABLE_RDP_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_agent_disable_rdp_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.disable_rdp_via_guest_agent(&ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest-agent/disable-rdp");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_DISABLE_RDP_FAILED", &sanitize_error(&e)),
         }
     }
 

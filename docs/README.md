@@ -7,6 +7,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 ## Getting Started
 
 - [`../README.md`](../README.md): project overview, install, API/dashboard, deployment options
+- [`PACKAGE_BINARY_REMOTE.md`](PACKAGE_BINARY_REMOTE.md): build a Linux amd64 client tarball on a remote host (`scripts/package-binary-remote.sh`)
 - [`../QUICK_REFERENCE.md`](../QUICK_REFERENCE.md): high-signal command cheatsheet
 - [`../DEVELOPMENT.md`](../DEVELOPMENT.md): architecture map and contributor workflows
 - [`../CONTRIBUTING.md`](../CONTRIBUTING.md): pull requests, style, and CI expectations

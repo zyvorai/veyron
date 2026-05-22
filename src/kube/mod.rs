@@ -1,7 +1,8 @@
 pub mod converter;
+pub mod guest_os;
+pub mod kubevirt_subresources;
 pub mod status;
 pub mod types;
-pub mod guest_os;
 pub mod vm_data_disk;
 pub mod vm_internet;
 pub mod vm_rdp;
@@ -9,7 +10,7 @@ pub mod windows_rdp;
 
 use crate::config::{CloudInitDelivery, VMConfig, VmExposeConfig};
 use crate::utils::VMRogueError;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use k8s_openapi::api::core::v1::{Secret, Service, ServicePort, ServiceSpec};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
@@ -1116,6 +1117,60 @@ impl KubeClient {
             ));
         }
         Ok(())
+    }
+
+    async fn guest_agent_rdp_context(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<(String, serde_json::Value, serde_json::Value)> {
+        let vmi_name = self
+            .resolve_vmi_name_for_console(namespace, vm_name)
+            .await
+            .context("No backing VMI — start the VM first")?;
+        let vmi = self.get_vmi(namespace, &vmi_name).await?;
+        let vmi_json = serde_json::to_value(&vmi)?;
+        let vm = self.get_vm(namespace, vm_name).await?;
+        let vm_json = serde_json::to_value(&vm)?;
+        Ok((vmi_name, vmi_json, vm_json))
+    }
+
+    /// Enable Windows Remote Desktop in a running guest via QEMU guest-agent (`guest-exec`).
+    pub async fn enable_rdp_via_guest_agent(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<windows_rdp::RdpGuestAgentResponse> {
+        let (vmi_name, vmi_json, vm_json) = self.guest_agent_rdp_context(namespace, vm_name).await?;
+        windows_rdp::set_rdp_via_guest_agent(
+            self.client.clone(),
+            namespace,
+            vm_name,
+            &vmi_name,
+            &vmi_json,
+            &vm_json,
+            true,
+        )
+        .await
+    }
+
+    /// Disable Windows Remote Desktop in a running guest via QEMU guest-agent (`guest-exec`).
+    pub async fn disable_rdp_via_guest_agent(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<windows_rdp::RdpGuestAgentResponse> {
+        let (vmi_name, vmi_json, vm_json) = self.guest_agent_rdp_context(namespace, vm_name).await?;
+        windows_rdp::set_rdp_via_guest_agent(
+            self.client.clone(),
+            namespace,
+            vm_name,
+            &vmi_name,
+            &vmi_json,
+            &vm_json,
+            false,
+        )
+        .await
     }
 
     /// Hotplug a PVC volume onto a VM (`virtctl addvolume`).

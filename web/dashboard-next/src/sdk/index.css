@@ -112,6 +112,71 @@ input, select, textarea {
   animation: spin 1s linear infinite;
 }
 
+/* Login surface */
+@keyframes vmrogue-login-float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(-16px, 18px, 0) rotate(8deg);
+  }
+}
+
+@keyframes vmrogue-login-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vmrogue-login-orb {
+  animation: vmrogue-login-float 12s ease-in-out infinite;
+}
+
+.vmrogue-login-feature {
+  animation: vmrogue-login-rise 0.55s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+  transition: transform var(--transition-smooth), background-color var(--transition-smooth), border-color var(--transition-smooth);
+}
+
+.vmrogue-login-feature:hover {
+  transform: translateY(-2px);
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+.vmrogue-login-delay-1 {
+  animation-delay: 0.08s;
+}
+
+.vmrogue-login-delay-2 {
+  animation-delay: 0.16s;
+}
+
+.vmrogue-login-delay-3 {
+  animation-delay: 0.24s;
+}
+
+.vmrogue-login-submit:hover:not(:disabled) {
+  background-color: var(--color-orange-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(240, 88, 58, 0.32) !important;
+}
+
+@media (max-width: 900px) {
+  .vmrogue-login-shell {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+
+  .vmrogue-login-hero {
+    display: none !important;
+  }
+}
+
 /* In-page anchors (HyperPageTabs sticky header) */
 #dashboard,
 #jobs,

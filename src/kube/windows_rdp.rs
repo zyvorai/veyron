@@ -2,6 +2,9 @@
 //!
 //! Merges masquerade interface port 3389 and optional cloud-init / config-drive userdata.
 
+use base64::Engine;
+use kube::Client;
+use serde::Serialize;
 use serde_json::{json, Value};
 
 pub const WINDOWS_RDP_PORT: i32 = 3389;
@@ -355,6 +358,180 @@ fn merge_rdp_userdata(vm: &mut Value) {
     }
 }
 
+/// Inline PowerShell for `guest-exec` (same actions as [`RDP_USERDATA_PS1`]).
+pub const WINDOWS_ENABLE_RDP_PS1_INLINE: &str = "Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' -Name 'fDenyTSConnections' -Value 0; Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'; Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp' -Name 'UserAuthentication' -Value 0";
+
+/// Inline PowerShell to disable incoming Remote Desktop in the guest.
+pub const WINDOWS_DISABLE_RDP_PS1_INLINE: &str = "Set-ItemProperty -Path 'HKLM:\\System\\CurrentControlSet\\Control\\Terminal Server' -Name 'fDenyTSConnections' -Value 1; Disable-NetFirewallRule -DisplayGroup 'Remote Desktop'";
+
+fn windows_rdp_guest_exec_body(ps1: &str) -> Value {
+    json!({
+        "path": r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe",
+        "arg": [
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-Command",
+            ps1
+        ],
+        "capture-output": true
+    })
+}
+
+/// KubeVirt `guest-exec` body to enable Remote Desktop inside a running Windows guest.
+pub fn windows_enable_rdp_guest_exec_body() -> Value {
+    windows_rdp_guest_exec_body(WINDOWS_ENABLE_RDP_PS1_INLINE)
+}
+
+/// KubeVirt `guest-exec` body to disable Remote Desktop inside a running Windows guest.
+pub fn windows_disable_rdp_guest_exec_body() -> Value {
+    windows_rdp_guest_exec_body(WINDOWS_DISABLE_RDP_PS1_INLINE)
+}
+
+#[derive(Debug, Serialize)]
+pub struct RdpGuestAgentResponse {
+    pub success: bool,
+    pub guest_agent_connected: bool,
+    pub is_windows_vm: bool,
+    pub message: String,
+    #[serde(rename = "guest_exec")]
+    pub guest_exec: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub exit_code: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stdout: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stderr: Option<String>,
+}
+
+fn guest_exec_field_text(v: &Value, keys: &[&str]) -> Option<String> {
+    for key in keys {
+        let Some(raw) = v.get(*key).and_then(|x| x.as_str()).filter(|s| !s.is_empty()) else {
+            continue;
+        };
+        let text = base64::engine::general_purpose::STANDARD
+            .decode(raw.as_bytes())
+            .ok()
+            .and_then(|b| String::from_utf8(b).ok())
+            .unwrap_or_else(|| raw.to_string());
+        return Some(text);
+    }
+    None
+}
+
+fn guest_exec_exit_code(v: &Value) -> Option<i64> {
+    v.get("exit-code")
+        .or_else(|| v.get("exitcode"))
+        .and_then(|x| x.as_i64())
+}
+
+/// Decode stdout/stderr and exit code from a `guest-exec` response.
+pub fn parse_guest_exec_response(raw: &Value) -> (Option<i64>, Option<String>, Option<String>) {
+    let exit = guest_exec_exit_code(raw);
+    let stdout = guest_exec_field_text(raw, &["out-data", "out_data", "stdout"]);
+    let stderr = guest_exec_field_text(raw, &["err-data", "err_data", "stderr"]);
+    (exit, stdout, stderr)
+}
+
+/// QEMU guest agent connected per KubeVirt `AgentConnected` condition on a VMI JSON value.
+pub fn vmi_guest_agent_connected(vmi: &Value) -> bool {
+    vmi.pointer("/status/conditions")
+        .or_else(|| vmi.get("conditions"))
+        .and_then(|c| c.as_array())
+        .is_some_and(|conds| {
+            conds.iter().any(|c| {
+                c.get("type").and_then(|t| t.as_str()) == Some("AgentConnected")
+                    && c.get("status").and_then(|s| s.as_str()) == Some("True")
+            })
+        })
+}
+
+/// Enable or disable Windows Remote Desktop via QEMU guest-agent (`guest-exec`).
+pub async fn set_rdp_via_guest_agent(
+    client: Client,
+    namespace: &str,
+    _vm_name: &str,
+    vmi_name: &str,
+    vmi_json: &Value,
+    vm_json: &Value,
+    enable: bool,
+) -> anyhow::Result<RdpGuestAgentResponse> {
+    if !vmi_guest_agent_connected(vmi_json) {
+        anyhow::bail!("QEMU guest agent is not connected (AgentConnected condition is not True)");
+    }
+
+    let is_windows = is_windows_guest(Some(vm_json), Some(vmi_json));
+    let body = if enable {
+        windows_enable_rdp_guest_exec_body()
+    } else {
+        windows_disable_rdp_guest_exec_body()
+    };
+    let mut guest_exec =
+        super::kubevirt_subresources::vmi_guest_exec(client.clone(), namespace, vmi_name, body).await?;
+
+    let mut exit_code;
+    let mut stdout;
+    let mut stderr;
+    (exit_code, stdout, stderr) = parse_guest_exec_response(&guest_exec);
+    let pid_only = guest_exec.get("pid").is_some() && exit_code.is_none() && stdout.is_none();
+
+    if pid_only {
+        if let Some(pid) = guest_exec.get("pid").and_then(|p| p.as_i64()) {
+            if let Ok(Some(status)) = super::kubevirt_subresources::wait_guest_exec(
+                client.clone(),
+                namespace,
+                vmi_name,
+                pid,
+                30,
+                std::time::Duration::from_millis(500),
+            )
+            .await
+            {
+                guest_exec = status;
+                (exit_code, stdout, stderr) = parse_guest_exec_response(&guest_exec);
+            }
+        }
+    }
+
+    let still_async = guest_exec.get("pid").is_some() && exit_code.is_none() && stdout.is_none();
+    let success = !still_async && exit_code.unwrap_or(0) == 0;
+
+    let message = if still_async {
+        if enable {
+            "Guest exec started (async). If RDP still fails, retry or enable Remote Desktop via VNC."
+        } else {
+            "Guest exec started (async). Remote Desktop disable may still be in progress."
+        }
+        .to_string()
+    } else if success {
+        if enable {
+            "Remote Desktop registry and firewall rules updated in the guest.".to_string()
+        } else {
+            "Remote Desktop disabled in the guest (registry and firewall rules).".to_string()
+        }
+    } else {
+        format!(
+            "Guest exec finished with exit code {:?}. {}",
+            exit_code,
+            stderr.as_deref().unwrap_or("See guest_exec output.")
+        )
+    };
+
+    Ok(RdpGuestAgentResponse {
+        success,
+        guest_agent_connected: true,
+        is_windows_vm: is_windows,
+        message,
+        guest_exec,
+        exit_code,
+        stdout,
+        stderr,
+    })
+}
+
+/// Back-compat alias for [`RdpGuestAgentResponse`].
+pub type EnableRdpGuestAgentResponse = RdpGuestAgentResponse;
+
 pub fn vmrogue_rdp_service_name(vm_name: &str) -> String {
     const PREFIX: &str = "rdp-";
     let max_body = 63usize.saturating_sub(PREFIX.len());
@@ -412,6 +589,41 @@ mod tests {
         });
         assert!(is_windows_vmi(&vmi));
         assert!(is_windows_guest(None, Some(&vmi)));
+    }
+
+    #[test]
+    fn enable_rdp_guest_exec_body_uses_powershell() {
+        let body = windows_enable_rdp_guest_exec_body();
+        assert!(
+            body["path"]
+                .as_str()
+                .unwrap()
+                .to_ascii_lowercase()
+                .contains("powershell")
+        );
+        let joined = body["arg"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(joined.contains("fDenyTSConnections"));
+        assert!(joined.contains("-Value 0"));
+    }
+
+    #[test]
+    fn disable_rdp_guest_exec_body_denies_connections() {
+        let joined = windows_disable_rdp_guest_exec_body()["arg"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|v| v.as_str())
+            .collect::<Vec<_>>()
+            .join(" ");
+        assert!(joined.contains("fDenyTSConnections"));
+        assert!(joined.contains("-Value 1"));
+        assert!(joined.contains("Disable-NetFirewallRule"));
     }
 
     #[test]

@@ -779,6 +779,168 @@ pub fn generate_default_spec() -> OpenApiSpec {
         },
     );
 
+    let ns_name_params = || {
+        vec![
+            Parameter {
+                name: "ns".to_string(),
+                location: ParameterLocation::Path,
+                required: true,
+                description: "Namespace".to_string(),
+                schema_type: "string".to_string(),
+            },
+            Parameter {
+                name: "name".to_string(),
+                location: ParameterLocation::Path,
+                required: true,
+                description: "VirtualMachine name".to_string(),
+                schema_type: "string".to_string(),
+            },
+        ]
+    };
+
+    let mut rdp_expose_get = HashMap::new();
+    rdp_expose_get.insert(
+        "get".to_string(),
+        Operation {
+            summary: "Get RDP NodePort exposure status".to_string(),
+            description: Some(
+                "Returns guest IP, Windows detection, NodePort Service status, and suggested ports."
+                    .to_string(),
+            ),
+            operation_id: "getVmRdpExpose".to_string(),
+            tags: vec!["vms".to_string(), "rdp".to_string()],
+            parameters: ns_name_params(),
+            responses: {
+                let mut r = HashMap::new();
+                r.insert(
+                    "200".to_string(),
+                    ResponseSpec {
+                        description: "RDP access status".to_string(),
+                        content_type: Some("application/json".to_string()),
+                        schema_ref: None,
+                    },
+                );
+                r
+            },
+            security: vec!["apiKey".to_string()],
+        },
+    );
+    let mut rdp_expose_put = rdp_expose_get.clone();
+    rdp_expose_put.insert(
+        "put".to_string(),
+        Operation {
+            summary: "Create or remove RDP NodePort exposure".to_string(),
+            description: Some(
+                "Body: { \"enabled\": true, \"service_type\": \"NodePort\", \"node_port\": 30101 }"
+                    .to_string(),
+            ),
+            operation_id: "putVmRdpExpose".to_string(),
+            tags: vec!["vms".to_string(), "rdp".to_string()],
+            parameters: ns_name_params(),
+            responses: {
+                let mut r = HashMap::new();
+                r.insert(
+                    "200".to_string(),
+                    ResponseSpec {
+                        description: "Updated RDP access status".to_string(),
+                        content_type: Some("application/json".to_string()),
+                        schema_ref: None,
+                    },
+                );
+                r
+            },
+            security: vec!["apiKey".to_string()],
+        },
+    );
+    let mut rdp_expose_delete = HashMap::new();
+    rdp_expose_delete.insert(
+        "delete".to_string(),
+        Operation {
+            summary: "Delete RDP NodePort Service".to_string(),
+            description: None,
+            operation_id: "deleteVmRdpExpose".to_string(),
+            tags: vec!["vms".to_string(), "rdp".to_string()],
+            parameters: ns_name_params(),
+            responses: {
+                let mut r = HashMap::new();
+                r.insert(
+                    "200".to_string(),
+                    ResponseSpec {
+                        description: "RDP Service removed".to_string(),
+                        content_type: Some("application/json".to_string()),
+                        schema_ref: None,
+                    },
+                );
+                r
+            },
+            security: vec!["apiKey".to_string()],
+        },
+    );
+    let mut rdp_expose_ops = rdp_expose_get;
+    rdp_expose_ops.extend(rdp_expose_put);
+    rdp_expose_ops.extend(rdp_expose_delete);
+
+    spec.add_path(
+        "/api/v1/vms/{ns}/{name}/rdp-expose",
+        PathItem {
+            operations: rdp_expose_ops,
+        },
+    );
+
+    let guest_rdp_post = |op_id: &str, summary: &str| Operation {
+        summary: summary.to_string(),
+        description: Some(
+            "Runs PowerShell in the guest via QEMU guest-agent (guest-exec). VM must be Running with AgentConnected."
+                .to_string(),
+        ),
+        operation_id: op_id.to_string(),
+        tags: vec!["vms".to_string(), "rdp".to_string()],
+        parameters: ns_name_params(),
+        responses: {
+            let mut r = HashMap::new();
+            r.insert(
+                "200".to_string(),
+                ResponseSpec {
+                    description: "Guest exec result".to_string(),
+                    content_type: Some("application/json".to_string()),
+                    schema_ref: None,
+                },
+            );
+            r
+        },
+        security: vec!["apiKey".to_string()],
+    };
+
+    let mut enable_rdp_ops = HashMap::new();
+    enable_rdp_ops.insert(
+        "post".to_string(),
+        guest_rdp_post(
+            "guestAgentEnableRdp",
+            "Enable Windows Remote Desktop in the guest",
+        ),
+    );
+    spec.add_path(
+        "/api/v1/vms/{ns}/{name}/guest-agent/enable-rdp",
+        PathItem {
+            operations: enable_rdp_ops,
+        },
+    );
+
+    let mut disable_rdp_ops = HashMap::new();
+    disable_rdp_ops.insert(
+        "post".to_string(),
+        guest_rdp_post(
+            "guestAgentDisableRdp",
+            "Disable Windows Remote Desktop in the guest",
+        ),
+    );
+    spec.add_path(
+        "/api/v1/vms/{ns}/{name}/guest-agent/disable-rdp",
+        PathItem {
+            operations: disable_rdp_ops,
+        },
+    );
+
     spec
 }
 

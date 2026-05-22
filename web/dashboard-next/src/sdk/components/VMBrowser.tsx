@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { fetchVmInventory } from "../../lib/api";
 import AddDataDiskPanel from "./AddDataDiskPanel";
+import VmRdpPanel from "./VmRdpPanel";
 
 interface VM {
   id: string;
@@ -362,12 +363,17 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
             if (slash < 1) return null;
             const ns = selectedVM.id.slice(0, slash);
             const vmName = selectedVM.id.slice(slash + 1);
+            const running =
+              (selectedVM.power_state || selectedVM.status || "").toLowerCase() === "running";
             return (
-              <AddDataDiskPanel
-                namespace={ns}
-                vmName={vmName}
-                onAttached={() => void discoverVMs()}
-              />
+              <>
+                <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />
+                <AddDataDiskPanel
+                  namespace={ns}
+                  vmName={vmName}
+                  onAttached={() => void discoverVMs()}
+                />
+              </>
             );
           })()}
         </div>

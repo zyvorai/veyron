@@ -669,6 +669,15 @@ pub struct VmiSpec {
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+pub struct VmiCondition {
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub type_: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
 pub struct VirtualMachineInstanceStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase: Option<String>,
@@ -682,6 +691,8 @@ pub struct VirtualMachineInstanceStatus {
         default
     )]
     pub guest_os_info: Option<GuestOsInfo>,
+    #[serde(default)]
+    pub conditions: Vec<VmiCondition>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -841,6 +852,7 @@ mod tests {
                 version: Some("22.04".to_string()),
                 kernel_release: Some("5.15.0".to_string()),
             }),
+            conditions: vec![],
         };
 
         let json = serde_json::to_value(&status).unwrap();
@@ -904,6 +916,7 @@ mod tests {
             node_name: None,
             interfaces: vec![],
             guest_os_info: None,
+            conditions: vec![],
         };
 
         let json = serde_json::to_value(&status).unwrap();
@@ -947,6 +960,7 @@ mod tests {
                 },
             ],
             guest_os_info: None,
+            conditions: vec![],
         };
 
         // Should return the first interface's IP
@@ -975,6 +989,7 @@ mod tests {
                 },
             ],
             guest_os_info: None,
+            conditions: vec![],
         };
 
         // Should skip empty string and return the second IP
@@ -988,6 +1003,7 @@ mod tests {
             node_name: None,
             interfaces: vec![],
             guest_os_info: None,
+            conditions: vec![],
         };
 
         assert_eq!(extract_first_ip(&status), None);
@@ -1006,6 +1022,7 @@ mod tests {
                 interface_name: None,
             }],
             guest_os_info: None,
+            conditions: vec![],
         };
 
         assert_eq!(extract_first_ip(&status), None);
