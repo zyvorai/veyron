@@ -3,6 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
+export PKG_INSTALL_ROOT="${ROOT}"
 # shellcheck source=/dev/null
 [[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
 
@@ -54,5 +55,6 @@ pkg_step_done
 pkg_install_finish "VMRogue" http 5151 "/dashboard" \
   "Cluster (once): ./install-cluster.sh → deploy VMRogue in cluster" \
   "Start API: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151" \
+  "Help: cat HELP.txt · ./install.sh --help" \
   "Override kubeconfig: ./install.sh --kubeconfig /path/to/config" \
   "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt"
