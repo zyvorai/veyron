@@ -6,6 +6,8 @@ cd "$ROOT"
 # shellcheck source=/dev/null
 [[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
 
+[[ -f vmrogue.env ]] && pkg_load_env_file vmrogue.env 2>/dev/null || true
+
 _PKG_SESSION_START=${SECONDS}
 pkg_counters_reset
 pkg_banner "VMRogue package test" "Client binary · optional cluster · optional API"

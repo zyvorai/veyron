@@ -247,7 +247,8 @@ CLUSTER FIRST (once per cluster — needs kubectl + admin kubeconfig)
 CLIENT ON THIS MACHINE
   1. tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
   2. ./install-everything.sh    (or ./install.sh then ./test-package.sh)
-  3. nano vmrogue.env   (KUBECONFIG + VMROGUE_API_KEY)
+     Kubeconfig: auto-detected, or ./install.sh --kubeconfig /path/to/config
+  3. nano vmrogue.env   (VMROGUE_API_KEY; KUBECONFIG set by install if found)
   4. set -a && source vmrogue.env && set +a
   5. ./vmrogue api-serve --host 0.0.0.0 --port 5151
   6. ./test-package.sh
