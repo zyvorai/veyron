@@ -205,6 +205,9 @@ cp "\${LIB}/package-uninstall.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
 chmod +x "\${OUT_DIR}/\${ARTIFACT}/install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-deps.sh" \
   "\${OUT_DIR}/\${ARTIFACT}/test-package.sh" "\${OUT_DIR}/\${ARTIFACT}/install-everything.sh" \
   "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
+chmod +x "\${LIB}/write-customer-help.sh"
+"\${LIB}/write-customer-help.sh" "\${OUT_DIR}/\${ARTIFACT}" "VMRogue" k8s
+cp "\${LIB}/START_HERE.txt" "\${OUT_DIR}/\${ARTIFACT}/"
 cat > "\${OUT_DIR}/\${ARTIFACT}/.package-lib/product.meta" <<'META'
 PRODUCT_NAME=VMRogue
 ACCESS_SCHEME=http
@@ -265,6 +268,8 @@ cat > "\${OUT_DIR}/\${ARTIFACT}/README.txt" <<README_EOF
 VMRogue ${VERSION} — Linux amd64 client bundle
 =============================================
 
+START: cat START_HERE.txt  |  full help: cat HELP.txt
+
 WHAT IS IN THIS ARCHIVE
   vmrogue, virtctl (optional)
   install.sh / uninstall.sh     Client on this machine
@@ -296,7 +301,7 @@ CLIENT
 UNINSTALL: ./uninstall.sh --yes [--remove-dir]
 README_EOF
 
-for req in install.sh uninstall.sh README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
+for req in install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
   install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
   install-client-deps.sh vmrogue vmrogue.env.example; do
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }

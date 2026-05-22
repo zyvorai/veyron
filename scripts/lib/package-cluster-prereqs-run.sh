@@ -3,8 +3,14 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
+export PKG_INSTALL_ROOT="${ROOT}"
 # shellcheck source=/dev/null
 [[ -f "${ROOT}/.package-lib/package-ui.sh" ]] && source "${ROOT}/.package-lib/package-ui.sh"
+
+[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && {
+  pkg_script_help "install-cluster.sh"
+  exit 0
+}
 # shellcheck source=/dev/null
 [[ -f "${ROOT}/cluster/env.sh" ]] && source "${ROOT}/cluster/env.sh"
 

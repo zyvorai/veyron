@@ -37,8 +37,12 @@ for repo in "${REPOS[@]}"; do
     cp -f "${KIT}/ZYVOR_INSTALL.txt" "${KIT}/ZyvorBrand.tsx" "${KIT}/zyvor-logo.png" \
       "${root}/scripts/zyvor-branding/"
   fi
-  cp -f "${KIT}/../lib/package-ui.sh" "${root}/scripts/lib/package-ui.sh" 2>/dev/null || true
-  cp -f "${KIT}/../lib/install-everything.sh" "${root}/scripts/lib/install-everything.sh" 2>/dev/null || true
+  LIB_SRC="${KIT}/../lib"
+  for libf in package-ui.sh install-everything.sh write-customer-help.sh START_HERE.txt \
+    package-bundle-client.sh package-cluster-test.sh package-host-test.sh package-cluster-prereqs-run.sh; do
+    [[ -f "${LIB_SRC}/${libf}" ]] && cp -f "${LIB_SRC}/${libf}" "${root}/scripts/lib/${libf}" 2>/dev/null || true
+  done
+  [[ -f "${LIB_SRC}/write-customer-help.sh" ]] && chmod +x "${root}/scripts/lib/write-customer-help.sh" 2>/dev/null || true
 
   pair="${WEB_PUBLIC[$repo]:-}"
   if [[ -n "${pair}" ]]; then
