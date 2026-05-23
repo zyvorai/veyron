@@ -1,5 +1,4 @@
 import React from "react";
-import { ZyvorInline } from "./ZyvorBrand";
 
 /**
  * HyperSDK-style sticky sub-header: hash anchors for in-page sections (matches legacy dashboard-react header).
@@ -77,9 +76,7 @@ export const HyperPageTabs: React.FC = () => {
           >
             Namespaces{" & "}VMs
           </a>
-        </nav>
-        <ZyvorInline product="VMRogue" />
-      </div>
+        </nav></div>
     </header>
   );
 };

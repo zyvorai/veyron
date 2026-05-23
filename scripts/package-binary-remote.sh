@@ -259,7 +259,7 @@ CLIENT ON THIS MACHINE
 Checklist: PREREQUISITES.txt  |  Flags: CLUSTER_SETUP.txt
 Remove: ./uninstall.sh --yes [--remove-dir]
 
-Packaged by Zyvor — https://zyvor.dev · © @zyvor 2026
+Packaged by Zyvor — zyvor.dev · HyperSDK · © 2026
 QEOF
 
 cp "\${BUILD_DIR}/scripts/zyvor-branding/ZYVOR_INSTALL.txt" "\${OUT_DIR}/\${ARTIFACT}/ZYVOR_INSTALL.txt" 2>/dev/null || true
