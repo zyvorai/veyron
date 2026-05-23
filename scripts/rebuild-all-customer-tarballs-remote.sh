@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Rebuild customer tarballs on a remote Linux host (fresh HELP.txt, install-everything, UX).
+# Same script in every Zyvor product repo — paths resolve via sibling checkout under tt/.
 #
 # Usage:
 #   ./scripts/rebuild-all-customer-tarballs-remote.sh HOST USER
@@ -9,8 +10,11 @@
 #   ./scripts/test-customer-e2e-remote.sh HOST USER --quick
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TT="$(cd "${ROOT}/.." && pwd)"
+VMROGUE="${TT}/VMRogue"
+
 HOST="${1:?HOST}"
 USER="${2:?USER}"
 shift 2 || true
@@ -20,7 +24,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --reuse-build) EXTRA+=(--reuse-build) ;;
     -h|--help)
-      sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *) echo "Unknown: $1" >&2; exit 1 ;;
@@ -29,7 +33,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 declare -a PRODUCTS=(
-  "VMRogue:${ROOT}/scripts/package-binary-remote.sh"
+  "VMRogue:${VMROGUE}/scripts/package-binary-remote.sh"
   "machina:${TT}/machina/scripts/package-binary-remote.sh"
   "v9s:${TT}/v9s/scripts/package-binary-remote.sh"
   "guestkit:${TT}/guestkit/scripts/package-binary-remote.sh"
@@ -43,6 +47,7 @@ declare -a PRODUCTS=(
 )
 
 echo "==> Rebuilding customer tarballs on ${USER}@${HOST}"
+echo "    Workspace: ${TT}"
 for entry in "${PRODUCTS[@]}"; do
   name="${entry%%:*}"
   script="${entry#*:}"
@@ -58,4 +63,4 @@ for entry in "${PRODUCTS[@]}"; do
 done
 
 echo ""
-echo "==> Done. Run E2E: ${ROOT}/scripts/test-customer-e2e-remote.sh ${HOST} ${USER} --quick"
+echo "==> Done. Run E2E: ${SCRIPT_DIR}/test-customer-e2e-remote.sh ${HOST} ${USER} --quick"
