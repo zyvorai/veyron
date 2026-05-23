@@ -94,4 +94,16 @@ for repo in "${REPOS[@]}"; do
   echo "package → ${repo}"
 done
 
+SCRIPTS_SRC="${KIT}/.."
+for script in rebuild-all-customer-tarballs-remote.sh test-customer-e2e-remote.sh test-packages-remote-only.sh; do
+  [[ -f "${SCRIPTS_SRC}/${script}" ]] || continue
+  for repo in VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge; do
+    root="${TT}/${repo}"
+    [[ -d "${root}/scripts" ]] || continue
+    cp -f "${SCRIPTS_SRC}/${script}" "${root}/scripts/${script}"
+    chmod +x "${root}/scripts/${script}"
+  done
+  echo "customer-scripts → ${script}"
+done
+
 echo "Done."
