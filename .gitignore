@@ -41,3 +41,6 @@ web/**/.vite/
 # Local AI caches
 .grok/
 **/.DS_Store
+
+# Local presentation exports
+presentations/
