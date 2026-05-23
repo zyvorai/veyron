@@ -214,9 +214,9 @@ ACCESS_SCHEME=http
 ACCESS_PORT=5151
 ACCESS_PATH=/dashboard
 AUTO_FULL_INSTALL=0
-FINISH_EXTRA_1=Cluster (once): ./install-cluster.sh then deploy VMRogue in the cluster
-FINISH_EXTRA_2=Start: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151
-FINISH_EXTRA_3=Docs: CLUSTER_SETUP.txt
+FINISH_EXTRA_1='Cluster (once): ./install-cluster.sh then deploy VMRogue in the cluster'
+FINISH_EXTRA_2='Start: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151'
+FINISH_EXTRA_3='Docs: CLUSTER_SETUP.txt'
 META
 
 CLUSTER_SRC="\${BUILD_DIR}/scripts/cluster"
