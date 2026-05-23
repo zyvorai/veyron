@@ -140,7 +140,7 @@ test_tarball() {
   timeout_secs="$(install_timeout_for "${name}")"
   log "  install: ${install_cmd} (timeout ${timeout_secs}s, ZYVOR_NONINTERACTIVE=1)"
 
-  if ! timeout "${timeout_secs}" env ZYVOR_NONINTERACTIVE=1 ZYVOR_AUTO_INSTALL=0 bash -c "${install_cmd}" </dev/null >>"${RESULTS}" 2>&1; then
+  if ! timeout "${timeout_secs}" env ZYVOR_NONINTERACTIVE=1 ZYVOR_AUTO_INSTALL=0 KUBECONFIG= bash -c "${install_cmd}" </dev/null >>"${RESULTS}" 2>&1; then
     log_fail "${install_cmd} failed or timed out (${timeout_secs}s)"
     tail -30 "${RESULTS}" | tee -a "${RESULTS}" >/dev/null
     rm -rf "${work}"
