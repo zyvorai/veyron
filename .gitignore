@@ -37,3 +37,7 @@ web/**/node_modules/
 web/**/dist/
 web/**/test-results/
 web/**/.vite/
+
+# Local AI caches
+.grok/
+**/.DS_Store
