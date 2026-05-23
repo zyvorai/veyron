@@ -135,6 +135,10 @@ export const HyperShell: React.FC<HyperShellProps> = ({ activeView, onViewChange
         }}
       >
         {children}
+        <footer className="zyvor-footer" style={{ marginTop: "auto", padding: "12px", textAlign: "center", fontSize: "12px", color: "#6b7280", borderTop: "1px solid #e5e7eb" }} role="contentinfo">
+          <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: "#f0583a", fontWeight: 600, textDecoration: "none" }}>zyvor.dev</a>
+          {" · HyperSDK · © 2026"}
+        </footer>
       </div>
     </div>
   );
