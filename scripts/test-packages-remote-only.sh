@@ -1,42 +1,185 @@
 #!/usr/bin/env bash
-# Run on remote host: install / test / uninstall for all *-dist tarballs.
-# Usage: scp to remote && bash ~/test-packages-remote-only.sh
+# Run on remote host: pleasant end-to-end customer install tests for all *-dist tarballs.
+#
+# Usage:
+#   scp scripts/test-packages-remote-only.sh user@host:~/
+#   ssh user@host 'bash ~/test-packages-remote-only.sh'
+#
+# Env:
+#   ZYVOR_E2E_INSTALL=install-everything|install   (default: install-everything when present)
+#   ZYVOR_E2E_TIMEOUT_SECS=900                    default per-product install timeout
+#   ZYVOR_E2E_SKIP=vmrogue,machina                comma-separated product names to skip
 set -uo pipefail
+
 TEST_ROOT="${HOME}/package-tests"
 mkdir -p "${TEST_ROOT}"
-RESULTS="${TEST_ROOT}/results-$(date +%Y%m%d-%H%M%S).log"
-PASS=0 FAIL=0
+RUN_ID="$(date +%Y%m%d-%H%M%S)"
+RESULTS="${TEST_ROOT}/results-${RUN_ID}.log"
+PASS=0 FAIL=0 WARN=0
+SESSION_START=${SECONDS}
+
+# Colors when stdout is a TTY
+if [[ -t 1 ]]; then
+  C_GREEN=$'\033[0;32m' C_RED=$'\033[0;31m' C_YELLOW=$'\033[0;33m'
+  C_CYAN=$'\033[0;36m' C_BOLD=$'\033[1m' C_DIM=$'\033[2m' C_RESET=$'\033[0m'
+else
+  C_GREEN= C_RED= C_YELLOW= C_CYAN= C_BOLD= C_DIM= C_RESET=
+fi
+
 log() { echo "$@" | tee -a "${RESULTS}"; }
+log_ok() { log "${C_GREEN}✓${C_RESET} $*"; }
+log_fail() { log "${C_RED}✗${C_RESET} $*"; }
+log_warn() { log "${C_YELLOW}!${C_RESET} $*"; }
+log_phase() { log ""; log "${C_BOLD}${C_CYAN}━━ $* ━━${C_RESET}"; }
+
 pick_latest() { ls -t "$1"/*.tar.gz 2>/dev/null | head -1; }
-has_uninstall() { tar tzf "$1" 2>/dev/null | awk -F/ '$NF=="uninstall.sh"{found=1} END{exit !found}'; }
+
+tar_has_file() {
+  local tarball="$1" leaf="$2"
+  tar tzf "${tarball}" 2>/dev/null | awk -F/ -v leaf="${leaf}" '$NF==leaf{found=1} END{exit !found}'
+}
+
+should_skip() {
+  local name="$1"
+  local skip="${ZYVOR_E2E_SKIP:-}"
+  [[ -z "${skip}" ]] && return 1
+  local want="${name,,}" item
+  IFS=',' read -ra _skip_list <<< "${skip}"
+  for item in "${_skip_list[@]}"; do
+    item="${item//[[:space:]]/}"
+    [[ -z "${item}" ]] && continue
+    [[ "${item,,}" == "${want}" ]] && return 0
+  done
+  return 1
+}
+
+install_timeout_for() {
+  local name="$1"
+  case "${name,,}" in
+    machina|vmrogue|v9s|ragnarok|aether|ironwolf|packetwolf) echo 900 ;;
+    *) echo "${ZYVOR_E2E_TIMEOUT_SECS:-600}" ;;
+  esac
+}
+
+choose_install_cmd() {
+  local mode="${ZYVOR_E2E_INSTALL:-}"
+  if [[ "${mode}" == "install" ]]; then
+    echo "./install.sh"
+    return
+  fi
+  if [[ "${mode}" == "install-everything" ]] || [[ -x ./install-everything.sh ]]; then
+    echo "./install-everything.sh"
+    return
+  fi
+  echo "./install.sh"
+}
+
+verify_bundle_layout() {
+  local tarball="$1"
+  local ok=0
+  for f in uninstall.sh install.sh START_HERE.txt HELP.txt install-everything.sh; do
+    if tar_has_file "${tarball}" "${f}"; then
+      log_ok "  tarball contains ${f}"
+    else
+      log_warn "  tarball missing ${f}"
+      ok=1
+    fi
+  done
+  tar_has_file "${tarball}" "package-ui.sh" || log_warn "  package-ui.sh not under .package-lib (old bundle?)"
+  return "${ok}"
+}
+
+verify_extracted_ux() {
+  local ok=0
+  [[ -f START_HERE.txt ]] && grep -q 'install-everything' START_HERE.txt && log_ok "  START_HERE.txt" || { log_warn "  START_HERE.txt"; ok=1; }
+  [[ -f HELP.txt ]] && log_ok "  HELP.txt ($(wc -l < HELP.txt | tr -d ' ') lines)" || { log_warn "  HELP.txt"; ok=1; }
+  if [[ -x ./install-everything.sh ]]; then
+    if ./install-everything.sh --help 2>/dev/null | grep -q 'install-everything\|HELP\|Zyvor\|START'; then
+      log_ok "  install-everything.sh --help"
+    else
+      log_warn "  install-everything.sh --help"
+      ok=1
+    fi
+  fi
+  if [[ -x ./install.sh ]]; then
+    ./install.sh --help >/dev/null 2>&1 && log_ok "  install.sh --help" || { log_warn "  install.sh --help"; ok=1; }
+  fi
+  return "${ok}"
+}
 
 test_tarball() {
   local name="$1" tarball="$2"
-  log ""; log "======== ${name} ========"
-  [[ -f "${tarball}" ]] || { log "FAIL: missing ${tarball}"; ((FAIL++)); return 1; }
-  has_uninstall "${tarball}" || { log "FAIL: no uninstall.sh in ${tarball}"; ((FAIL++)); return 1; }
-  tar tzf "${tarball}" 2>/dev/null | awk -F/ '$NF=="package-ui.sh"{u=1} END{exit !u}' || \
-    { log "WARN: package-ui.sh not in bundle (old tarball?)"; }
-  local work="${TEST_ROOT}/${name}-$$"
-  rm -rf "${work}" && mkdir -p "${work}"
-  tar xzf "${tarball}" -C "${work}" || { log "FAIL: extract"; ((FAIL++)); return 1; }
-  local dir; dir=$(find "${work}" -maxdepth 1 -mindepth 1 -type d | head -1)
-  cd "${dir}" || return 1
-  log "  dir: ${dir}"
-  if ! timeout 180 env ZYVOR_NONINTERACTIVE=1 ./install.sh </dev/null; then
-    log "FAIL: install.sh (timeout 180s)"
-    rm -rf "${work}"; ((FAIL++)); return 1
+  if should_skip "${name}"; then
+    log_phase "${name} (skipped)"
+    return 0
   fi
-  log "  OK: install.sh"
-  ./test-package.sh && log "  OK: test-package.sh" || log "  WARN: test-package.sh"
-  [[ -x ./test-cluster.sh ]] && command -v kubectl >/dev/null && \
-    [[ -n "${KUBECONFIG:-}" ]] && [[ -f "${KUBECONFIG}" ]] && \
-    ./test-cluster.sh && log "  OK: test-cluster.sh" || true
-  [[ -x ./test-host.sh ]] && ./test-host.sh && log "  OK: test-host.sh" || true
-  ./uninstall.sh --yes --remove-dir || { log "FAIL: uninstall"; rm -rf "${work}"; ((FAIL++)); return 1; }
-  sleep 3
-  [[ -d "${dir}" ]] && { log "FAIL: dir still exists"; rm -rf "${work}"; ((FAIL++)); return 1; }
-  log "PASS: ${name}"; ((PASS++)); return 0
+
+  log_phase "${name}"
+  local t0=${SECONDS}
+
+  [[ -f "${tarball}" ]] || { log_fail "missing tarball: ${tarball}"; ((FAIL++)); return 1; }
+  log "  tarball: ${tarball}"
+
+  tar_has_file "${tarball}" "uninstall.sh" || { log_fail "no uninstall.sh in archive"; ((FAIL++)); return 1; }
+
+  verify_bundle_layout "${tarball}" || ((WARN++))
+
+  local work="${TEST_ROOT}/${name}-${RUN_ID}-$$"
+  rm -rf "${work}" && mkdir -p "${work}"
+  tar xzf "${tarball}" -C "${work}" || { log_fail "extract failed"; ((FAIL++)); return 1; }
+
+  local dir
+  dir=$(find "${work}" -maxdepth 1 -mindepth 1 -type d | head -1)
+  cd "${dir}" || { log_fail "no extract directory"; ((FAIL++)); return 1; }
+  log "  extracted: ${dir}"
+
+  verify_extracted_ux || ((WARN++))
+
+  local install_cmd timeout_secs
+  install_cmd="$(choose_install_cmd)"
+  timeout_secs="$(install_timeout_for "${name}")"
+  log "  install: ${install_cmd} (timeout ${timeout_secs}s, ZYVOR_NONINTERACTIVE=1)"
+
+  if ! timeout "${timeout_secs}" env ZYVOR_NONINTERACTIVE=1 ZYVOR_AUTO_INSTALL=0 bash -c "${install_cmd}" </dev/null >>"${RESULTS}" 2>&1; then
+    log_fail "${install_cmd} failed or timed out (${timeout_secs}s)"
+    tail -30 "${RESULTS}" | tee -a "${RESULTS}" >/dev/null
+    rm -rf "${work}"
+    ((FAIL++))
+    return 1
+  fi
+  log_ok "${install_cmd}"
+
+  if [[ -x ./test-package.sh ]]; then
+    ./test-package.sh >>"${RESULTS}" 2>&1 && log_ok "test-package.sh" || { log_warn "test-package.sh"; ((WARN++)); }
+  fi
+
+  if [[ -x ./test-cluster.sh ]] && command -v kubectl >/dev/null 2>&1 \
+    && [[ -n "${KUBECONFIG:-}" ]] && [[ -f "${KUBECONFIG}" ]]; then
+    ./test-cluster.sh >>"${RESULTS}" 2>&1 && log_ok "test-cluster.sh" || log_warn "test-cluster.sh (optional)"
+  fi
+
+  if [[ -x ./test-host.sh ]]; then
+    ./test-host.sh >>"${RESULTS}" 2>&1 && log_ok "test-host.sh" || log_warn "test-host.sh (optional)"
+  fi
+
+  ./uninstall.sh --yes --remove-dir >>"${RESULTS}" 2>&1 || {
+    log_fail "uninstall.sh"
+    rm -rf "${work}"
+    ((FAIL++))
+    return 1
+  }
+  sleep 2
+  if [[ -d "${dir}" ]]; then
+    log_fail "install directory still exists after uninstall"
+    rm -rf "${work}"
+    ((FAIL++))
+    return 1
+  fi
+
+  local elapsed=$((SECONDS - t0))
+  log_ok "PASS ${name} (${elapsed}s)"
+  ((PASS++))
+  return 0
 }
 
 declare -a JOBS=(
@@ -52,7 +195,19 @@ declare -a JOBS=(
   "IronWolf|$(pick_latest "${HOME}/ironwolf-dist")"
   "forge|$(pick_latest "${HOME}/forge-dist")"
 )
-log "=== Remote install/uninstall tests ==="
-for job in "${JOBS[@]}"; do test_tarball "${job%%|*}" "${job#*|}" || true; done
-log ""; log "SUMMARY: ${PASS} passed, ${FAIL} failed"; log "Log: ${RESULTS}"
+
+log "${C_BOLD}Zyvor customer bundle E2E (remote)${C_RESET}"
+log "  install mode: ${ZYVOR_E2E_INSTALL:-install-everything (when bundled)}"
+log "  log file: ${RESULTS}"
+log ""
+
+for job in "${JOBS[@]}"; do
+  test_tarball "${job%%|*}" "${job#*|}" || true
+done
+
+total_elapsed=$((SECONDS - SESSION_START))
+log ""
+log "${C_BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${C_RESET}"
+log "${C_BOLD}Summary${C_RESET}  ${C_GREEN}${PASS} passed${C_RESET}  ${C_RED}${FAIL} failed${C_RESET}  ${C_YELLOW}${WARN} warnings${C_RESET}  (${total_elapsed}s)"
+log "Full log: ${RESULTS}"
 exit $((FAIL > 0))
