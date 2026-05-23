@@ -10,7 +10,9 @@ export PKG_INSTALL_ROOT="${ROOT}"
 pkg_parse_install_args "$@"
 
 _PKG_SESSION_START=${SECONDS}
+pkg_counters_reset
 pkg_install_welcome "VMRogue"
+pkg_bundle_sanity_check || true
 pkg_banner "VMRogue" "Kubernetes VM management · client bundle"
 pkg_step_init 5
 
