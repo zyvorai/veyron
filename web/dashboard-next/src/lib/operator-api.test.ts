@@ -41,6 +41,7 @@ describe("operator API path smoke list", () => {
       "/api/v1/events/recent",
       "/api/v1/monitoring/status",
       "/api/v1/security/posture",
+      "/api/v1/security/findings",
       "/api/v1/costs/summary",
     ];
 

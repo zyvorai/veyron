@@ -232,6 +232,22 @@ export async function fetchSecurityPosture(namespace = 'all'): Promise<SecurityP
   return apiJson<SecurityPostureRecord>(`/security/posture${q}`);
 }
 
+export type SecurityFindingRecord = {
+  id: string;
+  severity: string;
+  category: string;
+  title: string;
+  description: string;
+  resource: string;
+  recommendation: string;
+  detected_at: string;
+};
+
+export async function fetchSecurityFindings(namespace = 'all'): Promise<SecurityFindingRecord[]> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  return apiJson<SecurityFindingRecord[]>(`/security/findings${q}`);
+}
+
 export type CostSummaryRecord = {
   total_cost: number;
   currency: string;
