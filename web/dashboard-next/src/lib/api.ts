@@ -169,6 +169,82 @@ export async function fetchGitOpsStatus(namespace = 'all'): Promise<GitOpsStatus
   return apiJson<GitOpsStatusRecord>(`/gitops/status${q}`);
 }
 
+export type PodRecord = {
+  name: string;
+  namespace: string;
+  phase: string;
+  node_name: string;
+  ip: string;
+  containers: string[];
+  restarts: number;
+  age: string;
+};
+
+export async function fetchPods(namespace = 'all'): Promise<PodRecord[]> {
+  const q = `?namespace=${encodeURIComponent(namespace)}`;
+  return apiJson<PodRecord[]>(`/pods${q}`);
+}
+
+export type ClusterEventRecord = {
+  id: string;
+  event_type: string;
+  reason: string;
+  message: string;
+  namespace: string;
+  involved_object: string;
+  timestamp: string;
+  count: number;
+};
+
+export async function fetchRecentEvents(namespace = 'all'): Promise<ClusterEventRecord[]> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '?namespace=all';
+  return apiJson<ClusterEventRecord[]>(`/events/recent${q}`);
+}
+
+export type MonitoringStatusRecord = {
+  prometheus_available: boolean;
+  grafana_available: boolean;
+  alertmanager_available: boolean;
+  metrics_collection_interval: string;
+  retention_period: string;
+  active_alerts: number;
+  total_targets: number;
+  healthy_targets: number;
+};
+
+export async function fetchMonitoringStatus(namespace = 'all'): Promise<MonitoringStatusRecord> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  return apiJson<MonitoringStatusRecord>(`/monitoring/status${q}`);
+}
+
+export type SecurityPostureRecord = {
+  overall_score: number;
+  risk_level: string;
+  total_findings: number;
+  critical_findings: number;
+  high_findings: number;
+  medium_findings: number;
+  low_findings: number;
+};
+
+export async function fetchSecurityPosture(namespace = 'all'): Promise<SecurityPostureRecord> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  return apiJson<SecurityPostureRecord>(`/security/posture${q}`);
+}
+
+export type CostSummaryRecord = {
+  total_cost: number;
+  currency: string;
+  period: string;
+  pricing_model?: string;
+  disclaimer?: string;
+};
+
+export async function fetchCostSummary(namespace = 'all'): Promise<CostSummaryRecord> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  return apiJson<CostSummaryRecord>(`/costs/summary${q}`);
+}
+
 export async function stopVirtualMachine(namespace: string, name: string): Promise<void> {
   await vmLifecycleAction(namespace, name, 'stop');
 }

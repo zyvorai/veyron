@@ -27,6 +27,9 @@ pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/alerts",
     "/api/v1/custom-resources",
     "/api/v1/gitops",
+    "/api/v1/monitoring",
+    "/api/v1/security",
+    "/api/v1/costs",
 ];
 
 pub fn is_operator_api_path(path: &str) -> bool {
@@ -75,6 +78,11 @@ mod tests {
             "/api/v1/snapshots/default/my-vm",
             "/api/v1/custom-resources",
             "/api/v1/gitops/status",
+            "/api/v1/pods?namespace=all",
+            "/api/v1/events/recent",
+            "/api/v1/monitoring/status",
+            "/api/v1/security/posture",
+            "/api/v1/costs/summary",
         ] {
             assert!(is_operator_api_path(path), "{path}");
         }
@@ -84,6 +92,6 @@ mod tests {
     fn rate_limit_exempt_includes_operator_api_and_shell() {
         assert!(is_rate_limit_exempt_path("/dashboard-next/"));
         assert!(is_rate_limit_exempt_path("/api/v1/alerts"));
-        assert!(!is_rate_limit_exempt_path("/api/v1/costs"));
+        assert!(is_rate_limit_exempt_path("/api/v1/costs/summary"));
     }
 }

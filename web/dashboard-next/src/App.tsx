@@ -22,6 +22,8 @@ const VMBrowser = lazy(() => import('./sdk/components/VMBrowser'));
 const NodesPanel = lazy(() => import('./sdk/components/NodesPanel'));
 const StoragePanel = lazy(() => import('./sdk/components/StoragePanel'));
 const PlatformPanel = lazy(() => import('./sdk/components/PlatformPanel'));
+const WorkloadsPanel = lazy(() => import('./sdk/components/WorkloadsPanel'));
+const InsightsPanel = lazy(() => import('./sdk/components/InsightsPanel'));
 
 function ViewFallback() {
   return (
@@ -127,7 +129,11 @@ export default function App() {
       displayUser={displayUser}
     >
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {view === 'inventory' || view === 'storage' || view === 'platform' ? (
+        {view === 'inventory' ||
+        view === 'storage' ||
+        view === 'platform' ||
+        view === 'workloads' ||
+        view === 'insights' ? (
           <div
             style={{
               display: 'flex',
@@ -177,6 +183,14 @@ export default function App() {
         ) : view === 'platform' ? (
           <Suspense fallback={<ViewFallback />}>
             <PlatformPanel scopeNamespace={inventoryNs} />
+          </Suspense>
+        ) : view === 'workloads' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <WorkloadsPanel scopeNamespace={inventoryNs} />
+          </Suspense>
+        ) : view === 'insights' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <InsightsPanel scopeNamespace={inventoryNs} />
           </Suspense>
         ) : (
           <Suspense fallback={<ViewFallback />}>
