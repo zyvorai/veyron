@@ -107,6 +107,13 @@ export const Dashboard: React.FC = () => {
       onClick: () => requestVmrogueNav({ view: "storage" }),
     },
     {
+      title: "Platform (GitOps + CRDs)",
+      description: "GitOps sync status and installed CRD inventory",
+      icon: "◫",
+      href: "#platform",
+      onClick: () => requestVmrogueNav({ view: "platform" }),
+    },
+    {
       title: "Full dashboard",
       description: "VNC, snapshots, nodes, GitOps, and platform pages",
       icon: "▣",

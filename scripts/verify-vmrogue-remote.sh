@@ -93,6 +93,8 @@ check_json_ok "GET /api/v1/namespaces" "${BASE}/api/v1/namespaces" yes
 check_json_ok "GET /api/v1/nodes" "${BASE}/api/v1/nodes" yes
 check_json_ok "GET /api/v1/storage/classes" "${BASE}/api/v1/storage/classes" yes
 check_json_ok "GET /api/v1/storage/pvcs?ns=all" "${BASE}/api/v1/storage/pvcs?namespace=all" yes
+check_json_ok "GET /api/v1/custom-resources" "${BASE}/api/v1/custom-resources" yes
+check_json_ok "GET /api/v1/gitops/status" "${BASE}/api/v1/gitops/status?namespace=all" yes
 check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
 

@@ -35,19 +35,6 @@ type PanelProps = {
   onOpenInventory?: () => void;
 };
 
-/** @deprecated Use VmrogueInventoryPanel */
-export const PlaceholderExportForm: React.FC<PanelProps> = ({ onOpenInventory }) => (
-  <VmrogueInventoryPanel onOpenInventory={onOpenInventory} />
-);
-
-/** @deprecated Use VmroguePlatformPanel */
-export const WorkflowPlaceholder: React.FC = () => <VmroguePlatformPanel />;
-
-/** @deprecated Removed — operator CRDs live in the full dashboard */
-export const ManifestPlaceholder: React.FC<{ onSubmitSuccess?: (jobId: string) => void }> = () => (
-  <VmroguePlatformPanel />
-);
-
 export const VmrogueInventoryPanel: React.FC<PanelProps> = ({ onOpenInventory }) => (
   <div style={card}>
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
@@ -73,14 +60,11 @@ export const VmroguePlatformPanel: React.FC = () => (
       <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>Platform &amp; docs</h3>
     </div>
     <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', lineHeight: 1.5 }}>
-      Cluster nodes are in the operator sidebar. Snapshots, VNC, GitOps, and operator CRDs remain in the full
-      dashboard. API and CLI cover lifecycle automation.
+      Nodes, storage, GitOps, and CRD inventory live in the operator sidebar. VMRogue CRD editors and advanced
+      GitOps actions remain in the full dashboard.
     </p>
-    <button type="button" onClick={() => requestVmrogueNav({ view: 'nodes' })} style={linkBtn}>
-      Open nodes
-    </button>
-    <button type="button" onClick={() => requestVmrogueNav({ view: 'storage' })} style={linkBtn}>
-      Open storage
+    <button type="button" onClick={() => requestVmrogueNav({ view: 'platform' })} style={linkBtn}>
+      Open platform
     </button>
     <a href="/dashboard" style={linkBtn}>
       Full dashboard

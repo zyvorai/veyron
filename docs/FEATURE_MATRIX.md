@@ -122,7 +122,8 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 | RDP + data disk | Working | Working |
 | Cluster nodes (read-only) | Working | Working |
 | Storage PVCs + classes (read-only) | Working | Working |
-| GitOps, CRDs, … | Working | Link to classic SPA |
+| GitOps status + CRDs (read-only) | Working | Working |
+| Advanced GitOps / CRD editors | Working | Link to classic SPA |
 | Help → About (zyvor.dev) | Working | Working (login + shell) |
 
 **Strategy:** Operator UI targets day-one KubeVirt fleet ops; classic dashboard remains the full platform surface until pages are ported incrementally.
@@ -131,14 +132,14 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Port platform pages (GitOps, CRDs) | Low | Nodes + storage in operator UI; classic for the rest |
+| Port platform pages (GitOps, CRDs) | Done | Read-only Platform view in operator UI |
 | Cross-product Zyvor login kit sync | Low | Run `scripts/zyvor-branding/apply-zyvor-premium-login.sh` after shell/CSS changes |
 | Default landing on `/dashboard-next/` | Done | `GET /` permanent redirect to operator UI |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
-| E2E against live cluster | Medium | Vitest covers auth/nav; integration needs KubeVirt |
+| E2E against live cluster | Medium | Vitest + Rust path smoke tests; cluster E2E still manual |
 
 ## Immediate Next Steps
 
-1. Deploy embedded `/dashboard-next/` bundle (nodes, storage, root redirect).
-2. Add smoke coverage for remaining dashboard-facing API endpoints (backend/integration).
+1. Deploy latest `/dashboard-next/` bundle (platform view + path smoke tests).
+2. Optional: cross-product Zyvor login kit sync after CSS changes.
 3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA.
