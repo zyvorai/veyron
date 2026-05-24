@@ -1,9 +1,15 @@
 /** VMRogue REST client (browser → same-origin /api/v1). */
 
-const API = "/api/v1";
+import { getApiKey } from './auth';
+
+const API = '/api/v1';
 
 function authHeaders(): HeadersInit {
-  const token = typeof localStorage !== "undefined" ? localStorage.getItem("vmrogue_token") : null;
+  const apiKey = getApiKey();
+  if (apiKey) {
+    return { 'X-API-Key': apiKey };
+  }
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('vmrogue_token') : null;
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -38,17 +44,86 @@ export interface VmRecord {
   memory?: string;
 }
 
+export interface AlertRecord {
+  id?: string;
+  name: string;
+  source: string;
+  status: string;
+  message: string;
+  severity?: string;
+}
+
 export async function fetchVmInventory(namespace: string): Promise<VmRecord[]> {
   const q = namespace && namespace !== "all" ? `?namespace=${encodeURIComponent(namespace)}` : "";
   return apiJson<VmRecord[]>(`/vms${q}`);
 }
 
-export async function fetchAlerts(): Promise<unknown[]> {
-  return apiJson<unknown[]>(`/alerts`).catch(() => []);
+export async function fetchAlerts(namespace?: string): Promise<AlertRecord[]> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  return apiJson<AlertRecord[]>(`/alerts${q}`).catch(() => []);
 }
 
-export async function fetchHealthSummary(): Promise<{ status: string }> {
-  return apiJson<{ status: string }>(`/health`).catch(() => ({ status: "unknown" }));
+export async function fetchHealthSummary(): Promise<{
+  status: string;
+  message: string;
+  uptime_seconds?: number;
+}> {
+  type HealthPayload = { status: string; uptime_seconds?: number; service?: string };
+  const data = await apiJson<HealthPayload>(`/health`).catch(
+    (): HealthPayload => ({ status: 'unknown' }),
+  );
+  const message =
+    data.uptime_seconds != null
+      ? `uptime ${data.uptime_seconds}s`
+      : data.service ?? data.status;
+  return { status: data.status, message, uptime_seconds: data.uptime_seconds };
+}
+
+export interface NamespaceRecord {
+  name: string;
+  status: string;
+  vm_count: number;
+}
+
+export async function fetchNamespaces(): Promise<
+  Array<{ name: string; vmCount: number; status: string }>
+> {
+  const rows = await apiJson<NamespaceRecord[]>('/namespaces');
+  return rows.map((ns) => ({
+    name: ns.name,
+    vmCount: ns.vm_count,
+    status: ns.status,
+  }));
+}
+
+export async function stopVirtualMachine(namespace: string, name: string): Promise<void> {
+  await vmLifecycleAction(namespace, name, 'stop');
+}
+
+export async function startVirtualMachine(namespace: string, name: string): Promise<void> {
+  await vmLifecycleAction(namespace, name, 'start');
+}
+
+export async function restartVirtualMachine(namespace: string, name: string): Promise<void> {
+  await vmLifecycleAction(namespace, name, 'restart');
+}
+
+async function vmLifecycleAction(namespace: string, name: string, action: 'start' | 'stop' | 'restart'): Promise<void> {
+  const res = await fetch(
+    `${API}/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/${action}`,
+    {
+      method: 'POST',
+      headers: authHeaders(),
+    },
+  );
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg =
+      (body as { error?: { message?: string } })?.error?.message ||
+      (body as { message?: string })?.message ||
+      res.statusText;
+    throw new Error(msg);
+  }
 }
 
 export type RdpGuestAgentResult = {

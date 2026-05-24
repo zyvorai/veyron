@@ -14,6 +14,8 @@ pub mod routes;
 pub mod server;
 pub mod webhooks;
 pub mod websocket;
+#[cfg(feature = "web")]
+pub mod dashboard_next;
 
 /// API server configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

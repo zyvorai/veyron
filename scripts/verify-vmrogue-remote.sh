@@ -56,12 +56,29 @@ check_json_ok() {
     fi
 }
 
+check_html_contains() {
+    local name="$1"
+    local url="$2"
+    local needle="$3"
+    local body
+    body=$(curl -skS --connect-timeout 15 --max-time 45 "${url}" || true)
+    if echo "${body}" | grep -q "${needle}"; then
+        echo "  ✔ ${name}"
+    else
+        echo "  ✗ ${name}"
+        echo "${body}" | head -c 400 | sed 's/^/    /'
+        echo ""
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 echo ""
 echo "VMRogue remote verify → ${BASE}"
 echo ""
 
 echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
+check_html_contains "GET /dashboard-next/" "${BASE}/dashboard-next/" 'id="root"'
 
 echo "  (X-API-Key)"
 check_json_ok "GET /api/v1/templates" "${BASE}/api/v1/templates" yes

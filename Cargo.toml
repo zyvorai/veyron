@@ -63,6 +63,7 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots", "
 futures-util = { version = "0.3", optional = true }
 rustls-pemfile = { version = "2", optional = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots"], optional = true }
+rust-embed = { version = "8.9", optional = true }
 
 [features]
 default = ["web"]
@@ -75,6 +76,7 @@ web = [
     "futures-util",
     "rustls-pemfile",
     "reqwest",
+    "rust-embed",
 ]
 experimental = []
 

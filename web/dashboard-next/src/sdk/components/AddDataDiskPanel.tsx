@@ -211,8 +211,5 @@ const AddDataDiskPanel: React.FC<Props> = ({ namespace, vmName, onAttached }) =>
   );
 };
 
-function motion({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={style}>{children}</div>;
-}
 
 export default AddDataDiskPanel;

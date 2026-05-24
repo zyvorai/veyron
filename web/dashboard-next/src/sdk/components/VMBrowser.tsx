@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { fetchVmInventory } from "../../lib/api";
 import AddDataDiskPanel from "./AddDataDiskPanel";
 import VmRdpPanel from "./VmRdpPanel";
+import { VmLifecycleBar } from "./VmLifecycleBar";
 
 interface VM {
   id: string;
@@ -121,33 +122,16 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
     return '#2196f3';
   };
 
-  const getProviderIcon = (provider: string): string => {
-    const icons: { [key: string]: string } = {
-      vsphere: '☁️',
-      aws: '🌐',
-      azure: '🔷',
-      gcp: '🔶',
-      'hyperv': '💻',
-      oci: '🟧',
-      openstack: '🌀',
-      alibabacloud: '🟠',
-      proxmox: '🔧'
-    };
-    return icons[provider.toLowerCase()] || '📦';
-  };
-
   return (
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
         <div style={styles.headerLeft}>
-          <h2 style={styles.title}>
-            {getProviderIcon(provider)} {provider.toUpperCase()} Virtual Machines
-          </h2>
+          <h2 style={styles.title}>KubeVirt virtual machines</h2>
           <p style={styles.subtitle}>
             {loading
-              ? "Discovering…"
-              : `${filteredVMs.length} of ${vms.length} VMs · Namespace: ${
+              ? "Loading inventory…"
+              : `${filteredVMs.length} of ${vms.length} VMs · namespace: ${
                   inventoryNamespace === "all" ? "all" : inventoryNamespace
                 }`}
           </p>
@@ -160,7 +144,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
             ...(loading ? styles.refreshButtonDisabled : {})
           }}
         >
-          {loading ? '🔄 Discovering...' : '🔄 Refresh VMs'}
+          {loading ? '🔄 Loading…' : '🔄 Refresh'}
         </button>
       </div>
 
@@ -198,7 +182,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
       {loading ? (
         <div style={styles.loading}>
           <div style={styles.spinner}></div>
-          <p>Discovering virtual machines from {provider}...</p>
+          <p>Loading virtual machines from the cluster…</p>
         </div>
       ) : filteredVMs.length === 0 ? (
         <div style={styles.empty}>
@@ -273,7 +257,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                           handleVMClick(vm);
                         }}
                       >
-                        Select for Export
+                        Manage
                       </button>
                     </td>
                   </tr>
@@ -339,7 +323,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                     handleVMClick(vm);
                   }}
                 >
-                  Select for Export
+          Manage
                 </button>
               </div>
             ))}
@@ -367,6 +351,12 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
               (selectedVM.power_state || selectedVM.status || "").toLowerCase() === "running";
             return (
               <>
+                <VmLifecycleBar
+                  namespace={ns}
+                  vmName={vmName}
+                  status={selectedVM.power_state || selectedVM.status}
+                  onChanged={() => void discoverVMs()}
+                />
                 <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />
                 <AddDataDiskPanel
                   namespace={ns}

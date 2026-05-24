@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Propagate PremiumLoginShell.tsx + zyvor-premium-login.css across tt/* dashboards.
+set -euo pipefail
+KIT="$(cd "$(dirname "$0")" && pwd)"
+TT="$(cd "${KIT}/../../.." && pwd)"
+
+REPOS=(
+  VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge vmspawn
+)
+
+declare -A WEB_COMP=(
+  [VMRogue]="web/dashboard-next/src/sdk/components"
+  [v9s]="ui/src/components"
+  [machina]="web/src/components"
+  [hypersdk-]="web/dashboard-react/src/components"
+  [hyper2kvm-]="web/dashboard/src/components"
+  [packetwolf]="web-ui/src/components"
+  [ragnarok]="frontend/src/components"
+  [Aether]="web/dashboard/src/components"
+  [IronWolf]="web/dashboard/src/components"
+  [forge]="web-ui/src/components"
+  [vmspawn]=".web/src/components"
+)
+
+declare -A CSS_ENTRY=(
+  [VMRogue]="web/dashboard-next/src/sdk/index.css"
+  [v9s]="ui/src/index.css"
+  [machina]="web/src/styles/main.css"
+  [hypersdk-]="web/dashboard-react/src/index.css"
+  [hyper2kvm-]="web/dashboard/src/index.css"
+  [packetwolf]="web-ui/src/index.css"
+  [ragnarok]="frontend/src/index.css"
+  [Aether]="web/dashboard/src/index.css"
+  [IronWolf]="web/dashboard/src/index.css"
+  [forge]="web-ui/src/index.css"
+  [vmspawn]=".web/src/index.css"
+)
+
+IMPORT_LINE="@import './zyvor-premium-login.css';"
+
+for repo in "${REPOS[@]}"; do
+  comp="${WEB_COMP[$repo]:-}"
+  css="${CSS_ENTRY[$repo]:-}"
+  root="${TT}/${repo}"
+  [[ -n "${comp}" && -d "${root}/${comp}" ]] || continue
+
+  cp -f "${KIT}/PremiumLoginShell.tsx" "${root}/${comp}/PremiumLoginShell.tsx"
+  echo "PremiumLoginShell → ${repo}/${comp}"
+
+  css_dir="$(dirname "${root}/${css}")"
+  cp -f "${KIT}/zyvor-premium-login.css" "${css_dir}/zyvor-premium-login.css"
+
+  if [[ "${repo}" == "machina" ]]; then
+  echo "  (machina keeps login CSS in main.css — skip import)"
+    continue
+  fi
+
+  if [[ -f "${root}/${css}" ]] && ! grep -q 'zyvor-premium-login.css' "${root}/${css}"; then
+    # shellcheck disable=SC2016
+    perl -i -pe 'print "$ENV{IMPORT_LINE}\n" if $. == 1 && !/zyvor-premium-login/' "${root}/${css}" 2>/dev/null || \
+      sed -i '' "1i\\
+${IMPORT_LINE}
+" "${root}/${css}" 2>/dev/null || \
+      sed -i "1i ${IMPORT_LINE}" "${root}/${css}"
+    echo "  CSS import → ${repo}/${css}"
+  fi
+done
+
+# tt/hypersdk mirror
+if [[ -d "${TT}/tt/hypersdk/web/dashboard-react/src/components" ]]; then
+  cp -f "${KIT}/PremiumLoginShell.tsx" "${TT}/tt/hypersdk/web/dashboard-react/src/components/PremiumLoginShell.tsx"
+  cp -f "${KIT}/zyvor-premium-login.css" "${TT}/tt/hypersdk/web/dashboard-react/src/zyvor-premium-login.css"
+  css="${TT}/tt/hypersdk/web/dashboard-react/src/index.css"
+  if [[ -f "${css}" ]] && ! grep -q 'zyvor-premium-login.css' "${css}"; then
+    sed -i '' "1i\\
+@import './zyvor-premium-login.css';
+" "${css}" 2>/dev/null || sed -i "1i @import './zyvor-premium-login.css';" "${css}"
+  fi
+  echo "PremiumLoginShell → tt/hypersdk"
+fi
+
+echo "Done — premium login kit under ${TT}"

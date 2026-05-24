@@ -142,15 +142,20 @@ echo "  ${COLOR_DIM}NodePort:${COLOR_RESET}   ${NODE_PORT} → pod :5151 (TLS)"
 echo "  ${COLOR_DIM}API key:${COLOR_RESET}    ${API_KEY}"
 echo ""
 
+# ── Step 0: Embedded React operator UI ──
+step "Step 0/7: Building embedded dashboard-next"
+"${SCRIPT_DIR}/build-dashboard-next.sh"
+info "dashboard-next staged for rust-embed"
+
 # ── Step 1: Rsync ──
-step "Step 1/6: Syncing source to ${HOST}"
+step "Step 1/7: Syncing source to ${HOST}"
 rsync -az --delete \
     --exclude target/ --exclude .git/ --exclude operator/bin/ \
     . "${USER}@${HOST}:${REMOTE_DIR}/"
 info "Source synced"
 
 # ── Step 2: Build binary ──
-step "Step 2/6: Building release binary"
+step "Step 2/7: Building release binary"
 ssh "${USER}@${HOST}" "
     source \$HOME/.cargo/env 2>/dev/null || true
     cd ${REMOTE_DIR}
@@ -161,7 +166,7 @@ ssh "${USER}@${HOST}" "
 info "Binary built"
 
 # ── Step 3: Build container image ──
-step "Step 3/6: Building container image"
+step "Step 3/7: Building container image"
 ssh "${USER}@${HOST}" "
     cd ${REMOTE_DIR}
     cp target/release/vmrogue /tmp/vmrogue-binary
@@ -172,7 +177,7 @@ info "Container image built and imported"
 
 # ── Step 4: CDI (DataVolume / import) when missing ──
 # KubeVirt disk pipelines and examples often need CDI; installing it here avoids a separate manual step on fresh clusters.
-step "Step 4/6: Ensuring CDI (containerized-data-importer)"
+step "Step 4/7: Ensuring CDI (containerized-data-importer)"
 if [[ "${SKIP_CDI}" == "1" ]]; then
   info "Skipped CDI install (VMROGUE_SKIP_CDI=1)"
 else
@@ -187,7 +192,7 @@ fi
 # keep running the previous image layers).
 DEPLOY_STAMP="$(date +%s)-${RANDOM}"
 
-step "Step 5/6: Deploying to Kubernetes"
+step "Step 5/7: Deploying to Kubernetes"
 # shellcheck disable=SC2029
 ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
@@ -457,7 +462,7 @@ YAML
 info "K8s resources applied"
 
 # ── Step 6: Verify ──
-step "Step 6/6: Verifying deployment"
+step "Step 6/7: Verifying deployment"
 # Chain with && so a failed rollout is not masked by a later kubectl (ssh exits 0 on last cmd).
 ssh "${USER}@${HOST}" "
     ${K} -n ${NS} rollout status deployment/vmrogue-api --timeout=180s &&
@@ -486,6 +491,7 @@ echo "  ${COLOR_BOLD}═══════════════════�
 echo ""
 echo "  ${COLOR_BOLD}URLs${COLOR_RESET}"
 echo "    Dashboard:  https://${HOST}:${DISPLAY_NODE_PORT}/dashboard"
+echo "    Operator UI: https://${HOST}:${DISPLAY_NODE_PORT}/dashboard-next/"
 echo "    Health:     https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
 echo ""
 echo "  ${COLOR_DIM}TLS:${COLOR_RESET} self-signed init-container cert (browser warning) unless you mount a Secret at /certs."

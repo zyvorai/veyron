@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchAlerts, fetchHealthSummary, fetchVmInventory } from "../lib/api";
+import { getApiKey } from "../lib/auth";
 import type { AlertRecord, VmRecord } from "../types";
 import type { Alert, JobInfo, Metrics, ProviderStats } from "../sdk/types/metrics";
 import { useWebSocket } from "../sdk/hooks/useWebSocket";
@@ -125,6 +126,10 @@ export type MetricsFeed = {
 function metricsWebSocketURL(): string {
   const u = new URL("api/v1/ws/metrics", window.location.origin);
   u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
+  const key = getApiKey();
+  if (key) {
+    u.searchParams.set("token", key);
+  }
   return u.toString();
 }
 
