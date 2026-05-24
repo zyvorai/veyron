@@ -10,7 +10,9 @@ import {
   Terminal,
   Activity,
   CheckCircle,
+  Info,
 } from 'lucide-react';
+import { ZyvorAboutModal } from './ZyvorAboutModal';
 import { ZyvorFooter } from './ZyvorBrand';
 import {
   PremiumLoginShell,
@@ -61,6 +63,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
     document.title = 'Sign in · VMRogue';
@@ -214,7 +217,31 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           <CheckCircle className="h-3.5 w-3.5 text-emerald-500/70" />
           <span>Secured with VMRogue API key authentication</span>
         </div>
+        <div className="mt-3 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setAboutOpen(true)}
+            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <Info className="h-3.5 w-3.5" />
+            About VMRogue
+          </button>
+        </div>
       </form>
+      {aboutOpen ? (
+        <ZyvorAboutModal
+          product="VMRogue"
+          productTagline="KubeVirt fleet operations console for Kubernetes clusters."
+          onClose={() => setAboutOpen(false)}
+          extraLinks={[
+            {
+              label: 'Full dashboard',
+              href: '/dashboard',
+              description: 'Classic SPA with VNC, snapshots, and platform pages',
+            },
+          ]}
+        />
+      ) : null}
     </PremiumLoginShell>
   );
 };

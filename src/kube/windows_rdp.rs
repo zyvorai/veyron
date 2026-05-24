@@ -627,6 +627,26 @@ mod tests {
     }
 
     #[test]
+    fn parse_guest_exec_response_decodes_exit_and_stdout() {
+        let raw = json!({
+            "exit-code": 0,
+            "out-data": base64::engine::general_purpose::STANDARD.encode(b"ok")
+        });
+        let (exit, stdout, stderr) = parse_guest_exec_response(&raw);
+        assert_eq!(exit, Some(0));
+        assert_eq!(stdout.as_deref(), Some("ok"));
+        assert!(stderr.is_none());
+    }
+
+    #[test]
+    fn parse_guest_exec_pid_only_is_detected() {
+        let raw = json!({ "pid": 4242 });
+        let (exit, stdout, stderr) = parse_guest_exec_response(&raw);
+        assert!(exit.is_none() && stdout.is_none() && stderr.is_none());
+        assert!(raw.get("pid").is_some());
+    }
+
+    #[test]
     fn merges_rdp_port_on_masquerade() {
         let mut vm = json!({
             "spec": { "template": { "spec": {

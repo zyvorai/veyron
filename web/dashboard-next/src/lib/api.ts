@@ -126,6 +126,46 @@ async function vmLifecycleAction(namespace: string, name: string, action: 'start
   }
 }
 
+export async function pauseVirtualMachine(namespace: string, name: string): Promise<void> {
+  await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/pause`, {
+    method: 'POST',
+  });
+}
+
+export async function unpauseVirtualMachine(namespace: string, name: string): Promise<void> {
+  await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/unpause`, {
+    method: 'POST',
+  });
+}
+
+export async function migrateVirtualMachine(namespace: string, name: string): Promise<void> {
+  await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/migrate`, {
+    method: 'POST',
+  });
+}
+
+export async function cloneVirtualMachine(
+  namespace: string,
+  name: string,
+  newName: string,
+): Promise<void> {
+  await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/clone`, {
+    method: 'POST',
+    body: JSON.stringify({ new_name: newName }),
+  });
+}
+
+export async function resizeVirtualMachine(
+  namespace: string,
+  name: string,
+  body: { cpus: number; memory: string },
+): Promise<void> {
+  await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
 export type RdpGuestAgentResult = {
   success: boolean
   guest_agent_connected: boolean
