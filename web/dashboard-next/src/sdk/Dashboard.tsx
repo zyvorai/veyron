@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useVmrogueMetricsFeed } from "../hooks/useVmrogueMetricsFeed";
 import { AlertsList } from "./components/AlertsList";
 import { ChartContainer } from "./components/ChartContainer";
-import { Footer } from "./components/Footer";
 import { HyperPageTabs } from "./components/HyperPageTabs";
 import { Hero } from "./components/Hero";
 import { JobsTable } from "./components/JobsTable";
@@ -518,7 +517,6 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      <Footer />
     </div>
   );
 };

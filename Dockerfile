@@ -1,4 +1,12 @@
 # Multi-stage build for minimal production image
+FROM node:20-bookworm-slim AS dashboard-next
+
+WORKDIR /ui
+COPY web/dashboard-next/package.json web/dashboard-next/package-lock.json ./
+RUN npm ci
+COPY web/dashboard-next/ ./
+RUN npm run build
+
 FROM rust:1.94-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y musl-tools curl && rm -rf /var/lib/apt/lists/*
@@ -12,8 +20,9 @@ RUN mkdir src && echo "fn main() {}" > src/main.rs && echo "" > src/lib.rs \
     && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || true \
     && rm -rf src target/x86_64-unknown-linux-musl/release/vmrogue target/x86_64-unknown-linux-musl/release/deps/vmrogue-*
 
-# Build actual source
+# Build actual source (includes embedded dashboard-next from prior stage)
 COPY src/ src/
+COPY --from=dashboard-next /ui/dist/ src/api/web/dashboard-next/
 RUN touch src/main.rs src/lib.rs \
     && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl \
     && strip target/x86_64-unknown-linux-musl/release/vmrogue

@@ -159,6 +159,10 @@ end_phase
 
 # ── Step 1: Rsync source ──
 start_phase "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
+if [[ -x "${SCRIPT_DIR}/build-dashboard-next.sh" ]]; then
+    log_step "  🎨 Building embedded dashboard-next (local)"
+    "${SCRIPT_DIR}/build-dashboard-next.sh"
+fi
 ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -avz --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \
@@ -361,6 +365,7 @@ echo "  ✅ Deployment complete"
 echo "════════════════════════════════════════"
 echo "  ⏱️  Total time: $(format_duration "$(( $(now_epoch) - RUN_STARTED_AT ))")"
 echo "  🌐 Dashboard:  https://${HOST}:${NODE_PORT}/dashboard"
+echo "  🎨 Operator UI: https://${HOST}:${NODE_PORT}/dashboard-next/"
 echo "  💚 Health:     https://${HOST}:${NODE_PORT}/api/v1/health"
 if [ -n "${HTTP_REDIRECT_PORT}" ]; then
     echo "  ↪️  HTTP→HTTPS redirect also on node port ${HTTP_REDIRECT_PORT}"

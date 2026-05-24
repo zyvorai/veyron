@@ -4,6 +4,7 @@
 
 #[cfg(feature = "web")]
 pub mod web {
+    use crate::api::dashboard_next;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
     use crate::kube::{
@@ -395,7 +396,11 @@ pub mod web {
     ) -> impl IntoResponse {
         // Allow health, dashboard, static assets, and dashboard-originated API calls without auth
         let path = request.uri().path();
-        if path == "/api/v1/health" || path == "/dashboard" || path.starts_with("/assets/") {
+        if path == "/api/v1/health"
+            || path == "/dashboard"
+            || path.starts_with("/dashboard-next")
+            || path.starts_with("/assets/")
+        {
             return next.run(request).await.into_response();
         }
 
@@ -517,6 +522,7 @@ pub mod web {
         let path = request.uri().path();
         if path == "/api/v1/health"
             || path == "/dashboard"
+            || path.starts_with("/dashboard-next")
             || path.starts_with("/api/v1/vms")
             || path.starts_with("/api/v1/ws")
             || path.starts_with("/api/v1/events")
@@ -696,6 +702,18 @@ pub mod web {
         let timed_rest = Router::new()
             // Dashboard & static assets
             .route("/dashboard", get(dashboard_handler))
+            .route(
+                "/dashboard-next",
+                get(dashboard_next::dashboard_next_redirect),
+            )
+            .route(
+                "/dashboard-next/",
+                get(dashboard_next::dashboard_next_index),
+            )
+            .route(
+                "/dashboard-next/*path",
+                get(dashboard_next::dashboard_next_path),
+            )
             .route("/assets/novnc.min.js", get(novnc_handler))
             .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
             // VM endpoints

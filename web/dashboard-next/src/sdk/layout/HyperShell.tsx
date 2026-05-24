@@ -1,4 +1,5 @@
 import React from "react";
+import { ZyvorFooter } from "../components/ZyvorBrand";
 
 export type HyperShellView = "dashboard" | "inventory";
 
@@ -27,13 +28,20 @@ interface HyperShellProps {
   activeView: HyperShellView;
   onViewChange: (view: HyperShellView) => void;
   onLogout: () => void;
+  displayUser?: string;
   children: React.ReactNode;
 }
 
 /**
  * HyperSDK dashboard-react–style chrome: persistent left application rail + main workspace.
  */
-export const HyperShell: React.FC<HyperShellProps> = ({ activeView, onViewChange, onLogout, children }) => {
+export const HyperShell: React.FC<HyperShellProps> = ({
+  activeView,
+  onViewChange,
+  onLogout,
+  displayUser,
+  children,
+}) => {
   const navActive = (view: HyperShellView): React.CSSProperties =>
     activeView === view
       ? {
@@ -70,11 +78,11 @@ export const HyperShell: React.FC<HyperShellProps> = ({ activeView, onViewChange
               marginBottom: "6px",
             }}
           >
-            HyperSDK layout
+            KubeVirt console
           </div>
           <h1 style={{ margin: 0, fontSize: "22px", fontWeight: 700, color: "#fff" }}>VMRogue</h1>
           <p style={{ margin: "6px 0 0 0", fontSize: "12px", color: "#9ca3af", lineHeight: 1.4 }}>
-            KubeVirt operator console
+            Fleet operations dashboard
           </p>
         </div>
 
@@ -101,10 +109,11 @@ export const HyperShell: React.FC<HyperShellProps> = ({ activeView, onViewChange
         </nav>
 
         <div style={{ borderTop: "1px solid #2d2f32", paddingTop: "16px", marginTop: "8px" }}>
-          <p style={{ fontSize: "10px", color: "#6b7280", margin: "0 0 12px 8px", lineHeight: 1.45 }}>
-            UI clone of HyperSDK <code style={{ color: "#9ca3af" }}>dashboard-react</code> rail + workspace. Data from
-            VMRogue API.
-          </p>
+          {displayUser ? (
+            <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 10px 8px" }}>
+              Signed in as <strong style={{ color: "#e5e7eb" }}>{displayUser}</strong>
+            </p>
+          ) : null}
           <button
             type="button"
             onClick={onLogout}
@@ -135,11 +144,7 @@ export const HyperShell: React.FC<HyperShellProps> = ({ activeView, onViewChange
         }}
       >
         {children}
-        <footer className="zyvor-footer" style={{ marginTop: "auto", padding: "12px", textAlign: "center", fontSize: "12px", color: "#6b7280", borderTop: "1px solid #e5e7eb" }} role="contentinfo">
-          <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: "#f0583a", fontWeight: 600, textDecoration: "none" }}>zyvor.dev</a>
-          {" · "}
-          <span style={{ color: "#f97316" }}>© 2026</span>
-        </footer>
+        <ZyvorFooter className="border-t border-slate-200 bg-white/80" />
       </div>
     </div>
   );
