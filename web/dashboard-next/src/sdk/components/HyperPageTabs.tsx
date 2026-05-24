@@ -1,10 +1,22 @@
 import React from "react";
+import { requestVmrogueNav } from "../../lib/nav";
 
 /**
- * HyperSDK-style sticky sub-header: hash anchors for in-page sections (matches legacy dashboard-react header).
- * Sign out lives on the HyperShell sidebar.
+ * Sticky sub-header: in-page anchors on the dashboard and cross-view links to inventory.
  */
 export const HyperPageTabs: React.FC = () => {
+  const tabStyle: React.CSSProperties = {
+    color: "#222324",
+    fontSize: "14px",
+    fontWeight: 600,
+    textDecoration: "none",
+    background: "none",
+    border: "none",
+    padding: 0,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  };
+
   return (
     <header
       style={{
@@ -28,55 +40,31 @@ export const HyperPageTabs: React.FC = () => {
         }}
       >
         <nav style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }} aria-label="Section">
-          <a
-            href="#dashboard"
-            style={{
-              color: "#222324",
-              fontSize: "14px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            Dashboard
+          <a href="#dashboard" style={tabStyle}>
+            Overview
           </a>
-          <a
-            href="#jobs"
-            style={{
-              color: "#222324",
-              fontSize: "14px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-          >
-            VM jobs
+          <a href="#jobs" style={tabStyle}>
+            VM list
           </a>
-          <a
-            href="#manage"
-            style={{
-              color: "#222324",
-              fontSize: "14px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
+          <button
+            type="button"
+            style={tabStyle}
+            onClick={() => requestVmrogueNav({ view: "dashboard", scrollTo: "alerts" })}
           >
-            Manage
-          </a>
-          <a
-            href="#clusters-vms"
-            style={{
-              color: "#222324",
-              fontSize: "14px",
-              fontWeight: 600,
-              textDecoration: "none",
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              window.dispatchEvent(new CustomEvent("vmrogue:nav", { detail: { view: "inventory" } }));
-            }}
+            Alerts
+          </button>
+          <button
+            type="button"
+            style={tabStyle}
+            onClick={() => requestVmrogueNav({ view: "inventory" })}
           >
-            Namespaces{" & "}VMs
+            Clusters &amp; VMs
+          </button>
+          <a href="/dashboard" style={tabStyle}>
+            Full dashboard
           </a>
-        </nav></div>
+        </nav>
+      </div>
     </header>
   );
 };

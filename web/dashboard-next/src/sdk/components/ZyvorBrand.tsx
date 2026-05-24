@@ -5,6 +5,11 @@
 import React from 'react';
 
 export const ZYVOR_URL = 'https://zyvor.dev';
+export const ZYVOR_DOCS_URL = 'https://zyvor.dev/docs/intro';
+export const ZYVOR_PRODUCTS_URL = 'https://zyvor.dev/docs/products';
+export const ZYVOR_CONTACT_URL = 'https://zyvor.dev/contact';
+export const ZYVOR_PRIVACY_URL = 'https://zyvor.dev/privacy';
+export const ZYVOR_TERMS_URL = 'https://zyvor.dev/terms';
 export const ZYVOR_BRAND = 'Zyvor';
 export const ZYVOR_COPY = '© 2026';
 export const ZYVOR_LINE = `zyvor.dev · ${ZYVOR_COPY}`;

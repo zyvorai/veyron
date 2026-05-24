@@ -1682,9 +1682,18 @@ html[data-theme="zinc"] .monitor-cap{
           <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
         </div>
       </div>
+      <div class="nav-group">
+        <button class="nav-group-btn"><span class="nav-icon">?</span><span class="nav-label">Help</span></button>
+        <div class="nav-dropdown">
+          <button class="nav-link" type="button" onclick="openAboutModal()">About VMRogue</button>
+          <a class="nav-link" href="https://zyvor.dev/docs/intro" target="_blank" rel="noopener noreferrer">Documentation</a>
+          <a class="nav-link" href="https://zyvor.dev/docs/products" target="_blank" rel="noopener noreferrer">Product suite</a>
+          <a class="nav-link" href="https://zyvor.dev/contact" target="_blank" rel="noopener noreferrer">Contact</a>
+        </div>
+      </div>
     </div>
   </div>
-  <motion className="navbar-right">
+  <div class="navbar-right">
     <a href="/dashboard-next/" class="nav-link" style="text-decoration:none;font-size:.82rem;padding:6px 10px;border:1px solid var(--border);border-radius:8px" title="React operator console (HyperSDK layout)">Operator UI</a>
     <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <option value="slate">Slate Alloy</option>
@@ -2597,6 +2606,41 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
   </div>
 </div>
 
+<div class="modal-overlay" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+  <div class="modal" style="max-width:min(520px,96vw)">
+    <div class="modal-header">
+      <h2 id="about-modal-title">About VMRogue</h2>
+      <button type="button" class="modal-close" onclick="closeAboutModal()" aria-label="Close about dialog">&#10005;</button>
+    </div>
+    <div class="modal-body" style="font-size:.88rem;line-height:1.55;color:var(--text-muted)">
+      <p style="margin:0 0 12px">KubeVirt fleet operations console for Kubernetes clusters. Part of the <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style="color:#f97316;font-weight:600;text-decoration:none">Zyvor</a> platform suite.</p>
+      <p style="margin:0 0 16px">Visit <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style="color:#f97316;font-weight:600;text-decoration:none">zyvor.dev</a> for documentation, product guides, and support.</p>
+      <div id="about-version-row" style="display:none;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,0,0,.12);margin-bottom:16px">
+        <span style="color:var(--text-dim)">Version</span>
+        <span id="about-version" style="font-family:var(--font-mono);color:var(--text)"></span>
+      </div>
+      <h3 style="margin:0 0 8px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Help &amp; resources</h3>
+      <ul style="list-style:none;padding:0;margin:0 0 16px">
+        <li style="margin-bottom:8px"><a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style="color:var(--text);text-decoration:none;font-weight:600">zyvor.dev</a> <span style="color:var(--text-dim)">— platform home</span></li>
+        <li style="margin-bottom:8px"><a href="https://zyvor.dev/docs/intro" target="_blank" rel="noopener noreferrer" style="color:var(--text);text-decoration:none;font-weight:600">Documentation &amp; help</a> <span style="color:var(--text-dim)">— suite guides</span></li>
+        <li style="margin-bottom:8px"><a href="https://zyvor.dev/docs/products" target="_blank" rel="noopener noreferrer" style="color:var(--text);text-decoration:none;font-weight:600">Product suite</a> <span style="color:var(--text-dim)">— compare products</span></li>
+        <li style="margin-bottom:8px"><a href="https://zyvor.dev/contact" target="_blank" rel="noopener noreferrer" style="color:var(--text);text-decoration:none;font-weight:600">Contact</a> <span style="color:var(--text-dim)">— support &amp; enterprise</span></li>
+        <li><a href="/dashboard-next/" style="color:var(--text);text-decoration:none;font-weight:600">Operator UI</a> <span style="color:var(--text-dim)">— focused React console</span></li>
+      </ul>
+      <p style="margin:0;font-size:.78rem;text-align:center;color:var(--text-dim)">
+        <span style="color:#f97316;font-weight:600">&copy; 2026</span> Zyvor. All rights reserved.
+        <span style="margin:0 8px">&middot;</span>
+        <a href="https://zyvor.dev/privacy" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);text-decoration:none">Privacy</a>
+        <span style="margin:0 8px">&middot;</span>
+        <a href="https://zyvor.dev/terms" target="_blank" rel="noopener noreferrer">Terms</a>
+</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeAboutModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="footer-bar" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;padding:12px 16px;font-size:12px;color:rgba(148,163,184,0.85)">
   <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style="color:#f97316;text-decoration:none;font-weight:600">zyvor.dev</a>
   <span>&middot;</span>
@@ -3319,6 +3363,27 @@ function closePlatformInstallModal() {
   if (m) m.classList.remove('open');
 }
 
+function openAboutModal() {
+  const m = document.getElementById('about-modal');
+  if (m) m.classList.add('open');
+  const row = document.getElementById('about-version-row');
+  const verEl = document.getElementById('about-version');
+  if (row) row.style.display = 'none';
+  if (verEl) verEl.textContent = '';
+  apiJson('/api/v1/health').then((h) => {
+    const v = h && (h.version || (h.data && h.data.version));
+    if (v && row && verEl) {
+      verEl.textContent = v;
+      row.style.display = 'flex';
+    }
+  }).catch(() => {});
+}
+
+function closeAboutModal() {
+  const m = document.getElementById('about-modal');
+  if (m) m.classList.remove('open');
+}
+
 async function copyPlatformInstallScript() {
   try {
     await navigator.clipboard.writeText(getPlatformInstallScript());
@@ -3540,7 +3605,7 @@ async function forgeVM() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
-    closePlatformInstallModal();
+    closePlatformInstallModal(); closeAboutModal();
   }
 });
 document.getElementById('create-modal').addEventListener('click', e => {
@@ -3557,6 +3622,9 @@ document.getElementById('serial-modal').addEventListener('click', e => {
 });
 document.getElementById('platform-install-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closePlatformInstallModal();
+});
+document.getElementById('about-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAboutModal();
 });
 
 // ── VM Detail Panel ──

@@ -3,10 +3,11 @@ import React from 'react';
 interface HeroProps {
   title: string;
   subtitle: string;
-  onNewJob?: () => void;
+  primaryActionLabel?: string;
+  onPrimaryAction?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ title, subtitle, onNewJob }) => {
+export const Hero: React.FC<HeroProps> = ({ title, subtitle, primaryActionLabel, onPrimaryAction }) => {
   return (
     <div style={{
       backgroundColor: '#f0f2f7',
@@ -41,9 +42,9 @@ export const Hero: React.FC<HeroProps> = ({ title, subtitle, onNewJob }) => {
           {subtitle}
         </p>
 
-        {onNewJob && (
+        {primaryActionLabel && onPrimaryAction ? (
           <button
-            onClick={onNewJob}
+            onClick={onPrimaryAction}
             style={{
               padding: '10px 24px',
               backgroundColor: '#fff',
@@ -68,9 +69,9 @@ export const Hero: React.FC<HeroProps> = ({ title, subtitle, onNewJob }) => {
               e.currentTarget.style.transform = 'translateY(0)';
             }}
           >
-            New export job
+            {primaryActionLabel}
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
