@@ -79,11 +79,20 @@ echo ""
 echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
 check_html_contains "GET /dashboard-next/" "${BASE}/dashboard-next/" 'id="root"'
+loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
+if [[ "${loc}" == */dashboard-next/ ]]; then
+    echo "  ✔ GET / → /dashboard-next/"
+else
+    echo "  ✗ GET / → /dashboard-next/ (got: ${loc:-none})"
+    FAIL=$((FAIL + 1))
+fi
 
 echo "  (X-API-Key)"
 check_json_ok "GET /api/v1/templates" "${BASE}/api/v1/templates" yes
 check_json_ok "GET /api/v1/namespaces" "${BASE}/api/v1/namespaces" yes
 check_json_ok "GET /api/v1/nodes" "${BASE}/api/v1/nodes" yes
+check_json_ok "GET /api/v1/storage/classes" "${BASE}/api/v1/storage/classes" yes
+check_json_ok "GET /api/v1/storage/pvcs?ns=all" "${BASE}/api/v1/storage/pvcs?namespace=all" yes
 check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
 

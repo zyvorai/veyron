@@ -1,6 +1,6 @@
 /** Cross-view navigation for dashboard-next (shell + in-page sections). */
 
-export type VmrogueView = 'dashboard' | 'inventory';
+export type VmrogueView = 'dashboard' | 'inventory' | 'nodes' | 'storage';
 
 export const VMROGUE_NAV_EVENT = 'vmrogue:nav';
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { requestVmrogueNav } from '../../lib/nav';
 import { ZYVOR_DOCS_URL } from './ZyvorBrand';
 
 const card: React.CSSProperties = {
@@ -72,9 +73,15 @@ export const VmroguePlatformPanel: React.FC = () => (
       <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>Platform &amp; docs</h3>
     </div>
     <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', lineHeight: 1.5 }}>
-      Snapshots, VNC, nodes, GitOps, and operator CRDs are in the full dashboard. API and CLI cover lifecycle
-      automation.
+      Cluster nodes are in the operator sidebar. Snapshots, VNC, GitOps, and operator CRDs remain in the full
+      dashboard. API and CLI cover lifecycle automation.
     </p>
+    <button type="button" onClick={() => requestVmrogueNav({ view: 'nodes' })} style={linkBtn}>
+      Open nodes
+    </button>
+    <button type="button" onClick={() => requestVmrogueNav({ view: 'storage' })} style={linkBtn}>
+      Open storage
+    </button>
     <a href="/dashboard" style={linkBtn}>
       Full dashboard
     </a>

@@ -93,6 +93,20 @@ export const Dashboard: React.FC = () => {
       onClick: () => requestVmrogueNav({ view: "dashboard", scrollTo: "alerts" }),
     },
     {
+      title: "Cluster nodes",
+      description: "Read-only node capacity, roles, and readiness from GET /api/v1/nodes",
+      icon: "⬡",
+      href: "#nodes",
+      onClick: () => requestVmrogueNav({ view: "nodes" }),
+    },
+    {
+      title: "Storage",
+      description: "PVCs and storage classes from GET /api/v1/storage/*",
+      icon: "▣",
+      href: "#storage",
+      onClick: () => requestVmrogueNav({ view: "storage" }),
+    },
+    {
       title: "Full dashboard",
       description: "VNC, snapshots, nodes, GitOps, and platform pages",
       icon: "▣",

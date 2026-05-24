@@ -15,6 +15,10 @@ pub async fn dashboard_next_redirect() -> Redirect {
     Redirect::permanent("/dashboard-next/")
 }
 
+pub async fn root_redirect() -> Redirect {
+    Redirect::permanent("/dashboard-next/")
+}
+
 pub async fn dashboard_next_index() -> impl IntoResponse {
     serve_embedded("index.html")
 }

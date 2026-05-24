@@ -60,6 +60,20 @@ export const HyperPageTabs: React.FC = () => {
           >
             Clusters &amp; VMs
           </button>
+          <button
+            type="button"
+            style={tabStyle}
+            onClick={() => requestVmrogueNav({ view: "nodes" })}
+          >
+            Nodes
+          </button>
+          <button
+            type="button"
+            style={tabStyle}
+            onClick={() => requestVmrogueNav({ view: "storage" })}
+          >
+            Storage
+          </button>
           <a href="/dashboard" style={tabStyle}>
             Full dashboard
           </a>
