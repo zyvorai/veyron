@@ -184,6 +184,29 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
+      {connected && transport === "poll" && metrics && (
+        <div
+          style={{
+            backgroundColor: "#fffbeb",
+            borderBottom: "2px solid #f59e0b",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "1400px",
+              margin: "0 auto",
+              padding: "12px 24px",
+              fontSize: "13px",
+              color: "#92400e",
+              lineHeight: 1.45,
+            }}
+          >
+            REST poll mode: CPU and memory charts use estimated values derived from VM counts, not live Prometheus metrics.
+            Open <strong>Insights</strong> for monitoring stack status or use the classic dashboard for full platform analytics.
+          </div>
+        </div>
+      )}
+
       {connected && (
         <div style={{
           backgroundColor: '#10b98120',

@@ -99,6 +99,7 @@ check_json_ok "GET /api/v1/pods?ns=all" "${BASE}/api/v1/pods?namespace=all" yes
 check_json_ok "GET /api/v1/events/recent" "${BASE}/api/v1/events/recent?namespace=all" yes
 check_json_ok "GET /api/v1/monitoring/status" "${BASE}/api/v1/monitoring/status?namespace=all" yes
 check_json_ok "GET /api/v1/security/posture" "${BASE}/api/v1/security/posture?namespace=all" yes
+check_json_ok "GET /api/v1/security/findings" "${BASE}/api/v1/security/findings?namespace=all" yes
 check_json_ok "GET /api/v1/costs/summary" "${BASE}/api/v1/costs/summary?namespace=all" yes
 check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes

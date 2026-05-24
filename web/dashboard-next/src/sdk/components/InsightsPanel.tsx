@@ -3,10 +3,12 @@ import {
   fetchCostSummary,
   fetchMonitoringStatus,
   fetchRecentEvents,
+  fetchSecurityFindings,
   fetchSecurityPosture,
   type ClusterEventRecord,
   type CostSummaryRecord,
   type MonitoringStatusRecord,
+  type SecurityFindingRecord,
   type SecurityPostureRecord,
 } from "../../lib/api";
 
@@ -15,6 +17,7 @@ type Props = { scopeNamespace?: string };
 type SectionErrors = {
   monitoring?: string;
   security?: string;
+  findings?: string;
   costs?: string;
   events?: string;
 };
@@ -26,6 +29,7 @@ function sectionErrorMessage(reason: unknown): string {
 export function InsightsPanel({ scopeNamespace = "all" }: Props) {
   const [monitoring, setMonitoring] = useState<MonitoringStatusRecord | null>(null);
   const [security, setSecurity] = useState<SecurityPostureRecord | null>(null);
+  const [findings, setFindings] = useState<SecurityFindingRecord[]>([]);
   const [costs, setCosts] = useState<CostSummaryRecord | null>(null);
   const [events, setEvents] = useState<ClusterEventRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +41,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
     const results = await Promise.allSettled([
       fetchMonitoringStatus(scopeNamespace),
       fetchSecurityPosture(scopeNamespace),
+      fetchSecurityFindings(scopeNamespace),
       fetchCostSummary(scopeNamespace),
       fetchRecentEvents(scopeNamespace),
     ]);
@@ -57,17 +62,24 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
     }
 
     if (results[2].status === "fulfilled") {
-      setCosts(results[2].value);
+      setFindings(results[2].value.slice(0, 10));
     } else {
-      setCosts(null);
-      errors.costs = sectionErrorMessage(results[2].reason);
+      setFindings([]);
+      errors.findings = sectionErrorMessage(results[2].reason);
     }
 
     if (results[3].status === "fulfilled") {
-      setEvents(results[3].value.slice(0, 25));
+      setCosts(results[3].value);
+    } else {
+      setCosts(null);
+      errors.costs = sectionErrorMessage(results[3].reason);
+    }
+
+    if (results[4].status === "fulfilled") {
+      setEvents(results[4].value.slice(0, 25));
     } else {
       setEvents([]);
-      errors.events = sectionErrorMessage(results[3].reason);
+      errors.events = sectionErrorMessage(results[4].reason);
     }
 
     setSectionErrors(errors);
@@ -122,10 +134,40 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         {sectionErrors.security ? (
           <p style={sectionError}>{sectionErrors.security}</p>
         ) : security ? (
-          <p style={bodyText}>
-            Score <strong>{security.overall_score}</strong> · risk <strong>{security.risk_level}</strong> ·
-            findings: {security.critical_findings} critical, {security.high_findings} high, {security.medium_findings} medium
-          </p>
+          <>
+            <p style={bodyText}>
+              Score <strong>{security.overall_score}</strong> · risk <strong>{security.risk_level}</strong> ·
+              findings: {security.critical_findings} critical, {security.high_findings} high, {security.medium_findings} medium
+            </p>
+            {sectionErrors.findings ? (
+              <p style={sectionError}>{sectionErrors.findings}</p>
+            ) : findings.length > 0 ? (
+              <div style={{ ...tableWrap, marginTop: 12 }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Severity</th>
+                      <th style={th}>Title</th>
+                      <th style={th}>Resource</th>
+                      <th style={th}>Recommendation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {findings.map((f) => (
+                      <tr key={f.id} style={tr}>
+                        <td style={td}>{f.severity}</td>
+                        <td style={td}><strong>{f.title}</strong></td>
+                        <td style={tdMono}>{f.resource}</td>
+                        <td style={td}>{f.recommendation}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : !loading ? (
+              <p style={note}>No detailed findings for this scope.</p>
+            ) : null}
+          </>
         ) : (
           <p style={muted}>{loading ? "…" : "No security posture data"}</p>
         )}
