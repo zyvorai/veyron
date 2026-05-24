@@ -257,3 +257,134 @@ export function addDataDisk(
     body: JSON.stringify(body),
   });
 }
+
+export async function deleteVirtualMachine(namespace: string, name: string): Promise<void> {
+  await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {
+    method: "DELETE",
+  });
+}
+
+export type VmTemplate = {
+  name: string;
+  description: string;
+  os_type: string;
+  default_cpus: number;
+  default_memory: string;
+  default_disk_size: string;
+  tags: string[];
+};
+
+export function fetchTemplates(): Promise<VmTemplate[]> {
+  return apiJson<VmTemplate[]>("/templates");
+}
+
+export type CreateVmRequest = {
+  name: string;
+  namespace?: string;
+  template?: string;
+  cpus?: number;
+  memory?: string;
+  disk_size?: string;
+  start?: boolean;
+  allow_internet?: boolean;
+};
+
+export function createVirtualMachine(body: CreateVmRequest): Promise<{ name?: string }> {
+  return apiJson("/vms", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export type VmExposePort = {
+  name?: string;
+  port: number;
+  target_port?: number;
+  protocol?: string;
+  node_port?: number | null;
+};
+
+export type VmExposeStatus = {
+  enabled: boolean;
+  service_name?: string;
+  service_type?: string;
+  cluster_ip?: string;
+  ports?: VmExposePort[];
+};
+
+export function fetchVmExpose(namespace: string, name: string): Promise<VmExposeStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/expose`);
+}
+
+export function putVmExpose(
+  namespace: string,
+  name: string,
+  body: {
+    enabled: boolean;
+    service_type?: string;
+    ports?: VmExposePort[];
+  }
+): Promise<VmExposeStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/expose`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+}
+
+export type VmInternetStatus = {
+  enabled: boolean;
+  backend?: string | null;
+  policy_name?: string | null;
+};
+
+export function fetchVmInternet(namespace: string, name: string): Promise<VmInternetStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/network/internet`);
+}
+
+export function enableVmInternet(namespace: string, name: string): Promise<VmInternetStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/network/internet`, {
+    method: "PUT",
+  });
+}
+
+export function disableVmInternet(namespace: string, name: string): Promise<VmInternetStatus> {
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/network/internet`, {
+    method: "DELETE",
+  });
+}
+
+export type VmSnapshot = {
+  name: string;
+  vm_name: string;
+  namespace: string;
+  status: string;
+  ready: boolean;
+  age: string;
+};
+
+export function fetchVmSnapshots(namespace: string, vmName: string): Promise<VmSnapshot[]> {
+  return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(vmName)}`);
+}
+
+export function createVmSnapshot(
+  namespace: string,
+  vmName: string,
+  snapshotName?: string
+): Promise<{ message?: string }> {
+  return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(vmName)}/create`, {
+    method: "POST",
+    body: JSON.stringify(snapshotName ? { snapshot_name: snapshotName } : {}),
+  });
+}
+
+export function deleteVmSnapshot(namespace: string, snapshotName: string): Promise<void> {
+  return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(snapshotName)}/delete`, {
+    method: "POST",
+  });
+}
+
+export function restoreVmSnapshot(namespace: string, snapshotName: string): Promise<void> {
+  return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(snapshotName)}/restore`, {
+    method: "POST",
+  });
+}

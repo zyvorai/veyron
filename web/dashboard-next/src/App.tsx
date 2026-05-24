@@ -6,6 +6,12 @@ import {
   isAuthenticated,
   setAuthSession,
 } from './lib/auth';
+import {
+  scrollDashboardSection,
+  VMROGUE_NAV_EVENT,
+  type VmrogueNavDetail,
+  type VmrogueView,
+} from './lib/nav';
 import { Login } from './sdk/components/Login';
 import VMBrowser from './sdk/components/VMBrowser';
 import { Dashboard } from './sdk/Dashboard';
@@ -51,6 +57,24 @@ export default function App() {
     setView('dashboard');
     setInventoryNs('all');
   }, []);
+
+  const navigate = useCallback((next: VmrogueView, scrollTo?: string) => {
+    setView(next);
+    if (next === 'dashboard' && scrollTo) {
+      window.requestAnimationFrame(() => scrollDashboardSection(scrollTo));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    const onNav = (event: Event) => {
+      const detail = (event as CustomEvent<VmrogueNavDetail>).detail;
+      if (!detail?.view) return;
+      navigate(detail.view, detail.scrollTo);
+    };
+    window.addEventListener(VMROGUE_NAV_EVENT, onNav);
+    return () => window.removeEventListener(VMROGUE_NAV_EVENT, onNav);
+  }, [authed, navigate]);
 
   if (checking) {
     return (

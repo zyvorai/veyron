@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { ZyvorAboutModal } from "../components/ZyvorAboutModal";
 import { ZyvorFooter } from "../components/ZyvorBrand";
 
 export type HyperShellView = "dashboard" | "inventory";
@@ -42,6 +43,24 @@ export const HyperShell: React.FC<HyperShellProps> = ({
   displayUser,
   children,
 }) => {
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [apiVersion, setApiVersion] = useState<string | undefined>();
+
+  const openAbout = useCallback(() => {
+    setAboutOpen(true);
+    void fetch("/api/v1/health", { headers: { Accept: "application/json" } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body: { version?: string; data?: { version?: string } } | null) => {
+        const v = body?.version ?? body?.data?.version;
+        if (v) setApiVersion(v);
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!aboutOpen) setApiVersion(undefined);
+  }, [aboutOpen]);
+
   const navActive = (view: HyperShellView): React.CSSProperties =>
     activeView === view
       ? {
@@ -90,10 +109,7 @@ export const HyperShell: React.FC<HyperShellProps> = ({
           <button
             type="button"
             style={navActive("dashboard")}
-            onClick={() => {
-              onViewChange("dashboard");
-              window.dispatchEvent(new CustomEvent("vmrogue:nav", { detail: { view: "dashboard" } }));
-            }}
+            onClick={() => onViewChange("dashboard")}
           >
             <span aria-hidden>▤</span>
             Dashboard
@@ -109,6 +125,31 @@ export const HyperShell: React.FC<HyperShellProps> = ({
         </nav>
 
         <div style={{ borderTop: "1px solid #2d2f32", paddingTop: "16px", marginTop: "8px" }}>
+          <p
+            style={{
+              fontSize: "10px",
+              fontWeight: 700,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#6b7280",
+              margin: "0 0 8px 8px",
+            }}
+          >
+            Help
+          </p>
+          <button
+            type="button"
+            onClick={openAbout}
+            style={{
+              ...navItemBase,
+              marginBottom: "12px",
+              fontSize: "13px",
+              fontWeight: 500,
+            }}
+          >
+            <span aria-hidden>?</span>
+            About VMRogue
+          </button>
           {displayUser ? (
             <p style={{ fontSize: "11px", color: "#9ca3af", margin: "0 0 10px 8px" }}>
               Signed in as <strong style={{ color: "#e5e7eb" }}>{displayUser}</strong>
@@ -146,6 +187,22 @@ export const HyperShell: React.FC<HyperShellProps> = ({
         {children}
         <ZyvorFooter className="border-t border-slate-200 bg-white/80" />
       </div>
+
+      {aboutOpen ? (
+        <ZyvorAboutModal
+          product="VMRogue"
+          productTagline="KubeVirt fleet operations console for Kubernetes clusters."
+          version={apiVersion}
+          onClose={() => setAboutOpen(false)}
+          extraLinks={[
+            {
+              label: "Full dashboard",
+              href: "/dashboard",
+              description: "Classic SPA with VNC, snapshots, and platform pages",
+            },
+          ]}
+        />
+      ) : null}
     </div>
   );
 };

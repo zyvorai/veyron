@@ -1,72 +1,85 @@
-import React from "react";
+import React from 'react';
+import { ZYVOR_DOCS_URL } from './ZyvorBrand';
 
 const card: React.CSSProperties = {
-  backgroundColor: "#fff",
-  borderRadius: "4px",
-  border: "2px solid #e0e0e0",
-  padding: "16px",
+  backgroundColor: '#fff',
+  borderRadius: '4px',
+  border: '2px solid #e0e0e0',
+  padding: '16px',
 };
 
 const bar: React.CSSProperties = {
-  width: "2px",
-  height: "12px",
-  backgroundColor: "#f0583a",
-  marginRight: "6px",
+  width: '2px',
+  height: '12px',
+  backgroundColor: '#f0583a',
+  marginRight: '6px',
 };
 
-export const PlaceholderExportForm: React.FC = () => (
+const linkBtn: React.CSSProperties = {
+  display: 'inline-block',
+  marginTop: '10px',
+  marginRight: '8px',
+  padding: '6px 12px',
+  fontSize: '11px',
+  fontWeight: 600,
+  border: '1px solid #222324',
+  borderRadius: '4px',
+  background: '#fff',
+  color: '#222324',
+  textDecoration: 'none',
+  cursor: 'pointer',
+};
+
+type PanelProps = {
+  onOpenInventory?: () => void;
+};
+
+/** @deprecated Use VmrogueInventoryPanel */
+export const PlaceholderExportForm: React.FC<PanelProps> = ({ onOpenInventory }) => (
+  <VmrogueInventoryPanel onOpenInventory={onOpenInventory} />
+);
+
+/** @deprecated Use VmroguePlatformPanel */
+export const WorkflowPlaceholder: React.FC = () => <VmroguePlatformPanel />;
+
+/** @deprecated Removed — operator CRDs live in the full dashboard */
+export const ManifestPlaceholder: React.FC<{ onSubmitSuccess?: (jobId: string) => void }> = () => (
+  <VmroguePlatformPanel />
+);
+
+export const VmrogueInventoryPanel: React.FC<PanelProps> = ({ onOpenInventory }) => (
   <div style={card}>
-    <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
       <div style={bar} />
-      <h3 style={{ margin: 0, fontSize: "12px", fontWeight: 600 }}>VM operations</h3>
+      <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>VM inventory</h3>
     </div>
-    <p style={{ margin: 0, fontSize: "11px", color: "#6b7280", lineHeight: 1.5 }}>
-      The HyperSDK vSphere export wizard is not bundled here. Use the VMRogue API, kubectl, or your GitOps pipeline
-      for lifecycle changes.
+    <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', lineHeight: 1.5 }}>
+      Browse KubeVirt VirtualMachines by namespace, run start/stop/restart, and manage RDP exposure from the
+      Clusters &amp; VMs view.
     </p>
+    {onOpenInventory ? (
+      <button type="button" onClick={onOpenInventory} style={linkBtn}>
+        Open Clusters &amp; VMs
+      </button>
+    ) : null}
   </div>
 );
 
-export const WorkflowPlaceholder: React.FC = () => (
+export const VmroguePlatformPanel: React.FC = () => (
   <div style={card}>
-    <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
       <div style={bar} />
-      <h3 style={{ margin: 0, fontSize: "12px", fontWeight: 600 }}>Workflow daemon</h3>
+      <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>Platform &amp; docs</h3>
     </div>
-    <p style={{ margin: 0, fontSize: "11px", color: "#6b7280", lineHeight: 1.5 }}>
-      HyperSDK workflow HTTP endpoints are not part of VMRogue. Inventory above is live from your cluster via the
-      VMRogue API.
+    <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', lineHeight: 1.5 }}>
+      Snapshots, VNC, nodes, GitOps, and operator CRDs are in the full dashboard. API and CLI cover lifecycle
+      automation.
     </p>
-  </div>
-);
-
-type ManifestPlaceholderProps = {
-  onSubmitSuccess?: (jobId: string) => void;
-};
-
-export const ManifestPlaceholder: React.FC<ManifestPlaceholderProps> = ({ onSubmitSuccess }) => (
-  <div style={card}>
-    <div style={{ display: "flex", alignItems: "center", marginBottom: "8px" }}>
-      <div style={bar} />
-      <h3 style={{ margin: 0, fontSize: "12px", fontWeight: 600 }}>Manifest builder</h3>
-    </div>
-    <p style={{ margin: "0 0 12px", fontSize: "11px", color: "#6b7280", lineHeight: 1.5 }}>
-      HyperSDK manifest submission UI is not wired. Use CRDs and the operator API instead.
-    </p>
-    <button
-      type="button"
-      onClick={() => onSubmitSuccess?.("demo")}
-      style={{
-        padding: "6px 12px",
-        fontSize: "11px",
-        fontWeight: 600,
-        border: "1px solid #222324",
-        borderRadius: "4px",
-        background: "#fff",
-        cursor: "pointer",
-      }}
-    >
-      Demo callback
-    </button>
+    <a href="/dashboard" style={linkBtn}>
+      Full dashboard
+    </a>
+    <a href={ZYVOR_DOCS_URL} target="_blank" rel="noopener noreferrer" style={linkBtn}>
+      Zyvor docs
+    </a>
   </div>
 );

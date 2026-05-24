@@ -1,8 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { fetchVmInventory } from "../../lib/api";
 import AddDataDiskPanel from "./AddDataDiskPanel";
+import VmConsoleModal from "./VmConsoleModal";
+import { VmCreateModal } from "./VmCreateModal";
+import { VmInternetPanel, VmSshExposePanel } from "./VmNetworkPanels";
 import VmRdpPanel from "./VmRdpPanel";
 import { VmLifecycleBar } from "./VmLifecycleBar";
+import { VmSnapshotsPanel } from "./VmSnapshotsPanel";
 
 interface VM {
   id: string;
@@ -42,6 +46,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
   const [selectedVM, setSelectedVM] = useState<VM | null>(null);
   const [sortField, setSortField] = useState<keyof VM>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [consoleVm, setConsoleVm] = useState<{ ns: string; name: string } | null>(null);
 
   const discoverVMs = useCallback(async () => {
     setLoading(true);
@@ -136,16 +141,19 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                 }`}
           </p>
         </div>
-        <button
-          onClick={discoverVMs}
-          disabled={loading}
-          style={{
-            ...styles.refreshButton,
-            ...(loading ? styles.refreshButtonDisabled : {})
-          }}
-        >
-          {loading ? '🔄 Loading…' : '🔄 Refresh'}
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={discoverVMs}
+            disabled={loading}
+            style={{
+              ...styles.refreshButton,
+              ...(loading ? styles.refreshButtonDisabled : {}),
+            }}
+          >
+            {loading ? "🔄 Loading…" : "🔄 Refresh"}
+          </button>
+          <VmCreateModal defaultNamespace={inventoryNamespace} onCreated={() => void discoverVMs()} />
+        </div>
       </div>
 
       {/* Filters */}
@@ -356,7 +364,15 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                   vmName={vmName}
                   status={selectedVM.power_state || selectedVM.status}
                   onChanged={() => void discoverVMs()}
+                  onDeleted={() => {
+                    setSelectedVM(null);
+                    void discoverVMs();
+                  }}
+                  onOpenConsole={() => setConsoleVm({ ns, name: vmName })}
                 />
+                <VmSnapshotsPanel namespace={ns} vmName={vmName} />
+                <VmSshExposePanel namespace={ns} vmName={vmName} />
+                <VmInternetPanel namespace={ns} vmName={vmName} />
                 <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />
                 <AddDataDiskPanel
                   namespace={ns}
@@ -368,6 +384,14 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
           })()}
         </div>
       )}
+
+      {consoleVm ? (
+        <VmConsoleModal
+          namespace={consoleVm.ns}
+          vmName={consoleVm.name}
+          onClose={() => setConsoleVm(null)}
+        />
+      ) : null}
     </div>
   );
 };
@@ -386,6 +410,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: '20px',
     borderBottom: '2px solid #f0f2f7',
     paddingBottom: '15px',
+    flexWrap: 'wrap',
+    gap: '12px',
   },
   headerLeft: {
     flex: 1,

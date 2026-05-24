@@ -35,7 +35,11 @@ clean: ## Clean build artifacts
 install: ## Install to ~/.cargo/bin
 	cargo install --path .
 
-ci: fmt-check clippy test ## Run full CI pipeline locally
+ci: fmt-check clippy dashboard-next-ci test ## Run full CI pipeline locally
+
+dashboard-next-ci: ## Typecheck and build embedded operator UI
+	cd web/dashboard-next && npm ci && npm run typecheck && npm run build
+	./scripts/build-dashboard-next.sh
 
 helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
 	helm dependency build charts/vmrogue-monitoring

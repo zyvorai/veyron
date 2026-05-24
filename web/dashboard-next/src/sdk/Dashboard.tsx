@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo } from "react";
+import { requestVmrogueNav } from "../lib/nav";
 import { useVmrogueMetricsFeed } from "../hooks/useVmrogueMetricsFeed";
 import { AlertsList } from "./components/AlertsList";
 import { ChartContainer } from "./components/ChartContainer";
@@ -6,9 +7,8 @@ import { HyperPageTabs } from "./components/HyperPageTabs";
 import { Hero } from "./components/Hero";
 import { JobsTable } from "./components/JobsTable";
 import {
-  ManifestPlaceholder,
-  PlaceholderExportForm,
-  WorkflowPlaceholder,
+  VmrogueInventoryPanel,
+  VmroguePlatformPanel,
 } from "./components/PlaceholderPanels";
 import { QuickLinks } from "./components/QuickLinks";
 import { StatCard } from "./components/StatCard";
@@ -18,8 +18,7 @@ import { formatBytes, formatDuration, getStatusColor } from "./utils/formatters"
 
 export const Dashboard: React.FC = () => {
   const { data: metrics, connected, reconnecting, error, transport } = useVmrogueMetricsFeed(4000);
-  const { history, addMetrics } = useMetricsHistory(60); // Keep last 60 data points
-  const [showJobForm, setShowJobForm] = useState(false);
+  const { history, addMetrics } = useMetricsHistory(60);
 
   useEffect(() => {
     if (metrics) {
@@ -27,16 +26,16 @@ export const Dashboard: React.FC = () => {
     }
   }, [metrics, addMetrics]);
 
+  const openInventory = () => requestVmrogueNav({ view: "inventory" });
+
   const handleCancelJob = async (jobId: string) => {
     try {
       await cancelJob(jobId);
     } catch (err) {
-      console.error('Failed to cancel job:', err);
-      alert('Failed to cancel job');
+      console.error("Failed to stop VM:", err);
+      alert("Failed to stop VM");
     }
   };
-
-  // Job submission is now handled by VSphereExportWorkflow component
 
   const jobsChartData = useMemo(() => {
     return history.map((m) => ({
@@ -74,34 +73,32 @@ export const Dashboard: React.FC = () => {
   const quickLinks = [
     {
       title: "VM inventory",
-      description: "Open the Clusters & VMs view to browse KubeVirt VirtualMachines",
+      description: "Browse KubeVirt VirtualMachines and run lifecycle actions",
       icon: "●",
       href: "#inventory",
-      onClick: () => {
-        window.dispatchEvent(new CustomEvent("vmrogue:nav", { detail: { view: "inventory" } }));
-      },
+      onClick: openInventory,
     },
     {
-      title: "Request stop",
-      description: "Use the table below — Stop maps to POST /api/v1/vms/{ns}/{name}/stop",
+      title: "Stop a VM",
+      description: "Open inventory — Stop maps to POST /api/v1/vms/{ns}/{name}/stop",
       icon: "◈",
-      href: "#vms",
-      onClick: () => {},
+      href: "#jobs",
+      onClick: openInventory,
     },
     {
       title: "Alerts & events",
-      description: "Warning events from the cluster are surfaced as alerts",
+      description: "Warning events from the cluster surfaced as alerts",
       icon: "◷",
       href: "#alerts",
-      onClick: () => {},
+      onClick: () => requestVmrogueNav({ view: "dashboard", scrollTo: "alerts" }),
     },
     {
-      title: "Namespaces",
-      description: "Treat each namespace as a provider scope in the Clusters & VMs view",
+      title: "Full dashboard",
+      description: "VNC, snapshots, nodes, GitOps, and platform pages",
       icon: "▣",
-      href: "#namespaces",
+      href: "/dashboard",
       onClick: () => {
-        window.dispatchEvent(new CustomEvent("vmrogue:nav", { detail: { view: "inventory" } }));
+        window.location.href = "/dashboard";
       },
     },
   ];
@@ -113,8 +110,9 @@ export const Dashboard: React.FC = () => {
       <div id="dashboard">
       <Hero
         title="KubeVirt fleet operations"
-        subtitle="Live inventory, health, and signals from the VMRogue API — same dashboard layout as HyperSDK dashboard-react."
-        onNewJob={() => setShowJobForm(true)}
+        subtitle="Live inventory, health, and cluster signals from the VMRogue API."
+        primaryActionLabel="Open Clusters & VMs"
+        onPrimaryAction={openInventory}
       />
       </div>
 
@@ -193,74 +191,27 @@ export const Dashboard: React.FC = () => {
 
       <QuickLinks links={quickLinks} />
 
-      {/* Job Submission Form */}
-      {showJobForm && (
-        <div style={{
-          backgroundColor: '#f0f2f7',
-          padding: '24px 16px',
-        }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '24px',
-            }}>
-              <h2 style={{
-                margin: 0,
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#000',
-              }}>
-                New export job
-              </h2>
-              <button
-                onClick={() => setShowJobForm(false)}
-                style={{
-                  padding: '8px 16px',
-                  backgroundColor: 'transparent',
-                  color: '#222324',
-                  border: '2px solid #222324',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s cubic-bezier(0.215, 0.61, 0.355, 1)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#f0583a';
-                  e.currentTarget.style.color = '#f0583a';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#222324';
-                  e.currentTarget.style.color = '#222324';
-                }}
-              >
-                Close
-              </button>
-            </div>
-            <PlaceholderExportForm />
-          </div>
-        </div>
-      )}
-
       {/* Alerts */}
-      {metrics?.alerts && metrics.alerts.length > 0 && (
-        <div style={{
+      <div
+        id="alerts"
+        style={{
           backgroundColor: '#f0f2f7',
           padding: '24px',
+        }}
+      >
+        <div style={{
+          maxWidth: '1400px',
+          margin: '0 auto',
         }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-          }}>
+          {metrics?.alerts && metrics.alerts.length > 0 ? (
             <AlertsList alerts={metrics.alerts} />
-          </div>
+          ) : (
+            <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>
+              No warning alerts in the current namespace scope.
+            </p>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Stats Grid - Show demo data if no metrics */}
       {(metrics || hasConnectionIssue) && (
@@ -418,7 +369,7 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Workflow Daemon Integration */}
+      {/* Inventory CTA */}
       <div
         id="manage"
         style={{
@@ -430,11 +381,11 @@ export const Dashboard: React.FC = () => {
           maxWidth: '1400px',
           margin: '0 auto',
         }}>
-          <WorkflowPlaceholder />
+          <VmrogueInventoryPanel onOpenInventory={openInventory} />
         </div>
       </div>
 
-      {/* Manifest Builder */}
+      {/* Platform links */}
       <div style={{
         backgroundColor: '#f0f2f7',
         padding: '24px 16px',
@@ -443,11 +394,7 @@ export const Dashboard: React.FC = () => {
           maxWidth: '1400px',
           margin: '0 auto',
         }}>
-          <ManifestPlaceholder
-            onSubmitSuccess={(jobId) => {
-              console.log("Manifest demo callback:", jobId);
-            }}
-          />
+          <VmroguePlatformPanel />
         </div>
       </div>
 
