@@ -109,6 +109,18 @@ jobs:
       - name: Verify embed tree exists
         run: test -f src/api/web/dashboard-next/index.html
 
+      - name: Verify embedded asset references
+        run: |
+          set -euo pipefail
+          html=src/api/web/dashboard-next/index.html
+          grep -oE 'assets/[^"'\'' ]+' "$html" | sort -u | while read -r rel; do
+            test -f "src/api/web/dashboard-next/${rel}" || {
+              echo "Missing embedded asset: ${rel}" >&2
+              exit 1
+            }
+          done
+          echo "All index.html asset references exist on disk."
+
   test:
     name: Test Suite
     runs-on: ubuntu-latest

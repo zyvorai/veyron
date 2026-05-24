@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { ExternalLink, Info, X } from 'lucide-react';
 import {
   ZYVOR_CONTACT_URL,

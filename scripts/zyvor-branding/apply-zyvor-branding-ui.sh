@@ -32,6 +32,10 @@ for repo in "${REPOS[@]}"; do
   [[ -n "${comp}" && -d "${root}/${comp}" ]] || continue
   cp -f "${KIT}/ZyvorBrand.tsx" "${root}/${comp}/ZyvorBrand.tsx"
   echo "ZyvorBrand → ${repo}/${comp}"
+  if [[ -f "${KIT}/ZyvorAboutModal.tsx" ]]; then
+    cp -f "${KIT}/ZyvorAboutModal.tsx" "${root}/${comp}/ZyvorAboutModal.tsx"
+    echo "ZyvorAboutModal → ${repo}/${comp}"
+  fi
 done
 
 # scripts/zyvor-branding copy
