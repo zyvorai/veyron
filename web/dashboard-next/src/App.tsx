@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { fetchNamespaces } from './lib/api';
 import {
   clearAuthSession,
@@ -13,9 +13,27 @@ import {
   type VmrogueView,
 } from './lib/nav';
 import { Login } from './sdk/components/Login';
-import VMBrowser from './sdk/components/VMBrowser';
-import { Dashboard } from './sdk/Dashboard';
 import { HyperShell, type HyperShellView } from './sdk/layout/HyperShell';
+
+const Dashboard = lazy(() =>
+  import('./sdk/Dashboard').then((m) => ({ default: m.Dashboard }))
+);
+const VMBrowser = lazy(() => import('./sdk/components/VMBrowser'));
+
+function ViewFallback() {
+  return (
+    <div
+      style={{
+        padding: 24,
+        color: '#64748b',
+        fontSize: 14,
+        textAlign: 'center',
+      }}
+    >
+      Loading view…
+    </div>
+  );
+}
 
 export default function App() {
   const [checking, setChecking] = useState(true);
@@ -142,13 +160,17 @@ export default function App() {
           </div>
         ) : null}
         {view === 'dashboard' ? (
-          <Dashboard />
+          <Suspense fallback={<ViewFallback />}>
+            <Dashboard />
+          </Suspense>
         ) : (
-          <VMBrowser
-            provider="kubevirt"
-            inventoryNamespace={inventoryNs}
-            autoDiscoverOnMount
-          />
+          <Suspense fallback={<ViewFallback />}>
+            <VMBrowser
+              provider="kubevirt"
+              inventoryNamespace={inventoryNs}
+              autoDiscoverOnMount
+            />
+          </Suspense>
         )}
       </div>
     </HyperShell>

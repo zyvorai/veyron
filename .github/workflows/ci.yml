@@ -95,6 +95,10 @@ jobs:
         working-directory: web/dashboard-next
         run: npm run typecheck
 
+      - name: Unit tests
+        working-directory: web/dashboard-next
+        run: npm test -- --run
+
       - name: Build Vite bundle
         working-directory: web/dashboard-next
         run: npm run build

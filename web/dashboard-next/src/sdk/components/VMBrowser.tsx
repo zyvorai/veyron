@@ -1,8 +1,14 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { fetchVmInventory } from "../../lib/api";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  deleteVirtualMachine,
+  fetchVmInventory,
+  startVirtualMachine,
+  stopVirtualMachine,
+} from "../../lib/api";
 import AddDataDiskPanel from "./AddDataDiskPanel";
 import VmConsoleModal from "./VmConsoleModal";
 import { VmCreateModal } from "./VmCreateModal";
+import VmSerialModal from "./VmSerialModal";
 import { VmInternetPanel, VmSshExposePanel } from "./VmNetworkPanels";
 import VmRdpPanel from "./VmRdpPanel";
 import { VmLifecycleBar } from "./VmLifecycleBar";
@@ -14,6 +20,8 @@ interface VM {
   provider: string;
   status: string;
   power_state?: string;
+  cpu?: string;
+  memory?: string;
   cpu_count?: number;
   memory_mb?: number;
   os?: string;
@@ -47,6 +55,16 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
   const [sortField, setSortField] = useState<keyof VM>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [consoleVm, setConsoleVm] = useState<{ ns: string; name: string } | null>(null);
+  const [serialVm, setSerialVm] = useState<{ ns: string; name: string } | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState<string | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
+  const splitVmId = useCallback((id: string): { ns: string; name: string } | null => {
+    const slash = id.indexOf("/");
+    if (slash < 1) return null;
+    return { ns: id.slice(0, slash), name: id.slice(slash + 1) };
+  }, []);
 
   const discoverVMs = useCallback(async () => {
     setLoading(true);
@@ -61,6 +79,8 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
           provider: provider || "kubevirt",
           status: vm.status,
           power_state: vm.status,
+          cpu: vm.cpu,
+          memory: vm.memory,
           ip_address: vm.ip,
           tags: [vm.node, vm.cpu, vm.memory].filter(Boolean) as string[],
         })),
@@ -127,6 +147,62 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
     return '#2196f3';
   };
 
+  const visibleIds = useMemo(() => filteredVMs.map((vm) => vm.id), [filteredVMs]);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+
+  const toggleSelect = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of visibleIds) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const runBulkAction = async (action: 'start' | 'stop' | 'delete') => {
+    if (selectedIds.size === 0) return;
+    if (action === 'delete' && !confirm(`Delete ${selectedIds.size} VM(s)? This cannot be undone.`)) {
+      return;
+    }
+    setBulkBusy(action);
+    setBulkError(null);
+    const errors: string[] = [];
+    for (const id of selectedIds) {
+      const parts = splitVmId(id);
+      if (!parts) continue;
+      try {
+        if (action === 'delete') {
+          await deleteVirtualMachine(parts.ns, parts.name);
+          if (selectedVM?.id === id) setSelectedVM(null);
+        } else if (action === 'start') {
+          await startVirtualMachine(parts.ns, parts.name);
+        } else {
+          await stopVirtualMachine(parts.ns, parts.name);
+        }
+      } catch (err) {
+        errors.push(`${id}: ${err instanceof Error ? err.message : 'failed'}`);
+      }
+    }
+    setSelectedIds(new Set());
+    setBulkBusy(null);
+    if (errors.length) {
+      setBulkError(errors.slice(0, 3).join(' · ') + (errors.length > 3 ? ' …' : ''));
+    }
+    void discoverVMs();
+  };
+
   return (
     <div style={styles.container}>
       {/* Header */}
@@ -185,6 +261,48 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
           <strong>⚠️ Error:</strong> {error}
         </div>
       )}
+      {bulkError ? (
+        <div style={styles.bulkError} role="alert">
+          {bulkError}
+        </div>
+      ) : null}
+      {selectedIds.size > 0 ? (
+        <div style={styles.bulkBar}>
+          <label style={styles.bulkSelectAll}>
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={(e) => toggleSelectAllVisible(e.target.checked)}
+            />
+            Select visible
+          </label>
+          <span style={styles.bulkCount}>{selectedIds.size} selected</span>
+          <button
+            type="button"
+            disabled={bulkBusy !== null}
+            style={styles.bulkBtnStart}
+            onClick={() => void runBulkAction('start')}
+          >
+            {bulkBusy === 'start' ? 'Starting…' : 'Start'}
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy !== null}
+            style={styles.bulkBtnStop}
+            onClick={() => void runBulkAction('stop')}
+          >
+            {bulkBusy === 'stop' ? 'Stopping…' : 'Stop'}
+          </button>
+          <button
+            type="button"
+            disabled={bulkBusy !== null}
+            style={styles.bulkBtnDelete}
+            onClick={() => void runBulkAction('delete')}
+          >
+            {bulkBusy === 'delete' ? 'Deleting…' : 'Delete'}
+          </button>
+        </div>
+      ) : null}
 
       {/* VM Grid */}
       {loading ? (
@@ -208,6 +326,14 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
             <table style={styles.table}>
               <thead>
                 <tr style={styles.tableHeaderRow}>
+                  <th style={{ ...styles.tableHeader, width: 40, cursor: 'default' }}>
+                    <input
+                      type="checkbox"
+                      aria-label="Select all visible VMs"
+                      checked={allVisibleSelected}
+                      onChange={(e) => toggleSelectAllVisible(e.target.checked)}
+                    />
+                  </th>
                   <th style={styles.tableHeader} onClick={() => handleSort('name')}>
                     Name {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
                   </th>
@@ -235,6 +361,14 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                     }}
                     onClick={() => handleVMClick(vm)}
                   >
+                    <td style={styles.tableCell} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${vm.name}`}
+                        checked={selectedIds.has(vm.id)}
+                        onChange={(e) => toggleSelect(vm.id, e.target.checked)}
+                      />
+                    </td>
                     <td style={styles.tableCell}>
                       <div style={styles.vmNameCell}>
                         <strong>{vm.name}</strong>
@@ -363,12 +497,15 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                   namespace={ns}
                   vmName={vmName}
                   status={selectedVM.power_state || selectedVM.status}
+                  cpu={selectedVM.cpu}
+                  memory={selectedVM.memory}
                   onChanged={() => void discoverVMs()}
                   onDeleted={() => {
                     setSelectedVM(null);
                     void discoverVMs();
                   }}
                   onOpenConsole={() => setConsoleVm({ ns, name: vmName })}
+                  onOpenSerial={() => setSerialVm({ ns, name: vmName })}
                 />
                 <VmSnapshotsPanel namespace={ns} vmName={vmName} />
                 <VmSshExposePanel namespace={ns} vmName={vmName} />
@@ -390,6 +527,13 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
           namespace={consoleVm.ns}
           vmName={consoleVm.name}
           onClose={() => setConsoleVm(null)}
+        />
+      ) : null}
+      {serialVm ? (
+        <VmSerialModal
+          namespace={serialVm.ns}
+          vmName={serialVm.name}
+          onClose={() => setSerialVm(null)}
         />
       ) : null}
     </div>
@@ -467,6 +611,69 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: '5px',
     color: '#c62828',
     marginBottom: '20px',
+  },
+  bulkError: {
+    padding: '10px 14px',
+    backgroundColor: '#fff7ed',
+    border: '1px solid #fed7aa',
+    borderRadius: '8px',
+    color: '#c2410c',
+    marginBottom: '12px',
+    fontSize: '13px',
+  },
+  bulkBar: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px 14px',
+    marginBottom: '16px',
+    backgroundColor: '#fff7ed',
+    border: '1px solid rgba(240, 88, 58, 0.25)',
+    borderRadius: '8px',
+  },
+  bulkSelectAll: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '13px',
+    color: '#374151',
+  },
+  bulkCount: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#222324',
+    marginRight: '8px',
+  },
+  bulkBtnStart: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    border: '1px solid rgba(34,197,94,.35)',
+    background: 'rgba(34,197,94,.12)',
+    color: '#15803d',
+    fontWeight: 600,
+    fontSize: '12px',
+    cursor: 'pointer',
+  },
+  bulkBtnStop: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    border: '1px solid rgba(244,67,54,.35)',
+    background: 'rgba(244,67,54,.1)',
+    color: '#b91c1c',
+    fontWeight: 600,
+    fontSize: '12px',
+    cursor: 'pointer',
+  },
+  bulkBtnDelete: {
+    padding: '6px 12px',
+    borderRadius: '6px',
+    border: '1px solid rgba(244,67,54,.45)',
+    background: '#fef2f2',
+    color: '#991b1b',
+    fontWeight: 600,
+    fontSize: '12px',
+    cursor: 'pointer',
   },
   loading: {
     textAlign: 'center',

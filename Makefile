@@ -37,8 +37,8 @@ install: ## Install to ~/.cargo/bin
 
 ci: fmt-check clippy dashboard-next-ci test ## Run full CI pipeline locally
 
-dashboard-next-ci: ## Typecheck and build embedded operator UI
-	cd web/dashboard-next && npm ci && npm run typecheck && npm run build
+dashboard-next-ci: ## Typecheck, test, and build embedded operator UI
+	cd web/dashboard-next && npm ci && npm run typecheck && npm test -- --run && npm run build
 	./scripts/build-dashboard-next.sh
 
 helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)

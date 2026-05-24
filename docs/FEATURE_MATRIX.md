@@ -102,8 +102,41 @@ These route groups now have first-class dashboard pages:
 | Observability | Counts and ingestion/storage values are approximations |
 | Performance | Percentiles are based on the latest metric sample, not historical windows |
 
+## Operator UI (`/dashboard-next/`)
+
+React operator console (HyperShell layout). Use the classic SPA at `/dashboard` for full platform pages.
+
+| Capability | Classic `/dashboard` | Operator UI `/dashboard-next/` |
+|---|---|---|
+| Login + API key session | Partial (localStorage) | Working (sessionStorage) |
+| Fleet metrics dashboard | Working | Working (REST/WS feed) |
+| VM list + lifecycle | Working | Working |
+| VNC console | Working | Working |
+| Serial console | Working | Working |
+| Create / delete VM | Working | Working |
+| Pause / unpause / migrate | Working | Working |
+| Clone / resize VM | Working | Working |
+| Bulk start / stop / delete | Working | Working |
+| Snapshots (per VM) | Working | Working |
+| SSH expose + internet egress | Working | Working |
+| RDP + data disk | Working | Working |
+| Nodes, storage, GitOps, CRDs, … | Working | Link to classic SPA |
+| Help → About (zyvor.dev) | Working | Working (login + shell) |
+
+**Strategy:** Operator UI targets day-one KubeVirt fleet ops; classic dashboard remains the full platform surface until pages are ported incrementally.
+
+### Operator UI — remaining (optional)
+
+| Item | Priority | Notes |
+|------|----------|-------|
+| Port platform pages (nodes, storage, GitOps, CRDs) | Low | Classic `/dashboard` links suffice for now |
+| Cross-product Zyvor login kit sync | Low | Run `scripts/zyvor-branding/apply-zyvor-premium-login.sh` after shell/CSS changes |
+| Default post-login landing on `/dashboard-next/` | Product | Optional redirect from `/` or `/dashboard` |
+| Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
+| E2E against live cluster | Medium | Vitest covers auth/nav; integration needs KubeVirt |
+
 ## Immediate Next Steps
 
-1. Add smoke coverage for all dashboard-facing endpoints.
-2. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring`.
-3. Add richer drill-downs and actions to the newly surfaced pages.
+1. Commit and deploy embedded `/dashboard-next/` bundle (serial console, lifecycle parity, bulk ops, tests).
+2. Add smoke coverage for remaining dashboard-facing API endpoints (backend/integration).
+3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA.
