@@ -14,25 +14,41 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
   const [gitops, setGitops] = useState<GitOpsStatusRecord | null>(null);
   const [crds, setCrds] = useState<CustomResourceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [gitopsError, setGitopsError] = useState<string | null>(null);
+  const [crdsError, setCrdsError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
-    try {
-      const [status, resources] = await Promise.all([
-        fetchGitOpsStatus(scopeNamespace),
-        fetchCustomResources(),
-      ]);
-      setGitops(status);
-      setCrds(resources);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load platform data");
+    setGitopsError(null);
+    setCrdsError(null);
+    const [statusResult, resourcesResult] = await Promise.allSettled([
+      fetchGitOpsStatus(scopeNamespace),
+      fetchCustomResources(),
+    ]);
+
+    if (statusResult.status === "fulfilled") {
+      setGitops(statusResult.value);
+    } else {
       setGitops(null);
-      setCrds([]);
-    } finally {
-      setLoading(false);
+      setGitopsError(
+        statusResult.reason instanceof Error
+          ? statusResult.reason.message
+          : "Failed to load GitOps status",
+      );
     }
+
+    if (resourcesResult.status === "fulfilled") {
+      setCrds(resourcesResult.value);
+    } else {
+      setCrds([]);
+      setCrdsError(
+        resourcesResult.reason instanceof Error
+          ? resourcesResult.reason.message
+          : "Failed to load CRD inventory",
+      );
+    }
+
+    setLoading(false);
   }, [scopeNamespace]);
 
   useEffect(() => {
@@ -55,11 +71,11 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
         </button>
       </div>
 
-      {error ? <div style={errorBox} role="alert">{error}</div> : null}
-
       <section style={section}>
         <h3 style={sectionTitle}>GitOps status</h3>
-        {gitops ? (
+        {gitopsError ? (
+          <p style={muted}>{gitopsError}</p>
+        ) : gitops ? (
           <>
             <div style={statGrid}>
               <div style={statCard}>
@@ -88,7 +104,9 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
 
       <section style={section}>
         <h3 style={sectionTitle}>Custom resource definitions</h3>
-        {crds.length === 0 && !loading ? (
+        {crdsError ? (
+          <p style={muted}>{crdsError}</p>
+        ) : crds.length === 0 && !loading ? (
           <p style={muted}>No CRDs returned (check API RBAC for apiextensions.k8s.io).</p>
         ) : (
           <div style={tableWrap}>
@@ -143,9 +161,6 @@ const title: CSSProperties = { margin: 0, fontSize: 22, color: "#222324" };
 const subtitle: CSSProperties = { margin: "6px 0 0", fontSize: 13, color: "#6b7280" };
 const refreshBtn: CSSProperties = {
   padding: "8px 14px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer",
-};
-const errorBox: CSSProperties = {
-  padding: "12px 14px", marginBottom: 16, borderRadius: 8, background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", fontSize: 13,
 };
 const section: CSSProperties = { marginBottom: 28 };
 const sectionTitle: CSSProperties = { margin: "0 0 12px", fontSize: 16, color: "#222324" };

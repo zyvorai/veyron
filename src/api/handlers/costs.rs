@@ -1,9 +1,16 @@
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+#[cfg(feature = "web")]
+use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 use super::feature_context::VmrogueFeatureContext;
 
@@ -89,10 +96,16 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn compute_cost_entries(state: &SharedState) -> Vec<CostEntry> {
+async fn compute_cost_entries(state: &SharedState, scope: &str) -> Vec<CostEntry> {
     let s = state.read().await;
-    let vms = s.client().list_all_vms().await.unwrap_or_default();
+    let vms = s.client().list_vms_for_scope(scope).await;
+    cost_entries_from_vms(&vms)
+}
 
+#[cfg(feature = "web")]
+fn cost_entries_from_vms(
+    vms: &[crate::kube::types::VirtualMachine],
+) -> Vec<CostEntry> {
     vms.iter()
         .map(|vm| {
             let meta = &vm.metadata;
@@ -125,7 +138,6 @@ async fn compute_cost_entries(state: &SharedState) -> Vec<CostEntry> {
 
             let cpu_cost = cpu_cores * CPU_RATE * HOURS_PER_MONTH;
             let memory_cost = memory_gib * MEMORY_RATE * HOURS_PER_MONTH;
-            // Sum actual disk sizes from VM spec
             let total_disk_gib: f64 = vm
                 .spec
                 .template
@@ -136,9 +148,8 @@ async fn compute_cost_entries(state: &SharedState) -> Vec<CostEntry> {
                 .as_ref()
                 .and_then(|r| r.get("storage"))
                 .map(|v| parse_memory_gib(v.as_str()))
-                .unwrap_or(20.0); // default 20Gi if no storage in requests
+                .unwrap_or(20.0);
             let storage_cost = total_disk_gib * STORAGE_RATE * HOURS_PER_MONTH;
-            // Flat per-VM network egress estimate; refined when live metrics are available
             let network_cost = NETWORK_RATE_PER_VM;
             let total_cost = cpu_cost + memory_cost + storage_cost + network_cost;
 
@@ -159,7 +170,7 @@ async fn compute_cost_entries(state: &SharedState) -> Vec<CostEntry> {
 
 #[cfg(feature = "web")]
 async fn list_costs(State(state): State<SharedState>) -> Json<CostsListResponse> {
-    let costs = compute_cost_entries(&state).await;
+    let costs = compute_cost_entries(&state, "all").await;
     Json(CostsListResponse {
         vmrogue_context: VmrogueFeatureContext::costs_list(),
         costs,
@@ -167,8 +178,15 @@ async fn list_costs(State(state): State<SharedState>) -> Json<CostsListResponse>
 }
 
 #[cfg(feature = "web")]
-async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary> {
-    let costs = compute_cost_entries(&state).await;
+async fn get_cost_summary(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CostSummary> {
+    let scope = {
+        let s = state.read().await;
+        namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace)
+    };
+    let costs = compute_cost_entries(&state, &scope).await;
 
     let total: f64 = costs.iter().map(|c| c.total_cost).sum();
     let mut by_namespace: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
@@ -205,7 +223,7 @@ async fn get_cost_summary(State(state): State<SharedState>) -> Json<CostSummary>
 
 #[cfg(feature = "web")]
 async fn get_cost_forecast(State(state): State<SharedState>) -> Json<CostForecast> {
-    let costs = compute_cost_entries(&state).await;
+    let costs = compute_cost_entries(&state, "all").await;
     let current: f64 = costs.iter().map(|c| c.total_cost).sum();
 
     Json(CostForecast {
