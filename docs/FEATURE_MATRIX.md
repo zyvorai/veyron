@@ -123,6 +123,8 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 | Cluster nodes (read-only) | Working | Working |
 | Storage PVCs + classes (read-only) | Working | Working |
 | GitOps status + CRDs (read-only) | Working | Working |
+| Workloads / pods (read-only) | Working | Working |
+| Monitoring + security + costs + events | Working | Working (Insights view) |
 | Advanced GitOps / CRD editors | Working | Link to classic SPA |
 | Help → About (zyvor.dev) | Working | Working (login + shell) |
 

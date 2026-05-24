@@ -18,6 +18,9 @@ export const OPERATOR_API_PREFIXES = [
   "/api/v1/alerts",
   "/api/v1/custom-resources",
   "/api/v1/gitops",
+  "/api/v1/monitoring",
+  "/api/v1/security",
+  "/api/v1/costs",
 ] as const;
 
 describe("operator API path smoke list", () => {
@@ -34,6 +37,11 @@ describe("operator API path smoke list", () => {
       "/api/v1/snapshots",
       "/api/v1/custom-resources",
       "/api/v1/gitops/status",
+      "/api/v1/pods",
+      "/api/v1/events/recent",
+      "/api/v1/monitoring/status",
+      "/api/v1/security/posture",
+      "/api/v1/costs/summary",
     ];
 
     for (const path of clientPaths) {

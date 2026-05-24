@@ -114,6 +114,20 @@ export const Dashboard: React.FC = () => {
       onClick: () => requestVmrogueNav({ view: "platform" }),
     },
     {
+      title: "Workloads (pods)",
+      description: "Pod phase, node placement, and restart counts",
+      icon: "◎",
+      href: "#workloads",
+      onClick: () => requestVmrogueNav({ view: "workloads" }),
+    },
+    {
+      title: "Insights",
+      description: "Monitoring stack, security posture, costs, and recent events",
+      icon: "◷",
+      href: "#insights",
+      onClick: () => requestVmrogueNav({ view: "insights" }),
+    },
+    {
       title: "Full dashboard",
       description: "VNC, snapshots, nodes, GitOps, and platform pages",
       icon: "▣",

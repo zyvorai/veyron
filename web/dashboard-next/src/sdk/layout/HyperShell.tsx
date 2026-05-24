@@ -2,7 +2,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ZyvorAboutModal } from "../components/ZyvorAboutModal";
 import { ZyvorFooter } from "../components/ZyvorBrand";
 
-export type HyperShellView = "dashboard" | "inventory" | "nodes" | "storage" | "platform";
+export type HyperShellView =
+  | "dashboard"
+  | "inventory"
+  | "nodes"
+  | "storage"
+  | "platform"
+  | "workloads"
+  | "insights";
 
 const SIDEBAR_W = 260;
 
@@ -145,6 +152,22 @@ export const HyperShell: React.FC<HyperShellProps> = ({
           >
             <span aria-hidden>◫</span>
             Platform
+          </button>
+          <button
+            type="button"
+            style={navActive("workloads")}
+            onClick={() => onViewChange("workloads")}
+          >
+            <span aria-hidden>◎</span>
+            Workloads
+          </button>
+          <button
+            type="button"
+            style={navActive("insights")}
+            onClick={() => onViewChange("insights")}
+          >
+            <span aria-hidden>◷</span>
+            Insights
           </button>
         </nav>
 

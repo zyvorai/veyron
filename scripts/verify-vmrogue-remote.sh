@@ -95,6 +95,11 @@ check_json_ok "GET /api/v1/storage/classes" "${BASE}/api/v1/storage/classes" yes
 check_json_ok "GET /api/v1/storage/pvcs?ns=all" "${BASE}/api/v1/storage/pvcs?namespace=all" yes
 check_json_ok "GET /api/v1/custom-resources" "${BASE}/api/v1/custom-resources" yes
 check_json_ok "GET /api/v1/gitops/status" "${BASE}/api/v1/gitops/status?namespace=all" yes
+check_json_ok "GET /api/v1/pods?ns=all" "${BASE}/api/v1/pods?namespace=all" yes
+check_json_ok "GET /api/v1/events/recent" "${BASE}/api/v1/events/recent?namespace=all" yes
+check_json_ok "GET /api/v1/monitoring/status" "${BASE}/api/v1/monitoring/status?namespace=all" yes
+check_json_ok "GET /api/v1/security/posture" "${BASE}/api/v1/security/posture?namespace=all" yes
+check_json_ok "GET /api/v1/costs/summary" "${BASE}/api/v1/costs/summary" yes
 check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
 
