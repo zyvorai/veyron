@@ -13,7 +13,7 @@ import {
   type VmrogueView,
 } from './lib/nav';
 import { Login } from './sdk/components/Login';
-import { HyperShell, type HyperShellView } from './sdk/layout/HyperShell';
+import { HyperShell } from './sdk/layout/HyperShell';
 
 const Dashboard = lazy(() =>
   import('./sdk/Dashboard').then((m) => ({ default: m.Dashboard }))
@@ -43,7 +43,7 @@ function ViewFallback() {
 export default function App() {
   const [checking, setChecking] = useState(true);
   const [authed, setAuthed] = useState(false);
-  const [view, setView] = useState<HyperShellView>('dashboard');
+  const [view, setView] = useState<VmrogueView>('dashboard');
   const [displayUser, setDisplayUser] = useState('');
   const [inventoryNs, setInventoryNs] = useState('all');
   const [namespaces, setNamespaces] = useState<Array<{ name: string; vmCount: number }>>([]);

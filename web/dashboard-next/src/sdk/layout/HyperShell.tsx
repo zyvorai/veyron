@@ -1,15 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
+import type { VmrogueView } from "../../lib/nav";
 import { ZyvorAboutModal } from "../components/ZyvorAboutModal";
 import { ZyvorFooter } from "../components/ZyvorBrand";
-
-export type HyperShellView =
-  | "dashboard"
-  | "inventory"
-  | "nodes"
-  | "storage"
-  | "platform"
-  | "workloads"
-  | "insights";
 
 const SIDEBAR_W = 260;
 
@@ -33,8 +25,8 @@ const navItemBase: React.CSSProperties = {
 };
 
 interface HyperShellProps {
-  activeView: HyperShellView;
-  onViewChange: (view: HyperShellView) => void;
+  activeView: VmrogueView;
+  onViewChange: (view: VmrogueView) => void;
   onLogout: () => void;
   displayUser?: string;
   children: React.ReactNode;
@@ -68,7 +60,7 @@ export const HyperShell: React.FC<HyperShellProps> = ({
     if (!aboutOpen) setApiVersion(undefined);
   }, [aboutOpen]);
 
-  const navActive = (view: HyperShellView): React.CSSProperties =>
+  const navActive = (view: VmrogueView): React.CSSProperties =>
     activeView === view
       ? {
           ...navItemBase,
