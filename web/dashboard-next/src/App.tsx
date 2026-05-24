@@ -21,6 +21,7 @@ const Dashboard = lazy(() =>
 const VMBrowser = lazy(() => import('./sdk/components/VMBrowser'));
 const NodesPanel = lazy(() => import('./sdk/components/NodesPanel'));
 const StoragePanel = lazy(() => import('./sdk/components/StoragePanel'));
+const PlatformPanel = lazy(() => import('./sdk/components/PlatformPanel'));
 
 function ViewFallback() {
   return (
@@ -126,7 +127,7 @@ export default function App() {
       displayUser={displayUser}
     >
       <div style={{ flex: 1, overflow: 'auto' }}>
-        {view === 'inventory' || view === 'storage' ? (
+        {view === 'inventory' || view === 'storage' || view === 'platform' ? (
           <div
             style={{
               display: 'flex',
@@ -172,6 +173,10 @@ export default function App() {
         ) : view === 'storage' ? (
           <Suspense fallback={<ViewFallback />}>
             <StoragePanel scopeNamespace={inventoryNs} />
+          </Suspense>
+        ) : view === 'platform' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <PlatformPanel scopeNamespace={inventoryNs} />
           </Suspense>
         ) : (
           <Suspense fallback={<ViewFallback />}>

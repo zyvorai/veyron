@@ -140,6 +140,35 @@ export async function fetchStorageClasses(): Promise<StorageClassRecord[]> {
   return apiJson<StorageClassRecord[]>('/storage/classes');
 }
 
+export type CustomResourceRecord = {
+  name: string;
+  group: string;
+  version: string;
+  kind: string;
+  namespace?: string | null;
+  scope: string;
+  instance_count: number;
+};
+
+export type GitOpsStatusRecord = {
+  repo_url: string;
+  branch: string;
+  last_commit: string;
+  sync_status: string;
+  last_synced?: string | null;
+  drift_detected: boolean;
+  note: string;
+};
+
+export async function fetchCustomResources(): Promise<CustomResourceRecord[]> {
+  return apiJson<CustomResourceRecord[]>('/custom-resources');
+}
+
+export async function fetchGitOpsStatus(namespace = 'all'): Promise<GitOpsStatusRecord> {
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  return apiJson<GitOpsStatusRecord>(`/gitops/status${q}`);
+}
+
 export async function stopVirtualMachine(namespace: string, name: string): Promise<void> {
   await vmLifecycleAction(namespace, name, 'stop');
 }

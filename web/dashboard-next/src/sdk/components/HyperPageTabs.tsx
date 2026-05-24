@@ -74,6 +74,13 @@ export const HyperPageTabs: React.FC = () => {
           >
             Storage
           </button>
+          <button
+            type="button"
+            style={tabStyle}
+            onClick={() => requestVmrogueNav({ view: "platform" })}
+          >
+            Platform
+          </button>
           <a href="/dashboard" style={tabStyle}>
             Full dashboard
           </a>

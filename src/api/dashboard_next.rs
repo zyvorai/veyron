@@ -63,3 +63,57 @@ fn content_type(path: &str) -> &'static str {
         _ => "application/octet-stream",
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::response::IntoResponse;
+    use http::StatusCode;
+
+    #[test]
+    fn content_type_maps_known_extensions() {
+        assert_eq!(content_type("index.html"), "text/html; charset=utf-8");
+        assert_eq!(content_type("app.js"), "application/javascript; charset=utf-8");
+        assert_eq!(content_type("styles.css"), "text/css; charset=utf-8");
+        assert_eq!(content_type("data.bin"), "application/octet-stream");
+    }
+
+    #[tokio::test]
+    async fn root_and_dashboard_next_redirect_to_operator_ui() {
+        for redirect in [root_redirect().await, dashboard_next_redirect().await] {
+            let resp = redirect.into_response();
+            assert_eq!(resp.status(), StatusCode::PERMANENT_REDIRECT);
+            assert_eq!(
+                resp.headers()
+                    .get(http::header::LOCATION)
+                    .and_then(|v| v.to_str().ok()),
+                Some("/dashboard-next/")
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn embedded_index_is_react_shell() {
+        let resp = dashboard_next_index().await.into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .expect("body");
+        let html = String::from_utf8(body.to_vec()).expect("utf-8 html");
+        assert!(html.contains("id=\"root\""));
+        assert!(html.contains("/dashboard-next/assets/"));
+    }
+
+    #[tokio::test]
+    async fn unknown_asset_path_falls_back_to_spa_shell() {
+        let resp = dashboard_next_path(Path("does-not-exist.js".into()))
+            .await
+            .into_response();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let body = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .expect("body");
+        let html = String::from_utf8(body.to_vec()).expect("utf-8 html");
+        assert!(html.contains("id=\"root\""));
+    }
+}

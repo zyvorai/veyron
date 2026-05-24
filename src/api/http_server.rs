@@ -5,6 +5,7 @@
 #[cfg(feature = "web")]
 pub mod web {
     use crate::api::dashboard_next;
+    use crate::api::dashboard_paths;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
     use crate::kube::{
@@ -396,12 +397,7 @@ pub mod web {
     ) -> impl IntoResponse {
         // Allow health, dashboard, static assets, and dashboard-originated API calls without auth
         let path = request.uri().path();
-        if path == "/api/v1/health"
-            || path == "/"
-            || path == "/dashboard"
-            || path.starts_with("/dashboard-next")
-            || path.starts_with("/assets/")
-        {
+        if dashboard_paths::is_auth_exempt_path(path) {
             return next.run(request).await.into_response();
         }
 
@@ -521,24 +517,7 @@ pub mod web {
     ) -> impl IntoResponse {
         // Allow health, dashboard, and internal dashboard API calls without rate limiting
         let path = request.uri().path();
-        if path == "/api/v1/health"
-            || path == "/"
-            || path == "/dashboard"
-            || path.starts_with("/dashboard-next")
-            || path.starts_with("/api/v1/vms")
-            || path.starts_with("/api/v1/ws")
-            || path.starts_with("/api/v1/events")
-            || path.starts_with("/api/v1/nodes")
-            || path.starts_with("/api/v1/pods")
-            || path.starts_with("/api/v1/snapshots")
-            || path.starts_with("/api/v1/snapshot-schedules")
-            || path.starts_with("/api/v1/dashboard")
-            || path.starts_with("/api/v1/templates")
-            || path.starts_with("/api/v1/profiles")
-            || path.starts_with("/api/v1/namespaces")
-            || path.starts_with("/api/v1/storage")
-            || path.starts_with("/api/v1/activity")
-        {
+        if dashboard_paths::is_rate_limit_exempt_path(path) {
             return next.run(request).await.into_response();
         }
 
