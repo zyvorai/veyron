@@ -133,13 +133,13 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 | Item | Priority | Notes |
 |------|----------|-------|
 | Port platform pages (GitOps, CRDs) | Done | Read-only Platform view in operator UI |
-| Cross-product Zyvor login kit sync | Low | Run `scripts/zyvor-branding/apply-zyvor-premium-login.sh` after shell/CSS changes |
+| Cross-product Zyvor login kit sync | Done | `scripts/zyvor-branding/sync-zyvor-kit-from-vmrogue.sh` + apply scripts |
 | Default landing on `/dashboard-next/` | Done | `GET /` permanent redirect to operator UI |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 | E2E against live cluster | Medium | Vitest + Rust path smoke tests; cluster E2E still manual |
 
 ## Immediate Next Steps
 
-1. Deploy latest `/dashboard-next/` bundle (platform view + path smoke tests).
-2. Optional: cross-product Zyvor login kit sync after CSS changes.
+1. Deploy latest `/dashboard-next/` bundle to clusters.
+2. Run `./scripts/zyvor-branding/apply-zyvor-branding-ui.sh` on sibling tt/* repos when refreshing suite branding.
 3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA.

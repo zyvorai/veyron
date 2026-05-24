@@ -46,6 +46,14 @@ for repo in "${REPOS[@]}"; do
 
   cp -f "${KIT}/PremiumLoginShell.tsx" "${root}/${comp}/PremiumLoginShell.tsx"
   echo "PremiumLoginShell → ${repo}/${comp}"
+  if [[ -f "${KIT}/ZyvorAboutModal.tsx" ]]; then
+    cp -f "${KIT}/ZyvorAboutModal.tsx" "${root}/${comp}/ZyvorAboutModal.tsx"
+    echo "ZyvorAboutModal → ${repo}/${comp}"
+  fi
+  if [[ -f "${KIT}/ZyvorBrand.tsx" ]]; then
+    cp -f "${KIT}/ZyvorBrand.tsx" "${root}/${comp}/ZyvorBrand.tsx"
+    echo "ZyvorBrand → ${repo}/${comp}"
+  fi
 
   css_dir="$(dirname "${root}/${css}")"
   cp -f "${KIT}/zyvor-premium-login.css" "${css_dir}/zyvor-premium-login.css"

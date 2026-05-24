@@ -40,6 +40,9 @@ ci: fmt-check clippy dashboard-next-ci test ## Run full CI pipeline locally
 dashboard-next-ci: ## Typecheck, test, and build embedded operator UI
 	cd web/dashboard-next && npm ci && npm run typecheck && npm test -- --run && npm run build
 	./scripts/build-dashboard-next.sh
+	@grep -oE 'assets/[^"'\'' ]+' src/api/web/dashboard-next/index.html | sort -u | while read -r rel; do \
+	  test -f "src/api/web/dashboard-next/$${rel}" || (echo "Missing embed: $${rel}" >&2; exit 1); \
+	done
 
 helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
 	helm dependency build charts/vmrogue-monitoring
