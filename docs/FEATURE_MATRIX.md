@@ -120,7 +120,9 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 | Snapshots (per VM) | Working | Working |
 | SSH expose + internet egress | Working | Working |
 | RDP + data disk | Working | Working |
-| Nodes, storage, GitOps, CRDs, … | Working | Link to classic SPA |
+| Cluster nodes (read-only) | Working | Working |
+| Storage PVCs + classes (read-only) | Working | Working |
+| GitOps, CRDs, … | Working | Link to classic SPA |
 | Help → About (zyvor.dev) | Working | Working (login + shell) |
 
 **Strategy:** Operator UI targets day-one KubeVirt fleet ops; classic dashboard remains the full platform surface until pages are ported incrementally.
@@ -129,14 +131,14 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Port platform pages (nodes, storage, GitOps, CRDs) | Low | Classic `/dashboard` links suffice for now |
+| Port platform pages (GitOps, CRDs) | Low | Nodes + storage in operator UI; classic for the rest |
 | Cross-product Zyvor login kit sync | Low | Run `scripts/zyvor-branding/apply-zyvor-premium-login.sh` after shell/CSS changes |
-| Default post-login landing on `/dashboard-next/` | Product | Optional redirect from `/` or `/dashboard` |
+| Default landing on `/dashboard-next/` | Done | `GET /` permanent redirect to operator UI |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 | E2E against live cluster | Medium | Vitest covers auth/nav; integration needs KubeVirt |
 
 ## Immediate Next Steps
 
-1. Commit and deploy embedded `/dashboard-next/` bundle (serial console, lifecycle parity, bulk ops, tests).
+1. Deploy embedded `/dashboard-next/` bundle (nodes, storage, root redirect).
 2. Add smoke coverage for remaining dashboard-facing API endpoints (backend/integration).
 3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA.

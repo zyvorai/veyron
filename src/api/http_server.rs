@@ -397,6 +397,7 @@ pub mod web {
         // Allow health, dashboard, static assets, and dashboard-originated API calls without auth
         let path = request.uri().path();
         if path == "/api/v1/health"
+            || path == "/"
             || path == "/dashboard"
             || path.starts_with("/dashboard-next")
             || path.starts_with("/assets/")
@@ -521,6 +522,7 @@ pub mod web {
         // Allow health, dashboard, and internal dashboard API calls without rate limiting
         let path = request.uri().path();
         if path == "/api/v1/health"
+            || path == "/"
             || path == "/dashboard"
             || path.starts_with("/dashboard-next")
             || path.starts_with("/api/v1/vms")
@@ -534,6 +536,7 @@ pub mod web {
             || path.starts_with("/api/v1/templates")
             || path.starts_with("/api/v1/profiles")
             || path.starts_with("/api/v1/namespaces")
+            || path.starts_with("/api/v1/storage")
             || path.starts_with("/api/v1/activity")
         {
             return next.run(request).await.into_response();
@@ -701,6 +704,7 @@ pub mod web {
 
         let timed_rest = Router::new()
             // Dashboard & static assets
+            .route("/", get(dashboard_next::root_redirect))
             .route("/dashboard", get(dashboard_handler))
             .route(
                 "/dashboard-next",
@@ -2738,33 +2742,34 @@ pub mod web {
         };
         let ns = query.namespace.as_deref().unwrap_or(&namespace);
 
-        match client.list_pvcs(ns).await {
-            Ok(pvcs) => {
-                let items: Vec<serde_json::Value> = pvcs
-                    .iter()
-                    .map(|pvc| {
-                        let meta = &pvc.metadata;
-                        let spec = pvc.spec.as_ref();
-                        let status = pvc.status.as_ref();
-                        serde_json::json!({
-                            "name": meta.name.clone().unwrap_or_default(),
-                            "namespace": meta.namespace.clone().unwrap_or_default(),
-                            "status": status.and_then(|s| s.phase.as_ref()).map(|s| s.to_string()).unwrap_or_default(),
-                            "capacity": status
-                                .and_then(|s| s.capacity.as_ref())
-                                .and_then(|c| c.get("storage"))
-                                .map(|v| v.0.clone())
-                                .unwrap_or_default(),
-                            "storage_class": spec.and_then(|s| s.storage_class_name.clone()).unwrap_or_default(),
-                            "access_modes": spec.map(|s| s.access_modes.clone().unwrap_or_default()).unwrap_or_default(),
-                        })
-                    })
-                    .collect();
-                let ctx = req_ctx(HttpMethod::GET, "/api/v1/storage/pvcs");
-                ok_json(&ApiResponse::success(&items, &ctx.request_id))
-            }
-            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
-        }
+        let pvcs = if ns == "all" {
+            client.list_pvcs_for_scope("all").await
+        } else {
+            client.list_pvcs(ns).await.unwrap_or_default()
+        };
+
+        let items: Vec<serde_json::Value> = pvcs
+            .iter()
+            .map(|pvc| {
+                let meta = &pvc.metadata;
+                let spec = pvc.spec.as_ref();
+                let status = pvc.status.as_ref();
+                serde_json::json!({
+                    "name": meta.name.clone().unwrap_or_default(),
+                    "namespace": meta.namespace.clone().unwrap_or_default(),
+                    "status": status.and_then(|s| s.phase.as_ref()).map(|s| s.to_string()).unwrap_or_default(),
+                    "capacity": status
+                        .and_then(|s| s.capacity.as_ref())
+                        .and_then(|c| c.get("storage"))
+                        .map(|v| v.0.clone())
+                        .unwrap_or_default(),
+                    "storage_class": spec.and_then(|s| s.storage_class_name.clone()).unwrap_or_default(),
+                    "access_modes": spec.map(|s| s.access_modes.clone().unwrap_or_default()).unwrap_or_default(),
+                })
+            })
+            .collect();
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/storage/pvcs");
+        ok_json(&ApiResponse::success(&items, &ctx.request_id))
     }
 
     async fn list_storage_classes_handler(State(state): State<SharedState>) -> impl IntoResponse {

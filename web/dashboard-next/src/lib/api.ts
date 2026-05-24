@@ -96,6 +96,50 @@ export async function fetchNamespaces(): Promise<
   }));
 }
 
+export type ClusterNodeRecord = {
+  name: string;
+  status: string;
+  roles: string[];
+  cpu_capacity: string;
+  memory_capacity: string;
+  cpu_allocatable: string;
+  memory_allocatable: string;
+  kubelet_version: string;
+  os_image: string;
+  kernel_version: string;
+  age: string;
+};
+
+export async function fetchClusterNodes(): Promise<ClusterNodeRecord[]> {
+  return apiJson<ClusterNodeRecord[]>('/nodes');
+}
+
+export type PvcRecord = {
+  name: string;
+  namespace: string;
+  status: string;
+  capacity: string;
+  storage_class: string;
+  access_modes: string[];
+};
+
+export type StorageClassRecord = {
+  name: string;
+  provisioner: string;
+  reclaim_policy: string;
+  volume_binding_mode: string;
+  is_default: boolean;
+};
+
+export async function fetchPvcs(namespace = 'all'): Promise<PvcRecord[]> {
+  const q = `?namespace=${encodeURIComponent(namespace)}`;
+  return apiJson<PvcRecord[]>(`/storage/pvcs${q}`);
+}
+
+export async function fetchStorageClasses(): Promise<StorageClassRecord[]> {
+  return apiJson<StorageClassRecord[]>('/storage/classes');
+}
+
 export async function stopVirtualMachine(namespace: string, name: string): Promise<void> {
   await vmLifecycleAction(namespace, name, 'stop');
 }
