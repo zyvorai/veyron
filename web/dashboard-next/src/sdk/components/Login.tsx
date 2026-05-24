@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { ZyvorFooter } from './ZyvorBrand';
 
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<void>;
@@ -463,6 +464,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
         </section>
       </div>
+      <ZyvorFooter />
     </div>
   );
 };
