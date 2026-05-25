@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import {
+  createTenant,
   fetchCustomResources,
   fetchGitOpsStatus,
+  fetchImageCatalog,
+  fetchTenants,
+  fetchVeleroStatus,
   triggerGitOpsSync,
   type CustomResourceRecord,
   type GitOpsStatusRecord,
+  type ImageCatalogResponse,
+  type TenantRecord,
+  type VeleroStatusResponse,
 } from "../../lib/api";
 import CapabilityBanner from "./CapabilityBanner";
 import ErrorBanner from "./ErrorBanner";
@@ -22,14 +29,29 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [tenants, setTenants] = useState<TenantRecord[]>([]);
+  const [images, setImages] = useState<ImageCatalogResponse | null>(null);
+  const [velero, setVelero] = useState<VeleroStatusResponse | null>(null);
+  const [tenantsError, setTenantsError] = useState<string | null>(null);
+  const [imagesError, setImagesError] = useState<string | null>(null);
+  const [veleroError, setVeleroError] = useState<string | null>(null);
+  const [tenantBusy, setTenantBusy] = useState(false);
+  const [tenantForm, setTenantForm] = useState({ id: "", display_name: "", owner_email: "" });
 
   const load = useCallback(async () => {
     setLoading(true);
     setGitopsError(null);
     setCrdsError(null);
-    const [statusResult, resourcesResult] = await Promise.allSettled([
+    setTenantsError(null);
+    setImagesError(null);
+    setVeleroError(null);
+    const [statusResult, resourcesResult, tenantsResult, imagesResult, veleroResult] =
+      await Promise.allSettled([
       fetchGitOpsStatus(scopeNamespace),
       fetchCustomResources(),
+      fetchTenants(),
+      fetchImageCatalog(scopeNamespace),
+      fetchVeleroStatus(),
     ]);
 
     if (statusResult.status === "fulfilled") {
@@ -54,6 +76,39 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
       );
     }
 
+    if (tenantsResult.status === "fulfilled") {
+      setTenants(tenantsResult.value);
+    } else {
+      setTenants([]);
+      setTenantsError(
+        tenantsResult.reason instanceof Error
+          ? tenantsResult.reason.message
+          : "Failed to load tenants",
+      );
+    }
+
+    if (imagesResult.status === "fulfilled") {
+      setImages(imagesResult.value);
+    } else {
+      setImages(null);
+      setImagesError(
+        imagesResult.reason instanceof Error
+          ? imagesResult.reason.message
+          : "Failed to load image catalog",
+      );
+    }
+
+    if (veleroResult.status === "fulfilled") {
+      setVelero(veleroResult.value);
+    } else {
+      setVelero(null);
+      setVeleroError(
+        veleroResult.reason instanceof Error
+          ? veleroResult.reason.message
+          : "Failed to load Velero status",
+      );
+    }
+
     setLoading(false);
   }, [scopeNamespace]);
 
@@ -73,6 +128,26 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
       setSyncError(e instanceof Error ? e.message : "GitOps sync failed");
     } finally {
       setSyncBusy(false);
+    }
+  };
+
+  const provisionTenant = async () => {
+    if (!tenantForm.id.trim() || !tenantForm.display_name.trim()) return;
+    setTenantBusy(true);
+    setTenantsError(null);
+    try {
+      await createTenant({
+        id: tenantForm.id.trim(),
+        display_name: tenantForm.display_name.trim(),
+        owner_email: tenantForm.owner_email.trim() || "ops@example.com",
+        bootstrap_namespace: true,
+      });
+      setTenantForm({ id: "", display_name: "", owner_email: "" });
+      await load();
+    } catch (e) {
+      setTenantsError(e instanceof Error ? e.message : "Tenant create failed");
+    } finally {
+      setTenantBusy(false);
     }
   };
 
@@ -175,6 +250,130 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
               </tbody>
             </table>
           </div>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Tenants</h3>
+        {tenantsError ? <ErrorBanner message={tenantsError} /> : null}
+        <div style={statGrid}>
+          {tenants.map((t) => (
+            <div key={t.id} style={statCard}>
+              <div style={statLabel}>{t.display_name}</div>
+              <div style={statValue}>{t.id}</div>
+              <p style={note}>
+                {t.namespaces.join(", ") || "no namespaces"} · quota {t.cpu_quota} CPU / {t.memory_quota}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+          <input
+            placeholder="tenant-id"
+            value={tenantForm.id}
+            onChange={(e) => setTenantForm((f) => ({ ...f, id: e.target.value }))}
+            style={refreshBtn}
+          />
+          <input
+            placeholder="Display name"
+            value={tenantForm.display_name}
+            onChange={(e) => setTenantForm((f) => ({ ...f, display_name: e.target.value }))}
+            style={refreshBtn}
+          />
+          <input
+            placeholder="owner@email"
+            value={tenantForm.owner_email}
+            onChange={(e) => setTenantForm((f) => ({ ...f, owner_email: e.target.value }))}
+            style={refreshBtn}
+          />
+          <button type="button" style={syncBtn} disabled={tenantBusy} onClick={() => void provisionTenant()}>
+            {tenantBusy ? "Creating…" : "Bootstrap tenant"}
+          </button>
+        </div>
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Golden image catalog</h3>
+        {imagesError ? <ErrorBanner message={imagesError} /> : null}
+        {images ? (
+          <>
+            <CapabilityBanner context={images.vmrogue_context} />
+            {images.images.length === 0 ? (
+              <p style={muted}>No DataVolumes or golden-image PVCs in scope.</p>
+            ) : (
+              <div style={tableWrap}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Name</th>
+                      <th style={th}>NS</th>
+                      <th style={th}>Kind</th>
+                      <th style={th}>Source</th>
+                      <th style={th}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {images.images.map((img) => (
+                      <tr key={`${img.namespace}-${img.name}`} style={tr}>
+                        <td style={td}><strong>{img.name}</strong></td>
+                        <td style={tdMono}>{img.namespace}</td>
+                        <td style={td}>{img.kind}</td>
+                        <td style={td}>{img.source_type}</td>
+                        <td style={td}>{img.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={muted}>{loading ? "Loading…" : "No image catalog data"}</p>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Velero backup / restore</h3>
+        {veleroError ? <ErrorBanner message={veleroError} /> : null}
+        {velero ? (
+          <>
+            <CapabilityBanner context={velero.vmrogue_context} />
+            <p style={note}>
+              Velero {velero.velero_available ? "detected" : "not installed"} · {velero.backups.length} backup(s) ·{" "}
+              {velero.restores.length} restore(s)
+            </p>
+            {(velero.backups.length > 0 || velero.restores.length > 0) && (
+              <div style={tableWrap}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Name</th>
+                      <th style={th}>Phase</th>
+                      <th style={th}>Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {velero.backups.slice(0, 10).map((b) => (
+                      <tr key={`b-${b.name}`} style={tr}>
+                        <td style={td}>backup/{b.name}</td>
+                        <td style={td}>{b.phase}</td>
+                        <td style={tdMono}>{b.storage_location || `${b.items_backed_up} items`}</td>
+                      </tr>
+                    ))}
+                    {velero.restores.slice(0, 10).map((r) => (
+                      <tr key={`r-${r.name}`} style={tr}>
+                        <td style={td}>restore/{r.name}</td>
+                        <td style={td}>{r.phase}</td>
+                        <td style={tdMono}>from {r.backup_name || "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={muted}>{loading ? "Loading…" : "No Velero data"}</p>
         )}
       </section>
 

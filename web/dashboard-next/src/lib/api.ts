@@ -1,6 +1,6 @@
 /** VMRogue REST client (browser → same-origin /api/v1). */
 
-import { getApiKey } from './auth';
+import { getApiKey, getBearerToken } from './auth';
 
 const API = '/api/v1';
 
@@ -17,7 +17,7 @@ function authHeaders(): HeadersInit {
   if (apiKey) {
     return { 'X-API-Key': apiKey };
   }
-  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('vmrogue_token') : null;
+  const token = getBearerToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
@@ -807,4 +807,150 @@ export function restoreVmSnapshot(namespace: string, snapshotName: string): Prom
   return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(snapshotName)}/restore`, {
     method: 'POST',
   });
+}
+
+export type TenantRecord = {
+  id: string;
+  display_name: string;
+  owner_email: string;
+  status: string;
+  namespaces: string[];
+  billing_tags: Record<string, string>;
+  cpu_quota: string;
+  memory_quota: string;
+  max_vms: number;
+  created_at: string;
+};
+
+export function fetchTenants(): Promise<TenantRecord[]> {
+  return apiJson<TenantRecord[]>('/tenants');
+}
+
+export function createTenant(body: {
+  id: string;
+  display_name: string;
+  owner_email: string;
+  cpu_quota?: string;
+  memory_quota?: string;
+  max_vms?: number;
+  bootstrap_namespace?: boolean;
+}): Promise<TenantRecord> {
+  return apiJson('/tenants', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export type NadRecord = {
+  name: string;
+  namespace: string;
+  config: string;
+  scope: string;
+};
+
+export function fetchNetworkAttachmentDefinitions(namespace?: string): Promise<NadRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<NadRecord[]>(`/network/nads${q}`);
+}
+
+export type ImageCatalogEntry = {
+  name: string;
+  namespace: string;
+  kind: string;
+  source_type: string;
+  status: string;
+  capacity: string;
+  storage_class: string;
+  age: string;
+  tags: string[];
+};
+
+export type ImageCatalogResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  images: ImageCatalogEntry[];
+};
+
+export function fetchImageCatalog(namespace?: string): Promise<ImageCatalogResponse> {
+  const q = nsQuery(namespace, true);
+  return apiJson(`/images/catalog${q}`);
+}
+
+export type VeleroBackupRecord = {
+  name: string;
+  namespace: string;
+  phase: string;
+  storage_location: string;
+  completion_timestamp?: string | null;
+  items_backed_up: number;
+};
+
+export type VeleroRestoreRecord = {
+  name: string;
+  namespace: string;
+  phase: string;
+  backup_name: string;
+  completion_timestamp?: string | null;
+};
+
+export type VeleroStatusResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  velero_available: boolean;
+  backups: VeleroBackupRecord[];
+  restores: VeleroRestoreRecord[];
+};
+
+export function fetchVeleroStatus(): Promise<VeleroStatusResponse> {
+  return apiJson('/velero/status');
+}
+
+export type TraceRow = {
+  trace_id: string;
+  service: string;
+  operation: string;
+  duration_ms: number;
+  span_count: number;
+  status: string;
+  started_at: string;
+};
+
+export type TracesResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  total_traces: number;
+  success_rate: number;
+  p99_ms?: number | null;
+  errors_1h: number;
+  traces: TraceRow[];
+};
+
+export function fetchTraces(namespace?: string): Promise<TracesResponse> {
+  const q = nsQuery(namespace, true);
+  return apiJson(`/traces${q}`);
+}
+
+export type MetricsTimelinePoint = {
+  timestamp: number;
+  value: number;
+};
+
+export type MetricsTimelineResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  namespace: string;
+  vm_name: string;
+  metric: string;
+  unit: string;
+  points: MetricsTimelinePoint[];
+};
+
+export function fetchMetricsTimeline(params: {
+  namespace?: string;
+  vm?: string;
+  metric?: string;
+  hours?: number;
+}): Promise<MetricsTimelineResponse> {
+  const search = new URLSearchParams();
+  if (params.namespace && params.namespace !== 'all') {
+    search.set('namespace', params.namespace);
+  }
+  if (params.vm) search.set('vm', params.vm);
+  if (params.metric) search.set('metric', params.metric);
+  if (params.hours != null) search.set('hours', String(params.hours));
+  const q = search.toString();
+  return apiJson(`/metrics/timeline${q ? `?${q}` : ''}`);
 }

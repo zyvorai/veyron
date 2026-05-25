@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod alerts;
 pub mod audit;
 pub mod autoscaler;
@@ -19,12 +20,14 @@ pub mod gitops;
 pub mod health;
 pub mod heatmap;
 pub mod helm;
+pub mod images;
 pub mod hpa;
 pub mod incidents;
 pub mod ingress;
 pub mod logs;
 pub mod metrics;
 pub mod migration_policies;
+pub mod multus;
 pub mod migrations;
 pub mod monitoring;
 pub mod namespace_scope;
@@ -47,8 +50,10 @@ pub mod slo;
 pub mod snapshots;
 pub mod storage;
 pub mod templates;
+pub mod tenants;
 pub mod topology;
 pub mod traces;
+pub mod velero;
 pub mod vmis;
 pub mod webhooks;
 pub mod windows;
@@ -123,4 +128,8 @@ pub fn all_routes(
         .merge(rdp::router(state.clone()))
         .merge(dr::router(state.clone()))
         .merge(windows::router())
+        .merge(tenants::router(state.clone()))
+        .merge(multus::router(state.clone()))
+        .merge(images::router(state.clone()))
+        .merge(velero::router(state.clone()))
 }

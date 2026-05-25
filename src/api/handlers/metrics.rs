@@ -40,8 +40,43 @@ pub struct ClusterMetrics {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/metrics", get(get_cluster_metrics))
+        .route("/metrics/timeline", get(get_metrics_timeline))
         .route("/metrics/{vm}", get(get_vm_metrics))
         .with_state(state)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetricsTimelinePoint {
+    pub timestamp: i64,
+    pub value: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MetricsTimelineResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub namespace: String,
+    pub vm_name: String,
+    pub metric: String,
+    pub unit: String,
+    pub points: Vec<MetricsTimelinePoint>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct TimelineQuery {
+    pub namespace: Option<String>,
+    pub vm: Option<String>,
+    #[serde(default = "default_metric")]
+    pub metric: String,
+    #[serde(default = "default_hours")]
+    pub hours: u32,
+}
+
+fn default_metric() -> String {
+    "cpu".to_string()
+}
+
+fn default_hours() -> u32 {
+    6
 }
 
 #[cfg(feature = "web")]
@@ -164,6 +199,80 @@ async fn get_vm_metrics(
         })),
         Err(_) => Json(None),
     }
+}
+
+#[cfg(feature = "web")]
+async fn get_metrics_timeline(
+    State(state): State<SharedState>,
+    Query(q): Query<TimelineQuery>,
+) -> Json<MetricsTimelineResponse> {
+    let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let vm_name = q.vm.clone().unwrap_or_default();
+    let hours = q.hours.clamp(1, 72);
+    let metric = if q.metric.is_empty() {
+        "cpu".to_string()
+    } else {
+        q.metric.clone()
+    };
+
+    let ctx = super::feature_context::VmrogueFeatureContext {
+        data_source: "prometheus_range_query".to_string(),
+        scope: format!(
+            "Prometheus range series for VM {vm_name} ({metric}) over {hours}h."
+        ),
+        limitations: "Requires VMROGUE_PROMETHEUS_URL. Uses kubevirt_vmi_* metrics when present.".to_string(),
+    };
+
+    let mut points = Vec::new();
+    let unit = if metric == "memory" {
+        "bytes".to_string()
+    } else {
+        "percent".to_string()
+    };
+
+    if let Some(prom_base) = std::env::var("VMROGUE_PROMETHEUS_URL").ok() {
+        if !vm_name.is_empty() && !namespace_scope::is_all_namespaces(&scope) {
+            let end = chrono::Utc::now().timestamp();
+            let start = end - (hours as i64 * 3600);
+            let prom_query = match metric.as_str() {
+                "memory" => format!(
+                    "kubevirt_vmi_memory_resident_bytes{{namespace=\"{scope}\", name=\"{vm_name}\"}}"
+                ),
+                _ => format!(
+                    "rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{scope}\", name=\"{vm_name}\"}}[5m]) * 100"
+                ),
+            };
+            if let Ok(series) = crate::api::prometheus::range_query_series(
+                &prom_base,
+                &prom_query,
+                start,
+                end,
+                300,
+            )
+            .await
+            {
+                if let Some((_, vals)) = series.into_iter().next() {
+                    points = vals
+                        .into_iter()
+                        .map(|(ts, v)| MetricsTimelinePoint {
+                            timestamp: ts,
+                            value: v,
+                        })
+                        .collect();
+                }
+            }
+        }
+    }
+
+    Json(MetricsTimelineResponse {
+        vmrogue_context: ctx,
+        namespace: scope,
+        vm_name,
+        metric,
+        unit,
+        points,
+    })
 }
 
 fn parse_k8s_memory(s: &str) -> u64 {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   disableVmInternet,
   enableVmInternet,
+  fetchNetworkAttachmentDefinitions,
   fetchVmInternet,
   fetchVmExpose,
   putVmExpose,
@@ -216,6 +217,70 @@ export function VmInternetPanel({ namespace, vmName }: Props) {
             </button>
           </div>
           <p style={s.hint}>Targets virt-launcher pods labeled kubevirt.io/vm for this VM.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function VmMultusPanel({ namespace }: { namespace: string }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nads, setNads] = useState<Array<{ name: string; namespace: string; config: string }>>([]);
+  const [selected, setSelected] = useState("");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const rows = await fetchNetworkAttachmentDefinitions(namespace);
+      setNads(rows);
+      if (rows.length && !selected) setSelected(`${rows[0].namespace}/${rows[0].name}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load NADs");
+    } finally {
+      setLoading(false);
+    }
+  }, [namespace, selected]);
+
+  useEffect(() => {
+    if (open) void refresh();
+  }, [open, refresh]);
+
+  return (
+    <div style={s.wrap}>
+      <button type="button" style={s.toggle} onClick={() => setOpen((o) => !o)}>
+        {open ? "▼" : "▶"} Multus network attachments
+      </button>
+      {open && (
+        <div style={s.panel}>
+          {loading && <p style={s.muted}>Loading NAD inventory…</p>}
+          {error && <p style={s.err}>{error}</p>}
+          {nads.length === 0 && !loading ? (
+            <p style={s.muted}>No NetworkAttachmentDefinitions in scope. Create NADs in your CNI namespace first.</p>
+          ) : (
+            <>
+              <label style={s.label}>
+                Attach NAD (reference for VM spec)
+                <select value={selected} onChange={(e) => setSelected(e.target.value)} style={s.inputWide}>
+                  {nads.map((nad) => (
+                    <option key={`${nad.namespace}/${nad.name}`} value={`${nad.namespace}/${nad.name}`}>
+                      {nad.namespace}/{nad.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selected ? (
+                <p style={s.mono}>
+                  multus networkName: {selected.split("/")[1]} · namespace: {selected.split("/")[0]}
+                </p>
+              ) : null}
+              <p style={s.hint}>
+                Add a secondary interface in the VM YAML with networkName matching the NAD. Full attach editor ships with VM update API.
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

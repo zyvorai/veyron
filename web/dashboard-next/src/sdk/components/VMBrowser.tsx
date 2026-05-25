@@ -9,7 +9,7 @@ import AddDataDiskPanel from "./AddDataDiskPanel";
 import VmConsoleModal from "./VmConsoleModal";
 import { VmCreateModal } from "./VmCreateModal";
 import VmSerialModal from "./VmSerialModal";
-import { VmInternetPanel, VmSshExposePanel } from "./VmNetworkPanels";
+import { VmInternetPanel, VmMultusPanel, VmSshExposePanel } from "./VmNetworkPanels";
 import VmRdpPanel from "./VmRdpPanel";
 import { VmLifecycleBar } from "./VmLifecycleBar";
 import { VmSnapshotsPanel } from "./VmSnapshotsPanel";
@@ -512,6 +512,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                 <VmSnapshotSchedulesPanel namespace={ns} vmName={vmName} />
                 <VmSshExposePanel namespace={ns} vmName={vmName} />
                 <VmInternetPanel namespace={ns} vmName={vmName} />
+                <VmMultusPanel namespace={ns} />
                 <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />
                 <AddDataDiskPanel
                   namespace={ns}

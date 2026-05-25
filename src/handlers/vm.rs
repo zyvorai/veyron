@@ -1380,6 +1380,12 @@ pub async fn handle_export(
     kubevirt: bool,
     namespace: &str,
 ) -> Result<()> {
+    if !kubevirt {
+        eprintln!(
+            "Note: Cross-hypervisor export belongs in HyperSDK (https://zyvor.dev/hypersdk). \
+             Exporting VMRogue VMConfig YAML for GitOps only."
+        );
+    }
     use crate::kube;
     use crate::output;
     use std::fs;
@@ -2321,6 +2327,14 @@ pub async fn handle_import(
 ) -> Result<()> {
     use crate::kube;
     use crate::output::spinner::spinner;
+
+    eprintln!(
+        "{}",
+        color::warning(
+            "Note: Hypervisor-to-KubeVirt migration belongs in HyperSDK (https://zyvor.dev/hypersdk). \
+             This command imports KubeVirt VirtualMachine YAML only."
+        )
+    );
 
     // Validate file size to prevent resource exhaustion
     let metadata = std::fs::metadata(&file)
