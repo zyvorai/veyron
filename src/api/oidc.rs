@@ -56,7 +56,7 @@ pub fn oidc_public_config() -> serde_json::Value {
             }
         });
     let redirect = crate::api::integrations::env_var("VMROGUE_OIDC_REDIRECT_URI")
-        .unwrap_or_else(|| "/dashboard-next/".to_string());
+        .unwrap_or_else(|| "/dashboard".to_string());
     serde_json::json!({
         "enabled": oidc_configured(),
         "issuer": issuer,

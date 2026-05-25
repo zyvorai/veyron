@@ -16,7 +16,7 @@ pub async fn dashboard_next_redirect() -> Redirect {
 }
 
 pub async fn root_redirect() -> Redirect {
-    Redirect::permanent("/dashboard-next/")
+    Redirect::permanent("/dashboard")
 }
 
 pub async fn dashboard_next_index() -> impl IntoResponse {
@@ -79,17 +79,27 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn root_and_dashboard_next_redirect_to_operator_ui() {
-        for redirect in [root_redirect().await, dashboard_next_redirect().await] {
-            let resp = redirect.into_response();
-            assert_eq!(resp.status(), StatusCode::PERMANENT_REDIRECT);
-            assert_eq!(
-                resp.headers()
-                    .get(http::header::LOCATION)
-                    .and_then(|v| v.to_str().ok()),
-                Some("/dashboard-next/")
-            );
-        }
+    async fn root_redirects_to_full_dashboard() {
+        let resp = root_redirect().await.into_response();
+        assert_eq!(resp.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            resp.headers()
+                .get(http::header::LOCATION)
+                .and_then(|v| v.to_str().ok()),
+            Some("/dashboard")
+        );
+    }
+
+    #[tokio::test]
+    async fn dashboard_next_redirect_to_trailing_slash() {
+        let resp = dashboard_next_redirect().await.into_response();
+        assert_eq!(resp.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            resp.headers()
+                .get(http::header::LOCATION)
+                .and_then(|v| v.to_str().ok()),
+            Some("/dashboard-next/")
+        );
     }
 
     #[tokio::test]
