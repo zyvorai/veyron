@@ -80,10 +80,10 @@ echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
 check_html_contains "GET /dashboard-next/" "${BASE}/dashboard-next/" 'id="root"'
 loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
-if [[ "${loc}" == */dashboard-next/ ]]; then
-    echo "  ✔ GET / → /dashboard-next/"
+if [[ "${loc}" == */dashboard ]]; then
+    echo "  ✔ GET / → /dashboard"
 else
-    echo "  ✗ GET / → /dashboard-next/ (got: ${loc:-none})"
+    echo "  ✗ GET / → /dashboard (got: ${loc:-none})"
     FAIL=$((FAIL + 1))
 fi
 
