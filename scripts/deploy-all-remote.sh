@@ -166,6 +166,7 @@ fi
 ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -avz --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \
+    --exclude='node_modules/' --exclude='web/dashboard-next/node_modules/' --exclude='e2e/node_modules/' \
     --exclude='*.qcow2' --exclude='*.vmdk' --exclude='*.iso' \
     -e "ssh -o StrictHostKeyChecking=no" \
     "$REPO_DIR/" "${REMOTE}:${DEPLOY_DIR}/" 2>&1 | sed -e 's/^/  [rsync] /'

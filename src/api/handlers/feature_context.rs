@@ -31,6 +31,30 @@ impl VmrogueFeatureContext {
         }
     }
 
+    pub fn logs_loki() -> Self {
+        Self {
+            data_source: "loki_query_range".to_string(),
+            scope: "Log lines from Loki for the selected namespace scope.".to_string(),
+            limitations: "Requires VMROGUE_LOKI_URL. Query uses LogQL namespace selector.".to_string(),
+        }
+    }
+
+    pub fn incidents_alertmanager() -> Self {
+        Self {
+            data_source: "alertmanager_v2_alerts".to_string(),
+            scope: "Active Alertmanager alerts mapped to incident rows.".to_string(),
+            limitations: "Requires VMROGUE_ALERTMANAGER_URL. Falls back to Warning Events when unset.".to_string(),
+        }
+    }
+
+    pub fn gitops_controllers() -> Self {
+        Self {
+            data_source: "argocd_flux_crd_status".to_string(),
+            scope: "Argo CD Application and Flux Kustomization CR status in namespace.".to_string(),
+            limitations: "POST /gitops/sync triggers Argo CD API when VMROGUE_ARGOCD_URL+TOKEN are set; otherwise updates ConfigMap only.".to_string(),
+        }
+    }
+
     pub fn logs_dashboard() -> Self {
         Self {
             data_source: "virt_launcher_pod_logs".to_string(),
@@ -108,6 +132,14 @@ impl VmrogueFeatureContext {
                 .to_string(),
             limitations: "Kubernetes does not expose filesystem-level usage on PVCs without metrics (kubelet volume stats / CSI). Bound PVCs show full capacity as used for allocation reporting."
                 .to_string(),
+        }
+    }
+
+    pub fn costs_opencost() -> Self {
+        Self {
+            data_source: "opencost_allocation".to_string(),
+            scope: "Monthly costs from OpenCost allocation API joined to VMs via virt-launcher pods.".to_string(),
+            limitations: "Requires VMROGUE_OPENCOST_URL and OpenCost installed. Falls back to static rates when unavailable.".to_string(),
         }
     }
 

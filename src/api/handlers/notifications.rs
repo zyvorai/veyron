@@ -39,6 +39,7 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/notifications", get(list_notifications))
         .route("/notifications/read", post(mark_notifications_read))
+        .route("/notifications/test", post(test_notifications))
         .with_state(state)
 }
 
@@ -180,5 +181,16 @@ async fn mark_notifications_read(
     Json(serde_json::json!({
         "marked_read": req.notification_ids.len(),
         "status": "ok",
+    }))
+}
+
+#[cfg(feature = "web")]
+async fn test_notifications() -> Json<serde_json::Value> {
+    let results = crate::notifications::delivery::deliver_test_notification().await;
+    Json(serde_json::json!({
+        "channels_tested": results.len(),
+        "results": results.iter().map(|(name, ok, target)| {
+            serde_json::json!({ "channel": name, "success": ok, "target": target })
+        }).collect::<Vec<_>>(),
     }))
 }

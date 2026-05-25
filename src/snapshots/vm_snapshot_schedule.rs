@@ -25,6 +25,9 @@ pub struct SnapshotScheduleRecord {
     pub snapshot_prefix: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub last_run: Option<DateTime<Utc>>,
+    /// After each scheduled snapshot, prune older snapshots beyond this count (0 = disabled).
+    #[serde(default)]
+    pub max_snapshots: u32,
 }
 
 pub const SCHEDULE_CM_LABEL_TYPE: &str = "snapshot-schedule";
@@ -101,6 +104,7 @@ pub async fn upsert_schedule_cm(
     cron_expr: &str,
     snapshot_prefix: Option<&str>,
     enabled: bool,
+    max_snapshots: u32,
 ) -> Result<String> {
     Schedule::from_str(cron_expr.trim()).context("invalid cron expression")?;
 
@@ -113,6 +117,7 @@ pub async fn upsert_schedule_cm(
         cron: cron_expr.trim().to_string(),
         snapshot_prefix: snapshot_prefix.unwrap_or("sched").to_string(),
         last_run: None,
+        max_snapshots,
     };
 
     let data = store_schedule_json(&rec)?;
@@ -234,6 +239,19 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
 
         if snapshot_ok {
             rec.last_run = Some(now);
+            if rec.max_snapshots > 0 {
+                if let Err(e) = mgr
+                    .apply_retention_policy(&rec.vm_name, rec.max_snapshots)
+                    .await
+                {
+                    log::warn!(
+                        "retention after schedule for {}/{}: {}",
+                        ns,
+                        rec.vm_name,
+                        e
+                    );
+                }
+            }
             match persist_schedule_cm(client.clone(), ns, name, &rec).await {
                 Ok(_) => log::info!(
                     "scheduled snapshot '{}' for VM {}/{}",

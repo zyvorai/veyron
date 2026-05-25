@@ -10,6 +10,7 @@ pub mod costs;
 pub mod custom_dashboards;
 pub mod custom_resources;
 pub mod dependencies;
+pub mod dr;
 pub mod disks;
 pub mod events;
 pub mod feature_context;
@@ -50,6 +51,7 @@ pub mod topology;
 pub mod traces;
 pub mod vmis;
 pub mod webhooks;
+pub mod windows;
 pub mod workloads;
 
 /// VMRogue CRD management handlers (vmrogue.io/v1alpha1).
@@ -119,4 +121,6 @@ pub fn all_routes(
         .merge(traces::router(state.clone()))
         // RDP (VM discovery + config, proxy requires external gateway)
         .merge(rdp::router(state.clone()))
+        .merge(dr::router(state.clone()))
+        .merge(windows::router())
 }
