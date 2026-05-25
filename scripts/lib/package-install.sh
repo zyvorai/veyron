@@ -24,9 +24,8 @@ else
   pkg_step_done
 fi
 
-pkg_step "Configuration & Kubernetes access"
+pkg_step "Configuration, admin login & Kubernetes access"
 pkg_k8s_env_configure vmrogue.env.example vmrogue.env "VMRogue"
-pkg_detail "Set VMROGUE_API_KEY in vmrogue.env before starting the API"
 pkg_step_done
 
 pkg_step "Verify binaries"

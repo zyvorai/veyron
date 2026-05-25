@@ -182,7 +182,7 @@ fi
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/vmrogue.env.example" <<'ENV_EOF'
 # Copy to vmrogue.env and adjust before starting the API.
-VMROGUE_API_KEY=change-me-strong-secret
+VMROGUE_API_KEY=Admin@321
 # VMROGUE_API_KEYS=admin:secret1,write:secret2,readonly:secret3
 KUBECONFIG=/path/to/kubeconfig.yaml
 # VMROGUE_NAMESPACE=default
@@ -199,6 +199,7 @@ cp "\${LIB}/package-client-install.sh" "\${OUT_DIR}/\${ARTIFACT}/install-client-
 cp "\${LIB}/package-client-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-package.sh"
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}/.package-lib"
 cp "\${LIB}/package-ui.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
+cp "\${LIB}/package-auth-bootstrap.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
 cp "\${LIB}/install-everything.sh" "\${OUT_DIR}/\${ARTIFACT}/"
 cp "\${LIB}/package-uninstall-lib.sh" "\${OUT_DIR}/\${ARTIFACT}/.package-lib/"
 cp "\${LIB}/package-uninstall.sh" "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
