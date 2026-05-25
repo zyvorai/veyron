@@ -25,6 +25,7 @@ import {
 
 interface LoginProps {
   onLogin: (username: string, password: string) => Promise<void>;
+  onOidcLogin?: () => Promise<void>;
 }
 
 const USERNAME_STORAGE_KEY = 'vmrogue_dashboard_username';
@@ -56,12 +57,14 @@ const features: PremiumLoginFeature[] = [
   },
 ];
 
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC<LoginProps> = ({ onLogin, onOidcLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [oidcLoading, setOidcLoading] = useState(false);
+  const [oidcEnabled, setOidcEnabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
 
@@ -77,6 +80,10 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setUsername(savedUsername);
       setRememberMe(true);
     }
+
+    void import('../../lib/oidc').then(({ fetchOidcConfig }) =>
+      fetchOidcConfig().then((cfg) => setOidcEnabled(!!cfg)),
+    );
 
     return () => {
       document.title = 'VMRogue';
@@ -110,6 +117,18 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleOidc = async () => {
+    if (!onOidcLogin) return;
+    setOidcLoading(true);
+    setError(null);
+    try {
+      await onOidcLogin();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'SSO login failed');
+      setOidcLoading(false);
     }
   };
 
@@ -213,9 +232,20 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
           )}
         </LoginSubmit>
 
+        {oidcEnabled && onOidcLogin ? (
+          <button
+            type="button"
+            onClick={() => void handleOidc()}
+            disabled={isLoading || oidcLoading}
+            className="mt-4 w-full rounded-xl border border-slate-600/60 bg-slate-800/40 py-3 text-sm font-semibold text-slate-200 hover:bg-slate-800/70 transition-colors disabled:opacity-50"
+          >
+            {oidcLoading ? 'Redirecting to SSO…' : 'Sign in with SSO (OIDC)'}
+          </button>
+        ) : null}
+
         <div className="mt-6 pt-5 border-t border-slate-700/30 flex items-center justify-center gap-2 text-xs text-slate-500">
           <CheckCircle className="h-3.5 w-3.5 text-emerald-500/70" />
-          <span>Secured with VMRogue API key authentication</span>
+          <span>API key or OIDC SSO when configured</span>
         </div>
         <div className="mt-3 flex items-center justify-center">
           <button

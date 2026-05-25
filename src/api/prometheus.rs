@@ -58,6 +58,77 @@ pub async fn instant_query_vector(
     Ok(out)
 }
 
+#[derive(Debug, Deserialize)]
+struct PromRangeData {
+    result: Option<Vec<PromRangeResult>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PromRangeResult {
+    metric: Option<HashMap<String, String>>,
+    values: Option<Vec<(f64, String)>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PromRangeEnvelope {
+    status: Option<String>,
+    data: Option<PromRangeData>,
+}
+
+/// Run a Prometheus range query. `base` is the query-API prefix ending in `/query` or `/query_range`.
+pub async fn range_query_series(
+    base: &str,
+    query: &str,
+    start_unix: i64,
+    end_unix: i64,
+    step_secs: u64,
+) -> Result<Vec<(HashMap<String, String>, Vec<(i64, f64)>)>> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .context("reqwest client")?;
+
+    let range_url = if base.contains("/query_range") {
+        base.trim_end_matches('/').to_string()
+    } else if base.ends_with("/query") {
+        format!("{}_range", base.trim_end_matches('/'))
+    } else {
+        format!("{}/api/v1/query_range", base.trim_end_matches('/'))
+    };
+
+    let resp = client
+        .get(&range_url)
+        .query(&[
+            ("query", query),
+            ("start", &start_unix.to_string()),
+            ("end", &end_unix.to_string()),
+            ("step", &step_secs.to_string()),
+        ])
+        .send()
+        .await
+        .context("prometheus range GET")?;
+    if !resp.status().is_success() {
+        anyhow::bail!("prometheus range HTTP {}", resp.status());
+    }
+
+    let env: PromRangeEnvelope = resp.json().await.context("prometheus range json")?;
+    if env.status.as_deref() != Some("success") {
+        anyhow::bail!("prometheus range status {:?}", env.status);
+    }
+
+    let mut out = Vec::new();
+    for r in env.data.and_then(|d| d.result).unwrap_or_default() {
+        let points: Vec<(i64, f64)> = r
+            .values
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|(ts, val)| val.parse::<f64>().ok().map(|v| (ts as i64, v)))
+            .collect();
+        out.push((r.metric.unwrap_or_default(), points));
+    }
+    Ok(out)
+}
+
 /// Map `(namespace, pvc_name) -> used_bytes` from `kubelet_volume_stats_used_bytes` samples.
 pub fn index_pvc_used_bytes(
     samples: Vec<(HashMap<String, String>, f64)>,

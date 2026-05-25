@@ -9,6 +9,9 @@ import {
   fetchRecentEvents,
   fetchSecurityFindings,
   fetchSecurityPosture,
+  fetchTraces,
+  fetchMetricsTimeline,
+  fetchVmInventory,
   type ClusterEventRecord,
   type CostBudgetRecord,
   type CostSummaryRecord,
@@ -17,6 +20,8 @@ import {
   type MonitoringStatusRecord,
   type SecurityFindingRecord,
   type SecurityPostureRecord,
+  type TracesResponse,
+  type MetricsTimelineResponse,
 } from "../../lib/api";
 import CapabilityBanner from "./CapabilityBanner";
 import ErrorBanner from "./ErrorBanner";
@@ -32,6 +37,8 @@ type SectionErrors = {
   incidents?: string;
   logs?: string;
   budgets?: string;
+  traces?: string;
+  timeline?: string;
 };
 
 function sectionErrorMessage(reason: unknown): string {
@@ -47,6 +54,8 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
   const [incidents, setIncidents] = useState<IncidentsTimelineRecord | null>(null);
   const [logs, setLogs] = useState<LogsDashboardRecord | null>(null);
   const [budgets, setBudgets] = useState<CostBudgetRecord[]>([]);
+  const [traces, setTraces] = useState<TracesResponse | null>(null);
+  const [timeline, setTimeline] = useState<MetricsTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [sectionErrors, setSectionErrors] = useState<SectionErrors>({});
   const [budgetBusy, setBudgetBusy] = useState(false);
@@ -69,6 +78,17 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
       fetchIncidents(scopeNamespace),
       fetchLogs(scopeNamespace, 40),
       fetchCostBudgets(),
+      fetchTraces(scopeNamespace),
+      fetchVmInventory(scopeNamespace).then(async (vms) => {
+        const running = vms.find((v) => v.status === "Running");
+        if (!running) return null;
+        return fetchMetricsTimeline({
+          namespace: running.namespace,
+          vm: running.name,
+          metric: "cpu",
+          hours: 6,
+        });
+      }),
     ]);
     const errors: SectionErrors = {};
 
@@ -126,6 +146,20 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
     } else {
       setBudgets([]);
       errors.budgets = sectionErrorMessage(results[7].reason);
+    }
+
+    if (results[8].status === "fulfilled") {
+      setTraces(results[8].value);
+    } else {
+      setTraces(null);
+      errors.traces = sectionErrorMessage(results[8].reason);
+    }
+
+    if (results[9].status === "fulfilled") {
+      setTimeline(results[9].value);
+    } else {
+      setTimeline(null);
+      errors.timeline = sectionErrorMessage(results[9].reason);
     }
 
     setSectionErrors(errors);
@@ -426,6 +460,80 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
           </>
         ) : (
           <p style={muted}>{loading ? "…" : "No log data"}</p>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Distributed traces</h3>
+        {sectionErrors.traces ? <p style={sectionError}>{sectionErrors.traces}</p> : null}
+        {traces ? (
+          <>
+            <CapabilityBanner context={traces.vmrogue_context} />
+            <div style={statGrid}>
+              <Stat label="Traces" value={String(traces.total_traces)} />
+              <Stat label="Success rate" value={`${traces.success_rate.toFixed(1)}%`} ok />
+              <Stat label="Errors (1h)" value={String(traces.errors_1h)} />
+            </div>
+            {traces.traces.length > 0 ? (
+              <div style={{ ...tableWrap, marginTop: 12 }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Trace</th>
+                      <th style={th}>Service</th>
+                      <th style={th}>Operation</th>
+                      <th style={th}>Duration</th>
+                      <th style={th}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {traces.traces.slice(0, 15).map((t) => (
+                      <tr key={t.trace_id} style={tr}>
+                        <td style={tdMono}>{t.trace_id}</td>
+                        <td style={td}>{t.service}</td>
+                        <td style={td}>{t.operation}</td>
+                        <td style={td}>{t.duration_ms} ms</td>
+                        <td style={td}>{t.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p style={muted}>No traces in scope.</p>
+            )}
+          </>
+        ) : (
+          <p style={muted}>{loading ? "…" : "No trace data"}</p>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>VM metrics timeline (Prometheus)</h3>
+        {sectionErrors.timeline ? <p style={sectionError}>{sectionErrors.timeline}</p> : null}
+        {timeline ? (
+          <>
+            <CapabilityBanner context={timeline.vmrogue_context} />
+            <p style={bodyText}>
+              {timeline.vm_name ? (
+                <>
+                  <strong>{timeline.namespace}/{timeline.vm_name}</strong> — {timeline.metric} ({timeline.unit})
+                </>
+              ) : (
+                "Select a running VM in a single namespace to populate timeline."
+              )}
+            </p>
+            {timeline.points.length > 0 ? (
+              <p style={note}>
+                {timeline.points.length} samples · latest {timeline.points[timeline.points.length - 1]?.value.toFixed(2)}{" "}
+                {timeline.unit}
+              </p>
+            ) : (
+              <p style={muted}>Set VMROGUE_PROMETHEUS_URL and ensure kubevirt_vmi_* metrics are scraped.</p>
+            )}
+          </>
+        ) : (
+          <p style={muted}>{loading ? "…" : "No timeline data"}</p>
         )}
       </section>
 

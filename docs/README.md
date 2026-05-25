@@ -4,6 +4,11 @@ This directory contains focused guides for VMRogue features and operations. Star
 
 **Repository layout:** default development branch is **`main`** (Rust CLI + web API). The historical Go-era tree is preserved on branch **`main-go`** for reference only.
 
+## Platform positioning
+
+- [`VMROGUE_HYPERSDK_BOUNDARY.md`](VMROGUE_HYPERSDK_BOUNDARY.md): VMRogue (KubeVirt ops) vs HyperSDK (migration/portability)
+- [`OIDC_SSO.md`](OIDC_SSO.md): enterprise SSO / OIDC configuration
+
 ## Getting Started
 
 - [`../README.md`](../README.md): project overview, install, API/dashboard, deployment options

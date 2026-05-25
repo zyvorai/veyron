@@ -22,12 +22,15 @@ pub struct VmrogueFeatureContext {
 
 impl VmrogueFeatureContext {
     pub fn traces() -> Self {
+        Self::traces_fallback()
+    }
+
+    pub fn traces_fallback() -> Self {
         Self {
             data_source: "kubernetes_events".to_string(),
             scope: "Kubernetes Events in the selected namespace scope, shown as trace-like rows."
                 .to_string(),
-            limitations: "Not OpenTelemetry or Jaeger: no real distributed traces, span parents, or service graphs. duration_ms is nominal; p99_ms is not populated. Values map from Event fields (reason, involvedObject, count)."
-                .to_string(),
+            limitations: "Not OpenTelemetry or Jaeger: configure VMROGUE_JAEGER_QUERY_URL for real traces. duration_ms is nominal when using Events fallback.".to_string(),
         }
     }
 

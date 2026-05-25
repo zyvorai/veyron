@@ -24,6 +24,8 @@ pub mod websocket;
 pub mod dashboard_next;
 #[cfg(feature = "web")]
 pub mod dashboard_paths;
+#[cfg(feature = "web")]
+pub mod oidc;
 
 /// API server configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

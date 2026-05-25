@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Apply Cilium egress bootstrap manifests shipped in this bundle (after Cilium + in-cluster deploy).
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
 # shellcheck source=/dev/null

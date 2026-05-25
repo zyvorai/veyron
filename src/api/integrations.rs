@@ -151,7 +151,9 @@ mod tests {
 
     #[test]
     fn cost_backend_defaults_static() {
-        std::env::remove_var("VMROGUE_COST_BACKEND");
+        unsafe {
+            std::env::remove_var("VMROGUE_COST_BACKEND");
+        }
         assert_eq!(cost_backend(), "static");
     }
 }

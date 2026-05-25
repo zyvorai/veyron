@@ -3,6 +3,7 @@
 /// Routes reachable without an API key (shell HTML, health, static assets).
 pub fn is_auth_exempt_path(path: &str) -> bool {
     path == "/api/v1/health"
+        || path == "/api/v1/auth/oidc/config"
         || path == "/"
         || path == "/dashboard"
         || path.starts_with("/dashboard-next")
@@ -32,6 +33,12 @@ pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/costs",
     "/api/v1/logs",
     "/api/v1/incidents",
+    "/api/v1/tenants",
+    "/api/v1/network/nads",
+    "/api/v1/images/catalog",
+    "/api/v1/velero/status",
+    "/api/v1/metrics/timeline",
+    "/api/v1/traces",
 ];
 
 pub fn is_operator_api_path(path: &str) -> bool {
@@ -90,6 +97,12 @@ mod tests {
             "/api/v1/logs",
             "/api/v1/incidents/timeline",
             "/api/v1/snapshot-schedules",
+            "/api/v1/tenants",
+            "/api/v1/network/nads",
+            "/api/v1/images/catalog",
+            "/api/v1/velero/status",
+            "/api/v1/metrics/timeline",
+            "/api/v1/traces",
         ] {
             assert!(is_operator_api_path(path), "{path}");
         }

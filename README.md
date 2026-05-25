@@ -677,6 +677,10 @@ fn main() -> anyhow::Result<()> {
 
 **Infrastructure** - Helm charts for vmrogue and vmrogue-operator. Kustomize overlays for dev/prod. Prometheus ServiceMonitor with 6 alert rules. Grafana dashboard with 10 panels. Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. Docker image with Dockerfile.deploy for quick builds. CI integration tests with Kind + KubeVirt.
 
+### Product boundary
+
+VMRogue operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [HyperSDK](https://zyvor.dev/hypersdk). See [docs/VMROGUE_HYPERSDK_BOUNDARY.md](docs/VMROGUE_HYPERSDK_BOUNDARY.md).
+
 ### Future Enhancements
 
 - [ ] Profile auto-selection based on template

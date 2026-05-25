@@ -477,7 +477,16 @@ pub mod web {
                 let role = match role {
                     Some(r) => Some(r),
                     None => {
-                        if crate::api::integrations::env_var("VMROGUE_OIDC_USERINFO_URL").is_some()
+                        if crate::api::oidc::oidc_configured() {
+                            crate::api::oidc::oidc_role_from_bearer(&key)
+                                .await
+                                .map(|rstr| match rstr.as_str() {
+                                    "admin" => ApiRole::Admin,
+                                    "write" => ApiRole::Write,
+                                    _ => ApiRole::ReadOnly,
+                                })
+                        } else if crate::api::integrations::env_var("VMROGUE_OIDC_USERINFO_URL")
+                            .is_some()
                         {
                             match crate::api::integrations::oidc_userinfo_role(&key).await {
                                 Ok(Some(rstr)) => Some(match rstr.as_str() {
@@ -852,8 +861,14 @@ pub mod web {
                 "/api/v1/dashboard/overview",
                 get(dashboard_overview_handler),
             )
-            // Health
+            // Health + public OIDC discovery
             .route("/api/v1/health", get(health_handler))
+            .route(
+                "/api/v1/auth/oidc/config",
+                get(|| async {
+                    axum::Json(crate::api::oidc::oidc_public_config())
+                }),
+            )
             .with_state(state.clone())
             // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
             // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.

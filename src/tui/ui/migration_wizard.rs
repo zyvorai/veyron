@@ -33,6 +33,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
             .fg(Color::Rgb(255, 145, 115))
             .add_modifier(Modifier::BOLD),
     ));
+    header_spans.push(Span::styled(
+        " (KubeVirt only)",
+        Style::default().fg(Color::Gray),
+    ));
     let header_text = Line::from(header_spans);
     let header = Paragraph::new(header_text)
         .alignment(Alignment::Center)
@@ -345,7 +349,8 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                 .fg(Color::Rgb(222, 115, 86))
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(": Cancel", Style::default().fg(Color::Gray)),
+        Span::styled(": Cancel | ", Style::default().fg(Color::Gray)),
+        Span::styled("VMware/Hyper-V import: HyperSDK", Style::default().fg(Color::Gray)),
     ]))
     .alignment(Alignment::Center)
     .block(
