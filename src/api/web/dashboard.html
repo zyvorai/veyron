@@ -1825,6 +1825,8 @@ html[data-theme="zinc"] .monitor-cap{
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div><button class="btn-create" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
+  <div id="snap-cap-banner"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="btn btn-sm btn-restart" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
   <div class="card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
 </div>
 </div>
@@ -2453,6 +2455,20 @@ html[data-theme="zinc"] .monitor-cap{
   </div>
 </div>
 
+<!-- SNAPSHOT SCHEDULE MODAL -->
+<div class="modal-overlay" id="snap-schedule-modal">
+  <div class="modal" style="width:440px">
+    <div class="modal-header"><h2>Snapshot Schedule</h2><button class="modal-close" onclick="closeScheduleModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">VM Name</label><input type="text" class="form-input" id="sched-vm-name" placeholder="my-vm"></div>
+      <div class="form-group"><label class="form-label">Cron (UTC)</label><input type="text" class="form-input" id="sched-cron" placeholder="0 2 * * *" value="0 2 * * *"></div>
+      <div class="form-group"><label class="form-label">Prefix</label><input type="text" class="form-input" id="sched-prefix" placeholder="sched" value="sched"></div>
+      <div class="form-group"><label class="form-label">Max snapshots (retention)</label><input type="number" class="form-input" id="sched-max" min="0" value="5"></div>
+    </div>
+    <div class="modal-footer"><button class="btn-cancel" onclick="closeScheduleModal()">Cancel</button><button class="btn-forge" onclick="createSchedule()">Save Schedule</button></div>
+  </div>
+</div>
+
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="apikey-modal">
   <div class="modal" style="width:400px">
@@ -2781,7 +2797,7 @@ function loadPageData(page) {
     fetchEvents(false);
   }
   if (page === 'vms') fetchVMs();
-  if (page === 'snapshots') { fetchVMs(); fetchSnapshots(); }
+  if (page === 'snapshots') { fetchVMs(); fetchSnapshots(); fetchSchedules(); }
   if (page === 'events') fetchEvents(true);
   if (page === 'nodes') fetchNodes();
   if (page === 'pods') fetchPods();
@@ -3218,6 +3234,39 @@ async function fetchSnapshots() {
     const el = document.getElementById('snap-list');
     if (el) el.innerHTML='<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
   }
+}
+
+async function fetchSchedules() {
+  const el = document.getElementById('snap-schedule-list');
+  if (!el) return;
+  try {
+    const j = await apiJson('/api/v1/snapshot-schedules' + nsParam());
+    const rows = asArray(j);
+    setCapBanner('snap-cap-banner', { data_source: 'snapshot_schedule_configmaps', scope: 'Cron schedules (UTC) run in the API pod with Lease leader election.', limitations: 'Requires API replica holding vmrogue-snapshot-scheduler Lease. max_snapshots prunes after each run.' });
+    if (rows.length === 0) {
+      el.innerHTML = '<div class="empty-state"><p>No schedules — add one to automate snapshots.</p></div>';
+      return;
+    }
+    el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button class="btn btn-delete" onclick="deleteSchedule('+JSON.stringify(s.namespace||'default')+','+JSON.stringify(s.name||'')+')">Delete</button></div></div>').join('');
+  } catch(e) {
+    el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">'+esc(e.message)+'</p></div>';
+  }
+}
+function openScheduleModal() {
+  document.getElementById('snap-schedule-modal').classList.add('open');
+  const v = document.getElementById('vm-name');
+  if (v && v.value) document.getElementById('sched-vm-name').value = v.value;
+}
+function closeScheduleModal() { document.getElementById('snap-schedule-modal').classList.remove('open'); }
+async function createSchedule() {
+  const body = { vm_name: document.getElementById('sched-vm-name').value, cron: document.getElementById('sched-cron').value, snapshot_prefix: document.getElementById('sched-prefix').value, max_snapshots: parseInt(document.getElementById('sched-max').value,10)||0, enabled: true };
+  await apiJson('/api/v1/snapshot-schedules', { method: 'POST', body: JSON.stringify(body) });
+  closeScheduleModal(); toast('Schedule created','success'); fetchSchedules();
+}
+async function deleteSchedule(ns, name) {
+  if (!confirm('Delete schedule '+name+'?')) return;
+  await apiJson('/api/v1/snapshot-schedules/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), { method: 'DELETE' });
+  toast('Schedule deleted','success'); fetchSchedules();
 }
 
 // Fetch cluster overview for real resource bars

@@ -202,6 +202,17 @@ impl VulnerabilityScanner {
         let scan_id = format!("scan-{}", Utc::now().format("%Y%m%d-%H%M%S"));
         let mut result = ScanResult::new(scan_id, &config.vm_name, config.scan_type.clone());
 
+        #[cfg(feature = "web")]
+        if let Ok(trivy_url) = std::env::var("VMROGUE_TRIVY_URL") {
+            if !trivy_url.is_empty() {
+                if let Ok(count) = Self::scan_via_trivy(&trivy_url, &config.vm_name, &mut result) {
+                    result.statistics.packages_scanned = count as usize;
+                    result.complete();
+                    return result;
+                }
+            }
+        }
+
         // Simulate scanning different components
         if config.include_os_packages {
             Self::scan_os_packages(&mut result);
@@ -217,6 +228,55 @@ impl VulnerabilityScanner {
 
         result.complete();
         result
+    }
+
+    #[cfg(feature = "web")]
+    fn scan_via_trivy(
+        base_url: &str,
+        vm_name: &str,
+        result: &mut ScanResult,
+    ) -> Result<u32, ()> {
+        let rt = tokio::runtime::Runtime::new().map_err(|_| ())?;
+        rt.block_on(async {
+            let url = format!(
+                "{}/scan/{}",
+                base_url.trim_end_matches('/'),
+                vm_name
+            );
+            let client = reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .map_err(|_| ())?;
+            let resp = client.get(&url).send().await.map_err(|_| ())?;
+            if !resp.status().is_success() {
+                return Err(());
+            }
+            let body: serde_json::Value = resp.json().await.map_err(|_| ())?;
+            let vulns = body
+                .get("vulnerabilities")
+                .and_then(|v| v.as_array())
+                .cloned()
+                .unwrap_or_default();
+            let count = vulns.len();
+            for v in &vulns {
+                let id = v.get("VulnerabilityID").and_then(|x| x.as_str()).unwrap_or("CVE-?");
+                let title = v.get("Title").and_then(|x| x.as_str()).unwrap_or("Trivy finding");
+                let sev_str = v
+                    .get("Severity")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("MEDIUM");
+                let severity = match sev_str {
+                    "CRITICAL" => super::Severity::Critical,
+                    "HIGH" => super::Severity::High,
+                    "LOW" => super::Severity::Low,
+                    _ => super::Severity::Medium,
+                };
+                result.add_vulnerability(
+                    Vulnerability::new(id, title, severity).with_description("Trivy scan result"),
+                );
+            }
+            Ok(count as u32)
+        })
     }
 
     fn scan_os_packages(result: &mut ScanResult) {

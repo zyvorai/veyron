@@ -10,6 +10,12 @@ pub mod pagination;
 pub mod pam_auth;
 #[cfg(feature = "web")]
 pub mod prometheus;
+#[cfg(feature = "web")]
+pub mod integrations;
+#[cfg(feature = "web")]
+pub mod opencost;
+#[cfg(feature = "web")]
+pub mod loki;
 pub mod routes;
 pub mod server;
 pub mod webhooks;

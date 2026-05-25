@@ -21,8 +21,11 @@ pub struct GitOpsStatus {
     pub sync_status: String,
     pub last_synced: Option<String>,
     pub drift_detected: bool,
-    /// Explains that VMRogue does not drive Argo CD / Flux APIs.
     pub note: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub argo_applications: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub flux_kustomizations: Vec<String>,
 }
 
 /// GitOps sync request
@@ -30,6 +33,8 @@ pub struct GitOpsStatus {
 pub struct GitOpsSyncRequest {
     pub force: bool,
     pub dry_run: bool,
+    #[serde(default)]
+    pub argo_app: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -45,7 +50,85 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
-/// Report GitOps status by checking for ArgoCD or Flux applications.
+#[cfg(feature = "web")]
+async fn list_dynamic_crs(
+    client: kube::Client,
+    namespace: &str,
+    group: &str,
+    version: &str,
+    plural: &str,
+) -> Vec<String> {
+    use kube::api::{ApiResource, DynamicObject, ListParams};
+
+    let ar = ApiResource {
+        group: group.to_string(),
+        version: version.to_string(),
+        api_version: format!("{group}/{version}"),
+        kind: plural.to_string(),
+        plural: plural.to_string(),
+    };
+    let api: kube::Api<DynamicObject> = if namespace == "all" {
+        kube::Api::all_with(client, &ar)
+    } else {
+        kube::Api::namespaced_with(client, namespace, &ar)
+    };
+    match api.list(&ListParams::default().limit(50)).await {
+        Ok(list) => list
+            .items
+            .iter()
+            .filter_map(|o| o.metadata.name.clone())
+            .collect(),
+        Err(_) => vec![],
+    }
+}
+
+#[cfg(feature = "web")]
+async fn argo_app_status(
+    client: kube::Client,
+    namespace: &str,
+) -> (Vec<String>, Option<String>, Option<String>) {
+    use kube::api::{ApiResource, DynamicObject, ListParams};
+
+    let ar = ApiResource {
+        group: "argoproj.io".into(),
+        version: "v1alpha1".into(),
+        api_version: "argoproj.io/v1alpha1".into(),
+        kind: "Application".into(),
+        plural: "applications".into(),
+    };
+    let api: kube::Api<DynamicObject> = if namespace == "all" {
+        kube::Api::all_with(client, &ar)
+    } else {
+        kube::Api::namespaced_with(client, namespace, &ar)
+    };
+    let Ok(list) = api.list(&ListParams::default().limit(50)).await else {
+        return (vec![], None, None);
+    };
+    let names: Vec<String> = list
+        .items
+        .iter()
+        .filter_map(|o| o.metadata.name.clone())
+        .collect();
+    let first = list.items.first();
+    let sync = first.and_then(|o| {
+        o.data
+            .get("status")
+            .and_then(|s| s.get("sync"))
+            .and_then(|s| s.get("status"))
+            .and_then(|v| v.as_str())
+            .map(String::from)
+    });
+    let health = first.and_then(|o| {
+        o.data
+            .get("status")
+            .and_then(|s| s.get("health"))
+            .and_then(|h| h.get("status"))
+            .and_then(|v| v.as_str())
+            .map(String::from)
+    });
+    (names, sync, health)
+}
+
 #[cfg(feature = "web")]
 async fn get_gitops_status(
     State(state): State<SharedState>,
@@ -55,10 +138,9 @@ async fn get_gitops_status(
 
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
+    let client = s.client().client();
 
-    // Check for vmrogue gitops config in ConfigMap
-    let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &namespace);
+    let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(client.clone(), &namespace);
     let params = kube::api::ListParams::default().labels("vmrogue.io/type=gitops");
 
     let (repo_url, branch, last_commit, last_synced, stored_vm_count) =
@@ -90,26 +172,86 @@ async fn get_gitops_status(
 
     let drift_detected = stored_vm_count.map(|c| c != vms.len()).unwrap_or(false);
 
-    let sync_status = if repo_url.is_empty() {
-        "not_configured"
-    } else if drift_detected {
-        "out_of_sync"
-    } else if last_synced.is_some() {
-        "synced"
+    let (argo_apps, argo_sync, _argo_health) = argo_app_status(client.clone(), &namespace).await;
+    let flux_kusts = list_dynamic_crs(
+        client.clone(),
+        &namespace,
+        "kustomize.toolkit.fluxcd.io",
+        "v1",
+        "kustomizations",
+    )
+    .await;
+
+    let has_controllers = !argo_apps.is_empty() || !flux_kusts.is_empty();
+    let ctx = if has_controllers {
+        VmrogueFeatureContext::gitops_controllers()
     } else {
-        "pending"
+        VmrogueFeatureContext::gitops_status()
+    };
+
+    let sync_status = if let Some(ref st) = argo_sync {
+        st.to_lowercase()
+    } else if repo_url.is_empty() && !has_controllers {
+        "not_configured".to_string()
+    } else if drift_detected {
+        "out_of_sync".to_string()
+    } else if last_synced.is_some() {
+        "synced".to_string()
+    } else {
+        "pending".to_string()
+    };
+
+    let note = if has_controllers {
+        format!(
+            "Argo CD apps: {}. Flux kustomizations: {}. POST /gitops/sync can trigger Argo CD when VMROGUE_ARGOCD_URL is set.",
+            if argo_apps.is_empty() {
+                "none".into()
+            } else {
+                argo_apps.join(", ")
+            },
+            if flux_kusts.is_empty() {
+                "none".into()
+            } else {
+                flux_kusts.join(", ")
+            }
+        )
+    } else {
+        "Derived from VMRogue GitOps ConfigMaps and live VM counts.".to_string()
     };
 
     Json(GitOpsStatus {
-        vmrogue_context: VmrogueFeatureContext::gitops_status(),
+        vmrogue_context: ctx,
         repo_url,
         branch,
         last_commit,
-        sync_status: sync_status.to_string(),
+        sync_status,
         last_synced,
         drift_detected,
-        note: "Derived from VMRogue GitOps ConfigMaps and live VM counts. POST /gitops/sync updates timestamps in that ConfigMap only — it does not invoke Argo CD or Flux.".to_string(),
+        note,
+        argo_applications: argo_apps,
+        flux_kustomizations: flux_kusts,
     })
+}
+
+#[cfg(feature = "web")]
+async fn trigger_argocd_sync(app: &str) -> bool {
+    let base = match crate::api::integrations::env_var("VMROGUE_ARGOCD_URL") {
+        Some(u) => u,
+        None => return false,
+    };
+    let token = match crate::api::integrations::env_var("VMROGUE_ARGOCD_TOKEN") {
+        Some(t) => t,
+        None => return false,
+    };
+    let url = format!(
+        "{}/api/v1/applications/{}/sync",
+        base.trim_end_matches('/'),
+        app
+    );
+    let body = serde_json::json!({ "prune": false });
+    crate::api::integrations::post_json(&url, &body, Some(&token))
+        .await
+        .unwrap_or(false)
 }
 
 #[cfg(feature = "web")]
@@ -129,8 +271,14 @@ async fn trigger_sync(
     };
     let now = chrono::Utc::now().to_rfc3339();
 
+    let mut argo_triggered = false;
     if !req.dry_run {
-        // Persist sync state back to the GitOps ConfigMap
+        if let Some(ref app) = req.argo_app {
+            argo_triggered = trigger_argocd_sync(app).await;
+        } else if let Some(app) = crate::api::integrations::env_var("VMROGUE_ARGOCD_DEFAULT_APP") {
+            argo_triggered = trigger_argocd_sync(&app).await;
+        }
+
         let api: kube::api::Api<ConfigMap> =
             kube::api::Api::namespaced(s.client().client(), &namespace);
         let params = kube::api::ListParams::default().labels("vmrogue.io/type=gitops");
@@ -155,14 +303,6 @@ async fn trigger_sync(
         }
     }
 
-    log::info!(
-        "GitOps sync triggered: dry_run={}, force={}, namespace={}, vms={}",
-        req.dry_run,
-        req.force,
-        namespace,
-        vms.len()
-    );
-
     (
         axum::http::StatusCode::OK,
         Json(serde_json::json!({
@@ -172,8 +312,8 @@ async fn trigger_sync(
             "synced_at": if req.dry_run { serde_json::Value::Null } else { serde_json::Value::String(now) },
             "dry_run": req.dry_run,
             "force": req.force,
-            "note": "Updates the vmrogue GitOps ConfigMap timestamp when present; does not trigger Argo CD or Flux reconciliation.",
-            "vmrogue_context": serde_json::to_value(VmrogueFeatureContext::gitops_status()).unwrap_or(serde_json::Value::Null),
+            "argo_sync_triggered": argo_triggered,
+            "vmrogue_context": serde_json::to_value(VmrogueFeatureContext::gitops_controllers()).unwrap_or(serde_json::Value::Null),
         })),
     )
 }

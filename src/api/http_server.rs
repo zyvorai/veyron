@@ -469,19 +469,35 @@ pub mod web {
                 next.run(request).await.into_response()
             }
             Some(key) => {
-                // Check multi-key table for additional keys
                 let s2 = state.read().await;
                 let role = s2.authenticate(&key).cloned().or_else(|| {
-                    // Try JWT Bearer token validation
                     s2.authenticate_jwt(&key)
                 });
+                drop(s2);
+                let role = match role {
+                    Some(r) => Some(r),
+                    None => {
+                        if crate::api::integrations::env_var("VMROGUE_OIDC_USERINFO_URL").is_some()
+                        {
+                            match crate::api::integrations::oidc_userinfo_role(&key).await {
+                                Ok(Some(rstr)) => Some(match rstr.as_str() {
+                                    "admin" => ApiRole::Admin,
+                                    "write" => ApiRole::Write,
+                                    _ => ApiRole::ReadOnly,
+                                }),
+                                _ => None,
+                            }
+                        } else {
+                            None
+                        }
+                    }
+                };
                 match role {
                     Some(role) => {
                         if role == ApiRole::ReadOnly
                             && request.method() != axum::http::Method::GET
                             && request.method() != axum::http::Method::HEAD
                         {
-                            drop(s2);
                             let (status, json) = err_json(
                                 403,
                                 "FORBIDDEN",
@@ -489,11 +505,9 @@ pub mod web {
                             );
                             return (status, json).into_response();
                         }
-                        drop(s2);
                         next.run(request).await.into_response()
                     }
                     None => {
-                        drop(s2);
                         let (status, json) =
                             err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
                         (status, json).into_response()
@@ -3514,6 +3528,8 @@ pub mod web {
         snapshot_prefix: Option<String>,
         #[serde(default = "default_true")]
         enabled: bool,
+        #[serde(default)]
+        max_snapshots: u32,
     }
 
     fn default_true() -> bool {
@@ -3551,6 +3567,7 @@ pub mod web {
                             "cron": rec.cron,
                             "enabled": rec.enabled,
                             "snapshot_prefix": rec.snapshot_prefix,
+                            "max_snapshots": rec.max_snapshots,
                             "last_run": rec.last_run.map(|t| t.to_rfc3339()),
                         }))
                     })
@@ -3591,6 +3608,7 @@ pub mod web {
             &req.cron,
             req.snapshot_prefix.as_deref(),
             req.enabled,
+            req.max_snapshots,
         )
         .await
         {

@@ -96,10 +96,43 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn compute_cost_entries(state: &SharedState, scope: &str) -> Vec<CostEntry> {
+async fn compute_cost_entries(
+    state: &SharedState,
+    scope: &str,
+) -> (Vec<CostEntry>, VmrogueFeatureContext) {
     let s = state.read().await;
     let vms = s.client().list_vms_for_scope(scope).await;
-    cost_entries_from_vms(&vms)
+    let client = s.client().client();
+
+    if crate::api::integrations::cost_backend() == "opencost" {
+        match crate::api::opencost::vm_costs_from_opencost(&client, &vms).await {
+            Ok(oc) if oc.iter().any(|(_, _, c)| *c > 0.0) => {
+                let costs: Vec<CostEntry> = oc
+                    .into_iter()
+                    .map(|(namespace, vm_name, total_cost)| CostEntry {
+                        vm_name,
+                        namespace,
+                        cpu_cost: 0.0,
+                        memory_cost: 0.0,
+                        storage_cost: 0.0,
+                        network_cost: 0.0,
+                        total_cost: round2(total_cost),
+                        currency: "USD".to_string(),
+                        period: "monthly".to_string(),
+                    })
+                    .collect();
+                return (costs, VmrogueFeatureContext::costs_opencost());
+            }
+            Ok(_) | Err(_) => {
+                log::warn!("OpenCost unavailable; falling back to static rates");
+            }
+        }
+    }
+
+    (
+        cost_entries_from_vms(&vms),
+        VmrogueFeatureContext::costs_list(),
+    )
 }
 
 #[cfg(feature = "web")]
@@ -170,9 +203,9 @@ fn cost_entries_from_vms(
 
 #[cfg(feature = "web")]
 async fn list_costs(State(state): State<SharedState>) -> Json<CostsListResponse> {
-    let costs = compute_cost_entries(&state, "all").await;
+    let (costs, ctx) = compute_cost_entries(&state, "all").await;
     Json(CostsListResponse {
-        vmrogue_context: VmrogueFeatureContext::costs_list(),
+        vmrogue_context: ctx,
         costs,
     })
 }
@@ -186,7 +219,7 @@ async fn get_cost_summary(
         let s = state.read().await;
         namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace)
     };
-    let costs = compute_cost_entries(&state, &scope).await;
+    let (costs, ctx) = compute_cost_entries(&state, &scope).await;
 
     let total: f64 = costs.iter().map(|c| c.total_cost).sum();
     let mut by_namespace: std::collections::HashMap<String, f64> = std::collections::HashMap::new();
@@ -209,25 +242,31 @@ async fn get_cost_summary(
     by_resource_type.insert("storage".to_string(), round2(storage_total));
     by_resource_type.insert("network".to_string(), round2(network_total));
 
+    let is_opencost = ctx.data_source.contains("opencost");
+    let disclaimer = ctx.limitations.clone();
     Json(CostSummary {
-        vmrogue_context: VmrogueFeatureContext::costs_summary(),
+        vmrogue_context: ctx,
         total_cost: round2(total),
         currency: "USD".to_string(),
         period: "monthly".to_string(),
         by_namespace,
         by_resource_type,
-        pricing_model: "static_reference_rates".to_string(),
-        disclaimer: "CPU/memory/storage costs are internal estimates from static $/unit rates; not provider billing or OpenCost data.".to_string(),
+        pricing_model: if is_opencost {
+            "opencost_allocation".to_string()
+        } else {
+            "static_reference_rates".to_string()
+        },
+        disclaimer,
     })
 }
 
 #[cfg(feature = "web")]
 async fn get_cost_forecast(State(state): State<SharedState>) -> Json<CostForecast> {
-    let costs = compute_cost_entries(&state, "all").await;
+    let (costs, ctx) = compute_cost_entries(&state, "all").await;
     let current: f64 = costs.iter().map(|c| c.total_cost).sum();
 
     Json(CostForecast {
-        vmrogue_context: VmrogueFeatureContext::costs_forecast(),
+        vmrogue_context: ctx,
         current_monthly: round2(current),
         projected_monthly: round2(current * 1.05),
         trend: if current > 0.0 { "growing" } else { "stable" }.to_string(),

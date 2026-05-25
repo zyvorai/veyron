@@ -58,14 +58,73 @@ async fn get_incident_timeline(
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
 
+    let mut incidents: Vec<IncidentEvent> = Vec::new();
+    let now = chrono::Utc::now();
+    let mut ctx = VmrogueFeatureContext::incidents();
+
+    if let Some(am_url) = crate::api::integrations::env_var("VMROGUE_ALERTMANAGER_URL") {
+        match crate::api::integrations::fetch_alertmanager_alerts(&am_url).await {
+            Ok(alerts) if !alerts.is_empty() => {
+                ctx = VmrogueFeatureContext::incidents_alertmanager();
+                for (i, alert) in alerts.iter().enumerate() {
+                    let labels = alert.labels.as_ref();
+                    let ns = labels
+                        .and_then(|l| l.get("namespace"))
+                        .cloned()
+                        .unwrap_or_else(|| namespace.clone());
+                    if namespace != "all" && ns != namespace {
+                        continue;
+                    }
+                    let title = labels
+                        .and_then(|l| l.get("alertname"))
+                        .cloned()
+                        .unwrap_or_else(|| "Alert".into());
+                    let desc = alert
+                        .annotations
+                        .as_ref()
+                        .and_then(|a| a.get("description"))
+                        .or_else(|| {
+                            alert
+                                .annotations
+                                .as_ref()
+                                .and_then(|a| a.get("summary"))
+                        })
+                        .cloned()
+                        .unwrap_or_default();
+                    let state = alert
+                        .status
+                        .as_ref()
+                        .and_then(|st| st.state.as_deref())
+                        .unwrap_or("active");
+                    incidents.push(IncidentEvent {
+                        id: format!("am-{i}-{title}"),
+                        timestamp: now.to_rfc3339(),
+                        kind: "alertmanager".to_string(),
+                        severity: labels
+                            .and_then(|l| l.get("severity"))
+                            .cloned()
+                            .unwrap_or_else(|| "warning".into()),
+                        title,
+                        description: desc,
+                        vm_name: labels.and_then(|l| l.get("vm")).cloned(),
+                        namespace: ns,
+                        resolved: state == "suppressed",
+                    });
+                }
+            }
+            Ok(_) => {}
+            Err(e) => {
+                log::warn!("Alertmanager fetch failed: {}", e);
+            }
+        }
+    }
+
+    if incidents.is_empty() {
     let events = if namespace == "all" {
         s.client().list_all_events().await.unwrap_or_default()
     } else {
         s.client().list_events(&namespace).await.unwrap_or_default()
     };
-
-    let mut incidents: Vec<IncidentEvent> = Vec::new();
-    let now = chrono::Utc::now();
 
     for event in &events {
         if event.type_.as_deref() != Some("Warning") {
@@ -124,6 +183,7 @@ async fn get_incident_timeline(
             resolved,
         });
     }
+    } // incidents.is_empty() fallback
 
     // Check SLO status and add a synthetic SLO-breach incident if needed
     let vms = if namespace == "all" {
@@ -177,7 +237,7 @@ async fn get_incident_timeline(
     let warning = incidents.iter().filter(|e| e.severity == "warning").count() as u32;
 
     Json(IncidentTimeline {
-        vmrogue_context: VmrogueFeatureContext::incidents(),
+        vmrogue_context: ctx,
         total_incidents: total,
         open_incidents: open,
         resolved_last_24h: resolved_24h,

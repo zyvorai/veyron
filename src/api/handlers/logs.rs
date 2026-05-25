@@ -203,6 +203,56 @@ async fn fetch_pod_logs(
 }
 
 #[cfg(feature = "web")]
+async fn fetch_logs_with_backends(
+    state: &SharedState,
+    ns: &str,
+    params: &LogQueryParams,
+) -> (Vec<LogEntry>, VmrogueFeatureContext) {
+    if let Ok(loki_url) = std::env::var("VMROGUE_LOKI_URL") {
+        if !loki_url.is_empty() {
+            let limit = params.limit.unwrap_or(500);
+            match crate::api::loki::query_range(
+                ns,
+                params.search.as_deref(),
+                limit,
+            )
+            .await
+            {
+                Ok(lines) if !lines.is_empty() => {
+                    let entries: Vec<LogEntry> = lines
+                        .into_iter()
+                        .map(|l| LogEntry {
+                            timestamp: l.timestamp,
+                            level: "INFO".to_string(),
+                            source: format!("{}/{}", l.namespace, l.pod),
+                            message: l.message,
+                            metadata: std::collections::HashMap::new(),
+                        })
+                        .collect();
+                    return (entries, VmrogueFeatureContext::logs_loki());
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    log::warn!("Loki query failed, using pod logs: {}", e);
+                }
+            }
+        }
+    }
+
+    let tail = params.tail.or(params.limit.map(|l| l as i64));
+    let entries = fetch_pod_logs(
+        state,
+        ns,
+        params.vm.as_deref(),
+        tail,
+        params.since,
+        params.container.as_deref(),
+    )
+    .await;
+    (entries, VmrogueFeatureContext::logs_dashboard())
+}
+
+#[cfg(feature = "web")]
 async fn list_logs(
     State(state): State<SharedState>,
     Query(params): Query<LogQueryParams>,
@@ -214,9 +264,11 @@ async fn list_logs(
             .clone()
             .unwrap_or_else(|| s.namespace.clone())
     };
-    let mut entries = fetch_pod_logs(&state, &ns, None, Some(500), None, None).await;
+    let (mut entries, ctx) = fetch_logs_with_backends(&state, &ns, &params).await;
     apply_log_filters(&mut entries, &params);
-    Json(build_log_dashboard(entries))
+    let mut resp = build_log_dashboard(entries);
+    resp.vmrogue_context = ctx;
+    Json(resp)
 }
 
 #[cfg(feature = "web")]
@@ -231,21 +283,12 @@ async fn query_logs(
             .clone()
             .unwrap_or_else(|| s.namespace.clone())
     };
-    let tail = params.tail.or(params.limit.map(|l| l as i64));
-    let mut entries = fetch_pod_logs(
-        &state,
-        &ns,
-        params.vm.as_deref(),
-        tail,
-        params.since,
-        params.container.as_deref(),
-    )
-    .await;
+    let (mut entries, ctx) = fetch_logs_with_backends(&state, &ns, &params).await;
 
     apply_log_filters(&mut entries, &params);
 
     Json(LogQueryResponse {
-        vmrogue_context: VmrogueFeatureContext::logs_dashboard(),
+        vmrogue_context: ctx,
         entries,
     })
 }
