@@ -4,6 +4,14 @@ import { getApiKey } from './auth';
 
 const API = '/api/v1';
 
+export type VmrogueFeatureContext = {
+  data_source: string;
+  scope: string;
+  limitations: string;
+};
+
+type ApiBody = Record<string, unknown> | unknown[] | null;
+
 function authHeaders(): HeadersInit {
   const apiKey = getApiKey();
   if (apiKey) {
@@ -13,25 +21,90 @@ function authHeaders(): HeadersInit {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+/** Normalize unknown thrown values to a user-facing message. */
+export function errorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return 'Request failed';
+}
+
+/** Extract an error message from a parsed API body (HTTP error or success:false). */
+export function extractApiError(
+  body: ApiBody,
+  statusText: string,
+  fallbackText?: string,
+): string {
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    const obj = body as Record<string, unknown>;
+    const errField = obj.error;
+    if (errField && typeof errField === 'object' && errField !== null) {
+      const msg = (errField as { message?: string }).message;
+      if (msg) return String(msg);
+    }
+    if (typeof errField === 'string' && errField) return errField;
+    if (typeof obj.message === 'string' && obj.message) return obj.message;
+  }
+  if (fallbackText?.trim()) return fallbackText.trim().slice(0, 200);
+  return statusText || 'Request failed';
+}
+
+/** Unwrap ApiResponse { success, data }; leave bare payloads as-is. */
+export function unwrapApiData<T>(body: ApiBody): T {
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    const obj = body as Record<string, unknown>;
+    if (obj.success === true && Object.prototype.hasOwnProperty.call(obj, 'data')) {
+      return obj.data as T;
+    }
+  }
+  return body as T;
+}
+
+/** Parse fetch response body and throw on failure. Exported for unit tests. */
+export async function parseApiResponse<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  let body: ApiBody = null;
+  if (text) {
+    try {
+      body = JSON.parse(text) as ApiBody;
+    } catch {
+      if (!res.ok) {
+        throw new Error(text.trim().slice(0, 200) || `HTTP ${res.status}`);
+      }
+      throw new Error('Invalid JSON from API');
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(extractApiError(body, res.statusText, text));
+  }
+
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    const obj = body as Record<string, unknown>;
+    if (obj.success === false) {
+      throw new Error(extractApiError(body, res.statusText));
+    }
+  }
+
+  return unwrapApiData<T>(body);
+}
+
 async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...authHeaders(),
       ...(init?.headers ?? {}),
     },
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg =
-      (body as { error?: { message?: string } })?.error?.message ||
-      (body as { message?: string })?.message ||
-      res.statusText;
-    throw new Error(msg);
+  return parseApiResponse<T>(res);
+}
+
+function nsQuery(namespace?: string, defaultAll = false): string {
+  if (namespace && namespace !== 'all') {
+    return `?namespace=${encodeURIComponent(namespace)}`;
   }
-  const wrapped = body as { data?: T };
-  return (wrapped.data !== undefined ? wrapped.data : body) as T;
+  return defaultAll ? '?namespace=all' : '';
 }
 
 export interface VmRecord {
@@ -54,13 +127,22 @@ export interface AlertRecord {
 }
 
 export async function fetchVmInventory(namespace: string): Promise<VmRecord[]> {
-  const q = namespace && namespace !== "all" ? `?namespace=${encodeURIComponent(namespace)}` : "";
+  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
   return apiJson<VmRecord[]>(`/vms${q}`);
 }
 
 export async function fetchAlerts(namespace?: string): Promise<AlertRecord[]> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
-  return apiJson<AlertRecord[]>(`/alerts${q}`).catch(() => []);
+  const q = nsQuery(namespace);
+  return apiJson<AlertRecord[]>(`/alerts${q}`);
+}
+
+/** Alerts fetch that returns empty list on failure (metrics poll fallback). */
+export async function fetchAlertsSafe(namespace?: string): Promise<AlertRecord[]> {
+  try {
+    return await fetchAlerts(namespace);
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchHealthSummary(): Promise<{
@@ -151,6 +233,7 @@ export type CustomResourceRecord = {
 };
 
 export type GitOpsStatusRecord = {
+  vmrogue_context?: VmrogueFeatureContext;
   repo_url: string;
   branch: string;
   last_commit: string;
@@ -158,6 +241,8 @@ export type GitOpsStatusRecord = {
   last_synced?: string | null;
   drift_detected: boolean;
   note: string;
+  argo_applications?: string[];
+  flux_kustomizations?: string[];
 };
 
 export async function fetchCustomResources(): Promise<CustomResourceRecord[]> {
@@ -165,8 +250,27 @@ export async function fetchCustomResources(): Promise<CustomResourceRecord[]> {
 }
 
 export async function fetchGitOpsStatus(namespace = 'all'): Promise<GitOpsStatusRecord> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  const q = nsQuery(namespace);
   return apiJson<GitOpsStatusRecord>(`/gitops/status${q}`);
+}
+
+export type GitOpsSyncRequest = {
+  force?: boolean;
+  dry_run?: boolean;
+  argo_app?: string;
+};
+
+export type GitOpsSyncResult = {
+  message?: string;
+  sync_status?: string;
+  vmrogue_context?: VmrogueFeatureContext;
+};
+
+export async function triggerGitOpsSync(body: GitOpsSyncRequest = {}): Promise<GitOpsSyncResult> {
+  return apiJson<GitOpsSyncResult>('/gitops/sync', {
+    method: 'POST',
+    body: JSON.stringify({ force: false, dry_run: false, ...body }),
+  });
 }
 
 export type PodRecord = {
@@ -197,7 +301,7 @@ export type ClusterEventRecord = {
 };
 
 export async function fetchRecentEvents(namespace = 'all'): Promise<ClusterEventRecord[]> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '?namespace=all';
+  const q = nsQuery(namespace, true);
   return apiJson<ClusterEventRecord[]>(`/events/recent${q}`);
 }
 
@@ -213,7 +317,7 @@ export type MonitoringStatusRecord = {
 };
 
 export async function fetchMonitoringStatus(namespace = 'all'): Promise<MonitoringStatusRecord> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  const q = nsQuery(namespace);
   return apiJson<MonitoringStatusRecord>(`/monitoring/status${q}`);
 }
 
@@ -228,7 +332,7 @@ export type SecurityPostureRecord = {
 };
 
 export async function fetchSecurityPosture(namespace = 'all'): Promise<SecurityPostureRecord> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  const q = nsQuery(namespace);
   return apiJson<SecurityPostureRecord>(`/security/posture${q}`);
 }
 
@@ -244,11 +348,12 @@ export type SecurityFindingRecord = {
 };
 
 export async function fetchSecurityFindings(namespace = 'all'): Promise<SecurityFindingRecord[]> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  const q = nsQuery(namespace);
   return apiJson<SecurityFindingRecord[]>(`/security/findings${q}`);
 }
 
 export type CostSummaryRecord = {
+  vmrogue_context?: VmrogueFeatureContext;
   total_cost: number;
   currency: string;
   period: string;
@@ -257,8 +362,127 @@ export type CostSummaryRecord = {
 };
 
 export async function fetchCostSummary(namespace = 'all'): Promise<CostSummaryRecord> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  const q = nsQuery(namespace);
   return apiJson<CostSummaryRecord>(`/costs/summary${q}`);
+}
+
+export type CostBudgetRecord = {
+  name: string;
+  namespace: string;
+  monthly_limit: number;
+  current_spend: number;
+  alert_threshold_percent: number;
+  status: string;
+};
+
+export type CreateBudgetRequest = {
+  name: string;
+  namespace: string;
+  monthly_limit: number;
+  alert_threshold_percent?: number;
+};
+
+export async function fetchCostBudgets(): Promise<CostBudgetRecord[]> {
+  return apiJson<CostBudgetRecord[]>('/costs/budgets');
+}
+
+export async function createCostBudget(body: CreateBudgetRequest): Promise<CostBudgetRecord> {
+  return apiJson<CostBudgetRecord>('/costs/budgets', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export type LogLineRecord = {
+  ts: string;
+  level: string;
+  source: string;
+  msg: string;
+};
+
+export type LogsDashboardRecord = {
+  vmrogue_context: VmrogueFeatureContext;
+  error_count: number;
+  warn_count: number;
+  info_count: number;
+  total_1h: number;
+  lines: LogLineRecord[];
+};
+
+export async function fetchLogs(namespace = 'all', limit = 50): Promise<LogsDashboardRecord> {
+  const params = new URLSearchParams();
+  if (namespace && namespace !== 'all') params.set('namespace', namespace);
+  params.set('limit', String(limit));
+  const q = params.toString() ? `?${params.toString()}` : '';
+  return apiJson<LogsDashboardRecord>(`/logs${q}`);
+}
+
+export type IncidentEventRecord = {
+  id: string;
+  timestamp: string;
+  kind: string;
+  severity: string;
+  title: string;
+  description: string;
+  vm_name?: string | null;
+  namespace: string;
+  resolved: boolean;
+};
+
+export type IncidentsTimelineRecord = {
+  vmrogue_context: VmrogueFeatureContext;
+  total_incidents: number;
+  open_incidents: number;
+  resolved_last_24h: number;
+  critical: number;
+  warning: number;
+  events: IncidentEventRecord[];
+};
+
+export async function fetchIncidents(namespace = 'all'): Promise<IncidentsTimelineRecord> {
+  const q = nsQuery(namespace);
+  return apiJson<IncidentsTimelineRecord>(`/incidents/timeline${q}`);
+}
+
+export type SnapshotScheduleRecord = {
+  name: string;
+  namespace: string;
+  vm_name: string;
+  cron: string;
+  enabled: boolean;
+  snapshot_prefix: string;
+  max_snapshots: number;
+  last_run?: string | null;
+};
+
+export type CreateSnapshotScheduleRequest = {
+  namespace?: string;
+  vm_name: string;
+  cron: string;
+  snapshot_prefix?: string;
+  enabled?: boolean;
+  max_snapshots?: number;
+};
+
+export async function fetchSnapshotSchedules(namespace = 'all'): Promise<SnapshotScheduleRecord[]> {
+  const q = nsQuery(namespace);
+  return apiJson<SnapshotScheduleRecord[]>(`/snapshot-schedules${q}`);
+}
+
+export async function createSnapshotSchedule(
+  body: CreateSnapshotScheduleRequest,
+): Promise<{ message?: string; name?: string; namespace?: string }> {
+  return apiJson('/snapshot-schedules', {
+    method: 'POST',
+    body: JSON.stringify({ enabled: true, max_snapshots: 0, ...body }),
+  });
+}
+
+export async function deleteSnapshotSchedule(namespace: string, cmName: string): Promise<void> {
+  await apiJson(
+    `/snapshot-schedules/${encodeURIComponent(namespace)}/${encodeURIComponent(cmName)}`,
+    { method: 'DELETE' },
+  );
 }
 
 export async function stopVirtualMachine(namespace: string, name: string): Promise<void> {
@@ -273,22 +497,15 @@ export async function restartVirtualMachine(namespace: string, name: string): Pr
   await vmLifecycleAction(namespace, name, 'restart');
 }
 
-async function vmLifecycleAction(namespace: string, name: string, action: 'start' | 'stop' | 'restart'): Promise<void> {
-  const res = await fetch(
-    `${API}/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/${action}`,
-    {
-      method: 'POST',
-      headers: authHeaders(),
-    },
+async function vmLifecycleAction(
+  namespace: string,
+  name: string,
+  action: 'start' | 'stop' | 'restart',
+): Promise<void> {
+  await apiJson(
+    `/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/${action}`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' } },
   );
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg =
-      (body as { error?: { message?: string } })?.error?.message ||
-      (body as { message?: string })?.message ||
-      res.statusText;
-    throw new Error(msg);
-  }
 }
 
 export async function pauseVirtualMachine(namespace: string, name: string): Promise<void> {
@@ -332,75 +549,73 @@ export async function resizeVirtualMachine(
 }
 
 export type RdpGuestAgentResult = {
-  success: boolean
-  guest_agent_connected: boolean
-  is_windows_vm: boolean
-  message: string
-  guest_exec: unknown
-  exit_code?: number | null
-  stdout?: string | null
-  stderr?: string | null
-}
+  success: boolean;
+  guest_agent_connected: boolean;
+  is_windows_vm: boolean;
+  message: string;
+  guest_exec: unknown;
+  exit_code?: number | null;
+  stdout?: string | null;
+  stderr?: string | null;
+};
 
 export type RdpExposeStatus = {
-  guest_ip?: string | null
-  is_windows_vm: boolean
-  exposed: boolean
-  node_port?: number | null
-  cluster_ip?: string | null
-  service_name: string
-  service_type?: string | null
-  rdp_via_nodeport_example?: string | null
-  vm_spec_has_rdp_port: boolean
-  suggested_node_port?: number | null
-}
+  guest_ip?: string | null;
+  is_windows_vm: boolean;
+  exposed: boolean;
+  node_port?: number | null;
+  cluster_ip?: string | null;
+  service_name: string;
+  service_type?: string | null;
+  rdp_via_nodeport_example?: string | null;
+  vm_spec_has_rdp_port: boolean;
+  suggested_node_port?: number | null;
+};
 
 export type VmDetail = VmRecord & {
   vmi_status?: {
-    phase?: string
-    conditions?: Array<{ type?: string; type_?: string; status?: string }>
-  }
-}
+    phase?: string;
+    conditions?: Array<{ type?: string; type_?: string; status?: string }>;
+  };
+};
 
 export function fetchVmDetail(namespace: string, name: string): Promise<VmDetail> {
-  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`)
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`);
 }
 
 export function fetchRdpExpose(namespace: string, name: string): Promise<RdpExposeStatus> {
-  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/rdp-expose`)
+  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/rdp-expose`);
 }
 
 export function putRdpExpose(
   namespace: string,
   name: string,
-  body: { enabled: boolean; service_type?: string; node_port?: number }
+  body: { enabled: boolean; service_type?: string; node_port?: number },
 ): Promise<RdpExposeStatus> {
   return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/rdp-expose`, {
-    method: "PUT",
+    method: 'PUT',
     body: JSON.stringify(body),
-  })
+  });
 }
 
-/** Enable Windows RDP inside the guest via QEMU guest-agent (guest-exec). */
 export async function enableRdpViaGuestAgent(
   namespace: string,
-  name: string
+  name: string,
 ): Promise<RdpGuestAgentResult> {
-  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/guest-agent/enable-rdp`, {
-    method: "POST",
-    body: "{}",
-  })
+  return apiJson(
+    `/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/guest-agent/enable-rdp`,
+    { method: 'POST', body: '{}' },
+  );
 }
 
-/** Disable Windows RDP inside the guest via QEMU guest-agent (guest-exec). */
 export async function disableRdpViaGuestAgent(
   namespace: string,
-  name: string
+  name: string,
 ): Promise<RdpGuestAgentResult> {
-  return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/guest-agent/disable-rdp`, {
-    method: "POST",
-    body: "{}",
-  })
+  return apiJson(
+    `/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/guest-agent/disable-rdp`,
+    { method: 'POST', body: '{}' },
+  );
 }
 
 export interface DataDiskDefaults {
@@ -455,17 +670,17 @@ export function addDataDisk(
     mount_path?: string;
     filesystem?: string;
     wait_bound?: boolean;
-  }
+  },
 ): Promise<AddDataDiskResponse> {
   return apiJson(`/vms/${encodeURIComponent(ns)}/${encodeURIComponent(name)}/storage/data-disk`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(body),
   });
 }
 
 export async function deleteVirtualMachine(namespace: string, name: string): Promise<void> {
   await apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 }
 
@@ -480,7 +695,7 @@ export type VmTemplate = {
 };
 
 export function fetchTemplates(): Promise<VmTemplate[]> {
-  return apiJson<VmTemplate[]>("/templates");
+  return apiJson<VmTemplate[]>('/templates');
 }
 
 export type CreateVmRequest = {
@@ -495,8 +710,8 @@ export type CreateVmRequest = {
 };
 
 export function createVirtualMachine(body: CreateVmRequest): Promise<{ name?: string }> {
-  return apiJson("/vms", {
-    method: "POST",
+  return apiJson('/vms', {
+    method: 'POST',
     body: JSON.stringify(body),
   });
 }
@@ -528,10 +743,10 @@ export function putVmExpose(
     enabled: boolean;
     service_type?: string;
     ports?: VmExposePort[];
-  }
+  },
 ): Promise<VmExposeStatus> {
   return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/expose`, {
-    method: "PUT",
+    method: 'PUT',
     body: JSON.stringify(body),
   });
 }
@@ -548,13 +763,13 @@ export function fetchVmInternet(namespace: string, name: string): Promise<VmInte
 
 export function enableVmInternet(namespace: string, name: string): Promise<VmInternetStatus> {
   return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/network/internet`, {
-    method: "PUT",
+    method: 'PUT',
   });
 }
 
 export function disableVmInternet(namespace: string, name: string): Promise<VmInternetStatus> {
   return apiJson(`/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/network/internet`, {
-    method: "DELETE",
+    method: 'DELETE',
   });
 }
 
@@ -574,22 +789,22 @@ export function fetchVmSnapshots(namespace: string, vmName: string): Promise<VmS
 export function createVmSnapshot(
   namespace: string,
   vmName: string,
-  snapshotName?: string
+  snapshotName?: string,
 ): Promise<{ message?: string }> {
   return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(vmName)}/create`, {
-    method: "POST",
+    method: 'POST',
     body: JSON.stringify(snapshotName ? { snapshot_name: snapshotName } : {}),
   });
 }
 
 export function deleteVmSnapshot(namespace: string, snapshotName: string): Promise<void> {
   return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(snapshotName)}/delete`, {
-    method: "POST",
+    method: 'POST',
   });
 }
 
 export function restoreVmSnapshot(namespace: string, snapshotName: string): Promise<void> {
   return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(snapshotName)}/restore`, {
-    method: "POST",
+    method: 'POST',
   });
 }

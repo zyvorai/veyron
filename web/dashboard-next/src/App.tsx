@@ -13,6 +13,7 @@ import {
   type VmrogueView,
 } from './lib/nav';
 import { Login } from './sdk/components/Login';
+import ErrorBanner from './sdk/components/ErrorBanner';
 import { HyperShell } from './sdk/layout/HyperShell';
 
 const Dashboard = lazy(() =>
@@ -47,6 +48,7 @@ export default function App() {
   const [displayUser, setDisplayUser] = useState('');
   const [inventoryNs, setInventoryNs] = useState('all');
   const [namespaces, setNamespaces] = useState<Array<{ name: string; vmCount: number }>>([]);
+  const [namespaceError, setNamespaceError] = useState<string | null>(null);
 
   useEffect(() => {
     setAuthed(isAuthenticated());
@@ -56,9 +58,16 @@ export default function App() {
 
   useEffect(() => {
     if (!authed) return;
+    setNamespaceError(null);
     void fetchNamespaces()
-      .then((rows) => setNamespaces(rows))
-      .catch(() => setNamespaces([]));
+      .then((rows) => {
+        setNamespaces(rows);
+        setNamespaceError(null);
+      })
+      .catch((err) => {
+        setNamespaces([]);
+        setNamespaceError(err instanceof Error ? err.message : 'Failed to load namespaces');
+      });
   }, [authed]);
 
   const handleLogin = useCallback(async (username: string, password: string) => {
@@ -134,39 +143,46 @@ export default function App() {
         view === 'platform' ||
         view === 'workloads' ||
         view === 'insights' ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              padding: '12px 16px',
-              background: '#fff',
-              borderBottom: '1px solid #e5e7eb',
-            }}
-          >
-            <label htmlFor="inventory-ns" style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
-              Namespace
-            </label>
-            <select
-              id="inventory-ns"
-              value={inventoryNs}
-              onChange={(e) => setInventoryNs(e.target.value)}
+          <>
+            {namespaceError ? (
+              <div style={{ padding: '12px 16px 0', background: '#fff' }}>
+                <ErrorBanner message={namespaceError} />
+              </div>
+            ) : null}
+            <div
               style={{
-                padding: '6px 10px',
-                borderRadius: '6px',
-                border: '1px solid #d1d5db',
-                fontSize: '13px',
-                minWidth: '180px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 16px',
+                background: '#fff',
+                borderBottom: '1px solid #e5e7eb',
               }}
             >
-              <option value="all">All namespaces</option>
-              {namespaces.map((ns) => (
-                <option key={ns.name} value={ns.name}>
-                  {ns.name} ({ns.vmCount} VMs)
-                </option>
-              ))}
-            </select>
-          </div>
+              <label htmlFor="inventory-ns" style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                Namespace
+              </label>
+              <select
+                id="inventory-ns"
+                value={inventoryNs}
+                onChange={(e) => setInventoryNs(e.target.value)}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '13px',
+                  minWidth: '180px',
+                }}
+              >
+                <option value="all">All namespaces</option>
+                {namespaces.map((ns) => (
+                  <option key={ns.name} value={ns.name}>
+                    {ns.name} ({ns.vmCount} VMs)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
         ) : null}
         {view === 'dashboard' ? (
           <Suspense fallback={<ViewFallback />}>

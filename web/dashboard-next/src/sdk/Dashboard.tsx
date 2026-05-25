@@ -1,8 +1,10 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { requestVmrogueNav } from "../lib/nav";
+import { errorMessage } from "../lib/api";
 import { useVmrogueMetricsFeed } from "../hooks/useVmrogueMetricsFeed";
 import { AlertsList } from "./components/AlertsList";
 import { ChartContainer } from "./components/ChartContainer";
+import ErrorBanner from "./components/ErrorBanner";
 import { HyperPageTabs } from "./components/HyperPageTabs";
 import { Hero } from "./components/Hero";
 import { JobsTable } from "./components/JobsTable";
@@ -19,6 +21,7 @@ import { formatBytes, formatDuration, getStatusColor } from "./utils/formatters"
 export const Dashboard: React.FC = () => {
   const { data: metrics, connected, reconnecting, error, transport } = useVmrogueMetricsFeed(4000);
   const { history, addMetrics } = useMetricsHistory(60);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     if (metrics) {
@@ -29,11 +32,11 @@ export const Dashboard: React.FC = () => {
   const openInventory = () => requestVmrogueNav({ view: "inventory" });
 
   const handleCancelJob = async (jobId: string) => {
+    setActionError(null);
     try {
       await cancelJob(jobId);
     } catch (err) {
-      console.error("Failed to stop VM:", err);
-      alert("Failed to stop VM");
+      setActionError(errorMessage(err));
     }
   };
 
@@ -422,6 +425,7 @@ export const Dashboard: React.FC = () => {
             }}>
               Virtual machines
             </h2>
+            {actionError ? <ErrorBanner message={actionError} /> : null}
             <JobsTable jobs={metrics.recent_jobs} onCancelJob={handleCancelJob} />
           </div>
         </div>

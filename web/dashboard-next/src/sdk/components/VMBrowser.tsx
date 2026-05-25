@@ -13,6 +13,7 @@ import { VmInternetPanel, VmSshExposePanel } from "./VmNetworkPanels";
 import VmRdpPanel from "./VmRdpPanel";
 import { VmLifecycleBar } from "./VmLifecycleBar";
 import { VmSnapshotsPanel } from "./VmSnapshotsPanel";
+import { VmSnapshotSchedulesPanel } from "./VmSnapshotSchedulesPanel";
 
 interface VM {
   id: string;
@@ -508,6 +509,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                   onOpenSerial={() => setSerialVm({ ns, name: vmName })}
                 />
                 <VmSnapshotsPanel namespace={ns} vmName={vmName} />
+                <VmSnapshotSchedulesPanel namespace={ns} vmName={vmName} />
                 <VmSshExposePanel namespace={ns} vmName={vmName} />
                 <VmInternetPanel namespace={ns} vmName={vmName} />
                 <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />

@@ -11,6 +11,7 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
   const [templates, setTemplates] = useState<VmTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [namespace, setNamespace] = useState(defaultNamespace === "all" ? "default" : defaultNamespace);
@@ -27,14 +28,19 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
 
   useEffect(() => {
     if (!open) return;
+    setTemplatesError(null);
     void fetchTemplates()
       .then((rows) => {
         setTemplates(rows);
+        setTemplatesError(null);
         if (rows.length && !rows.some((t) => t.name === template)) {
           setTemplate(rows[0].name);
         }
       })
-      .catch(() => setTemplates([]));
+      .catch((err) => {
+        setTemplates([]);
+        setTemplatesError(err instanceof Error ? err.message : "Failed to load templates");
+      });
   }, [open, template]);
 
   const onTemplateChange = (value: string) => {
@@ -97,6 +103,11 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
         {error ? (
           <p style={{ color: "#dc2626", fontSize: 13, margin: "0 0 12px" }} role="alert">
             {error}
+          </p>
+        ) : null}
+        {templatesError ? (
+          <p style={{ color: "#b45309", fontSize: 13, margin: "0 0 12px" }} role="alert">
+            Templates unavailable: {templatesError}
           </p>
         ) : null}
         <div style={{ display: "grid", gap: 10 }}>
