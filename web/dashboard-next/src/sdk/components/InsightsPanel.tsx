@@ -1,16 +1,25 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import {
+  createCostBudget,
+  fetchCostBudgets,
   fetchCostSummary,
+  fetchIncidents,
+  fetchLogs,
   fetchMonitoringStatus,
   fetchRecentEvents,
   fetchSecurityFindings,
   fetchSecurityPosture,
   type ClusterEventRecord,
+  type CostBudgetRecord,
   type CostSummaryRecord,
+  type IncidentsTimelineRecord,
+  type LogsDashboardRecord,
   type MonitoringStatusRecord,
   type SecurityFindingRecord,
   type SecurityPostureRecord,
 } from "../../lib/api";
+import CapabilityBanner from "./CapabilityBanner";
+import ErrorBanner from "./ErrorBanner";
 
 type Props = { scopeNamespace?: string };
 
@@ -20,6 +29,9 @@ type SectionErrors = {
   findings?: string;
   costs?: string;
   events?: string;
+  incidents?: string;
+  logs?: string;
+  budgets?: string;
 };
 
 function sectionErrorMessage(reason: unknown): string {
@@ -32,8 +44,18 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
   const [findings, setFindings] = useState<SecurityFindingRecord[]>([]);
   const [costs, setCosts] = useState<CostSummaryRecord | null>(null);
   const [events, setEvents] = useState<ClusterEventRecord[]>([]);
+  const [incidents, setIncidents] = useState<IncidentsTimelineRecord | null>(null);
+  const [logs, setLogs] = useState<LogsDashboardRecord | null>(null);
+  const [budgets, setBudgets] = useState<CostBudgetRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [sectionErrors, setSectionErrors] = useState<SectionErrors>({});
+  const [budgetBusy, setBudgetBusy] = useState(false);
+  const [budgetForm, setBudgetForm] = useState({
+    name: "",
+    namespace: scopeNamespace === "all" ? "default" : scopeNamespace,
+    monthly_limit: 500,
+    alert_threshold_percent: 80,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,6 +66,9 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
       fetchSecurityFindings(scopeNamespace),
       fetchCostSummary(scopeNamespace),
       fetchRecentEvents(scopeNamespace),
+      fetchIncidents(scopeNamespace),
+      fetchLogs(scopeNamespace, 40),
+      fetchCostBudgets(),
     ]);
     const errors: SectionErrors = {};
 
@@ -82,6 +107,27 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
       errors.events = sectionErrorMessage(results[4].reason);
     }
 
+    if (results[5].status === "fulfilled") {
+      setIncidents(results[5].value);
+    } else {
+      setIncidents(null);
+      errors.incidents = sectionErrorMessage(results[5].reason);
+    }
+
+    if (results[6].status === "fulfilled") {
+      setLogs(results[6].value);
+    } else {
+      setLogs(null);
+      errors.logs = sectionErrorMessage(results[6].reason);
+    }
+
+    if (results[7].status === "fulfilled") {
+      setBudgets(results[7].value);
+    } else {
+      setBudgets([]);
+      errors.budgets = sectionErrorMessage(results[7].reason);
+    }
+
     setSectionErrors(errors);
     setLoading(false);
   }, [scopeNamespace]);
@@ -89,6 +135,40 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    setBudgetForm((prev) => ({
+      ...prev,
+      namespace: scopeNamespace === "all" ? prev.namespace : scopeNamespace,
+    }));
+  }, [scopeNamespace]);
+
+  const createBudget = async () => {
+    if (!budgetForm.name.trim()) {
+      setSectionErrors((prev) => ({ ...prev, budgets: "Budget name is required" }));
+      return;
+    }
+    setBudgetBusy(true);
+    setSectionErrors((prev) => ({ ...prev, budgets: undefined }));
+    try {
+      await createCostBudget({
+        name: budgetForm.name.trim(),
+        namespace: budgetForm.namespace.trim() || "default",
+        monthly_limit: budgetForm.monthly_limit,
+        alert_threshold_percent: budgetForm.alert_threshold_percent,
+      });
+      setBudgetForm((prev) => ({ ...prev, name: "" }));
+      const rows = await fetchCostBudgets();
+      setBudgets(rows);
+    } catch (e) {
+      setSectionErrors((prev) => ({
+        ...prev,
+        budgets: e instanceof Error ? e.message : "Create budget failed",
+      }));
+    } finally {
+      setBudgetBusy(false);
+    }
+  };
 
   const failedSections = Object.keys(sectionErrors).length;
 
@@ -99,7 +179,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
           <h2 style={title}>Insights</h2>
           <p style={subtitle}>
             {loading
-              ? "Loading monitoring, security, costs, and events…"
+              ? "Loading monitoring, security, costs, incidents, logs, and events…"
               : `Namespace scope: ${scopeNamespace}${failedSections ? ` · ${failedSections} section(s) unavailable` : ""}`}
           </p>
         </div>
@@ -179,6 +259,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
           <p style={sectionError}>{sectionErrors.costs}</p>
         ) : costs ? (
           <>
+            <CapabilityBanner context={costs.vmrogue_context} />
             <p style={bodyText}>
               <strong>{costs.total_cost.toFixed(2)} {costs.currency}</strong> / {costs.period}
               {costs.pricing_model ? ` · ${costs.pricing_model}` : ""}
@@ -187,6 +268,164 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
           </>
         ) : (
           <p style={muted}>{loading ? "…" : "No cost summary"}</p>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Cost budgets</h3>
+        {sectionErrors.budgets ? <ErrorBanner message={sectionErrors.budgets} /> : null}
+        <div style={budgetFormRow}>
+          <input
+            placeholder="Budget name"
+            value={budgetForm.name}
+            onChange={(e) => setBudgetForm((p) => ({ ...p, name: e.target.value }))}
+            style={input}
+          />
+          <input
+            placeholder="Namespace"
+            value={budgetForm.namespace}
+            onChange={(e) => setBudgetForm((p) => ({ ...p, namespace: e.target.value }))}
+            style={input}
+          />
+          <input
+            type="number"
+            min={1}
+            placeholder="Monthly limit"
+            value={budgetForm.monthly_limit}
+            onChange={(e) => setBudgetForm((p) => ({ ...p, monthly_limit: parseFloat(e.target.value) || 0 }))}
+            style={input}
+          />
+          <input
+            type="number"
+            min={1}
+            max={100}
+            placeholder="Alert %"
+            value={budgetForm.alert_threshold_percent}
+            onChange={(e) =>
+              setBudgetForm((p) => ({ ...p, alert_threshold_percent: parseFloat(e.target.value) || 80 }))
+            }
+            style={input}
+          />
+          <button type="button" style={refreshBtn} disabled={budgetBusy} onClick={() => void createBudget()}>
+            {budgetBusy ? "Saving…" : "Add budget"}
+          </button>
+        </div>
+        {budgets.length === 0 && !loading ? (
+          <p style={muted}>No budgets configured.</p>
+        ) : (
+          <div style={{ ...tableWrap, marginTop: 12 }}>
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th style={th}>Name</th>
+                  <th style={th}>Namespace</th>
+                  <th style={th}>Spend / limit</th>
+                  <th style={th}>Threshold</th>
+                  <th style={th}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {budgets.map((b) => (
+                  <tr key={`${b.namespace}/${b.name}`} style={tr}>
+                    <td style={td}><strong>{b.name}</strong></td>
+                    <td style={td}>{b.namespace}</td>
+                    <td style={td}>
+                      {b.current_spend.toFixed(2)} / {b.monthly_limit.toFixed(2)}
+                    </td>
+                    <td style={td}>{b.alert_threshold_percent}%</td>
+                    <td style={td}>{b.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Incidents</h3>
+        {sectionErrors.incidents ? (
+          <p style={sectionError}>{sectionErrors.incidents}</p>
+        ) : incidents ? (
+          <>
+            <CapabilityBanner context={incidents.vmrogue_context} />
+            <p style={bodyText}>
+              {incidents.open_incidents} open · {incidents.critical} critical · {incidents.warning} warning ·{" "}
+              {incidents.resolved_last_24h} resolved (24h)
+            </p>
+            {incidents.events.length === 0 && !loading ? (
+              <p style={muted}>No incidents in this scope.</p>
+            ) : (
+              <div style={{ ...tableWrap, marginTop: 12 }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Time</th>
+                      <th style={th}>Severity</th>
+                      <th style={th}>Title</th>
+                      <th style={th}>Namespace</th>
+                      <th style={th}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {incidents.events.slice(0, 20).map((ev) => (
+                      <tr key={ev.id} style={tr}>
+                        <td style={tdMono}>{ev.timestamp ? ev.timestamp.slice(0, 19) : "—"}</td>
+                        <td style={td}>{ev.severity}</td>
+                        <td style={td}><strong>{ev.title}</strong></td>
+                        <td style={td}>{ev.namespace}</td>
+                        <td style={td}>{ev.resolved ? "resolved" : "open"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={muted}>{loading ? "…" : "No incident data"}</p>
+        )}
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Recent logs</h3>
+        {sectionErrors.logs ? (
+          <p style={sectionError}>{sectionErrors.logs}</p>
+        ) : logs ? (
+          <>
+            <CapabilityBanner context={logs.vmrogue_context} />
+            <p style={bodyText}>
+              {logs.error_count} errors · {logs.warn_count} warnings · {logs.info_count} info · {logs.total_1h} lines
+            </p>
+            {logs.lines.length === 0 && !loading ? (
+              <p style={muted}>No log lines for this scope.</p>
+            ) : (
+              <div style={{ ...tableWrap, marginTop: 12 }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>Time</th>
+                      <th style={th}>Level</th>
+                      <th style={th}>Source</th>
+                      <th style={th}>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {logs.lines.slice(0, 30).map((line, idx) => (
+                      <tr key={`${line.ts}-${idx}`} style={tr}>
+                        <td style={tdMono}>{line.ts !== "-" ? line.ts.slice(0, 19) : "—"}</td>
+                        <td style={td}>{line.level}</td>
+                        <td style={tdMono}>{line.source}</td>
+                        <td style={td}>{line.msg}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <p style={muted}>{loading ? "…" : "No log data"}</p>
         )}
       </section>
 
@@ -257,5 +496,7 @@ const th: CSSProperties = { textAlign: "left", padding: "12px 14px", background:
 const tr: CSSProperties = { borderBottom: "1px solid #f3f4f6" };
 const td: CSSProperties = { padding: "12px 14px", color: "#374151", verticalAlign: "top" };
 const tdMono: CSSProperties = { ...td, fontFamily: "ui-monospace, monospace", fontSize: 12 };
+const budgetFormRow: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 12 };
+const input: CSSProperties = { padding: "8px 10px", borderRadius: 6, border: "1px solid #d1d5db", fontSize: 13, minWidth: 120 };
 
 export default InsightsPanel;

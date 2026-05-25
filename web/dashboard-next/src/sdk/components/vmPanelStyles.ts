@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { errorBox } from "./ErrorBanner";
+import { capabilityBox } from "./CapabilityBanner";
 
 export const panelStyles: Record<string, CSSProperties> = {
   wrap: { marginTop: 12, borderTop: "1px solid #eee", paddingTop: 12 },
@@ -54,4 +56,6 @@ export const panelStyles: Record<string, CSSProperties> = {
   hint: { fontSize: 12, color: "#666", marginTop: 8 },
   err: { color: "#c62828", margin: "4px 0" },
   ok: { color: "#15803d", margin: "4px 0" },
+  errorBox,
+  capabilityBox,
 };

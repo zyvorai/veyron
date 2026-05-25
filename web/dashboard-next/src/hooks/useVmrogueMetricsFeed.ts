@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { fetchAlerts, fetchHealthSummary, fetchVmInventory } from "../lib/api";
+import { fetchAlertsSafe, fetchHealthSummary, fetchVmInventory } from "../lib/api";
 import { getApiKey } from "../lib/auth";
 import type { AlertRecord, VmRecord } from "../types";
 import type { Alert, JobInfo, Metrics, ProviderStats } from "../sdk/types/metrics";
@@ -154,7 +154,7 @@ export function useVmrogueMetricsFeed(intervalMs = 4000): MetricsFeed {
       const [health, vms, alertList] = await Promise.all([
         fetchHealthSummary(),
         fetchVmInventory("all"),
-        fetchAlerts("all").catch(() => [] as AlertRecord[]),
+        fetchAlertsSafe("all"),
       ]);
       setPollData(buildMetrics(vms, health.message, health.status, alertList));
       setPollConnected(true);

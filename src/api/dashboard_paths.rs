@@ -30,6 +30,8 @@ pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/monitoring",
     "/api/v1/security",
     "/api/v1/costs",
+    "/api/v1/logs",
+    "/api/v1/incidents",
 ];
 
 pub fn is_operator_api_path(path: &str) -> bool {
@@ -84,6 +86,10 @@ mod tests {
             "/api/v1/security/posture",
             "/api/v1/security/findings",
             "/api/v1/costs/summary",
+            "/api/v1/costs/budgets",
+            "/api/v1/logs",
+            "/api/v1/incidents/timeline",
+            "/api/v1/snapshot-schedules",
         ] {
             assert!(is_operator_api_path(path), "{path}");
         }
