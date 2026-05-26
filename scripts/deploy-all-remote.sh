@@ -69,7 +69,9 @@ end_phase() {
 stream_remote() {
     local label="$1"
     local cmd="$2"
-    ssh "${REMOTE}" "${cmd}" 2>&1 | sed -e "s/^/  [${label}] /"
+    # Keep the session alive through long podman/cargo builds (avoid client timeout).
+    ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=120 -o TCPKeepAlive=yes \
+        "${REMOTE}" "${cmd}" 2>&1 | sed -e "s/^/  [${label}] /"
 }
 
 QUICK=false

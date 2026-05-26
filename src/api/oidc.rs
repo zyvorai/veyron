@@ -15,6 +15,7 @@ struct Jwks {
 
 #[cfg(feature = "web")]
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)] // n/e/alg reserved for full RS256 verify
 struct Jwk {
     kid: Option<String>,
     kty: Option<String>,
