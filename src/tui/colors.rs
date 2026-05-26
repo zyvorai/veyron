@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // Color helpers for CLI and TUI
 // CLI colors use colored/owo_colors for terminal output
 // TUI colors use ratatui::style::Color for TUI rendering

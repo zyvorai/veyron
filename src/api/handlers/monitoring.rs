@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -17,6 +21,7 @@ use k8s_openapi::api::core::v1::Event;
 /// Monitoring status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitoringStatus {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
     pub prometheus_available: bool,
     pub grafana_available: bool,
     pub alertmanager_available: bool,
@@ -160,7 +165,21 @@ async fn get_monitoring_status(
         found.unwrap_or_else(|| "15d".to_string())
     };
 
+    if std::env::var("VMROGUE_PROMETHEUS_URL")
+        .map(|u| !u.trim().is_empty())
+        .unwrap_or(false)
+    {
+        prometheus = true;
+    }
+    if std::env::var("VMROGUE_ALERTMANAGER_URL")
+        .map(|u| !u.trim().is_empty())
+        .unwrap_or(false)
+    {
+        alertmanager = true;
+    }
+
     Json(MonitoringStatus {
+        vmrogue_context: super::feature_context::VmrogueFeatureContext::monitoring_status(),
         prometheus_available: prometheus,
         grafana_available: grafana,
         alertmanager_available: alertmanager,

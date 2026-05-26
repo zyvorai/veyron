@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Default Remote Desktop (TCP 3389) for Windows KubeVirt VMs.
 //!
 //! Merges masquerade interface port 3389 and optional cloud-init / config-drive userdata.

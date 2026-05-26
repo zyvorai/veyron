@@ -1,6 +1,12 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use crate::config::*;
 use std::collections::HashMap;
 use std::sync::LazyLock;
+
+pub mod registry;
 
 // ============================================================================
 // Shared feature/firmware/clock presets
@@ -168,6 +174,13 @@ impl TemplateManager {
     }
 
     pub fn get(&self, name: &str) -> Option<VMConfig> {
+        if let Ok(Some(reg)) = registry::TemplateRegistry::load() {
+            if let Some(path) = registry::TemplateRegistry::registry_path() {
+                if let Ok(Some(cfg)) = reg.resolve_config(name, &path) {
+                    return Some(cfg);
+                }
+            }
+        }
         self.templates.get(name).cloned()
     }
 
@@ -662,8 +675,26 @@ fn oracle_8_template() -> VMConfig {
 // Windows Templates
 // ============================================================================
 
+/// Minimal Cloudbase-Init config-drive userData for first-boot setup.
+/// Replace credentials via GitOps secrets before production use.
+fn windows_cloud_init_userdata() -> &'static str {
+    r#"#ps1_sysnative
+# VMRogue Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
+Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
+Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
+Write-Host 'Cloudbase-Init config-drive applied by VMRogue template.'
+"#
+}
+
+fn apply_windows_cloud_init(builder: VMConfigBuilder) -> VMConfig {
+    builder
+        .cloud_init_config_drive(windows_cloud_init_userdata())
+        .build()
+}
+
 fn windows_2022_template() -> VMConfig {
-    VMConfigBuilder::new("windows-vm")
+    apply_windows_cloud_init(
+        VMConfigBuilder::new("windows-vm")
         .namespace("default")
         .cpu(4, 1, 1)
         .memory("8Gi")
@@ -686,12 +717,13 @@ fn windows_2022_template() -> VMConfig {
         .disable_balloon()
         .io_threads_policy("shared")
         .termination_grace_period(120)
-        .machine_type("q35")
-        .build()
+        .machine_type("q35"),
+    )
 }
 
 fn windows_2019_template() -> VMConfig {
-    VMConfigBuilder::new("windows-vm")
+    apply_windows_cloud_init(
+        VMConfigBuilder::new("windows-vm")
         .namespace("default")
         .cpu(4, 1, 1)
         .memory("8Gi")
@@ -713,12 +745,13 @@ fn windows_2019_template() -> VMConfig {
         .disable_balloon()
         .io_threads_policy("shared")
         .termination_grace_period(120)
-        .machine_type("q35")
-        .build()
+        .machine_type("q35"),
+    )
 }
 
 fn windows_11_template() -> VMConfig {
-    VMConfigBuilder::new("windows-vm")
+    apply_windows_cloud_init(
+        VMConfigBuilder::new("windows-vm")
         .namespace("default")
         .cpu(4, 2, 1)
         .memory("4Gi")
@@ -741,12 +774,13 @@ fn windows_11_template() -> VMConfig {
         .disable_balloon()
         .io_threads_policy("shared")
         .termination_grace_period(120)
-        .machine_type("q35")
-        .build()
+        .machine_type("q35"),
+    )
 }
 
 fn windows_10_template() -> VMConfig {
-    VMConfigBuilder::new("windows-vm")
+    apply_windows_cloud_init(
+        VMConfigBuilder::new("windows-vm")
         .namespace("default")
         .cpu(4, 1, 1)
         .memory("8Gi")
@@ -768,8 +802,8 @@ fn windows_10_template() -> VMConfig {
         .disable_balloon()
         .io_threads_policy("shared")
         .termination_grace_period(120)
-        .machine_type("q35")
-        .build()
+        .machine_type("q35"),
+    )
 }
 
 // ============================================================================

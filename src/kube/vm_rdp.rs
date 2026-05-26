@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! RDP NodePort / LoadBalancer exposure for Windows KubeVirt VMs.
 //!
 //! Selects **virt-launcher** pods via `kubevirt.io/vm=<vm>` (not `kubevirt.io/domain` used for SSH expose).

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Metadata for API payloads that are derived, bounded, or backed by a narrow source.
 //! Attached as `vmrogue_context` so clients and the dashboard can explain what users are seeing.
 //!
@@ -54,7 +58,7 @@ impl VmrogueFeatureContext {
         Self {
             data_source: "argocd_flux_crd_status".to_string(),
             scope: "Argo CD Application and Flux Kustomization CR status in namespace.".to_string(),
-            limitations: "POST /gitops/sync triggers Argo CD API when VMROGUE_ARGOCD_URL+TOKEN are set; otherwise updates ConfigMap only.".to_string(),
+            limitations: "POST /gitops/sync triggers Argo CD API when VMROGUE_ARGOCD_URL+TOKEN are set, or Flux reconcile annotation when flux_kustomization is set; otherwise updates ConfigMap only.".to_string(),
         }
     }
 
@@ -182,6 +186,86 @@ impl VmrogueFeatureContext {
             scope: "Capacity-style rows derived from VM/node counts and running ratios in scope."
                 .to_string(),
             limitations: "Not a metrics-backed forecast: growth and breach hints are heuristics from density and running VM ratio, not time-series models."
+                .to_string(),
+        }
+    }
+
+    pub fn forecasting_prometheus() -> Self {
+        Self {
+            data_source: "prometheus_vm_growth".to_string(),
+            scope: "VM count trend from Prometheus kubevirt_vmi_* series over 7d when configured."
+                .to_string(),
+            limitations: "Requires VMROGUE_PROMETHEUS_URL. Falls back to cluster density heuristics when Prometheus is unavailable."
+                .to_string(),
+        }
+    }
+
+    pub fn performance_prometheus() -> Self {
+        Self {
+            data_source: "prometheus_histogram_percentiles".to_string(),
+            scope: "CPU/memory p50/p95/p99 from Prometheus range queries over the last hour."
+                .to_string(),
+            limitations: "Requires VMROGUE_PROMETHEUS_URL and kubevirt_vmi_* metrics. Falls back to single-sample estimates when unavailable."
+                .to_string(),
+        }
+    }
+
+    pub fn scheduling_events() -> Self {
+        Self {
+            data_source: "kubernetes_scheduled_events".to_string(),
+            scope: "Pending/scheduled pod counts, preemption events, and latency from Scheduled Events."
+                .to_string(),
+            limitations: "Latency is averaged from Scheduled event timestamps, not scheduler histogram metrics. Set VMROGUE_PROMETHEUS_URL for scheduler_scheduling_duration_seconds when available."
+                .to_string(),
+        }
+    }
+
+    pub fn scheduling_prometheus() -> Self {
+        Self {
+            data_source: "prometheus_scheduler_metrics".to_string(),
+            scope: "Scheduling latency from Prometheus scheduler metrics plus pod phase counts."
+                .to_string(),
+            limitations: "Requires VMROGUE_PROMETHEUS_URL and scheduler metrics exposition on the cluster."
+                .to_string(),
+        }
+    }
+
+    pub fn security_config() -> Self {
+        Self {
+            data_source: "vm_spec_security_rules".to_string(),
+            scope: "Configuration-derived findings from VM spec (host network, resources, TPM, RNG)."
+                .to_string(),
+            limitations: "Not vulnerability scanning. Set VMROGUE_TRIVY_URL to merge Trivy CVE findings when a scanner is deployed."
+                .to_string(),
+        }
+    }
+
+    pub fn security_trivy() -> Self {
+        Self {
+            data_source: "vm_spec_plus_trivy".to_string(),
+            scope: "VM config analysis merged with optional Trivy scanner results."
+                .to_string(),
+            limitations: "Trivy integration requires VMROGUE_TRIVY_URL pointing at a VMRogue-compatible scan API."
+                .to_string(),
+        }
+    }
+
+    pub fn monitoring_status() -> Self {
+        Self {
+            data_source: "service_discovery_plus_events".to_string(),
+            scope: "Prometheus/Grafana/Alertmanager detection via Service names; alert count from Warning Events."
+                .to_string(),
+            limitations: "Stack detection is heuristic (service name substring). VMROGUE_PROMETHEUS_URL env confirms Prometheus URL even when Service name differs."
+                .to_string(),
+        }
+    }
+
+    pub fn cilium_policies() -> Self {
+        Self {
+            data_source: "cilium_cnp_ccnp_and_networkpolicy".to_string(),
+            scope: "Native CiliumNetworkPolicy and CCNP when CRDs exist, plus Kubernetes NetworkPolicy in scope."
+                .to_string(),
+            limitations: "Flow view derives from NetworkPolicy rules only; Hubble flow export is not queried."
                 .to_string(),
         }
     }

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use super::types::*;
 use std::collections::HashMap;
 
@@ -252,6 +256,23 @@ impl VMConfigBuilder {
             network: net_name.clone(),
             model: "virtio".to_string(),
             network_type: NetworkType::SRIOV { name: net_name },
+            mac_address: None,
+        });
+        self
+    }
+
+    /// Add an OVN-Kubernetes overlay interface via Multus NAD (e.g. `ovn-k8s-cni-overlay`).
+    pub fn add_ovn_network(
+        mut self,
+        name: impl Into<String>,
+        nad_name: impl Into<String>,
+    ) -> Self {
+        let net_name = nad_name.into();
+        self.config.interfaces.push(InterfaceConfig {
+            name: name.into(),
+            network: net_name.clone(),
+            model: "virtio".to_string(),
+            network_type: NetworkType::Ovn { name: net_name },
             mac_address: None,
         });
         self

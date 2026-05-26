@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // Resource Gauge Widget - Visual resource usage indicators with gradient support
 use crate::tui::colors::gradient;
 use crate::tui::colors::tui as colors;

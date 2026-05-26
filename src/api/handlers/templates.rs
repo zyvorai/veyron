@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{Json, Router, extract::Path, http::StatusCode, routing::get};
 use serde::{Deserialize, Serialize};

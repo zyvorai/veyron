@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -10,11 +14,14 @@ use serde::{Deserialize, Serialize};
 use crate::api::http_server::web::SharedState;
 
 #[cfg(feature = "web")]
+use super::feature_context::VmrogueFeatureContext;
+#[cfg(feature = "web")]
 use super::namespace_scope::{self, DashboardNamespaceQuery};
 
 /// Security posture
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityPosture {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub overall_score: u8,
     pub risk_level: String,
     pub total_findings: u32,
@@ -35,6 +42,12 @@ pub struct SecurityFinding {
     pub resource: String,
     pub recommendation: String,
     pub detected_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SecurityFindingsResponse {
+    pub vmrogue_context: VmrogueFeatureContext,
+    pub findings: Vec<SecurityFinding>,
 }
 
 #[cfg(feature = "web")]
@@ -120,7 +133,16 @@ async fn get_security_posture(
     }
     .to_string();
 
+    let trivy_enabled = std::env::var("VMROGUE_TRIVY_URL")
+        .map(|u| !u.trim().is_empty())
+        .unwrap_or(false);
+
     Json(SecurityPosture {
+        vmrogue_context: if trivy_enabled {
+            VmrogueFeatureContext::security_trivy()
+        } else {
+            VmrogueFeatureContext::security_config()
+        },
         overall_score: score,
         risk_level,
         total_findings: total,
@@ -135,7 +157,7 @@ async fn get_security_posture(
 async fn list_security_findings(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
-) -> Json<Vec<SecurityFinding>> {
+) -> Json<SecurityFindingsResponse> {
     let s = state.read().await;
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
     let vms = s.client().list_vms_for_scope(&scope).await;
@@ -228,5 +250,54 @@ async fn list_security_findings(
         }
     }
 
-    Json(findings)
+    let trivy_url = std::env::var("VMROGUE_TRIVY_URL")
+        .ok()
+        .filter(|u| !u.trim().is_empty());
+    let mut used_trivy = false;
+    if let Some(ref base) = trivy_url {
+        for vm in &vms {
+            let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
+            let vm_ns = vm.metadata.namespace.as_deref().unwrap_or(scope.as_str());
+            let scan = crate::security::scan::VulnerabilityScanner::scan(
+                &crate::security::scan::ScanConfig::new(vm_name, crate::security::scan::ScanType::Quick),
+            );
+            for vuln in &scan.vulnerabilities {
+                id_counter += 1;
+                used_trivy = true;
+                findings.push(SecurityFinding {
+                    id: format!("SEC-{:04}", id_counter),
+                    severity: match vuln.severity {
+                        crate::security::Severity::Critical => "Critical",
+                        crate::security::Severity::High => "High",
+                        crate::security::Severity::Medium => "Medium",
+                        crate::security::Severity::Low => "Low",
+                        crate::security::Severity::Info => "Info",
+                    }
+                    .to_string(),
+                    category: "Vulnerability".to_string(),
+                    title: vuln.title.clone(),
+                    description: vuln.description.clone(),
+                    resource: format!("{}/{}", vm_ns, vm_name),
+                    recommendation: vuln
+                        .fixed_version
+                        .as_ref()
+                        .map(|v| format!("Upgrade to fixed version: {v}"))
+                        .unwrap_or_else(|| {
+                            "Apply vendor patches or rebuild the golden image".to_string()
+                        }),
+                    detected_at: now.clone(),
+                });
+            }
+            let _ = base;
+        }
+    }
+
+    Json(SecurityFindingsResponse {
+        vmrogue_context: if used_trivy {
+            VmrogueFeatureContext::security_trivy()
+        } else {
+            VmrogueFeatureContext::security_config()
+        },
+        findings,
+    })
 }

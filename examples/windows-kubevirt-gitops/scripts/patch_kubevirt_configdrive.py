@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+# Proprietary software — see LICENSE in the repository root.
+# https://zyvor.dev · info@zyvor.dev
+
 """
 Patch a KubeVirt VirtualMachine YAML to use cloudInitConfigDrive for cloudinitdisk.
 

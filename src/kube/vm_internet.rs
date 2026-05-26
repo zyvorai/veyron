@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Per-VM internet egress policies (CiliumNetworkPolicy preferred, Kubernetes NetworkPolicy fallback).
 //!
 //! Selects virt-launcher pods via label `kubevirt.io/vm=<VirtualMachine.metadata.name>`.

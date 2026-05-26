@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! KubeVirt `subresources.kubevirt.io/v1` helpers (guest-exec, …).
 
 use anyhow::Result;

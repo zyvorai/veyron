@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 import { describe, expect, it } from 'vitest';
 
 /** Keep in sync with `OPERATOR_API_PREFIXES` in src/api/dashboard_paths.rs */

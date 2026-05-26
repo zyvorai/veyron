@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -71,6 +75,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/snapshots", get(list_snapshots).post(create_snapshot))
         .route("/snapshots/{id}", delete(delete_snapshot))
         .route("/snapshots/{id}/restore", post(restore_snapshot))
+        .route("/snapshots/export", get(export_snapshots))
         .with_state(state)
 }
 
@@ -217,4 +222,40 @@ async fn restore_snapshot(
             StatusCode::INTERNAL_SERVER_ERROR
         }
     }
+}
+
+#[cfg(feature = "web")]
+async fn export_snapshots(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
+    let s = state.read().await;
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let client = s.client().client();
+
+    let snapshots = if namespace_scope::is_all_namespaces(&scope) {
+        let mut merged = Vec::new();
+        for ns in namespace_scope::kubernetes_namespace_names(&client).await {
+            let manager = SnapshotManager::from_client(client.clone(), &ns);
+            if let Ok(mut snaps) = manager.list_all_snapshots().await {
+                merged.append(&mut snaps);
+            }
+        }
+        merged
+    } else {
+        let manager = SnapshotManager::from_client(client, &scope);
+        manager.list_all_snapshots().await.map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        })?
+    };
+
+    Ok(Json(serde_json::json!({
+        "namespace": scope,
+        "count": snapshots.len(),
+        "snapshots": snapshots,
+        "export_format": "kubevirt_virtualmachinesnapshot_list",
+    })))
 }

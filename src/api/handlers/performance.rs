@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -93,27 +97,45 @@ async fn list_performance_profiles(
     let now = chrono::Utc::now().to_rfc3339();
 
     let mut profiles = Vec::new();
+    let mut used_prometheus = false;
 
     for vm in &vms {
         let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
-        let collector = crate::monitoring::metrics::MetricsCollector::new(
-            vm.metadata
-                .namespace
-                .clone()
-                .unwrap_or_else(|| namespace.clone()),
-        );
+        let vm_ns = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| namespace.clone());
+        let collector = crate::monitoring::metrics::MetricsCollector::new(vm_ns.clone());
 
         if let Ok(metrics) = collector.collect(vm_name).await {
             let cpu = metrics.cpu.usage_percent;
             let mem = metrics.memory.usage_percent;
-            // Derive conservative percentile estimates from the current measurement.
-            // These scale factors model burst headroom above the observed baseline.
-            let cpu_p50 = cpu;
-            let cpu_p95 = (cpu * 1.30).min(100.0);
-            let cpu_p99 = (cpu * 1.50).min(100.0);
-            let mem_p50 = mem;
-            let mem_p95 = (mem * 1.20).min(100.0);
-            let mem_p99 = (mem * 1.35).min(100.0);
+            let mut cpu_p50 = cpu;
+            let mut cpu_p95 = (cpu * 1.30).min(100.0);
+            let mut cpu_p99 = (cpu * 1.50).min(100.0);
+            let mut mem_p50 = mem;
+            let mut mem_p95 = (mem * 1.20).min(100.0);
+            let mut mem_p99 = (mem * 1.35).min(100.0);
+
+            if namespace != "all" {
+                if let Some((p50, p95, p99)) =
+                    prometheus_vm_cpu_percentiles(&vm_ns, vm_name).await
+                {
+                    cpu_p50 = p50;
+                    cpu_p95 = p95;
+                    cpu_p99 = p99;
+                    used_prometheus = true;
+                }
+                if let Some((p50, p95, p99)) =
+                    prometheus_vm_memory_percentiles(&vm_ns, vm_name).await
+                {
+                    mem_p50 = p50;
+                    mem_p95 = p95;
+                    mem_p99 = p99;
+                    used_prometheus = true;
+                }
+            }
             // Estimate average I/O latency: throughput / (IOPS × sector size).
             // Clamp to a plausible range; returns 0 when no I/O is observed.
             let total_iops =
@@ -143,9 +165,60 @@ async fn list_performance_profiles(
     }
 
     Json(PerformanceProfilesResponse {
-        vmrogue_context: VmrogueFeatureContext::performance_profiles(),
+        vmrogue_context: if used_prometheus {
+            VmrogueFeatureContext::performance_prometheus()
+        } else {
+            VmrogueFeatureContext::performance_profiles()
+        },
         profiles,
     })
+}
+
+#[cfg(feature = "web")]
+async fn prometheus_vm_cpu_percentiles(ns: &str, vm: &str) -> Option<(f64, f64, f64)> {
+    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let end = chrono::Utc::now().timestamp();
+    let start = end - 3600;
+    let query = format!(
+        "rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{ns}\", name=\"{vm}\"}}[5m]) * 100"
+    );
+    percentile_triplet_from_range(&base, &query, start, end).await
+}
+
+#[cfg(feature = "web")]
+async fn prometheus_vm_memory_percentiles(ns: &str, vm: &str) -> Option<(f64, f64, f64)> {
+    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let end = chrono::Utc::now().timestamp();
+    let start = end - 3600;
+    let query = format!(
+        "kubevirt_vmi_memory_resident_bytes{{namespace=\"{ns}\", name=\"{vm}\"}}"
+    );
+    percentile_triplet_from_range(&base, &query, start, end).await
+}
+
+#[cfg(feature = "web")]
+async fn percentile_triplet_from_range(
+    base: &str,
+    query: &str,
+    start: i64,
+    end: i64,
+) -> Option<(f64, f64, f64)> {
+    let series = crate::api::prometheus::range_query_series(base, query, start, end, 300)
+        .await
+        .ok()?;
+    let mut values: Vec<f64> = series
+        .into_iter()
+        .flat_map(|(_, pts)| pts.into_iter().map(|(_, v)| v))
+        .collect();
+    if values.is_empty() {
+        return None;
+    }
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    Some((
+        crate::api::prometheus::percentile_sorted(&values, 0.50),
+        crate::api::prometheus::percentile_sorted(&values, 0.95),
+        crate::api::prometheus::percentile_sorted(&values, 0.99),
+    ))
 }
 
 /// Build a synthetic flamegraph from live CPU metrics.

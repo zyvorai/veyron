@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // VM Details View - Tabbed detail view with Overview, Network, and Events tabs
 
 use crate::tui::colors::tui as colors;
@@ -10,7 +14,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
-pub const TAB_NAMES: [&str; 3] = ["Overview", "Network", "Events"];
+pub const TAB_NAMES: [&str; 4] = ["Overview", "Network", "Events", "Logs"];
 
 pub fn render(f: &mut Frame, state: &AppState, _config: &TuiConfig, active_tab: usize) {
     let size = f.area();
@@ -54,6 +58,7 @@ pub fn render(f: &mut Frame, state: &AppState, _config: &TuiConfig, active_tab: 
             0 => render_overview_tab(f, vm, chunks[2]),
             1 => render_network_tab(f, vm, state, chunks[2]),
             2 => render_events_tab(f, vm, state, chunks[2]),
+            3 => render_logs_tab(f, vm, chunks[2]),
             _ => render_overview_tab(f, vm, chunks[2]),
         }
     } else {
@@ -386,6 +391,28 @@ fn render_events_tab(
         .alignment(Alignment::Left)
         .scroll((state.detail_events_scroll, 0));
 
+    f.render_widget(details, area);
+}
+
+fn render_logs_tab(f: &mut Frame, vm: &crate::tui::state::VmInfo, area: ratatui::layout::Rect) {
+    let text = vec![
+        Line::from(format!("VM: {}/{}", vm.namespace, vm.name)),
+        Line::from(""),
+        Line::from("Virt-launcher pod logs (preview):"),
+        Line::from("  Use GET /api/v1/logs?vm=<name> for full log search."),
+        Line::from("  Set VMROGUE_LOKI_URL for cluster-wide Loki queries."),
+        Line::from(""),
+        Line::from("Press 'l' in the VM list to refresh metrics; console: 'c' (serial/VNC via API)."),
+    ];
+    let details = Paragraph::new(text)
+        .style(Style::default().fg(colors::TEXT))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(colors::BORDER))
+                .title("Logs & Console"),
+        )
+        .alignment(Alignment::Left);
     f.render_widget(details, area);
 }
 
