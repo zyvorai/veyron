@@ -33,6 +33,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALL_REMOTE="${SCRIPT_DIR}/deploy-all-remote.sh"
+# shellcheck source=lib/deploy-remote-ui.sh
+source "${SCRIPT_DIR}/lib/deploy-remote-ui.sh"
 
 usage() {
     cat <<'EOF'
@@ -82,23 +84,17 @@ REMOTE="${USER}@${HOST}"
 SSH_TIMEOUT="${DEPLOY_SSH_TIMEOUT:-20}"
 
 if [[ "${DEPLOY_REMOTE_SKIP_CHECK:-0}" == "1" ]] || [[ "${SKIP_PREFLIGHT}" == true ]]; then
+    deploy_skip_preflight_note
     exec "${ALL_REMOTE}" "${FORWARD[@]}"
 fi
 
-echo ""
-echo "  deploy-remote — preflight"
-echo "  Target: ${REMOTE}"
-echo ""
+deploy_preflight_banner "${REMOTE}" "${SSH_TIMEOUT}"
 
 if ! ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT}" -o StrictHostKeyChecking=accept-new \
     "${REMOTE}" "true" 2>/dev/null; then
-    echo "  ❌ SSH preflight failed: cannot reach ${REMOTE} (timeout ${SSH_TIMEOUT}s, BatchMode)."
-    echo "     Try: ssh ${REMOTE}"
-    echo "     Or:  DEPLOY_REMOTE_SKIP_CHECK=1 ${0##*/} $(printf '%q ' "$@")"
-    exit 1
+    deploy_preflight_fail "${REMOTE}" "${SSH_TIMEOUT}" "${0##*/} $(printf '%q ' "$@")"
 fi
 
-echo "  ✔ SSH OK — starting deploy-all-remote.sh"
-echo ""
+deploy_preflight_ok
 
 exec "${ALL_REMOTE}" "${FORWARD[@]}"
