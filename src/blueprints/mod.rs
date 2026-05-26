@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // Multi-VM Blueprints - Deploy complete application stacks with one command
 // This is an innovative feature for deploying complex topologies
 

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -110,11 +114,21 @@ async fn list_predictions(
         "flat"
     };
 
+    let mut ctx = VmrogueFeatureContext::forecasting_predictions();
+    let mut prom_growth_rate = growth_rate;
+    if let Some(base) = std::env::var("VMROGUE_PROMETHEUS_URL").ok() {
+        if let Some(rate) = prometheus_vm_count_growth_rate(&base).await {
+            prom_growth_rate = rate;
+            ctx = VmrogueFeatureContext::forecasting_prometheus();
+        }
+    }
+    let predicted_vms_prom = (total_vms * prom_growth_rate).ceil();
+
     let mut predictions = vec![
         ForecastPrediction {
             metric: "vm_count".to_string(),
             current_value: total_vms,
-            predicted_value: predicted_vms,
+            predicted_value: predicted_vms_prom,
             confidence: 0.70,
             prediction_window: "7d".to_string(),
             trend: trend_label.to_string(),
@@ -202,7 +216,27 @@ async fn list_predictions(
     }
 
     Json(ForecastPredictionsResponse {
-        vmrogue_context: VmrogueFeatureContext::forecasting_predictions(),
+        vmrogue_context: ctx,
         predictions,
     })
+}
+
+#[cfg(feature = "web")]
+async fn prometheus_vm_count_growth_rate(base: &str) -> Option<f64> {
+    let end = chrono::Utc::now().timestamp();
+    let start = end - 7 * 86400;
+    let query = "count(kubevirt_vmi_phase_count{phase=\"Running\"})";
+    let series = crate::api::prometheus::range_query_series(base, query, start, end, 3600)
+        .await
+        .ok()?;
+    let values: Vec<f64> = series
+        .into_iter()
+        .flat_map(|(_, pts)| pts.into_iter().map(|(_, v)| v))
+        .collect();
+    if values.len() < 2 {
+        return None;
+    }
+    let first = values.first()?.max(1.0);
+    let last = *values.last()?;
+    Some((last / first).clamp(1.0, 2.0))
 }

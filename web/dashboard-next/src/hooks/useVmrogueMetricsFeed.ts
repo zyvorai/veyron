@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchAlertsSafe, fetchHealthSummary, fetchVmInventory } from "../lib/api";
 import { getApiKey } from "../lib/auth";

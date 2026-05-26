@@ -1,10 +1,15 @@
-//! Golden image / CDI DataVolume catalog.
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
+//! Golden image / CDI DataVolume catalog and import.
 
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
     extract::{Query, State},
-    routing::get,
+    http::StatusCode,
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -33,10 +38,27 @@ pub struct ImageCatalogResponse {
     pub images: Vec<ImageCatalogEntry>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct ImportDataVolumeRequest {
+    pub name: String,
+    pub namespace: String,
+    pub url: Option<String>,
+    pub registry: Option<String>,
+    #[serde(default)]
+    pub storage_class: Option<String>,
+    #[serde(default = "default_import_size")]
+    pub size: String,
+}
+
+fn default_import_size() -> String {
+    "20Gi".to_string()
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/images/catalog", get(list_image_catalog))
+        .route("/images/import", post(import_data_volume))
         .with_state(state)
 }
 
@@ -45,7 +67,7 @@ fn image_context() -> super::feature_context::VmrogueFeatureContext {
     super::feature_context::VmrogueFeatureContext {
         data_source: "cdi_datavolumes_and_pvcs".to_string(),
         scope: "CDI DataVolumes and image-tagged PVCs in namespace scope.".to_string(),
-        limitations: "Packer builds are documented in docs/WINDOWS_PACKER_GITOPS_PIPELINE.md; this API lists cluster objects only.".to_string(),
+        limitations: "POST /images/import creates CDI DataVolume CRs. Packer builds remain in docs/WINDOWS_PACKER_GITOPS_PIPELINE.md.".to_string(),
     }
 }
 
@@ -167,4 +189,86 @@ async fn list_image_catalog(
         vmrogue_context: image_context(),
         images,
     })
+}
+
+#[cfg(feature = "web")]
+async fn import_data_volume(
+    State(state): State<SharedState>,
+    Json(req): Json<ImportDataVolumeRequest>,
+) -> Result<(StatusCode, Json<serde_json::Value>), (StatusCode, Json<serde_json::Value>)> {
+    use kube::api::{ApiResource, DynamicObject, PostParams};
+
+    if req.name.is_empty() || req.namespace.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "name and namespace required" })),
+        ));
+    }
+    let source = if let Some(url) = req.url.as_ref().filter(|u| !u.is_empty()) {
+        serde_json::json!({ "http": { "url": url } })
+    } else if let Some(reg) = req.registry.as_ref().filter(|r| !r.is_empty()) {
+        serde_json::json!({ "registry": { "url": reg } })
+    } else {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "url or registry source required" })),
+        ));
+    };
+
+    let mut pvc_spec = serde_json::json!({
+        "accessModes": ["ReadWriteOnce"],
+        "resources": { "requests": { "storage": req.size } }
+    });
+    if let Some(sc) = req.storage_class.as_ref().filter(|s| !s.is_empty()) {
+        pvc_spec["storageClassName"] = serde_json::Value::String(sc.clone());
+    }
+
+    let dv = serde_json::json!({
+        "apiVersion": "cdi.kubevirt.io/v1beta1",
+        "kind": "DataVolume",
+        "metadata": {
+            "name": req.name,
+            "namespace": req.namespace,
+            "labels": { "vmrogue.io/type": "imported-image" }
+        },
+        "spec": {
+            "source": source,
+            "pvc": pvc_spec
+        }
+    });
+
+    let ar = ApiResource {
+        group: "cdi.kubevirt.io".to_string(),
+        version: "v1beta1".to_string(),
+        api_version: "cdi.kubevirt.io/v1beta1".to_string(),
+        kind: "DataVolume".to_string(),
+        plural: "datavolumes".to_string(),
+    };
+    let s = state.read().await;
+    let client = s.client().client();
+    let api: kube::Api<DynamicObject> =
+        kube::Api::namespaced_with(client, &req.namespace, &ar);
+
+    let obj: DynamicObject = serde_json::from_value(dv).map_err(|e| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )
+    })?;
+
+    match api.create(&PostParams::default(), &obj).await {
+        Ok(created) => Ok((
+            StatusCode::CREATED,
+            Json(serde_json::json!({
+                "status": "created",
+                "name": created.metadata.name,
+                "namespace": created.metadata.namespace,
+                "vmrogue_context": image_context(),
+            })),
+        )),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )),
+    }
 }

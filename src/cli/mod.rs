@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -290,7 +294,11 @@ pub enum Commands {
     },
 
     /// List available templates
-    Templates,
+    Templates {
+        /// Group templates by OS family
+        #[arg(long)]
+        by_family: bool,
+    },
 
     /// Show template details
     Template {
@@ -2755,7 +2763,10 @@ mod tests {
     #[test]
     fn test_templates_command() {
         let cli = parse(&["vmrogue", "templates"]).unwrap();
-        assert!(matches!(*cli.command, Commands::Templates));
+        assert!(matches!(
+            *cli.command,
+            Commands::Templates { by_family: false }
+        ));
     }
 
     #[test]

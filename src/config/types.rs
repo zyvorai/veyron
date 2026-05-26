@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -275,6 +279,10 @@ pub enum NetworkType {
     Pod,
     #[serde(rename = "sriov")]
     SRIOV {
+        name: String,
+    },
+    /// OVN-Kubernetes overlay via Multus NetworkAttachmentDefinition (e.g. `ovn-k8s-cni-overlay`).
+    Ovn {
         name: String,
     },
 }

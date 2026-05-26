@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Optional external backend helpers (OpenCost, Loki, Alertmanager, Argo CD, notification channels).
 
 #[cfg(feature = "web")]
@@ -85,6 +89,22 @@ pub async fn deliver_email(relay_url: &str, subject: &str, body: &str, recipient
         "from": env_var("VMROGUE_EMAIL_FROM").unwrap_or_else(|| "vmrogue@local".to_string())
     });
     post_json(relay_url, &payload, env_var("VMROGUE_EMAIL_RELAY_TOKEN").as_deref()).await
+}
+
+/// Generic SMS HTTP relay (Twilio-style JSON webhook).
+#[cfg(feature = "web")]
+pub async fn deliver_sms(relay_url: &str, body: &str, phone_numbers: &[String]) -> Result<bool> {
+    let payload = serde_json::json!({
+        "text": body,
+        "to": phone_numbers,
+        "from": env_var("VMROGUE_SMS_FROM").unwrap_or_else(|| "vmrogue".to_string())
+    });
+    post_json(
+        relay_url,
+        &payload,
+        env_var("VMROGUE_SMS_WEBHOOK_TOKEN").as_deref(),
+    )
+    .await
 }
 
 /// OIDC userinfo validation — returns role string when token is valid.

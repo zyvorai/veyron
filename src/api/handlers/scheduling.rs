@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -9,9 +13,12 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
+use super::feature_context::VmrogueFeatureContext;
+
 /// Scheduling status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SchedulingStatus {
+    pub vmrogue_context: VmrogueFeatureContext,
     pub pending_pods: u32,
     pub scheduled_pods: u32,
     pub unschedulable_nodes: Vec<String>,
@@ -29,6 +36,16 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/scheduling/status", get(get_scheduling_status))
         .with_state(state)
+}
+
+#[cfg(feature = "web")]
+async fn prometheus_scheduling_latency_ms() -> Option<f64> {
+    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let query = "histogram_quantile(0.95, sum(rate(scheduler_scheduling_duration_seconds_bucket[5m])) by (le)) * 1000";
+    let samples = crate::api::prometheus::instant_query_vector(&base, query)
+        .await
+        .ok()?;
+    samples.first().map(|(_, v)| *v)
 }
 
 #[cfg(feature = "web")]
@@ -83,7 +100,6 @@ async fn get_scheduling_status(
         .filter_map(|n| n.metadata.name.clone())
         .collect();
 
-    // Count preemption events in the namespace
     let preemptions = events
         .iter()
         .filter(|e| {
@@ -96,8 +112,6 @@ async fn get_scheduling_status(
         })
         .count() as u32;
 
-    // Estimate scheduling latency from Scheduled events: average time between
-    // pod creation timestamp and the event's first timestamp.
     let latency_samples: Vec<f64> = events
         .iter()
         .filter(|e| e.reason.as_deref() == Some("Scheduled"))
@@ -108,13 +122,20 @@ async fn get_scheduling_status(
             if delta >= 0.0 { Some(delta) } else { None }
         })
         .collect();
-    let scheduling_latency_ms = if latency_samples.is_empty() {
+    let mut scheduling_latency_ms = if latency_samples.is_empty() {
         0.0
     } else {
         latency_samples.iter().sum::<f64>() / latency_samples.len() as f64
     };
 
+    let mut ctx = VmrogueFeatureContext::scheduling_events();
+    if let Some(prom_latency) = prometheus_scheduling_latency_ms().await {
+        scheduling_latency_ms = prom_latency;
+        ctx = VmrogueFeatureContext::scheduling_prometheus();
+    }
+
     Json(SchedulingStatus {
+        vmrogue_context: ctx,
         pending_pods,
         scheduled_pods,
         unschedulable_nodes,

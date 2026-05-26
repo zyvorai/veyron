@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Optional Prometheus instant-query helper for PVC volume usage (kubelet cAdvisor metrics).
 
 use anyhow::{Context, Result};
@@ -21,8 +25,17 @@ struct PromResult {
     value: Option<(f64, String)>,
 }
 
-/// Run an instant Prometheus query. `base` is the full query-API prefix, e.g.
-/// `https://prometheus.example.com/api/v1/query`.
+/// Normalize a Prometheus base URL to the instant-query endpoint.
+pub fn instant_query_url(base: &str) -> String {
+    let trimmed = base.trim_end_matches('/');
+    if trimmed.contains("/query") {
+        trimmed.to_string()
+    } else {
+        format!("{trimmed}/api/v1/query")
+    }
+}
+
+/// Run an instant Prometheus query. `base` is the Prometheus server root or `/api/v1/query` URL.
 pub async fn instant_query_vector(
     base: &str,
     query: &str,
@@ -33,7 +46,7 @@ pub async fn instant_query_vector(
         .context("reqwest client")?;
 
     let resp = client
-        .get(base.trim_end_matches('/'))
+        .get(instant_query_url(base))
         .query(&[("query", query)])
         .send()
         .await
@@ -151,6 +164,15 @@ pub fn index_pvc_used_bytes(
         }
     }
     m
+}
+
+/// Compute a percentile (0.0–1.0) from a sorted slice of samples.
+pub fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
+    if sorted.is_empty() {
+        return 0.0;
+    }
+    let idx = ((sorted.len() as f64 - 1.0) * p.clamp(0.0, 1.0)).round() as usize;
+    sorted[idx.min(sorted.len() - 1)]
 }
 
 #[cfg(all(test, feature = "web"))]

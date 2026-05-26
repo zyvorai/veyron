@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Path rules shared by dashboard / operator UI middleware.
 
 /// Routes reachable without an API key (shell HTML, health, static assets).

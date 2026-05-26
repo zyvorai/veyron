@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Create PVC + hot-plug data disk to a KubeVirt VM (Windows D:/E: or Linux /mnt/data).
 
 use anyhow::{anyhow, Result};

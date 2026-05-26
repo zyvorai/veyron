@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use vmrogue::blueprints::BLUEPRINTS;
 use vmrogue::config::{DiskSource, NetworkType, VMConfig, VMConfigBuilder, validate_vm_config};
 use vmrogue::kube::vm_config_to_kubevirt;

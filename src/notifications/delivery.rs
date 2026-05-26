@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Notification channel delivery (Slack, email relay, PagerDuty).
 
 #[cfg(feature = "web")]
@@ -175,12 +179,24 @@ pub async fn deliver_observability_notification(
             notification.mark_failed("PagerDuty requires web feature");
         }
         NotificationChannel::SMS { phone_numbers } => {
-            log::warn!(
-                "SMS not implemented: {} (phones: {:?}) — use webhook or Slack",
-                notification.subject,
-                phone_numbers
-            );
-            notification.mark_failed("SMS not implemented; use Slack or webhook");
+            #[cfg(feature = "web")]
+            if let Some(relay) = integrations::env_var("VMROGUE_SMS_WEBHOOK_URL") {
+                match integrations::deliver_sms(&relay, &notification.subject, phone_numbers).await
+                {
+                    Ok(true) => notification.mark_sent(),
+                    Ok(false) => notification.mark_failed("SMS relay returned failure"),
+                    Err(e) => notification.mark_failed(format!("SMS error: {}", e)),
+                }
+            } else {
+                log::warn!(
+                    "SMS: set VMROGUE_SMS_WEBHOOK_URL. {} (phones: {:?})",
+                    notification.subject,
+                    phone_numbers
+                );
+                notification.mark_failed("SMS requires VMROGUE_SMS_WEBHOOK_URL");
+            }
+            #[cfg(not(feature = "web"))]
+            notification.mark_failed("SMS requires web feature");
         }
     }
 }

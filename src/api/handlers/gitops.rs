@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -35,6 +39,9 @@ pub struct GitOpsSyncRequest {
     pub dry_run: bool,
     #[serde(default)]
     pub argo_app: Option<String>,
+    /// Flux Kustomization name to annotate for reconcile (namespace from query).
+    #[serde(default)]
+    pub flux_kustomization: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -255,6 +262,40 @@ async fn trigger_argocd_sync(app: &str) -> bool {
 }
 
 #[cfg(feature = "web")]
+async fn trigger_flux_reconcile(
+    client: kube::Client,
+    namespace: &str,
+    kustomization: &str,
+) -> bool {
+    use kube::api::{ApiResource, DynamicObject, Patch, PatchParams};
+
+    let ar = ApiResource {
+        group: "kustomize.toolkit.fluxcd.io".into(),
+        version: "v1".into(),
+        api_version: "kustomize.toolkit.fluxcd.io/v1".into(),
+        kind: "Kustomization".into(),
+        plural: "kustomizations".into(),
+    };
+    let api: kube::Api<DynamicObject> = kube::Api::namespaced_with(client, namespace, &ar);
+    let now = chrono::Utc::now().to_rfc3339();
+    let patch = serde_json::json!({
+        "metadata": {
+            "annotations": {
+                "reconcile.fluxcd.io/requestedAt": now,
+                "reconcile.fluxcd.io/forceAt": now
+            }
+        }
+    });
+    api.patch(
+        kustomization,
+        &PatchParams::default(),
+        &Patch::Merge(patch),
+    )
+    .await
+    .is_ok()
+}
+
+#[cfg(feature = "web")]
 async fn trigger_sync(
     State(state): State<SharedState>,
     Query(query): Query<GitOpsQuery>,
@@ -272,11 +313,28 @@ async fn trigger_sync(
     let now = chrono::Utc::now().to_rfc3339();
 
     let mut argo_triggered = false;
+    let mut flux_triggered = false;
     if !req.dry_run {
         if let Some(ref app) = req.argo_app {
             argo_triggered = trigger_argocd_sync(app).await;
         } else if let Some(app) = crate::api::integrations::env_var("VMROGUE_ARGOCD_DEFAULT_APP") {
             argo_triggered = trigger_argocd_sync(&app).await;
+        }
+
+        if let Some(ref kust) = req.flux_kustomization {
+            flux_triggered = trigger_flux_reconcile(
+                s.client().client(),
+                &namespace,
+                kust,
+            )
+            .await;
+        } else if let Some(kust) = crate::api::integrations::env_var("VMROGUE_FLUX_DEFAULT_KUSTOMIZATION") {
+            flux_triggered = trigger_flux_reconcile(
+                s.client().client(),
+                &namespace,
+                &kust,
+            )
+            .await;
         }
 
         let api: kube::api::Api<ConfigMap> =
@@ -313,6 +371,7 @@ async fn trigger_sync(
             "dry_run": req.dry_run,
             "force": req.force,
             "argo_sync_triggered": argo_triggered,
+            "flux_reconcile_triggered": flux_triggered,
             "vmrogue_context": serde_json::to_value(VmrogueFeatureContext::gitops_controllers()).unwrap_or(serde_json::Value::Null),
         })),
     )

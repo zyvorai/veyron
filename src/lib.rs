@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! # VMRogue
 //!
 //! Craft VMs for KubeVirt with Rust power.
@@ -301,8 +305,8 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             )?;
         }
 
-        Commands::Templates => {
-            handlers::vm::handle_templates()?;
+        Commands::Templates { by_family } => {
+            handlers::vm::handle_templates(by_family)?;
         }
 
         Commands::Template { name, output } => {

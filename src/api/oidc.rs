@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! OpenID Connect JWKS bearer validation for enterprise SSO.
 
 #[cfg(feature = "web")]
@@ -188,13 +192,30 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
         if let Ok(jwks) = fetch_jwks().await {
             let header = decode_jwt_header(token)?;
             let kid = header.get("kid").and_then(|v| v.as_str());
-            let _key = jwks.keys.iter().find(|k| {
+            if let Some(key) = jwks.keys.iter().find(|k| {
                 k.kty.as_deref() == Some("RSA")
                     && kid.map(|id| k.kid.as_deref() == Some(id)).unwrap_or(true)
-            });
-            // Structural validation + issuer/exp; full RS256 verify when jsonwebtoken added.
-            if _key.is_some() {
-                return Some(map_role_claim(&payload));
+            }) {
+                if let (Some(n), Some(e)) = (key.n.as_deref(), key.e.as_deref()) {
+                    if let Ok(decoding_key) = jsonwebtoken::DecodingKey::from_rsa_components(n, e) {
+                        let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
+                        if let Some(ref iss) =
+                            crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
+                        {
+                            if !iss.is_empty() {
+                                validation.set_issuer(&[iss.as_str()]);
+                            }
+                        }
+                        validation.validate_exp = true;
+                        if let Ok(data) = jsonwebtoken::decode::<serde_json::Value>(
+                            token,
+                            &decoding_key,
+                            &validation,
+                        ) {
+                            return Some(map_role_claim(&data.claims));
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // VM Profiles System - Pre-configured resource profiles for different workloads
 // This is an innovative feature that makes VM creation easier and optimized
 
@@ -185,6 +189,51 @@ impl ProfileManager {
     pub fn reload(&mut self) -> Result<()> {
         self.custom_profiles = self.storage.load_all()?;
         Ok(())
+    }
+
+    /// Suggest a resource profile name for a VM template (rule-based, not ML).
+    pub fn suggest_profile_for_template(template_name: &str) -> Option<String> {
+        let t = template_name.to_lowercase();
+        if t.starts_with("windows") {
+            return Some("prod".to_string());
+        }
+        if t.contains("alpine") || t.contains("talos") || t.contains("flatcar") {
+            return Some("minimal".to_string());
+        }
+        if t.contains("database") || t.contains("postgres") {
+            return Some("database".to_string());
+        }
+        if let Ok(profiles) = PROFILES.read() {
+            for p in profiles.list() {
+                if p.recommended_os.iter().any(|os| {
+                    let os_l = os.to_lowercase();
+                    t == os_l || t.starts_with(&format!("{os_l}-"))
+                }) {
+                    return Some(p.name.clone());
+                }
+            }
+        }
+        Some("dev".to_string())
+    }
+
+    /// Apply suggested profile CPU/memory/disk to a VMConfig when fields are at template defaults.
+    pub fn apply_suggested_profile(config: &mut VMConfig, template_name: &str) {
+        let Some(profile_name) = Self::suggest_profile_for_template(template_name) else {
+            return;
+        };
+        let Ok(profiles) = PROFILES.read() else {
+            return;
+        };
+        let Some(profile) = profiles.get(&profile_name) else {
+            return;
+        };
+        config.cpu.cores = profile.cpu_cores;
+        config.cpu.sockets = profile.cpu_sockets;
+        config.cpu.threads = profile.cpu_threads;
+        config.memory = profile.memory.clone();
+        if let Some(disk) = config.disks.first_mut() {
+            disk.size = profile.disk_size.clone();
+        }
     }
 }
 

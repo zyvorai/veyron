@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // VM Snapshots & Backup System - Production-grade snapshot management
 // This is a critical feature for disaster recovery and VM lifecycle management
 

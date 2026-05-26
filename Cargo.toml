@@ -3,7 +3,7 @@ name = "vmrogue"
 version = "0.2.0"
 edition = "2024"
 description = "Rogue VM management for KubeVirt with Rust power"
-license = "MIT OR Apache-2.0"
+license = "LicenseRef-Zyvor-Proprietary"
 authors = ["Susant Sahani"]
 repository = "https://github.com/ssahani/VMRogue"
 homepage = "https://github.com/ssahani/VMRogue"
@@ -63,6 +63,7 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots", "
 futures-util = { version = "0.3", optional = true }
 rustls-pemfile = { version = "2", optional = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots"], optional = true }
+jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"], optional = true }
 rust-embed = { version = "8.9", optional = true }
 
 [features]
@@ -76,6 +77,7 @@ web = [
     "futures-util",
     "rustls-pemfile",
     "reqwest",
+    "jsonwebtoken",
     "rust-embed",
 ]
 experimental = []

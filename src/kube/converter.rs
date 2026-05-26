@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use crate::config::{
     BootloaderType, ClockConfig, CloudInitDelivery, DiskDeviceType, DiskSource, FeaturesConfig,
     FirmwareConfig, NetworkType, VMConfig,
@@ -232,7 +236,9 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         let (masquerade, bridge, sriov) = match &iface.network_type {
             NetworkType::Pod => (Some(BTreeMap::new()), None, None),
             NetworkType::Bridge => (None, Some(BTreeMap::new()), None),
-            NetworkType::Multus { .. } => (None, Some(BTreeMap::new()), None),
+            NetworkType::Multus { .. } | NetworkType::Ovn { .. } => {
+                (None, Some(BTreeMap::new()), None)
+            }
             NetworkType::SRIOV { .. } => (None, None, Some(BTreeMap::new())),
         };
 
@@ -262,7 +268,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 pod: Some(BTreeMap::new()),
                 multus: None,
             },
-            NetworkType::Multus { name } => Network {
+            NetworkType::Multus { name } | NetworkType::Ovn { name } => Network {
                 name: iface.name.clone(),
                 pod: None,
                 multus: Some(MultusNetwork {

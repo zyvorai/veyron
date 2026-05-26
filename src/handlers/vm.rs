@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 use crate::config::{InterfaceConfig, NetworkType, VMConfig, VMConfigBuilder, validate_vm_config};
 use crate::kube::types::VirtualMachine;
 use crate::output::{OutputFormat, format_output};
@@ -488,6 +492,7 @@ fn load_or_create_config(
         })?;
         config.name = name.to_string();
         config.namespace = namespace.to_string();
+        crate::profiles::ProfileManager::apply_suggested_profile(&mut config, &template_name);
         Ok(config)
     } else {
         // Create a basic default VM
@@ -1149,10 +1154,28 @@ pub fn handle_generate(
     Ok(())
 }
 
-pub fn handle_templates() -> Result<()> {
-    println!("{}", color::header("Available templates:"));
-    for template in TEMPLATES.list() {
-        println!("  {} {}", color::value("•"), color::label(&template));
+pub fn handle_templates(by_family: bool) -> Result<()> {
+    if by_family {
+        println!("{}", color::header("Templates by family:"));
+        for (family, names) in TEMPLATES.list_by_family() {
+            println!("\n  {}", color::label(&family));
+            for template in names {
+                println!("    {} {}", color::value("•"), color::value(&template));
+            }
+        }
+        if let Ok(Some(reg)) = crate::templates::registry::TemplateRegistry::load() {
+            if !reg.templates.is_empty() {
+                println!("\n  {}", color::label("Registry (custom)"));
+                for t in &reg.templates {
+                    println!("    {} {}", color::value("•"), color::value(&t.name));
+                }
+            }
+        }
+    } else {
+        println!("{}", color::header("Available templates:"));
+        for template in TEMPLATES.list() {
+            println!("  {} {}", color::value("•"), color::label(&template));
+        }
     }
     Ok(())
 }

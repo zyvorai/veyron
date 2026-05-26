@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // Cost Management & Optimization - Track and optimize VM resource costs
 
 use chrono::{DateTime, TimeDelta as Duration, Utc};

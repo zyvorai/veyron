@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
@@ -61,17 +65,17 @@ async fn list_policies(
     let s = state.read().await;
     let client = s.client().client();
     let api: kube::api::Api<HorizontalPodAutoscaler> = match query.namespace.as_deref() {
-        Some("all") => kube::api::Api::all(client),
-        Some(ns) => kube::api::Api::namespaced(client, ns),
-        None => kube::api::Api::namespaced(client, &s.namespace),
+        Some("all") => kube::api::Api::all(client.clone()),
+        Some(ns) => kube::api::Api::namespaced(client.clone(), ns),
+        None => kube::api::Api::namespaced(client.clone(), &s.namespace),
     };
-    let hpas = match api.list(&kube::api::ListParams::default()).await {
-        Ok(list) => list,
-        Err(_) => return Json(vec![]),
-    };
+    let hpas = api
+        .list(&kube::api::ListParams::default())
+        .await
+        .map(|list| list.items)
+        .unwrap_or_default();
 
-    let results: Vec<AutoscalerPolicy> = hpas
-        .items
+    let mut results: Vec<AutoscalerPolicy> = hpas
         .iter()
         .map(|hpa| {
             let spec = hpa.spec.as_ref();
@@ -125,6 +129,59 @@ async fn list_policies(
             }
         })
         .collect();
+
+    // KubeVirt VM vertical scale policies stored as ConfigMaps (vmrogue.io/type=vm-autoscaler).
+    use k8s_openapi::api::core::v1::ConfigMap;
+    let ns_for_cm = query
+        .namespace
+        .clone()
+        .unwrap_or_else(|| s.namespace.clone());
+    let cm_api: kube::api::Api<ConfigMap> = if ns_for_cm == "all" {
+        kube::api::Api::all(client)
+    } else {
+        kube::api::Api::namespaced(client, &ns_for_cm)
+    };
+    if let Ok(cms) = cm_api
+        .list(
+            &kube::api::ListParams::default().labels("vmrogue.io/type=vm-autoscaler"),
+        )
+        .await
+    {
+        for cm in cms.items {
+            let Some(data) = cm.data.as_ref() else { continue };
+            let name = cm.metadata.name.clone().unwrap_or_default();
+            let namespace = cm.metadata.namespace.clone().unwrap_or_default();
+            let target_name = data.get("vm_name").cloned().unwrap_or_default();
+            let min_replicas = data
+                .get("min_cpu_cores")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(1);
+            let max_replicas = data
+                .get("max_cpu_cores")
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(min_replicas);
+            let cpu_threshold = data
+                .get("cpu_threshold_percent")
+                .and_then(|v| v.parse().ok());
+            results.push(AutoscalerPolicy {
+                name,
+                namespace,
+                target_kind: "VirtualMachine".to_string(),
+                target_name,
+                min_replicas,
+                max_replicas,
+                current_replicas: 1,
+                cpu_threshold,
+                memory_threshold: data
+                    .get("memory_threshold_percent")
+                    .and_then(|v| v.parse().ok()),
+                enabled: data
+                    .get("enabled")
+                    .map(|v| v != "false")
+                    .unwrap_or(true),
+            });
+        }
+    }
 
     Json(results)
 }

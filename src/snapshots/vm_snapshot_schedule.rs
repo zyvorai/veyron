@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 //! Snapshot schedules persisted as labeled ConfigMaps (`vmrogue.io/type=snapshot-schedule`).
 //! Evaluated periodically by the web API while the process runs (UTC cron).
 

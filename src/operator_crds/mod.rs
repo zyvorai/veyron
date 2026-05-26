@@ -1,3 +1,7 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+// Proprietary software — see LICENSE in the repository root.
+// https://zyvor.dev · info@zyvor.dev
+
 // VMRogue Operator CRD Definitions
 //
 // Rust-side mirror of the Go operator CRDs (vmrogue.io/v1alpha1).
@@ -540,6 +544,9 @@ impl From<&crate::config::VMConfig> for VMRogueVMSpec {
                     }
                     crate::config::NetworkType::SRIOV { name } => {
                         ("sriov".to_string(), Some(name.clone()))
+                    }
+                    crate::config::NetworkType::Ovn { name } => {
+                        ("ovn".to_string(), Some(name.clone()))
                     }
                 };
 
