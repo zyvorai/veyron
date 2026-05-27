@@ -6,16 +6,16 @@
 //!
 //! Selects **virt-launcher** pods via `kubevirt.io/vm=<vm>` (not `kubevirt.io/domain` used for SSH expose).
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use k8s_openapi::api::core::v1::{Service, ServicePort, ServiceSpec};
 use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
-use kube::api::{Api, DeleteParams, ListParams, PostParams};
 use kube::Client;
+use kube::api::{Api, DeleteParams, ListParams, PostParams};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
 
-use super::windows_rdp::{vmrogue_rdp_service_name, WINDOWS_RDP_PORT};
+use super::windows_rdp::{WINDOWS_RDP_PORT, vmrogue_rdp_service_name};
 
 /// Within Kubernetes NodePort range 30000–32767.
 pub const RDP_NODEPORT_RANGE_START: i32 = 30_100;
@@ -86,7 +86,12 @@ pub fn validate_node_port(np: i32) -> Result<()> {
 }
 
 pub fn rdp_node_port_from_service(svc: &Service) -> Option<i32> {
-    svc.spec.as_ref()?.ports.as_ref()?.iter().find_map(|p| p.node_port)
+    svc.spec
+        .as_ref()?
+        .ports
+        .as_ref()?
+        .iter()
+        .find_map(|p| p.node_port)
 }
 
 pub async fn list_rdp_nodeport_entries(client: Client) -> Result<Vec<RdpNodePortInUse>> {
@@ -190,9 +195,10 @@ async fn validate_node_ports_available(
         return Ok(());
     }
     let entries = list_rdp_nodeport_entries(client).await?;
-    if let Some(conflict) = entries.iter().find(|e| {
-        e.node_port == node_port && !(e.namespace == namespace && e.vm_name == vm_name)
-    }) {
+    if let Some(conflict) = entries
+        .iter()
+        .find(|e| e.node_port == node_port && !(e.namespace == namespace && e.vm_name == vm_name))
+    {
         return Err(anyhow!(
             "NodePort {} is already used by VM {}/{} (Service {}). Choose a different port.",
             node_port,
@@ -228,8 +234,14 @@ pub async fn upsert_rdp_expose_service(
     };
 
     if service_type == "NodePort" || service_type == "LoadBalancer" {
-        validate_node_ports_available(client.clone(), namespace, vm_name, node_port, existing.as_ref())
-            .await?;
+        validate_node_ports_available(
+            client.clone(),
+            namespace,
+            vm_name,
+            node_port,
+            existing.as_ref(),
+        )
+        .await?;
     }
 
     let mut port = ServicePort::default();
@@ -274,7 +286,9 @@ pub async fn upsert_rdp_expose_service(
         Some(prev) => {
             let mut desired = svc;
             desired.metadata.resource_version = prev.metadata.resource_version;
-            svc_api.replace(&svc_name, &PostParams::default(), &desired).await?;
+            svc_api
+                .replace(&svc_name, &PostParams::default(), &desired)
+                .await?;
         }
         None => {
             svc_api.create(&PostParams::default(), &svc).await?;
@@ -283,7 +297,11 @@ pub async fn upsert_rdp_expose_service(
     Ok(())
 }
 
-pub async fn delete_rdp_expose_service(client: Client, namespace: &str, vm_name: &str) -> Result<()> {
+pub async fn delete_rdp_expose_service(
+    client: Client,
+    namespace: &str,
+    vm_name: &str,
+) -> Result<()> {
     let svc_name = vmrogue_rdp_service_name(vm_name);
     let svc_api: Api<Service> = Api::namespaced(client, namespace);
     match svc_api.get(&svc_name).await {
@@ -307,7 +325,9 @@ pub async fn assemble_rdp_access(
     node_ips: Vec<String>,
 ) -> Result<RdpAccessStatus> {
     let service_name = vmrogue_rdp_service_name(vm_name);
-    let used_entries = list_rdp_nodeport_entries(client.clone()).await.unwrap_or_default();
+    let used_entries = list_rdp_nodeport_entries(client.clone())
+        .await
+        .unwrap_or_default();
     let used_set: HashSet<i32> = used_entries.iter().map(|e| e.node_port).collect();
     let used_node_ports: Vec<RdpNodePortInUse> = used_entries
         .into_iter()
@@ -317,32 +337,26 @@ pub async fn assemble_rdp_access(
 
     let resolved = get_rdp_expose_service(client, namespace, vm_name).await?;
 
-    let (
-        exposed,
-        node_port,
-        cluster_ip,
-        service_type,
-        expose_ports,
-        rdp_via_nodeport_example,
-    ) = match resolved {
-        Some(svc) => {
-            let rows = service_to_port_rows(&svc);
-            let np = rdp_node_port_from_service(&svc);
-            let cip = svc
-                .spec
-                .as_ref()
-                .and_then(|s| s.cluster_ip.as_ref())
-                .filter(|c| !c.is_empty() && *c != "None")
-                .cloned();
-            let st = svc.spec.as_ref().and_then(|s| s.type_.clone());
-            let example = match (np, node_ips.first()) {
-                (Some(port), Some(ip)) => Some(format!("{ip}:{port}")),
-                _ => None,
-            };
-            (true, np, cip, st, rows, example)
-        }
-        None => (false, None, None, None, Vec::new(), None),
-    };
+    let (exposed, node_port, cluster_ip, service_type, expose_ports, rdp_via_nodeport_example) =
+        match resolved {
+            Some(svc) => {
+                let rows = service_to_port_rows(&svc);
+                let np = rdp_node_port_from_service(&svc);
+                let cip = svc
+                    .spec
+                    .as_ref()
+                    .and_then(|s| s.cluster_ip.as_ref())
+                    .filter(|c| !c.is_empty() && *c != "None")
+                    .cloned();
+                let st = svc.spec.as_ref().and_then(|s| s.type_.clone());
+                let example = match (np, node_ips.first()) {
+                    (Some(port), Some(ip)) => Some(format!("{ip}:{port}")),
+                    _ => None,
+                };
+                (true, np, cip, st, rows, example)
+            }
+            None => (false, None, None, None, Vec::new(), None),
+        };
 
     Ok(RdpAccessStatus {
         guest_ip,

@@ -2,9 +2,9 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-pub mod auth;
 pub mod alerts;
 pub mod audit;
+pub mod auth;
 pub mod autoscaler;
 pub mod backups;
 pub mod chaos_engineering;
@@ -15,8 +15,8 @@ pub mod costs;
 pub mod custom_dashboards;
 pub mod custom_resources;
 pub mod dependencies;
-pub mod dr;
 pub mod disks;
+pub mod dr;
 pub mod events;
 pub mod feature_context;
 pub mod forecasting;
@@ -24,16 +24,16 @@ pub mod gitops;
 pub mod health;
 pub mod heatmap;
 pub mod helm;
-pub mod images;
 pub mod hpa;
+pub mod images;
 pub mod incidents;
 pub mod ingress;
 pub mod logs;
 pub mod metrics;
 pub mod migration_policies;
-pub mod multus;
 pub mod migrations;
 pub mod monitoring;
+pub mod multus;
 pub mod namespace_scope;
 pub mod namespaces;
 pub mod network;

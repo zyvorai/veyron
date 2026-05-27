@@ -9,7 +9,7 @@
 use base64::Engine;
 use kube::Client;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub const WINDOWS_RDP_PORT: i32 = 3389;
 
@@ -40,15 +40,11 @@ pub fn is_windows_vmi(vmi: &Value) -> bool {
     let Some(info) = info else {
         return false;
     };
-    if info
-        .get("id")
-        .and_then(|v| v.as_str())
-        .is_some_and(|id| {
-            id.eq_ignore_ascii_case("mswindows")
-                || id.eq_ignore_ascii_case("windows")
-                || id.contains("win")
-        })
-    {
+    if info.get("id").and_then(|v| v.as_str()).is_some_and(|id| {
+        id.eq_ignore_ascii_case("mswindows")
+            || id.eq_ignore_ascii_case("windows")
+            || id.contains("win")
+    }) {
         return true;
     }
     for key in ["name", "prettyName", "version", "versionId"] {
@@ -193,18 +189,23 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         }
     }
 
-    if vm.pointer("/spec/template/spec/domain/devices/video")
+    if vm
+        .pointer("/spec/template/spec/domain/devices/video")
         .and_then(|v| v.as_array())
         .is_some_and(|arr| arr.iter().any(|v| v.get("qxl").is_some()))
     {
         return true;
     }
 
-    if vm.pointer("/spec/template/spec/domain/features/hyperv").is_some() {
+    if vm
+        .pointer("/spec/template/spec/domain/features/hyperv")
+        .is_some()
+    {
         return true;
     }
 
-    if vm.pointer("/spec/template/spec/domain/clock/timer")
+    if vm
+        .pointer("/spec/template/spec/domain/clock/timer")
         .and_then(|t| t.as_array())
         .is_some_and(|timers| {
             timers.iter().any(|timer| {
@@ -410,7 +411,11 @@ pub struct RdpGuestAgentResponse {
 
 fn guest_exec_field_text(v: &Value, keys: &[&str]) -> Option<String> {
     for key in keys {
-        let Some(raw) = v.get(*key).and_then(|x| x.as_str()).filter(|s| !s.is_empty()) else {
+        let Some(raw) = v
+            .get(*key)
+            .and_then(|x| x.as_str())
+            .filter(|s| !s.is_empty())
+        else {
             continue;
         };
         let text = base64::engine::general_purpose::STANDARD
@@ -471,7 +476,8 @@ pub async fn set_rdp_via_guest_agent(
         windows_disable_rdp_guest_exec_body()
     };
     let mut guest_exec =
-        super::kubevirt_subresources::vmi_guest_exec(client.clone(), namespace, vmi_name, body).await?;
+        super::kubevirt_subresources::vmi_guest_exec(client.clone(), namespace, vmi_name, body)
+            .await?;
 
     let mut exit_code;
     let mut stdout;

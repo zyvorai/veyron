@@ -217,10 +217,7 @@ impl KubeClient {
         // Convert VMConfig to KubeVirt VirtualMachine
         let mut vm = vm_config_to_kubevirt(config)?;
         if let Ok(mut v) = serde_json::to_value(&vm) {
-            let template_hint = config
-                .labels
-                .get("vmrogue.io/template")
-                .map(|s| s.as_str());
+            let template_hint = config.labels.get("vmrogue.io/template").map(|s| s.as_str());
             if windows_rdp::should_apply_windows_rdp(&v, template_hint) {
                 windows_rdp::merge_windows_rdp_defaults(&mut v);
                 if let Ok(parsed) = serde_json::from_value(v) {
@@ -294,7 +291,8 @@ impl KubeClient {
             .await;
 
         if let Err(e) =
-            crate::kube::vm_internet::remove_vm_internet_egress(&self.client(), namespace, name).await
+            crate::kube::vm_internet::remove_vm_internet_egress(&self.client(), namespace, name)
+                .await
         {
             log::warn!(
                 "Failed to remove internet egress policy for {}/{}: {}",
@@ -315,12 +313,9 @@ impl KubeClient {
         if !config.allow_internet {
             return Ok(None);
         }
-        let st = vm_internet::ensure_vm_internet_egress(
-            &self.client(),
-            &config.namespace,
-            &config.name,
-        )
-        .await?;
+        let st =
+            vm_internet::ensure_vm_internet_egress(&self.client(), &config.namespace, &config.name)
+                .await?;
         Ok(Some(st))
     }
 
@@ -1145,7 +1140,8 @@ impl KubeClient {
         namespace: &str,
         vm_name: &str,
     ) -> Result<windows_rdp::RdpGuestAgentResponse> {
-        let (vmi_name, vmi_json, vm_json) = self.guest_agent_rdp_context(namespace, vm_name).await?;
+        let (vmi_name, vmi_json, vm_json) =
+            self.guest_agent_rdp_context(namespace, vm_name).await?;
         windows_rdp::set_rdp_via_guest_agent(
             self.client.clone(),
             namespace,
@@ -1164,7 +1160,8 @@ impl KubeClient {
         namespace: &str,
         vm_name: &str,
     ) -> Result<windows_rdp::RdpGuestAgentResponse> {
-        let (vmi_name, vmi_json, vm_json) = self.guest_agent_rdp_context(namespace, vm_name).await?;
+        let (vmi_name, vmi_json, vm_json) =
+            self.guest_agent_rdp_context(namespace, vm_name).await?;
         windows_rdp::set_rdp_via_guest_agent(
             self.client.clone(),
             namespace,

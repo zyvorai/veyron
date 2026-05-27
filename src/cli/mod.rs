@@ -2458,7 +2458,10 @@ pub enum Commands {
 
     // ========== IMPORT ==========
     /// Import a KubeVirt VirtualMachine YAML (not hypervisor migration — see HyperSDK)
-    #[command(name = "import", after_help = "Hypervisor migration (VMware/Hyper-V) is provided by HyperSDK: https://zyvor.dev/hypersdk")]
+    #[command(
+        name = "import",
+        after_help = "Hypervisor migration (VMware/Hyper-V) is provided by HyperSDK: https://zyvor.dev/hypersdk"
+    )]
     Import {
         /// Path to YAML/JSON file
         file: String,

@@ -431,12 +431,9 @@ async fn list_rdp_capable_vms(
         let mut rdp_port: u16 = 3389;
         let mut reachable = false;
         if is_windows {
-            if let Ok(Some(svc)) = crate::kube::vm_rdp::get_rdp_expose_service(
-                s.kube_client.client(),
-                vm_ns,
-                vm_name,
-            )
-            .await
+            if let Ok(Some(svc)) =
+                crate::kube::vm_rdp::get_rdp_expose_service(s.kube_client.client(), vm_ns, vm_name)
+                    .await
             {
                 if let Some(np) = crate::kube::vm_rdp::rdp_node_port_from_service(&svc) {
                     rdp_port = np.clamp(1, u16::MAX as i32) as u16;

@@ -235,18 +235,10 @@ impl VulnerabilityScanner {
     }
 
     #[cfg(feature = "web")]
-    fn scan_via_trivy(
-        base_url: &str,
-        vm_name: &str,
-        result: &mut ScanResult,
-    ) -> Result<u32, ()> {
+    fn scan_via_trivy(base_url: &str, vm_name: &str, result: &mut ScanResult) -> Result<u32, ()> {
         let rt = tokio::runtime::Runtime::new().map_err(|_| ())?;
         rt.block_on(async {
-            let url = format!(
-                "{}/scan/{}",
-                base_url.trim_end_matches('/'),
-                vm_name
-            );
+            let url = format!("{}/scan/{}", base_url.trim_end_matches('/'), vm_name);
             let client = reqwest::Client::builder()
                 .timeout(std::time::Duration::from_secs(30))
                 .build()
@@ -263,8 +255,14 @@ impl VulnerabilityScanner {
                 .unwrap_or_default();
             let count = vulns.len();
             for v in &vulns {
-                let id = v.get("VulnerabilityID").and_then(|x| x.as_str()).unwrap_or("CVE-?");
-                let title = v.get("Title").and_then(|x| x.as_str()).unwrap_or("Trivy finding");
+                let id = v
+                    .get("VulnerabilityID")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("CVE-?");
+                let title = v
+                    .get("Title")
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("Trivy finding");
                 let sev_str = v
                     .get("Severity")
                     .and_then(|x| x.as_str())

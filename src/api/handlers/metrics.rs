@@ -222,10 +222,9 @@ async fn get_metrics_timeline(
 
     let ctx = super::feature_context::VmrogueFeatureContext {
         data_source: "prometheus_range_query".to_string(),
-        scope: format!(
-            "Prometheus range series for VM {vm_name} ({metric}) over {hours}h."
-        ),
-        limitations: "Requires VMROGUE_PROMETHEUS_URL. Uses kubevirt_vmi_* metrics when present.".to_string(),
+        scope: format!("Prometheus range series for VM {vm_name} ({metric}) over {hours}h."),
+        limitations: "Requires VMROGUE_PROMETHEUS_URL. Uses kubevirt_vmi_* metrics when present."
+            .to_string(),
     };
 
     let mut points = Vec::new();
@@ -247,14 +246,9 @@ async fn get_metrics_timeline(
                     "rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{scope}\", name=\"{vm_name}\"}}[5m]) * 100"
                 ),
             };
-            if let Ok(series) = crate::api::prometheus::range_query_series(
-                &prom_base,
-                &prom_query,
-                start,
-                end,
-                300,
-            )
-            .await
+            if let Ok(series) =
+                crate::api::prometheus::range_query_series(&prom_base, &prom_query, start, end, 300)
+                    .await
             {
                 if let Some((_, vals)) = series.into_iter().next() {
                     points = vals

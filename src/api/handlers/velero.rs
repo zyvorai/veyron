@@ -66,7 +66,9 @@ fn velero_context(available: bool) -> super::feature_context::VmrogueFeatureCont
         super::feature_context::VmrogueFeatureContext {
             data_source: "velero_not_installed".to_string(),
             scope: "Velero CRDs not detected.".to_string(),
-            limitations: "Install Velero in the cluster or use KubeVirt snapshot schedules as tier-1 backup.".to_string(),
+            limitations:
+                "Install Velero in the cluster or use KubeVirt snapshot schedules as tier-1 backup."
+                    .to_string(),
         }
     }
 }
@@ -115,10 +117,7 @@ async fn velero_status(
                 .into_iter()
                 .filter_map(|o| {
                     let name = o.metadata.name?;
-                    let ns = o
-                        .metadata
-                        .namespace
-                        .unwrap_or_else(|| "velero".to_string());
+                    let ns = o.metadata.namespace.unwrap_or_else(|| "velero".to_string());
                     let phase = o
                         .data
                         .get("status")
@@ -168,10 +167,7 @@ async fn velero_status(
                 .into_iter()
                 .filter_map(|o| {
                     let name = o.metadata.name?;
-                    let ns = o
-                        .metadata
-                        .namespace
-                        .unwrap_or_else(|| "velero".to_string());
+                    let ns = o.metadata.namespace.unwrap_or_else(|| "velero".to_string());
                     let phase = o
                         .data
                         .get("status")

@@ -52,8 +52,8 @@ pub fn oidc_public_config() -> serde_json::Value {
                 format!("{issuer}/protocol/openid-connect/auth")
             }
         });
-    let token_url = crate::api::integrations::env_var("VMROGUE_OIDC_TOKEN_URL")
-        .unwrap_or_else(|| {
+    let token_url =
+        crate::api::integrations::env_var("VMROGUE_OIDC_TOKEN_URL").unwrap_or_else(|| {
             if issuer.is_empty() {
                 String::new()
             } else {
@@ -80,9 +80,16 @@ async fn fetch_jwks() -> Result<Jwks> {
             keys: cached.keys.clone(),
         });
     }
-    let url = crate::api::integrations::env_var("VMROGUE_OIDC_JWKS_URL").context("VMROGUE_OIDC_JWKS_URL")?;
+    let url = crate::api::integrations::env_var("VMROGUE_OIDC_JWKS_URL")
+        .context("VMROGUE_OIDC_JWKS_URL")?;
     let client = crate::api::integrations::http_client().await?;
-    let jwks: Jwks = client.get(&url).send().await?.json().await.context("jwks json")?;
+    let jwks: Jwks = client
+        .get(&url)
+        .send()
+        .await?
+        .json()
+        .await
+        .context("jwks json")?;
     let _ = JWKS_CACHE.set(Jwks {
         keys: jwks.keys.clone(),
     });
@@ -198,7 +205,8 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
             }) {
                 if let (Some(n), Some(e)) = (key.n.as_deref(), key.e.as_deref()) {
                     if let Ok(decoding_key) = jsonwebtoken::DecodingKey::from_rsa_components(n, e) {
-                        let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
+                        let mut validation =
+                            jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
                         if let Some(ref iss) =
                             crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
                         {

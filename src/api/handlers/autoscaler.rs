@@ -142,13 +142,13 @@ async fn list_policies(
         kube::api::Api::namespaced(client, &ns_for_cm)
     };
     if let Ok(cms) = cm_api
-        .list(
-            &kube::api::ListParams::default().labels("vmrogue.io/type=vm-autoscaler"),
-        )
+        .list(&kube::api::ListParams::default().labels("vmrogue.io/type=vm-autoscaler"))
         .await
     {
         for cm in cms.items {
-            let Some(data) = cm.data.as_ref() else { continue };
+            let Some(data) = cm.data.as_ref() else {
+                continue;
+            };
             let name = cm.metadata.name.clone().unwrap_or_default();
             let namespace = cm.metadata.namespace.clone().unwrap_or_default();
             let target_name = data.get("vm_name").cloned().unwrap_or_default();
@@ -175,10 +175,7 @@ async fn list_policies(
                 memory_threshold: data
                     .get("memory_threshold_percent")
                     .and_then(|v| v.parse().ok()),
-                enabled: data
-                    .get("enabled")
-                    .map(|v| v != "false")
-                    .unwrap_or(true),
+                enabled: data.get("enabled").map(|v| v != "false").unwrap_or(true),
             });
         }
     }

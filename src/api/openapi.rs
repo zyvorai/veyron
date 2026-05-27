@@ -891,7 +891,8 @@ pub fn generate_default_spec() -> OpenApiSpec {
         },
     );
 
-    let guest_rdp_post = |op_id: &str, summary: &str| Operation {
+    let guest_rdp_post = |op_id: &str, summary: &str| {
+        Operation {
         summary: summary.to_string(),
         description: Some(
             "Runs PowerShell in the guest via QEMU guest-agent (guest-exec). VM must be Running with AgentConnected."
@@ -913,6 +914,7 @@ pub fn generate_default_spec() -> OpenApiSpec {
             r
         },
         security: vec!["apiKey".to_string()],
+    }
     };
 
     let mut enable_rdp_ops = HashMap::new();

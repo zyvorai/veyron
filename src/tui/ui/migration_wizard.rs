@@ -354,7 +354,10 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
                 .add_modifier(Modifier::BOLD),
         ),
         Span::styled(": Cancel | ", Style::default().fg(Color::Gray)),
-        Span::styled("VMware/Hyper-V import: HyperSDK", Style::default().fg(Color::Gray)),
+        Span::styled(
+            "VMware/Hyper-V import: HyperSDK",
+            Style::default().fg(Color::Gray),
+        ),
     ]))
     .alignment(Alignment::Center)
     .block(

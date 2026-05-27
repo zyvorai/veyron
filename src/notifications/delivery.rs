@@ -156,7 +156,9 @@ pub async fn deliver_observability_notification(
             #[cfg(not(feature = "web"))]
             notification.mark_failed("Slack delivery requires web feature");
         }
-        NotificationChannel::PagerDuty { integration_key, .. } => {
+        NotificationChannel::PagerDuty {
+            integration_key, ..
+        } => {
             #[cfg(feature = "web")]
             {
                 let key = if integration_key.is_empty() {
@@ -168,8 +170,7 @@ pub async fn deliver_observability_notification(
                     notification.mark_failed("Set VMROGUE_PAGERDUTY_ROUTING_KEY or routing_key");
                     return;
                 }
-                match integrations::deliver_pagerduty(&key, &notification.subject, "error").await
-                {
+                match integrations::deliver_pagerduty(&key, &notification.subject, "error").await {
                     Ok(true) => notification.mark_sent(),
                     Ok(false) => notification.mark_failed("PagerDuty enqueue failed"),
                     Err(e) => notification.mark_failed(format!("PagerDuty error: {}", e)),
@@ -208,7 +209,9 @@ pub async fn deliver_test_notification() -> Vec<(String, bool, String)> {
     let msg = "VMRogue notification channel test";
 
     if let Some(url) = integrations::env_var("VMROGUE_SLACK_WEBHOOK_URL") {
-        let ok = integrations::deliver_slack(&url, msg).await.unwrap_or(false);
+        let ok = integrations::deliver_slack(&url, msg)
+            .await
+            .unwrap_or(false);
         results.push(("slack".into(), ok, url));
     }
     if let Some(relay) = integrations::env_var("VMROGUE_EMAIL_RELAY_URL") {

@@ -56,9 +56,7 @@ impl TemplateRegistry {
         let full = if path.is_absolute() {
             path.to_path_buf()
         } else {
-            base.parent()
-                .unwrap_or(base)
-                .join(path)
+            base.parent().unwrap_or(base).join(path)
         };
         let content = std::fs::read_to_string(&full)
             .with_context(|| format!("read template file {}", full.display()))?;

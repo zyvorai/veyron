@@ -4,16 +4,16 @@
 
 //! Create PVC + hot-plug data disk to a KubeVirt VM (Windows D:/E: or Linux /mnt/data).
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use kube::api::{Api, Patch, PatchParams};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::time::Duration;
 use tokio::time::sleep;
 
-use super::guest_os::{detect_guest_os_family, GuestOsFamily};
 use super::KubeClient;
+use super::guest_os::{GuestOsFamily, detect_guest_os_family};
 
 #[derive(Debug, Deserialize)]
 pub struct AddDataDiskRequest {
@@ -111,10 +111,13 @@ pub fn suggest_next_disk_name(family: GuestOsFamily, existing: &[String]) -> Str
 }
 
 impl KubeClient {
-    pub async fn data_disk_defaults(&self, namespace: &str, vm_name: &str) -> Result<DataDiskDefaults> {
+    pub async fn data_disk_defaults(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<DataDiskDefaults> {
         let ctx = self.load_storage_context(namespace, vm_name).await?;
-        let suggested_disk_name =
-            suggest_next_disk_name(ctx.guest_os, &ctx.existing_volume_names);
+        let suggested_disk_name = suggest_next_disk_name(ctx.guest_os, &ctx.existing_volume_names);
         let storage_classes = self.list_storage_class_names().await?;
         let (suggested_mount_path, suggested_filesystem) =
             linux_mount_defaults(ctx.guest_os, &suggested_disk_name);
@@ -217,11 +220,7 @@ impl KubeClient {
         })
     }
 
-    async fn load_storage_context(
-        &self,
-        namespace: &str,
-        name: &str,
-    ) -> Result<StorageContext> {
+    async fn load_storage_context(&self, namespace: &str, name: &str) -> Result<StorageContext> {
         let vm = self.get_vm(namespace, name).await?;
         let vm_json = serde_json::to_value(&vm)?;
 
@@ -258,7 +257,9 @@ impl KubeClient {
     async fn list_storage_class_names(&self) -> Result<Vec<String>> {
         use k8s_openapi::api::storage::v1::StorageClass;
         let sc_api: Api<StorageClass> = Api::all(self.client.clone());
-        let list = sc_api.list(&kube::api::ListParams::default().limit(200)).await?;
+        let list = sc_api
+            .list(&kube::api::ListParams::default().limit(200))
+            .await?;
         let mut names: Vec<String> = list
             .items
             .into_iter()
@@ -268,12 +269,7 @@ impl KubeClient {
         Ok(names)
     }
 
-    async fn wait_pvc_bound(
-        &self,
-        namespace: &str,
-        name: &str,
-        timeout: Duration,
-    ) -> Result<()> {
+    async fn wait_pvc_bound(&self, namespace: &str, name: &str, timeout: Duration) -> Result<()> {
         let pvc_api: Api<PersistentVolumeClaim> = Api::namespaced(self.client.clone(), namespace);
         let started = std::time::Instant::now();
         loop {
@@ -373,7 +369,9 @@ struct StorageContext {
 }
 
 fn detect_root_disk_bus(vm: &Value) -> Option<String> {
-    let disks = vm.pointer("/spec/template/spec/domain/devices/disks")?.as_array()?;
+    let disks = vm
+        .pointer("/spec/template/spec/domain/devices/disks")?
+        .as_array()?;
     let root = disks
         .iter()
         .find(|d| d.get("name").and_then(|n| n.as_str()) == Some("rootdisk"))
@@ -480,7 +478,9 @@ Get-Volume {letter}"##,
                 steps: vec![
                     "Open Disk Management (Win+X → Disk Management).".into(),
                     "Select the new disk → Initialize (GPT) → OK.".into(),
-                    format!("New Simple Volume → assign drive letter {letter}: → NTFS quick format."),
+                    format!(
+                        "New Simple Volume → assign drive letter {letter}: → NTFS quick format."
+                    ),
                     "Or run the PowerShell snippet below in an elevated session.".into(),
                 ],
                 powershell: Some(ps),
@@ -548,9 +548,6 @@ mod tests {
 
     #[test]
     fn suggests_data_1_for_linux() {
-        assert_eq!(
-            suggest_next_disk_name(GuestOsFamily::Linux, &[]),
-            "data-1"
-        );
+        assert_eq!(suggest_next_disk_name(GuestOsFamily::Linux, &[]), "data-1");
     }
 }

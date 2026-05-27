@@ -259,7 +259,10 @@ async fn list_security_findings(
             let vm_name = vm.metadata.name.as_deref().unwrap_or("unknown");
             let vm_ns = vm.metadata.namespace.as_deref().unwrap_or(scope.as_str());
             let scan = crate::security::scan::VulnerabilityScanner::scan(
-                &crate::security::scan::ScanConfig::new(vm_name, crate::security::scan::ScanType::Quick),
+                &crate::security::scan::ScanConfig::new(
+                    vm_name,
+                    crate::security::scan::ScanType::Quick,
+                ),
             );
             for vuln in &scan.vulnerabilities {
                 id_counter += 1;

@@ -29,7 +29,12 @@ fn format_kube_error(e: &kube::Error) -> String {
 const SUB: &str = "/apis/subresources.kubevirt.io/v1";
 
 /// Run a command in the guest via QEMU guest-agent (`guest-exec`).
-pub async fn vmi_guest_exec(client: Client, namespace: &str, vmi: &str, body: Value) -> Result<Value> {
+pub async fn vmi_guest_exec(
+    client: Client,
+    namespace: &str,
+    vmi: &str,
+    body: Value,
+) -> Result<Value> {
     let uri = format!(
         "{SUB}/namespaces/{}/virtualmachineinstances/{}/guest-exec",
         segment(namespace),

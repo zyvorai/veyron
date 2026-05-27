@@ -42,7 +42,8 @@ impl VmrogueFeatureContext {
         Self {
             data_source: "loki_query_range".to_string(),
             scope: "Log lines from Loki for the selected namespace scope.".to_string(),
-            limitations: "Requires VMROGUE_LOKI_URL. Query uses LogQL namespace selector.".to_string(),
+            limitations: "Requires VMROGUE_LOKI_URL. Query uses LogQL namespace selector."
+                .to_string(),
         }
     }
 
@@ -50,7 +51,9 @@ impl VmrogueFeatureContext {
         Self {
             data_source: "alertmanager_v2_alerts".to_string(),
             scope: "Active Alertmanager alerts mapped to incident rows.".to_string(),
-            limitations: "Requires VMROGUE_ALERTMANAGER_URL. Falls back to Warning Events when unset.".to_string(),
+            limitations:
+                "Requires VMROGUE_ALERTMANAGER_URL. Falls back to Warning Events when unset."
+                    .to_string(),
         }
     }
 
@@ -225,8 +228,9 @@ impl VmrogueFeatureContext {
             data_source: "prometheus_scheduler_metrics".to_string(),
             scope: "Scheduling latency from Prometheus scheduler metrics plus pod phase counts."
                 .to_string(),
-            limitations: "Requires VMROGUE_PROMETHEUS_URL and scheduler metrics exposition on the cluster."
-                .to_string(),
+            limitations:
+                "Requires VMROGUE_PROMETHEUS_URL and scheduler metrics exposition on the cluster."
+                    .to_string(),
         }
     }
 
