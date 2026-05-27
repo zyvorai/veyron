@@ -110,6 +110,10 @@ pub struct VMRogueVMSpec {
     #[serde(default = "default_true")]
     #[serde(rename = "allowInternet")]
     pub allow_internet: bool,
+
+    /// Windows sysprep / domain-join secret references.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub windows: Option<CRDWindowsSpec>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -194,9 +198,31 @@ pub struct CRDNetworkType {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDSecretKeyRef {
+    pub name: String,
+    pub key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
+pub struct CRDWindowsSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "sysprepSecretRef")]
+    pub sysprep_secret_ref: Option<CRDSecretKeyRef>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "domainJoinSecretRef")]
+    pub domain_join_secret_ref: Option<CRDSecretKeyRef>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct CRDCloudInitSpec {
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     #[serde(rename = "userData")]
     pub user_data: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "userDataSecretRef")]
+    pub user_data_secret_ref: Option<CRDSecretKeyRef>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "networkData")]
     pub network_data: Option<String>,
@@ -300,11 +326,91 @@ pub struct VMRogueVMStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "observedGeneration")]
     pub observed_generation: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "resolvedSpecHash")]
+    pub resolved_spec_hash: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "driftDetected")]
+    pub drift_detected: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "driftMessage")]
+    pub drift_message: Option<String>,
 }
 
 // =============================================================================
-// VMRogueBlueprint CRD
+// VMTemplate CRD (cluster-scoped catalog)
 // =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "vmrogue.io",
+    version = "v1alpha1",
+    kind = "VMTemplate",
+    namespaced = false
+)]
+#[kube(status = "VMTemplateStatus")]
+#[kube(shortname = "vmtpl")]
+pub struct VMTemplateSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tags: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub family: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "recommendedProfiles")]
+    pub recommended_profiles: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "minKubeVirtVersion")]
+    pub min_kubevirt_version: Option<String>,
+    pub default: VMRogueVMSpec,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VMTemplateStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "observedGeneration")]
+    pub observed_generation: Option<i64>,
+}
+
+// =============================================================================
+// VMProfile CRD (cluster-scoped catalog)
+// =============================================================================
+
+#[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
+#[kube(
+    group = "vmrogue.io",
+    version = "v1alpha1",
+    kind = "VMProfile",
+    namespaced = false
+)]
+#[kube(status = "VMProfileStatus")]
+#[kube(shortname = "vmprof")]
+pub struct VMProfileSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub cores: u32,
+    #[serde(default = "default_one")]
+    pub sockets: u32,
+    #[serde(default = "default_one")]
+    pub threads: u32,
+    pub memory: String,
+    #[serde(rename = "diskSize")]
+    pub disk_size: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "useCases")]
+    pub use_cases: Vec<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[serde(rename = "recommendedTemplates")]
+    pub recommended_templates: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
+pub struct VMProfileStatus {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "observedGeneration")]
+    pub observed_generation: Option<i64>,
+}
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
@@ -583,6 +689,7 @@ impl From<&crate::config::VMConfig> for VMRogueVMSpec {
             interfaces,
             cloud_init: config.cloud_init.as_ref().map(|ci| CRDCloudInitSpec {
                 user_data: ci.user_data.clone(),
+                user_data_secret_ref: None,
                 network_data: ci.network_data.clone(),
                 delivery: match ci.delivery {
                     crate::config::CloudInitDelivery::NoCloud => None,
@@ -644,6 +751,7 @@ impl From<&crate::config::VMConfig> for VMRogueVMSpec {
             labels: config.labels.clone(),
             annotations: config.annotations.clone(),
             allow_internet: config.allow_internet,
+            windows: None,
         }
     }
 }
@@ -730,6 +838,24 @@ mod tests {
         assert_eq!(
             crd.metadata.name.as_deref(),
             Some("vmrogueactions.vmrogue.io")
+        );
+    }
+
+    #[test]
+    fn test_vmtemplate_crd_generates() {
+        let crd = VMTemplate::crd();
+        assert_eq!(
+            crd.metadata.name.as_deref(),
+            Some("vmtemplates.vmrogue.io")
+        );
+    }
+
+    #[test]
+    fn test_vmprofile_crd_generates() {
+        let crd = VMProfile::crd();
+        assert_eq!(
+            crd.metadata.name.as_deref(),
+            Some("vmprofiles.vmrogue.io")
         );
     }
 }

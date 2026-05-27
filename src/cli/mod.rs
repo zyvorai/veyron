@@ -57,6 +57,22 @@ pub struct Cli {
 }
 
 #[derive(Subcommand, Debug)]
+pub enum CatalogAction {
+    /// Export built-in templates and profiles to operator/config/catalog YAML
+    Export {
+        /// Output directory
+        #[arg(long)]
+        output: Option<String>,
+    },
+    /// Apply exported catalog YAML to the cluster (cluster-scoped CRDs)
+    Sync {
+        /// Namespace context label only (CRDs are cluster-scoped)
+        #[arg(long, default_value = "default")]
+        namespace: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Create a new VM
     Create {
@@ -298,6 +314,16 @@ pub enum Commands {
         /// Group templates by OS family
         #[arg(long)]
         by_family: bool,
+
+        /// List templates from cluster VMTemplate CRDs (requires operator CRDs)
+        #[arg(long)]
+        source: Option<String>,
+    },
+
+    /// Template catalog export and cluster sync (VMTemplate / VMProfile CRDs)
+    Catalog {
+        #[command(subcommand)]
+        action: CatalogAction,
     },
 
     /// Show template details
@@ -2768,7 +2794,10 @@ mod tests {
         let cli = parse(&["vmrogue", "templates"]).unwrap();
         assert!(matches!(
             *cli.command,
-            Commands::Templates { by_family: false }
+            Commands::Templates {
+                by_family: false,
+                source: None,
+            }
         ));
     }
 

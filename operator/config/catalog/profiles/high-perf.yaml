@@ -1,0 +1,22 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: high-perf
+spec:
+  description: High performance - maximum resources for demanding workloads
+  cores: 8
+  sockets: 2
+  threads: 1
+  memory: '16Gi'
+  diskSize: '100Gi'
+  useCases:
+  - Database servers
+  - Data processing
+  - Machine learning
+  - High traffic applications
+  recommendedTemplates:
+  - ubuntu-24.04
+  - almalinux
+  - rocky

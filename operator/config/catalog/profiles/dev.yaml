@@ -1,0 +1,21 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: dev
+spec:
+  description: Development environment - minimal resources for testing
+  cores: 1
+  sockets: 1
+  threads: 1
+  memory: '2Gi'
+  diskSize: '10Gi'
+  useCases:
+  - Local development
+  - Testing
+  - Learning
+  recommendedTemplates:
+  - ubuntu
+  - alpine
+  - debian

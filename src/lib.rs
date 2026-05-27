@@ -50,6 +50,7 @@ pub mod automation;
 pub mod backup;
 pub mod blueprints;
 pub mod capacity;
+pub mod catalog;
 pub mod compliance;
 pub mod cost;
 pub mod devexp;
@@ -305,9 +306,18 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             )?;
         }
 
-        Commands::Templates { by_family } => {
-            handlers::vm::handle_templates(by_family)?;
+        Commands::Templates { by_family, source } => {
+            handlers::vm::handle_templates(by_family, source.as_deref())?;
         }
+
+        Commands::Catalog { action } => match action {
+            cli::CatalogAction::Export { output } => {
+                handlers::catalog::handle_catalog_export(output)?;
+            }
+            cli::CatalogAction::Sync { namespace } => {
+                handlers::catalog::handle_catalog_sync(namespace).await?;
+            }
+        },
 
         Commands::Template { name, output } => {
             handlers::vm::handle_template(name, output)?;

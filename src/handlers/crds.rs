@@ -274,6 +274,7 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
         let data = std::fs::read_to_string(path)?;
         Some(CRDCloudInitSpec {
             user_data: data,
+            user_data_secret_ref: None,
             network_data: None,
             delivery: None,
         })
@@ -281,6 +282,7 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
         // Auto-generate basic cloud-init with hostname
         Some(CRDCloudInitSpec {
             user_data: format!("#cloud-config\nhostname: {}\n", name),
+            user_data_secret_ref: None,
             network_data: None,
             delivery: None,
         })
@@ -348,6 +350,7 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
         labels,
         annotations: std::collections::HashMap::new(),
         allow_internet: !args.no_internet,
+        windows: None,
     })
 }
 

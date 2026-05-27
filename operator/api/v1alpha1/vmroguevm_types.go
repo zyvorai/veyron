@@ -8,6 +8,30 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// SecretKeyRef references a key in a Kubernetes Secret.
+type SecretKeyRef struct {
+	// Secret name.
+	Name string `json:"name"`
+
+	// Key within the Secret.
+	Key string `json:"key"`
+
+	// Secret namespace (defaults to VM namespace).
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+}
+
+// WindowsSpec holds Windows-specific bootstrap secret references.
+type WindowsSpec struct {
+	// Sysprep unattend.xml or answer file in a Secret.
+	// +optional
+	SysprepSecretRef *SecretKeyRef `json:"sysprepSecretRef,omitempty"`
+
+	// Domain join credentials JSON in a Secret (domain, ou, user, password).
+	// +optional
+	DomainJoinSecretRef *SecretKeyRef `json:"domainJoinSecretRef,omitempty"`
+}
+
 // VMRogueVMSpec defines the desired state of a virtual machine.
 // Fields mirror the Rust VMConfig from src/config/types.rs.
 type VMRogueVMSpec struct {
@@ -86,6 +110,10 @@ type VMRogueVMSpec struct {
 	// Annotations to apply to the KubeVirt VM.
 	// +optional
 	Annotations map[string]string `json:"annotations,omitempty"`
+
+	// Windows-specific bootstrap (sysprep, domain join).
+	// +optional
+	Windows *WindowsSpec `json:"windows,omitempty"`
 }
 
 // CPUSpec mirrors Rust CPUConfig.
@@ -216,8 +244,13 @@ type NetworkType struct {
 
 // CloudInitSpec mirrors Rust CloudInitConfig.
 type CloudInitSpec struct {
-	// Cloud-init user data.
-	UserData string `json:"userData"`
+	// Cloud-init user data (inline; prefer userDataSecretRef in GitOps).
+	// +optional
+	UserData string `json:"userData,omitempty"`
+
+	// Reference to userData in a Secret.
+	// +optional
+	UserDataSecretRef *SecretKeyRef `json:"userDataSecretRef,omitempty"`
 
 	// Cloud-init network data.
 	// +optional
@@ -365,6 +398,18 @@ type VMRogueVMStatus struct {
 	// Generation observed by the controller.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// SHA256 hash of the resolved spec (template + profile + overrides).
+	// +optional
+	ResolvedSpecHash string `json:"resolvedSpecHash,omitempty"`
+
+	// True when KubeVirt VM spec differs from resolved VMRogueVM spec.
+	// +optional
+	DriftDetected bool `json:"driftDetected,omitempty"`
+
+	// Human-readable drift summary.
+	// +optional
+	DriftMessage string `json:"driftMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true

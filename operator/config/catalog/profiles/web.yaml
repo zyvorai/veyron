@@ -1,0 +1,23 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: web
+spec:
+  description: Web server - optimized for HTTP workloads
+  cores: 4
+  sockets: 1
+  threads: 1
+  memory: '8Gi'
+  diskSize: '40Gi'
+  useCases:
+  - Web applications
+  - Nginx
+  - Apache
+  - Static sites
+  - Reverse proxy
+  recommendedTemplates:
+  - ubuntu
+  - alpine
+  - debian

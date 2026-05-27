@@ -270,5 +270,180 @@ pub fn builtin_blueprints() -> HashMap<String, Blueprint> {
         },
     );
 
+    // Windows enterprise role blueprints (require golden image + secrets for production)
+    blueprints.insert(
+        "windows-jumpbox".to_string(),
+        Blueprint {
+            name: "windows-jumpbox".to_string(),
+            description: "Windows Server 2022 jump box. Secrets: optional sysprepSecretRef / domainJoinSecretRef via override.".to_string(),
+            vms: vec![VMSpec {
+                name: "jumpbox".to_string(),
+                template: "windows-2022".to_string(),
+                profile: Some("prod".to_string()),
+                cpu: Some(2),
+                memory: Some("8Gi".to_string()),
+                disk_size: Some("80Gi".to_string()),
+                depends_on: vec![],
+                labels: HashMap::from([
+                    ("role".to_string(), "jumpbox".to_string()),
+                    ("os".to_string(), "windows".to_string()),
+                ]),
+            }],
+            tags: vec!["windows".to_string(), "enterprise".to_string(), "jumpbox".to_string()],
+        },
+    );
+
+    blueprints.insert(
+        "windows-ad".to_string(),
+        Blueprint {
+            name: "windows-ad".to_string(),
+            description: "Single Windows Server 2022 domain controller. Provide sysprep/domain secrets via GitOps.".to_string(),
+            vms: vec![VMSpec {
+                name: "dc".to_string(),
+                template: "windows-2022".to_string(),
+                profile: Some("prod".to_string()),
+                cpu: Some(4),
+                memory: Some("16Gi".to_string()),
+                disk_size: Some("128Gi".to_string()),
+                depends_on: vec![],
+                labels: HashMap::from([
+                    ("role".to_string(), "domain-controller".to_string()),
+                    ("os".to_string(), "windows".to_string()),
+                ]),
+            }],
+            tags: vec!["windows".to_string(), "enterprise".to_string(), "ad".to_string()],
+        },
+    );
+
+    blueprints.insert(
+        "windows-ad-member".to_string(),
+        Blueprint {
+            name: "windows-ad-member".to_string(),
+            description: "AD domain controller + member server (depends_on ordering).".to_string(),
+            vms: vec![
+                VMSpec {
+                    name: "dc".to_string(),
+                    template: "windows-2022".to_string(),
+                    profile: Some("prod".to_string()),
+                    cpu: Some(4),
+                    memory: Some("16Gi".to_string()),
+                    disk_size: Some("128Gi".to_string()),
+                    depends_on: vec![],
+                    labels: HashMap::from([("role".to_string(), "domain-controller".to_string())]),
+                },
+                VMSpec {
+                    name: "member".to_string(),
+                    template: "windows-2022".to_string(),
+                    profile: Some("prod".to_string()),
+                    cpu: Some(4),
+                    memory: Some("8Gi".to_string()),
+                    disk_size: Some("80Gi".to_string()),
+                    depends_on: vec!["dc".to_string()],
+                    labels: HashMap::from([
+                        ("role".to_string(), "member-server".to_string()),
+                        (
+                            "windows.domainJoinSecretRef".to_string(),
+                            "ad-join".to_string(),
+                        ),
+                    ]),
+                },
+            ],
+            tags: vec![
+                "windows".to_string(),
+                "enterprise".to_string(),
+                "ad".to_string(),
+            ],
+        },
+    );
+
+    blueprints.insert(
+        "windows-rds".to_string(),
+        Blueprint {
+            name: "windows-rds".to_string(),
+            description: "Windows Server 2022 RDS session host (single VM).".to_string(),
+            vms: vec![VMSpec {
+                name: "rds".to_string(),
+                template: "windows-2022".to_string(),
+                profile: Some("prod".to_string()),
+                cpu: Some(8),
+                memory: Some("32Gi".to_string()),
+                disk_size: Some("128Gi".to_string()),
+                depends_on: vec![],
+                labels: HashMap::from([("role".to_string(), "rds".to_string())]),
+            }],
+            tags: vec![
+                "windows".to_string(),
+                "enterprise".to_string(),
+                "rds".to_string(),
+            ],
+        },
+    );
+
+    blueprints.insert(
+        "windows-iis".to_string(),
+        Blueprint {
+            name: "windows-iis".to_string(),
+            description: "Windows Server 2022 IIS web server.".to_string(),
+            vms: vec![VMSpec {
+                name: "web".to_string(),
+                template: "windows-2022".to_string(),
+                profile: Some("web".to_string()),
+                cpu: None,
+                memory: None,
+                disk_size: Some("80Gi".to_string()),
+                depends_on: vec![],
+                labels: HashMap::from([("role".to_string(), "iis".to_string())]),
+            }],
+            tags: vec![
+                "windows".to_string(),
+                "enterprise".to_string(),
+                "iis".to_string(),
+            ],
+        },
+    );
+
+    blueprints.insert(
+        "windows-sql".to_string(),
+        Blueprint {
+            name: "windows-sql".to_string(),
+            description: "Windows Server 2022 SQL Server host (database profile sizing)."
+                .to_string(),
+            vms: vec![VMSpec {
+                name: "sql".to_string(),
+                template: "windows-2022".to_string(),
+                profile: Some("database".to_string()),
+                cpu: None,
+                memory: None,
+                disk_size: Some("256Gi".to_string()),
+                depends_on: vec![],
+                labels: HashMap::from([("role".to_string(), "sql".to_string())]),
+            }],
+            tags: vec![
+                "windows".to_string(),
+                "enterprise".to_string(),
+                "sql".to_string(),
+            ],
+        },
+    );
+
+    blueprints.insert(
+        "windows-dev".to_string(),
+        Blueprint {
+            name: "windows-dev".to_string(),
+            description: "Windows 11 developer workstation (small template defaults — override RAM/disk for production).".to_string(),
+            vms: vec![VMSpec {
+                name: "workstation".to_string(),
+                template: "windows-11".to_string(),
+                profile: Some("prod".to_string()),
+                cpu: Some(8),
+                memory: Some("16Gi".to_string()),
+                disk_size: Some("128Gi".to_string()),
+                depends_on: vec![],
+                labels: HashMap::from([("role".to_string(), "dev-workstation".to_string())]),
+            }],
+            tags: vec!["windows".to_string(), "enterprise".to_string(), "dev".to_string()],
+        },
+    );
+
     blueprints
 }

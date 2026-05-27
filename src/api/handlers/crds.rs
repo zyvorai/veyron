@@ -169,6 +169,8 @@ pub fn router(state: SharedState) -> Router {
             get(get_action).delete(delete_action),
         )
         .route("/crds/actions/{ns}/{name}/approve", post(approve_action))
+        .route("/crds/templates", get(list_catalog_templates))
+        .route("/crds/profiles", get(list_catalog_profiles))
         .with_state(state)
 }
 
@@ -741,6 +743,86 @@ async fn approve_action(
             }
         }
         Err(_) => StatusCode::NOT_FOUND,
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CatalogTemplateSummary {
+    pub name: String,
+    pub family: Option<String>,
+    pub description: Option<String>,
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CatalogProfileSummary {
+    pub name: String,
+    pub cores: u32,
+    pub memory: String,
+    pub disk_size: String,
+    pub description: Option<String>,
+}
+
+#[cfg(feature = "web")]
+async fn list_catalog_templates(
+    State(state): State<SharedState>,
+) -> Json<CrdListResponse<CatalogTemplateSummary>> {
+    use kube::Api;
+
+    let s = state.read().await;
+    let api: Api<VMTemplate> = Api::all(s.client().client());
+
+    match api.list(&kube::api::ListParams::default().limit(200)).await {
+        Ok(list) => {
+            let items: Vec<CatalogTemplateSummary> = list
+                .iter()
+                .map(|t| CatalogTemplateSummary {
+                    name: t.metadata.name.clone().unwrap_or_default(),
+                    family: t.spec.family.clone(),
+                    description: t.spec.description.clone(),
+                    tags: t.spec.tags.clone(),
+                })
+                .collect();
+            let total = items.len();
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
+        }
+        Err(e) => crd_list_err(e),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn list_catalog_profiles(
+    State(state): State<SharedState>,
+) -> Json<CrdListResponse<CatalogProfileSummary>> {
+    use kube::Api;
+
+    let s = state.read().await;
+    let api: Api<VMProfile> = Api::all(s.client().client());
+
+    match api.list(&kube::api::ListParams::default().limit(100)).await {
+        Ok(list) => {
+            let items: Vec<CatalogProfileSummary> = list
+                .iter()
+                .map(|p| CatalogProfileSummary {
+                    name: p.metadata.name.clone().unwrap_or_default(),
+                    cores: p.spec.cores,
+                    memory: p.spec.memory.clone(),
+                    disk_size: p.spec.disk_size.clone(),
+                    description: p.spec.description.clone(),
+                })
+                .collect();
+            let total = items.len();
+            Json(CrdListResponse {
+                items,
+                total,
+                message: None,
+            })
+        }
+        Err(e) => crd_list_err(e),
     }
 }
 

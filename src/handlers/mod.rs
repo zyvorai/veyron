@@ -8,6 +8,7 @@
 pub mod api;
 pub mod automation;
 pub mod backup;
+pub mod catalog;
 pub mod cost;
 pub mod crds;
 pub mod devexp;

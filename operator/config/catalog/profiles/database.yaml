@@ -1,0 +1,23 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: database
+spec:
+  description: Database - optimized for I/O intensive workloads
+  cores: 6
+  sockets: 1
+  threads: 1
+  memory: '16Gi'
+  diskSize: '200Gi'
+  useCases:
+  - Database servers
+  - PostgreSQL
+  - MySQL
+  - MongoDB
+  - Redis
+  recommendedTemplates:
+  - ubuntu-22.04
+  - debian-12
+  - almalinux

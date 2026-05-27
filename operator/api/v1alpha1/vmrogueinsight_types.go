@@ -12,7 +12,7 @@ import (
 // Designed as the output target for future eBPF agents and metrics analysis.
 type VMRogueInsightSpec struct {
 	// Type of insight.
-	// +kubebuilder:validation:Enum=Performance;Security;Cost;Anomaly;Capacity;Network
+	// +kubebuilder:validation:Enum=Performance;Security;Cost;Anomaly;Capacity;Network;Drift
 	InsightType string `json:"insightType"`
 
 	// Severity level.

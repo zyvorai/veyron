@@ -104,12 +104,26 @@ async fn list_image_catalog(
                 continue;
             };
             let ns = dv.metadata.namespace.unwrap_or_else(|| scope.clone());
-            let phase = dv
+            let cdi_phase = dv
                 .data
                 .get("status")
                 .and_then(|st| st.get("phase"))
                 .and_then(|p| p.as_str())
                 .unwrap_or("Unknown");
+            let image_phase = dv
+                .metadata
+                .labels
+                .as_ref()
+                .and_then(|l| l.get("vmrogue.io/image-phase"))
+                .cloned()
+                .unwrap_or_else(|| {
+                    if cdi_phase == "Succeeded" {
+                        "ready".to_string()
+                    } else {
+                        "building".to_string()
+                    }
+                });
+            let phase = cdi_phase;
             let source_type = dv
                 .data
                 .get("spec")
@@ -135,7 +149,7 @@ async fn list_image_catalog(
                 capacity: String::new(),
                 storage_class: String::new(),
                 age: String::new(),
-                tags: vec!["cdi".to_string()],
+                tags: vec!["cdi".to_string(), format!("image-phase:{image_phase}")],
             });
         }
     }
@@ -233,7 +247,10 @@ async fn import_data_volume(
         "metadata": {
             "name": req.name,
             "namespace": req.namespace,
-            "labels": { "vmrogue.io/type": "imported-image" }
+            "labels": {
+                "vmrogue.io/type": "imported-image",
+                "vmrogue.io/image-phase": "building"
+            }
         },
         "spec": {
             "source": source,

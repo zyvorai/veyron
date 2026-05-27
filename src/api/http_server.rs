@@ -733,6 +733,7 @@ pub mod web {
             // Batch must be before parameterized :ns/:name routes to avoid ambiguity
             .route("/api/v1/vms/batch", post(batch_vm_handler))
             .route("/api/v1/vms/:ns/:name", get(get_vm_handler))
+            .route("/api/v1/vms/:ns/:name/drift", get(get_vm_drift_handler))
             .route("/api/v1/vms/:ns/:name", delete(delete_vm_handler))
             // Templates
             .route("/api/v1/templates", get(list_templates_handler))
@@ -1299,6 +1300,52 @@ pub mod web {
                 let msg = sanitize_error(&e);
                 if msg.contains("NotFound") || msg.contains("not found") {
                     err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name))
+                } else {
+                    err_json(500, "INTERNAL_ERROR", &msg)
+                }
+            }
+        }
+    }
+
+    async fn get_vm_drift_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+
+        use crate::operator_crds::VMRogueVM;
+        use kube::Api;
+
+        let client = {
+            let s = state.read().await;
+            s.kube_client.client().clone()
+        };
+        let api: Api<VMRogueVM> = Api::namespaced(client, &ns);
+
+        match api.get(&name).await {
+            Ok(vm) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/drift");
+                let body = serde_json::json!({
+                    "name": name,
+                    "namespace": ns,
+                    "drift_detected": vm.status.as_ref().map(|s| s.drift_detected).unwrap_or(false),
+                    "drift_message": vm.status.as_ref().and_then(|s| s.drift_message.clone()),
+                    "resolved_spec_hash": vm.status.as_ref().and_then(|s| s.resolved_spec_hash.clone()),
+                    "template": vm.spec.template,
+                    "profile": vm.spec.profile,
+                });
+                ok_json(&ApiResponse::success(&body, &ctx.request_id))
+            }
+            Err(e) => {
+                let msg = sanitize_error(&e);
+                if msg.contains("NotFound") || msg.contains("not found") {
+                    err_json(
+                        404,
+                        "NOT_FOUND",
+                        &format!("VMRogueVM '{name}' not found in namespace '{ns}'"),
+                    )
                 } else {
                     err_json(500, "INTERNAL_ERROR", &msg)
                 }

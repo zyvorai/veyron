@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
+	"github.com/ssahani/vmrogue/operator/internal/catalog"
 	"github.com/ssahani/vmrogue/operator/internal/converter"
 	"github.com/ssahani/vmrogue/operator/internal/eventbus"
 	"github.com/ssahani/vmrogue/operator/internal/network"
@@ -83,10 +84,32 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if vm.Spec.CloudInit != nil {
-		d := strings.ToLower(strings.TrimSpace(vm.Spec.CloudInit.Delivery))
+	resolver := catalog.Resolver{Client: r.Client}
+	resolvedSpec, err := resolver.ResolveSpec(ctx, vm.Spec.Template, vm.Spec.Profile, vm.Spec, catalog.BlueprintOverrides{})
+	if err != nil {
+		logger.Error(err, "failed to resolve template/profile")
+		r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("catalog resolve: %v", err))
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+	}
+
+	workVM := vm.DeepCopy()
+	workVM.Spec = resolvedSpec
+	if workVM.Spec.CloudInit != nil {
+		userData, uErr := catalog.ResolveCloudInitUserData(ctx, r.Client, vm.Namespace, &workVM.Spec)
+		if uErr != nil {
+			logger.Error(uErr, "failed to resolve cloud-init userData")
+			r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("cloud-init: %v", uErr))
+			return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
+		}
+		if userData != "" {
+			workVM.Spec.CloudInit.UserData = userData
+		}
+	}
+
+	if workVM.Spec.CloudInit != nil {
+		d := strings.ToLower(strings.TrimSpace(workVM.Spec.CloudInit.Delivery))
 		if d == "configdrive" || d == "config_drive" {
-			if err := r.ensureConfigDriveSecret(ctx, &vm); err != nil {
+			if err := r.ensureConfigDriveSecret(ctx, workVM); err != nil {
 				logger.Error(err, "failed to reconcile config-drive Secret")
 				r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("config-drive secret: %v", err))
 				return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
@@ -94,8 +117,13 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 	}
 
+	specHash, err := catalog.SpecHash(resolvedSpec)
+	if err != nil {
+		logger.Error(err, "failed to hash resolved spec")
+	}
+
 	// Convert VMRogueVM spec to KubeVirt VirtualMachine
-	desired, err := converter.VMRogueVMToKubeVirt(&vm)
+	desired, err := converter.VMRogueVMToKubeVirt(workVM)
 	if err != nil {
 		logger.Error(err, "failed to convert VMRogueVM to KubeVirt VM")
 		r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("conversion error: %v", err))
@@ -118,6 +146,14 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if errors.IsNotFound(err) {
 		// Create new KubeVirt VM
 		logger.Info("creating KubeVirt VirtualMachine", "name", vm.Name)
+		if specHash != "" {
+			ann := desired.GetAnnotations()
+			if ann == nil {
+				ann = map[string]string{}
+			}
+			ann["vmrogue.io/resolved-spec-hash"] = specHash
+			desired.SetAnnotations(ann)
+		}
 
 		if err := r.Create(ctx, desired); err != nil {
 			logger.Error(err, "failed to create KubeVirt VM")
@@ -132,6 +168,14 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	} else {
 		// Update existing KubeVirt VM spec
+		if specHash != "" {
+			ann := existing.GetAnnotations()
+			if ann == nil {
+				ann = map[string]string{}
+			}
+			ann["vmrogue.io/resolved-spec-hash"] = specHash
+			existing.SetAnnotations(ann)
+		}
 		existingSpec, _, _ := unstructured.NestedMap(existing.Object, "spec")
 		desiredSpec, _, _ := unstructured.NestedMap(desired.Object, "spec")
 
@@ -142,6 +186,16 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				return ctrl.Result{}, err
 			}
 			r.publishEvent(eventbus.SubjectVMUpdated, &vm, "Updated")
+		}
+
+		drift, driftMsg := catalog.CompareKubeVirtSpec(specHash, existing)
+		if drift {
+			vm.Status.DriftDetected = true
+			vm.Status.DriftMessage = driftMsg
+			_ = r.ensureDriftInsight(ctx, &vm, driftMsg)
+		} else {
+			vm.Status.DriftDetected = false
+			vm.Status.DriftMessage = ""
 		}
 	}
 
@@ -166,6 +220,9 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	vm.Status.IPAddress = ipAddress
 	vm.Status.LastReconciled = &now
 	vm.Status.ObservedGeneration = vm.Generation
+	if specHash != "" {
+		vm.Status.ResolvedSpecHash = specHash
+	}
 
 	condition := metav1.Condition{
 		Type:               "Ready",
@@ -214,6 +271,13 @@ func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *v
 			sec.StringData = make(map[string]string)
 		}
 		sec.StringData["userdata"] = vm.Spec.CloudInit.UserData
+		if vm.Spec.CloudInit.UserData == "" && vm.Spec.CloudInit.UserDataSecretRef != nil {
+			data, err := catalog.ResolveCloudInitUserData(ctx, r.Client, vm.Namespace, &vm.Spec)
+			if err != nil {
+				return err
+			}
+			sec.StringData["userdata"] = data
+		}
 		sec.Type = corev1.SecretTypeOpaque
 		if sec.Labels == nil {
 			sec.Labels = map[string]string{}
@@ -333,6 +397,44 @@ func (r *VMRogueVMReconciler) readVMIStatus(ctx context.Context, namespace, name
 	}
 
 	return vmPhase, nodeName, ipAddress
+}
+
+func (r *VMRogueVMReconciler) ensureDriftInsight(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM, message string) error {
+	name := fmt.Sprintf("drift-%s", vm.Name)
+	insight := &vmroguev1alpha1.VMRogueInsight{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: vm.Namespace,
+			Labels: map[string]string{
+				"vmrogue.io/vm":    vm.Name,
+				"vmrogue.io/type":  "drift",
+				"vmrogue.io/managed-by": "vmrogue-operator",
+			},
+		},
+		Spec: vmroguev1alpha1.VMRogueInsightSpec{
+			InsightType: "Drift",
+			Severity:    "High",
+			VMRef:       vm.Name,
+			Namespace:   vm.Namespace,
+			Title:       fmt.Sprintf("Configuration drift: %s", vm.Name),
+			Description: message,
+			Source:      "operator",
+			Data: map[string]string{
+				"resolvedSpecHash": vm.Status.ResolvedSpecHash,
+			},
+		},
+	}
+	existing := &vmroguev1alpha1.VMRogueInsight{}
+	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: vm.Namespace}, existing)
+	if errors.IsNotFound(err) {
+		return r.Create(ctx, insight)
+	}
+	if err != nil {
+		return err
+	}
+	existing.Spec.Description = message
+	existing.Spec.Data["resolvedSpecHash"] = vm.Status.ResolvedSpecHash
+	return r.Update(ctx, existing)
 }
 
 func (r *VMRogueVMReconciler) updateStatus(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM, phase vmroguev1alpha1.VMRogueVMPhase, message string) {
