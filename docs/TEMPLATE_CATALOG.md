@@ -20,10 +20,25 @@ Resolution order in the operator (`operator/internal/catalog/resolver.go`):
 ## Bootstrap
 
 ```bash
-./scripts/generate-catalog-crds.sh
+./scripts/generate-catalog-crds.sh   # or: make catalog-generate
 kubectl apply -f operator/config/crd/bases/vmrogue.io_vmtemplates.yaml
 kubectl apply -f operator/config/crd/bases/vmrogue.io_vmprofiles.yaml
-vmrogue catalog sync
+vmrogue catalog sync                 # create or replace catalog CRDs (idempotent)
+```
+
+CI can verify checked-in YAML matches Rust export:
+
+```bash
+make catalog-check
+```
+
+## CLI inspection
+
+```bash
+vmrogue templates --source cluster          # list cluster VMTemplate CRDs
+vmrogue catalog list                        # templates + profiles from cluster
+vmrogue catalog list --templates            # templates only
+vmrogue catalog list --profiles             # profiles only
 ```
 
 ## Windows secrets

@@ -209,6 +209,26 @@ ssh "${USER}@${HOST}" "
       ${K} get crd virtualmachines.kubevirt.io &>/dev/null || { echo 'KubeVirt CRD virtualmachines.kubevirt.io not found'; exit 1; }
     fi
 
+    for crd_yaml in ${REMOTE_DIR}/operator/config/crd/bases/vmrogue.io_vmtemplates.yaml ${REMOTE_DIR}/operator/config/crd/bases/vmrogue.io_vmprofiles.yaml; do
+      if [[ -f \"\${crd_yaml}\" ]]; then
+        ${K} apply -f \"\${crd_yaml}\"
+      fi
+    done
+    if ${K} get crd vmtemplates.vmrogue.io &>/dev/null; then
+      if [[ -d ${REMOTE_DIR}/operator/config/catalog/templates ]]; then
+        echo 'Applying VMTemplate catalog manifests...'
+        for f in ${REMOTE_DIR}/operator/config/catalog/templates/*.yaml; do
+          [[ -f \"\$f\" ]] && ${K} apply -f \"\$f\" || true
+        done
+      fi
+      if [[ -d ${REMOTE_DIR}/operator/config/catalog/profiles ]]; then
+        echo 'Applying VMProfile catalog manifests...'
+        for f in ${REMOTE_DIR}/operator/config/catalog/profiles/*.yaml; do
+          [[ -f \"\$f\" ]] && ${K} apply -f \"\$f\" || true
+        done
+      fi
+    fi
+
     cat << 'YAML' | ${K} apply -f -
 apiVersion: v1
 kind: ServiceAccount
@@ -249,10 +269,10 @@ rules:
     resources: ['virtualmachinesnapshots', 'virtualmachinesnapshotcontents', 'virtualmachinerestores']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   - apiGroups: ['vmrogue.io']
-    resources: ['vmroguevms', 'vmrogueblueprints', 'vmroguepolicies', 'vmrogueinsights', 'vmrogueactions']
+    resources: ['vmroguevms', 'vmrogueblueprints', 'vmroguepolicies', 'vmrogueinsights', 'vmrogueactions', 'vmtemplates', 'vmprofiles']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
   - apiGroups: ['vmrogue.io']
-    resources: ['vmroguevms/status', 'vmrogueblueprints/status', 'vmroguepolicies/status', 'vmrogueinsights/status', 'vmrogueactions/status']
+    resources: ['vmroguevms/status', 'vmrogueblueprints/status', 'vmroguepolicies/status', 'vmrogueinsights/status', 'vmrogueactions/status', 'vmtemplates/status', 'vmprofiles/status']
     verbs: ['get', 'update', 'patch']
   - apiGroups: ['']
     resources: ['namespaces', 'nodes', 'pods', 'pods/log', 'events', 'persistentvolumeclaims', 'configmaps', 'resourcequotas']

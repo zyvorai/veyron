@@ -70,6 +70,15 @@ pub enum CatalogAction {
         #[arg(long, default_value = "default")]
         namespace: String,
     },
+    /// List VMTemplate and VMProfile CRDs from the connected cluster
+    List {
+        /// Show templates only
+        #[arg(long)]
+        templates: bool,
+        /// Show profiles only
+        #[arg(long)]
+        profiles: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]

@@ -231,7 +231,7 @@ mod tests {
         let manager = BlueprintManager::new().unwrap();
         let blueprints = manager.list();
 
-        assert!(blueprints.len() >= 5);
+        assert!(blueprints.len() >= 12);
     }
 
     #[test]

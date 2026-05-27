@@ -1154,14 +1154,44 @@ pub fn handle_generate(
     Ok(())
 }
 
-pub fn handle_templates(by_family: bool, source: Option<&str>) -> Result<()> {
+pub async fn handle_templates(by_family: bool, source: Option<&str>) -> Result<()> {
     if source == Some("cluster") {
-        println!(
-            "{}",
-            color::info(
-                "Cluster VMTemplate CRDs: use `kubectl get vmtemplates` or `vmrogue catalog sync` after export."
-            )
-        );
+        let list = crate::catalog::list_cluster_templates().await?;
+        if list.is_empty() {
+            println!(
+                "{}",
+                color::info("No VMTemplate CRDs in cluster (run: vmrogue catalog sync)")
+            );
+            return Ok(());
+        }
+        if by_family {
+            println!("{}", color::header("Cluster templates by family:"));
+            let mut by_fam: std::collections::BTreeMap<String, Vec<_>> =
+                std::collections::BTreeMap::new();
+            for t in list {
+                by_fam
+                    .entry(t.family.clone().unwrap_or_else(|| "other".into()))
+                    .or_default()
+                    .push(t);
+            }
+            for (family, items) in by_fam {
+                println!("\n  {}", color::label(&family));
+                for t in items {
+                    println!("    {} {}", color::value("•"), color::value(&t.name));
+                }
+            }
+        } else {
+            println!("{}", color::header("Cluster VMTemplate catalog:"));
+            for t in list {
+                let family = t.family.as_deref().unwrap_or("other");
+                println!(
+                    "  {} {} {}",
+                    color::value("•"),
+                    color::label(&t.name),
+                    color::info(&format!("({family})"))
+                );
+            }
+        }
         return Ok(());
     }
     if by_family {

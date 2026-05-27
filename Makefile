@@ -1,4 +1,4 @@
-.PHONY: build release check test clippy fmt lint clean install help docker deploy dashboard-next
+.PHONY: build release check test clippy fmt lint clean install help docker deploy dashboard-next catalog-generate catalog-check
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -72,6 +72,18 @@ templates: build ## List available templates
 
 profiles: build ## List resource profiles
 	./target/debug/vmrogue profiles --details
+
+catalog-generate: build ## Export VMTemplate/VMProfile YAML from Rust templates
+	./scripts/generate-catalog-crds.sh
+
+catalog-check: catalog-generate ## Regenerate catalog; fail if operator/config/catalog drifts
+	@if git diff --quiet operator/config/catalog; then \
+	  echo "catalog-check: operator/config/catalog matches export"; \
+	else \
+	  echo "catalog-check: operator/config/catalog is out of date (run make catalog-generate and commit)" >&2; \
+	  git diff --stat operator/config/catalog; \
+	  exit 1; \
+	fi
 
 # ============================================================================
 # Operator targets (Go)
