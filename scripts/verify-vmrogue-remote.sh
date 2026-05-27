@@ -56,6 +56,23 @@ check_json_ok() {
     fi
 }
 
+# Endpoints that return CrdListResponse { items, total } without ApiResponse wrapper.
+check_json_items() {
+    local name="$1"
+    local url="$2"
+    local body
+    body=$(curl -skS --connect-timeout 15 --max-time 45 \
+        -H "X-API-Key: ${KEY}" "${url}" || true)
+    if echo "${body}" | grep -qE '"items"\s*:\s*\['; then
+        echo "  ✔ ${name}"
+    else
+        echo "  ✗ ${name}"
+        echo "${body}" | head -c 400 | sed 's/^/    /'
+        echo ""
+        FAIL=$((FAIL + 1))
+    fi
+}
+
 check_html_contains() {
     local name="$1"
     local url="$2"
@@ -89,18 +106,21 @@ fi
 
 echo "  (X-API-Key)"
 check_json_ok "GET /api/v1/templates" "${BASE}/api/v1/templates" yes
+check_json_items "GET /api/v1/crds/templates" "${BASE}/api/v1/crds/templates"
+check_json_items "GET /api/v1/crds/profiles" "${BASE}/api/v1/crds/profiles"
+check_json_items "GET /api/v1/images/catalog" "${BASE}/api/v1/images/catalog?namespace=all"
 check_json_ok "GET /api/v1/namespaces" "${BASE}/api/v1/namespaces" yes
 check_json_ok "GET /api/v1/nodes" "${BASE}/api/v1/nodes" yes
 check_json_ok "GET /api/v1/storage/classes" "${BASE}/api/v1/storage/classes" yes
 check_json_ok "GET /api/v1/storage/pvcs?ns=all" "${BASE}/api/v1/storage/pvcs?namespace=all" yes
-check_json_ok "GET /api/v1/custom-resources" "${BASE}/api/v1/custom-resources" yes
-check_json_ok "GET /api/v1/gitops/status" "${BASE}/api/v1/gitops/status?namespace=all" yes
+check_json_items "GET /api/v1/custom-resources" "${BASE}/api/v1/custom-resources"
+check_json_items "GET /api/v1/gitops/status" "${BASE}/api/v1/gitops/status?namespace=all"
 check_json_ok "GET /api/v1/pods?ns=all" "${BASE}/api/v1/pods?namespace=all" yes
 check_json_ok "GET /api/v1/events/recent" "${BASE}/api/v1/events/recent?namespace=all" yes
-check_json_ok "GET /api/v1/monitoring/status" "${BASE}/api/v1/monitoring/status?namespace=all" yes
-check_json_ok "GET /api/v1/security/posture" "${BASE}/api/v1/security/posture?namespace=all" yes
-check_json_ok "GET /api/v1/security/findings" "${BASE}/api/v1/security/findings?namespace=all" yes
-check_json_ok "GET /api/v1/costs/summary" "${BASE}/api/v1/costs/summary?namespace=all" yes
+check_json_items "GET /api/v1/monitoring/status" "${BASE}/api/v1/monitoring/status?namespace=all"
+check_json_items "GET /api/v1/security/posture" "${BASE}/api/v1/security/posture?namespace=all"
+check_json_items "GET /api/v1/security/findings" "${BASE}/api/v1/security/findings?namespace=all"
+check_json_items "GET /api/v1/costs/summary" "${BASE}/api/v1/costs/summary?namespace=all"
 check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
 

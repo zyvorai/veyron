@@ -46,39 +46,44 @@ pub async fn namespace_pod_costs() -> Result<HashMap<(String, String), f64>> {
 #[cfg(feature = "web")]
 fn parse_allocation_row(row: &serde_json::Value, out: &mut HashMap<(String, String), f64>) {
     if let Some(obj) = row.as_object() {
-        for (key, val) in obj {
-            if key.contains("pod") || key.contains("namespace") {
-                if let Some(inner) = val.as_object() {
-                    let ns = inner
-                        .get("properties")
-                        .and_then(|p| p.get("namespace"))
-                        .or_else(|| inner.get("namespace"))
-                        .and_then(|n| n.as_str())
-                        .unwrap_or("")
-                        .to_string();
-                    let pod = inner
-                        .get("properties")
-                        .and_then(|p| p.get("pod"))
-                        .or_else(|| inner.get("pod"))
-                        .and_then(|n| n.as_str())
-                        .unwrap_or("")
-                        .to_string();
-                    let cost = inner
-                        .get("totalCost")
-                        .or_else(|| inner.get("totalAmortizedCost"))
-                        .and_then(|c| c.as_f64())
-                        .unwrap_or(0.0);
-                    if !ns.is_empty() && !pod.is_empty() && cost > 0.0 {
-                        out.insert((ns, pod), cost);
-                    }
-                }
-            }
+        try_extract_allocation(obj, out);
+        for val in obj.values() {
             parse_allocation_row(val, out);
         }
     } else if let Some(arr) = row.as_array() {
         for item in arr {
             parse_allocation_row(item, out);
         }
+    }
+}
+
+/// Extract namespace/pod/cost when `obj` looks like an OpenCost allocation row.
+#[cfg(feature = "web")]
+fn try_extract_allocation(
+    obj: &serde_json::Map<String, serde_json::Value>,
+    out: &mut HashMap<(String, String), f64>,
+) {
+    let ns = obj
+        .get("properties")
+        .and_then(|p| p.get("namespace"))
+        .or_else(|| obj.get("namespace"))
+        .and_then(|n| n.as_str())
+        .unwrap_or("")
+        .to_string();
+    let pod = obj
+        .get("properties")
+        .and_then(|p| p.get("pod"))
+        .or_else(|| obj.get("pod"))
+        .and_then(|n| n.as_str())
+        .unwrap_or("")
+        .to_string();
+    let cost = obj
+        .get("totalCost")
+        .or_else(|| obj.get("totalAmortizedCost"))
+        .and_then(|c| c.as_f64())
+        .unwrap_or(0.0);
+    if !ns.is_empty() && !pod.is_empty() && cost > 0.0 {
+        out.insert((ns, pod), cost);
     }
 }
 

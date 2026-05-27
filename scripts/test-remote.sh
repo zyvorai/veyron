@@ -24,7 +24,24 @@ NS="${VMROGUE_NAMESPACE:-vmrogue-system}"
 NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
 API_KEY="${VMROGUE_API_KEY:-Admin@321}"
 REMOTE_DIR="${VMROGUE_REMOTE_DIR:-/home/${USER}/vmrogue}"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOCAL_SAMPLES="${REPO_ROOT}/operator/config/samples"
 SAMPLES="${REMOTE_DIR}/operator/config/samples"
+
+# Apply a sample manifest: remote file if present, else pipe from local checkout.
+apply_sample() {
+  local rel="$1"
+  local remote_path="${SAMPLES}/${rel}"
+  local local_path="${LOCAL_SAMPLES}/${rel}"
+  if _ssh "test -f '${remote_path}'" >/dev/null 2>&1; then
+    run_k apply -f "${remote_path}"
+  elif [[ -f "${local_path}" ]]; then
+    cat "${local_path}" | _ssh "${REMOTE_K[@]}" apply -f -
+  else
+    echo "missing sample: ${rel} (not on remote or in ${LOCAL_SAMPLES})" >&2
+    return 1
+  fi
+}
 
 PASS=0
 FAIL=0
@@ -103,12 +120,20 @@ CRD_COUNT=$(run_k get crd -o name 2>/dev/null | grep -c 'vmrogue\.io' || true)
 CRD_COUNT="${CRD_COUNT// /}"
 CRD_COUNT="${CRD_COUNT//$'\r'/}"
 CRD_COUNT="${CRD_COUNT:-0}"
-if [[ "${CRD_COUNT}" -ge 5 ]]; then
-  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRDs)"
+if [[ "${CRD_COUNT}" -ge 7 ]]; then
+  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRDs incl. catalog)"
+elif [[ "${CRD_COUNT}" -ge 5 ]]; then
+  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRDs; catalog CRDs optional)"
 elif [[ "${CRD_COUNT}" -ge 1 ]]; then
-  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRD(s); expected 5 when operator is fully installed)"
+  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRD(s))"
 else
   skip "No vmrogue.io CRDs (install operator CRDs for VMRogueVM / blueprints)"
+fi
+
+if run_k get vmtemplate windows-2022 >/dev/null 2>&1; then
+  pass "VMTemplate windows-2022 in cluster catalog"
+elif [[ "${CRD_COUNT}" -ge 7 ]]; then
+  skip "VMTemplate windows-2022 not synced (run catalog export + deploy or vmrogue catalog sync)"
 fi
 
 if [[ "${CRD_COUNT}" -ge 1 ]]; then
@@ -242,9 +267,9 @@ else
   if [[ "$OP_READY" != "1/1" ]]; then
     skip "entire tier — vmrogue-operator not ready"
   else
-    BP_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmrogueblueprint.yaml" 2>&1)
+    BP_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueblueprint.yaml" 2>&1)
     if echo "$BP_OUT" | grep -qE 'created|configured|unchanged'; then
-      pass "LAMP blueprint applied from ${SAMPLES}/"
+      pass "LAMP blueprint applied"
     else
       fail "blueprint apply" "$BP_OUT"
     fi
@@ -254,6 +279,19 @@ else
       pass "kubectl get VMRogueBlueprint lamp-stack (spec.vms)"
     else
       fail "blueprint get" "$(run_k get vmrogueblueprint lamp-stack -n default 2>&1)"
+    fi
+
+    # Windows blueprint with template resolution (operator catalog)
+    if run_k get vmtemplate windows-2022 >/dev/null 2>&1; then
+      WIN_OUT=$(apply_sample "windows-ad-blueprint.yaml" 2>&1 || true)
+      if echo "$WIN_OUT" | grep -qE 'created|configured|unchanged'; then
+        pass "Windows AD blueprint applied (template catalog)"
+        run_k delete vmrogueblueprint windows-ad-lab -n default --ignore-not-found >/dev/null 2>&1 || true
+      else
+        skip "windows-ad blueprint apply (sample or CRD issue)"
+      fi
+    else
+      skip "windows-ad blueprint — VMTemplate CRD/catalog not installed"
     fi
 
     run_k delete vmrogueblueprint lamp-stack -n default --ignore-not-found >/dev/null 2>&1 || true
@@ -276,7 +314,7 @@ else
   if [[ "$OP_READY" != "1/1" ]]; then
     skip "entire tier — vmrogue-operator not ready"
   else
-    POL_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmroguepolicy.yaml" 2>&1)
+    POL_OUT=$(apply_sample "vmrogue_v1alpha1_vmroguepolicy.yaml" 2>&1)
     echo "$POL_OUT" | grep -qE 'created|configured|unchanged' && pass "Security policy applied" || fail "policy apply" "$POL_OUT"
 
     sleep 2
@@ -286,10 +324,10 @@ else
       fail "policy get" "missing prod-security-baseline or rules"
     fi
 
-    INS_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmrogueinsight.yaml" 2>&1)
+    INS_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueinsight.yaml" 2>&1)
     echo "$INS_OUT" | grep -qE 'created|configured|unchanged' && pass "Insight applied" || fail "insight apply" "$INS_OUT"
 
-    ACT_OUT=$(run_k apply -f "${SAMPLES}/vmrogue_v1alpha1_vmrogueaction.yaml" 2>&1)
+    ACT_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueaction.yaml" 2>&1)
     echo "$ACT_OUT" | grep -qE 'created|configured|unchanged' && pass "Action applied" || fail "action apply" "$ACT_OUT"
 
     sleep 2
@@ -312,9 +350,12 @@ AUTH=( -H "X-API-Key: ${API_KEY}" )
 for endpoint in \
   "/api/v1/crds/vmroguevms" \
   "/api/v1/crds/blueprints" \
+  "/api/v1/crds/templates" \
+  "/api/v1/crds/profiles" \
   "/api/v1/crds/policies" \
   "/api/v1/crds/insights" \
-  "/api/v1/crds/actions"; do
+  "/api/v1/crds/actions" \
+  "/api/v1/images/catalog"; do
   code=$(curl_api "$endpoint" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
   if [[ "$code" == "200" ]]; then
     pass "GET ${endpoint} → 200"

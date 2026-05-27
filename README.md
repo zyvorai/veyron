@@ -1,8 +1,6 @@
 # VMRogue
 
 [![CI](https://github.com/ssahani/VMRogue/workflows/CI/badge.svg)](https://github.com/ssahani/VMRogue/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org/)
 
 > Rogue VM management for KubeVirt — forged in Rust.
@@ -506,7 +504,7 @@ vmrogue profile database      # View specific profile
 
 ## Multi-VM Blueprints
 
-Deploy complete application stacks with **5 ready-to-use blueprints**:
+Deploy complete application stacks with **12 ready-to-use blueprints** (5 Linux stacks + 7 Windows enterprise roles):
 
 | Blueprint | VMs | Description |
 |-----------|-----|-------------|
@@ -515,12 +513,24 @@ Deploy complete application stacks with **5 ready-to-use blueprints**:
 | **3tier** | 3 | PostgreSQL + App Server + Nginx |
 | **cicd** | 3 | GitLab + Jenkins + Artifact Registry |
 | **dev-stack** | 3 | Database + Redis Cache + Workspace |
+| **windows-jumpbox** | 1 | Windows Server 2022 jump host |
+| **windows-ad** | 1 | Domain controller |
+| **windows-ad-member** | 2 | DC + member server (ordered) |
+| **windows-rds** | 1 | RDS session host |
+| **windows-iis** | 1 | IIS web server |
+| **windows-sql** | 1 | SQL Server host (database profile) |
+| **windows-dev** | 1 | Windows 11 dev workstation |
 
 ```bash
 vmrogue blueprints            # List all blueprints
+vmrogue blueprints --tag windows
 vmrogue blueprint lamp        # View blueprint details
 vmrogue deploy lamp --start   # Deploy and start
+vmrogue catalog export        # Export VMTemplate/VMProfile CRD YAML
+vmrogue catalog sync          # Apply catalog to cluster
 ```
+
+See [docs/TEMPLATE_CATALOG.md](docs/TEMPLATE_CATALOG.md) for operator template resolution and Windows secret refs.
 
 ## OS Templates (44 Available)
 
@@ -659,7 +669,7 @@ fn main() -> anyhow::Result<()> {
 
 ### Current Status
 
-**Core** - 44 OS templates, 8 resource profiles, 5 multi-VM blueprints, 169+ CLI commands (including pause, unpause, resize, events, nodes, pods, import, search, troubleshoot, capacity, placement, list-json, clusters-list, clusters-discover, gitops-diff, gitops-status), configuration validation, YAML/JSON output, cloud-init support. 2,433 tests passing. All modules promoted (zero experimental feature gates).
+**Core** - 44 OS templates, 8 resource profiles, 12 multi-VM blueprints (incl. Windows AD/RDS/IIS/SQL), VMTemplate/VMProfile catalog CRDs, 169+ CLI commands
 
 **Kubernetes** - Full CRUD, VM lifecycle management (including pause/unpause and resize), KubeVirt CRD conversion, health checks with scoring, multi-namespace support, PVC creation, batch operations, manifest generation for all disk and network types. Handlers return live cluster data; some dashboard analytics endpoints use estimates (see `docs/FEATURE_MATRIX.md`).
 

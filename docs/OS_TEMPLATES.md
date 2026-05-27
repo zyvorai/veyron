@@ -1,8 +1,24 @@
 # 🎯 VMRogue OS Templates - Complete Catalog
 
-**See also:** [Documentation index](README.md).
+**See also:** [Documentation index](README.md), [TEMPLATE_CATALOG.md](TEMPLATE_CATALOG.md) (cluster VMTemplate/VMProfile CRDs).
 
-VMRogue now includes **44 OS templates** across **15 operating system families**!
+VMRogue includes **44 OS templates** across **15 operating system families**.
+
+## Dual source (CLI vs cluster)
+
+| Source | Use when |
+|--------|----------|
+| **Rust embedded** (`src/templates/mod.rs`) | Offline CLI: `vmrogue create`, `vmrogue deploy`, `vmrogue templates` |
+| **VMTemplate CRDs** (cluster) | Operator GitOps: `template:` on VMRogueVM / VMRogueBlueprint resolves via operator catalog |
+
+Bootstrap cluster catalog:
+
+```bash
+./scripts/generate-catalog-crds.sh
+vmrogue catalog sync   # or deploy-all-remote applies operator/config/catalog/*.yaml
+```
+
+Operator and CLI should agree on template **names** (`windows-2022`, `ubuntu-22.04`, …). Blueprint **`override`** still wins for explicit GitOps patches.
 
 ## 📊 Template Statistics
 

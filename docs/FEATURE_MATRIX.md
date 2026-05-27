@@ -15,15 +15,16 @@ Status legend:
 | Page | Frontend Page ID | Primary Routes | Backend Source | Status | Notes |
 |---|---|---|---|---|---|
 | Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview` | `http_server.rs` | Working | Overview cards and event feed are live |
-| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | Main lifecycle page; RDP panel in embedded SPA and dashboard-next `VMBrowser` |
+| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | Drift reads VMRogueVM `status.driftDetected` (operator) |
 | Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes | `http_server.rs` | Working | Uses direct handlers in `http_server.rs` |
 | Nodes | `page-nodes` | `/api/v1/nodes` | `http_server.rs`, `handlers/nodes.rs` | Working | Real allocatable/capacity data |
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |
 | Storage | `page-storage` | `/api/v1/storage/pvcs`, `/api/v1/storage/classes` | `http_server.rs` | Working | Separate richer storage routes also exist |
 | Events | `page-events` | `/api/v1/events` | `http_server.rs`, `handlers/events.rs` | Working | Event feed is live |
 | CRDs | `page-crds` | `/api/v1/crds/vmroguevms` | `handlers/crds.rs` | Working | Operator CRD listing and create flow |
+| Template catalog | `page-crds` | `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/crds.rs` | Working | Cluster VMTemplate/VMProfile CRDs; operator resolves `template`+`profile` |
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
-| Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Uses operator CRDs |
+| Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Includes operator-emitted **Drift** insights |
 | Actions | `page-actions` | `/api/v1/crds/actions` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Costs | `page-costs` | `/api/v1/costs`, `/summary`, `/forecast` | `handlers/costs.rs` | Partial | Summary JSON includes `pricing_model`, `disclaimer`; not billing-integrated |
 | Security | `page-security` | `/api/v1/security/posture`, `/findings` | `handlers/security.rs` | Partial | Rule set is basic VM config analysis |
@@ -84,6 +85,9 @@ These route groups now have first-class dashboard pages:
 | Observability | `/api/v1/observability/overview` | Surfaced |
 | Performance | `/api/v1/performance/profiles` | Surfaced |
 | Webhooks | `/api/v1/webhooks` | Surfaced |
+| Template catalog | `/api/v1/crds/templates`, `/api/v1/crds/profiles` | Surfaced (API); classic CRDs page partial |
+| Golden images | `/api/v1/images/catalog`, `/api/v1/images/import` | API Working; CDI lifecycle labels on import |
+| VM drift | `/api/v1/vms/:ns/:name/drift` | API Working; operator sets VMRogueVM status |
 
 ## Known Partial Areas
 
@@ -142,6 +146,7 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 
 ## Immediate Next Steps
 
-1. Deploy latest `/dashboard-next/` bundle to clusters.
-2. Run `./scripts/zyvor-branding/apply-zyvor-branding-ui.sh` on sibling tt/* repos when refreshing suite branding.
-3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA — optional backends: `VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`, Flux sync via `flux_kustomization` on `POST /gitops/sync`.
+1. Run `./scripts/generate-catalog-crds.sh` before deploy; `deploy-all-remote.sh` applies catalog YAML automatically.
+2. `./scripts/test-remote.sh` tier 3+ uses local samples when remote checkout is absent; Windows blueprint test when VMTemplate CRDs exist.
+3. Deploy latest `/dashboard-next/` bundle to clusters.
+4. Tighten remaining heuristic pages — optional backends: `VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`.

@@ -844,18 +844,12 @@ mod tests {
     #[test]
     fn test_vmtemplate_crd_generates() {
         let crd = VMTemplate::crd();
-        assert_eq!(
-            crd.metadata.name.as_deref(),
-            Some("vmtemplates.vmrogue.io")
-        );
+        assert_eq!(crd.metadata.name.as_deref(), Some("vmtemplates.vmrogue.io"));
     }
 
     #[test]
     fn test_vmprofile_crd_generates() {
         let crd = VMProfile::crd();
-        assert_eq!(
-            crd.metadata.name.as_deref(),
-            Some("vmprofiles.vmrogue.io")
-        );
+        assert_eq!(crd.metadata.name.as_deref(), Some("vmprofiles.vmrogue.io"));
     }
 }
