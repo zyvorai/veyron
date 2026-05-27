@@ -302,13 +302,13 @@ CLIENT
 UNINSTALL: ./uninstall.sh --yes [--remove-dir]
 README_EOF
 
+chmod +x "\${LIB}/finalize-customer-bundle.sh"
+"\${LIB}/finalize-customer-bundle.sh" "\${OUT_DIR}/\${ARTIFACT}" "\${BUILD_DIR}" "VMRogue" "\${VERSION}"
 for req in LICENSE LEGAL-INDEX.txt install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
   install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
   install-client-deps.sh vmrogue vmrogue.env.example; do
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }
 done
-chmod +x "\${LIB}/finalize-customer-bundle.sh"
-"\${LIB}/finalize-customer-bundle.sh" "\${OUT_DIR}/\${ARTIFACT}" "\${BUILD_DIR}" "VMRogue" "\${VERSION}"
 echo "Customer bundle OK (install.sh, README, QUICKSTART, test scripts, binary)"
 
 cd "\${OUT_DIR}"
