@@ -215,13 +215,7 @@ async fn fetch_logs_with_backends(
     if let Ok(loki_url) = std::env::var("VMROGUE_LOKI_URL") {
         if !loki_url.is_empty() {
             let limit = params.limit.unwrap_or(500);
-            match crate::api::loki::query_range(
-                ns,
-                params.search.as_deref(),
-                limit,
-            )
-            .await
-            {
+            match crate::api::loki::query_range(ns, params.search.as_deref(), limit).await {
                 Ok(lines) if !lines.is_empty() => {
                     let entries: Vec<LogEntry> = lines
                         .into_iter()

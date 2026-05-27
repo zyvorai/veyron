@@ -49,7 +49,9 @@ pub async fn query_range(
 ) -> Result<Vec<LokiLogLine>> {
     let base = integrations::env_var("VMROGUE_LOKI_URL").context("VMROGUE_LOKI_URL not set")?;
     let now = Utc::now();
-    let start = (now - chrono::TimeDelta::hours(1)).timestamp_nanos_opt().unwrap_or(0);
+    let start = (now - chrono::TimeDelta::hours(1))
+        .timestamp_nanos_opt()
+        .unwrap_or(0);
     let end = now.timestamp_nanos_opt().unwrap_or(0);
 
     let mut query = if namespace_scope == "all" {

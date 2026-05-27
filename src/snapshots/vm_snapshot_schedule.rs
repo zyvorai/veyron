@@ -248,12 +248,7 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
                     .apply_retention_policy(&rec.vm_name, rec.max_snapshots)
                     .await
                 {
-                    log::warn!(
-                        "retention after schedule for {}/{}: {}",
-                        ns,
-                        rec.vm_name,
-                        e
-                    );
+                    log::warn!("retention after schedule for {}/{}: {}", ns, rec.vm_name, e);
                 }
             }
             match persist_schedule_cm(client.clone(), ns, name, &rec).await {

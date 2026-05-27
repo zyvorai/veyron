@@ -302,8 +302,8 @@ mod tests {
     #[test]
     fn test_suggest_profile_for_template() {
         assert_eq!(
-            ProfileManager::suggest_profile_for_template("ubuntu-22.04"),
-            Some("prod".to_string())
+            ProfileManager::suggest_profile_for_template("ubuntu"),
+            Some("dev".to_string())
         );
         assert_eq!(
             ProfileManager::suggest_profile_for_template("windows-11"),

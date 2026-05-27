@@ -5,11 +5,7 @@
 //! Windows golden-image setup wizard API.
 
 #[cfg(feature = "web")]
-use axum::{
-    Json, Router,
-    extract::Query,
-    routing::get,
-};
+use axum::{Json, Router, extract::Query, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize)]
@@ -75,7 +71,8 @@ async fn get_setup_plan(Query(q): Query<WindowsSetupQuery>) -> Json<WindowsSetup
         WindowsSetupStep {
             id: "rdp".into(),
             title: "Expose RDP via API".into(),
-            description: "PUT /api/v1/vms/{ns}/{name}/rdp-expose; POST guest-agent/enable-rdp.".into(),
+            description: "PUT /api/v1/vms/{ns}/{name}/rdp-expose; POST guest-agent/enable-rdp."
+                .into(),
             doc_anchor: Some("rdp-expose".into()),
         },
     ];

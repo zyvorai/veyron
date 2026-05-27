@@ -87,12 +87,7 @@ async fn get_incident_timeline(
                         .annotations
                         .as_ref()
                         .and_then(|a| a.get("description"))
-                        .or_else(|| {
-                            alert
-                                .annotations
-                                .as_ref()
-                                .and_then(|a| a.get("summary"))
-                        })
+                        .or_else(|| alert.annotations.as_ref().and_then(|a| a.get("summary")))
                         .cloned()
                         .unwrap_or_default();
                     let state = alert
@@ -124,69 +119,71 @@ async fn get_incident_timeline(
     }
 
     if incidents.is_empty() {
-    let events = if namespace == "all" {
-        s.client().list_all_events().await.unwrap_or_default()
-    } else {
-        s.client().list_events(&namespace).await.unwrap_or_default()
-    };
-
-    for event in &events {
-        if event.type_.as_deref() != Some("Warning") {
-            continue;
-        }
-
-        let reason = event.reason.as_deref().unwrap_or("Unknown");
-        let msg = event.message.as_deref().unwrap_or("");
-        let obj = event.involved_object.name.as_deref().unwrap_or("unknown");
-        let obj_kind = event.involved_object.kind.as_deref().unwrap_or("Object");
-        let ev_ns = event
-            .metadata
-            .namespace
-            .as_deref()
-            .unwrap_or(namespace.as_str());
-
-        let ts = event
-            .last_timestamp
-            .as_ref()
-            .or(event.first_timestamp.as_ref())
-            .or(event.metadata.creation_timestamp.as_ref())
-            .map(|t| t.0)
-            .unwrap_or(now);
-
-        let age_hours = (now - ts).num_hours();
-
-        // Map K8s warning reason to severity
-        let severity = match reason {
-            "OOMKilling" | "BackOff" | "Failed" | "FailedMount" | "FailedScheduling" => "critical",
-            _ => "warning",
-        };
-
-        // VM-related events get the vm_name extracted from the object name
-        let vm_name = if obj_kind == "VirtualMachineInstance" || obj_kind == "VirtualMachine" {
-            Some(obj.to_string())
-        } else if obj.starts_with("virt-launcher-") {
-            Some(obj.trim_start_matches("virt-launcher-").to_string())
+        let events = if namespace == "all" {
+            s.client().list_all_events().await.unwrap_or_default()
         } else {
-            None
+            s.client().list_events(&namespace).await.unwrap_or_default()
         };
 
-        // Consider events older than 1h as resolved (simplified heuristic)
-        let resolved = age_hours > 1;
+        for event in &events {
+            if event.type_.as_deref() != Some("Warning") {
+                continue;
+            }
 
-        let id = format!("{}-{}-{}", ev_ns, obj, ts.timestamp());
+            let reason = event.reason.as_deref().unwrap_or("Unknown");
+            let msg = event.message.as_deref().unwrap_or("");
+            let obj = event.involved_object.name.as_deref().unwrap_or("unknown");
+            let obj_kind = event.involved_object.kind.as_deref().unwrap_or("Object");
+            let ev_ns = event
+                .metadata
+                .namespace
+                .as_deref()
+                .unwrap_or(namespace.as_str());
 
-        incidents.push(IncidentEvent {
-            id,
-            timestamp: ts.to_rfc3339(),
-            kind: "k8s-event".to_string(),
-            severity: severity.to_string(),
-            title: format!("{}/{}: {}", obj_kind, obj, reason),
-            description: msg.to_string(),
-            vm_name,
-            namespace: ev_ns.to_string(),
-            resolved,
-        });
-    }
+            let ts = event
+                .last_timestamp
+                .as_ref()
+                .or(event.first_timestamp.as_ref())
+                .or(event.metadata.creation_timestamp.as_ref())
+                .map(|t| t.0)
+                .unwrap_or(now);
+
+            let age_hours = (now - ts).num_hours();
+
+            // Map K8s warning reason to severity
+            let severity = match reason {
+                "OOMKilling" | "BackOff" | "Failed" | "FailedMount" | "FailedScheduling" => {
+                    "critical"
+                }
+                _ => "warning",
+            };
+
+            // VM-related events get the vm_name extracted from the object name
+            let vm_name = if obj_kind == "VirtualMachineInstance" || obj_kind == "VirtualMachine" {
+                Some(obj.to_string())
+            } else if obj.starts_with("virt-launcher-") {
+                Some(obj.trim_start_matches("virt-launcher-").to_string())
+            } else {
+                None
+            };
+
+            // Consider events older than 1h as resolved (simplified heuristic)
+            let resolved = age_hours > 1;
+
+            let id = format!("{}-{}-{}", ev_ns, obj, ts.timestamp());
+
+            incidents.push(IncidentEvent {
+                id,
+                timestamp: ts.to_rfc3339(),
+                kind: "k8s-event".to_string(),
+                severity: severity.to_string(),
+                title: format!("{}/{}: {}", obj_kind, obj, reason),
+                description: msg.to_string(),
+                vm_name,
+                namespace: ev_ns.to_string(),
+                resolved,
+            });
+        }
     } // incidents.is_empty() fallback
 
     // Check SLO status and add a synthetic SLO-breach incident if needed

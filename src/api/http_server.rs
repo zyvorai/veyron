@@ -474,9 +474,10 @@ pub mod web {
             }
             Some(key) => {
                 let s2 = state.read().await;
-                let role = s2.authenticate(&key).cloned().or_else(|| {
-                    s2.authenticate_jwt(&key)
-                });
+                let role = s2
+                    .authenticate(&key)
+                    .cloned()
+                    .or_else(|| s2.authenticate_jwt(&key));
                 drop(s2);
                 let role = match role {
                     Some(r) => Some(r),
@@ -869,9 +870,7 @@ pub mod web {
             .route("/api/v1/health", get(health_handler))
             .route(
                 "/api/v1/auth/oidc/config",
-                get(|| async {
-                    axum::Json(crate::api::oidc::oidc_public_config())
-                }),
+                get(|| async { axum::Json(crate::api::oidc::oidc_public_config()) }),
             )
             .with_state(state.clone())
             // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
@@ -1553,7 +1552,10 @@ pub mod web {
         ns: &str,
         name: &str,
     ) -> Result<vm_rdp::RdpAccessStatus, String> {
-        let vm = kube.get_vm(ns, name).await.map_err(|e| sanitize_error(&e))?;
+        let vm = kube
+            .get_vm(ns, name)
+            .await
+            .map_err(|e| sanitize_error(&e))?;
         let vm_json = serde_json::to_value(&vm).map_err(|e| e.to_string())?;
         let spec_has_rdp = vm_json
             .pointer("/spec/template/spec/domain/devices/interfaces")
@@ -1682,10 +1684,7 @@ pub mod web {
                 err_json(500, "INTERNAL_ERROR", &msg)
             }
         } else {
-            let svc_type = req
-                .service_type
-                .as_deref()
-                .unwrap_or("NodePort");
+            let svc_type = req.service_type.as_deref().unwrap_or("NodePort");
             let svc_type = match svc_type.to_ascii_lowercase().as_str() {
                 "loadbalancer" => "LoadBalancer",
                 "clusterip" => "ClusterIP",
@@ -1705,14 +1704,8 @@ pub mod web {
                     "node_port must be in range 30000–32767",
                 );
             }
-            match vm_rdp::upsert_rdp_expose_service(
-                kube.client(),
-                &ns,
-                &name,
-                svc_type,
-                node_port,
-            )
-            .await
+            match vm_rdp::upsert_rdp_expose_service(kube.client(), &ns, &name, svc_type, node_port)
+                .await
             {
                 Ok(()) => match rdp_context_for_vm(&kube, &ns, &name).await {
                     Ok(body) => {
@@ -1739,7 +1732,10 @@ pub mod web {
         };
         match kube.enable_rdp_via_guest_agent(&ns, &name).await {
             Ok(resp) => {
-                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest-agent/enable-rdp");
+                let ctx = req_ctx(
+                    HttpMethod::POST,
+                    "/api/v1/vms/:ns/:name/guest-agent/enable-rdp",
+                );
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_ENABLE_RDP_FAILED", &sanitize_error(&e)),
@@ -1759,7 +1755,10 @@ pub mod web {
         };
         match kube.disable_rdp_via_guest_agent(&ns, &name).await {
             Ok(resp) => {
-                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest-agent/disable-rdp");
+                let ctx = req_ctx(
+                    HttpMethod::POST,
+                    "/api/v1/vms/:ns/:name/guest-agent/disable-rdp",
+                );
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_DISABLE_RDP_FAILED", &sanitize_error(&e)),

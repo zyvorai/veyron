@@ -695,114 +695,114 @@ fn apply_windows_cloud_init(builder: VMConfigBuilder) -> VMConfig {
 fn windows_2022_template() -> VMConfig {
     apply_windows_cloud_init(
         VMConfigBuilder::new("windows-vm")
-        .namespace("default")
-        .cpu(4, 1, 1)
-        .memory("8Gi")
-        .add_blank_disk_sata("rootdisk", "60Gi", 1)
-        .set_disk_cache("rootdisk", "none")
-        .add_cdrom(
-            "virtio-drivers",
-            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
-            2,
-        )
-        .add_windows_network("default")
-        .label("os", "windows")
-        .label("os.version", "2022")
-        .features(windows_features())
-        .firmware(uefi_firmware())
-        .clock(windows_clock())
-        .enable_tpm()
-        .enable_rng()
-        .usb_tablet()
-        .disable_balloon()
-        .io_threads_policy("shared")
-        .termination_grace_period(120)
-        .machine_type("q35"),
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk_sata("rootdisk", "60Gi", 1)
+            .set_disk_cache("rootdisk", "none")
+            .add_cdrom(
+                "virtio-drivers",
+                "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+                2,
+            )
+            .add_windows_network("default")
+            .label("os", "windows")
+            .label("os.version", "2022")
+            .features(windows_features())
+            .firmware(uefi_firmware())
+            .clock(windows_clock())
+            .enable_tpm()
+            .enable_rng()
+            .usb_tablet()
+            .disable_balloon()
+            .io_threads_policy("shared")
+            .termination_grace_period(120)
+            .machine_type("q35"),
     )
 }
 
 fn windows_2019_template() -> VMConfig {
     apply_windows_cloud_init(
         VMConfigBuilder::new("windows-vm")
-        .namespace("default")
-        .cpu(4, 1, 1)
-        .memory("8Gi")
-        .add_blank_disk_sata("rootdisk", "60Gi", 1)
-        .set_disk_cache("rootdisk", "none")
-        .add_cdrom(
-            "virtio-drivers",
-            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
-            2,
-        )
-        .add_windows_network("default")
-        .label("os", "windows")
-        .label("os.version", "2019")
-        .features(windows_features())
-        .firmware(uefi_firmware())
-        .clock(windows_clock())
-        .enable_rng()
-        .usb_tablet()
-        .disable_balloon()
-        .io_threads_policy("shared")
-        .termination_grace_period(120)
-        .machine_type("q35"),
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk_sata("rootdisk", "60Gi", 1)
+            .set_disk_cache("rootdisk", "none")
+            .add_cdrom(
+                "virtio-drivers",
+                "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+                2,
+            )
+            .add_windows_network("default")
+            .label("os", "windows")
+            .label("os.version", "2019")
+            .features(windows_features())
+            .firmware(uefi_firmware())
+            .clock(windows_clock())
+            .enable_rng()
+            .usb_tablet()
+            .disable_balloon()
+            .io_threads_policy("shared")
+            .termination_grace_period(120)
+            .machine_type("q35"),
     )
 }
 
 fn windows_11_template() -> VMConfig {
     apply_windows_cloud_init(
         VMConfigBuilder::new("windows-vm")
-        .namespace("default")
-        .cpu(4, 2, 1)
-        .memory("4Gi")
-        .add_blank_disk_sata("rootdisk", "16Gi", 1)
-        .set_disk_cache("rootdisk", "none")
-        .add_cdrom(
-            "virtio-drivers",
-            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
-            2,
-        )
-        .add_windows_network("default")
-        .label("os", "windows")
-        .label("os.version", "11")
-        .features(windows_features())
-        .firmware(uefi_secure_boot_firmware())
-        .clock(windows_clock())
-        .enable_tpm()
-        .enable_rng()
-        .usb_tablet()
-        .disable_balloon()
-        .io_threads_policy("shared")
-        .termination_grace_period(120)
-        .machine_type("q35"),
+            .namespace("default")
+            .cpu(4, 2, 1)
+            .memory("4Gi")
+            .add_blank_disk_sata("rootdisk", "16Gi", 1)
+            .set_disk_cache("rootdisk", "none")
+            .add_cdrom(
+                "virtio-drivers",
+                "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+                2,
+            )
+            .add_windows_network("default")
+            .label("os", "windows")
+            .label("os.version", "11")
+            .features(windows_features())
+            .firmware(uefi_secure_boot_firmware())
+            .clock(windows_clock())
+            .enable_tpm()
+            .enable_rng()
+            .usb_tablet()
+            .disable_balloon()
+            .io_threads_policy("shared")
+            .termination_grace_period(120)
+            .machine_type("q35"),
     )
 }
 
 fn windows_10_template() -> VMConfig {
     apply_windows_cloud_init(
         VMConfigBuilder::new("windows-vm")
-        .namespace("default")
-        .cpu(4, 1, 1)
-        .memory("8Gi")
-        .add_blank_disk_sata("rootdisk", "60Gi", 1)
-        .set_disk_cache("rootdisk", "none")
-        .add_cdrom(
-            "virtio-drivers",
-            "quay.io/kubevirt/virtio-container-disk:v1.8.1",
-            2,
-        )
-        .add_windows_network("default")
-        .label("os", "windows")
-        .label("os.version", "10")
-        .features(windows_features())
-        .firmware(uefi_firmware())
-        .clock(windows_clock())
-        .enable_rng()
-        .usb_tablet()
-        .disable_balloon()
-        .io_threads_policy("shared")
-        .termination_grace_period(120)
-        .machine_type("q35"),
+            .namespace("default")
+            .cpu(4, 1, 1)
+            .memory("8Gi")
+            .add_blank_disk_sata("rootdisk", "60Gi", 1)
+            .set_disk_cache("rootdisk", "none")
+            .add_cdrom(
+                "virtio-drivers",
+                "quay.io/kubevirt/virtio-container-disk:v1.8.1",
+                2,
+            )
+            .add_windows_network("default")
+            .label("os", "windows")
+            .label("os.version", "10")
+            .features(windows_features())
+            .firmware(uefi_firmware())
+            .clock(windows_clock())
+            .enable_rng()
+            .usb_tablet()
+            .disable_balloon()
+            .io_threads_policy("shared")
+            .termination_grace_period(120)
+            .machine_type("q35"),
     )
 }
 

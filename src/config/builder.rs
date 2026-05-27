@@ -262,11 +262,7 @@ impl VMConfigBuilder {
     }
 
     /// Add an OVN-Kubernetes overlay interface via Multus NAD (e.g. `ovn-k8s-cni-overlay`).
-    pub fn add_ovn_network(
-        mut self,
-        name: impl Into<String>,
-        nad_name: impl Into<String>,
-    ) -> Self {
+    pub fn add_ovn_network(mut self, name: impl Into<String>, nad_name: impl Into<String>) -> Self {
         let net_name = nad_name.into();
         self.config.interfaces.push(InterfaceConfig {
             name: name.into(),

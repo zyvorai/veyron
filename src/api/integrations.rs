@@ -81,14 +81,24 @@ pub async fn deliver_pagerduty(routing_key: &str, summary: &str, severity: &str)
 
 /// Generic email HTTP relay (SendGrid/Mailgun-style JSON) or log-only fallback.
 #[cfg(feature = "web")]
-pub async fn deliver_email(relay_url: &str, subject: &str, body: &str, recipients: &[String]) -> Result<bool> {
+pub async fn deliver_email(
+    relay_url: &str,
+    subject: &str,
+    body: &str,
+    recipients: &[String],
+) -> Result<bool> {
     let payload = serde_json::json!({
         "subject": subject,
         "text": body,
         "to": recipients,
         "from": env_var("VMROGUE_EMAIL_FROM").unwrap_or_else(|| "vmrogue@local".to_string())
     });
-    post_json(relay_url, &payload, env_var("VMROGUE_EMAIL_RELAY_TOKEN").as_deref()).await
+    post_json(
+        relay_url,
+        &payload,
+        env_var("VMROGUE_EMAIL_RELAY_TOKEN").as_deref(),
+    )
+    .await
 }
 
 /// Generic SMS HTTP relay (Twilio-style JSON webhook).
@@ -122,8 +132,7 @@ pub async fn oidc_userinfo_role(token: &str) -> Result<Option<String>> {
         return Ok(None);
     }
     let info: serde_json::Value = resp.json().await.context("userinfo json")?;
-    let role_claim =
-        env_var("VMROGUE_OIDC_ROLE_CLAIM").unwrap_or_else(|| "groups".to_string());
+    let role_claim = env_var("VMROGUE_OIDC_ROLE_CLAIM").unwrap_or_else(|| "groups".to_string());
     if let Some(v) = info.get(&role_claim) {
         if let Some(s) = v.as_str() {
             return Ok(Some(s.to_string()));

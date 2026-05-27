@@ -15,14 +15,17 @@ use super::integrations;
 /// Monthly cost per `(namespace, pod_name)` from OpenCost allocation rows.
 #[cfg(feature = "web")]
 pub async fn namespace_pod_costs() -> Result<HashMap<(String, String), f64>> {
-    let base = integrations::env_var("VMROGUE_OPENCOST_URL")
-        .context("VMROGUE_OPENCOST_URL not set")?;
+    let base =
+        integrations::env_var("VMROGUE_OPENCOST_URL").context("VMROGUE_OPENCOST_URL not set")?;
     let url = format!(
         "{}/allocation/compute?window=30d&aggregate=pod,namespace&step=1d",
         base.trim_end_matches('/')
     );
-    let v = integrations::get_json(&url, integrations::env_var("VMROGUE_OPENCOST_TOKEN").as_deref())
-        .await?;
+    let v = integrations::get_json(
+        &url,
+        integrations::env_var("VMROGUE_OPENCOST_TOKEN").as_deref(),
+    )
+    .await?;
 
     let mut out = HashMap::new();
     let data = v
@@ -117,7 +120,10 @@ pub async fn vm_costs_from_opencost(
     for vm in vms {
         let name = vm.metadata.name.clone().unwrap_or_default();
         let ns = vm.metadata.namespace.clone().unwrap_or_default();
-        let cost = vm_totals.get(&(ns.clone(), name.clone())).copied().unwrap_or(0.0);
+        let cost = vm_totals
+            .get(&(ns.clone(), name.clone()))
+            .copied()
+            .unwrap_or(0.0);
         results.push((ns, name, cost));
     }
     Ok(results)

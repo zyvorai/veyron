@@ -165,9 +165,7 @@ fn vm_has_linux_cloud_init(vm: &Value) -> bool {
 
 fn userdata_looks_like_windows(ud: &str) -> bool {
     let l = ud.to_lowercase();
-    l.contains("ps1_sysnative")
-        || l.contains("fdenytsconnections")
-        || l.contains("terminal server")
+    l.contains("ps1_sysnative") || l.contains("fdenytsconnections") || l.contains("terminal server")
 }
 
 fn userdata_looks_like_linux_cloud_config(ci: &Value) -> bool {

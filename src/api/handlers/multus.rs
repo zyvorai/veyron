@@ -69,7 +69,10 @@ async fn list_nads(
         .into_iter()
         .filter_map(|o| {
             let name = o.metadata.name?;
-            let namespace = o.metadata.namespace.unwrap_or_else(|| "default".to_string());
+            let namespace = o
+                .metadata
+                .namespace
+                .unwrap_or_else(|| "default".to_string());
             let config = o
                 .data
                 .get("spec")

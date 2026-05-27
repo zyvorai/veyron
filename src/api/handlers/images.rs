@@ -100,7 +100,9 @@ async fn list_image_catalog(
 
     if let Ok(dvs) = dv_api.list(&ListParams::default().limit(100)).await {
         for dv in dvs.items {
-            let Some(name) = dv.metadata.name else { continue };
+            let Some(name) = dv.metadata.name else {
+                continue;
+            };
             let ns = dv.metadata.namespace.unwrap_or_else(|| scope.clone());
             let phase = dv
                 .data
@@ -153,7 +155,9 @@ async fn list_image_catalog(
         .await
     {
         for pvc in pvcs.items {
-            let Some(name) = pvc.metadata.name else { continue };
+            let Some(name) = pvc.metadata.name else {
+                continue;
+            };
             let ns = pvc.metadata.namespace.unwrap_or_else(|| scope.clone());
             let capacity = pvc
                 .status
@@ -246,8 +250,7 @@ async fn import_data_volume(
     };
     let s = state.read().await;
     let client = s.client().client();
-    let api: kube::Api<DynamicObject> =
-        kube::Api::namespaced_with(client, &req.namespace, &ar);
+    let api: kube::Api<DynamicObject> = kube::Api::namespaced_with(client, &req.namespace, &ar);
 
     let obj: DynamicObject = serde_json::from_value(dv).map_err(|e| {
         (

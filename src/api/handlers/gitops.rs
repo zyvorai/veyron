@@ -286,13 +286,9 @@ async fn trigger_flux_reconcile(
             }
         }
     });
-    api.patch(
-        kustomization,
-        &PatchParams::default(),
-        &Patch::Merge(patch),
-    )
-    .await
-    .is_ok()
+    api.patch(kustomization, &PatchParams::default(), &Patch::Merge(patch))
+        .await
+        .is_ok()
 }
 
 #[cfg(feature = "web")]
@@ -322,19 +318,11 @@ async fn trigger_sync(
         }
 
         if let Some(ref kust) = req.flux_kustomization {
-            flux_triggered = trigger_flux_reconcile(
-                s.client().client(),
-                &namespace,
-                kust,
-            )
-            .await;
-        } else if let Some(kust) = crate::api::integrations::env_var("VMROGUE_FLUX_DEFAULT_KUSTOMIZATION") {
-            flux_triggered = trigger_flux_reconcile(
-                s.client().client(),
-                &namespace,
-                &kust,
-            )
-            .await;
+            flux_triggered = trigger_flux_reconcile(s.client().client(), &namespace, kust).await;
+        } else if let Some(kust) =
+            crate::api::integrations::env_var("VMROGUE_FLUX_DEFAULT_KUSTOMIZATION")
+        {
+            flux_triggered = trigger_flux_reconcile(s.client().client(), &namespace, &kust).await;
         }
 
         let api: kube::api::Api<ConfigMap> =

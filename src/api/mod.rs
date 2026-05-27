@@ -6,30 +6,30 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub mod handlers;
-pub mod http_server;
-pub mod middleware;
-pub mod openapi;
-pub mod pagination;
-pub mod pam_auth;
-#[cfg(feature = "web")]
-pub mod prometheus;
-#[cfg(feature = "web")]
-pub mod integrations;
-#[cfg(feature = "web")]
-pub mod opencost;
-#[cfg(feature = "web")]
-pub mod loki;
-pub mod routes;
-pub mod server;
-pub mod webhooks;
-pub mod websocket;
 #[cfg(feature = "web")]
 pub mod dashboard_next;
 #[cfg(feature = "web")]
 pub mod dashboard_paths;
+pub mod handlers;
+pub mod http_server;
+#[cfg(feature = "web")]
+pub mod integrations;
+#[cfg(feature = "web")]
+pub mod loki;
+pub mod middleware;
 #[cfg(feature = "web")]
 pub mod oidc;
+pub mod openapi;
+#[cfg(feature = "web")]
+pub mod opencost;
+pub mod pagination;
+pub mod pam_auth;
+#[cfg(feature = "web")]
+pub mod prometheus;
+pub mod routes;
+pub mod server;
+pub mod webhooks;
+pub mod websocket;
 
 /// API server configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]

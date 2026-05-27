@@ -6,7 +6,7 @@
 
 use axum::{
     extract::Path,
-    http::{header, StatusCode},
+    http::{StatusCode, header},
     response::{IntoResponse, Redirect, Response},
 };
 use rust_embed::RustEmbed;
@@ -77,7 +77,10 @@ mod tests {
     #[test]
     fn content_type_maps_known_extensions() {
         assert_eq!(content_type("index.html"), "text/html; charset=utf-8");
-        assert_eq!(content_type("app.js"), "application/javascript; charset=utf-8");
+        assert_eq!(
+            content_type("app.js"),
+            "application/javascript; charset=utf-8"
+        );
         assert_eq!(content_type("styles.css"), "text/css; charset=utf-8");
         assert_eq!(content_type("data.bin"), "application/octet-stream");
     }

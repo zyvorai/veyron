@@ -119,8 +119,7 @@ async fn list_performance_profiles(
             let mut mem_p99 = (mem * 1.35).min(100.0);
 
             if namespace != "all" {
-                if let Some((p50, p95, p99)) =
-                    prometheus_vm_cpu_percentiles(&vm_ns, vm_name).await
+                if let Some((p50, p95, p99)) = prometheus_vm_cpu_percentiles(&vm_ns, vm_name).await
                 {
                     cpu_p50 = p50;
                     cpu_p95 = p95;
@@ -179,9 +178,8 @@ async fn prometheus_vm_cpu_percentiles(ns: &str, vm: &str) -> Option<(f64, f64, 
     let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
     let end = chrono::Utc::now().timestamp();
     let start = end - 3600;
-    let query = format!(
-        "rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{ns}\", name=\"{vm}\"}}[5m]) * 100"
-    );
+    let query =
+        format!("rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{ns}\", name=\"{vm}\"}}[5m]) * 100");
     percentile_triplet_from_range(&base, &query, start, end).await
 }
 
@@ -190,9 +188,7 @@ async fn prometheus_vm_memory_percentiles(ns: &str, vm: &str) -> Option<(f64, f6
     let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
     let end = chrono::Utc::now().timestamp();
     let start = end - 3600;
-    let query = format!(
-        "kubevirt_vmi_memory_resident_bytes{{namespace=\"{ns}\", name=\"{vm}\"}}"
-    );
+    let query = format!("kubevirt_vmi_memory_resident_bytes{{namespace=\"{ns}\", name=\"{vm}\"}}");
     percentile_triplet_from_range(&base, &query, start, end).await
 }
 

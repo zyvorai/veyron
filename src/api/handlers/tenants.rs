@@ -108,10 +108,7 @@ async fn bootstrap_tenant_namespace(
     if ns_api.get(&ns_name).await.is_err() {
         let mut labels = BTreeMap::new();
         labels.insert(TENANT_NS_LABEL.to_string(), tenant_id.to_string());
-        labels.insert(
-            "vmrogue.io/managed-by".to_string(),
-            "vmrogue".to_string(),
-        );
+        labels.insert("vmrogue.io/managed-by".to_string(), "vmrogue".to_string());
         let ns = Namespace {
             metadata: kube::api::ObjectMeta {
                 name: Some(ns_name.clone()),
@@ -188,12 +185,10 @@ async fn get_tenant(
             Json(serde_json::json!({ "error": "tenant not found" })),
         )
     })?;
-    cm_to_tenant(&cm)
-        .map(Json)
-        .ok_or((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(serde_json::json!({ "error": "invalid tenant record" })),
-        ))
+    cm_to_tenant(&cm).map(Json).ok_or((
+        StatusCode::INTERNAL_SERVER_ERROR,
+        Json(serde_json::json!({ "error": "invalid tenant record" })),
+    ))
 }
 
 #[cfg(feature = "web")]
@@ -201,7 +196,12 @@ async fn create_tenant(
     State(state): State<SharedState>,
     Json(req): Json<CreateTenantRequest>,
 ) -> Result<Json<TenantRecord>, (StatusCode, Json<serde_json::Value>)> {
-    if req.id.is_empty() || !req.id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-') {
+    if req.id.is_empty()
+        || !req
+            .id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '-')
+    {
         return Err((
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": "tenant id must be alphanumeric with dashes" })),
@@ -229,7 +229,7 @@ async fn create_tenant(
                 return Err((
                     StatusCode::INTERNAL_SERVER_ERROR,
                     Json(serde_json::json!({ "error": e })),
-                ))
+                ));
             }
         }
     }
@@ -303,5 +303,7 @@ async fn delete_tenant(
                 Json(serde_json::json!({ "error": "tenant not found" })),
             )
         })?;
-    Ok(Json(serde_json::json!({ "message": "tenant deleted", "id": id })))
+    Ok(Json(
+        serde_json::json!({ "message": "tenant deleted", "id": id }),
+    ))
 }

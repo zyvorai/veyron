@@ -140,9 +140,7 @@ async fn compute_cost_entries(
 }
 
 #[cfg(feature = "web")]
-fn cost_entries_from_vms(
-    vms: &[crate::kube::types::VirtualMachine],
-) -> Vec<CostEntry> {
+fn cost_entries_from_vms(vms: &[crate::kube::types::VirtualMachine]) -> Vec<CostEntry> {
     vms.iter()
         .map(|vm| {
             let meta = &vm.metadata;

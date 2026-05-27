@@ -148,7 +148,9 @@ async fn dr_failover(
             latest.name,
             req.target_kubeconfig_context
                 .as_ref()
-                .map(|c| format!("; apply GET /dr/export manifests to context '{c}' for cross-cluster DR"))
+                .map(|c| format!(
+                    "; apply GET /dr/export manifests to context '{c}' for cross-cluster DR"
+                ))
                 .unwrap_or_default()
         ),
         target_kubeconfig_context: req.target_kubeconfig_context,
