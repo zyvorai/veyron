@@ -266,6 +266,18 @@ ssh "${REMOTE}" "
     for f in ${DEPLOY_DIR}/operator/config/crd/bases/*.yaml; do
         ${K8S_CMD} apply -f \"\$f\"
     done
+    if [ -d ${DEPLOY_DIR}/operator/config/catalog/templates ]; then
+        echo 'Applying VMTemplate catalog manifests...'
+        for f in ${DEPLOY_DIR}/operator/config/catalog/templates/*.yaml; do
+            [ -f \"\$f\" ] && ${K8S_CMD} apply -f \"\$f\" || true
+        done
+    fi
+    if [ -d ${DEPLOY_DIR}/operator/config/catalog/profiles ]; then
+        echo 'Applying VMProfile catalog manifests...'
+        for f in ${DEPLOY_DIR}/operator/config/catalog/profiles/*.yaml; do
+            [ -f \"\$f\" ] && ${K8S_CMD} apply -f \"\$f\" || true
+        done
+    fi
     ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/rbac/service_account.yaml
     ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/rbac/role.yaml
     ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/nats/nats-deployment.yaml

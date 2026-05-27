@@ -26,6 +26,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 - [`NETWORK_MANAGEMENT.md`](NETWORK_MANAGEMENT.md): VM networking operations
 - [`DEVELOPER_VM_ACCESS.md`](DEVELOPER_VM_ACCESS.md): SSH and `virtctl` access patterns
 - [`OS_TEMPLATES.md`](OS_TEMPLATES.md): template catalog and guidance
+- [`TEMPLATE_CATALOG.md`](TEMPLATE_CATALOG.md): VMTemplate/VMProfile CRDs, operator resolution, Windows secrets, drift
 
 ## TUI and UX
 

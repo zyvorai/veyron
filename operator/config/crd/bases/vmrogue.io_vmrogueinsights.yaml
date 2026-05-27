@@ -50,7 +50,7 @@ spec:
               properties:
                 insightType:
                   type: string
-                  enum: ["Performance", "Security", "Cost", "Anomaly", "Capacity", "Network"]
+                  enum: ["Performance", "Security", "Cost", "Anomaly", "Capacity", "Network", "Drift"]
                 severity:
                   type: string
                   enum: ["Critical", "High", "Medium", "Low", "Info"]
