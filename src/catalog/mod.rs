@@ -110,6 +110,64 @@ pub fn default_output_dir() -> PathBuf {
     PathBuf::from("operator/config/catalog")
 }
 
+/// Summary row for cluster VMTemplate listing.
+#[derive(Debug, Clone)]
+pub struct ClusterTemplateSummary {
+    pub name: String,
+    pub family: Option<String>,
+    pub description: Option<String>,
+}
+
+/// Summary row for cluster VMProfile listing.
+#[derive(Debug, Clone)]
+pub struct ClusterProfileSummary {
+    pub name: String,
+    pub cores: u32,
+    pub memory: String,
+    pub disk_size: String,
+}
+
+/// List VMTemplate CRDs from the connected cluster.
+pub async fn list_cluster_templates() -> Result<Vec<ClusterTemplateSummary>> {
+    use kube::{Api, Client, api::ListParams};
+
+    let client = Client::try_default().await?;
+    let api: Api<VMTemplate> = Api::all(client);
+    let list = api.list(&ListParams::default().limit(500)).await?;
+    let mut items: Vec<_> = list
+        .items
+        .into_iter()
+        .map(|t| ClusterTemplateSummary {
+            name: t.metadata.name.unwrap_or_default(),
+            family: t.spec.family.clone(),
+            description: t.spec.description.clone(),
+        })
+        .collect();
+    items.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(items)
+}
+
+/// List VMProfile CRDs from the connected cluster.
+pub async fn list_cluster_profiles() -> Result<Vec<ClusterProfileSummary>> {
+    use kube::{Api, Client, api::ListParams};
+
+    let client = Client::try_default().await?;
+    let api: Api<VMProfile> = Api::all(client);
+    let list = api.list(&ListParams::default().limit(100)).await?;
+    let mut items: Vec<_> = list
+        .items
+        .into_iter()
+        .map(|p| ClusterProfileSummary {
+            name: p.metadata.name.unwrap_or_default(),
+            cores: p.spec.cores,
+            memory: p.spec.memory.clone(),
+            disk_size: p.spec.disk_size.clone(),
+        })
+        .collect();
+    items.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(items)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

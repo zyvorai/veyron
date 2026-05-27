@@ -14,7 +14,7 @@ home: https://github.com/ssahani/VMRogue
 sources:
   - https://github.com/ssahani/VMRogue
 maintainers:
-  - name: Susant Sahani
+  - name: ZyvorAI Labs Private Limited
     url: https://github.com/ssahani
 dependencies:
   - name: kube-prometheus-stack

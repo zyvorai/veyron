@@ -307,7 +307,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         }
 
         Commands::Templates { by_family, source } => {
-            handlers::vm::handle_templates(by_family, source.as_deref())?;
+            handlers::vm::handle_templates(by_family, source.as_deref()).await?;
         }
 
         Commands::Catalog { action } => match action {
@@ -316,6 +316,12 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             }
             cli::CatalogAction::Sync { namespace } => {
                 handlers::catalog::handle_catalog_sync(namespace).await?;
+            }
+            cli::CatalogAction::List {
+                templates,
+                profiles,
+            } => {
+                handlers::catalog::handle_catalog_list(templates, profiles).await?;
             }
         },
 
