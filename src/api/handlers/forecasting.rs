@@ -89,7 +89,7 @@ async fn list_predictions(
     };
 
     let predicted_density = vm_density * growth_rate;
-    let predicted_vms = (total_vms * growth_rate).ceil();
+    let _predicted_vms = (total_vms * growth_rate).ceil();
 
     // Estimate days until density threshold breach at current growth rate
     let density_threshold = 20.0f64;

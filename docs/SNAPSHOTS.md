@@ -520,7 +520,7 @@ Content-Type: application/json
 {"target_vm": "restored-vm"}
 ```
 
-> **Note:** Restore via API returns 501 — VirtualMachineRestore CRD wiring is in progress. Use the CLI for restore operations.
+> **Note:** Restore via API is implemented at `POST /api/v1/snapshots/{id}/restore` (in-place when `target_vm` is omitted). Export snapshot metadata via `GET /api/v1/snapshots/export`.
 
 ---
 

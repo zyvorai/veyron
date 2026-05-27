@@ -17,6 +17,8 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 use std::sync::RwLock;
 
+use crate::config::VMConfig;
+
 pub static PROFILES: LazyLock<RwLock<ProfileManager>> =
     LazyLock::new(|| match ProfileManager::new() {
         Ok(manager) => RwLock::new(manager),
@@ -230,7 +232,7 @@ impl ProfileManager {
         config.cpu.cores = profile.cpu_cores;
         config.cpu.sockets = profile.cpu_sockets;
         config.cpu.threads = profile.cpu_threads;
-        config.memory = profile.memory.clone();
+        config.memory.size = profile.memory.clone();
         if let Some(disk) = config.disks.first_mut() {
             disk.size = profile.disk_size.clone();
         }
@@ -295,6 +297,22 @@ mod tests {
         assert!(manager.is_builtin("dev"));
         assert!(manager.is_builtin("prod"));
         assert!(!manager.is_builtin("nonexistent"));
+    }
+
+    #[test]
+    fn test_suggest_profile_for_template() {
+        assert_eq!(
+            ProfileManager::suggest_profile_for_template("ubuntu-22.04"),
+            Some("prod".to_string())
+        );
+        assert_eq!(
+            ProfileManager::suggest_profile_for_template("windows-11"),
+            Some("prod".to_string())
+        );
+        assert_eq!(
+            ProfileManager::suggest_profile_for_template("alpine"),
+            Some("minimal".to_string())
+        );
     }
 
     #[test]

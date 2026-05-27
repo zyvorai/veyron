@@ -728,7 +728,7 @@ Returns network interfaces extracted from VirtualMachineInstance status, includi
 GET /network/bandwidth
 ```
 
-> **Note:** Bandwidth monitoring requires metrics integration and returns 501 until wired.
+> **Note:** Bandwidth monitoring is available at `GET /api/v1/network/bandwidth` (MetricsCollector-based estimates).
 
 ---
 
