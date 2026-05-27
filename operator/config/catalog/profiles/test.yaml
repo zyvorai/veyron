@@ -1,0 +1,21 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: test
+spec:
+  description: Testing environment - moderate resources for CI/CD
+  cores: 2
+  sockets: 1
+  threads: 1
+  memory: '4Gi'
+  diskSize: '20Gi'
+  useCases:
+  - CI/CD pipelines
+  - Integration testing
+  - QA environments
+  recommendedTemplates:
+  - ubuntu
+  - almalinux
+  - rocky

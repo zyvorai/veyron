@@ -1,0 +1,87 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMTemplate
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: windows
+spec:
+  description: 'VMRogue built-in template: windows'
+  tags:
+  - windows
+  family: windows
+  recommendedProfiles:
+  - prod
+  default:
+    cpu:
+      cores: 4
+      sockets: 1
+      threads: 1
+    memory:
+      size: '8Gi'
+    disks:
+    - name: rootdisk
+      size: '60Gi'
+      bootOrder: 1
+      source:
+        type: blank
+      deviceType: disk
+      bus: sata
+      cache: none
+    - name: virtio-drivers
+      size: '0'
+      bootOrder: 2
+      source:
+        type: containerDisk
+        image: quay.io/kubevirt/virtio-container-disk:v1.8.1
+      deviceType: cdrom
+      bus: sata
+    interfaces:
+    - name: default
+      network: default
+      model: e1000e
+      networkType:
+        type: pod
+    cloudInit:
+      userData: |
+        #ps1_sysnative
+        # VMRogue Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
+        Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
+        Write-Host 'Cloudbase-Init config-drive applied by VMRogue template.'
+      delivery: configdrive
+    features:
+      acpi: true
+      apic: true
+      hyperv:
+        relaxed: true
+        vapic: true
+        spinlocks: 8191
+        vpindex: true
+        runtime: true
+        synic: true
+        stimer: true
+        reset: true
+        frequencies: true
+        reenlightenment: true
+        tlbflush: true
+        ipi: true
+      smm: true
+    firmware:
+      bootloader: efi
+      secureBoot: false
+      persistent: true
+    clock:
+      utc: true
+      timers:
+        hpetPresent: false
+        pitTickPolicy: delay
+        rtcTickPolicy: catchup
+        hypervPresent: true
+    terminationGracePeriod: 120
+    enableTpm: true
+    enableRng: true
+    machineType: q35
+    labels:
+      os.version: '2022'
+      os: windows
+    allowInternet: true

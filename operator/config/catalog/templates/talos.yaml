@@ -1,0 +1,45 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMTemplate
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: talos
+spec:
+  description: 'VMRogue built-in template: talos'
+  tags:
+  - linux
+  family: linux
+  recommendedProfiles:
+  - minimal
+  default:
+    cpu:
+      cores: 2
+      sockets: 1
+      threads: 1
+    memory:
+      size: '4Gi'
+    disks:
+    - name: rootdisk
+      size: '20Gi'
+      bootOrder: 1
+      source:
+        type: blank
+      deviceType: disk
+    interfaces:
+    - name: default
+      network: default
+      model: virtio
+      networkType:
+        type: pod
+    clock:
+      utc: true
+      timers:
+        hpetPresent: false
+        pitTickPolicy: delay
+        rtcTickPolicy: catchup
+    enableTpm: false
+    enableRng: true
+    labels:
+      os: talos
+      os.version: latest
+    allowInternet: true

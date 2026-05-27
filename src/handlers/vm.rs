@@ -1154,7 +1154,16 @@ pub fn handle_generate(
     Ok(())
 }
 
-pub fn handle_templates(by_family: bool) -> Result<()> {
+pub fn handle_templates(by_family: bool, source: Option<&str>) -> Result<()> {
+    if source == Some("cluster") {
+        println!(
+            "{}",
+            color::info(
+                "Cluster VMTemplate CRDs: use `kubectl get vmtemplates` or `vmrogue catalog sync` after export."
+            )
+        );
+        return Ok(());
+    }
     if by_family {
         println!("{}", color::header("Templates by family:"));
         for (family, names) in TEMPLATES.list_by_family() {

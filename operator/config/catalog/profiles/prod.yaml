@@ -1,0 +1,22 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: prod
+spec:
+  description: Production environment - balanced resources for reliability
+  cores: 4
+  sockets: 1
+  threads: 1
+  memory: '8Gi'
+  diskSize: '40Gi'
+  useCases:
+  - Production workloads
+  - Web applications
+  - API servers
+  recommendedTemplates:
+  - ubuntu-22.04
+  - almalinux
+  - rocky
+  - debian

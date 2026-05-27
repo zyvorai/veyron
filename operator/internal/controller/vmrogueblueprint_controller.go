@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
+	"github.com/ssahani/vmrogue/operator/internal/catalog"
 	"github.com/ssahani/vmrogue/operator/internal/eventbus"
 )
 
@@ -125,7 +126,18 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			}
 
 			// Create the VMRogueVM CR
-			newVM := r.buildVMFromBlueprint(&bp, &vmSpec, crName)
+			newVM, err := r.buildVMFromBlueprint(ctx, &bp, &vmSpec, crName)
+			if err != nil {
+				logger.Error(err, "failed to build VMRogueVM spec", "vm", crName)
+				anyFailed = true
+				vmStatuses = append(vmStatuses, vmroguev1alpha1.VMDeploymentStatus{
+					Name:    vmName,
+					Phase:   vmroguev1alpha1.VMPhaseFailed,
+					VMRef:   crName,
+					Message: fmt.Sprintf("Build failed: %v", err),
+				})
+				continue
+			}
 			if err := r.Create(ctx, newVM); err != nil {
 				logger.Error(err, "failed to create VMRogueVM for blueprint", "vm", crName)
 				anyFailed = true
@@ -229,7 +241,23 @@ func (r *VMRogueBlueprintReconciler) handleDeletion(ctx context.Context, bp *vmr
 	return ctrl.Result{}, nil
 }
 
-func (r *VMRogueBlueprintReconciler) buildVMFromBlueprint(bp *vmroguev1alpha1.VMRogueBlueprint, vmSpec *vmroguev1alpha1.BlueprintVMSpec, crName string) *vmroguev1alpha1.VMRogueVM {
+func (r *VMRogueBlueprintReconciler) buildVMFromBlueprint(ctx context.Context, bp *vmroguev1alpha1.VMRogueBlueprint, vmSpec *vmroguev1alpha1.BlueprintVMSpec, crName string) (*vmroguev1alpha1.VMRogueVM, error) {
+	resolver := catalog.Resolver{Client: r.Client}
+	profile := derefStringOr(vmSpec.Profile, "")
+
+	base := vmroguev1alpha1.VMRogueVMSpec{
+		Running: boolPtr(true),
+	}
+	resolved, err := resolver.ResolveSpec(ctx, vmSpec.Template, profile, base, catalog.BlueprintOverrides{
+		CPU:      vmSpec.CPU,
+		Memory:   vmSpec.Memory,
+		DiskSize: vmSpec.DiskSize,
+		Override: vmSpec.Override,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	vm := &vmroguev1alpha1.VMRogueVM{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crName,
@@ -249,71 +277,14 @@ func (r *VMRogueBlueprintReconciler) buildVMFromBlueprint(bp *vmroguev1alpha1.VM
 				},
 			},
 		},
-		Spec: vmroguev1alpha1.VMRogueVMSpec{
-			Template: vmSpec.Template,
-			Profile:  derefStringOr(vmSpec.Profile, ""),
-			Running:  boolPtr(true),
-		},
+		Spec: resolved,
 	}
 
-	// Apply overrides
-	if vmSpec.CPU != nil {
-		vm.Spec.CPU.Cores = *vmSpec.CPU
-	} else {
-		vm.Spec.CPU.Cores = 2
-	}
-	vm.Spec.CPU.Sockets = 1
-	vm.Spec.CPU.Threads = 1
-
-	if vmSpec.Memory != nil {
-		vm.Spec.Memory.Size = *vmSpec.Memory
-	} else {
-		vm.Spec.Memory.Size = "4Gi"
-	}
-
-	// Apply labels
 	for k, v := range vmSpec.Labels {
 		vm.Labels[k] = v
 	}
 
-	// Apply full override — merge onto existing spec, preserving base fields
-	if vmSpec.Override != nil {
-		override := vmSpec.Override
-		if override.CPU.Cores > 0 {
-			vm.Spec.CPU = override.CPU
-		}
-		if override.Memory.Size != "" {
-			vm.Spec.Memory = override.Memory
-		}
-		if len(override.Disks) > 0 {
-			vm.Spec.Disks = override.Disks
-		}
-		if len(override.Interfaces) > 0 {
-			vm.Spec.Interfaces = override.Interfaces
-		}
-		if override.CloudInit != nil {
-			vm.Spec.CloudInit = override.CloudInit
-		}
-		if override.Features != nil {
-			vm.Spec.Features = override.Features
-		}
-		if override.Firmware != nil {
-			vm.Spec.Firmware = override.Firmware
-		}
-		if override.Clock != nil {
-			vm.Spec.Clock = override.Clock
-		}
-		vm.Spec.EnableTPM = override.EnableTPM
-		vm.Spec.EnableRNG = override.EnableRNG
-		if override.MachineType != nil {
-			vm.Spec.MachineType = override.MachineType
-		}
-		if override.EvictionStrategy != nil {
-			vm.Spec.EvictionStrategy = override.EvictionStrategy
-		}
-	}
-
-	return vm
+	return vm, nil
 }
 
 func (r *VMRogueBlueprintReconciler) updateBlueprintStatus(ctx context.Context, bp *vmroguev1alpha1.VMRogueBlueprint, phase vmroguev1alpha1.BlueprintPhase, message string) {

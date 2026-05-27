@@ -1,0 +1,20 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: minimal
+spec:
+  description: Minimal - ultra lightweight for basic tasks
+  cores: 1
+  sockets: 1
+  threads: 1
+  memory: '512Mi'
+  diskSize: '5Gi'
+  useCases:
+  - DNS server
+  - Jump host
+  - Monitoring agent
+  - Log collector
+  recommendedTemplates:
+  - alpine

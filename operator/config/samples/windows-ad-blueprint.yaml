@@ -1,0 +1,40 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMRogueBlueprint
+metadata:
+  name: windows-ad-lab
+  namespace: default
+spec:
+  description: "Windows AD lab — DC + member. Requires Secrets win-sysprep and ad-join (see examples/windows-domain-join/)."
+  vms:
+    - name: dc
+      template: windows-2022
+      profile: prod
+      cpu: 4
+      memory: 16Gi
+      diskSize: 128Gi
+      labels:
+        role: domain-controller
+    - name: member
+      template: windows-2022
+      profile: prod
+      cpu: 4
+      memory: 8Gi
+      diskSize: 80Gi
+      dependsOn:
+        - dc
+      override:
+        windows:
+          domainJoinSecretRef:
+            name: ad-join
+            key: join.json
+        cloudInit:
+          delivery: configdrive
+          userDataSecretRef:
+            name: win-sysprep
+            key: userdata
+      labels:
+        role: member-server
+  tags:
+    - windows
+    - ad
+    - enterprise

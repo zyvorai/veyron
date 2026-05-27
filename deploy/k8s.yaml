@@ -60,7 +60,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # VMRogue CRDs
   - apiGroups: ["vmrogue.io"]
-    resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions"]
+    resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions", "vmtemplates", "vmprofiles"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["vmrogue.io"]
     resources:
@@ -69,6 +69,8 @@ rules:
       - "vmroguepolicies/status"
       - "vmrogueinsights/status"
       - "vmrogueactions/status"
+      - "vmtemplates/status"
+      - "vmprofiles/status"
     verbs: ["get", "update", "patch"]
   # Core Kubernetes
   - apiGroups: [""]

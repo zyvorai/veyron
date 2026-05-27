@@ -19,6 +19,10 @@ rules:
       - vmrogueactions
       - vmrogueactions/status
       - vmrogueactions/finalizers
+      - vmtemplates
+      - vmtemplates/status
+      - vmprofiles
+      - vmprofiles/status
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
   # KubeVirt VirtualMachines - create and manage

@@ -1,0 +1,22 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMProfile
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: microservice
+spec:
+  description: Microservice - optimized for containerized applications
+  cores: 2
+  sockets: 1
+  threads: 1
+  memory: '4Gi'
+  diskSize: '20Gi'
+  useCases:
+  - Container runtime
+  - Kubernetes nodes
+  - Docker hosts
+  - Microservices
+  recommendedTemplates:
+  - flatcar
+  - alpine
+  - ubuntu

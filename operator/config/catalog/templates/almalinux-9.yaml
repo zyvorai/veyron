@@ -1,0 +1,66 @@
+apiVersion: vmrogue.io/v1alpha1
+kind: VMTemplate
+metadata:
+  labels:
+    vmrogue.io/managed-by: vmrogue-catalog-export
+  name: almalinux-9
+spec:
+  description: 'VMRogue built-in template: almalinux-9'
+  tags:
+  - linux
+  family: linux
+  recommendedProfiles:
+  - database
+  default:
+    cpu:
+      cores: 2
+      sockets: 1
+      threads: 1
+    memory:
+      size: '4Gi'
+    disks:
+    - name: rootdisk
+      size: '0'
+      bootOrder: 1
+      source:
+        type: containerDisk
+        image: quay.io/containerdisks/almalinux:9
+      deviceType: disk
+    - name: datadisk
+      size: '20Gi'
+      bootOrder: 2
+      source:
+        type: blank
+      deviceType: disk
+    interfaces:
+    - name: default
+      network: default
+      model: virtio
+      networkType:
+        type: pod
+    cloudInit:
+      userData: |
+        #cloud-config
+        user: vmrogue
+        password: 9I0sCKoGWAwTc2!g
+        lock_passwd: false
+        chpasswd: { expire: True }
+        ssh_pwauth: False
+        package_update: true
+        packages:
+          - qemu-guest-agent
+        runcmd:
+          - [ systemctl, enable, qemu-guest-agent ]
+          - [ systemctl, start, qemu-guest-agent ]
+    clock:
+      utc: true
+      timers:
+        hpetPresent: false
+        pitTickPolicy: delay
+        rtcTickPolicy: catchup
+    enableTpm: false
+    enableRng: true
+    labels:
+      os: almalinux
+      os.version: '9'
+    allowInternet: true
