@@ -302,7 +302,7 @@ CLIENT
 UNINSTALL: ./uninstall.sh --yes [--remove-dir]
 README_EOF
 
-for req in install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
+for req in LICENSE LEGAL-INDEX.txt install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
   install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
   install-client-deps.sh vmrogue vmrogue.env.example; do
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }
