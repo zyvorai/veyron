@@ -144,4 +144,4 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 
 1. Deploy latest `/dashboard-next/` bundle to clusters.
 2. Run `./scripts/zyvor-branding/apply-zyvor-branding-ui.sh` on sibling tt/* repos when refreshing suite branding.
-3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA.
+3. Tighten remaining heuristic pages such as `costs`, `security`, and `monitoring` in the classic SPA — optional backends: `VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`, Flux sync via `flux_kustomization` on `POST /gitops/sync`.

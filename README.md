@@ -683,12 +683,13 @@ VMRogue operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cr
 
 ### Future Enhancements
 
-- [ ] Profile auto-selection based on template
-- [ ] ML-based optimization
-- [ ] Pluggable template registry (local/remote)
-- [ ] Terraform provider
-- [ ] SR-IOV and OVN networking
-- [ ] DataVolume CRD management (CDI)
+- [ ] Profile auto-selection based on template *(implemented: auto-applies suggested profile on `vmrogue create --template`; see `ProfileManager::suggest_profile_for_template`)*
+- [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VMROGUE_PROMETHEUS_URL` is set)*
+- [ ] Pluggable template registry (local/remote) *(implemented: `~/.config/vmrogue/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`)*
+- [x] Terraform provider — see [`terraform-provider-vmrogue/`](terraform-provider-vmrogue/)
+- [x] SR-IOV networking — VM config, converter, and CLI support
+- [x] OVN networking — `NetworkType::Ovn` + `add_ovn_network()` builder
+- [x] DataVolume CRD management (CDI) — `GET /api/v1/images/catalog`, `POST /api/v1/images/import`
 
 ## Development
 

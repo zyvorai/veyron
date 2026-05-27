@@ -94,7 +94,7 @@ vmrogue tui --interactive --theme dark --namespace production
 - Create VM (`c` in VM List)
 - Create Snapshot (`c` in Snapshots)
 - Edit Configuration (future)
-- Batch Operations (future)
+- Batch Operations (interactive TUI: multi-select + bulk start/stop/delete)
 
 ### 3. Context Menus
 
@@ -437,7 +437,7 @@ context_menu = "m"
 | **Progress indicators** | ✗ | ✓ |
 | **Search/filter** | ✗ | ✓ |
 | **Error recovery** | ✗ | ✓ |
-| **Batch operations** | ✗ | ✓ (planned) |
+| **Batch operations** | ✓ (interactive TUI) | ✓ |
 | **Mouse support** | ✗ | ✓ (planned) |
 
 ## 🎓 Tips & Best Practices
@@ -481,7 +481,7 @@ context_menu = "m"
 
 ### Planned Features
 - [ ] Multi-select with checkboxes
-- [ ] Batch operations (start/stop multiple VMs)
+- [x] Batch operations (start/stop/delete multiple VMs in interactive TUI)
 - [ ] Mouse support (click buttons, scroll lists)
 - [ ] Custom themes (user-defined colors)
 - [ ] Saved filters and searches

@@ -106,12 +106,12 @@ Automate with: versioned **ISO URLs**, checksums, **Chocolatey/winget** scripts 
 
 When you set **`cloud_init`** on a `VMConfig`, **`src/kube/converter.rs`** emits **`cloudInitNoCloud`** — ideal for **Linux** cloud-init.
 
-**Windows + Cloudbase-Init** in KubeVirt is commonly paired with **`cloudInitConfigDrive`** (see YAML examples above). That volume type is **not** emitted by the current `VMConfig` schema, so **fully automated “`vmrogue create --template windows-11` + PowerShell userData config drive”** requires either:
+**Windows + Cloudbase-Init** uses **`cloudInitConfigDrive`**. VMRogue supports this via **`CloudInitDelivery::ConfigDrive`** / builder **`.cloud_init_config_drive()`**, and built-in **`windows-*` templates** now ship placeholder config-drive userData (enable RDP). Production passwords and Sysprep still belong in **GitOps secrets** or the Packer pipeline:
 
-1. **Post-process** generated YAML (CI script / Kustomize patch) to swap or add the `cloudInitConfigDrive` volume and disk, or  
-2. A **future VMRogue enhancement** (e.g. optional `cloud_init_config_drive` / Windows-specific volume in `VMConfig`) — contributors welcome.
+1. **`vmrogue create --template windows-11`** — emits config-drive userData from the template; override secrets in CI/Kustomize before apply, or  
+2. **Post-process** generated YAML (see [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md)) for golden-image-specific userData.
 
-Until then, treat **config-drive userData** as **GitOps-managed YAML**, not something the Rust templates alone express.
+Golden image build (Audit Mode, Sysprep, CDI import) remains an **external pipeline** — see **`examples/windows-kubevirt-gitops/`**.
 
 **Full walkthrough (Packer, QCOW2 shrink, CDI, Kustomize, `vmrogue generate` + patch):** [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md) and the **`examples/windows-kubevirt-gitops/`** directory in this repository.
 
