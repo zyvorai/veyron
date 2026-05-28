@@ -5,12 +5,21 @@
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import {
   fetchIntegrationsStatus,
+  type IntegrationOpenLink,
   type IntegrationStatusItem,
   type IntegrationsStatusResponse,
 } from "../../lib/api";
-import { requestVmrogueNav } from "../../lib/nav";
+import { requestVmrogueNav, type VmrogueView } from "../../lib/nav";
 import CapabilityBanner from "./CapabilityBanner";
 import ErrorBanner from "./ErrorBanner";
+
+const IN_APP_VIEWS = new Set<VmrogueView>([
+  "platform",
+  "operations",
+  "compliance",
+  "fleet",
+  "insights",
+]);
 
 function probeLabel(probe: string): string {
   switch (probe) {
@@ -37,6 +46,18 @@ function probeStyle(probe: string): CSSProperties {
   if (probe === "failed") return { ...base, background: "#fee2e2", color: "#991b1b" };
   if (probe === "not_configured") return { ...base, background: "#f3f4f6", color: "#6b7280" };
   return { ...base, background: "#fef3c7", color: "#92400e" };
+}
+
+function openIntegration(link: IntegrationOpenLink) {
+  if (link.kind === "external") {
+    window.open(link.href, "_blank", "noopener,noreferrer");
+    return;
+  }
+  if (link.kind === "in_app_view" && IN_APP_VIEWS.has(link.href as VmrogueView)) {
+    requestVmrogueNav({ view: link.href as VmrogueView });
+    return;
+  }
+  requestVmrogueNav({ view: "insights", scrollTo: link.href });
 }
 
 export function IntegrationsPanel() {
@@ -93,9 +114,9 @@ export function IntegrationsPanel() {
 
       <p style={note}>
         Wire cluster services via the <code style={code}>vmrogue-integrations</code> Secret (auto-applied
-        on deploy when Prometheus/Loki/OpenCost/Trivy/Jaeger are detected) or Helm{" "}
-        <code style={code}>integrations.*</code> values. See repo{" "}
-        <code style={code}>docs/OPTIONAL_INTEGRATIONS.md</code>.
+        on deploy when Prometheus/Loki/OpenCost/Trivy/Jaeger/Grafana are detected) or Helm{" "}
+        <code style={code}>integrations.*</code> values. External console links use NodePort + node IP when
+        reachable from your browser; override with <code style={code}>VMROGUE_*_EXTERNAL_URL</code> env vars.
       </p>
 
       <div style={tableWrap}>
@@ -106,13 +127,14 @@ export function IntegrationsPanel() {
               <th style={th}>Env var</th>
               <th style={th}>Endpoint</th>
               <th style={th}>Status</th>
+              <th style={th}>Open</th>
               <th style={th}>Feeds</th>
             </tr>
           </thead>
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td colSpan={5} style={emptyTd}>
+                <td colSpan={6} style={emptyTd}>
                   {loading ? "Loading…" : "No integration metadata"}
                 </td>
               </tr>
@@ -126,6 +148,15 @@ export function IntegrationsPanel() {
                   <td style={td}>{row.endpoint ?? "—"}</td>
                   <td style={td}>
                     <span style={probeStyle(row.probe)}>{probeLabel(row.probe)}</span>
+                  </td>
+                  <td style={td}>
+                    {row.open ? (
+                      <button type="button" style={openBtn} onClick={() => openIntegration(row.open!)}>
+                        {row.open.label}
+                      </button>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                   <td style={tdMuted}>{row.feeds}</td>
                 </tr>
@@ -165,6 +196,16 @@ const secondaryBtn: CSSProperties = {
   borderColor: "#f0583a",
   color: "#c2410c",
 };
+const openBtn: CSSProperties = {
+  padding: "4px 10px",
+  borderRadius: 6,
+  border: "1px solid #f0583a",
+  background: "#fff",
+  color: "#c2410c",
+  fontWeight: 600,
+  fontSize: 12,
+  cursor: "pointer",
+};
 const tableWrap: CSSProperties = {
   overflowX: "auto",
   background: "#fff",
@@ -182,7 +223,7 @@ const th: CSSProperties = {
 const tr: CSSProperties = { borderBottom: "1px solid #f3f4f6" };
 const td: CSSProperties = { padding: "12px 14px", color: "#374151", verticalAlign: "top" };
 const tdMono: CSSProperties = { ...td, fontFamily: "ui-monospace, monospace", fontSize: 11 };
-const tdMuted: CSSProperties = { ...td, fontSize: 12, color: "#6b7280", maxWidth: 280 };
+const tdMuted: CSSProperties = { ...td, fontSize: 12, color: "#6b7280", maxWidth: 240 };
 const emptyTd: CSSProperties = { ...td, textAlign: "center", color: "#9ca3af" };
 
 export default IntegrationsPanel;

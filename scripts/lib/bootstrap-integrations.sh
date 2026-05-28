@@ -85,7 +85,7 @@ bootstrap_vmrogue_integrations() {
         return 0
     fi
 
-    local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url=""
+    local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url="" grafana_url=""
     local argocd_url="" argocd_token="" argocd_default_app=""
     local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc=""
 
@@ -100,6 +100,13 @@ bootstrap_vmrogue_integrations() {
         am_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i alertmanager | grep -v operated | head -1 | sed 's|service/||' || true)
         if [[ -n "${am_svc}" ]]; then
             am_url="http://${am_svc}.monitoring.svc:9093"
+        fi
+        grafana_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i grafana | grep -v headless | head -1 | sed 's|service/||' || true)
+        if [[ -n "${grafana_svc}" ]]; then
+            grafana_port=$(${k8s} get svc "${grafana_svc}" -n monitoring -o jsonpath='{.spec.ports[?(@.name=="service")].port}' 2>/dev/null || true)
+            [[ -z "${grafana_port}" ]] && grafana_port=$(${k8s} get svc "${grafana_svc}" -n monitoring -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || true)
+            [[ -z "${grafana_port}" ]] && grafana_port=3000
+            grafana_url="http://${grafana_svc}.monitoring.svc:${grafana_port}"
         fi
     fi
 
@@ -152,7 +159,7 @@ bootstrap_vmrogue_integrations() {
         fi
     fi
 
-    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${argocd_url}" ]]; then
+    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" ]]; then
         echo "No integration services detected — skip vmrogue-integrations Secret"
         return 0
     fi
@@ -180,6 +187,7 @@ EOF
     [[ -n "${opencost_url}" ]] && echo "  VMROGUE_OPENCOST_URL: \"${opencost_url}\"" >>"${tmp}"
     [[ -n "${trivy_url}" ]] && echo "  VMROGUE_TRIVY_URL: \"${trivy_url}\"" >>"${tmp}"
     [[ -n "${jaeger_url}" ]] && echo "  VMROGUE_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
+    [[ -n "${grafana_url}" ]] && echo "  VMROGUE_GRAFANA_URL: \"${grafana_url}\"" >>"${tmp}"
     [[ -n "${argocd_url}" ]] && echo "  VMROGUE_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
     [[ -n "${argocd_token}" ]] && echo "  VMROGUE_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
     [[ -n "${argocd_default_app}" ]] && echo "  VMROGUE_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"

@@ -1167,6 +1167,12 @@ export function syncCluster(name: string): Promise<ClusterSummary> {
   return apiJson<ClusterSummary>(`/clusters/${encodeURIComponent(name)}/sync`);
 }
 
+export type IntegrationOpenLink = {
+  kind: string;
+  label: string;
+  href: string;
+};
+
 export type IntegrationStatusItem = {
   id: string;
   name: string;
@@ -1175,6 +1181,7 @@ export type IntegrationStatusItem = {
   endpoint: string | null;
   probe: string;
   feeds: string;
+  open?: IntegrationOpenLink | null;
 };
 
 export type IntegrationsStatusResponse = {
