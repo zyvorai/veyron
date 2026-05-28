@@ -90,14 +90,16 @@ bootstrap_vmrogue_integrations() {
     local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc=""
 
     if ${k8s} get ns monitoring &>/dev/null; then
-        prom_svc=$(${k8s} get svc -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+        prom_svc=$(${k8s} get svc -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+            | grep -viE 'grafana|node-exporter|operated$' | grep -E 'prometheus' | head -1 || true)
         if [[ -z "${prom_svc}" ]]; then
-            prom_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i prometheus | head -1 | sed 's|service/||' || true)
+            prom_svc=$(${k8s} get svc -n monitoring -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+                | grep -i prometheus | grep -viE 'grafana|node-exporter|operator|alertmanager|operated' | head -1 || true)
         fi
         if [[ -n "${prom_svc}" ]]; then
             prom_url="http://${prom_svc}.monitoring.svc:9090/api/v1/query"
         fi
-        am_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i alertmanager | grep -v operated | head -1 | sed 's|service/||' || true)
+        am_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i alertmanager | grep -vi operated | head -1 | sed 's|service/||' || true)
         if [[ -n "${am_svc}" ]]; then
             am_url="http://${am_svc}.monitoring.svc:9093"
         fi
