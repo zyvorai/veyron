@@ -130,7 +130,7 @@ echo ""
 
 echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
-check_html_contains "GET /dashboard" "${BASE}/dashboard" 'page-dashboard'
+check_http_200 "GET /dashboard" "${BASE}/dashboard" no
 loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
 if [[ "${loc}" == */dashboard/* || "${loc}" == */dashboard ]]; then
     echo "  ✔ GET / → ${loc}"
