@@ -1000,6 +1000,16 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   animation:fade-in .25s cubic-bezier(.16,1,.3,1);
 }
 .vm-detail .detail-loading{padding:14px 16px;color:var(--text-muted);font-size:.88rem}
+.drift-badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;vertical-align:middle}
+.drift-badge.sync{background:rgba(34,197,94,.15);color:#15803d}
+.drift-badge.drift{background:rgba(234,179,8,.2);color:#92400e}
+.drift-badge.na{background:rgba(148,163,184,.15);color:#6b7280}
+.cluster-context-bar{display:none;padding:8px 20px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:.82rem}
+.cluster-context-bar.visible{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.cluster-context-meta{color:var(--text-muted)}
+.catalog-banner{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.88rem;line-height:1.45}
+.catalog-banner.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#166534}
+.catalog-banner.warn{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.28);color:#92400e}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
 .detail-section{
   background:var(--steel);border-radius:4px;padding:14px 16px;
@@ -1666,7 +1676,9 @@ html[data-theme="zinc"] .monitor-cap{
           <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
           <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
           <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
+          <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
           <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
+          <button class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
           <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
         </div>
       </div>
@@ -1716,6 +1728,15 @@ html[data-theme="zinc"] .monitor-cap{
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </nav>
+
+<div class="cluster-context-bar" id="cluster-context-bar">
+  <div class="cluster-context-meta" id="cluster-context-meta">Kube context: loading…</div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <label for="cluster-activate-select" class="form-label" style="margin:0;font-size:.75rem">Activate</label>
+    <select class="form-select" id="cluster-activate-select" style="min-width:180px;font-size:.82rem"></select>
+    <button type="button" class="btn btn-sm btn-restart" id="cluster-activate-btn" onclick="activateClusterContext()">Switch context</button>
+  </div>
+</div>
 
 <div class="page-context-bar">
   <div class="page-context-inner">
@@ -1788,7 +1809,7 @@ html[data-theme="zinc"] .monitor-cap{
 <!-- VMS PAGE -->
 <div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Virtual Machines</h1><p>KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button class="btn-create" onclick="openCreateModal()">+ Forge VM</button></div></div>
+  <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button class="btn-create" onclick="openCreateModal()">+ Forge VM</button></div></div>
   <div class="card">
     <div class="card-header">
       <span class="card-title">Fleet Roster</span>
@@ -1796,6 +1817,9 @@ html[data-theme="zinc"] .monitor-cap{
         <input type="text" class="form-input" id="vm-search" placeholder="Search VMs..." oninput="filterVMs()">
         <select class="form-select" id="vm-filter-status" onchange="filterVMs()">
           <option value="">All</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="Error">Error</option>
+        </select>
+        <select class="form-select" id="vm-filter-drift" onchange="filterVMs()" title="Operator drift filter">
+          <option value="">All drift</option><option value="drift">Drift detected</option><option value="clear">In sync</option><option value="unmanaged">Unmanaged</option>
         </select>
       </div>
     </div>
@@ -2110,8 +2134,60 @@ html[data-theme="zinc"] .monitor-cap{
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Backups</span></div>
+  <div class="card"><div class="card-header"><span class="card-title">VM backups</span></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">Velero (cluster)</span></div>
+    <div id="velero-cap-banner"></div>
+    <div id="velero-summary" style="padding:0 16px 8px;font-size:.88rem;color:var(--text-muted)"></div>
+    <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Storage location</th><th>Items</th><th>Completed</th></tr></thead><tbody id="velero-backups-body"></tbody></table>
+    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span></div>
+    <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Backup</th><th>Completed</th></tr></thead><tbody id="velero-restores-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-catalog" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header">
+    <div><h1>Template catalog</h1><p>Cluster VMTemplate / VMProfile CRDs vs embedded library</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn-create" onclick="catalogSync()">Sync cluster catalog</button>
+      <button type="button" class="btn" onclick="openCatalogPublishTemplate()">+ Publish template</button>
+      <button type="button" class="btn" onclick="openCatalogPublishProfile()">+ Publish profile</button>
+    </div>
+  </div>
+  <div id="catalog-status-banner"></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Deploy VMRogueVM (template + profile)</span></div>
+    <div style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+      <div class="form-group" style="margin:0"><label class="form-label">Namespace</label><input class="form-input" id="catalog-deploy-ns" value="default" style="width:120px"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Name (optional)</label><input class="form-input" id="catalog-deploy-name" placeholder="auto" style="width:140px"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Template</label><select class="form-select" id="catalog-deploy-template" style="min-width:160px"></select></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Profile</label><select class="form-select" id="catalog-deploy-profile" style="min-width:140px"></select></div>
+      <button type="button" class="btn-forge" onclick="catalogDeployVmrogueVm()">Deploy VMRogueVM</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">VMTemplate CRDs</span></div>
+    <table class="table"><thead><tr><th>Name</th><th>Family</th><th>Description</th><th>Tags</th></tr></thead><tbody id="catalog-templates-body"></tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">VMProfile CRDs</span></div>
+    <table class="table"><thead><tr><th>Name</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Description</th></tr></thead><tbody id="catalog-profiles-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-integrations" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Integrations</h1><p>Optional observability, FinOps, security, and GitOps backends</p></div>
+    <button type="button" class="btn" onclick="fetchIntegrations()">Refresh</button>
+  </div>
+  <div id="integrations-cap-banner"></div>
+  <div class="card">
+    <table class="table"><thead><tr><th>Service</th><th>Env var</th><th>Configured</th><th>Probe</th><th>Feeds</th><th></th></tr></thead><tbody id="integrations-body"></tbody></table>
+  </div>
 </div>
 </div>
 
@@ -2743,6 +2819,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 // State
 let currentPage = 'dashboard';
 let vmData = [];
+let lastIntegrationsStatus = null;
 /** Last VM the user expanded on the VMs page or chose for snapshot (ns + name). */
 let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
@@ -2799,7 +2876,9 @@ const PAGE_META = {
   heatmap: {kicker:'Observe', title:'Node resource heatmap', tags:['Capacity','VM density','Heuristic']},
   'custom-dashboards': {kicker:'Platform', title:'Saved custom dashboard layouts', tags:['ConfigMap','Panels','Grafana-style']},
   'network-policies': {kicker:'Network', title:'Kubernetes NetworkPolicy rules', tags:['Ingress','Egress','Selectors']},
-  images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']}
+  images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']},
+  catalog: {kicker:'Platform', title:'VMTemplate and VMProfile catalog sync', tags:['CRDs','Embedded library','Deploy VMRogueVM']},
+  integrations: {kicker:'Platform', title:'Optional backend wiring and probes', tags:['Prometheus','OpenCost','Argo CD']}
 };
 
 function applyTheme(theme, writeStorage) {
@@ -2854,6 +2933,17 @@ function initTheme() {
 }
 
 // Navigation
+function openIntegrationLink(link) {
+  if (!link) return;
+  if (link.kind === 'external') {
+    window.open(link.href, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  if (link.kind === 'in_app' && link.href) {
+    navigate(link.href);
+  }
+}
+
 function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2907,6 +2997,8 @@ function loadPageData(page) {
   if (page === 'dependencies') fetchDependencies();
   if (page === 'autoscaler') fetchAutoscaler();
   if (page === 'forecasting') fetchForecasting();
+  if (page === 'catalog') fetchCatalog();
+  if (page === 'integrations') fetchIntegrations();
   if (page === 'gitops') fetchGitOps();
   if (page === 'scheduling') fetchScheduling();
   if (page === 'cilium') fetchCilium();
@@ -3207,6 +3299,16 @@ function vmSshBlock(vm, showActions) {
   return html;
 }
 
+function vmDriftBadge(vm) {
+  if (vm.vmrogue_managed !== true) {
+    return '<span class="drift-badge na">N/A</span>';
+  }
+  if (vm.drift_detected === true) {
+    return '<span class="drift-badge drift">Drift</span>';
+  }
+  return '<span class="drift-badge sync">In sync</span>';
+}
+
 // Render VM row
 function vmRow(vm, showActions) {
   const cls = sc(vm.status);
@@ -3223,7 +3325,7 @@ function vmRow(vm, showActions) {
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" onclick="event.stopPropagation();toggleVMSelect(\''+vm.name+'\',this.checked)"' + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
   const clickAttr = showActions ? ' onclick="toggleVmDetail(\''+ns+'\',\''+vm.name+'\')" style="cursor:pointer"' : '';
   const sshBlock = vmSshBlock(vm, showActions);
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+'</span><span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
   return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div><div class="vm-ns">'+esc(ns)+'</div></div></div>'+rightCol+'</div>';
 }
 
@@ -3260,7 +3362,12 @@ async function fetchVMs() {
       '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>' :
       vmData.slice(0,10).map(v=>vmRow(v,false)).join('');
 
-    document.getElementById('vm-count').textContent = total+' VMs // '+running+' active / '+stopped+' idle'+(failed?' / '+failed+' failed':'');
+    const driftN = vmData.filter(v => v.drift_detected === true).length;
+    document.getElementById('vm-count').textContent = total+' VMs // '+running+' active / '+stopped+' idle'+(failed?' / '+failed+' failed':'')+(driftN?' / '+driftN+' drift':'');
+    const subEl = document.getElementById('vm-page-subtitle');
+    if (subEl) {
+      subEl.textContent = 'KubeVirt fleet command' + (driftN ? ' — ' + driftN + ' with operator drift' : '');
+    }
     // Only re-render VM list if no detail panel is open (prevents wiping expanded detail)
     if (!expandedVm) {
       document.getElementById('vm-full-list').innerHTML = vmData.length===0 ?
@@ -3575,6 +3682,15 @@ function renderDashboardCommandCenter() {
       : {icon:'↗', title:'Fleet is fully engaged', detail:'No stopped VMs are currently sitting idle in scope.', state:'good'}
   ];
 
+  if (lastIntegrationsStatus && lastIntegrationsStatus.unconfigured > 0) {
+    priorities.unshift({
+      icon: '⚙',
+      title: 'Optional integrations not configured',
+      detail: lastIntegrationsStatus.unconfigured + ' backend(s) — wire env vars on the API pod or open Integrations.',
+      state: 'warn'
+    });
+  }
+
   priorityEl.innerHTML = priorities.map(item =>
     '<div class="priority-item">' +
       '<div class="priority-icon">' + item.icon + '</div>' +
@@ -3804,6 +3920,8 @@ async function fetchVmDetail(ns, name) {
 
     let inner = '<div class="detail-grid">';
 
+    inner += '<div class="detail-section"><div class="detail-section-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
+
     inner += '<div class="detail-section"><div class="detail-section-title">Status</div>';
     inner += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
     inner += detailRow('Ready', vm.ready ? 'Yes' : 'No');
@@ -3877,6 +3995,7 @@ async function fetchVmDetail(ns, name) {
     });
     loadExposePanel(ns, name);
     loadRdpPanel(ns, name, vmi, vm);
+    loadVmDriftPanel(ns, name, vm);
     loadInternetPanel(ns, name);
   } catch (e) {
     holder.innerHTML =
@@ -4150,9 +4269,13 @@ function detailRow(label, value) {
 function filterVMs() {
   const q = (document.getElementById('vm-search').value || '').toLowerCase();
   const statusFilter = document.getElementById('vm-filter-status').value;
+  const driftFilter = (document.getElementById('vm-filter-drift') || {}).value || '';
   const filtered = vmData.filter(v => {
-    if (q && !v.name.toLowerCase().includes(q)) return false;
+    if (q && !v.name.toLowerCase().includes(q) && !(v.namespace || '').toLowerCase().includes(q)) return false;
     if (statusFilter && v.status !== statusFilter) return false;
+    if (driftFilter === 'drift' && v.drift_detected !== true) return false;
+    if (driftFilter === 'clear' && !(v.vmrogue_managed === true && v.drift_detected === false)) return false;
+    if (driftFilter === 'unmanaged' && v.vmrogue_managed === true) return false;
     return true;
   });
   document.getElementById('vm-full-list').innerHTML = filtered.length === 0 ?
@@ -5050,6 +5173,8 @@ function setRefreshInterval(val) {
 
 // Main refresh loop
 function refresh() {
+  fetchClusterContext();
+  fetchIntegrations();
   fetchVMs();
   if (currentPage === 'events') fetchEvents(true);
   else fetchEvents(false);
@@ -5079,6 +5204,8 @@ window.addEventListener('load', async () => {
   refresh();
   fetchTemplates();
   fetchNamespaces();
+  fetchClusterContext();
+  fetchIntegrations();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   window.addEventListener('resize', () => {
     drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
@@ -5502,6 +5629,7 @@ async function fetchBackups() {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
     console.error('Backups fetch error:', e);
   }
+  await fetchVelero();
 }
 
 async function fetchMetrics() {
@@ -6003,6 +6131,285 @@ function openImageImportModal() {
     method: 'POST',
     body: JSON.stringify({ name, namespace: ns, url: url || undefined, registry: registry || undefined, size })
   }).then(() => { toast('Import started', 'success'); fetchImages(); }).catch(e => toast(e.message, 'error'));
+}
+
+async function loadVmDriftPanel(ns, name, vm) {
+  const el = document.getElementById('drift-panel-' + name);
+  if (!el) return;
+  if (vm.vmrogue_managed !== true) {
+    el.innerHTML = detailRow('Status', 'Not operator-managed (no VMRogueVM CR for this KubeVirt VM)');
+    return;
+  }
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/drift');
+    const d = unwrapData(j);
+    let inner = detailRow('Drift', d.drift_detected ? 'Detected' : 'In sync');
+    if (d.template) inner += detailRow('Template', d.template);
+    if (d.profile) inner += detailRow('Profile', d.profile);
+    if (d.drift_message) inner += detailRow('Message', d.drift_message);
+    if (d.resolved_spec_hash) inner += detailRow('Resolved spec hash', d.resolved_spec_hash);
+    el.innerHTML = inner;
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (msg.includes('404') || msg.toLowerCase().includes('not found')) {
+      el.innerHTML = detailRow('Status', 'VMRogueVM not found — not operator-managed');
+    } else {
+      el.innerHTML = detailRow('Error', msg);
+    }
+  }
+}
+
+async function fetchCatalog() {
+  const banner = document.getElementById('catalog-status-banner');
+  const tplTb = document.getElementById('catalog-templates-body');
+  const profTb = document.getElementById('catalog-profiles-body');
+  const tplSel = document.getElementById('catalog-deploy-template');
+  const profSel = document.getElementById('catalog-deploy-profile');
+  try {
+    const [status, tplJ, profJ] = await Promise.all([
+      apiJson('/api/v1/catalog/status'),
+      apiJson('/api/v1/crds/templates'),
+      apiJson('/api/v1/crds/profiles'),
+    ]);
+    const tpl = crdItemsFromJson(tplJ);
+    const prof = crdItemsFromJson(profJ);
+    const inSync = status.in_sync === true;
+    const missTpl = (status.missing_templates || []).length;
+    const missProf = (status.missing_profiles || []).length;
+    if (banner) {
+      banner.className = 'catalog-banner ' + (inSync ? 'ok' : 'warn');
+      banner.innerHTML = '<strong>' + (inSync ? 'Catalog in sync' : 'Catalog drift') + '</strong> — ' +
+        esc(status.message || '') + '<br>Embedded: ' + (status.embedded_templates || 0) + ' templates, ' + (status.embedded_profiles || 0) + ' profiles · Cluster: ' +
+        (status.cluster_templates || 0) + ' templates, ' + (status.cluster_profiles || 0) + ' profiles' +
+        (missTpl || missProf ? ' · Missing ' + missTpl + ' template(s), ' + missProf + ' profile(s)' : '');
+    }
+    if (tplTb) {
+      tplTb.innerHTML = tpl.items.length ? tpl.items.map(t =>
+        '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.family || '-') + '</td><td>' + esc(t.description || '-') + '</td><td>' + esc((t.tags || []).join(', ') || '-') + '</td></tr>'
+      ).join('') : crdEmptyRow(4, { message: tpl.message });
+    }
+    if (profTb) {
+      profTb.innerHTML = prof.items.length ? prof.items.map(p =>
+        '<tr><td>' + esc(p.name) + '</td><td>' + p.cores + '</td><td>' + esc(p.memory) + '</td><td>' + esc(p.disk_size) + '</td><td>' + esc(p.description || '-') + '</td></tr>'
+      ).join('') : crdEmptyRow(5, { message: prof.message });
+    }
+    if (tplSel) {
+      tplSel.innerHTML = tpl.items.map(t => '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>').join('')
+        || '<option value="">(sync catalog first)</option>';
+    }
+    if (profSel) {
+      profSel.innerHTML = prof.items.map(p => '<option value="' + esc(p.name) + '">' + esc(p.name) + '</option>').join('')
+        || '<option value="">(sync catalog first)</option>';
+    }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (banner) { banner.className = 'catalog-banner warn'; banner.textContent = msg; }
+    if (tplTb) tplTb.innerHTML = tbodyError(4, msg);
+    if (profTb) profTb.innerHTML = tbodyError(5, msg);
+  }
+}
+
+async function catalogSync() {
+  try {
+    const j = await apiJson('/api/v1/catalog/sync', { method: 'POST' });
+    toast((j && j.message) || 'Catalog synced', 'success');
+    fetchCatalog();
+  } catch (e) { toast('Catalog sync: ' + (e.message || String(e)), 'error'); }
+}
+
+async function openCatalogPublishTemplate() {
+  const name = prompt('VMTemplate CRD name (e.g. my-ubuntu-22):');
+  if (!name || !name.trim()) return;
+  const fromEmbedded = prompt('Built-in template name to copy (from embedded library):');
+  if (!fromEmbedded || !fromEmbedded.trim()) return;
+  const description = prompt('Description (optional):') || undefined;
+  try {
+    await apiJson('/api/v1/crds/templates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim(), from_embedded: fromEmbedded.trim(), description: description || undefined }),
+    });
+    toast('Published VMTemplate: ' + name.trim(), 'success');
+    fetchCatalog();
+  } catch (e) { toast('Publish template: ' + (e.message || String(e)), 'error'); }
+}
+
+async function openCatalogPublishProfile() {
+  const name = prompt('VMProfile CRD name (e.g. dev-small):');
+  if (!name || !name.trim()) return;
+  const fromEmbedded = prompt('Copy from embedded profile name (leave empty to set cores/memory/disk manually):');
+  let body;
+  if (fromEmbedded && fromEmbedded.trim()) {
+    body = { name: name.trim(), from_embedded: fromEmbedded.trim() };
+  } else {
+    const cores = parseInt(prompt('CPU cores:', '2') || '2', 10);
+    const memory = prompt('Memory (e.g. 4Gi):', '4Gi') || '4Gi';
+    const disk_size = prompt('Disk size (e.g. 40Gi):', '40Gi') || '40Gi';
+    body = { name: name.trim(), cores: cores || 2, memory, disk_size };
+  }
+  try {
+    await apiJson('/api/v1/crds/profiles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    toast('Published VMProfile: ' + name.trim(), 'success');
+    fetchCatalog();
+  } catch (e) { toast('Publish profile: ' + (e.message || String(e)), 'error'); }
+}
+
+async function catalogDeployVmrogueVm() {
+  const ns = (document.getElementById('catalog-deploy-ns') || {}).value || 'default';
+  const name = (document.getElementById('catalog-deploy-name') || {}).value || '';
+  const template = (document.getElementById('catalog-deploy-template') || {}).value;
+  const profile = (document.getElementById('catalog-deploy-profile') || {}).value;
+  if (!template || !profile) { toast('Select template and profile', 'error'); return; }
+  const body = {
+    namespace: ns.trim() || 'default',
+    name: name.trim() || undefined,
+    template,
+    profile,
+    cpu: { cores: 2, sockets: 1, threads: 1 },
+    memory: { size: '4Gi' },
+  };
+  try {
+    const j = await apiJson('/api/v1/crds/vmroguevms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const created = unwrapData(j) || j;
+    toast('VMRogueVM created: ' + (created.name || name || template), 'success');
+    fetchCatalog();
+    fetchCRDs();
+  } catch (e) { toast('Deploy VMRogueVM: ' + (e.message || String(e)), 'error'); }
+}
+
+function integrationProbeClass(probe) {
+  if (probe === 'ok') return 'running';
+  if (probe === 'failed') return 'error';
+  if (probe === 'skipped') return 'other';
+  return 'stopped';
+}
+
+async function fetchIntegrations() {
+  const tb = document.getElementById('integrations-body');
+  try {
+    const data = await apiJson('/api/v1/integrations/status');
+    setCapBanner('integrations-cap-banner', data.vmrogue_context);
+    const items = data.integrations || [];
+    const unconfigured = items.filter(i => !i.configured).length;
+    lastIntegrationsStatus = { unconfigured, total: items.length };
+    if (currentPage === 'dashboard') renderDashboardCommandCenter();
+    if (!tb) return;
+    tb.innerHTML = items.map(i => {
+      let openBtn = '';
+      if (i.open) {
+        if (i.open.kind === 'in_app') {
+          openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();navigate(\'' + esc(i.open.href) + '\')">' + esc(i.open.label) + '</button>';
+        } else {
+          openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();window.open(\'' + esc(i.open.href).replace(/'/g, '%27') + '\',\'_blank\',\'noopener,noreferrer\')">' + esc(i.open.label) + '</button>';
+        }
+      }
+      return '<tr><td>' + esc(i.name) + '</td><td><code style="font-size:.78em">' + esc(i.env_var) + '</code></td><td>' +
+        (i.configured ? '<span class="vm-badge running">Yes</span>' : '<span class="vm-badge stopped">No</span>') + '</td><td><span class="vm-badge ' + integrationProbeClass(i.probe) + '">' + esc(i.probe) + '</span></td><td style="max-width:280px;font-size:.82em">' + esc(i.feeds) + '</td><td>' + openBtn + '</td></tr>';
+    }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No integrations defined</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    console.error('Integrations fetch error:', e);
+  }
+}
+
+async function fetchVelero() {
+  const sum = document.getElementById('velero-summary');
+  const bb = document.getElementById('velero-backups-body');
+  const rb = document.getElementById('velero-restores-body');
+  if (!bb && !rb) return;
+  try {
+    const data = await apiJson('/api/v1/velero/status');
+    setCapBanner('velero-cap-banner', data.vmrogue_context);
+    if (!data.velero_available) {
+      const note = (data.vmrogue_context && data.vmrogue_context.limitations) || 'Install Velero or apply Velero CRDs.';
+      if (sum) sum.textContent = note;
+      if (bb) bb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + esc(note) + '</td></tr>';
+      if (rb) rb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">—</td></tr>';
+      return;
+    }
+    const backups = data.backups || [];
+    const restores = data.restores || [];
+    if (sum) sum.textContent = backups.length + ' backup(s), ' + restores.length + ' restore(s)';
+    if (bb) {
+      bb.innerHTML = backups.map(b =>
+        '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>'
+      ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Velero backups</td></tr>';
+    }
+    if (rb) {
+      rb.innerHTML = restores.map(r =>
+        '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>'
+      ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Velero restores</td></tr>';
+    }
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (sum) sum.textContent = msg;
+    if (bb) bb.innerHTML = tbodyError(6, msg);
+    if (rb) rb.innerHTML = tbodyError(5, msg);
+  }
+}
+
+async function fetchClusterContext() {
+  const bar = document.getElementById('cluster-context-bar');
+  const meta = document.getElementById('cluster-context-meta');
+  const sel = document.getElementById('cluster-activate-select');
+  const btn = document.getElementById('cluster-activate-btn');
+  try {
+    const data = await apiJson('/api/v1/clusters');
+    const clusters = data.clusters || [];
+    const current = data.current_context || data.kubeconfig_current_context || 'default';
+    if (bar) bar.classList.add('visible');
+    if (meta) {
+      if (clusters.length === 0) {
+        meta.textContent = 'Kube context: ' + esc(current) + ' (in-cluster or single context)';
+      } else if (clusters.length === 1) {
+        const c = clusters[0];
+        meta.textContent = 'Cluster: ' + esc(c.name) + ' · context ' + esc(c.context) + ' · ' + esc(c.health) + ' · ' + c.vm_count + ' VMs · ' + c.node_count + ' nodes';
+      } else {
+        const parts = clusters.map(c =>
+          esc(c.name) + (c.is_active ? ' (active)' : '') + ' — ' + c.vm_count + ' VMs, ' + c.node_count + ' nodes, ' + esc(c.health)
+        );
+        meta.innerHTML = '<strong>Context:</strong> ' + esc(current) + ' · ' + parts.join(' · ');
+      }
+    }
+    if (sel) {
+      if (clusters.length <= 1) {
+        sel.innerHTML = clusters.length ? '<option value="' + esc(clusters[0].name) + '">' + esc(clusters[0].name) + '</option>' : '<option value="">—</option>';
+        sel.disabled = true;
+        if (btn) btn.disabled = true;
+      } else {
+        sel.disabled = false;
+        if (btn) btn.disabled = false;
+        sel.innerHTML = clusters.map(c =>
+          '<option value="' + esc(c.name) + '"' + (c.is_active ? ' selected' : '') + '>' + esc(c.name) + ' (' + esc(c.context) + ')</option>'
+        ).join('');
+      }
+    }
+  } catch (e) {
+    if (bar) bar.classList.remove('visible');
+    if (meta) meta.textContent = 'Multi-cluster: ' + (e.message || String(e));
+  }
+}
+
+async function activateClusterContext() {
+  const sel = document.getElementById('cluster-activate-select');
+  const name = sel && sel.value;
+  if (!name) { toast('No cluster selected', 'error'); return; }
+  try {
+    const j = await apiJson('/api/v1/clusters/' + encodeURIComponent(name) + '/activate', { method: 'POST' });
+    toast((j && j.message) || 'Switched to ' + name, 'success');
+    fetchClusterContext();
+    fetchVMs();
+    if (currentPage === 'dashboard') { fetchEvents(false); await fetchOverview(); }
+    loadPageData(currentPage);
+  } catch (e) { toast('Activate cluster: ' + (e.message || String(e)), 'error'); }
 }
 
 async function fetchIncidents() {

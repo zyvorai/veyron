@@ -15,14 +15,15 @@ Status legend:
 | Page | Frontend Page ID | Primary Routes | Backend Source | Status | Notes |
 |---|---|---|---|---|---|
 | Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview` | `http_server.rs` | Working | Overview cards and event feed are live |
-| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | Drift reads VMRogueVM `status.driftDetected` (operator) |
+| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | List drift badges + filter; detail panel via `/drift` |
 | Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes | `http_server.rs` | Working | Uses direct handlers in `http_server.rs` |
 | Nodes | `page-nodes` | `/api/v1/nodes` | `http_server.rs`, `handlers/nodes.rs` | Working | Real allocatable/capacity data |
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |
 | Storage | `page-storage` | `/api/v1/storage/pvcs`, `/api/v1/storage/classes` | `http_server.rs` | Working | Separate richer storage routes also exist |
 | Events | `page-events` | `/api/v1/events` | `http_server.rs`, `handlers/events.rs` | Working | Event feed is live |
 | CRDs | `page-crds` | `/api/v1/crds/vmroguevms` | `handlers/crds.rs` | Working | Operator CRD listing and create flow |
-| Template catalog | `page-crds` | `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/crds.rs` | Working | Cluster VMTemplate/VMProfile CRDs; operator resolves `template`+`profile` |
+| Template catalog | `page-catalog` | `/api/v1/catalog/status`, `/api/v1/catalog/sync`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/catalog.rs`, `handlers/crds.rs` | Working | Sync, publish, deploy VMRogueVM |
+| Integrations | `page-integrations` | `/api/v1/integrations/status` | `handlers/integrations.rs` | Working | Env probes + in-app deep links to classic pages |
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Includes operator-emitted **Drift** insights |
 | Actions | `page-actions` | `/api/v1/crds/actions` | `handlers/crds.rs` | Working | Uses operator CRDs |
@@ -42,7 +43,7 @@ Status legend:
 | Quotas | `page-quotas` | `/api/v1/quotas` | `handlers/quotas.rs` | Working | Namespace-aware |
 | Ingress | `page-ingress` | `/api/v1/ingress` | `handlers/ingress.rs` | Working | Namespace-aware |
 | HPA | `page-hpa` | `/api/v1/hpa` | `handlers/hpa.rs` | Working | Namespace-aware |
-| Backups | `page-backups` | `/api/v1/backups` | `handlers/backups.rs` | Working | Namespace-aware listing |
+| Backups | `page-backups` | `/api/v1/backups`, `/api/v1/velero/status` | `handlers/backups.rs`, `handlers/velero.rs` | Working | VM backups + Velero Backup/Restore tables |
 | Metrics | `page-metrics` | `/api/v1/metrics` | `handlers/metrics.rs` | Working | Cluster summary view |
 | Topology | `page-topology` | `/api/v1/topology/map` | `handlers/topology.rs` | Working | Namespace-aware VM graph |
 | Dependencies | `page-dependencies` | `/api/v1/dependencies/graph` | `handlers/dependencies.rs` | Working | Client-side namespace filtering |
@@ -85,7 +86,10 @@ These route groups now have first-class dashboard pages:
 | Observability | `/api/v1/observability/overview` | Surfaced |
 | Performance | `/api/v1/performance/profiles` | Surfaced |
 | Webhooks | `/api/v1/webhooks` | Surfaced |
-| Template catalog | `/api/v1/crds/templates`, `/api/v1/crds/profiles` | Surfaced (API); classic CRDs page partial |
+| Template catalog | `/api/v1/catalog/*`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | Surfaced (classic **Catalog** page) |
+| Integrations status | `/api/v1/integrations/status` | Surfaced (classic **Integrations** page) |
+| Velero | `/api/v1/velero/status` | Surfaced (classic **Backups** page) |
+| Multi-cluster | `/api/v1/clusters`, `POST .../activate` | Surfaced (navbar context bar) |
 | Golden images | `/api/v1/images/catalog`, `/api/v1/images/import` | Surfaced (classic **Images** page + operator Platform) |
 | Compliance | `/api/v1/compliance/status`, `/reports` | Surfaced (classic **Compliance**) |
 | DR | `/api/v1/dr/export`, `/failover`, `/apply` | Surfaced (classic **Disaster Recovery**) |
@@ -93,7 +97,7 @@ These route groups now have first-class dashboard pages:
 | Custom dashboards | `/api/v1/dashboards` | Surfaced (classic **Custom Dashboards**) |
 | Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
 | Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
-| VM drift | `/api/v1/vms/:ns/:name/drift` | API Working; operator sets VMRogueVM status |
+| VM drift | `/api/v1/vms` (list fields), `/api/v1/vms/:ns/:name/drift` | Surfaced (VM list badges, filter, detail panel) |
 
 ## Known Partial Areas
 
@@ -121,9 +125,12 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | VM list + lifecycle | Working | Start/stop/migrate, VNC, serial, snapshots |
 | CRD YAML editors | Working | VMRogueVM, templates, policies, insights |
 | GitOps, DR, compliance, heatmap | Working | See navbar pages |
-| VM operator drift | Working | Drift via `GET /api/v1/vms/:ns/:name/drift` |
+| VM operator drift | Working | List badges/filter + detail `GET /api/v1/vms/:ns/:name/drift` |
+| Template catalog page | Working | `page-catalog`: status, sync, CRD tables, publish, deploy VMRogueVM |
+| Integrations page | Working | `page-integrations` + in-app links (`monitoring`, `costs`, …) |
+| Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
+| Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
 | OIDC / SSO | Partial | Backend JWKS + `GET /api/v1/auth/oidc/config`; classic UI uses API key in localStorage |
-| Integrations status API | Working | `GET /api/v1/integrations/status` for env wiring probes |
 
 ## Immediate Next Steps
 
