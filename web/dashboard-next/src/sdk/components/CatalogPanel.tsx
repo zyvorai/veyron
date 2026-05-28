@@ -8,10 +8,13 @@ import {
   createCatalogTemplate,
   createVmrogueVm,
   fetchCatalogProfiles,
+  fetchCatalogStatus,
   fetchCatalogTemplates,
   fetchProfiles,
   fetchTemplates,
+  syncCatalog,
   type CatalogProfileRecord,
+  type CatalogStatus,
   type CatalogTemplateRecord,
   type VmProfile,
   type VmTemplate,
@@ -30,6 +33,7 @@ export function CatalogPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [catalogMessage, setCatalogMessage] = useState<string | null>(null);
+  const [catalogStatus, setCatalogStatus] = useState<CatalogStatus | null>(null);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
 
@@ -58,6 +62,7 @@ export function CatalogPanel() {
       fetchCatalogProfiles(),
       fetchTemplates(),
       fetchProfiles(),
+      fetchCatalogStatus(),
     ]);
     if (results[0].status === "fulfilled") {
       setTemplates(results[0].value.items);
@@ -97,8 +102,27 @@ export function CatalogPanel() {
     } else {
       setEmbeddedProfiles([]);
     }
+    if (results[4].status === "fulfilled") {
+      setCatalogStatus(results[4].value);
+    } else {
+      setCatalogStatus(null);
+    }
     setLoading(false);
   }, []);
+
+  const runCatalogSync = async () => {
+    setActionBusy(true);
+    setActionMsg(null);
+    try {
+      const result = await syncCatalog();
+      setActionMsg(result.message);
+      await load();
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : "Catalog sync failed");
+    } finally {
+      setActionBusy(false);
+    }
+  };
 
   useEffect(() => {
     void load();
@@ -234,6 +258,9 @@ export function CatalogPanel() {
           </p>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" style={primaryBtn} disabled={actionBusy || loading} onClick={() => void runCatalogSync()}>
+            {actionBusy ? "Syncing…" : "Sync embedded catalog"}
+          </button>
           <button type="button" style={secondaryBtn} onClick={() => requestVmrogueNav({ view: "platform" })}>
             Golden images
           </button>
@@ -242,6 +269,22 @@ export function CatalogPanel() {
           </button>
         </div>
       </div>
+
+      {catalogStatus ? (
+        <div style={catalogStatus.in_sync ? syncOk : syncWarn}>
+          <strong>{catalogStatus.in_sync ? "Catalog in sync" : "Catalog drift"}</strong>
+          {" · "}
+          cluster {catalogStatus.cluster_templates}/{catalogStatus.embedded_templates} templates,{" "}
+          {catalogStatus.cluster_profiles}/{catalogStatus.embedded_profiles} profiles
+          {catalogStatus.message ? ` — ${catalogStatus.message}` : ""}
+          {!catalogStatus.in_sync && catalogStatus.missing_templates.length > 0 ? (
+            <span style={{ display: "block", marginTop: 6, fontSize: 11 }}>
+              Missing templates: {catalogStatus.missing_templates.slice(0, 8).join(", ")}
+              {catalogStatus.missing_templates.length > 8 ? "…" : ""}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       <div style={tabRow}>
         {(
@@ -532,4 +575,12 @@ const secondaryBtn: CSSProperties = {
 };
 const primaryBtn: CSSProperties = {
   ...refreshBtn, borderColor: "#f0583a", background: "#f0583a", color: "#fff",
+};
+const syncOk: CSSProperties = {
+  marginBottom: 16, padding: "10px 14px", borderRadius: 8, fontSize: 13,
+  background: "#dcfce7", color: "#166534", border: "1px solid #bbf7d0",
+};
+const syncWarn: CSSProperties = {
+  marginBottom: 16, padding: "10px 14px", borderRadius: 8, fontSize: 13,
+  background: "#fffbeb", color: "#92400e", border: "1px solid #fde68a",
 };

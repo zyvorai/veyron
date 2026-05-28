@@ -147,6 +147,10 @@ bootstrap_vmrogue_integrations() {
         fi
     fi
 
+    if ${k8s} get crd backups.velero.io &>/dev/null; then
+        echo "Velero CRDs detected — cluster backups available in dashboard-next Backups view"
+    fi
+
     local argo_lines argo_ns_discovered=""
     argo_lines=$(bootstrap_argocd_credentials "${k8s}" || true)
     if [[ -n "${argo_lines}" ]]; then
