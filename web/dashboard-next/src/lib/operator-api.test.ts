@@ -50,6 +50,7 @@ describe('operator API path smoke list', () => {
       '/api/v1/templates',
       '/api/v1/crds/templates',
       '/api/v1/crds/profiles',
+      '/api/v1/crds/insights',
       '/api/v1/catalog/status',
       '/api/v1/profiles',
       '/api/v1/alerts',

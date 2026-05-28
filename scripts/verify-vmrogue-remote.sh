@@ -145,6 +145,7 @@ echo "  (X-API-Key)"
 check_json_ok "GET /api/v1/templates" "${BASE}/api/v1/templates" yes
 check_json_items "GET /api/v1/crds/templates" "${BASE}/api/v1/crds/templates"
 check_json_items "GET /api/v1/crds/profiles" "${BASE}/api/v1/crds/profiles"
+check_json_items "GET /api/v1/crds/insights" "${BASE}/api/v1/crds/insights?namespace=all"
 check_json_grep "GET /api/v1/catalog/status" \
     "${BASE}/api/v1/catalog/status" 'embedded_templates'
 check_json_grep "GET /api/v1/images/catalog" \

@@ -150,7 +150,7 @@ export interface AlertRecord {
 }
 
 export async function fetchVmInventory(namespace: string): Promise<VmRecord[]> {
-  const q = namespace && namespace !== 'all' ? `?namespace=${encodeURIComponent(namespace)}` : '';
+  const q = nsQuery(namespace, true);
   return apiJson<VmRecord[]>(`/vms${q}`);
 }
 
@@ -756,6 +756,22 @@ export function fetchCatalogTemplates(): Promise<CrdListResponse<CatalogTemplate
 
 export function fetchCatalogProfiles(): Promise<CrdListResponse<CatalogProfileRecord>> {
   return apiJson<CrdListResponse<CatalogProfileRecord>>('/crds/profiles');
+}
+
+export type InsightRecord = {
+  name: string;
+  namespace: string;
+  insight_type: string;
+  severity: string;
+  vm_ref?: string | null;
+  title: string;
+  state?: string | null;
+  created_at: string;
+};
+
+export function fetchInsights(namespace = 'all'): Promise<CrdListResponse<InsightRecord>> {
+  const q = nsQuery(namespace, true);
+  return apiJson<CrdListResponse<InsightRecord>>(`/crds/insights${q}`);
 }
 
 export type CreateCatalogTemplateRequest = {
