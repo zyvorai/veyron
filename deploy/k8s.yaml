@@ -258,7 +258,11 @@ spec:
                   key: api-key
             - name: RUST_LOG
               value: "info"
-          # Optional: envFrom secretRef name vmrogue-integrations — see deploy/k8s/optional-integrations.env.example.yaml
+          envFrom:
+            - secretRef:
+                name: vmrogue-integrations
+                optional: true
+          # Create secret from deploy/k8s/optional-integrations.env.example.yaml when Prometheus/OpenCost/etc. exist.
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
