@@ -2,12 +2,13 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   createCostBudget,
   fetchCostBudgets,
   fetchCostSummary,
   fetchIncidents,
+  fetchInsights,
   fetchLogs,
   fetchMonitoringStatus,
   fetchRecentEvents,
@@ -20,13 +21,16 @@ import {
   type CostBudgetRecord,
   type CostSummaryRecord,
   type IncidentsTimelineRecord,
+  type InsightRecord,
   type LogsDashboardRecord,
   type MonitoringStatusRecord,
   type SecurityFindingRecord,
   type SecurityPostureRecord,
   type TracesResponse,
   type MetricsTimelineResponse,
+  type VmRecord,
 } from "../../lib/api";
+import { requestVmrogueNav } from "../../lib/nav";
 import CapabilityBanner from "./CapabilityBanner";
 import ErrorBanner from "./ErrorBanner";
 
@@ -43,6 +47,8 @@ type SectionErrors = {
   budgets?: string;
   traces?: string;
   timeline?: string;
+  drift?: string;
+  operatorInsights?: string;
 };
 
 function sectionErrorMessage(reason: unknown): string {
@@ -60,6 +66,8 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
   const [budgets, setBudgets] = useState<CostBudgetRecord[]>([]);
   const [traces, setTraces] = useState<TracesResponse | null>(null);
   const [timeline, setTimeline] = useState<MetricsTimelineResponse | null>(null);
+  const [vmInventory, setVmInventory] = useState<VmRecord[]>([]);
+  const [insights, setInsights] = useState<InsightRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [sectionErrors, setSectionErrors] = useState<SectionErrors>({});
   const [budgetBusy, setBudgetBusy] = useState(false);
@@ -83,16 +91,8 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
       fetchLogs(scopeNamespace, 40),
       fetchCostBudgets(),
       fetchTraces(scopeNamespace),
-      fetchVmInventory(scopeNamespace).then(async (vms) => {
-        const running = vms.find((v) => v.status === "Running");
-        if (!running) return null;
-        return fetchMetricsTimeline({
-          namespace: running.namespace,
-          vm: running.name,
-          metric: "cpu",
-          hours: 6,
-        });
-      }),
+      fetchVmInventory(scopeNamespace),
+      fetchInsights(scopeNamespace),
     ]);
     const errors: SectionErrors = {};
 
@@ -160,10 +160,37 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
     }
 
     if (results[9].status === "fulfilled") {
-      setTimeline(results[9].value);
+      setVmInventory(results[9].value);
+      const running = results[9].value.find((v) => v.status === "Running");
+      if (running) {
+        try {
+          setTimeline(
+            await fetchMetricsTimeline({
+              namespace: running.namespace,
+              vm: running.name,
+              metric: "cpu",
+              hours: 6,
+            }),
+          );
+        } catch (reason) {
+          setTimeline(null);
+          errors.timeline = sectionErrorMessage(reason);
+        }
+      } else {
+        setTimeline(null);
+      }
     } else {
+      setVmInventory([]);
       setTimeline(null);
+      errors.drift = sectionErrorMessage(results[9].reason);
       errors.timeline = sectionErrorMessage(results[9].reason);
+    }
+
+    if (results[10].status === "fulfilled") {
+      setInsights(results[10].value.items);
+    } else {
+      setInsights([]);
+      errors.operatorInsights = sectionErrorMessage(results[10].reason);
     }
 
     setSectionErrors(errors);
@@ -210,6 +237,26 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
 
   const failedSections = Object.keys(sectionErrors).length;
 
+  const driftSummary = useMemo(() => {
+    const driftVms = vmInventory.filter((vm) => vm.drift_detected === true);
+    return {
+      total: vmInventory.length,
+      managed: vmInventory.filter((vm) => vm.vmrogue_managed === true).length,
+      inSync: vmInventory.filter(
+        (vm) => vm.vmrogue_managed === true && vm.drift_detected === false,
+      ).length,
+      drift: driftVms.length,
+      unmanaged: vmInventory.filter((vm) => vm.vmrogue_managed !== true).length,
+      driftVms,
+    };
+  }, [vmInventory]);
+
+  const driftInsights = useMemo(
+    () =>
+      insights.filter((insight) => insight.insight_type.toLowerCase().includes("drift")),
+    [insights],
+  );
+
   return (
     <div style={wrap}>
       <div style={header}>
@@ -225,6 +272,103 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
           {loading ? "Refreshing…" : "Refresh"}
         </button>
       </div>
+
+      <section id="insights-drift" style={section}>
+        <div style={sectionHeaderRow}>
+          <h3 style={{ ...sectionTitle, margin: 0 }}>Operator drift</h3>
+          <button
+            type="button"
+            style={linkBtn}
+            onClick={() => requestVmrogueNav({ view: "inventory" })}
+          >
+            Open inventory
+          </button>
+        </div>
+        {sectionErrors.drift ? (
+          <p style={sectionError}>{sectionErrors.drift}</p>
+        ) : (
+          <>
+            <p style={bodyText}>
+              VMRogueVM reconciliation vs live KubeVirt VMs · scope{" "}
+              <strong>{scopeNamespace}</strong>
+            </p>
+            <div style={statGrid}>
+              <Stat label="Total VMs" value={String(driftSummary.total)} />
+              <Stat label="Operator-managed" value={String(driftSummary.managed)} />
+              <Stat
+                label="In sync"
+                value={String(driftSummary.inSync)}
+                ok={driftSummary.managed === 0 || driftSummary.drift === 0}
+              />
+              <Stat
+                label="Drift detected"
+                value={String(driftSummary.drift)}
+                ok={driftSummary.drift === 0}
+              />
+              <Stat label="Unmanaged" value={String(driftSummary.unmanaged)} />
+            </div>
+            {driftSummary.driftVms.length > 0 ? (
+              <div style={{ ...tableWrap, marginTop: 12 }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={th}>VM</th>
+                      <th style={th}>Status</th>
+                      <th style={th}>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {driftSummary.driftVms.map((vm) => (
+                      <tr key={`${vm.namespace}/${vm.name}`} style={tr}>
+                        <td style={tdMono}>
+                          {vm.namespace}/{vm.name}
+                        </td>
+                        <td style={td}>
+                          <span style={badgeWarn}>Drift</span>
+                        </td>
+                        <td style={td}>{vm.drift_message || "Spec differs from resolved template/profile"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : !loading ? (
+              <p style={note}>No operator-managed VMs with drift in this scope.</p>
+            ) : null}
+          </>
+        )}
+        {sectionErrors.operatorInsights ? (
+          <p style={{ ...sectionError, marginTop: 12 }}>{sectionErrors.operatorInsights}</p>
+        ) : driftInsights.length > 0 ? (
+          <>
+            <h4 style={subSectionTitle}>Operator insight CRDs</h4>
+            <div style={{ ...tableWrap, marginTop: 8 }}>
+              <table style={table}>
+                <thead>
+                  <tr>
+                    <th style={th}>Severity</th>
+                    <th style={th}>Title</th>
+                    <th style={th}>VM</th>
+                    <th style={th}>State</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {driftInsights.slice(0, 15).map((insight) => (
+                    <tr key={`${insight.namespace}/${insight.name}`} style={tr}>
+                      <td style={td}>{insight.severity}</td>
+                      <td style={td}>
+                        <strong>{insight.title}</strong>
+                      </td>
+                      <td style={tdMono}>{insight.vm_ref || "—"}</td>
+                      <td style={td}>{insight.state || "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : null}
+      </section>
 
       <section id="insights-monitoring" style={section}>
         <h3 style={sectionTitle}>Monitoring</h3>
@@ -593,7 +737,35 @@ const title: CSSProperties = { margin: 0, fontSize: 22, color: "#222324" };
 const subtitle: CSSProperties = { margin: "6px 0 0", fontSize: 13, color: "#6b7280" };
 const refreshBtn: CSSProperties = { padding: "8px 14px", borderRadius: 6, border: "1px solid #d1d5db", background: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer" };
 const section: CSSProperties = { marginBottom: 28 };
+const sectionHeaderRow: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
+  marginBottom: 12,
+};
 const sectionTitle: CSSProperties = { margin: "0 0 12px", fontSize: 16, color: "#222324" };
+const subSectionTitle: CSSProperties = { margin: "16px 0 0", fontSize: 14, color: "#374151" };
+const linkBtn: CSSProperties = {
+  padding: "6px 12px",
+  borderRadius: 6,
+  border: "1px solid #d1d5db",
+  background: "#fff",
+  fontWeight: 600,
+  fontSize: 12,
+  cursor: "pointer",
+  color: "#1d4ed8",
+};
+const badgeWarn: CSSProperties = {
+  display: "inline-block",
+  padding: "2px 8px",
+  borderRadius: 4,
+  fontSize: 11,
+  fontWeight: 600,
+  background: "#fef3c7",
+  color: "#92400e",
+};
 const sectionError: CSSProperties = { margin: 0, fontSize: 13, color: "#b91c1c" };
 const muted: CSSProperties = { color: "#6b7280", fontSize: 14 };
 const bodyText: CSSProperties = { margin: 0, fontSize: 14, color: "#374151" };
