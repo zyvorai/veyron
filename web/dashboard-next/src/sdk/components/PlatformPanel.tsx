@@ -10,7 +10,6 @@ import {
   fetchImageCatalog,
   fetchNetworkPolicies,
   fetchTenants,
-  fetchVeleroStatus,
   importDataVolume,
   triggerGitOpsSync,
   type CustomResourceRecord,
@@ -18,8 +17,8 @@ import {
   type ImageCatalogResponse,
   type NetworkPolicyRecord,
   type TenantRecord,
-  type VeleroStatusResponse,
 } from "../../lib/api";
+import { requestVmrogueNav } from "../../lib/nav";
 import CapabilityBanner from "./CapabilityBanner";
 import ErrorBanner from "./ErrorBanner";
 
@@ -40,11 +39,9 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
   const [selectedFluxKust, setSelectedFluxKust] = useState("");
   const [tenants, setTenants] = useState<TenantRecord[]>([]);
   const [images, setImages] = useState<ImageCatalogResponse | null>(null);
-  const [velero, setVelero] = useState<VeleroStatusResponse | null>(null);
   const [netpols, setNetpols] = useState<NetworkPolicyRecord[]>([]);
   const [tenantsError, setTenantsError] = useState<string | null>(null);
   const [imagesError, setImagesError] = useState<string | null>(null);
-  const [veleroError, setVeleroError] = useState<string | null>(null);
   const [netpolError, setNetpolError] = useState<string | null>(null);
   const [tenantBusy, setTenantBusy] = useState(false);
   const [importBusy, setImportBusy] = useState(false);
@@ -63,15 +60,13 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
     setCrdsError(null);
     setTenantsError(null);
     setImagesError(null);
-    setVeleroError(null);
     setNetpolError(null);
-    const [statusResult, resourcesResult, tenantsResult, imagesResult, veleroResult, netpolResult] =
+    const [statusResult, resourcesResult, tenantsResult, imagesResult, netpolResult] =
       await Promise.allSettled([
       fetchGitOpsStatus(scopeNamespace),
       fetchCustomResources(),
       fetchTenants(),
       fetchImageCatalog(scopeNamespace),
-      fetchVeleroStatus(),
       fetchNetworkPolicies(scopeNamespace),
     ]);
 
@@ -116,17 +111,6 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
         imagesResult.reason instanceof Error
           ? imagesResult.reason.message
           : "Failed to load image catalog",
-      );
-    }
-
-    if (veleroResult.status === "fulfilled") {
-      setVelero(veleroResult.value);
-    } else {
-      setVelero(null);
-      setVeleroError(
-        veleroResult.reason instanceof Error
-          ? veleroResult.reason.message
-          : "Failed to load Velero status",
       );
     }
 
@@ -513,50 +497,13 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
-        <h3 style={sectionTitle}>Velero backup / restore</h3>
-        {veleroError ? <ErrorBanner message={veleroError} /> : null}
-        {velero ? (
-          <>
-            <CapabilityBanner context={velero.vmrogue_context} />
-            <p style={note}>
-              Velero {velero.velero_available ? "detected" : "not installed"} · {velero.backups.length} backup(s) ·{" "}
-              {velero.restores.length} restore(s)
-            </p>
-            {(velero.backups.length > 0 || velero.restores.length > 0) && (
-              <div style={tableWrap}>
-                <table style={table}>
-                  <thead>
-                    <tr>
-                      <th style={th}>Name</th>
-                      <th style={th}>Phase</th>
-                      <th style={th}>Details</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {velero.backups.slice(0, 10).map((b) => (
-                      <tr key={`b-${b.name}`} style={tr}>
-                        <td style={td}>backup/{b.name}</td>
-                        <td style={td}>{b.phase}</td>
-                        <td style={tdMono}>{b.storage_location || `${b.items_backed_up} items`}</td>
-                      </tr>
-                    ))}
-                    {velero.restores.slice(0, 10).map((r) => (
-                      <tr key={`r-${r.name}`} style={tr}>
-                        <td style={td}>restore/{r.name}</td>
-                        <td style={td}>{r.phase}</td>
-                        <td style={tdMono}>from {r.backup_name || "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </>
-        ) : (
-          <p style={muted}>{loading ? "Loading…" : "No Velero data"}</p>
-        )}
-      </section>
+      <p style={note}>
+        Velero cluster backups and KubeVirt snapshot schedules: open the{" "}
+        <button type="button" style={linkBtn} onClick={() => requestVmrogueNav({ view: "backups" })}>
+          Backups
+        </button>{" "}
+        sidebar.
+      </p>
 
       <p style={footerNote}>
         Advanced VMRogue CRD YAML editors remain in the{" "}
@@ -623,5 +570,8 @@ const td: CSSProperties = { padding: "12px 14px", color: "#374151", verticalAlig
 const tdMono: CSSProperties = { ...td, fontFamily: "ui-monospace, monospace", fontSize: 12 };
 const footerNote: CSSProperties = { marginTop: 8, fontSize: 12, color: "#9ca3af" };
 const link: CSSProperties = { color: "#f0583a", fontWeight: 600 };
+const linkBtn: CSSProperties = {
+  border: "none", background: "none", color: "#c2410c", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 12,
+};
 
 export default PlatformPanel;
