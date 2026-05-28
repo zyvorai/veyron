@@ -30,6 +30,7 @@ const Dashboard = lazy(() =>
 const VMBrowser = lazy(() => import('./sdk/components/VMBrowser'));
 const NodesPanel = lazy(() => import('./sdk/components/NodesPanel'));
 const StoragePanel = lazy(() => import('./sdk/components/StoragePanel'));
+const BackupsPanel = lazy(() => import('./sdk/components/BackupsPanel'));
 const PlatformPanel = lazy(() => import('./sdk/components/PlatformPanel'));
 const WorkloadsPanel = lazy(() => import('./sdk/components/WorkloadsPanel'));
 const InsightsPanel = lazy(() => import('./sdk/components/InsightsPanel'));
@@ -223,6 +224,7 @@ export default function App() {
       <div style={{ flex: 1, overflow: 'auto' }}>
         {view === 'inventory' ||
         view === 'storage' ||
+        view === 'backups' ||
         view === 'platform' ||
         view === 'workloads' ||
         view === 'insights' ||
@@ -316,6 +318,10 @@ export default function App() {
         ) : view === 'storage' ? (
           <Suspense fallback={<ViewFallback />}>
             <StoragePanel scopeNamespace={inventoryNs} />
+          </Suspense>
+        ) : view === 'backups' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <BackupsPanel scopeNamespace={inventoryNs} />
           </Suspense>
         ) : view === 'platform' ? (
           <Suspense fallback={<ViewFallback />}>

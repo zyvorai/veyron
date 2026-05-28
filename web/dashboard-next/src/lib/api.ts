@@ -934,6 +934,25 @@ export function fetchVeleroStatus(): Promise<VeleroStatusResponse> {
   return apiJson('/velero/status');
 }
 
+export type VmBackupRecord = {
+  id: string;
+  name: string;
+  vm_name: string;
+  namespace: string;
+  backup_type: string;
+  status: string;
+  size_bytes?: number | null;
+  compressed: boolean;
+  encrypted: boolean;
+  created_at: string;
+  completed_at?: string | null;
+};
+
+export function fetchVmrogueBackups(namespace = 'all'): Promise<VmBackupRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<VmBackupRecord[]>(`/backups${q}`);
+}
+
 export type TraceRow = {
   trace_id: string;
   service: string;
