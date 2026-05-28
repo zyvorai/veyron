@@ -262,16 +262,24 @@ export type GitOpsSyncRequest = {
   force?: boolean;
   dry_run?: boolean;
   argo_app?: string;
+  flux_kustomization?: string;
 };
 
 export type GitOpsSyncResult = {
+  status?: string;
   message?: string;
   sync_status?: string;
+  argo_sync_triggered?: boolean;
+  flux_reconcile_triggered?: boolean;
   vmrogue_context?: VmrogueFeatureContext;
 };
 
-export async function triggerGitOpsSync(body: GitOpsSyncRequest = {}): Promise<GitOpsSyncResult> {
-  return apiJson<GitOpsSyncResult>('/gitops/sync', {
+export async function triggerGitOpsSync(
+  body: GitOpsSyncRequest = {},
+  namespace = 'all',
+): Promise<GitOpsSyncResult> {
+  const q = nsQuery(namespace, true);
+  return apiJson<GitOpsSyncResult>(`/gitops/sync${q}`, {
     method: 'POST',
     body: JSON.stringify({ force: false, dry_run: false, ...body }),
   });

@@ -83,7 +83,13 @@ const DEFINITIONS: &[IntegrationDef] = &[
         id: "argocd",
         name: "Argo CD",
         env_var: "VMROGUE_ARGOCD_URL",
-        feeds: "GitOps sync (with VMROGUE_ARGOCD_TOKEN)",
+        feeds: "GitOps sync (POST /gitops/sync)",
+    },
+    IntegrationDef {
+        id: "argocd_token",
+        name: "Argo CD token",
+        env_var: "VMROGUE_ARGOCD_TOKEN",
+        feeds: "Bearer auth for Argo CD API",
     },
 ];
 
@@ -127,10 +133,18 @@ async fn probe_url(url: &str) -> bool {
         return false;
     };
     match client.get(url).send().await {
-        Ok(resp) => {
-            let code = resp.status().as_u16();
-            code < 500
-        }
+        Ok(resp) => resp.status().as_u16() < 500,
+        Err(_) => false,
+    }
+}
+
+#[cfg(feature = "web")]
+async fn probe_url_bearer(url: &str, token: &str) -> bool {
+    let Ok(client) = crate::api::integrations::http_client().await else {
+        return false;
+    };
+    match client.get(url).bearer_auth(token).send().await {
+        Ok(resp) => resp.status().as_u16() < 500,
         Err(_) => false,
     }
 }
@@ -149,14 +163,33 @@ async fn get_integrations_status(
         if configured {
             configured_count += 1;
         }
-        let endpoint = raw.as_deref().and_then(redact_endpoint);
-        let probe = if !configured {
+        let endpoint = if def.id == "argocd_token" {
+            None
+        } else {
+            raw.as_deref().and_then(redact_endpoint)
+        };
+        let probe = if def.id == "argocd_token" {
+            if configured {
+                "ok".to_string()
+            } else {
+                "not_configured".to_string()
+            }
+        } else if !configured {
             "not_configured".to_string()
         } else {
             "skipped".to_string()
         };
-        if let Some(url) = raw {
-            probe_futures.push((def.id, url));
+        if let Some(url) = raw.filter(|_| def.id != "argocd_token") {
+            if def.id == "argocd" {
+                if let Some(token) = crate::api::integrations::env_var("VMROGUE_ARGOCD_TOKEN") {
+                    let apps_url = format!("{}/api/v1/applications", url.trim_end_matches('/'));
+                    probe_futures.push((def.id, apps_url, Some(token)));
+                } else {
+                    probe_futures.push((def.id, url, None));
+                }
+            } else {
+                probe_futures.push((def.id, url, None));
+            }
         }
         integrations.push(IntegrationStatusItem {
             id: def.id.to_string(),
@@ -190,8 +223,12 @@ async fn get_integrations_status(
     });
 
     let probe_results: Vec<(String, bool)> = futures_util::future::join_all(probe_futures.into_iter().map(
-        |(id, url)| async move {
-            let ok = probe_url(&url).await;
+        |(id, url, token)| async move {
+            let ok = if let Some(t) = token {
+                probe_url_bearer(&url, &t).await
+            } else {
+                probe_url(&url).await
+            };
             (id.to_string(), ok)
         },
     ))

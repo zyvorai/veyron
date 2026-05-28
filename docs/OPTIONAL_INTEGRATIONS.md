@@ -6,7 +6,7 @@ VMRogue API handlers work without external services using Kubernetes data and he
 
 ## Quick apply
 
-**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when `monitoring` or `loki` namespaces exist. Set `VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip.
+**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability or Argo CD namespaces exist. It can set `VMROGUE_ARGOCD_URL`, obtain a session token from `argocd-initial-admin-secret` (ClusterIP login), and `VMROGUE_ARGOCD_DEFAULT_APP` from the first Application CR. Set `VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VMROGUE_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for URL-only.
 
 **Manual:**
 
