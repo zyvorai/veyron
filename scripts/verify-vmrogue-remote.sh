@@ -185,10 +185,10 @@ check_json_ok "GET /api/v1/snapshots?ns=all" \
     "${BASE}/api/v1/snapshots?namespace=all" yes
 check_json_ok "GET /api/v1/snapshot-schedules" \
     "${BASE}/api/v1/snapshot-schedules?namespace=all" yes
-check_json_ok "GET /api/v1/backups" \
-    "${BASE}/api/v1/backups?namespace=all" yes
-check_json_ok "GET /api/v1/velero/status" \
-    "${BASE}/api/v1/velero/status" yes
+check_json_grep "GET /api/v1/backups" \
+    "${BASE}/api/v1/backups?namespace=all" '^\['
+check_json_grep "GET /api/v1/velero/status" \
+    "${BASE}/api/v1/velero/status" 'velero_available'
 dr_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
     -H "X-API-Key: ${KEY}" \
     "${BASE}/api/v1/dr/export?namespace=default&vm_name=nonexistent-vm" || echo "000")
