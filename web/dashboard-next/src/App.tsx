@@ -14,6 +14,7 @@ import {
 import { completeOidcCallback, fetchOidcConfig } from './lib/oidc';
 import {
   scrollDashboardSection,
+  scrollViewSection,
   VMROGUE_NAV_EVENT,
   type VmrogueNavDetail,
   type VmrogueView,
@@ -154,8 +155,16 @@ export default function App() {
 
   const navigate = useCallback((next: VmrogueView, scrollTo?: string) => {
     setView(next);
-    if (next === 'dashboard' && scrollTo) {
-      window.requestAnimationFrame(() => scrollDashboardSection(scrollTo));
+    if (scrollTo) {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          if (next === 'dashboard') {
+            scrollDashboardSection(scrollTo);
+          } else {
+            scrollViewSection(scrollTo);
+          }
+        });
+      });
     }
   }, []);
 

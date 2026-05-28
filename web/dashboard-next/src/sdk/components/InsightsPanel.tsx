@@ -226,7 +226,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         </button>
       </div>
 
-      <section style={section}>
+      <section id="insights-monitoring" style={section}>
         <h3 style={sectionTitle}>Monitoring</h3>
         {sectionErrors.monitoring ? (
           <p style={sectionError}>{sectionErrors.monitoring}</p>
@@ -247,7 +247,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-security" style={section}>
         <h3 style={sectionTitle}>Security posture</h3>
         {sectionErrors.security ? (
           <p style={sectionError}>{sectionErrors.security}</p>
@@ -291,7 +291,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-costs" style={section}>
         <h3 style={sectionTitle}>Cost estimate</h3>
         {sectionErrors.costs ? (
           <p style={sectionError}>{sectionErrors.costs}</p>
@@ -309,7 +309,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-budgets" style={section}>
         <h3 style={sectionTitle}>Cost budgets</h3>
         {sectionErrors.budgets ? <ErrorBanner message={sectionErrors.budgets} /> : null}
         <div style={budgetFormRow}>
@@ -380,7 +380,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-incidents" style={section}>
         <h3 style={sectionTitle}>Incidents</h3>
         {sectionErrors.incidents ? (
           <p style={sectionError}>{sectionErrors.incidents}</p>
@@ -425,7 +425,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-logs" style={section}>
         <h3 style={sectionTitle}>Recent logs</h3>
         {sectionErrors.logs ? (
           <p style={sectionError}>{sectionErrors.logs}</p>
@@ -467,7 +467,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-traces" style={section}>
         <h3 style={sectionTitle}>Distributed traces</h3>
         {sectionErrors.traces ? <p style={sectionError}>{sectionErrors.traces}</p> : null}
         {traces ? (
@@ -512,7 +512,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-timeline" style={section}>
         <h3 style={sectionTitle}>VM metrics timeline (Prometheus)</h3>
         {sectionErrors.timeline ? <p style={sectionError}>{sectionErrors.timeline}</p> : null}
         {timeline ? (
@@ -541,7 +541,7 @@ export function InsightsPanel({ scopeNamespace = "all" }: Props) {
         )}
       </section>
 
-      <section style={section}>
+      <section id="insights-events" style={section}>
         <h3 style={sectionTitle}>Recent events</h3>
         {sectionErrors.events ? (
           <p style={sectionError}>{sectionErrors.events}</p>

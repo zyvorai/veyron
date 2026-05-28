@@ -34,3 +34,8 @@ export function scrollDashboardSection(id: string): void {
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
+
+/** Scroll a section inside the active dashboard-next view (e.g. Insights panels). */
+export function scrollViewSection(id: string): void {
+  scrollDashboardSection(id);
+}
