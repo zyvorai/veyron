@@ -169,8 +169,14 @@ pub fn router(state: SharedState) -> Router {
             get(get_action).delete(delete_action),
         )
         .route("/crds/actions/{ns}/{name}/approve", post(approve_action))
-        .route("/crds/templates", get(list_catalog_templates))
-        .route("/crds/profiles", get(list_catalog_profiles))
+        .route(
+            "/crds/templates",
+            get(list_catalog_templates).post(create_catalog_template),
+        )
+        .route(
+            "/crds/profiles",
+            get(list_catalog_profiles).post(create_catalog_profile),
+        )
         .with_state(state)
 }
 
@@ -248,28 +254,43 @@ async fn get_vmrogue_vm(
     }
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateVMRogueVMRequest {
+    pub namespace: Option<String>,
+    pub name: Option<String>,
+    #[serde(flatten)]
+    pub spec: VMRogueVMSpec,
+}
+
 #[cfg(feature = "web")]
 async fn create_vmrogue_vm(
     State(state): State<SharedState>,
-    Json(spec): Json<VMRogueVMSpec>,
+    Json(body): Json<CreateVMRogueVMRequest>,
 ) -> Result<Json<VMRogueVMSummary>, StatusCode> {
     let s = state.read().await;
-    let ns = &s.namespace;
-    let api: Api<VMRogueVM> = Api::namespaced(s.client().client().clone(), ns);
+    let ns = body
+        .namespace
+        .filter(|n| !n.is_empty())
+        .unwrap_or_else(|| s.namespace.clone());
+    let api: Api<VMRogueVM> = Api::namespaced(s.client().client().clone(), &ns);
 
-    let name = format!(
-        "vrvm-{}",
-        spec.template
-            .clone()
-            .unwrap_or_else(|| "vm".to_string())
-            .replace('.', "-")
-    );
+    let name = body.name.filter(|n| !n.is_empty()).unwrap_or_else(|| {
+        format!(
+            "vrvm-{}-{}",
+            body.spec
+                .template
+                .clone()
+                .unwrap_or_else(|| "vm".to_string())
+                .replace('.', "-"),
+            random_suffix()
+        )
+    });
 
-    let vm = VMRogueVM::new(&name, spec);
+    let vm = VMRogueVM::new(&name, body.spec);
     match api.create(&PostParams::default(), &vm).await {
         Ok(created) => Ok(Json(VMRogueVMSummary {
             name: created.metadata.name.clone().unwrap_or_default(),
-            namespace: ns.clone(),
+            namespace: ns,
             template: created.spec.template.clone(),
             cpu_cores: created.spec.cpu.cores,
             memory: created.spec.memory.size.clone(),
@@ -823,6 +844,209 @@ async fn list_catalog_profiles(
             })
         }
         Err(e) => crd_list_err(e),
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateCatalogTemplateBody {
+    pub name: String,
+    /// Built-in Rust template to copy as VMTemplate `spec.default`.
+    pub from_embedded: String,
+    pub description: Option<String>,
+    pub family: Option<String>,
+    pub tags: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateCatalogProfileBody {
+    pub name: String,
+    pub cores: u32,
+    pub memory: String,
+    pub disk_size: String,
+    pub description: Option<String>,
+    /// Optional built-in profile name to copy sizing from.
+    pub from_embedded: Option<String>,
+}
+
+#[cfg(feature = "web")]
+async fn create_catalog_template(
+    State(state): State<SharedState>,
+    Json(body): Json<CreateCatalogTemplateBody>,
+) -> Result<Json<CatalogTemplateSummary>, (StatusCode, String)> {
+    use std::collections::BTreeMap;
+
+    let name = body.name.trim();
+    if name.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "name required".to_string()));
+    }
+    let embedded = body.from_embedded.trim();
+    if embedded.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "from_embedded required (built-in template name)".to_string(),
+        ));
+    }
+    let config = crate::templates::TEMPLATES
+        .get(embedded)
+        .ok_or_else(|| {
+            (
+                StatusCode::BAD_REQUEST,
+                format!("unknown embedded template: {embedded}"),
+            )
+        })?;
+    let default_spec = VMRogueVMSpec::from(&config);
+    let family = body
+        .family
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| crate::catalog::template_family(embedded));
+    let recommended = crate::profiles::ProfileManager::suggest_profile_for_template(embedded)
+        .map(|p| vec![p])
+        .unwrap_or_default();
+
+    let doc = VMTemplate {
+        metadata: kube::api::ObjectMeta {
+            name: Some(name.to_string()),
+            labels: Some(BTreeMap::from([(
+                "vmrogue.io/managed-by".to_string(),
+                "vmrogue-api".to_string(),
+            )])),
+            ..Default::default()
+        },
+        spec: VMTemplateSpec {
+            description: body
+                .description
+                .clone()
+                .filter(|s| !s.is_empty())
+                .or_else(|| Some(format!("VMRogue catalog template: {name}"))),
+            tags: body.tags.clone().unwrap_or_else(|| vec![family.clone()]),
+            family: Some(family),
+            recommended_profiles: recommended,
+            min_kubevirt_version: None,
+            default: default_spec,
+        },
+        status: None,
+    };
+
+    let s = state.read().await;
+    let api: Api<VMTemplate> = Api::all(s.client().client());
+    match api.create(&PostParams::default(), &doc).await {
+        Ok(created) => Ok(Json(CatalogTemplateSummary {
+            name: created.metadata.name.clone().unwrap_or_default(),
+            family: created.spec.family.clone(),
+            description: created.spec.description.clone(),
+            tags: created.spec.tags.clone(),
+        })),
+        Err(kube::Error::Api(e)) if e.code == 409 => Err((
+            StatusCode::CONFLICT,
+            format!("VMTemplate '{name}' already exists"),
+        )),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("create VMTemplate: {e}"),
+        )),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn create_catalog_profile(
+    State(state): State<SharedState>,
+    Json(body): Json<CreateCatalogProfileBody>,
+) -> Result<Json<CatalogProfileSummary>, (StatusCode, String)> {
+    use std::collections::BTreeMap;
+
+    let name = body.name.trim();
+    if name.is_empty() {
+        return Err((StatusCode::BAD_REQUEST, "name required".to_string()));
+    }
+
+    let (cores, memory, disk_size, description, sockets, threads, use_cases) =
+        if let Some(ref embedded) = body.from_embedded {
+            let profiles = crate::profiles::PROFILES.read().map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("lock profiles: {e}"),
+                )
+            })?;
+            let p = profiles.get(embedded).ok_or_else(|| {
+                (
+                    StatusCode::BAD_REQUEST,
+                    format!("unknown embedded profile: {embedded}"),
+                )
+            })?;
+            (
+                p.cpu_cores,
+                p.memory.clone(),
+                p.disk_size.clone(),
+                Some(p.description.clone()),
+                p.cpu_sockets,
+                p.cpu_threads,
+                p.use_cases.clone(),
+            )
+        } else {
+            (
+                body.cores,
+                body.memory.clone(),
+                body.disk_size.clone(),
+                body.description.clone(),
+                1,
+                1,
+                vec![],
+            )
+        };
+
+    if cores == 0 {
+        return Err((StatusCode::BAD_REQUEST, "cores must be >= 1".to_string()));
+    }
+    if memory.trim().is_empty() || disk_size.trim().is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            "memory and disk_size required".to_string(),
+        ));
+    }
+
+    let doc = VMProfile {
+        metadata: kube::api::ObjectMeta {
+            name: Some(name.to_string()),
+            labels: Some(BTreeMap::from([(
+                "vmrogue.io/managed-by".to_string(),
+                "vmrogue-api".to_string(),
+            )])),
+            ..Default::default()
+        },
+        spec: VMProfileSpec {
+            description: description
+                .filter(|s| !s.is_empty())
+                .or_else(|| body.description.clone().filter(|s| !s.is_empty())),
+            cores,
+            sockets,
+            threads,
+            memory,
+            disk_size,
+            use_cases,
+            recommended_templates: vec![],
+        },
+        status: None,
+    };
+
+    let s = state.read().await;
+    let api: Api<VMProfile> = Api::all(s.client().client());
+    match api.create(&PostParams::default(), &doc).await {
+        Ok(created) => Ok(Json(CatalogProfileSummary {
+            name: created.metadata.name.clone().unwrap_or_default(),
+            cores: created.spec.cores,
+            memory: created.spec.memory.clone(),
+            disk_size: created.spec.disk_size.clone(),
+            description: created.spec.description.clone(),
+        })),
+        Err(kube::Error::Api(e)) if e.code == 409 => Err((
+            StatusCode::CONFLICT,
+            format!("VMProfile '{name}' already exists"),
+        )),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("create VMProfile: {e}"),
+        )),
     }
 }
 

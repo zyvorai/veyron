@@ -739,6 +739,70 @@ export function fetchCatalogProfiles(): Promise<CrdListResponse<CatalogProfileRe
   return apiJson<CrdListResponse<CatalogProfileRecord>>('/crds/profiles');
 }
 
+export type CreateCatalogTemplateRequest = {
+  name: string;
+  from_embedded: string;
+  description?: string;
+  family?: string;
+  tags?: string[];
+};
+
+export function createCatalogTemplate(
+  body: CreateCatalogTemplateRequest,
+): Promise<CatalogTemplateRecord> {
+  return apiJson<CatalogTemplateRecord>('/crds/templates', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export type CreateCatalogProfileRequest = {
+  name: string;
+  cores: number;
+  memory: string;
+  disk_size: string;
+  description?: string;
+  from_embedded?: string;
+};
+
+export function createCatalogProfile(
+  body: CreateCatalogProfileRequest,
+): Promise<CatalogProfileRecord> {
+  return apiJson<CatalogProfileRecord>('/crds/profiles', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export type VmrogueVmSummary = {
+  name: string;
+  namespace: string;
+  template?: string | null;
+  cpu_cores: number;
+  memory: string;
+  phase?: string | null;
+  kubevirt_vm?: string | null;
+  created_at: string;
+};
+
+export type CreateVmrogueVmRequest = {
+  namespace?: string;
+  name?: string;
+  template?: string;
+  profile?: string;
+  cpu?: { cores: number; sockets?: number; threads?: number };
+  memory?: { size: string };
+  running?: boolean;
+  allowInternet?: boolean;
+};
+
+export function createVmrogueVm(body: CreateVmrogueVmRequest): Promise<VmrogueVmSummary> {
+  return apiJson<VmrogueVmSummary>('/crds/vmroguevms', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 export type VmProfile = {
   name: string;
   description: string;

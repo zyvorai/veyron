@@ -13,6 +13,7 @@ import {
   fetchCiliumStatus,
   fetchCustomDashboards,
   fetchResourceHeatmap,
+  fetchVmInventory,
   type AutoscalerPolicyRecord,
   type CiliumPolicyRecord,
   type CiliumStatusRecord,
@@ -20,6 +21,7 @@ import {
   type DrExportPayload,
   type NodeHeatmapEntry,
   type ResourceHeatmapResponse,
+  type VmRecord,
 } from "../../lib/api";
 import CapabilityBanner from "./CapabilityBanner";
 import ErrorBanner from "./ErrorBanner";
@@ -27,6 +29,8 @@ import ErrorBanner from "./ErrorBanner";
 type Props = { scopeNamespace?: string };
 
 type OpsTab = "dr" | "heatmap" | "dashboards" | "network" | "scaling";
+type DrStep = "select" | "exporting" | "review" | "acting";
+type DrView = "summary" | "json";
 
 export function OperationsPanel({ scopeNamespace = "all" }: Props) {
   const [tab, setTab] = useState<OpsTab>("dr");
@@ -53,10 +57,25 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
   const [drOutput, setDrOutput] = useState("");
   const [drBusy, setDrBusy] = useState(false);
   const [drExport, setDrExport] = useState<DrExportPayload | null>(null);
+  const [drStep, setDrStep] = useState<DrStep>("select");
+  const [drView, setDrView] = useState<DrView>("summary");
+  const [drProgress, setDrProgress] = useState<string | null>(null);
+  const [drVmList, setDrVmList] = useState<VmRecord[]>([]);
+  const [drVmLoading, setDrVmLoading] = useState(false);
 
   useEffect(() => {
     setDrNs(scopeNamespace === "all" ? "default" : scopeNamespace);
   }, [scopeNamespace]);
+
+  useEffect(() => {
+    if (tab !== "dr") return;
+    const ns = drNs.trim() || "default";
+    setDrVmLoading(true);
+    void fetchVmInventory(ns)
+      .then((rows) => setDrVmList(rows))
+      .catch(() => setDrVmList([]))
+      .finally(() => setDrVmLoading(false));
+  }, [tab, drNs]);
 
   const loadTab = useCallback(async () => {
     setLoading(true);
@@ -105,21 +124,47 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
     const vm = drVm.trim();
     if (!vm) {
       setDrOutput("VM name required");
+      setDrStep("select");
       return;
     }
     setDrBusy(true);
+    setDrStep("exporting");
+    setDrProgress("Fetching VirtualMachine manifest from Kubernetes…");
     setDrOutput("");
+    setDrExport(null);
     try {
+      setDrProgress("Listing KubeVirt snapshots for VM…");
       const data = await drExportManifests(ns, vm);
       setDrExport(data);
       setDrOutput(JSON.stringify(data, null, 2));
+      setDrStep("review");
+      setDrProgress(null);
     } catch (e) {
       setDrExport(null);
+      setDrStep("select");
+      setDrProgress(null);
       setDrOutput(e instanceof Error ? e.message : "Export failed");
     } finally {
       setDrBusy(false);
     }
   };
+
+  const copyExportJson = async () => {
+    if (!drOutput) return;
+    try {
+      await navigator.clipboard.writeText(drOutput);
+      setDrProgress("Copied export JSON to clipboard");
+      window.setTimeout(() => setDrProgress(null), 2500);
+    } catch {
+      setDrProgress("Could not copy to clipboard");
+    }
+  };
+
+  const drSnapshotCount = Array.isArray(drExport?.snapshots) ? drExport.snapshots.length : 0;
+  const drManifestKind =
+    drExport?.virtual_machine && typeof drExport.virtual_machine === "object"
+      ? String((drExport.virtual_machine as { kind?: string }).kind ?? "VirtualMachine")
+      : null;
 
   const downloadExport = () => {
     if (!drOutput) return;
@@ -141,6 +186,8 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
     }
     if (!dryRun && !window.confirm(`Run DR failover for ${ns}/${vm}?`)) return;
     setDrBusy(true);
+    setDrStep("acting");
+    setDrProgress(dryRun ? "Running failover dry-run…" : "Running DR failover…");
     try {
       const data = await drFailover({
         namespace: ns,
@@ -149,10 +196,13 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
         target_kubeconfig_context: drTarget.trim() || null,
       });
       setDrOutput(JSON.stringify(data, null, 2));
+      setDrStep("review");
     } catch (e) {
       setDrOutput(e instanceof Error ? e.message : "Failover failed");
+      setDrStep("review");
     } finally {
       setDrBusy(false);
+      setDrProgress(null);
     }
   };
 
@@ -161,10 +211,13 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
     const vm = drVm.trim();
     if (!vm) {
       setDrOutput("VM name required");
+      setDrStep("select");
       return;
     }
     if (!dryRun && !window.confirm(`Apply DR manifest for ${ns}/${vm} on this cluster?`)) return;
     setDrBusy(true);
+    setDrStep("acting");
+    setDrProgress(dryRun ? "Running apply dry-run…" : "Applying VirtualMachine on cluster…");
     try {
       const data = await drApply({
         namespace: ns,
@@ -175,10 +228,13 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
         virtual_machine: drExport?.virtual_machine,
       });
       setDrOutput(JSON.stringify(data, null, 2));
+      setDrStep("review");
     } catch (e) {
       setDrOutput(e instanceof Error ? e.message : "Apply failed");
+      setDrStep("review");
     } finally {
       setDrBusy(false);
+      setDrProgress(null);
     }
   };
 
@@ -217,20 +273,47 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
           <p style={note}>
             Export a KubeVirt VM manifest (+ snapshots metadata), then apply or failover on this or another cluster.
           </p>
+
+          <DrStepBar step={drStep} />
+
+          {drProgress ? (
+            <p style={progressNote} role="status">
+              {drBusy ? "⏳ " : ""}{drProgress}
+            </p>
+          ) : null}
+
           <div style={formRow}>
             <label style={label}>
               Namespace
-              <input style={input} value={drNs} onChange={(e) => setDrNs(e.target.value)} />
+              <input style={input} value={drNs} onChange={(e) => { setDrNs(e.target.value); setDrStep("select"); }} />
             </label>
             <label style={label}>
               VM name
-              <input style={input} value={drVm} onChange={(e) => setDrVm(e.target.value)} placeholder="my-vm" />
+              <input
+                style={input}
+                list="dr-vm-options"
+                value={drVm}
+                onChange={(e) => { setDrVm(e.target.value); setDrStep("select"); }}
+                placeholder="my-vm"
+              />
+              <datalist id="dr-vm-options">
+                {drVmList.map((v) => (
+                  <option key={`${v.namespace}/${v.name}`} value={v.name}>
+                    {v.status}
+                  </option>
+                ))}
+              </datalist>
             </label>
             <label style={label}>
               Target name / context (optional)
               <input style={input} value={drTarget} onChange={(e) => setDrTarget(e.target.value)} />
             </label>
           </div>
+          {drVmLoading ? <p style={hint}>Loading VMs in {drNs}…</p> : null}
+          {!drVmLoading && drVmList.length > 0 ? (
+            <p style={hint}>{drVmList.length} VM(s) in namespace — pick from the VM name suggestions.</p>
+          ) : null}
+
           <label style={{ ...label, display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <input
               type="checkbox"
@@ -241,15 +324,18 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
           </label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
             <button type="button" style={primaryBtn} disabled={drBusy} onClick={() => void runExport()}>
-              Export manifest
+              {drBusy && drStep === "exporting" ? "Exporting…" : "1. Export manifest"}
             </button>
             <button type="button" style={refreshBtn} disabled={drBusy || !drOutput} onClick={downloadExport}>
               Download JSON
             </button>
-            <button type="button" style={refreshBtn} disabled={drBusy} onClick={() => void runApply(true)}>
-              Apply (dry-run)
+            <button type="button" style={refreshBtn} disabled={!drOutput} onClick={() => void copyExportJson()}>
+              Copy JSON
             </button>
-            <button type="button" style={primaryBtn} disabled={drBusy} onClick={() => void runApply(false)}>
+            <button type="button" style={refreshBtn} disabled={drBusy || !drExport} onClick={() => void runApply(true)}>
+              2. Apply (dry-run)
+            </button>
+            <button type="button" style={primaryBtn} disabled={drBusy || !drExport} onClick={() => void runApply(false)}>
               Apply
             </button>
             <button type="button" style={refreshBtn} disabled={drBusy} onClick={() => void runFailover(true)}>
@@ -259,7 +345,32 @@ export function OperationsPanel({ scopeNamespace = "all" }: Props) {
               Failover
             </button>
           </div>
-          <pre style={pre}>{drOutput || "DR output will appear here…"}</pre>
+
+          {drExport && drView === "summary" ? (
+            <div style={summaryCard}>
+              <div style={summaryGrid}>
+                <div><span style={summaryLabel}>Namespace</span><div style={summaryValue}>{drExport.namespace}</div></div>
+                <div><span style={summaryLabel}>VM</span><div style={summaryValue}>{drExport.vm_name}</div></div>
+                <div><span style={summaryLabel}>Manifest</span><div style={summaryValue}>{drManifestKind ?? "VirtualMachine"}</div></div>
+                <div><span style={summaryLabel}>Snapshots</span><div style={summaryValue}>{drSnapshotCount}</div></div>
+              </div>
+              {drExport.note ? <p style={hint}>{drExport.note}</p> : null}
+            </div>
+          ) : null}
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <button type="button" style={drView === "summary" ? tabBtnActive : tabBtn} onClick={() => setDrView("summary")}>
+              Summary
+            </button>
+            <button type="button" style={drView === "json" ? tabBtnActive : tabBtn} onClick={() => setDrView("json")}>
+              Raw JSON
+            </button>
+          </div>
+          {drView === "json" ? (
+            <pre style={pre}>{drOutput || "Run export to fetch GET /api/v1/dr/export payload…"}</pre>
+          ) : !drExport ? (
+            <p style={muted}>Select a VM and export to review manifest metadata before apply or failover.</p>
+          ) : null}
         </section>
       ) : null}
 
@@ -516,6 +627,37 @@ function formatTime(iso: string): string {
   }
 }
 
+function DrStepBar({ step }: { step: DrStep }) {
+  const steps: { id: DrStep; label: string }[] = [
+    { id: "select", label: "Select VM" },
+    { id: "exporting", label: "Export" },
+    { id: "review", label: "Review" },
+    { id: "acting", label: "Apply / failover" },
+  ];
+  const activeIdx = steps.findIndex((s) => s.id === step);
+  return (
+    <div style={stepBar}>
+      {steps.map((s, i) => (
+        <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>
+          <div
+            style={{
+              ...stepDot,
+              background: i <= activeIdx ? "#f0583a" : "#e5e7eb",
+              color: i <= activeIdx ? "#fff" : "#6b7280",
+            }}
+          >
+            {i + 1}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: i === activeIdx ? 700 : 500, color: i <= activeIdx ? "#374151" : "#9ca3af" }}>
+            {s.label}
+          </span>
+          {i < steps.length - 1 ? <div style={stepLine} /> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const wrap: CSSProperties = { padding: "20px 24px 32px", maxWidth: 1400, margin: "0 auto" };
 const header: CSSProperties = { marginBottom: 16 };
 const title: CSSProperties = { margin: 0, fontSize: 22, color: "#222324" };
@@ -527,6 +669,24 @@ const tabBtn: CSSProperties = {
 const tabBtnActive: CSSProperties = { ...tabBtn, borderColor: "#f0583a", background: "rgba(240,88,58,0.08)", color: "#c2410c" };
 const section: CSSProperties = { marginBottom: 24 };
 const note: CSSProperties = { fontSize: 13, color: "#6b7280", lineHeight: 1.5, marginBottom: 16 };
+const hint: CSSProperties = { fontSize: 12, color: "#6b7280", margin: "0 0 12px" };
+const muted: CSSProperties = { fontSize: 13, color: "#9ca3af", margin: 0 };
+const progressNote: CSSProperties = {
+  fontSize: 13, color: "#1d4ed8", background: "#eff6ff", padding: "8px 12px", borderRadius: 6, marginBottom: 12,
+};
+const stepBar: CSSProperties = { display: "flex", gap: 4, marginBottom: 16, flexWrap: "wrap" };
+const stepDot: CSSProperties = {
+  width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700,
+};
+const stepLine: CSSProperties = { flex: 1, height: 2, background: "#e5e7eb", minWidth: 12 };
+const summaryCard: CSSProperties = {
+  background: "#fff", border: "1px solid #e5e7eb", borderRadius: 8, padding: 14, marginBottom: 12,
+};
+const summaryGrid: CSSProperties = {
+  display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12,
+};
+const summaryLabel: CSSProperties = { fontSize: 10, fontWeight: 700, textTransform: "uppercase", color: "#6b7280" };
+const summaryValue: CSSProperties = { marginTop: 4, fontSize: 14, fontWeight: 700, color: "#111827" };
 const formRow: CSSProperties = { display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 12 };
 const label: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, fontSize: 12, fontWeight: 600, color: "#374151" };
 const input: CSSProperties = {

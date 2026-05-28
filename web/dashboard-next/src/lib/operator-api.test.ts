@@ -32,6 +32,7 @@ export const OPERATOR_API_PREFIXES = [
   '/api/v1/network/nads',
   '/api/v1/images/catalog',
   '/api/v1/velero/status',
+  '/api/v1/dr',
   '/api/v1/metrics/timeline',
   '/api/v1/traces',
 ] as const;
@@ -68,6 +69,7 @@ describe('operator API path smoke list', () => {
       '/api/v1/network/nads',
       '/api/v1/images/catalog',
       '/api/v1/velero/status',
+      '/api/v1/dr/export',
       '/api/v1/metrics/timeline',
       '/api/v1/traces',
     ];
