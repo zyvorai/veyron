@@ -3319,31 +3319,33 @@ pub mod web {
                 .unwrap_or_else(|| s.namespace.clone())
         };
 
-        match crate::snapshots::SnapshotManager::new(&namespace).await {
-            Ok(manager) => match manager.list_all_snapshots().await {
-                Ok(snapshots) => {
-                    let ns_for_items = namespace.clone();
-                    let items: Vec<SnapshotItem> = snapshots
-                        .into_iter()
-                        .map(|s| {
-                            let age = s.age();
-                            let status = s.status.to_string();
-                            SnapshotItem {
-                                name: s.name,
-                                vm_name: s.vm_name,
-                                namespace: ns_for_items.clone(),
-                                status,
-                                ready: s.ready_to_use,
-                                age,
-                            }
-                        })
-                        .collect();
-                    let ctx = req_ctx(HttpMethod::GET, "/api/v1/snapshots");
-                    ok_json(&ApiResponse::success(&items, &ctx.request_id))
-                }
-                Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
-            },
-            Err(e) => err_json(503, "SERVICE_UNAVAILABLE", &sanitize_error(&e)),
+        let client = {
+            let s = state.read().await;
+            s.kube_client.client()
+        };
+
+        match crate::snapshots::SnapshotManager::list_snapshots_in_scope(client, &namespace).await
+        {
+            Ok(snapshots) => {
+                let items: Vec<SnapshotItem> = snapshots
+                    .into_iter()
+                    .map(|s| {
+                        let age = s.age();
+                        let status = s.status.to_string();
+                        SnapshotItem {
+                            name: s.name,
+                            vm_name: s.vm_name,
+                            namespace: s.namespace,
+                            status,
+                            ready: s.ready_to_use,
+                            age,
+                        }
+                    })
+                    .collect();
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/snapshots");
+                ok_json(&ApiResponse::success(&items, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
         }
     }
 
