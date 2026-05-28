@@ -216,6 +216,14 @@ else
 fi
 check_json_grep "GET /api/v1/experience/migration/sources" \
     "${BASE}/api/v1/experience/migration/sources" '"sources"'
+check_json_grep "GET /api/v1/experience/fleet/health" \
+    "${BASE}/api/v1/experience/fleet/health?namespace=all" '"items"'
+check_json_grep "GET /api/v1/experience/templates" \
+    "${BASE}/api/v1/experience/templates" '"templates"'
+check_json_grep "GET /api/v1/experience/session" \
+    "${BASE}/api/v1/experience/session" '"role"'
+check_json_grep "GET /api/v1/experience/locations" \
+    "${BASE}/api/v1/experience/locations" '"locations"'
 check_json_grep "GET /api/v1/gitops/status" \
     "${BASE}/api/v1/gitops/status?namespace=all" '"sync_status"'
 check_json_ok "GET /api/v1/snapshots?ns=all" \

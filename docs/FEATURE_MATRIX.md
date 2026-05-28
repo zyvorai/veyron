@@ -99,7 +99,7 @@ These route groups now have first-class dashboard pages:
 | Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
 | Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
 | VM drift | `/api/v1/vms` (list fields), `/api/v1/vms/:ns/:name/drift` | Surfaced (VM list badges, filter, detail panel) |
-| CloudOS experience | `/api/v1/experience/home`, `/search`, `/errors/translate`, `/migration/*` | Datacenter Home, Spotlight (⌘K), Fix-it modal, Migration page |
+| CloudOS experience | `/api/v1/experience/*` | Datacenter Home, Spotlight, Fix-it, Migration, App Store, fleet health, locations, session |
 
 ## Known Partial Areas
 
@@ -134,6 +134,11 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | CloudOS Spotlight | Working | `⌘K` / `Ctrl+K` → `/experience/search` |
 | CloudOS Fix-it errors | Working | VM actions → `/experience/errors/translate` modal |
 | Migration Assistant | Working | `page-migration` — scan/plan/execute via experience API |
+| Template App Store | Working | `page-app-store` — `/experience/templates` grid + Forge VM |
+| CloudOS Finder sidebar | Working | Left nav: Home, VMs, Store, Migration, Backups, Monitor |
+| VM guest health scores | Working | `/experience/fleet/health` pills on list + cards |
+| CloudOS session / RBAC UI | Working | `/experience/session` hides mutating controls for readonly |
+| CloudOS Locations | Working | Multi-cluster bar relabeled; `/experience/locations` |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
 | OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VMROGUE_OIDC_*` set |

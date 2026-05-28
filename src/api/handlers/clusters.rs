@@ -91,7 +91,7 @@ fn kubeconfig_file_current_context() -> String {
 }
 
 #[cfg(feature = "web")]
-fn effective_current_context(active: Option<&str>) -> String {
+pub fn effective_current_context(active: Option<&str>) -> String {
     active
         .map(|s| s.to_string())
         .filter(|s| !s.is_empty())

@@ -8,7 +8,7 @@
 use axum::{
     Json, Router,
     extract::{Query, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -95,7 +95,7 @@ pub struct TranslateErrorResponse {
     pub raw_message: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MigrationInventoryItem {
     pub name: String,
     #[serde(default)]
@@ -211,6 +211,11 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/migration/scan", post(migration_scan))
         .route("/experience/migration/plan", post(migration_plan))
         .route("/experience/migration/execute", post(migration_execute))
+        .route("/experience/migration/discover", post(migration_discover))
+        .route("/experience/session", get(experience_session))
+        .route("/experience/fleet/health", get(fleet_health))
+        .route("/experience/templates", get(template_store))
+        .route("/experience/locations", get(experience_locations))
         .with_state(state)
 }
 
@@ -223,6 +228,338 @@ fn experience_context() -> super::feature_context::VmrogueFeatureContext {
         limitations: "Health scores and migration readiness are heuristic until guest metrics and vCenter APIs are wired."
             .to_string(),
     }
+}
+
+#[cfg(feature = "web")]
+async fn resolve_client_role(
+    state: &crate::api::http_server::web::WebState,
+    headers: &HeaderMap,
+) -> crate::api::http_server::web::ApiRole {
+    use crate::api::http_server::web::ApiRole;
+
+    let key = headers
+        .get("x-api-key")
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_string)
+        .or_else(|| {
+            headers
+                .get("authorization")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.strip_prefix("Bearer "))
+                .map(str::to_string)
+        });
+
+    let Some(key) = key else {
+        return ApiRole::Admin;
+    };
+
+    if let Some(role) = state.authenticate(&key) {
+        return role.clone();
+    }
+    if let Some(role) = state.authenticate_jwt(&key) {
+        return role;
+    }
+    if crate::api::oidc::oidc_configured() {
+        if let Some(rstr) = crate::api::oidc::oidc_role_from_bearer(&key).await {
+            return match rstr.as_str() {
+                "admin" => ApiRole::Admin,
+                "write" => ApiRole::Write,
+                _ => ApiRole::ReadOnly,
+            };
+        }
+    }
+    ApiRole::Admin
+}
+
+fn role_label(role: &crate::api::http_server::web::ApiRole) -> &'static str {
+    use crate::api::http_server::web::ApiRole;
+    match role {
+        ApiRole::Admin => "admin",
+        ApiRole::Write => "write",
+        ApiRole::ReadOnly => "readonly",
+    }
+}
+
+pub fn vm_health_score(status: &str, drift_detected: bool) -> (u8, String) {
+    let base: u8 = match status {
+        "Running" => 92,
+        "Stopped" => 68,
+        "Failed" | "Error" => 35,
+        _ => 55,
+    };
+    let score = if drift_detected {
+        base.saturating_sub(18)
+    } else {
+        base
+    };
+    let label = if score >= 85 {
+        "Healthy"
+    } else if score >= 65 {
+        "Fair"
+    } else if score >= 45 {
+        "Needs attention"
+    } else {
+        "Critical"
+    };
+    (score, label.to_string())
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ExperienceSessionResponse {
+    pub product: String,
+    pub role: String,
+    pub can_write: bool,
+    pub can_admin: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct VmFleetHealthItem {
+    pub namespace: String,
+    pub name: String,
+    pub status: String,
+    pub health_score: u8,
+    pub health_label: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct FleetHealthResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub items: Vec<VmFleetHealthItem>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TemplateStoreItem {
+    pub id: String,
+    pub title: String,
+    pub subtitle: String,
+    pub os_family: String,
+    pub cpu: u32,
+    pub memory: String,
+    pub disk: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct TemplateStoreResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub templates: Vec<TemplateStoreItem>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct LocationItem {
+    pub id: String,
+    pub name: String,
+    pub region: String,
+    pub health: String,
+    pub active: bool,
+    pub vm_count: u32,
+    pub node_count: u32,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct LocationsResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub current_location: String,
+    pub locations: Vec<LocationItem>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct MigrationDiscoverRequest {
+    pub source: String,
+    #[serde(default)]
+    pub vcenter_host: Option<String>,
+    #[serde(default)]
+    pub username: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MigrationDiscoverResponse {
+    pub status: String,
+    pub message: String,
+    pub suggested_items: Vec<MigrationInventoryItem>,
+}
+
+#[cfg(feature = "web")]
+async fn experience_session(
+    State(state): State<SharedState>,
+    headers: HeaderMap,
+) -> Json<ExperienceSessionResponse> {
+    let s = state.read().await;
+    let role = resolve_client_role(&s, &headers).await;
+    let can_admin = role == crate::api::http_server::web::ApiRole::Admin;
+    let can_write = can_admin || role == crate::api::http_server::web::ApiRole::Write;
+    Json(ExperienceSessionResponse {
+        product: "Zyvor CloudOS".to_string(),
+        role: role_label(&role).to_string(),
+        can_write,
+        can_admin,
+    })
+}
+
+#[cfg(feature = "web")]
+async fn fleet_health(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<FleetHealthResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let mut items = Vec::new();
+    if let Ok(vms) = client.list_vms(&scope).await {
+        for vm in vms {
+            let name = vm.metadata.name.clone().unwrap_or_default();
+            let ns = vm.metadata.namespace.clone().unwrap_or_else(|| "default".to_string());
+            let status = vm
+                .status
+                .as_ref()
+                .and_then(|s| s.printable_status.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+            let (health_score, health_label) = vm_health_score(&status, false);
+            items.push(VmFleetHealthItem {
+                namespace: ns,
+                name,
+                status,
+                health_score,
+                health_label,
+            });
+        }
+    }
+    Json(FleetHealthResponse {
+        vmrogue_context: experience_context(),
+        items,
+    })
+}
+
+#[cfg(feature = "web")]
+async fn template_store() -> Json<TemplateStoreResponse> {
+    use crate::templates::TEMPLATES;
+
+    let names = TEMPLATES.list();
+    let mut seen = std::collections::HashSet::new();
+    let mut templates = Vec::new();
+    for name in names {
+        if !seen.insert(name.clone()) {
+            continue;
+        }
+        let Some(cfg) = TEMPLATES.get(&name) else {
+            continue;
+        };
+        let os = if name.starts_with("windows") {
+            "windows"
+        } else if name.contains("ubuntu") {
+            "ubuntu"
+        } else if name.contains("debian") {
+            "debian"
+        } else if name.contains("fedora") {
+            "fedora"
+        } else {
+            "linux"
+        };
+        templates.push(TemplateStoreItem {
+            id: name.clone(),
+            title: name.clone(),
+            subtitle: format!(
+                "{} vCPU · {} · {}",
+                cfg.cpu.cores,
+                cfg.memory.size,
+                cfg.disks
+                    .first()
+                    .map(|d| d.size.as_str())
+                    .unwrap_or("—")
+            ),
+            os_family: os.to_string(),
+            cpu: cfg.cpu.cores,
+            memory: cfg.memory.size.clone(),
+            disk: cfg
+                .disks
+                .first()
+                .map(|d| d.size.clone())
+                .unwrap_or_default(),
+            tags: vec![os.to_string(), "kubevirt".to_string()],
+        });
+    }
+    templates.sort_by(|a, b| a.id.cmp(&b.id));
+    Json(TemplateStoreResponse {
+        vmrogue_context: experience_context(),
+        templates,
+    })
+}
+
+#[cfg(feature = "web")]
+async fn experience_locations(State(state): State<SharedState>) -> Json<LocationsResponse> {
+    let s = state.read().await;
+    let active = s.active_kube_context.as_deref();
+    let current = super::clusters::effective_current_context(active);
+    drop(s);
+
+    let mut manager = crate::multi_cluster::MultiClusterManager::new();
+    let _ = manager.discover_from_kubeconfig().await;
+    let locations: Vec<LocationItem> = manager
+        .clusters
+        .iter()
+        .map(|c| LocationItem {
+            id: c.context.clone(),
+            name: c.name.clone(),
+            region: c.region.clone(),
+            health: match c.health {
+                crate::multi_cluster::ClusterHealth::Healthy => "healthy".to_string(),
+                crate::multi_cluster::ClusterHealth::Degraded => "degraded".to_string(),
+                crate::multi_cluster::ClusterHealth::Unhealthy => "unhealthy".to_string(),
+                crate::multi_cluster::ClusterHealth::Unknown => "unknown".to_string(),
+            },
+            active: c.context == current,
+            vm_count: c.vm_count as u32,
+            node_count: c.node_count as u32,
+        })
+        .collect();
+
+    let current_location = if locations.iter().any(|l| l.active) {
+        locations
+            .iter()
+            .find(|l| l.active)
+            .map(|l| l.name.clone())
+            .unwrap_or_else(|| current.clone())
+    } else {
+        current.clone()
+    };
+
+    Json(LocationsResponse {
+        vmrogue_context: experience_context(),
+        current_location,
+        locations,
+    })
+}
+
+#[cfg(feature = "web")]
+async fn migration_discover(Json(body): Json<MigrationDiscoverRequest>) -> Json<MigrationDiscoverResponse> {
+    let host = body
+        .vcenter_host
+        .as_deref()
+        .unwrap_or("vcenter.example.com");
+    let msg = if body.source == "vmware" {
+        format!(
+            "vCenter API sync for {host} is not wired yet. Export VMs from vCenter (OVF/OVA or VMDK) \
+             or paste inventory JSON, then run Scan readiness."
+        )
+    } else {
+        "Use Scan readiness with exported inventory JSON for this source.".to_string()
+    };
+    Json(MigrationDiscoverResponse {
+        status: "manual".to_string(),
+        message: msg,
+        suggested_items: vec![MigrationInventoryItem {
+            name: "exported-workload".to_string(),
+            os: Some("Linux".to_string()),
+            firmware: Some("uefi".to_string()),
+            disk_format: Some("vmdk".to_string()),
+            disk_gb: Some(40),
+            network: None,
+            has_vmware_tools: Some(false),
+            virtio_ready: Some(false),
+        }],
+    })
 }
 
 // ── Fix-it translator (shared with tests) ───────────────────────────
@@ -533,7 +870,7 @@ async fn experience_home(
             title: "Template Store".to_string(),
             subtitle: "Sync & deploy".to_string(),
             icon: "catalog".to_string(),
-            action: "navigate:catalog".to_string(),
+            action: "navigate:app-store".to_string(),
         },
     ];
 
@@ -599,8 +936,9 @@ async fn experience_search(
     let pages = [
         ("dashboard", "Datacenter Home", "Fleet overview"),
         ("vms", "Virtual Machines", "KubeVirt fleet"),
+        ("app-store", "Template Store", "App Store for VM images"),
         ("migration", "Migration Assistant", "VMware / OVA import"),
-        ("catalog", "Template Store", "VMTemplate catalog"),
+        ("catalog", "Catalog (advanced)", "VMTemplate CRD sync"),
         ("backups", "Backups", "Snapshots & Velero"),
         ("monitoring", "Activity Monitor", "Health & metrics"),
         ("integrations", "Integrations", "Prometheus, Grafana, …"),
@@ -954,10 +1292,13 @@ async fn migration_execute(
 
 #[cfg(test)]
 mod tests {
-    use super::translate_error_message;
+    use super::{translate_error_message, vm_health_score};
 
     #[test]
     fn translate_pvc_pending() {
+        let (score, label) = vm_health_score("Running", false);
+        assert!(score >= 85);
+        assert_eq!(label, "Healthy");
         let t = translate_error_message(
             "0/5 nodes are available: pod has unbound immediate PersistentVolumeClaims",
             Some("start_vm"),

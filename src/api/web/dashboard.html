@@ -1688,12 +1688,53 @@ html[data-theme="zinc"] .monitor-cap{
   color:var(--text-muted);font-size:.74rem;cursor:pointer;white-space:nowrap;
 }
 .btn-spotlight:hover{border-color:rgba(56,189,248,.3);color:var(--spark)}
+.cloudos-body-row{display:flex;align-items:stretch;min-height:calc(100vh - 52px)}
+.cloudos-finder{
+  width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-secondary);
+  padding:14px 10px;display:flex;flex-direction:column;gap:6px;
+}
+.cloudos-finder-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:8px 10px 4px}
+.cloudos-finder-item{
+  display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;
+  background:transparent;color:var(--text-muted);font-size:.84rem;text-align:left;cursor:pointer;
+}
+.cloudos-finder-item:hover,.cloudos-finder-item.active{background:rgba(56,189,248,.1);color:var(--text)}
+.cloudos-finder-item .fi-icon{width:18px;text-align:center;opacity:.85}
+.cloudos-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.finder-toggle{display:none;margin-right:8px}
+.app-store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:12px}
+.app-store-card{
+  border-radius:14px;border:1px solid var(--border);background:var(--bg-elevated);padding:16px;
+  cursor:pointer;transition:border-color .15s,transform .15s;
+}
+.app-store-card:hover{border-color:rgba(56,189,248,.3);transform:translateY(-1px)}
+.app-store-icon{font-size:1.6rem;margin-bottom:8px}
+.app-store-title{font-weight:600;font-size:.95rem}
+.app-store-sub{font-size:.78rem;color:var(--text-dim);margin:6px 0 10px;line-height:1.45}
+.vm-health-pill{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;
+  font-size:.68rem;border:1px solid var(--border);margin-left:6px;
+}
+.vm-health-pill.good{color:var(--success);border-color:rgba(34,197,94,.25)}
+.vm-health-pill.fair{color:var(--warning);border-color:rgba(251,191,36,.3)}
+.vm-health-pill.bad{color:var(--error);border-color:rgba(239,68,68,.3)}
+@media(max-width:960px){
+  .finder-toggle{display:inline-flex}
+  .cloudos-finder{
+    position:fixed;left:0;top:52px;bottom:0;z-index:120;transform:translateX(-100%);
+    transition:transform .2s;box-shadow:8px 0 32px rgba(0,0,0,.35);
+  }
+  .cloudos-finder.open{transform:translateX(0)}
+  .cloudos-body-row{min-height:auto}
+  .navbar-left .nav-links{display:none}
+}
 </style>
 </head>
 <body>
 
 <nav class="navbar">
   <div class="navbar-left">
+    <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Toggle sidebar">☰</button>
     <span class="navbar-brand" onclick="navigate('dashboard')">VMRogue</span>
     <div class="nav-links">
       <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">◫</span><span class="nav-label">Dashboard</span></button>
@@ -1830,12 +1871,27 @@ html[data-theme="zinc"] .monitor-cap{
   </div>
 </nav>
 
+<div class="cloudos-body-row">
+<aside class="cloudos-finder" id="cloudos-finder" aria-label="CloudOS Finder">
+  <div class="cloudos-finder-title">Zyvor CloudOS</div>
+  <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Datacenter Home</button>
+  <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Virtual Machines</button>
+  <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">⬡</span>Template Store</button>
+  <button type="button" class="cloudos-finder-item" data-page="migration" onclick="finderNavigate('migration')"><span class="fi-icon">⇄</span>Migration</button>
+  <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon">⧉</span>Backups</button>
+  <button type="button" class="cloudos-finder-item" data-page="monitoring" onclick="finderNavigate('monitoring')"><span class="fi-icon">⬢</span>Activity Monitor</button>
+  <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon">⚙</span>Integrations</button>
+  <div class="cloudos-finder-title" style="margin-top:10px">Workspace</div>
+  <div id="finder-location-label" style="padding:4px 12px;font-size:.78rem;color:var(--text-dim)">All workspaces</div>
+</aside>
+<div class="cloudos-main">
+
 <div class="cluster-context-bar" id="cluster-context-bar">
-  <div class="cluster-context-meta" id="cluster-context-meta">Kube context: loading…</div>
+  <div class="cluster-context-meta" id="cluster-context-meta">Location: loading…</div>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <label for="cluster-activate-select" class="form-label" style="margin:0;font-size:.75rem">Activate</label>
+    <label for="cluster-activate-select" class="form-label" style="margin:0;font-size:.75rem">Switch location</label>
     <select class="form-select" id="cluster-activate-select" style="min-width:180px;font-size:.82rem"></select>
-    <button type="button" class="btn btn-sm btn-restart" id="cluster-activate-btn" onclick="activateClusterContext()">Switch context</button>
+    <button type="button" class="btn btn-sm btn-restart" id="cluster-activate-btn" onclick="activateClusterContext()">Switch</button>
   </div>
 </div>
 
@@ -2320,6 +2376,18 @@ html[data-theme="zinc"] .monitor-cap{
 </div>
 </div>
 
+<div class="page section-shell" id="page-app-store" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Template Store</h1><p>Install-ready golden images — pick a template and forge a VM</p></div>
+    <button type="button" class="btn-create" onclick="openCreateModal()">Forge VM</button>
+  </div>
+  <div id="app-store-cap-banner"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Available templates</span><button type="button" class="btn btn-sm" onclick="fetchAppStore()">Refresh</button></div>
+    <div class="app-store-grid" id="app-store-grid"></div>
+  </div>
+</div>
+</div>
+
 <div class="page section-shell" id="page-migration" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Migration Assistant</h1><p>VMware, OVA, and VMDK import via CDI — guided readiness and execution</p></div>
@@ -2331,7 +2399,15 @@ html[data-theme="zinc"] .monitor-cap{
     <div style="padding:16px">
       <label class="form-label">Migration source</label>
       <select class="form-select" id="migration-source" style="max-width:360px"></select>
+      <div class="grid-2" style="gap:12px;margin-top:12px;max-width:720px">
+        <div><label class="form-label">vCenter host (optional)</label><input class="form-input" id="migration-vcenter-host" placeholder="vcenter.example.com"></div>
+        <div><label class="form-label">Username (optional)</label><input class="form-input" id="migration-vcenter-user" placeholder="administrator@vsphere.local"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button type="button" class="btn btn-sm" onclick="discoverMigrationInventory()">Discover inventory</button>
+      </div>
       <p style="margin-top:10px;font-size:.85rem;color:var(--text-dim)" id="migration-pipeline"></p>
+      <p style="margin-top:6px;font-size:.82rem;color:var(--text-dim)" id="migration-discover-msg"></p>
     </div>
   </div>
   <div class="card migration-step">
@@ -3004,6 +3080,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
   <span>VMRogue</span>
 </div>
 </div>
+</div>
 
 <script>
 // State
@@ -3069,7 +3146,8 @@ const PAGE_META = {
   images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']},
   catalog: {kicker:'Platform', title:'VMTemplate and VMProfile catalog sync', tags:['CRDs','Embedded library','Deploy VMRogueVM']},
   integrations: {kicker:'Platform', title:'Optional backend wiring and probes', tags:['Prometheus','OpenCost','Argo CD']},
-  migration: {kicker:'Platform', title:'VMware / OVA / VMDK migration assistant', tags:['CDI import','Readiness scan','VMRogueVM']}
+  migration: {kicker:'Platform', title:'VMware / OVA / VMDK migration assistant', tags:['CDI import','Readiness scan','VMRogueVM']},
+  'app-store': {kicker:'Platform', title:'Template Store — App Store for VM images', tags:['Golden images','One-click forge','Catalog sync']}
 };
 
 function applyTheme(theme, writeStorage) {
@@ -3147,6 +3225,7 @@ function navigate(page) {
   });
   document.body.dataset.page = page;
   document.body.dataset.section = pageEl.dataset.section || page;
+  syncFinderActive(page);
   updatePageContext(page);
   loadPageData(page);
 }
@@ -3206,6 +3285,7 @@ function loadPageData(page) {
   if (page === 'network-policies') fetchNetworkPolicies();
   if (page === 'images') fetchImages();
   if (page === 'migration') fetchMigrationPage();
+  if (page === 'app-store') fetchAppStore();
 }
 
 // Toast notifications
@@ -3593,8 +3673,132 @@ let spotlightResults = [];
 let spotlightActiveIndex = 0;
 let spotlightDebounce = null;
 let lastMigrationScan = null;
+let fleetHealthMap = {};
+let cloudOsSession = { role: 'admin', can_write: true, can_admin: true };
 
 const VM_VIEW_KEY = 'vmrogue_vm_view';
+
+function toggleFinder() {
+  const el = document.getElementById('cloudos-finder');
+  if (el) el.classList.toggle('open');
+}
+
+function finderNavigate(page) {
+  navigate(page);
+  const el = document.getElementById('cloudos-finder');
+  if (el && window.innerWidth <= 960) el.classList.remove('open');
+}
+
+function syncFinderActive(page) {
+  document.querySelectorAll('.cloudos-finder-item').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.page === page);
+  });
+}
+
+async function fetchExperienceSession() {
+  try {
+    cloudOsSession = await apiJson('/api/v1/experience/session');
+    applyCloudOsSession();
+  } catch (e) {
+    console.error('Experience session error:', e);
+  }
+}
+
+function applyCloudOsSession() {
+  const ro = cloudOsSession && cloudOsSession.can_write === false;
+  document.querySelectorAll('.btn-create').forEach(el => { el.style.display = ro ? 'none' : ''; });
+  document.querySelectorAll('.btn-delete').forEach(el => { el.style.display = ro ? 'none' : ''; });
+  const label = document.getElementById('auth-session-label');
+  if (label && cloudOsSession && cloudOsSession.role) {
+    label.textContent = (label.textContent ? label.textContent + ' · ' : '') + cloudOsSession.role;
+  }
+}
+
+async function fetchFleetHealth() {
+  try {
+    const data = await apiJson('/api/v1/experience/fleet/health' + nsParam());
+    fleetHealthMap = {};
+    (data.items || []).forEach(item => {
+      fleetHealthMap[item.namespace + '/' + item.name] = item;
+    });
+  } catch (e) {
+    console.error('Fleet health error:', e);
+  }
+}
+
+function vmHealthPill(vm) {
+  const key = (vm.namespace || 'default') + '/' + vm.name;
+  const h = fleetHealthMap[key];
+  if (!h) return '';
+  const cls = h.health_score >= 85 ? 'good' : h.health_score >= 65 ? 'fair' : 'bad';
+  return '<span class="vm-health-pill ' + cls + '">' + h.health_score + '% ' + esc(h.health_label) + '</span>';
+}
+
+async function fetchAppStore() {
+  try {
+    const data = await apiJson('/api/v1/experience/templates');
+    setCapBanner('app-store-cap-banner', data.vmrogue_context);
+    const grid = document.getElementById('app-store-grid');
+    const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
+    grid.innerHTML = (data.templates || []).map(t => {
+      const em = icon[t.os_family] || '◫';
+      return '<div class="app-store-card" onclick="forgeFromTemplate(' + JSON.stringify(t.id) + ')">' +
+        '<div class="app-store-icon">' + em + '</div>' +
+        '<div class="app-store-title">' + esc(t.title) + '</div>' +
+        '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
+        '<button type="button" class="btn btn-sm btn-start" onclick="event.stopPropagation();forgeFromTemplate(' + JSON.stringify(t.id) + ')">Get</button>' +
+      '</div>';
+    }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
+  } catch (e) {
+    toast('Template Store: ' + (e.message || String(e)), 'error');
+  }
+}
+
+function forgeFromTemplate(name) {
+  openCreateModal();
+  setTimeout(() => {
+    const sel = document.getElementById('vm-template');
+    if (sel) { sel.value = name; onTemplateChange(); }
+  }, 200);
+}
+
+async function discoverMigrationInventory() {
+  const source = document.getElementById('migration-source').value;
+  const host = document.getElementById('migration-vcenter-host').value.trim();
+  const user = document.getElementById('migration-vcenter-user').value.trim();
+  try {
+    const data = await apiJson('/api/v1/experience/migration/discover', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: source, vcenter_host: host || null, username: user || null })
+    });
+    const msgEl = document.getElementById('migration-discover-msg');
+    if (msgEl) msgEl.textContent = data.message || '';
+    if (data.suggested_items && data.suggested_items.length) {
+      document.getElementById('migration-inventory').value = JSON.stringify(data.suggested_items, null, 2);
+    }
+    toast('Inventory template loaded — edit and scan', 'info');
+  } catch (e) {
+    await translateApiError(e.message, 'migration_discover');
+  }
+}
+
+async function runMigrationPlan(vmName) {
+  const source = document.getElementById('migration-source').value;
+  let item = (lastMigrationScan && lastMigrationScan.items || []).find(i => i.name === vmName);
+  if (!item) item = { name: vmName, os: 'Linux', firmware: 'uefi', disk_format: 'vmdk', disk_gb: 40 };
+  try {
+    const data = await apiJson('/api/v1/experience/migration/plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: source, item: item, target_namespace: document.getElementById('migration-target-ns').value || 'default' })
+    });
+    const steps = (data.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n');
+    alert('Migration plan for ' + data.name + ' (' + data.readiness + ')\n\n' + steps);
+  } catch (e) {
+    await translateApiError(e.message, 'migration_plan');
+  }
+}
 
 function initVmViewMode() {
   try {
@@ -3636,6 +3840,8 @@ function renderDatacenterHome(data) {
   if (!greet || !data) return;
   greet.textContent = data.greeting || 'Welcome back.';
   if (ws) ws.textContent = data.workspace || 'All workspaces';
+  const fl = document.getElementById('finder-location-label');
+  if (fl) fl.textContent = data.workspace || 'All workspaces';
   const score = data.health_score != null ? data.health_score : '--';
   if (ring) {
     ring.textContent = score + (typeof score === 'number' ? '%' : '');
@@ -3672,7 +3878,7 @@ function renderControlCenter(items) {
 
 function runExperienceAction(action) {
   if (!action) return;
-  if (action === 'create_vm') { openCreateModal(); return; }
+  if (action === 'create_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
   if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
   toast('Action: ' + action, 'info');
 }
@@ -3848,7 +4054,8 @@ async function runMigrationScan() {
           '<strong>' + esc(item.name) + '</strong>' +
           '<span class="vm-badge ' + (item.readiness === 'ready' ? 'running' : item.readiness === 'blocked' ? 'error' : 'stopped') + '">' + esc(item.readiness) + '</span>' +
         '</div>' + checks +
-        '<button type="button" class="btn btn-sm" style="margin-top:8px" onclick="prefillMigrationExecute(' + JSON.stringify(item.name) + ')">Use for import</button>' +
+        '<button type="button" class="btn btn-sm" style="margin-top:8px;margin-right:6px" onclick="prefillMigrationExecute(' + JSON.stringify(item.name) + ')">Use for import</button>' +
+        '<button type="button" class="btn btn-sm btn-restart" style="margin-top:8px" onclick="runMigrationPlan(' + JSON.stringify(item.name) + ')">View plan</button>' +
       '</div>';
     }).join('');
     toast('Scan complete: ' + (data.total || 0) + ' workload(s)', 'success');
@@ -3898,7 +4105,7 @@ function vmCard(vm, showActions) {
     '<div class="vm-card-top"><div class="vm-card-icon">◫</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
     '<div class="vm-card-ns">' + esc(ns) + '</div>' +
-    '<div class="vm-card-meta">' + esc(vm.cpu) + ' · ' + esc(vm.memory) + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '') + '</div>' +
+    '<div class="vm-card-meta">' + esc(vm.cpu) + ' · ' + esc(vm.memory) + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '') + '</div>' +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
 }
 
@@ -4019,7 +4226,7 @@ function vmRow(vm, showActions) {
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" onclick="event.stopPropagation();toggleVMSelect(\''+vm.name+'\',this.checked)"' + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
   const clickAttr = showActions ? ' onclick="toggleVmDetail(\''+ns+'\',\''+vm.name+'\')" style="cursor:pointer"' : '';
   const sshBlock = vmSshBlock(vm, showActions);
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
   return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div><div class="vm-ns">'+esc(ns)+'</div></div></div>'+rightCol+'</div>';
 }
 
@@ -4048,6 +4255,7 @@ async function fetchVMs() {
 
     document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs under command';
     renderDashboardCommandCenter();
+    await fetchFleetHealth();
     fetchExperienceHome();
 
     // Fetch real cluster capacity + platform readiness (updates nav health dot)
@@ -5537,7 +5745,7 @@ async function migrateVM(ns, name) {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/migrate', {method:'POST'});
     toast(name + ' migration initiated', 'success');
     setTimeout(refresh, 2000);
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
+  } catch(e) { await translateApiError(e.message, 'migrate'); }
 }
 
 // ── Bulk Operations ──
@@ -5917,6 +6125,7 @@ window.addEventListener('load', async () => {
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
   initVmViewMode();
+  fetchExperienceSession();
 
   refresh();
   fetchTemplates();
@@ -7087,15 +7296,15 @@ async function fetchClusterContext() {
     if (bar) bar.classList.add('visible');
     if (meta) {
       if (clusters.length === 0) {
-        meta.textContent = 'Kube context: ' + esc(current) + ' (in-cluster or single context)';
+        meta.textContent = 'Location: ' + esc(current) + ' (in-cluster or single context)';
       } else if (clusters.length === 1) {
         const c = clusters[0];
-        meta.textContent = 'Cluster: ' + esc(c.name) + ' · context ' + esc(c.context) + ' · ' + esc(c.health) + ' · ' + c.vm_count + ' VMs · ' + c.node_count + ' nodes';
+        meta.textContent = 'Location: ' + esc(c.name) + ' · ' + esc(c.health) + ' · ' + c.vm_count + ' VMs';
       } else {
         const parts = clusters.map(c =>
-          esc(c.name) + (c.is_active ? ' (active)' : '') + ' — ' + c.vm_count + ' VMs, ' + c.node_count + ' nodes, ' + esc(c.health)
+          esc(c.name) + (c.is_active ? ' (active)' : '') + ' — ' + c.vm_count + ' VMs, ' + esc(c.health)
         );
-        meta.innerHTML = '<strong>Context:</strong> ' + esc(current) + ' · ' + parts.join(' · ');
+        meta.innerHTML = '<strong>Location:</strong> ' + esc(current) + ' · ' + parts.join(' · ');
       }
     }
     if (sel) {
