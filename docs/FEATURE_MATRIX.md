@@ -14,8 +14,8 @@ Status legend:
 
 | Page | Frontend Page ID | Primary Routes | Backend Source | Status | Notes |
 |---|---|---|---|---|---|
-| Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview` | `http_server.rs` | Working | Overview cards and event feed are live |
-| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | List drift badges + filter; detail panel via `/drift` |
+| Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview`, `/api/v1/experience/home` | `http_server.rs`, `handlers/experience.rs` | Working | Datacenter Home, control center, overview cards |
+| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | List/card views, drift badges + filter; detail panel via `/drift` |
 | Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes | `http_server.rs` | Working | Uses direct handlers in `http_server.rs` |
 | Nodes | `page-nodes` | `/api/v1/nodes` | `http_server.rs`, `handlers/nodes.rs` | Working | Real allocatable/capacity data |
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |
@@ -24,6 +24,7 @@ Status legend:
 | CRDs | `page-crds` | `/api/v1/crds/vmroguevms` | `handlers/crds.rs` | Working | Operator CRD listing and create flow |
 | Template catalog | `page-catalog` | `/api/v1/catalog/status`, `/api/v1/catalog/sync`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/catalog.rs`, `handlers/crds.rs` | Working | Sync, publish, deploy VMRogueVM |
 | Integrations | `page-integrations` | `/api/v1/integrations/status` | `handlers/integrations.rs` | Working | Env probes + in-app deep links to classic pages |
+| Migration Assistant | `page-migration` | `/api/v1/experience/migration/*` | `handlers/experience.rs` | Working | VMware/OVA/VMDK scan, plan, CDI execute |
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Includes operator-emitted **Drift** insights |
 | Actions | `page-actions` | `/api/v1/crds/actions` | `handlers/crds.rs` | Working | Uses operator CRDs |
@@ -98,6 +99,7 @@ These route groups now have first-class dashboard pages:
 | Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
 | Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
 | VM drift | `/api/v1/vms` (list fields), `/api/v1/vms/:ns/:name/drift` | Surfaced (VM list badges, filter, detail panel) |
+| CloudOS experience | `/api/v1/experience/home`, `/search`, `/errors/translate`, `/migration/*` | Datacenter Home, Spotlight (⌘K), Fix-it modal, Migration page |
 
 ## Known Partial Areas
 
@@ -128,6 +130,10 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | VM operator drift | Working | List badges/filter + detail `GET /api/v1/vms/:ns/:name/drift` |
 | Template catalog page | Working | `page-catalog`: status, sync, CRD tables, publish, deploy VMRogueVM |
 | Integrations page | Working | `page-integrations` + in-app links (`monitoring`, `costs`, …) |
+| CloudOS Datacenter Home | Working | `/experience/home` — greeting, health score, action cards, control center bar |
+| CloudOS Spotlight | Working | `⌘K` / `Ctrl+K` → `/experience/search` |
+| CloudOS Fix-it errors | Working | VM actions → `/experience/errors/translate` modal |
+| Migration Assistant | Working | `page-migration` — scan/plan/execute via experience API |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
 | OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VMROGUE_OIDC_*` set |

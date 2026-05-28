@@ -200,6 +200,22 @@ check_http_200 "GET /api/v1/network-policies" \
     "${BASE}/api/v1/network-policies?namespace=all" yes
 check_json_grep "GET /api/v1/integrations/status" \
     "${BASE}/api/v1/integrations/status" '"integrations"'
+check_json_grep "GET /api/v1/experience/home" \
+    "${BASE}/api/v1/experience/home?namespace=all" '"health_score"'
+translate_body=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -X POST -H "X-API-Key: ${KEY}" -H 'Content-Type: application/json' \
+    -d '{"message":"PersistentVolumeClaim not bound","context":"vm_start"}' \
+    "${BASE}/api/v1/experience/errors/translate" || true)
+if echo "${translate_body}" | grep -q '"explanation"'; then
+    echo "  ✔ POST /api/v1/experience/errors/translate"
+else
+    echo "  ✗ POST /api/v1/experience/errors/translate"
+    echo "${translate_body}" | head -c 400 | sed 's/^/    /'
+    echo ""
+    FAIL=$((FAIL + 1))
+fi
+check_json_grep "GET /api/v1/experience/migration/sources" \
+    "${BASE}/api/v1/experience/migration/sources" '"sources"'
 check_json_grep "GET /api/v1/gitops/status" \
     "${BASE}/api/v1/gitops/status?namespace=all" '"sync_status"'
 check_json_ok "GET /api/v1/snapshots?ns=all" \
