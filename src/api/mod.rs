@@ -7,8 +7,6 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[cfg(feature = "web")]
-pub mod dashboard_next;
-#[cfg(feature = "web")]
 pub mod dashboard_paths;
 pub mod handlers;
 pub mod http_server;

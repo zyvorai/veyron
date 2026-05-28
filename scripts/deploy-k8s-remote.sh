@@ -142,11 +142,6 @@ echo "  ${COLOR_DIM}NodePort:${COLOR_RESET}   ${NODE_PORT} → pod :5151 (TLS)"
 echo "  ${COLOR_DIM}API key:${COLOR_RESET}    ${API_KEY}"
 echo ""
 
-# ── Step 0: Embedded React operator UI ──
-step "Step 0/7: Building embedded dashboard-next"
-"${SCRIPT_DIR}/build-dashboard-next.sh"
-info "dashboard-next staged for rust-embed"
-
 # ── Step 1: Rsync ──
 step "Step 1/7: Syncing source to ${HOST}"
 rsync -az --delete \
@@ -511,7 +506,6 @@ echo "  ${COLOR_BOLD}═══════════════════�
 echo ""
 echo "  ${COLOR_BOLD}URLs${COLOR_RESET}"
 echo "    Dashboard:  https://${HOST}:${DISPLAY_NODE_PORT}/dashboard"
-echo "    Operator UI: https://${HOST}:${DISPLAY_NODE_PORT}/dashboard-next/"
 echo "    Health:     https://${HOST}:${DISPLAY_NODE_PORT}/api/v1/health"
 echo ""
 echo "  ${COLOR_DIM}TLS:${COLOR_RESET} self-signed init-container cert (browser warning) unless you mount a Secret at /certs."

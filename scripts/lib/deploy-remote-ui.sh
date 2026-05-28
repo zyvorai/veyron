@@ -150,7 +150,6 @@ deploy_complete() {
     pkg_box_begin "Open in browser"
     pkg_box_line "Dashboard:  https://${host}:${node_port}/dashboard" "${PKG_C_BOLD}${PKG_C_GREEN}"
     pkg_box_line "Health:     https://${host}:${node_port}/api/v1/health" "${PKG_C_CYAN}"
-    pkg_box_line "Operator UI: https://${host}:${node_port}/dashboard-next/" "${PKG_C_DIM}"
     if [[ -n "${http_redirect_port}" ]]; then
         pkg_box_line "HTTP redirect: node port ${http_redirect_port}" "${PKG_C_DIM}"
     fi

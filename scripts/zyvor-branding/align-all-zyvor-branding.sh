@@ -67,11 +67,7 @@ add_footer "${TT}/vmspawn/.web/src/App.tsx" './components/ZyvorBrand'
 add_footer "${TT}/hypersdk-/web/dashboard-react/src/App.tsx" './components/ZyvorBrand'
 add_footer "${TT}/hyper2kvm-/web/dashboard/src/components/Layout.tsx" './ZyvorBrand'
 
-# VMRogue HyperShell
-HSHELL="${TT}/VMRogue/web/dashboard-next/src/sdk/layout/HyperShell.tsx"
-if [[ -f "${HSHELL}" ]] && ! grep -q 'zyvor-footer' "${HSHELL}"; then
-  perl -i -0777 -pe 's|(        \{children\}\n      </div>)|        {children}\n        <footer className="zyvor-footer" style={{ marginTop: "auto", padding: "12px", textAlign: "center", fontSize: "12px", color: "#6b7280", borderTop: "1px solid #e5e7eb" }} role="contentinfo">\n          <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style={{ color: "#f0583a", fontWeight: 600, textDecoration: "none" }}>zyvor.dev</a>\n          {" · HyperSDK · © 2026"}\n        </footer>\n      </div>|s' "${HSHELL}"
-fi
+echo "Done."
 
 # hypersdk-web i18n footers
 for f in "${TT}/hypersdk-web/i18n"/*/docusaurus-theme-classic/footer.json; do

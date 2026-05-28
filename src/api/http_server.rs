@@ -8,7 +8,6 @@
 
 #[cfg(feature = "web")]
 pub mod web {
-    use crate::api::dashboard_next;
     use crate::api::dashboard_paths;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
@@ -731,20 +730,8 @@ pub mod web {
 
         let timed_rest = Router::new()
             // Dashboard & static assets
-            .route("/", get(dashboard_next::root_redirect))
+            .route("/", get(root_redirect))
             .route("/dashboard", get(dashboard_handler))
-            .route(
-                "/dashboard-next",
-                get(dashboard_next::dashboard_next_redirect),
-            )
-            .route(
-                "/dashboard-next/",
-                get(dashboard_next::dashboard_next_index),
-            )
-            .route(
-                "/dashboard-next/*path",
-                get(dashboard_next::dashboard_next_path),
-            )
             .route("/assets/novnc.min.js", get(novnc_handler))
             .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
             // VM endpoints
@@ -1054,6 +1041,10 @@ pub mod web {
         }
 
         Ok(())
+    }
+
+    async fn root_redirect() -> axum::response::Redirect {
+        axum::response::Redirect::permanent("/dashboard")
     }
 
     async fn dashboard_handler() -> Html<&'static str> {

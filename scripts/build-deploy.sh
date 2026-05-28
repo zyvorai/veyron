@@ -93,13 +93,6 @@ cmd_test() {
 
 # ── Build ────────────────────────────────────────────
 cmd_build() {
-    log "Building embedded dashboard-next..."
-    if [[ -x "${SCRIPT_DIR}/build-dashboard-next.sh" ]]; then
-        "${SCRIPT_DIR}/build-dashboard-next.sh"
-    else
-        warn "scripts/build-dashboard-next.sh not found — embedded UI may be stale"
-    fi
-
     log "Building release binary..."
     cargo build --release --locked
     strip target/release/vmrogue 2>/dev/null || true

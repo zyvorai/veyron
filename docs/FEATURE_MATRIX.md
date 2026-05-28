@@ -92,7 +92,7 @@ These route groups now have first-class dashboard pages:
 | Heatmap | `/api/v1/heatmap/resources` | Surfaced (classic **Heatmap**) |
 | Custom dashboards | `/api/v1/dashboards` | Surfaced (classic **Custom Dashboards**) |
 | Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
-| Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Operator UI **Attach to VM** |
+| Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
 | VM drift | `/api/v1/vms/:ns/:name/drift` | API Working; operator sets VMRogueVM status |
 
 ## Known Partial Areas
@@ -112,75 +112,21 @@ These route groups now have first-class dashboard pages:
 | Observability | Counts and ingestion/storage values are approximations |
 | Performance | Percentiles are based on the latest metric sample, not historical windows |
 
-## Operator UI (`/dashboard-next/`)
+## Web dashboard (`/dashboard/`)
 
-React operator console (HyperShell layout). `GET /` redirects here. Use the classic SPA at `/dashboard` for advanced CRD YAML editors and legacy-only pages.
+Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`). `GET /` redirects to `/dashboard`.
 
-| Capability | Classic `/dashboard` | Operator UI `/dashboard-next/` |
+| Capability | Status | Notes |
 |---|---|---|
-| Login + API key session | Partial (localStorage) | Working (sessionStorage + OIDC when configured) |
-| Fleet metrics dashboard | Working | Working (REST/WS feed) |
-| VM list + lifecycle | Working | Working |
-| VNC console | Working | Working |
-| Serial console | Working | Working |
-| Create / delete VM | Working | Working |
-| Pause / unpause / migrate | Working | Working |
-| Clone / resize VM | Working | Working |
-| Bulk start / stop / delete | Working | Working |
-| Snapshots (per VM) | Working | Working |
-| SSH expose + internet egress | Working | Working |
-| RDP + data disk + Multus attach | Working | Working |
-| Cluster nodes (read-only) | Working | Working |
-| Storage PVCs + classes (read-only) | Working | Working |
-| GitOps status + CRDs + tenants + Velero | Working | Working (Platform view) |
-| Golden images catalog + CDI import | Working | Working (Platform view) |
-| Network policies (list) | Working | Working (Platform view) |
-| Compliance status + reports | Working | Working (Compliance view) |
-| DR export / apply / failover | Working | Working (Operations → DR tab) |
-| VM operator drift column | Working | Working (Clusters & VMs inventory) |
-| Operator drift summary | Working | Working (Insights view) |
-| Resource heatmap | Working | Working (Operations → Heatmap tab) |
-| Custom dashboards (list) | Working | Working (Operations → Dashboards tab) |
-| Workloads / pods (read-only) | Working | Working (search + phase filter) |
-| Monitoring + security + costs + events + logs/traces | Working | Working (Insights view) |
-| Advanced CRD YAML editors | Working | Link to classic SPA |
-| Help → About (zyvor.dev) | Working | Working (login + shell) |
-
-**Strategy:** Operator UI is the default landing experience; classic dashboard remains for deep CRD editing and any pages not yet ported.
-
-### Operator UI — Phase 2 (recent)
-
-| Item | Status | Notes |
-|------|--------|-------|
-| Compliance / Operations / Platform extensions | Done | Sidebar Compliance + Operations (DR, heatmap, dashboards, Cilium, autoscaler) |
-| Integrations auto-bootstrap on deploy | Done | `scripts/lib/bootstrap-integrations.sh` |
-| Multi-cluster kubeconfig inventory | Done | `GET /api/v1/clusters`, context banner in operator UI |
-| Default landing on `/dashboard-next/` | Done | `GET /` permanent redirect |
-
-### Operator UI — remaining (optional)
-
-| Item | Priority | Notes |
-|------|----------|-------|
-| Live kubeconfig context switch | Medium | API pod uses one context; inventory is read-only |
-| OpenCost / Trivy / Jaeger on deploy | Done | Bootstrap detects opencost/trivy-system/monitoring Jaeger when present |
-| Fleet sidebar (multi-cluster) | Done | Sync per kubeconfig context |
-| Integrations panel + `/api/v1/integrations/status` | Done | Env wiring + HTTP probe from API pod |
-| Argo CD token bootstrap on deploy | Done | `bootstrap-integrations.sh` + Platform GitOps app picker |
-| Integration deep links (Insights + consoles) | Done | NodePort discovery, `VMROGUE_*_EXTERNAL_URL`, Grafana bootstrap |
-| Fleet kube context switch | Done | `POST /api/v1/clusters/:name/activate` + ConfigMap persistence |
-| Storage snapshots + schedules (dashboard-next) | Done | `GET /api/v1/snapshots?namespace=all`, fleet tables + VM panels |
-| Backups sidebar (Velero + VM backup API) | Done | `/dashboard-next/` Backups view, links to Storage + DR |
-| Template catalog sidebar (VMTemplate / VMProfile CRDs) | Done | Browse + publish template/profile CRDs + deploy VMRogueVM |
-| DR export workflow (Operations) | Done | Step bar, VM picker, summary/JSON, copy/download, apply/failover |
-| Catalog sync API + UI | Done | `GET/POST /api/v1/catalog/*`, sync banner + one-click upsert |
-| VM drift in inventory | Done | Drift column + filter on `GET /api/v1/vms`; detail via `/drift` |
-| Operator drift in Insights | Done | Cluster-wide drift stats + VMRogueInsight CRDs in Insights view |
-| OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
-| Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
+| VM list + lifecycle | Working | Start/stop/migrate, VNC, serial, snapshots |
+| CRD YAML editors | Working | VMRogueVM, templates, policies, insights |
+| GitOps, DR, compliance, heatmap | Working | See navbar pages |
+| VM operator drift | Working | Drift via `GET /api/v1/vms/:ns/:name/drift` |
+| OIDC / SSO | Partial | Backend JWKS + `GET /api/v1/auth/oidc/config`; classic UI uses API key in localStorage |
+| Integrations status API | Working | `GET /api/v1/integrations/status` for env wiring probes |
 
 ## Immediate Next Steps
 
 1. Run `./scripts/generate-catalog-crds.sh` before deploy; `deploy-all-remote.sh` applies catalog YAML automatically.
 2. `./scripts/test-remote.sh` tier 3+ uses local samples when remote checkout is absent; Windows blueprint test when VMTemplate CRDs exist.
-3. Deploy latest `/dashboard-next/` bundle to clusters.
-4. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`, …).
+3. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`, …).

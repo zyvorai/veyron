@@ -407,7 +407,7 @@ for endpoint in \
   fi
 done
 
-for path in "/dashboard" "/dashboard-next/"; do
+for path in "/dashboard"; do
   code=$(curl_api "$path" -o /dev/null -w '%{http_code}')
   if [[ "$code" == "200" ]]; then
     pass "GET ${path} → 200"
@@ -417,10 +417,10 @@ for path in "/dashboard" "/dashboard-next/"; do
 done
 
 root_loc=$(curl -skI "${BASE_URL}/" 2>/dev/null | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
-if [[ "${root_loc}" == */dashboard-next/* || "${root_loc}" == */dashboard-next ]]; then
+if [[ "${root_loc}" == */dashboard/* || "${root_loc}" == */dashboard ]]; then
   pass "GET / → ${root_loc}"
 else
-  fail "GET / root redirect" "expected /dashboard-next/, got: ${root_loc:-none}"
+  fail "GET / root redirect" "expected /dashboard, got: ${root_loc:-none}"
 fi
 
 # ═══════════════════════════════════════════════
