@@ -8,12 +8,15 @@ import {
   fetchCustomResources,
   fetchGitOpsStatus,
   fetchImageCatalog,
+  fetchNetworkPolicies,
   fetchTenants,
   fetchVeleroStatus,
+  importDataVolume,
   triggerGitOpsSync,
   type CustomResourceRecord,
   type GitOpsStatusRecord,
   type ImageCatalogResponse,
+  type NetworkPolicyRecord,
   type TenantRecord,
   type VeleroStatusResponse,
 } from "../../lib/api";
@@ -36,11 +39,21 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
   const [tenants, setTenants] = useState<TenantRecord[]>([]);
   const [images, setImages] = useState<ImageCatalogResponse | null>(null);
   const [velero, setVelero] = useState<VeleroStatusResponse | null>(null);
+  const [netpols, setNetpols] = useState<NetworkPolicyRecord[]>([]);
   const [tenantsError, setTenantsError] = useState<string | null>(null);
   const [imagesError, setImagesError] = useState<string | null>(null);
   const [veleroError, setVeleroError] = useState<string | null>(null);
+  const [netpolError, setNetpolError] = useState<string | null>(null);
   const [tenantBusy, setTenantBusy] = useState(false);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importMessage, setImportMessage] = useState<string | null>(null);
   const [tenantForm, setTenantForm] = useState({ id: "", display_name: "", owner_email: "" });
+  const [importForm, setImportForm] = useState({
+    name: "",
+    url: "",
+    registry: "",
+    size: "20Gi",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,13 +62,15 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
     setTenantsError(null);
     setImagesError(null);
     setVeleroError(null);
-    const [statusResult, resourcesResult, tenantsResult, imagesResult, veleroResult] =
+    setNetpolError(null);
+    const [statusResult, resourcesResult, tenantsResult, imagesResult, veleroResult, netpolResult] =
       await Promise.allSettled([
       fetchGitOpsStatus(scopeNamespace),
       fetchCustomResources(),
       fetchTenants(),
       fetchImageCatalog(scopeNamespace),
       fetchVeleroStatus(),
+      fetchNetworkPolicies(scopeNamespace),
     ]);
 
     if (statusResult.status === "fulfilled") {
@@ -113,6 +128,17 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
       );
     }
 
+    if (netpolResult.status === "fulfilled") {
+      setNetpols(netpolResult.value);
+    } else {
+      setNetpols([]);
+      setNetpolError(
+        netpolResult.reason instanceof Error
+          ? netpolResult.reason.message
+          : "Failed to load network policies",
+      );
+    }
+
     setLoading(false);
   }, [scopeNamespace]);
 
@@ -132,6 +158,37 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
       setSyncError(e instanceof Error ? e.message : "GitOps sync failed");
     } finally {
       setSyncBusy(false);
+    }
+  };
+
+  const runImageImport = async () => {
+    const name = importForm.name.trim();
+    if (!name) return;
+    const ns = scopeNamespace === "all" ? "default" : scopeNamespace;
+    const url = importForm.url.trim();
+    const registry = importForm.registry.trim();
+    if (!url && !registry) {
+      setImagesError("Provide HTTP(S) URL or container registry image");
+      return;
+    }
+    setImportBusy(true);
+    setImportMessage(null);
+    setImagesError(null);
+    try {
+      const result = await importDataVolume({
+        name,
+        namespace: ns,
+        url: url || undefined,
+        registry: registry || undefined,
+        size: importForm.size.trim() || "20Gi",
+      });
+      setImportMessage(result.message ?? `Import started: ${name}`);
+      setImportForm({ name: "", url: "", registry: "", size: "20Gi" });
+      await load();
+    } catch (e) {
+      setImagesError(e instanceof Error ? e.message : "Image import failed");
+    } finally {
+      setImportBusy(false);
     }
   };
 
@@ -334,6 +391,74 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
         ) : (
           <p style={muted}>{loading ? "Loading…" : "No image catalog data"}</p>
         )}
+        <div style={{ marginTop: 16 }}>
+          <h4 style={{ margin: "0 0 8px", fontSize: 14, color: "#374151" }}>Import CDI DataVolume</h4>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <input
+              placeholder="volume name"
+              value={importForm.name}
+              onChange={(e) => setImportForm((f) => ({ ...f, name: e.target.value }))}
+              style={refreshBtn}
+            />
+            <input
+              placeholder="https://…/image.qcow2"
+              value={importForm.url}
+              onChange={(e) => setImportForm((f) => ({ ...f, url: e.target.value }))}
+              style={{ ...refreshBtn, minWidth: 220 }}
+            />
+            <input
+              placeholder="registry image (if no URL)"
+              value={importForm.registry}
+              onChange={(e) => setImportForm((f) => ({ ...f, registry: e.target.value }))}
+              style={{ ...refreshBtn, minWidth: 200 }}
+            />
+            <input
+              placeholder="20Gi"
+              value={importForm.size}
+              onChange={(e) => setImportForm((f) => ({ ...f, size: e.target.value }))}
+              style={{ ...refreshBtn, width: 72 }}
+            />
+            <button type="button" style={syncBtn} disabled={importBusy} onClick={() => void runImageImport()}>
+              {importBusy ? "Importing…" : "Start import"}
+            </button>
+          </div>
+          {importMessage ? <p style={successNote}>{importMessage}</p> : null}
+        </div>
+      </section>
+
+      <section style={section}>
+        <h3 style={sectionTitle}>Network policies</h3>
+        {netpolError ? <ErrorBanner message={netpolError} /> : null}
+        {netpols.length === 0 && !loading && !netpolError ? (
+          <p style={muted}>No NetworkPolicies in scope.</p>
+        ) : (
+          <div style={tableWrap}>
+            <table style={table}>
+              <thead>
+                <tr>
+                  <th style={th}>Name</th>
+                  <th style={th}>Namespace</th>
+                  <th style={th}>Types</th>
+                  <th style={th}>Ingress</th>
+                  <th style={th}>Egress</th>
+                  <th style={th}>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {netpols.map((p) => (
+                  <tr key={`${p.namespace}-${p.name}`} style={tr}>
+                    <td style={td}><strong>{p.name}</strong></td>
+                    <td style={tdMono}>{p.namespace}</td>
+                    <td style={td}>{(p.policy_types || []).join(", ") || "—"}</td>
+                    <td style={td}>{p.ingress_rules}</td>
+                    <td style={td}>{p.egress_rules}</td>
+                    <td style={tdMono}>{p.created_at ? new Date(p.created_at).toLocaleString() : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section style={section}>
@@ -382,8 +507,8 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
       </section>
 
       <p style={footerNote}>
-        VMRogue CRD editors and full GitOps workflows remain in the{" "}
-        <a href="/dashboard" style={link}>full dashboard</a>.
+        Advanced VMRogue CRD YAML editors remain in the{" "}
+        <a href="/dashboard" style={link}>classic dashboard</a>.
       </p>
     </div>
   );

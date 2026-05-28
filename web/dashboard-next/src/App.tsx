@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { fetchNamespaces, fetchTenants, type TenantRecord } from './lib/api';
+import { fetchClusters, fetchNamespaces, fetchTenants, type TenantRecord } from './lib/api';
 import {
   clearAuthSession,
   getDisplayUser,
@@ -31,6 +31,8 @@ const StoragePanel = lazy(() => import('./sdk/components/StoragePanel'));
 const PlatformPanel = lazy(() => import('./sdk/components/PlatformPanel'));
 const WorkloadsPanel = lazy(() => import('./sdk/components/WorkloadsPanel'));
 const InsightsPanel = lazy(() => import('./sdk/components/InsightsPanel'));
+const CompliancePanel = lazy(() => import('./sdk/components/CompliancePanel'));
+const OperationsPanel = lazy(() => import('./sdk/components/OperationsPanel'));
 
 function ViewFallback() {
   return (
@@ -57,6 +59,8 @@ export default function App() {
   const [namespaceError, setNamespaceError] = useState<string | null>(null);
   const [tenants, setTenants] = useState<TenantRecord[]>([]);
   const [activeTenantId, setActiveTenantId] = useState<string>('');
+  const [kubeContext, setKubeContext] = useState('');
+  const [clusterCount, setClusterCount] = useState(0);
 
   useEffect(() => {
     setAuthed(isAuthenticated());
@@ -84,11 +88,19 @@ export default function App() {
   useEffect(() => {
     if (!authed) return;
     setNamespaceError(null);
-    void Promise.all([fetchNamespaces(), fetchTenants().catch(() => [])])
-      .then(([rows, tenantRows]) => {
+    void Promise.all([
+      fetchNamespaces(),
+      fetchTenants().catch(() => []),
+      fetchClusters().catch(() => null),
+    ])
+      .then(([rows, tenantRows, clusters]) => {
         setNamespaces(rows);
         setTenants(tenantRows);
         setNamespaceError(null);
+        if (clusters) {
+          setKubeContext(clusters.current_context);
+          setClusterCount(clusters.clusters.length);
+        }
       })
       .catch((err) => {
         setNamespaces([]);
@@ -190,7 +202,9 @@ export default function App() {
         view === 'storage' ||
         view === 'platform' ||
         view === 'workloads' ||
-        view === 'insights' ? (
+        view === 'insights' ||
+        view === 'compliance' ||
+        view === 'operations' ? (
           <>
             {namespaceError ? (
               <div style={{ padding: '12px 16px 0', background: '#fff' }}>
@@ -236,6 +250,12 @@ export default function App() {
                     ))}
                   </select>
                 </>
+              ) : null}
+              {kubeContext ? (
+                <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                  Kube context: <strong style={{ color: '#374151' }}>{kubeContext}</strong>
+                  {clusterCount > 1 ? ` · ${clusterCount} contexts in kubeconfig` : ''}
+                </span>
               ) : null}
               <label htmlFor="inventory-ns" style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
                 Namespace
@@ -285,6 +305,14 @@ export default function App() {
         ) : view === 'insights' ? (
           <Suspense fallback={<ViewFallback />}>
             <InsightsPanel scopeNamespace={inventoryNs} />
+          </Suspense>
+        ) : view === 'compliance' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <CompliancePanel scopeNamespace={inventoryNs} />
+          </Suspense>
+        ) : view === 'operations' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <OperationsPanel scopeNamespace={inventoryNs} />
           </Suspense>
         ) : (
           <Suspense fallback={<ViewFallback />}>

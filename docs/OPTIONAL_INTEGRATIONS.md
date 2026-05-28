@@ -6,6 +6,10 @@ VMRogue API handlers work without external services using Kubernetes data and he
 
 ## Quick apply
 
+**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when `monitoring` or `loki` namespaces exist. Set `VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip.
+
+**Manual:**
+
 1. Copy [deploy/k8s/optional-integrations.env.example.yaml](../deploy/k8s/optional-integrations.env.example.yaml) and fill in cluster-internal URLs.
 2. Apply the Secret, then restart the API:
 

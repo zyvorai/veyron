@@ -305,6 +305,13 @@ ssh "${REMOTE}" "
 # Apply VMRogue API deployment
 ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
 
+# Optional: Prometheus / Alertmanager / Loki URLs when those namespaces exist
+if [[ -f "${REPO_DIR}/scripts/lib/bootstrap-integrations.sh" ]]; then
+    deploy_substep "🔗 Wiring vmrogue-integrations Secret (if monitoring/loki present)…"
+    ssh "${REMOTE}" "bash ${DEPLOY_DIR}/scripts/lib/bootstrap-integrations.sh '${K8S_CMD}' '${NAMESPACE}'" 2>&1 || \
+        pkg_warn "integrations bootstrap skipped or failed (non-fatal)"
+fi
+
 # Apply Operator deployment
 ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/manager/manager.yaml" 2>&1
 

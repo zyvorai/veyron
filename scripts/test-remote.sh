@@ -369,7 +369,10 @@ for endpoint in \
   "/api/v1/compliance/status" \
   "/api/v1/heatmap/resources" \
   "/api/v1/dashboards" \
-  "/api/v1/network-policies"; do
+  "/api/v1/network-policies" \
+  "/api/v1/clusters" \
+  "/api/v1/cilium/status" \
+  "/api/v1/autoscaler/policies"; do
   code=$(curl_api "$endpoint" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
   if [[ "$code" == "200" ]]; then
     pass "GET ${endpoint} → 200"
@@ -408,11 +411,11 @@ for path in "/dashboard" "/dashboard-next/"; do
   fi
 done
 
-code=$(curl -sk -o /dev/null -w '%{http_code}' "${BASE_URL}/" 2>/dev/null || echo "000")
-if [[ "$code" == "301" || "$code" == "308" || "$code" == "302" ]]; then
-  pass "GET / → redirect (${code})"
+root_loc=$(curl -skI "${BASE_URL}/" 2>/dev/null | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
+if [[ "${root_loc}" == */dashboard-next/* || "${root_loc}" == */dashboard-next ]]; then
+  pass "GET / → ${root_loc}"
 else
-  fail "GET / redirect" "HTTP ${code}"
+  fail "GET / root redirect" "expected /dashboard-next/, got: ${root_loc:-none}"
 fi
 
 # ═══════════════════════════════════════════════

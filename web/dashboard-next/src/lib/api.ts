@@ -975,3 +975,253 @@ export function fetchMetricsTimeline(params: {
   const q = search.toString();
   return apiJson(`/metrics/timeline${q ? `?${q}` : ''}`);
 }
+
+export type ComplianceStatusRecord = {
+  framework: string;
+  compliant: boolean;
+  score: number;
+  total_controls: number;
+  passing_controls: number;
+  failing_controls: number;
+  last_checked: string;
+};
+
+export type ComplianceReportRecord = {
+  id: string;
+  framework: string;
+  generated_at: string;
+  summary: ComplianceStatusRecord;
+  findings: Array<{
+    control_id: string;
+    title: string;
+    status: string;
+    severity: string;
+    description: string;
+  }>;
+};
+
+export function fetchComplianceStatus(namespace = 'all'): Promise<ComplianceStatusRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<ComplianceStatusRecord[]>(`/compliance/status${q}`);
+}
+
+export function fetchComplianceReports(namespace = 'all'): Promise<ComplianceReportRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<ComplianceReportRecord[]>(`/compliance/reports${q}`);
+}
+
+export type NodeHeatmapEntry = {
+  node_name: string;
+  cpu_utilization: number;
+  memory_utilization: number;
+  disk_utilization: number;
+  network_utilization: number;
+  vm_count: number;
+  heat_score: number;
+};
+
+export type ResourceHeatmapResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  nodes: NodeHeatmapEntry[];
+  timestamp: string;
+};
+
+export function fetchResourceHeatmap(): Promise<ResourceHeatmapResponse> {
+  return apiJson<ResourceHeatmapResponse>('/heatmap/resources');
+}
+
+export type CustomDashboardRecord = {
+  id: string;
+  name: string;
+  description: string;
+  panels: unknown[];
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export function fetchCustomDashboards(namespace = 'all'): Promise<CustomDashboardRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<CustomDashboardRecord[]>(`/dashboards${q}`);
+}
+
+export type NetworkPolicyRecord = {
+  name: string;
+  namespace: string;
+  policy_types: string[];
+  ingress_rules: number;
+  egress_rules: number;
+  created_at: string;
+};
+
+export function fetchNetworkPolicies(namespace = 'all'): Promise<NetworkPolicyRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<NetworkPolicyRecord[]>(`/network-policies${q}`);
+}
+
+export type DrExportPayload = {
+  namespace: string;
+  vm_name: string;
+  virtual_machine?: unknown;
+  snapshots?: unknown[];
+  note?: string;
+};
+
+export function drExportManifests(namespace: string, vmName: string): Promise<DrExportPayload> {
+  const q = `?namespace=${encodeURIComponent(namespace)}&vm_name=${encodeURIComponent(vmName)}`;
+  return apiJson<DrExportPayload>(`/dr/export${q}`);
+}
+
+export type DrFailoverRequest = {
+  namespace: string;
+  vm_name: string;
+  dry_run?: boolean;
+  target_kubeconfig_context?: string | null;
+};
+
+export type DrFailoverResponse = {
+  status: string;
+  snapshot_name?: string | null;
+  message: string;
+  target_kubeconfig_context?: string | null;
+};
+
+export function drFailover(body: DrFailoverRequest): Promise<DrFailoverResponse> {
+  return apiJson<DrFailoverResponse>('/dr/failover', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export type DrApplyRequest = {
+  namespace: string;
+  vm_name: string;
+  target_namespace?: string;
+  target_name?: string;
+  virtual_machine?: unknown;
+  restore_latest_snapshot?: boolean;
+  dry_run?: boolean;
+};
+
+export type DrApplyResponse = {
+  status: string;
+  target_namespace: string;
+  target_name: string;
+  message: string;
+  snapshot_name?: string | null;
+};
+
+export function drApply(body: DrApplyRequest): Promise<DrApplyResponse> {
+  return apiJson<DrApplyResponse>('/dr/apply', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export type ImportDataVolumeRequest = {
+  name: string;
+  namespace: string;
+  url?: string;
+  registry?: string;
+  storage_class?: string;
+  size?: string;
+};
+
+export function importDataVolume(body: ImportDataVolumeRequest): Promise<{ message?: string; name?: string }> {
+  return apiJson('/images/import', {
+    method: 'POST',
+    body: JSON.stringify({ size: '20Gi', ...body }),
+  });
+}
+
+export type ClusterSummary = {
+  name: string;
+  context: string;
+  environment: string;
+  is_primary: boolean;
+  health: string;
+  vm_count: number;
+  node_count: number;
+  region: string;
+};
+
+export type ClustersResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  current_context: string;
+  clusters: ClusterSummary[];
+};
+
+export function fetchClusters(): Promise<ClustersResponse> {
+  return apiJson<ClustersResponse>('/clusters');
+}
+
+export function syncCluster(name: string): Promise<ClusterSummary> {
+  return apiJson<ClusterSummary>(`/clusters/${encodeURIComponent(name)}/sync`);
+}
+
+export type CiliumStatusRecord = {
+  version: string;
+  agent_count: number;
+  healthy_agents: number;
+  cluster_mesh_enabled: boolean;
+  hubble_enabled: boolean;
+  encryption_enabled: boolean;
+  installation_namespace: string;
+};
+
+export type CiliumPolicyRecord = {
+  name: string;
+  namespace: string;
+  enforcement: string;
+  ingress_rules: number;
+  egress_rules: number;
+  policy_kind: string;
+};
+
+export function fetchCiliumStatus(): Promise<CiliumStatusRecord> {
+  return apiJson<CiliumStatusRecord>('/cilium/status');
+}
+
+export function fetchCiliumPolicies(namespace = 'all'): Promise<CiliumPolicyRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<CiliumPolicyRecord[]>(`/cilium/policies${q}`);
+}
+
+export type AutoscalerPolicyRecord = {
+  name: string;
+  namespace: string;
+  target_kind: string;
+  target_name: string;
+  min_replicas: number;
+  max_replicas: number;
+  current_replicas: number;
+  cpu_threshold?: number | null;
+  memory_threshold?: number | null;
+  enabled: boolean;
+};
+
+export function fetchAutoscalerPolicies(namespace = 'all'): Promise<AutoscalerPolicyRecord[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<AutoscalerPolicyRecord[]>(`/autoscaler/policies${q}`);
+}
+
+export function createAutoscalerPolicy(
+  namespace: string,
+  body: {
+    name: string;
+    target_name: string;
+    min_replicas: number;
+    max_replicas: number;
+    cpu_threshold?: number;
+    memory_threshold?: number;
+  },
+): Promise<AutoscalerPolicyRecord> {
+  const q =
+    namespace && namespace !== 'all'
+      ? `?namespace=${encodeURIComponent(namespace)}`
+      : '';
+  return apiJson<AutoscalerPolicyRecord>(`/autoscaler/policies${q}`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}

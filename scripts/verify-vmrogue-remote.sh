@@ -132,8 +132,10 @@ echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
 check_html_contains "GET /dashboard-next/" "${BASE}/dashboard-next/" 'id="root"'
 loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
-if [[ "${loc}" == */dashboard-next/* || "${loc}" == */dashboard-next || "${loc}" == */dashboard/* || "${loc}" == */dashboard ]]; then
+if [[ "${loc}" == */dashboard-next/* || "${loc}" == */dashboard-next ]]; then
     echo "  ✔ GET / → ${loc}"
+elif [[ "${loc}" == */dashboard/* || "${loc}" == */dashboard ]]; then
+    echo "  ✔ GET / → ${loc} (legacy)"
 else
     echo "  ✗ GET / root redirect (got: ${loc:-none})"
     FAIL=$((FAIL + 1))

@@ -20,7 +20,7 @@ pub async fn dashboard_next_redirect() -> Redirect {
 }
 
 pub async fn root_redirect() -> Redirect {
-    Redirect::permanent("/dashboard")
+    Redirect::permanent("/dashboard-next/")
 }
 
 pub async fn dashboard_next_index() -> impl IntoResponse {
