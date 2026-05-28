@@ -1324,6 +1324,8 @@ pub mod web {
                             info.vmrogue_managed = Some(true);
                             info.drift_detected = Some(*drift);
                             info.drift_message = message.clone();
+                        } else {
+                            info.vmrogue_managed = Some(false);
                         }
                         info
                     })
