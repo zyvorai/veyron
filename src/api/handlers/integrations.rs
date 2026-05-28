@@ -252,8 +252,14 @@ async fn discover_nodeport_url(
         if !name.contains(&needle) {
             continue;
         }
+        if name.contains("grafana") && needle == "prometheus" {
+            continue;
+        }
+        if name.contains("node-exporter") || name.contains("operator") {
+            continue;
+        }
         let ports = svc.spec.as_ref().and_then(|s| s.ports.as_ref())?;
-        let node_port = ports.iter().find_map(|p| p.node_port)?;
+        let node_port = ports.iter().find_map(|p| p.node_port.filter(|np| *np > 0))?;
         let scheme = if name.contains("grafana") || name.contains("argocd") {
             "http"
         } else {
@@ -273,6 +279,7 @@ async fn resolve_external_open(
     let external_env = match id {
         "grafana" => "VMROGUE_GRAFANA_EXTERNAL_URL",
         "prometheus" => "VMROGUE_PROMETHEUS_EXTERNAL_URL",
+        "alertmanager" => "VMROGUE_ALERTMANAGER_EXTERNAL_URL",
         "argocd" => "VMROGUE_ARGOCD_EXTERNAL_URL",
         "jaeger" => "VMROGUE_JAEGER_EXTERNAL_URL",
         _ => return None,
@@ -288,6 +295,7 @@ async fn resolve_external_open(
     let (ns, hint) = match id {
         "grafana" => ("monitoring", "grafana"),
         "prometheus" => ("monitoring", "prometheus"),
+        "alertmanager" => ("monitoring", "alertmanager"),
         "argocd" => {
             for ns in ["argocd", "argo-cd"] {
                 if let Some(u) = discover_nodeport_url(client, ns, "argocd-server").await {
@@ -365,9 +373,10 @@ async fn get_integrations_status(
         }
         let mut open = if def.id == "argocd_token" {
             None
-        } else if def.id == "grafana" || def.id == "argocd" {
-            resolve_external_open(&kube_client, def.id, raw.as_deref()).await
-        } else if def.id == "jaeger" {
+        } else if matches!(
+            def.id,
+            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger"
+        ) {
             resolve_external_open(&kube_client, def.id, raw.as_deref())
                 .await
                 .or_else(|| in_app_open(def.id))

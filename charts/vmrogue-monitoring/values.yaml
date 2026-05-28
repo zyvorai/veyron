@@ -29,9 +29,11 @@ kps:
     enabled: true
     defaultDashboardsEnabled: true
     adminPassword: changeme
-    # Service listens on 3000 instead of 80 so port-forward avoids :80.
+    # Optional browser access via NodePort (bootstrap sets VMROGUE_GRAFANA_EXTERNAL_URL).
     service:
-      port: 3000
+      type: NodePort
+      port: 80
+      nodePort: 30080
     sidecar:
       dashboards:
         enabled: true

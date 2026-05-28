@@ -130,7 +130,7 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | Integrations page | Working | `page-integrations` + in-app links (`monitoring`, `costs`, …) |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
-| OIDC / SSO | Partial | Backend JWKS + `GET /api/v1/auth/oidc/config`; classic UI uses API key in localStorage |
+| OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VMROGUE_OIDC_*` set |
 
 ## Immediate Next Steps
 

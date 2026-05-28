@@ -880,6 +880,19 @@ pub mod web {
                 "/api/v1/auth/oidc/config",
                 get(|| async { axum::Json(crate::api::oidc::oidc_public_config()) }),
             )
+            .route(
+                "/api/v1/auth/oidc/token",
+                post(|axum::Json(body): axum::Json<crate::api::oidc::OidcTokenExchangeRequest>| async move {
+                    match crate::api::oidc::exchange_oidc_authorization_code(body).await {
+                        Ok(json) => axum::Json(json).into_response(),
+                        Err(e) => (
+                            axum::http::StatusCode::BAD_REQUEST,
+                            e,
+                        )
+                            .into_response(),
+                    }
+                }),
+            )
             .with_state(state.clone())
             // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
             // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.

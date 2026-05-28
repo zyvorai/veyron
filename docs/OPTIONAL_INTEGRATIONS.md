@@ -31,6 +31,10 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 | `VMROGUE_LOKI_URL` | Logs page (cluster-wide LogQL) | `http://loki.loki:3100` |
 | `VMROGUE_JAEGER_QUERY_URL` | Traces | `http://jaeger-query:16686/api/traces` |
 | `VMROGUE_TEMPO_QUERY_URL` | Traces (alternative) | `http://tempo:3200` |
+| `VMROGUE_GRAFANA_EXTERNAL_URL` | Integrations **Open console** (browser) | `http://HOST:30080` |
+| `VMROGUE_PROMETHEUS_EXTERNAL_URL` | Prometheus UI (browser) | `http://HOST:30090` |
+| `VMROGUE_ALERTMANAGER_EXTERNAL_URL` | Alertmanager UI (browser) | `http://HOST:30093` |
+| `VMROGUE_JAEGER_EXTERNAL_URL` | Jaeger UI (browser) | `http://HOST:16686` |
 | `VMROGUE_ALERTMANAGER_URL` | Incidents timeline | `http://alertmanager:9093` |
 | `VMROGUE_ARGOCD_URL` | GitOps sync (POST) | `https://argocd-server.argocd` |
 | `VMROGUE_ARGOCD_TOKEN` | Argo CD API token | (secret) |
@@ -40,7 +44,7 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 
 Responses include `vmrogue_context` describing the active data source when integrations are used or skipped.
 
-**Dashboard:** `GET /api/v1/integrations/status` lists configured `VMROGUE_*` backends (redacted host, HTTP probe) and optional external console links (NodePort + node IP, or `VMROGUE_GRAFANA_EXTERNAL_URL`, `VMROGUE_PROMETHEUS_EXTERNAL_URL`, `VMROGUE_ARGOCD_EXTERNAL_URL`, `VMROGUE_JAEGER_EXTERNAL_URL`).
+**Dashboard:** `GET /api/v1/integrations/status` lists configured `VMROGUE_*` backends (redacted host, HTTP probe) and **Open console** links when `VMROGUE_*_EXTERNAL_URL` is set or a NodePort is auto-discovered (`scripts/lib/bootstrap-integrations.sh`).
 
 ## Monitoring stack
 
@@ -50,7 +54,7 @@ Install the optional umbrella chart for Prometheus, Grafana, and Alertmanager:
 ./scripts/install-vmrogue-monitoring.sh monitoring
 ```
 
-Then point `VMROGUE_PROMETHEUS_URL` at the in-cluster Prometheus query API and `VMROGUE_ALERTMANAGER_URL` at Alertmanager.
+Then point `VMROGUE_PROMETHEUS_URL` at the in-cluster Prometheus query API and `VMROGUE_ALERTMANAGER_URL` at Alertmanager. Optional Grafana NodePort (`charts/vmrogue-monitoring` sets port **30080** by default) is wired to `VMROGUE_GRAFANA_EXTERNAL_URL` on deploy.
 
 ## FinOps (OpenCost)
 
