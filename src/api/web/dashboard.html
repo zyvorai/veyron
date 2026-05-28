@@ -1593,6 +1593,101 @@ html[data-theme="zinc"] .monitor-cap{
   background:linear-gradient(145deg,rgba(40,44,50,.94) 0%,rgba(57,63,72,.88) 48%,rgba(25,28,33,.95) 100%);
   border-color:rgba(166,173,184,.16);
 }
+
+/* ── Zyvor CloudOS experience layer ── */
+.control-center-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:10px 20px;margin:0;border-bottom:1px solid var(--border);
+  background:linear-gradient(90deg,rgba(56,189,248,.06),rgba(59,130,246,.04));
+}
+.cc-items{display:flex;gap:10px;flex-wrap:wrap;flex:1}
+.cc-tile{
+  display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;
+  background:var(--bg-elevated);border:1px solid var(--border);min-width:140px;
+}
+.cc-tile.ok{border-color:rgba(34,197,94,.25)}
+.cc-tile.warn{border-color:rgba(251,191,36,.35)}
+.cc-tile.error{border-color:rgba(239,68,68,.35)}
+.cc-label{font-size:.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
+.cc-value{font-size:1rem;font-weight:600}
+.cloudos-datacenter{
+  display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:18px;
+}
+@media(max-width:960px){.cloudos-datacenter{grid-template-columns:1fr}}
+.dc-hero{
+  padding:22px 24px;border-radius:14px;border:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(15,23,42,.4));
+}
+.dc-greeting{font-size:1.35rem;font-weight:600;margin-bottom:4px}
+.dc-workspace{font-size:.85rem;color:var(--text-dim);margin-bottom:16px}
+.dc-health{display:flex;align-items:center;gap:16px}
+.dc-health-ring{
+  width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:1.25rem;font-weight:700;border:4px solid var(--spark);background:rgba(56,189,248,.08);
+}
+.dc-health-ring.warn{border-color:var(--warning)}
+.dc-health-ring.error{border-color:var(--error)}
+.dc-health-summary{font-size:.92rem;line-height:1.5;color:var(--text-muted);max-width:420px}
+.dc-action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
+.dc-action-card{
+  padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);
+  cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;
+}
+.dc-action-card:hover{border-color:rgba(56,189,248,.35);transform:translateY(-1px)}
+.dc-action-title{font-weight:600;font-size:.92rem}
+.dc-action-sub{font-size:.78rem;color:var(--text-dim);margin-top:4px}
+.vm-view-toggle{display:flex;gap:4px;margin-left:auto}
+.vm-view-toggle button{
+  padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;
+  color:var(--text-muted);font-size:.78rem;cursor:pointer;
+}
+.vm-view-toggle button.active{background:rgba(56,189,248,.12);color:var(--spark);border-color:rgba(56,189,248,.3)}
+.vm-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:12px}
+.vm-card{
+  border-radius:14px;border:1px solid var(--border);background:var(--bg-elevated);padding:16px;
+  cursor:pointer;transition:box-shadow .15s,border-color .15s;
+}
+.vm-card:hover{border-color:rgba(56,189,248,.25);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.vm-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
+.vm-card-icon{
+  width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;background:rgba(56,189,248,.1);color:var(--spark);
+}
+.vm-card-name{font-weight:600;font-size:.95rem}
+.vm-card-ns{font-size:.74rem;color:var(--text-dim)}
+.vm-card-meta{font-size:.78rem;color:var(--text-muted);margin:10px 0 12px}
+.vm-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.spotlight-panel{
+  width:min(640px,92vw);margin:12vh auto 0;background:var(--bg-elevated);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.45);
+}
+.spotlight-input-wrap{padding:14px 16px;border-bottom:1px solid var(--border)}
+.spotlight-input{
+  width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg);color:var(--text);font-size:1rem;
+}
+.spotlight-results{max-height:360px;overflow-y:auto;padding:8px}
+.spotlight-item{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;
+}
+.spotlight-item:hover,.spotlight-item.active{background:rgba(56,189,248,.1)}
+.spotlight-kind{font-size:.68rem;text-transform:uppercase;color:var(--text-dim);min-width:48px}
+.spotlight-title{font-weight:500}
+.spotlight-sub{font-size:.78rem;color:var(--text-dim)}
+.fixit-panel{width:min(520px,92vw);margin:15vh auto 0;padding:24px;border-radius:16px;background:var(--bg-elevated);border:1px solid var(--border)}
+.fixit-title{font-size:1.1rem;font-weight:600;margin-bottom:8px}
+.fixit-explanation{font-size:.9rem;line-height:1.55;color:var(--text-muted);margin-bottom:16px}
+.fixit-actions{display:flex;gap:8px;flex-wrap:wrap}
+.migration-step{margin-bottom:20px}
+.migration-check{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.migration-check.ok .check-dot{color:var(--success)}
+.migration-check.warn .check-dot{color:var(--warning)}
+.migration-check.error .check-dot{color:var(--error)}
+.btn-spotlight{
+  padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);
+  color:var(--text-muted);font-size:.74rem;cursor:pointer;white-space:nowrap;
+}
+.btn-spotlight:hover{border-color:rgba(56,189,248,.3);color:var(--spark)}
 </style>
 </head>
 <body>
@@ -1679,6 +1774,7 @@ html[data-theme="zinc"] .monitor-cap{
           <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
           <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
           <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
+          <button class="nav-link" data-page="migration" onclick="navigate('migration')">Migration <span class="nav-tag-new">NEW</span></button>
           <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
           <button class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
           <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
@@ -1714,6 +1810,7 @@ html[data-theme="zinc"] .monitor-cap{
     </div>
   </div>
   <div class="navbar-right">
+    <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K Search</button>
     <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <option value="slate">Slate Alloy</option>
       <option value="steel">Steel</option>
@@ -1756,14 +1853,50 @@ html[data-theme="zinc"] .monitor-cap{
   </div>
 </div>
 
+<div class="control-center-bar" id="control-center-bar">
+  <div class="cc-items" id="cc-items">
+    <div class="cc-tile ok"><div><div class="cc-label">Loading</div><div class="cc-value">…</div></div></div>
+  </div>
+  <button type="button" class="btn-spotlight" onclick="openSpotlight()">Spotlight</button>
+</div>
+
 <div class="toast-container" id="toasts"></div>
+
+<div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
+  <div class="spotlight-panel" onclick="event.stopPropagation()">
+    <div class="spotlight-input-wrap">
+      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Search VMs, pages, actions…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="spotlight-results" id="spotlight-results"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="fixit-modal" role="dialog" aria-modal="true" aria-labelledby="fixit-title">
+  <div class="fixit-panel" onclick="event.stopPropagation()">
+    <div class="fixit-title" id="fixit-title">Something went wrong</div>
+    <div class="fixit-explanation" id="fixit-explanation"></div>
+    <div class="fixit-actions" id="fixit-actions"></div>
+    <div style="margin-top:16px"><button type="button" class="btn btn-sm" onclick="closeFixItModal()">Dismiss</button></div>
+  </div>
+</div>
 
 <div class="container">
 
 <!-- DASHBOARD PAGE -->
 <div class="page active section-shell" id="page-dashboard" data-section="dashboard">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Dashboard</h1><p id="subtitle">Forging connections...</p></div></div>
+  <div class="page-header"><div><h1>Datacenter Home</h1><p id="subtitle">Forging connections...</p></div></div>
+  <div class="cloudos-datacenter" id="cloudos-datacenter">
+    <div class="dc-hero">
+      <div class="dc-greeting" id="dc-greeting">Welcome back.</div>
+      <div class="dc-workspace" id="dc-workspace">All workspaces</div>
+      <div class="dc-health">
+        <div class="dc-health-ring" id="dc-health-ring">--</div>
+        <div class="dc-health-summary" id="dc-health-summary">Loading fleet health…</div>
+      </div>
+    </div>
+    <div class="dc-action-grid" id="dc-action-grid"></div>
+  </div>
   <div class="dashboard-command-grid">
     <div class="command-hero">
       <div class="command-hero-top">
@@ -1825,6 +1958,10 @@ html[data-theme="zinc"] .monitor-cap{
         <select class="form-select" id="vm-filter-drift" onchange="filterVMs()" title="Operator drift filter">
           <option value="">All drift</option><option value="drift">Drift detected</option><option value="clear">In sync</option><option value="unmanaged">Unmanaged</option>
         </select>
+        <div class="vm-view-toggle">
+          <button type="button" id="vm-view-list" class="active" onclick="setVmViewMode('list')">List</button>
+          <button type="button" id="vm-view-grid" onclick="setVmViewMode('grid')">Cards</button>
+        </div>
       </div>
     </div>
     <div class="bulk-bar" id="bulk-bar">
@@ -2179,6 +2316,51 @@ html[data-theme="zinc"] .monitor-cap{
   <div class="card">
     <div class="card-header"><span class="card-title">VMProfile CRDs</span></div>
     <table class="table"><thead><tr><th>Name</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Description</th></tr></thead><tbody id="catalog-profiles-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-migration" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Migration Assistant</h1><p>VMware, OVA, and VMDK import via CDI — guided readiness and execution</p></div>
+    <button type="button" class="btn" onclick="fetchMigrationPage()">Refresh</button>
+  </div>
+  <div id="migration-cap-banner"></div>
+  <div class="card migration-step">
+    <div class="card-header"><span class="card-title">1. Source</span></div>
+    <div style="padding:16px">
+      <label class="form-label">Migration source</label>
+      <select class="form-select" id="migration-source" style="max-width:360px"></select>
+      <p style="margin-top:10px;font-size:.85rem;color:var(--text-dim)" id="migration-pipeline"></p>
+    </div>
+  </div>
+  <div class="card migration-step">
+    <div class="card-header"><span class="card-title">2. Inventory</span></div>
+    <div style="padding:16px">
+      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:10px">Paste JSON array of VMs to assess, or leave empty for a sample workload.</p>
+      <textarea class="form-input" id="migration-inventory" rows="8" style="width:100%;font-family:monospace;font-size:.82rem" placeholder='[{"name":"app-01","os":"Linux","firmware":"uefi","disk_format":"vmdk","disk_gb":40,"virtio_ready":true}]'></textarea>
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button type="button" class="btn btn-start" onclick="runMigrationScan()">Scan readiness</button>
+      </div>
+    </div>
+  </div>
+  <div class="card migration-step" id="migration-results-card" style="display:none">
+    <div class="card-header"><span class="card-title">3. Readiness</span><span id="migration-scan-summary" style="font-size:.82rem;color:var(--text-dim)"></span></div>
+    <div style="padding:16px" id="migration-scan-results"></div>
+  </div>
+  <div class="card migration-step" id="migration-execute-card" style="display:none">
+    <div class="card-header"><span class="card-title">4. Import</span></div>
+    <div style="padding:16px">
+      <div class="grid-2" style="gap:12px;margin-bottom:12px">
+        <div><label class="form-label">Target namespace</label><input class="form-input" id="migration-target-ns" value="default"></div>
+        <div><label class="form-label">VM name</label><input class="form-input" id="migration-target-name" placeholder="migrated-app-01"></div>
+        <div><label class="form-label">Import URL (CDI HTTP)</label><input class="form-input" id="migration-import-url" placeholder="https://…/disk.qcow2"></div>
+        <div><label class="form-label">Disk size</label><input class="form-input" id="migration-disk-size" value="40Gi"></div>
+        <div><label class="form-label">Template (optional)</label><input class="form-input" id="migration-template" placeholder="ubuntu-22.04"></div>
+        <div><label class="form-label">Profile (optional)</label><input class="form-input" id="migration-profile" placeholder="small"></div>
+      </div>
+      <button type="button" class="btn-create" onclick="runMigrationExecute()">Start CDI import</button>
+    </div>
   </div>
 </div>
 </div>
@@ -2886,7 +3068,8 @@ const PAGE_META = {
   'network-policies': {kicker:'Network', title:'Kubernetes NetworkPolicy rules', tags:['Ingress','Egress','Selectors']},
   images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']},
   catalog: {kicker:'Platform', title:'VMTemplate and VMProfile catalog sync', tags:['CRDs','Embedded library','Deploy VMRogueVM']},
-  integrations: {kicker:'Platform', title:'Optional backend wiring and probes', tags:['Prometheus','OpenCost','Argo CD']}
+  integrations: {kicker:'Platform', title:'Optional backend wiring and probes', tags:['Prometheus','OpenCost','Argo CD']},
+  migration: {kicker:'Platform', title:'VMware / OVA / VMDK migration assistant', tags:['CDI import','Readiness scan','VMRogueVM']}
 };
 
 function applyTheme(theme, writeStorage) {
@@ -3022,6 +3205,7 @@ function loadPageData(page) {
   if (page === 'custom-dashboards') fetchCustomDashboards();
   if (page === 'network-policies') fetchNetworkPolicies();
   if (page === 'images') fetchImages();
+  if (page === 'migration') fetchMigrationPage();
 }
 
 // Toast notifications
@@ -3402,6 +3586,336 @@ function fmtTime(ts) {
   try { const d=new Date(ts),n=new Date(),m=Math.floor((n-d)/60000); if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.floor(m/60)+'h ago';return Math.floor(m/1440)+'d ago'; } catch{return ts;}
 }
 
+// ── Zyvor CloudOS experience layer ──
+let lastExperienceHome = null;
+let vmViewMode = 'list';
+let spotlightResults = [];
+let spotlightActiveIndex = 0;
+let spotlightDebounce = null;
+let lastMigrationScan = null;
+
+const VM_VIEW_KEY = 'vmrogue_vm_view';
+
+function initVmViewMode() {
+  try {
+    const saved = localStorage.getItem(VM_VIEW_KEY);
+    if (saved === 'grid' || saved === 'list') vmViewMode = saved;
+  } catch (e) {}
+  setVmViewMode(vmViewMode, false);
+}
+
+function setVmViewMode(mode, writeStorage) {
+  vmViewMode = mode === 'grid' ? 'grid' : 'list';
+  const listBtn = document.getElementById('vm-view-list');
+  const gridBtn = document.getElementById('vm-view-grid');
+  if (listBtn) listBtn.classList.toggle('active', vmViewMode === 'list');
+  if (gridBtn) gridBtn.classList.toggle('active', vmViewMode === 'grid');
+  if (writeStorage !== false) {
+    try { localStorage.setItem(VM_VIEW_KEY, vmViewMode); } catch (e) {}
+  }
+  filterVMs();
+}
+
+async function fetchExperienceHome() {
+  try {
+    const data = await apiJson('/api/v1/experience/home' + nsParam());
+    lastExperienceHome = data;
+    renderDatacenterHome(data);
+    renderControlCenter(data.control_center || []);
+  } catch (e) {
+    console.error('Experience home error:', e);
+  }
+}
+
+function renderDatacenterHome(data) {
+  const greet = document.getElementById('dc-greeting');
+  const ws = document.getElementById('dc-workspace');
+  const ring = document.getElementById('dc-health-ring');
+  const summary = document.getElementById('dc-health-summary');
+  const grid = document.getElementById('dc-action-grid');
+  if (!greet || !data) return;
+  greet.textContent = data.greeting || 'Welcome back.';
+  if (ws) ws.textContent = data.workspace || 'All workspaces';
+  const score = data.health_score != null ? data.health_score : '--';
+  if (ring) {
+    ring.textContent = score + (typeof score === 'number' ? '%' : '');
+    ring.className = 'dc-health-ring' + (score >= 85 ? '' : score >= 65 ? ' warn' : ' error');
+  }
+  if (summary) summary.textContent = data.health_summary || '';
+  if (grid && data.action_cards) {
+    grid.innerHTML = data.action_cards.map(card =>
+      '<button type="button" class="dc-action-card" onclick="runExperienceAction(' + JSON.stringify(card.action) + ')">' +
+        '<div class="dc-action-title">' + esc(card.title) + '</div>' +
+        '<div class="dc-action-sub">' + esc(card.subtitle) + '</div>' +
+      '</button>'
+    ).join('');
+  }
+  if (data.experience && data.experience.tagline) {
+    const sub = document.getElementById('subtitle');
+    if (sub) sub.textContent = data.experience.tagline;
+  }
+}
+
+function renderControlCenter(items) {
+  const el = document.getElementById('cc-items');
+  if (!el) return;
+  if (!items || items.length === 0) {
+    el.innerHTML = '<div class="cc-tile ok"><div><div class="cc-label">Status</div><div class="cc-value">Ready</div></div></div>';
+    return;
+  }
+  el.innerHTML = items.map(item =>
+    '<div class="cc-tile ' + esc(item.status || 'ok') + '">' +
+      '<div><div class="cc-label">' + esc(item.label) + '</div><div class="cc-value">' + esc(item.value) + '</div></div>' +
+    '</div>'
+  ).join('');
+}
+
+function runExperienceAction(action) {
+  if (!action) return;
+  if (action === 'create_vm') { openCreateModal(); return; }
+  if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
+  toast('Action: ' + action, 'info');
+}
+
+function openSpotlight() {
+  const modal = document.getElementById('spotlight-modal');
+  const input = document.getElementById('spotlight-input');
+  if (!modal || !input) return;
+  modal.classList.add('open');
+  input.value = '';
+  spotlightResults = [];
+  spotlightActiveIndex = 0;
+  document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--text-dim)">Type to search VMs and pages…</div>';
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeSpotlight() {
+  const modal = document.getElementById('spotlight-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function runSpotlightSearch(q) {
+  try {
+    const data = await apiJson('/api/v1/experience/search?q=' + encodeURIComponent(q) + nsParam().replace('?', '&'));
+    spotlightResults = data.results || [];
+    spotlightActiveIndex = 0;
+    renderSpotlightResults();
+  } catch (e) {
+    document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+function renderSpotlightResults() {
+  const el = document.getElementById('spotlight-results');
+  if (!el) return;
+  if (spotlightResults.length === 0) {
+    el.innerHTML = '<div style="padding:16px;color:var(--text-dim)">No results</div>';
+    return;
+  }
+  el.innerHTML = spotlightResults.map((r, i) =>
+    '<div class="spotlight-item' + (i === spotlightActiveIndex ? ' active' : '') + '" data-idx="' + i + '" onclick="activateSpotlightResult(' + i + ')">' +
+      '<span class="spotlight-kind">' + esc(r.kind) + '</span>' +
+      '<div><div class="spotlight-title">' + esc(r.title) + '</div><div class="spotlight-sub">' + esc(r.subtitle) + '</div></div>' +
+    '</div>'
+  ).join('');
+}
+
+function activateSpotlightResult(idx) {
+  const r = spotlightResults[idx];
+  if (!r) return;
+  closeSpotlight();
+  runSpotlightAction(r.action);
+}
+
+function runSpotlightAction(action) {
+  if (!action) return;
+  if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
+  if (action.indexOf('open_vm:') === 0) {
+    const parts = action.split(':');
+    if (parts.length >= 3) {
+      navigate('vms');
+      setTimeout(() => toggleVmDetail(parts[1], parts[2]), 300);
+    }
+    return;
+  }
+  toast(action, 'info');
+}
+
+function onSpotlightKeydown(e) {
+  if (!document.getElementById('spotlight-modal').classList.contains('open')) return;
+  if (e.key === 'Escape') { closeSpotlight(); return; }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    spotlightActiveIndex = Math.min(spotlightActiveIndex + 1, spotlightResults.length - 1);
+    renderSpotlightResults();
+    return;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    spotlightActiveIndex = Math.max(spotlightActiveIndex - 1, 0);
+    renderSpotlightResults();
+    return;
+  }
+  if (e.key === 'Enter' && spotlightResults.length > 0) {
+    e.preventDefault();
+    activateSpotlightResult(spotlightActiveIndex);
+  }
+}
+
+async function translateApiError(message, context) {
+  try {
+    const data = await apiJson('/api/v1/experience/errors/translate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: message || 'Unknown error', context: context || 'general' })
+    });
+    showFixItModal(data);
+    return data;
+  } catch (e) {
+    toast('Error: ' + (message || e.message), 'error');
+    return null;
+  }
+}
+
+function showFixItModal(data) {
+  const modal = document.getElementById('fixit-modal');
+  if (!modal || !data) return;
+  document.getElementById('fixit-title').textContent = data.title || 'Something went wrong';
+  document.getElementById('fixit-explanation').textContent = data.explanation || data.raw_message || '';
+  const actions = document.getElementById('fixit-actions');
+  actions.innerHTML = (data.fixes || []).map(fix => {
+    const page = fix.page ? fix.page : '';
+    return '<button type="button" class="btn btn-sm btn-restart" onclick="runFixAction(' +
+      JSON.stringify(fix.action) + ',' + JSON.stringify(page) + ',' + JSON.stringify(fix.label) + ')">' +
+      esc(fix.label) + '</button>';
+  }).join('');
+  modal.classList.add('open');
+}
+
+function closeFixItModal() {
+  const modal = document.getElementById('fixit-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function runFixAction(action, page, label) {
+  closeFixItModal();
+  if (action === 'navigate' && page) { navigate(page); return; }
+  if (action === 'retry') { refresh(); toast('Retry when ready', 'info'); return; }
+  toast(label || action, 'info');
+}
+
+async function fetchMigrationPage() {
+  try {
+    const data = await apiJson('/api/v1/experience/migration/sources');
+    setCapBanner('migration-cap-banner', data.vmrogue_context);
+    const sel = document.getElementById('migration-source');
+    const sources = data.sources || [];
+    sel.innerHTML = sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.label) + '</option>').join('');
+    const pipe = document.getElementById('migration-pipeline');
+    if (pipe) pipe.textContent = data.pipeline || '';
+  } catch (e) {
+    toast('Migration sources: ' + (e.message || String(e)), 'error');
+  }
+}
+
+async function runMigrationScan() {
+  const source = document.getElementById('migration-source').value;
+  let items = [];
+  const raw = (document.getElementById('migration-inventory').value || '').trim();
+  if (raw) {
+    try { items = JSON.parse(raw); if (!Array.isArray(items)) throw new Error('JSON must be an array'); }
+    catch (e) { toast('Invalid inventory JSON: ' + e.message, 'error'); return; }
+  }
+  try {
+    const data = await apiJson('/api/v1/experience/migration/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: source, items: items })
+    });
+    lastMigrationScan = data;
+    document.getElementById('migration-results-card').style.display = '';
+    document.getElementById('migration-execute-card').style.display = '';
+    document.getElementById('migration-scan-summary').textContent =
+      (data.ready || 0) + ' ready · ' + (data.needs_preparation || 0) + ' need prep · ' + (data.blocked || 0) + ' blocked';
+    const el = document.getElementById('migration-scan-results');
+    el.innerHTML = (data.items || []).map(item => {
+      const checks = (item.checks || []).map(c =>
+        '<div class="migration-check ' + esc(c.status) + '"><span class="check-dot">●</span><div><strong>' +
+          esc(c.label) + '</strong><div style="font-size:.82rem;color:var(--text-dim)">' + esc(c.detail) + '</div></div></div>'
+      ).join('');
+      return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<strong>' + esc(item.name) + '</strong>' +
+          '<span class="vm-badge ' + (item.readiness === 'ready' ? 'running' : item.readiness === 'blocked' ? 'error' : 'stopped') + '">' + esc(item.readiness) + '</span>' +
+        '</div>' + checks +
+        '<button type="button" class="btn btn-sm" style="margin-top:8px" onclick="prefillMigrationExecute(' + JSON.stringify(item.name) + ')">Use for import</button>' +
+      '</div>';
+    }).join('');
+    toast('Scan complete: ' + (data.total || 0) + ' workload(s)', 'success');
+  } catch (e) {
+    await translateApiError(e.message, 'migration_scan');
+  }
+}
+
+function prefillMigrationExecute(name) {
+  document.getElementById('migration-target-name').value = 'migrated-' + name.replace(/[^a-zA-Z0-9-]/g, '-');
+  document.getElementById('migration-execute-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function runMigrationExecute() {
+  const body = {
+    name: document.getElementById('migration-target-name').value.trim(),
+    namespace: document.getElementById('migration-target-ns').value.trim() || 'default',
+    import_url: document.getElementById('migration-import-url').value.trim() || null,
+    disk_size: document.getElementById('migration-disk-size').value.trim() || '40Gi',
+    template: document.getElementById('migration-template').value.trim() || null,
+    profile: document.getElementById('migration-profile').value.trim() || null
+  };
+  if (!body.name) { toast('VM name required', 'error'); return; }
+  try {
+    const data = await apiJson('/api/v1/experience/migration/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    toast(data.message || 'Migration started', 'success');
+  } catch (e) {
+    await translateApiError(e.message, 'migration_execute');
+  }
+}
+
+function vmCard(vm, showActions) {
+  const cls = sc(vm.status);
+  const ns = vm.namespace || 'default';
+  const isRunning = vm.status === 'Running';
+  const primary = isRunning
+    ? '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openVncConsole(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Open</button>'
+    : '<button type="button" class="btn btn-start btn-sm" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('start') + ')">Start</button>';
+  const actions = showActions ? primary +
+    '<button type="button" class="btn btn-sm btn-restart" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('restart') + ')">↻</button>' +
+    '<button type="button" class="btn btn-sm btn-delete" onclick="event.stopPropagation();vmDelete(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">×</button>' : '';
+  return '<div class="vm-card" onclick="toggleVmDetail(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">' +
+    '<div class="vm-card-top"><div class="vm-card-icon">◫</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
+    '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
+    '<div class="vm-card-ns">' + esc(ns) + '</div>' +
+    '<div class="vm-card-meta">' + esc(vm.cpu) + ' · ' + esc(vm.memory) + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '') + '</div>' +
+    '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
+}
+
+function renderVmFullList(vms) {
+  const el = document.getElementById('vm-full-list');
+  if (!el) return;
+  if (vms.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No VMs match filter</p></div>';
+    return;
+  }
+  if (vmViewMode === 'grid') {
+    el.innerHTML = '<div class="vm-card-grid">' + vms.map(v => vmCard(v, true)).join('') + '</div>';
+  } else {
+    el.innerHTML = vms.map(v => vmRow(v, true)).join('');
+  }
+}
+
 // VM Action
 async function vmAction(ns, name, action) {
   const url = '/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name)+'/'+encodeURIComponent(action);
@@ -3409,7 +3923,7 @@ async function vmAction(ns, name, action) {
     await apiJson(url, {method:'POST'});
     toast(name+' '+action+' initiated', 'success');
     setTimeout(refresh, 1500);
-  } catch(e) { toast('Error: '+e.message, 'error'); }
+  } catch(e) { await translateApiError(e.message, 'vm_' + action); }
 }
 
 async function vmDelete(ns, name) {
@@ -3418,7 +3932,7 @@ async function vmDelete(ns, name) {
     await apiJson('/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), {method:'DELETE'});
     toast(name+' deleted', 'success');
     setTimeout(refresh, 1500);
-  } catch(e) { toast('Error: '+e.message, 'error'); }
+  } catch(e) { await translateApiError(e.message, 'vm_delete'); }
 }
 
 // ── SSH / remote shell hints (guest IP from VMI; user is a best-effort guess) ──
@@ -3534,6 +4048,7 @@ async function fetchVMs() {
 
     document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs under command';
     renderDashboardCommandCenter();
+    fetchExperienceHome();
 
     // Fetch real cluster capacity + platform readiness (updates nav health dot)
     await fetchOverview();
@@ -3550,9 +4065,7 @@ async function fetchVMs() {
     }
     // Only re-render VM list if no detail panel is open (prevents wiping expanded detail)
     if (!expandedVm) {
-      document.getElementById('vm-full-list').innerHTML = vmData.length===0 ?
-        '<div class="empty-state"><div class="icon">&#9881;</div><p>No VMs found</p></div>' :
-        vmData.map(v=>vmRow(v,true)).join('');
+      renderVmFullList(vmData);
     }
 
     /* Platform / Forge readiness: fetchOverview → updateHealth */
@@ -4031,12 +4544,33 @@ async function forgeVM() {
   }
 }
 
-// Close modals on Escape or overlay click
 document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    openSpotlight();
+    return;
+  }
+  onSpotlightKeydown(e);
   if (e.key === 'Escape') {
     closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
-    closePlatformInstallModal(); closeAboutModal();
+    closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
   }
+});
+document.getElementById('spotlight-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeSpotlight();
+});
+document.getElementById('fixit-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeFixItModal();
+});
+document.getElementById('spotlight-input').addEventListener('input', e => {
+  clearTimeout(spotlightDebounce);
+  const q = e.target.value.trim();
+  if (!q) {
+    spotlightResults = [];
+    document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--text-dim)">Type to search VMs and pages…</div>';
+    return;
+  }
+  spotlightDebounce = setTimeout(() => runSpotlightSearch(q), 180);
 });
 document.getElementById('create-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCreateModal();
@@ -4460,7 +4994,9 @@ function filterVMs() {
   });
   document.getElementById('vm-full-list').innerHTML = filtered.length === 0 ?
     '<div class="empty-state"><div class="icon">&#9881;</div><p>No VMs match filter</p></div>' :
-    filtered.map(v => vmRow(v, true)).join('');
+    (vmViewMode === 'grid'
+      ? '<div class="vm-card-grid">' + filtered.map(v => vmCard(v, true)).join('') + '</div>'
+      : filtered.map(v => vmRow(v, true)).join(''));
 }
 
 // ── Nodes ──
@@ -5380,6 +5916,7 @@ window.addEventListener('load', async () => {
 
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
+  initVmViewMode();
 
   refresh();
   fetchTemplates();
