@@ -36,6 +36,8 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
   const [syncBusy, setSyncBusy] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [selectedArgoApp, setSelectedArgoApp] = useState("");
+  const [selectedFluxKust, setSelectedFluxKust] = useState("");
   const [tenants, setTenants] = useState<TenantRecord[]>([]);
   const [images, setImages] = useState<ImageCatalogResponse | null>(null);
   const [velero, setVelero] = useState<VeleroStatusResponse | null>(null);
@@ -146,13 +148,31 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const apps = gitops?.argo_applications ?? [];
+    const kusts = gitops?.flux_kustomizations ?? [];
+    setSelectedArgoApp((prev) => (prev && apps.includes(prev) ? prev : apps[0] ?? ""));
+    setSelectedFluxKust((prev) => (prev && kusts.includes(prev) ? prev : kusts[0] ?? ""));
+  }, [gitops?.argo_applications, gitops?.flux_kustomizations]);
+
   const runSync = async () => {
     setSyncBusy(true);
     setSyncError(null);
     setSyncMessage(null);
     try {
-      const result = await triggerGitOpsSync({ force: false, dry_run: false });
-      setSyncMessage(result.message ?? "Sync triggered");
+      const result = await triggerGitOpsSync(
+        {
+          force: false,
+          dry_run: false,
+          argo_app: selectedArgoApp || undefined,
+          flux_kustomization: selectedFluxKust || undefined,
+        },
+        scopeNamespace,
+      );
+      const parts = ["GitOps sync requested"];
+      if (result.argo_sync_triggered) parts.push("Argo CD refresh sent");
+      if (result.flux_reconcile_triggered) parts.push("Flux reconcile annotated");
+      setSyncMessage(result.message ?? parts.join(" · "));
       await load();
     } catch (e) {
       setSyncError(e instanceof Error ? e.message : "GitOps sync failed");
@@ -223,7 +243,39 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
               : `GitOps: ${gitops?.sync_status ?? "unknown"} · ${crds.length} CRD(s) · namespace scope: ${scopeNamespace}`}
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          {(gitops?.argo_applications?.length ?? 0) > 0 ? (
+            <label style={inlineLabel}>
+              Argo app
+              <select
+                value={selectedArgoApp}
+                onChange={(e) => setSelectedArgoApp(e.target.value)}
+                style={inlineSelect}
+              >
+                {gitops!.argo_applications!.map((app) => (
+                  <option key={app} value={app}>
+                    {app}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          {(gitops?.flux_kustomizations?.length ?? 0) > 0 ? (
+            <label style={inlineLabel}>
+              Flux kustomization
+              <select
+                value={selectedFluxKust}
+                onChange={(e) => setSelectedFluxKust(e.target.value)}
+                style={inlineSelect}
+              >
+                {gitops!.flux_kustomizations!.map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <button type="button" style={refreshBtn} onClick={() => void load()} disabled={loading}>
             {loading ? "Refreshing…" : "Refresh"}
           </button>
@@ -532,6 +584,21 @@ const refreshBtn: CSSProperties = {
 };
 const syncBtn: CSSProperties = {
   padding: "8px 14px", borderRadius: 6, border: "1px solid #f0583a", background: "#f0583a", color: "#fff", fontWeight: 600, fontSize: 13, cursor: "pointer",
+};
+const inlineLabel: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 4,
+  fontSize: 11,
+  fontWeight: 600,
+  color: "#6b7280",
+};
+const inlineSelect: CSSProperties = {
+  padding: "6px 8px",
+  borderRadius: 6,
+  border: "1px solid #d1d5db",
+  fontSize: 13,
+  minWidth: 140,
 };
 const section: CSSProperties = { marginBottom: 28 };
 const sectionTitle: CSSProperties = { margin: "0 0 12px", fontSize: 16, color: "#222324" };
