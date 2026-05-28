@@ -119,6 +119,25 @@ export interface VmRecord {
   node?: string;
   cpu?: string;
   memory?: string;
+  vmrogue_managed?: boolean | null;
+  drift_detected?: boolean | null;
+  drift_message?: string | null;
+}
+
+export type VmDriftRecord = {
+  name: string;
+  namespace: string;
+  drift_detected: boolean;
+  drift_message?: string | null;
+  resolved_spec_hash?: string | null;
+  template?: string | null;
+  profile?: string | null;
+};
+
+export function fetchVmDrift(namespace: string, name: string): Promise<VmDriftRecord> {
+  return apiJson<VmDriftRecord>(
+    `/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/drift`,
+  );
 }
 
 export interface AlertRecord {

@@ -137,6 +137,7 @@ React operator console (HyperShell layout). `GET /` redirects here. Use the clas
 | Network policies (list) | Working | Working (Platform view) |
 | Compliance status + reports | Working | Working (Compliance view) |
 | DR export / apply / failover | Working | Working (Operations → DR tab) |
+| VM operator drift column | Working | Working (Clusters & VMs inventory) |
 | Resource heatmap | Working | Working (Operations → Heatmap tab) |
 | Custom dashboards (list) | Working | Working (Operations → Dashboards tab) |
 | Workloads / pods (read-only) | Working | Working (search + phase filter) |
@@ -171,6 +172,7 @@ React operator console (HyperShell layout). `GET /` redirects here. Use the clas
 | Template catalog sidebar (VMTemplate / VMProfile CRDs) | Done | Browse + publish template/profile CRDs + deploy VMRogueVM |
 | DR export workflow (Operations) | Done | Step bar, VM picker, summary/JSON, copy/download, apply/failover |
 | Catalog sync API + UI | Done | `GET/POST /api/v1/catalog/*`, sync banner + one-click upsert |
+| VM drift in inventory | Done | Drift column + filter on `GET /api/v1/vms`; detail via `/drift` |
 | OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 

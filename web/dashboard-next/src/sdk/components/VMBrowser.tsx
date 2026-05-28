@@ -18,6 +18,7 @@ import VmRdpPanel from "./VmRdpPanel";
 import { VmLifecycleBar } from "./VmLifecycleBar";
 import { VmSnapshotsPanel } from "./VmSnapshotsPanel";
 import { VmSnapshotSchedulesPanel } from "./VmSnapshotSchedulesPanel";
+import VmDriftPanel from "./VmDriftPanel";
 
 interface VM {
   id: string;
@@ -35,6 +36,9 @@ interface VM {
   datacenter?: string;
   cluster?: string;
   tags?: string[];
+  vmrogue_managed?: boolean | null;
+  drift_detected?: boolean | null;
+  drift_message?: string | null;
 }
 
 interface VMBrowserProps {
@@ -56,6 +60,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterDrift, setFilterDrift] = useState<'all' | 'drift' | 'clear' | 'unmanaged'>('all');
   const [selectedVM, setSelectedVM] = useState<VM | null>(null);
   const [sortField, setSortField] = useState<keyof VM>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -88,6 +93,9 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
           memory: vm.memory,
           ip_address: vm.ip,
           tags: [vm.node, vm.cpu, vm.memory].filter(Boolean) as string[],
+          vmrogue_managed: vm.vmrogue_managed ?? null,
+          drift_detected: vm.drift_detected ?? null,
+          drift_message: vm.drift_message ?? null,
         })),
       );
       setError(null);
@@ -129,7 +137,12 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
       const matchesStatus = filterStatus === 'all' ||
                           vm.power_state?.toLowerCase() === filterStatus.toLowerCase() ||
                           vm.status?.toLowerCase() === filterStatus.toLowerCase();
-      return matchesSearch && matchesStatus;
+      const matchesDrift =
+        filterDrift === 'all' ||
+        (filterDrift === 'drift' && vm.drift_detected === true) ||
+        (filterDrift === 'clear' && vm.vmrogue_managed === true && vm.drift_detected === false) ||
+        (filterDrift === 'unmanaged' && vm.vmrogue_managed !== true);
+      return matchesSearch && matchesStatus && matchesDrift;
     })
     .sort((a, b) => {
       const aVal = a[sortField];
@@ -141,6 +154,21 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
       const comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return sortDirection === 'asc' ? comparison : -comparison;
     });
+
+  const driftCount = useMemo(
+    () => vms.filter((vm) => vm.drift_detected === true).length,
+    [vms],
+  );
+
+  const getDriftLabel = (vm: VM): string => {
+    if (vm.vmrogue_managed !== true) return 'N/A';
+    return vm.drift_detected ? 'Drift' : 'In sync';
+  };
+
+  const getDriftColor = (vm: VM): string => {
+    if (vm.vmrogue_managed !== true) return '#9ca3af';
+    return vm.drift_detected ? '#b45309' : '#15803d';
+  };
 
   const getStatusColor = (status: string | undefined): string => {
     if (!status) return '#999';
@@ -219,7 +247,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
               ? "Loading inventory…"
               : `${filteredVMs.length} of ${vms.length} VMs · namespace: ${
                   inventoryNamespace === "all" ? "all" : inventoryNamespace
-                }`}
+                }${driftCount > 0 ? ` · ${driftCount} with drift` : ""}`}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -257,6 +285,17 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
           <option value="stopped">Stopped</option>
           <option value="poweredoff">Powered Off</option>
           <option value="suspended">Suspended</option>
+        </select>
+        <select
+          value={filterDrift}
+          onChange={(e) => setFilterDrift(e.target.value as typeof filterDrift)}
+          style={styles.filterSelect}
+          aria-label="Filter by operator drift"
+        >
+          <option value="all">All drift states</option>
+          <option value="drift">Drift detected</option>
+          <option value="clear">Operator in sync</option>
+          <option value="unmanaged">Not operator-managed</option>
         </select>
       </div>
 
@@ -353,6 +392,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                   </th>
                   <th style={styles.tableHeader}>OS</th>
                   <th style={styles.tableHeader}>IP Address</th>
+                  <th style={styles.tableHeader}>Drift</th>
                   <th style={styles.tableHeader}>Actions</th>
                 </tr>
               </thead>
@@ -396,6 +436,15 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                     </td>
                     <td style={styles.tableCell}>{vm.os || '-'}</td>
                     <td style={styles.tableCell}>{vm.ip_address || '-'}</td>
+                    <td style={styles.tableCell}>
+                      <span style={{
+                        ...styles.statusBadge,
+                        backgroundColor: getDriftColor(vm),
+                        color: '#fff',
+                      }}>
+                        {getDriftLabel(vm)}
+                      </span>
+                    </td>
                     <td style={styles.tableCell}>
                       <button
                         style={styles.selectButton}
@@ -512,11 +561,17 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                   onOpenConsole={() => setConsoleVm({ ns, name: vmName })}
                   onOpenSerial={() => setSerialVm({ ns, name: vmName })}
                 />
+                <VmDriftPanel
+                  namespace={ns}
+                  vmName={vmName}
+                  initialDrift={selectedVM.drift_detected}
+                  initialMessage={selectedVM.drift_message}
+                />
                 <VmSnapshotsPanel namespace={ns} vmName={vmName} />
                 <VmSnapshotSchedulesPanel namespace={ns} vmName={vmName} />
                 <VmSshExposePanel namespace={ns} vmName={vmName} />
                 <VmInternetPanel namespace={ns} vmName={vmName} />
-                <VmMultusPanel namespace={ns} vmName={vm.name} />
+                <VmMultusPanel namespace={ns} vmName={vmName} />
                 <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />
                 <AddDataDiskPanel
                   namespace={ns}

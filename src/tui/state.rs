@@ -90,6 +90,13 @@ pub struct VmInfo {
     pub disk: String,
     pub ip: String,
     pub node: String,
+    /// Set when a VMRogueVM CR exists for this KubeVirt VM (operator-managed).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vmrogue_managed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drift_detected: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub drift_message: Option<String>,
 }
 
 impl VmInfo {
@@ -212,6 +219,9 @@ impl VmInfo {
             disk,
             ip,
             node,
+            vmrogue_managed: None,
+            drift_detected: None,
+            drift_message: None,
         }
     }
 
