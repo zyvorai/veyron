@@ -9,6 +9,7 @@ pub mod autoscaler;
 pub mod backups;
 pub mod chaos_engineering;
 pub mod cilium;
+pub mod clusters;
 pub mod clones;
 pub mod compliance;
 pub mod costs;
@@ -136,4 +137,5 @@ pub fn all_routes(
         .merge(multus::router(state.clone()))
         .merge(images::router(state.clone()))
         .merge(velero::router(state.clone()))
+        .merge(clusters::router(state.clone()))
 }

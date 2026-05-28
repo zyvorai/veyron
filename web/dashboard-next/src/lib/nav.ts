@@ -11,7 +11,9 @@ export type VmrogueView =
   | 'storage'
   | 'platform'
   | 'workloads'
-  | 'insights';
+  | 'insights'
+  | 'compliance'
+  | 'operations';
 
 export const VMROGUE_NAV_EVENT = 'vmrogue:nav';
 

@@ -64,8 +64,8 @@ export const VmroguePlatformPanel: React.FC = () => (
       <h3 style={{ margin: 0, fontSize: '12px', fontWeight: 600 }}>Platform &amp; docs</h3>
     </div>
     <p style={{ margin: 0, fontSize: '11px', color: '#6b7280', lineHeight: 1.5 }}>
-      Nodes, storage, GitOps, and CRD inventory live in the operator sidebar. VMRogue CRD editors and advanced
-      GitOps actions remain in the full dashboard.
+      Nodes, storage, GitOps, compliance, operations, and CRD inventory live in the operator sidebar. Advanced
+      CRD YAML editors remain in the classic dashboard.
     </p>
     <button type="button" onClick={() => requestVmrogueNav({ view: 'platform' })} style={linkBtn}>
       Open platform

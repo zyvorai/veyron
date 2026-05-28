@@ -165,6 +165,22 @@ export const HyperShell: React.FC<HyperShellProps> = ({
             <span aria-hidden>◷</span>
             Insights
           </button>
+          <button
+            type="button"
+            style={navActive("compliance")}
+            onClick={() => onViewChange("compliance")}
+          >
+            <span aria-hidden>✓</span>
+            Compliance
+          </button>
+          <button
+            type="button"
+            style={navActive("operations")}
+            onClick={() => onViewChange("operations")}
+          >
+            <span aria-hidden>↻</span>
+            Operations
+          </button>
         </nav>
 
         <div style={{ borderTop: "1px solid #2d2f32", paddingTop: "16px", marginTop: "8px" }}>

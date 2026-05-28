@@ -114,11 +114,11 @@ These route groups now have first-class dashboard pages:
 
 ## Operator UI (`/dashboard-next/`)
 
-React operator console (HyperShell layout). Use the classic SPA at `/dashboard` for full platform pages.
+React operator console (HyperShell layout). `GET /` redirects here. Use the classic SPA at `/dashboard` for advanced CRD YAML editors and legacy-only pages.
 
 | Capability | Classic `/dashboard` | Operator UI `/dashboard-next/` |
 |---|---|---|
-| Login + API key session | Partial (localStorage) | Working (sessionStorage) |
+| Login + API key session | Partial (localStorage) | Working (sessionStorage + OIDC when configured) |
 | Fleet metrics dashboard | Working | Working (REST/WS feed) |
 | VM list + lifecycle | Working | Working |
 | VNC console | Working | Working |
@@ -129,26 +129,40 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 | Bulk start / stop / delete | Working | Working |
 | Snapshots (per VM) | Working | Working |
 | SSH expose + internet egress | Working | Working |
-| RDP + data disk | Working | Working |
+| RDP + data disk + Multus attach | Working | Working |
 | Cluster nodes (read-only) | Working | Working |
 | Storage PVCs + classes (read-only) | Working | Working |
-| GitOps status + CRDs (read-only) | Working | Working |
+| GitOps status + CRDs + tenants + Velero | Working | Working (Platform view) |
+| Golden images catalog + CDI import | Working | Working (Platform view) |
+| Network policies (list) | Working | Working (Platform view) |
+| Compliance status + reports | Working | Working (Compliance view) |
+| DR export / apply / failover | Working | Working (Operations → DR tab) |
+| Resource heatmap | Working | Working (Operations → Heatmap tab) |
+| Custom dashboards (list) | Working | Working (Operations → Dashboards tab) |
 | Workloads / pods (read-only) | Working | Working (search + phase filter) |
-| Monitoring + security + costs + events | Working | Working (Insights view + findings table) |
-| Advanced GitOps / CRD editors | Working | Link to classic SPA |
+| Monitoring + security + costs + events + logs/traces | Working | Working (Insights view) |
+| Advanced CRD YAML editors | Working | Link to classic SPA |
 | Help → About (zyvor.dev) | Working | Working (login + shell) |
 
-**Strategy:** Operator UI targets day-one KubeVirt fleet ops; classic dashboard remains the full platform surface until pages are ported incrementally.
+**Strategy:** Operator UI is the default landing experience; classic dashboard remains for deep CRD editing and any pages not yet ported.
+
+### Operator UI — Phase 2 (recent)
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Compliance / Operations / Platform extensions | Done | Sidebar Compliance + Operations (DR, heatmap, dashboards, Cilium, autoscaler) |
+| Integrations auto-bootstrap on deploy | Done | `scripts/lib/bootstrap-integrations.sh` |
+| Multi-cluster kubeconfig inventory | Done | `GET /api/v1/clusters`, context banner in operator UI |
+| Default landing on `/dashboard-next/` | Done | `GET /` permanent redirect |
 
 ### Operator UI — remaining (optional)
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| Port platform pages (GitOps, CRDs) | Done | Read-only Platform view in operator UI |
-| Cross-product Zyvor login kit sync | Done | `scripts/zyvor-branding/sync-zyvor-kit-from-vmrogue.sh` + apply scripts |
-| Default landing on `/dashboard-next/` | Done | `GET /` permanent redirect to operator UI |
+| Live kubeconfig context switch | Medium | API pod uses one context; inventory is read-only |
+| OpenCost / Trivy env on deploy | Medium | Bootstrap detects Prometheus/Loki only; add OpenCost/Trivy namespaces |
+| OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
-| E2E against live cluster | Medium | Vitest + Rust path smoke tests; cluster E2E still manual |
 
 ## Immediate Next Steps
 
