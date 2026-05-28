@@ -5,11 +5,10 @@ KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"
 
 REPOS=(
-  VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge vmspawn
+  v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge vmspawn
 )
 
 declare -A WEB_COMP=(
-  [VMRogue]="web/dashboard-next/src/sdk/components"
   [v9s]="ui/src/components"
   [machina]="web/src/components"
   [hypersdk-]="web/dashboard-react/src/components"
@@ -23,7 +22,6 @@ declare -A WEB_COMP=(
 )
 
 declare -A CSS_ENTRY=(
-  [VMRogue]="web/dashboard-next/src/sdk/index.css"
   [v9s]="ui/src/index.css"
   [machina]="web/src/styles/main.css"
   [hypersdk-]="web/dashboard-react/src/index.css"

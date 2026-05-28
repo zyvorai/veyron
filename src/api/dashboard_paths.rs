@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Path rules shared by dashboard / operator UI middleware.
+//! Path rules shared by dashboard middleware.
 
 /// Routes reachable without an API key (shell HTML, health, static assets).
 pub fn is_auth_exempt_path(path: &str) -> bool {
@@ -10,11 +10,10 @@ pub fn is_auth_exempt_path(path: &str) -> bool {
         || path == "/api/v1/auth/oidc/config"
         || path == "/"
         || path == "/dashboard"
-        || path.starts_with("/dashboard-next")
         || path.starts_with("/assets/")
 }
 
-/// Operator UI + classic dashboard API prefixes exempt from the global rate limiter.
+/// Dashboard API prefixes exempt from the global rate limiter.
 pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/vms",
     "/api/v1/ws",
@@ -67,7 +66,6 @@ pub fn is_rate_limit_exempt_path(path: &str) -> bool {
     path == "/api/v1/health"
         || path == "/"
         || path == "/dashboard"
-        || path.starts_with("/dashboard-next")
         || is_operator_api_path(path)
 }
 
@@ -76,12 +74,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn auth_exempt_includes_operator_shell_and_health() {
+    fn auth_exempt_includes_dashboard_shell_and_health() {
         for path in [
             "/",
             "/dashboard",
-            "/dashboard-next/",
-            "/dashboard-next/assets/index.js",
             "/assets/novnc.min.js",
             "/api/v1/health",
         ] {
@@ -91,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn operator_api_prefixes_cover_dashboard_next_reads() {
+    fn dashboard_api_prefixes_cover_common_reads() {
         for path in [
             "/api/v1/namespaces",
             "/api/v1/nodes",
@@ -131,8 +127,8 @@ mod tests {
     }
 
     #[test]
-    fn rate_limit_exempt_includes_operator_api_and_shell() {
-        assert!(is_rate_limit_exempt_path("/dashboard-next/"));
+    fn rate_limit_exempt_includes_dashboard_api_and_shell() {
+        assert!(is_rate_limit_exempt_path("/dashboard"));
         assert!(is_rate_limit_exempt_path("/api/v1/alerts"));
         assert!(is_rate_limit_exempt_path("/api/v1/costs/summary"));
     }

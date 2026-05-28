@@ -129,14 +129,10 @@ deploy_phase_end
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
-if [[ -x "${SCRIPT_DIR}/build-dashboard-next.sh" ]]; then
-    deploy_substep "🎨 Building embedded dashboard-next (local)"
-    "${SCRIPT_DIR}/build-dashboard-next.sh"
-fi
 ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -avz --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \
-    --exclude='node_modules/' --exclude='web/dashboard-next/node_modules/' --exclude='e2e/node_modules/' \
+    --exclude='node_modules/' --exclude='e2e/node_modules/' \
     --exclude='*.qcow2' --exclude='*.vmdk' --exclude='*.iso' \
     -e "ssh -o StrictHostKeyChecking=no" \
     "$REPO_DIR/" "${REMOTE}:${DEPLOY_DIR}/" 2>&1 | stream_local_rsync

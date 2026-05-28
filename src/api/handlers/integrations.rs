@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Optional backend wiring status for dashboard-next (env + lightweight probe).
+//! Optional backend wiring status for the web dashboard (env + lightweight probe).
 
 #[cfg(feature = "web")]
 use axum::{

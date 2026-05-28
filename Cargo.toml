@@ -64,7 +64,6 @@ futures-util = { version = "0.3", optional = true }
 rustls-pemfile = { version = "2", optional = true }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-native-roots"], optional = true }
 jsonwebtoken = { version = "9", default-features = false, features = ["use_pem"], optional = true }
-rust-embed = { version = "8.9", optional = true }
 
 [features]
 default = ["web"]
@@ -78,17 +77,12 @@ web = [
     "rustls-pemfile",
     "reqwest",
     "jsonwebtoken",
-    "rust-embed",
 ]
 experimental = []
 
 [dev-dependencies]
 tempfile = "3.8"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls-native-roots"] }
-
-[[test]]
-name = "dashboard_next_e2e"
-path = "tests/dashboard_next_e2e.rs"
 
 [profile.release]
 lto = true

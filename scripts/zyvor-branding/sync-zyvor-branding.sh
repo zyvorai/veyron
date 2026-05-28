@@ -7,7 +7,6 @@ LOGO="${ROOT}/zyvor-logo.png"
 
 declare -a TARGETS=(
   # ssahani suite (tt/)
-  "/Users/ssahani/tt/VMRogue/web/dashboard-next/public"
   "/Users/ssahani/tt/v9s/ui/public"
   "/Users/ssahani/tt/machina/web/public"
   "/Users/ssahani/tt/hypersdk-/web/dashboard-react/public"

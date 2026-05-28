@@ -74,57 +74,10 @@ jobs:
       - name: Run audit
         run: cargo audit
 
-  dashboard-next:
-    name: dashboard-next (typecheck + embed)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: web/dashboard-next/package-lock.json
-
-      - name: Install UI dependencies
-        working-directory: web/dashboard-next
-        run: npm ci
-
-      - name: Typecheck
-        working-directory: web/dashboard-next
-        run: npm run typecheck
-
-      - name: Unit tests
-        working-directory: web/dashboard-next
-        run: npm test -- --run
-
-      - name: Build Vite bundle
-        working-directory: web/dashboard-next
-        run: npm run build
-
-      - name: Stage embedded static assets
-        run: ./scripts/build-dashboard-next.sh
-
-      - name: Verify embed tree exists
-        run: test -f src/api/web/dashboard-next/index.html
-
-      - name: Verify embedded asset references
-        run: |
-          set -euo pipefail
-          html=src/api/web/dashboard-next/index.html
-          grep -oE 'assets/[^"'\'' ]+' "$html" | sort -u | while read -r rel; do
-            test -f "src/api/web/dashboard-next/${rel}" || {
-              echo "Missing embedded asset: ${rel}" >&2
-              exit 1
-            }
-          done
-          echo "All index.html asset references exist on disk."
-
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    needs: [fmt, clippy, audit, helm-monitoring, dashboard-next]
+    needs: [fmt, clippy, audit, helm-monitoring]
     steps:
       - uses: actions/checkout@v4
 
@@ -168,9 +121,6 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ runner.os }}-build-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Build embedded dashboard-next
-        run: ./scripts/build-dashboard-next.sh
 
       - name: Build release
         run: cargo build --release

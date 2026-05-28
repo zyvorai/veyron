@@ -130,12 +130,10 @@ echo ""
 
 echo "  (unauthenticated)"
 check_json_ok "GET /api/v1/health" "${BASE}/api/v1/health" no
-check_html_contains "GET /dashboard-next/" "${BASE}/dashboard-next/" 'id="root"'
+check_html_contains "GET /dashboard" "${BASE}/dashboard" 'page-dashboard'
 loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
-if [[ "${loc}" == */dashboard-next/* || "${loc}" == */dashboard-next ]]; then
+if [[ "${loc}" == */dashboard/* || "${loc}" == */dashboard ]]; then
     echo "  ✔ GET / → ${loc}"
-elif [[ "${loc}" == */dashboard/* || "${loc}" == */dashboard ]]; then
-    echo "  ✔ GET / → ${loc} (legacy)"
 else
     echo "  ✗ GET / root redirect (got: ${loc:-none})"
     FAIL=$((FAIL + 1))
@@ -212,7 +210,7 @@ else
     echo "  ✗ GET /api/v1/dr/export (HTTP ${dr_code})"
     FAIL=$((FAIL + 1))
 fi
-check_http_200 "GET /dashboard (classic)" "${BASE}/dashboard" no
+check_http_200 "GET /dashboard" "${BASE}/dashboard" no
 
 echo ""
 if [[ "${FAIL}" -eq 0 ]]; then

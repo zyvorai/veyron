@@ -1,6 +1,6 @@
 # Enterprise SSO (OIDC) for VMRogue
 
-Configure OpenID Connect for human login to `/dashboard-next/` while keeping API keys for automation.
+Configure OpenID Connect for human login while keeping API keys for automation. The classic dashboard at `/dashboard` uses API keys in browser localStorage today; OIDC bearer validation is available on the API for clients that obtain tokens from your IdP.
 
 ## API server environment
 
@@ -18,21 +18,21 @@ Role mapping (first matching group wins):
 - `vmrogue-write` or `write` → **write**
 - otherwise → **readonly**
 
-## Dashboard (PKCE public client)
+## Public OIDC discovery
 
 | Variable | Description |
 |----------|-------------|
-| `VMROGUE_OIDC_CLIENT_ID` | OAuth client id |
+| `VMROGUE_OIDC_CLIENT_ID` | OAuth client id (exposed via discovery) |
 | `VMROGUE_OIDC_AUTHORIZATION_URL` | Authorization endpoint |
 | `VMROGUE_OIDC_TOKEN_URL` | Token endpoint |
-| `VMROGUE_OIDC_REDIRECT_URI` | Callback URL (default: `{origin}/dashboard-next/`) |
+| `VMROGUE_OIDC_REDIRECT_URI` | Callback URL (default: `{origin}/dashboard`) |
 
-The operator UI reads `GET /api/v1/auth/oidc/config` and shows **Sign in with SSO** when configured.
+Clients read `GET /api/v1/auth/oidc/config` for issuer, client id, and endpoints.
 
 ## Keycloak quick start
 
 1. Create realm `vmrogue`, client `vmrogue-dashboard`, access type **public**, PKCE enabled.
-2. Valid redirect URI: `https://<api-host>/dashboard-next/*`
+2. Valid redirect URI: `https://<api-host>/dashboard/*`
 3. Add group mappers → `vmrogue-admin`, `vmrogue-write`.
 4. Set env vars on the API Deployment (see table above).
 

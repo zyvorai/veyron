@@ -40,7 +40,7 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 
 Responses include `vmrogue_context` describing the active data source when integrations are used or skipped.
 
-**Operator UI:** `GET /api/v1/integrations/status` lists configured `VMROGUE_*` backends (redacted host, HTTP probe) and optional `open` links — **Insights** sections or external consoles (NodePort + node IP, or `VMROGUE_GRAFANA_EXTERNAL_URL`, `VMROGUE_PROMETHEUS_EXTERNAL_URL`, `VMROGUE_ARGOCD_EXTERNAL_URL`, `VMROGUE_JAEGER_EXTERNAL_URL`). Open **Integrations** in `/dashboard-next/`.
+**Dashboard:** `GET /api/v1/integrations/status` lists configured `VMROGUE_*` backends (redacted host, HTTP probe) and optional external console links (NodePort + node IP, or `VMROGUE_GRAFANA_EXTERNAL_URL`, `VMROGUE_PROMETHEUS_EXTERNAL_URL`, `VMROGUE_ARGOCD_EXTERNAL_URL`, `VMROGUE_JAEGER_EXTERNAL_URL`).
 
 ## Monitoring stack
 

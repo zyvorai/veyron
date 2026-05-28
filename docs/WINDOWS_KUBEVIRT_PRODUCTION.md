@@ -60,7 +60,7 @@ On clusters where KubeVirt’s **`VideoConfig` alpha feature gate** is enabled, 
 | `POST /api/v1/vms/{ns}/{name}/guest-agent/enable-rdp` | Enable RDP in a **running** guest via QEMU guest-agent (`guest-exec` PowerShell) |
 | `POST /api/v1/vms/{ns}/{name}/guest-agent/disable-rdp` | Disable RDP in the guest via guest-agent |
 
-**Requirements:** VM must be **Running**; guest must allow Remote Desktop (Pro/Enterprise/Server); each VM needs a **unique** NodePort. Guest-agent endpoints require **AgentConnected** on the VMI and API RBAC on `subresources.kubevirt.io` **`virtualmachineinstances/guest-exec`** and **`guest-exec-status`**. VM create merges masquerade port **3389** and first-boot userdata when the template is Windows (`src/kube/windows_rdp.rs`). The embedded dashboard and **dashboard-next** VM browser expose these actions in the **Remote access (RDP)** panel.
+**Requirements:** VM must be **Running**; guest must allow Remote Desktop (Pro/Enterprise/Server); each VM needs a **unique** NodePort. Guest-agent endpoints require **AgentConnected** on the VMI and API RBAC on `subresources.kubevirt.io` **`virtualmachineinstances/guest-exec`** and **`guest-exec-status`**. VM create merges masquerade port **3389** and first-boot userdata when the template is Windows (`src/kube/windows_rdp.rs`). The embedded dashboard exposes these actions in the **Remote access (RDP)** panel.
 
 **macOS client:**
 

@@ -1,4 +1,4 @@
-.PHONY: build release check test clippy fmt lint clean install help docker deploy dashboard-next catalog-generate catalog-check
+.PHONY: build release check test clippy fmt lint clean install help docker deploy catalog-generate catalog-check
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -6,10 +6,7 @@ help: ## Show this help
 build: ## Build debug binary
 	cargo build
 
-dashboard-next: ## Build and embed React operator UI (dashboard-next)
-	./scripts/build-dashboard-next.sh
-
-release: dashboard-next ## Build optimized release binary
+release: ## Build optimized release binary
 	cargo build --release
 
 check: ## Run cargo check
@@ -35,14 +32,7 @@ clean: ## Clean build artifacts
 install: ## Install to ~/.cargo/bin
 	cargo install --path .
 
-ci: fmt-check clippy dashboard-next-ci test ## Run full CI pipeline locally
-
-dashboard-next-ci: ## Typecheck, test, and build embedded operator UI
-	cd web/dashboard-next && npm ci && npm run typecheck && npm test -- --run && npm run build
-	./scripts/build-dashboard-next.sh
-	@grep -oE 'assets/[^"'\'' ]+' src/api/web/dashboard-next/index.html | sort -u | while read -r rel; do \
-	  test -f "src/api/web/dashboard-next/$${rel}" || (echo "Missing embed: $${rel}" >&2; exit 1); \
-	done
+ci: fmt-check clippy test ## Run full CI pipeline locally
 
 helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
 	helm dependency build charts/vmrogue-monitoring

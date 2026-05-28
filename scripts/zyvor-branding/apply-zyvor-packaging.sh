@@ -5,13 +5,12 @@ KIT="$(cd "$(dirname "$0")" && pwd)"
 TT="$(cd "${KIT}/../../.." && pwd)"  # …/VMRogue/scripts/zyvor-branding → repo root's parent (tt)
 
 REPOS=(
-  VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
+  v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
   vmspawn nightforge hypersdk-web hypercluster
 )
 
 # repo → "public_dir:components_dir" (either may be empty)
 declare -A WEB_PUBLIC=(
-  [VMRogue]="web/dashboard-next/public:web/dashboard-next/src/sdk/components"
   [v9s]="ui/public:ui/src/components"
   [machina]="web/public:web/src/components"
   [hypersdk-]="web/dashboard-react/public:web/dashboard-react/src/components"

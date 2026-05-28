@@ -1,13 +1,5 @@
 #!/usr/bin/env bash
-# Refresh scripts/zyvor-branding kit from VMRogue dashboard-next (canonical Zyvor UI).
+# Legacy: dashboard-next was removed; kit files live under scripts/zyvor-branding/.
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-KIT="${ROOT}/scripts/zyvor-branding"
-SRC="${ROOT}/web/dashboard-next/src/sdk"
-
-cp -f "${SRC}/components/ZyvorAboutModal.tsx" "${KIT}/ZyvorAboutModal.tsx"
-cp -f "${SRC}/components/ZyvorBrand.tsx" "${KIT}/ZyvorBrand.tsx"
-cp -f "${SRC}/components/PremiumLoginShell.tsx" "${KIT}/PremiumLoginShell.tsx"
-cp -f "${SRC}/zyvor-premium-login.css" "${KIT}/zyvor-premium-login.css"
-
-echo "Synced Zyvor kit from VMRogue dashboard-next → ${KIT}"
+echo "dashboard-next removed — Zyvor kit is maintained in scripts/zyvor-branding/ (no sync from VMRogue UI)." >&2
+exit 0
