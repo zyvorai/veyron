@@ -322,6 +322,10 @@ ssh "${REMOTE}" "
     ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
     ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
     ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
+    if ${K8S_CMD} -n ${NAMESPACE} get secret vmrogue-integrations &>/dev/null; then
+        ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/vmrogue-api 2>/dev/null || true
+        ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
+    fi
 " 2>&1 || true
 deploy_phase_end
 

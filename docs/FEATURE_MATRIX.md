@@ -160,7 +160,8 @@ React operator console (HyperShell layout). `GET /` redirects here. Use the clas
 | Item | Priority | Notes |
 |------|----------|-------|
 | Live kubeconfig context switch | Medium | API pod uses one context; inventory is read-only |
-| OpenCost / Trivy env on deploy | Medium | Bootstrap detects Prometheus/Loki only; add OpenCost/Trivy namespaces |
+| OpenCost / Trivy / Jaeger on deploy | Done | Bootstrap detects opencost/trivy-system/monitoring Jaeger when present |
+| Fleet sidebar (multi-cluster) | Done | Sync per kubeconfig context |
 | OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 
