@@ -1243,6 +1243,47 @@ pub mod web {
         m
     }
 
+    async fn vrvm_drift_index(
+        kube_client: &crate::kube::KubeClient,
+        scope_ns: &str,
+    ) -> std::collections::HashMap<(String, String), (bool, Option<String>)> {
+        use crate::api::handlers::namespace_scope;
+        use crate::operator_crds::VMRogueVM;
+        use std::collections::HashMap;
+
+        let mut index = HashMap::new();
+        let client = kube_client.client();
+        let Ok(list) = namespace_scope::list_namespaced_resource::<VMRogueVM>(&client, scope_ns).await
+        else {
+            return index;
+        };
+
+        for vm in list {
+            let ns = vm
+                .metadata
+                .namespace
+                .clone()
+                .unwrap_or_else(|| "default".to_string());
+            let name = vm.metadata.name.clone().unwrap_or_default();
+            if name.is_empty() {
+                continue;
+            }
+            let drift = vm
+                .status
+                .as_ref()
+                .map(|s| s.drift_detected)
+                .unwrap_or(false);
+            let message = vm.status.as_ref().and_then(|s| s.drift_message.clone());
+            index.insert((ns.clone(), name.clone()), (drift, message.clone()));
+            if let Some(kv) = vm.status.as_ref().and_then(|s| s.kubevirt_vm_name.clone()) {
+                if kv != name {
+                    index.insert((ns, kv), (drift, message));
+                }
+            }
+        }
+        index
+    }
+
     async fn list_vms_handler(
         State(state): State<SharedState>,
         Query(query): Query<VmQuery>,
@@ -1266,6 +1307,7 @@ pub mod web {
         match vms_result {
             Ok(vms) => {
                 let vmi_index = vmi_ip_node_index(&client, scope_ns).await;
+                let drift_index = vrvm_drift_index(&client, scope_ns).await;
                 let vm_infos: Vec<VmInfo> = vms
                     .iter()
                     .map(|vm| {
@@ -1275,7 +1317,15 @@ pub mod web {
                             .get(&(ns.to_string(), name.to_string()))
                             .cloned()
                             .unwrap_or((None, None));
-                        VmInfo::from_vm_with_vmi_data(vm, ip, node)
+                        let mut info = VmInfo::from_vm_with_vmi_data(vm, ip, node);
+                        if let Some((drift, message)) = drift_index
+                            .get(&(ns.to_string(), name.to_string()))
+                        {
+                            info.vmrogue_managed = Some(true);
+                            info.drift_detected = Some(*drift);
+                            info.drift_message = message.clone();
+                        }
+                        info
                     })
                     .collect();
                 let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms");

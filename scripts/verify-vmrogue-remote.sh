@@ -169,6 +169,17 @@ check_json_grep "GET /api/v1/costs/summary" \
     "${BASE}/api/v1/costs/summary?namespace=all" 'total_cost'
 check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
+check_json_grep "GET /api/v1/vms (drift fields)" \
+    "${BASE}/api/v1/vms?namespace=all" '"vmrogue_managed"'
+drift_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
+    -H "X-API-Key: ${KEY}" \
+    "${BASE}/api/v1/vms/default/nonexistent-vm/drift" || echo "000")
+if [[ "${drift_code}" == "404" || "${drift_code}" == "200" ]]; then
+    echo "  ✔ GET /api/v1/vms/:ns/:name/drift (HTTP ${drift_code})"
+else
+    echo "  ✗ GET /api/v1/vms/:ns/:name/drift (HTTP ${drift_code})"
+    FAIL=$((FAIL + 1))
+fi
 
 echo "  (feature-gap routes)"
 check_json_grep "GET /api/v1/compliance/status" \
