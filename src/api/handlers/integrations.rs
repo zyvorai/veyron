@@ -157,12 +157,12 @@ async fn probe_url(url: &str) -> bool {
 #[cfg(feature = "web")]
 fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
     let (href, label) = match id {
-        "prometheus" => ("insights-monitoring", "Open in Insights"),
-        "alertmanager" => ("insights-incidents", "Open incidents"),
-        "loki" => ("insights-logs", "Open logs"),
-        "opencost" => ("insights-costs", "Open costs"),
-        "trivy" => ("insights-security", "Open security"),
-        "jaeger" => ("insights-traces", "Open traces"),
+        "prometheus" => ("monitoring", "Open monitoring"),
+        "alertmanager" => ("incidents", "Open incidents"),
+        "loki" => ("logs", "Open logs"),
+        "opencost" => ("costs", "Open costs"),
+        "trivy" => ("security", "Open security"),
+        "jaeger" => ("traces", "Open traces"),
         _ => return None,
     };
     Some(IntegrationOpenLink {
