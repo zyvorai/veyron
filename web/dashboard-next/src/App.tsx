@@ -34,6 +34,7 @@ const InsightsPanel = lazy(() => import('./sdk/components/InsightsPanel'));
 const CompliancePanel = lazy(() => import('./sdk/components/CompliancePanel'));
 const OperationsPanel = lazy(() => import('./sdk/components/OperationsPanel'));
 const FleetPanel = lazy(() => import('./sdk/components/FleetPanel'));
+const IntegrationsPanel = lazy(() => import('./sdk/components/IntegrationsPanel'));
 
 function ViewFallback() {
   return (
@@ -318,6 +319,10 @@ export default function App() {
         ) : view === 'fleet' ? (
           <Suspense fallback={<ViewFallback />}>
             <FleetPanel />
+          </Suspense>
+        ) : view === 'integrations' ? (
+          <Suspense fallback={<ViewFallback />}>
+            <IntegrationsPanel />
           </Suspense>
         ) : (
           <Suspense fallback={<ViewFallback />}>

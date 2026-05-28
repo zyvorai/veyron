@@ -1159,6 +1159,26 @@ export function syncCluster(name: string): Promise<ClusterSummary> {
   return apiJson<ClusterSummary>(`/clusters/${encodeURIComponent(name)}/sync`);
 }
 
+export type IntegrationStatusItem = {
+  id: string;
+  name: string;
+  env_var: string;
+  configured: boolean;
+  endpoint: string | null;
+  probe: string;
+  feeds: string;
+};
+
+export type IntegrationsStatusResponse = {
+  vmrogue_context: VmrogueFeatureContext;
+  integrations: IntegrationStatusItem[];
+  configured_count: number;
+};
+
+export function fetchIntegrationsStatus(): Promise<IntegrationsStatusResponse> {
+  return apiJson<IntegrationsStatusResponse>('/integrations/status');
+}
+
 export type CiliumStatusRecord = {
   version: string;
   agent_count: number;

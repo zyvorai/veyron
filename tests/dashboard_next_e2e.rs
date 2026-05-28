@@ -31,6 +31,7 @@ fn dashboard_and_operator_api_smoke() {
         "/api/v1/dashboards?namespace=all",
         "/api/v1/network-policies?namespace=all",
         "/api/v1/clusters",
+        "/api/v1/integrations/status",
         "/api/v1/cilium/status",
         "/api/v1/autoscaler/policies?namespace=all",
         "/api/v1/images/catalog?namespace=all",

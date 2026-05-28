@@ -28,6 +28,7 @@ pub mod helm;
 pub mod hpa;
 pub mod images;
 pub mod incidents;
+pub mod integrations;
 pub mod ingress;
 pub mod logs;
 pub mod metrics;
@@ -138,4 +139,5 @@ pub fn all_routes(
         .merge(images::router(state.clone()))
         .merge(velero::router(state.clone()))
         .merge(clusters::router(state.clone()))
+        .merge(integrations::router(state.clone()))
 }

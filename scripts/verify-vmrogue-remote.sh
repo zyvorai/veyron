@@ -177,6 +177,8 @@ check_http_200 "GET /api/v1/dashboards" \
     "${BASE}/api/v1/dashboards?namespace=all" yes
 check_http_200 "GET /api/v1/network-policies" \
     "${BASE}/api/v1/network-policies?namespace=all" yes
+check_json_grep "GET /api/v1/integrations/status" \
+    "${BASE}/api/v1/integrations/status" '"integrations"'
 dr_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
     -H "X-API-Key: ${KEY}" \
     "${BASE}/api/v1/dr/export?namespace=default&vm_name=nonexistent-vm" || echo "000")
