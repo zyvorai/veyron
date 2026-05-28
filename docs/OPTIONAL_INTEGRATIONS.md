@@ -40,6 +40,8 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 
 Responses include `vmrogue_context` describing the active data source when integrations are used or skipped.
 
+**Operator UI:** `GET /api/v1/integrations/status` lists configured `VMROGUE_*` backends (redacted host, HTTP probe). Open **Integrations** in `/dashboard-next/`.
+
 ## Monitoring stack
 
 Install the optional umbrella chart for Prometheus, Grafana, and Alertmanager:

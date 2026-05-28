@@ -372,7 +372,8 @@ for endpoint in \
   "/api/v1/network-policies" \
   "/api/v1/clusters" \
   "/api/v1/cilium/status" \
-  "/api/v1/autoscaler/policies"; do
+  "/api/v1/autoscaler/policies" \
+  "/api/v1/integrations/status"; do
   code=$(curl_api "$endpoint" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
   if [[ "$code" == "200" ]]; then
     pass "GET ${endpoint} → 200"
