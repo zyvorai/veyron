@@ -165,6 +165,7 @@ React operator console (HyperShell layout). `GET /` redirects here. Use the clas
 | Integrations panel + `/api/v1/integrations/status` | Done | Env wiring + HTTP probe from API pod |
 | Argo CD token bootstrap on deploy | Done | `bootstrap-integrations.sh` + Platform GitOps app picker |
 | Integration deep links (Insights + consoles) | Done | NodePort discovery, `VMROGUE_*_EXTERNAL_URL`, Grafana bootstrap |
+| Fleet kube context switch | Done | `POST /api/v1/clusters/:name/activate` + ConfigMap persistence |
 | OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 

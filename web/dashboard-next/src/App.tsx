@@ -22,6 +22,7 @@ import {
 import { Login } from './sdk/components/Login';
 import ErrorBanner from './sdk/components/ErrorBanner';
 import { HyperShell } from './sdk/layout/HyperShell';
+import { VMROGUE_KUBE_CONTEXT_EVENT } from './sdk/components/FleetPanel';
 
 const Dashboard = lazy(() =>
   import('./sdk/Dashboard').then((m) => ({ default: m.Dashboard }))
@@ -88,8 +89,7 @@ export default function App() {
     })();
   }, [checking, authed]);
 
-  useEffect(() => {
-    if (!authed) return;
+  const reloadScope = useCallback(() => {
     setNamespaceError(null);
     void Promise.all([
       fetchNamespaces(),
@@ -110,7 +110,19 @@ export default function App() {
         setTenants([]);
         setNamespaceError(err instanceof Error ? err.message : 'Failed to load namespaces');
       });
-  }, [authed]);
+  }, []);
+
+  useEffect(() => {
+    if (!authed) return;
+    reloadScope();
+  }, [authed, reloadScope]);
+
+  useEffect(() => {
+    if (!authed) return;
+    const onKubeContext = () => reloadScope();
+    window.addEventListener(VMROGUE_KUBE_CONTEXT_EVENT, onKubeContext);
+    return () => window.removeEventListener(VMROGUE_KUBE_CONTEXT_EVENT, onKubeContext);
+  }, [authed, reloadScope]);
 
   const activeTenant = useMemo(
     () => tenants.find((t) => t.id === activeTenantId) ?? null,

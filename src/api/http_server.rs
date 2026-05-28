@@ -129,6 +129,8 @@ pub mod web {
     pub struct WebState {
         pub namespace: String,
         pub kube_client: KubeClient,
+        /// Kubeconfig context name used for API calls (may differ from file default).
+        pub active_kube_context: Option<String>,
         pub api_key: Option<String>,
         pub api_keys: Vec<ApiKeyEntry>,
         rate_limiter: RateLimiterState,
@@ -173,14 +175,32 @@ pub mod web {
                 }
             }
 
+            let mut active_kube_context = None;
+            let bootstrap = KubeClient::new().await?;
+            if let Some(ctx) =
+                crate::api::handlers::clusters::load_persisted_kube_context(&bootstrap, &namespace)
+                    .await
+            {
+                crate::kube::set_active_kube_context(Some(ctx.clone()));
+                active_kube_context = Some(ctx);
+            }
             let kube_client = KubeClient::new().await?;
             Ok(Self {
                 namespace,
                 kube_client,
+                active_kube_context,
                 api_key,
                 api_keys,
                 rate_limiter: RateLimiterState::new(rate_limit_per_minute, 60),
             })
+        }
+
+        /// Switch kube API client to another kubeconfig context (multi-cluster file).
+        pub async fn apply_kube_context(&mut self, context: Option<String>) -> anyhow::Result<()> {
+            crate::kube::set_active_kube_context(context.clone());
+            self.kube_client = KubeClient::new().await?;
+            self.active_kube_context = context;
+            Ok(())
         }
 
         pub fn client(&self) -> &KubeClient {

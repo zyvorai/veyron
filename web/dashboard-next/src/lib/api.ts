@@ -1147,6 +1147,7 @@ export type ClusterSummary = {
   context: string;
   environment: string;
   is_primary: boolean;
+  is_active: boolean;
   health: string;
   vm_count: number;
   node_count: number;
@@ -1156,7 +1157,15 @@ export type ClusterSummary = {
 export type ClustersResponse = {
   vmrogue_context: VmrogueFeatureContext;
   current_context: string;
+  kubeconfig_current_context: string;
   clusters: ClusterSummary[];
+};
+
+export type ActivateClusterResponse = {
+  status: string;
+  cluster: string;
+  context: string;
+  message: string;
 };
 
 export function fetchClusters(): Promise<ClustersResponse> {
@@ -1165,6 +1174,13 @@ export function fetchClusters(): Promise<ClustersResponse> {
 
 export function syncCluster(name: string): Promise<ClusterSummary> {
   return apiJson<ClusterSummary>(`/clusters/${encodeURIComponent(name)}/sync`);
+}
+
+export function activateCluster(name: string): Promise<ActivateClusterResponse> {
+  return apiJson<ActivateClusterResponse>(`/clusters/${encodeURIComponent(name)}/activate`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
 }
 
 export type IntegrationOpenLink = {
