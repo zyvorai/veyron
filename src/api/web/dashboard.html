@@ -21,6 +21,8 @@
   --bg-deep:#090b0e;
   --bg-card:rgba(31,36,43,.84);
   --bg-card-solid:#181c22;
+  --bg-elevated:#1e232b;
+  --bg-secondary:#14171c;
   --bg-tertiary:rgba(57,66,78,.42);
   --steel:#1b2027;
   --steel-light:#313a45;
@@ -177,15 +179,49 @@ body>*{position:relative;z-index:1}
    NAVBAR — v9s-style top bar (slate + blue)
    ═══════════════════════════════════════════════════ */
 .navbar{
-  position:sticky;top:0;z-index:50;
-  background:rgba(10,12,15,.92);
+  position:sticky;top:0;z-index:120;
+  background:rgba(10,12,15,.96);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(120,132,148,.2);
-  padding:0 24px;height:72px;
-  display:flex;align-items:center;justify-content:space-between;
-  box-shadow:0 1px 0 rgba(255,255,255,.03),0 14px 36px rgba(0,0,0,.28);
+  border-bottom:1px solid rgba(120,132,148,.22);
+  padding:0 16px;min-height:56px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  box-shadow:0 1px 0 rgba(255,255,255,.03),0 8px 24px rgba(0,0,0,.22);
 }
+.cloudos-topbar .navbar-left{gap:10px;overflow:hidden}
+.cloudos-topbar .navbar-brand{font-size:1.05rem;animation:none}
+.cloudos-topbar .navbar-brand::before{width:32px;height:32px;font-size:.9rem;border-radius:10px}
+.navbar-page-title{
+  font-size:.92rem;font-weight:600;color:var(--text-muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:min(320px,32vw);
+  padding-left:10px;border-left:1px solid var(--border);
+}
+.btn-nav-browse{
+  padding:7px 12px;border-radius:9px;border:1px solid var(--border);
+  background:rgba(57,66,78,.35);color:var(--text);font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.btn-nav-browse:hover,.btn-nav-browse.active{border-color:rgba(56,189,248,.35);color:var(--spark)}
+.cloudos-topbar .nav-links{
+  display:none;position:fixed;top:56px;left:0;right:0;z-index:115;
+  padding:12px 16px 16px;margin:0;border-radius:0;
+  border:1px solid rgba(120,132,148,.24);border-top:none;
+  max-height:min(52vh,440px);overflow-y:auto;
+  background:rgba(8,10,13,.98);
+  box-shadow:0 16px 40px rgba(0,0,0,.5);
+  flex-wrap:wrap;align-content:flex-start;gap:8px;
+}
+body.classic-nav-open .cloudos-topbar .nav-links{display:flex}
+@media(min-width:961px){
+  body.classic-nav-open .cloudos-topbar .nav-links{left:220px}
+  body.finder-collapsed.classic-nav-open .cloudos-topbar .nav-links{left:0}
+}
+.classic-nav-backdrop{
+  display:none;position:fixed;inset:56px 0 0 0;z-index:110;background:rgba(0,0,0,.35);
+}
+body.classic-nav-open .classic-nav-backdrop{display:block}
+.page-context-bar{display:none}
+body[data-page="dashboard"] .control-center-bar{display:flex}
+.control-center-bar{display:none}
 .navbar::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,rgba(214,221,230,.55),rgba(159,176,196,.85),rgba(199,208,219,.72),transparent);
@@ -1596,8 +1632,8 @@ html[data-theme="zinc"] .monitor-cap{
 
 /* ── Zyvor CloudOS experience layer ── */
 .control-center-bar{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  padding:10px 20px;margin:0;border-bottom:1px solid var(--border);
+  align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:8px 16px;margin:0;border-bottom:1px solid var(--border);
   background:linear-gradient(90deg,rgba(56,189,248,.06),rgba(59,130,246,.04));
 }
 .cc-items{display:flex;gap:10px;flex-wrap:wrap;flex:1}
@@ -1608,7 +1644,7 @@ html[data-theme="zinc"] .monitor-cap{
 .cc-tile.ok{border-color:rgba(34,197,94,.25)}
 .cc-tile.warn{border-color:rgba(251,191,36,.35)}
 .cc-tile.error{border-color:rgba(239,68,68,.35)}
-.cc-label{font-size:.72rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
+.cc-label{font-size:.72rem;color:var(--text-dim);text-transform:none;letter-spacing:.02em}
 .cc-value{font-size:1rem;font-weight:600}
 .cloudos-datacenter{
   display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:18px;
@@ -1688,11 +1724,14 @@ html[data-theme="zinc"] .monitor-cap{
   color:var(--text-muted);font-size:.74rem;cursor:pointer;white-space:nowrap;
 }
 .btn-spotlight:hover{border-color:rgba(56,189,248,.3);color:var(--spark)}
-.cloudos-body-row{display:flex;align-items:stretch;min-height:calc(100vh - 52px)}
+.cloudos-body-row{display:flex;align-items:stretch;min-height:calc(100vh - 56px)}
 .cloudos-finder{
   width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-secondary);
   padding:14px 10px;display:flex;flex-direction:column;gap:6px;
+  transition:width .2s,padding .2s;
 }
+body.finder-collapsed .cloudos-finder{width:0;padding:0;overflow:hidden;border-right:none}
+body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 .cloudos-finder-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:8px 10px 4px}
 .cloudos-finder-item{
   display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;
@@ -1701,7 +1740,10 @@ html[data-theme="zinc"] .monitor-cap{
 .cloudos-finder-item:hover,.cloudos-finder-item.active{background:rgba(56,189,248,.1);color:var(--text)}
 .cloudos-finder-item .fi-icon{width:18px;text-align:center;opacity:.85}
 .cloudos-main{flex:1;min-width:0;display:flex;flex-direction:column}
-.finder-toggle{display:none;margin-right:8px}
+.finder-toggle{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:36px;height:36px;padding:0;border-radius:9px;flex-shrink:0;
+}
 .app-store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:12px}
 .app-store-card{
   border-radius:14px;border:1px solid var(--border);background:var(--bg-elevated);padding:16px;
@@ -1718,27 +1760,31 @@ html[data-theme="zinc"] .monitor-cap{
 .vm-health-pill.good{color:var(--success);border-color:rgba(34,197,94,.25)}
 .vm-health-pill.fair{color:var(--warning);border-color:rgba(251,191,36,.3)}
 .vm-health-pill.bad{color:var(--error);border-color:rgba(239,68,68,.3)}
+@media(max-width:1100px){
+  .refresh-text{display:none}
+}
 @media(max-width:960px){
-  .finder-toggle{display:inline-flex}
   .cloudos-finder{
-    position:fixed;left:0;top:52px;bottom:0;z-index:120;transform:translateX(-100%);
+    position:fixed;left:0;top:56px;bottom:0;z-index:125;transform:translateX(-100%);
     transition:transform .2s;box-shadow:8px 0 32px rgba(0,0,0,.35);
   }
   .cloudos-finder.open{transform:translateX(0)}
   .cloudos-body-row{min-height:auto}
-  .navbar-left .nav-links{display:none}
+  body.classic-nav-open .cloudos-topbar .nav-links{left:0}
+}
+@media(min-width:961px){
+  .cloudos-finder{position:relative;transform:none!important}
 }
 </style>
 </head>
 <body>
 
-<nav class="navbar">
+<nav class="navbar cloudos-topbar">
   <div class="navbar-left">
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Toggle sidebar">☰</button>
-    <span class="navbar-brand" onclick="navigate('dashboard')">VMRogue</span>
+    <span class="navbar-brand" onclick="navigate('dashboard')">CloudOS</span>
+    <span class="navbar-page-title" id="navbar-page-title">Datacenter Home</span>
     <div class="nav-links">
-      <button class="nav-link active" data-page="dashboard" onclick="navigate('dashboard')"><span class="nav-icon">◫</span><span class="nav-label">Dashboard</span></button>
-
       <div class="nav-group">
         <button class="nav-group-btn"><span class="nav-icon">◆</span><span class="nav-label">Compute</span></button>
         <div class="nav-dropdown">
@@ -1851,7 +1897,8 @@ html[data-theme="zinc"] .monitor-cap{
     </div>
   </div>
   <div class="navbar-right">
-    <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K Search</button>
+    <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
+    <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <option value="slate">Slate Alloy</option>
       <option value="steel">Steel</option>
@@ -1870,6 +1917,7 @@ html[data-theme="zinc"] .monitor-cap{
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </nav>
+<div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
 
 <div class="cloudos-body-row">
 <aside class="cloudos-finder" id="cloudos-finder" aria-label="CloudOS Finder">
@@ -1881,6 +1929,10 @@ html[data-theme="zinc"] .monitor-cap{
   <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon">⧉</span>Backups</button>
   <button type="button" class="cloudos-finder-item" data-page="monitoring" onclick="finderNavigate('monitoring')"><span class="fi-icon">⬢</span>Activity Monitor</button>
   <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon">⚙</span>Integrations</button>
+  <div class="cloudos-finder-title" style="margin-top:10px">Network &amp; platform</div>
+  <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon">⟷</span>Ingress</button>
+  <button type="button" class="cloudos-finder-item" data-page="catalog" onclick="finderNavigate('catalog')"><span class="fi-icon">▦</span>Catalog (advanced)</button>
+  <button type="button" class="cloudos-finder-item" onclick="toggleClassicNav()"><span class="fi-icon">⋯</span>All pages…</button>
   <div class="cloudos-finder-title" style="margin-top:10px">Workspace</div>
   <div id="finder-location-label" style="padding:4px 12px;font-size:.78rem;color:var(--text-dim)">All workspaces</div>
 </aside>
@@ -3179,10 +3231,12 @@ function setTheme(theme) {
 }
 
 function updatePageContext(page) {
-  const meta = PAGE_META[page] || {kicker:'VMRogue', title:'Cluster command surface', tags:['Live cluster']};
+  const meta = PAGE_META[page] || {kicker:'CloudOS', title:'Cluster command surface', tags:['Live cluster']};
   const kicker = document.getElementById('context-kicker');
   const breadcrumb = document.getElementById('context-breadcrumb');
   const tags = document.getElementById('context-tags');
+  const navTitle = document.getElementById('navbar-page-title');
+  if (navTitle) navTitle.textContent = meta.kicker || page;
   if (kicker) kicker.textContent = meta.kicker;
   if (breadcrumb) breadcrumb.textContent = meta.title;
   if (tags) {
@@ -3214,9 +3268,11 @@ function openIntegrationLink(link) {
 }
 
 function navigate(page) {
+  closeClassicNav();
   currentPage = page;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) { toast('Page not found: ' + page, 'error'); return; }
   pageEl.classList.add('active');
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   document.querySelectorAll('.nav-group-btn').forEach(b => {
@@ -3679,11 +3735,28 @@ let cloudOsSession = { role: 'admin', can_write: true, can_admin: true };
 const VM_VIEW_KEY = 'vmrogue_vm_view';
 
 function toggleFinder() {
-  const el = document.getElementById('cloudos-finder');
-  if (el) el.classList.toggle('open');
+  if (window.innerWidth <= 960) {
+    const el = document.getElementById('cloudos-finder');
+    if (el) el.classList.toggle('open');
+  } else {
+    document.body.classList.toggle('finder-collapsed');
+  }
+}
+
+function toggleClassicNav() {
+  document.body.classList.toggle('classic-nav-open');
+  const btn = document.getElementById('btn-classic-nav');
+  if (btn) btn.classList.toggle('active', document.body.classList.contains('classic-nav-open'));
+}
+
+function closeClassicNav() {
+  document.body.classList.remove('classic-nav-open');
+  const btn = document.getElementById('btn-classic-nav');
+  if (btn) btn.classList.remove('active');
 }
 
 function finderNavigate(page) {
+  closeClassicNav();
   navigate(page);
   const el = document.getElementById('cloudos-finder');
   if (el && window.innerWidth <= 960) el.classList.remove('open');
@@ -4760,6 +4833,7 @@ document.addEventListener('keydown', e => {
   }
   onSpotlightKeydown(e);
   if (e.key === 'Escape') {
+    closeClassicNav();
     closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
   }
