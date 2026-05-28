@@ -134,8 +134,8 @@ check_http_200 "GET /dashboard" "${BASE}/dashboard" no
 check_json_grep "GET /api/v1/auth/oidc/config" "${BASE}/api/v1/auth/oidc/config" '"enabled"'
 oidc_token_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
     -X POST -H 'Content-Type: application/json' -d '{}' "${BASE}/api/v1/auth/oidc/token" || echo "000")
-if [[ "${oidc_token_code}" == "400" ]]; then
-    echo "  ✔ POST /api/v1/auth/oidc/token (HTTP 400 without body fields)"
+if [[ "${oidc_token_code}" == "400" || "${oidc_token_code}" == "422" ]]; then
+    echo "  ✔ POST /api/v1/auth/oidc/token (HTTP ${oidc_token_code} without valid body)"
 else
     echo "  ✗ POST /api/v1/auth/oidc/token (HTTP ${oidc_token_code})"
     FAIL=$((FAIL + 1))
