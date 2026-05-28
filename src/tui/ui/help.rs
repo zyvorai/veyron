@@ -151,6 +151,7 @@ fn render_help_content(f: &mut Frame, area: ratatui::layout::Rect) {
         key_line_colored("d", "Delete VM (batch in multi-select)", colors::ERROR),
         key_line("o", "Cycle sort mode (Name/Status/Age)"),
         key_line("f", "Cycle status filter (All/Running/Stopped/Failed)"),
+        key_line("E", "Export VM list to CSV in data dir"),
         key_line("v", "Toggle multi-select mode"),
         Line::from(""),
         // ── MULTI-SELECT ──

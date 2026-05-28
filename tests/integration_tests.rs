@@ -1653,3 +1653,30 @@ fn test_policy_rule_value_field() {
         serde_json::from_str(rule_json_no_val).expect("should parse without value");
     assert_eq!(rule2.value, None);
 }
+
+#[test]
+fn test_ssh_access_credential_shape() {
+    use vmrogue::kube::vm_ssh::SshPropagation;
+    let propagation = SshPropagation::QemuGuestAgent.propagation_json("clouduser");
+    assert!(propagation.get("qemuGuestAgent").is_some());
+    let cred = serde_json::json!({
+        "sshPublicKey": {
+            "propagationMethod": propagation,
+            "source": { "secret": { "secretName": "my-vm-ssh-key" } }
+        }
+    });
+    assert_eq!(
+        cred.pointer("/sshPublicKey/source/secret/secretName")
+            .and_then(|v| v.as_str()),
+        Some("my-vm-ssh-key")
+    );
+}
+
+#[test]
+fn test_multus_network_patch_shape() {
+    let net = serde_json::json!({
+        "name": "net1",
+        "multus": { "networkName": "other-ns/my-nad" }
+    });
+    assert_eq!(net["multus"]["networkName"], "other-ns/my-nad");
+}

@@ -273,6 +273,26 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             handlers::vm::handle_ssh(name, user, &cli.namespace).await?;
         }
 
+        Commands::SshKeyInject {
+            name,
+            public_key_file,
+            public_key,
+            guest_user,
+            secret_name,
+            config_drive,
+        } => {
+            handlers::vm::handle_ssh_key_inject(
+                name,
+                &cli.namespace,
+                public_key_file,
+                public_key,
+                guest_user,
+                secret_name,
+                config_drive,
+            )
+            .await?;
+        }
+
         Commands::Vnc { name } => {
             handlers::vm::handle_vnc(name, &cli.namespace).await?;
         }

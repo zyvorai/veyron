@@ -11,6 +11,8 @@ use axum::{
     http::StatusCode,
     routing::{get, post},
 };
+#[cfg(feature = "web")]
+use kube::api::{Api, PostParams};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -42,11 +44,41 @@ pub struct DrExportQuery {
     pub vm_name: String,
 }
 
+/// Apply exported VM manifest on the **current** cluster (DR target site).
+/// Cross-cluster: export from source, then POST this body on the recovery cluster API.
+#[derive(Debug, Clone, Deserialize)]
+pub struct DrApplyRequest {
+    pub namespace: String,
+    pub vm_name: String,
+    #[serde(default)]
+    pub target_namespace: Option<String>,
+    #[serde(default)]
+    pub target_name: Option<String>,
+    /// Full VirtualMachine JSON from GET /dr/export (optional; defaults to live VM in namespace).
+    #[serde(default)]
+    pub virtual_machine: Option<serde_json::Value>,
+    #[serde(default)]
+    pub restore_latest_snapshot: bool,
+    #[serde(default)]
+    pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DrApplyResponse {
+    pub status: String,
+    pub target_namespace: String,
+    pub target_name: String,
+    pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snapshot_name: Option<String>,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/dr/failover", post(dr_failover))
         .route("/dr/export", get(dr_export_manifests))
+        .route("/dr/apply", post(dr_apply))
         .with_state(state)
 }
 
@@ -91,7 +123,7 @@ async fn dr_failover(
     }
 
     let mut sorted = snapshots;
-    sorted.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    sorted.sort_by_key(|s| std::cmp::Reverse(s.created_at.clone()));
     let latest = &sorted[0];
 
     if !latest.ready_to_use {
@@ -188,6 +220,142 @@ async fn dr_export_manifests(
         "vm_name": q.vm_name,
         "virtual_machine": vm,
         "snapshots": snapshots,
-        "note": "Apply VirtualMachine on target cluster; restore latest ready snapshot via KubeVirt VirtualMachineRestore or POST /dr/failover in target namespace after replication."
+        "note": "Apply VirtualMachine on target cluster via POST /dr/apply with virtual_machine payload, or POST /dr/failover for same-cluster in-place restore."
     })))
+}
+
+#[cfg(feature = "web")]
+async fn dr_apply(
+    State(state): State<SharedState>,
+    Json(req): Json<DrApplyRequest>,
+) -> Result<Json<DrApplyResponse>, (StatusCode, Json<serde_json::Value>)> {
+    if req.namespace.is_empty() || req.vm_name.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "namespace and vm_name required" })),
+        ));
+    }
+
+    let target_ns = req
+        .target_namespace
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| req.namespace.clone());
+    let target_name = req
+        .target_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| req.vm_name.clone());
+
+    if req.dry_run {
+        return Ok(Json(DrApplyResponse {
+            status: "dry_run".to_string(),
+            target_namespace: target_ns.clone(),
+            target_name: target_name.clone(),
+            message: format!(
+                "Would apply VM '{}' in namespace '{}' on this cluster",
+                target_name, target_ns
+            ),
+            snapshot_name: None,
+        }));
+    }
+
+    let s = state.read().await;
+    let kube = s.client().clone();
+    drop(s);
+
+    let vm: crate::kube::types::VirtualMachine = if let Some(ref raw) = req.virtual_machine {
+        serde_json::from_value(raw.clone()).map_err(|e| {
+            (
+                StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": format!("invalid virtual_machine: {e}") })),
+            )
+        })?
+    } else {
+        kube.get_vm(&req.namespace, &req.vm_name)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+            })?
+    };
+
+    let mut to_apply = vm;
+    to_apply.status = None;
+    to_apply.metadata.name = Some(target_name.clone());
+    to_apply.metadata.namespace = Some(target_ns.clone());
+    to_apply.metadata.resource_version = None;
+    to_apply.metadata.uid = None;
+    to_apply.metadata.creation_timestamp = None;
+
+    let vm_api: Api<crate::kube::types::VirtualMachine> =
+        Api::namespaced(kube.client(), &target_ns);
+    let pp = PostParams::default();
+    match vm_api.create(&pp, &to_apply).await {
+        Ok(_) => {}
+        Err(kube::Error::Api(err)) if err.code == 409 => {
+            vm_api
+                .replace(&target_name, &pp, &to_apply)
+                .await
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                })?;
+        }
+        Err(e) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            ));
+        }
+    }
+
+    let mut snapshot_used = None;
+    if req.restore_latest_snapshot {
+        let snap_mgr = crate::snapshots::SnapshotManager::new(&req.namespace)
+            .await
+            .map_err(|e| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": e.to_string() })),
+                )
+            })?;
+        let mut snapshots = snap_mgr
+            .list_snapshots_for_vm(&req.vm_name)
+            .await
+            .unwrap_or_default();
+        snapshots.sort_by_key(|s| std::cmp::Reverse(s.created_at.clone()));
+        if let Some(latest) = snapshots.into_iter().find(|s| s.ready_to_use) {
+            let restore_mgr = crate::snapshots::RestoreManager::new(&target_ns)
+                .await
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                })?;
+            restore_mgr
+                .restore_to_new_vm(&latest.name, &target_name, false)
+                .await
+                .map_err(|e| {
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(serde_json::json!({ "error": e.to_string() })),
+                    )
+                })?;
+            snapshot_used = Some(latest.name);
+        }
+    }
+
+    Ok(Json(DrApplyResponse {
+        status: "applied".to_string(),
+        target_namespace: target_ns.clone(),
+        target_name: target_name.clone(),
+        message: "VirtualMachine applied on this cluster. Snapshots must be replicated separately for cross-cluster restore.".to_string(),
+        snapshot_name: snapshot_used,
+    }))
 }

@@ -49,6 +49,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 ## Helm and monitoring
 
 - [`../charts/vmrogue-monitoring/README.md`](../charts/vmrogue-monitoring/README.md): optional Prometheus/Grafana/Alertmanager umbrella chart
+- [`OPTIONAL_INTEGRATIONS.md`](OPTIONAL_INTEGRATIONS.md): Prometheus, OpenCost, Trivy, Loki, Jaeger, Alertmanager, Argo CD env vars for API production parity
 
 When you add or change user-visible behavior, update this index if you introduce a new top-level guide under `docs/`.
 

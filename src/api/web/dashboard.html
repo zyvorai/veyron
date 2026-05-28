@@ -1613,6 +1613,8 @@ html[data-theme="zinc"] .monitor-cap{
           <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
           <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
           <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
+          <button class="nav-link" data-page="heatmap" onclick="navigate('heatmap')">Heatmap</button>
+          <button class="nav-link" data-page="custom-dashboards" onclick="navigate('custom-dashboards')">Custom Dashboards</button>
           <button class="nav-link" data-page="observability" onclick="navigate('observability')">Overview</button>
           <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
           <div class="nav-dropdown-sep"></div>
@@ -1627,6 +1629,7 @@ html[data-theme="zinc"] .monitor-cap{
         <div class="nav-dropdown">
           <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
           <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
+          <button class="nav-link" data-page="images" onclick="navigate('images')">Images</button>
           <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
         </div>
       </div>
@@ -1635,6 +1638,7 @@ html[data-theme="zinc"] .monitor-cap{
         <button class="nav-group-btn"><span class="nav-icon">⟷</span><span class="nav-label">Network</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
+          <button class="nav-link" data-page="network-policies" onclick="navigate('network-policies')">Network Policies</button>
           <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
           <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
           <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
@@ -1645,6 +1649,7 @@ html[data-theme="zinc"] .monitor-cap{
         <button class="nav-group-btn"><span class="nav-icon">⛨</span><span class="nav-label">Security</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
+          <button class="nav-link" data-page="compliance" onclick="navigate('compliance')">Compliance</button>
           <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
           <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
           <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
@@ -1678,6 +1683,7 @@ html[data-theme="zinc"] .monitor-cap{
         <button class="nav-group-btn"><span class="nav-icon">✦</span><span class="nav-label">Ops</span></button>
         <div class="nav-dropdown">
           <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
+          <button class="nav-link" data-page="dr" onclick="navigate('dr')">Disaster Recovery</button>
           <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
           <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
         </div>
@@ -2221,6 +2227,75 @@ html[data-theme="zinc"] .monitor-cap{
 </div>
 </div>
 
+<div class="page section-shell" id="page-compliance" data-section="security">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div></div>
+  <div id="compliance-cap-banner"></div>
+  <div id="compliance-stats" class="grid-4"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Framework Status</span></div>
+  <table class="table"><thead><tr><th>Framework</th><th>Score</th><th>Passing</th><th>Failing</th><th>Compliant</th><th>Checked</th></tr></thead><tbody id="compliance-status-body"></tbody></table></div>
+  <div class="card"><div class="card-header"><span class="card-title">Reports</span></div>
+  <table class="table"><thead><tr><th>Report</th><th>Framework</th><th>Generated</th><th>Score</th><th>Findings</th></tr></thead><tbody id="compliance-reports-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-dr" data-section="ops">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div></div>
+  <div class="card" style="padding:16px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
+      <div class="form-group"><label class="form-label">Namespace</label><input class="form-input" id="dr-ns" placeholder="default"></div>
+      <div class="form-group"><label class="form-label">VM name</label><input class="form-input" id="dr-vm" placeholder="my-vm"></div>
+      <div class="form-group"><label class="form-label">Target name (optional)</label><input class="form-input" id="dr-target" placeholder="same as source"></div>
+      <button class="btn btn-primary" onclick="drExport()">Export</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn" onclick="drFailover(false)">Failover (in-place)</button>
+      <button class="btn" onclick="drFailover(true)">Dry-run failover</button>
+      <button class="btn" onclick="drApply(false)">Apply export on cluster</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.85rem"><input type="checkbox" id="dr-restore-snap"> Restore latest snapshot</label>
+    </div>
+    <pre id="dr-output" style="margin-top:14px;max-height:320px;overflow:auto;font-size:.72rem;background:var(--bg-elevated);padding:12px;border-radius:8px;border:1px solid var(--border)"></pre>
+  </div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-heatmap" data-section="observe">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Resource Heatmap</h1><p>Per-node utilization heuristics from capacity vs VM density</p></div></div>
+  <div id="heatmap-cap-banner"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Nodes</span></div>
+  <table class="table"><thead><tr><th>Node</th><th>CPU %</th><th>Memory %</th><th>Disk %</th><th>Network est.</th><th>VMs</th><th>Heat</th></tr></thead><tbody id="heatmap-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-custom-dashboards" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Custom Dashboards</h1><p>ConfigMap-backed panel layouts (vmrogue.io/type=dashboard)</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Description</th><th>Panels</th><th>Author</th><th>Updated</th></tr></thead><tbody id="custom-dashboards-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-network-policies" data-section="network">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div></div>
+  <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-images" data-section="storage">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div>
+    <button class="btn-create" onclick="openImageImportModal()">+ Import DataVolume</button>
+  </div>
+  <div id="images-cap-banner"></div>
+  <div class="card"><div class="card-header"><span class="card-title">Catalog</span></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th></tr></thead><tbody id="images-body"></tbody></table></div>
+</div>
+</div>
+
 <div class="page section-shell" id="page-traces" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header">
@@ -2720,7 +2795,13 @@ const PAGE_META = {
   hpa: {kicker:'Compute', title:'Horizontal autoscaler target and replica pressure', tags:['Desired replicas','Bounds','Targets']},
   autoscaler: {kicker:'Compute', title:'Autoscaler policy summary and scaling intent', tags:['Policies','Targets','Limits']},
   scheduling: {kicker:'Compute', title:'Scheduling pressure and unschedulable signals', tags:['Pending pods','Preemption','Node pressure']},
-  incidents: {kicker:'Ops', title:'Incident timeline and heuristic response view', tags:['Critical first','Timeline','Resolution state']}
+  incidents: {kicker:'Ops', title:'Incident timeline and heuristic response view', tags:['Critical first','Timeline','Resolution state']},
+  compliance: {kicker:'Security', title:'Compliance frameworks and control findings', tags:['PCI','HIPAA','SOC2','VM spec']},
+  dr: {kicker:'Ops', title:'DR export, apply, and in-place failover', tags:['Snapshots','Cross-cluster','KubeVirt']},
+  heatmap: {kicker:'Observe', title:'Node resource heatmap', tags:['Capacity','VM density','Heuristic']},
+  'custom-dashboards': {kicker:'Platform', title:'Saved custom dashboard layouts', tags:['ConfigMap','Panels','Grafana-style']},
+  'network-policies': {kicker:'Network', title:'Kubernetes NetworkPolicy rules', tags:['Ingress','Egress','Selectors']},
+  images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']}
 };
 
 function applyTheme(theme, writeStorage) {
@@ -2837,6 +2918,12 @@ function loadPageData(page) {
   if (page === 'traces') fetchTraces();
   if (page === 'logs') fetchLogs();
   if (page === 'incidents') fetchIncidents();
+  if (page === 'compliance') fetchCompliance();
+  if (page === 'dr') { /* form-driven */ }
+  if (page === 'heatmap') fetchHeatmap();
+  if (page === 'custom-dashboards') fetchCustomDashboards();
+  if (page === 'network-policies') fetchNetworkPolicies();
+  if (page === 'images') fetchImages();
 }
 
 // Toast notifications
@@ -5768,6 +5855,156 @@ async function fetchLogs() {
     if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px;line-height:1.45">' + esc(msg) + '</div>';
     console.error('Logs fetch error:', e);
   }
+}
+
+async function fetchCompliance() {
+  const stats = document.getElementById('compliance-stats');
+  const stBody = document.getElementById('compliance-status-body');
+  const repBody = document.getElementById('compliance-reports-body');
+  try {
+    const statuses = asArray(await apiJson('/api/v1/compliance/status' + nsParam()));
+    const reports = asArray(await apiJson('/api/v1/compliance/reports' + nsParam()));
+    if (stats) {
+      const avg = statuses.length ? Math.round(statuses.reduce((s, x) => s + (x.score || 0), 0) / statuses.length) : 0;
+      stats.innerHTML = `
+        <div class="stat-card"><div class="stat-label">Frameworks</div><div class="stat-value">${statuses.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Avg score</div><div class="stat-value">${avg}%</div></div>
+        <div class="stat-card"><div class="stat-label">Reports</div><div class="stat-value">${reports.length}</div></div>
+        <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">${esc(currentNs)}</div></div>`;
+    }
+    if (stBody) stBody.innerHTML = statuses.map(s => `<tr>
+      <td>${esc(s.framework)}</td><td>${s.score ?? 0}%</td><td>${s.passing_controls ?? 0}</td><td>${s.failing_controls ?? 0}</td>
+      <td><span class="stat-badge ${s.compliant ? 'badge-green' : 'badge-muted'}">${s.compliant ? 'yes' : 'no'}</span></td>
+      <td>${fmtTime(s.last_checked)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No frameworks</td></tr>';
+    if (repBody) repBody.innerHTML = reports.map(r => `<tr>
+      <td>${esc(r.id)}</td><td>${esc(r.framework)}</td><td>${fmtTime(r.generated_at)}</td>
+      <td>${r.summary?.score ?? '-'}%</td><td>${(r.findings || []).length}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No reports</td></tr>';
+  } catch (e) {
+    const msg = e.message || String(e);
+    if (stats) stats.innerHTML = summaryErrorHtml(msg);
+    if (stBody) stBody.innerHTML = tbodyError(6, msg);
+    if (repBody) repBody.innerHTML = tbodyError(5, msg);
+  }
+}
+
+async function fetchHeatmap() {
+  const tb = document.getElementById('heatmap-body');
+  try {
+    const data = await apiJson('/api/v1/heatmap/resources');
+    setCapBanner('heatmap-cap-banner', data.vmrogue_context);
+    const nodes = data.nodes || [];
+    if (!tb) return;
+    tb.innerHTML = nodes.map(n => `<tr>
+      <td>${esc(n.node_name)}</td><td>${(n.cpu_utilization || 0).toFixed(1)}</td><td>${(n.memory_utilization || 0).toFixed(1)}</td>
+      <td>${(n.disk_utilization || 0).toFixed(1)}</td><td>${(n.network_utilization || 0).toFixed(1)}</td>
+      <td>${n.vm_count ?? 0}</td><td>${(n.heat_score || 0).toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No nodes</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+  }
+}
+
+async function fetchCustomDashboards() {
+  const tb = document.getElementById('custom-dashboards-body');
+  try {
+    const rows = asArray(await apiJson('/api/v1/dashboards' + nsParam()));
+    if (!tb) return;
+    tb.innerHTML = rows.map(d => `<tr>
+      <td>${esc(d.name)}</td><td>${esc(d.description || '')}</td><td>${(d.panels || []).length}</td>
+      <td>${esc(d.created_by || '')}</td><td>${fmtTime(d.updated_at)}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No dashboards</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
+  }
+}
+
+async function fetchNetworkPolicies() {
+  const tb = document.getElementById('netpol-body');
+  try {
+    const rows = asArray(await apiJson('/api/v1/network-policies' + nsParam()));
+    if (!tb) return;
+    tb.innerHTML = rows.map(p => `<tr>
+      <td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc((p.policy_types || []).join(', '))}</td>
+      <td>${p.ingress_rules ?? 0}</td><td>${p.egress_rules ?? 0}</td><td>${fmtTime(p.created_at)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+  }
+}
+
+async function fetchImages() {
+  const tb = document.getElementById('images-body');
+  try {
+    const data = await apiJson('/api/v1/images/catalog' + nsParam());
+    setCapBanner('images-cap-banner', data.vmrogue_context);
+    const images = data.images || [];
+    if (!tb) return;
+    tb.innerHTML = images.map(img => `<tr>
+      <td>${esc(img.name)}</td><td>${esc(img.namespace)}</td><td>${esc(img.kind)}</td><td>${esc(img.source_type)}</td>
+      <td>${esc(img.status)}</td><td>${esc(img.capacity)}</td><td>${esc(img.age)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No images</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+  }
+}
+
+function drFields() {
+  const ns = document.getElementById('dr-ns')?.value?.trim() || currentNs;
+  const vm = document.getElementById('dr-vm')?.value?.trim();
+  const target = document.getElementById('dr-target')?.value?.trim();
+  return { ns: ns === 'all' ? 'default' : ns, vm, target };
+}
+
+async function drExport() {
+  const out = document.getElementById('dr-output');
+  const { ns, vm } = drFields();
+  if (!vm) { toast('VM name required', 'error'); return; }
+  try {
+    const q = `?namespace=${encodeURIComponent(ns)}&vm_name=${encodeURIComponent(vm)}`;
+    const data = await apiJson('/api/v1/dr/export' + q);
+    if (out) out.textContent = JSON.stringify(data, null, 2);
+    window._drLastExport = data;
+    toast('Export ready', 'success');
+  } catch (e) { if (out) out.textContent = e.message; toast(e.message, 'error'); }
+}
+
+async function drFailover(dryRun) {
+  const out = document.getElementById('dr-output');
+  const { ns, vm, target } = drFields();
+  if (!vm) { toast('VM name required', 'error'); return; }
+  try {
+    const body = { namespace: ns, vm_name: vm, dry_run: dryRun, target_kubeconfig_context: target || null };
+    const data = await apiJson('/api/v1/dr/failover', { method: 'POST', body: JSON.stringify(body) });
+    if (out) out.textContent = JSON.stringify(data, null, 2);
+    toast(data.status || 'failover', data.status === 'restored' ? 'success' : 'info');
+  } catch (e) { if (out) out.textContent = e.message; toast(e.message, 'error'); }
+}
+
+async function drApply(dryRun) {
+  const out = document.getElementById('dr-output');
+  const { ns, vm, target } = drFields();
+  if (!vm) { toast('VM name required', 'error'); return; }
+  const restore = document.getElementById('dr-restore-snap')?.checked;
+  try {
+    const body = {
+      namespace: ns, vm_name: vm, dry_run: dryRun,
+      target_name: target || undefined,
+      restore_latest_snapshot: !!restore,
+      virtual_machine: window._drLastExport?.virtual_machine
+    };
+    const data = await apiJson('/api/v1/dr/apply', { method: 'POST', body: JSON.stringify(body) });
+    if (out) out.textContent = JSON.stringify(data, null, 2);
+    toast(data.message || 'applied', 'success');
+  } catch (e) { if (out) out.textContent = e.message; toast(e.message, 'error'); }
+}
+
+function openImageImportModal() {
+  const name = prompt('DataVolume name');
+  if (!name) return;
+  const url = prompt('HTTP(S) image URL (or leave blank for registry)');
+  const registry = url ? null : prompt('containerdisk registry image');
+  const ns = currentNs === 'all' ? 'default' : currentNs;
+  const size = prompt('Size', '20Gi') || '20Gi';
+  apiJson('/api/v1/images/import', {
+    method: 'POST',
+    body: JSON.stringify({ name, namespace: ns, url: url || undefined, registry: registry || undefined, size })
+  }).then(() => { toast('Import started', 'success'); fetchImages(); }).catch(e => toast(e.message, 'error'));
 }
 
 async function fetchIncidents() {

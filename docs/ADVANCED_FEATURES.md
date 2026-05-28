@@ -557,10 +557,10 @@ Recently completed:
 - Cost budgets and anomaly detection
 
 Future enhancements planned:
-- SSH key injection command
-- Auto-scaling groups
-- Prometheus integration for historical metrics
-- Cross-cluster DR failover execution
+- [x] SSH key injection — `vmrogue ssh-key-inject` (KubeVirt `accessCredentials` + Secret)
+- [ ] VM auto-scaling groups (HPA listing exists; no KubeVirt VM autoscaler product)
+- [x] Prometheus integration for historical metrics — set `VMROGUE_PROMETHEUS_URL` (see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md))
+- [x] Cross-cluster DR apply — `GET /api/v1/dr/export` + `POST /api/v1/dr/apply` on recovery cluster; same-cluster in-place via `POST /api/v1/dr/failover`
 
 ---
 

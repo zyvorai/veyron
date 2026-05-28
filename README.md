@@ -693,9 +693,9 @@ VMRogue operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cr
 
 ### Future Enhancements
 
-- [ ] Profile auto-selection based on template *(implemented: auto-applies suggested profile on `vmrogue create --template`; see `ProfileManager::suggest_profile_for_template`)*
-- [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VMROGUE_PROMETHEUS_URL` is set)*
-- [ ] Pluggable template registry (local/remote) *(implemented: `~/.config/vmrogue/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`)*
+- [x] Profile auto-selection based on template — `vmrogue create --template` via `ProfileManager::suggest_profile_for_template`
+- [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VMROGUE_PROMETHEUS_URL` is set; see [docs/OPTIONAL_INTEGRATIONS.md](docs/OPTIONAL_INTEGRATIONS.md))*
+- [x] Pluggable template registry — `~/.config/vmrogue/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`
 - [x] Terraform provider — see [`terraform-provider-vmrogue/`](terraform-provider-vmrogue/)
 - [x] SR-IOV networking — VM config, converter, and CLI support
 - [x] OVN networking — `NetworkType::Ovn` + `add_ovn_network()` builder

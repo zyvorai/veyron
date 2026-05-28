@@ -457,7 +457,8 @@ test result: ok. 16 passed; 0 failed
 
 Planned features for future releases:
 
-- [ ] Scheduled snapshots (cron-like)
+- [x] Scheduled snapshots (cron-like) — `GET/POST /api/v1/snapshot-schedules`, Lease leader in API pod; UI on Snapshots page and operator console
+- [x] Automated retention policy enforcement — `RetentionEnforcer` + schedule `max_snapshots`
 - [ ] Snapshot chains visualization
 - [ ] Incremental snapshot support
 - [ ] Snapshot encryption

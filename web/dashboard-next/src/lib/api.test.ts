@@ -7,6 +7,7 @@ import {
   extractApiError,
   parseApiResponse,
   unwrapApiData,
+  type AttachMultusResponse,
 } from './api';
 
 describe('extractApiError', () => {
@@ -72,6 +73,20 @@ describe('parseApiResponse', () => {
       statusText: 'OK',
     });
     await expect(parseApiResponse<Array<{ name: string }>>(res)).resolves.toEqual([{ name: 'ns1' }]);
+  });
+
+  it('unwraps attach multus response', async () => {
+    const res = new Response(
+      JSON.stringify({
+        success: true,
+        data: { interface_name: 'net1', multus_network_name: 'ns/nad', message: 'ok' },
+      }),
+      { status: 200, statusText: 'OK' },
+    );
+    await expect(parseApiResponse<AttachMultusResponse>(res)).resolves.toMatchObject({
+      interface_name: 'net1',
+      multus_network_name: 'ns/nad',
+    });
   });
 
   it('returns bare JSON objects', async () => {

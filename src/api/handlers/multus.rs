@@ -7,8 +7,9 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Query, State},
-    routing::get,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -28,10 +29,26 @@ pub struct NadQuery {
     pub namespace: Option<String>,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct AttachMultusRequest {
+    pub nad_namespace: String,
+    pub nad_name: String,
+    #[serde(default)]
+    pub interface_name: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AttachMultusResponse {
+    pub interface_name: String,
+    pub multus_network_name: String,
+    pub message: String,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/network/nads", get(list_nads))
+        .route("/vms/:ns/:name/network/multus", post(attach_multus_to_vm))
         .with_state(state)
 }
 
@@ -94,4 +111,56 @@ async fn list_nads(
         .collect();
 
     Json(rows)
+}
+
+#[cfg(feature = "web")]
+async fn attach_multus_to_vm(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Json(req): Json<AttachMultusRequest>,
+) -> Result<Json<AttachMultusResponse>, (StatusCode, Json<serde_json::Value>)> {
+    if ns.is_empty() || name.is_empty() || req.nad_name.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "namespace, vm name, and nad_name required" })),
+        ));
+    }
+    let nad_ns = if req.nad_namespace.is_empty() {
+        ns.clone()
+    } else {
+        req.nad_namespace.clone()
+    };
+    let multus_network_name = if nad_ns == ns {
+        req.nad_name.clone()
+    } else {
+        format!("{nad_ns}/{}", req.nad_name)
+    };
+
+    let s = state.read().await;
+    let client = s.client().clone();
+    drop(s);
+
+    match client
+        .attach_multus_nad(
+            &ns,
+            &name,
+            &nad_ns,
+            &req.nad_name,
+            req.interface_name.as_deref(),
+        )
+        .await
+    {
+        Ok((_, iface)) => Ok(Json(AttachMultusResponse {
+            interface_name: iface,
+            multus_network_name,
+            message: format!(
+                "Attached Multus NAD {nad_ns}/{} to VM {ns}/{name}. Restart the VM if it was running.",
+                req.nad_name
+            ),
+        })),
+        Err(e) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        )),
+    }
 }

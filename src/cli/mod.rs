@@ -260,6 +260,28 @@ pub enum Commands {
         user: String,
     },
 
+    /// Inject an SSH public key into a VM (KubeVirt accessCredentials + Secret)
+    #[command(name = "ssh-key-inject")]
+    SshKeyInject {
+        /// VM name
+        name: String,
+        /// Path to public key file (e.g. ~/.ssh/id_ed25519.pub)
+        #[arg(long, conflicts_with = "public_key")]
+        public_key_file: Option<std::path::PathBuf>,
+        /// Inline public key (ssh-ed25519 / ssh-rsa …)
+        #[arg(long, conflicts_with = "public_key_file")]
+        public_key: Option<String>,
+        /// Linux guest user for qemuGuestAgent propagation
+        #[arg(long, default_value = "clouduser")]
+        guest_user: String,
+        /// Kubernetes Secret name (default: {vm}-ssh-key)
+        #[arg(long)]
+        secret_name: Option<String>,
+        /// Use configDrive propagation instead of qemuGuestAgent
+        #[arg(long)]
+        config_drive: bool,
+    },
+
     /// Open VNC console for a VM
     Vnc {
         /// VM name
