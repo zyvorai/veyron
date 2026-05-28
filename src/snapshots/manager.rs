@@ -132,6 +132,30 @@ impl SnapshotManager {
             .collect())
     }
 
+    /// List snapshots in one namespace or cluster-wide when `namespace` is `all`.
+    pub async fn list_snapshots_in_scope(
+        client: Client,
+        namespace: &str,
+    ) -> Result<Vec<SnapshotInfo>> {
+        if namespace == "all" {
+            let api: Api<VirtualMachineSnapshot> = Api::all(client.clone());
+            let snapshot_list = api
+                .list(&ListParams::default())
+                .await
+                .context("Failed to list snapshots cluster-wide")?;
+            let helper = Self::from_client(client, "default");
+            Ok(snapshot_list
+                .items
+                .into_iter()
+                .map(|s| helper.snapshot_to_info(s))
+                .collect())
+        } else {
+            Self::from_client(client, namespace)
+                .list_all_snapshots()
+                .await
+        }
+    }
+
     /// List all snapshots in namespace
     pub async fn list_all_snapshots(&self) -> Result<Vec<SnapshotInfo>> {
         let snapshots: Api<VirtualMachineSnapshot> =

@@ -798,6 +798,11 @@ export function fetchVmSnapshots(namespace: string, vmName: string): Promise<VmS
   return apiJson(`/snapshots/${encodeURIComponent(namespace)}/${encodeURIComponent(vmName)}`);
 }
 
+export function fetchAllSnapshots(namespace = 'all'): Promise<VmSnapshot[]> {
+  const q = nsQuery(namespace, true);
+  return apiJson<VmSnapshot[]>(`/snapshots${q}`);
+}
+
 export function createVmSnapshot(
   namespace: string,
   vmName: string,
