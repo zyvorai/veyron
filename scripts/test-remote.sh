@@ -275,7 +275,8 @@ else
     fi
 
     sleep 6
-    if run_k get vmrogueblueprint lamp-stack -n default -o 'jsonpath={.spec.vms[0].name}' 2>/dev/null | grep -q 'db'; then
+    # Remote login shell may be zsh — brace globs break jsonpath=; use YAML + grep.
+    if run_k get vmrogueblueprint lamp-stack -n default -o yaml 2>/dev/null | grep -qE '^[[:space:]]+name:[[:space:]]+db'; then
       pass "kubectl get VMRogueBlueprint lamp-stack (spec.vms)"
     else
       fail "blueprint get" "$(run_k get vmrogueblueprint lamp-stack -n default 2>&1)"
@@ -365,6 +366,26 @@ for endpoint in \
 done
 
 for endpoint in \
+  "/api/v1/compliance/status" \
+  "/api/v1/heatmap/resources" \
+  "/api/v1/dashboards" \
+  "/api/v1/network-policies"; do
+  code=$(curl_api "$endpoint" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
+  if [[ "$code" == "200" ]]; then
+    pass "GET ${endpoint} → 200"
+  else
+    fail "GET ${endpoint}" "HTTP ${code}"
+  fi
+done
+
+code=$(curl_api "/api/v1/dr/export?namespace=default&vm_name=nonexistent-vm" -o /dev/null -w '%{http_code}' "${AUTH[@]}")
+if [[ "$code" == "200" || "$code" == "404" ]]; then
+  pass "GET /api/v1/dr/export → ${code}"
+else
+  fail "GET /api/v1/dr/export" "HTTP ${code}"
+fi
+
+for endpoint in \
   "/api/v1/nodes" \
   "/api/v1/pods" \
   "/api/v1/events" \
@@ -378,11 +399,20 @@ for endpoint in \
   fi
 done
 
-code=$(curl_api "/dashboard" -o /dev/null -w '%{http_code}')
-if [[ "$code" == "200" ]]; then
-  pass "GET /dashboard → 200"
+for path in "/dashboard" "/dashboard-next/"; do
+  code=$(curl_api "$path" -o /dev/null -w '%{http_code}')
+  if [[ "$code" == "200" ]]; then
+    pass "GET ${path} → 200"
+  else
+    fail "GET ${path}" "HTTP ${code}"
+  fi
+done
+
+code=$(curl -sk -o /dev/null -w '%{http_code}' "${BASE_URL}/" 2>/dev/null || echo "000")
+if [[ "$code" == "301" || "$code" == "308" || "$code" == "302" ]]; then
+  pass "GET / → redirect (${code})"
 else
-  fail "GET /dashboard" "HTTP ${code}"
+  fail "GET / redirect" "HTTP ${code}"
 fi
 
 # ═══════════════════════════════════════════════
