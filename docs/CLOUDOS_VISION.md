@@ -92,14 +92,24 @@ Full vCenter inventory sync and live vMotion-style migration are **future** work
 | Health | VM status + node Ready + warning events |
 | Migration task | CDI import + operator reconcile |
 
-## Roadmap (beyond skeleton)
+## Roadmap status
 
-| Phase | Capability |
-|-------|------------|
-| **Now** | Experience API skeleton, Datacenter Home, Spotlight, Fix-it, migration scan/plan/execute |
-| **Next** | Guest health scores, template “App Store” UX, Finder-style sidebar |
-| **Later** | vCenter API inventory, live migration UX, mobile-friendly console shell |
-| **Enterprise** | Multi-cluster workspace switcher as “Locations,” RBAC-aware action cards |
+| Phase | Capability | Status |
+|-------|------------|--------|
+| **Now** | Experience API, Datacenter Home, Spotlight, Fix-it, migration scan/plan/execute | **Done** |
+| **Next** | Guest health scores, Template App Store, Finder sidebar, Locations bar, RBAC session | **Done** (classic dashboard) |
+| **Later** | vCenter API live inventory, live migration polish, mobile shell | Partial — discover stub + migrate fix-it; full vCenter API pending |
+| **Enterprise** | RBAC-filtered action cards, multi-location switcher | Partial — session role + location bar; full tenant RBAC pending |
+
+### Experience API (full surface)
+
+| Route | Purpose |
+|-------|---------|
+| `GET /experience/session` | Role + write/admin flags for UI |
+| `GET /experience/fleet/health` | Per-VM health scores |
+| `GET /experience/templates` | Template Store catalog |
+| `GET /experience/locations` | Multi-cluster as CloudOS locations |
+| `POST /experience/migration/discover` | vCenter inventory stub → JSON template |
 
 ## Related docs
 
