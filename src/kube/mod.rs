@@ -9,7 +9,9 @@ pub mod status;
 pub mod types;
 pub mod vm_data_disk;
 pub mod vm_internet;
+pub mod vm_multus;
 pub mod vm_rdp;
+pub mod vm_ssh;
 pub mod windows_rdp;
 
 use crate::config::{CloudInitDelivery, VMConfig, VmExposeConfig};

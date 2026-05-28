@@ -516,7 +516,7 @@ const VMBrowser: React.FC<VMBrowserProps> = ({
                 <VmSnapshotSchedulesPanel namespace={ns} vmName={vmName} />
                 <VmSshExposePanel namespace={ns} vmName={vmName} />
                 <VmInternetPanel namespace={ns} vmName={vmName} />
-                <VmMultusPanel namespace={ns} />
+                <VmMultusPanel namespace={ns} vmName={vm.name} />
                 <VmRdpPanel namespace={ns} vmName={vmName} vmRunning={running} />
                 <AddDataDiskPanel
                   namespace={ns}

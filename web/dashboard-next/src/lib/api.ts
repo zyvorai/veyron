@@ -854,6 +854,23 @@ export function fetchNetworkAttachmentDefinitions(namespace?: string): Promise<N
   return apiJson<NadRecord[]>(`/network/nads${q}`);
 }
 
+export type AttachMultusResponse = {
+  interface_name: string;
+  multus_network_name: string;
+  message: string;
+};
+
+export function attachMultusToVm(
+  namespace: string,
+  vmName: string,
+  body: { nad_namespace: string; nad_name: string; interface_name?: string },
+): Promise<AttachMultusResponse> {
+  return apiJson(
+    `/vms/${encodeURIComponent(namespace)}/${encodeURIComponent(vmName)}/network/multus`,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+}
+
 export type ImageCatalogEntry = {
   name: string;
   namespace: string;

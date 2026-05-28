@@ -438,7 +438,7 @@ context_menu = "m"
 | **Search/filter** | ✗ | ✓ |
 | **Error recovery** | ✗ | ✓ |
 | **Batch operations** | ✓ (interactive TUI) | ✓ |
-| **Mouse support** | ✗ | ✓ (planned) |
+| **Mouse support** | ✗ | ✓ (scroll + click VM list) |
 
 ## 🎓 Tips & Best Practices
 
@@ -480,9 +480,10 @@ context_menu = "m"
 ## 🚀 Future Enhancements
 
 ### Planned Features
-- [ ] Multi-select with checkboxes
+- [x] Multi-select with checkboxes
 - [x] Batch operations (start/stop/delete multiple VMs in interactive TUI)
-- [ ] Mouse support (click buttons, scroll lists)
+- [x] Mouse support (scroll lists; left-click selects VM row)
+- [x] Export operations (CSV) — press `E` on VM list (writes `~/.local/share/vmrogue/vm-export-*.csv`)
 - [ ] Custom themes (user-defined colors)
 - [ ] Saved filters and searches
 - [ ] VM console integration

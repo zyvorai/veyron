@@ -1036,6 +1036,56 @@ pub async fn handle_ssh(name: String, user: String, namespace: &str) -> Result<(
     }
 }
 
+pub async fn handle_ssh_key_inject(
+    name: String,
+    namespace: &str,
+    public_key_file: Option<std::path::PathBuf>,
+    public_key: Option<String>,
+    guest_user: String,
+    secret_name: Option<String>,
+    config_drive: bool,
+) -> Result<()> {
+    use crate::kube::{KubeClient, vm_ssh::SshPropagation};
+
+    let key = if let Some(path) = public_key_file {
+        std::fs::read_to_string(&path)
+            .map_err(|e| anyhow!("read public key file {}: {}", path.display(), e))?
+    } else if let Some(k) = public_key {
+        k
+    } else {
+        return Err(anyhow!(
+            "provide --public-key-file or --public-key (ssh-ed25519 AAAA…)"
+        ));
+    };
+
+    let secret = secret_name.unwrap_or_else(|| format!("{name}-ssh-key"));
+    let propagation = if config_drive {
+        SshPropagation::ConfigDrive
+    } else {
+        SshPropagation::QemuGuestAgent
+    };
+
+    let client = KubeClient::new().await?;
+    client
+        .inject_ssh_public_key(namespace, &name, &key, &secret, &guest_user, propagation)
+        .await?;
+
+    println!(
+        "{}",
+        color::success(&format!(
+            "SSH public key injected into VM '{}' (secret: {}/{})",
+            name, namespace, secret
+        ))
+    );
+    println!(
+        "  {}",
+        color::muted(
+            "Restart the VM if it was running so the guest agent or config-drive picks up credentials."
+        )
+    );
+    Ok(())
+}
+
 pub async fn handle_vnc(name: String, namespace: &str) -> Result<()> {
     println!("Opening VNC console for VM '{}'...", name);
     let status = std::process::Command::new("virtctl")

@@ -70,6 +70,51 @@ spec:
             {{- end }}
             - name: RUST_LOG
               value: "info"
+            {{- with .Values.integrations.prometheusUrl }}
+            - name: VMROGUE_PROMETHEUS_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.opencostUrl }}
+            - name: VMROGUE_OPENCOST_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.opencostToken }}
+            - name: VMROGUE_OPENCOST_TOKEN
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.trivyUrl }}
+            - name: VMROGUE_TRIVY_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.lokiUrl }}
+            - name: VMROGUE_LOKI_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.jaegerQueryUrl }}
+            - name: VMROGUE_JAEGER_QUERY_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.tempoQueryUrl }}
+            - name: VMROGUE_TEMPO_QUERY_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.alertmanagerUrl }}
+            - name: VMROGUE_ALERTMANAGER_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.argocdUrl }}
+            - name: VMROGUE_ARGOCD_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.integrations.argocdToken }}
+            - name: VMROGUE_ARGOCD_TOKEN
+              value: {{ . | quote }}
+            {{- end }}
+          {{- if .Values.integrations.existingSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.integrations.existingSecret }}
+          {{- end }}
           ports:
             - name: https
               containerPort: {{ .Values.api.port }}

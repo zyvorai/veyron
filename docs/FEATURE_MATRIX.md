@@ -86,7 +86,13 @@ These route groups now have first-class dashboard pages:
 | Performance | `/api/v1/performance/profiles` | Surfaced |
 | Webhooks | `/api/v1/webhooks` | Surfaced |
 | Template catalog | `/api/v1/crds/templates`, `/api/v1/crds/profiles` | Surfaced (API); classic CRDs page partial |
-| Golden images | `/api/v1/images/catalog`, `/api/v1/images/import` | API Working; CDI lifecycle labels on import |
+| Golden images | `/api/v1/images/catalog`, `/api/v1/images/import` | Surfaced (classic **Images** page + operator Platform) |
+| Compliance | `/api/v1/compliance/status`, `/reports` | Surfaced (classic **Compliance**) |
+| DR | `/api/v1/dr/export`, `/failover`, `/apply` | Surfaced (classic **Disaster Recovery**) |
+| Heatmap | `/api/v1/heatmap/resources` | Surfaced (classic **Heatmap**) |
+| Custom dashboards | `/api/v1/dashboards` | Surfaced (classic **Custom Dashboards**) |
+| Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
+| Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Operator UI **Attach to VM** |
 | VM drift | `/api/v1/vms/:ns/:name/drift` | API Working; operator sets VMRogueVM status |
 
 ## Known Partial Areas
@@ -149,4 +155,4 @@ React operator console (HyperShell layout). Use the classic SPA at `/dashboard` 
 1. Run `./scripts/generate-catalog-crds.sh` before deploy; `deploy-all-remote.sh` applies catalog YAML automatically.
 2. `./scripts/test-remote.sh` tier 3+ uses local samples when remote checkout is absent; Windows blueprint test when VMTemplate CRDs exist.
 3. Deploy latest `/dashboard-next/` bundle to clusters.
-4. Tighten remaining heuristic pages — optional backends: `VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`.
+4. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`, …).

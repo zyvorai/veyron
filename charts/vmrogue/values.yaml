@@ -59,3 +59,19 @@ networkPolicy:
 # RBAC for KubeVirt and VMRogue CRD access
 rbac:
   create: true
+
+# Optional observability / finops / GitOps backends (see docs/OPTIONAL_INTEGRATIONS.md).
+# Non-empty values are injected as container env vars on the API Deployment.
+integrations:
+  prometheusUrl: ""
+  opencostUrl: ""
+  opencostToken: ""
+  trivyUrl: ""
+  lokiUrl: ""
+  jaegerQueryUrl: ""
+  tempoQueryUrl: ""
+  alertmanagerUrl: ""
+  argocdUrl: ""
+  argocdToken: ""
+  # Reference an existing Secret (all keys become env vars), e.g. vmrogue-integrations
+  existingSecret: ""

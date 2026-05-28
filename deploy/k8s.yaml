@@ -258,6 +258,7 @@ spec:
                   key: api-key
             - name: RUST_LOG
               value: "info"
+          # Optional: envFrom secretRef name vmrogue-integrations — see deploy/k8s/optional-integrations.env.example.yaml
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001

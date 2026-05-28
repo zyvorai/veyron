@@ -91,7 +91,7 @@ pub async fn handle_catalog_list(templates: bool, profiles: bool) -> Result<()> 
             }
             Err(e) => {
                 return Err(
-                    e.context("list VMProfile CRDs (install operator CRDs and catalog sync)"),
+                    e.context("list VMProfile CRDs (install operator CRDs and catalog sync)")
                 );
             }
         }
@@ -178,7 +178,9 @@ pub async fn handle_catalog_sync(_namespace: String) -> Result<()> {
     }
     println!(
         "{}",
-        color::success(&format!("Synced {synced} catalog CRDs to cluster (create or replace)"))
+        color::success(&format!(
+            "Synced {synced} catalog CRDs to cluster (create or replace)"
+        ))
     );
     Ok(())
 }

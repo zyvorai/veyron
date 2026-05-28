@@ -970,7 +970,11 @@ pub async fn handle_tui(
     let original_hook = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |panic_info| {
         let _ = crossterm::terminal::disable_raw_mode();
-        let _ = crossterm::execute!(std::io::stderr(), crossterm::terminal::LeaveAlternateScreen);
+        let _ = crossterm::execute!(
+            std::io::stderr(),
+            crossterm::event::DisableMouseCapture,
+            crossterm::terminal::LeaveAlternateScreen
+        );
         // Call original hook
         original_hook(panic_info);
     }));
@@ -979,6 +983,10 @@ pub async fn handle_tui(
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
+    if !basic {
+        let _ = crossterm::event::EnableMouseCapture;
+        execute!(stdout, crossterm::event::EnableMouseCapture)?;
+    }
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
@@ -1011,6 +1019,12 @@ pub async fn handle_tui(
     };
 
     // Always restore terminal, even if app.run() returned an error
+    if !basic {
+        let _ = execute!(
+            terminal.backend_mut(),
+            crossterm::event::DisableMouseCapture
+        );
+    }
     let _ = disable_raw_mode();
     let _ = execute!(terminal.backend_mut(), LeaveAlternateScreen);
     let _ = terminal.show_cursor();

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   disableVmInternet,
   enableVmInternet,
+  attachMultusToVm,
   fetchNetworkAttachmentDefinitions,
   fetchVmInternet,
   fetchVmExpose,
@@ -227,12 +228,14 @@ export function VmInternetPanel({ namespace, vmName }: Props) {
   );
 }
 
-export function VmMultusPanel({ namespace }: { namespace: string }) {
+export function VmMultusPanel({ namespace, vmName }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [nads, setNads] = useState<Array<{ name: string; namespace: string; config: string }>>([]);
   const [selected, setSelected] = useState("");
+  const [ifaceName, setIfaceName] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -246,11 +249,31 @@ export function VmMultusPanel({ namespace }: { namespace: string }) {
     } finally {
       setLoading(false);
     }
-  }, [namespace, selected]);
+  }, [namespace]);
 
   useEffect(() => {
     if (open) void refresh();
   }, [open, refresh]);
+
+  const attach = async () => {
+    if (!selected) return;
+    const [nadNs, nadName] = selected.split("/");
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await attachMultusToVm(namespace, vmName, {
+        nad_namespace: nadNs,
+        nad_name: nadName,
+        interface_name: ifaceName.trim() || undefined,
+      });
+      setMessage(res.message);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Attach failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={s.wrap}>
@@ -280,9 +303,22 @@ export function VmMultusPanel({ namespace }: { namespace: string }) {
                   multus networkName: {selected.split("/")[1]} · namespace: {selected.split("/")[0]}
                 </p>
               ) : null}
-              <p style={s.hint}>
-                Add a secondary interface in the VM YAML with networkName matching the NAD. Full attach editor ships with VM update API.
-              </p>
+              <label style={s.label}>
+                Interface name (optional)
+                <input
+                  value={ifaceName}
+                  onChange={(e) => setIfaceName(e.target.value)}
+                  placeholder="net1"
+                  style={s.input}
+                />
+              </label>
+              <div style={s.row}>
+                <button type="button" style={s.btnPrimary} disabled={loading || !selected} onClick={() => void attach()}>
+                  Attach to VM
+                </button>
+              </div>
+              {message ? <p style={{ ...s.muted, color: "#15803d" }}>{message}</p> : null}
+              <p style={s.hint}>Patches the VirtualMachine spec. Stop the VM first for safest apply; restart after attach.</p>
             </>
           )}
         </div>

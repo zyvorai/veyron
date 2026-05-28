@@ -237,8 +237,10 @@ impl InteractiveApp {
 
             // Handle input
             if event::poll(Duration::from_millis(100))? {
-                if let Event::Key(key) = event::read()? {
-                    self.handle_key(key).await?;
+                match event::read()? {
+                    Event::Key(key) => self.handle_key(key).await?,
+                    Event::Mouse(mouse) => self.handle_mouse(mouse),
+                    _ => {}
                 }
             }
 
@@ -815,6 +817,54 @@ impl InteractiveApp {
         Ok(())
     }
 
+    /// Mouse: scroll to move selection; left-click selects row on list views.
+    fn handle_mouse(&mut self, mouse: crossterm::event::MouseEvent) {
+        use crossterm::event::{MouseButton, MouseEventKind};
+        if !matches!(self.mode, InteractiveMode::Normal) {
+            return;
+        }
+        match mouse.kind {
+            MouseEventKind::ScrollDown => match self.current_view {
+                View::VmList => self.state.select_next(),
+                View::Nodes => self.state.select_next_node(),
+                View::Pods => self.state.select_next_pod(),
+                View::Events => self.state.select_next_event(),
+                _ => {}
+            },
+            MouseEventKind::ScrollUp => match self.current_view {
+                View::VmList => self.state.select_previous(),
+                View::Nodes => self.state.select_previous_node(),
+                View::Pods => self.state.select_previous_pod(),
+                View::Events => self.state.select_previous_event(),
+                _ => {}
+            },
+            MouseEventKind::Down(MouseButton::Left) if self.current_view == View::VmList => {
+                let row = mouse.row.saturating_sub(4) as usize;
+                if row < self.state.filtered_vms().len() {
+                    self.state.selected_index = row;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn export_vm_list_csv(&self) -> Result<std::path::PathBuf> {
+        let dir = crate::utils::data_dir()?;
+        let path = dir.join(format!(
+            "vm-export-{}.csv",
+            chrono::Utc::now().format("%Y%m%d-%H%M%S")
+        ));
+        let mut lines = vec!["namespace,name,status,cpu,memory,node".to_string()];
+        for vm in self.state.filtered_vms() {
+            lines.push(format!(
+                "{},{},{},{},{},{}",
+                vm.namespace, vm.name, vm.status, vm.cpu, vm.memory, vm.node
+            ));
+        }
+        std::fs::write(&path, lines.join("\n"))?;
+        Ok(path)
+    }
+
     /// Handle VM list view keys
     async fn handle_vm_list_key(&mut self, key: KeyEvent) -> Result<()> {
         // Handle Ctrl+ combinations first
@@ -932,6 +982,12 @@ impl InteractiveApp {
                 let filter_name = self.state.status_filter.as_deref().unwrap_or("All");
                 self.notifications.info(format!("Filter: {}", filter_name));
             }
+            KeyCode::Char('E') => match self.export_vm_list_csv() {
+                Ok(path) => self
+                    .notifications
+                    .success(format!("Exported VMs to {}", path.display())),
+                Err(e) => self.notifications.error(format!("Export failed: {}", e)),
+            },
             KeyCode::Char('d') => {
                 if self.state.multi_select_mode && !self.state.selected_items.is_empty() {
                     // Batch delete with confirmation
