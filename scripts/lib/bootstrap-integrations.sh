@@ -12,7 +12,8 @@ bootstrap_vmrogue_integrations() {
         return 0
     fi
 
-    local prom_url="" am_url="" loki_url="" prom_svc="" am_svc="" loki_svc=""
+    local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url=""
+    local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc=""
 
     if ${k8s} get ns monitoring &>/dev/null; then
         prom_svc=$(${k8s} get svc -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
@@ -38,12 +39,39 @@ bootstrap_vmrogue_integrations() {
         fi
     fi
 
-    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" ]]; then
-        echo "No Prometheus/Alertmanager/Loki services detected — skip vmrogue-integrations Secret"
+    if ${k8s} get ns opencost &>/dev/null; then
+        opencost_svc=$(${k8s} get svc -n opencost -o jsonpath='{.items[?(@.metadata.name=="opencost")].metadata.name}' 2>/dev/null || true)
+        if [[ -z "${opencost_svc}" ]]; then
+            opencost_svc=$(${k8s} get svc -n opencost -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+        fi
+        if [[ -n "${opencost_svc}" ]]; then
+            opencost_url="http://${opencost_svc}.opencost.svc:9003"
+        fi
+    fi
+
+    for tns in trivy-system trivy; do
+        if ${k8s} get ns "${tns}" &>/dev/null; then
+            trivy_svc=$(${k8s} get svc -n "${tns}" -o name 2>/dev/null | grep -i trivy | head -1 | sed 's|service/||' || true)
+            if [[ -n "${trivy_svc}" ]]; then
+                trivy_url="http://${trivy_svc}.${tns}.svc:4954"
+                break
+            fi
+        fi
+    done
+
+    if ${k8s} get ns monitoring &>/dev/null; then
+        jaeger_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i jaeger | grep -i query | head -1 | sed 's|service/||' || true)
+        if [[ -n "${jaeger_svc}" ]]; then
+            jaeger_url="http://${jaeger_svc}.monitoring.svc:16686/api/traces"
+        fi
+    fi
+
+    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" ]]; then
+        echo "No integration services detected — skip vmrogue-integrations Secret"
         return 0
     fi
 
-    echo "Applying vmrogue-integrations Secret in ${ns} (detected observability services)…"
+    echo "Applying vmrogue-integrations Secret in ${ns}…"
     ${k8s} create namespace "${ns}" --dry-run=client -o yaml | ${k8s} apply -f - >/dev/null 2>&1 || true
 
     local tmp
@@ -63,6 +91,9 @@ EOF
     [[ -n "${prom_url}" ]] && echo "  VMROGUE_PROMETHEUS_URL: \"${prom_url}\"" >>"${tmp}"
     [[ -n "${am_url}" ]] && echo "  VMROGUE_ALERTMANAGER_URL: \"${am_url}\"" >>"${tmp}"
     [[ -n "${loki_url}" ]] && echo "  VMROGUE_LOKI_URL: \"${loki_url}\"" >>"${tmp}"
+    [[ -n "${opencost_url}" ]] && echo "  VMROGUE_OPENCOST_URL: \"${opencost_url}\"" >>"${tmp}"
+    [[ -n "${trivy_url}" ]] && echo "  VMROGUE_TRIVY_URL: \"${trivy_url}\"" >>"${tmp}"
+    [[ -n "${jaeger_url}" ]] && echo "  VMROGUE_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
 
     ${k8s} apply -f "${tmp}"
     rm -f "${tmp}"

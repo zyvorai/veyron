@@ -13,7 +13,8 @@ export type VmrogueView =
   | 'workloads'
   | 'insights'
   | 'compliance'
-  | 'operations';
+  | 'operations'
+  | 'fleet';
 
 export const VMROGUE_NAV_EVENT = 'vmrogue:nav';
 
