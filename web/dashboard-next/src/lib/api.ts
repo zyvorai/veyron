@@ -803,6 +803,32 @@ export function createVmrogueVm(body: CreateVmrogueVmRequest): Promise<VmrogueVm
   });
 }
 
+export type CatalogStatus = {
+  crds_available: boolean;
+  embedded_templates: number;
+  embedded_profiles: number;
+  cluster_templates: number;
+  cluster_profiles: number;
+  in_sync: boolean;
+  missing_templates: string[];
+  missing_profiles: string[];
+  message?: string | null;
+};
+
+export type CatalogSyncResult = {
+  templates_synced: number;
+  profiles_synced: number;
+  message: string;
+};
+
+export function fetchCatalogStatus(): Promise<CatalogStatus> {
+  return apiJson<CatalogStatus>('/catalog/status');
+}
+
+export function syncCatalog(): Promise<CatalogSyncResult> {
+  return apiJson<CatalogSyncResult>('/catalog/sync', { method: 'POST' });
+}
+
 export type VmProfile = {
   name: string;
   description: string;

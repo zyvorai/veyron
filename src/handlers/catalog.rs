@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::path::PathBuf;
 
 use crate::tui::colors::cli as color;
@@ -103,42 +103,14 @@ async fn upsert_template(
     api: &kube::Api<crate::operator_crds::VMTemplate>,
     tpl: crate::operator_crds::VMTemplate,
 ) -> Result<()> {
-    use kube::api::PostParams;
-
-    let name = tpl
-        .metadata
-        .name
-        .clone()
-        .context("VMTemplate metadata.name required")?;
-    match api.create(&PostParams::default(), &tpl).await {
-        Ok(_) => Ok(()),
-        Err(kube::Error::Api(a)) if a.code == 409 => {
-            api.replace(&name, &PostParams::default(), &tpl).await?;
-            Ok(())
-        }
-        Err(e) => Err(e.into()),
-    }
+    crate::catalog::upsert_template(api, tpl).await
 }
 
 async fn upsert_profile(
     api: &kube::Api<crate::operator_crds::VMProfile>,
     prof: crate::operator_crds::VMProfile,
 ) -> Result<()> {
-    use kube::api::PostParams;
-
-    let name = prof
-        .metadata
-        .name
-        .clone()
-        .context("VMProfile metadata.name required")?;
-    match api.create(&PostParams::default(), &prof).await {
-        Ok(_) => Ok(()),
-        Err(kube::Error::Api(a)) if a.code == 409 => {
-            api.replace(&name, &PostParams::default(), &prof).await?;
-            Ok(())
-        }
-        Err(e) => Err(e.into()),
-    }
+    crate::catalog::upsert_profile(api, prof).await
 }
 
 pub async fn handle_catalog_sync(_namespace: String) -> Result<()> {

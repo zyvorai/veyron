@@ -7,6 +7,7 @@ pub mod audit;
 pub mod auth;
 pub mod autoscaler;
 pub mod backups;
+pub mod catalog;
 pub mod chaos_engineering;
 pub mod cilium;
 pub mod clusters;
@@ -105,6 +106,7 @@ pub fn all_routes(
         .merge(ingress::router(state.clone()))
         .merge(hpa::router(state.clone()))
         .merge(backups::router(state.clone()))
+        .merge(catalog::router(state.clone()))
         .merge(security::router(state.clone()))
         .merge(compliance::router(state.clone()))
         .merge(monitoring::router(state.clone()))

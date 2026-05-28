@@ -170,6 +170,7 @@ React operator console (HyperShell layout). `GET /` redirects here. Use the clas
 | Backups sidebar (Velero + VM backup API) | Done | `/dashboard-next/` Backups view, links to Storage + DR |
 | Template catalog sidebar (VMTemplate / VMProfile CRDs) | Done | Browse + publish template/profile CRDs + deploy VMRogueVM |
 | DR export workflow (Operations) | Done | Step bar, VM picker, summary/JSON, copy/download, apply/failover |
+| Catalog sync API + UI | Done | `GET/POST /api/v1/catalog/*`, sync banner + one-click upsert |
 | OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 
