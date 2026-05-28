@@ -15,6 +15,7 @@ import ErrorBanner from "./ErrorBanner";
 
 const IN_APP_VIEWS = new Set<VmrogueView>([
   "platform",
+  "catalog",
   "operations",
   "compliance",
   "fleet",
