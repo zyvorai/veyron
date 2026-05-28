@@ -27,7 +27,7 @@ Role mapping (first matching group wins):
 | `VMROGUE_OIDC_TOKEN_URL` | Token endpoint |
 | `VMROGUE_OIDC_REDIRECT_URI` | Callback URL (default: `{origin}/dashboard`) |
 
-Clients read `GET /api/v1/auth/oidc/config` for issuer, client id, and endpoints.
+Clients read `GET /api/v1/auth/oidc/config` for issuer, client id, and endpoints. The classic dashboard uses PKCE (`POST /api/v1/auth/oidc/token` exchanges the authorization code server-side) and sends `Authorization: Bearer <access_token>` on API calls.
 
 ## Keycloak quick start
 

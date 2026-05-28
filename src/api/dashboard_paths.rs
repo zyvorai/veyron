@@ -8,6 +8,7 @@
 pub fn is_auth_exempt_path(path: &str) -> bool {
     path == "/api/v1/health"
         || path == "/api/v1/auth/oidc/config"
+        || path == "/api/v1/auth/oidc/token"
         || path == "/"
         || path == "/dashboard"
         || path.starts_with("/assets/")
@@ -64,6 +65,8 @@ pub fn is_operator_api_path(path: &str) -> bool {
 
 pub fn is_rate_limit_exempt_path(path: &str) -> bool {
     path == "/api/v1/health"
+        || path == "/api/v1/auth/oidc/config"
+        || path == "/api/v1/auth/oidc/token"
         || path == "/"
         || path == "/dashboard"
         || is_operator_api_path(path)
@@ -80,6 +83,8 @@ mod tests {
             "/dashboard",
             "/assets/novnc.min.js",
             "/api/v1/health",
+            "/api/v1/auth/oidc/config",
+            "/api/v1/auth/oidc/token",
         ] {
             assert!(is_auth_exempt_path(path), "{path}");
         }

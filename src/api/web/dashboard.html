@@ -1160,6 +1160,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .remember-row input[type="checkbox"]{accent-color:var(--molten)}
 .remember-row label{font-size:.8em;color:var(--text-muted);cursor:pointer}
+.auth-divider{text-align:center;color:var(--text-dim);font-size:.78rem;margin:14px 0 10px}
+.auth-session{font-size:.74rem;color:var(--text-muted);white-space:nowrap}
 
 /* Namespace selector */
 .ns-select{
@@ -1725,6 +1727,8 @@ html[data-theme="zinc"] .monitor-cap{
       <option value="5000">5s</option><option value="10000">10s</option><option value="30000">30s</option><option value="0">Off</option>
     </select>
     <span class="refresh-text" id="last-refresh"></span>
+    <span id="auth-session-label" class="auth-session" style="display:none"></span>
+    <button type="button" class="btn btn-sm" id="auth-signout-btn" style="display:none;font-size:.72rem" onclick="signOut()">Sign out</button>
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </nav>
@@ -2623,9 +2627,13 @@ html[data-theme="zinc"] .monitor-cap{
 <div class="modal-overlay" id="apikey-modal">
   <div class="modal" style="width:400px">
     <div class="modal-header">
-      <h2>API Key</h2>
+      <h2>Sign in</h2>
     </div>
     <div class="modal-body">
+      <div id="oidc-login-section" style="display:none;margin-bottom:4px">
+        <button type="button" class="btn-forge" style="width:100%" onclick="startOidcLogin()">Sign in with SSO</button>
+        <div class="auth-divider">or use API key</div>
+      </div>
       <div class="form-group">
         <label class="form-label">Enter your VMRogue API key</label>
         <div class="key-input-wrap">
@@ -3077,18 +3085,172 @@ function drawChart(id, data, color, glowColor) {
   ctx.strokeStyle = color+'40'; ctx.lineWidth = 1; ctx.stroke();
 }
 
-// API Key Auth
+// API Key / OIDC Auth
 let apiKeyResolve = null;
+let oidcConfig = null;
+const OIDC_TOKEN_KEY = 'vmrogue_oidc_token';
+const OIDC_PKCE_KEY = 'vmrogue_oidc_pkce';
+const OIDC_STATE_KEY = 'vmrogue_oidc_state';
 
 function getApiKey() {
-  // Check localStorage first (remember me), then sessionStorage
   return localStorage.getItem('vmrogue_api_key') || sessionStorage.getItem('vmrogue_api_key') || '';
+}
+
+function getOidcToken() {
+  return sessionStorage.getItem(OIDC_TOKEN_KEY) || '';
+}
+
+function getAuthCredential() {
+  const oidc = getOidcToken();
+  if (oidc) return { mode: 'oidc', token: oidc };
+  const key = getApiKey();
+  if (key) return { mode: 'apikey', token: key };
+  return null;
+}
+
+function updateAuthSessionUI() {
+  const label = document.getElementById('auth-session-label');
+  const btn = document.getElementById('auth-signout-btn');
+  const cred = getAuthCredential();
+  if (!label || !btn) return;
+  if (cred) {
+    label.style.display = 'inline';
+    label.textContent = cred.mode === 'oidc' ? 'SSO session' : 'API key';
+    btn.style.display = 'inline-block';
+  } else {
+    label.style.display = 'none';
+    btn.style.display = 'none';
+  }
+}
+
+function signOut() {
+  sessionStorage.removeItem(OIDC_TOKEN_KEY);
+  localStorage.removeItem('vmrogue_api_key');
+  sessionStorage.removeItem('vmrogue_api_key');
+  updateAuthSessionUI();
+  requireApiKey();
+}
+
+function pkceRandomString(len) {
+  const a = new Uint8Array(len);
+  crypto.getRandomValues(a);
+  let s = '';
+  for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function pkceChallenge(verifier) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+  let s = '';
+  const bytes = new Uint8Array(digest);
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function loadOidcConfig() {
+  try {
+    const resp = await fetch('/api/v1/auth/oidc/config');
+    if (!resp.ok) return null;
+    oidcConfig = await resp.json();
+    const section = document.getElementById('oidc-login-section');
+    if (section) section.style.display = (oidcConfig && oidcConfig.enabled) ? 'block' : 'none';
+    return oidcConfig;
+  } catch (e) {
+    return null;
+  }
+}
+
+function oidcRedirectUri(cfg) {
+  const r = (cfg && cfg.redirect_uri) ? String(cfg.redirect_uri) : '/dashboard';
+  if (r.startsWith('http://') || r.startsWith('https://')) return r;
+  return window.location.origin + (r.startsWith('/') ? r : '/' + r);
+}
+
+async function startOidcLogin() {
+  const cfg = oidcConfig || await loadOidcConfig();
+  if (!cfg || !cfg.enabled || !cfg.client_id || !cfg.authorization_url) {
+    toast('SSO is not configured on this API', 'error');
+    return;
+  }
+  const verifier = pkceRandomString(32);
+  const challenge = await pkceChallenge(verifier);
+  const state = pkceRandomString(16);
+  sessionStorage.setItem(OIDC_PKCE_KEY, verifier);
+  sessionStorage.setItem(OIDC_STATE_KEY, state);
+  const redirectUri = oidcRedirectUri(cfg);
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: cfg.client_id,
+    redirect_uri: redirectUri,
+    scope: cfg.scope || 'openid profile email',
+    state: state,
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+  });
+  const join = cfg.authorization_url.indexOf('?') >= 0 ? '&' : '?';
+  window.location.href = cfg.authorization_url + join + params.toString();
+}
+
+async function handleOidcCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const err = params.get('error');
+  if (err) {
+    toast('SSO error: ' + (params.get('error_description') || err), 'error');
+    window.history.replaceState({}, '', window.location.pathname);
+    return false;
+  }
+  if (!code) return false;
+  const expectedState = sessionStorage.getItem(OIDC_STATE_KEY);
+  const verifier = sessionStorage.getItem(OIDC_PKCE_KEY);
+  if (!expectedState || state !== expectedState || !verifier) {
+    toast('SSO state mismatch — try again', 'error');
+    window.history.replaceState({}, '', window.location.pathname);
+    return false;
+  }
+  const cfg = oidcConfig || await loadOidcConfig();
+  const redirectUri = oidcRedirectUri(cfg);
+  try {
+    const resp = await fetch('/api/v1/auth/oidc/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, redirect_uri: redirectUri, code_verifier: verifier }),
+    });
+    const body = await resp.json().catch(function() { return {}; });
+    if (!resp.ok) {
+      throw new Error((body && (body.message || body.error)) || ('HTTP ' + resp.status));
+    }
+    const token = body.access_token || (body.data && body.data.access_token);
+    if (!token) throw new Error('No access_token in response');
+    sessionStorage.setItem(OIDC_TOKEN_KEY, token);
+    sessionStorage.removeItem(OIDC_PKCE_KEY);
+    sessionStorage.removeItem(OIDC_STATE_KEY);
+    localStorage.removeItem('vmrogue_api_key');
+    sessionStorage.removeItem('vmrogue_api_key');
+    window.history.replaceState({}, '', window.location.pathname);
+    document.getElementById('apikey-modal').classList.remove('open');
+    updateAuthSessionUI();
+    return true;
+  } catch (e) {
+    toast('SSO login: ' + (e.message || String(e)), 'error');
+    window.history.replaceState({}, '', window.location.pathname);
+    return false;
+  }
+}
+
+async function initAuth() {
+  await loadOidcConfig();
+  if (await handleOidcCallback()) return;
+  if (!getAuthCredential()) await requireApiKey();
+  updateAuthSessionUI();
 }
 
 function requireApiKey() {
   return new Promise(resolve => {
-    const existing = getApiKey();
-    if (existing) { resolve(existing); return; }
+    const existing = getAuthCredential();
+    if (existing) { resolve(existing.token); return; }
+    loadOidcConfig();
     apiKeyResolve = resolve;
     document.getElementById('apikey-input').value = '';
     document.getElementById('apikey-modal').classList.add('open');
@@ -3099,6 +3261,7 @@ function requireApiKey() {
 function submitApiKey() {
   const key = document.getElementById('apikey-input').value.trim();
   if (!key) return;
+  sessionStorage.removeItem(OIDC_TOKEN_KEY);
   const remember = document.getElementById('apikey-remember').checked;
   if (remember) {
     localStorage.setItem('vmrogue_api_key', key);
@@ -3107,6 +3270,7 @@ function submitApiKey() {
     localStorage.removeItem('vmrogue_api_key');
   }
   document.getElementById('apikey-modal').classList.remove('open');
+  updateAuthSessionUI();
   if (apiKeyResolve) { apiKeyResolve(key); apiKeyResolve = null; }
   refresh();
 }
@@ -3136,17 +3300,33 @@ function crdEmptyRow(colspan, payload) {
 }
 
 async function apiFetch(url, opts) {
-  let key = getApiKey();
-  if (!key) key = await requireApiKey();
+  let cred = getAuthCredential();
+  if (!cred) {
+    await requireApiKey();
+    cred = getAuthCredential();
+  }
   opts = opts || {};
-  opts.headers = Object.assign({'X-API-Key': key}, opts.headers || {});
+  opts.headers = Object.assign({}, opts.headers || {});
+  if (cred && cred.mode === 'oidc') {
+    opts.headers['Authorization'] = 'Bearer ' + cred.token;
+  } else if (cred) {
+    opts.headers['X-API-Key'] = cred.token;
+  }
   const resp = await fetch(url, opts);
-  // If 401, clear saved key and re-prompt
   if (resp.status === 401) {
+    sessionStorage.removeItem(OIDC_TOKEN_KEY);
     localStorage.removeItem('vmrogue_api_key');
     sessionStorage.removeItem('vmrogue_api_key');
-    const newKey = await requireApiKey();
-    opts.headers['X-API-Key'] = newKey;
+    updateAuthSessionUI();
+    await requireApiKey();
+    cred = getAuthCredential();
+    if (cred && cred.mode === 'oidc') {
+      opts.headers['Authorization'] = 'Bearer ' + cred.token;
+      delete opts.headers['X-API-Key'];
+    } else if (cred) {
+      opts.headers['X-API-Key'] = cred.token;
+      delete opts.headers['Authorization'];
+    }
     return fetch(url, opts);
   }
   return resp;
@@ -4527,7 +4707,7 @@ async function connectVnc() {
   }
 
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const apiKey = getApiKey();
+  const apiKey = (getAuthCredential() || {}).token || getApiKey();
   const url = proto + '//' + location.host + '/api/v1/vms/' + vncVmNs + '/' + vncVmName + '/vnc?token=' + encodeURIComponent(apiKey);
 
   placeholder.style.display = 'none';
@@ -4629,7 +4809,7 @@ function connectSerial() {
   }
   const out = document.getElementById('serial-output');
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const apiKey = getApiKey();
+  const apiKey = (getAuthCredential() || {}).token || getApiKey();
   const url = proto + '//' + location.host + '/api/v1/vms/' + encodeURIComponent(serialVmNs) + '/' + encodeURIComponent(serialVmName) + '/serial?token=' + encodeURIComponent(apiKey);
 
   try {
@@ -5198,8 +5378,8 @@ window.addEventListener('load', async () => {
   const sel = document.getElementById('refresh-interval');
   sel.value = refreshInterval || '5000';
 
-  // Ensure API key is set before any API calls
-  await requireApiKey();
+  // Ensure auth (API key or OIDC) before any API calls
+  await initAuth();
 
   refresh();
   fetchTemplates();
@@ -6307,6 +6487,8 @@ async function fetchIntegrations() {
       if (i.open) {
         if (i.open.kind === 'in_app') {
           openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();navigate(\'' + esc(i.open.href) + '\')">' + esc(i.open.label) + '</button>';
+        } else if (i.open.kind === 'external') {
+          openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();window.open(\'' + esc(i.open.href).replace(/'/g, '%27') + '\',\'_blank\',\'noopener,noreferrer\')">' + esc(i.open.label) + '</button>';
         } else {
           openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();window.open(\'' + esc(i.open.href).replace(/'/g, '%27') + '\',\'_blank\',\'noopener,noreferrer\')">' + esc(i.open.label) + '</button>';
         }

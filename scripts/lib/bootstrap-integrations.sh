@@ -76,6 +76,28 @@ bootstrap_argocd_credentials() {
     printf '%s\n%s\n%s\n%s' "${argocd_url}" "${argocd_token}" "${argocd_default_app}" "${argocd_ns}"
 }
 
+bootstrap_ready_node_ip() {
+    local k8s="${1:?kubectl}"
+    local ip=""
+    ip=$(${k8s} get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="ExternalIP")].address}{"\n"}{end}' 2>/dev/null | grep -v '^$' | head -1 || true)
+    if [[ -z "${ip}" ]]; then
+        ip=$(${k8s} get nodes -o jsonpath='{range .items[*]}{.status.addresses[?(@.type=="InternalIP")].address}{"\n"}{end}' 2>/dev/null | grep -v '^$' | head -1 || true)
+    fi
+    printf '%s' "${ip}"
+}
+
+bootstrap_nodeport_external_url() {
+    local k8s="${1:?kubectl}" ns="${2:?namespace}" svc="${3:?service}" scheme="${4:-http}"
+    local node_ip="" np=""
+    [[ -z "${svc}" ]] && return 0
+    node_ip=$(bootstrap_ready_node_ip "${k8s}")
+    [[ -z "${node_ip}" ]] && return 0
+    np=$(${k8s} get svc "${svc}" -n "${ns}" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || true)
+    if [[ -n "${np}" && "${np}" != "null" && "${np}" != "0" ]]; then
+        printf '%s://%s:%s' "${scheme}" "${node_ip}" "${np}"
+    fi
+}
+
 bootstrap_vmrogue_integrations() {
     local k8s="${1:?kubectl command}"
     local ns="${2:-vmrogue-system}"
@@ -86,8 +108,9 @@ bootstrap_vmrogue_integrations() {
     fi
 
     local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url="" grafana_url=""
+    local grafana_ext="" prom_ext="" am_ext="" jaeger_ext=""
     local argocd_url="" argocd_token="" argocd_default_app=""
-    local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc=""
+    local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc="" grafana_svc=""
 
     if ${k8s} get ns monitoring &>/dev/null; then
         prom_svc=$(${k8s} get svc -n monitoring -l app.kubernetes.io/name=prometheus -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
@@ -109,6 +132,13 @@ bootstrap_vmrogue_integrations() {
             [[ -z "${grafana_port}" ]] && grafana_port=$(${k8s} get svc "${grafana_svc}" -n monitoring -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || true)
             [[ -z "${grafana_port}" ]] && grafana_port=3000
             grafana_url="http://${grafana_svc}.monitoring.svc:${grafana_port}"
+            grafana_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${grafana_svc}" http || true)
+        fi
+        if [[ -n "${prom_svc}" ]]; then
+            prom_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${prom_svc}" http || true)
+        fi
+        if [[ -n "${am_svc}" ]]; then
+            am_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${am_svc}" http || true)
         fi
     fi
 
@@ -146,6 +176,7 @@ bootstrap_vmrogue_integrations() {
         jaeger_svc=$(${k8s} get svc -n monitoring -o name 2>/dev/null | grep -i jaeger | grep -i query | head -1 | sed 's|service/||' || true)
         if [[ -n "${jaeger_svc}" ]]; then
             jaeger_url="http://${jaeger_svc}.monitoring.svc:16686/api/traces"
+            jaeger_ext=$(bootstrap_nodeport_external_url "${k8s}" monitoring "${jaeger_svc}" http || true)
         fi
     fi
 
@@ -194,6 +225,10 @@ EOF
     [[ -n "${trivy_url}" ]] && echo "  VMROGUE_TRIVY_URL: \"${trivy_url}\"" >>"${tmp}"
     [[ -n "${jaeger_url}" ]] && echo "  VMROGUE_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
     [[ -n "${grafana_url}" ]] && echo "  VMROGUE_GRAFANA_URL: \"${grafana_url}\"" >>"${tmp}"
+    [[ -n "${grafana_ext}" ]] && echo "  VMROGUE_GRAFANA_EXTERNAL_URL: \"${grafana_ext}\"" >>"${tmp}"
+    [[ -n "${prom_ext}" ]] && echo "  VMROGUE_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
+    [[ -n "${am_ext}" ]] && echo "  VMROGUE_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
+    [[ -n "${jaeger_ext}" ]] && echo "  VMROGUE_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
     [[ -n "${argocd_url}" ]] && echo "  VMROGUE_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
     [[ -n "${argocd_token}" ]] && echo "  VMROGUE_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
     [[ -n "${argocd_default_app}" ]] && echo "  VMROGUE_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"
