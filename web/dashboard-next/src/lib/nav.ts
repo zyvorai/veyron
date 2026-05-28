@@ -10,6 +10,7 @@ export type VmrogueView =
   | 'nodes'
   | 'storage'
   | 'backups'
+  | 'catalog'
   | 'platform'
   | 'workloads'
   | 'insights'

@@ -710,10 +710,53 @@ export function fetchTemplates(): Promise<VmTemplate[]> {
   return apiJson<VmTemplate[]>('/templates');
 }
 
+export type CrdListResponse<T> = {
+  items: T[];
+  total: number;
+  message?: string | null;
+};
+
+export type CatalogTemplateRecord = {
+  name: string;
+  family?: string | null;
+  description?: string | null;
+  tags: string[];
+};
+
+export type CatalogProfileRecord = {
+  name: string;
+  cores: number;
+  memory: string;
+  disk_size: string;
+  description?: string | null;
+};
+
+export function fetchCatalogTemplates(): Promise<CrdListResponse<CatalogTemplateRecord>> {
+  return apiJson<CrdListResponse<CatalogTemplateRecord>>('/crds/templates');
+}
+
+export function fetchCatalogProfiles(): Promise<CrdListResponse<CatalogProfileRecord>> {
+  return apiJson<CrdListResponse<CatalogProfileRecord>>('/crds/profiles');
+}
+
+export type VmProfile = {
+  name: string;
+  description: string;
+  cpu_cores: number;
+  memory: string;
+  disk_size: string;
+  use_cases: string[];
+};
+
+export function fetchProfiles(): Promise<VmProfile[]> {
+  return apiJson<VmProfile[]>('/profiles');
+}
+
 export type CreateVmRequest = {
   name: string;
   namespace?: string;
   template?: string;
+  profile?: string;
   cpus?: number;
   memory?: string;
   disk_size?: string;

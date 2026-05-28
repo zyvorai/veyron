@@ -159,6 +159,14 @@ export const HyperShell: React.FC<HyperShellProps> = ({
           </button>
           <button
             type="button"
+            style={navActive("catalog")}
+            onClick={() => onViewChange("catalog")}
+          >
+            <span aria-hidden>📋</span>
+            Catalog
+          </button>
+          <button
+            type="button"
             style={navActive("platform")}
             onClick={() => onViewChange("platform")}
           >

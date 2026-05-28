@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 import { useEffect, useState, type CSSProperties } from "react";
-import { createVirtualMachine, fetchTemplates, type VmTemplate } from "../../lib/api";
+import { createVirtualMachine, fetchProfiles, fetchTemplates, type VmProfile, type VmTemplate } from "../../lib/api";
 
 type Props = {
   defaultNamespace: string;
@@ -13,6 +13,7 @@ type Props = {
 export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
   const [open, setOpen] = useState(false);
   const [templates, setTemplates] = useState<VmTemplate[]>([]);
+  const [profiles, setProfiles] = useState<VmProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [templatesError, setTemplatesError] = useState<string | null>(null);
@@ -20,6 +21,7 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
   const [name, setName] = useState("");
   const [namespace, setNamespace] = useState(defaultNamespace === "all" ? "default" : defaultNamespace);
   const [template, setTemplate] = useState("ubuntu");
+  const [profile, setProfile] = useState("");
   const [cpus, setCpus] = useState(2);
   const [memory, setMemory] = useState("4Gi");
   const [diskSize, setDiskSize] = useState("20Gi");
@@ -33,27 +35,44 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
   useEffect(() => {
     if (!open) return;
     setTemplatesError(null);
-    void fetchTemplates()
-      .then((rows) => {
+    void Promise.allSettled([fetchTemplates(), fetchProfiles()]).then((results) => {
+      if (results[0].status === "fulfilled") {
+        const rows = results[0].value;
         setTemplates(rows);
-        setTemplatesError(null);
         if (rows.length && !rows.some((t) => t.name === template)) {
           setTemplate(rows[0].name);
         }
-      })
-      .catch((err) => {
+      } else {
         setTemplates([]);
-        setTemplatesError(err instanceof Error ? err.message : "Failed to load templates");
-      });
+        setTemplatesError(
+          results[0].reason instanceof Error ? results[0].reason.message : "Failed to load templates",
+        );
+      }
+      if (results[1].status === "fulfilled") {
+        setProfiles(results[1].value);
+      } else {
+        setProfiles([]);
+      }
+    });
   }, [open, template]);
 
   const onTemplateChange = (value: string) => {
     setTemplate(value);
     const t = templates.find((row) => row.name === value);
-    if (t) {
+    if (t && !profile) {
       setCpus(t.default_cpus);
       setMemory(t.default_memory);
       setDiskSize(t.default_disk_size);
+    }
+  };
+
+  const onProfileChange = (value: string) => {
+    setProfile(value);
+    const p = profiles.find((row) => row.name === value);
+    if (p) {
+      setCpus(p.cpu_cores);
+      setMemory(p.memory);
+      setDiskSize(p.disk_size);
     }
   };
 
@@ -70,6 +89,7 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
         name: vmName,
         namespace: namespace.trim() || "default",
         template,
+        profile: profile.trim() || undefined,
         cpus,
         memory,
         disk_size: diskSize,
@@ -134,6 +154,19 @@ export function VmCreateModal({ defaultNamespace, onCreated }: Props) {
               ))}
             </select>
           </label>
+          {profiles.length > 0 ? (
+            <label style={label}>
+              Profile (optional)
+              <select value={profile} onChange={(e) => onProfileChange(e.target.value)} style={field}>
+                <option value="">— custom sizing —</option>
+                {profiles.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name} — {p.cpu_cores} CPU · {p.memory} · {p.disk_size}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
             <label style={label}>
               CPUs

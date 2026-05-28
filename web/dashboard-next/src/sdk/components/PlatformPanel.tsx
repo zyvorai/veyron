@@ -391,6 +391,13 @@ export function PlatformPanel({ scopeNamespace = "all" }: Props) {
 
       <section style={section}>
         <h3 style={sectionTitle}>Golden image catalog</h3>
+        <p style={note}>
+          VMTemplate / VMProfile sizing: open the{" "}
+          <button type="button" style={linkBtn} onClick={() => requestVmrogueNav({ view: "catalog" })}>
+            Catalog
+          </button>{" "}
+          sidebar.
+        </p>
         {imagesError ? <ErrorBanner message={imagesError} /> : null}
         {images ? (
           <>
