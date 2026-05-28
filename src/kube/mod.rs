@@ -54,6 +54,29 @@ pub struct PlatformReadiness {
 
 pub(crate) static KUBECONFIG_PATH: OnceLock<String> = OnceLock::new();
 static CACHED_CONFIG: tokio::sync::OnceCell<Config> = tokio::sync::OnceCell::const_new();
+static ACTIVE_KUBECONFIG_CONTEXT: std::sync::RwLock<Option<String>> =
+    std::sync::RwLock::new(None);
+
+/// Override kube client context for the API process (multi-cluster kubeconfig).
+pub fn set_active_kube_context(ctx: Option<String>) {
+    if let Ok(mut guard) = ACTIVE_KUBECONFIG_CONTEXT.write() {
+        *guard = ctx;
+    }
+}
+
+/// Active kubeconfig context override, if any.
+pub fn active_kube_context() -> Option<String> {
+    ACTIVE_KUBECONFIG_CONTEXT.read().ok().and_then(|g| g.clone())
+}
+
+fn kubeconfig_path_string() -> Option<String> {
+    if let Some(path) = KUBECONFIG_PATH.get() {
+        return Some(path.clone());
+    }
+    std::env::var("KUBECONFIG").ok().filter(|p| !p.is_empty()).or_else(|| {
+        dirs::home_dir().map(|h| h.join(".kube/config").to_string_lossy().into_owned())
+    })
+}
 
 /// Set the global kubeconfig path (called once at startup)
 pub fn set_kubeconfig_path(path: String) {
@@ -64,12 +87,31 @@ pub fn set_kubeconfig_path(path: String) {
 ///
 /// The config is pure data (no runtime handles), so it is safe to cache
 /// across await points and even across tokio runtimes in tests.
+async fn resolve_config_for_context(ctx: &str) -> Result<Config> {
+    let path = kubeconfig_path_string()
+        .filter(|p| std::path::Path::new(p).exists())
+        .context("kubeconfig file required for context switch (set KUBECONFIG or --kubeconfig)")?;
+    let kubeconfig = kube::config::Kubeconfig::read_from(&path).map_err(|e| anyhow::anyhow!(e))?;
+    let opts = kube::config::KubeConfigOptions {
+        context: Some(ctx.to_string()),
+        ..Default::default()
+    };
+    Config::from_custom_kubeconfig(kubeconfig, &opts)
+        .await
+        .map_err(|e| anyhow::anyhow!(e))
+}
+
 async fn resolve_config() -> Result<Config> {
+    if let Some(ctx) = active_kube_context() {
+        return resolve_config_for_context(&ctx).await;
+    }
     let config = CACHED_CONFIG
         .get_or_try_init(|| async {
-            let cfg = if let Some(path) = KUBECONFIG_PATH.get() {
+            let cfg = if let Some(path) = kubeconfig_path_string()
+                .filter(|p| std::path::Path::new(p).exists())
+            {
                 let kubeconfig =
-                    kube::config::Kubeconfig::read_from(path).map_err(|e| anyhow::anyhow!(e))?;
+                    kube::config::Kubeconfig::read_from(&path).map_err(|e| anyhow::anyhow!(e))?;
                 Config::from_custom_kubeconfig(
                     kubeconfig,
                     &kube::config::KubeConfigOptions::default(),
@@ -121,6 +163,14 @@ impl KubeClient {
     pub async fn new() -> Result<Self> {
         let client = get_client().await?;
         Ok(Self { client })
+    }
+
+    /// Create a client using an explicit kubeconfig context (does not mutate global override).
+    pub async fn for_context(context: &str) -> Result<Self> {
+        let config = resolve_config_for_context(context).await?;
+        Ok(Self {
+            client: Client::try_from(config)?,
+        })
     }
 
     /// Create a new KubeClient with custom kubeconfig path
