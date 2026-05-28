@@ -13,7 +13,7 @@ use crate::operator_crds::{VMProfile, VMProfileSpec, VMRogueVMSpec, VMTemplate, 
 use crate::profiles::PROFILES;
 use crate::templates::TEMPLATES;
 
-fn template_family(name: &str) -> String {
+pub fn template_family(name: &str) -> String {
     if name.starts_with("windows") {
         "windows".to_string()
     } else {

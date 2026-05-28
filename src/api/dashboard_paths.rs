@@ -43,6 +43,7 @@ pub const OPERATOR_API_PREFIXES: &[&str] = &[
     "/api/v1/images/catalog",
     "/api/v1/velero/status",
     "/api/v1/backups",
+    "/api/v1/dr",
     "/api/v1/metrics/timeline",
     "/api/v1/traces",
     "/api/v1/integrations",

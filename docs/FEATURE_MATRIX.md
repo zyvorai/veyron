@@ -168,7 +168,8 @@ React operator console (HyperShell layout). `GET /` redirects here. Use the clas
 | Fleet kube context switch | Done | `POST /api/v1/clusters/:name/activate` + ConfigMap persistence |
 | Storage snapshots + schedules (dashboard-next) | Done | `GET /api/v1/snapshots?namespace=all`, fleet tables + VM panels |
 | Backups sidebar (Velero + VM backup API) | Done | `/dashboard-next/` Backups view, links to Storage + DR |
-| Template catalog sidebar (VMTemplate / VMProfile CRDs) | Done | `/dashboard-next/` Catalog view + profile picker on create VM |
+| Template catalog sidebar (VMTemplate / VMProfile CRDs) | Done | Browse + publish template/profile CRDs + deploy VMRogueVM |
+| DR export workflow (Operations) | Done | Step bar, VM picker, summary/JSON, copy/download, apply/failover |
 | OIDC production rollout | Medium | See [OIDC_SSO.md](OIDC_SSO.md) |
 | Vite bundle splitting / size budget | Low | Lazy routes already split Dashboard vs inventory |
 
