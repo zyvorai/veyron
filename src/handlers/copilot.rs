@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use crate::copilot::{
-    CopilotAskRequest, CopilotResponse, YamlBuildRequest, copilot_ask, recommend_template,
-    scheduling_explainer, vm_doctor, yaml_preview,
+    CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
+    network_lens, recommend_template, scheduling_explainer, vm_doctor, yaml_preview,
 };
 use crate::kube::KubeClient;
 use anyhow::Result;
@@ -81,6 +81,21 @@ pub async fn handle_ai_yaml(
 
 pub async fn handle_ai_recommend(description: &str) -> Result<()> {
     let resp = recommend_template(description);
+    print_copilot(&resp, "text");
+    Ok(())
+}
+
+pub async fn handle_ai_backup(namespace: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = backup_advisor(&client, scope).await;
+    print_copilot(&resp, "text");
+    Ok(())
+}
+
+pub async fn handle_ai_network(name: &str, namespace: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let resp = network_lens(&client, namespace, name).await;
     print_copilot(&resp, "text");
     Ok(())
 }

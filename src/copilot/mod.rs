@@ -7,14 +7,18 @@
 //! Composes cluster facts, KubeVirt state, and existing translators into product-shaped
 //! responses. Optional external LLM backends can be wired later; v1 is deterministic.
 
+mod backup_advisor;
 mod doctor;
 pub mod fixit;
 mod intent;
+mod network_lens;
 mod scheduling;
 mod yaml_build;
 
+pub use backup_advisor::backup_advisor;
 pub use doctor::vm_doctor;
 pub use intent::CopilotIntent;
+pub use network_lens::network_lens;
 pub use scheduling::scheduling_explainer;
 pub use yaml_build::{YamlBuildRequest, yaml_preview};
 
@@ -140,6 +144,24 @@ pub async fn copilot_ask(
             yaml_preview(client, scope, spec).await
         }
         CopilotIntent::MigrationAdvisor => migration_advice_hint(),
+        CopilotIntent::BackupAdvisor => backup_advisor(client, scope).await,
+        CopilotIntent::NetworkLens => {
+            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
+                network_lens(client, ns, name).await
+            } else if let Some(name) = extract_vm_name(query) {
+                let ns = req.namespace.as_deref().unwrap_or(scope);
+                network_lens(client, ns, &name).await
+            } else {
+                let mut r = CopilotResponse::new(
+                    "VMRogue Network Lens",
+                    "network_lens",
+                    "Which VM should I inspect?",
+                );
+                r.summary =
+                    "Include a VM name — e.g. “Show network for vm-app-01”.".into();
+                r
+            }
+        }
         CopilotIntent::ErrorExplainer => explain_error_message(query, Some("copilot")),
         CopilotIntent::GeneralHelp => general_help(),
     }
@@ -157,6 +179,8 @@ fn general_help() -> CopilotResponse {
         "VMRogue Scheduling Explainer — why a VM is Pending".into(),
         "VMRogue YAML Builder — generate and validate VirtualMachine YAML".into(),
         "VMRogue Migration Advisor — readiness for VMware/OVA/VMDK".into(),
+        "VMRogue Backup Advisor — snapshot and Velero coverage gaps".into(),
+        "VMRogue Network Lens — interfaces, expose, and policies".into(),
         "VMRogue Error Explainer — translate ugly K8s errors".into(),
     ];
     r.recommendations = vec![
@@ -164,6 +188,8 @@ fn general_help() -> CopilotResponse {
         "Show all unhealthy VMs".into(),
         "Create a Windows Server 2022 VM with 8 CPU and 32GB RAM".into(),
         "Can I migrate this VMware VM safely?".into(),
+        "Which VMs have no backups?".into(),
+        "Show network for vm-app-01".into(),
     ];
     r
 }
@@ -315,10 +341,18 @@ mod tests {
     }
 
     #[test]
-    fn detect_yaml_intent() {
+    fn detect_backup_intent() {
         assert!(matches!(
-            intent::detect_intent("Create Windows Server 2022 VM 8 CPU 32GB"),
-            CopilotIntent::YamlBuilder
+            intent::detect_intent("Which VMs have no backups?"),
+            CopilotIntent::BackupAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_network_intent() {
+        assert!(matches!(
+            intent::detect_intent("Show network for vm-app-01"),
+            CopilotIntent::NetworkLens
         ));
     }
 }

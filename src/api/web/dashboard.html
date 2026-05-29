@@ -2080,8 +2080,14 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="modal-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-label="VMRogue Copilot">
   <div class="fixit-panel copilot-panel" onclick="event.stopPropagation()" style="width:min(640px,94vw);max-height:80vh;overflow:auto">
     <div class="fixit-title">VMRogue Copilot</div>
-    <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:12px">Ask about VM health, scheduling, YAML, or paste a Kubernetes error.</p>
+    <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:12px">Ask about VM health, scheduling, YAML, backups, network, or paste a Kubernetes error.</p>
     <textarea class="form-input" id="copilot-input" rows="3" placeholder="Why is my VM not starting?" style="width:100%;margin-bottom:10px;font-size:.9rem"></textarea>
+    <div class="copilot-chips" id="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <button type="button" class="btn btn-sm" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy VMs</button>
+      <button type="button" class="btn btn-sm" onclick="copilotChip('Which VMs have no backups?')">Backup gaps</button>
+      <button type="button" class="btn btn-sm" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML builder</button>
+      <button type="button" class="btn btn-sm" onclick="copilotChip('Can I migrate this VMware VM safely?')">Migration</button>
+    </div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button type="button" class="btn btn-start btn-sm" onclick="runCopilotAsk()">Ask</button>
       <button type="button" class="btn btn-sm" onclick="closeCopilot()">Close</button>
@@ -2523,7 +2529,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div></div>
+  <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div>
+    <button type="button" class="btn btn-sm" onclick="runBackupAdvisor()">Backup Advisor</button></div>
+  <div class="card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Backup Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('backup-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="card"><div class="card-header"><span class="card-title">VM backups</span></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card" style="margin-top:16px">
@@ -4414,13 +4425,67 @@ function runExperienceAction(action) {
   toast('Action: ' + action, 'info');
 }
 
-function openCopilot() {
+function openCopilot(prefill) {
   const modal = document.getElementById('copilot-modal');
   const input = document.getElementById('copilot-input');
   if (!modal) return;
   modal.classList.add('open');
   document.getElementById('copilot-result').innerHTML = '';
-  if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+  if (input) {
+    input.value = prefill || '';
+    delete input.dataset.vmNs;
+    delete input.dataset.vmName;
+    setTimeout(() => input.focus(), 50);
+  }
+}
+
+function copilotChip(text) {
+  const input = document.getElementById('copilot-input');
+  if (input) input.value = text;
+  runCopilotAsk();
+}
+
+function openCopilotDoctor(ns, name) {
+  openCopilot('');
+  const el = document.getElementById('copilot-result');
+  if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Running VMRogue Doctor…</div>';
+  apiJson('/api/v1/experience/copilot/doctor/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
+    .then(data => renderCopilotResult(data))
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>'; });
+}
+
+async function runCopilotAskScoped(ns, name, query) {
+  const el = document.getElementById('copilot-result');
+  if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Thinking…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: query || ('Health report for ' + name),
+        namespace: ns,
+        vm_name: name
+      })
+    });
+    renderCopilotResult(data);
+  } catch (e) {
+    if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+async function runBackupAdvisor() {
+  const card = document.getElementById('backup-advisor-card');
+  const body = document.getElementById('backup-advisor-body');
+  if (!card || !body) return;
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">Analyzing backup coverage…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/backup' + nsParam());
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
 }
 
 function closeCopilot() {
@@ -4429,8 +4494,16 @@ function closeCopilot() {
 }
 
 async function runCopilotAsk() {
-  const q = (document.getElementById('copilot-input') || {}).value || '';
+  const input = document.getElementById('copilot-input');
+  const q = (input || {}).value || '';
   if (!q.trim()) { toast('Enter a question', 'error'); return; }
+  const ns = input && input.dataset.vmNs;
+  const vmName = input && input.dataset.vmName;
+  if (ns && vmName) {
+    await runCopilotAskScoped(ns, vmName, q.trim());
+    if (input) { delete input.dataset.vmNs; delete input.dataset.vmName; }
+    return;
+  }
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Thinking…</div>';
   try {
@@ -4448,6 +4521,11 @@ async function runCopilotAsk() {
 function renderCopilotResult(data) {
   const el = document.getElementById('copilot-result');
   if (!el || !data) return;
+  renderCopilotResultInto(el, data);
+}
+
+function renderCopilotResultInto(el, data) {
+  if (!el || !data) return;
   let html = '<div style="font-size:.78rem;color:var(--spark);margin-bottom:6px">' + esc(data.module || 'Copilot') + '</div>';
   html += '<div style="font-weight:600;margin-bottom:8px">' + esc(data.title || '') + '</div>';
   if (data.summary) html += '<p style="font-size:.88rem;line-height:1.5;color:var(--text-muted)">' + esc(data.summary) + '</p>';
@@ -4463,7 +4541,8 @@ function renderCopilotResult(data) {
     html += '</ul></div>';
   }
   if (data.yaml_preview) {
-    html += '<pre style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
+    html += '<pre id="copilot-yaml-preview" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
+    html += '<button type="button" class="btn btn-sm" style="margin-top:8px" onclick="copyToClipboard(document.getElementById(\'copilot-yaml-preview\').textContent)">Copy YAML</button>';
   }
   if (data.recommendations && data.recommendations.length) {
     html += '<div style="margin-top:12px;font-size:.82rem"><strong>Recommended fixes</strong><ol style="margin:6px 0 0 18px">';
@@ -4476,6 +4555,9 @@ function renderCopilotResult(data) {
       const page = a.page || '';
       if (a.action === 'navigate' && page) {
         html += '<button type="button" class="btn btn-sm" onclick="closeCopilot();navigate(' + JSON.stringify(page) + ')">' + esc(a.label) + '</button>';
+      } else if (a.action === 'open_vm' && page) {
+        const parts = page.split(':');
+        html += '<button type="button" class="btn btn-sm" onclick="closeCopilot();navigate(\'vms\');setTimeout(function(){toggleVmDetail(' + JSON.stringify(parts[0]) + ',' + JSON.stringify(parts[1] || '') + ');},400)">' + esc(a.label) + '</button>';
       } else if (a.action === 'forge_vm') {
         html += '<button type="button" class="btn btn-sm btn-start" onclick="closeCopilot();openCreateModal()">' + esc(a.label) + '</button>';
       } else if (a.action === 'copy_kubectl' && page) {
@@ -4818,6 +4900,7 @@ function vmCard(vm, showActions) {
     ? '<button type="button" class="btn btn-sm btn-stop" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('stop') + ')">Stop</button>'
     : '';
   const actions = showActions ? primary + stopBtn +
+    '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotDoctor(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Diagnose</button>' +
     '<button type="button" class="btn btn-sm btn-restart" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('restart') + ')">↻</button>' +
     '<button type="button" class="btn btn-sm btn-delete" onclick="event.stopPropagation();vmDelete(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">×</button>' : '';
   return '<div class="vm-card" onclick="toggleVmDetail(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">' +
@@ -5543,14 +5626,19 @@ function toggleVmDetail(ns, name) {
   expandedVm = key;
   rememberVmForSnap(ns, name);
 
-  // Insert placeholder synchronously so a second click cannot spawn duplicate panels before fetch completes.
+  const placeholder = '<div class="vm-detail" id="' + detailId + '"><div class="detail-loading">Loading VM details\u2026</div></div>';
   const rows = document.querySelectorAll('#vm-full-list .vm-row');
   for (const row of rows) {
     if (row.querySelector('.vm-name')?.textContent === name) {
-      row.insertAdjacentHTML(
-        'afterend',
-        '<div class="vm-detail" id="' + detailId + '"><div class="detail-loading">Loading VM details\u2026</div></div>'
-      );
+      row.insertAdjacentHTML('afterend', placeholder);
+      fetchVmDetail(ns, name);
+      return;
+    }
+  }
+  const cards = document.querySelectorAll('#vm-full-list .vm-card');
+  for (const card of cards) {
+    if (card.querySelector('.vm-card-name')?.textContent === name) {
+      card.insertAdjacentHTML('afterend', placeholder);
       fetchVmDetail(ns, name);
       return;
     }
@@ -5569,6 +5657,8 @@ async function fetchVmDetail(ns, name) {
     const guestOS = vmi.guest_os_info;
 
     let inner = '<div class="detail-grid">';
+
+    inner += '<div class="detail-section"><div class="detail-section-title">VMRogue Doctor</div><div id="doctor-panel-' + name + '">Loading\u2026</div></div>';
 
     inner += '<div class="detail-section"><div class="detail-section-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
 
@@ -5631,6 +5721,7 @@ async function fetchVmDetail(ns, name) {
     inner += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
     inner += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" onclick="event.stopPropagation();cloneVM(\'' + ns + '\',\'' + name + '\')">&#10697; Clone</button>';
     inner += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
+    inner += '<button class="btn" style="background:rgba(56,189,248,.1);color:var(--spark);border:1px solid rgba(56,189,248,.2)" onclick="event.stopPropagation();openCopilotDoctor(\'' + ns + '\',\'' + name + '\')">Diagnose</button>';
     inner += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
     inner += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
     inner += '</div>';
@@ -5647,6 +5738,7 @@ async function fetchVmDetail(ns, name) {
     loadRdpPanel(ns, name, vmi, vm);
     loadVmDriftPanel(ns, name, vm);
     loadInternetPanel(ns, name);
+    loadDoctorPanel(ns, name);
   } catch (e) {
     holder.innerHTML =
       '<div class="detail-section"><div class="detail-section-title">Error</div><div class="detail-row"><span class="val" style="color:var(--error)">' +
@@ -7787,6 +7879,25 @@ function openImageImportModal() {
     method: 'POST',
     body: JSON.stringify({ name, namespace: ns, url: url || undefined, registry: registry || undefined, size })
   }).then(() => { toast('Import started', 'success'); fetchImages(); }).catch(e => toast(e.message, 'error'));
+}
+
+async function loadDoctorPanel(ns, name) {
+  const el = document.getElementById('doctor-panel-' + name);
+  if (!el) return;
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/doctor/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    let html = '';
+    if (data.summary) html += '<p style="margin:0 0 8px;font-size:.86rem;color:var(--text-muted)">' + esc(data.summary) + '</p>';
+    if (data.health_score != null) html += '<p style="margin:0"><strong>Health ' + data.health_score + '/100</strong></p>';
+    if (data.recommendations && data.recommendations.length) {
+      html += '<ul style="margin:8px 0 0 18px;font-size:.82rem">';
+      data.recommendations.slice(0, 3).forEach(r => { html += '<li>' + esc(r) + '</li>'; });
+      html += '</ul>';
+    }
+    el.innerHTML = html || 'No issues reported.';
+  } catch (e) {
+    el.innerHTML = '<span style="color:var(--error)">' + esc(e.message) + '</span>';
+  }
 }
 
 async function loadVmDriftPanel(ns, name, vm) {

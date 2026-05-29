@@ -7,12 +7,27 @@ pub enum CopilotIntent {
     UnhealthyFleet,
     YamlBuilder,
     MigrationAdvisor,
+    BackupAdvisor,
+    NetworkLens,
     ErrorExplainer,
     GeneralHelp,
 }
 
 pub fn detect_intent(query: &str) -> CopilotIntent {
     let lower = query.to_lowercase();
+
+    if lower.contains("backup") || lower.contains("velero") || lower.contains("unprotected") {
+        return CopilotIntent::BackupAdvisor;
+    }
+
+    if lower.contains("network")
+        || lower.contains("connectivity")
+        || lower.contains("multus")
+        || lower.contains("firewall")
+        || lower.contains("nodeport")
+    {
+        return CopilotIntent::NetworkLens;
+    }
 
     if lower.contains("insufficient memory")
         || lower.contains("nodes are available")

@@ -238,6 +238,8 @@ else
     echo ""
     FAIL=$((FAIL + 1))
 fi
+check_json_grep "GET /api/v1/experience/copilot/backup" \
+    "${BASE}/api/v1/experience/copilot/backup?namespace=all" '"module"'
 check_json_grep "GET /api/v1/gitops/status" \
     "${BASE}/api/v1/gitops/status?namespace=all" '"sync_status"'
 check_json_ok "GET /api/v1/snapshots?ns=all" \
