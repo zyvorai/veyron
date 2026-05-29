@@ -236,6 +236,18 @@ else
 fi
 check_json_grep "GET /api/v1/experience/copilot/backup" \
     "${BASE}/api/v1/experience/copilot/backup?namespace=all" '"module"'
+gitops_body=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -H "X-API-Key: ${KEY}" -H "Content-Type: application/json" \
+    -d '{"yaml":"apiVersion: kubevirt.io/v1\nkind: VirtualMachine\n","app_name":"verify","namespace":"default"}' \
+    "${BASE}/api/v1/experience/copilot/gitops/export" || true)
+if echo "${gitops_body}" | grep -q '"files"'; then
+    echo "  ✔ POST /api/v1/experience/copilot/gitops/export"
+else
+    echo "  ✗ POST /api/v1/experience/copilot/gitops/export"
+    echo "${gitops_body}" | head -c 400 | sed 's/^/    /'
+    echo ""
+    FAIL=$((FAIL + 1))
+fi
 check_json_grep "GET /api/v1/gitops/status" \
     "${BASE}/api/v1/gitops/status?namespace=all" '"sync_status"'
 check_json_ok "GET /api/v1/snapshots?ns=all" \

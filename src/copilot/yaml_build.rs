@@ -7,9 +7,9 @@ use crate::kube::vm_config_to_kubevirt;
 use crate::kube::KubeClient;
 use crate::output::to_yaml;
 use crate::templates::TEMPLATES;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct YamlBuildRequest {
     #[serde(default)]
     pub name: Option<String>,
@@ -114,6 +114,7 @@ pub async fn yaml_preview(
         Ok(vm) => match to_yaml(&vm) {
             Ok(yaml) => {
                 r.yaml_preview = Some(yaml);
+                r.yaml_build = Some(req.clone());
                 r.summary = format!(
                     "Preview for {namespace}/{name} from template {template_name}."
                 );
@@ -138,14 +139,14 @@ pub async fn yaml_preview(
             page: Some(template_name.into()),
         },
         CopilotAction {
-            label: "Open Catalog".into(),
-            action: "navigate".into(),
-            page: Some("catalog".into()),
+            label: "Save as Blueprint".into(),
+            action: "save_blueprint".into(),
+            page: None,
         },
         CopilotAction {
             label: "Export GitOps".into(),
-            action: "navigate".into(),
-            page: Some("gitops".into()),
+            action: "export_gitops".into(),
+            page: None,
         },
     ];
 

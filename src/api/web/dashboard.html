@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260530c">
+<meta name="vmrogue-dashboard-rev" content="20260530d">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260530c';
+  var DASH_REV = '20260530d';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2103,6 +2103,18 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   </div>
 </div>
 
+<div class="modal-overlay" id="gitops-export-modal" role="dialog" aria-modal="true" aria-label="GitOps export">
+  <div class="fixit-panel" onclick="event.stopPropagation()" style="width:min(720px,94vw);max-height:85vh;overflow:auto">
+    <div class="fixit-title" id="gitops-export-title">GitOps export</div>
+    <p id="gitops-export-sub" style="font-size:.82rem;color:var(--text-dim);margin-bottom:10px"></p>
+    <pre id="gitops-export-body" style="margin:0;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.72rem;overflow:auto;max-height:55vh;white-space:pre-wrap"></pre>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button type="button" class="btn btn-sm btn-start" onclick="copyGitOpsExport()">Copy bundle</button>
+      <button type="button" class="btn btn-sm" onclick="closeGitOpsExportModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
   <div class="spotlight-panel" onclick="event.stopPropagation()">
     <div class="spotlight-input-wrap">
@@ -3253,7 +3265,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260530c';
+window.__VMROGUE_DASH_REV = '20260530d';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4554,6 +4566,10 @@ function renderCopilotResult(data) {
 
 function renderCopilotResultInto(el, data) {
   if (!el || !data) return;
+  if (data.yaml_preview) {
+    window._copilotLastYaml = data.yaml_preview;
+    window._copilotLastYamlBuild = data.yaml_build || null;
+  }
   let html = '<div style="font-size:.78rem;color:var(--spark);margin-bottom:6px">' + esc(data.module || 'Copilot') + '</div>';
   html += '<div style="font-weight:600;margin-bottom:8px">' + esc(data.title || '') + '</div>';
   if (data.summary) html += '<p style="font-size:.88rem;line-height:1.5;color:var(--text-muted)">' + esc(data.summary) + '</p>';
@@ -4570,7 +4586,11 @@ function renderCopilotResultInto(el, data) {
   }
   if (data.yaml_preview) {
     html += '<pre id="copilot-yaml-preview" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
-    html += '<button type="button" class="btn btn-sm" style="margin-top:8px" ' + onHandler('copyToClipboard(document.getElementById(' + jsArgs('copilot-yaml-preview') + ').textContent)') + '>Copy YAML</button>';
+    html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
+    html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(document.getElementById(' + jsArgs('copilot-yaml-preview') + ').textContent)') + '>Copy YAML</button>';
+    html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('copilotSaveBlueprint()') + '>Save as Blueprint</button>';
+    html += '<button type="button" class="btn btn-sm" ' + onHandler('copilotExportGitOps()') + '>Export GitOps</button>';
+    html += '</div>';
   }
   if (data.recommendations && data.recommendations.length) {
     html += '<div style="margin-top:12px;font-size:.82rem"><strong>Recommended fixes</strong><ol style="margin:6px 0 0 18px">';
@@ -4590,11 +4610,81 @@ function renderCopilotResultInto(el, data) {
         html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('closeCopilot();openCreateModal()') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'copy_kubectl' && page) {
         html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
+      } else if (a.action === 'save_blueprint') {
+        html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('copilotSaveBlueprint()') + '>' + esc(a.label) + '</button>';
+      } else if (a.action === 'export_gitops') {
+        html += '<button type="button" class="btn btn-sm" ' + onHandler('copilotExportGitOps()') + '>' + esc(a.label) + '</button>';
       }
     });
     html += '</div>';
   }
   el.innerHTML = html;
+}
+
+async function copilotSaveBlueprint() {
+  const build = window._copilotLastYamlBuild;
+  if (!build) {
+    toast('Run YAML Builder first (e.g. “Create Ubuntu 22.04 VM 2 CPU 4Gi”)', 'error');
+    return;
+  }
+  const description = prompt('Blueprint description (optional):') || undefined;
+  const blueprintName = prompt('Blueprint name (optional — auto-generated if empty):') || undefined;
+  try {
+    const body = Object.assign({}, build, {
+      description: description,
+      blueprint_name: blueprintName && blueprintName.trim() ? blueprintName.trim() : undefined,
+      tags: ['zeusos-copilot']
+    });
+    const data = await apiJson('/api/v1/experience/copilot/blueprint/save' + nsParam(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    toast(data.message || ('Blueprint saved: ' + data.name), 'success');
+  } catch (e) {
+    toast('Blueprint save: ' + (e.message || String(e)), 'error');
+  }
+}
+
+async function copilotExportGitOps() {
+  const yaml = window._copilotLastYaml;
+  if (!yaml) {
+    toast('No YAML preview — ask Copilot to build a VM manifest first', 'error');
+    return;
+  }
+  const appName = prompt('App name for the GitOps folder:', 'vmrogue-app') || 'vmrogue-app';
+  const ns = prompt('Target namespace:', currentNamespace === 'all' ? 'default' : currentNamespace) || 'default';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/gitops/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ yaml: yaml, app_name: appName, namespace: ns })
+    });
+    window._gitopsExportBundle = formatGitOpsBundle(data.files || {});
+    document.getElementById('gitops-export-title').textContent = 'GitOps export — ' + (data.app_name || appName);
+    document.getElementById('gitops-export-sub').textContent = (data.runbook || '').split('\n').slice(0, 3).join(' ');
+    document.getElementById('gitops-export-body').textContent = window._gitopsExportBundle;
+    document.getElementById('gitops-export-modal').classList.add('open');
+  } catch (e) {
+    toast('GitOps export: ' + (e.message || String(e)), 'error');
+  }
+}
+
+function formatGitOpsBundle(files) {
+  return Object.keys(files).sort().map(function(path) {
+    return '=== ' + path + ' ===\n' + files[path];
+  }).join('\n\n');
+}
+
+function closeGitOpsExportModal() {
+  const modal = document.getElementById('gitops-export-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function copyGitOpsExport() {
+  const text = window._gitopsExportBundle || (document.getElementById('gitops-export-body') || {}).textContent;
+  if (!text) return;
+  copyToClipboard(text);
 }
 
 function openSpotlight() {
