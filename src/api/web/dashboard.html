@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531a">
+<meta name="vmrogue-dashboard-rev" content="20260531b">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531a';
+  var DASH_REV = '20260531b';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1991,6 +1991,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
       <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
       <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
+      <button class="nav-link" data-page="blueprint-studio" onclick="navigate('blueprint-studio')">Blueprint Studio</button>
       <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
       <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
       <button class="nav-link" data-page="app-store" onclick="navigate('app-store')">Template Store</button>
@@ -2333,6 +2334,29 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button class="btn" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
   <div class="card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
+  </div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-blueprint-studio" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VMRogueBlueprint CRDs saved from Copilot or created here</p></div>
+    <button type="button" class="btn btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
+  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">Operator CRDs</span><span class="vmrogue-cap-scope">Changes apply to <code>VMRogueBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="vmrogue-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
+  <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
+    <div class="card"><div class="card-header"><span class="card-title">Blueprints</span></div>
+      <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
+    </div>
+    <div class="card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn btn-sm btn-start" id="blueprint-studio-save-btn" disabled onclick="blueprintStudioSave()">Save</button>
+        <button type="button" class="btn btn-sm btn-stop" id="blueprint-studio-delete-btn" disabled onclick="blueprintStudioDelete()">Delete</button>
+      </div></div>
+      <div style="padding:12px">
+        <div id="blueprint-studio-meta" style="font-size:.82rem;color:var(--text-dim);margin-bottom:8px"></div>
+        <textarea id="blueprint-studio-spec" class="form-input" style="width:100%;min-height:320px;font-family:var(--font-mono);font-size:.8rem" placeholder="{\n  &quot;description&quot;: &quot;…&quot;,\n  &quot;vms&quot;: [],\n  &quot;tags&quot;: []\n}" disabled></textarea>
+      </div>
+    </div>
   </div>
 </div>
 </div>
@@ -3272,7 +3296,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531a';
+window.__VMROGUE_DASH_REV = '20260531b';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -3337,6 +3361,7 @@ const PAGE_META = {
   forecasting: {kicker:'FinOps', title:'Short-horizon cost and capacity forecasting', tags:['Trend view','Confidence','Breaches']},
   operators: {kicker:'Platform', title:'Operators, CRDs, and platform control', tags:['Cluster services','Custom resources','Automation hooks']},
   crds: {kicker:'Platform', title:'Operator-managed VMRogue resources', tags:['Custom resources','Templates','Spec state']},
+  'blueprint-studio': {kicker:'Platform', title:'Edit VMRogueBlueprint multi-VM designs', tags:['Copilot save','JSON spec','Operator reconcile']},
   helm: {kicker:'Platform', title:'Helm release inventory and version posture', tags:['Releases','Chart versions','Namespaces']},
   'custom-resources': {kicker:'Platform', title:'Installed CRDs and live resource inventory', tags:['Kinds','Scope','Instance counts']},
   gitops: {kicker:'Platform', title:'Sync status and drift across GitOps sources', tags:['Drift','Branch','Sync state']},
@@ -3459,6 +3484,7 @@ function loadPageData(page) {
   if (page === 'pods') fetchPods();
   if (page === 'storage') fetchStorage();
   if (page === 'crds') fetchCRDs();
+  if (page === 'blueprint-studio') fetchBlueprintStudio();
   if (page === 'policies') fetchPolicies();
   if (page === 'insights') fetchInsights();
   if (page === 'actions') fetchActions();
@@ -4667,6 +4693,9 @@ async function copilotSaveBlueprint() {
       body: JSON.stringify(body)
     });
     toast(data.message || ('Blueprint saved: ' + data.name), 'success');
+    navigate('blueprint-studio');
+    _blueprintStudioSelection = { ns: data.namespace || 'default', name: data.name };
+    fetchBlueprintStudio();
   } catch (e) {
     toast('Blueprint save: ' + (e.message || String(e)), 'error');
   }
@@ -5905,16 +5934,27 @@ async function loadGuestFilesystemPanel(ns, name, vmi) {
 
 function renderGuestFilesystemPanel(container, st) {
   const mounts = (st && st.mounts) || [];
-  if (!mounts.length) {
+  const prom = (st && st.prometheus_mounts) || [];
+  const sources = (st && st.sources) || [];
+  if (!mounts.length && !prom.length) {
     container.innerHTML = '<div class="detail-row"><span class="lbl">Mounts</span><span class="val">' + esc((st && st.message) || 'No mount data') + '</span></div>';
     return;
   }
-  let inner = '<table class="iface-table"><thead><tr><th>Mount</th><th>Used</th><th>Avail</th><th>%</th></tr></thead><tbody>';
-  mounts.forEach(function(m) {
-    const hot = m.use_percent >= 85;
-    inner += '<tr' + (hot ? ' style="color:var(--warning)"' : '') + '><td>' + esc(m.mount || '—') + '</td><td>' + formatBytes(m.used_bytes) + '</td><td>' + formatBytes(m.avail_bytes) + '</td><td>' + (m.use_percent != null ? m.use_percent.toFixed(1) + '%' : '—') + '</td></tr>';
-  });
-  inner += '</tbody></table>';
+  let inner = '';
+  if (sources.length) inner += '<div class="detail-row"><span class="lbl">Sources</span><span class="val">' + esc(sources.join(', ')) + '</span></div>';
+  function tableFor(rows, title) {
+    if (!rows.length) return '';
+    let h = '<div class="detail-section-title" style="margin:10px 0 6px;font-size:.82rem">' + esc(title) + '</div>';
+    h += '<table class="iface-table"><thead><tr><th>Mount</th><th>Used</th><th>Avail</th><th>%</th></tr></thead><tbody>';
+    rows.forEach(function(m) {
+      const hot = m.use_percent >= 85;
+      h += '<tr' + (hot ? ' style="color:var(--warning)"' : '') + '><td>' + esc(m.mount || '—') + '</td><td>' + formatBytes(m.used_bytes) + '</td><td>' + formatBytes(m.avail_bytes) + '</td><td>' + (m.use_percent != null ? m.use_percent.toFixed(1) + '%' : '—') + '</td></tr>';
+    });
+    h += '</tbody></table>';
+    return h;
+  }
+  inner += tableFor(mounts, 'Primary');
+  if (prom.length) inner += tableFor(prom, 'Prometheus');
   if (st && st.message) inner += '<div class="detail-row" style="margin-top:6px"><span class="lbl">Note</span><span class="val" style="font-size:.82rem">' + esc(st.message) + '</span></div>';
   container.innerHTML = inner;
 }
@@ -6723,6 +6763,125 @@ async function fetchCRDs() {
     tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="vm-badge ' + sc(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
   } catch (e) {
     tb.innerHTML = tbodyError(8, e.message || String(e));
+  }
+}
+
+let _blueprintStudioSelection = null;
+
+async function fetchBlueprintStudio() {
+  const tb = document.getElementById('blueprint-studio-body');
+  if (!tb) return;
+  try {
+    const j = await apiJson('/api/v1/crds/blueprints' + nsParam());
+    const { items, message } = crdItemsFromJson(j);
+    if (items.length === 0) {
+      tb.innerHTML = crdEmptyRow(4, { message });
+      return;
+    }
+    tb.innerHTML = items.map(function(bp) {
+      return '<tr style="cursor:pointer" ' + onHandler('blueprintStudioSelect(' + jsArgs(bp.namespace, bp.name) + ')') + '><td>' + esc(bp.name) + '</td><td>' + esc(bp.namespace) + '</td><td>' + (bp.vm_count || 0) + '</td><td>' + esc(bp.phase || '—') + '</td></tr>';
+    }).join('');
+    if (_blueprintStudioSelection) {
+      blueprintStudioSelect(_blueprintStudioSelection.ns, _blueprintStudioSelection.name, true);
+    }
+  } catch (e) {
+    tb.innerHTML = tbodyError(4, e.message || String(e));
+  }
+}
+
+async function blueprintStudioSelect(ns, name, quiet) {
+  _blueprintStudioSelection = { ns: ns, name: name };
+  const title = document.getElementById('blueprint-studio-editor-title');
+  const meta = document.getElementById('blueprint-studio-meta');
+  const specEl = document.getElementById('blueprint-studio-spec');
+  const saveBtn = document.getElementById('blueprint-studio-save-btn');
+  const delBtn = document.getElementById('blueprint-studio-delete-btn');
+  if (title) title.textContent = ns + '/' + name;
+  if (specEl) {
+    specEl.disabled = false;
+    specEl.value = 'Loading…';
+  }
+  try {
+    const j = await apiJson('/api/v1/crds/blueprints/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    const detail = unwrapData(j) || j;
+    if (meta) {
+      meta.textContent = (detail.description || 'No description') + ' · ' + (detail.vm_count || 0) + ' VM(s) · tags: ' + ((detail.tags || []).join(', ') || '—');
+    }
+    if (specEl && detail.spec) {
+      specEl.value = JSON.stringify(detail.spec, null, 2);
+    }
+    if (saveBtn) saveBtn.disabled = false;
+    if (delBtn) delBtn.disabled = false;
+    if (!quiet) toast('Loaded blueprint ' + name, 'success');
+  } catch (e) {
+    if (specEl) specEl.value = '';
+    toast('Blueprint load: ' + (e.message || String(e)), 'error');
+  }
+}
+
+function blueprintStudioNew() {
+  const ns = (document.getElementById('workspace-ns') && document.getElementById('workspace-ns').value) || 'default';
+  const name = prompt('New blueprint name:', 'bp-studio-' + Date.now().toString(36)) || '';
+  if (!name.trim()) return;
+  const template = prompt('Template for first VM:', 'ubuntu-22.04') || 'ubuntu-22.04';
+  const spec = {
+    description: 'Created in Blueprint Studio',
+    vms: [{ name: 'vm-1', template: template, cpu: 2, memory: '4Gi', diskSize: '40Gi', dependsOn: [], labels: {} }],
+    tags: ['studio']
+  };
+  apiJson('/api/v1/crds/blueprints', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name.trim(), description: spec.description, vms: spec.vms, tags: spec.tags })
+  }).then(function() {
+    toast('Blueprint created: ' + name.trim(), 'success');
+    _blueprintStudioSelection = { ns: ns, name: name.trim() };
+    fetchBlueprintStudio();
+  }).catch(function(e) { toast('Create: ' + (e.message || String(e)), 'error'); });
+}
+
+async function blueprintStudioSave() {
+  if (!_blueprintStudioSelection) return;
+  const specEl = document.getElementById('blueprint-studio-spec');
+  if (!specEl) return;
+  let spec;
+  try {
+    spec = JSON.parse(specEl.value);
+  } catch (e) {
+    toast('Invalid JSON spec', 'error');
+    return;
+  }
+  const ns = _blueprintStudioSelection.ns;
+  const name = _blueprintStudioSelection.name;
+  try {
+    await apiJson('/api/v1/crds/blueprints/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(spec)
+    });
+    toast('Blueprint saved', 'success');
+    fetchBlueprintStudio();
+  } catch (e) {
+    toast('Save: ' + (e.message || String(e)), 'error');
+  }
+}
+
+async function blueprintStudioDelete() {
+  if (!_blueprintStudioSelection) return;
+  if (!confirm('Delete blueprint ' + _blueprintStudioSelection.name + '?')) return;
+  const ns = _blueprintStudioSelection.ns;
+  const name = _blueprintStudioSelection.name;
+  try {
+    await apiJson('/api/v1/crds/blueprints/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), { method: 'DELETE' });
+    toast('Blueprint deleted', 'success');
+    _blueprintStudioSelection = null;
+    const specEl = document.getElementById('blueprint-studio-spec');
+    if (specEl) { specEl.value = ''; specEl.disabled = true; }
+    document.getElementById('blueprint-studio-save-btn').disabled = true;
+    document.getElementById('blueprint-studio-delete-btn').disabled = true;
+    fetchBlueprintStudio();
+  } catch (e) {
+    toast('Delete: ' + (e.message || String(e)), 'error');
   }
 }
 
