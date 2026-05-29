@@ -947,6 +947,41 @@ pub fn generate_default_spec() -> OpenApiSpec {
         },
     );
 
+    let mut guest_fs_ops = HashMap::new();
+    guest_fs_ops.insert(
+        "get".to_string(),
+        Operation {
+            summary: "In-guest filesystem usage".to_string(),
+            description: Some(
+                "Runs df (Linux) or Get-PSDrive (Windows) in the guest via QEMU guest-agent. \
+                 VM must be Running with AgentConnected."
+                    .to_string(),
+            ),
+            operation_id: "guestFilesystem".to_string(),
+            tags: vec!["vms".to_string(), "guest-agent".to_string()],
+            parameters: ns_name_params(),
+            responses: {
+                let mut r = HashMap::new();
+                r.insert(
+                    "200".to_string(),
+                    ResponseSpec {
+                        description: "Mount list with used/avail bytes".to_string(),
+                        content_type: Some("application/json".to_string()),
+                        schema_ref: None,
+                    },
+                );
+                r
+            },
+            security: vec!["apiKey".to_string()],
+        },
+    );
+    spec.add_path(
+        "/api/v1/vms/{ns}/{name}/guest-filesystem",
+        PathItem {
+            operations: guest_fs_ops,
+        },
+    );
+
     spec
 }
 

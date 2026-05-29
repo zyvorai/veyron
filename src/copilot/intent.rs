@@ -9,6 +9,7 @@ pub enum CopilotIntent {
     BackupAdvisor,
     NetworkLens,
     GuestInspector,
+    GuestFilesystem,
     StorageDoctor,
     SecuritySentinel,
     ErrorExplainer,
@@ -35,6 +36,16 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
         || lower.contains("security review")
     {
         return CopilotIntent::SecuritySentinel;
+    }
+
+    if lower.contains("guest filesystem")
+        || lower.contains("guest fs")
+        || (lower.contains("filesystem") && lower.contains("guest"))
+        || (lower.contains("in-guest") && (lower.contains("disk") || lower.contains("storage")))
+        || lower.contains("df -")
+        || (lower.contains("df") && lower.contains("guest"))
+    {
+        return CopilotIntent::GuestFilesystem;
     }
 
     if lower.contains("guest agent")

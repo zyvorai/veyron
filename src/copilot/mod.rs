@@ -193,6 +193,23 @@ pub async fn copilot_ask(
                 r
             }
         }
+        CopilotIntent::GuestFilesystem => {
+            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
+                guest_filesystem_report(client, ns, name).await
+            } else if let Some(name) = extract_vm_name(query) {
+                let ns = req.namespace.as_deref().unwrap_or(scope);
+                guest_filesystem_report(client, ns, &name).await
+            } else {
+                let mut r = CopilotResponse::new(
+                    "VMRogue Guest Filesystem",
+                    "guest_filesystem",
+                    "Which VM should I inspect?",
+                );
+                r.summary =
+                    "Include a VM name — e.g. “Show guest filesystem for vm-db-01”.".into();
+                r
+            }
+        }
         CopilotIntent::StorageDoctor => storage_doctor(client, scope).await,
         CopilotIntent::SecuritySentinel => {
             if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
@@ -223,6 +240,7 @@ fn general_help() -> CopilotResponse {
         "VMRogue Backup Advisor — snapshot and Velero coverage gaps".into(),
         "VMRogue Network Lens — interfaces, expose, and policies".into(),
         "VMRogue Guest Inspector — guest agent, OS info, in-guest signals".into(),
+        "VMRogue Guest Filesystem — in-guest disk usage via guest-exec".into(),
         "VMRogue Storage Doctor — PVC pressure and snapshot sprawl".into(),
         "VMRogue Security Sentinel — RDP exposure, drift, policies".into(),
         "VMRogue Error Explainer — translate ugly K8s errors".into(),
@@ -234,6 +252,7 @@ fn general_help() -> CopilotResponse {
         "Which VMs have no backups?".into(),
         "Show network for vm-app-01".into(),
         "Show guest agent status for vm-db-01".into(),
+        "Show guest filesystem for vm-db-01".into(),
         "Which PVCs are almost full?".into(),
         "Security review for production VMs".into(),
     ];
@@ -401,6 +420,14 @@ mod tests {
         assert!(matches!(
             intent::detect_intent("Show guest agent status for vm-db-01"),
             CopilotIntent::GuestInspector
+        ));
+    }
+
+    #[test]
+    fn detect_guest_filesystem_intent() {
+        assert!(matches!(
+            intent::detect_intent("Show guest filesystem for vm-db-01"),
+            CopilotIntent::GuestFilesystem
         ));
     }
 }

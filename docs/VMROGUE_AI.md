@@ -55,6 +55,7 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 
 ```bash
 vmrogue ai guest vm-db-01
+vmrogue ai filesystem vm-db-01
 vmrogue ai storage
 vmrogue ai security --name vm-app-01
 vmrogue ai "Why is my VM not starting?"
@@ -114,6 +115,12 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 1. ~~**Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML~~ **Done** — `POST /experience/copilot/blueprint/save`
 2. ~~**GitOps Generator** — export kustomize trees from Copilot previews~~ **Done** — `POST /experience/copilot/gitops/export`
 3. ~~**Guest filesystem metrics** — guest-exec or Prometheus guest exporters~~ **Done** — `GET /api/v1/vms/:ns/:name/guest-filesystem`, Copilot `GET /experience/copilot/guest/:ns/:name/filesystem`, VM detail panel
+
+## Future (not scheduled)
+
+- **Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set
+- **Cost Copilot** — OpenCost integration for per-VM spend narratives
+- **Blueprint Studio UI** — edit saved `VMRogueBlueprint` CRDs from the dashboard
 
 ## Related docs
 
