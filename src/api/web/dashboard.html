@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="vmrogue-dashboard-rev" content="20260529c">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
@@ -3228,6 +3230,17 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 </div>
 
 <script>
+// Bump when dashboard JS changes — forces one reload after deploy (sessionStorage).
+window.__VMROGUE_DASH_REV = '20260529c';
+(function () {
+  try {
+    const k = 'vmrogue_dashboard_rev';
+    const prev = sessionStorage.getItem(k);
+    sessionStorage.setItem(k, window.__VMROGUE_DASH_REV);
+    if (prev && prev !== window.__VMROGUE_DASH_REV) location.reload();
+  } catch (e) { /* private mode */ }
+})();
+
 // State
 let currentPage = 'dashboard';
 let vmData = [];
@@ -4757,7 +4770,13 @@ async function fetchVMs() {
     }
 
     /* Platform / Forge readiness: fetchOverview → updateHealth */
-  } catch(e) { updateHealth(false, e.message); }
+  } catch(e) {
+    console.error('fetchVMs', e);
+    const msg = (e && e.message && e.message.indexOf('renderDc') >= 0)
+      ? 'Dashboard script out of date — hard refresh (Cmd+Shift+R)'
+      : ((e && e.message) || 'Fleet load failed');
+    updateHealth(false, msg);
+  }
 }
 
 // Fetch Events
@@ -5020,13 +5039,23 @@ function renderDashboardCommandCenter() {
   const priorityEl = document.getElementById('dash-priority-list');
   const badgeEl = document.getElementById('command-badges');
   const copyEl = document.getElementById('command-copy');
-  renderDcTodayStats();
-  if (!metricEl || !priorityEl) return;
-
+  const todayEl = document.getElementById('dc-today-stats');
   const running = vmData.filter(v => v.status === 'Running').length;
   const failed = vmData.filter(v => v.status === 'Failed' || v.status === 'Error').length;
   const stopped = vmData.filter(v => v.status === 'Stopped').length;
   const warnings = lastEvents.filter(e => e.type === 'Warning').length;
+  if (todayEl) {
+    const overviewEarly = lastOverview || {};
+    const nodesEarly = overviewEarly.nodes || {};
+    const readyEarly = nodesEarly.ready_nodes != null && nodesEarly.total_nodes != null
+      ? nodesEarly.ready_nodes + '/' + nodesEarly.total_nodes : 'n/a';
+    todayEl.innerHTML =
+      '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></div>' +
+      '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
+      '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyEarly + '</div></div>' +
+      (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
+  }
+  if (!metricEl || !priorityEl) return;
   const overview = lastOverview || {};
   const nodes = overview.nodes || {};
   const cluster = overview.cluster || {};
