@@ -131,6 +131,19 @@ pub enum AiCommands {
         /// VM name
         name: String,
     },
+    /// QEMU guest-agent and in-guest signals
+    Guest {
+        /// VM name
+        name: String,
+    },
+    /// Fleet PVC pressure and snapshot sprawl
+    Storage,
+    /// Security exposure, drift, and policies
+    Security {
+        /// VM name (optional — fleet sweep when omitted)
+        #[arg(long)]
+        name: Option<String>,
+    },
 }
 
 #[derive(Subcommand, Debug)]

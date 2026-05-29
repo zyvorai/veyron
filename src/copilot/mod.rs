@@ -10,16 +10,23 @@
 mod backup_advisor;
 mod doctor;
 pub mod fixit;
+mod guest_inspector;
 mod intent;
+mod llm;
 mod network_lens;
 mod scheduling;
+mod security_sentinel;
+mod storage_doctor;
 mod yaml_build;
 
 pub use backup_advisor::backup_advisor;
 pub use doctor::vm_doctor;
+pub use guest_inspector::guest_inspector;
 pub use intent::CopilotIntent;
 pub use network_lens::network_lens;
 pub use scheduling::scheduling_explainer;
+pub use security_sentinel::{security_sentinel, security_sentinel_fleet};
+pub use storage_doctor::storage_doctor;
 pub use yaml_build::{YamlBuildRequest, yaml_preview};
 
 use fixit::explain_error_message;
@@ -143,7 +150,6 @@ pub async fn copilot_ask(
             let spec = yaml_build::parse_spec_from_query(query);
             yaml_preview(client, scope, spec).await
         }
-        CopilotIntent::MigrationAdvisor => migration_advice_hint(),
         CopilotIntent::BackupAdvisor => backup_advisor(client, scope).await,
         CopilotIntent::NetworkLens => {
             if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
@@ -162,6 +168,33 @@ pub async fn copilot_ask(
                 r
             }
         }
+        CopilotIntent::GuestInspector => {
+            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
+                guest_inspector(client, ns, name).await
+            } else if let Some(name) = extract_vm_name(query) {
+                let ns = req.namespace.as_deref().unwrap_or(scope);
+                guest_inspector(client, ns, &name).await
+            } else {
+                let mut r = CopilotResponse::new(
+                    "VMRogue Guest Inspector",
+                    "guest_inspector",
+                    "Which VM should I inspect?",
+                );
+                r.summary = "Include a VM name — e.g. “Show guest agent status for vm-db-01”.".into();
+                r
+            }
+        }
+        CopilotIntent::StorageDoctor => storage_doctor(client, scope).await,
+        CopilotIntent::SecuritySentinel => {
+            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
+                security_sentinel(client, ns, name).await
+            } else if let Some(name) = extract_vm_name(query) {
+                let ns = req.namespace.as_deref().unwrap_or(scope);
+                security_sentinel(client, ns, &name).await
+            } else {
+                security_sentinel_fleet(client, scope).await
+            }
+        }
         CopilotIntent::ErrorExplainer => explain_error_message(query, Some("copilot")),
         CopilotIntent::GeneralHelp => general_help(),
     }
@@ -173,50 +206,27 @@ fn general_help() -> CopilotResponse {
         "help",
         "AI-native VM operator for KubeVirt",
     );
-    r.summary = "Ask about VM health, scheduling, YAML, migration, or paste a Kubernetes error.".into();
+    r.summary = "Ask about VM health, scheduling, YAML, backups, security, or paste a Kubernetes error.".into();
     r.evidence = vec![
         "VMRogue Doctor — inspect a VM and get a health score".into(),
         "VMRogue Scheduling Explainer — why a VM is Pending".into(),
         "VMRogue YAML Builder — generate and validate VirtualMachine YAML".into(),
-        "VMRogue Migration Advisor — readiness for VMware/OVA/VMDK".into(),
         "VMRogue Backup Advisor — snapshot and Velero coverage gaps".into(),
         "VMRogue Network Lens — interfaces, expose, and policies".into(),
+        "VMRogue Guest Inspector — guest agent, OS info, in-guest signals".into(),
+        "VMRogue Storage Doctor — PVC pressure and snapshot sprawl".into(),
+        "VMRogue Security Sentinel — RDP exposure, drift, policies".into(),
         "VMRogue Error Explainer — translate ugly K8s errors".into(),
     ];
     r.recommendations = vec![
         "Why is my VM not starting?".into(),
         "Show all unhealthy VMs".into(),
         "Create a Windows Server 2022 VM with 8 CPU and 32GB RAM".into(),
-        "Can I migrate this VMware VM safely?".into(),
         "Which VMs have no backups?".into(),
         "Show network for vm-app-01".into(),
-    ];
-    r
-}
-
-fn migration_advice_hint() -> CopilotResponse {
-    let mut r = CopilotResponse::new(
-        "VMRogue Migration Advisor",
-        "migration",
-        "Migration readiness lives in CloudOS",
-    );
-    r.summary =
-        "Use the Migration Assistant wizard for scan, inline plan, and CDI import tasks.".into();
-    r.recommendations = vec![
-        "Discover workloads → scan readiness → preview plan → execute CDI import".into(),
-        "Ensure VirtIO drivers and UEFI firmware match your target template".into(),
-    ];
-    r.actions = vec![
-        CopilotAction {
-            label: "Open Migration Assistant".into(),
-            action: "navigate".into(),
-            page: Some("migration".into()),
-        },
-        CopilotAction {
-            label: "Template Store".into(),
-            action: "navigate".into(),
-            page: Some("app-store".into()),
-        },
+        "Show guest agent status for vm-db-01".into(),
+        "Which PVCs are almost full?".into(),
+        "Security review for production VMs".into(),
     ];
     r
 }
@@ -280,6 +290,11 @@ fn extract_vm_name(query: &str) -> Option<String> {
         }
     }
     None
+}
+
+/// Apply optional LLM paraphrase when `VMROGUE_AI_URL` is configured.
+pub async fn finalize_copilot(resp: CopilotResponse) -> CopilotResponse {
+    llm::maybe_enhance_response(resp).await
 }
 
 /// Quick template recommendation from workload description (v1 heuristic).
@@ -353,6 +368,30 @@ mod tests {
         assert!(matches!(
             intent::detect_intent("Show network for vm-app-01"),
             CopilotIntent::NetworkLens
+        ));
+    }
+
+    #[test]
+    fn detect_storage_intent() {
+        assert!(matches!(
+            intent::detect_intent("Which PVCs are almost full?"),
+            CopilotIntent::StorageDoctor
+        ));
+    }
+
+    #[test]
+    fn detect_security_intent() {
+        assert!(matches!(
+            intent::detect_intent("Security review for production VMs"),
+            CopilotIntent::SecuritySentinel
+        ));
+    }
+
+    #[test]
+    fn detect_guest_intent() {
+        assert!(matches!(
+            intent::detect_intent("Show guest agent status for vm-db-01"),
+            CopilotIntent::GuestInspector
         ));
     }
 }

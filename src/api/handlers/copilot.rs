@@ -12,7 +12,8 @@ use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
-    network_lens, recommend_template, scheduling_explainer, vm_doctor, yaml_preview,
+    finalize_copilot, guest_inspector, network_lens, recommend_template, scheduling_explainer,
+    security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
 };
 
 #[cfg(feature = "web")]
@@ -34,6 +35,16 @@ pub fn router(state: SharedState) -> Router {
             "/experience/copilot/network/:ns/:name",
             get(copilot_network_handler),
         )
+        .route(
+            "/experience/copilot/guest/:ns/:name",
+            get(copilot_guest_handler),
+        )
+        .route("/experience/copilot/storage", get(copilot_storage_handler))
+        .route(
+            "/experience/copilot/security/:ns/:name",
+            get(copilot_security_handler),
+        )
+        .route("/experience/copilot/security", get(copilot_security_fleet_handler))
         .with_state(state)
 }
 
@@ -51,7 +62,7 @@ async fn copilot_ask_handler(
         body.namespace.clone().or(q.namespace.clone()),
         &default_ns,
     );
-    Json(copilot_ask(&client, &scope, &body).await)
+    Json(finalize_copilot(copilot_ask(&client, &scope, &body).await).await)
 }
 
 #[cfg(feature = "web")]
@@ -63,7 +74,7 @@ async fn copilot_doctor_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
-    Json(vm_doctor(&client, &ns, &name).await)
+    Json(finalize_copilot(vm_doctor(&client, &ns, &name).await).await)
 }
 
 #[cfg(feature = "web")]
@@ -75,7 +86,7 @@ async fn copilot_scheduling_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
-    Json(scheduling_explainer(&client, &ns, &name).await)
+    Json(finalize_copilot(scheduling_explainer(&client, &ns, &name).await).await)
 }
 
 #[cfg(feature = "web")]
@@ -92,7 +103,7 @@ async fn copilot_yaml_handler(
         body.namespace.clone().or(q.namespace.clone()),
         &default_ns,
     );
-    Json(yaml_preview(&client, &scope, body).await)
+    Json(finalize_copilot(yaml_preview(&client, &scope, body).await).await)
 }
 
 #[derive(serde::Deserialize)]
@@ -103,7 +114,7 @@ struct RecommendRequest {
 
 #[cfg(feature = "web")]
 async fn copilot_recommend_handler(Json(body): Json<RecommendRequest>) -> Json<CopilotResponse> {
-    Json(recommend_template(&body.description))
+    Json(finalize_copilot(recommend_template(&body.description)).await)
 }
 
 #[cfg(feature = "web")]
@@ -116,7 +127,7 @@ async fn copilot_backup_handler(
         (s.kube_client.clone(), s.namespace.clone())
     };
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
-    Json(backup_advisor(&client, &scope).await)
+    Json(finalize_copilot(backup_advisor(&client, &scope).await).await)
 }
 
 #[cfg(feature = "web")]
@@ -128,5 +139,55 @@ async fn copilot_network_handler(
         let s = state.read().await;
         s.kube_client.clone()
     };
-    Json(network_lens(&client, &ns, &name).await)
+    Json(finalize_copilot(network_lens(&client, &ns, &name).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_guest_handler(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Json<CopilotResponse> {
+    let client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    Json(finalize_copilot(guest_inspector(&client, &ns, &name).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_storage_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(storage_doctor(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_security_handler(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Json<CopilotResponse> {
+    let client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    Json(finalize_copilot(security_sentinel(&client, &ns, &name).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_security_fleet_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(security_sentinel_fleet(&client, &scope).await).await)
 }

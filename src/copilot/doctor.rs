@@ -34,6 +34,7 @@ pub async fn vm_doctor(client: &KubeClient, namespace: &str, name: &str) -> Copi
         if let Some(phase) = vmi.status.as_ref().and_then(|s| s.phase.clone()) {
             r.evidence.push(format!("VMI phase: {phase}"));
         }
+        super::guest_inspector::enrich_doctor_with_guest(&mut r, &vmi);
         if let Some(node) = client.get_vm_node(namespace, name).await.ok().flatten() {
             r.evidence.push(format!("Scheduled node: {node}"));
         }

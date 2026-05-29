@@ -6,9 +6,11 @@ pub enum CopilotIntent {
     SchedulingExplainer,
     UnhealthyFleet,
     YamlBuilder,
-    MigrationAdvisor,
     BackupAdvisor,
     NetworkLens,
+    GuestInspector,
+    StorageDoctor,
+    SecuritySentinel,
     ErrorExplainer,
     GeneralHelp,
 }
@@ -18,6 +20,29 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
 
     if lower.contains("backup") || lower.contains("velero") || lower.contains("unprotected") {
         return CopilotIntent::BackupAdvisor;
+    }
+
+    if lower.contains("storage doctor")
+        || (lower.contains("pvc") && (lower.contains("full") || lower.contains("bloat")))
+        || (lower.contains("disk") && lower.contains("full"))
+        || lower.contains("snapshot sprawl")
+    {
+        return CopilotIntent::StorageDoctor;
+    }
+
+    if lower.contains("security sentinel")
+        || (lower.contains("security") && (lower.contains("rdp") || lower.contains("exposed")))
+        || lower.contains("security review")
+    {
+        return CopilotIntent::SecuritySentinel;
+    }
+
+    if lower.contains("guest agent")
+        || lower.contains("guest inspector")
+        || lower.contains("guest os")
+        || (lower.contains("guest") && lower.contains("inspect"))
+    {
+        return CopilotIntent::GuestInspector;
     }
 
     if lower.contains("network")
@@ -48,10 +73,6 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
         || lower.contains("stuck in scheduling")
     {
         return CopilotIntent::SchedulingExplainer;
-    }
-
-    if lower.contains("migrate") || lower.contains("vmware") || lower.contains("vmdk") {
-        return CopilotIntent::MigrationAdvisor;
     }
 
     if lower.contains("create")
