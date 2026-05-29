@@ -125,3 +125,98 @@ pub async fn scheduling_explainer(client: &KubeClient, namespace: &str, name: &s
 
     r
 }
+
+/// Fleet view: VMs stuck in Pending / scheduling failures.
+pub async fn scheduling_fleet_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
+    let mut r = CopilotResponse::new(
+        "VMRogue Scheduling Fleet",
+        "scheduling_fleet",
+        "Scheduling pressure in workspace",
+    );
+
+    let vms = client.list_vms_for_scope(scope).await;
+    let pending: Vec<_> = vms
+        .iter()
+        .filter(|vm| {
+            vm.status
+                .as_ref()
+                .and_then(|s| s.printable_status.as_deref())
+                == Some("Pending")
+        })
+        .collect();
+
+    r.evidence.push(format!("VMs in scope: {}", vms.len()));
+    r.evidence
+        .push(format!("Pending / scheduling: {}", pending.len()));
+
+    for vm in pending.iter().take(8) {
+        let name = vm.metadata.name.as_deref().unwrap_or("?");
+        let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+        r.evidence.push(format!("Pending: {ns}/{name}"));
+    }
+
+    if pending.is_empty() {
+        r.summary = "No VMs are Pending in the active workspace.".into();
+        return r;
+    }
+
+    let namespaces: Vec<String> = if scope == "all" {
+        let mut ns: Vec<String> = vms
+            .iter()
+            .filter_map(|v| v.metadata.namespace.clone())
+            .collect();
+        ns.sort();
+        ns.dedup();
+        ns
+    } else {
+        vec![scope.to_string()]
+    };
+
+    let mut reasons = Vec::new();
+    for ns in namespaces.iter().take(8) {
+        let events = client.list_events(ns).await.unwrap_or_default();
+        for ev in events.iter().rev().take(80) {
+            let msg = ev.message.as_deref().unwrap_or("");
+            let ml = msg.to_lowercase();
+            if ml.contains("insufficient")
+                || ml.contains("nodes are available")
+                || ml.contains("unschedulable")
+                || ml.contains("persistentvolumeclaim")
+            {
+                let reason = format!(
+                    "{}: {}",
+                    ev.reason.as_deref().unwrap_or("Scheduling"),
+                    msg.chars().take(120).collect::<String>()
+                );
+                if !reasons.contains(&reason) {
+                    reasons.push(reason);
+                }
+            }
+        }
+    }
+    for reason in reasons.iter().take(6) {
+        r.evidence.push(format!("Event: {reason}"));
+    }
+
+    r.summary = format!(
+        "{} VM(s) Pending — inspect scheduling events and node capacity.",
+        pending.len()
+    );
+    r.recommendations.push("Use Copilot Scheduling on a VM name for targeted fixes.".into());
+    r.recommendations
+        .push("Reduce CPU/memory requests or add nodes / fix PVC binding.".into());
+
+    r.actions = vec![
+        CopilotAction {
+            label: "Open VMs".into(),
+            action: "navigate".into(),
+            page: Some("vms".into()),
+        },
+        CopilotAction {
+            label: "Open Nodes".into(),
+            action: "navigate".into(),
+            page: Some("nodes".into()),
+        },
+    ];
+    r
+}

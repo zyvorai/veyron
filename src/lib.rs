@@ -1625,6 +1625,21 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                     )
                     .await?;
                 }
+                Some(AiCommands::Performance { output }) => {
+                    handlers::copilot::handle_ai_performance(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Gitops { output }) => {
+                    handlers::copilot::handle_ai_gitops(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Forecast { output }) => {
+                    handlers::copilot::handle_ai_forecast(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Integrations { output }) => {
+                    handlers::copilot::handle_ai_integrations(&output).await?;
+                }
+                Some(AiCommands::Pending { output }) => {
+                    handlers::copilot::handle_ai_pending(&cli.namespace, &output).await?;
+                }
                 None => {
                     let q = query.join(" ");
                     if q.trim().is_empty() {

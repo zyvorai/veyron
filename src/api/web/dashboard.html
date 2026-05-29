@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531b">
+<meta name="vmrogue-dashboard-rev" content="20260531c">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531b';
+  var DASH_REV = '20260531c';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2429,7 +2429,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-monitoring" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div></div>
+  <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div>
+    <button type="button" class="btn btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div>
+  <div id="performance-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('performance-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="performance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="monitor-capabilities">
     <div class="monitor-cap"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
     <div class="monitor-cap"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
@@ -2656,7 +2661,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-integrations" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Integrations</h1><p>Optional observability, FinOps, security, and GitOps backends</p></div>
+    <button type="button" class="btn btn-sm" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
     <button type="button" class="btn" onclick="fetchIntegrations()">Refresh</button>
+  </div>
+  <div id="integrations-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Integrations Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('integrations-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="integrations-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="integrations-cap-banner"></div>
   <div class="card">
@@ -2700,7 +2710,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div></div>
+  <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div>
+    <button type="button" class="btn btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div>
+  <div id="forecast-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Forecast Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('forecast-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="forecasting-cap-banner"></div>
   <div class="card"><div class="card-header"><span class="card-title">Predictions</span></div>
   <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
@@ -2709,7 +2724,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-gitops" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div></div>
+  <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div>
+    <button type="button" class="btn btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div>
+  <div id="gitops-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue GitOps Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('gitops-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="gitops-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="gitops-cap-banner"></div>
   <div id="gitops-summary" class="grid-4"></div>
 </div>
@@ -2717,7 +2737,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div></div>
+  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div>
+    <button type="button" class="btn btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div>
+  <div id="scheduling-fleet-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Scheduling Fleet</span><button type="button" class="btn btn-sm" onclick="document.getElementById('scheduling-fleet-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="scheduling-summary" class="grid-4"></div>
 </div>
 </div>
@@ -3296,7 +3321,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531b';
+window.__VMROGUE_DASH_REV = '20260531c';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4975,6 +5000,101 @@ async function runSecuritySentinel() {
   body.innerHTML = '<div style="color:var(--text-dim)">Running security scan…</div>';
   try {
     const data = await apiJson('/api/v1/experience/copilot/security' + nsParam());
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+async function runPerformanceAdvisor() {
+  const card = document.getElementById('performance-advisor-card');
+  const body = document.getElementById('performance-advisor-body');
+  if (!card || !body) {
+    openCopilot('Which VMs have high CPU or memory?');
+    runCopilotAsk();
+    return;
+  }
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">Analyzing performance…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/performance' + nsParam());
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+async function runGitOpsAdvisor() {
+  const card = document.getElementById('gitops-advisor-card');
+  const body = document.getElementById('gitops-advisor-body');
+  if (!card || !body) {
+    openCopilot('GitOps drift in my namespaces');
+    runCopilotAsk();
+    return;
+  }
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">Reviewing GitOps posture…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/gitops' + nsParam());
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+async function runForecastAdvisor() {
+  const card = document.getElementById('forecast-advisor-card');
+  const body = document.getElementById('forecast-advisor-body');
+  if (!card || !body) {
+    openCopilot('Forecast capacity growth for 30 days');
+    runCopilotAsk();
+    return;
+  }
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">Forecasting capacity…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/forecast' + nsParam());
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+async function runIntegrationsAdvisor() {
+  const card = document.getElementById('integrations-advisor-card');
+  const body = document.getElementById('integrations-advisor-body');
+  if (!card || !body) {
+    openCopilot('Which integrations are configured?');
+    runCopilotAsk();
+    return;
+  }
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">Checking integrations…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/integrations');
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+async function runSchedulingFleetAdvisor() {
+  const card = document.getElementById('scheduling-fleet-advisor-card');
+  const body = document.getElementById('scheduling-fleet-advisor-body');
+  if (!card || !body) {
+    openCopilot('Which VMs are pending scheduling?');
+    runCopilotAsk();
+    return;
+  }
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">Scanning pending VMs…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/scheduling' + nsParam());
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {

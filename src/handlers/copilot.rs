@@ -2,8 +2,10 @@
 
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
-    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, recommend_template, scheduling_explainer,
-    security_sentinel, security_sentinel_fleet, storage_doctor, cost_advisor, cost_advisor_vm, vm_doctor, yaml_preview,
+    cost_advisor, cost_advisor_vm, forecast_advisor, gitops_advisor, integrations_advisor,
+    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, performance_advisor,
+    recommend_template, scheduling_explainer, scheduling_fleet_advisor,
+    security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
 };
 use crate::kube::KubeClient;
 use anyhow::Result;
@@ -157,6 +159,44 @@ pub async fn handle_ai_security(
     } else {
         finalize_copilot(security_sentinel_fleet(&client, scope).await).await
     };
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_performance(namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = finalize_copilot(performance_advisor(&client, scope).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_gitops(namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = finalize_copilot(gitops_advisor(&client, scope).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_forecast(namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = finalize_copilot(forecast_advisor(&client, scope).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_integrations(output: &str) -> Result<()> {
+    let resp = finalize_copilot(integrations_advisor().await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_pending(namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = finalize_copilot(scheduling_fleet_advisor(&client, scope).await).await;
     print_copilot(&resp, output);
     Ok(())
 }

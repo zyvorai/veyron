@@ -14,10 +14,14 @@ mod doctor;
 pub mod fixit;
 mod guest_inspector;
 mod guest_filesystem;
+mod forecast_advisor;
+mod gitops_advisor;
 mod gitops_generator;
+mod integrations_advisor;
 mod intent;
 mod llm;
 mod network_lens;
+mod performance_advisor;
 mod scheduling;
 mod security_sentinel;
 mod storage_doctor;
@@ -25,6 +29,10 @@ mod yaml_build;
 
 pub use backup_advisor::backup_advisor;
 pub use cost_advisor::{cost_advisor, cost_advisor_vm};
+pub use forecast_advisor::forecast_advisor;
+pub use gitops_advisor::gitops_advisor;
+pub use integrations_advisor::integrations_advisor;
+pub use performance_advisor::performance_advisor;
 pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveResponse};
 pub use doctor::vm_doctor;
 pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
@@ -32,7 +40,7 @@ pub use guest_inspector::guest_inspector;
 pub use guest_filesystem::guest_filesystem_report;
 pub use intent::CopilotIntent;
 pub use network_lens::network_lens;
-pub use scheduling::scheduling_explainer;
+pub use scheduling::{scheduling_explainer, scheduling_fleet_advisor};
 pub use security_sentinel::{security_sentinel, security_sentinel_fleet};
 pub use storage_doctor::storage_doctor;
 pub use yaml_build::{YamlBuildRequest, yaml_preview};
@@ -146,14 +154,7 @@ pub async fn copilot_ask(
                 let ns = req.namespace.as_deref().unwrap_or(scope);
                 scheduling_explainer(client, ns, &name).await
             } else {
-                let mut r = CopilotResponse::new(
-                    "VMRogue Scheduling Explainer",
-                    "scheduling",
-                    "Which VM is stuck scheduling?",
-                );
-                r.summary =
-                    "Include the VM name — e.g. “Why is payroll-vm pending?”".into();
-                r
+                scheduling_fleet_advisor(client, scope).await
             }
         }
         CopilotIntent::UnhealthyFleet => list_unhealthy_vms(client, scope).await,
@@ -233,6 +234,10 @@ pub async fn copilot_ask(
                 security_sentinel_fleet(client, scope).await
             }
         }
+        CopilotIntent::PerformanceAdvisor => performance_advisor(client, scope).await,
+        CopilotIntent::GitopsAdvisor => gitops_advisor(client, scope).await,
+        CopilotIntent::ForecastAdvisor => forecast_advisor(client, scope).await,
+        CopilotIntent::IntegrationsAdvisor => integrations_advisor().await,
         CopilotIntent::ErrorExplainer => explain_error_message(query, Some("copilot")),
         CopilotIntent::GeneralHelp => general_help(),
     }
@@ -256,6 +261,11 @@ fn general_help() -> CopilotResponse {
         "VMRogue Guest Filesystem — in-guest disk usage via guest-exec".into(),
         "VMRogue Storage Doctor — PVC pressure and snapshot sprawl".into(),
         "VMRogue Security Sentinel — RDP exposure, drift, policies".into(),
+        "VMRogue Performance Advisor — CPU/memory hotspots".into(),
+        "VMRogue GitOps Advisor — repos, drift, Argo/Flux".into(),
+        "VMRogue Forecast Advisor — 30-day capacity heuristic".into(),
+        "VMRogue Integrations Advisor — optional backend wiring".into(),
+        "VMRogue Scheduling Fleet — pending VMs and events".into(),
         "VMRogue Error Explainer — translate ugly K8s errors".into(),
     ];
     r.recommendations = vec![
@@ -269,6 +279,11 @@ fn general_help() -> CopilotResponse {
         "Show guest filesystem for vm-db-01".into(),
         "Which PVCs are almost full?".into(),
         "Security review for production VMs".into(),
+        "Which VMs have high CPU or memory?".into(),
+        "GitOps drift in my namespaces".into(),
+        "Forecast capacity growth for 30 days".into(),
+        "Which integrations are configured?".into(),
+        "Which VMs are pending scheduling?".into(),
     ];
     r
 }
@@ -450,6 +465,38 @@ mod tests {
         assert!(matches!(
             intent::detect_intent("Which VMs are most expensive?"),
             CopilotIntent::CostAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_performance_intent() {
+        assert!(matches!(
+            intent::detect_intent("Which VMs have high CPU or memory?"),
+            CopilotIntent::PerformanceAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_gitops_intent() {
+        assert!(matches!(
+            intent::detect_intent("GitOps drift in my namespaces"),
+            CopilotIntent::GitopsAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_forecast_intent() {
+        assert!(matches!(
+            intent::detect_intent("Forecast capacity growth for 30 days"),
+            CopilotIntent::ForecastAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_integrations_intent() {
+        assert!(matches!(
+            intent::detect_intent("Which integrations are configured?"),
+            CopilotIntent::IntegrationsAdvisor
         ));
     }
 }

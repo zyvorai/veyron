@@ -241,6 +241,16 @@ check_json_grep "GET /api/v1/crds/blueprints" \
     "${BASE}/api/v1/crds/blueprints?namespace=all" '"items"'
 check_json_grep "GET /api/v1/experience/copilot/cost" \
     "${BASE}/api/v1/experience/copilot/cost?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/performance" \
+    "${BASE}/api/v1/experience/copilot/performance?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/gitops" \
+    "${BASE}/api/v1/experience/copilot/gitops?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/forecast" \
+    "${BASE}/api/v1/experience/copilot/forecast?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/integrations" \
+    "${BASE}/api/v1/experience/copilot/integrations" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/scheduling" \
+    "${BASE}/api/v1/experience/copilot/scheduling?namespace=all" '"module"'
 check_json_grep "GET /api/v1/experience/copilot/guest/filesystem" \
     "${BASE}/api/v1/experience/copilot/guest/default/nonexistent-vm/filesystem" '"module"'
 gitops_body=$(curl -skS --connect-timeout 15 --max-time 45 \
