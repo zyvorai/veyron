@@ -173,6 +173,7 @@ body>*{position:relative;z-index:1}
 
 @media(prefers-reduced-motion:reduce){
   body::before,body::after,.container::before,.stat-card,.stat-card::before,.stat-card::after,.navbar::after,.navbar-brand,.chart-card,.chart-card::before{animation:none!important}
+  .classic-nav-backdrop{transition:none}
 }
 
 /* ═══════════════════════════════════════════════════
@@ -202,17 +203,51 @@ body>*{position:relative;z-index:1}
 }
 .btn-nav-browse:hover,.btn-nav-browse.active{border-color:rgba(56,189,248,.35);color:var(--spark)}
 /* Browse mega-menu — outside navbar to avoid backdrop-filter / overflow clipping */
+.topbar-location{
+  display:flex;align-items:center;gap:8px;max-width:min(340px,28vw);min-width:0;
+  padding:4px 10px;border-radius:9px;border:1px solid rgba(120,132,148,.18);
+  background:rgba(20,24,30,.55);
+}
+.topbar-location-meta{
+  font-size:.74rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
+  text-transform:none;letter-spacing:.01em;
+}
+.topbar-location-select{min-width:120px;font-size:.78rem;padding:6px 8px}
+.topbar-location-btn{font-size:.72rem;padding:5px 10px}
+.browse-mega-header{
+  display:none;position:fixed;top:56px;left:0;right:0;z-index:131;
+  padding:12px 20px 10px;margin:0;
+  border-bottom:1px solid rgba(120,132,148,.2);
+  background:rgba(8,10,13,.99);
+  align-items:center;justify-content:space-between;gap:12px;
+}
+body.classic-nav-open .browse-mega-header{display:flex}
+@media(min-width:961px){
+  body.classic-nav-open .browse-mega-header{left:220px}
+  body.finder-collapsed.classic-nav-open .browse-mega-header{left:0}
+}
+.browse-mega-title{font-size:.92rem;font-weight:600;color:var(--text)}
+.browse-filter-input{
+  width:min(280px,40vw);padding:8px 12px;border-radius:9px;border:1px solid var(--border);
+  background:var(--bg);color:var(--text);font-size:.84rem;
+}
 .browse-mega-menu{
-  display:none;position:fixed;top:56px;left:0;right:0;z-index:130;
-  padding:16px 20px 20px;margin:0;
+  display:none;position:fixed;top:96px;left:0;right:0;z-index:130;
+  padding:12px 20px 20px;margin:0;
   border-bottom:1px solid rgba(120,132,148,.28);
-  max-height:min(72vh,560px);overflow-y:auto;overflow-x:hidden;
+  max-height:min(68vh,520px);overflow-y:auto;overflow-x:hidden;
   background:rgba(8,10,13,.98);
   box-shadow:0 20px 48px rgba(0,0,0,.55);
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-  gap:8px 20px;align-content:start;
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
+  gap:10px 22px;align-content:start;
 }
 body.classic-nav-open .browse-mega-menu{display:grid}
+.browse-mega-menu .nav-group.browse-hidden{display:none}
+.browse-pin-btn{
+  margin-left:auto;padding:0 4px;border:none;background:transparent;color:var(--text-dim);
+  cursor:pointer;font-size:.72rem;opacity:0;transition:opacity .15s;
+}
+.browse-mega-menu .nav-link:hover .browse-pin-btn{opacity:1}
 @media(min-width:961px){
   body.classic-nav-open .browse-mega-menu{left:220px}
   body.finder-collapsed.classic-nav-open .browse-mega-menu{left:0}
@@ -221,7 +256,7 @@ body.classic-nav-open .browse-mega-menu{display:grid}
   display:flex;flex-direction:column;align-items:stretch;position:relative;
 }
 .browse-mega-menu .nav-group-btn{
-  font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  font-size:.78rem;font-weight:600;letter-spacing:.01em;text-transform:none;
   color:var(--spark);padding:6px 10px 8px;cursor:default;pointer-events:none;
   background:transparent;border:none;justify-content:flex-start;
 }
@@ -233,14 +268,10 @@ body.classic-nav-open .browse-mega-menu{display:grid}
 .browse-mega-menu .nav-dropdown::before{display:none}
 .browse-mega-menu .nav-link{padding:7px 10px;font-size:.82rem}
 .classic-nav-backdrop{
-  display:none;position:fixed;inset:56px 0 0 0;z-index:125;background:rgba(0,0,0,.4);
+  display:none;position:fixed;inset:96px 0 0 0;z-index:125;background:rgba(0,0,0,.4);
 }
 body.classic-nav-open .classic-nav-backdrop{display:block}
-.page-context-bar{display:none}
-body[data-page="dashboard"] .control-center-bar{display:flex}
-.control-center-bar{display:none}
-.cluster-context-bar{padding:6px 16px;font-size:.8rem}
-.cluster-context-bar.visible{min-height:unset}
+body:not([data-page="dashboard"])::before{animation:none!important}
 .navbar::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,rgba(214,221,230,.55),rgba(159,176,196,.85),rgba(199,208,219,.72),transparent);
@@ -1013,8 +1044,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .form-group{margin-bottom:16px}
 .form-label{
-  display:block;font-family:var(--font-sans);font-size:.75rem;font-weight:700;
-  color:var(--text-muted);letter-spacing:.08em;text-transform:uppercase;
+  display:block;font-family:var(--font-sans);font-size:.78rem;font-weight:600;
+  color:var(--text-muted);letter-spacing:.01em;text-transform:none;
   margin-bottom:6px;
 }
 .form-input,.form-select{
@@ -1650,21 +1681,35 @@ html[data-theme="zinc"] .monitor-cap{
 }
 
 /* ── Zyvor CloudOS experience layer ── */
-.control-center-bar{
-  align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
-  padding:8px 16px;margin:0;border-bottom:1px solid var(--border);
-  background:linear-gradient(90deg,rgba(56,189,248,.06),rgba(59,130,246,.04));
+.dc-cc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.dc-cc-chip{
+  padding:5px 10px;border-radius:999px;font-size:.72rem;border:1px solid var(--border);
+  background:rgba(20,24,30,.5);color:var(--text-muted);
 }
-.cc-items{display:flex;gap:10px;flex-wrap:wrap;flex:1}
-.cc-tile{
-  display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:10px;
-  background:var(--bg-elevated);border:1px solid var(--border);min-width:140px;
+.dc-cc-chip.ok{border-color:rgba(34,197,94,.28);color:var(--success)}
+.dc-cc-chip.warn{border-color:rgba(251,191,36,.35);color:var(--warning)}
+.dc-cc-chip.error{border-color:rgba(239,68,68,.35);color:var(--error)}
+.dc-section-label{font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:10px}
+.dc-pinned-section{margin-bottom:18px}
+.dc-today-panel{
+  margin-bottom:18px;padding:16px 18px;border-radius:14px;border:1px solid var(--border);
+  background:var(--bg-elevated);
 }
-.cc-tile.ok{border-color:rgba(34,197,94,.25)}
-.cc-tile.warn{border-color:rgba(251,191,36,.35)}
-.cc-tile.error{border-color:rgba(239,68,68,.35)}
-.cc-label{font-size:.72rem;color:var(--text-dim);text-transform:none;letter-spacing:.02em}
-.cc-value{font-size:1rem;font-weight:600}
+.dc-today-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.dc-today-stats{display:flex;gap:10px;flex-wrap:wrap}
+.dc-stat-tile{
+  padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(15,23,42,.35);
+  min-width:100px;
+}
+.dc-stat-label{font-size:.72rem;color:var(--text-dim)}
+.dc-stat-value{font-size:1rem;font-weight:600;margin-top:2px}
+.operator-details{margin-top:8px}
+.operator-details>summary{
+  cursor:pointer;font-size:.82rem;color:var(--text-dim);padding:8px 0;list-style:none;
+}
+.operator-details>summary::-webkit-details-marker{display:none}
+.operator-details[open]>summary{margin-bottom:12px;color:var(--text-muted)}
+#page-dashboard>.space-y>.page-header{display:none}
 .cloudos-datacenter{
   display:grid;grid-template-columns:1.2fr 1fr;gap:16px;margin-bottom:18px;
 }
@@ -1710,6 +1755,11 @@ html[data-theme="zinc"] .monitor-cap{
 }
 .vm-card-name{font-weight:600;font-size:.95rem}
 .vm-card-ns{font-size:.74rem;color:var(--text-dim)}
+.vm-workspace-chip{
+  display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;font-size:.68rem;
+  border:1px solid var(--border);color:var(--text-dim);
+}
+.vm-rdp-hint{font-size:.72rem;color:var(--spark);margin-left:4px}
 .vm-card-meta{font-size:.78rem;color:var(--text-muted);margin:10px 0 12px}
 .vm-card-actions{display:flex;gap:6px;flex-wrap:wrap}
 .spotlight-panel{
@@ -1721,7 +1771,38 @@ html[data-theme="zinc"] .monitor-cap{
   width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
   background:var(--bg);color:var(--text);font-size:1rem;
 }
-.spotlight-results{max-height:360px;overflow-y:auto;padding:8px}
+.spotlight-results{max-height:320px;overflow-y:auto;padding:8px}
+.spotlight-section-label{
+  font-size:.72rem;font-weight:600;color:var(--text-dim);padding:8px 12px 4px;text-transform:none;
+}
+.spotlight-footer{
+  padding:10px 14px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-dim);
+  display:flex;justify-content:space-between;gap:8px;
+}
+.migration-stepper{
+  display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;padding:4px;
+  border-bottom:1px solid var(--border);
+}
+.migration-step-tab{
+  padding:8px 14px;border-radius:999px;border:1px solid var(--border);background:transparent;
+  color:var(--text-muted);font-size:.78rem;cursor:pointer;
+}
+.migration-step-tab.active{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.35);color:var(--spark)}
+.migration-step-tab.done{border-color:rgba(34,197,94,.3);color:var(--success)}
+.migration-step-panel{display:none}
+.migration-step-panel.active{display:block}
+.migration-inv-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.migration-inv-table th,.migration-inv-table td{padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+.migration-inv-table th{font-size:.74rem;color:var(--text-dim);font-weight:600}
+.migration-plan-accordion{
+  margin-top:10px;padding:12px;border-radius:10px;border:1px solid var(--border);background:rgba(15,23,42,.35);
+}
+.migration-plan-accordion summary{cursor:pointer;font-weight:600;font-size:.85rem}
+.migration-tasks-list{display:flex;flex-direction:column;gap:10px}
+.migration-task-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;
+  border-radius:10px;border:1px solid var(--border);background:var(--bg-elevated);
+}
 .spotlight-item{
   display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;
 }
@@ -1751,7 +1832,21 @@ html[data-theme="zinc"] .monitor-cap{
 }
 body.finder-collapsed .cloudos-finder{width:0;padding:0;overflow:hidden;border-right:none}
 body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
-.cloudos-finder-title{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:8px 10px 4px}
+.cloudos-finder-title{font-size:.74rem;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--text-dim);padding:8px 10px 4px}
+.finder-section{margin-bottom:4px}
+.finder-section-toggle{
+  display:flex;align-items:center;justify-content:space-between;width:100%;
+  padding:6px 10px;border:none;background:transparent;color:var(--text-dim);
+  font-size:.74rem;font-weight:600;cursor:pointer;text-align:left;
+}
+.finder-section-toggle:hover{color:var(--text-muted)}
+.finder-chevron{font-size:.65rem;opacity:.7;transition:transform .15s}
+.finder-section.collapsed .finder-chevron{transform:rotate(-90deg)}
+.finder-section.collapsed .finder-section-body{display:none}
+.finder-section-body{display:flex;flex-direction:column;gap:2px}
+.finder-footer{margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
+.finder-location-cluster{font-size:.72rem;color:var(--text-dim);padding:2px 12px 8px;line-height:1.4}
+.cloudos-finder-item.active{border-left:3px solid var(--spark);padding-left:9px}
 .cloudos-finder-item{
   display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;
   background:transparent;color:var(--text-muted);font-size:.84rem;text-align:left;cursor:pointer;
@@ -1805,14 +1900,20 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <span class="navbar-page-title" id="navbar-page-title">Datacenter Home</span>
   </div>
   <div class="navbar-right">
+    <div class="topbar-location" id="topbar-location-wrap">
+      <span class="topbar-location-meta" id="cluster-context-meta">Location: loading…</span>
+      <select class="form-select topbar-location-select" id="cluster-activate-select" style="display:none"></select>
+      <button type="button" class="btn btn-sm btn-restart topbar-location-btn" id="cluster-activate-btn" onclick="activateClusterContext()" style="display:none">Switch</button>
+    </div>
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
+    <button type="button" class="btn-spotlight" onclick="openCopilot()" title="VMRogue Copilot">Copilot</button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <option value="slate">Slate Alloy</option>
       <option value="steel">Steel</option>
       <option value="zinc">Zinc Metal</option>
     </select>
-    <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Namespace">
+    <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
       <option value="all">all</option>
       <option value="default">default</option>
     </select>
@@ -1825,6 +1926,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </nav>
+<div class="browse-mega-header" id="browse-mega-header">
+  <span class="browse-mega-title">All pages</span>
+  <input type="text" class="browse-filter-input" id="browse-filter-input" placeholder="Filter pages…" oninput="filterBrowseMenu()" autocomplete="off" spellcheck="false">
+</div>
 <div class="browse-mega-menu" id="browse-mega-menu" role="navigation" aria-label="Browse all pages">
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">◆</span><span class="nav-label">Compute</span></button>
@@ -1934,54 +2039,56 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="cloudos-body-row">
 <aside class="cloudos-finder" id="cloudos-finder" aria-label="CloudOS Finder">
-  <div class="cloudos-finder-title">Zyvor CloudOS</div>
-  <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Datacenter Home</button>
-  <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Virtual Machines</button>
-  <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">⬡</span>Template Store</button>
-  <button type="button" class="cloudos-finder-item" data-page="migration" onclick="finderNavigate('migration')"><span class="fi-icon">⇄</span>Migration</button>
-  <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon">⧉</span>Backups</button>
-  <button type="button" class="cloudos-finder-item" data-page="monitoring" onclick="finderNavigate('monitoring')"><span class="fi-icon">⬢</span>Activity Monitor</button>
-  <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon">⚙</span>Integrations</button>
-  <div class="cloudos-finder-title" style="margin-top:10px">Network &amp; platform</div>
-  <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon">⟷</span>Ingress</button>
-  <button type="button" class="cloudos-finder-item" data-page="catalog" onclick="finderNavigate('catalog')"><span class="fi-icon">▦</span>Catalog (advanced)</button>
-  <button type="button" class="cloudos-finder-item" onclick="toggleClassicNav()"><span class="fi-icon">⋯</span>All pages…</button>
-  <div class="cloudos-finder-title" style="margin-top:10px">Workspace</div>
-  <div id="finder-location-label" style="padding:4px 12px;font-size:.78rem;color:var(--text-dim)">All workspaces</div>
+  <div class="finder-section" id="finder-sec-favorites" data-finder-section="favorites">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-favorites">
+      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Datacenter Home</button>
+      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Virtual Machines</button>
+      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">⬡</span>Template Store</button>
+    </div>
+  </div>
+  <div class="finder-section" id="finder-sec-operations" data-finder-section="operations">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('operations')">Operations <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-operations">
+      <button type="button" class="cloudos-finder-item" data-page="migration" onclick="finderNavigate('migration')"><span class="fi-icon">⇄</span>Migration</button>
+      <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon">⧉</span>Backups</button>
+      <button type="button" class="cloudos-finder-item" data-page="monitoring" onclick="finderNavigate('monitoring')"><span class="fi-icon">⬢</span>Activity Monitor</button>
+    </div>
+  </div>
+  <div class="finder-section" id="finder-sec-network" data-finder-section="network">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('network')">Network <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-network">
+      <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon">⟷</span>Ingress</button>
+      <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon">⚙</span>Integrations</button>
+    </div>
+  </div>
+  <div class="finder-section" id="finder-sec-pinned" data-finder-section="pinned" style="display:none">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('pinned')">Pinned <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-pinned-links"></div>
+  </div>
+  <button type="button" class="cloudos-finder-item" onclick="toggleClassicNav()" style="margin-top:4px"><span class="fi-icon">⋯</span>Advanced… Browse all</button>
+  <div class="finder-footer">
+    <div class="cloudos-finder-title">Workspace</div>
+    <div id="finder-location-label" style="padding:4px 12px;font-size:.78rem;color:var(--text-dim)">All workspaces</div>
+    <div id="finder-location-cluster" class="finder-location-cluster"></div>
+  </div>
 </aside>
 <div class="cloudos-main">
 
-<div class="cluster-context-bar" id="cluster-context-bar">
-  <div class="cluster-context-meta" id="cluster-context-meta">Location: loading…</div>
-  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <label for="cluster-activate-select" class="form-label" style="margin:0;font-size:.75rem">Switch location</label>
-    <select class="form-select" id="cluster-activate-select" style="min-width:180px;font-size:.82rem"></select>
-    <button type="button" class="btn btn-sm btn-restart" id="cluster-activate-btn" onclick="activateClusterContext()">Switch</button>
-  </div>
-</div>
-
-<div class="page-context-bar">
-  <div class="page-context-inner">
-    <div>
-      <div class="context-kicker" id="context-kicker">Dashboard</div>
-      <div class="context-breadcrumb" id="context-breadcrumb">Fleet overview and live command surface</div>
-    </div>
-    <div class="context-tags" id="context-tags">
-      <span class="context-chip">Live cluster</span>
-      <span class="context-chip">Theme aware</span>
-      <span class="context-chip">Action ready</span>
-    </div>
-  </div>
-</div>
-
-<div class="control-center-bar" id="control-center-bar">
-  <div class="cc-items" id="cc-items">
-    <div class="cc-tile ok"><div><div class="cc-label">Loading</div><div class="cc-value">…</div></div></div>
-  </div>
-  <button type="button" class="btn-spotlight" onclick="openSpotlight()">Spotlight</button>
-</div>
-
 <div class="toast-container" id="toasts"></div>
+
+<div class="modal-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-label="VMRogue Copilot">
+  <div class="fixit-panel copilot-panel" onclick="event.stopPropagation()" style="width:min(640px,94vw);max-height:80vh;overflow:auto">
+    <div class="fixit-title">VMRogue Copilot</div>
+    <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:12px">Ask about VM health, scheduling, YAML, or paste a Kubernetes error.</p>
+    <textarea class="form-input" id="copilot-input" rows="3" placeholder="Why is my VM not starting?" style="width:100%;margin-bottom:10px;font-size:.9rem"></textarea>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button type="button" class="btn btn-start btn-sm" onclick="runCopilotAsk()">Ask</button>
+      <button type="button" class="btn btn-sm" onclick="closeCopilot()">Close</button>
+    </div>
+    <div id="copilot-result"></div>
+  </div>
+</div>
 
 <div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
   <div class="spotlight-panel" onclick="event.stopPropagation()">
@@ -1989,6 +2096,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Search VMs, pages, actions…" autocomplete="off" spellcheck="false">
     </div>
     <div class="spotlight-results" id="spotlight-results"></div>
+    <div class="spotlight-footer" id="spotlight-footer">
+      <span>↑↓ navigate · Enter open · Esc close</span>
+      <span id="spotlight-recents-hint"></span>
+    </div>
   </div>
 </div>
 
@@ -2013,11 +2124,27 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <div class="dc-workspace" id="dc-workspace">All workspaces</div>
       <div class="dc-health">
         <div class="dc-health-ring" id="dc-health-ring">--</div>
-        <div class="dc-health-summary" id="dc-health-summary">Loading fleet health…</div>
+        <div>
+          <div class="dc-health-summary" id="dc-health-summary">Loading fleet health…</div>
+          <div class="dc-cc-chips" id="dc-cc-chips"></div>
+        </div>
       </div>
     </div>
     <div class="dc-action-grid" id="dc-action-grid"></div>
   </div>
+  <div class="dc-pinned-section" id="dc-pinned-section" style="display:none">
+    <div class="dc-section-label">Pinned VMs</div>
+    <div class="vm-card-grid" id="dc-pinned-vms"></div>
+  </div>
+  <div class="dc-today-panel" id="dc-today-panel">
+    <div class="dc-today-header">
+      <span class="dc-section-label" style="margin:0">Today</span>
+      <div class="dc-today-stats" id="dc-today-stats"></div>
+    </div>
+    <div class="priority-list" id="dash-priority-list"></div>
+  </div>
+  <details class="operator-details" id="operator-details">
+    <summary>Show operator details</summary>
   <div class="dashboard-command-grid">
     <div class="command-hero">
       <div class="command-hero-top">
@@ -2061,6 +2188,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span><button class="nav-link table-action-link" onclick="navigate('events')">View all &#8250;</button></div><div id="dash-event-list"></div></div>
     </div>
   </div>
+  </details>
 </div>
 </div>
 
@@ -2080,8 +2208,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
           <option value="">All drift</option><option value="drift">Drift detected</option><option value="clear">In sync</option><option value="unmanaged">Unmanaged</option>
         </select>
         <div class="vm-view-toggle">
-          <button type="button" id="vm-view-list" class="active" onclick="setVmViewMode('list')">List</button>
-          <button type="button" id="vm-view-grid" onclick="setVmViewMode('grid')">Cards</button>
+          <button type="button" id="vm-view-list" onclick="setVmViewMode('list')">List</button>
+          <button type="button" id="vm-view-grid" class="active" onclick="setVmViewMode('grid')">Cards</button>
         </div>
       </div>
     </div>
@@ -2423,7 +2551,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   <div class="card">
     <div class="card-header"><span class="card-title">Deploy VMRogueVM (template + profile)</span></div>
     <div style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
-      <div class="form-group" style="margin:0"><label class="form-label">Namespace</label><input class="form-input" id="catalog-deploy-ns" value="default" style="width:120px"></div>
+      <div class="form-group" style="margin:0"><label class="form-label">Target workspace</label><input class="form-input" id="catalog-deploy-ns" value="default" style="width:120px"></div>
       <div class="form-group" style="margin:0"><label class="form-label">Name (optional)</label><input class="form-input" id="catalog-deploy-name" placeholder="auto" style="width:140px"></div>
       <div class="form-group" style="margin:0"><label class="form-label">Template</label><select class="form-select" id="catalog-deploy-template" style="min-width:160px"></select></div>
       <div class="form-group" style="margin:0"><label class="form-label">Profile</label><select class="form-select" id="catalog-deploy-profile" style="min-width:140px"></select></div>
@@ -2459,48 +2587,95 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <button type="button" class="btn" onclick="fetchMigrationPage()">Refresh</button>
   </div>
   <div id="migration-cap-banner"></div>
-  <div class="card migration-step">
-    <div class="card-header"><span class="card-title">1. Source</span></div>
-    <div style="padding:16px">
-      <label class="form-label">Migration source</label>
-      <select class="form-select" id="migration-source" style="max-width:360px"></select>
-      <div class="grid-2" style="gap:12px;margin-top:12px;max-width:720px">
-        <div><label class="form-label">vCenter host (optional)</label><input class="form-input" id="migration-vcenter-host" placeholder="vcenter.example.com"></div>
-        <div><label class="form-label">Username (optional)</label><input class="form-input" id="migration-vcenter-user" placeholder="administrator@vsphere.local"></div>
+  <div class="migration-stepper" id="migration-stepper">
+    <button type="button" class="migration-step-tab active" data-step="1" onclick="setMigrationStep(1)">1 Source</button>
+    <button type="button" class="migration-step-tab" data-step="2" onclick="setMigrationStep(2)">2 Workloads</button>
+    <button type="button" class="migration-step-tab" data-step="3" onclick="setMigrationStep(3)">3 Readiness</button>
+    <button type="button" class="migration-step-tab" data-step="4" onclick="setMigrationStep(4)">4 Import</button>
+    <button type="button" class="migration-step-tab" data-step="5" onclick="setMigrationStep(5)">5 Tasks</button>
+  </div>
+  <div class="migration-step-panel active" id="migration-panel-1">
+    <div class="card migration-step">
+      <div class="card-header"><span class="card-title">Source</span></div>
+      <div style="padding:16px">
+        <label class="form-label">Migration source</label>
+        <select class="form-select" id="migration-source" style="max-width:360px"></select>
+        <div class="grid-2" style="gap:12px;margin-top:12px;max-width:720px">
+          <div><label class="form-label">vCenter host (optional)</label><input class="form-input" id="migration-vcenter-host" placeholder="vcenter.example.com"></div>
+          <div><label class="form-label">Username (optional)</label><input class="form-input" id="migration-vcenter-user" placeholder="administrator@vsphere.local"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm" onclick="discoverMigrationInventory()">Discover inventory</button>
+          <button type="button" class="btn btn-sm btn-start" onclick="setMigrationStep(2)">Next: Workloads</button>
+        </div>
+        <p style="margin-top:10px;font-size:.85rem;color:var(--text-dim)" id="migration-pipeline"></p>
+        <p style="margin-top:6px;font-size:.82rem;color:var(--text-dim)" id="migration-discover-msg"></p>
       </div>
-      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-        <button type="button" class="btn btn-sm" onclick="discoverMigrationInventory()">Discover inventory</button>
-      </div>
-      <p style="margin-top:10px;font-size:.85rem;color:var(--text-dim)" id="migration-pipeline"></p>
-      <p style="margin-top:6px;font-size:.82rem;color:var(--text-dim)" id="migration-discover-msg"></p>
     </div>
   </div>
-  <div class="card migration-step">
-    <div class="card-header"><span class="card-title">2. Inventory</span></div>
-    <div style="padding:16px">
-      <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:10px">Paste JSON array of VMs to assess, or leave empty for a sample workload.</p>
-      <textarea class="form-input" id="migration-inventory" rows="8" style="width:100%;font-family:monospace;font-size:.82rem" placeholder='[{"name":"app-01","os":"Linux","firmware":"uefi","disk_format":"vmdk","disk_gb":40,"virtio_ready":true}]'></textarea>
-      <div style="margin-top:12px;display:flex;gap:8px">
-        <button type="button" class="btn btn-start" onclick="runMigrationScan()">Scan readiness</button>
+  <div class="migration-step-panel" id="migration-panel-2">
+    <div class="card migration-step">
+      <div class="card-header"><span class="card-title">Workloads</span></div>
+      <div style="padding:16px">
+        <p style="font-size:.85rem;color:var(--text-dim);margin-bottom:10px">Add VMs to assess for migration readiness.</p>
+        <div style="overflow-x:auto;margin-bottom:12px">
+          <table class="migration-inv-table" id="migration-inv-table">
+            <thead><tr><th>Name</th><th>OS</th><th>Firmware</th><th>Disk format</th><th>Size (GB)</th><th>VirtIO</th><th></th></tr></thead>
+            <tbody id="migration-inv-tbody"></tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button type="button" class="btn btn-sm" onclick="addMigrationInventoryRow()">Add row</button>
+          <button type="button" class="btn btn-sm" onclick="importMigrationSample()">Import sample</button>
+        </div>
+        <textarea class="form-input" id="migration-inventory" rows="4" style="width:100%;font-family:monospace;font-size:.78rem;display:none" aria-hidden="true"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm" onclick="setMigrationStep(1)">Back</button>
+          <button type="button" class="btn btn-start" onclick="runMigrationScan()">Scan readiness</button>
+        </div>
       </div>
     </div>
   </div>
-  <div class="card migration-step" id="migration-results-card" style="display:none">
-    <div class="card-header"><span class="card-title">3. Readiness</span><span id="migration-scan-summary" style="font-size:.82rem;color:var(--text-dim)"></span></div>
-    <div style="padding:16px" id="migration-scan-results"></div>
-  </div>
-  <div class="card migration-step" id="migration-execute-card" style="display:none">
-    <div class="card-header"><span class="card-title">4. Import</span></div>
-    <div style="padding:16px">
-      <div class="grid-2" style="gap:12px;margin-bottom:12px">
-        <div><label class="form-label">Target namespace</label><input class="form-input" id="migration-target-ns" value="default"></div>
-        <div><label class="form-label">VM name</label><input class="form-input" id="migration-target-name" placeholder="migrated-app-01"></div>
-        <div><label class="form-label">Import URL (CDI HTTP)</label><input class="form-input" id="migration-import-url" placeholder="https://…/disk.qcow2"></div>
-        <div><label class="form-label">Disk size</label><input class="form-input" id="migration-disk-size" value="40Gi"></div>
-        <div><label class="form-label">Template (optional)</label><input class="form-input" id="migration-template" placeholder="ubuntu-22.04"></div>
-        <div><label class="form-label">Profile (optional)</label><input class="form-input" id="migration-profile" placeholder="small"></div>
+  <div class="migration-step-panel" id="migration-panel-3">
+    <div class="card migration-step" id="migration-results-card">
+      <div class="card-header"><span class="card-title">Readiness</span><span id="migration-scan-summary" style="font-size:.82rem;color:var(--text-dim)"></span></div>
+      <div style="padding:16px" id="migration-scan-results">
+        <p style="color:var(--text-dim);font-size:.85rem">Run a scan from Workloads to see readiness checks.</p>
       </div>
-      <button type="button" class="btn-create" onclick="runMigrationExecute()">Start CDI import</button>
+      <div style="padding:0 16px 16px"><button type="button" class="btn btn-sm" onclick="setMigrationStep(2)">Back</button>
+        <button type="button" class="btn btn-sm btn-start" onclick="setMigrationStep(4)" style="margin-left:8px">Next: Import</button></div>
+    </div>
+  </div>
+  <div class="migration-step-panel" id="migration-panel-4">
+    <div class="card migration-step" id="migration-execute-card">
+      <div class="card-header"><span class="card-title">Import</span></div>
+      <div style="padding:16px">
+        <div class="grid-2" style="gap:12px;margin-bottom:12px">
+          <div><label class="form-label">Target workspace</label><input class="form-input" id="migration-target-ns" value="default"></div>
+          <div><label class="form-label">VM name</label><input class="form-input" id="migration-target-name" placeholder="migrated-app-01"></div>
+          <div><label class="form-label">Import URL (CDI HTTP)</label><input class="form-input" id="migration-import-url" placeholder="https://…/disk.qcow2"></div>
+          <div><label class="form-label">Disk size</label><input class="form-input" id="migration-disk-size" value="40Gi"></div>
+          <div><label class="form-label">Template (optional)</label><select class="form-select" id="migration-template"><option value="">—</option></select></div>
+          <div><label class="form-label">Profile (optional)</label><select class="form-select" id="migration-profile"><option value="">—</option></select></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn btn-sm" onclick="setMigrationStep(3)">Back</button>
+          <button type="button" class="btn-create" onclick="runMigrationExecute()">Start CDI import</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="migration-step-panel" id="migration-panel-5">
+    <div class="card migration-step">
+      <div class="card-header"><span class="card-title">Tasks</span>
+        <button type="button" class="btn btn-sm" onclick="fetchMigrationTasks()">Refresh</button>
+      </div>
+      <div style="padding:16px">
+        <div class="migration-tasks-list" id="migration-tasks-list">
+          <p style="color:var(--text-dim);font-size:.85rem">No in-progress imports yet. Start an import from step 4.</p>
+        </div>
+        <p style="margin-top:12px;font-size:.82rem;color:var(--text-dim)">CDI DataVolumes labeled <code>vmrogue.io/managed-by=vmrogue-migration</code>. <button type="button" class="nav-link table-action-link" onclick="navigate('storage')">Open Storage</button></p>
+      </div>
     </div>
   </div>
 </div>
@@ -3245,16 +3420,8 @@ function setTheme(theme) {
 
 function updatePageContext(page) {
   const meta = PAGE_META[page] || {kicker:'CloudOS', title:'Cluster command surface', tags:['Live cluster']};
-  const kicker = document.getElementById('context-kicker');
-  const breadcrumb = document.getElementById('context-breadcrumb');
-  const tags = document.getElementById('context-tags');
   const navTitle = document.getElementById('navbar-page-title');
   if (navTitle) navTitle.textContent = meta.kicker || page;
-  if (kicker) kicker.textContent = meta.kicker;
-  if (breadcrumb) breadcrumb.textContent = meta.title;
-  if (tags) {
-    tags.innerHTML = (meta.tags || []).map(tag => '<span class="context-chip">' + esc(tag) + '</span>').join('');
-  }
 }
 
 function initTheme() {
@@ -3283,6 +3450,7 @@ function openIntegrationLink(link) {
 function navigate(page) {
   closeClassicNav();
   currentPage = page;
+  recordSpotlightRecent({ kind: 'page', title: page, action: 'navigate:' + page });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) { toast('Page not found: ' + page, 'error'); return; }
@@ -3737,7 +3905,7 @@ function fmtTime(ts) {
 
 // ── Zyvor CloudOS experience layer ──
 let lastExperienceHome = null;
-let vmViewMode = 'list';
+let vmViewMode = 'grid';
 let spotlightResults = [];
 let spotlightActiveIndex = 0;
 let spotlightDebounce = null;
@@ -3746,6 +3914,126 @@ let fleetHealthMap = {};
 let cloudOsSession = { role: 'admin', can_write: true, can_admin: true };
 
 const VM_VIEW_KEY = 'vmrogue_vm_view';
+const FINDER_SECTIONS_KEY = 'vmrogue_finder_sections';
+const FINDER_PINS_KEY = 'vmrogue_finder_pins';
+const SPOTLIGHT_RECENTS_KEY = 'vmrogue_spotlight_recents';
+const MIGRATION_TASKS_KEY = 'vmrogue_migration_tasks';
+let migrationInventoryRows = [];
+let migrationStep = 1;
+let migrationPlanCache = {};
+
+function toggleFinderSection(name) {
+  const sec = document.querySelector('.finder-section[data-finder-section="' + name + '"]');
+  if (!sec) return;
+  sec.classList.toggle('collapsed');
+  try {
+    const state = JSON.parse(localStorage.getItem(FINDER_SECTIONS_KEY) || '{}');
+    state[name] = sec.classList.contains('collapsed');
+    localStorage.setItem(FINDER_SECTIONS_KEY, JSON.stringify(state));
+  } catch (e) {}
+}
+
+function initFinderSections() {
+  let state = {};
+  try { state = JSON.parse(localStorage.getItem(FINDER_SECTIONS_KEY) || '{}'); } catch (e) {}
+  document.querySelectorAll('.finder-section[data-finder-section]').forEach(sec => {
+    const name = sec.dataset.finderSection;
+    if (state[name]) sec.classList.add('collapsed');
+  });
+  renderFinderPins();
+}
+
+function getFinderPins() {
+  try {
+    const pins = JSON.parse(localStorage.getItem(FINDER_PINS_KEY) || '[]');
+    return Array.isArray(pins) ? pins : [];
+  } catch (e) { return []; }
+}
+
+function pinPageToFinder(pageId, label) {
+  const pins = getFinderPins().filter(p => p.id !== pageId);
+  pins.unshift({ id: pageId, label: label || pageId });
+  try { localStorage.setItem(FINDER_PINS_KEY, JSON.stringify(pins.slice(0, 8))); } catch (e) {}
+  renderFinderPins();
+  toast('Pinned to Finder', 'success');
+}
+
+function renderFinderPins() {
+  const pins = getFinderPins();
+  const sec = document.getElementById('finder-sec-pinned');
+  const body = document.getElementById('finder-pinned-links');
+  if (!sec || !body) return;
+  if (!pins.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  body.innerHTML = pins.map(p =>
+    '<button type="button" class="cloudos-finder-item" data-page="' + esc(p.id) + '" onclick="finderNavigate(' + JSON.stringify(p.id) + ')">' +
+      '<span class="fi-icon">★</span>' + esc(p.label) + '</button>'
+  ).join('');
+}
+
+function filterBrowseMenu() {
+  const q = ((document.getElementById('browse-filter-input') || {}).value || '').trim().toLowerCase();
+  document.querySelectorAll('#browse-mega-menu .nav-group').forEach(grp => {
+    let visible = 0;
+    grp.querySelectorAll('.nav-link').forEach(link => {
+      const text = (link.textContent || '').toLowerCase();
+      const page = (link.dataset.page || '').toLowerCase();
+      const show = !q || text.includes(q) || page.includes(q);
+      link.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    grp.classList.toggle('browse-hidden', visible === 0);
+  });
+}
+
+function initBrowsePinButtons() {
+  document.querySelectorAll('#browse-mega-menu .nav-link[data-page]').forEach(link => {
+    if (link.querySelector('.browse-pin-btn')) return;
+    const page = link.dataset.page;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'browse-pin-btn';
+    btn.title = 'Pin to Finder';
+    btn.textContent = '★';
+    btn.onclick = function(e) {
+      e.stopPropagation();
+      pinPageToFinder(page, link.textContent.trim());
+    };
+    link.style.display = 'flex';
+    link.style.alignItems = 'center';
+    link.appendChild(btn);
+  });
+}
+
+function recordSpotlightRecent(item) {
+  if (!item || !item.action) return;
+  try {
+    const recents = JSON.parse(localStorage.getItem(SPOTLIGHT_RECENTS_KEY) || '[]');
+    const entry = { kind: item.kind, title: item.title, action: item.action, ts: Date.now() };
+    const filtered = recents.filter(r => r.action !== entry.action);
+    filtered.unshift(entry);
+    localStorage.setItem(SPOTLIGHT_RECENTS_KEY, JSON.stringify(filtered.slice(0, 8)));
+  } catch (e) {}
+}
+
+function guessOsFamily(vm) {
+  const n = ((vm.name || '') + ' ' + (vm.template || '') + ' ' + (vm.os || '')).toLowerCase();
+  if (n.indexOf('win') !== -1) return 'windows';
+  if (n.indexOf('ubuntu') !== -1) return 'ubuntu';
+  if (n.indexOf('debian') !== -1) return 'debian';
+  if (n.indexOf('fedora') !== -1) return 'fedora';
+  if (n.indexOf('rhel') !== -1 || n.indexOf('centos') !== -1) return 'linux';
+  return 'linux';
+}
+
+function osFamilyIcon(family) {
+  const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
+  return icon[family] || '◫';
+}
+
+function isWindowsVm(vm) {
+  return guessOsFamily(vm) === 'windows';
+}
 
 function toggleFinder() {
   if (window.innerWidth <= 960) {
@@ -3820,13 +4108,16 @@ function vmHealthPill(vm) {
   return '<span class="vm-health-pill ' + cls + '">' + h.health_score + '% ' + esc(h.health_label) + '</span>';
 }
 
+let appStoreCache = [];
+
 async function fetchAppStore() {
   try {
     const data = await apiJson('/api/v1/experience/templates');
+    appStoreCache = data.templates || [];
     setCapBanner('app-store-cap-banner', data.vmrogue_context);
     const grid = document.getElementById('app-store-grid');
     const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
-    grid.innerHTML = (data.templates || []).map(t => {
+    grid.innerHTML = appStoreCache.map(t => {
       const em = icon[t.os_family] || '◫';
       return '<div class="app-store-card" onclick="forgeFromTemplate(' + JSON.stringify(t.id) + ')">' +
         '<div class="app-store-icon">' + em + '</div>' +
@@ -3840,12 +4131,40 @@ async function fetchAppStore() {
   }
 }
 
-function forgeFromTemplate(name) {
-  openCreateModal();
-  setTimeout(() => {
-    const sel = document.getElementById('vm-template');
-    if (sel) { sel.value = name; onTemplateChange(); }
-  }, 200);
+function effectiveTemplateDisk(tpl) {
+  const raw = tpl && (tpl.default_disk_size || tpl.disk);
+  return raw && raw !== '0' ? raw : '20Gi';
+}
+
+async function forgeFromTemplate(name) {
+  if (cloudOsSession && cloudOsSession.can_write === false) {
+    toast('Read-only session', 'error');
+    return;
+  }
+  if (!appStoreCache.length) {
+    try { await fetchAppStore(); } catch (_) { /* openCreateModal still loads /templates */ }
+  }
+  const storeItem = appStoreCache.find(t => t.id === name);
+  await openCreateModal();
+  const sel = document.getElementById('vm-template');
+  if (sel) {
+    if (!Array.from(sel.options).some(o => o.value === name)) {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    }
+    sel.value = name;
+  }
+  if (storeItem) {
+    document.getElementById('vm-cpus').value = storeItem.cpu;
+    document.getElementById('vm-memory').value = storeItem.memory;
+    document.getElementById('vm-disk').value = effectiveTemplateDisk(storeItem);
+  } else if (sel && sel.value === name) {
+    onTemplateChange();
+  } else {
+    toast('Template "' + name + '" not found', 'error');
+  }
 }
 
 async function discoverMigrationInventory() {
@@ -3861,7 +4180,9 @@ async function discoverMigrationInventory() {
     const msgEl = document.getElementById('migration-discover-msg');
     if (msgEl) msgEl.textContent = data.message || '';
     if (data.suggested_items && data.suggested_items.length) {
-      document.getElementById('migration-inventory').value = JSON.stringify(data.suggested_items, null, 2);
+      migrationInventoryRows = data.suggested_items.map(normalizeMigrationRow);
+      renderMigrationInventoryTable();
+      setMigrationStep(2);
     }
     toast('Inventory template loaded — edit and scan', 'info');
   } catch (e) {
@@ -3869,21 +4190,118 @@ async function discoverMigrationInventory() {
   }
 }
 
+function normalizeMigrationRow(row) {
+  return {
+    name: row.name || 'vm-01',
+    os: row.os || 'Linux',
+    firmware: row.firmware || 'uefi',
+    disk_format: row.disk_format || 'vmdk',
+    disk_gb: row.disk_gb != null ? row.disk_gb : 40,
+    virtio_ready: row.virtio_ready !== false
+  };
+}
+
+function addMigrationInventoryRow() {
+  migrationInventoryRows.push(normalizeMigrationRow({ name: 'app-' + (migrationInventoryRows.length + 1) }));
+  renderMigrationInventoryTable();
+}
+
+function importMigrationSample() {
+  migrationInventoryRows = [
+    normalizeMigrationRow({ name: 'app-01', os: 'Linux', firmware: 'uefi', disk_format: 'vmdk', disk_gb: 40, virtio_ready: true }),
+    normalizeMigrationRow({ name: 'win-db-01', os: 'Windows', firmware: 'uefi', disk_format: 'vmdk', disk_gb: 80, virtio_ready: false })
+  ];
+  renderMigrationInventoryTable();
+}
+
+function removeMigrationInventoryRow(idx) {
+  migrationInventoryRows.splice(idx, 1);
+  renderMigrationInventoryTable();
+}
+
+function renderMigrationInventoryTable() {
+  const tb = document.getElementById('migration-inv-tbody');
+  if (!tb) return;
+  if (!migrationInventoryRows.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="color:var(--text-dim);padding:12px">No workloads — add a row or import sample.</td></tr>';
+    return;
+  }
+  tb.innerHTML = migrationInventoryRows.map((row, i) =>
+    '<tr data-idx="' + i + '">' +
+      '<td><input class="form-input" style="padding:6px 8px;font-size:.82rem" value="' + esc(row.name) + '" onchange="updateMigrationRow(' + i + ',\'name\',this.value)"></td>' +
+      '<td><input class="form-input" style="padding:6px 8px;font-size:.82rem" value="' + esc(row.os) + '" onchange="updateMigrationRow(' + i + ',\'os\',this.value)"></td>' +
+      '<td><select class="form-select" style="padding:6px 8px;font-size:.82rem" onchange="updateMigrationRow(' + i + ',\'firmware\',this.value)"><option value="uefi"' + (row.firmware === 'uefi' ? ' selected' : '') + '>UEFI</option><option value="bios"' + (row.firmware === 'bios' ? ' selected' : '') + '>BIOS</option></select></td>' +
+      '<td><input class="form-input" style="padding:6px 8px;font-size:.82rem" value="' + esc(row.disk_format) + '" onchange="updateMigrationRow(' + i + ',\'disk_format\',this.value)"></td>' +
+      '<td><input type="number" class="form-input" style="padding:6px 8px;font-size:.82rem;width:72px" value="' + esc(String(row.disk_gb)) + '" onchange="updateMigrationRow(' + i + ',\'disk_gb\',parseInt(this.value,10)||40)"></td>' +
+      '<td><input type="checkbox"' + (row.virtio_ready ? ' checked' : '') + ' onchange="updateMigrationRow(' + i + ',\'virtio_ready\',this.checked)"></td>' +
+      '<td><button type="button" class="btn btn-sm btn-delete" onclick="removeMigrationInventoryRow(' + i + ')">×</button></td>' +
+    '</tr>'
+  ).join('');
+}
+
+function updateMigrationRow(idx, field, value) {
+  if (!migrationInventoryRows[idx]) return;
+  migrationInventoryRows[idx][field] = value;
+}
+
+function setMigrationStep(step) {
+  migrationStep = step;
+  document.querySelectorAll('.migration-step-tab').forEach(tab => {
+    const n = parseInt(tab.dataset.step, 10);
+    tab.classList.toggle('active', n === step);
+    tab.classList.toggle('done', n < step);
+  });
+  document.querySelectorAll('.migration-step-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'migration-panel-' + step);
+  });
+  if (step === 5) fetchMigrationTasks();
+}
+
+function getMigrationInventoryItems() {
+  syncMigrationInventoryFromTable();
+  return migrationInventoryRows.slice();
+}
+
+function syncMigrationInventoryFromTable() {
+  const tb = document.getElementById('migration-inv-tbody');
+  if (!tb) return;
+  tb.querySelectorAll('tr[data-idx]').forEach(tr => {
+    const idx = parseInt(tr.dataset.idx, 10);
+    const inputs = tr.querySelectorAll('input,select');
+    if (!migrationInventoryRows[idx] || !inputs.length) return;
+    migrationInventoryRows[idx].name = inputs[0].value;
+    migrationInventoryRows[idx].os = inputs[1].value;
+    migrationInventoryRows[idx].firmware = inputs[2].value;
+    migrationInventoryRows[idx].disk_format = inputs[3].value;
+    migrationInventoryRows[idx].disk_gb = parseInt(inputs[4].value, 10) || 40;
+    migrationInventoryRows[idx].virtio_ready = inputs[5].checked;
+  });
+}
+
 async function runMigrationPlan(vmName) {
   const source = document.getElementById('migration-source').value;
   let item = (lastMigrationScan && lastMigrationScan.items || []).find(i => i.name === vmName);
-  if (!item) item = { name: vmName, os: 'Linux', firmware: 'uefi', disk_format: 'vmdk', disk_gb: 40 };
+  if (!item) item = migrationInventoryRows.find(r => r.name === vmName) || { name: vmName, os: 'Linux', firmware: 'uefi', disk_format: 'vmdk', disk_gb: 40 };
   try {
     const data = await apiJson('/api/v1/experience/migration/plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ source: source, item: item, target_namespace: document.getElementById('migration-target-ns').value || 'default' })
     });
-    const steps = (data.steps || []).map((s, i) => (i + 1) + '. ' + s).join('\n');
-    alert('Migration plan for ' + data.name + ' (' + data.readiness + ')\n\n' + steps);
+    migrationPlanCache[vmName] = data;
+    renderMigrationScanResults(lastMigrationScan);
   } catch (e) {
     await translateApiError(e.message, 'migration_plan');
   }
+}
+
+function renderMigrationPlanAccordion(vmName, data) {
+  if (!data) return '';
+  const steps = (data.steps || []).map((s, i) => '<li>' + esc(s) + '</li>').join('');
+  return '<details class="migration-plan-accordion" open>' +
+    '<summary>Migration plan — ' + esc(data.name) + ' (' + esc(data.readiness) + ')</summary>' +
+    '<ol style="margin:10px 0 0 18px;font-size:.85rem;line-height:1.55;color:var(--text-muted)">' + steps + '</ol>' +
+  '</details>';
 }
 
 function initVmViewMode() {
@@ -3911,7 +4329,6 @@ async function fetchExperienceHome() {
     const data = await apiJson('/api/v1/experience/home' + nsParam());
     lastExperienceHome = data;
     renderDatacenterHome(data);
-    renderControlCenter(data.control_center || []);
   } catch (e) {
     console.error('Experience home error:', e);
   }
@@ -3923,6 +4340,7 @@ function renderDatacenterHome(data) {
   const ring = document.getElementById('dc-health-ring');
   const summary = document.getElementById('dc-health-summary');
   const grid = document.getElementById('dc-action-grid');
+  const chips = document.getElementById('dc-cc-chips');
   if (!greet || !data) return;
   greet.textContent = data.greeting || 'Welcome back.';
   if (ws) ws.textContent = data.workspace || 'All workspaces';
@@ -3934,6 +4352,11 @@ function renderDatacenterHome(data) {
     ring.className = 'dc-health-ring' + (score >= 85 ? '' : score >= 65 ? ' warn' : ' error');
   }
   if (summary) summary.textContent = data.health_summary || '';
+  if (chips && data.control_center) {
+    chips.innerHTML = data.control_center.map(item =>
+      '<span class="dc-cc-chip ' + esc(item.status || 'ok') + '">' + esc(item.label) + ': ' + esc(item.value) + '</span>'
+    ).join('');
+  }
   if (grid && data.action_cards) {
     grid.innerHTML = data.action_cards.map(card =>
       '<button type="button" class="dc-action-card" onclick="runExperienceAction(' + JSON.stringify(card.action) + ')">' +
@@ -3942,24 +4365,46 @@ function renderDatacenterHome(data) {
       '</button>'
     ).join('');
   }
+  if (data.pinned_vms && data.pinned_vms.length) {
+    renderPinnedVms(data.pinned_vms);
+  } else {
+    renderPinnedVmsFromClient();
+  }
   if (data.experience && data.experience.tagline) {
     const sub = document.getElementById('subtitle');
     if (sub) sub.textContent = data.experience.tagline;
   }
 }
 
-function renderControlCenter(items) {
-  const el = document.getElementById('cc-items');
+function renderPinnedVms(vms) {
+  const sec = document.getElementById('dc-pinned-section');
+  const el = document.getElementById('dc-pinned-vms');
+  if (!sec || !el) return;
+  const list = (vms || []).slice(0, 4);
+  if (!list.length) { sec.style.display = 'none'; return; }
+  sec.style.display = '';
+  el.innerHTML = list.map(v => vmCard(typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' }, true)).join('');
+}
+
+function renderPinnedVmsFromClient() {
+  const running = vmData.filter(v => v.status === 'Running').slice(0, 4);
+  renderPinnedVms(running);
+}
+
+function renderDcTodayStats() {
+  const el = document.getElementById('dc-today-stats');
   if (!el) return;
-  if (!items || items.length === 0) {
-    el.innerHTML = '<div class="cc-tile ok"><div><div class="cc-label">Status</div><div class="cc-value">Ready</div></div></div>';
-    return;
-  }
-  el.innerHTML = items.map(item =>
-    '<div class="cc-tile ' + esc(item.status || 'ok') + '">' +
-      '<div><div class="cc-label">' + esc(item.label) + '</div><div class="cc-value">' + esc(item.value) + '</div></div>' +
-    '</div>'
-  ).join('');
+  const running = vmData.filter(v => v.status === 'Running').length;
+  const failed = vmData.filter(v => v.status === 'Failed' || v.status === 'Error').length;
+  const warnings = lastEvents.filter(e => e.type === 'Warning').length;
+  const overview = lastOverview || {};
+  const nodes = overview.nodes || {};
+  const readyNodes = nodes.ready_nodes != null && nodes.total_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : 'n/a';
+  el.innerHTML =
+    '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></div>' +
+    '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
+    '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyNodes + '</div></div>' +
+    (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
 }
 
 function runExperienceAction(action) {
@@ -3967,6 +4412,79 @@ function runExperienceAction(action) {
   if (action === 'create_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
   if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
   toast('Action: ' + action, 'info');
+}
+
+function openCopilot() {
+  const modal = document.getElementById('copilot-modal');
+  const input = document.getElementById('copilot-input');
+  if (!modal) return;
+  modal.classList.add('open');
+  document.getElementById('copilot-result').innerHTML = '';
+  if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+}
+
+function closeCopilot() {
+  const modal = document.getElementById('copilot-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+async function runCopilotAsk() {
+  const q = (document.getElementById('copilot-input') || {}).value || '';
+  if (!q.trim()) { toast('Enter a question', 'error'); return; }
+  const el = document.getElementById('copilot-result');
+  if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Thinking…</div>';
+  try {
+    const data = await apiJson('/api/v1/experience/copilot/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q.trim(), namespace: currentNamespace === 'all' ? null : currentNamespace })
+    });
+    renderCopilotResult(data);
+  } catch (e) {
+    if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+function renderCopilotResult(data) {
+  const el = document.getElementById('copilot-result');
+  if (!el || !data) return;
+  let html = '<div style="font-size:.78rem;color:var(--spark);margin-bottom:6px">' + esc(data.module || 'Copilot') + '</div>';
+  html += '<div style="font-weight:600;margin-bottom:8px">' + esc(data.title || '') + '</div>';
+  if (data.summary) html += '<p style="font-size:.88rem;line-height:1.5;color:var(--text-muted)">' + esc(data.summary) + '</p>';
+  if (data.health_score != null) html += '<p style="margin-top:8px">Health score: <strong>' + data.health_score + '/100</strong></p>';
+  if (data.evidence && data.evidence.length) {
+    html += '<div style="margin-top:12px;font-size:.82rem"><strong>Evidence</strong><ul style="margin:6px 0 0 18px">';
+    data.evidence.forEach(e => { html += '<li>' + esc(e) + '</li>'; });
+    html += '</ul></div>';
+  }
+  if (data.validation && data.validation.length) {
+    html += '<div style="margin-top:12px;font-size:.82rem"><strong>Validation</strong><ul style="margin:6px 0 0 18px">';
+    data.validation.forEach(v => { html += '<li>[' + esc(v.status) + '] ' + esc(v.check) + ' — ' + esc(v.detail) + '</li>'; });
+    html += '</ul></div>';
+  }
+  if (data.yaml_preview) {
+    html += '<pre style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
+  }
+  if (data.recommendations && data.recommendations.length) {
+    html += '<div style="margin-top:12px;font-size:.82rem"><strong>Recommended fixes</strong><ol style="margin:6px 0 0 18px">';
+    data.recommendations.forEach(r => { html += '<li>' + esc(r) + '</li>'; });
+    html += '</ol></div>';
+  }
+  if (data.actions && data.actions.length) {
+    html += '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">';
+    data.actions.forEach(a => {
+      const page = a.page || '';
+      if (a.action === 'navigate' && page) {
+        html += '<button type="button" class="btn btn-sm" onclick="closeCopilot();navigate(' + JSON.stringify(page) + ')">' + esc(a.label) + '</button>';
+      } else if (a.action === 'forge_vm') {
+        html += '<button type="button" class="btn btn-sm btn-start" onclick="closeCopilot();openCreateModal()">' + esc(a.label) + '</button>';
+      } else if (a.action === 'copy_kubectl' && page) {
+        html += '<button type="button" class="btn btn-sm" onclick="copyToClipboard(' + JSON.stringify(page) + ')">' + esc(a.label) + '</button>';
+      }
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
 }
 
 function openSpotlight() {
@@ -3977,8 +4495,28 @@ function openSpotlight() {
   input.value = '';
   spotlightResults = [];
   spotlightActiveIndex = 0;
-  document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--text-dim)">Type to search VMs and pages…</div>';
+  renderSpotlightRecents();
   setTimeout(() => input.focus(), 50);
+}
+
+function renderSpotlightRecents() {
+  const el = document.getElementById('spotlight-results');
+  const hint = document.getElementById('spotlight-recents-hint');
+  let recents = [];
+  try { recents = JSON.parse(localStorage.getItem(SPOTLIGHT_RECENTS_KEY) || '[]'); } catch (e) {}
+  if (hint) hint.textContent = recents.length ? recents.length + ' recent' : '';
+  if (!el) return;
+  if (!recents.length) {
+    el.innerHTML = '<div style="padding:16px;color:var(--text-dim)">Type to search VMs, pages, and actions…</div>';
+    return;
+  }
+  spotlightResults = recents.map(r => ({
+    kind: r.kind || 'recent',
+    title: r.title,
+    subtitle: 'Recent',
+    action: r.action
+  }));
+  renderSpotlightResults();
 }
 
 function closeSpotlight() {
@@ -4004,23 +4542,43 @@ function renderSpotlightResults() {
     el.innerHTML = '<div style="padding:16px;color:var(--text-dim)">No results</div>';
     return;
   }
-  el.innerHTML = spotlightResults.map((r, i) =>
-    '<div class="spotlight-item' + (i === spotlightActiveIndex ? ' active' : '') + '" data-idx="' + i + '" onclick="activateSpotlightResult(' + i + ')">' +
-      '<span class="spotlight-kind">' + esc(r.kind) + '</span>' +
-      '<div><div class="spotlight-title">' + esc(r.title) + '</div><div class="spotlight-sub">' + esc(r.subtitle) + '</div></div>' +
-    '</div>'
-  ).join('');
+  const kinds = ['vm', 'page', 'action', 'recent'];
+  const labels = { vm: 'VMs', page: 'Pages', action: 'Actions', recent: 'Recents' };
+  let html = '';
+  kinds.forEach(kind => {
+    const items = spotlightResults.map((r, i) => ({ r, i })).filter(x => (x.r.kind || 'page') === kind);
+    if (!items.length) return;
+    html += '<div class="spotlight-section-label">' + (labels[kind] || kind) + '</div>';
+    items.forEach(x => {
+      const active = x.i === spotlightActiveIndex ? ' active' : '';
+      html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" onclick="activateSpotlightResult(' + x.i + ')">' +
+        '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
+        '<div><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
+      '</div>';
+    });
+  });
+  const other = spotlightResults.map((r, i) => ({ r, i })).filter(x => !kinds.includes(x.r.kind || 'page'));
+  other.forEach(x => {
+    const active = x.i === spotlightActiveIndex ? ' active' : '';
+    html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" onclick="activateSpotlightResult(' + x.i + ')">' +
+      '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
+      '<div><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
+    '</div>';
+  });
+  el.innerHTML = html || '<div style="padding:16px;color:var(--text-dim)">No results</div>';
 }
 
 function activateSpotlightResult(idx) {
   const r = spotlightResults[idx];
   if (!r) return;
+  recordSpotlightRecent(r);
   closeSpotlight();
   runSpotlightAction(r.action);
 }
 
 function runSpotlightAction(action) {
   if (!action) return;
+  if (action === 'create_vm' || action === 'forge_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
   if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
   if (action.indexOf('open_vm:') === 0) {
     const parts = action.split(':');
@@ -4098,26 +4656,65 @@ function runFixAction(action, page, label) {
 
 async function fetchMigrationPage() {
   try {
-    const data = await apiJson('/api/v1/experience/migration/sources');
-    setCapBanner('migration-cap-banner', data.vmrogue_context);
+    const [srcData, tplData, profData] = await Promise.all([
+      apiJson('/api/v1/experience/migration/sources'),
+      apiJson('/api/v1/experience/templates').catch(() => ({ templates: [] })),
+      apiJson('/api/v1/crds/profiles').catch(() => ({ items: [] }))
+    ]);
+    setCapBanner('migration-cap-banner', srcData.vmrogue_context);
     const sel = document.getElementById('migration-source');
-    const sources = data.sources || [];
+    const sources = srcData.sources || [];
     sel.innerHTML = sources.map(s => '<option value="' + esc(s.id) + '">' + esc(s.label) + '</option>').join('');
     const pipe = document.getElementById('migration-pipeline');
-    if (pipe) pipe.textContent = data.pipeline || '';
+    if (pipe) pipe.textContent = srcData.pipeline || '';
+    const tplSel = document.getElementById('migration-template');
+    const profSel = document.getElementById('migration-profile');
+    const templates = tplData.templates || [];
+    const profiles = crdItemsFromJson(profData).items || [];
+    if (tplSel) {
+      tplSel.innerHTML = '<option value="">—</option>' + templates.map(t =>
+        '<option value="' + esc(t.id || t.name) + '">' + esc(t.title || t.name || t.id) + '</option>'
+      ).join('');
+    }
+    if (profSel) {
+      profSel.innerHTML = '<option value="">—</option>' + profiles.map(p =>
+        '<option value="' + esc(p.name || p.metadata?.name) + '">' + esc(p.name || p.metadata?.name) + '</option>'
+      ).join('');
+    }
+    if (!migrationInventoryRows.length) addMigrationInventoryRow();
+    else renderMigrationInventoryTable();
+    setMigrationStep(migrationStep || 1);
+    fetchMigrationTasks();
   } catch (e) {
     toast('Migration sources: ' + (e.message || String(e)), 'error');
   }
 }
 
+function renderMigrationScanResults(data) {
+  if (!data) return;
+  document.getElementById('migration-scan-summary').textContent =
+    (data.ready || 0) + ' ready · ' + (data.needs_preparation || 0) + ' need prep · ' + (data.blocked || 0) + ' blocked';
+  const el = document.getElementById('migration-scan-results');
+  el.innerHTML = (data.items || []).map(item => {
+    const checks = (item.checks || []).map(c =>
+      '<div class="migration-check ' + esc(c.status) + '"><span class="check-dot">●</span><div><strong>' +
+        esc(c.label) + '</strong><div style="font-size:.82rem;color:var(--text-dim)">' + esc(c.detail) + '</div></div></div>'
+    ).join('');
+    const plan = migrationPlanCache[item.name] ? renderMigrationPlanAccordion(item.name, migrationPlanCache[item.name]) : '';
+    return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<strong>' + esc(item.name) + '</strong>' +
+        '<span class="vm-badge ' + (item.readiness === 'ready' ? 'running' : item.readiness === 'blocked' ? 'error' : 'stopped') + '">' + esc(item.readiness) + '</span>' +
+      '</div>' + checks + plan +
+      '<button type="button" class="btn btn-sm" style="margin-top:8px;margin-right:6px" onclick="prefillMigrationExecute(' + JSON.stringify(item.name) + ')">Use for import</button>' +
+      '<button type="button" class="btn btn-sm btn-restart" style="margin-top:8px" onclick="runMigrationPlan(' + JSON.stringify(item.name) + ')">View plan</button>' +
+    '</div>';
+  }).join('');
+}
+
 async function runMigrationScan() {
   const source = document.getElementById('migration-source').value;
-  let items = [];
-  const raw = (document.getElementById('migration-inventory').value || '').trim();
-  if (raw) {
-    try { items = JSON.parse(raw); if (!Array.isArray(items)) throw new Error('JSON must be an array'); }
-    catch (e) { toast('Invalid inventory JSON: ' + e.message, 'error'); return; }
-  }
+  const items = getMigrationInventoryItems();
   try {
     const data = await apiJson('/api/v1/experience/migration/scan', {
       method: 'POST',
@@ -4125,25 +4722,8 @@ async function runMigrationScan() {
       body: JSON.stringify({ source: source, items: items })
     });
     lastMigrationScan = data;
-    document.getElementById('migration-results-card').style.display = '';
-    document.getElementById('migration-execute-card').style.display = '';
-    document.getElementById('migration-scan-summary').textContent =
-      (data.ready || 0) + ' ready · ' + (data.needs_preparation || 0) + ' need prep · ' + (data.blocked || 0) + ' blocked';
-    const el = document.getElementById('migration-scan-results');
-    el.innerHTML = (data.items || []).map(item => {
-      const checks = (item.checks || []).map(c =>
-        '<div class="migration-check ' + esc(c.status) + '"><span class="check-dot">●</span><div><strong>' +
-          esc(c.label) + '</strong><div style="font-size:.82rem;color:var(--text-dim)">' + esc(c.detail) + '</div></div></div>'
-      ).join('');
-      return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-          '<strong>' + esc(item.name) + '</strong>' +
-          '<span class="vm-badge ' + (item.readiness === 'ready' ? 'running' : item.readiness === 'blocked' ? 'error' : 'stopped') + '">' + esc(item.readiness) + '</span>' +
-        '</div>' + checks +
-        '<button type="button" class="btn btn-sm" style="margin-top:8px;margin-right:6px" onclick="prefillMigrationExecute(' + JSON.stringify(item.name) + ')">Use for import</button>' +
-        '<button type="button" class="btn btn-sm btn-restart" style="margin-top:8px" onclick="runMigrationPlan(' + JSON.stringify(item.name) + ')">View plan</button>' +
-      '</div>';
-    }).join('');
+    renderMigrationScanResults(data);
+    setMigrationStep(3);
     toast('Scan complete: ' + (data.total || 0) + ' workload(s)', 'success');
   } catch (e) {
     await translateApiError(e.message, 'migration_scan');
@@ -4152,17 +4732,19 @@ async function runMigrationScan() {
 
 function prefillMigrationExecute(name) {
   document.getElementById('migration-target-name').value = 'migrated-' + name.replace(/[^a-zA-Z0-9-]/g, '-');
-  document.getElementById('migration-execute-card').scrollIntoView({ behavior: 'smooth' });
+  setMigrationStep(4);
 }
 
 async function runMigrationExecute() {
+  const tplEl = document.getElementById('migration-template');
+  const profEl = document.getElementById('migration-profile');
   const body = {
     name: document.getElementById('migration-target-name').value.trim(),
     namespace: document.getElementById('migration-target-ns').value.trim() || 'default',
     import_url: document.getElementById('migration-import-url').value.trim() || null,
     disk_size: document.getElementById('migration-disk-size').value.trim() || '40Gi',
-    template: document.getElementById('migration-template').value.trim() || null,
-    profile: document.getElementById('migration-profile').value.trim() || null
+    template: tplEl && tplEl.value ? tplEl.value : null,
+    profile: profEl && profEl.value ? profEl.value : null
   };
   if (!body.name) { toast('VM name required', 'error'); return; }
   try {
@@ -4172,8 +4754,53 @@ async function runMigrationExecute() {
       body: JSON.stringify(body)
     });
     toast(data.message || 'Migration started', 'success');
+    try {
+      const tasks = JSON.parse(sessionStorage.getItem(MIGRATION_TASKS_KEY) || '[]');
+      tasks.unshift({
+        name: data.datavolume || body.name,
+        namespace: body.namespace,
+        vmrogue_vm: data.vmrogue_vm,
+        started: new Date().toISOString()
+      });
+      sessionStorage.setItem(MIGRATION_TASKS_KEY, JSON.stringify(tasks.slice(0, 20)));
+    } catch (e) {}
+    setMigrationStep(5);
+    fetchMigrationTasks();
   } catch (e) {
     await translateApiError(e.message, 'migration_execute');
+  }
+}
+
+async function fetchMigrationTasks() {
+  const el = document.getElementById('migration-tasks-list');
+  if (!el) return;
+  let sessionTasks = [];
+  try { sessionTasks = JSON.parse(sessionStorage.getItem(MIGRATION_TASKS_KEY) || '[]'); } catch (e) {}
+  try {
+    const data = await apiJson('/api/v1/experience/migration/tasks' + nsParam());
+    const apiTasks = data.tasks || [];
+    const merged = apiTasks.length ? apiTasks : sessionTasks;
+    if (!merged.length) {
+      el.innerHTML = '<p style="color:var(--text-dim);font-size:.85rem">No in-progress imports yet. Start an import from step 4.</p>';
+      return;
+    }
+    el.innerHTML = merged.map(t =>
+      '<div class="migration-task-row">' +
+        '<div><strong>' + esc(t.name) + '</strong><div style="font-size:.78rem;color:var(--text-dim)">' +
+          esc(t.namespace || 'default') + (t.vmrogue_vm ? ' · VMRogueVM ' + esc(t.vmrogue_vm) : '') + '</div></div>' +
+        '<span class="vm-badge ' + (t.phase === 'Succeeded' ? 'running' : t.phase === 'Failed' ? 'error' : 'stopped') + '">' +
+          esc(t.phase || t.status || 'In progress') + '</span>' +
+      '</div>'
+    ).join('');
+  } catch (e) {
+    if (sessionTasks.length) {
+      el.innerHTML = sessionTasks.map(t =>
+        '<div class="migration-task-row"><div><strong>' + esc(t.name) + '</strong><div style="font-size:.78rem;color:var(--text-dim)">' +
+          esc(t.namespace) + '</div></div><span class="vm-badge stopped">Session</span></div>'
+      ).join('');
+    } else {
+      el.innerHTML = '<p style="color:var(--text-dim);font-size:.85rem">Tasks API unavailable — check Storage page for CDI status.</p>';
+    }
   }
 }
 
@@ -4181,17 +4808,23 @@ function vmCard(vm, showActions) {
   const cls = sc(vm.status);
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
+  const family = guessOsFamily(vm);
+  const icon = osFamilyIcon(family);
+  const winHint = isRunning && isWindowsVm(vm) ? '<span class="vm-rdp-hint" title="Use RDP expose for Windows">RDP</span>' : '';
   const primary = isRunning
-    ? '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openVncConsole(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Open</button>'
+    ? '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openVncConsole(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Open</button>' + winHint
     : '<button type="button" class="btn btn-start btn-sm" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('start') + ')">Start</button>';
-  const actions = showActions ? primary +
+  const stopBtn = isRunning && showActions
+    ? '<button type="button" class="btn btn-sm btn-stop" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('stop') + ')">Stop</button>'
+    : '';
+  const actions = showActions ? primary + stopBtn +
     '<button type="button" class="btn btn-sm btn-restart" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('restart') + ')">↻</button>' +
     '<button type="button" class="btn btn-sm btn-delete" onclick="event.stopPropagation();vmDelete(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">×</button>' : '';
   return '<div class="vm-card" onclick="toggleVmDetail(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">' +
-    '<div class="vm-card-top"><div class="vm-card-icon">◫</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
-    '<div class="vm-card-ns">' + esc(ns) + '</div>' +
-    '<div class="vm-card-meta">' + esc(vm.cpu) + ' · ' + esc(vm.memory) + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '') + '</div>' +
+    '<span class="vm-workspace-chip">workspace · ' + esc(ns) + '</span>' +
+    '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '') + '</div>' +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
 }
 
@@ -4343,6 +4976,7 @@ async function fetchVMs() {
     renderDashboardCommandCenter();
     await fetchFleetHealth();
     fetchExperienceHome();
+    renderPinnedVmsFromClient();
 
     // Fetch real cluster capacity + platform readiness (updates nav health dot)
     await fetchOverview();
@@ -4626,6 +5260,7 @@ function renderDashboardCommandCenter() {
   const priorityEl = document.getElementById('dash-priority-list');
   const badgeEl = document.getElementById('command-badges');
   const copyEl = document.getElementById('command-copy');
+  renderDcTodayStats();
   if (!metricEl || !priorityEl) return;
 
   const running = vmData.filter(v => v.status === 'Running').length;
@@ -4701,7 +5336,7 @@ async function fetchTemplates() {
       opt.value = t.name;
       const cpu = t.default_cpus != null ? t.default_cpus : t.cpu;
       const mem = t.default_memory || t.memory;
-      const disk = t.default_disk_size || t.disk;
+      const disk = effectiveTemplateDisk(t);
       opt.textContent = t.name + ' (' + cpu + ' CPU, ' + mem + ', ' + disk + ')';
       sel.appendChild(opt);
     });
@@ -4716,7 +5351,7 @@ function onTemplateChange() {
   if (tpl) {
     document.getElementById('vm-cpus').value = tpl.default_cpus != null ? tpl.default_cpus : tpl.cpu;
     document.getElementById('vm-memory').value = tpl.default_memory || tpl.memory;
-    document.getElementById('vm-disk').value = tpl.default_disk_size || tpl.disk;
+    document.getElementById('vm-disk').value = effectiveTemplateDisk(tpl);
   }
 }
 
@@ -4755,8 +5390,8 @@ function selectProfile(name) {
   renderProfilePicker();
 }
 
-function openCreateModal() {
-  if (templateCache.length === 0) fetchTemplates();
+async function openCreateModal() {
+  if (templateCache.length === 0) await fetchTemplates();
   if (profileCache.length === 0) fetchProfiles();
   selectedProfile = '';
   document.getElementById('create-modal').classList.add('open');
@@ -4797,7 +5432,10 @@ async function forgeVM() {
     profile: selectedProfile || null,
     cpus: parseInt(document.getElementById('vm-cpus').value) || 1,
     memory: document.getElementById('vm-memory').value.trim() || '2Gi',
-    disk_size: document.getElementById('vm-disk').value.trim() || '10Gi',
+    disk_size: (() => {
+      const d = document.getElementById('vm-disk').value.trim();
+      return d && d !== '0' ? d : '10Gi';
+    })(),
     cloud_init: cloudInit || null,
     start: document.getElementById('vm-autostart').checked,
     allow_internet: (() => {
@@ -4853,6 +5491,9 @@ document.addEventListener('keydown', e => {
 });
 document.getElementById('spotlight-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeSpotlight();
+});
+document.getElementById('copilot-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeCopilot();
 });
 document.getElementById('fixit-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFixItModal();
@@ -6212,6 +6853,8 @@ window.addEventListener('load', async () => {
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
   initVmViewMode();
+  initFinderSections();
+  initBrowsePinButtons();
   fetchExperienceSession();
 
   refresh();
@@ -7372,44 +8015,51 @@ async function fetchVelero() {
 }
 
 async function fetchClusterContext() {
-  const bar = document.getElementById('cluster-context-bar');
+  const wrap = document.getElementById('topbar-location-wrap');
   const meta = document.getElementById('cluster-context-meta');
   const sel = document.getElementById('cluster-activate-select');
   const btn = document.getElementById('cluster-activate-btn');
+  const finderLoc = document.getElementById('finder-location-cluster');
   try {
     const data = await apiJson('/api/v1/clusters');
     const clusters = data.clusters || [];
     const current = data.current_context || data.kubeconfig_current_context || 'default';
-    if (bar) bar.classList.add('visible');
+    if (wrap) wrap.style.display = '';
     if (meta) {
       if (clusters.length === 0) {
-        meta.textContent = 'Location: ' + esc(current) + ' (in-cluster or single context)';
+        meta.textContent = 'Location: ' + current;
       } else if (clusters.length === 1) {
         const c = clusters[0];
-        meta.textContent = 'Location: ' + esc(c.name) + ' · ' + esc(c.health) + ' · ' + c.vm_count + ' VMs';
+        meta.textContent = c.name + ' · ' + c.health + ' · ' + c.vm_count + ' VMs';
       } else {
-        const parts = clusters.map(c =>
-          esc(c.name) + (c.is_active ? ' (active)' : '') + ' — ' + c.vm_count + ' VMs, ' + esc(c.health)
-        );
-        meta.innerHTML = '<strong>Location:</strong> ' + esc(current) + ' · ' + parts.join(' · ');
+        meta.textContent = current + ' · ' + clusters.length + ' locations';
       }
     }
-    if (sel) {
+    if (finderLoc) {
+      finderLoc.textContent = clusters.length <= 1
+        ? (clusters[0] ? clusters[0].name + ' (' + clusters[0].health + ')' : current)
+        : current + ' — use top bar to switch';
+    }
+    if (sel && btn) {
       if (clusters.length <= 1) {
+        sel.style.display = 'none';
+        btn.style.display = 'none';
         sel.innerHTML = clusters.length ? '<option value="' + esc(clusters[0].name) + '">' + esc(clusters[0].name) + '</option>' : '<option value="">—</option>';
         sel.disabled = true;
-        if (btn) btn.disabled = true;
+        btn.disabled = true;
       } else {
+        sel.style.display = '';
+        btn.style.display = '';
         sel.disabled = false;
-        if (btn) btn.disabled = false;
+        btn.disabled = false;
         sel.innerHTML = clusters.map(c =>
           '<option value="' + esc(c.name) + '"' + (c.is_active ? ' selected' : '') + '>' + esc(c.name) + ' (' + esc(c.context) + ')</option>'
         ).join('');
       }
     }
   } catch (e) {
-    if (bar) bar.classList.remove('visible');
-    if (meta) meta.textContent = 'Multi-cluster: ' + (e.message || String(e));
+    if (meta) meta.textContent = 'Location: ' + (e.message || String(e));
+    if (finderLoc) finderLoc.textContent = '';
   }
 }
 

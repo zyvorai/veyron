@@ -44,6 +44,15 @@ pub struct HomeActionCard {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct PinnedVmSummary {
+    pub namespace: String,
+    pub name: String,
+    pub status: String,
+    pub cpu: String,
+    pub memory: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ExperienceHomeResponse {
     pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
     pub experience: ExperienceContext,
@@ -55,6 +64,7 @@ pub struct ExperienceHomeResponse {
     pub control_center: Vec<ControlCenterItem>,
     pub action_cards: Vec<HomeActionCard>,
     pub warnings: Vec<String>,
+    pub pinned_vms: Vec<PinnedVmSummary>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -212,6 +222,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/migration/plan", post(migration_plan))
         .route("/experience/migration/execute", post(migration_execute))
         .route("/experience/migration/discover", post(migration_discover))
+        .route("/experience/migration/tasks", get(migration_tasks))
         .route("/experience/session", get(experience_session))
         .route("/experience/fleet/health", get(fleet_health))
         .route("/experience/templates", get(template_store))
@@ -281,27 +292,7 @@ fn role_label(role: &crate::api::http_server::web::ApiRole) -> &'static str {
 }
 
 pub fn vm_health_score(status: &str, drift_detected: bool) -> (u8, String) {
-    let base: u8 = match status {
-        "Running" => 92,
-        "Stopped" => 68,
-        "Failed" | "Error" => 35,
-        _ => 55,
-    };
-    let score = if drift_detected {
-        base.saturating_sub(18)
-    } else {
-        base
-    };
-    let label = if score >= 85 {
-        "Healthy"
-    } else if score >= 65 {
-        "Fair"
-    } else if score >= 45 {
-        "Needs attention"
-    } else {
-        "Critical"
-    };
-    (score, label.to_string())
+    crate::copilot::fixit::vm_health_score(status, drift_detected)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -464,19 +455,12 @@ async fn template_store() -> Json<TemplateStoreResponse> {
                 "{} vCPU · {} · {}",
                 cfg.cpu.cores,
                 cfg.memory.size,
-                cfg.disks
-                    .first()
-                    .map(|d| d.size.as_str())
-                    .unwrap_or("—")
+                cfg.default_disk_size_label()
             ),
             os_family: os.to_string(),
             cpu: cfg.cpu.cores,
             memory: cfg.memory.size.clone(),
-            disk: cfg
-                .disks
-                .first()
-                .map(|d| d.size.clone())
-                .unwrap_or_default(),
+            disk: cfg.default_disk_size_label(),
             tags: vec![os.to_string(), "kubevirt".to_string()],
         });
     }
@@ -565,129 +549,19 @@ async fn migration_discover(Json(body): Json<MigrationDiscoverRequest>) -> Json<
 // ── Fix-it translator (shared with tests) ───────────────────────────
 
 pub fn translate_error_message(message: &str, context: Option<&str>) -> TranslateErrorResponse {
-    let lower = message.to_lowercase();
-    let ctx = context.unwrap_or("general");
-
-    let (title, explanation, fixes) = if lower.contains("persistentvolumeclaim")
-        || lower.contains("unbound immediate persistentvolumeclaims")
-        || lower.contains("waiting for a volume")
-    {
-        (
-            "Disk storage is not ready",
-            "This VM cannot start because its disk volume is still being provisioned or no storage is available for the requested StorageClass.",
-            vec![
-                FixAction {
-                    label: "Check storage tiers".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("storage".to_string()),
-                },
-                FixAction {
-                    label: "Retry start".to_string(),
-                    action: "retry".to_string(),
-                    page: None,
-                },
-            ],
-        )
-    } else if lower.contains("network attachment definition")
-        || lower.contains("networkattachmentdefinition")
-        || lower.contains("multus")
-    {
-        (
-            "VM network is missing",
-            "The VM references a network that does not exist in this workspace. Create the network or choose an existing one.",
-            vec![
-                FixAction {
-                    label: "Open networks".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("cilium".to_string()),
-                },
-                FixAction {
-                    label: "Edit VM network".to_string(),
-                    action: "edit_network".to_string(),
-                    page: Some("vms".to_string()),
-                },
-            ],
-        )
-    } else if lower.contains("insufficient cpu")
-        || lower.contains("insufficient memory")
-        || lower.contains("0/") && lower.contains("nodes are available")
-    {
-        (
-            "Not enough cluster capacity",
-            "No node can schedule this VM with its current CPU, memory, or placement rules.",
-            vec![
-                FixAction {
-                    label: "View nodes".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("nodes".to_string()),
-                },
-                FixAction {
-                    label: "Resize VM".to_string(),
-                    action: "resize".to_string(),
-                    page: Some("vms".to_string()),
-                },
-            ],
-        )
-    } else if lower.contains("forbidden") || lower.contains("403") {
-        (
-            "Permission denied",
-            "Your API key or SSO role cannot perform this action on this resource.",
-            vec![FixAction {
-                label: "Review access".to_string(),
-                action: "navigate".to_string(),
-                page: Some("rbac".to_string()),
-            }],
-        )
-    } else if ctx == "migrate" && (lower.contains("migration") || lower.contains("live migrate")) {
-        (
-            "Live migration blocked",
-            "KubeVirt could not migrate this running VM. Common causes: shared storage missing, VM not running, or network/storage policy.",
-            vec![
-                FixAction {
-                    label: "Check VM status".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("vms".to_string()),
-                },
-                FixAction {
-                    label: "View nodes".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("nodes".to_string()),
-                },
-            ],
-        )
-    } else if lower.contains("not found") || lower.contains("404") {
-        (
-            "Resource not found",
-            "The VM or related object may have been deleted or is in another workspace.",
-            vec![FixAction {
-                label: "Refresh VM list".to_string(),
-                action: "refresh".to_string(),
-                page: Some("vms".to_string()),
-            }],
-        )
-    } else {
-        (
-            "Operation failed",
-            "The platform returned an error. Check events and VM details for the underlying Kubernetes or KubeVirt cause.",
-            vec![
-                FixAction {
-                    label: "View events".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("events".to_string()),
-                },
-                FixAction {
-                    label: "Open VM".to_string(),
-                    action: "navigate".to_string(),
-                    page: Some("vms".to_string()),
-                },
-            ],
-        )
-    };
-
+    let r = crate::copilot::fixit::explain_error_message(message, context);
     TranslateErrorResponse {
-        title: title.to_string(),
-        explanation: explanation.to_string(),
-        fixes,
+        title: r.title,
+        explanation: r.summary,
+        fixes: r
+            .actions
+            .into_iter()
+            .map(|a| FixAction {
+                label: a.label,
+                action: a.action,
+                page: a.page,
+            })
+            .collect(),
         raw_message: message.to_string(),
     }
 }
@@ -874,6 +748,40 @@ async fn experience_home(
         },
     ];
 
+    let mut pinned_vms = Vec::new();
+    for vm in vms.iter().filter(|vm| {
+        vm.status
+            .as_ref()
+            .and_then(|s| s.printable_status.as_deref())
+            == Some("Running")
+    }) {
+        let name = vm.metadata.name.clone().unwrap_or_default();
+        let ns = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| scope.clone());
+        let status = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.printable_status.clone())
+            .unwrap_or_else(|| "Running".to_string());
+        let (cpu, memory) = {
+            let info = crate::tui::state::VmInfo::from_vm(vm);
+            (info.cpu, info.memory)
+        };
+        pinned_vms.push(PinnedVmSummary {
+            namespace: ns,
+            name,
+            status,
+            cpu,
+            memory,
+        });
+        if pinned_vms.len() >= 4 {
+            break;
+        }
+    }
+
     Json(ExperienceHomeResponse {
         vmrogue_context: experience_context(),
         experience: ExperienceContext {
@@ -888,6 +796,7 @@ async fn experience_home(
         control_center,
         action_cards,
         warnings,
+        pinned_vms,
     })
 }
 
@@ -961,10 +870,36 @@ async fn experience_search(
     if needle.contains("migrate") {
         results.push(SearchResultItem {
             kind: "action".to_string(),
-            id: "migrate".to_string(),
+            id: "migration-assistant".to_string(),
+            title: "Migration Assistant".to_string(),
+            subtitle: "VMware / OVA / VMDK import".to_string(),
+            action: "navigate:migration".to_string(),
+        });
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "live-migrate".to_string(),
             title: "Live migrate a VM".to_string(),
             subtitle: "Open Virtual Machines".to_string(),
             action: "navigate:vms".to_string(),
+        });
+    }
+
+    if needle.contains("create") || needle.contains("forge") || needle == "vm" {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "forge-vm".to_string(),
+            title: "Forge a new VM".to_string(),
+            subtitle: "Open create dialog".to_string(),
+            action: "forge_vm".to_string(),
+        });
+    }
+    if needle.contains("backup") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "backups".to_string(),
+            title: "View backups".to_string(),
+            subtitle: "Snapshots & Velero".to_string(),
+            action: "navigate:backups".to_string(),
         });
     }
 
@@ -1288,6 +1223,94 @@ async fn migration_execute(
         datavolume: dv_name,
         vmrogue_vm: vrvm_name,
     }))
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MigrationTaskItem {
+    pub name: String,
+    pub namespace: String,
+    pub phase: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vmrogue_vm: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_vm: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MigrationTasksResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub tasks: Vec<MigrationTaskItem>,
+}
+
+#[cfg(feature = "web")]
+async fn migration_tasks(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<MigrationTasksResponse> {
+    use kube::api::{Api, ApiResource, DynamicObject, ListParams};
+
+    let s = state.read().await;
+    let client = s.client().client();
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+
+    let ar = ApiResource {
+        group: "cdi.kubevirt.io".to_string(),
+        version: "v1beta1".to_string(),
+        api_version: "cdi.kubevirt.io/v1beta1".to_string(),
+        kind: "DataVolume".to_string(),
+        plural: "datavolumes".to_string(),
+    };
+    let dv_api: Api<DynamicObject> = if namespace_scope::is_all_namespaces(&scope) {
+        Api::all_with(client, &ar)
+    } else {
+        Api::namespaced_with(client, &scope, &ar)
+    };
+
+    let mut tasks = Vec::new();
+    if let Ok(dvs) = dv_api
+        .list(
+            &ListParams::default()
+                .labels("vmrogue.io/managed-by=vmrogue-migration")
+                .limit(50),
+        )
+        .await
+    {
+        for dv in dvs.items {
+            let Some(name) = dv.metadata.name else {
+                continue;
+            };
+            let ns = dv
+                .metadata
+                .namespace
+                .clone()
+                .unwrap_or_else(|| scope.clone());
+            let phase = dv
+                .data
+                .get("status")
+                .and_then(|st| st.get("phase"))
+                .and_then(|p| p.as_str())
+                .unwrap_or("Pending")
+                .to_string();
+            let source_vm = dv
+                .metadata
+                .labels
+                .as_ref()
+                .and_then(|l| l.get("vmrogue.io/source-vm"))
+                .cloned();
+            tasks.push(MigrationTaskItem {
+                name,
+                namespace: ns,
+                phase,
+                vmrogue_vm: None,
+                source_vm,
+            });
+        }
+    }
+
+    Json(MigrationTasksResponse {
+        vmrogue_context: experience_context(),
+        tasks,
+    })
 }
 
 #[cfg(test)]

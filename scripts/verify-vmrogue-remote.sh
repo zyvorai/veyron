@@ -224,6 +224,20 @@ check_json_grep "GET /api/v1/experience/session" \
     "${BASE}/api/v1/experience/session" '"role"'
 check_json_grep "GET /api/v1/experience/locations" \
     "${BASE}/api/v1/experience/locations" '"locations"'
+check_json_grep "GET /api/v1/experience/migration/tasks" \
+    "${BASE}/api/v1/experience/migration/tasks?namespace=all" '"tasks"'
+copilot_body=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -X POST -H "X-API-Key: ${KEY}" -H 'Content-Type: application/json' \
+    -d '{"query":"show unhealthy vms"}' \
+    "${BASE}/api/v1/experience/copilot/ask" || true)
+if echo "${copilot_body}" | grep -q '"module"'; then
+    echo "  ✔ POST /api/v1/experience/copilot/ask"
+else
+    echo "  ✗ POST /api/v1/experience/copilot/ask"
+    echo "${copilot_body}" | head -c 400 | sed 's/^/    /'
+    echo ""
+    FAIL=$((FAIL + 1))
+fi
 check_json_grep "GET /api/v1/gitops/status" \
     "${BASE}/api/v1/gitops/status?namespace=all" '"sync_status"'
 check_json_ok "GET /api/v1/snapshots?ns=all" \

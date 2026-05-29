@@ -130,15 +130,19 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | VM operator drift | Working | List badges/filter + detail `GET /api/v1/vms/:ns/:name/drift` |
 | Template catalog page | Working | `page-catalog`: status, sync, CRD tables, publish, deploy VMRogueVM |
 | Integrations page | Working | `page-integrations` + in-app links (`monitoring`, `costs`, …) |
-| CloudOS Datacenter Home | Working | `/experience/home` — greeting, health score, action cards, control center bar |
-| CloudOS Spotlight | Working | `⌘K` / `Ctrl+K` → `/experience/search` |
+| CloudOS Datacenter Home | Working | `/experience/home` — hero, Today panel, pinned VMs, health chips (no duplicate fleet bar) |
+| CloudOS Spotlight | Working | `⌘K` — grouped results, recents, forge/migrate/backup actions |
 | CloudOS Fix-it errors | Working | VM actions → `/experience/errors/translate` modal |
-| Migration Assistant | Working | `page-migration` — scan/plan/execute via experience API |
+| Migration Assistant | Working | 5-step wizard — table inventory, inline plan accordion, tasks via `/experience/migration/tasks` |
 | Template App Store | Working | `page-app-store` — `/experience/templates` grid + Forge VM |
-| CloudOS Finder sidebar | Working | Left nav: Home, VMs, Store, Migration, Backups, Monitor |
-| VM guest health scores | Working | `/experience/fleet/health` pills on list + cards |
+| CloudOS Finder sidebar | Working | Favorites / Operations / Network (collapsible); Browse pin-to-Finder |
+| VM guest health scores | Working | `/experience/fleet/health` pills on cards-first VM grid |
 | CloudOS session / RBAC UI | Working | `/experience/session` hides mutating controls for readonly |
-| CloudOS Locations | Working | Multi-cluster bar relabeled; `/experience/locations` |
+| CloudOS Locations | Working | Location in top bar; `/experience/locations` |
+| VMRogue Copilot (v1) | Working | `POST /experience/copilot/ask`, CLI `vmrogue ai`, dashboard Copilot modal |
+| VMRogue Doctor | Working | `GET /experience/copilot/doctor/:ns/:name` |
+| VMRogue YAML Builder | Working | `POST /experience/copilot/yaml/preview` with cluster validation |
+| VMRogue Scheduling Explainer | Working | `GET /experience/copilot/scheduling/:ns/:name` |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
 | OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VMROGUE_OIDC_*` set |

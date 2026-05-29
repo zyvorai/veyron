@@ -98,6 +98,7 @@ Full vCenter inventory sync and live vMotion-style migration are **future** work
 |-------|------------|--------|
 | **Now** | Experience API, Datacenter Home, Spotlight, Fix-it, migration scan/plan/execute | **Done** |
 | **Next** | Guest health scores, Template App Store, Finder sidebar, Locations bar, RBAC session | **Done** (classic dashboard) |
+| **Awesome** | Calmer chrome, Today panel, VM cards-first, Finder sections, Spotlight recents, migration wizard | **Done** — merged location bar, stepper UI, `GET /experience/migration/tasks` |
 | **Later** | vCenter API live inventory, live migration polish, mobile shell | Partial — discover stub + migrate fix-it; full vCenter API pending |
 | **Enterprise** | RBAC-filtered action cards, multi-location switcher | Partial — session role + location bar; full tenant RBAC pending |
 
@@ -110,9 +111,23 @@ Full vCenter inventory sync and live vMotion-style migration are **future** work
 | `GET /experience/templates` | Template Store catalog |
 | `GET /experience/locations` | Multi-cluster as CloudOS locations |
 | `POST /experience/migration/discover` | vCenter inventory stub → JSON template |
+| `GET /experience/migration/tasks` | In-progress CDI imports (`vmrogue.io/managed-by=vmrogue-migration`) |
+| `POST /experience/copilot/ask` | VMRogue Copilot — NL router to Doctor, YAML, scheduling, explain |
+| `GET /experience/copilot/doctor/:ns/:name` | Per-VM health report |
+| `GET /experience/copilot/scheduling/:ns/:name` | Scheduling failure explainer |
+
+### Awesome sprint UI (dashboard)
+
+- **Top bar** — page title, compact location + workspace selector, Browse filter mega-menu
+- **Datacenter Home** — single hero with health chips; **Today** panel (stats + priority queue); pinned running VMs; operator details collapsed
+- **VMs** — cards-first grid with OS icons, health pills, Open/RDP hints
+- **Finder** — Favorites / Operations / Network sections (collapsible); pin pages from Browse
+- **Spotlight** — recents in `localStorage`, grouped results, keyboard hints
+- **Migration** — 5-step wizard (Source → Workloads table → Readiness → Import → Tasks)
 
 ## Related docs
 
+- [VMROGUE_AI.md](./VMROGUE_AI.md) — AI copilot vision + v1 API/CLI
 - [FEATURE_MATRIX.md](./FEATURE_MATRIX.md) — API and UI parity tracking
 - [TEMPLATE_CATALOG.md](./TEMPLATE_CATALOG.md) — VMTemplate / VMProfile
 - [WINDOWS_KUBEVIRT_PRODUCTION.md](./WINDOWS_KUBEVIRT_PRODUCTION.md) — Windows golden images

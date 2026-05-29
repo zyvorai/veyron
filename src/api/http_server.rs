@@ -3348,11 +3348,15 @@ pub mod web {
             .iter()
             .filter_map(|name| {
                 TEMPLATES.get(name).map(|t| {
+                    let disk = t.default_disk_size_label();
                     serde_json::json!({
                         "name": name,
                         "cpu": t.cpu.cores,
                         "memory": t.memory.size,
-                        "disk": t.disks.first().map(|d| d.size.as_str()).unwrap_or("10Gi"),
+                        "disk": disk,
+                        "default_cpus": t.cpu.cores,
+                        "default_memory": t.memory.size,
+                        "default_disk_size": disk,
                     })
                 })
             })

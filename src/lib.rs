@@ -35,6 +35,7 @@
 
 pub mod cli;
 pub mod config;
+pub mod copilot;
 pub mod kube;
 pub mod network;
 pub mod output;
@@ -1557,6 +1558,51 @@ pub async fn run(mut cli: Cli) -> Result<()> {
 
         Commands::Doctor => {
             handlers::vm::handle_doctor(&cli.namespace).await?;
+        }
+
+        Commands::Ai { action, query } => {
+            use cli::AiCommands;
+            match action {
+                Some(AiCommands::Doctor { name }) => {
+                    handlers::copilot::handle_ai_doctor(&name, &cli.namespace, "text").await?;
+                }
+                Some(AiCommands::Scheduling { name }) => {
+                    handlers::copilot::handle_ai_scheduling(&name, &cli.namespace, "text").await?;
+                }
+                Some(AiCommands::Explain { message }) => {
+                    handlers::copilot::handle_ai_explain(&message, &cli.namespace).await?;
+                }
+                Some(AiCommands::Yaml {
+                    name,
+                    template,
+                    cpus,
+                    memory,
+                    disk,
+                    output,
+                }) => {
+                    handlers::copilot::handle_ai_yaml(
+                        &cli.namespace,
+                        name.as_deref(),
+                        template.as_deref(),
+                        cpus,
+                        memory.as_deref(),
+                        disk.as_deref(),
+                        &output,
+                    )
+                    .await?;
+                }
+                Some(AiCommands::Recommend { description }) => {
+                    handlers::copilot::handle_ai_recommend(&description).await?;
+                }
+                None => {
+                    let q = query.join(" ");
+                    if q.trim().is_empty() {
+                        println!("Usage: vmrogue ai \"<question>\"  or  vmrogue ai doctor <name>");
+                    } else {
+                        handlers::copilot::handle_ai_ask(&q, &cli.namespace, None).await?;
+                    }
+                }
+            }
         }
 
         // ========== GITOPS ==========

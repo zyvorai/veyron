@@ -82,6 +82,51 @@ pub enum CatalogAction {
 }
 
 #[derive(Subcommand, Debug)]
+pub enum AiCommands {
+    /// VM health report (VMRogue Doctor)
+    Doctor {
+        /// VM name
+        name: String,
+    },
+    /// Why is this VM pending / unschedulable?
+    Scheduling {
+        /// VM name
+        name: String,
+    },
+    /// Translate a Kubernetes / KubeVirt error
+    Explain {
+        /// Raw error message
+        message: String,
+    },
+    /// Generate VirtualMachine YAML with cluster validation
+    Yaml {
+        /// VM name
+        #[arg(long)]
+        name: Option<String>,
+        /// Template (e.g. windows-2022, ubuntu-22.04)
+        #[arg(long)]
+        template: Option<String>,
+        /// CPU cores
+        #[arg(long)]
+        cpus: Option<u32>,
+        /// Memory (e.g. 32Gi)
+        #[arg(long)]
+        memory: Option<String>,
+        /// Root disk size
+        #[arg(long)]
+        disk: Option<String>,
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Recommend a VM profile from workload description
+    Recommend {
+        /// Workload description
+        description: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// Create a new VM
     Create {
@@ -2302,6 +2347,16 @@ pub enum Commands {
     /// Diagnose environment and connectivity
     #[command(name = "doctor", visible_alias = "doc")]
     Doctor,
+
+    /// AI copilot — VM doctor, scheduling, YAML, error explain (v1)
+    #[command(name = "ai", visible_alias = "copilot")]
+    Ai {
+        #[command(subcommand)]
+        action: Option<AiCommands>,
+        /// Natural-language question when no subcommand is used
+        #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
+        query: Vec<String>,
+    },
 
     // ========== GITOPS ==========
     /// Export all VMs as VMRogueVM CRD manifests to a directory
