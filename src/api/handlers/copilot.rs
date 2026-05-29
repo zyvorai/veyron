@@ -13,9 +13,11 @@ use crate::api::http_server::web::SharedState;
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, BlueprintSaveRequest, BlueprintSaveResponse,
     GitOpsExportRequest, GitOpsExportResponse, backup_advisor, copilot_ask, cost_advisor, cost_advisor_vm,
-    export_gitops,
-    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, recommend_template, save_blueprint,
-    scheduling_explainer, security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor,
+    export_gitops, forecast_advisor, gitops_advisor, integrations_advisor,
+    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, performance_advisor,
+    recommend_template, save_blueprint,
+    scheduling_explainer, scheduling_fleet_advisor, security_sentinel, security_sentinel_fleet,
+    storage_doctor, vm_doctor,
     yaml_preview,
 };
 
@@ -65,6 +67,11 @@ pub fn router(state: SharedState) -> Router {
             get(copilot_security_handler),
         )
         .route("/experience/copilot/security", get(copilot_security_fleet_handler))
+        .route("/experience/copilot/performance", get(copilot_performance_handler))
+        .route("/experience/copilot/gitops", get(copilot_gitops_handler))
+        .route("/experience/copilot/forecast", get(copilot_forecast_handler))
+        .route("/experience/copilot/integrations", get(copilot_integrations_handler))
+        .route("/experience/copilot/scheduling", get(copilot_scheduling_fleet_handler))
         .with_state(state)
 }
 
@@ -274,4 +281,61 @@ async fn copilot_security_fleet_handler(
     };
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     Json(finalize_copilot(security_sentinel_fleet(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_performance_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(performance_advisor(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_gitops_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(gitops_advisor(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_forecast_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(forecast_advisor(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_integrations_handler() -> Json<CopilotResponse> {
+    Json(finalize_copilot(integrations_advisor().await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_scheduling_fleet_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(scheduling_fleet_advisor(&client, &scope).await).await)
 }

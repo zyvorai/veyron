@@ -161,6 +161,36 @@ pub enum AiCommands {
         #[arg(long)]
         name: Option<String>,
     },
+    /// Fleet CPU/memory hotspots
+    Performance {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// GitOps repos, drift, and Argo/Flux presence
+    Gitops {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Heuristic 30-day capacity forecast
+    Forecast {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Optional observability / FinOps backend wiring
+    Integrations {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Fleet scheduling pressure (pending VMs)
+    Pending {
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]

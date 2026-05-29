@@ -13,12 +13,47 @@ pub enum CopilotIntent {
     GuestFilesystem,
     StorageDoctor,
     SecuritySentinel,
+    PerformanceAdvisor,
+    GitopsAdvisor,
+    ForecastAdvisor,
+    IntegrationsAdvisor,
     ErrorExplainer,
     GeneralHelp,
 }
 
 pub fn detect_intent(query: &str) -> CopilotIntent {
     let lower = query.to_lowercase();
+
+    if lower.contains("integrations advisor")
+        || lower.contains("which integrations")
+        || (lower.contains("integration") && lower.contains("configured"))
+        || lower.contains("optional backends")
+    {
+        return CopilotIntent::IntegrationsAdvisor;
+    }
+
+    if lower.contains("forecast advisor")
+        || lower.contains("capacity forecast")
+        || lower.contains("capacity growth")
+        || (lower.contains("forecast") && (lower.contains("capacity") || lower.contains("30-day")))
+    {
+        return CopilotIntent::ForecastAdvisor;
+    }
+
+    if lower.contains("gitops advisor")
+        || lower.contains("gitops drift")
+        || (lower.contains("gitops") && (lower.contains("drift") || lower.contains("argo") || lower.contains("flux")))
+    {
+        return CopilotIntent::GitopsAdvisor;
+    }
+
+    if lower.contains("performance advisor")
+        || lower.contains("performance hotspot")
+        || (lower.contains("high") && (lower.contains("cpu") || lower.contains("memory")))
+        || (lower.contains("hot") && lower.contains("vm"))
+    {
+        return CopilotIntent::PerformanceAdvisor;
+    }
 
     if lower.contains("backup") || lower.contains("velero") || lower.contains("unprotected") {
         return CopilotIntent::BackupAdvisor;

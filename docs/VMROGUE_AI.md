@@ -120,6 +120,18 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 2. ~~**GitOps Generator** — export kustomize trees from Copilot previews~~ **Done** — `POST /experience/copilot/gitops/export`
 3. ~~**Guest filesystem metrics** — guest-exec or Prometheus guest exporters~~ **Done** — `GET /api/v1/vms/:ns/:name/guest-filesystem`, Copilot `GET /experience/copilot/guest/:ns/:name/filesystem`, VM detail panel
 
+## Copilot Expansion Pack (fleet advisors)
+
+| Module | API | CLI |
+|--------|-----|-----|
+| Performance Advisor | `GET /experience/copilot/performance` | `vmrogue ai performance` |
+| GitOps Advisor | `GET /experience/copilot/gitops` | `vmrogue ai gitops` |
+| Forecast Advisor | `GET /experience/copilot/forecast` | `vmrogue ai forecast` |
+| Integrations Advisor | `GET /experience/copilot/integrations` | `vmrogue ai integrations` |
+| Scheduling Fleet | `GET /experience/copilot/scheduling` | `vmrogue ai pending` |
+
+Natural-language routing via `POST /experience/copilot/ask` recognizes the same intents. Dashboard chips live on Monitoring, GitOps, Forecasting, Integrations, and Scheduling pages.
+
 ## Future (not scheduled)
 
 - ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`
