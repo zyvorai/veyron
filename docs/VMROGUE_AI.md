@@ -122,9 +122,9 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 ## Future (not scheduled)
 
+- ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`
 - ~~**Cost Copilot** — OpenCost integration for per-VM spend narratives~~ **Done** — `GET /experience/copilot/cost`, `vmrogue ai cost`
-- **Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set
-- **Blueprint Studio UI** — edit saved `VMRogueBlueprint` CRDs from the dashboard
+- ~~**Blueprint Studio UI** — edit saved `VMRogueBlueprint` CRDs from the dashboard~~ **Done** — Platform → Blueprint Studio, `PUT /api/v1/crds/blueprints/:ns/:name`
 
 ## Related docs
 

@@ -5,6 +5,24 @@
 pub mod converter;
 pub mod guest_filesystem;
 pub mod guest_os;
+#[cfg(feature = "web")]
+pub mod guest_prometheus;
+#[cfg(not(feature = "web"))]
+pub mod guest_prometheus {
+    use super::guest_filesystem::GuestFilesystemMount;
+    use super::types::VirtualMachine;
+    use kube::Client;
+
+    pub async fn prometheus_storage_mounts_for_vm(
+        _client: &Client,
+        _prom_base: &str,
+        _namespace: &str,
+        _vm_name: &str,
+        _vm: &VirtualMachine,
+    ) -> (Vec<GuestFilesystemMount>, Vec<String>) {
+        (Vec::new(), Vec::new())
+    }
+}
 pub mod kubevirt_subresources;
 pub mod status;
 pub mod types;
@@ -1227,23 +1245,84 @@ impl KubeClient {
         .await
     }
 
-    /// In-guest filesystem usage via QEMU guest-agent (`df` / PowerShell).
+    /// In-guest filesystem usage via QEMU guest-agent (`df` / PowerShell) with optional Prometheus enrichment.
     pub async fn guest_filesystem_metrics(
         &self,
         namespace: &str,
         vm_name: &str,
     ) -> Result<guest_filesystem::GuestFilesystemResponse> {
-        let (vmi_name, vmi_json, vm_json) =
-            self.guest_agent_rdp_context(namespace, vm_name).await?;
-        guest_filesystem::collect_guest_filesystem(
-            self.client.clone(),
-            namespace,
-            vm_name,
-            &vmi_name,
-            &vm_json,
-            &vmi_json,
-        )
-        .await
+        let vm = self.get_vm(namespace, vm_name).await?;
+        let vmi_name = self
+            .resolve_vmi_name_for_console(namespace, vm_name)
+            .await
+            .unwrap_or_else(|_| vm_name.to_string());
+        let vmi_json = self
+            .get_vmi(namespace, &vmi_name)
+            .await
+            .ok()
+            .and_then(|v| serde_json::to_value(&v).ok());
+        let vm_json = serde_json::to_value(&vm)?;
+        let agent_up = vmi_json
+            .as_ref()
+            .is_some_and(|j| windows_rdp::vmi_guest_agent_connected(j));
+
+        let mut prom_mounts = Vec::new();
+        let mut prom_sources = Vec::new();
+        if let Ok(prom_url) = std::env::var("VMROGUE_PROMETHEUS_URL") {
+            if !prom_url.trim().is_empty() {
+                let (m, s) = guest_prometheus::prometheus_storage_mounts_for_vm(
+                    &self.client,
+                    prom_url.trim(),
+                    namespace,
+                    vm_name,
+                    &vm,
+                )
+                .await;
+                prom_mounts = m;
+                prom_sources = s;
+            }
+        }
+
+        if agent_up {
+            let vmi_j = vmi_json.as_ref().unwrap_or(&serde_json::Value::Null);
+            let mut resp = guest_filesystem::collect_guest_filesystem(
+                self.client.clone(),
+                namespace,
+                vm_name,
+                &vmi_name,
+                &vm_json,
+                vmi_j,
+            )
+            .await?;
+            resp.prometheus_mounts = prom_mounts.clone();
+            resp.sources.extend(prom_sources);
+            return Ok(resp);
+        }
+
+        if !prom_mounts.is_empty() {
+            let family =
+                guest_os::detect_guest_os_family(Some(&vm_json), vmi_json.as_ref());
+            return Ok(guest_filesystem::GuestFilesystemResponse {
+                namespace: namespace.to_string(),
+                vm_name: vm_name.to_string(),
+                vmi_name,
+                guest_agent_connected: false,
+                os_family: family.as_str().to_string(),
+                mounts: prom_mounts.clone(),
+                prometheus_mounts: prom_mounts,
+                sources: prom_sources,
+                message: Some(
+                    "Guest agent not connected — showing Prometheus PVC / exporter metrics only."
+                        .into(),
+                ),
+                exit_code: None,
+                stderr: None,
+            });
+        }
+
+        anyhow::bail!(
+            "QEMU guest agent is not connected and no Prometheus storage metrics were found (set VMROGUE_PROMETHEUS_URL)"
+        );
     }
 
     /// Hotplug a PVC volume onto a VM (`virtctl addvolume`).

@@ -25,7 +25,7 @@ use super::namespace_scope::{self, DashboardNamespaceQuery};
 #[cfg(feature = "web")]
 use kube::{
     Api,
-    api::{DeleteParams, PostParams},
+    api::{DeleteParams, Patch, PatchParams, PostParams},
 };
 
 use crate::operator_crds::*;
@@ -90,6 +90,20 @@ pub struct VMRogueBlueprintSummary {
     pub created_at: String,
 }
 
+/// Full VMRogueBlueprint for Blueprint Studio editing.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VMRogueBlueprintDetail {
+    pub name: String,
+    pub namespace: String,
+    pub description: Option<String>,
+    pub vm_count: usize,
+    pub phase: Option<String>,
+    pub ready_vms: Option<i32>,
+    pub tags: Vec<String>,
+    pub created_at: String,
+    pub spec: VMRogueBlueprintSpec,
+}
+
 /// VMRoguePolicy summary.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VMRoguePolicySummary {
@@ -146,7 +160,9 @@ pub fn router(state: SharedState) -> Router {
         .route("/crds/blueprints", post(create_blueprint))
         .route(
             "/crds/blueprints/{ns}/{name}",
-            get(get_blueprint).delete(delete_blueprint),
+            get(get_blueprint)
+                .put(update_blueprint)
+                .delete(delete_blueprint),
         )
         // VMRoguePolicy endpoints
         .route("/crds/policies", get(list_policies))
@@ -324,6 +340,43 @@ async fn delete_vmrogue_vm(
 
 // ── VMRogueBlueprint handlers ──────────────────────────────────
 
+fn blueprint_detail(bp: &VMRogueBlueprint, ns: &str) -> VMRogueBlueprintDetail {
+    VMRogueBlueprintDetail {
+        name: bp.metadata.name.clone().unwrap_or_default(),
+        namespace: ns.to_string(),
+        description: bp.spec.description.clone(),
+        vm_count: bp.spec.vms.len(),
+        phase: bp.status.as_ref().and_then(|s| s.phase.clone()),
+        ready_vms: bp.status.as_ref().and_then(|s| s.ready_vms),
+        tags: bp.spec.tags.clone(),
+        created_at: bp
+            .metadata
+            .creation_timestamp
+            .as_ref()
+            .map(|t| t.0.to_rfc3339())
+            .unwrap_or_default(),
+        spec: bp.spec.clone(),
+    }
+}
+
+fn blueprint_summary(bp: &VMRogueBlueprint, ns: &str) -> VMRogueBlueprintSummary {
+    VMRogueBlueprintSummary {
+        name: bp.metadata.name.clone().unwrap_or_default(),
+        namespace: ns.to_string(),
+        description: bp.spec.description.clone(),
+        vm_count: bp.spec.vms.len(),
+        phase: bp.status.as_ref().and_then(|s| s.phase.clone()),
+        ready_vms: bp.status.as_ref().and_then(|s| s.ready_vms),
+        tags: bp.spec.tags.clone(),
+        created_at: bp
+            .metadata
+            .creation_timestamp
+            .as_ref()
+            .map(|t| t.0.to_rfc3339())
+            .unwrap_or_default(),
+    }
+}
+
 #[cfg(feature = "web")]
 async fn list_blueprints(
     State(state): State<SharedState>,
@@ -337,20 +390,8 @@ async fn list_blueprints(
         Ok(list) => {
             let items: Vec<VMRogueBlueprintSummary> = list
                 .iter()
-                .map(|bp| VMRogueBlueprintSummary {
-                    name: bp.metadata.name.clone().unwrap_or_default(),
-                    namespace: bp.metadata.namespace.clone().unwrap_or_default(),
-                    description: bp.spec.description.clone(),
-                    vm_count: bp.spec.vms.len(),
-                    phase: bp.status.as_ref().and_then(|s| s.phase.clone()),
-                    ready_vms: bp.status.as_ref().and_then(|s| s.ready_vms),
-                    tags: bp.spec.tags.clone(),
-                    created_at: bp
-                        .metadata
-                        .creation_timestamp
-                        .as_ref()
-                        .map(|t| t.0.to_rfc3339())
-                        .unwrap_or_default(),
+                .map(|bp| {
+                    blueprint_summary(bp, bp.metadata.namespace.as_deref().unwrap_or("default"))
                 })
                 .collect();
             let total = items.len();
@@ -368,39 +409,56 @@ async fn list_blueprints(
 async fn get_blueprint(
     State(state): State<SharedState>,
     Path((ns, name)): Path<(String, String)>,
-) -> Result<Json<VMRogueBlueprintSummary>, StatusCode> {
+) -> Result<Json<VMRogueBlueprintDetail>, StatusCode> {
     let s = state.read().await;
     let api: Api<VMRogueBlueprint> = Api::namespaced(s.client().client().clone(), &ns);
     match api.get(&name).await {
-        Ok(bp) => Ok(Json(VMRogueBlueprintSummary {
-            name: bp.metadata.name.clone().unwrap_or_default(),
-            namespace: ns,
-            description: bp.spec.description.clone(),
-            vm_count: bp.spec.vms.len(),
-            phase: bp.status.as_ref().and_then(|s| s.phase.clone()),
-            ready_vms: bp.status.as_ref().and_then(|s| s.ready_vms),
-            tags: bp.spec.tags.clone(),
-            created_at: bp
-                .metadata
-                .creation_timestamp
-                .as_ref()
-                .map(|t| t.0.to_rfc3339())
-                .unwrap_or_default(),
-        })),
+        Ok(bp) => Ok(Json(blueprint_detail(&bp, &ns))),
         Err(_) => Err(StatusCode::NOT_FOUND),
     }
 }
 
 #[cfg(feature = "web")]
+async fn update_blueprint(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Json(spec): Json<VMRogueBlueprintSpec>,
+) -> Result<Json<VMRogueBlueprintDetail>, StatusCode> {
+    let s = state.read().await;
+    let api: Api<VMRogueBlueprint> = Api::namespaced(s.client().client().clone(), &ns);
+    let patch = Patch::Merge(serde_json::json!({ "spec": spec }));
+    match api
+        .patch(&name, &PatchParams::apply("vmrogue"), &patch)
+        .await
+    {
+        Ok(bp) => Ok(Json(blueprint_detail(&bp, &ns))),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
+
+#[cfg(feature = "web")]
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateBlueprintRequest {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(flatten)]
+    pub spec: VMRogueBlueprintSpec,
+}
+
+#[cfg(feature = "web")]
 async fn create_blueprint(
     State(state): State<SharedState>,
-    Json(spec): Json<VMRogueBlueprintSpec>,
+    Json(body): Json<CreateBlueprintRequest>,
 ) -> Result<Json<VMRogueBlueprintSummary>, StatusCode> {
     let s = state.read().await;
     let ns = &s.namespace;
     let api: Api<VMRogueBlueprint> = Api::namespaced(s.client().client().clone(), ns);
 
-    let name = format!("bp-{}", random_suffix());
+    let name = body
+        .name
+        .filter(|n| !n.trim().is_empty())
+        .unwrap_or_else(|| format!("bp-{}", random_suffix()));
+    let spec = body.spec;
     let bp = VMRogueBlueprint::new(&name, spec.clone());
     match api.create(&PostParams::default(), &bp).await {
         Ok(created) => Ok(Json(VMRogueBlueprintSummary {

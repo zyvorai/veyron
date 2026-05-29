@@ -33,6 +33,10 @@ pub struct GuestFilesystemResponse {
     pub guest_agent_connected: bool,
     pub os_family: String,
     pub mounts: Vec<GuestFilesystemMount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub prometheus_mounts: Vec<GuestFilesystemMount>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sources: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -227,6 +231,8 @@ pub async fn collect_guest_filesystem(
         guest_agent_connected: true,
         os_family: family.as_str().to_string(),
         mounts,
+        prometheus_mounts: Vec::new(),
+        sources: vec!["guest-exec".into()],
         message,
         exit_code,
         stderr,
