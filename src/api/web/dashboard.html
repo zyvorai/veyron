@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260529f">
+<meta name="vmrogue-dashboard-rev" content="20260530a">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260529f';
+  var DASH_REV = '20260530a';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -3253,7 +3253,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260529f';
+window.__VMROGUE_DASH_REV = '20260530a';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -3958,7 +3958,7 @@ function renderFinderPins() {
   if (!pins.length) { sec.style.display = 'none'; return; }
   sec.style.display = '';
   body.innerHTML = pins.map(p =>
-    '<button type="button" class="cloudos-finder-item" data-page="' + esc(p.id) + '" onclick="finderNavigate(' + JSON.stringify(p.id) + ')">' +
+    '<button type="button" class="cloudos-finder-item" data-page="' + esc(p.id) + '" ' + onHandler('finderNavigate(' + jsArgs(p.id) + ')') + '>' +
       '<span class="fi-icon">★</span>' + esc(p.label) + '</button>'
   ).join('');
 }
@@ -4133,11 +4133,11 @@ async function fetchAppStore() {
     const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
     grid.innerHTML = appStoreCache.map(t => {
       const em = icon[t.os_family] || '◫';
-      return '<div class="app-store-card" onclick="forgeFromTemplate(' + JSON.stringify(t.id) + ')">' +
+      return '<div class="app-store-card" ' + onHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>' +
         '<div class="app-store-icon">' + em + '</div>' +
         '<div class="app-store-title">' + esc(t.title) + '</div>' +
         '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-        '<button type="button" class="btn btn-sm btn-start" onclick="event.stopPropagation();forgeFromTemplate(' + JSON.stringify(t.id) + ')">Get</button>' +
+        '<button type="button" class="btn btn-sm btn-start" ' + onHandler('event.stopPropagation();forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
       '</div>';
     }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
   } catch (e) {
@@ -4190,20 +4190,20 @@ function vmCard(vm, showActions) {
   const icon = osFamilyIcon(family);
   const winHint = isRunning && isWindowsVm(vm) ? '<span class="vm-rdp-hint" title="Use RDP expose for Windows">RDP</span>' : '';
   const primary = isRunning
-    ? '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openVncConsole(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Open</button>' + winHint
-    : '<button type="button" class="btn btn-start btn-sm" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('start') + ')">Start</button>';
+    ? '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' + winHint
+    : '<button type="button" class="btn btn-start btn-sm" ' + onHandler('event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
   const stopBtn = isRunning && showActions
-    ? '<button type="button" class="btn btn-sm btn-stop" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('stop') + ')">Stop</button>'
+    ? '<button type="button" class="btn btn-sm btn-stop" ' + onHandler('event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
     : '';
   const pendingHint = vm.status === 'Pending'
-    ? '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotScheduling(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Scheduling</button>'
+    ? '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openCopilotScheduling(' + jsArgs(ns, vm.name) + ')') + '>Scheduling</button>'
     : '';
   const actions = showActions ? primary + stopBtn + pendingHint +
-    '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotDoctor(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Diagnose</button>' +
-    '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotNetwork(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">Network</button>' +
-    '<button type="button" class="btn btn-sm btn-restart" onclick="event.stopPropagation();vmAction(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ',' + JSON.stringify('restart') + ')">↻</button>' +
-    '<button type="button" class="btn btn-sm btn-delete" onclick="event.stopPropagation();vmDelete(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">×</button>' : '';
-  return '<div class="vm-card" onclick="toggleVmDetail(' + JSON.stringify(ns) + ',' + JSON.stringify(vm.name) + ')">' +
+    '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
+    '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
+    '<button type="button" class="btn btn-sm btn-restart" ' + onHandler('event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
+    '<button type="button" class="btn btn-sm btn-delete" ' + onHandler('event.stopPropagation();vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
+  return '<div class="vm-card" ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
     '<span class="vm-workspace-chip">workspace · ' + esc(ns) + '</span>' +
@@ -4275,7 +4275,7 @@ function vmSshBlock(vm, showActions) {
       '<div class="ssh-block-title"><strong>SSH</strong> <span style="font-weight:400;opacity:.8">(KubeVirt / virtctl)</span></div>' +
       '<div style="margin-top:6px;line-height:1.45">Guest IP not reported on the VMI yet. On any machine with <code>kubectl</code> and <code>virtctl</code>:</div>' +
       '<div style="margin-top:6px"><code>' + esc(virtFallback) + '</code>' +
-      (showActions ? ' <button type="button" class="btn-mini" onclick="event.stopPropagation();copyToClipboard(' + JSON.stringify(virtFallback) + ')">Copy SSH command</button>' : '') +
+      (showActions ? ' <button type="button" class="btn-mini" ' + onHandler('event.stopPropagation();copyToClipboard(' + jsArgs(virtFallback) + ')') + '>Copy SSH command</button>' : '') +
       '</div></div>';
   }
   const u = guessSshUser(vm.name);
@@ -4294,8 +4294,8 @@ function vmSshBlock(vm, showActions) {
     '<div style="margin-top:8px;opacity:.82;font-size:.95em;line-height:1.45"><strong>A</strong> works only if your machine can route to <code>' + esc(ip) + '</code> (same LAN, VPN, load balancer, etc.). <strong>B</strong> works wherever <code>kubectl</code> works; install the KubeVirt <code>virtctl</code> client.</div>';
   if (showActions) {
     html += '<div class="ssh-actions">' +
-      '<button type="button" class="btn-mini" onclick="event.stopPropagation();copyToClipboard(' + JSON.stringify(ssh) + ')">Copy SSH (TCP)</button>' +
-      '<button type="button" class="btn-mini" onclick="event.stopPropagation();copyToClipboard(' + JSON.stringify(virt) + ')">Copy SSH (virtctl)</button>' +
+      '<button type="button" class="btn-mini" ' + onHandler('event.stopPropagation();copyToClipboard(' + jsArgs(ssh) + ')') + '>Copy SSH (TCP)</button>' +
+      '<button type="button" class="btn-mini" ' + onHandler('event.stopPropagation();copyToClipboard(' + jsArgs(virt) + ')') + '>Copy SSH (virtctl)</button>' +
       '</div>';
   }
   html += '</div>';
@@ -4387,7 +4387,7 @@ function renderDatacenterHome(data) {
   }
   if (grid && data.action_cards) {
     grid.innerHTML = data.action_cards.map(card =>
-      '<button type="button" class="dc-action-card" onclick="runExperienceAction(' + JSON.stringify(card.action) + ')">' +
+      '<button type="button" class="dc-action-card" ' + onHandler('runExperienceAction(' + jsArgs(card.action) + ')') + '>' +
         '<div class="dc-action-title">' + esc(card.title) + '</div>' +
         '<div class="dc-action-sub">' + esc(card.subtitle) + '</div>' +
       '</button>'
@@ -4571,14 +4571,14 @@ function renderCopilotResultInto(el, data) {
     data.actions.forEach(a => {
       const page = a.page || '';
       if (a.action === 'navigate' && page) {
-        html += '<button type="button" class="btn btn-sm" onclick="closeCopilot();navigate(' + JSON.stringify(page) + ')">' + esc(a.label) + '</button>';
+        html += '<button type="button" class="btn btn-sm" ' + onHandler('closeCopilot();navigate(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'open_vm' && page) {
         const parts = page.split(':');
-        html += '<button type="button" class="btn btn-sm" onclick="closeCopilot();navigate(\'vms\');setTimeout(function(){toggleVmDetail(' + JSON.stringify(parts[0]) + ',' + JSON.stringify(parts[1] || '') + ');},400)">' + esc(a.label) + '</button>';
+        html += '<button type="button" class="btn btn-sm" ' + onHandler('closeCopilot();navigate(\'vms\');setTimeout(function(){toggleVmDetail(' + jsArgs(parts[0], parts[1] || '') + ');},400)') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'forge_vm') {
-        html += '<button type="button" class="btn btn-sm btn-start" onclick="closeCopilot();openCreateModal()">' + esc(a.label) + '</button>';
+        html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('closeCopilot();openCreateModal()') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'copy_kubectl' && page) {
-        html += '<button type="button" class="btn btn-sm" onclick="copyToClipboard(' + JSON.stringify(page) + ')">' + esc(a.label) + '</button>';
+        html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
       }
     });
     html += '</div>';
@@ -4734,8 +4734,7 @@ function showFixItModal(data) {
   const actions = document.getElementById('fixit-actions');
   actions.innerHTML = (data.fixes || []).map(fix => {
     const page = fix.page ? fix.page : '';
-    return '<button type="button" class="btn btn-sm btn-restart" onclick="runFixAction(' +
-      JSON.stringify(fix.action) + ',' + JSON.stringify(page) + ',' + JSON.stringify(fix.label) + ')">' +
+    return '<button type="button" class="btn btn-sm btn-restart" ' + onHandler('runFixAction(' + jsArgs(fix.action, page, fix.label) + ')') + '>' +
       esc(fix.label) + '</button>';
   }).join('');
   modal.classList.add('open');
@@ -4935,8 +4934,8 @@ async function fetchSnapshots() {
     el.innerHTML = snaps.map(s => {
       const ready = s.ready;
       return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
-        (ready ? '<button class="btn btn-restart" onclick="restoreSnapshot(' + JSON.stringify(s.namespace || 'default') + ',' + JSON.stringify(s.name) + ')">Restore</button>' : '') +
-        '<button class="btn btn-delete" onclick="deleteSnapshot(' + JSON.stringify(s.namespace || 'default') + ',' + JSON.stringify(s.name) + ')">&#10005;</button>' +
+        (ready ? '<button class="btn btn-restart" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
+        '<button class="btn btn-delete" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
         '</div></div>';
     }).join('');
   } catch(e) {
@@ -4956,7 +4955,7 @@ async function fetchSchedules() {
       el.innerHTML = '<div class="empty-state"><p>No schedules — add one to automate snapshots.</p></div>';
       return;
     }
-    el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button class="btn btn-delete" onclick="deleteSchedule('+JSON.stringify(s.namespace||'default')+','+JSON.stringify(s.name||'')+')">Delete</button></div></div>').join('');
+    el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button class="btn btn-delete" ' + onHandler('deleteSchedule(' + jsArgs(s.namespace || 'default', s.name || '') + ')') + '>Delete</button></div></div>').join('');
   } catch(e) {
     el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">'+esc(e.message)+'</p></div>';
   }
@@ -5051,6 +5050,13 @@ function setCapBanner(id, ctx) {
   if (el) el.innerHTML = vmrogueFeatureBanner(ctx);
 }
 function esc(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+/** Build comma-separated JSON.stringify args for inline handlers (use inside onclick='…'). */
+function jsArgs() {
+  return Array.from(arguments).map(a => JSON.stringify(a)).join(',');
+}
+function onHandler(expr) {
+  return 'onclick=\'' + expr + '\'';
+}
 function updateHealth(ok, msg, warn) {
   const isWarn = warn === true;
   const dot = document.getElementById('health-dot');
