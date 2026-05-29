@@ -5,6 +5,8 @@ use std::collections::{HashMap, HashSet};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 
 use super::{CopilotAction, CopilotResponse};
+use crate::kube::guest_filesystem::format_mount_evidence;
+use crate::kube::windows_rdp::vmi_guest_agent_connected;
 use crate::kube::KubeClient;
 use crate::kube::types::VirtualMachine;
 use crate::snapshots::SnapshotManager;
@@ -123,6 +125,13 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
         );
     }
 
+    if prom_usage.is_empty() {
+        r.evidence.push(
+            "In-guest filesystem: GET /api/v1/vms/:ns/:name/guest-filesystem (guest agent required).".into(),
+        );
+        sample_guest_filesystem(client, &vms, &mut r).await;
+    }
+
     r.actions = vec![
         CopilotAction {
             label: "Open Storage".into(),
@@ -141,6 +150,58 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
         },
     ];
     r
+}
+
+async fn sample_guest_filesystem(
+    client: &KubeClient,
+    vms: &[VirtualMachine],
+    r: &mut CopilotResponse,
+) {
+    use serde_json::to_value;
+
+    for vm in vms
+        .iter()
+        .filter(|v| {
+            v.status
+                .as_ref()
+                .and_then(|s| s.printable_status.as_deref())
+                == Some("Running")
+        })
+        .take(2)
+    {
+        let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+        let name = vm.metadata.name.as_deref().unwrap_or("");
+        if name.is_empty() {
+            continue;
+        }
+        let Ok(vmi) = client.get_vmi(ns, name).await else {
+            continue;
+        };
+        let vmi_json = to_value(&vmi).ok();
+        if !vmi_json
+            .as_ref()
+            .is_some_and(|j| vmi_guest_agent_connected(j))
+        {
+            continue;
+        }
+        let vm_json = to_value(vm).ok();
+        if let Ok(resp) = crate::kube::guest_filesystem::collect_guest_filesystem(
+            client.client().clone(),
+            ns,
+            name,
+            vmi.metadata.name.as_deref().unwrap_or(name),
+            vm_json.as_ref().unwrap_or(&serde_json::Value::Null),
+            vmi_json.as_ref().unwrap_or(&serde_json::Value::Null),
+        )
+        .await
+        {
+            for m in resp.mounts.iter().take(4) {
+                r.evidence
+                    .push(format!("Guest FS {ns}/{name}: {}", format_mount_evidence(m)));
+            }
+            return;
+        }
+    }
 }
 
 fn vm_bound_pvc_names(vms: &[VirtualMachine]) -> HashSet<String> {

@@ -3,6 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 pub mod converter;
+pub mod guest_filesystem;
 pub mod guest_os;
 pub mod kubevirt_subresources;
 pub mod status;
@@ -1222,6 +1223,25 @@ impl KubeClient {
             &vmi_json,
             &vm_json,
             false,
+        )
+        .await
+    }
+
+    /// In-guest filesystem usage via QEMU guest-agent (`df` / PowerShell).
+    pub async fn guest_filesystem_metrics(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<guest_filesystem::GuestFilesystemResponse> {
+        let (vmi_name, vmi_json, vm_json) =
+            self.guest_agent_rdp_context(namespace, vm_name).await?;
+        guest_filesystem::collect_guest_filesystem(
+            self.client.clone(),
+            namespace,
+            vm_name,
+            &vmi_name,
+            &vm_json,
+            &vmi_json,
         )
         .await
     }

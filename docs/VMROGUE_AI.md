@@ -46,6 +46,7 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 | `GET /experience/copilot/network/:ns/:name` | Network Lens — per-VM posture |
 
 | `GET /experience/copilot/guest/:ns/:name` | Guest Inspector |
+| `GET /experience/copilot/guest/:ns/:name/filesystem` | Guest filesystem (guest-exec) |
 | `GET /experience/copilot/storage` | Storage Doctor |
 | `GET /experience/copilot/security/:ns/:name` | Security Sentinel (per VM) |
 | `GET /experience/copilot/security` | Security Sentinel (fleet) |
@@ -112,7 +113,7 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 1. ~~**Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML~~ **Done** — `POST /experience/copilot/blueprint/save`
 2. ~~**GitOps Generator** — export kustomize trees from Copilot previews~~ **Done** — `POST /experience/copilot/gitops/export`
-3. **Guest filesystem metrics** — guest-exec or Prometheus guest exporters
+3. ~~**Guest filesystem metrics** — guest-exec or Prometheus guest exporters~~ **Done** — `GET /api/v1/vms/:ns/:name/guest-filesystem`, Copilot `GET /experience/copilot/guest/:ns/:name/filesystem`, VM detail panel
 
 ## Related docs
 

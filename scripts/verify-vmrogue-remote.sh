@@ -141,7 +141,8 @@ else
     FAIL=$((FAIL + 1))
 fi
 loc=$(curl -skI --connect-timeout 15 --max-time 45 "${BASE}/" | tr -d '\r' | awk -F': ' 'tolower($1)=="location"{print $2; exit}')
-if [[ "${loc}" == */dashboard/* || "${loc}" == */dashboard ]]; then
+loc_path="${loc%%\?*}"
+if [[ "${loc_path}" == */dashboard || "${loc_path}" == */dashboard/ ]]; then
     echo "  ✔ GET / → ${loc}"
 else
     echo "  ✗ GET / root redirect (got: ${loc:-none})"
@@ -236,6 +237,8 @@ else
 fi
 check_json_grep "GET /api/v1/experience/copilot/backup" \
     "${BASE}/api/v1/experience/copilot/backup?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/guest/filesystem" \
+    "${BASE}/api/v1/experience/copilot/guest/default/nonexistent-vm/filesystem" '"module"'
 gitops_body=$(curl -skS --connect-timeout 15 --max-time 45 \
     -H "X-API-Key: ${KEY}" -H "Content-Type: application/json" \
     -d '{"yaml":"apiVersion: kubevirt.io/v1\nkind: VirtualMachine\n","app_name":"verify","namespace":"default"}' \

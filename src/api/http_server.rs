@@ -822,6 +822,10 @@ pub mod web {
                 post(guest_agent_disable_rdp_handler),
             )
             .route(
+                "/api/v1/vms/:ns/:name/guest-filesystem",
+                get(guest_filesystem_handler),
+            )
+            .route(
                 "/api/v1/vms/:ns/:name",
                 axum::routing::put(update_vm_handler),
             )
@@ -1057,7 +1061,7 @@ pub mod web {
     }
 
     async fn root_redirect() -> axum::response::Redirect {
-        axum::response::Redirect::permanent("/dashboard?dash=20260530d")
+        axum::response::Redirect::permanent("/dashboard?dash=20260530e")
     }
 
     async fn dashboard_handler() -> impl IntoResponse {
@@ -1892,6 +1896,29 @@ pub mod web {
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_DISABLE_RDP_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_filesystem_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_filesystem_metrics(&ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(
+                    HttpMethod::GET,
+                    "/api/v1/vms/:ns/:name/guest-filesystem",
+                );
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_FILESYSTEM_FAILED", &sanitize_error(&e)),
         }
     }
 
