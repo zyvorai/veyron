@@ -124,6 +124,13 @@ pub enum AiCommands {
         /// Workload description
         description: String,
     },
+    /// Fleet backup coverage (snapshots, schedules, Velero)
+    Backup,
+    /// Per-VM network posture
+    Network {
+        /// VM name
+        name: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]

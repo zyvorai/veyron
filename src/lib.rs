@@ -1594,6 +1594,12 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 Some(AiCommands::Recommend { description }) => {
                     handlers::copilot::handle_ai_recommend(&description).await?;
                 }
+                Some(AiCommands::Backup) => {
+                    handlers::copilot::handle_ai_backup(&cli.namespace).await?;
+                }
+                Some(AiCommands::Network { name }) => {
+                    handlers::copilot::handle_ai_network(&name, &cli.namespace).await?;
+                }
                 None => {
                     let q = query.join(" ");
                     if q.trim().is_empty() {

@@ -43,6 +43,8 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 | `GET /experience/copilot/scheduling/:ns/:name` | Scheduling Explainer |
 | `POST /experience/copilot/yaml/preview` | YAML Builder + validation |
 | `POST /experience/copilot/recommend` | Blueprint-style recommendation |
+| `GET /experience/copilot/backup` | Backup Advisor — fleet coverage |
+| `GET /experience/copilot/network/:ns/:name` | Network Lens — per-VM posture |
 
 ### CLI
 
@@ -85,7 +87,9 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 | 3 | AI VM Doctor | **Done** — events, VMI, health score |
 | 4 | AI Scheduling Explainer | **Done** — event-driven reasons + fixes |
 | 5 | AI Migration Advisor | **Partial** — CloudOS migration wizard + scan/plan |
-| 6 | AI Guest Inspector | **Planned** — QEMU guest agent metrics |
+| 6 | AI Backup Advisor | **Done** — snapshot/schedule/Velero coverage |
+| 7 | AI Network Lens | **Done** — interfaces, expose, policies per VM |
+| 8 | AI Guest Inspector | **Planned** — QEMU guest agent metrics |
 
 ## Safety rails (product policy)
 

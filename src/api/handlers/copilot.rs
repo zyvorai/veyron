@@ -11,8 +11,8 @@ use axum::{
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
-    CopilotAskRequest, CopilotResponse, YamlBuildRequest, copilot_ask, recommend_template,
-    scheduling_explainer, vm_doctor, yaml_preview,
+    CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
+    network_lens, recommend_template, scheduling_explainer, vm_doctor, yaml_preview,
 };
 
 #[cfg(feature = "web")]
@@ -29,6 +29,11 @@ pub fn router(state: SharedState) -> Router {
         )
         .route("/experience/copilot/yaml/preview", post(copilot_yaml_handler))
         .route("/experience/copilot/recommend", post(copilot_recommend_handler))
+        .route("/experience/copilot/backup", get(copilot_backup_handler))
+        .route(
+            "/experience/copilot/network/:ns/:name",
+            get(copilot_network_handler),
+        )
         .with_state(state)
 }
 
@@ -99,4 +104,29 @@ struct RecommendRequest {
 #[cfg(feature = "web")]
 async fn copilot_recommend_handler(Json(body): Json<RecommendRequest>) -> Json<CopilotResponse> {
     Json(recommend_template(&body.description))
+}
+
+#[cfg(feature = "web")]
+async fn copilot_backup_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(backup_advisor(&client, &scope).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_network_handler(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Json<CopilotResponse> {
+    let client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    Json(network_lens(&client, &ns, &name).await)
 }

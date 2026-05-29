@@ -139,7 +139,7 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | VM guest health scores | Working | `/experience/fleet/health` pills on cards-first VM grid |
 | CloudOS session / RBAC UI | Working | `/experience/session` hides mutating controls for readonly |
 | CloudOS Locations | Working | Location in top bar; `/experience/locations` |
-| VMRogue Copilot (v1) | Working | `POST /experience/copilot/ask`, CLI `vmrogue ai`, dashboard Copilot modal |
+| VMRogue Copilot (v1) | Working | Doctor, YAML, scheduling, **Backup Advisor**, **Network Lens** |
 | VMRogue Doctor | Working | `GET /experience/copilot/doctor/:ns/:name` |
 | VMRogue YAML Builder | Working | `POST /experience/copilot/yaml/preview` with cluster validation |
 | VMRogue Scheduling Explainer | Working | `GET /experience/copilot/scheduling/:ns/:name` |
