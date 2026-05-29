@@ -11,9 +11,11 @@ use axum::{
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
-    CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
-    finalize_copilot, guest_inspector, network_lens, recommend_template, scheduling_explainer,
-    security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
+    CopilotAskRequest, CopilotResponse, YamlBuildRequest, BlueprintSaveRequest, BlueprintSaveResponse,
+    GitOpsExportRequest, GitOpsExportResponse, backup_advisor, copilot_ask, export_gitops,
+    finalize_copilot, guest_inspector, network_lens, recommend_template, save_blueprint,
+    scheduling_explainer, security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor,
+    yaml_preview,
 };
 
 #[cfg(feature = "web")]
@@ -29,6 +31,14 @@ pub fn router(state: SharedState) -> Router {
             get(copilot_scheduling_handler),
         )
         .route("/experience/copilot/yaml/preview", post(copilot_yaml_handler))
+        .route(
+            "/experience/copilot/blueprint/save",
+            post(copilot_blueprint_save_handler),
+        )
+        .route(
+            "/experience/copilot/gitops/export",
+            post(copilot_gitops_export_handler),
+        )
         .route("/experience/copilot/recommend", post(copilot_recommend_handler))
         .route("/experience/copilot/backup", get(copilot_backup_handler))
         .route(
@@ -104,6 +114,33 @@ async fn copilot_yaml_handler(
         &default_ns,
     );
     Json(finalize_copilot(yaml_preview(&client, &scope, body).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_blueprint_save_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+    Json(body): Json<BlueprintSaveRequest>,
+) -> Result<Json<BlueprintSaveResponse>, (axum::http::StatusCode, String)> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(
+        body.build.namespace.clone().or(q.namespace.clone()),
+        &default_ns,
+    );
+    save_blueprint(&client, &scope, body)
+        .await
+        .map(Json)
+        .map_err(|e| (axum::http::StatusCode::BAD_REQUEST, e))
+}
+
+#[cfg(feature = "web")]
+async fn copilot_gitops_export_handler(
+    Json(body): Json<GitOpsExportRequest>,
+) -> Json<GitOpsExportResponse> {
+    Json(export_gitops(body))
 }
 
 #[derive(serde::Deserialize)]

@@ -8,9 +8,11 @@
 //! responses. Optional external LLM backends can be wired later; v1 is deterministic.
 
 mod backup_advisor;
+mod blueprint_studio;
 mod doctor;
 pub mod fixit;
 mod guest_inspector;
+mod gitops_generator;
 mod intent;
 mod llm;
 mod network_lens;
@@ -20,7 +22,9 @@ mod storage_doctor;
 mod yaml_build;
 
 pub use backup_advisor::backup_advisor;
+pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveResponse};
 pub use doctor::vm_doctor;
+pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
 pub use guest_inspector::guest_inspector;
 pub use intent::CopilotIntent;
 pub use network_lens::network_lens;
@@ -63,6 +67,8 @@ pub struct CopilotResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub yaml_preview: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub yaml_build: Option<YamlBuildRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub health_score: Option<u8>,
 }
 
@@ -79,6 +85,7 @@ impl CopilotResponse {
             actions: Vec::new(),
             validation: None,
             yaml_preview: None,
+            yaml_build: None,
             health_score: None,
         }
     }

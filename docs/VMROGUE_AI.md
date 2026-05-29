@@ -110,8 +110,8 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 ## Next phases
 
-1. **Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML
-2. **GitOps Generator** — export kustomize trees from Copilot previews
+1. ~~**Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML~~ **Done** — `POST /experience/copilot/blueprint/save`
+2. ~~**GitOps Generator** — export kustomize trees from Copilot previews~~ **Done** — `POST /experience/copilot/gitops/export`
 3. **Guest filesystem metrics** — guest-exec or Prometheus guest exporters
 
 ## Related docs
