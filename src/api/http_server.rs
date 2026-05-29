@@ -1060,8 +1060,15 @@ pub mod web {
         axum::response::Redirect::permanent("/dashboard")
     }
 
-    async fn dashboard_handler() -> Html<&'static str> {
-        Html(include_str!("web/dashboard.html"))
+    async fn dashboard_handler() -> impl IntoResponse {
+        (
+            [
+                (header::CACHE_CONTROL, "no-cache, no-store, must-revalidate"),
+                (header::PRAGMA, "no-cache"),
+                (header::EXPIRES, "0"),
+            ],
+            Html(include_str!("web/dashboard.html")),
+        )
     }
 
     async fn novnc_handler() -> impl IntoResponse {
