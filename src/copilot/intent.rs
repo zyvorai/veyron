@@ -7,6 +7,7 @@ pub enum CopilotIntent {
     UnhealthyFleet,
     YamlBuilder,
     BackupAdvisor,
+    CostAdvisor,
     NetworkLens,
     GuestInspector,
     GuestFilesystem,
@@ -21,6 +22,16 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
 
     if lower.contains("backup") || lower.contains("velero") || lower.contains("unprotected") {
         return CopilotIntent::BackupAdvisor;
+    }
+
+    if lower.contains("cost advisor")
+        || lower.contains("cost copilot")
+        || lower.contains("expensive")
+        || (lower.contains("cost") && lower.contains("spend"))
+        || lower.contains("finops")
+        || (lower.contains("how much") && lower.contains("vm"))
+    {
+        return CopilotIntent::CostAdvisor;
     }
 
     if lower.contains("storage doctor")

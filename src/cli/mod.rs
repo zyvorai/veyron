@@ -126,6 +126,15 @@ pub enum AiCommands {
     },
     /// Fleet backup coverage (snapshots, schedules, Velero)
     Backup,
+    /// Fleet or per-VM cost analysis (OpenCost or reference rates)
+    Cost {
+        /// VM name (optional — fleet sweep when omitted)
+        #[arg(long)]
+        name: Option<String>,
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
     /// Per-VM network posture
     Network {
         /// VM name

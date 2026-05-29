@@ -237,6 +237,8 @@ else
 fi
 check_json_grep "GET /api/v1/experience/copilot/backup" \
     "${BASE}/api/v1/experience/copilot/backup?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/cost" \
+    "${BASE}/api/v1/experience/copilot/cost?namespace=all" '"module"'
 check_json_grep "GET /api/v1/experience/copilot/guest/filesystem" \
     "${BASE}/api/v1/experience/copilot/guest/default/nonexistent-vm/filesystem" '"module"'
 gitops_body=$(curl -skS --connect-timeout 15 --max-time 45 \

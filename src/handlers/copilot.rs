@@ -3,7 +3,7 @@
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
     finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, recommend_template, scheduling_explainer,
-    security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
+    security_sentinel, security_sentinel_fleet, storage_doctor, cost_advisor, cost_advisor_vm, vm_doctor, yaml_preview,
 };
 use crate::kube::KubeClient;
 use anyhow::Result;
@@ -97,6 +97,22 @@ pub async fn handle_ai_backup(namespace: &str) -> Result<()> {
     let scope = if namespace.is_empty() { "default" } else { namespace };
     let resp = finalize_copilot(backup_advisor(&client, scope).await).await;
     print_copilot(&resp, "text");
+    Ok(())
+}
+
+pub async fn handle_ai_cost(
+    namespace: &str,
+    name: Option<&str>,
+    output: &str,
+) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = if let Some(vm) = name {
+        finalize_copilot(cost_advisor_vm(&client, scope, vm).await).await
+    } else {
+        finalize_copilot(cost_advisor(&client, scope).await).await
+    };
+    print_copilot(&resp, output);
     Ok(())
 }
 
