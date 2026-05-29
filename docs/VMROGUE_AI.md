@@ -132,6 +132,19 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 Natural-language routing via `POST /experience/copilot/ask` recognizes the same intents. Dashboard chips live on Monitoring, GitOps, Forecasting, Integrations, and Scheduling pages.
 
+## Copilot Expansion Pack 2 (platform advisors)
+
+| Module | API | CLI |
+|--------|-----|-----|
+| Compliance Advisor | `GET /experience/copilot/compliance` | `vmrogue ai compliance` |
+| Observability Advisor | `GET /experience/copilot/observability` | `vmrogue ai observability` |
+| Cilium Advisor | `GET /experience/copilot/cilium` | `vmrogue ai cilium` |
+| Node Advisor | `GET /experience/copilot/nodes` | `vmrogue ai nodes` |
+| Drift Advisor | `GET /experience/copilot/drift` | `vmrogue ai drift` |
+| Alert Advisor | `GET /experience/copilot/alerts` | `vmrogue ai alerts` |
+| SLO Advisor | `GET /experience/copilot/slo` | `vmrogue ai slo` |
+| Migration Advisor | `GET /experience/copilot/migrations` | `vmrogue ai migrations` |
+
 ## Future (not scheduled)
 
 - ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`

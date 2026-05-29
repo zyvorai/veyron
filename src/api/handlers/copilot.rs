@@ -12,13 +12,13 @@ use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, BlueprintSaveRequest, BlueprintSaveResponse,
-    GitOpsExportRequest, GitOpsExportResponse, backup_advisor, copilot_ask, cost_advisor, cost_advisor_vm,
-    export_gitops, forecast_advisor, gitops_advisor, integrations_advisor,
-    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, performance_advisor,
-    recommend_template, save_blueprint,
+    GitOpsExportRequest, GitOpsExportResponse, alert_advisor, backup_advisor, cilium_advisor,
+    compliance_advisor, copilot_ask, cost_advisor, cost_advisor_vm, drift_advisor,
+    export_gitops, forecast_advisor, gitops_advisor, integrations_advisor, migration_advisor,
+    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, node_advisor,
+    observability_advisor, performance_advisor, recommend_template, save_blueprint,
     scheduling_explainer, scheduling_fleet_advisor, security_sentinel, security_sentinel_fleet,
-    storage_doctor, vm_doctor,
-    yaml_preview,
+    slo_advisor, storage_doctor, vm_doctor, yaml_preview,
 };
 
 #[cfg(feature = "web")]
@@ -72,6 +72,14 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/copilot/forecast", get(copilot_forecast_handler))
         .route("/experience/copilot/integrations", get(copilot_integrations_handler))
         .route("/experience/copilot/scheduling", get(copilot_scheduling_fleet_handler))
+        .route("/experience/copilot/compliance", get(copilot_compliance_handler))
+        .route("/experience/copilot/observability", get(copilot_observability_handler))
+        .route("/experience/copilot/cilium", get(copilot_cilium_handler))
+        .route("/experience/copilot/nodes", get(copilot_nodes_handler))
+        .route("/experience/copilot/drift", get(copilot_drift_handler))
+        .route("/experience/copilot/alerts", get(copilot_alerts_handler))
+        .route("/experience/copilot/slo", get(copilot_slo_handler))
+        .route("/experience/copilot/migrations", get(copilot_migrations_handler))
         .with_state(state)
 }
 
@@ -339,3 +347,29 @@ async fn copilot_scheduling_fleet_handler(
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     Json(finalize_copilot(scheduling_fleet_advisor(&client, &scope).await).await)
 }
+
+macro_rules! copilot_scope_handler {
+    ($fn:ident, $advisor:expr) => {
+        #[cfg(feature = "web")]
+        async fn $fn(
+            State(state): State<SharedState>,
+            Query(q): Query<DashboardNamespaceQuery>,
+        ) -> Json<CopilotResponse> {
+            let (client, default_ns) = {
+                let s = state.read().await;
+                (s.kube_client.clone(), s.namespace.clone())
+            };
+            let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+            Json(finalize_copilot($advisor(&client, &scope).await).await)
+        }
+    };
+}
+
+copilot_scope_handler!(copilot_compliance_handler, compliance_advisor);
+copilot_scope_handler!(copilot_observability_handler, observability_advisor);
+copilot_scope_handler!(copilot_cilium_handler, cilium_advisor);
+copilot_scope_handler!(copilot_nodes_handler, node_advisor);
+copilot_scope_handler!(copilot_drift_handler, drift_advisor);
+copilot_scope_handler!(copilot_alerts_handler, alert_advisor);
+copilot_scope_handler!(copilot_slo_handler, slo_advisor);
+copilot_scope_handler!(copilot_migrations_handler, migration_advisor);

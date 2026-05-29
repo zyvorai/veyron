@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531c">
+<meta name="vmrogue-dashboard-rev" content="20260531d">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531c';
+  var DASH_REV = '20260531d';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2281,7 +2281,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <!-- NODES PAGE -->
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div><div class="page-header-right" id="node-count"></div></div>
+  <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div>
+    <div class="page-header-right"><button type="button" class="btn btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span id="node-count"></span></div></div>
+  <div id="node-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Node Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('node-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="card">
     <div class="card-header"><span class="card-title">Cluster Nodes</span></div>
     <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
@@ -2372,7 +2377,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div></div>
+  <div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div>
+    <button type="button" class="btn btn-sm" onclick="runDriftAdvisor()">Drift Advisor</button></div>
+  <div id="drift-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Drift Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('drift-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="drift-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="card"><div class="card-header"><span class="card-title">Active Insights</span></div>
   <table class="table" id="insights-table"><thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>VM</th><th>Title</th><th>State</th></tr></thead><tbody id="insights-body"></tbody></table>
   </div>
@@ -2476,7 +2486,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div></div>
+  <div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div>
+    <button type="button" class="btn btn-sm" onclick="runAlertAdvisor()">Alert Advisor</button></div>
+  <div id="alert-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Alert Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('alert-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="alert-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="card"><div class="card-header"><span class="card-title">Active Alerts</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
   </div>
@@ -2531,7 +2546,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div></div>
+  <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
+    <button type="button" class="btn btn-sm" onclick="runSloAdvisor()">SLO Advisor</button></div>
+  <div id="slo-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue SLO Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('slo-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="slo-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="slo-burn-stats" class="grid-4"></div>
   <div class="grid-2">
     <div class="card">
@@ -2749,7 +2769,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div></div>
+  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div>
+    <button type="button" class="btn btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div>
+  <div id="cilium-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('cilium-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="cilium-summary" class="grid-4" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
@@ -2767,7 +2792,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-observability" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div></div>
+  <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div>
+    <button type="button" class="btn btn-sm" onclick="runObservabilityAdvisor()">Observability Advisor</button></div>
+  <div id="observability-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Observability Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('observability-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="observability-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="observability-summary" class="grid-4"></div>
 </div>
 </div>
@@ -2803,7 +2833,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-compliance" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div></div>
+  <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
+    <button type="button" class="btn btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button></div>
+  <div id="compliance-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Compliance Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('compliance-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="compliance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="compliance-cap-banner"></div>
   <div id="compliance-stats" class="grid-4"></div>
   <div class="card"><div class="card-header"><span class="card-title">Framework Status</span></div>
@@ -2815,7 +2850,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-dr" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div></div>
+  <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div>
+    <button type="button" class="btn btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div>
+  <div id="migration-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Migration Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('migration-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="migration-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="card" style="padding:16px">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
       <div class="form-group"><label class="form-label">Namespace</label><input class="form-input" id="dr-ns" placeholder="default"></div>
@@ -3321,7 +3361,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531c';
+window.__VMROGUE_DASH_REV = '20260531d';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5100,6 +5140,51 @@ async function runSchedulingFleetAdvisor() {
   } catch (e) {
     body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
   }
+}
+
+async function runFleetCopilotAdvisor(cardId, bodyId, apiPath, fallbackQuery, loadingMsg) {
+  const card = document.getElementById(cardId);
+  const body = document.getElementById(bodyId);
+  if (!card || !body) {
+    openCopilot(fallbackQuery);
+    runCopilotAsk();
+    return;
+  }
+  card.style.display = 'block';
+  body.innerHTML = '<div style="color:var(--text-dim)">' + esc(loadingMsg) + '</div>';
+  try {
+    const suffix = apiPath.indexOf('/integrations') >= 0 ? '' : nsParam();
+    const data = await apiJson(apiPath + suffix);
+    body.innerHTML = '';
+    renderCopilotResultInto(body, data);
+  } catch (e) {
+    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
+  }
+}
+
+function runComplianceAdvisor() {
+  runFleetCopilotAdvisor('compliance-advisor-card', 'compliance-advisor-body', '/api/v1/experience/copilot/compliance', 'Compliance score for production VMs', 'Evaluating compliance…');
+}
+function runObservabilityAdvisor() {
+  runFleetCopilotAdvisor('observability-advisor-card', 'observability-advisor-body', '/api/v1/experience/copilot/observability', 'Is observability stack installed?', 'Scanning observability stack…');
+}
+function runCiliumAdvisor() {
+  runFleetCopilotAdvisor('cilium-advisor-card', 'cilium-advisor-body', '/api/v1/experience/copilot/cilium', 'Cilium and network policy posture', 'Reviewing network policy…');
+}
+function runNodeAdvisor() {
+  runFleetCopilotAdvisor('node-advisor-card', 'node-advisor-body', '/api/v1/experience/copilot/nodes', 'Node capacity and pressure', 'Analyzing nodes…');
+}
+function runDriftAdvisor() {
+  runFleetCopilotAdvisor('drift-advisor-card', 'drift-advisor-body', '/api/v1/experience/copilot/drift', 'Which VMs have operator drift?', 'Scanning VMRogueVM drift…');
+}
+function runAlertAdvisor() {
+  runFleetCopilotAdvisor('alert-advisor-card', 'alert-advisor-body', '/api/v1/experience/copilot/alerts', 'Active warning events in namespace', 'Collecting warnings…');
+}
+function runSloAdvisor() {
+  runFleetCopilotAdvisor('slo-advisor-card', 'slo-advisor-body', '/api/v1/experience/copilot/slo', 'Fleet availability SLO status', 'Computing SLO…');
+}
+function runMigrationAdvisor() {
+  runFleetCopilotAdvisor('migration-advisor-card', 'migration-advisor-body', '/api/v1/experience/copilot/migrations', 'Any live migrations running?', 'Checking migrations…');
 }
 
 function runCopilotQuick(query) {

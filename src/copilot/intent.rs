@@ -17,12 +17,79 @@ pub enum CopilotIntent {
     GitopsAdvisor,
     ForecastAdvisor,
     IntegrationsAdvisor,
+    ComplianceAdvisor,
+    ObservabilityAdvisor,
+    CiliumAdvisor,
+    NodeAdvisor,
+    DriftAdvisor,
+    AlertAdvisor,
+    SloAdvisor,
+    MigrationAdvisor,
     ErrorExplainer,
     GeneralHelp,
 }
 
 pub fn detect_intent(query: &str) -> CopilotIntent {
     let lower = query.to_lowercase();
+
+    if lower.contains("migration advisor")
+        || lower.contains("live migration")
+        || (lower.contains("migration") && (lower.contains("running") || lower.contains("in progress")))
+    {
+        return CopilotIntent::MigrationAdvisor;
+    }
+
+    if lower.contains("slo advisor")
+        || lower.contains("availability slo")
+        || (lower.contains("fleet") && lower.contains("availability"))
+    {
+        return CopilotIntent::SloAdvisor;
+    }
+
+    if lower.contains("alert advisor")
+        || lower.contains("warning events")
+        || (lower.contains("active") && lower.contains("alerts"))
+    {
+        return CopilotIntent::AlertAdvisor;
+    }
+
+    if lower.contains("drift advisor")
+        || lower.contains("operator drift")
+        || lower.contains("template drift")
+        || (lower.contains("drift") && lower.contains("vmrogue"))
+        || (lower.contains("which") && lower.contains("drift") && !lower.contains("gitops"))
+    {
+        return CopilotIntent::DriftAdvisor;
+    }
+
+    if lower.contains("node advisor")
+        || lower.contains("node capacity")
+        || lower.contains("node pressure")
+        || (lower.contains("nodes") && lower.contains("ready"))
+    {
+        return CopilotIntent::NodeAdvisor;
+    }
+
+    if lower.contains("cilium advisor")
+        || lower.contains("cilium posture")
+        || (lower.contains("network policy") && lower.contains("posture"))
+    {
+        return CopilotIntent::CiliumAdvisor;
+    }
+
+    if lower.contains("observability advisor")
+        || lower.contains("observability stack")
+        || (lower.contains("observability") && lower.contains("installed"))
+    {
+        return CopilotIntent::ObservabilityAdvisor;
+    }
+
+    if lower.contains("compliance advisor")
+        || lower.contains("compliance score")
+        || lower.contains("compliance posture")
+    {
+        return CopilotIntent::ComplianceAdvisor;
+    }
 
     if lower.contains("integrations advisor")
         || lower.contains("which integrations")

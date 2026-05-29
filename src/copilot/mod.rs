@@ -7,32 +7,48 @@
 //! Composes cluster facts, KubeVirt state, and existing translators into product-shaped
 //! responses. Optional external LLM backends can be wired later; v1 is deterministic.
 
+mod alert_advisor;
 mod backup_advisor;
 mod blueprint_studio;
+mod cilium_advisor;
+mod compliance_advisor;
 mod cost_advisor;
 mod doctor;
 pub mod fixit;
 mod guest_inspector;
 mod guest_filesystem;
+mod drift_advisor;
 mod forecast_advisor;
 mod gitops_advisor;
 mod gitops_generator;
 mod integrations_advisor;
 mod intent;
 mod llm;
+mod migration_advisor;
 mod network_lens;
+mod node_advisor;
+mod observability_advisor;
 mod performance_advisor;
 mod scheduling;
 mod security_sentinel;
+mod slo_advisor;
 mod storage_doctor;
 mod yaml_build;
 
+pub use alert_advisor::alert_advisor;
 pub use backup_advisor::backup_advisor;
+pub use cilium_advisor::cilium_advisor;
+pub use compliance_advisor::compliance_advisor;
 pub use cost_advisor::{cost_advisor, cost_advisor_vm};
+pub use drift_advisor::drift_advisor;
 pub use forecast_advisor::forecast_advisor;
 pub use gitops_advisor::gitops_advisor;
 pub use integrations_advisor::integrations_advisor;
+pub use migration_advisor::migration_advisor;
+pub use node_advisor::node_advisor;
+pub use observability_advisor::observability_advisor;
 pub use performance_advisor::performance_advisor;
+pub use slo_advisor::slo_advisor;
 pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveResponse};
 pub use doctor::vm_doctor;
 pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
@@ -238,6 +254,14 @@ pub async fn copilot_ask(
         CopilotIntent::GitopsAdvisor => gitops_advisor(client, scope).await,
         CopilotIntent::ForecastAdvisor => forecast_advisor(client, scope).await,
         CopilotIntent::IntegrationsAdvisor => integrations_advisor().await,
+        CopilotIntent::ComplianceAdvisor => compliance_advisor(client, scope).await,
+        CopilotIntent::ObservabilityAdvisor => observability_advisor(client, scope).await,
+        CopilotIntent::CiliumAdvisor => cilium_advisor(client, scope).await,
+        CopilotIntent::NodeAdvisor => node_advisor(client, scope).await,
+        CopilotIntent::DriftAdvisor => drift_advisor(client, scope).await,
+        CopilotIntent::AlertAdvisor => alert_advisor(client, scope).await,
+        CopilotIntent::SloAdvisor => slo_advisor(client, scope).await,
+        CopilotIntent::MigrationAdvisor => migration_advisor(client, scope).await,
         CopilotIntent::ErrorExplainer => explain_error_message(query, Some("copilot")),
         CopilotIntent::GeneralHelp => general_help(),
     }
@@ -266,6 +290,14 @@ fn general_help() -> CopilotResponse {
         "VMRogue Forecast Advisor — 30-day capacity heuristic".into(),
         "VMRogue Integrations Advisor — optional backend wiring".into(),
         "VMRogue Scheduling Fleet — pending VMs and events".into(),
+        "VMRogue Compliance Advisor — VM hardening and policy gaps".into(),
+        "VMRogue Observability Advisor — metrics/logs/traces stack".into(),
+        "VMRogue Cilium Advisor — agents and network policies".into(),
+        "VMRogue Node Advisor — capacity and node pressure".into(),
+        "VMRogue Drift Advisor — VMRogueVM template drift".into(),
+        "VMRogue Alert Advisor — warning events narrative".into(),
+        "VMRogue SLO Advisor — fleet availability SLO".into(),
+        "VMRogue Migration Advisor — live migration status".into(),
         "VMRogue Error Explainer — translate ugly K8s errors".into(),
     ];
     r.recommendations = vec![
@@ -284,6 +316,14 @@ fn general_help() -> CopilotResponse {
         "Forecast capacity growth for 30 days".into(),
         "Which integrations are configured?".into(),
         "Which VMs are pending scheduling?".into(),
+        "Compliance score for production VMs".into(),
+        "Is observability stack installed?".into(),
+        "Cilium and network policy posture".into(),
+        "Node capacity and pressure".into(),
+        "Which VMs have operator drift?".into(),
+        "Active warning events in namespace".into(),
+        "Fleet availability SLO status".into(),
+        "Any live migrations running?".into(),
     ];
     r
 }
@@ -497,6 +537,30 @@ mod tests {
         assert!(matches!(
             intent::detect_intent("Which integrations are configured?"),
             CopilotIntent::IntegrationsAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_compliance_intent() {
+        assert!(matches!(
+            intent::detect_intent("Compliance score for production VMs"),
+            CopilotIntent::ComplianceAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_drift_intent() {
+        assert!(matches!(
+            intent::detect_intent("Which VMs have operator drift?"),
+            CopilotIntent::DriftAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_migration_intent() {
+        assert!(matches!(
+            intent::detect_intent("Any live migrations running?"),
+            CopilotIntent::MigrationAdvisor
         ));
     }
 }
