@@ -12,6 +12,7 @@ mod blueprint_studio;
 mod doctor;
 pub mod fixit;
 mod guest_inspector;
+mod guest_filesystem;
 mod gitops_generator;
 mod intent;
 mod llm;
@@ -26,6 +27,7 @@ pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveRe
 pub use doctor::vm_doctor;
 pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
 pub use guest_inspector::guest_inspector;
+pub use guest_filesystem::guest_filesystem_report;
 pub use intent::CopilotIntent;
 pub use network_lens::network_lens;
 pub use scheduling::scheduling_explainer;

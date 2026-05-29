@@ -13,7 +13,7 @@ use crate::api::http_server::web::SharedState;
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, BlueprintSaveRequest, BlueprintSaveResponse,
     GitOpsExportRequest, GitOpsExportResponse, backup_advisor, copilot_ask, export_gitops,
-    finalize_copilot, guest_inspector, network_lens, recommend_template, save_blueprint,
+    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, recommend_template, save_blueprint,
     scheduling_explainer, security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor,
     yaml_preview,
 };
@@ -48,6 +48,10 @@ pub fn router(state: SharedState) -> Router {
         .route(
             "/experience/copilot/guest/:ns/:name",
             get(copilot_guest_handler),
+        )
+        .route(
+            "/experience/copilot/guest/:ns/:name/filesystem",
+            get(copilot_guest_filesystem_handler),
         )
         .route("/experience/copilot/storage", get(copilot_storage_handler))
         .route(
@@ -189,6 +193,18 @@ async fn copilot_guest_handler(
         s.kube_client.clone()
     };
     Json(finalize_copilot(guest_inspector(&client, &ns, &name).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_guest_filesystem_handler(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Json<CopilotResponse> {
+    let client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    Json(finalize_copilot(guest_filesystem_report(&client, &ns, &name).await).await)
 }
 
 #[cfg(feature = "web")]

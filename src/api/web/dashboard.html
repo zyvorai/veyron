@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260530d">
+<meta name="vmrogue-dashboard-rev" content="20260530e">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260530d';
+  var DASH_REV = '20260530e';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2308,7 +2308,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="card-header"><span class="card-title">VMRogue Storage Doctor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('storage-doctor-card').style.display='none'">Dismiss</button></div>
     <div id="storage-doctor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VMROGUE_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. In-guest filesystem usage still needs a guest agent or custom metrics.</span></div>
+  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VMROGUE_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. Per-VM in-guest usage: open a VM detail panel or <code>GET /api/v1/vms/:ns/:name/guest-filesystem</code> (requires QEMU guest agent).</span></div>
   <p id="storage-prometheus-hint" style="display:none;margin:0 0 10px;font-size:.82em;color:var(--text-dim);font-family:var(--font-mono)"></p>
   <div class="grid-2">
     <div class="card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span></div><div id="pvc-list"></div></div>
@@ -3265,7 +3265,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260530d';
+window.__VMROGUE_DASH_REV = '20260530e';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5623,6 +5623,8 @@ async function fetchVmDetail(ns, name) {
     inner += detailRow('Disk', vm.disk || 'N/A');
     inner += '</div>';
 
+    inner += '<div class="detail-section"><div class="detail-section-title">Guest filesystem</div><div id="guest-fs-panel-' + name + '">Loading\u2026</div></div>';
+
     if (ifaces.length > 0) {
       inner += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
       inner += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
@@ -5681,6 +5683,7 @@ async function fetchVmDetail(ns, name) {
     });
     loadExposePanel(ns, name);
     loadRdpPanel(ns, name, vmi, vm);
+    loadGuestFilesystemPanel(ns, name, vmi);
     loadVmDriftPanel(ns, name, vm);
     loadInternetPanel(ns, name);
     loadDoctorPanel(ns, name);
@@ -5837,6 +5840,47 @@ function vmiGuestAgentConnected(vmi) {
   return conds.some(function(c) {
     return (c.type === 'AgentConnected' || c.type_ === 'AgentConnected') && c.status === 'True';
   });
+}
+
+function formatBytes(n) {
+  if (n == null || !Number.isFinite(n)) return '—';
+  const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+  let i = 0;
+  let v = Number(n);
+  while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+  return v.toFixed(i === 0 ? 0 : 1) + ' ' + u[i];
+}
+
+async function loadGuestFilesystemPanel(ns, name, vmi) {
+  const el = document.getElementById('guest-fs-panel-' + name);
+  if (!el) return;
+  if (!vmiGuestAgentConnected(vmi || {})) {
+    el.innerHTML = '<div class="detail-row"><span class="lbl">Status</span><span class="val">Guest agent not connected — install qemu-guest-agent for in-guest disk usage.</span></div>';
+    return;
+  }
+  try {
+    const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/guest-filesystem');
+    const st = unwrapData(j);
+    renderGuestFilesystemPanel(el, st);
+  } catch (e) {
+    el.innerHTML = '<div class="detail-row"><span class="lbl">Error</span><span class="val" style="color:var(--error)">' + esc(e.message || String(e)) + '</span></div>';
+  }
+}
+
+function renderGuestFilesystemPanel(container, st) {
+  const mounts = (st && st.mounts) || [];
+  if (!mounts.length) {
+    container.innerHTML = '<div class="detail-row"><span class="lbl">Mounts</span><span class="val">' + esc((st && st.message) || 'No mount data') + '</span></div>';
+    return;
+  }
+  let inner = '<table class="iface-table"><thead><tr><th>Mount</th><th>Used</th><th>Avail</th><th>%</th></tr></thead><tbody>';
+  mounts.forEach(function(m) {
+    const hot = m.use_percent >= 85;
+    inner += '<tr' + (hot ? ' style="color:var(--warning)"' : '') + '><td>' + esc(m.mount || '—') + '</td><td>' + formatBytes(m.used_bytes) + '</td><td>' + formatBytes(m.avail_bytes) + '</td><td>' + (m.use_percent != null ? m.use_percent.toFixed(1) + '%' : '—') + '</td></tr>';
+  });
+  inner += '</tbody></table>';
+  if (st && st.message) inner += '<div class="detail-row" style="margin-top:6px"><span class="lbl">Note</span><span class="val" style="font-size:.82rem">' + esc(st.message) + '</span></div>';
+  container.innerHTML = inner;
 }
 
 async function loadRdpPanel(ns, name, vmi, vm) {

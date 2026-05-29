@@ -1,6 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use super::{CopilotAction, CopilotResponse};
+use crate::kube::guest_filesystem::{collect_guest_filesystem, format_mount_evidence};
 use crate::kube::KubeClient;
 use crate::kube::guest_os::detect_guest_os_family;
 use crate::kube::types::VirtualMachineInstance;
@@ -61,6 +62,28 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
         r.recommendations.push(
             "Guest agent is up — freeze/unfreeze, guest-exec RDP, and consistent backups are available.".into(),
         );
+        if let Ok(vm_json) = to_value(&vm) {
+            if let Ok(resp) = collect_guest_filesystem(
+                client.client().clone(),
+                namespace,
+                name,
+                vmi.metadata.name.as_deref().unwrap_or(name),
+                &vm_json,
+                vmi_json.as_ref().unwrap_or(&serde_json::Value::Null),
+            )
+            .await
+            {
+                for m in resp.mounts.iter().take(6) {
+                    r.evidence
+                        .push(format!("Guest FS: {}", format_mount_evidence(m)));
+                }
+                if resp.mounts.iter().any(|m| m.use_percent >= 85.0) {
+                    r.recommendations.push(
+                        "A guest mount is above 85% — expand PVC or prune data; snapshot first.".into(),
+                    );
+                }
+            }
+        }
     } else {
         r.evidence.push("QEMU guest agent: not connected".into());
         r.recommendations.push(
