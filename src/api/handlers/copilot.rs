@@ -12,7 +12,8 @@ use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, BlueprintSaveRequest, BlueprintSaveResponse,
-    GitOpsExportRequest, GitOpsExportResponse, backup_advisor, copilot_ask, export_gitops,
+    GitOpsExportRequest, GitOpsExportResponse, backup_advisor, copilot_ask, cost_advisor, cost_advisor_vm,
+    export_gitops,
     finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, recommend_template, save_blueprint,
     scheduling_explainer, security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor,
     yaml_preview,
@@ -41,6 +42,11 @@ pub fn router(state: SharedState) -> Router {
         )
         .route("/experience/copilot/recommend", post(copilot_recommend_handler))
         .route("/experience/copilot/backup", get(copilot_backup_handler))
+        .route("/experience/copilot/cost", get(copilot_cost_handler))
+        .route(
+            "/experience/copilot/cost/:ns/:name",
+            get(copilot_cost_vm_handler),
+        )
         .route(
             "/experience/copilot/network/:ns/:name",
             get(copilot_network_handler),
@@ -169,6 +175,31 @@ async fn copilot_backup_handler(
     };
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     Json(finalize_copilot(backup_advisor(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_cost_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<CopilotResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    Json(finalize_copilot(cost_advisor(&client, &scope).await).await)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_cost_vm_handler(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> Json<CopilotResponse> {
+    let client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    Json(finalize_copilot(cost_advisor_vm(&client, &ns, &name).await).await)
 }
 
 #[cfg(feature = "web")]

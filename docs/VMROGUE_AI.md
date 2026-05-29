@@ -43,8 +43,9 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 | `POST /experience/copilot/yaml/preview` | YAML Builder + validation |
 | `POST /experience/copilot/recommend` | Blueprint-style recommendation |
 | `GET /experience/copilot/backup` | Backup Advisor — fleet coverage |
+| `GET /experience/copilot/cost` | Cost Advisor — fleet spend |
+| `GET /experience/copilot/cost/:ns/:name` | Cost Advisor — per VM |
 | `GET /experience/copilot/network/:ns/:name` | Network Lens — per-VM posture |
-
 | `GET /experience/copilot/guest/:ns/:name` | Guest Inspector |
 | `GET /experience/copilot/guest/:ns/:name/filesystem` | Guest filesystem (guest-exec) |
 | `GET /experience/copilot/storage` | Storage Doctor |
@@ -57,6 +58,8 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 vmrogue ai guest vm-db-01
 vmrogue ai filesystem vm-db-01
 vmrogue ai storage
+vmrogue ai cost
+vmrogue ai cost --name vm-app-01
 vmrogue ai security --name vm-app-01
 vmrogue ai "Why is my VM not starting?"
 vmrogue ai doctor vm-db-01
@@ -101,6 +104,7 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 | 8 | AI Storage Doctor | **Done** — PVC pressure, snapshot sprawl |
 | 9 | AI Security Sentinel | **Done** — RDP expose, drift, policies |
 | 10 | Optional LLM backend | **Done** — `VMROGUE_AI_URL` paraphrase layer |
+| 11 | AI Cost Advisor | **Done** — OpenCost or reference rates, fleet + per-VM |
 
 ## Safety rails (product policy)
 
@@ -118,8 +122,8 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 ## Future (not scheduled)
 
+- ~~**Cost Copilot** — OpenCost integration for per-VM spend narratives~~ **Done** — `GET /experience/copilot/cost`, `vmrogue ai cost`
 - **Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set
-- **Cost Copilot** — OpenCost integration for per-VM spend narratives
 - **Blueprint Studio UI** — edit saved `VMRogueBlueprint` CRDs from the dashboard
 
 ## Related docs

@@ -1597,6 +1597,14 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 Some(AiCommands::Backup) => {
                     handlers::copilot::handle_ai_backup(&cli.namespace).await?;
                 }
+                Some(AiCommands::Cost { name, output }) => {
+                    handlers::copilot::handle_ai_cost(
+                        &cli.namespace,
+                        name.as_deref(),
+                        &output,
+                    )
+                    .await?;
+                }
                 Some(AiCommands::Network { name }) => {
                     handlers::copilot::handle_ai_network(&name, &cli.namespace).await?;
                 }

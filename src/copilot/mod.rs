@@ -9,6 +9,7 @@
 
 mod backup_advisor;
 mod blueprint_studio;
+mod cost_advisor;
 mod doctor;
 pub mod fixit;
 mod guest_inspector;
@@ -23,6 +24,7 @@ mod storage_doctor;
 mod yaml_build;
 
 pub use backup_advisor::backup_advisor;
+pub use cost_advisor::{cost_advisor, cost_advisor_vm};
 pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveResponse};
 pub use doctor::vm_doctor;
 pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
@@ -160,6 +162,16 @@ pub async fn copilot_ask(
             yaml_preview(client, scope, spec).await
         }
         CopilotIntent::BackupAdvisor => backup_advisor(client, scope).await,
+        CopilotIntent::CostAdvisor => {
+            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
+                cost_advisor_vm(client, ns, name).await
+            } else if let Some(name) = extract_vm_name(query) {
+                let ns = req.namespace.as_deref().unwrap_or(scope);
+                cost_advisor_vm(client, ns, &name).await
+            } else {
+                cost_advisor(client, scope).await
+            }
+        }
         CopilotIntent::NetworkLens => {
             if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
                 network_lens(client, ns, name).await
@@ -238,6 +250,7 @@ fn general_help() -> CopilotResponse {
         "VMRogue Scheduling Explainer — why a VM is Pending".into(),
         "VMRogue YAML Builder — generate and validate VirtualMachine YAML".into(),
         "VMRogue Backup Advisor — snapshot and Velero coverage gaps".into(),
+        "VMRogue Cost Advisor — fleet spend (OpenCost or reference rates)".into(),
         "VMRogue Network Lens — interfaces, expose, and policies".into(),
         "VMRogue Guest Inspector — guest agent, OS info, in-guest signals".into(),
         "VMRogue Guest Filesystem — in-guest disk usage via guest-exec".into(),
@@ -250,6 +263,7 @@ fn general_help() -> CopilotResponse {
         "Show all unhealthy VMs".into(),
         "Create a Windows Server 2022 VM with 8 CPU and 32GB RAM".into(),
         "Which VMs have no backups?".into(),
+        "Which VMs are most expensive?".into(),
         "Show network for vm-app-01".into(),
         "Show guest agent status for vm-db-01".into(),
         "Show guest filesystem for vm-db-01".into(),
@@ -428,6 +442,14 @@ mod tests {
         assert!(matches!(
             intent::detect_intent("Show guest filesystem for vm-db-01"),
             CopilotIntent::GuestFilesystem
+        ));
+    }
+
+    #[test]
+    fn detect_cost_intent() {
+        assert!(matches!(
+            intent::detect_intent("Which VMs are most expensive?"),
+            CopilotIntent::CostAdvisor
         ));
     }
 }
