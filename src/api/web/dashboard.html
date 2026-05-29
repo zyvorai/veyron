@@ -188,7 +188,7 @@ body>*{position:relative;z-index:1}
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   box-shadow:0 1px 0 rgba(255,255,255,.03),0 8px 24px rgba(0,0,0,.22);
 }
-.cloudos-topbar .navbar-left{gap:10px;overflow:hidden}
+.cloudos-topbar .navbar-left{gap:10px;min-width:0;flex:1;overflow:visible}
 .cloudos-topbar .navbar-brand{font-size:1.05rem;animation:none}
 .cloudos-topbar .navbar-brand::before{width:32px;height:32px;font-size:.9rem;border-radius:10px}
 .navbar-page-title{
@@ -201,27 +201,46 @@ body>*{position:relative;z-index:1}
   background:rgba(57,66,78,.35);color:var(--text);font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;
 }
 .btn-nav-browse:hover,.btn-nav-browse.active{border-color:rgba(56,189,248,.35);color:var(--spark)}
-.cloudos-topbar .nav-links{
-  display:none;position:fixed;top:56px;left:0;right:0;z-index:115;
-  padding:12px 16px 16px;margin:0;border-radius:0;
-  border:1px solid rgba(120,132,148,.24);border-top:none;
-  max-height:min(52vh,440px);overflow-y:auto;
+/* Browse mega-menu — outside navbar to avoid backdrop-filter / overflow clipping */
+.browse-mega-menu{
+  display:none;position:fixed;top:56px;left:0;right:0;z-index:130;
+  padding:16px 20px 20px;margin:0;
+  border-bottom:1px solid rgba(120,132,148,.28);
+  max-height:min(72vh,560px);overflow-y:auto;overflow-x:hidden;
   background:rgba(8,10,13,.98);
-  box-shadow:0 16px 40px rgba(0,0,0,.5);
-  flex-wrap:wrap;align-content:flex-start;gap:8px;
+  box-shadow:0 20px 48px rgba(0,0,0,.55);
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:8px 20px;align-content:start;
 }
-body.classic-nav-open .cloudos-topbar .nav-links{display:flex}
+body.classic-nav-open .browse-mega-menu{display:grid}
 @media(min-width:961px){
-  body.classic-nav-open .cloudos-topbar .nav-links{left:220px}
-  body.finder-collapsed.classic-nav-open .cloudos-topbar .nav-links{left:0}
+  body.classic-nav-open .browse-mega-menu{left:220px}
+  body.finder-collapsed.classic-nav-open .browse-mega-menu{left:0}
 }
+.browse-mega-menu .nav-group{
+  display:flex;flex-direction:column;align-items:stretch;position:relative;
+}
+.browse-mega-menu .nav-group-btn{
+  font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--spark);padding:6px 10px 8px;cursor:default;pointer-events:none;
+  background:transparent;border:none;justify-content:flex-start;
+}
+.browse-mega-menu .nav-group-btn::after{display:none}
+.browse-mega-menu .nav-dropdown{
+  display:block!important;position:static;background:transparent;border:none;
+  box-shadow:none;padding:0 0 10px;min-width:0;backdrop-filter:none;
+}
+.browse-mega-menu .nav-dropdown::before{display:none}
+.browse-mega-menu .nav-link{padding:7px 10px;font-size:.82rem}
 .classic-nav-backdrop{
-  display:none;position:fixed;inset:56px 0 0 0;z-index:110;background:rgba(0,0,0,.35);
+  display:none;position:fixed;inset:56px 0 0 0;z-index:125;background:rgba(0,0,0,.4);
 }
 body.classic-nav-open .classic-nav-backdrop{display:block}
 .page-context-bar{display:none}
 body[data-page="dashboard"] .control-center-bar{display:flex}
 .control-center-bar{display:none}
+.cluster-context-bar{padding:6px 16px;font-size:.8rem}
+.cluster-context-bar.visible{min-height:unset}
 .navbar::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,transparent,rgba(214,221,230,.55),rgba(159,176,196,.85),rgba(199,208,219,.72),transparent);
@@ -1770,7 +1789,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   }
   .cloudos-finder.open{transform:translateX(0)}
   .cloudos-body-row{min-height:auto}
-  body.classic-nav-open .cloudos-topbar .nav-links{left:0}
+  body.classic-nav-open .browse-mega-menu{left:0}
 }
 @media(min-width:961px){
   .cloudos-finder{position:relative;transform:none!important}
@@ -1784,117 +1803,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Toggle sidebar">☰</button>
     <span class="navbar-brand" onclick="navigate('dashboard')">CloudOS</span>
     <span class="navbar-page-title" id="navbar-page-title">Datacenter Home</span>
-    <div class="nav-links">
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">◆</span><span class="nav-label">Compute</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
-          <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
-          <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
-          <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
-          <button class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
-          <button class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
-          <button class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">⬢</span><span class="nav-label">Observe</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
-          <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
-          <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts</button>
-          <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
-          <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
-          <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
-          <button class="nav-link" data-page="heatmap" onclick="navigate('heatmap')">Heatmap</button>
-          <button class="nav-link" data-page="custom-dashboards" onclick="navigate('custom-dashboards')">Custom Dashboards</button>
-          <button class="nav-link" data-page="observability" onclick="navigate('observability')">Overview</button>
-          <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
-          <div class="nav-dropdown-sep"></div>
-          <button class="nav-link" data-page="traces" onclick="navigate('traces')">Traces <span class="nav-tag-new">NEW</span></button>
-          <button class="nav-link" data-page="logs" onclick="navigate('logs')">Logs <span class="nav-tag-new">NEW</span></button>
-          <button class="nav-link" data-page="incidents" onclick="navigate('incidents')">Incidents <span class="nav-tag-new">NEW</span></button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">▣</span><span class="nav-label">Storage</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
-          <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
-          <button class="nav-link" data-page="images" onclick="navigate('images')">Images</button>
-          <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">⟷</span><span class="nav-label">Network</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
-          <button class="nav-link" data-page="network-policies" onclick="navigate('network-policies')">Network Policies</button>
-          <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
-          <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
-          <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">⛨</span><span class="nav-label">Security</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
-          <button class="nav-link" data-page="compliance" onclick="navigate('compliance')">Compliance</button>
-          <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
-          <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
-          <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
-          <button class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">▦</span><span class="nav-label">Platform</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" type="button" onclick="openPlatformInstallModal();">Install KubeVirt stack&#8230;</button>
-          <div class="nav-dropdown-sep"></div>
-          <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
-          <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
-          <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
-          <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
-          <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
-          <button class="nav-link" data-page="migration" onclick="navigate('migration')">Migration <span class="nav-tag-new">NEW</span></button>
-          <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
-          <button class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
-          <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">◌</span><span class="nav-label">FinOps</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
-          <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">✦</span><span class="nav-label">Ops</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
-          <button class="nav-link" data-page="dr" onclick="navigate('dr')">Disaster Recovery</button>
-          <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
-          <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
-        </div>
-      </div>
-      <div class="nav-group">
-        <button class="nav-group-btn"><span class="nav-icon">?</span><span class="nav-label">Help</span></button>
-        <div class="nav-dropdown">
-          <button class="nav-link" type="button" onclick="openAboutModal()">About VMRogue</button>
-          <a class="nav-link" href="https://zyvor.dev/docs/intro" target="_blank" rel="noopener noreferrer">Documentation</a>
-          <a class="nav-link" href="https://zyvor.dev/docs/products" target="_blank" rel="noopener noreferrer">Product suite</a>
-          <a class="nav-link" href="https://zyvor.dev/contact" target="_blank" rel="noopener noreferrer">Contact</a>
-        </div>
-      </div>
-    </div>
   </div>
   <div class="navbar-right">
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
@@ -1917,6 +1825,111 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </nav>
+<div class="browse-mega-menu" id="browse-mega-menu" role="navigation" aria-label="Browse all pages">
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">◆</span><span class="nav-label">Compute</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
+      <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
+      <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
+      <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
+      <button class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
+      <button class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
+      <button class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">⬢</span><span class="nav-label">Observe</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
+      <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
+      <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts</button>
+      <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
+      <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
+      <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
+      <button class="nav-link" data-page="heatmap" onclick="navigate('heatmap')">Heatmap</button>
+      <button class="nav-link" data-page="custom-dashboards" onclick="navigate('custom-dashboards')">Custom Dashboards</button>
+      <button class="nav-link" data-page="observability" onclick="navigate('observability')">Overview</button>
+      <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
+      <div class="nav-dropdown-sep"></div>
+      <button class="nav-link" data-page="traces" onclick="navigate('traces')">Traces</button>
+      <button class="nav-link" data-page="logs" onclick="navigate('logs')">Logs</button>
+      <button class="nav-link" data-page="incidents" onclick="navigate('incidents')">Incidents</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">▣</span><span class="nav-label">Storage</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
+      <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
+      <button class="nav-link" data-page="images" onclick="navigate('images')">Images</button>
+      <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">⟷</span><span class="nav-label">Network</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
+      <button class="nav-link" data-page="network-policies" onclick="navigate('network-policies')">Network Policies</button>
+      <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
+      <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
+      <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">⛨</span><span class="nav-label">Security</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
+      <button class="nav-link" data-page="compliance" onclick="navigate('compliance')">Compliance</button>
+      <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
+      <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
+      <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
+      <button class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">▦</span><span class="nav-label">Platform</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" type="button" onclick="openPlatformInstallModal(); closeClassicNav();">Install KubeVirt stack…</button>
+      <div class="nav-dropdown-sep"></div>
+      <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
+      <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
+      <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
+      <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
+      <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
+      <button class="nav-link" data-page="app-store" onclick="navigate('app-store')">Template Store</button>
+      <button class="nav-link" data-page="migration" onclick="navigate('migration')">Migration</button>
+      <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
+      <button class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
+      <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">◌</span><span class="nav-label">FinOps</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
+      <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">✦</span><span class="nav-label">Ops</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
+      <button class="nav-link" data-page="dr" onclick="navigate('dr')">Disaster Recovery</button>
+      <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
+      <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
+    </div>
+  </div>
+  <div class="nav-group">
+    <button type="button" class="nav-group-btn"><span class="nav-icon">?</span><span class="nav-label">Help</span></button>
+    <div class="nav-dropdown">
+      <button class="nav-link" type="button" onclick="openAboutModal(); closeClassicNav();">About VMRogue</button>
+      <a class="nav-link" href="https://zyvor.dev/docs/intro" target="_blank" rel="noopener noreferrer">Documentation</a>
+      <a class="nav-link" href="https://zyvor.dev/docs/products" target="_blank" rel="noopener noreferrer">Product suite</a>
+      <a class="nav-link" href="https://zyvor.dev/contact" target="_blank" rel="noopener noreferrer">Contact</a>
+    </div>
+  </div>
+</div>
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
 
 <div class="cloudos-body-row">
