@@ -1600,6 +1600,20 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 Some(AiCommands::Network { name }) => {
                     handlers::copilot::handle_ai_network(&name, &cli.namespace).await?;
                 }
+                Some(AiCommands::Guest { name }) => {
+                    handlers::copilot::handle_ai_guest(&name, &cli.namespace, "text").await?;
+                }
+                Some(AiCommands::Storage) => {
+                    handlers::copilot::handle_ai_storage(&cli.namespace, "text").await?;
+                }
+                Some(AiCommands::Security { name }) => {
+                    handlers::copilot::handle_ai_security(
+                        &cli.namespace,
+                        name.as_deref(),
+                        "text",
+                    )
+                    .await?;
+                }
                 None => {
                     let q = query.join(" ");
                     if q.trim().is_empty() {

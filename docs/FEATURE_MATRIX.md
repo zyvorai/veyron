@@ -24,7 +24,6 @@ Status legend:
 | CRDs | `page-crds` | `/api/v1/crds/vmroguevms` | `handlers/crds.rs` | Working | Operator CRD listing and create flow |
 | Template catalog | `page-catalog` | `/api/v1/catalog/status`, `/api/v1/catalog/sync`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/catalog.rs`, `handlers/crds.rs` | Working | Sync, publish, deploy VMRogueVM |
 | Integrations | `page-integrations` | `/api/v1/integrations/status` | `handlers/integrations.rs` | Working | Env probes + in-app deep links to classic pages |
-| Migration Assistant | `page-migration` | `/api/v1/experience/migration/*` | `handlers/experience.rs` | Working | VMware/OVA/VMDK scan, plan, CDI execute |
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Includes operator-emitted **Drift** insights |
 | Actions | `page-actions` | `/api/v1/crds/actions` | `handlers/crds.rs` | Working | Uses operator CRDs |
@@ -99,7 +98,7 @@ These route groups now have first-class dashboard pages:
 | Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
 | Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
 | VM drift | `/api/v1/vms` (list fields), `/api/v1/vms/:ns/:name/drift` | Surfaced (VM list badges, filter, detail panel) |
-| CloudOS experience | `/api/v1/experience/*` | Datacenter Home, Spotlight, Fix-it, Migration, App Store, fleet health, locations, session |
+| CloudOS experience | `/api/v1/experience/*` | Datacenter Home, Spotlight, Fix-it, App Store, fleet health, locations, session |
 
 ## Known Partial Areas
 
@@ -133,7 +132,6 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | CloudOS Datacenter Home | Working | `/experience/home` — hero, Today panel, pinned VMs, health chips (no duplicate fleet bar) |
 | CloudOS Spotlight | Working | `⌘K` — grouped results, recents, forge/migrate/backup actions |
 | CloudOS Fix-it errors | Working | VM actions → `/experience/errors/translate` modal |
-| Migration Assistant | Working | 5-step wizard — table inventory, inline plan accordion, tasks via `/experience/migration/tasks` |
 | Template App Store | Working | `page-app-store` — `/experience/templates` grid + Forge VM |
 | CloudOS Finder sidebar | Working | Favorites / Operations / Network (collapsible); Browse pin-to-Finder |
 | VM guest health scores | Working | `/experience/fleet/health` pills on cards-first VM grid |

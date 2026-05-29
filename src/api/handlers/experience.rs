@@ -2,13 +2,13 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Zyvor CloudOS experience layer — home, search, fix-it errors, migration assistant.
+//! Zyvor CloudOS experience layer — home, search, fix-it errors.
 
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
     extract::{Query, State},
-    http::{HeaderMap, StatusCode},
+    http::{HeaderMap},
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -105,105 +105,8 @@ pub struct TranslateErrorResponse {
     pub raw_message: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct MigrationInventoryItem {
-    pub name: String,
-    #[serde(default)]
-    pub os: Option<String>,
-    #[serde(default)]
-    pub firmware: Option<String>,
-    #[serde(default)]
-    pub disk_format: Option<String>,
-    #[serde(default)]
-    pub disk_gb: Option<u32>,
-    #[serde(default)]
-    pub network: Option<String>,
-    #[serde(default)]
-    pub has_vmware_tools: Option<bool>,
-    #[serde(default)]
-    pub virtio_ready: Option<bool>,
-}
-
 #[derive(Debug, Clone, Deserialize)]
-pub struct MigrationScanRequest {
-    pub source: String,
-    #[serde(default)]
-    pub items: Vec<MigrationInventoryItem>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationReadinessCheck {
-    pub id: String,
-    pub label: String,
-    pub status: String,
-    pub detail: String,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationScanItem {
-    pub name: String,
-    pub readiness: String,
-    pub checks: Vec<MigrationReadinessCheck>,
-    pub recommended_plan: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationScanResponse {
-    pub source: String,
-    pub source_label: String,
-    pub total: u32,
-    pub ready: u32,
-    pub needs_preparation: u32,
-    pub blocked: u32,
-    pub items: Vec<MigrationScanItem>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct MigrationPlanRequest {
-    pub source: String,
-    pub item: MigrationInventoryItem,
-    #[serde(default)]
-    pub target_namespace: Option<String>,
-    #[serde(default)]
-    pub target_network: Option<String>,
-    #[serde(default)]
-    pub storage_class: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationPlanResponse {
-    pub name: String,
-    pub readiness: String,
-    pub checks: Vec<MigrationReadinessCheck>,
-    pub steps: Vec<String>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct MigrationExecuteRequest {
-    pub name: String,
-    pub namespace: String,
-    #[serde(default)]
-    pub template: Option<String>,
-    #[serde(default)]
-    pub profile: Option<String>,
-    #[serde(default)]
-    pub import_url: Option<String>,
-    #[serde(default)]
-    pub storage_class: Option<String>,
-    #[serde(default)]
-    pub disk_size: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationExecuteResponse {
-    pub status: String,
-    pub message: String,
-    pub datavolume: Option<String>,
-    pub vmrogue_vm: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct MigrationSearchQuery {
+pub struct ExperienceSearchQuery {
     pub q: Option<String>,
     #[serde(flatten)]
     pub ns: DashboardNamespaceQuery,
@@ -217,12 +120,6 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/home", get(experience_home))
         .route("/experience/search", get(experience_search))
         .route("/experience/errors/translate", post(translate_error_handler))
-        .route("/experience/migration/sources", get(migration_sources))
-        .route("/experience/migration/scan", post(migration_scan))
-        .route("/experience/migration/plan", post(migration_plan))
-        .route("/experience/migration/execute", post(migration_execute))
-        .route("/experience/migration/discover", post(migration_discover))
-        .route("/experience/migration/tasks", get(migration_tasks))
         .route("/experience/session", get(experience_session))
         .route("/experience/fleet/health", get(fleet_health))
         .route("/experience/templates", get(template_store))
@@ -236,8 +133,7 @@ fn experience_context() -> super::feature_context::VmrogueFeatureContext {
         data_source: "experience_compose".to_string(),
         scope: "Zyvor CloudOS experience API — aggregates KubeVirt/K8s into product vocabulary."
             .to_string(),
-        limitations: "Health scores and migration readiness are heuristic until guest metrics and vCenter APIs are wired."
-            .to_string(),
+        limitations: "Guest metrics use QEMU agent + optional Prometheus.".to_string(),
     }
 }
 
@@ -354,21 +250,7 @@ pub struct LocationsResponse {
     pub locations: Vec<LocationItem>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct MigrationDiscoverRequest {
-    pub source: String,
-    #[serde(default)]
-    pub vcenter_host: Option<String>,
-    #[serde(default)]
-    pub username: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationDiscoverResponse {
-    pub status: String,
-    pub message: String,
-    pub suggested_items: Vec<MigrationInventoryItem>,
-}
+// ── Fix-it translator (shared with tests) ───────────────────────────
 
 #[cfg(feature = "web")]
 async fn experience_session(
@@ -513,36 +395,6 @@ async fn experience_locations(State(state): State<SharedState>) -> Json<Location
         vmrogue_context: experience_context(),
         current_location,
         locations,
-    })
-}
-
-#[cfg(feature = "web")]
-async fn migration_discover(Json(body): Json<MigrationDiscoverRequest>) -> Json<MigrationDiscoverResponse> {
-    let host = body
-        .vcenter_host
-        .as_deref()
-        .unwrap_or("vcenter.example.com");
-    let msg = if body.source == "vmware" {
-        format!(
-            "vCenter API sync for {host} is not wired yet. Export VMs from vCenter (OVF/OVA or VMDK) \
-             or paste inventory JSON, then run Scan readiness."
-        )
-    } else {
-        "Use Scan readiness with exported inventory JSON for this source.".to_string()
-    };
-    Json(MigrationDiscoverResponse {
-        status: "manual".to_string(),
-        message: msg,
-        suggested_items: vec![MigrationInventoryItem {
-            name: "exported-workload".to_string(),
-            os: Some("Linux".to_string()),
-            firmware: Some("uefi".to_string()),
-            disk_format: Some("vmdk".to_string()),
-            disk_gb: Some(40),
-            network: None,
-            has_vmware_tools: Some(false),
-            virtio_ready: Some(false),
-        }],
     })
 }
 
@@ -712,13 +564,6 @@ async fn experience_home(
             action: "create_vm".to_string(),
         },
         HomeActionCard {
-            id: "migration".to_string(),
-            title: "Migration Assistant".to_string(),
-            subtitle: "VMware / OVA / VMDK".to_string(),
-            icon: "migrate".to_string(),
-            action: "navigate:migration".to_string(),
-        },
-        HomeActionCard {
             id: "console".to_string(),
             title: "Open Console".to_string(),
             subtitle: "VNC or serial".to_string(),
@@ -731,6 +576,13 @@ async fn experience_home(
             subtitle: "Snapshots & Velero".to_string(),
             icon: "backup".to_string(),
             action: "navigate:backups".to_string(),
+        },
+        HomeActionCard {
+            id: "copilot".to_string(),
+            title: "VMRogue Copilot".to_string(),
+            subtitle: "Doctor, YAML, backups, network".to_string(),
+            icon: "copilot".to_string(),
+            action: "open_copilot".to_string(),
         },
         HomeActionCard {
             id: "health".to_string(),
@@ -805,7 +657,7 @@ async fn experience_home(
 #[cfg(feature = "web")]
 async fn experience_search(
     State(state): State<SharedState>,
-    Query(q): Query<MigrationSearchQuery>,
+    Query(q): Query<ExperienceSearchQuery>,
 ) -> Json<ExperienceSearchResponse> {
     let query = q.q.clone().unwrap_or_default();
     let needle = query.to_lowercase();
@@ -846,7 +698,6 @@ async fn experience_search(
         ("dashboard", "Datacenter Home", "Fleet overview"),
         ("vms", "Virtual Machines", "KubeVirt fleet"),
         ("app-store", "Template Store", "App Store for VM images"),
-        ("migration", "Migration Assistant", "VMware / OVA import"),
         ("catalog", "Catalog (advanced)", "VMTemplate CRD sync"),
         ("backups", "Backups", "Snapshots & Velero"),
         ("monitoring", "Activity Monitor", "Health & metrics"),
@@ -868,13 +719,6 @@ async fn experience_search(
     }
 
     if needle.contains("migrate") {
-        results.push(SearchResultItem {
-            kind: "action".to_string(),
-            id: "migration-assistant".to_string(),
-            title: "Migration Assistant".to_string(),
-            subtitle: "VMware / OVA / VMDK import".to_string(),
-            action: "navigate:migration".to_string(),
-        });
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "live-migrate".to_string(),
@@ -901,417 +745,61 @@ async fn experience_search(
             subtitle: "Snapshots & Velero".to_string(),
             action: "navigate:backups".to_string(),
         });
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "backup-advisor".to_string(),
+            title: "Backup Advisor".to_string(),
+            subtitle: "Find VMs without snapshots or schedules".to_string(),
+            action: "copilot:backup".to_string(),
+        });
+    }
+
+    if needle.contains("copilot")
+        || needle.contains("ai ")
+        || needle == "ai"
+        || needle.contains("doctor")
+        || needle.contains("diagnose")
+    {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "copilot".to_string(),
+            title: "VMRogue Copilot".to_string(),
+            subtitle: "Ask about VM health, YAML, errors".to_string(),
+            action: "open_copilot".to_string(),
+        });
+    }
+    if needle.contains("unhealthy") || needle.contains("degraded") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "unhealthy-vms".to_string(),
+            title: "Show unhealthy VMs".to_string(),
+            subtitle: "VMRogue Doctor fleet scan".to_string(),
+            action: "copilot:unhealthy".to_string(),
+        });
+    }
+    if needle.contains("network") || needle.contains("connectivity") || needle.contains("firewall") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "network-lens".to_string(),
+            title: "Network Lens".to_string(),
+            subtitle: "Inspect VM interfaces and policies".to_string(),
+            action: "open_copilot".to_string(),
+        });
+    }
+    if needle.contains("scheduling") || needle.contains("pending") || needle.contains("unschedulable") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "scheduling-explainer".to_string(),
+            title: "Scheduling Explainer".to_string(),
+            subtitle: "Why a VM is stuck Pending".to_string(),
+            action: "open_copilot".to_string(),
+        });
     }
 
     results.truncate(25);
     Json(ExperienceSearchResponse { query, results })
 }
 
-// ── Migration assistant ─────────────────────────────────────────────
-
-fn source_label(source: &str) -> &str {
-    match source {
-        "vmware" => "VMware vCenter / ESXi",
-        "ova" => "OVA / OVF package",
-        "vmdk" => "VMDK disk file",
-        "hyperv" => "Hyper-V",
-        "proxmox" => "Proxmox",
-        _ => "Custom source",
-    }
-}
-
-fn assess_migration_item(item: &MigrationInventoryItem) -> (String, Vec<MigrationReadinessCheck>, Vec<String>) {
-    let mut checks = Vec::new();
-    let mut blocked = false;
-    let mut needs_prep = false;
-
-    let fw = item.firmware.as_deref().unwrap_or("bios").to_lowercase();
-    if fw.contains("efi") || fw.contains("uefi") {
-        checks.push(MigrationReadinessCheck {
-            id: "firmware".to_string(),
-            label: "UEFI firmware".to_string(),
-            status: "ok".to_string(),
-            detail: "Compatible with KubeVirt UEFI templates.".to_string(),
-        });
-    } else {
-        checks.push(MigrationReadinessCheck {
-            id: "firmware".to_string(),
-            label: "BIOS firmware".to_string(),
-            status: "warn".to_string(),
-            detail: "Verify template uses matching firmware.".to_string(),
-        });
-        needs_prep = true;
-    }
-
-    let fmt = item.disk_format.as_deref().unwrap_or("vmdk").to_lowercase();
-    if fmt.contains("vmdk") || fmt.contains("qcow") || fmt.contains("raw") {
-        checks.push(MigrationReadinessCheck {
-            id: "disk".to_string(),
-            label: "Disk format".to_string(),
-            status: "ok".to_string(),
-            detail: format!("{fmt} can be imported via CDI."),
-        });
-    } else {
-        checks.push(MigrationReadinessCheck {
-            id: "disk".to_string(),
-            label: "Disk format".to_string(),
-            status: "error".to_string(),
-            detail: "Convert to VMDK/QCOW2 before import.".to_string(),
-        });
-        blocked = true;
-    }
-
-    if item.virtio_ready == Some(true) {
-        checks.push(MigrationReadinessCheck {
-            id: "virtio".to_string(),
-            label: "VirtIO drivers".to_string(),
-            status: "ok".to_string(),
-            detail: "Guest is VirtIO-ready.".to_string(),
-        });
-    } else {
-        checks.push(MigrationReadinessCheck {
-            id: "virtio".to_string(),
-            label: "VirtIO drivers".to_string(),
-            status: "warn".to_string(),
-            detail: "Plan driver injection or install virtio-win in guest.".to_string(),
-        });
-        needs_prep = true;
-    }
-
-    if item.has_vmware_tools == Some(true) {
-        checks.push(MigrationReadinessCheck {
-            id: "tools".to_string(),
-            label: "VMware Tools".to_string(),
-            status: "warn".to_string(),
-            detail: "Replace with QEMU guest agent / Cloudbase-Init after cutover.".to_string(),
-        });
-        needs_prep = true;
-    }
-
-    if item.network.is_none() {
-        checks.push(MigrationReadinessCheck {
-            id: "network".to_string(),
-            label: "Network mapping".to_string(),
-            status: "warn".to_string(),
-            detail: "Map source network to a workspace network (NAD or pod).".to_string(),
-        });
-        needs_prep = true;
-    } else {
-        checks.push(MigrationReadinessCheck {
-            id: "network".to_string(),
-            label: "Network mapping".to_string(),
-            status: "ok".to_string(),
-            detail: format!("Target network: {}", item.network.as_deref().unwrap_or("default")),
-        });
-    }
-
-    let readiness = if blocked {
-        "blocked"
-    } else if needs_prep {
-        "needs_preparation"
-    } else {
-        "ready"
-    };
-
-    let plan = vec![
-        "Convert disk to QCOW2/RAW if required (virt-v2v or qemu-img)".to_string(),
-        "Import disk via CDI DataVolume (URL upload or registry)".to_string(),
-        "Create VM from template + profile or VMRogueVM".to_string(),
-        "Verify boot and install guest tools".to_string(),
-        "Cut over traffic and decommission source VM".to_string(),
-    ];
-
-    (readiness.to_string(), checks, plan)
-}
-
-#[cfg(feature = "web")]
-async fn migration_sources() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "sources": [
-            {"id": "vmware", "label": "VMware vCenter / ESXi", "formats": ["vmdk", "ova"]},
-            {"id": "ova", "label": "OVA / OVF package", "formats": ["ova", "ovf"]},
-            {"id": "vmdk", "label": "VMDK file", "formats": ["vmdk"]},
-            {"id": "hyperv", "label": "Hyper-V", "formats": ["vhdx"]},
-            {"id": "proxmox", "label": "Proxmox", "formats": ["qcow2", "raw"]}
-        ],
-        "pipeline": "Source disk → CDI DataVolume → PVC → KubeVirt VirtualMachine"
-    }))
-}
-
-#[cfg(feature = "web")]
-async fn migration_scan(Json(body): Json<MigrationScanRequest>) -> Json<MigrationScanResponse> {
-    let mut items_out = Vec::new();
-    let inv = if body.items.is_empty() {
-        vec![MigrationInventoryItem {
-            name: "example-workload".to_string(),
-            os: Some("Linux".to_string()),
-            firmware: Some("uefi".to_string()),
-            disk_format: Some("vmdk".to_string()),
-            disk_gb: Some(40),
-            network: None,
-            has_vmware_tools: Some(false),
-            virtio_ready: Some(true),
-        }]
-    } else {
-        body.items.clone()
-    };
-
-    let mut ready = 0u32;
-    let mut needs = 0u32;
-    let mut blocked = 0u32;
-
-    for item in &inv {
-        let (readiness, checks, plan) = assess_migration_item(item);
-        match readiness.as_str() {
-            "ready" => ready += 1,
-            "blocked" => blocked += 1,
-            _ => needs += 1,
-        }
-        items_out.push(MigrationScanItem {
-            name: item.name.clone(),
-            readiness,
-            checks,
-            recommended_plan: plan,
-        });
-    }
-
-    Json(MigrationScanResponse {
-        source: body.source.clone(),
-        source_label: source_label(&body.source).to_string(),
-        total: items_out.len() as u32,
-        ready,
-        needs_preparation: needs,
-        blocked,
-        items: items_out,
-    })
-}
-
-#[cfg(feature = "web")]
-async fn migration_plan(Json(body): Json<MigrationPlanRequest>) -> Json<MigrationPlanResponse> {
-    let (readiness, checks, steps) = assess_migration_item(&body.item);
-    Json(MigrationPlanResponse {
-        name: body.item.name.clone(),
-        readiness,
-        checks,
-        steps,
-    })
-}
-
-#[cfg(feature = "web")]
-async fn migration_execute(
-    State(state): State<SharedState>,
-    Json(body): Json<MigrationExecuteRequest>,
-) -> Result<Json<MigrationExecuteResponse>, (StatusCode, String)> {
-    use kube::api::{Api, ApiResource, DynamicObject, PostParams};
-
-    let name = body.name.trim();
-    let ns = body.namespace.trim();
-    if name.is_empty() || ns.is_empty() {
-        return Err((StatusCode::BAD_REQUEST, "name and namespace required".to_string()));
-    }
-
-    let s = state.read().await;
-    let client = s.client().client();
-    let mut dv_name: Option<String> = None;
-
-    if let Some(url) = body.import_url.as_ref().filter(|u| !u.is_empty()) {
-        let size = body
-            .disk_size
-            .clone()
-            .filter(|s| !s.is_empty())
-            .unwrap_or_else(|| "40Gi".to_string());
-        let sc = body.storage_class.clone();
-        let dv_meta_name = format!("import-{}", name.replace('.', "-"));
-        let mut spec = serde_json::json!({
-            "apiVersion": "cdi.kubevirt.io/v1beta1",
-            "kind": "DataVolume",
-            "metadata": {
-                "name": dv_meta_name,
-                "namespace": ns,
-                "labels": {
-                    "vmrogue.io/managed-by": "vmrogue-migration",
-                    "vmrogue.io/source-vm": name
-                }
-            },
-            "spec": {
-                "source": { "http": { "url": url } },
-                "pvc": {
-                    "accessModes": ["ReadWriteOnce"],
-                    "resources": { "requests": { "storage": size } }
-                }
-            }
-        });
-        if let Some(ref sc_name) = sc {
-            if let Some(pvc) = spec
-                .pointer_mut("/spec/pvc")
-                .and_then(|p| p.as_object_mut())
-            {
-                pvc.insert("storageClassName".to_string(), serde_json::json!(sc_name));
-            }
-        }
-        let ar = ApiResource {
-            group: "cdi.kubevirt.io".to_string(),
-            version: "v1beta1".to_string(),
-            api_version: "cdi.kubevirt.io/v1beta1".to_string(),
-            kind: "DataVolume".to_string(),
-            plural: "datavolumes".to_string(),
-        };
-        let api: Api<DynamicObject> = Api::namespaced_with(client.clone(), ns, &ar);
-        let obj: DynamicObject = serde_json::from_value(spec)
-            .map_err(|e| (StatusCode::BAD_REQUEST, format!("invalid DV spec: {e}")))?;
-        api.create(&PostParams::default(), &obj)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("CDI import: {e}")))?;
-        dv_name = Some(dv_meta_name);
-    }
-
-    let vrvm_name = if body.template.is_some() || body.profile.is_some() {
-        use crate::operator_crds::{VMRogueVM, VMRogueVMSpec, CRDCPUSpec, CRDMemorySpec};
-        let tpl = body.template.clone();
-        let prof = body.profile.clone();
-        let spec = VMRogueVMSpec {
-            template: tpl,
-            profile: prof,
-            cpu: CRDCPUSpec {
-                cores: 2,
-                sockets: 1,
-                threads: 1,
-                model: None,
-                dedicated_cpu_placement: None,
-                isolate_emulator_thread: None,
-            },
-            memory: CRDMemorySpec {
-                size: "4Gi".to_string(),
-                hugepages_page_size: None,
-                max_guest: None,
-            },
-            disks: vec![],
-            interfaces: vec![],
-            cloud_init: None,
-            features: None,
-            firmware: None,
-            clock: None,
-            eviction_strategy: None,
-            termination_grace_period: None,
-            enable_tpm: false,
-            enable_rng: false,
-            machine_type: None,
-            running: Some(true),
-            labels: Default::default(),
-            annotations: Default::default(),
-            allow_internet: true,
-            windows: None,
-        };
-        let vm_name = format!("migrated-{}", name.replace('.', "-"));
-        let vm = VMRogueVM::new(&vm_name, spec);
-        let api: Api<VMRogueVM> = Api::namespaced(client.clone(), ns);
-        api.create(&PostParams::default(), &vm)
-            .await
-            .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, format!("VMRogueVM: {e}")))?;
-        Some(vm_name)
-    } else {
-        None
-    };
-
-    Ok(Json(MigrationExecuteResponse {
-        status: "accepted".to_string(),
-        message: if dv_name.is_some() {
-            "CDI import started; create or attach VM when disk is Ready.".to_string()
-        } else {
-            "Migration plan recorded; provide import_url to start CDI import.".to_string()
-        },
-        datavolume: dv_name,
-        vmrogue_vm: vrvm_name,
-    }))
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationTaskItem {
-    pub name: String,
-    pub namespace: String,
-    pub phase: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vmrogue_vm: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub source_vm: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct MigrationTasksResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
-    pub tasks: Vec<MigrationTaskItem>,
-}
-
-#[cfg(feature = "web")]
-async fn migration_tasks(
-    State(state): State<SharedState>,
-    Query(q): Query<DashboardNamespaceQuery>,
-) -> Json<MigrationTasksResponse> {
-    use kube::api::{Api, ApiResource, DynamicObject, ListParams};
-
-    let s = state.read().await;
-    let client = s.client().client();
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-
-    let ar = ApiResource {
-        group: "cdi.kubevirt.io".to_string(),
-        version: "v1beta1".to_string(),
-        api_version: "cdi.kubevirt.io/v1beta1".to_string(),
-        kind: "DataVolume".to_string(),
-        plural: "datavolumes".to_string(),
-    };
-    let dv_api: Api<DynamicObject> = if namespace_scope::is_all_namespaces(&scope) {
-        Api::all_with(client, &ar)
-    } else {
-        Api::namespaced_with(client, &scope, &ar)
-    };
-
-    let mut tasks = Vec::new();
-    if let Ok(dvs) = dv_api
-        .list(
-            &ListParams::default()
-                .labels("vmrogue.io/managed-by=vmrogue-migration")
-                .limit(50),
-        )
-        .await
-    {
-        for dv in dvs.items {
-            let Some(name) = dv.metadata.name else {
-                continue;
-            };
-            let ns = dv
-                .metadata
-                .namespace
-                .clone()
-                .unwrap_or_else(|| scope.clone());
-            let phase = dv
-                .data
-                .get("status")
-                .and_then(|st| st.get("phase"))
-                .and_then(|p| p.as_str())
-                .unwrap_or("Pending")
-                .to_string();
-            let source_vm = dv
-                .metadata
-                .labels
-                .as_ref()
-                .and_then(|l| l.get("vmrogue.io/source-vm"))
-                .cloned();
-            tasks.push(MigrationTaskItem {
-                name,
-                namespace: ns,
-                phase,
-                vmrogue_vm: None,
-                source_vm,
-            });
-        }
-    }
-
-    Json(MigrationTasksResponse {
-        vmrogue_context: experience_context(),
-        tasks,
-    })
-}
 
 #[cfg(test)]
 mod tests {

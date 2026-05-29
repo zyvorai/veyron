@@ -214,8 +214,6 @@ else
     echo ""
     FAIL=$((FAIL + 1))
 fi
-check_json_grep "GET /api/v1/experience/migration/sources" \
-    "${BASE}/api/v1/experience/migration/sources" '"sources"'
 check_json_grep "GET /api/v1/experience/fleet/health" \
     "${BASE}/api/v1/experience/fleet/health?namespace=all" '"items"'
 check_json_grep "GET /api/v1/experience/templates" \
@@ -224,8 +222,6 @@ check_json_grep "GET /api/v1/experience/session" \
     "${BASE}/api/v1/experience/session" '"role"'
 check_json_grep "GET /api/v1/experience/locations" \
     "${BASE}/api/v1/experience/locations" '"locations"'
-check_json_grep "GET /api/v1/experience/migration/tasks" \
-    "${BASE}/api/v1/experience/migration/tasks?namespace=all" '"tasks"'
 copilot_body=$(curl -skS --connect-timeout 15 --max-time 45 \
     -X POST -H "X-API-Key: ${KEY}" -H 'Content-Type: application/json' \
     -d '{"query":"show unhealthy vms"}' \

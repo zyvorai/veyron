@@ -22,7 +22,6 @@ Users ask in plain language; VMRogue responds with **root cause**, **evidence fr
 | **VMRogue Error Explainer** | Translate K8s/KubeVirt errors |
 | **VMRogue YAML Builder** | Generate + validate VirtualMachine YAML |
 | **VMRogue Scheduling Explainer** | Human-readable Pending / Unschedulable |
-| **VMRogue Migration Advisor** | VMware/OVA/VMDK readiness (CloudOS wizard) |
 | **VMRogue Blueprint Studio** | Reusable AI-generated profiles |
 | **VMRogue Network Lens** | VM-to-VM connectivity debugging |
 | **VMRogue Storage Doctor** | PVC / snapshot bloat |
@@ -46,9 +45,17 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 | `GET /experience/copilot/backup` | Backup Advisor — fleet coverage |
 | `GET /experience/copilot/network/:ns/:name` | Network Lens — per-VM posture |
 
+| `GET /experience/copilot/guest/:ns/:name` | Guest Inspector |
+| `GET /experience/copilot/storage` | Storage Doctor |
+| `GET /experience/copilot/security/:ns/:name` | Security Sentinel (per VM) |
+| `GET /experience/copilot/security` | Security Sentinel (fleet) |
+
 ### CLI
 
 ```bash
+vmrogue ai guest vm-db-01
+vmrogue ai storage
+vmrogue ai security --name vm-app-01
 vmrogue ai "Why is my VM not starting?"
 vmrogue ai doctor vm-db-01
 vmrogue ai scheduling vm-app-01
@@ -86,10 +93,12 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 | 2 | AI YAML Builder | **Done** — preview + StorageClass/memory/template checks |
 | 3 | AI VM Doctor | **Done** — events, VMI, health score |
 | 4 | AI Scheduling Explainer | **Done** — event-driven reasons + fixes |
-| 5 | AI Migration Advisor | **Partial** — CloudOS migration wizard + scan/plan |
-| 6 | AI Backup Advisor | **Done** — snapshot/schedule/Velero coverage |
-| 7 | AI Network Lens | **Done** — interfaces, expose, policies per VM |
-| 8 | AI Guest Inspector | **Planned** — QEMU guest agent metrics |
+| 5 | AI Backup Advisor | **Done** — snapshot/schedule/Velero coverage |
+| 6 | AI Network Lens | **Done** — interfaces, expose, policies per VM |
+| 7 | AI Guest Inspector | **Done** — guest agent, OS info, Doctor merge |
+| 8 | AI Storage Doctor | **Done** — PVC pressure, snapshot sprawl |
+| 9 | AI Security Sentinel | **Done** — RDP expose, drift, policies |
+| 10 | Optional LLM backend | **Done** — `VMROGUE_AI_URL` paraphrase layer |
 
 ## Safety rails (product policy)
 
@@ -101,11 +110,9 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 ## Next phases
 
-1. **Optional LLM backend** — `VMROGUE_AI_URL` / API key for paraphrase + multi-step plans; keep deterministic validation layer
-2. **Network Lens** — Multus NAD + NetworkPolicy path analysis
-3. **Backup Advisor** — join Velero status + VM labels (`production`)
-4. **Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML
-5. **GitOps Generator** — export kustomize trees from Copilot previews
+1. **Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML
+2. **GitOps Generator** — export kustomize trees from Copilot previews
+3. **Guest filesystem metrics** — guest-exec or Prometheus guest exporters
 
 ## Related docs
 

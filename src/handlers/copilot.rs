@@ -2,7 +2,8 @@
 
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
-    network_lens, recommend_template, scheduling_explainer, vm_doctor, yaml_preview,
+    finalize_copilot, guest_inspector, network_lens, recommend_template, scheduling_explainer,
+    security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
 };
 use crate::kube::KubeClient;
 use anyhow::Result;
@@ -10,14 +11,17 @@ use anyhow::Result;
 pub async fn handle_ai_ask(query: &str, namespace: &str, vm_name: Option<&str>) -> Result<()> {
     let client = KubeClient::new().await?;
     let scope = if namespace.is_empty() { "default" } else { namespace };
-    let resp = copilot_ask(
-        &client,
-        scope,
-        &CopilotAskRequest {
-            query: query.to_string(),
-            namespace: Some(namespace.to_string()),
-            vm_name: vm_name.map(str::to_string),
-        },
+    let resp = finalize_copilot(
+        copilot_ask(
+            &client,
+            scope,
+            &CopilotAskRequest {
+                query: query.to_string(),
+                namespace: Some(namespace.to_string()),
+                vm_name: vm_name.map(str::to_string),
+            },
+        )
+        .await,
     )
     .await;
     print_copilot(&resp, "text");
@@ -26,28 +30,31 @@ pub async fn handle_ai_ask(query: &str, namespace: &str, vm_name: Option<&str>) 
 
 pub async fn handle_ai_doctor(name: &str, namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let resp = vm_doctor(&client, namespace, name).await;
+    let resp = finalize_copilot(vm_doctor(&client, namespace, name).await).await;
     print_copilot(&resp, output);
     Ok(())
 }
 
 pub async fn handle_ai_scheduling(name: &str, namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let resp = scheduling_explainer(&client, namespace, name).await;
+    let resp = finalize_copilot(scheduling_explainer(&client, namespace, name).await).await;
     print_copilot(&resp, output);
     Ok(())
 }
 
 pub async fn handle_ai_explain(message: &str, namespace: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let resp = copilot_ask(
-        &client,
-        namespace,
-        &CopilotAskRequest {
-            query: message.to_string(),
-            namespace: None,
-            vm_name: None,
-        },
+    let resp = finalize_copilot(
+        copilot_ask(
+            &client,
+            namespace,
+            &CopilotAskRequest {
+                query: message.to_string(),
+                namespace: None,
+                vm_name: None,
+            },
+        )
+        .await,
     )
     .await;
     print_copilot(&resp, "text");
@@ -74,7 +81,7 @@ pub async fn handle_ai_yaml(
         storage_class: None,
         network_attachment: None,
     };
-    let resp = yaml_preview(&client, namespace, req).await;
+    let resp = finalize_copilot(yaml_preview(&client, namespace, req).await).await;
     print_copilot(&resp, output);
     Ok(())
 }
@@ -88,15 +95,46 @@ pub async fn handle_ai_recommend(description: &str) -> Result<()> {
 pub async fn handle_ai_backup(namespace: &str) -> Result<()> {
     let client = KubeClient::new().await?;
     let scope = if namespace.is_empty() { "default" } else { namespace };
-    let resp = backup_advisor(&client, scope).await;
+    let resp = finalize_copilot(backup_advisor(&client, scope).await).await;
     print_copilot(&resp, "text");
     Ok(())
 }
 
 pub async fn handle_ai_network(name: &str, namespace: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let resp = network_lens(&client, namespace, name).await;
+    let resp = finalize_copilot(network_lens(&client, namespace, name).await).await;
     print_copilot(&resp, "text");
+    Ok(())
+}
+
+pub async fn handle_ai_guest(name: &str, namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let resp = finalize_copilot(guest_inspector(&client, namespace, name).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_storage(namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = finalize_copilot(storage_doctor(&client, scope).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_security(
+    namespace: &str,
+    name: Option<&str>,
+    output: &str,
+) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let resp = if let Some(vm) = name {
+        finalize_copilot(security_sentinel(&client, scope, vm).await).await
+    } else {
+        finalize_copilot(security_sentinel_fleet(&client, scope).await).await
+    };
+    print_copilot(&resp, output);
     Ok(())
 }
 
