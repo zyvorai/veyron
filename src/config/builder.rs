@@ -456,6 +456,15 @@ mod tests {
     }
 
     #[test]
+    fn test_default_disk_size_label_skips_container_root() {
+        let config = VMConfigBuilder::new("ubuntu-vm")
+            .add_container_disk("rootdisk", "quay.io/containerdisks/ubuntu:22.04", 1)
+            .add_blank_disk("datadisk", "20Gi", 2)
+            .build();
+        assert_eq!(config.default_disk_size_label(), "20Gi");
+    }
+
+    #[test]
     fn test_builder_multus_network() {
         let config = VMConfigBuilder::new("multus-vm")
             .namespace("default")

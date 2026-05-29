@@ -136,6 +136,28 @@ pub fn default_allow_internet() -> bool {
     true
 }
 
+impl VMConfig {
+    /// First meaningful blank/data disk size for UI defaults (skips container/CDROM `0` sizes).
+    pub fn default_disk_size_label(&self) -> String {
+        self.disks
+            .iter()
+            .find(|d| {
+                d.device_type != DiskDeviceType::CDROM
+                    && !matches!(d.source, DiskSource::ContainerDisk { .. })
+                    && !d.size.is_empty()
+                    && d.size != "0"
+            })
+            .map(|d| d.size.clone())
+            .or_else(|| {
+                self.disks
+                    .iter()
+                    .find(|d| !d.size.is_empty() && d.size != "0")
+                    .map(|d| d.size.clone())
+            })
+            .unwrap_or_else(|| "20Gi".to_string())
+    }
+}
+
 /// CPU configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CPUConfig {

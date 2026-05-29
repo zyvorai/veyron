@@ -20,6 +20,7 @@ pub mod dependencies;
 pub mod disks;
 pub mod dr;
 pub mod experience;
+pub mod copilot;
 pub mod events;
 pub mod feature_context;
 pub mod forecasting;
@@ -109,6 +110,7 @@ pub fn all_routes(
         .merge(backups::router(state.clone()))
         .merge(catalog::router(state.clone()))
         .merge(experience::router(state.clone()))
+        .merge(copilot::router(state.clone()))
         .merge(security::router(state.clone()))
         .merge(compliance::router(state.clone()))
         .merge(monitoring::router(state.clone()))

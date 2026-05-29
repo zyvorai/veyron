@@ -116,11 +116,7 @@ async fn list_templates() -> Json<Vec<TemplateResponse>> {
                     os_type: os.clone(),
                     default_cpus: config.cpu.cores,
                     default_memory: config.memory.size.clone(),
-                    default_disk_size: config
-                        .disks
-                        .first()
-                        .map(|d| d.size.clone())
-                        .unwrap_or_default(),
+                    default_disk_size: config.default_disk_size_label(),
                     tags: tags_from_os(&os),
                 }
             })
@@ -141,11 +137,7 @@ async fn get_template(Path(name): Path<String>) -> Result<Json<TemplateResponse>
                 os_type: os.clone(),
                 default_cpus: config.cpu.cores,
                 default_memory: config.memory.size.clone(),
-                default_disk_size: config
-                    .disks
-                    .first()
-                    .map(|d| d.size.clone())
-                    .unwrap_or_default(),
+                default_disk_size: config.default_disk_size_label(),
                 tags: tags_from_os(&os),
             }))
         }
