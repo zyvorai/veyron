@@ -1057,7 +1057,7 @@ pub mod web {
     }
 
     async fn root_redirect() -> axum::response::Redirect {
-        axum::response::Redirect::permanent("/dashboard")
+        axum::response::Redirect::permanent("/dashboard?dash=20260529e")
     }
 
     async fn dashboard_handler() -> impl IntoResponse {

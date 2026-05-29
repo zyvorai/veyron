@@ -4,11 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260529c">
+<meta name="vmrogue-dashboard-rev" content="20260529e">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
+  var DASH_REV = '20260529e';
+  var revParam = 'dash=' + DASH_REV;
+  if (location.search.indexOf(revParam) === -1) {
+    location.replace(location.pathname + '?' + revParam + location.hash);
+    return;
+  }
   try {
     const savedTheme = localStorage.getItem('vmrogue_theme');
     if (savedTheme === 'zinc' || savedTheme === 'steel') {
@@ -1805,6 +1811,18 @@ html[data-theme="zinc"] .monitor-cap{
 }
 body.finder-collapsed .cloudos-finder{width:0;padding:0;overflow:hidden;border-right:none}
 body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
+.finder-toolbar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:2px 4px 8px;margin-bottom:2px;border-bottom:1px solid var(--border);
+}
+.finder-toolbar-title{font-size:.72rem;font-weight:600;color:var(--text-dim);letter-spacing:.04em;text-transform:uppercase}
+.finder-collapse-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:8px;border:1px solid var(--border);
+  background:var(--bg-elevated);color:var(--text-muted);cursor:pointer;font-size:1rem;line-height:1;
+}
+.finder-collapse-btn:hover{border-color:rgba(56,189,248,.35);color:var(--spark)}
+.finder-toggle[aria-expanded="false"]{border-color:rgba(56,189,248,.35);color:var(--spark)}
 .cloudos-finder-title{font-size:.74rem;font-weight:600;letter-spacing:.01em;text-transform:none;color:var(--text-dim);padding:8px 10px 4px}
 .finder-section{margin-bottom:4px}
 .finder-section-toggle{
@@ -1868,7 +1886,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <nav class="navbar cloudos-topbar">
   <div class="navbar-left">
-    <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Toggle sidebar">☰</button>
+    <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Hide sidebar" aria-expanded="true" title="Hide sidebar (⌘\)">☰</button>
     <span class="navbar-brand" onclick="navigate('dashboard')">CloudOS</span>
     <span class="navbar-page-title" id="navbar-page-title">Datacenter Home</span>
   </div>
@@ -2011,6 +2029,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="cloudos-body-row">
 <aside class="cloudos-finder" id="cloudos-finder" aria-label="CloudOS Finder">
+  <div class="finder-toolbar">
+    <span class="finder-toolbar-title">Sidebar</span>
+    <button type="button" class="finder-collapse-btn" onclick="toggleFinder()" title="Hide sidebar" aria-label="Hide sidebar">‹</button>
+  </div>
   <div class="finder-section" id="finder-sec-favorites" data-finder-section="favorites">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-favorites">
@@ -3230,16 +3252,38 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 </div>
 
 <script>
-// Bump when dashboard JS changes — forces one reload after deploy (sessionStorage).
-window.__VMROGUE_DASH_REV = '20260529c';
+// Bump when dashboard JS changes — forces reload after deploy.
+window.__VMROGUE_DASH_REV = '20260529e';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
     const prev = sessionStorage.getItem(k);
     sessionStorage.setItem(k, window.__VMROGUE_DASH_REV);
-    if (prev && prev !== window.__VMROGUE_DASH_REV) location.reload();
+    if (prev && prev !== window.__VMROGUE_DASH_REV) {
+      location.replace(location.pathname + '?dash=' + encodeURIComponent(window.__VMROGUE_DASH_REV) + location.hash);
+    }
   } catch (e) { /* private mode */ }
 })();
+
+// Stale-cache shim (Safari may keep an old dashboard script body).
+if (typeof window.renderDcTodayStats !== 'function') {
+  window.renderDcTodayStats = function renderDcTodayStats() {
+    const el = document.getElementById('dc-today-stats');
+    if (!el) return;
+    const running = (vmData || []).filter(v => v.status === 'Running').length;
+    const failed = (vmData || []).filter(v => v.status === 'Failed' || v.status === 'Error').length;
+    const warnings = (lastEvents || []).filter(e => e.type === 'Warning').length;
+    const overview = lastOverview || {};
+    const nodes = overview.nodes || {};
+    const readyNodes = nodes.ready_nodes != null && nodes.total_nodes != null
+      ? nodes.ready_nodes + '/' + nodes.total_nodes : 'n/a';
+    el.innerHTML =
+      '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + (vmData || []).length + '</div></div>' +
+      '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
+      '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyNodes + '</div></div>' +
+      (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
+  };
+}
 
 // State
 let currentPage = 'dashboard';
@@ -3832,7 +3876,43 @@ let cloudOsSession = { role: 'admin', can_write: true, can_admin: true };
 const VM_VIEW_KEY = 'vmrogue_vm_view';
 const FINDER_SECTIONS_KEY = 'vmrogue_finder_sections';
 const FINDER_PINS_KEY = 'vmrogue_finder_pins';
+const FINDER_COLLAPSED_KEY = 'vmrogue_finder_collapsed';
 const SPOTLIGHT_RECENTS_KEY = 'vmrogue_spotlight_recents';
+
+function isFinderMobile() {
+  return window.innerWidth <= 960;
+}
+
+function syncFinderToggleUi() {
+  const btn = document.querySelector('.finder-toggle');
+  const collapsed = document.body.classList.contains('finder-collapsed');
+  if (btn) {
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    btn.setAttribute('aria-label', collapsed ? 'Show sidebar' : 'Hide sidebar');
+    btn.title = collapsed ? 'Show sidebar (⌘\\)' : 'Hide sidebar (⌘\\)';
+  }
+  const collapseBtn = document.querySelector('.finder-collapse-btn');
+  if (collapseBtn) {
+    collapseBtn.title = 'Hide sidebar';
+    collapseBtn.setAttribute('aria-label', 'Hide sidebar');
+  }
+}
+
+function setFinderCollapsed(collapsed, persist) {
+  if (isFinderMobile()) return;
+  document.body.classList.toggle('finder-collapsed', collapsed);
+  syncFinderToggleUi();
+  if (persist !== false) {
+    try { localStorage.setItem(FINDER_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
+  }
+}
+
+function initFinderCollapsed() {
+  if (isFinderMobile()) return;
+  let collapsed = false;
+  try { collapsed = localStorage.getItem(FINDER_COLLAPSED_KEY) === '1'; } catch (e) {}
+  setFinderCollapsed(collapsed, false);
+}
 
 function toggleFinderSection(name) {
   const sec = document.querySelector('.finder-section[data-finder-section="' + name + '"]');
@@ -3948,12 +4028,12 @@ function isWindowsVm(vm) {
 }
 
 function toggleFinder() {
-  if (window.innerWidth <= 960) {
+  if (isFinderMobile()) {
     const el = document.getElementById('cloudos-finder');
     if (el) el.classList.toggle('open');
-  } else {
-    document.body.classList.toggle('finder-collapsed');
+    return;
   }
+  setFinderCollapsed(!document.body.classList.contains('finder-collapsed'));
 }
 
 function toggleClassicNav() {
@@ -3972,7 +4052,7 @@ function finderNavigate(page) {
   closeClassicNav();
   navigate(page);
   const el = document.getElementById('cloudos-finder');
-  if (el && window.innerWidth <= 960) el.classList.remove('open');
+  if (el && isFinderMobile()) el.classList.remove('open');
 }
 
 function syncFinderActive(page) {
@@ -5266,6 +5346,11 @@ async function forgeVM() {
 }
 
 document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+    e.preventDefault();
+    toggleFinder();
+    return;
+  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
     openSpotlight();
@@ -6664,6 +6749,7 @@ window.addEventListener('load', async () => {
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
   initVmViewMode();
+  initFinderCollapsed();
   initFinderSections();
   initBrowsePinButtons();
   fetchExperienceSession();
@@ -6675,6 +6761,15 @@ window.addEventListener('load', async () => {
   fetchIntegrations();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   window.addEventListener('resize', () => {
+    if (isFinderMobile()) {
+      document.body.classList.remove('finder-collapsed');
+      const el = document.getElementById('cloudos-finder');
+      if (el && !el.classList.contains('open')) el.classList.remove('open');
+    } else {
+      const el = document.getElementById('cloudos-finder');
+      if (el) el.classList.remove('open');
+      initFinderCollapsed();
+    }
     drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
     drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
   });
