@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260529e">
+<meta name="vmrogue-dashboard-rev" content="20260529f">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260529e';
+  var DASH_REV = '20260529f';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2051,11 +2051,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('ai')">AI <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-ai">
-      <button type="button" class="cloudos-finder-item" onclick="openCopilot()"><span class="fi-icon">✦</span>Copilot</button>
-      <button type="button" class="cloudos-finder-item" onclick="runCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon">♥</span>Unhealthy VMs</button>
-      <button type="button" class="cloudos-finder-item" onclick="navigate('backups');runBackupAdvisor()"><span class="fi-icon">⧉</span>Backup Advisor</button>
-      <button type="button" class="cloudos-finder-item" onclick="runCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon">▣</span>Storage Doctor</button>
-      <button type="button" class="cloudos-finder-item" onclick="runSecuritySentinel();navigate('security')"><span class="fi-icon">⛨</span>Security Sentinel</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderOpenCopilot()"><span class="fi-icon">✦</span>Copilot</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon">♥</span>Unhealthy VMs</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon">⧉</span>Backup Advisor</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon">▣</span>Storage Doctor</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderSecuritySentinel()"><span class="fi-icon">⛨</span>Security Sentinel</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-network" data-finder-section="network">
@@ -3253,7 +3253,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260529e';
+window.__VMROGUE_DASH_REV = '20260529f';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4055,6 +4055,28 @@ function finderNavigate(page) {
   if (el && isFinderMobile()) el.classList.remove('open');
 }
 
+function finderOpenCopilot() {
+  try { openCopilot(''); } catch (e) { toast((e && e.message) || String(e), 'error'); }
+}
+
+function finderRunCopilotQuick(query) {
+  try { runCopilotQuick(query); } catch (e) { toast((e && e.message) || String(e), 'error'); }
+}
+
+function finderBackupAdvisor() {
+  try {
+    finderNavigate('backups');
+    runBackupAdvisor();
+  } catch (e) { toast((e && e.message) || String(e), 'error'); }
+}
+
+function finderSecuritySentinel() {
+  try {
+    finderNavigate('security');
+    runSecuritySentinel();
+  } catch (e) { toast((e && e.message) || String(e), 'error'); }
+}
+
 function syncFinderActive(page) {
   document.querySelectorAll('.cloudos-finder-item').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.page === page);
@@ -4802,55 +4824,67 @@ function runCopilotQuick(query) {
 }
 
 
-// Fetch VMs
+// Fetch VMs — shared vmData; only touch widgets that exist on the active page.
 async function fetchVMs() {
   try {
     const j = await apiJson('/api/v1/vms' + nsParam());
     const list = asArray(j);
     vmData = list;
-    const total=vmData.length, running=vmData.filter(v=>v.status==='Running').length;
-    const stopped=vmData.filter(v=>v.status==='Stopped').length;
-    const failed=vmData.filter(v=>v.status==='Failed'||v.status==='Error').length;
+    const total = vmData.length;
+    const running = vmData.filter(v => v.status === 'Running').length;
+    const stopped = vmData.filter(v => v.status === 'Stopped').length;
+    const failed = vmData.filter(v => v.status === 'Failed' || v.status === 'Error').length;
+    const driftN = vmData.filter(v => v.drift_detected === true).length;
 
-    let totalCpu=0; vmData.forEach(v=>{totalCpu+=parseInt(v.cpu)||1;});
-    let totalMemGb = 0; vmData.forEach(v=>{
+    let totalCpu = 0;
+    vmData.forEach(v => { totalCpu += parseInt(v.cpu, 10) || 1; });
+    let totalMemGb = 0;
+    vmData.forEach(v => {
       const m = v.memory || '';
       if (m.endsWith('Gi')) totalMemGb += parseFloat(m);
-      else if (m.endsWith('Mi')) totalMemGb += parseFloat(m)/1024;
+      else if (m.endsWith('Mi')) totalMemGb += parseFloat(m) / 1024;
     });
 
-    document.getElementById('stat-cards').innerHTML =
-      statCard('blue','&#9889;','Virtual Machines',total,'<span class="stat-badge badge-green">'+running+' active</span>')+
-      statCard('orange','&#9881;','Allocated vCPUs',totalCpu,'')+
-      statCard('purple','&#9830;','Total Memory',totalMemGb.toFixed(1)+' GB','')+
-      statCard('green','&#9733;','Fleet Health',(total>0?Math.round(running/total*100):0)+'%','');
+    const onDashboard = currentPage === 'dashboard';
+    const statCards = document.getElementById('stat-cards');
+    if (statCards) {
+      statCards.innerHTML =
+        statCard('blue', '&#9889;', 'Virtual Machines', total, '<span class="stat-badge badge-green">' + running + ' active</span>') +
+        statCard('orange', '&#9881;', 'Allocated vCPUs', totalCpu, '') +
+        statCard('purple', '&#9830;', 'Total Memory', totalMemGb.toFixed(1) + ' GB', '') +
+        statCard('green', '&#9733;', 'Fleet Health', (total > 0 ? Math.round(running / total * 100) : 0) + '%', '');
+    }
 
-    document.getElementById('subtitle').textContent = 'KubeVirt cluster \u2014 '+total+' VMs under command';
-    renderDashboardCommandCenter();
-    await fetchFleetHealth();
-    fetchExperienceHome();
-    renderPinnedVmsFromClient();
+    const subtitle = document.getElementById('subtitle');
+    if (subtitle) subtitle.textContent = 'KubeVirt cluster \u2014 ' + total + ' VMs under command';
 
-    // Fetch real cluster capacity + platform readiness (updates nav health dot)
-    await fetchOverview();
+    if (onDashboard) {
+      try { renderDashboardCommandCenter(); } catch (e) { console.error('renderDashboardCommandCenter', e); }
+      await fetchFleetHealth();
+      fetchExperienceHome();
+      renderPinnedVmsFromClient();
+      await fetchOverview();
+      const dashVmList = document.getElementById('dash-vm-list');
+      if (dashVmList) {
+        dashVmList.innerHTML = vmData.length === 0
+          ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>'
+          : vmData.slice(0, 10).map(v => vmRow(v, false)).join('');
+      }
+    }
 
-    document.getElementById('dash-vm-list').innerHTML = vmData.length===0 ?
-      '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>' :
-      vmData.slice(0,10).map(v=>vmRow(v,false)).join('');
-
-    const driftN = vmData.filter(v => v.drift_detected === true).length;
-    document.getElementById('vm-count').textContent = total+' VMs // '+running+' active / '+stopped+' idle'+(failed?' / '+failed+' failed':'')+(driftN?' / '+driftN+' drift':'');
+    const vmCount = document.getElementById('vm-count');
+    if (vmCount) {
+      vmCount.textContent = total + ' VMs // ' + running + ' active / ' + stopped + ' idle' +
+        (failed ? ' / ' + failed + ' failed' : '') + (driftN ? ' / ' + driftN + ' drift' : '');
+    }
     const subEl = document.getElementById('vm-page-subtitle');
     if (subEl) {
       subEl.textContent = 'KubeVirt fleet command' + (driftN ? ' — ' + driftN + ' with operator drift' : '');
     }
-    // Only re-render VM list if no detail panel is open (prevents wiping expanded detail)
     if (!expandedVm) {
       renderVmFullList(vmData);
     }
-
-    /* Platform / Forge readiness: fetchOverview → updateHealth */
-  } catch(e) {
+  } catch (e) {
     console.error('fetchVMs', e);
     const msg = (e && e.message && e.message.indexOf('renderDc') >= 0)
       ? 'Dashboard script out of date — hard refresh (Cmd+Shift+R)'
@@ -4866,6 +4900,7 @@ async function fetchEvents(full) {
     const events = asArray(j);
     lastEvents = events;
     const renderEvents = (items, target) => {
+      if (!target) return;
       if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#9889;</div><p>No signals intercepted</p></div>'; return; }
       target.innerHTML = items.map(e => {
         const isWarn = e.type==='Warning';
@@ -4873,9 +4908,11 @@ async function fetchEvents(full) {
         return '<div class="event-row"><div class="event-dot '+cls+'"></div><div class="event-body"><p class="event-msg">'+esc(e.message||e.reason||'No message')+'</p><div class="event-meta"><span>'+esc(e.namespace)+'</span><span>'+esc(e.involved_object)+'</span></div></div><span class="event-badge '+cls+'">'+(isWarn?'Warning':'Info')+'</span><span class="event-time">'+fmtTime(e.timestamp)+'</span></div>';
       }).join('');
     };
-    renderEvents(events.slice(0,5), document.getElementById('dash-event-list'));
+    renderEvents(events.slice(0, 5), document.getElementById('dash-event-list'));
     if (full) renderEvents(events, document.getElementById('events-full-list'));
-    renderDashboardCommandCenter();
+    if (currentPage === 'dashboard') {
+      try { renderDashboardCommandCenter(); } catch (e) { console.error('renderDashboardCommandCenter', e); }
+    }
   } catch (e) {
     const dash = document.getElementById('dash-event-list');
     const fullEl = document.getElementById('events-full-list');
@@ -5115,6 +5152,7 @@ async function copyPlatformInstallScript() {
 }
 
 function renderDashboardCommandCenter() {
+  try {
   const metricEl = document.getElementById('command-metrics');
   const priorityEl = document.getElementById('dash-priority-list');
   const badgeEl = document.getElementById('command-badges');
@@ -5189,6 +5227,9 @@ function renderDashboardCommandCenter() {
       '<div class="priority-state ' + item.state + '">' + (item.state === 'hot' ? 'Critical' : item.state === 'warn' ? 'Watch' : 'Stable') + '</div>' +
     '</div>'
   ).join('');
+  } catch (e) {
+    console.error('renderDashboardCommandCenter', e);
+  }
 }
 
 // ── Create VM ──
