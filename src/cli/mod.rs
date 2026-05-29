@@ -191,6 +191,46 @@ pub enum AiCommands {
         #[arg(short, long, default_value = "text")]
         output: String,
     },
+    /// VM hardening and compliance gaps
+    Compliance {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Metrics/logs/traces stack discovery
+    Observability {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Cilium agents and network policies
+    Cilium {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Node capacity and pressure
+    Nodes {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// VMRogueVM operator drift
+    Drift {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Warning events narrative
+    Alerts {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Fleet availability SLO
+    Slo {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Live migration status
+    Migrations {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]

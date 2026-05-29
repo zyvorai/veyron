@@ -1640,6 +1640,30 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 Some(AiCommands::Pending { output }) => {
                     handlers::copilot::handle_ai_pending(&cli.namespace, &output).await?;
                 }
+                Some(AiCommands::Compliance { output }) => {
+                    handlers::copilot::handle_ai_compliance(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Observability { output }) => {
+                    handlers::copilot::handle_ai_observability(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Cilium { output }) => {
+                    handlers::copilot::handle_ai_cilium(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Nodes { output }) => {
+                    handlers::copilot::handle_ai_nodes(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Drift { output }) => {
+                    handlers::copilot::handle_ai_drift(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Alerts { output }) => {
+                    handlers::copilot::handle_ai_alerts(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Slo { output }) => {
+                    handlers::copilot::handle_ai_slo(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Migrations { output }) => {
+                    handlers::copilot::handle_ai_migrations(&cli.namespace, &output).await?;
+                }
                 None => {
                     let q = query.join(" ");
                     if q.trim().is_empty() {

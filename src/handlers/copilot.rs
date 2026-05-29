@@ -1,11 +1,13 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use crate::copilot::{
-    CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
-    cost_advisor, cost_advisor_vm, forecast_advisor, gitops_advisor, integrations_advisor,
-    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, performance_advisor,
-    recommend_template, scheduling_explainer, scheduling_fleet_advisor,
-    security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
+    CopilotAskRequest, CopilotResponse, YamlBuildRequest, alert_advisor, backup_advisor,
+    cilium_advisor, compliance_advisor, copilot_ask, cost_advisor, cost_advisor_vm,
+    drift_advisor, forecast_advisor, gitops_advisor, integrations_advisor, migration_advisor,
+    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, node_advisor,
+    observability_advisor, performance_advisor, recommend_template, scheduling_explainer,
+    scheduling_fleet_advisor, security_sentinel, security_sentinel_fleet, slo_advisor,
+    storage_doctor, vm_doctor, yaml_preview,
 };
 use crate::kube::KubeClient;
 use anyhow::Result;
@@ -200,6 +202,27 @@ pub async fn handle_ai_pending(namespace: &str, output: &str) -> Result<()> {
     print_copilot(&resp, output);
     Ok(())
 }
+
+macro_rules! ai_scope_handler {
+    ($name:ident, $advisor:ident) => {
+        pub async fn $name(namespace: &str, output: &str) -> Result<()> {
+            let client = KubeClient::new().await?;
+            let scope = if namespace.is_empty() { "default" } else { namespace };
+            let resp = finalize_copilot($advisor(&client, scope).await).await;
+            print_copilot(&resp, output);
+            Ok(())
+        }
+    };
+}
+
+ai_scope_handler!(handle_ai_compliance, compliance_advisor);
+ai_scope_handler!(handle_ai_observability, observability_advisor);
+ai_scope_handler!(handle_ai_cilium, cilium_advisor);
+ai_scope_handler!(handle_ai_nodes, node_advisor);
+ai_scope_handler!(handle_ai_drift, drift_advisor);
+ai_scope_handler!(handle_ai_alerts, alert_advisor);
+ai_scope_handler!(handle_ai_slo, slo_advisor);
+ai_scope_handler!(handle_ai_migrations, migration_advisor);
 
 fn print_copilot(resp: &CopilotResponse, output: &str) {
     if output == "json" {

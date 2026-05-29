@@ -251,6 +251,22 @@ check_json_grep "GET /api/v1/experience/copilot/integrations" \
     "${BASE}/api/v1/experience/copilot/integrations" '"module"'
 check_json_grep "GET /api/v1/experience/copilot/scheduling" \
     "${BASE}/api/v1/experience/copilot/scheduling?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/compliance" \
+    "${BASE}/api/v1/experience/copilot/compliance?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/observability" \
+    "${BASE}/api/v1/experience/copilot/observability?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/cilium" \
+    "${BASE}/api/v1/experience/copilot/cilium?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/nodes" \
+    "${BASE}/api/v1/experience/copilot/nodes?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/drift" \
+    "${BASE}/api/v1/experience/copilot/drift?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/alerts" \
+    "${BASE}/api/v1/experience/copilot/alerts?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/slo" \
+    "${BASE}/api/v1/experience/copilot/slo?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/migrations" \
+    "${BASE}/api/v1/experience/copilot/migrations?namespace=all" '"module"'
 check_json_grep "GET /api/v1/experience/copilot/guest/filesystem" \
     "${BASE}/api/v1/experience/copilot/guest/default/nonexistent-vm/filesystem" '"module"'
 gitops_body=$(curl -skS --connect-timeout 15 --max-time 45 \
