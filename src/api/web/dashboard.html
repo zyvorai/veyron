@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260530a">
+<meta name="vmrogue-dashboard-rev" content="20260530c">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260530a';
+  var DASH_REV = '20260530c';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1887,8 +1887,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <nav class="navbar cloudos-topbar">
   <div class="navbar-left">
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Hide sidebar" aria-expanded="true" title="Hide sidebar (⌘\)">☰</button>
-    <span class="navbar-brand" onclick="navigate('dashboard')">CloudOS</span>
-    <span class="navbar-page-title" id="navbar-page-title">Datacenter Home</span>
+    <span class="navbar-brand" onclick="navigate('dashboard')">ZeusOS</span>
+    <span class="navbar-page-title" id="navbar-page-title">ZeusOS Dashboard</span>
   </div>
   <div class="navbar-right">
     <div class="topbar-location" id="topbar-location-wrap">
@@ -2028,7 +2028,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
 
 <div class="cloudos-body-row">
-<aside class="cloudos-finder" id="cloudos-finder" aria-label="CloudOS Finder">
+<aside class="cloudos-finder" id="cloudos-finder" aria-label="ZeusOS Finder">
   <div class="finder-toolbar">
     <span class="finder-toolbar-title">Sidebar</span>
     <button type="button" class="finder-collapse-btn" onclick="toggleFinder()" title="Hide sidebar" aria-label="Hide sidebar">‹</button>
@@ -2036,7 +2036,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   <div class="finder-section" id="finder-sec-favorites" data-finder-section="favorites">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-favorites">
-      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Datacenter Home</button>
+      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>ZeusOS Dashboard</button>
       <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Virtual Machines</button>
       <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">⬡</span>Template Store</button>
     </div>
@@ -2130,7 +2130,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <!-- DASHBOARD PAGE -->
 <div class="page active section-shell" id="page-dashboard" data-section="dashboard">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Datacenter Home</h1><p id="subtitle">Forging connections...</p></div></div>
+  <div class="page-header"><div><h1>ZeusOS Dashboard</h1><p id="subtitle">Forging connections...</p></div></div>
   <div class="cloudos-datacenter" id="cloudos-datacenter">
     <div class="dc-hero">
       <div class="dc-greeting" id="dc-greeting">Welcome back.</div>
@@ -3253,7 +3253,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260530a';
+window.__VMROGUE_DASH_REV = '20260530c';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -3298,7 +3298,7 @@ let lastOverview = null;
 let lastEvents = [];
 
 const PAGE_META = {
-  dashboard: {kicker:'Dashboard', title:'Fleet overview and live command surface', tags:['Live cluster','KubeVirt control','Realtime refresh']},
+  dashboard: {kicker:'ZeusOS Dashboard', title:'Fleet overview and live command surface', tags:['Live cluster','KubeVirt control','Realtime refresh']},
   vms: {kicker:'Compute', title:'Virtual machine fleet command', tags:['Start stop resize','SSH and VNC','Bulk actions']},
   monitoring: {kicker:'Observe', title:'Stack health, anomalies, and recommendations', tags:['Metrics aware','Prometheus hints','Namespace scoped']},
   workloads: {kicker:'Compute', title:'Deployments, stateful services, and daemon workloads', tags:['Replica health','Workload types','Namespace view']},
@@ -3380,7 +3380,7 @@ function setTheme(theme) {
 }
 
 function updatePageContext(page) {
-  const meta = PAGE_META[page] || {kicker:'CloudOS', title:'Cluster command surface', tags:['Live cluster']};
+  const meta = PAGE_META[page] || {kicker:'ZeusOS', title:'Cluster command surface', tags:['Live cluster']};
   const navTitle = document.getElementById('navbar-page-title');
   if (navTitle) navTitle.textContent = meta.kicker || page;
 }
@@ -4137,7 +4137,7 @@ async function fetchAppStore() {
         '<div class="app-store-icon">' + em + '</div>' +
         '<div class="app-store-title">' + esc(t.title) + '</div>' +
         '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-        '<button type="button" class="btn btn-sm btn-start" ' + onHandler('event.stopPropagation();forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
+        '<button type="button" class="btn btn-sm btn-start" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
       '</div>';
     }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
   } catch (e) {
@@ -4190,19 +4190,19 @@ function vmCard(vm, showActions) {
   const icon = osFamilyIcon(family);
   const winHint = isRunning && isWindowsVm(vm) ? '<span class="vm-rdp-hint" title="Use RDP expose for Windows">RDP</span>' : '';
   const primary = isRunning
-    ? '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' + winHint
-    : '<button type="button" class="btn btn-start btn-sm" ' + onHandler('event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
+    ? '<button type="button" class="btn btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' + winHint
+    : '<button type="button" class="btn btn-start btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
   const stopBtn = isRunning && showActions
-    ? '<button type="button" class="btn btn-sm btn-stop" ' + onHandler('event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
+    ? '<button type="button" class="btn btn-sm btn-stop" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
     : '';
   const pendingHint = vm.status === 'Pending'
-    ? '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openCopilotScheduling(' + jsArgs(ns, vm.name) + ')') + '>Scheduling</button>'
+    ? '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, vm.name) + ')') + '>Scheduling</button>'
     : '';
   const actions = showActions ? primary + stopBtn + pendingHint +
-    '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
-    '<button type="button" class="btn btn-sm" ' + onHandler('event.stopPropagation();openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
-    '<button type="button" class="btn btn-sm btn-restart" ' + onHandler('event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
-    '<button type="button" class="btn btn-sm btn-delete" ' + onHandler('event.stopPropagation();vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
+    '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
+    '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
+    '<button type="button" class="btn btn-sm btn-restart" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
+    '<button type="button" class="btn btn-sm btn-delete" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   return '<div class="vm-card" ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
@@ -4275,7 +4275,7 @@ function vmSshBlock(vm, showActions) {
       '<div class="ssh-block-title"><strong>SSH</strong> <span style="font-weight:400;opacity:.8">(KubeVirt / virtctl)</span></div>' +
       '<div style="margin-top:6px;line-height:1.45">Guest IP not reported on the VMI yet. On any machine with <code>kubectl</code> and <code>virtctl</code>:</div>' +
       '<div style="margin-top:6px"><code>' + esc(virtFallback) + '</code>' +
-      (showActions ? ' <button type="button" class="btn-mini" ' + onHandler('event.stopPropagation();copyToClipboard(' + jsArgs(virtFallback) + ')') + '>Copy SSH command</button>' : '') +
+      (showActions ? ' <button type="button" class="btn-mini" ' + onStopHandler('copyToClipboard(' + jsArgs(virtFallback) + ')') + '>Copy SSH command</button>' : '') +
       '</div></div>';
   }
   const u = guessSshUser(vm.name);
@@ -4294,8 +4294,8 @@ function vmSshBlock(vm, showActions) {
     '<div style="margin-top:8px;opacity:.82;font-size:.95em;line-height:1.45"><strong>A</strong> works only if your machine can route to <code>' + esc(ip) + '</code> (same LAN, VPN, load balancer, etc.). <strong>B</strong> works wherever <code>kubectl</code> works; install the KubeVirt <code>virtctl</code> client.</div>';
   if (showActions) {
     html += '<div class="ssh-actions">' +
-      '<button type="button" class="btn-mini" ' + onHandler('event.stopPropagation();copyToClipboard(' + jsArgs(ssh) + ')') + '>Copy SSH (TCP)</button>' +
-      '<button type="button" class="btn-mini" ' + onHandler('event.stopPropagation();copyToClipboard(' + jsArgs(virt) + ')') + '>Copy SSH (virtctl)</button>' +
+      '<button type="button" class="btn-mini" ' + onStopHandler('copyToClipboard(' + jsArgs(ssh) + ')') + '>Copy SSH (TCP)</button>' +
+      '<button type="button" class="btn-mini" ' + onStopHandler('copyToClipboard(' + jsArgs(virt) + ')') + '>Copy SSH (virtctl)</button>' +
       '</div>';
   }
   html += '</div>';
@@ -4312,21 +4312,32 @@ function vmDriftBadge(vm) {
   return '<span class="drift-badge sync">In sync</span>';
 }
 
+/** Comma-separated JSON.stringify args for inline handlers (use inside onclick='…'). */
+function jsArgs() {
+  return Array.from(arguments).map(a => JSON.stringify(a)).join(',');
+}
+function onHandler(expr) {
+  return 'onclick=\'' + expr + '\'';
+}
+function onStopHandler(expr) {
+  return onHandler('event.stopPropagation();' + expr);
+}
+
 // Render VM row
 function vmRow(vm, showActions) {
   const cls = sc(vm.status);
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.74rem" onclick="event.stopPropagation();openVncConsole(\''+ns+'\',\''+vm.name+'\')">VNC</button>' +
-    '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.18);font-size:.74rem" onclick="event.stopPropagation();openSerialConsole(\''+ns+'\',\''+vm.name+'\')">Serial</button>' : '') +
-    (!isRunning ? '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'start\')">&#9654;</button>' : '') +
-    (isRunning ? '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'stop\')">&#9632;</button>' : '') +
-    '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\''+ns+'\',\''+vm.name+'\',\'restart\')">&#8635;</button>' +
-    '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\''+ns+'\',\''+vm.name+'\')">&#10005;</button>' +
+    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.74rem" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>VNC</button>' +
+    '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.18);font-size:.74rem" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, vm.name) + ')') + '>Serial</button>' : '') +
+    (!isRunning ? '<button class="btn btn-start" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>&#9654;</button>' : '') +
+    (isRunning ? '<button class="btn btn-stop" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>&#9632;</button>' : '') +
+    '<button class="btn btn-restart" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>&#8635;</button>' +
+    '<button class="btn btn-delete" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>&#10005;</button>' +
     '</div>' : '';
-  const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" onclick="event.stopPropagation();toggleVMSelect(\''+vm.name+'\',this.checked)"' + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
-  const clickAttr = showActions ? ' onclick="toggleVmDetail(\''+ns+'\',\''+vm.name+'\')" style="cursor:pointer"' : '';
+  const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(vm.name) + ',this.checked)') + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
+  const clickAttr = showActions ? (' ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"') : '';
   const sshBlock = vmSshBlock(vm, showActions);
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
   return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div><div class="vm-ns">'+esc(ns)+'</div></div></div>'+rightCol+'</div>';
@@ -4559,7 +4570,7 @@ function renderCopilotResultInto(el, data) {
   }
   if (data.yaml_preview) {
     html += '<pre id="copilot-yaml-preview" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
-    html += '<button type="button" class="btn btn-sm" style="margin-top:8px" onclick="copyToClipboard(document.getElementById(\'copilot-yaml-preview\').textContent)">Copy YAML</button>';
+    html += '<button type="button" class="btn btn-sm" style="margin-top:8px" ' + onHandler('copyToClipboard(document.getElementById(' + jsArgs('copilot-yaml-preview') + ').textContent)') + '>Copy YAML</button>';
   }
   if (data.recommendations && data.recommendations.length) {
     html += '<div style="margin-top:12px;font-size:.82rem"><strong>Recommended fixes</strong><ol style="margin:6px 0 0 18px">';
@@ -4650,7 +4661,7 @@ function renderSpotlightResults() {
     html += '<div class="spotlight-section-label">' + (labels[kind] || kind) + '</div>';
     items.forEach(x => {
       const active = x.i === spotlightActiveIndex ? ' active' : '';
-      html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" onclick="activateSpotlightResult(' + x.i + ')">' +
+      html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" ' + onHandler('activateSpotlightResult(' + x.i + ')') + '>' +
         '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
         '<div><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
       '</div>';
@@ -4659,7 +4670,7 @@ function renderSpotlightResults() {
   const other = spotlightResults.map((r, i) => ({ r, i })).filter(x => !kinds.includes(x.r.kind || 'page'));
   other.forEach(x => {
     const active = x.i === spotlightActiveIndex ? ' active' : '';
-    html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" onclick="activateSpotlightResult(' + x.i + ')">' +
+    html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" ' + onHandler('activateSpotlightResult(' + x.i + ')') + '>' +
       '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
       '<div><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
     '</div>';
@@ -5050,13 +5061,6 @@ function setCapBanner(id, ctx) {
   if (el) el.innerHTML = vmrogueFeatureBanner(ctx);
 }
 function esc(s) { const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
-/** Build comma-separated JSON.stringify args for inline handlers (use inside onclick='…'). */
-function jsArgs() {
-  return Array.from(arguments).map(a => JSON.stringify(a)).join(',');
-}
-function onHandler(expr) {
-  return 'onclick=\'' + expr + '\'';
-}
 function updateHealth(ok, msg, warn) {
   const isWarn = warn === true;
   const dot = document.getElementById('health-dot');
@@ -5287,7 +5291,7 @@ async function fetchProfiles() {
 function renderProfilePicker() {
   const el = document.getElementById('profile-picker');
   el.innerHTML = profileCache.map(p =>
-    '<div class="profile-card' + (selectedProfile === p.name ? ' selected' : '') + '" onclick="selectProfile(\'' + p.name + '\')">' +
+    '<div class="profile-card' + (selectedProfile === p.name ? ' selected' : '') + '" ' + onHandler('selectProfile(' + jsArgs(p.name) + ')') + '>' +
     '<div class="pc-name">' + esc(p.name) + '</div>' +
     '<div class="pc-spec">' + p.cpu_cores + 'C / ' + esc(p.memory) + '</div>' +
     '</div>'
@@ -5498,11 +5502,11 @@ async function fetchVmDetail(ns, name) {
 
     inner += '<div class="detail-section"><div class="detail-section-title">VMRogue AI</div>';
     inner += '<div class="detail-actions" style="margin-top:0;margin-bottom:10px">';
-    inner += '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotDoctor(\'' + ns + '\',\'' + name + '\')">Doctor</button>';
-    inner += '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotGuest(\'' + ns + '\',\'' + name + '\')">Guest</button>';
-    inner += '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotNetwork(\'' + ns + '\',\'' + name + '\')">Network Lens</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network Lens</button>';
     if (vm.status === 'Pending') {
-      inner += '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();openCopilotScheduling(\'' + ns + '\',\'' + name + '\')">Scheduling</button>';
+      inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
     }
     inner += '</div>';
     inner += '<div id="doctor-panel-' + name + '">Loading\u2026</div></div>';
@@ -5554,27 +5558,27 @@ async function fetchVmDetail(ns, name) {
 
     inner += '<div class="detail-actions">';
     if (vm.status === 'Running') {
-      inner += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" onclick="event.stopPropagation();openVncConsole(\'' + ns + '\',\'' + name + '\')">&#9000; VNC</button>';
-      inner += '<button class="btn" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.22)" onclick="event.stopPropagation();openSerialConsole(\'' + ns + '\',\'' + name + '\')">&#9618; Serial</button>';
-      inner += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" onclick="event.stopPropagation();pauseVM(\'' + ns + '\',\'' + name + '\')">&#10074;&#10074; Pause</button>';
-      inner += '<button class="btn btn-stop" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'stop\')">&#9632; Stop</button>';
-      inner += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();migrateVM(\'' + ns + '\',\'' + name + '\')">&#8644; Migrate</button>';
+      inner += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; VNC</button>';
+      inner += '<button class="btn" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.22)" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>&#9618; Serial</button>';
+      inner += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>&#10074;&#10074; Pause</button>';
+      inner += '<button class="btn btn-stop" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>&#9632; Stop</button>';
+      inner += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>&#8644; Migrate</button>';
     } else {
-      inner += '<button class="btn btn-start" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'start\')">&#9654; Start</button>';
+      inner += '<button class="btn btn-start" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>&#9654; Start</button>';
     }
     if (vmi.phase === 'Paused') {
-      inner += '<button class="btn btn-start" onclick="event.stopPropagation();unpauseVM(\'' + ns + '\',\'' + name + '\')">&#9654; Unpause</button>';
+      inner += '<button class="btn btn-start" ' + onStopHandler('unpauseVM(' + jsArgs(ns, name) + ')') + '>&#9654; Unpause</button>';
     }
-    inner += '<button class="btn btn-restart" onclick="event.stopPropagation();vmAction(\'' + ns + '\',\'' + name + '\',\'restart\')">&#8635; Restart</button>';
-    inner += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" onclick="event.stopPropagation();cloneVM(\'' + ns + '\',\'' + name + '\')">&#10697; Clone</button>';
-    inner += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" onclick="event.stopPropagation();openResizeModal(\'' + ns + '\',\'' + name + '\',\'' + esc(vm.cpu) + '\',\'' + esc(vm.memory) + '\')">&#8693; Resize</button>';
+    inner += '<button class="btn btn-restart" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>&#8635; Restart</button>';
+    inner += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>&#10697; Clone</button>';
+    inner += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>&#8693; Resize</button>';
     if (vm.status === 'Pending') {
-      inner += '<button class="btn" style="background:rgba(251,191,36,.1);color:var(--warning);border:1px solid rgba(251,191,36,.25)" onclick="event.stopPropagation();openCopilotScheduling(\'' + ns + '\',\'' + name + '\')">Scheduling</button>';
+      inner += '<button class="btn" style="background:rgba(251,191,36,.1);color:var(--warning);border:1px solid rgba(251,191,36,.25)" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
     }
-    inner += '<button class="btn" style="background:rgba(56,189,248,.1);color:var(--spark);border:1px solid rgba(56,189,248,.2)" onclick="event.stopPropagation();openCopilotDoctor(\'' + ns + '\',\'' + name + '\')">Diagnose</button>';
-    inner += '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.2)" onclick="event.stopPropagation();openCopilotNetwork(\'' + ns + '\',\'' + name + '\')">Network</button>';
-    inner += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" onclick="event.stopPropagation();openSnapModalFor(\'' + ns + '\',\'' + name + '\')">&#9670; Snapshot</button>';
-    inner += '<button class="btn btn-delete" onclick="event.stopPropagation();vmDelete(\'' + ns + '\',\'' + name + '\')">&#10005; Delete</button>';
+    inner += '<button class="btn" style="background:rgba(56,189,248,.1);color:var(--spark);border:1px solid rgba(56,189,248,.2)" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
+    inner += '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.2)" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
+    inner += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>&#9670; Snapshot</button>';
+    inner += '<button class="btn btn-delete" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>&#10005; Delete</button>';
     inner += '</div>';
 
     inner += '<div id="security-' + name + '"></div>';
@@ -5635,8 +5639,8 @@ function renderExposePanel(container, ns, name, ex) {
   inner += '<option value="ClusterIP">ClusterIP</option><option value="NodePort">NodePort</option><option value="LoadBalancer">LoadBalancer</option></select></label>';
   inner += '<label class="form-label tiny-label">Service port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-port" min="1" max="65535" value="22"></label>';
   inner += '<label class="form-label tiny-label">Target port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-target" min="1" max="65535" value="22"></label>';
-  inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();applyVmExpose(\'' + ns + '\',\'' + name + '\',\'' + tid + '\')">Apply</button>';
-  inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();removeVmExpose(\'' + ns + '\',\'' + name + '\')">Remove</button>';
+  inner += '<button type="button" class="btn btn-start" ' + onStopHandler('applyVmExpose(' + jsArgs(ns, name, tid) + ')') + '>Apply</button>';
+  inner += '<button type="button" class="btn btn-stop" ' + onStopHandler('removeVmExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
   inner += '</div>';
   container.innerHTML = inner;
   if (enabled) {
@@ -5678,8 +5682,8 @@ function renderInternetPanel(container, ns, name, st) {
     inner += '<div class="detail-row"><span class="lbl">Status</span><span class="val">Off — virt-launcher pods only get broad egress if your cluster default allows it, or you enable a policy here.</span></div>';
   }
   inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">';
-  inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();enableVmInternet(\'' + ns + '\',\'' + name + '\')">Enable internet</button>';
-  inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();disableVmInternet(\'' + ns + '\',\'' + name + '\')">Remove policy</button>';
+  inner += '<button type="button" class="btn btn-start" ' + onStopHandler('enableVmInternet(' + jsArgs(ns, name) + ')') + '>Enable internet</button>';
+  inner += '<button type="button" class="btn btn-stop" ' + onStopHandler('disableVmInternet(' + jsArgs(ns, name) + ')') + '>Remove policy</button>';
   inner += '</div>';
   inner += '<p class="detail-hint" style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim);line-height:1.35">Selects pods with label <code>kubevirt.io/vm</code> = this VM. On default-deny Cilium clusters, this adds an explicit allow.</p>';
   container.innerHTML = inner;
@@ -5779,11 +5783,11 @@ function renderRdpPanel(container, ns, name, st, ctx) {
   }
   inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
   inner += '<label class="form-label tiny-label">NodePort<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-np" min="30000" max="32767" value="' + esc(String((st && st.suggested_node_port) || 30100)) + '"></label>';
-  inner += '<button type="button" class="btn btn-start" onclick="event.stopPropagation();applyVmRdpExpose(\'' + ns + '\',\'' + name + '\',\'' + tid + '\')">Expose RDP</button>';
-  inner += '<button type="button" class="btn btn-stop" onclick="event.stopPropagation();removeVmRdpExpose(\'' + ns + '\',\'' + name + '\')">Remove</button>';
+  inner += '<button type="button" class="btn btn-start" ' + onStopHandler('applyVmRdpExpose(' + jsArgs(ns, name, tid) + ')') + '>Expose RDP</button>';
+  inner += '<button type="button" class="btn btn-stop" ' + onStopHandler('removeVmRdpExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
   const enableDisabled = !(ctx.running && ctx.agentUp);
-  inner += '<button type="button" class="btn" style="background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.25)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' onclick="event.stopPropagation();enableGuestRdpInVm(\'' + ns + '\',\'' + name + '\')">Enable RDP in guest (agent)</button>';
-  inner += '<button type="button" class="btn" style="background:rgba(244,63,94,.12);color:#fda4af;border:1px solid rgba(244,63,94,.28)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' onclick="event.stopPropagation();disableGuestRdpInVm(\'' + ns + '\',\'' + name + '\')">Disable RDP in guest (agent)</button>';
+  inner += '<button type="button" class="btn" style="background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.25)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' ' + onStopHandler('enableGuestRdpInVm(' + jsArgs(ns, name) + ')') + '>Enable RDP in guest (agent)</button>';
+  inner += '<button type="button" class="btn" style="background:rgba(244,63,94,.12);color:#fda4af;border:1px solid rgba(244,63,94,.28)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' ' + onStopHandler('disableGuestRdpInVm(' + jsArgs(ns, name) + ')') + '>Disable RDP in guest (agent)</button>';
   inner += '</div>';
   inner += '<div class="detail-row" style="margin-top:8px"><span class="lbl">Hint</span><span class="val" style="font-size:.82rem">Enable RDP inside Windows first, then expose NodePort. Requires Windows Pro/Enterprise/Server and cluster guest-exec support.</span></div>';
   container.innerHTML = inner;
@@ -5892,7 +5896,7 @@ async function fetchNodes() {
     el.innerHTML = nodes.map(n => {
       const statusCls = n.status === 'Ready' ? 'ready' : 'not-ready';
       const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
-      return '<div class="table-row node-row" style="cursor:pointer" onclick="toggleNodeDetail(\'' + esc(n.name) + '\')">' +
+      return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
         '<span class="cell-name">' + esc(n.name) + '</span>' +
         '<span><span class="cell-badge ' + statusCls + '">' + esc(n.status) + '</span></span>' +
         '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
@@ -6664,7 +6668,7 @@ function addCrdDisk() {
     '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Size</label><input type="text" class="form-input compact-field" id="crd-disk-size-'+n+'" value="20Gi"></div>' +
     '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Source</label><select class="form-select compact-field" id="crd-disk-source-'+n+'"><option value="blank">Blank</option><option value="containerDisk">Container Disk</option><option value="pvc">PVC</option></select></div>' +
     '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Image / PVC</label><input type="text" class="form-input compact-field" id="crd-disk-ref-'+n+'" placeholder="image or pvc name"></div>' +
-    '<button class="btn btn-sm" onclick="document.getElementById(\'crd-disk-'+n+'\').remove()" style="color:var(--ember)">X</button>';
+    '<button class="btn btn-sm" ' + onHandler('document.getElementById(' + jsArgs('crd-disk-' + n) + ').remove()') + ' style="color:var(--ember)">X</button>';
   document.getElementById('crd-disks-list').appendChild(el);
 }
 
@@ -7934,11 +7938,11 @@ async function fetchIntegrations() {
       let openBtn = '';
       if (i.open) {
         if (i.open.kind === 'in_app') {
-          openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();navigate(\'' + esc(i.open.href) + '\')">' + esc(i.open.label) + '</button>';
+          openBtn = '<button type="button" class="btn btn-sm" ' + onStopHandler('navigate(' + jsArgs(i.open.href) + ')') + '>' + esc(i.open.label) + '</button>';
         } else if (i.open.kind === 'external') {
-          openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();window.open(\'' + esc(i.open.href).replace(/'/g, '%27') + '\',\'_blank\',\'noopener,noreferrer\')">' + esc(i.open.label) + '</button>';
+          openBtn = '<button type="button" class="btn btn-sm" ' + onStopHandler('window.open(' + jsArgs(i.open.href, '_blank', 'noopener,noreferrer') + ')') + '>' + esc(i.open.label) + '</button>';
         } else {
-          openBtn = '<button type="button" class="btn btn-sm" onclick="event.stopPropagation();window.open(\'' + esc(i.open.href).replace(/'/g, '%27') + '\',\'_blank\',\'noopener,noreferrer\')">' + esc(i.open.label) + '</button>';
+          openBtn = '<button type="button" class="btn btn-sm" ' + onStopHandler('window.open(' + jsArgs(i.open.href, '_blank', 'noopener,noreferrer') + ')') + '>' + esc(i.open.label) + '</button>';
         }
       }
       return '<tr><td>' + esc(i.name) + '</td><td><code style="font-size:.78em">' + esc(i.env_var) + '</code></td><td>' +

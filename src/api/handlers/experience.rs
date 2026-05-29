@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Zyvor CloudOS experience layer — home, search, fix-it errors.
+//! ZeusOS experience layer — home, search, fix-it errors.
 
 #[cfg(feature = "web")]
 use axum::{
@@ -131,7 +131,7 @@ pub fn router(state: SharedState) -> Router {
 fn experience_context() -> super::feature_context::VmrogueFeatureContext {
     super::feature_context::VmrogueFeatureContext {
         data_source: "experience_compose".to_string(),
-        scope: "Zyvor CloudOS experience API — aggregates KubeVirt/K8s into product vocabulary."
+        scope: "ZeusOS experience API — aggregates KubeVirt/K8s into product vocabulary."
             .to_string(),
         limitations: "Guest metrics use QEMU agent + optional Prometheus.".to_string(),
     }
@@ -262,7 +262,7 @@ async fn experience_session(
     let can_admin = role == crate::api::http_server::web::ApiRole::Admin;
     let can_write = can_admin || role == crate::api::http_server::web::ApiRole::Write;
     Json(ExperienceSessionResponse {
-        product: "Zyvor CloudOS".to_string(),
+        product: "ZeusOS".to_string(),
         role: role_label(&role).to_string(),
         can_write,
         can_admin,
@@ -637,7 +637,7 @@ async fn experience_home(
     Json(ExperienceHomeResponse {
         vmrogue_context: experience_context(),
         experience: ExperienceContext {
-            product: "Zyvor CloudOS".to_string(),
+            product: "ZeusOS".to_string(),
             tagline: "A macOS-like control plane for Kubernetes-native virtualization.".to_string(),
         },
         greeting,
@@ -695,7 +695,7 @@ async fn experience_search(
     }
 
     let pages = [
-        ("dashboard", "Datacenter Home", "Fleet overview"),
+        ("dashboard", "ZeusOS Dashboard", "Fleet overview"),
         ("vms", "Virtual Machines", "KubeVirt fleet"),
         ("app-store", "Template Store", "App Store for VM images"),
         ("catalog", "Catalog (advanced)", "VMTemplate CRD sync"),
