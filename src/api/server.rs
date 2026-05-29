@@ -270,6 +270,12 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         .with_auth(),
         Endpoint::new(
             "GET",
+            "/api/v1/vms/:ns/:name/guest-filesystem",
+            "In-guest filesystem usage via QEMU guest-agent (df / Get-PSDrive)",
+        )
+        .with_auth(),
+        Endpoint::new(
+            "GET",
             "/api/v1/vms/:ns/:name/network/internet",
             "Per-VM internet egress policy status (Cilium or Kubernetes)",
         ),

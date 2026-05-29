@@ -1603,6 +1603,9 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 Some(AiCommands::Guest { name }) => {
                     handlers::copilot::handle_ai_guest(&name, &cli.namespace, "text").await?;
                 }
+                Some(AiCommands::Filesystem { name, output }) => {
+                    handlers::copilot::handle_ai_filesystem(&name, &cli.namespace, &output).await?;
+                }
                 Some(AiCommands::Storage) => {
                     handlers::copilot::handle_ai_storage(&cli.namespace, "text").await?;
                 }

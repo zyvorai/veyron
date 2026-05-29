@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260530e">
+<meta name="vmrogue-dashboard-rev" content="20260530f">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260530e';
+  var DASH_REV = '20260530f';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2094,6 +2094,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="btn btn-sm" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
       <button type="button" class="btn btn-sm" onclick="copilotChip('Security review for production VMs')">Security</button>
       <button type="button" class="btn btn-sm" onclick="copilotChip('Show guest agent status')">Guest</button>
+      <button type="button" class="btn btn-sm" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button type="button" class="btn btn-start btn-sm" onclick="runCopilotAsk()">Ask</button>
@@ -3265,7 +3266,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260530e';
+window.__VMROGUE_DASH_REV = '20260530f';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4880,6 +4881,15 @@ function openCopilotGuest(ns, name) {
     .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>'; });
 }
 
+function openCopilotFilesystem(ns, name) {
+  openCopilot('');
+  const el = document.getElementById('copilot-result');
+  if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Reading guest filesystem…</div>';
+  apiJson('/api/v1/experience/copilot/guest/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/filesystem')
+    .then(data => renderCopilotResult(data))
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>'; });
+}
+
 async function runStorageDoctor() {
   const card = document.getElementById('storage-doctor-card');
   const body = document.getElementById('storage-doctor-body');
@@ -5594,6 +5604,7 @@ async function fetchVmDetail(ns, name) {
     inner += '<div class="detail-actions" style="margin-top:0;margin-bottom:10px">';
     inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
     inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotFilesystem(' + jsArgs(ns, name) + ')') + '>Guest FS</button>';
     inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network Lens</button>';
     if (vm.status === 'Pending') {
       inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';

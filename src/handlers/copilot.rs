@@ -2,7 +2,7 @@
 
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, backup_advisor, copilot_ask,
-    finalize_copilot, guest_inspector, network_lens, recommend_template, scheduling_explainer,
+    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, recommend_template, scheduling_explainer,
     security_sentinel, security_sentinel_fleet, storage_doctor, vm_doctor, yaml_preview,
 };
 use crate::kube::KubeClient;
@@ -110,6 +110,13 @@ pub async fn handle_ai_network(name: &str, namespace: &str) -> Result<()> {
 pub async fn handle_ai_guest(name: &str, namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
     let resp = finalize_copilot(guest_inspector(&client, namespace, name).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+pub async fn handle_ai_filesystem(name: &str, namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let resp = finalize_copilot(guest_filesystem_report(&client, namespace, name).await).await;
     print_copilot(&resp, output);
     Ok(())
 }

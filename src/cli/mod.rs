@@ -136,6 +136,14 @@ pub enum AiCommands {
         /// VM name
         name: String,
     },
+    /// In-guest filesystem usage (guest-exec df / Get-PSDrive)
+    Filesystem {
+        /// VM name
+        name: String,
+        /// Output format (text, json)
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
     /// Fleet PVC pressure and snapshot sprawl
     Storage,
     /// Security exposure, drift, and policies
