@@ -168,6 +168,8 @@ The agent tool registry exposes **27 tools** (all fleet/per-VM advisors plus `ya
 
 When `VMROGUE_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_trace` array showing which deterministic tools ran (displayed as chips in the Copilot modal).
 
+**Proactive briefing:** `GET /experience/home` includes `copilot_briefing` — up to 3 fleet insights (failed/pending/degraded VMs, node pressure) with one-click Copilot actions on the Datacenter home hero.
+
 ## Copilot Expansion Pack 3
 
 | Module | API | CLI |
