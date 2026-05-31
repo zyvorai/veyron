@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531r">
+<meta name="vmrogue-dashboard-rev" content="20260531s">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531r';
+  var DASH_REV = '20260531s';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1996,6 +1996,10 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .flow-stat-chip.active{border-color:var(--primary-blue);background:rgba(59,130,246,.12)}
 .cilium-copilot-bar,.page-copilot-bar{margin-bottom:16px;padding:14px 16px}
 .page-glass-stats .glass-stat-pill{min-width:0}
+.monitor-cap.glass-card{padding:18px 20px}
+.monitor-stack-row.page-glass-stats{margin-bottom:0}
+.cost-ns-bar{margin-bottom:8px}
+.cost-ns-bar .glass-progress{margin:0}
 .table tbody tr.clickable-row{cursor:pointer;transition:background .12s}
 .table tbody tr.clickable-row:hover{background:rgba(59,130,246,.06)}
 .dr-glass-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
@@ -2853,22 +2857,34 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-costs" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Cost Analysis</h1><p>Per-VM cost breakdown and namespace budgets (estimated monthly USD)</p></div>
-    <button type="button" class="btn btn-sm" onclick="runCostAdvisor()">Cost Advisor</button></div>
-  <div id="cost-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Cost Advisor</span></div>
-    <div id="cost-advisor-body" style="padding:12px"></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCostAdvisor()">Cost Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">FinOps Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="cost-copilot-input" placeholder="Ask about spend, budgets, or expensive VMs…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runCostCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCostCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="costCopilotChip('Which VMs are most expensive?')">Top spenders</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="costCopilotChip('Forecast capacity growth for 30 days')">Forecast</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCostAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="cost-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Cost Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('cost-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="cost-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="cost-cap-banner"></div>
-  <div id="cost-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div id="cost-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-    <div class="card"><div class="card-header"><span class="card-title">Cost by Namespace</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Cost by Namespace</span></div>
     <div id="cost-by-namespace" style="padding:12px"></div>
     </div>
-    <div class="card"><div class="card-header"><span class="card-title">Cost Forecast</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Cost Forecast</span></div>
     <div id="cost-forecast" style="padding:12px"></div>
     </div>
   </div>
-  <div class="card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span></div>
   <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th></tr></thead><tbody id="costs-body"></tbody></table>
   </div>
 </div>
@@ -2892,32 +2908,44 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-monitoring" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div>
-    <button type="button" class="btn btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div>
-  <div id="performance-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('performance-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Monitoring Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="monitoring-copilot-input" placeholder="Ask about anomalies, recommendations, or monitoring stack…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runMonitoringCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runMonitoringCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="monitoringCopilotChip('Which VMs have high CPU or memory?')">Hot VMs</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="monitoringCopilotChip('Active warning events in namespace')">Warnings</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="performance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('performance-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="performance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="monitor-capabilities">
-    <div class="monitor-cap"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
-    <div class="monitor-cap"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
-    <div class="monitor-cap"><div class="monitor-cap-icon" style="background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
-    <div class="monitor-cap"><div class="monitor-cap-icon" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--success)">&#8866;</div><div><h3>Also in VMRogue</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--success)">&#8866;</div><div><h3>Also in VMRogue</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
   </div>
   <div id="monitoring-status" class="monitor-overview"></div>
   <div class="grid-2">
-    <div class="card">
+    <div class="card glass-card">
       <div class="card-header" style="flex-wrap:wrap;gap:8px">
         <span class="card-title">Recommendations</span>
-        <span id="recommendations-count-badge" class="rec-count-badge badge-muted" style="display:none"></span>
+        <span id="recommendations-count-badge" class="glass-badge other rec-count-badge" style="display:none"></span>
       </div>
       <div class="table-scroll">
       <table class="table" id="recommendations-table"><thead><tr><th>Priority</th><th>Category</th><th>Title</th><th>Resource</th><th>Impact</th></tr></thead><tbody id="recommendations-body"></tbody></table>
       </div>
     </div>
-    <div class="card">
+    <div class="card glass-card">
       <div class="card-header" style="flex-wrap:wrap;gap:8px">
         <span class="card-title">Anomaly detection</span>
-        <span id="anomaly-count-badge" class="anom-count-badge"></span>
+        <span id="anomaly-count-badge" class="glass-badge running anom-count-badge"></span>
       </div>
       <div class="table-scroll">
       <table class="table"><thead><tr><th>VM</th><th>Metric</th><th>Value</th><th>Threshold</th><th>Deviation</th><th>Severity</th><th>Detected</th></tr></thead><tbody id="anomalies-body"></tbody></table>
@@ -3207,13 +3235,25 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-gitops" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div>
-    <button type="button" class="btn btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div>
-  <div id="gitops-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue GitOps Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('gitops-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">GitOps Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="gitops-copilot-input" placeholder="Ask about sync status, drift, or GitOps posture…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runGitOpsCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runGitOpsCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="gitopsCopilotChip('GitOps drift in my namespaces')">Drift scan</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="gitopsCopilotChip('Which VMs have operator drift?')">VM drift</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="gitops-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue GitOps Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('gitops-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="gitops-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="gitops-cap-banner"></div>
-  <div id="gitops-summary" class="grid-4"></div>
+  <div id="gitops-summary" class="grid-4 page-glass-stats"></div>
 </div>
 </div>
 
@@ -3434,15 +3474,17 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-custom-dashboards" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Dashboards</h1><p>ConfigMap-backed panel layouts (vmrogue.io/type=dashboard)</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Description</th><th>Panels</th><th>Author</th><th>Updated</th></tr></thead><tbody id="custom-dashboards-body"></tbody></table></div>
 </div>
 </div>
 
 <div class="page section-shell" id="page-network-policies" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div>
+  <div id="netpol-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
 </div>
 </div>
@@ -3453,7 +3495,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <button class="btn-create" onclick="openImageImportModal()">+ Import DataVolume</button>
   </div>
   <div id="images-cap-banner"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Catalog</span></div>
+  <div id="images-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th></tr></thead><tbody id="images-body"></tbody></table></div>
 </div>
 </div>
@@ -3941,7 +3984,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531r';
+window.__VMROGUE_DASH_REV = '20260531s';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -8612,10 +8655,11 @@ async function fetchCosts() {
 
     const total = summary.total_cost || 0;
     const costNote = summary.disclaimer ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(summary.disclaimer) + '</p>' : '';
-    sumEl.innerHTML = '<div class="stat-card"><div class="stat-value">$' + total.toFixed(2) + '</div><div class="stat-label">Monthly Total</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + (costs.length||0) + '</div><div class="stat-label">VMs Tracked</div></div>' +
-      '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.cpu||0).toFixed(2) + '</div><div class="stat-label">CPU Cost</div></div>' +
-      '<div class="stat-card"><div class="stat-value">$' + (summary.by_resource_type?.memory||0).toFixed(2) + '</div><div class="stat-label">Memory Cost</div></div>' +
+    sumEl.innerHTML =
+      '<div class="glass-stat-pill"><div class="gsl">Monthly total</div><div class="gsv">$' + total.toFixed(2) + '</div></div>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs tracked</div><div class="gsv">' + (costs.length || 0) + '</div></button>' +
+      '<div class="glass-stat-pill"><div class="gsl">CPU cost</div><div class="gsv">$' + (summary.by_resource_type?.cpu || 0).toFixed(2) + '</div></div>' +
+      '<div class="glass-stat-pill"><div class="gsl">Memory cost</div><div class="gsv">$' + (summary.by_resource_type?.memory || 0).toFixed(2) + '</div></div>' +
       costNote;
 
     // Namespace breakdown
@@ -8624,8 +8668,8 @@ async function fetchCosts() {
     if (nsEntries.length) {
       const maxVal = nsEntries[0][1] || 1;
       nsEl.innerHTML = nsEntries.map(([ns, cost]) => {
-        const pct = (cost / maxVal * 100).toFixed(0);
-        return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:2px"><span>' + esc(ns) + '</span><span style="font-weight:600">$' + cost.toFixed(2) + '</span></div><div style="background:var(--bg-tertiary);border-radius:4px;height:8px"><div style="background:var(--accent);width:' + pct + '%;height:100%;border-radius:4px"></div></div></div>';
+        const pct = Math.min(100, (cost / maxVal * 100));
+        return '<div class="cost-ns-bar">' + glassProgressBar(esc(ns) + ' · $' + cost.toFixed(2), pct) + '</div>';
       }).join('');
     } else { nsEl.innerHTML = '<p style="color:var(--text-dim)">No namespace data</p>'; }
 
@@ -8633,13 +8677,17 @@ async function fetchCosts() {
     try {
       const fc = await apiJson('/api/v1/costs/forecast');
       const fcCap = fc.vmrogue_context && fc.vmrogue_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.vmrogue_context.limitations) + '</p>' : '';
-      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--accent)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected Monthly</div><div style="margin-top:12px;padding:8px 12px;border-radius:999px;display:inline-block;font-size:.76rem;font-weight:700;background:' + (fc.trend === 'growing' ? 'var(--error-dim);color:var(--error)' : 'var(--success-dim);color:var(--success)') + '">' + esc(fc.trend || 'stable') + '</div>' + fcCap + '</div>';
+      const trendCls = fc.trend === 'growing' ? 'error' : 'running';
+      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px"><span class="glass-badge ' + trendCls + '">' + esc(fc.trend || 'stable') + '</span></div>' + fcCap + '</div>';
     } catch {
       fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
     }
 
     if (!costs.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No cost data</td></tr>'; return; }
-    tb.innerHTML = costs.sort((a,b) => b.total_cost - a.total_cost).map(c => '<tr><td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + c.cpu_cost.toFixed(2) + '</td><td>$' + c.memory_cost.toFixed(2) + '</td><td>$' + c.storage_cost.toFixed(2) + '</td><td><strong>$' + c.total_cost.toFixed(2) + '</strong></td></tr>').join('');
+    tb.innerHTML = costs.sort((a,b) => b.total_cost - a.total_cost).map(c =>
+      '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
+      '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + c.cpu_cost.toFixed(2) + '</td><td>$' + c.memory_cost.toFixed(2) + '</td><td>$' + c.storage_cost.toFixed(2) + '</td><td><strong>$' + c.total_cost.toFixed(2) + '</strong></td></tr>'
+    ).join('');
   } catch(e) {
     const msg = e.message || String(e);
     if (sumEl) sumEl.innerHTML = summaryErrorHtml(msg);
@@ -8871,34 +8919,23 @@ async function fetchMonitoring() {
       anoList = [];
     }
     if (sum) {
-      const stackCard = (label, available, blurbOn, blurbOff) => {
-        const cardClass = available ? 'stat-card stat-card-green' : 'stat-card stat-card-neutral';
-        const head = available ? 'In cluster' : 'Not detected';
-        const sub = available ? blurbOn : blurbOff;
-        return `<div class="${cardClass}"><div class="stat-label">${label}</div><div class="stat-value" style="font-size:1.22rem">${head}</div><div class="monitor-stack-sub">${sub}</div></div>`;
-      };
-      const promOn = 'Service name contains <strong>prometheus</strong> under a scanned namespace.';
-      const promOff = 'No prometheus Service found yet. Optional — install a chart such as kube-prometheus-stack; live VM charts on VM detail still work via their own data path.';
-      const grafOn = 'Service name contains <strong>grafana</strong> under a scanned namespace.';
-      const grafOff = 'No grafana Service found. Link out from your platform docs when you add Grafana.';
-      const amOn = 'Service name contains <strong>alertmanager</strong> under a scanned namespace.';
-      const amOff = 'No alertmanager Service found. Use the Alerts and Notifications pages for cluster signals in VMRogue.';
-      const anoCardClass = anoList.some(a => a.severity === 'critical') ? 'stat-card-red' : anoList.length ? 'stat-card-orange' : '';
+      const anoHot = anoList.some(a => a.severity === 'critical');
+      const anoWarn = anoList.length && !anoHot;
       const alerts = status.active_alerts != null ? status.active_alerts : 0;
       const interval = status.metrics_collection_interval || '30s';
       const retention = status.retention_period || '—';
-      sum.innerHTML = `
-        <div class="monitor-stack-row">
-          ${stackCard('Prometheus', !!status.prometheus_available, promOn, promOff)}
-          ${stackCard('Grafana', !!status.grafana_available, grafOn, grafOff)}
-          ${stackCard('Alertmanager', !!status.alertmanager_available, amOn, amOff)}
-        </div>
-        <div class="grid-4">
-          <div class="stat-card stat-card-cyan"><div class="stat-label">Nodes ready</div><div class="stat-value" style="font-size:1.45rem">${status.healthy_targets}/${status.total_targets}</div><div class="monitor-stat-note">Kubernetes Ready condition</div></div>
-          <div class="stat-card ${anoCardClass}"><div class="stat-label">Anomalies</div><div class="stat-value" style="font-size:1.45rem">${anoList.length}</div><div class="monitor-stat-note">Threshold breaches in scope</div></div>
-          <div class="stat-card ${alerts > 0 ? 'stat-card-orange' : ''}"><div class="stat-label">Warning events</div><div class="stat-value" style="font-size:1.45rem">${alerts}</div><div class="monitor-stat-note">In the API server's configured namespace</div></div>
-          <div class="stat-card stat-card-purple"><div class="stat-label">Retention hint</div><div class="stat-value" style="font-size:1.1rem;font-family:var(--font-mono)">${esc(String(retention))}</div><div class="monitor-stat-note">Scrape window label · ${esc(String(interval))}</div></div>
-        </div>`;
+      sum.innerHTML =
+        '<div class="monitor-stack-row page-glass-stats">' +
+        monitorStackPill('Prometheus', !!status.prometheus_available) +
+        monitorStackPill('Grafana', !!status.grafana_available) +
+        monitorStackPill('Alertmanager', !!status.alertmanager_available) +
+        '</div>' +
+        '<div class="grid-4 page-glass-stats">' +
+        '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'nodes\')" title="View nodes"><div class="gsl">Nodes ready</div><div class="gsv">' + (status.healthy_targets || 0) + '/' + (status.total_targets || 0) + '</div></button>' +
+        '<button type="button" class="glass-stat-pill' + (anoHot ? ' bad' : anoWarn ? ' warn' : ' ok') + ' clickable-stat" onclick="scrollToMonitoringAnomalies()" title="View anomalies"><div class="gsl">Anomalies</div><div class="gsv">' + anoList.length + '</div></button>' +
+        '<button type="button" class="glass-stat-pill' + (alerts > 0 ? ' warn' : '') + ' clickable-stat" onclick="navigate(\'events\')" title="View warning events"><div class="gsl">Warning events</div><div class="gsv">' + alerts + '</div></button>' +
+        '<div class="glass-stat-pill"><div class="gsl">Retention</div><div class="gsv" style="font-size:.95rem;font-family:var(--font-mono)">' + esc(String(retention)) + '</div><div class="gsl" style="margin-top:4px;font-size:.68rem">Scrape · ' + esc(String(interval)) + '</div></div>' +
+        '</div>';
     }
     if (recBadge) {
       if (!recList.length) {
@@ -8908,7 +8945,7 @@ async function fetchMonitoring() {
         recBadge.style.display = 'inline';
         const highs = recList.filter(r => r.priority === 'High').length;
         recBadge.textContent = recList.length + ' hint' + (recList.length === 1 ? '' : 's');
-        recBadge.className = 'rec-count-badge ' + (highs ? 'event-badge.warn' : 'badge-green');
+        recBadge.className = 'glass-badge ' + (highs ? 'error' : 'running') + ' rec-count-badge';
       }
     }
     if (recTb) {
@@ -8923,29 +8960,18 @@ async function fetchMonitoring() {
           </ul>
         </div></td></tr>`;
       recTb.innerHTML = recList.map(r => {
-        const pclr = r.priority === 'High' ? 'var(--error)' : r.priority === 'Medium' ? 'var(--warning)' : 'var(--text-muted)';
-        return `<tr><td style="color:${pclr};font-weight:600">${r.priority}</td><td>${esc(r.category)}</td><td>${esc(r.title)}</td><td><code>${esc(r.resource)}</code></td><td>${esc(r.impact)}</td></tr>`;
+        const badgeCls = r.priority === 'High' ? 'error' : r.priority === 'Medium' ? 'other' : 'stopped';
+        return `<tr><td><span class="glass-badge ${badgeCls}">${esc(r.priority)}</span></td><td>${esc(r.category)}</td><td>${esc(r.title)}</td><td><code>${esc(r.resource)}</code></td><td>${esc(r.impact)}</td></tr>`;
       }).join('') || recEmpty;
     }
     if (badge) {
-      badge.className = 'anom-count-badge';
       if (anoList.length) {
         badge.textContent = anoList.length + ' open';
         const crit = anoList.some(a => a.severity === 'critical');
-        if (crit) {
-          badge.style.background = 'var(--error-dim)';
-          badge.style.color = 'var(--error)';
-          badge.style.border = '1px solid rgba(255,34,68,.2)';
-        } else {
-          badge.style.background = 'var(--warning-dim)';
-          badge.style.color = 'var(--warning)';
-          badge.style.border = '1px solid rgba(255,170,0,.2)';
-        }
+        badge.className = 'glass-badge ' + (crit ? 'error' : 'other') + ' anom-count-badge';
       } else {
         badge.textContent = 'Clear';
-        badge.style.background = 'var(--success-dim)';
-        badge.style.color = 'var(--success)';
-        badge.style.border = '1px solid rgba(34,197,94,.2)';
+        badge.className = 'glass-badge running anom-count-badge';
       }
     }
     if (anTb) {
@@ -8961,10 +8987,12 @@ async function fetchMonitoring() {
           </ul>
         </div></td></tr>`;
       anTb.innerHTML = anoList.map(a => {
-      const sclr = a.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
+      const sevCls = a.severity === 'critical' ? 'error' : 'other';
       const valShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.current_value : (a.current_value+'%');
       const thrShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.threshold : (a.threshold+'%');
-      return `<tr><td>${esc(a.vm_name)}</td><td>${esc(a.metric)}</td><td>${valShow}</td><td>${thrShow}</td><td style="color:${sclr}">${a.deviation_percent}%</td><td style="color:${sclr};font-weight:600">${esc(a.severity)}</td><td>${fmtTime(a.detected_at)}</td></tr>`;
+      return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(a.namespace) + ',' + jsArgs(a.vm_name) + ')') + ' title="Open VM detail">' +
+        '<td>' + esc(a.vm_name) + '</td><td>' + esc(a.metric) + '</td><td>' + valShow + '</td><td>' + thrShow + '</td>' +
+        '<td>' + a.deviation_percent + '%</td><td><span class="glass-badge ' + sevCls + '">' + esc(a.severity) + '</span></td><td>' + fmtTime(a.detected_at) + '</td></tr>';
     }).join('') || anoEmpty;
     }
   } catch (e) {
@@ -9346,11 +9374,13 @@ async function fetchGitOps() {
     if (!summary) return;
     setCapBanner('gitops-cap-banner', status.vmrogue_context);
     const note = status.note ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(status.note) + '</p>' : '';
-    summary.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Repo</div><div class="stat-value">${esc(status.repo_url || 'Not configured')}</div></div>
-      <div class="stat-card"><div class="stat-label">Branch</div><div class="stat-value">${esc(status.branch || '-')}</div></div>
-      <div class="stat-card"><div class="stat-label">Sync</div><div class="stat-value">${esc(status.sync_status || 'unknown')}</div></div>
-      <div class="stat-card"><div class="stat-label">Drift</div><div class="stat-value">${status.drift_detected ? 'Detected' : 'Clear'}</div></div>` + note;
+    const syncOk = (status.sync_status || '').toLowerCase().indexOf('sync') >= 0 && (status.sync_status || '').toLowerCase().indexOf('out') < 0;
+    summary.innerHTML =
+      '<div class="glass-stat-pill"><div class="gsl">Repo</div><div class="gsv" style="font-size:.95rem">' + esc(status.repo_url || 'Not configured') + '</div></div>' +
+      '<div class="glass-stat-pill"><div class="gsl">Branch</div><div class="gsv">' + esc(status.branch || '-') + '</div></div>' +
+      '<div class="glass-stat-pill' + (syncOk ? ' ok' : ' warn') + '"><div class="gsl">Sync</div><div class="gsv" style="font-size:1rem">' + esc(status.sync_status || 'unknown') + '</div></div>' +
+      '<button type="button" class="glass-stat-pill' + (status.drift_detected ? ' bad' : ' ok') + ' clickable-stat" onclick="' + (status.drift_detected ? 'runGitOpsAdvisor()' : 'navigate(\'insights\')') + '" title="' + (status.drift_detected ? 'Run GitOps advisor' : 'View insights') + '"><div class="gsl">Drift</div><div class="gsv">' + (status.drift_detected ? 'Detected' : 'Clear') + '</div></button>' +
+      note;
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('GitOps fetch error:', e);
@@ -9576,6 +9606,64 @@ function runTracesCopilotAsk() {
 function setTracesErrorFilter() {
   const inp = document.getElementById('traces-search');
   if (inp) { inp.value = 'error'; filterTraces(); }
+}
+
+function monitoringCopilotChip(query) {
+  const inp = document.getElementById('monitoring-copilot-input');
+  if (inp) inp.value = query;
+  runMonitoringCopilotAsk();
+}
+
+function runMonitoringCopilotAsk() {
+  const inp = document.getElementById('monitoring-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Which VMs have high CPU or memory?';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function scrollToMonitoringAnomalies() {
+  const el = document.getElementById('anomalies-body');
+  const card = el && el.closest('.card');
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function costCopilotChip(query) {
+  const inp = document.getElementById('cost-copilot-input');
+  if (inp) inp.value = query;
+  runCostCopilotAsk();
+}
+
+function runCostCopilotAsk() {
+  const inp = document.getElementById('cost-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Which VMs are most expensive?';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function gitopsCopilotChip(query) {
+  const inp = document.getElementById('gitops-copilot-input');
+  if (inp) inp.value = query;
+  runGitOpsCopilotAsk();
+}
+
+function runGitOpsCopilotAsk() {
+  const inp = document.getElementById('gitops-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'GitOps drift in my namespaces';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function monitorStackPill(label, available) {
+  return '<div class="glass-stat-pill' + (available ? ' ok' : '') + ' clickable-stat" onclick="navigate(\'observability\')" title="Open observability">' +
+    '<div class="gsl">' + esc(label) + '</div><div class="gsv" style="font-size:.95rem">' + (available ? 'In cluster' : 'Not detected') + '</div></div>';
+}
+
+function imageStatusClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s.indexOf('succeed') >= 0 || s.indexOf('ready') >= 0) return 'running';
+  if (s.indexOf('pending') >= 0 || s.indexOf('import') >= 0) return 'other';
+  if (s.indexOf('fail') >= 0 || s.indexOf('error') >= 0) return 'error';
+  return 'other';
 }
 
 function observabilityStatClass(status) {
@@ -9850,28 +9938,52 @@ async function fetchCustomDashboards() {
 
 async function fetchNetworkPolicies() {
   const tb = document.getElementById('netpol-body');
+  const summary = document.getElementById('netpol-summary');
   try {
     const rows = asArray(await apiJson('/api/v1/network-policies' + nsParam()));
+    if (summary) {
+      const ingress = rows.reduce((n, p) => n + (p.ingress_rules || 0), 0);
+      const egress = rows.reduce((n, p) => n + (p.egress_rules || 0), 0);
+      summary.innerHTML =
+        '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'cilium\')" title="Open Cilium"><div class="gsl">Policies</div><div class="gsv">' + rows.length + '</div></button>' +
+        '<div class="glass-stat-pill"><div class="gsl">Ingress rules</div><div class="gsv">' + ingress + '</div></div>' +
+        '<div class="glass-stat-pill"><div class="gsl">Egress rules</div><div class="gsv">' + egress + '</div></div>' +
+        '<div class="glass-stat-pill"><div class="gsl">Scope</div><div class="gsv" style="font-size:1rem">' + esc(currentNs) + '</div></div>';
+    }
     if (!tb) return;
-    tb.innerHTML = rows.map(p => `<tr>
-      <td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc((p.policy_types || []).join(', '))}</td>
-      <td>${p.ingress_rules ?? 0}</td><td>${p.egress_rules ?? 0}</td><td>${fmtTime(p.created_at)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies</td></tr>';
+    tb.innerHTML = rows.map(p =>
+      '<tr class="clickable-row" onclick="navigate(\'cilium\')" title="Open Cilium network view">' +
+      '<td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
+      '<td>' + (p.ingress_rules ?? 0) + '</td><td>' + (p.egress_rules ?? 0) + '</td><td>' + fmtTime(p.created_at) + '</td></tr>'
+    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies</td></tr>';
   } catch (e) {
+    if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
   }
 }
 
 async function fetchImages() {
   const tb = document.getElementById('images-body');
+  const summary = document.getElementById('images-summary');
   try {
     const data = await apiJson('/api/v1/images/catalog' + nsParam());
     setCapBanner('images-cap-banner', data.vmrogue_context);
     const images = data.images || [];
+    if (summary) {
+      const ready = images.filter(img => imageStatusClass(img.status) === 'running').length;
+      const pending = images.filter(img => imageStatusClass(img.status) === 'other').length;
+      summary.innerHTML =
+        '<div class="glass-stat-pill"><div class="gsl">Images</div><div class="gsv">' + images.length + '</div></div>' +
+        '<div class="glass-stat-pill ok"><div class="gsl">Ready</div><div class="gsv">' + ready + '</div></div>' +
+        '<div class="glass-stat-pill' + (pending ? ' warn' : '') + '"><div class="gsl">In progress</div><div class="gsv">' + pending + '</div></div>' +
+        '<button type="button" class="glass-stat-pill clickable-stat" onclick="openImageImportModal()" title="Import DataVolume"><div class="gsl">Import</div><div class="gsv">+</div></button>';
+    }
     if (!tb) return;
     tb.innerHTML = images.map(img => `<tr>
       <td>${esc(img.name)}</td><td>${esc(img.namespace)}</td><td>${esc(img.kind)}</td><td>${esc(img.source_type)}</td>
-      <td>${esc(img.status)}</td><td>${esc(img.capacity)}</td><td>${esc(img.age)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No images</td></tr>';
+      <td><span class="glass-badge ${imageStatusClass(img.status)}">${esc(img.status)}</span></td><td>${esc(img.capacity)}</td><td>${esc(img.age)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No images</td></tr>';
   } catch (e) {
+    if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
   }
 }
