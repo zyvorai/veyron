@@ -15,6 +15,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/deploy-ssh.sh
+source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
+
 REMOTE="${1:?Usage: $0 <user@host> [cdi-version]}"
 CDI_VERSION="${2:-${VMROGUE_CDI_VERSION:-v1.65.0}}"
 
@@ -24,7 +28,7 @@ if [[ "${VMROGUE_SKIP_CDI:-0}" == "1" ]]; then
 fi
 
 _ssh() {
-  ssh -o ConnectTimeout=15 -o StrictHostKeyChecking=no "${REMOTE}" "$@"
+  deploy_ssh "${REMOTE}" "$@"
 }
 
 K_MODE=$(_ssh 'if [ -x /usr/local/bin/k3s ]; then echo k3s_std; elif command -v k3s >/dev/null 2>&1; then echo k3s_path; elif command -v kubectl >/dev/null 2>&1; then echo kubectl_plain; else echo ""; fi' | tr -d '\r')

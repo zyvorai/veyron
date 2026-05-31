@@ -40,9 +40,24 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
     });
 
     let mut hot = Vec::new();
+    let mut prom_hot = Vec::new();
     for vm in running.iter().take(12) {
         let name = vm.metadata.name.as_deref().unwrap_or("?");
         let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+        if prom {
+            if let Some((cpu_p95, mem_p95)) = prom_percentiles(ns, name).await {
+                if cpu_p95 >= 80.0 || mem_p95 >= 85.0 {
+                    prom_hot.push(format!(
+                        "{ns}/{name} — CPU p95 {cpu_p95:.0}%, memory p95 {mem_p95:.0}%"
+                    ));
+                    continue;
+                }
+                r.evidence.push(format!(
+                    "{ns}/{name}: CPU p95 {cpu_p95:.0}%, memory p95 {mem_p95:.0}%"
+                ));
+                continue;
+            }
+        }
         let collector = crate::monitoring::metrics::MetricsCollector::new(ns.to_string());
         if let Ok(m) = collector.collect(name).await {
             let cpu = m.cpu.usage_percent;
@@ -56,23 +71,24 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
         }
     }
 
-    for row in hot.iter().take(8) {
+    for row in prom_hot.iter().chain(hot.iter()).take(8) {
         r.evidence.push(format!("Hot: {row}"));
     }
 
-    r.summary = if hot.is_empty() {
+    let total_hot = prom_hot.len() + hot.len();
+    r.summary = if total_hot == 0 {
         format!(
-            "{} running VM(s) — no VM above 80% CPU / 85% memory in the latest sample.",
-            running.len()
+            "{} running VM(s) — no VM above 80% CPU / 85% memory{}.",
+            running.len(),
+            if prom { " (24h Prometheus p95)" } else { "" }
         )
     } else {
         format!(
-            "{} VM(s) show high CPU or memory — review sizing or noisy neighbors.",
-            hot.len()
+            "{total_hot} VM(s) show high CPU or memory — review sizing or noisy neighbors."
         )
     };
 
-    if !hot.is_empty() {
+    if total_hot > 0 {
         r.recommendations.push(
             "Right-size CPU/memory or migrate noisy VMs before they throttle.".into(),
         );
@@ -97,4 +113,37 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
         },
     ];
     r
+}
+
+#[cfg(feature = "web")]
+async fn prom_percentiles(ns: &str, vm: &str) -> Option<(f64, f64)> {
+    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let end = chrono::Utc::now().timestamp();
+    let start = end - 86400;
+    let cpu_q = format!("rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{ns}\", name=\"{vm}\"}}[5m]) * 100");
+    let mem_q = format!("kubevirt_vmi_memory_resident_bytes{{namespace=\"{ns}\", name=\"{vm}\"}}");
+    let cpu_p95 = prom_p95(&base, &cpu_q, start, end).await?;
+    let mem_p95 = prom_p95(&base, &mem_q, start, end).await?;
+    Some((cpu_p95, mem_p95))
+}
+
+#[cfg(feature = "web")]
+async fn prom_p95(base: &str, query: &str, start: i64, end: i64) -> Option<f64> {
+    let series = crate::api::prometheus::range_query_series(base, query, start, end, 300)
+        .await
+        .ok()?;
+    let mut values: Vec<f64> = series
+        .into_iter()
+        .flat_map(|(_, pts)| pts.into_iter().map(|(_, v)| v))
+        .collect();
+    if values.is_empty() {
+        return None;
+    }
+    values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    Some(crate::api::prometheus::percentile_sorted(&values, 0.95))
+}
+
+#[cfg(not(feature = "web"))]
+async fn prom_percentiles(_ns: &str, _vm: &str) -> Option<(f64, f64)> {
+    None
 }

@@ -1664,6 +1664,15 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 Some(AiCommands::Migrations { output }) => {
                     handlers::copilot::handle_ai_migrations(&cli.namespace, &output).await?;
                 }
+                Some(AiCommands::Quotas { output }) => {
+                    handlers::copilot::handle_ai_quotas(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::Catalog { output }) => {
+                    handlers::copilot::handle_ai_catalog(&cli.namespace, &output).await?;
+                }
+                Some(AiCommands::VeleroDr { output }) => {
+                    handlers::copilot::handle_ai_velero_dr(&cli.namespace, &output).await?;
+                }
                 None => {
                     let q = query.join(" ");
                     if q.trim().is_empty() {

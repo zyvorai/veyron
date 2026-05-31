@@ -32,14 +32,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/deploy-remote-ui.sh
 source "${SCRIPT_DIR}/lib/deploy-remote-ui.sh"
+# shellcheck source=lib/deploy-ssh.sh
+source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 DEPLOY_RUN_STARTED=${SECONDS}
 
 stream_remote() {
     local label="$1"
     local cmd="$2"
     # Keep the session alive through long podman/cargo builds (avoid client timeout).
-    ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=120 -o TCPKeepAlive=yes \
-        "${REMOTE}" "${cmd}" 2>&1 | while IFS= read -r line || [[ -n "${line}" ]]; do
+    deploy_ssh_stream "${REMOTE}" "${cmd}" 2>&1 | while IFS= read -r line || [[ -n "${line}" ]]; do
         deploy_stream_prefix "${label}"
         printf '%s\n' "${line}"
     done
@@ -78,17 +79,17 @@ NAMESPACE="vmrogue-system"
 [ -f "$REPO_DIR/Cargo.toml" ] || { pkg_fail "Not in vmrogue repo (missing Cargo.toml)"; exit 1; }
 
 # ── Resolve remote paths and tools ──
-REMOTE_HOME=$(ssh "${REMOTE}" "echo \$HOME")
+REMOTE_HOME=$(deploy_ssh "${REMOTE}" "echo \$HOME")
 DEPLOY_DIR="${REMOTE_HOME}/.deployment/vmrogue"
 
 SUDO=""
 [ "$USER" != "root" ] && SUDO="sudo"
 
 # Detect build tool (single-quoted remote script — avoids nested-quote parse issues)
-CTR_BUILD=$(ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; elif command -v nerdctl >/dev/null 2>&1; then echo nerdctl; else echo none; fi')
+CTR_BUILD=$(deploy_ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; elif command -v nerdctl >/dev/null 2>&1; then echo nerdctl; else echo none; fi')
 
 # Detect K8s runtime for image import (heredoc + explicit bash — robust across shells)
-K8S_RUNTIME=$(ssh "${REMOTE}" env "SUDO=${SUDO:-}" bash -s <<'REMOTE_K8S_RUNTIME'
+K8S_RUNTIME=$(deploy_ssh "${REMOTE}" env "SUDO=${SUDO:-}" bash -s <<'REMOTE_K8S_RUNTIME'
 if [ -x /usr/local/bin/k3s ] || command -v k3s >/dev/null 2>&1; then echo k3s
 elif [ -x /usr/local/bin/rke2 ] || command -v rke2 >/dev/null 2>&1; then echo rke2
 elif command -v microk8s >/dev/null 2>&1; then echo microk8s
@@ -102,13 +103,13 @@ REMOTE_K8S_RUNTIME
 )
 
 # Cluster flavor (kubeadm vs k3s vs generic kubectl) — separate from import path above
-CLUSTER_FLAVOR=$(ssh "${REMOTE}" 'if [ -x /usr/local/bin/k3s ] || command -v k3s >/dev/null 2>&1; then echo k3s; elif [ -x /usr/local/bin/rke2 ] || command -v rke2 >/dev/null 2>&1; then echo rke2; elif command -v kubeadm >/dev/null 2>&1; then echo kubeadm; elif command -v kubectl >/dev/null 2>&1; then echo kubernetes; else echo unknown; fi')
+CLUSTER_FLAVOR=$(deploy_ssh "${REMOTE}" 'if [ -x /usr/local/bin/k3s ] || command -v k3s >/dev/null 2>&1; then echo k3s; elif [ -x /usr/local/bin/rke2 ] || command -v rke2 >/dev/null 2>&1; then echo rke2; elif command -v kubeadm >/dev/null 2>&1; then echo kubeadm; elif command -v kubectl >/dev/null 2>&1; then echo kubernetes; else echo unknown; fi')
 case "${CLUSTER_FLAVOR}" in
     k3s)
-        K8S_CMD="sudo $(ssh "${REMOTE}" 'which k3s 2>/dev/null || echo /usr/local/bin/k3s') kubectl"
+        K8S_CMD="sudo $(deploy_ssh "${REMOTE}" 'which k3s 2>/dev/null || echo /usr/local/bin/k3s') kubectl"
         ;;
     rke2)
-        K8S_CMD="sudo $(ssh "${REMOTE}" 'which rke2 2>/dev/null || echo /usr/local/bin/rke2') kubectl"
+        K8S_CMD="sudo $(deploy_ssh "${REMOTE}" 'which rke2 2>/dev/null || echo /usr/local/bin/rke2') kubectl"
         ;;
     *)
         K8S_CMD="kubectl"
@@ -129,12 +130,12 @@ deploy_phase_end
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
-ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
+deploy_ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -avz --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \
     --exclude='node_modules/' --exclude='e2e/node_modules/' \
     --exclude='*.qcow2' --exclude='*.vmdk' --exclude='*.iso' \
-    -e "ssh -o StrictHostKeyChecking=no" \
+    -e "$(deploy_rsync_ssh)" \
     "$REPO_DIR/" "${REMOTE}:${DEPLOY_DIR}/" 2>&1 | stream_local_rsync
 deploy_phase_end
 
@@ -172,21 +173,21 @@ else
 
     case "${K8S_RUNTIME}" in
         k3s)
-            K3S_BIN=$(ssh "${REMOTE}" "which k3s 2>/dev/null || echo /usr/local/bin/k3s")
-            ssh "${REMOTE}" "
+            K3S_BIN=$(deploy_ssh "${REMOTE}" "which k3s 2>/dev/null || echo /usr/local/bin/k3s")
+            deploy_ssh "${REMOTE}" "
                 ${CTR_BUILD} save ${VMROGUE_IMAGE} | ${SUDO} ${K3S_BIN} ctr images import -
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} | ${SUDO} ${K3S_BIN} ctr images import -
             " 2>&1
             ;;
         rke2)
-            RKE2_BIN=$(ssh "${REMOTE}" "which rke2 2>/dev/null || echo /usr/local/bin/rke2")
-            ssh "${REMOTE}" "
+            RKE2_BIN=$(deploy_ssh "${REMOTE}" "which rke2 2>/dev/null || echo /usr/local/bin/rke2")
+            deploy_ssh "${REMOTE}" "
                 ${CTR_BUILD} save ${VMROGUE_IMAGE} | ${SUDO} ${RKE2_BIN} ctr images import -
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} | ${SUDO} ${RKE2_BIN} ctr images import -
             " 2>&1
             ;;
         microk8s)
-            ssh "${REMOTE}" "
+            deploy_ssh "${REMOTE}" "
                 ${CTR_BUILD} save ${VMROGUE_IMAGE} > /tmp/vmrogue.tar
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/vmrogue-operator.tar
                 microk8s ctr image import /tmp/vmrogue.tar
@@ -195,13 +196,13 @@ else
             " 2>&1
             ;;
         kind)
-            ssh "${REMOTE}" "
+            deploy_ssh "${REMOTE}" "
                 kind load docker-image ${VMROGUE_IMAGE}
                 kind load docker-image ${OPERATOR_IMAGE}
             " 2>&1
             ;;
         minikube)
-            ssh "${REMOTE}" "
+            deploy_ssh "${REMOTE}" "
                 ${CTR_BUILD} save ${VMROGUE_IMAGE} > /tmp/vmrogue.tar
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/vmrogue-operator.tar
                 minikube image load /tmp/vmrogue.tar
@@ -211,14 +212,14 @@ else
             ;;
         containerd)
             # Standard kubeadm K8s with containerd
-            ssh "${REMOTE}" "
+            deploy_ssh "${REMOTE}" "
                 ${CTR_BUILD} save ${VMROGUE_IMAGE} | ${SUDO} ctr -n k8s.io images import -
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} | ${SUDO} ctr -n k8s.io images import -
             " 2>&1
             ;;
         cri)
             # CRI-O or other CRI runtime — import via tar
-            ssh "${REMOTE}" "
+            deploy_ssh "${REMOTE}" "
                 ${CTR_BUILD} save ${VMROGUE_IMAGE} > /tmp/vmrogue.tar
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/vmrogue-operator.tar
                 ${SUDO} crictl pull /tmp/vmrogue.tar 2>/dev/null || \
@@ -247,7 +248,7 @@ deploy_phase_start "📋 [4/7] CDI (if missing), CRDs, NATS, RBAC, and Cilium eg
   pkg_fail "CDI ensure failed (set VMROGUE_SKIP_CDI=1 to skip on air-gapped clusters)"
   exit 1
 }
-ssh "${REMOTE}" "
+deploy_ssh "${REMOTE}" "
     ${K8S_CMD} create namespace ${NAMESPACE} --dry-run=client -o yaml | ${K8S_CMD} apply -f -
     if [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml ]; then
         echo 'Applying Cilium egress policy for ${NAMESPACE} (vmrogue / nats workloads)...'
@@ -286,35 +287,35 @@ deploy_phase_start "🚀 [5/7] Deploying VMRogue API + Operator"
 
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
-ssh "${REMOTE}" "
+deploy_ssh "${REMOTE}" "
     ${K8S_CMD} -n ${NAMESPACE} delete deployment vmrogue-api vmrogue-operator \
         --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
     ${K8S_CMD} -n ${NAMESPACE} delete secret vmrogue-api-key --ignore-not-found --wait=false 2>/dev/null || true
 " 2>&1
 
 # Create API key secret
-ssh "${REMOTE}" "
+deploy_ssh "${REMOTE}" "
     ${K8S_CMD} -n ${NAMESPACE} create secret generic vmrogue-api-key \
         --from-literal=api-key='${API_KEY}'
 " 2>&1
 
 # Apply VMRogue API deployment
-ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
+deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
 
 # Optional: Prometheus / Alertmanager / Loki URLs when those namespaces exist
 if [[ -f "${REPO_DIR}/scripts/lib/bootstrap-integrations.sh" ]]; then
     deploy_substep "🔗 Wiring vmrogue-integrations Secret (if monitoring/loki present)…"
-    ssh "${REMOTE}" "bash ${DEPLOY_DIR}/scripts/lib/bootstrap-integrations.sh '${K8S_CMD}' '${NAMESPACE}'" 2>&1 || \
+    deploy_ssh "${REMOTE}" "bash ${DEPLOY_DIR}/scripts/lib/bootstrap-integrations.sh '${K8S_CMD}' '${NAMESPACE}'" 2>&1 || \
         pkg_warn "integrations bootstrap skipped or failed (non-fatal)"
 fi
 
 # Apply Operator deployment
-ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/manager/manager.yaml" 2>&1
+deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/manager/manager.yaml" 2>&1
 
 # Same image tags + imagePullPolicy: Never: replacing the Deployment can still leave
 # kubelet using a cached layer unless pods are recreated after image import.
 deploy_substep "🔄 Recycling API + operator pods for new images…"
-ssh "${REMOTE}" "
+deploy_ssh "${REMOTE}" "
     ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
     ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
     ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
@@ -328,14 +329,14 @@ deploy_phase_end
 # ── Step 6: Clean up source ──
 echo ""
 deploy_phase_start "🧹 [6/7] Cleaning up build directory"
-ssh "${REMOTE}" "rm -rf ${DEPLOY_DIR}"
+deploy_ssh "${REMOTE}" "rm -rf ${DEPLOY_DIR}"
 deploy_phase_end
 
 # ── Step 7: Verify ──
 echo ""
 deploy_phase_start "🔍 [7/7] Verifying"
 sleep 3
-ssh "${REMOTE}" "
+deploy_ssh "${REMOTE}" "
     echo ''
     echo '  Pods:'
     ${K8S_CMD} -n ${NAMESPACE} get pods -o wide
@@ -346,8 +347,8 @@ ssh "${REMOTE}" "
 deploy_phase_end
 
 # Do not use ports[0]: API order may list http-redirect (30150) before https (30151).
-NODE_PORT=$(ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
-HTTP_REDIRECT_PORT=$(ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
+NODE_PORT=$(deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
+HTTP_REDIRECT_PORT=$(deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
 
 deploy_complete "${HOST}" "${USER}" "${REMOTE}" "${NODE_PORT}" "${HTTP_REDIRECT_PORT}" \
     "${API_KEY}" "${SCRIPT_DIR}" "${K8S_CMD}" "${NAMESPACE}"

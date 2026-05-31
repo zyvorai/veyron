@@ -73,6 +73,15 @@ pub fn is_rate_limit_exempt_path(path: &str) -> bool {
         || is_operator_api_path(path)
 }
 
+/// POST routes that invoke the optional LLM backend (separate rate bucket).
+pub fn is_ai_rate_limited_path(path: &str, method: &str) -> bool {
+    if method != "POST" {
+        return false;
+    }
+    path == "/api/v1/experience/copilot/chat"
+        || path == "/api/v1/experience/copilot/ask"
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -138,5 +147,22 @@ mod tests {
         assert!(is_rate_limit_exempt_path("/dashboard"));
         assert!(is_rate_limit_exempt_path("/api/v1/alerts"));
         assert!(is_rate_limit_exempt_path("/api/v1/costs/summary"));
+    }
+
+    #[test]
+    fn ai_rate_limited_paths_are_post_copilot_only() {
+        assert!(is_ai_rate_limited_path(
+            "/api/v1/experience/copilot/chat",
+            "POST"
+        ));
+        assert!(is_ai_rate_limited_path(
+            "/api/v1/experience/copilot/ask",
+            "POST"
+        ));
+        assert!(!is_ai_rate_limited_path(
+            "/api/v1/experience/copilot/chat",
+            "GET"
+        ));
+        assert!(!is_ai_rate_limited_path("/api/v1/experience/copilot/status", "GET"));
     }
 }

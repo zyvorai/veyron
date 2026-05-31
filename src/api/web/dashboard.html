@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531d">
+<meta name="vmrogue-dashboard-rev" content="20260531e">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531d';
+  var DASH_REV = '20260531e';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1843,7 +1843,34 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   background:transparent;color:var(--text-muted);font-size:.84rem;text-align:left;cursor:pointer;
 }
 .cloudos-finder-item:hover,.cloudos-finder-item.active{background:rgba(56,189,248,.1);color:var(--text)}
-.cloudos-finder-item .fi-icon{width:18px;text-align:center;opacity:.85}
+.copilot-module-badge{display:inline-block;font-size:.72rem;padding:2px 8px;border-radius:999px;background:rgba(56,189,248,.12);color:var(--spark);margin-bottom:6px}
+.copilot-context-banner{font-size:.78rem;color:var(--text-dim);padding:6px 10px;border-radius:8px;background:rgba(56,189,248,.06);margin-bottom:10px;display:none}
+.copilot-thread{max-height:280px;overflow-y:auto;margin-bottom:12px;padding-right:4px}
+.copilot-msg-user{text-align:right;margin-bottom:10px}
+.copilot-msg-user span{display:inline-block;max-width:92%;padding:8px 12px;border-radius:12px 12px 4px 12px;background:rgba(56,189,248,.15);font-size:.86rem}
+.copilot-msg-assistant{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.copilot-chip-group{margin-bottom:8px}
+.copilot-chip-label{font-size:.68rem;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.copilot-chip-btn:focus-visible{outline:2px solid var(--spark);outline-offset:2px}
+.copilot-result-card{margin-top:4px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}
+.copilot-result-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.copilot-health-ring{
+  flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+  width:52px;height:52px;border-radius:50%;border:3px solid var(--border);
+  font-size:.78rem;font-weight:700;
+}
+.copilot-health-ring.good{border-color:var(--success);color:var(--success)}
+.copilot-health-ring.fair{border-color:var(--warning);color:var(--warning)}
+.copilot-health-ring.bad{border-color:var(--error);color:var(--error)}
+.copilot-evidence,.copilot-validation{margin-top:12px;font-size:.82rem}
+.copilot-evidence summary,.copilot-validation summary{cursor:pointer;font-weight:600;user-select:none}
+.copilot-evidence ul,.copilot-validation ul{margin:8px 0 0 18px}
+.copilot-copy-row{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.copilot-tool-trace{margin-bottom:12px;padding:10px 12px;border-radius:10px;background:rgba(56,189,248,.04);border:1px solid rgba(56,189,248,.12)}
+.copilot-tool-trace-label{font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.copilot-tool-chips{display:flex;flex-wrap:wrap;gap:6px}
+.copilot-tool-chip{display:inline-flex;align-items:center;gap:4px;font-size:.72rem;padding:3px 8px;border-radius:999px;background:rgba(56,189,248,.1);color:var(--spark);border:1px solid rgba(56,189,248,.15)}
+.copilot-tool-args{color:var(--text-dim);font-size:.68rem}
 .cloudos-main{flex:1;min-width:0;display:flex;flex-direction:column}
 .finder-toggle{
   display:inline-flex;align-items:center;justify-content:center;
@@ -1861,6 +1888,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 .vm-health-pill{
   display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;
   font-size:.68rem;border:1px solid var(--border);margin-left:6px;
+  background:transparent;color:inherit;cursor:pointer;font-family:inherit;
 }
 .vm-health-pill.good{color:var(--success);border-color:rgba(34,197,94,.25)}
 .vm-health-pill.fair{color:var(--warning);border-color:rgba(251,191,36,.3)}
@@ -2057,6 +2085,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon">⧉</span>Backup Advisor</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon">▣</span>Storage Doctor</button>
       <button type="button" class="cloudos-finder-item" onclick="finderSecuritySentinel()"><span class="fi-icon">⛨</span>Security Sentinel</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which VMs are most expensive?')"><span class="fi-icon">$</span>Cost Advisor</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Compliance score for production VMs')"><span class="fi-icon">✓</span>Compliance</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which VMs have operator drift?')"><span class="fi-icon">≠</span>Drift</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which VMs are pending scheduling?')"><span class="fi-icon">⏳</span>Pending VMs</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which namespaces are near quota limits?')"><span class="fi-icon">◫</span>Quotas</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-network" data-finder-section="network">
@@ -2081,25 +2114,40 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="toast-container" id="toasts"></div>
 
-<div class="modal-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-label="VMRogue Copilot">
-  <div class="fixit-panel copilot-panel" onclick="event.stopPropagation()" style="width:min(640px,94vw);max-height:80vh;overflow:auto">
-    <div class="fixit-title">VMRogue Copilot</div>
-    <p style="font-size:.82rem;color:var(--text-dim);margin-bottom:12px">Ask about VM health, scheduling, YAML, backups, network, or paste a Kubernetes error.</p>
-    <textarea class="form-input" id="copilot-input" rows="3" placeholder="Why is my VM not starting?" style="width:100%;margin-bottom:10px;font-size:.9rem"></textarea>
-    <div class="copilot-chips" id="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy VMs</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Which VMs have no backups?')">Backup gaps</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Show network for my VM')">Network</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML builder</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Security review for production VMs')">Security</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Show guest agent status')">Guest</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
-      <button type="button" class="btn btn-sm" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
+<div class="modal-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-labelledby="copilot-title">
+  <div class="fixit-panel copilot-panel" tabindex="-1" onclick="event.stopPropagation()" style="width:min(680px,94vw);max-height:85vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <div class="fixit-title" id="copilot-title" style="margin:0">VMRogue Copilot</div>
+      <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
+    <div id="copilot-context-banner" class="copilot-context-banner"></div>
+    <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
+    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Why is my VM not starting?" aria-label="Copilot question" style="width:100%;margin-bottom:10px;font-size:.9rem"></textarea>
+    <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are pending scheduling?')">Pending</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Security review for production VMs')">Security</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which namespaces are near quota limits?')">Quotas</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Velero DR readiness')">Velero DR</button>
+    </div></div>
+    <div class="copilot-chip-group"><div class="copilot-chip-label">Per-VM</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show network for my VM')">Network</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show guest agent status')">Guest</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
+    </div></div>
+    <div class="copilot-chip-group"><div class="copilot-chip-label">Platform</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Is the template catalog in sync?')">Catalog</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Compliance score for production VMs')">Compliance</button>
+      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Node capacity and pressure')">Nodes</button>
+    </div></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <button type="button" class="btn btn-start btn-sm" onclick="runCopilotAsk()">Ask</button>
+      <button type="button" class="btn btn-sm" onclick="copilotNewChat()">New chat</button>
       <button type="button" class="btn btn-sm" onclick="closeCopilot()">Close</button>
     </div>
     <div id="copilot-result"></div>
@@ -2590,7 +2638,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-quotas" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div></div>
+  <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div>
+    <button type="button" class="btn btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div>
+  <div id="quota-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Quota Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('quota-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="quota-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div class="card"><div class="card-header"><span class="card-title">Resource Quotas</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>CPU Used / Limit</th><th>Memory Used / Limit</th><th>VMs</th></tr></thead><tbody id="quotas-body"></tbody></table></div>
 </div>
@@ -2638,10 +2691,15 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   <div class="page-header">
     <div><h1>Template catalog</h1><p>Cluster VMTemplate / VMProfile CRDs vs embedded library</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
       <button type="button" class="btn-create" onclick="catalogSync()">Sync cluster catalog</button>
       <button type="button" class="btn" onclick="openCatalogPublishTemplate()">+ Publish template</button>
       <button type="button" class="btn" onclick="openCatalogPublishProfile()">+ Publish profile</button>
     </div>
+  </div>
+  <div id="catalog-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Catalog Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('catalog-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="catalog-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="catalog-status-banner"></div>
   <div class="card">
@@ -2851,7 +2909,13 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-dr" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div>
-    <button type="button" class="btn btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="btn btn-sm" onclick="runVeleroDrAdvisor()">Velero DR Advisor</button>
+    <button type="button" class="btn btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div></div>
+  <div id="velero-dr-advisor-card" class="card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Velero DR Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('velero-dr-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="velero-dr-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="migration-advisor-card" class="card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Migration Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('migration-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="migration-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -3361,7 +3425,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531d';
+window.__VMROGUE_DASH_REV = '20260531e';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4228,8 +4292,10 @@ function vmHealthPill(vm) {
   const key = (vm.namespace || 'default') + '/' + vm.name;
   const h = fleetHealthMap[key];
   if (!h) return '';
+  const ns = vm.namespace || 'default';
+  const name = vm.name;
   const cls = h.health_score >= 85 ? 'good' : h.health_score >= 65 ? 'fair' : 'bad';
-  return '<span class="vm-health-pill ' + cls + '">' + h.health_score + '% ' + esc(h.health_label) + '</span>';
+  return '<button type="button" class="vm-health-pill ' + cls + '" title="Open Copilot Doctor" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>' + h.health_score + '% ' + esc(h.health_label) + '</button>';
 }
 
 let appStoreCache = [];
@@ -4558,23 +4624,227 @@ function renderDcTodayStats() {
 
 function runExperienceAction(action) {
   if (!action) return;
+  if (handleCopilotAction(action)) return;
   if (action === 'create_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
   if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
   toast('Action: ' + action, 'info');
 }
 
+function handleCopilotAction(action) {
+  if (!action) return false;
+  if (action === 'open_copilot') { openCopilot(''); return true; }
+  const quickAsk = {
+    'copilot:backup': 'Which VMs have no backups?',
+    'copilot:unhealthy': 'Show all unhealthy VMs',
+    'copilot:cost': 'Which VMs are most expensive?',
+    'copilot:compliance': 'Compliance score for production VMs',
+    'copilot:drift': 'Which VMs have operator drift?',
+    'copilot:scheduling': 'Which VMs are pending scheduling?',
+    'copilot:security': 'Security review for production VMs',
+    'copilot:quota': 'Which namespaces are near quota limits?',
+    'copilot:storage': 'Which PVCs are almost full?',
+    'copilot:catalog': 'Is the template catalog in sync?',
+    'copilot:velero-dr': 'Velero DR readiness'
+  };
+  if (quickAsk[action]) {
+    openCopilot(quickAsk[action]);
+    setTimeout(runCopilotAsk, 80);
+    return true;
+  }
+  if (action.indexOf('copilot:') === 0) {
+    const q = action.slice(8).replace(/-/g, ' ');
+    openCopilot(q.charAt(0).toUpperCase() + q.slice(1));
+    return true;
+  }
+  return false;
+}
+
 function openCopilot(prefill) {
+  openCopilotWithVm(prefill, null, null);
+}
+
+function openCopilotWithVm(prefill, vmNs, vmName) {
   const modal = document.getElementById('copilot-modal');
   const input = document.getElementById('copilot-input');
+  const panel = modal && modal.querySelector('.copilot-panel');
   if (!modal) return;
+  copilotReturnFocus = document.activeElement;
   modal.classList.add('open');
   document.getElementById('copilot-result').innerHTML = '';
+  renderCopilotThread();
+  loadCopilotStatus();
+  setCopilotContext(vmNs, vmName);
+  document.addEventListener('keydown', onCopilotKeydown, true);
   if (input) {
     input.value = prefill || '';
-    delete input.dataset.vmNs;
-    delete input.dataset.vmName;
-    setTimeout(() => input.focus(), 50);
+    setTimeout(function() { input.focus(); }, 50);
+  } else if (panel) {
+    setTimeout(function() { panel.focus(); }, 50);
   }
+}
+
+let copilotReturnFocus = null;
+
+function copilotFocusables() {
+  const panel = document.querySelector('#copilot-modal .copilot-panel');
+  if (!panel) return [];
+  return Array.from(panel.querySelectorAll('button, [href], input, textarea, select, [tabindex]:not([tabindex="-1"])'))
+    .filter(function(el) { return !el.disabled && el.offsetParent !== null; });
+}
+
+function onCopilotKeydown(e) {
+  const modal = document.getElementById('copilot-modal');
+  if (!modal || !modal.classList.contains('open')) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    closeCopilot();
+    return;
+  }
+  if (e.key === 'Tab') {
+    const items = copilotFocusables();
+    if (items.length < 2) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+    return;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    onCopilotChipNav(e);
+  }
+}
+
+function onCopilotChipNav(e) {
+  const chips = Array.from(document.querySelectorAll('#copilot-modal .copilot-chip-btn'));
+  if (!chips.length) return;
+  const active = document.activeElement;
+  if (!active || !active.classList.contains('copilot-chip-btn')) return;
+  const idx = chips.indexOf(active);
+  if (idx < 0) return;
+  e.preventDefault();
+  const next = e.key === 'ArrowRight'
+    ? chips[(idx + 1) % chips.length]
+    : chips[(idx - 1 + chips.length) % chips.length];
+  next.focus();
+}
+
+function setCopilotContext(ns, name) {
+  const banner = document.getElementById('copilot-context-banner');
+  const input = document.getElementById('copilot-input');
+  if (input) {
+    if (ns && name) {
+      input.dataset.vmNs = ns;
+      input.dataset.vmName = name;
+    } else {
+      delete input.dataset.vmNs;
+      delete input.dataset.vmName;
+    }
+  }
+  if (!banner) return;
+  if (ns && name) {
+    banner.style.display = 'block';
+    banner.textContent = 'Context: ' + ns + '/' + name;
+  } else {
+    banner.style.display = 'none';
+    banner.textContent = '';
+  }
+}
+
+function copilotMessages() {
+  try {
+    return JSON.parse(sessionStorage.getItem('vmrogue_copilot_thread') || '[]');
+  } catch (e) { return []; }
+}
+
+function saveCopilotMessages(msgs) {
+  sessionStorage.setItem('vmrogue_copilot_thread', JSON.stringify(msgs.slice(-24)));
+}
+
+function renderCopilotThread() {
+  const el = document.getElementById('copilot-thread');
+  if (!el) return;
+  const msgs = copilotMessages();
+  if (!msgs.length) { el.innerHTML = ''; return; }
+  el.innerHTML = msgs.map(function(m) {
+    if (m.role === 'user') {
+      return '<div class="copilot-msg-user"><span>' + esc(m.content) + '</span></div>';
+    }
+    return '<div class="copilot-msg-assistant"><span class="copilot-module-badge">' + esc(m.module || 'Copilot') + '</span><div>' + esc(m.content) + '</div></div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function copilotNewChat() {
+  sessionStorage.removeItem('vmrogue_copilot_thread');
+  setCopilotContext(null, null);
+  renderCopilotThread();
+  document.getElementById('copilot-result').innerHTML = '';
+  const input = document.getElementById('copilot-input');
+  if (input) input.value = '';
+}
+
+async function loadCopilotStatus() {
+  const badge = document.getElementById('copilot-mode-badge');
+  if (!badge) return;
+  try {
+    const st = await apiJson('/api/v1/experience/copilot/status');
+    updateCopilotModeBadge(st.mode, st.llm_configured);
+  } catch (e) {
+    badge.style.display = 'none';
+  }
+}
+
+function updateCopilotModeBadge(mode, llmConfigured) {
+  const badge = document.getElementById('copilot-mode-badge');
+  if (!badge) return;
+  badge.style.display = 'inline-block';
+  if (llmConfigured && mode && mode !== 'off') {
+    badge.textContent = 'AI · ' + mode;
+  } else {
+    badge.textContent = 'Rule-based';
+  }
+}
+
+function formatCopilotToolArgs(args) {
+  if (!args || typeof args !== 'object') return '';
+  const parts = [];
+  if (args.namespace) parts.push(String(args.namespace));
+  if (args.vm_name) parts.push(String(args.vm_name));
+  if (args.message) parts.push(String(args.message).slice(0, 48));
+  if (parts.length) return parts.join(' · ');
+  try {
+    const s = JSON.stringify(args);
+    return s.length > 56 ? s.slice(0, 53) + '…' : s;
+  } catch (e) { return ''; }
+}
+
+function renderCopilotToolTraceHtml(toolTrace, mode) {
+  const trace = toolTrace || [];
+  if (!trace.length && (!mode || mode === 'off' || mode === 'paraphrase')) return '';
+  let html = '<div class="copilot-tool-trace">';
+  html += '<div class="copilot-tool-trace-label">';
+  html += trace.length ? ('Agent invoked ' + trace.length + ' tool' + (trace.length === 1 ? '' : 's')) : 'Copilot mode';
+  if (mode && mode !== 'off') html += ' · ' + esc(mode);
+  html += '</div>';
+  if (trace.length) {
+    html += '<div class="copilot-tool-chips">';
+    trace.forEach(function(t) {
+      const argsHint = formatCopilotToolArgs(t.args);
+      html += '<span class="copilot-tool-chip" title="' + esc(JSON.stringify(t.args || {})) + '">';
+      html += esc(t.tool || 'tool');
+      if (argsHint) html += '<span class="copilot-tool-args">' + esc(argsHint) + '</span>';
+      html += '</span>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function copilotChip(text) {
@@ -4584,7 +4854,7 @@ function copilotChip(text) {
 }
 
 function openCopilotDoctor(ns, name) {
-  openCopilot('');
+  openCopilotWithVm('', ns, name);
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Running VMRogue Doctor…</div>';
   apiJson('/api/v1/experience/copilot/doctor/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
@@ -4648,6 +4918,11 @@ async function runCostAdvisor() {
 function closeCopilot() {
   const modal = document.getElementById('copilot-modal');
   if (modal) modal.classList.remove('open');
+  document.removeEventListener('keydown', onCopilotKeydown, true);
+  if (copilotReturnFocus && typeof copilotReturnFocus.focus === 'function') {
+    try { copilotReturnFocus.focus(); } catch (err) { /* ignore */ }
+  }
+  copilotReturnFocus = null;
 }
 
 async function runCopilotAsk() {
@@ -4656,50 +4931,75 @@ async function runCopilotAsk() {
   if (!q.trim()) { toast('Enter a question', 'error'); return; }
   const ns = input && input.dataset.vmNs;
   const vmName = input && input.dataset.vmName;
-  if (ns && vmName) {
-    await runCopilotAskScoped(ns, vmName, q.trim());
-    if (input) { delete input.dataset.vmNs; delete input.dataset.vmName; }
-    return;
-  }
+  const msgs = copilotMessages();
+  msgs.push({ role: 'user', content: q.trim() });
+  saveCopilotMessages(msgs);
+  renderCopilotThread();
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Thinking…</div>';
   try {
-    const data = await apiJson('/api/v1/experience/copilot/ask', {
+    const body = {
+      query: q.trim(),
+      messages: msgs,
+      namespace: ns || (currentNamespace === 'all' ? null : currentNamespace),
+      vm_name: vmName || null
+    };
+    const data = await apiJson('/api/v1/experience/copilot/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q.trim(), namespace: currentNamespace === 'all' ? null : currentNamespace })
+      body: JSON.stringify(body)
     });
-    renderCopilotResult(data);
+    const cop = data.copilot || data;
+    msgs.push({ role: 'assistant', content: data.message ? data.message.content : (cop.summary || cop.title), module: cop.module });
+    saveCopilotMessages(msgs);
+    renderCopilotThread();
+    renderCopilotResult(cop, { tool_trace: data.tool_trace, mode: data.mode });
+    updateCopilotModeBadge(data.mode, true);
+    if (input) input.value = '';
   } catch (e) {
     if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message) + '</div>';
   }
 }
 
-function renderCopilotResult(data) {
+function renderCopilotResult(data, meta) {
   const el = document.getElementById('copilot-result');
   if (!el || !data) return;
-  renderCopilotResultInto(el, data);
+  renderCopilotResultInto(el, data, meta);
 }
 
-function renderCopilotResultInto(el, data) {
+function renderCopilotResultInto(el, data, meta) {
   if (!el || !data) return;
   if (data.yaml_preview) {
     window._copilotLastYaml = data.yaml_preview;
     window._copilotLastYamlBuild = data.yaml_build || null;
   }
-  let html = '<div style="font-size:.78rem;color:var(--spark);margin-bottom:6px">' + esc(data.module || 'Copilot') + '</div>';
-  html += '<div style="font-weight:600;margin-bottom:8px">' + esc(data.title || '') + '</div>';
+  let html = renderCopilotToolTraceHtml(meta && meta.tool_trace, meta && meta.mode);
+  html += '<div class="copilot-result-card">';
+  if (data.health_score != null) {
+    const ringCls = data.health_score >= 85 ? 'good' : data.health_score >= 65 ? 'fair' : 'bad';
+    html += '<div class="copilot-result-header">';
+    html += '<span class="copilot-health-ring ' + ringCls + '" title="Health score">' + data.health_score + '</span>';
+    html += '<div><span class="copilot-module-badge">' + esc(data.module || 'Copilot') + '</span>';
+    html += '<div style="font-weight:600;margin-top:4px">' + esc(data.title || '') + '</div></div></div>';
+  } else {
+    html += '<span class="copilot-module-badge">' + esc(data.module || 'Copilot') + '</span>';
+    html += '<div style="font-weight:600;margin:8px 0">' + esc(data.title || '') + '</div>';
+  }
   if (data.summary) html += '<p style="font-size:.88rem;line-height:1.5;color:var(--text-muted)">' + esc(data.summary) + '</p>';
-  if (data.health_score != null) html += '<p style="margin-top:8px">Health score: <strong>' + data.health_score + '/100</strong></p>';
   if (data.evidence && data.evidence.length) {
-    html += '<div style="margin-top:12px;font-size:.82rem"><strong>Evidence</strong><ul style="margin:6px 0 0 18px">';
-    data.evidence.forEach(e => { html += '<li>' + esc(e) + '</li>'; });
-    html += '</ul></div>';
+    const openAttr = data.evidence.length <= 4 ? ' open' : '';
+    html += '<details class="copilot-evidence"' + openAttr + '>';
+    html += '<summary>Evidence (' + data.evidence.length + ')</summary><ul>';
+    data.evidence.forEach(function(e) { html += '<li>' + esc(e) + '</li>'; });
+    html += '</ul><div class="copilot-copy-row">';
+    html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(data.evidence.join('\n')) + ')') + '>Copy evidence</button>';
+    html += '</div></details>';
   }
   if (data.validation && data.validation.length) {
-    html += '<div style="margin-top:12px;font-size:.82rem"><strong>Validation</strong><ul style="margin:6px 0 0 18px">';
-    data.validation.forEach(v => { html += '<li>[' + esc(v.status) + '] ' + esc(v.check) + ' — ' + esc(v.detail) + '</li>'; });
-    html += '</ul></div>';
+    html += '<details class="copilot-validation" open>';
+    html += '<summary>Validation (' + data.validation.length + ')</summary><ul>';
+    data.validation.forEach(function(v) { html += '<li>[' + esc(v.status) + '] ' + esc(v.check) + ' — ' + esc(v.detail) + '</li>'; });
+    html += '</ul></details>';
   }
   if (data.yaml_preview) {
     html += '<pre id="copilot-yaml-preview" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
@@ -4735,6 +5035,7 @@ function renderCopilotResultInto(el, data) {
     });
     html += '</div>';
   }
+  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -4898,6 +5199,7 @@ function activateSpotlightResult(idx) {
 
 function runSpotlightAction(action) {
   if (!action) return;
+  if (handleCopilotAction(action)) return;
   if (action === 'create_vm' || action === 'forge_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
   if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
   if (action.indexOf('open_vm:') === 0) {
@@ -4974,7 +5276,7 @@ function runFixAction(action, page, label) {
 }
 
 function openCopilotNetwork(ns, name) {
-  openCopilot('');
+  openCopilotWithVm('', ns, name);
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Running Network Lens…</div>';
   apiJson('/api/v1/experience/copilot/network/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
@@ -4983,7 +5285,7 @@ function openCopilotNetwork(ns, name) {
 }
 
 function openCopilotScheduling(ns, name) {
-  openCopilot('');
+  openCopilotWithVm('', ns, name);
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Analyzing scheduling…</div>';
   apiJson('/api/v1/experience/copilot/scheduling/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
@@ -4992,7 +5294,7 @@ function openCopilotScheduling(ns, name) {
 }
 
 function openCopilotGuest(ns, name) {
-  openCopilot('');
+  openCopilotWithVm('', ns, name);
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Inspecting guest…</div>';
   apiJson('/api/v1/experience/copilot/guest/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
@@ -5001,7 +5303,7 @@ function openCopilotGuest(ns, name) {
 }
 
 function openCopilotFilesystem(ns, name) {
-  openCopilot('');
+  openCopilotWithVm('', ns, name);
   const el = document.getElementById('copilot-result');
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Reading guest filesystem…</div>';
   apiJson('/api/v1/experience/copilot/guest/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/filesystem')
@@ -5185,6 +5487,15 @@ function runSloAdvisor() {
 }
 function runMigrationAdvisor() {
   runFleetCopilotAdvisor('migration-advisor-card', 'migration-advisor-body', '/api/v1/experience/copilot/migrations', 'Any live migrations running?', 'Checking migrations…');
+}
+function runQuotaAdvisor() {
+  runFleetCopilotAdvisor('quota-advisor-card', 'quota-advisor-body', '/api/v1/experience/copilot/quotas', 'Which namespaces are near quota limits?', 'Analyzing quotas…');
+}
+function runCatalogAdvisor() {
+  runFleetCopilotAdvisor('catalog-advisor-card', 'catalog-advisor-body', '/api/v1/experience/copilot/catalog', 'Is the template catalog in sync?', 'Checking catalog…');
+}
+function runVeleroDrAdvisor() {
+  runFleetCopilotAdvisor('velero-dr-advisor-card', 'velero-dr-advisor-body', '/api/v1/experience/copilot/velero-dr', 'Velero DR readiness', 'Checking Velero DR…');
 }
 
 function runCopilotQuick(query) {
@@ -5771,6 +6082,7 @@ document.addEventListener('keydown', e => {
     closeClassicNav();
     closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
+    closeCopilot();
   }
 });
 document.getElementById('spotlight-modal').addEventListener('click', e => {
@@ -5778,6 +6090,12 @@ document.getElementById('spotlight-modal').addEventListener('click', e => {
 });
 document.getElementById('copilot-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCopilot();
+});
+document.getElementById('copilot-input').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runCopilotAsk();
+  }
 });
 document.getElementById('fixit-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFixItModal();
@@ -5864,7 +6182,10 @@ async function fetchVmDetail(ns, name) {
     inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
     inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
     inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotFilesystem(' + jsArgs(ns, name) + ')') + '>Guest FS</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network Lens</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Security review for ' + name, ns, name) + ')') + '>Security</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Cost for ' + name, ns, name) + ')') + '>Cost</button>';
+    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Tell me about ' + name, ns, name) + ')') + '>Ask Copilot</button>';
     if (vm.status === 'Pending') {
       inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
     }

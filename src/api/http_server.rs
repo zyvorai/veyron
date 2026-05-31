@@ -10,6 +10,7 @@
 pub mod web {
     use crate::api::dashboard_paths;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
+    use crate::copilot::{self, AiMode};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
     use crate::kube::{
         KubeClient, MigrateVmOptions, vm_expose_service_name, vm_internet, vm_rdp, windows_rdp,
@@ -133,6 +134,7 @@ pub mod web {
         pub api_key: Option<String>,
         pub api_keys: Vec<ApiKeyEntry>,
         rate_limiter: RateLimiterState,
+        ai_rate_limiter: RateLimiterState,
     }
 
     impl WebState {
@@ -191,6 +193,7 @@ pub mod web {
                 api_key,
                 api_keys,
                 rate_limiter: RateLimiterState::new(rate_limit_per_minute, 60),
+                ai_rate_limiter: RateLimiterState::new(copilot::ai_rate_limit_per_min(), 60),
             })
         }
 
@@ -572,6 +575,19 @@ pub mod web {
         if !s.rate_limiter.check_rate_limit() {
             let (status, json) =
                 err_json(429, "RATE_LIMITED", "Too many requests. Please slow down.");
+            return (status, json).into_response();
+        }
+
+        let method = request.method().as_str();
+        if dashboard_paths::is_ai_rate_limited_path(path, method)
+            && copilot::ai_mode() != AiMode::Off
+            && !s.ai_rate_limiter.check_rate_limit()
+        {
+            let (status, json) = err_json(
+                429,
+                "AI_RATE_LIMITED",
+                "Too many Copilot LLM requests. Please slow down.",
+            );
             return (status, json).into_response();
         }
         drop(s);
@@ -1061,7 +1077,7 @@ pub mod web {
     }
 
     async fn root_redirect() -> axum::response::Redirect {
-        axum::response::Redirect::permanent("/dashboard?dash=20260531d")
+        axum::response::Redirect::permanent("/dashboard?dash=20260531h")
     }
 
     async fn dashboard_handler() -> impl IntoResponse {

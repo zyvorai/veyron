@@ -11,14 +11,16 @@ use axum::{
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
-    CopilotAskRequest, CopilotResponse, YamlBuildRequest, BlueprintSaveRequest, BlueprintSaveResponse,
-    GitOpsExportRequest, GitOpsExportResponse, alert_advisor, backup_advisor, cilium_advisor,
-    compliance_advisor, copilot_ask, cost_advisor, cost_advisor_vm, drift_advisor,
-    export_gitops, forecast_advisor, gitops_advisor, integrations_advisor, migration_advisor,
-    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, node_advisor,
-    observability_advisor, performance_advisor, recommend_template, save_blueprint,
-    scheduling_explainer, scheduling_fleet_advisor, security_sentinel, security_sentinel_fleet,
-    slo_advisor, storage_doctor, vm_doctor, yaml_preview,
+    copilot_chat, CopilotAskRequest, CopilotChatRequest, CopilotResponse, YamlBuildRequest,
+    BlueprintSaveRequest, BlueprintSaveResponse, GitOpsExportRequest, GitOpsExportResponse,
+    alert_advisor, backup_advisor, catalog_advisor, cilium_advisor, compliance_advisor,
+    copilot_ask, cost_advisor, cost_advisor_vm, drift_advisor, export_gitops, forecast_advisor,
+    gitops_advisor, integrations_advisor, migration_advisor, finalize_copilot,
+    guest_inspector, guest_filesystem_report, network_lens, node_advisor,
+    observability_advisor, performance_advisor, quota_advisor, recommend_template,
+    save_blueprint, scheduling_explainer, scheduling_fleet_advisor, security_sentinel,
+    security_sentinel_fleet, slo_advisor, status_snapshot, storage_doctor,
+    velero_dr_advisor, vm_doctor, yaml_preview,
 };
 
 #[cfg(feature = "web")]
@@ -28,6 +30,8 @@ use super::namespace_scope::{self, DashboardNamespaceQuery};
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/experience/copilot/ask", post(copilot_ask_handler))
+        .route("/experience/copilot/chat", post(copilot_chat_handler))
+        .route("/experience/copilot/status", get(copilot_status_handler))
         .route("/experience/copilot/doctor/:ns/:name", get(copilot_doctor_handler))
         .route(
             "/experience/copilot/scheduling/:ns/:name",
@@ -80,7 +84,32 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/copilot/alerts", get(copilot_alerts_handler))
         .route("/experience/copilot/slo", get(copilot_slo_handler))
         .route("/experience/copilot/migrations", get(copilot_migrations_handler))
+        .route("/experience/copilot/quotas", get(copilot_quotas_handler))
+        .route("/experience/copilot/catalog", get(copilot_catalog_handler))
+        .route("/experience/copilot/velero-dr", get(copilot_velero_dr_handler))
         .with_state(state)
+}
+
+#[cfg(feature = "web")]
+async fn copilot_status_handler() -> Json<crate::copilot::CopilotStatusResponse> {
+    Json(status_snapshot())
+}
+
+#[cfg(feature = "web")]
+async fn copilot_chat_handler(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+    Json(body): Json<CopilotChatRequest>,
+) -> Json<crate::copilot::CopilotChatResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(
+        body.namespace.clone().or(q.namespace.clone()),
+        &default_ns,
+    );
+    Json(copilot_chat(&client, &scope, &body).await)
 }
 
 #[cfg(feature = "web")]
@@ -373,3 +402,16 @@ copilot_scope_handler!(copilot_drift_handler, drift_advisor);
 copilot_scope_handler!(copilot_alerts_handler, alert_advisor);
 copilot_scope_handler!(copilot_slo_handler, slo_advisor);
 copilot_scope_handler!(copilot_migrations_handler, migration_advisor);
+copilot_scope_handler!(copilot_quotas_handler, quota_advisor);
+copilot_scope_handler!(copilot_velero_dr_handler, velero_dr_advisor);
+
+#[cfg(feature = "web")]
+async fn copilot_catalog_handler(
+    State(state): State<SharedState>,
+) -> Json<CopilotResponse> {
+    let client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
+    Json(finalize_copilot(catalog_advisor(&client).await).await)
+}

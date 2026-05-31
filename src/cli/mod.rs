@@ -231,6 +231,21 @@ pub enum AiCommands {
         #[arg(short, long, default_value = "text")]
         output: String,
     },
+    /// ResourceQuota pressure
+    Quotas {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Template catalog sync health
+    Catalog {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
+    /// Velero backup/restore DR readiness
+    VeleroDr {
+        #[arg(short, long, default_value = "text")]
+        output: String,
+    },
 }
 
 #[derive(Subcommand, Debug)]

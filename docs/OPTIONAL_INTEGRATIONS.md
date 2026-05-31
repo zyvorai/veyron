@@ -39,6 +39,9 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 | `VMROGUE_ARGOCD_URL` | GitOps sync (POST) | `https://argocd-server.argocd` |
 | `VMROGUE_ARGOCD_TOKEN` | Argo CD API token | (secret) |
 | `VMROGUE_EMAIL_RELAY_URL` | Notification email delivery | HTTP relay |
+| `VMROGUE_AI_URL` | Copilot LLM backend (OpenAI-compatible) | `https://api.openai.com/v1` |
+| `VMROGUE_AI_API_KEY` | LLM API key | (secret) |
+| `VMROGUE_AI_MODE` | `off` / `paraphrase` / `routing` / `agent` | `routing` |
 | `VMROGUE_SLACK_WEBHOOK_URL` | Slack notifications | incoming webhook |
 | `VMROGUE_PAGERDUTY_ROUTING_KEY` | PagerDuty events | routing key |
 

@@ -25,12 +25,47 @@ pub enum CopilotIntent {
     AlertAdvisor,
     SloAdvisor,
     MigrationAdvisor,
+    QuotaAdvisor,
+    CatalogAdvisor,
+    VeleroDrAdvisor,
     ErrorExplainer,
     GeneralHelp,
 }
 
 pub fn detect_intent(query: &str) -> CopilotIntent {
     let lower = query.to_lowercase();
+
+    if lower.contains("velero dr")
+        || lower.contains("velero advisor")
+        || (lower.contains("disaster recovery") && lower.contains("velero"))
+        || (lower.contains("dr readiness") && !lower.contains("gitops"))
+    {
+        return CopilotIntent::VeleroDrAdvisor;
+    }
+
+    if lower.contains("catalog advisor")
+        || lower.contains("catalog health")
+        || lower.contains("catalog sync")
+        || (lower.contains("catalog") && lower.contains("sync"))
+        || (lower.contains("template") && lower.contains("missing"))
+    {
+        return CopilotIntent::CatalogAdvisor;
+    }
+
+    if lower.contains("quota advisor")
+        || lower.contains("quota pressure")
+        || (lower.contains("resourcequota") && lower.contains("full"))
+        || (lower.contains("quota") && lower.contains("limit"))
+    {
+        return CopilotIntent::QuotaAdvisor;
+    }
+
+    if lower.contains("cve")
+        || lower.contains("trivy")
+        || lower.contains("vulnerability")
+    {
+        return CopilotIntent::SecuritySentinel;
+    }
 
     if lower.contains("migration advisor")
         || lower.contains("live migration")

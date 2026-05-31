@@ -267,6 +267,26 @@ check_json_grep "GET /api/v1/experience/copilot/slo" \
     "${BASE}/api/v1/experience/copilot/slo?namespace=all" '"module"'
 check_json_grep "GET /api/v1/experience/copilot/migrations" \
     "${BASE}/api/v1/experience/copilot/migrations?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/quotas" \
+    "${BASE}/api/v1/experience/copilot/quotas?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/catalog" \
+    "${BASE}/api/v1/experience/copilot/catalog" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/velero-dr" \
+    "${BASE}/api/v1/experience/copilot/velero-dr?namespace=all" '"module"'
+check_json_grep "GET /api/v1/experience/copilot/status" \
+    "${BASE}/api/v1/experience/copilot/status" '"mode"'
+chat_body=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -H "X-API-Key: ${KEY}" -H "Content-Type: application/json" \
+    -d '{"query":"help","messages":[]}' \
+    "${BASE}/api/v1/experience/copilot/chat" || true)
+if echo "${chat_body}" | grep -q '"copilot"'; then
+    echo "  ✔ POST /api/v1/experience/copilot/chat"
+else
+    echo "  ✗ POST /api/v1/experience/copilot/chat"
+    echo "${chat_body}" | head -c 400 | sed 's/^/    /'
+    echo ""
+    FAIL=$((FAIL + 1))
+fi
 check_json_grep "GET /api/v1/experience/copilot/guest/filesystem" \
     "${BASE}/api/v1/experience/copilot/guest/default/nonexistent-vm/filesystem" '"module"'
 gitops_body=$(curl -skS --connect-timeout 15 --max-time 45 \

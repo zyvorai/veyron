@@ -27,10 +27,11 @@ deploy_timestamp() {
 deploy_preflight_banner() {
     local remote="$1"
     local timeout="${2:-20}"
+    local port="${3:-22}"
     pkg_banner "🚀 VMRogue · deploy-remote" "SSH preflight · ${remote}"
     pkg_box_begin "Target"
     pkg_box_line "Host: ${remote}" "${PKG_C_BOLD}${PKG_C_CYAN}"
-    pkg_box_line "Timeout: ${timeout}s · BatchMode" "${PKG_C_DIM}"
+    pkg_box_line "Port: ${port} · Timeout: ${timeout}s · BatchMode" "${PKG_C_DIM}"
     pkg_box_end
 }
 
@@ -44,10 +45,18 @@ deploy_preflight_fail() {
     local remote="$1"
     local timeout="$2"
     local script_name="$3"
+    local port="${4:-22}"
+    local detail="${5:-}"
     echo ""
-    pkg_fail "Cannot reach ${remote} (timeout ${timeout}s, BatchMode auth)"
+    pkg_fail "Cannot reach ${remote} on port ${port} (timeout ${timeout}s, BatchMode auth)"
+    if [[ -n "${detail}" ]]; then
+        pkg_box_begin "SSH error"
+        pkg_box_line "${detail}" "${PKG_C_RED}"
+        pkg_box_end
+    fi
     pkg_next_steps \
-        "Test manually: ssh ${remote}" \
+        "Test manually: ssh -p ${port} ${remote}" \
+        "Console fix: sudo bash scripts/bootstrap-remote-sshd-port22.sh" \
         "Skip preflight: DEPLOY_REMOTE_SKIP_CHECK=1 ${script_name} …" \
         "Or pass: --no-preflight"
     exit 1

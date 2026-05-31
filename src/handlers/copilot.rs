@@ -2,12 +2,13 @@
 
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, alert_advisor, backup_advisor,
-    cilium_advisor, compliance_advisor, copilot_ask, cost_advisor, cost_advisor_vm,
-    drift_advisor, forecast_advisor, gitops_advisor, integrations_advisor, migration_advisor,
-    finalize_copilot, guest_inspector, guest_filesystem_report, network_lens, node_advisor,
-    observability_advisor, performance_advisor, recommend_template, scheduling_explainer,
-    scheduling_fleet_advisor, security_sentinel, security_sentinel_fleet, slo_advisor,
-    storage_doctor, vm_doctor, yaml_preview,
+    catalog_advisor, cilium_advisor, compliance_advisor, copilot_ask, cost_advisor,
+    cost_advisor_vm, drift_advisor, forecast_advisor, gitops_advisor, integrations_advisor,
+    migration_advisor, finalize_copilot, guest_inspector, guest_filesystem_report,
+    network_lens, node_advisor, observability_advisor, performance_advisor, quota_advisor,
+    recommend_template, scheduling_explainer, scheduling_fleet_advisor, security_sentinel,
+    security_sentinel_fleet, slo_advisor, storage_doctor, velero_dr_advisor, vm_doctor,
+    yaml_preview,
 };
 use crate::kube::KubeClient;
 use anyhow::Result;
@@ -223,6 +224,16 @@ ai_scope_handler!(handle_ai_drift, drift_advisor);
 ai_scope_handler!(handle_ai_alerts, alert_advisor);
 ai_scope_handler!(handle_ai_slo, slo_advisor);
 ai_scope_handler!(handle_ai_migrations, migration_advisor);
+
+pub async fn handle_ai_catalog(_namespace: &str, output: &str) -> Result<()> {
+    let client = KubeClient::new().await?;
+    let resp = finalize_copilot(catalog_advisor(&client).await).await;
+    print_copilot(&resp, output);
+    Ok(())
+}
+
+ai_scope_handler!(handle_ai_quotas, quota_advisor);
+ai_scope_handler!(handle_ai_velero_dr, velero_dr_advisor);
 
 fn print_copilot(resp: &CopilotResponse, output: &str) {
     if output == "json" {

@@ -110,6 +110,34 @@ spec:
             - name: VMROGUE_ARGOCD_TOKEN
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.ai.url }}
+            - name: VMROGUE_AI_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.ai.apiKey }}
+            - name: VMROGUE_AI_API_KEY
+              value: {{ .Values.ai.apiKey | quote }}
+            {{- end }}
+            {{- with .Values.ai.model }}
+            - name: VMROGUE_AI_MODEL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.ai.mode }}
+            - name: VMROGUE_AI_MODE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- if .Values.ai.maxToolRounds }}
+            - name: VMROGUE_AI_MAX_TOOL_ROUNDS
+              value: {{ .Values.ai.maxToolRounds | quote }}
+            {{- end }}
+            {{- if .Values.ai.timeoutSecs }}
+            - name: VMROGUE_AI_TIMEOUT_SECS
+              value: {{ .Values.ai.timeoutSecs | quote }}
+            {{- end }}
+            {{- if .Values.ai.rateLimitPerMin }}
+            - name: VMROGUE_AI_RATE_LIMIT_PER_MIN
+              value: {{ .Values.ai.rateLimitPerMin | quote }}
+            {{- end }}
           {{- if .Values.integrations.existingSecret }}
           envFrom:
             - secretRef:

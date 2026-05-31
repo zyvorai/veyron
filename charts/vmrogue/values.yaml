@@ -75,3 +75,13 @@ integrations:
   argocdToken: ""
   # Reference an existing Secret (all keys become env vars), e.g. vmrogue-integrations
   existingSecret: ""
+
+# Optional OpenAI-compatible LLM for Copilot (see docs/VMROGUE_AI.md).
+ai:
+  url: ""
+  apiKey: ""
+  model: "gpt-4o-mini"
+  mode: ""
+  maxToolRounds: 2
+  timeoutSecs: 30
+  rateLimitPerMin: 20
