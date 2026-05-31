@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531q">
+<meta name="vmrogue-dashboard-rev" content="20260531r">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531q';
+  var DASH_REV = '20260531r';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1996,6 +1996,13 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .flow-stat-chip.active{border-color:var(--primary-blue);background:rgba(59,130,246,.12)}
 .cilium-copilot-bar,.page-copilot-bar{margin-bottom:16px;padding:14px 16px}
 .page-glass-stats .glass-stat-pill{min-width:0}
+.table tbody tr.clickable-row{cursor:pointer;transition:background .12s}
+.table tbody tr.clickable-row:hover{background:rgba(59,130,246,.06)}
+.dr-glass-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.dr-output-glass{
+  margin-top:14px;max-height:320px;overflow:auto;font-size:.72rem;
+  background:rgba(15,23,42,.55);padding:12px;border-radius:12px;border:1px solid var(--glass-border);
+}
 .dc-briefing{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .dc-briefing-label{font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
 .dc-briefing-item{
@@ -3283,11 +3290,29 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-performance" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div></div>
+  <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Performance Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="performance-copilot-input" placeholder="Ask about CPU, memory pressure, or hot VMs…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runPerformanceCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runPerformanceCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="performanceCopilotChip('Which VMs have high CPU or memory?')">Hot VMs</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="performanceCopilotChip('Performance anomalies in the fleet')">Anomalies</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="performance-page-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('performance-page-advisor-card').style.display='none'">Dismiss</button></div>
+    <div id="performance-page-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
+  </div>
   <div id="performance-cap-banner"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Profiles</span></div>
+  <div id="performance-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Profiles</span></div>
   <table class="table"><thead><tr><th>VM</th><th>CPU P95</th><th>Memory P95</th><th>Read IOPS</th><th>Write IOPS</th><th>Collected</th></tr></thead><tbody id="performance-body"></tbody></table></div>
-  <div class="card">
+  <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">CPU Flamegraph</span>
       <select id="flamegraph-vm-select" class="toolbar-input" onchange="renderFlamegraph()">
@@ -3305,7 +3330,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-webhooks" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Webhooks</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
 </div>
 </div>
@@ -3343,39 +3368,65 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" class="btn btn-sm" onclick="runVeleroDrAdvisor()">Velero DR Advisor</button>
-    <button type="button" class="btn btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div></div>
-  <div id="velero-dr-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Velero DR Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('velero-dr-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runVeleroDrAdvisor()">Velero DR Advisor</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">DR Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="dr-copilot-input" placeholder="Ask about Velero backups, failover, or migration readiness…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runDrCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runDrCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="drCopilotChip('Velero DR readiness')">Velero readiness</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="drCopilotChip('Any live migrations running?')">Live migrations</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runVeleroDrAdvisor()">Run DR advisor</button>
+    </div>
+  </div>
+  <div id="velero-dr-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Velero DR Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('velero-dr-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="velero-dr-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div id="migration-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Migration Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('migration-advisor-card').style.display='none'">Dismiss</button></div>
+  <div id="migration-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Migration Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('migration-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="migration-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card" style="padding:16px">
+  <div class="card glass-card" style="padding:16px">
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end">
       <div class="form-group"><label class="form-label">Namespace</label><input class="form-input" id="dr-ns" placeholder="default"></div>
       <div class="form-group"><label class="form-label">VM name</label><input class="form-input" id="dr-vm" placeholder="my-vm"></div>
       <div class="form-group"><label class="form-label">Target name (optional)</label><input class="form-input" id="dr-target" placeholder="same as source"></div>
-      <button class="btn btn-primary" onclick="drExport()">Export</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="drExport()">Export</button>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-      <button class="btn" onclick="drFailover(false)">Failover (in-place)</button>
-      <button class="btn" onclick="drFailover(true)">Dry-run failover</button>
-      <button class="btn" onclick="drApply(false)">Apply export on cluster</button>
+    <div class="dr-glass-actions">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="drFailover(false)">Failover (in-place)</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="drFailover(true)">Dry-run failover</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="drApply(false)">Apply export on cluster</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:.85rem"><input type="checkbox" id="dr-restore-snap"> Restore latest snapshot</label>
     </div>
-    <pre id="dr-output" style="margin-top:14px;max-height:320px;overflow:auto;font-size:.72rem;background:var(--bg-elevated);padding:12px;border-radius:8px;border:1px solid var(--border)"></pre>
+    <pre id="dr-output" class="dr-output-glass"></pre>
   </div>
 </div>
 </div>
 
 <div class="page section-shell" id="page-heatmap" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Resource Heatmap</h1><p>Per-node utilization heuristics from capacity vs VM density</p></div></div>
+  <div class="page-header"><div><h1>Resource Heatmap</h1><p>Per-node utilization heuristics from capacity vs VM density</p></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Capacity Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="heatmap-copilot-input" placeholder="Ask about node pressure, heat scores, or capacity…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runHeatmapCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runHeatmapCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="heatmapCopilotChip('Node capacity and pressure')">Node pressure</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="heatmapCopilotChip('Which nodes are running hot?')">Hot nodes</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Run advisor</button>
+    </div>
+  </div>
   <div id="heatmap-cap-banner"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Nodes</span></div>
+  <div id="heatmap-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span></div>
   <table class="table"><thead><tr><th>Node</th><th>CPU %</th><th>Memory %</th><th>Disk %</th><th>Network est.</th><th>VMs</th><th>Heat</th></tr></thead><tbody id="heatmap-body"></tbody></table></div>
 </div>
 </div>
@@ -3415,15 +3466,27 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input id="traces-search" class="toolbar-input" style="width:220px" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
     </div>
   </div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Trace Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="traces-copilot-input" placeholder="Ask about trace errors, latency, or event patterns…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runTracesCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runTracesCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="tracesCopilotChip('Recent error traces in the cluster')">Error traces</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="tracesCopilotChip('Active warning events in namespace')">Warning events</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runAlertAdvisor()">Run advisor</button>
+    </div>
+  </div>
   <div id="traces-cap-banner"></div>
-  <div id="traces-stats" class="grid-4"></div>
-  <div class="card">
+  <div id="traces-stats" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
     <div class="card-header"><span class="card-title">Recent Traces</span></div>
     <table class="table"><thead><tr><th>Trace ID</th><th>Service</th><th>Operation</th><th>Duration</th><th>Spans</th><th>Status</th><th>Started</th></tr></thead><tbody id="traces-body"></tbody></table>
   </div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono);padding:12px;text-align:center;line-height:1.45">Not populated — this page uses Kubernetes Events, not OpenTelemetry. Wire a collector and extend VMRogue to chart real span latency if needed.</div></div>
-    <div class="card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono);padding:12px;text-align:center;line-height:1.45">Not populated — error counts above come from Event-shaped rows. OTel-backed charts would require a separate integration.</div></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">P99 Latency by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono);padding:12px;text-align:center;line-height:1.45">Not populated — this page uses Kubernetes Events, not OpenTelemetry. Wire a collector and extend VMRogue to chart real span latency if needed.</div></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Error Rate by Service</span></div><div style="height:160px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.8em;font-family:var(--font-mono);padding:12px;text-align:center;line-height:1.45">Not populated — error counts above come from Event-shaped rows. OTel-backed charts would require a separate integration.</div></div>
   </div>
 </div>
 </div>
@@ -3443,12 +3506,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input id="logs-search" class="toolbar-input" style="width:240px" placeholder="Search logs…" oninput="fetchLogs()">
     </div>
   </div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Log Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="logs-copilot-input" placeholder="Ask about log errors, virt-launcher signals, or VM logs…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runLogsCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runLogsCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="logsCopilotChip('Which VMs have error logs in the last hour?')">Error logs</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="logsCopilotChip('Summarize warning log patterns')">Warnings</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runObservabilityAdvisor()">Run advisor</button>
+    </div>
+  </div>
   <div id="logs-cap-banner"></div>
-  <div id="logs-stats" class="grid-4"></div>
-  <div class="card">
+  <div id="logs-stats" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Log Stream</span>
-      <span style="font-size:.74rem;padding:5px 10px;border-radius:999px;background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2);font-weight:700">● LIVE</span>
+      <span class="glass-badge running" style="font-size:.74rem">● LIVE</span>
     </div>
     <div id="logs-stream" style="font-family:var(--font-mono);font-size:.72em;max-height:480px;overflow-y:auto;padding:12px 18px;line-height:1.8;color:var(--text)">
       <div style="color:var(--text-dim);text-align:center;padding:40px">Connect log aggregator or wire up VM serial console to stream logs</div>
@@ -3866,7 +3941,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531q';
+window.__VMROGUE_DASH_REV = '20260531r';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -6011,8 +6086,12 @@ async function runSecuritySentinel() {
 }
 
 async function runPerformanceAdvisor() {
-  const card = document.getElementById('performance-advisor-card');
-  const body = document.getElementById('performance-advisor-body');
+  let card = document.getElementById('performance-advisor-card');
+  let body = document.getElementById('performance-advisor-body');
+  if (currentPage === 'performance') {
+    card = document.getElementById('performance-page-advisor-card');
+    body = document.getElementById('performance-page-advisor-body');
+  }
   if (!card || !body) {
     openCopilot('Which VMs have high CPU or memory?');
     runCopilotAsk();
@@ -9415,6 +9494,90 @@ function runComplianceCopilotAsk() {
   setTimeout(runCopilotAsk, 80);
 }
 
+function complianceFrameworkAsk(framework) {
+  complianceCopilotChip('Compliance status for ' + (framework || 'production') + ' framework');
+}
+
+function performanceCopilotChip(query) {
+  const inp = document.getElementById('performance-copilot-input');
+  if (inp) inp.value = query;
+  runPerformanceCopilotAsk();
+}
+
+function runPerformanceCopilotAsk() {
+  const inp = document.getElementById('performance-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Which VMs have high CPU or memory?';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function openPerformanceVm(vmName) {
+  const vm = (vmData || []).find(v => v.name === vmName);
+  openVmDetailDeep(vm && vm.namespace ? vm.namespace : currentNs, vmName);
+}
+
+function drCopilotChip(query) {
+  const inp = document.getElementById('dr-copilot-input');
+  if (inp) inp.value = query;
+  runDrCopilotAsk();
+}
+
+function runDrCopilotAsk() {
+  const inp = document.getElementById('dr-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Velero DR readiness';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function heatmapCopilotChip(query) {
+  const inp = document.getElementById('heatmap-copilot-input');
+  if (inp) inp.value = query;
+  runHeatmapCopilotAsk();
+}
+
+function runHeatmapCopilotAsk() {
+  const inp = document.getElementById('heatmap-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Node capacity and pressure';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function logsCopilotChip(query) {
+  const inp = document.getElementById('logs-copilot-input');
+  if (inp) inp.value = query;
+  runLogsCopilotAsk();
+}
+
+function runLogsCopilotAsk() {
+  const inp = document.getElementById('logs-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Which VMs have error logs in the last hour?';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function setLogsLevelFilter(level) {
+  const sel = document.getElementById('logs-level-filter');
+  if (sel) { sel.value = level || ''; fetchLogs(); }
+}
+
+function tracesCopilotChip(query) {
+  const inp = document.getElementById('traces-copilot-input');
+  if (inp) inp.value = query;
+  runTracesCopilotAsk();
+}
+
+function runTracesCopilotAsk() {
+  const inp = document.getElementById('traces-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Recent error traces in the cluster';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function setTracesErrorFilter() {
+  const inp = document.getElementById('traces-search');
+  if (inp) { inp.value = 'error'; filterTraces(); }
+}
+
 function observabilityStatClass(status) {
   const s = (status || '').toLowerCase();
   if (s.indexOf('ok') >= 0 || s.indexOf('ready') >= 0 || s.indexOf('up') >= 0) return ' ok';
@@ -9443,6 +9606,7 @@ let _flamegraphData = [];
 
 async function fetchPerformance() {
   const tb = document.getElementById('performance-body');
+  const summaryEl = document.getElementById('performance-summary');
   try {
     const profRes = await apiJson('/api/v1/performance/profiles' + nsParam());
     setCapBanner('performance-cap-banner', profRes.vmrogue_context);
@@ -9454,8 +9618,24 @@ async function fetchPerformance() {
     } catch (_) {
       graphs = [];
     }
-    if (tb) tb.innerHTML = items.map(p => `<tr><td>${esc(p.vm_name)}</td><td>${p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95}%</td><td>${p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95}%</td><td>${p.iops_read}</td><td>${p.iops_write}</td><td>${fmtTime(p.collected_at)}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No performance profiles found</td></tr>';
+    if (summaryEl) {
+      if (!items.length) {
+        summaryEl.innerHTML = '<div class="glass-stat-pill"><div class="gsl">Profiles</div><div class="gsv">0</div></div>';
+      } else {
+        const avgCpu = items.reduce((s, p) => s + (Number(p.cpu_p95) || 0), 0) / items.length;
+        const avgMem = items.reduce((s, p) => s + (Number(p.memory_p95) || 0), 0) / items.length;
+        const hot = items.filter(p => (Number(p.cpu_p95) || 0) >= 85 || (Number(p.memory_p95) || 0) >= 85).length;
+        summaryEl.innerHTML =
+          '<div class="glass-stat-pill"><div class="gsl">Profiles</div><div class="gsv">' + items.length + '</div></div>' +
+          '<div class="glass-stat-pill' + (avgCpu >= 85 ? ' warn' : '') + '"><div class="gsl">Avg CPU P95</div><div class="gsv">' + avgCpu.toFixed(1) + '%</div></div>' +
+          '<div class="glass-stat-pill' + (avgMem >= 85 ? ' warn' : '') + '"><div class="gsl">Avg mem P95</div><div class="gsv">' + avgMem.toFixed(1) + '%</div></div>' +
+          '<div class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Copilot"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></div>';
+      }
+    }
+    if (tb) tb.innerHTML = items.map(p =>
+      '<tr class="clickable-row" ' + onHandler('openPerformanceVm(' + jsArgs(p.vm_name) + ')') + ' title="Open VM detail">' +
+      '<td>' + esc(p.vm_name) + '</td><td>' + (p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95) + '%</td><td>' + (p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95) + '%</td><td>' + p.iops_read + '</td><td>' + p.iops_write + '</td><td>' + fmtTime(p.collected_at) + '</td></tr>'
+    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No performance profiles found</td></tr>';
     _flamegraphData = graphs;
     const sel = document.getElementById('flamegraph-vm-select');
     if (sel && graphs.length) {
@@ -9507,7 +9687,11 @@ async function fetchWebhooks() {
   try {
     const items = asArray(await apiJson('/api/v1/webhooks' + nsParam()));
     if (!tb) return;
-    tb.innerHTML = items.map(w => `<tr><td>${esc(w.name)}</td><td>${esc(w.url)}</td><td>${esc((w.events || []).join(', ') || '-')}</td><td>${w.active ? 'Yes' : 'No'}</td><td>${w.secret_configured ? 'Yes' : 'No'}</td><td>${w.failure_count}</td></tr>`).join('')
+    tb.innerHTML = items.map(w => `<tr>
+      <td>${esc(w.name)}</td><td>${esc(w.url)}</td><td>${esc((w.events || []).join(', ') || '-')}</td>
+      <td><span class="glass-badge ${w.active ? 'running' : 'stopped'}">${w.active ? 'Yes' : 'No'}</span></td>
+      <td>${w.secret_configured ? 'Yes' : 'No'}</td>
+      <td><span class="glass-badge ${w.failure_count ? 'error' : 'running'}">${w.failure_count}</span></td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No webhooks found</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -9521,18 +9705,18 @@ async function fetchTraces() {
   try {
     const data = await apiJson('/api/v1/traces' + nsParam());
     setCapBanner('traces-cap-banner', data.vmrogue_context);
-    if (stats) stats.innerHTML = `
-      <div class="stat-card stat-card-blue"><div class="stat-label">Total Traces</div><div class="stat-value">${data.total_traces || 0}</div></div>
-      <div class="stat-card stat-card-green"><div class="stat-label">Success Rate</div><div class="stat-value">${data.success_rate != null ? data.success_rate.toFixed(1) + '%' : 'N/A'}</div></div>
-      <div class="stat-card stat-card-orange"><div class="stat-label">P99 Latency</div><div class="stat-value">${data.p99_ms != null ? data.p99_ms + 'ms' : 'N/A'}</div></div>
-      <div class="stat-card stat-card-red"><div class="stat-label">Errors (1h)</div><div class="stat-value">${data.errors_1h || 0}</div></div>`;
+    if (stats) stats.innerHTML =
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="filterTraces()" title="All traces"><div class="gsl">Total traces</div><div class="gsv">' + (data.total_traces || 0) + '</div></button>' +
+      '<button type="button" class="glass-stat-pill ok clickable-stat" onclick="navigate(\'events\')" title="View events"><div class="gsl">Success rate</div><div class="gsv">' + (data.success_rate != null ? data.success_rate.toFixed(1) + '%' : 'N/A') + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="filterTraces()" title="Filter traces"><div class="gsl">P99 latency</div><div class="gsv">' + (data.p99_ms != null ? data.p99_ms + 'ms' : 'N/A') + '</div></button>' +
+      '<button type="button" class="glass-stat-pill bad clickable-stat" onclick="setTracesErrorFilter()" title="Filter error traces"><div class="gsl">Errors (1h)</div><div class="gsv">' + (data.errors_1h || 0) + '</div></button>';
     if (!tb) return;
     const items = data.traces || [];
     tb.innerHTML = items.map(t => `<tr>
       <td style="font-family:var(--font-mono);font-size:.8em">${esc((t.trace_id||'').slice(0,16))}…</td>
       <td>${esc(t.service)}</td><td>${esc(t.operation)}</td>
       <td>${t.duration_ms}ms</td><td>${t.span_count}</td>
-      <td><span class="stat-badge ${t.status==='ok'?'badge-green':'badge-muted'}">${esc(t.status)}</span></td>
+      <td><span class="glass-badge ${t.status==='ok'?'running':'error'}">${esc(t.status)}</span></td>
       <td>${fmtTime(t.started_at)}</td>
     </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No recent cluster events to show as traces</td></tr>';
   } catch (e) {
@@ -9559,11 +9743,11 @@ async function fetchLogs() {
     const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '');
     const data = await apiJson('/api/v1/logs' + params);
     setCapBanner('logs-cap-banner', data.vmrogue_context);
-    if (stats) stats.innerHTML = `
-      <div class="stat-card stat-card-red"><div class="stat-label">Errors</div><div class="stat-value">${data.error_count || 0}</div></div>
-      <div class="stat-card stat-card-orange"><div class="stat-label">Warnings</div><div class="stat-value">${data.warn_count || 0}</div></div>
-      <div class="stat-card stat-card-blue"><div class="stat-label">Info</div><div class="stat-value">${data.info_count || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">Total (1h)</div><div class="stat-value">${data.total_1h || 0}</div></div>`;
+    if (stats) stats.innerHTML =
+      '<button type="button" class="glass-stat-pill bad clickable-stat" onclick="setLogsLevelFilter(\'error\')" title="Show error logs"><div class="gsl">Errors</div><div class="gsv">' + (data.error_count || 0) + '</div></button>' +
+      '<button type="button" class="glass-stat-pill warn clickable-stat" onclick="setLogsLevelFilter(\'warn\')" title="Show warning logs"><div class="gsl">Warnings</div><div class="gsv">' + (data.warn_count || 0) + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="setLogsLevelFilter(\'info\')" title="Show info logs"><div class="gsl">Info</div><div class="gsv">' + (data.info_count || 0) + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="setLogsLevelFilter(\'\')" title="Show all logs"><div class="gsl">Total (1h)</div><div class="gsv">' + (data.total_1h || 0) + '</div></button>';
     if (!stream) return;
     const lines = data.lines || [];
     if (!lines.length) {
@@ -9600,10 +9784,12 @@ async function fetchCompliance() {
         '<div class="glass-stat-pill' + (failing ? ' warn' : '') + '"><div class="gsl">Failing controls</div><div class="gsv">' + failing + '</div></div>' +
         '<div class="glass-stat-pill"><div class="gsl">Reports</div><div class="gsv">' + reports.length + '</div></div>';
     }
-    if (stBody) stBody.innerHTML = statuses.map(s => `<tr>
-      <td>${esc(s.framework)}</td><td>${s.score ?? 0}%</td><td>${s.passing_controls ?? 0}</td><td>${s.failing_controls ?? 0}</td>
-      <td><span class="glass-badge ${s.compliant ? 'running' : 'error'}">${s.compliant ? 'yes' : 'no'}</span></td>
-      <td>${fmtTime(s.last_checked)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No frameworks</td></tr>';
+    if (stBody) stBody.innerHTML = statuses.map(s =>
+      '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Copilot about ' + esc(s.framework) + '">' +
+      '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
+      '<td><span class="glass-badge ' + (s.compliant ? 'running' : 'error') + '">' + (s.compliant ? 'yes' : 'no') + '</span></td>' +
+      '<td>' + fmtTime(s.last_checked) + '</td></tr>'
+    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No frameworks</td></tr>';
     if (repBody) repBody.innerHTML = reports.map(r => `<tr>
       <td>${esc(r.id)}</td><td>${esc(r.framework)}</td><td>${fmtTime(r.generated_at)}</td>
       <td>${r.summary?.score ?? '-'}%</td><td>${(r.findings || []).length}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No reports</td></tr>';
@@ -9617,17 +9803,35 @@ async function fetchCompliance() {
 
 async function fetchHeatmap() {
   const tb = document.getElementById('heatmap-body');
+  const summaryEl = document.getElementById('heatmap-summary');
   try {
     const data = await apiJson('/api/v1/heatmap/resources');
     setCapBanner('heatmap-cap-banner', data.vmrogue_context);
     const nodes = data.nodes || [];
+    if (summaryEl) {
+      if (!nodes.length) {
+        summaryEl.innerHTML = '<div class="glass-stat-pill"><div class="gsl">Nodes</div><div class="gsv">0</div></div>';
+      } else {
+        const avgHeat = nodes.reduce((s, n) => s + (Number(n.heat_score) || 0), 0) / nodes.length;
+        const hot = nodes.filter(n => (Number(n.heat_score) || 0) >= 0.75).length;
+        const vms = nodes.reduce((s, n) => s + (Number(n.vm_count) || 0), 0);
+        summaryEl.innerHTML =
+          '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'nodes\')" title="View nodes"><div class="gsl">Nodes</div><div class="gsv">' + nodes.length + '</div></button>' +
+          '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs on nodes</div><div class="gsv">' + vms + '</div></button>' +
+          '<div class="glass-stat-pill' + (avgHeat >= 0.75 ? ' warn' : '') + '"><div class="gsl">Avg heat</div><div class="gsv">' + avgHeat.toFixed(2) + '</div></div>' +
+          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="heatmapCopilotChip(\'Which nodes are running hot?\')" title="Ask Copilot"><div class="gsl">Hot nodes</div><div class="gsv">' + hot + '</div></button>';
+      }
+    }
     if (!tb) return;
-    tb.innerHTML = nodes.map(n => `<tr>
-      <td>${esc(n.node_name)}</td><td>${(n.cpu_utilization || 0).toFixed(1)}</td><td>${(n.memory_utilization || 0).toFixed(1)}</td>
-      <td>${(n.disk_utilization || 0).toFixed(1)}</td><td>${(n.network_utilization || 0).toFixed(1)}</td>
-      <td>${n.vm_count ?? 0}</td><td>${(n.heat_score || 0).toFixed(2)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No nodes</td></tr>';
+    tb.innerHTML = nodes.map(n =>
+      '<tr class="clickable-row" ' + onHandler('openNodeDetailDeep(' + jsArgs(n.node_name) + ')') + ' title="Open node detail">' +
+      '<td>' + esc(n.node_name) + '</td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
+      '<td>' + (n.disk_utilization || 0).toFixed(1) + '</td><td>' + (n.network_utilization || 0).toFixed(1) + '</td>' +
+      '<td>' + (n.vm_count ?? 0) + '</td><td>' + (n.heat_score || 0).toFixed(2) + '</td></tr>'
+    ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No nodes</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    if (summaryEl) summaryEl.innerHTML = summaryErrorHtml(e.message || String(e));
   }
 }
 
