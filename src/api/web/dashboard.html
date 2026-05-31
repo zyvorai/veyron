@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531k">
+<meta name="vmrogue-dashboard-rev" content="20260531l">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531k';
+  var DASH_REV = '20260531l';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1121,6 +1121,18 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .modal.glass-modal .form-input:focus,.modal.glass-modal .form-select:focus{
   border-color:var(--primary-blue);box-shadow:0 0 0 3px rgba(59,130,246,.15);
+}
+.glass-panel,.fixit-panel.glass-panel{
+  background:var(--glass-bg-elevated);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
+  box-shadow:var(--glass-shadow),0 25px 80px rgba(0,0,0,.45);
+  position:relative;
+}
+.glass-panel::before,.fixit-panel.glass-panel::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--glass-radius) var(--glass-radius) 0 0;
+  background:linear-gradient(90deg,transparent,var(--primary-blue),var(--primary-purple),transparent);
+  pointer-events:none;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2399,7 +2411,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="toast-container" id="toasts"></div>
 
 <div class="modal-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-labelledby="copilot-title">
-  <div class="fixit-panel copilot-panel" tabindex="-1" onclick="event.stopPropagation()" style="width:min(680px,94vw);max-height:85vh;overflow:auto">
+  <div class="fixit-panel copilot-panel glass-panel" tabindex="-1" onclick="event.stopPropagation()" style="width:min(680px,94vw);max-height:85vh;overflow:auto;margin:8vh auto 0">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
       <div class="fixit-title" id="copilot-title" style="margin:0">VMRogue Copilot</div>
       <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
@@ -2408,44 +2420,44 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
     <textarea class="form-input" id="copilot-input" rows="2" placeholder="Why is my VM not starting?" aria-label="Copilot question" style="width:100%;margin-bottom:10px;font-size:.9rem"></textarea>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are pending scheduling?')">Pending</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Security review for production VMs')">Security</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which namespaces are near quota limits?')">Quotas</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Velero DR readiness')">Velero DR</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are pending scheduling?')">Pending</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which PVCs are almost full?')">Storage</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Security review for production VMs')">Security</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which namespaces are near quota limits?')">Quotas</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Velero DR readiness')">Velero DR</button>
     </div></div>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Per-VM</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show network for my VM')">Network</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show guest agent status')">Guest</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show network for my VM')">Network</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show guest agent status')">Guest</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
     </div></div>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Platform</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Is the template catalog in sync?')">Catalog</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Compliance score for production VMs')">Compliance</button>
-      <button type="button" class="btn btn-sm copilot-chip-btn" onclick="copilotChip('Node capacity and pressure')">Nodes</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Is the template catalog in sync?')">Catalog</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Compliance score for production VMs')">Compliance</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Node capacity and pressure')">Nodes</button>
     </div></div>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <button type="button" class="btn btn-start btn-sm" onclick="runCopilotAsk()">Ask</button>
-      <button type="button" class="btn btn-sm" onclick="copilotNewChat()">New chat</button>
-      <button type="button" class="btn btn-sm" onclick="closeCopilot()">Close</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCopilotAsk()">Ask</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="copilotNewChat()">New chat</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeCopilot()">Close</button>
     </div>
     <div id="copilot-result"></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="gitops-export-modal" role="dialog" aria-modal="true" aria-label="GitOps export">
-  <div class="fixit-panel" onclick="event.stopPropagation()" style="width:min(720px,94vw);max-height:85vh;overflow:auto">
+  <div class="fixit-panel glass-panel" onclick="event.stopPropagation()" style="width:min(720px,94vw);max-height:85vh;overflow:auto;margin:8vh auto 0">
     <div class="fixit-title" id="gitops-export-title">GitOps export</div>
     <p id="gitops-export-sub" style="font-size:.82rem;color:var(--text-dim);margin-bottom:10px"></p>
     <pre id="gitops-export-body" style="margin:0;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.72rem;overflow:auto;max-height:55vh;white-space:pre-wrap"></pre>
     <div style="margin-top:14px;display:flex;gap:8px">
-      <button type="button" class="btn btn-sm btn-start" onclick="copyGitOpsExport()">Copy bundle</button>
-      <button type="button" class="btn btn-sm" onclick="closeGitOpsExportModal()">Close</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="copyGitOpsExport()">Copy bundle</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeGitOpsExportModal()">Close</button>
     </div>
   </div>
 </div>
@@ -3514,13 +3526,13 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="apikey-modal">
-  <div class="modal" style="width:400px">
+  <div class="modal glass-modal" style="width:400px">
     <div class="modal-header">
       <h2>Sign in</h2>
     </div>
     <div class="modal-body">
       <div id="oidc-login-section" style="display:none;margin-bottom:4px">
-        <button type="button" class="btn-forge" style="width:100%" onclick="startOidcLogin()">Sign in with SSO</button>
+        <button type="button" class="glass-btn-primary" style="width:100%" onclick="startOidcLogin()">Sign in with SSO</button>
         <div class="auth-divider">or use API key</div>
       </div>
       <div class="form-group">
@@ -3536,7 +3548,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-forge" onclick="submitApiKey()">Connect</button>
+      <button type="button" class="glass-btn-primary" onclick="submitApiKey()">Connect</button>
     </div>
   </div>
 </div>
@@ -3656,7 +3668,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 </script>
 
 <div class="modal-overlay" id="platform-install-modal">
-  <div class="modal" style="max-width:min(920px,96vw)">
+  <div class="modal glass-modal" style="max-width:min(920px,96vw)">
     <div class="modal-header">
       <h2>Install KubeVirt stack</h2>
       <button type="button" class="modal-close" onclick="closePlatformInstallModal()">&#10005;</button>
@@ -3665,20 +3677,20 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
       <p id="platform-install-hint" style="font-size:.88rem;color:var(--text-muted);line-height:1.55;margin-bottom:12px"></p>
       <p style="font-size:.84rem;color:var(--text-dim);line-height:1.5">Copy the script and run it on a machine where <code>kubectl</code> points at this cluster <strong>with cluster-admin</strong>. VMRogue cannot apply operators from your browser for security reasons.</p>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0">
-        <button type="button" class="btn btn-primary" onclick="copyPlatformInstallScript()">Copy script</button>
-        <a class="btn btn-sm btn-restart" href="https://kubevirt.io/quickstart_cloud/" target="_blank" rel="noopener noreferrer">KubeVirt quickstart</a>
-        <a class="btn btn-sm btn-restart" href="https://github.com/kubevirt/containerized-data-importer" target="_blank" rel="noopener noreferrer">CDI</a>
+        <button type="button" class="glass-btn-primary glass-btn-sm" onclick="copyPlatformInstallScript()">Copy script</button>
+        <a class="glass-btn-secondary glass-btn-sm" style="text-decoration:none;display:inline-flex;align-items:center" href="https://kubevirt.io/quickstart_cloud/" target="_blank" rel="noopener noreferrer">KubeVirt quickstart</a>
+        <a class="glass-btn-secondary glass-btn-sm" style="text-decoration:none;display:inline-flex;align-items:center" href="https://github.com/kubevirt/containerized-data-importer" target="_blank" rel="noopener noreferrer">CDI</a>
       </div>
       <pre id="platform-install-pre" class="form-input" style="font-size:.76rem;max-height:min(52vh,560px);overflow:auto;white-space:pre-wrap;background:rgba(0,0,0,.28);padding:14px;border-radius:12px;margin:0;font-family:var(--font-mono);line-height:1.4"></pre>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn" onclick="closePlatformInstallModal()">Close</button>
+      <button type="button" class="glass-btn-secondary" onclick="closePlatformInstallModal()">Close</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="about-modal" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
-  <div class="modal" style="max-width:min(520px,96vw)">
+  <div class="modal glass-modal" style="max-width:min(520px,96vw)">
     <div class="modal-header">
       <h2 id="about-modal-title">About VMRogue</h2>
       <button type="button" class="modal-close" onclick="closeAboutModal()" aria-label="Close about dialog">&#10005;</button>
@@ -3723,7 +3735,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531k';
+window.__VMROGUE_DASH_REV = '20260531l';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -3985,6 +3997,12 @@ function openPodDetailDeep(ns, name) {
   navigate('pods', { skipHash: true });
   setDashboardHash('pods', { kind: 'pod', ns: ns, name: name }, true);
   Promise.resolve(fetchPods()).finally(function() { togglePodDetail(ns, name, { skipHash: true }); });
+}
+
+function openNodeDetailDeep(nodeName) {
+  navigate('nodes', { skipHash: true });
+  setDashboardHash('nodes', { kind: 'node', name: nodeName }, true);
+  Promise.resolve(fetchNodes()).finally(function() { toggleNodeDetail(nodeName, { skipHash: true }); });
 }
 
 function loadPageData(page) {
@@ -4972,6 +4990,25 @@ function renderDatacenterHome(data) {
   }
 }
 
+function pinnedVmCard(vm) {
+  const cls = sc(vm.status);
+  const ns = vm.namespace || 'default';
+  const name = vm.name || 'vm';
+  const isRunning = vm.status === 'Running';
+  const family = guessOsFamily(vm);
+  const actions =
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('toggleVmDetail(' + jsArgs(ns, name) + ')') + '>Details</button>' +
+    (isRunning
+      ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>Console</button>'
+      : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start</button>');
+  return '<div class="vm-card">' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + osFamilyIcon(family) + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status || 'Unknown') + '</span></div>' +
+    '<div class="vm-card-name">' + esc(name) + '</div>' +
+    '<span class="vm-workspace-chip">workspace · ' + esc(ns) + '</span>' +
+    '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + '</div>' +
+    '<div class="vm-card-actions">' + actions + '</div></div>';
+}
+
 function renderPinnedVms(vms) {
   const sec = document.getElementById('dc-pinned-section');
   const el = document.getElementById('dc-pinned-vms');
@@ -4979,7 +5016,7 @@ function renderPinnedVms(vms) {
   const list = (vms || []).slice(0, 4);
   if (!list.length) { sec.style.display = 'none'; return; }
   sec.style.display = '';
-  el.innerHTML = list.map(v => vmCard(typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' }, true)).join('');
+  el.innerHTML = list.map(v => pinnedVmCard(typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' })).join('');
 }
 
 function renderPinnedVmsFromClient() {
@@ -7323,7 +7360,7 @@ function renderPodDetailHeader(pod) {
   const badgeCls = podPhaseBadgeClass(pod.phase);
   let actions = '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('pods', { kind: 'pod', ns: pod.namespace, name: pod.name }) + ')') + '>Copy link</button>';
   if (pod.node_name) {
-    actions += '<button type="button" class="glass-btn-secondary" onclick="navigate(\'nodes\')">View nodes</button>';
+    actions += '<button type="button" class="glass-btn-secondary" onclick="openNodeDetailDeep(' + jsArgs(pod.node_name) + ')">View node</button>';
   }
   return '<div class="vm-detail-header">' +
     '<div class="vm-detail-header-left">' +
