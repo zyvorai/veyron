@@ -7,12 +7,15 @@
 //! Composes cluster facts, KubeVirt state, and existing translators into product-shaped
 //! responses. Optional external LLM backends can be wired later; v1 is deterministic.
 
+mod agent;
 mod alert_advisor;
 mod backup_advisor;
 mod blueprint_studio;
+mod catalog_advisor;
 mod cilium_advisor;
 mod compliance_advisor;
 mod cost_advisor;
+mod dispatch;
 mod doctor;
 pub mod fixit;
 mod guest_inspector;
@@ -29,14 +32,19 @@ mod network_lens;
 mod node_advisor;
 mod observability_advisor;
 mod performance_advisor;
+mod quota_advisor;
 mod scheduling;
 mod security_sentinel;
 mod slo_advisor;
 mod storage_doctor;
+mod tools;
+mod velero_dr_advisor;
 mod yaml_build;
 
+pub use agent::copilot_chat;
 pub use alert_advisor::alert_advisor;
 pub use backup_advisor::backup_advisor;
+pub use catalog_advisor::catalog_advisor;
 pub use cilium_advisor::cilium_advisor;
 pub use compliance_advisor::compliance_advisor;
 pub use cost_advisor::{cost_advisor, cost_advisor_vm};
@@ -48,7 +56,10 @@ pub use migration_advisor::migration_advisor;
 pub use node_advisor::node_advisor;
 pub use observability_advisor::observability_advisor;
 pub use performance_advisor::performance_advisor;
+pub use quota_advisor::quota_advisor;
 pub use slo_advisor::slo_advisor;
+pub use llm::{ai_mode, ai_rate_limit_per_min, status_snapshot, AiMode};
+pub use velero_dr_advisor::velero_dr_advisor;
 pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveResponse};
 pub use doctor::vm_doctor;
 pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
@@ -61,9 +72,67 @@ pub use security_sentinel::{security_sentinel, security_sentinel_fleet};
 pub use storage_doctor::storage_doctor;
 pub use yaml_build::{YamlBuildRequest, yaml_preview};
 
-use fixit::explain_error_message;
+use dispatch::dispatch_intent;
 use crate::kube::KubeClient;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopilotChatMessage {
+    pub role: String,
+    pub content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub module: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopilotChatRequest {
+    #[serde(default)]
+    pub messages: Vec<CopilotChatMessage>,
+    #[serde(default)]
+    pub query: Option<String>,
+    #[serde(default)]
+    pub namespace: Option<String>,
+    #[serde(default)]
+    pub vm_name: Option<String>,
+}
+
+impl CopilotChatRequest {
+    pub fn query(&self) -> String {
+        if let Some(q) = &self.query {
+            if !q.trim().is_empty() {
+                return q.clone();
+            }
+        }
+        self.messages
+            .iter()
+            .rev()
+            .find(|m| m.role == "user")
+            .map(|m| m.content.clone())
+            .unwrap_or_default()
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopilotToolTrace {
+    pub tool: String,
+    pub args: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopilotChatResponse {
+    pub message: CopilotChatMessage,
+    pub copilot: CopilotResponse,
+    pub tool_trace: Vec<CopilotToolTrace>,
+    pub mode: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CopilotStatusResponse {
+    pub llm_configured: bool,
+    pub mode: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CopilotAction {
@@ -101,7 +170,7 @@ pub struct CopilotResponse {
 }
 
 impl CopilotResponse {
-    fn new(module: &str, intent: &str, title: impl Into<String>) -> Self {
+    pub(crate) fn new(module: &str, intent: &str, title: impl Into<String>) -> Self {
         Self {
             product: "VMRogue Copilot".to_string(),
             module: module.to_string(),
@@ -139,135 +208,11 @@ pub async fn copilot_ask(
         return general_help();
     }
 
-    let intent = intent::detect_intent(query);
-    match intent {
-        CopilotIntent::VmDoctor => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                vm_doctor(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                vm_doctor(client, ns, &name).await
-            } else {
-                let mut r = CopilotResponse::new(
-                    "VMRogue Doctor",
-                    "vm_doctor",
-                    "Which VM should I inspect?",
-                );
-                r.summary = "Specify a VM name in your question or pass namespace + vm_name.".into();
-                r.recommendations.push("Example: Why is vm-db-01 not starting?".into());
-                r.actions.push(CopilotAction {
-                    label: "Open VMs".into(),
-                    action: "navigate".into(),
-                    page: Some("vms".into()),
-                });
-                r
-            }
-        }
-        CopilotIntent::SchedulingExplainer => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                scheduling_explainer(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                scheduling_explainer(client, ns, &name).await
-            } else {
-                scheduling_fleet_advisor(client, scope).await
-            }
-        }
-        CopilotIntent::UnhealthyFleet => list_unhealthy_vms(client, scope).await,
-        CopilotIntent::YamlBuilder => {
-            let spec = yaml_build::parse_spec_from_query(query);
-            yaml_preview(client, scope, spec).await
-        }
-        CopilotIntent::BackupAdvisor => backup_advisor(client, scope).await,
-        CopilotIntent::CostAdvisor => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                cost_advisor_vm(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                cost_advisor_vm(client, ns, &name).await
-            } else {
-                cost_advisor(client, scope).await
-            }
-        }
-        CopilotIntent::NetworkLens => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                network_lens(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                network_lens(client, ns, &name).await
-            } else {
-                let mut r = CopilotResponse::new(
-                    "VMRogue Network Lens",
-                    "network_lens",
-                    "Which VM should I inspect?",
-                );
-                r.summary =
-                    "Include a VM name — e.g. “Show network for vm-app-01”.".into();
-                r
-            }
-        }
-        CopilotIntent::GuestInspector => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                guest_inspector(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                guest_inspector(client, ns, &name).await
-            } else {
-                let mut r = CopilotResponse::new(
-                    "VMRogue Guest Inspector",
-                    "guest_inspector",
-                    "Which VM should I inspect?",
-                );
-                r.summary = "Include a VM name — e.g. “Show guest agent status for vm-db-01”.".into();
-                r
-            }
-        }
-        CopilotIntent::GuestFilesystem => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                guest_filesystem_report(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                guest_filesystem_report(client, ns, &name).await
-            } else {
-                let mut r = CopilotResponse::new(
-                    "VMRogue Guest Filesystem",
-                    "guest_filesystem",
-                    "Which VM should I inspect?",
-                );
-                r.summary =
-                    "Include a VM name — e.g. “Show guest filesystem for vm-db-01”.".into();
-                r
-            }
-        }
-        CopilotIntent::StorageDoctor => storage_doctor(client, scope).await,
-        CopilotIntent::SecuritySentinel => {
-            if let (Some(ns), Some(name)) = (req.namespace.as_deref(), req.vm_name.as_deref()) {
-                security_sentinel(client, ns, name).await
-            } else if let Some(name) = extract_vm_name(query) {
-                let ns = req.namespace.as_deref().unwrap_or(scope);
-                security_sentinel(client, ns, &name).await
-            } else {
-                security_sentinel_fleet(client, scope).await
-            }
-        }
-        CopilotIntent::PerformanceAdvisor => performance_advisor(client, scope).await,
-        CopilotIntent::GitopsAdvisor => gitops_advisor(client, scope).await,
-        CopilotIntent::ForecastAdvisor => forecast_advisor(client, scope).await,
-        CopilotIntent::IntegrationsAdvisor => integrations_advisor().await,
-        CopilotIntent::ComplianceAdvisor => compliance_advisor(client, scope).await,
-        CopilotIntent::ObservabilityAdvisor => observability_advisor(client, scope).await,
-        CopilotIntent::CiliumAdvisor => cilium_advisor(client, scope).await,
-        CopilotIntent::NodeAdvisor => node_advisor(client, scope).await,
-        CopilotIntent::DriftAdvisor => drift_advisor(client, scope).await,
-        CopilotIntent::AlertAdvisor => alert_advisor(client, scope).await,
-        CopilotIntent::SloAdvisor => slo_advisor(client, scope).await,
-        CopilotIntent::MigrationAdvisor => migration_advisor(client, scope).await,
-        CopilotIntent::ErrorExplainer => explain_error_message(query, Some("copilot")),
-        CopilotIntent::GeneralHelp => general_help(),
-    }
+    let intent = llm::resolve_intent(query, &[]).await;
+    dispatch_intent(client, scope, intent, req).await
 }
 
-fn general_help() -> CopilotResponse {
+pub fn general_help() -> CopilotResponse {
     let mut r = CopilotResponse::new(
         "VMRogue Copilot",
         "help",
@@ -298,6 +243,9 @@ fn general_help() -> CopilotResponse {
         "VMRogue Alert Advisor — warning events narrative".into(),
         "VMRogue SLO Advisor — fleet availability SLO".into(),
         "VMRogue Migration Advisor — live migration status".into(),
+        "VMRogue Quota Advisor — ResourceQuota pressure".into(),
+        "VMRogue Catalog Advisor — template catalog sync".into(),
+        "VMRogue Velero DR Advisor — backup/restore readiness".into(),
         "VMRogue Error Explainer — translate ugly K8s errors".into(),
     ];
     r.recommendations = vec![
@@ -324,69 +272,11 @@ fn general_help() -> CopilotResponse {
         "Active warning events in namespace".into(),
         "Fleet availability SLO status".into(),
         "Any live migrations running?".into(),
+        "Which namespaces are near quota limits?".into(),
+        "Is the template catalog in sync?".into(),
+        "Velero DR readiness".into(),
     ];
     r
-}
-
-async fn list_unhealthy_vms(client: &KubeClient, scope: &str) -> CopilotResponse {
-    let mut r = CopilotResponse::new(
-        "VMRogue Doctor",
-        "unhealthy_fleet",
-        "Unhealthy VMs in scope",
-    );
-    let vms = client.list_vms_for_scope(scope).await;
-    let mut unhealthy = Vec::new();
-    for vm in &vms {
-        let name = vm.metadata.name.as_deref().unwrap_or("");
-        let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
-        let status = vm
-            .status
-            .as_ref()
-            .and_then(|s| s.printable_status.as_deref())
-            .unwrap_or("Unknown");
-        if matches!(status, "Failed" | "Error" | "Unknown") || status == "Pending" {
-            unhealthy.push(format!("{ns}/{name} — {status}"));
-        } else if status == "Stopped" {
-            continue;
-        } else if status == "Running" {
-            let (score, label) = crate::copilot::fixit::vm_health_score(status, false);
-            if score < 65 {
-                unhealthy.push(format!("{ns}/{name} — {label} ({score}%)"));
-            }
-        }
-    }
-    if unhealthy.is_empty() {
-        r.summary = "No clearly unhealthy VMs in the active workspace scope.".into();
-        r.evidence.push("Checked printable VM status and fleet health heuristics.".into());
-    } else {
-        r.summary = format!("Found {} VM(s) needing attention.", unhealthy.len());
-        r.evidence = unhealthy;
-        r.recommendations.push("Open VMRogue Doctor on the worst offender first.".into());
-    }
-    r.actions.push(CopilotAction {
-        label: "Open Virtual Machines".into(),
-        action: "navigate".into(),
-        page: Some("vms".into()),
-    });
-    r
-}
-
-fn extract_vm_name(query: &str) -> Option<String> {
-    let lower = query.to_lowercase();
-    for token in query.split_whitespace() {
-        let t = token.trim_matches(|c: char| !c.is_alphanumeric() && c != '-' && c != '_');
-        if t.len() >= 2
-            && ![
-                "why", "is", "my", "vm", "the", "not", "starting", "pending", "stuck", "show",
-                "all", "can", "migrate", "create", "windows", "linux", "server", "with",
-            ]
-            .contains(&t.to_lowercase().as_str())
-            && lower.contains(&t.to_lowercase())
-        {
-            return Some(t.to_string());
-        }
-    }
-    None
 }
 
 /// Apply optional LLM paraphrase when `VMROGUE_AI_URL` is configured.
@@ -561,6 +451,30 @@ mod tests {
         assert!(matches!(
             intent::detect_intent("Any live migrations running?"),
             CopilotIntent::MigrationAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_quota_intent() {
+        assert!(matches!(
+            intent::detect_intent("Which namespaces are near quota limits?"),
+            CopilotIntent::QuotaAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_catalog_intent() {
+        assert!(matches!(
+            intent::detect_intent("Is the template catalog in sync?"),
+            CopilotIntent::CatalogAdvisor
+        ));
+    }
+
+    #[test]
+    fn detect_velero_dr_intent() {
+        assert!(matches!(
+            intent::detect_intent("Velero DR readiness"),
+            CopilotIntent::VeleroDrAdvisor
         ));
     }
 }

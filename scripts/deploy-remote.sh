@@ -17,6 +17,8 @@
 #   DEPLOY_HOST / DEPLOY_USER     Defaults when host/user omitted
 #   DEPLOY_REMOTE_SKIP_CHECK=1    Skip SSH preflight (same as --no-preflight)
 #   DEPLOY_SSH_TIMEOUT            Seconds for SSH connect (default: 20)
+#   DEPLOY_SSH_PORT                 SSH port (default: 22)
+#   DEPLOY_SSH_PASSWORD             SSH password (uses sshpass; disables BatchMode)
 #   VMROGUE_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
 #   VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
 #   VMROGUE_REQUIRE_KUBEVIRT=1               deploy-k8s-remote.sh: fail if KubeVirt CRD missing
@@ -35,6 +37,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALL_REMOTE="${SCRIPT_DIR}/deploy-all-remote.sh"
 # shellcheck source=lib/deploy-remote-ui.sh
 source "${SCRIPT_DIR}/lib/deploy-remote-ui.sh"
+# shellcheck source=lib/deploy-ssh.sh
+source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 
 usage() {
     cat <<'EOF'
@@ -52,6 +56,7 @@ Usage:
 Environment:
   DEPLOY_REMOTE_SKIP_CHECK=1   Skip SSH preflight (same as --no-preflight)
   DEPLOY_SSH_TIMEOUT           SSH ConnectTimeout in seconds (default: 20)
+  DEPLOY_SSH_PORT              SSH port (default: 22)
 
 EOF
     "${ALL_REMOTE}" --help
@@ -81,18 +86,17 @@ done
 HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-185.165.240.5}}"
 USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
 REMOTE="${USER}@${HOST}"
-SSH_TIMEOUT="${DEPLOY_SSH_TIMEOUT:-20}"
 
 if [[ "${DEPLOY_REMOTE_SKIP_CHECK:-0}" == "1" ]] || [[ "${SKIP_PREFLIGHT}" == true ]]; then
     deploy_skip_preflight_note
     exec "${ALL_REMOTE}" "${FORWARD[@]}"
 fi
 
-deploy_preflight_banner "${REMOTE}" "${SSH_TIMEOUT}"
+deploy_preflight_banner "${REMOTE}" "${DEPLOY_SSH_TIMEOUT}" "${DEPLOY_SSH_PORT}"
 
-if ! ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT}" -o StrictHostKeyChecking=accept-new \
-    "${REMOTE}" "true" 2>/dev/null; then
-    deploy_preflight_fail "${REMOTE}" "${SSH_TIMEOUT}" "${0##*/} $(printf '%q ' "$@")"
+SSH_ERR=""
+if ! SSH_ERR=$(deploy_ssh_preflight "${REMOTE}"); then
+    deploy_preflight_fail "${REMOTE}" "${DEPLOY_SSH_TIMEOUT}" "${0##*/} $(printf '%q ' "$@")" "${DEPLOY_SSH_PORT}" "${SSH_ERR}"
 fi
 
 deploy_preflight_ok

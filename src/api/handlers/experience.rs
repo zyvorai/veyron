@@ -792,7 +792,52 @@ async fn experience_search(
             id: "scheduling-explainer".to_string(),
             title: "Scheduling Explainer".to_string(),
             subtitle: "Why a VM is stuck Pending".to_string(),
-            action: "open_copilot".to_string(),
+            action: "copilot:scheduling".to_string(),
+        });
+    }
+    if needle.contains("cost") || needle.contains("expensive") || needle.contains("spend") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "cost-advisor".to_string(),
+            title: "Cost Advisor".to_string(),
+            subtitle: "Fleet spend and top costly VMs".to_string(),
+            action: "copilot:cost".to_string(),
+        });
+    }
+    if needle.contains("compliance") || needle.contains("cis") || needle.contains("soc") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "compliance-advisor".to_string(),
+            title: "Compliance Advisor".to_string(),
+            subtitle: "Framework scores and failing checks".to_string(),
+            action: "copilot:compliance".to_string(),
+        });
+    }
+    if needle.contains("drift") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "drift-advisor".to_string(),
+            title: "Operator drift scan".to_string(),
+            subtitle: "VMRogueVM spec vs cluster state".to_string(),
+            action: "copilot:drift".to_string(),
+        });
+    }
+    if needle.contains("quota") || needle.contains("limit") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "quota-advisor".to_string(),
+            title: "Quota Advisor".to_string(),
+            subtitle: "Namespaces near ResourceQuota limits".to_string(),
+            action: "copilot:quota".to_string(),
+        });
+    }
+    if needle.contains("catalog") || (needle.contains("template") && needle.contains("sync")) {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "catalog-advisor".to_string(),
+            title: "Catalog Advisor".to_string(),
+            subtitle: "VMTemplate / VMProfile sync health".to_string(),
+            action: "copilot:catalog".to_string(),
         });
     }
 

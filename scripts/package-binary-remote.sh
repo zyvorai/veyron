@@ -18,6 +18,7 @@
 #   VMROGUE_PACKAGE_DIR           Remote output dir (default: ~/vmrogue-dist)
 #   VMROGUE_PACKAGE_VERSION       Override version in archive name
 #   DEPLOY_SSH_TIMEOUT            SSH connect timeout (default: 20)
+#   DEPLOY_SSH_PORT               SSH port (default: 22)
 #   VMROGUE_REMOTE_SKIP_SSH_CHECK=1  Skip SSH preflight
 #
 # Examples:
@@ -31,6 +32,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+# shellcheck source=lib/deploy-ssh.sh
+source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 
 FETCH=false
 REUSE_IMAGE=false
@@ -54,7 +57,6 @@ done
 
 HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-}}"
 USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
-SSH_TIMEOUT="${DEPLOY_SSH_TIMEOUT:-20}"
 
 if [[ -z "${HOST}" ]]; then
     echo "Usage: $0 <host> [user] [--fetch] [--reuse-image]" >&2
@@ -68,7 +70,7 @@ VERSION="${VMROGUE_PACKAGE_VERSION:-$(sed -n 's/^version = "\(.*\)"/\1/p' "${REP
 VERSION="${VERSION:-0.0.0}"
 ARCH="linux-amd64"
 REMOTE="${USER}@${HOST}"
-REMOTE_HOME=$(ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT}" "${REMOTE}" 'echo "$HOME"')
+REMOTE_HOME=$(deploy_ssh "${REMOTE}" 'echo "$HOME"')
 BUILD_DIR="${REMOTE_HOME}/.deployment/vmrogue-package"
 OUT_DIR="${VMROGUE_PACKAGE_DIR:-${REMOTE_HOME}/vmrogue-dist}"
 IMAGE_TAG="vmrogue-package:${VERSION}"
@@ -94,21 +96,24 @@ pkg_remote_banner "VMRogue" "${VERSION}" "${REMOTE}" "${ARCH}"
 
 if [[ "${VMROGUE_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
     pkg_remote_phase "Preflight"
-    ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT}" -o StrictHostKeyChecking=accept-new \
-        "${REMOTE}" "true"
-    pkg_ok "SSH ${REMOTE}"
+    SSH_ERR=""
+    if ! SSH_ERR=$(deploy_ssh_preflight "${REMOTE}"); then
+        pkg_fail "SSH preflight failed on port ${DEPLOY_SSH_PORT}: ${SSH_ERR}"
+        exit 1
+    fi
+    pkg_ok "SSH ${REMOTE} (port ${DEPLOY_SSH_PORT})"
 fi
 
 pkg_remote_phase "Sync source"
 pkg_remote_kv "Remote build dir" "${BUILD_DIR}"
-ssh "${REMOTE}" "mkdir -p '${BUILD_DIR}'"
+deploy_ssh "${REMOTE}" "mkdir -p '${BUILD_DIR}'"
 rsync -az --delete "${RSYNC_EXCLUDES[@]}" \
-    -e "ssh -o StrictHostKeyChecking=no" \
+    -e "$(deploy_rsync_ssh)" \
     "${REPO_DIR}/" "${REMOTE}:${BUILD_DIR}/"
 
 if ! $SKIP_DEPS; then
     pkg_remote_phase "Build dependencies"
-    ssh "${REMOTE}" bash -s <<'REMOTE_DEPS'
+    deploy_ssh "${REMOTE}" bash -s <<'REMOTE_DEPS'
 set -euo pipefail
 SUDO=""
 [ "$(id -u)" -ne 0 ] && command -v sudo &>/dev/null && SUDO=sudo
@@ -129,7 +134,7 @@ echo "  build deps: OK"
 REMOTE_DEPS
 fi
 
-CTR_BUILD=$(ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo none; fi')
+CTR_BUILD=$(deploy_ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; else echo none; fi')
 if [[ "${CTR_BUILD}" = "none" ]]; then
     echo "Remote host needs podman or docker (re-run without --skip-deps)." >&2
     exit 1
@@ -138,7 +143,7 @@ fi
 pkg_remote_phase "Container build (${CTR_BUILD})"
 BUILD_NEEDED=true
 if $REUSE_IMAGE; then
-    if ssh "${REMOTE}" "${CTR_BUILD} image exists '${IMAGE_TAG}' >/dev/null 2>&1"; then
+    if deploy_ssh "${REMOTE}" "${CTR_BUILD} image exists '${IMAGE_TAG}' >/dev/null 2>&1"; then
         BUILD_NEEDED=false
         pkg_ok "Reusing image ${IMAGE_TAG} (--reuse-image)"
     fi
@@ -150,13 +155,13 @@ if $BUILD_NEEDED; then
         BUILD_CMD="cd '${BUILD_DIR}' && DOCKER_BUILDKIT=1 docker build --progress=plain -t '${IMAGE_TAG}' ."
     fi
     pkg_info "First build often takes 10–15 minutes…"
-    ssh "${REMOTE}" "${BUILD_CMD}" 2>&1 | sed 's/^/  [build] /'
+    deploy_ssh "${REMOTE}" "${BUILD_CMD}" 2>&1 | sed 's/^/  [build] /'
     pkg_ok "Image ${IMAGE_TAG} ready"
 fi
 
 pkg_remote_phase "Assemble customer bundle"
 pkg_remote_kv "Output" "${OUT_DIR}/${ARTIFACT}"
-ssh "${REMOTE}" bash -s <<REMOTE_PACK
+deploy_ssh "${REMOTE}" bash -s <<REMOTE_PACK
 set -euo pipefail
 OUT_DIR='${OUT_DIR}'
 BUILD_DIR='${BUILD_DIR}'

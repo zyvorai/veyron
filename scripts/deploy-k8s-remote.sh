@@ -20,6 +20,7 @@
 #   VMROGUE_REQUIRE_KUBEVIRT=1 — fail deploy if KubeVirt VM CRD is missing (after rsync; remote kubectl check)
 #   VMROGUE_REMOTE_SKIP_SSH_CHECK=1 — skip SSH BatchMode preflight before rsync
 #   DEPLOY_SSH_TIMEOUT=20 — SSH ConnectTimeout seconds (preflight only)
+#   DEPLOY_SSH_PORT=22 — SSH port for rsync and remote commands
 #   NO_COLOR=1 — disable ANSI highlights
 #
 # RBAC applied with the manifest matches deploy/k8s.yaml ClusterRole (KubeVirt, CDI namespaces
@@ -29,6 +30,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# shellcheck source=lib/deploy-ssh.sh
+source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 
 usage() {
     cat <<'USAGE_EOF'
@@ -45,6 +49,7 @@ Environment (local):
   VMROGUE_REQUIRE_KUBEVIRT=1              Fail if KubeVirt VM CRD is missing
   VMROGUE_REMOTE_SKIP_SSH_CHECK=1         Skip SSH preflight
   DEPLOY_SSH_TIMEOUT                        SSH connect timeout (default 20)
+  DEPLOY_SSH_PORT                           SSH port (default 22)
   NO_COLOR=1                               Disable ANSI colors
 USAGE_EOF
 }
@@ -62,7 +67,6 @@ NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
 NS="vmrogue-system"
 CDI_VERSION="${VMROGUE_CDI_VERSION:-v1.65.0}"
 SKIP_CDI="${VMROGUE_SKIP_CDI:-0}"
-SSH_TIMEOUT="${DEPLOY_SSH_TIMEOUT:-20}"
 RUN_STARTED_AT="$(date +%s)"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
@@ -95,16 +99,16 @@ error() { echo "  ${COLOR_RED}[✗]${COLOR_RESET} $*"; exit 1; }
 REMOTE="${USER}@${HOST}"
 
 if [[ "${VMROGUE_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
-    step "Preflight: SSH (${REMOTE})"
-    if ! ssh -o BatchMode=yes -o ConnectTimeout="${SSH_TIMEOUT}" -o StrictHostKeyChecking=accept-new \
-        "${REMOTE}" "true" 2>/dev/null; then
-        error "SSH preflight failed (try: ssh ${REMOTE} or VMROGUE_REMOTE_SKIP_SSH_CHECK=1 $0 $*)"
+    step "Preflight: SSH (${REMOTE}, port ${DEPLOY_SSH_PORT})"
+    SSH_ERR=""
+    if ! SSH_ERR=$(deploy_ssh_preflight "${REMOTE}"); then
+        error "SSH preflight failed on port ${DEPLOY_SSH_PORT}: ${SSH_ERR} (try: ssh -p ${DEPLOY_SSH_PORT} ${REMOTE} or VMROGUE_REMOTE_SKIP_SSH_CHECK=1 $0 $*)"
     fi
-    info "SSH OK (timeout ${SSH_TIMEOUT}s)"
+    info "SSH OK (port ${DEPLOY_SSH_PORT}, timeout ${DEPLOY_SSH_TIMEOUT}s)"
 fi
 
 # Remote cluster: k3s (bundled kubectl + ctr) vs generic Kubernetes (kubectl + containerd ctr).
-REMOTE_K8S_FLAVOR=$(ssh "${USER}@${HOST}" '
+REMOTE_K8S_FLAVOR=$(deploy_ssh "${USER}@${HOST}" '
   if [ -x /usr/local/bin/k3s ]; then echo k3s_std
   elif command -v k3s >/dev/null 2>&1; then echo k3s_path
   elif command -v kubectl >/dev/null 2>&1; then echo kubectl
@@ -146,12 +150,13 @@ echo ""
 step "Step 1/7: Syncing source to ${HOST}"
 rsync -az --delete \
     --exclude target/ --exclude .git/ --exclude operator/bin/ \
+    -e "$(deploy_rsync_ssh)" \
     . "${USER}@${HOST}:${REMOTE_DIR}/"
 info "Source synced"
 
 # ── Step 2: Build binary ──
 step "Step 2/7: Building release binary"
-ssh "${USER}@${HOST}" "
+deploy_ssh "${USER}@${HOST}" "
     source \$HOME/.cargo/env 2>/dev/null || true
     cd ${REMOTE_DIR}
     cargo build --release 2>&1 | tail -3
@@ -162,7 +167,7 @@ info "Binary built"
 
 # ── Step 3: Build container image ──
 step "Step 3/7: Building container image"
-ssh "${USER}@${HOST}" "
+deploy_ssh "${USER}@${HOST}" "
     cd ${REMOTE_DIR}
     cp target/release/vmrogue /tmp/vmrogue-binary
     podman build --format docker -t localhost/vmrogue:latest -f Dockerfile.deploy /tmp 2>&1 | tail -3
@@ -189,7 +194,7 @@ DEPLOY_STAMP="$(date +%s)-${RANDOM}"
 
 step "Step 5/7: Deploying to Kubernetes"
 # shellcheck disable=SC2029
-ssh "${USER}@${HOST}" "
+deploy_ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
 
     if [[ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml ]]; then
@@ -479,7 +484,7 @@ info "K8s resources applied"
 # ── Step 6: Verify ──
 step "Step 6/7: Verifying deployment"
 # Chain with && so a failed rollout is not masked by a later kubectl (ssh exits 0 on last cmd).
-ssh "${USER}@${HOST}" "
+deploy_ssh "${USER}@${HOST}" "
     ${K} -n ${NS} rollout status deployment/vmrogue-api --timeout=180s &&
     echo '' &&
     ${K} -n ${NS} get pods -l app=vmrogue-api -o wide &&
@@ -494,7 +499,7 @@ ssh "${USER}@${HOST}" "
 info "Deployment verified"
 
 # Live Service NodePort for the https port (see port name in manifest).
-DISPLAY_NODE_PORT=$(ssh "${USER}@${HOST}" "${K} -n ${NS} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || true)
+DISPLAY_NODE_PORT=$(deploy_ssh "${USER}@${HOST}" "${K} -n ${NS} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || true)
 DISPLAY_NODE_PORT="${DISPLAY_NODE_PORT:-${NODE_PORT}}"
 
 TOTAL_SEC=$(( $(date +%s) - RUN_STARTED_AT ))

@@ -145,6 +145,39 @@ Natural-language routing via `POST /experience/copilot/ask` recognizes the same 
 | SLO Advisor | `GET /experience/copilot/slo` | `vmrogue ai slo` |
 | Migration Advisor | `GET /experience/copilot/migrations` | `vmrogue ai migrations` |
 
+## LLM upgrade (agent layer)
+
+When `VMROGUE_AI_URL` + `VMROGUE_AI_API_KEY` are set:
+
+| Env | Purpose |
+|-----|---------|
+| `VMROGUE_AI_MODE` | `off` / `paraphrase` (default) / `routing` / `agent` |
+| `VMROGUE_AI_MODEL` | OpenAI-compatible model (default `gpt-4o-mini`) |
+| `VMROGUE_AI_MAX_TOOL_ROUNDS` | Agent tool invocations per message (default `2`) |
+| `VMROGUE_AI_TIMEOUT_SECS` | LLM HTTP timeout (default `30`) |
+| `VMROGUE_AI_RATE_LIMIT_PER_MIN` | Separate rate bucket for `POST /copilot/chat` and `/copilot/ask` when LLM active (default `20`) |
+
+| Route | Purpose |
+|-------|---------|
+| `POST /experience/copilot/chat` | Multi-turn chat with optional tool trace |
+| `GET /experience/copilot/status` | LLM configured + active mode |
+
+Evidence, validation, and YAML remain deterministic — LLM only routes or paraphrases.
+
+The agent tool registry exposes **27 tools** (all fleet/per-VM advisors plus `yaml_preview` and `explain_error`).
+
+When `VMROGUE_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_trace` array showing which deterministic tools ran (displayed as chips in the Copilot modal).
+
+## Copilot Expansion Pack 3
+
+| Module | API | CLI |
+|--------|-----|-----|
+| Quota Advisor | `GET /experience/copilot/quotas` | `vmrogue ai quotas` |
+| Catalog Advisor | `GET /experience/copilot/catalog` | `vmrogue ai catalog` |
+| Velero DR Advisor | `GET /experience/copilot/velero-dr` | `vmrogue ai velero-dr` |
+| Trivy/CVE (Security Sentinel) | merged into `/experience/copilot/security` | `vmrogue ai security` |
+| Prometheus p95 (Performance) | merged into `/experience/copilot/performance` | `vmrogue ai performance` |
+
 ## Future (not scheduled)
 
 - ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`

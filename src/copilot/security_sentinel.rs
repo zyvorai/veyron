@@ -106,6 +106,8 @@ pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str)
         r.evidence.push("Internet egress: restricted by label".into());
     }
 
+    append_trivy_evidence(&mut r, name, &mut findings).await;
+
     r.summary = if findings == 0 {
         format!("No high-risk exposure signals for {name}.")
     } else {
@@ -140,6 +142,69 @@ pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str)
         },
     ];
     r
+}
+
+#[cfg(feature = "web")]
+async fn append_trivy_evidence(r: &mut CopilotResponse, vm_name: &str, findings: &mut u32) {
+    let Some(base) = std::env::var("VMROGUE_TRIVY_URL")
+        .ok()
+        .filter(|u| !u.trim().is_empty())
+    else {
+        r.evidence
+            .push("Trivy not configured — set VMROGUE_TRIVY_URL for CVE scan".into());
+        return;
+    };
+    match trivy_summary(&base, vm_name).await {
+        Some((crit, high)) => {
+            if crit + high > 0 {
+                *findings += 1;
+                r.evidence.push(format!(
+                    "Trivy: {crit} critical + {high} high CVE(s) on {vm_name}"
+                ));
+                r.recommendations
+                    .push("Patch guest OS packages or rebuild golden image.".into());
+            } else {
+                r.evidence
+                    .push(format!("Trivy: no critical/high CVEs on {vm_name}"));
+            }
+        }
+        None => r.evidence.push(format!("Trivy scan unavailable for {vm_name}")),
+    }
+}
+
+#[cfg(not(feature = "web"))]
+async fn append_trivy_evidence(r: &mut CopilotResponse, _vm_name: &str, _findings: &mut u32) {
+    let _ = r;
+}
+
+#[cfg(feature = "web")]
+async fn trivy_summary(base_url: &str, vm_name: &str) -> Option<(u32, u32)> {
+    let url = format!("{}/scan/{}", base_url.trim_end_matches('/'), vm_name);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .ok()?;
+    let resp = client.get(&url).send().await.ok()?;
+    if !resp.status().is_success() {
+        return None;
+    }
+    let body: serde_json::Value = resp.json().await.ok()?;
+    let vulns = body.get("vulnerabilities")?.as_array()?;
+    let mut crit = 0u32;
+    let mut high = 0u32;
+    for v in vulns {
+        match v.get("Severity").and_then(|s| s.as_str()) {
+            Some("CRITICAL") => crit += 1,
+            Some("HIGH") => high += 1,
+            _ => {}
+        }
+    }
+    Some((crit, high))
+}
+
+#[cfg(not(feature = "web"))]
+async fn trivy_summary(_base_url: &str, _vm_name: &str) -> Option<(u32, u32)> {
+    None
 }
 
 /// Fleet-wide security sweep for Copilot ask.
@@ -180,6 +245,31 @@ pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> Copilo
     }
     for key in drift.iter().take(8) {
         r.evidence.push(format!("Operator drift: {key}"));
+    }
+
+    let trivy_url = std::env::var("VMROGUE_TRIVY_URL")
+        .ok()
+        .filter(|u| !u.trim().is_empty());
+    if let Some(base) = trivy_url {
+        let mut cve_vms = 0usize;
+        for vm in vms.iter().take(15) {
+            let name = vm.metadata.name.as_deref().unwrap_or("");
+            if let Some((crit, high)) = trivy_summary(&base, name).await {
+                if crit + high > 0 {
+                    cve_vms += 1;
+                    r.evidence
+                        .push(format!("Trivy {name}: {crit} critical, {high} high CVE(s)"));
+                }
+            }
+        }
+        if cve_vms == 0 {
+            r.evidence
+                .push("Trivy: no critical/high CVEs in sampled VMs".into());
+        }
+    } else {
+        r.evidence.push(
+            "Trivy not configured — set VMROGUE_TRIVY_URL for CVE merge".into(),
+        );
     }
 
     let issues = exposed_rdp.len() + drift.len();
