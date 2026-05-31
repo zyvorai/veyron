@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531p">
+<meta name="vmrogue-dashboard-rev" content="20260531q">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531p';
+  var DASH_REV = '20260531q';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1994,7 +1994,8 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 }
 .flow-stat-chip:hover{background:rgba(30,41,59,.65);border-color:rgba(59,130,246,.35)}
 .flow-stat-chip.active{border-color:var(--primary-blue);background:rgba(59,130,246,.12)}
-.cilium-copilot-bar{margin-bottom:16px;padding:14px 16px}
+.cilium-copilot-bar,.page-copilot-bar{margin-bottom:16px;padding:14px 16px}
+.page-glass-stats .glass-stat-pill{min-width:0}
 .dc-briefing{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .dc-briefing-label{font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
 .dc-briefing-item{
@@ -2674,7 +2675,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <div class="filter-bar">
         <input type="text" class="form-input" id="vm-search" placeholder="Search VMs..." oninput="filterVMs()">
         <select class="form-select" id="vm-filter-status" onchange="filterVMs()">
-          <option value="">All</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="Error">Error</option>
+          <option value="">All</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues (Failed/Error)</option><option value="Failed">Failed</option><option value="Error">Error</option>
         </select>
         <select class="form-select" id="vm-filter-drift" onchange="filterVMs()" title="Operator drift filter">
           <option value="">All drift</option><option value="drift">Drift detected</option><option value="clear">In sync</option><option value="unmanaged">Unmanaged</option>
@@ -3259,12 +3260,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-observability" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div>
-    <button type="button" class="btn btn-sm" onclick="runObservabilityAdvisor()">Observability Advisor</button></div>
-  <div id="observability-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Observability Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('observability-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runObservabilityAdvisor()">Observability Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Observability Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="observability-copilot-input" placeholder="Ask about metrics, logs, traces, or monitoring stack…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runObservabilityCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runObservabilityCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="observabilityCopilotChip('Is observability stack installed?')">Stack status</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="observabilityCopilotChip('Which VMs have high warning log volume?')">Log signals</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runObservabilityAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="observability-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Observability Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('observability-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="observability-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div id="observability-summary" class="grid-4"></div>
+  <div id="observability-summary" class="grid-4 page-glass-stats"></div>
 </div>
 </div>
 
@@ -3300,16 +3313,28 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-compliance" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
-    <button type="button" class="btn btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button></div>
-  <div id="compliance-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Compliance Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('compliance-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Compliance Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="compliance-copilot-input" placeholder="Ask about framework scores, failing controls, or posture…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runComplianceCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runComplianceCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="complianceCopilotChip('Compliance score for production VMs')">Production score</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="complianceCopilotChip('Which frameworks are failing controls?')">Failing controls</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="compliance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Compliance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('compliance-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="compliance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="compliance-cap-banner"></div>
-  <div id="compliance-stats" class="grid-4"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Framework Status</span></div>
+  <div id="compliance-stats" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Framework Status</span></div>
   <table class="table"><thead><tr><th>Framework</th><th>Score</th><th>Passing</th><th>Failing</th><th>Compliant</th><th>Checked</th></tr></thead><tbody id="compliance-status-body"></tbody></table></div>
-  <div class="card"><div class="card-header"><span class="card-title">Reports</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Reports</span></div>
   <table class="table"><thead><tr><th>Report</th><th>Framework</th><th>Generated</th><th>Score</th><th>Findings</th></tr></thead><tbody id="compliance-reports-body"></tbody></table></div>
 </div>
 </div>
@@ -3841,7 +3866,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531p';
+window.__VMROGUE_DASH_REV = '20260531q';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4129,7 +4154,7 @@ function navigateToVmsIssues() {
   navigate('vms');
   setTimeout(function() {
     const sel = document.getElementById('vm-filter-status');
-    if (sel) { sel.value = 'Error'; filterVMs(); }
+    if (sel) { sel.value = '__issues__'; filterVMs(); }
   }, 220);
 }
 
@@ -6745,7 +6770,7 @@ document.addEventListener('keydown', e => {
     closeClassicNav();
     closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
-    closeCopilot();
+    closeCopilot(); closeGitOpsExportModal();
   }
 });
 document.getElementById('spotlight-modal').addEventListener('click', e => {
@@ -7377,7 +7402,9 @@ function filterVMs() {
   const driftFilter = (document.getElementById('vm-filter-drift') || {}).value || '';
   const filtered = vmData.filter(v => {
     if (q && !v.name.toLowerCase().includes(q) && !(v.namespace || '').toLowerCase().includes(q)) return false;
-    if (statusFilter && v.status !== statusFilter) return false;
+    if (statusFilter === '__issues__') {
+      if (v.status !== 'Failed' && v.status !== 'Error') return false;
+    } else if (statusFilter && v.status !== statusFilter) return false;
     if (driftFilter === 'drift' && v.drift_detected !== true) return false;
     if (driftFilter === 'clear' && !(v.vmrogue_managed === true && v.drift_detected === false)) return false;
     if (driftFilter === 'unmanaged' && v.vmrogue_managed === true) return false;
@@ -9296,6 +9323,7 @@ async function fetchCilium() {
     }
     window._ciliumFlowsCache = flowData.flows || [];
     window._ciliumFlowFilter = 'all';
+    window._lastCiliumFlowData = flowData;
     renderCiliumFlowStats(flowData);
     renderCiliumFlowsTable(flowData.flow_source);
   } catch (e) {
@@ -9361,16 +9389,50 @@ function runCiliumCopilotAsk() {
   setTimeout(runCopilotAsk, 80);
 }
 
+function observabilityCopilotChip(query) {
+  const inp = document.getElementById('observability-copilot-input');
+  if (inp) inp.value = query;
+  runObservabilityCopilotAsk();
+}
+
+function runObservabilityCopilotAsk() {
+  const inp = document.getElementById('observability-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Is observability stack installed?';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function complianceCopilotChip(query) {
+  const inp = document.getElementById('compliance-copilot-input');
+  if (inp) inp.value = query;
+  runComplianceCopilotAsk();
+}
+
+function runComplianceCopilotAsk() {
+  const inp = document.getElementById('compliance-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Compliance score for production VMs';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function observabilityStatClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s.indexOf('ok') >= 0 || s.indexOf('ready') >= 0 || s.indexOf('up') >= 0) return ' ok';
+  if (s.indexOf('warn') >= 0 || s.indexOf('partial') >= 0) return ' warn';
+  if (s.indexOf('fail') >= 0 || s.indexOf('down') >= 0 || s.indexOf('off') >= 0) return ' bad';
+  return '';
+}
+
 async function fetchObservability() {
   const summary = document.getElementById('observability-summary');
   try {
     const overview = await apiJson('/api/v1/observability/overview' + nsParam());
     if (!summary) return;
-    summary.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Metrics</div><div class="stat-value">${esc(overview.metrics_status)}</div></div>
-      <div class="stat-card"><div class="stat-label">Logs</div><div class="stat-value">${esc(overview.logs_status)}</div></div>
-      <div class="stat-card"><div class="stat-label">Log Entries</div><div class="stat-value">${overview.total_log_entries || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">Metric Series</div><div class="stat-value">${overview.total_metric_series || 0}</div></div>`;
+    summary.innerHTML =
+      '<button type="button" class="glass-stat-pill' + observabilityStatClass(overview.metrics_status) + ' clickable-stat" onclick="navigate(\'monitoring\')" title="Open monitoring"><div class="gsl">Metrics</div><div class="gsv" style="font-size:1rem">' + esc(overview.metrics_status || '-') + '</div></button>' +
+      '<button type="button" class="glass-stat-pill' + observabilityStatClass(overview.logs_status) + ' clickable-stat" onclick="navigate(\'logs\')" title="Open logs"><div class="gsl">Logs</div><div class="gsv" style="font-size:1rem">' + esc(overview.logs_status || '-') + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'logs\')" title="Open logs"><div class="gsl">Log entries</div><div class="gsv">' + (overview.total_log_entries || 0) + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'monitoring\')" title="Open monitoring"><div class="gsl">Metric series</div><div class="gsv">' + (overview.total_metric_series || 0) + '</div></button>';
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('Observability fetch error:', e);
@@ -9531,15 +9593,16 @@ async function fetchCompliance() {
     const reports = asArray(await apiJson('/api/v1/compliance/reports' + nsParam()));
     if (stats) {
       const avg = statuses.length ? Math.round(statuses.reduce((s, x) => s + (x.score || 0), 0) / statuses.length) : 0;
-      stats.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Frameworks</div><div class="stat-value">${statuses.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Avg score</div><div class="stat-value">${avg}%</div></div>
-        <div class="stat-card"><div class="stat-label">Reports</div><div class="stat-value">${reports.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">${esc(currentNs)}</div></div>`;
+      const failing = statuses.reduce((n, x) => n + (x.failing_controls || 0), 0);
+      stats.innerHTML =
+        '<div class="glass-stat-pill"><div class="gsl">Frameworks</div><div class="gsv">' + statuses.length + '</div></div>' +
+        '<div class="glass-stat-pill' + (avg >= 85 ? ' ok' : avg >= 65 ? ' warn' : ' bad') + '"><div class="gsl">Avg score</div><div class="gsv">' + avg + '%</div></div>' +
+        '<div class="glass-stat-pill' + (failing ? ' warn' : '') + '"><div class="gsl">Failing controls</div><div class="gsv">' + failing + '</div></div>' +
+        '<div class="glass-stat-pill"><div class="gsl">Reports</div><div class="gsv">' + reports.length + '</div></div>';
     }
     if (stBody) stBody.innerHTML = statuses.map(s => `<tr>
       <td>${esc(s.framework)}</td><td>${s.score ?? 0}%</td><td>${s.passing_controls ?? 0}</td><td>${s.failing_controls ?? 0}</td>
-      <td><span class="stat-badge ${s.compliant ? 'badge-green' : 'badge-muted'}">${s.compliant ? 'yes' : 'no'}</span></td>
+      <td><span class="glass-badge ${s.compliant ? 'running' : 'error'}">${s.compliant ? 'yes' : 'no'}</span></td>
       <td>${fmtTime(s.last_checked)}</td></tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No frameworks</td></tr>';
     if (repBody) repBody.innerHTML = reports.map(r => `<tr>
       <td>${esc(r.id)}</td><td>${esc(r.framework)}</td><td>${fmtTime(r.generated_at)}</td>
