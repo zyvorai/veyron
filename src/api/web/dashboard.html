@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531s">
+<meta name="vmrogue-dashboard-rev" content="20260531x">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531s';
+  var DASH_REV = '20260531x';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2000,6 +2000,15 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .monitor-stack-row.page-glass-stats{margin-bottom:0}
 .cost-ns-bar{margin-bottom:8px}
 .cost-ns-bar .glass-progress{margin:0}
+.vmrogue-cap-banner.glass-banner{
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);padding:14px 16px;
+}
+html[data-theme="steel"] .vmrogue-cap-banner.glass-banner,
+html[data-theme="zinc"] .vmrogue-cap-banner.glass-banner{
+  background:var(--glass-bg);border-color:var(--glass-border);
+}
+
 .table tbody tr.clickable-row{cursor:pointer;transition:background .12s}
 .table tbody tr.clickable-row:hover{background:rgba(59,130,246,.06)}
 .dr-glass-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
@@ -2322,7 +2331,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </select>
     <span class="refresh-text" id="last-refresh"></span>
     <span id="auth-session-label" class="auth-session" style="display:none"></span>
-    <button type="button" class="btn btn-sm" id="auth-signout-btn" style="display:none;font-size:.72rem" onclick="signOut()">Sign out</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" id="auth-signout-btn" style="display:none;font-size:.72rem" onclick="signOut()">Sign out</button>
     <div class="nav-status"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
   </div>
 </nav>
@@ -2665,11 +2674,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   <div class="dashboard-command-grid">
     <div class="dashboard-side-stack">
       <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--spark)">&#9889;</span> CPU Usage</span><span class="chart-current" id="cpu-current">--</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Virtual Machines</span><button class="nav-link table-action-link" onclick="navigate('vms')">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
+      <div class="card glass-card"><div class="card-header"><span class="card-title">Virtual Machines</span><button class="nav-link table-action-link" onclick="navigate('vms')">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
     </div>
     <div class="dashboard-side-stack">
       <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--molten)">&#9632;</span> Memory Usage</span><span class="chart-current" id="mem-current">--</span></div><div class="chart-area"><canvas id="mem-chart"></canvas></div></div>
-      <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span><button class="nav-link table-action-link" onclick="navigate('events')">View all &#8250;</button></div><div id="dash-event-list"></div></div>
+      <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span><button class="nav-link table-action-link" onclick="navigate('events')">View all &#8250;</button></div><div id="dash-event-list"></div></div>
     </div>
   </div>
   </details>
@@ -2680,7 +2689,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button class="btn-create" onclick="openCreateModal()">+ Forge VM</button></div></div>
-  <div class="card">
+  <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Fleet Roster</span>
       <div class="filter-bar">
@@ -2700,9 +2709,9 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="bulk-bar" id="bulk-bar">
       <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)">
       <span id="bulk-count">0 selected</span>
-      <button class="btn btn-start" onclick="bulkAction('start')">Start</button>
-      <button class="btn btn-stop" onclick="bulkAction('stop')">Stop</button>
-      <button class="btn btn-delete" onclick="bulkAction('delete')">Delete</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')">Start</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')">Stop</button>
+      <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')">Delete</button>
     </div>
     <div id="vm-full-list"></div>
   </div>
@@ -2727,10 +2736,23 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <!-- SNAPSHOTS PAGE -->
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div><button class="btn-create" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
+  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Backup Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="snapshots-copilot-input" placeholder="Ask about snapshots, schedules, or restore points…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('snapshots-copilot-input', 'Backup and snapshot posture for my VMs');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('snapshots-copilot-input', 'Backup and snapshot posture for my VMs')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('snapshots-copilot-input', 'Recent snapshot failures', 'Backup and snapshot posture for my VMs')">Recent snapshot failures</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runBackupAdvisor()">Run advisor</button>
+    </div>
+  </div>
+<button class="btn-create" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
   <div id="snap-cap-banner"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="btn btn-sm btn-restart" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
+  <div id="snap-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm btn-restart" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
 </div>
 </div>
 
@@ -2738,12 +2760,25 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div>
-    <div class="page-header-right"><button type="button" class="btn btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span id="node-count"></span></div></div>
-  <div id="node-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Node Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('node-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Node Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="nodes-copilot-input" placeholder="Ask about node capacity, pressure, or readiness…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('nodes-copilot-input', 'Node capacity and pressure');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('nodes-copilot-input', 'Node capacity and pressure')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('nodes-copilot-input', 'Which nodes are running hot?', 'Node capacity and pressure')">Hot nodes</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Run advisor</button>
+    </div>
+  </div>
+<div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span id="node-count"></span></div></div>
+  <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
+  <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card">
+  <div class="card glass-card">
     <div class="card-header"><span class="card-title">Cluster Nodes</span></div>
     <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
     <div id="node-list"></div>
@@ -2754,8 +2789,21 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <!-- PODS PAGE -->
 <div class="page section-shell" id="page-pods" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div><div class="page-header-right" id="pod-count"></div></div>
-  <div class="card">
+  <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Workload Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="pods-copilot-input" placeholder="Ask about pending pods, restarts, or scheduling…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('pods-copilot-input', 'Pending pods and scheduling pressure');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('pods-copilot-input', 'Pending pods and scheduling pressure')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('scheduling')">Pending pods</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
+    </div>
+  </div>
+<div class="page-header-right" id="pod-count"></div></div>
+  <div id="pods-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
     <div class="card-header"><span class="card-title">Pods</span></div>
     <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span></div>
     <div id="pod-list"></div>
@@ -2767,16 +2815,28 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-storage" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div>
-    <button type="button" class="btn btn-sm" onclick="runStorageDoctor()">Storage Doctor</button></div>
-  <div class="card" id="storage-doctor-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Storage Doctor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('storage-doctor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runStorageDoctor()">Storage Doctor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Storage Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="storage-copilot-input" placeholder="Ask about PVC usage, storage classes, or CSI…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('storage-copilot-input', 'Storage capacity and PVC usage');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('storage-copilot-input', 'Storage capacity and PVC usage')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runStorageDoctor()">Run doctor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">View monitoring</button>
+    </div>
+  </div>
+  <div class="card glass-card" id="storage-doctor-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Storage Doctor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('storage-doctor-card')">Dismiss</button></div>
     <div id="storage-doctor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VMROGUE_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. Per-VM in-guest usage: open a VM detail panel or <code>GET /api/v1/vms/:ns/:name/guest-filesystem</code> (requires QEMU guest agent).</span></div>
+  <div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VMROGUE_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. Per-VM in-guest usage: open a VM detail panel or <code>GET /api/v1/vms/:ns/:name/guest-filesystem</code> (requires QEMU guest agent).</span></div>
+  <div id="storage-summary" class="grid-4 page-glass-stats"></div>
   <p id="storage-prometheus-hint" style="display:none;margin:0 0 10px;font-size:.82em;color:var(--text-dim);font-family:var(--font-mono)"></p>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span></div><div id="pvc-list"></div></div>
-    <div class="card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span></div><div id="pvc-list"></div></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
   </div>
 </div>
 </div>
@@ -2785,15 +2845,28 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-events" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Events</h1><p>Cluster signal intercepts</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Signal Feed</span></div><div id="events-full-list"></div></div>
+  
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Events Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="events-copilot-input" placeholder="Ask about warning signals or recent cluster events…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('events-copilot-input', 'Active warning events in namespace');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('events-copilot-input', 'Active warning events in namespace')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('alerts')">View alerts</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('traces')">View traces</button>
+    </div>
+  </div>
+<div id="events-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span></div><div id="events-full-list"></div></div>
 </div>
 </div>
 
 <!-- CRD PAGES -->
 <div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button class="btn" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
-  <div class="card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
+  <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
   </div>
 </div>
@@ -2802,16 +2875,16 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-blueprint-studio" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VMRogueBlueprint CRDs saved from Copilot or created here</p></div>
-    <button type="button" class="btn btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
-  <div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">Operator CRDs</span><span class="vmrogue-cap-scope">Changes apply to <code>VMRogueBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="vmrogue-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
+  <div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">Operator CRDs</span><span class="vmrogue-cap-scope">Changes apply to <code>VMRogueBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="vmrogue-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
-    <div class="card"><div class="card-header"><span class="card-title">Blueprints</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
     </div>
-    <div class="card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
+    <div class="card glass-card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
       <div style="display:flex;gap:8px">
-        <button type="button" class="btn btn-sm btn-start" id="blueprint-studio-save-btn" disabled onclick="blueprintStudioSave()">Save</button>
-        <button type="button" class="btn btn-sm btn-stop" id="blueprint-studio-delete-btn" disabled onclick="blueprintStudioDelete()">Delete</button>
+        <button type="button" class="glass-btn-primary glass-btn-sm" id="blueprint-studio-save-btn" disabled onclick="blueprintStudioSave()">Save</button>
+        <button type="button" class="glass-btn-destructive glass-btn-sm" id="blueprint-studio-delete-btn" disabled onclick="blueprintStudioDelete()">Delete</button>
       </div></div>
       <div style="padding:12px">
         <div id="blueprint-studio-meta" style="font-size:.82rem;color:var(--text-dim);margin-bottom:8px"></div>
@@ -2825,7 +2898,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Policies</h1><p>VMRoguePolicy compliance enforcement</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Active Policies</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
   </div>
 </div>
@@ -2834,12 +2907,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div>
-    <button type="button" class="btn btn-sm" onclick="runDriftAdvisor()">Drift Advisor</button></div>
-  <div id="drift-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Drift Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('drift-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Drift Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="insights-copilot-input" placeholder="Ask about operator drift and unmanaged VMs…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('insights-copilot-input', 'Which VMs have operator drift?');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('insights-copilot-input', 'Which VMs have operator drift?')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runDriftAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsFilter('');document.getElementById('vm-filter-drift').value='drift';filterVMs();">Filter drift</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runDriftAdvisor()">Drift Advisor</button></div>
+  <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Drift Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('drift-advisor-card')">Dismiss</button></div>
     <div id="drift-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card"><div class="card-header"><span class="card-title">Active Insights</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Insights</span></div>
   <table class="table" id="insights-table"><thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>VM</th><th>Title</th><th>State</th></tr></thead><tbody id="insights-body"></tbody></table>
   </div>
 </div>
@@ -2848,7 +2933,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Actions</h1><p>VMRogueAction autopilot proposals</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Action Queue</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
   </div>
 </div>
@@ -2871,7 +2956,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="cost-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Cost Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('cost-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Cost Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cost-advisor-card')">Dismiss</button></div>
     <div id="cost-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="cost-cap-banner"></div>
@@ -2893,13 +2978,25 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-security" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Security</h1><p>Security posture and vulnerability findings</p></div>
-    <button type="button" class="btn btn-sm" onclick="runSecuritySentinel()">Security Sentinel</button></div>
-  <div class="card" id="security-sentinel-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Security Sentinel</span><button type="button" class="btn btn-sm" onclick="document.getElementById('security-sentinel-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Security Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="security-copilot-input" placeholder="Ask about security posture and critical findings…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('security-copilot-input', 'Security posture for production VMs');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('security-copilot-input', 'Security posture for production VMs')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSecuritySentinel()">Run sentinel</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('compliance')">Compliance</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSecuritySentinel()">Security Sentinel</button></div>
+  <div class="card glass-card" id="security-sentinel-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Security Sentinel</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('security-sentinel-card')">Dismiss</button></div>
     <div id="security-sentinel-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div id="security-summary" class="grid-4" style="margin-bottom:16px"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Security Findings</span></div>
+  <div id="security-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Security Findings</span></div>
   <table class="table" id="security-table"><thead><tr><th>Severity</th><th>Category</th><th>Title</th><th>Resource</th><th>Recommendation</th></tr></thead><tbody id="security-body"></tbody></table>
   </div>
 </div>
@@ -2922,7 +3019,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="performance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('performance-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-advisor-card')">Dismiss</button></div>
     <div id="performance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="monitor-capabilities">
@@ -2958,7 +3055,19 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-workloads" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Workloads</h1><p>Deployments, StatefulSets, and DaemonSets</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
+  
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Workloads Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="workloads-copilot-input" placeholder="Ask about deployments, replicas, or rollout health…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('workloads-copilot-input', 'Workload replica health in namespace');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('workloads-copilot-input', 'Workload replica health in namespace')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('pods')">View pods</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
+    </div>
+  </div>
+<div class="card glass-card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
   <table class="table" id="workloads-table"><thead><tr><th>Name</th><th>Type</th><th>Replicas</th><th>Ready</th><th>Status</th><th>Namespace</th></tr></thead><tbody id="workloads-body"></tbody></table>
   </div>
 </div>
@@ -2967,12 +3076,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div>
-    <button type="button" class="btn btn-sm" onclick="runAlertAdvisor()">Alert Advisor</button></div>
-  <div id="alert-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Alert Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('alert-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Alert Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="alerts-copilot-input" placeholder="Ask about active alerts and warning pressure…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('alerts-copilot-input', 'Active warning events in namespace');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('alerts-copilot-input', 'Active warning events in namespace')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runAlertAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runAlertAdvisor()">Alert Advisor</button></div>
+  <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Alert Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('alert-advisor-card')">Dismiss</button></div>
     <div id="alert-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card"><div class="card-header"><span class="card-title">Active Alerts</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Alerts</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
   </div>
 </div>
@@ -2981,8 +3102,20 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-audit" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div></div>
-  <div id="audit-summary" class="grid-4" style="margin-bottom:16px"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Audit Trail</span></div>
+  
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Audit Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="audit-copilot-input" placeholder="Ask about audit trail patterns and failed actions…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('audit-copilot-input', 'Recent failed actions in audit trail');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('audit-copilot-input', 'Recent failed actions in audit trail')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('security')">Security</button>
+    </div>
+  </div>
+<div id="audit-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span></div>
   <table class="table"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Type</th><th>Resource</th><th>Outcome</th></tr></thead><tbody id="audit-body"></tbody></table>
   </div>
 </div>
@@ -2991,7 +3124,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Notifications</span></div>
+  <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span></div>
   <table class="table"><thead><tr><th>Title</th><th>Severity</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifications-body"></tbody></table>
   </div>
 </div>
@@ -3000,7 +3134,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-helm" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Helm Releases</span></div>
+  <div id="helm-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
   </div>
 </div>
@@ -3009,7 +3144,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-operators" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Operators</span></div>
+  <div id="operators-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
   </div>
 </div>
@@ -3018,7 +3154,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-custom-resources" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Custom Resources</span></div>
+  <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
   </div>
 </div>
@@ -3027,18 +3164,30 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
-    <button type="button" class="btn btn-sm" onclick="runSloAdvisor()">SLO Advisor</button></div>
-  <div id="slo-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue SLO Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('slo-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">SLO Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="slo-copilot-input" placeholder="Ask about error budgets, burn rate, or availability…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('slo-copilot-input', 'Fleet availability SLO status');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('slo-copilot-input', 'Fleet availability SLO status')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSloAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('incidents')">View incidents</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSloAdvisor()">SLO Advisor</button></div>
+  <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
     <div id="slo-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div id="slo-burn-stats" class="grid-4"></div>
+  <div id="slo-burn-stats" class="grid-4 page-glass-stats"></div>
   <div class="grid-2">
-    <div class="card">
+    <div class="card glass-card">
       <div class="card-header"><span class="card-title">SLO Objectives</span></div>
       <table class="table"><thead><tr><th>Name</th><th>Service</th><th>SLI</th><th>Target</th><th>Current</th><th>Error Budget</th><th>Status</th></tr></thead><tbody id="slo-body"></tbody></table>
     </div>
-    <div class="card">
+    <div class="card glass-card">
       <div class="card-header"><span class="card-title">Error Budget Burn Rate</span></div>
       <table class="table"><thead><tr><th>SLO</th><th>Budget Total</th><th>Consumed</th><th>Burn 1h</th><th>Burn 24h</th><th>TTL</th><th>Status</th></tr></thead><tbody id="slo-burn-body"></tbody></table>
     </div>
@@ -3049,7 +3198,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-chaos" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
   </div>
 </div>
@@ -3058,11 +3207,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div></div>
-  <div id="rbac-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Roles</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
     <table class="table"><thead><tr><th>Name</th><th>Scope</th><th>Rules</th><th>Resources</th></tr></thead><tbody id="rbac-roles-body"></tbody></table></div>
-    <div class="card"><div class="card-header"><span class="card-title">Bindings</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Bindings</span></div>
     <table class="table"><thead><tr><th>Name</th><th>Role</th><th>Subjects</th></tr></thead><tbody id="rbac-bindings-body"></tbody></table></div>
   </div>
 </div>
@@ -3071,12 +3220,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-quotas" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div>
-    <button type="button" class="btn btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div>
-  <div id="quota-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Quota Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('quota-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Quota Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="quotas-copilot-input" placeholder="Ask about namespace quota limits and pressure…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('quotas-copilot-input', 'Which namespaces are near quota limits?');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('quotas-copilot-input', 'Which namespaces are near quota limits?')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('nodes')">View nodes</button>
+    </div>
+  </div>
+  <div id="quotas-summary" class="grid-4 page-glass-stats"></div>
+  <div id="quota-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Quota Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('quota-advisor-card')">Dismiss</button></div>
     <div id="quota-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card"><div class="card-header"><span class="card-title">Resource Quotas</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Resource Quotas</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>CPU Used / Limit</th><th>Memory Used / Limit</th><th>VMs</th></tr></thead><tbody id="quotas-body"></tbody></table></div>
 </div>
 </div>
@@ -3084,7 +3245,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-ingress" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Ingress Resources</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
 </div>
 </div>
@@ -3092,7 +3253,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-hpa" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
 </div>
 </div>
@@ -3100,14 +3261,26 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div>
-    <button type="button" class="btn btn-sm" onclick="runBackupAdvisor()">Backup Advisor</button></div>
-  <div class="card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Backup Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('backup-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Backup Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="backups-copilot-input" placeholder="Ask about Velero backups and restore readiness…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('backups-copilot-input', 'Velero DR readiness');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('backups-copilot-input', 'Velero DR readiness')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runBackupAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('dr')">Open DR</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runBackupAdvisor()">Backup Advisor</button></div>
+  <div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Backup Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('backup-advisor-card')">Dismiss</button></div>
     <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card"><div class="card-header"><span class="card-title">VM backups</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
-  <div class="card" style="margin-top:16px">
+  <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Velero (cluster)</span></div>
     <div id="velero-cap-banner"></div>
     <div id="velero-summary" style="padding:0 16px 8px;font-size:.88rem;color:var(--text-muted)"></div>
@@ -3122,19 +3295,32 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="space-y animate-fade-in">
   <div class="page-header">
     <div><h1>Template catalog</h1><p>Cluster VMTemplate / VMProfile CRDs vs embedded library</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="btn btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Catalog Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="catalog-copilot-input" placeholder="Ask about template catalog sync and profiles…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('catalog-copilot-input', 'Is the template catalog in sync?');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('catalog-copilot-input', 'Is the template catalog in sync?')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="catalogSync()">Sync catalog</button>
+    </div>
+  </div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
       <button type="button" class="btn-create" onclick="catalogSync()">Sync cluster catalog</button>
       <button type="button" class="btn" onclick="openCatalogPublishTemplate()">+ Publish template</button>
       <button type="button" class="btn" onclick="openCatalogPublishProfile()">+ Publish profile</button>
     </div>
   </div>
-  <div id="catalog-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Catalog Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('catalog-advisor-card').style.display='none'">Dismiss</button></div>
+  <div id="catalog-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Catalog Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('catalog-advisor-card')">Dismiss</button></div>
     <div id="catalog-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
+  <div id="catalog-summary" class="grid-4 page-glass-stats" style="margin-bottom:12px"></div>
   <div id="catalog-status-banner"></div>
-  <div class="card">
+  <div class="card glass-card">
     <div class="card-header"><span class="card-title">Deploy VMRogueVM (template + profile)</span></div>
     <div style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
       <div class="form-group" style="margin:0"><label class="form-label">Target workspace</label><input class="form-input" id="catalog-deploy-ns" value="default" style="width:120px"></div>
@@ -3144,11 +3330,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="btn-forge" onclick="catalogDeployVmrogueVm()">Deploy VMRogueVM</button>
     </div>
   </div>
-  <div class="card">
+  <div class="card glass-card">
     <div class="card-header"><span class="card-title">VMTemplate CRDs</span></div>
     <table class="table"><thead><tr><th>Name</th><th>Family</th><th>Description</th><th>Tags</th></tr></thead><tbody id="catalog-templates-body"></tbody></table>
   </div>
-  <div class="card">
+  <div class="card glass-card">
     <div class="card-header"><span class="card-title">VMProfile CRDs</span></div>
     <table class="table"><thead><tr><th>Name</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Description</th></tr></thead><tbody id="catalog-profiles-body"></tbody></table>
   </div>
@@ -3161,7 +3347,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <button type="button" class="btn-create" onclick="openCreateModal()">Forge VM</button>
   </div>
   <div id="app-store-cap-banner"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Available templates</span><button type="button" class="btn btn-sm" onclick="fetchAppStore()">Refresh</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Available templates</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAppStore()">Refresh</button></div>
     <div class="app-store-grid" id="app-store-grid"></div>
   </div>
 </div>
@@ -3171,15 +3357,27 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-integrations" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Integrations</h1><p>Optional observability, FinOps, security, and GitOps backends</p></div>
-    <button type="button" class="btn btn-sm" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Integrations Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="integrations-copilot-input" placeholder="Ask about configured observability and GitOps backends…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('integrations-copilot-input', 'Which integrations are configured?');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('integrations-copilot-input', 'Which integrations are configured?')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runIntegrationsAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIntegrations()">Refresh</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
     <button type="button" class="btn" onclick="fetchIntegrations()">Refresh</button>
   </div>
-  <div id="integrations-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Integrations Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('integrations-advisor-card').style.display='none'">Dismiss</button></div>
+  <div id="integrations-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Integrations Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('integrations-advisor-card')">Dismiss</button></div>
     <div id="integrations-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="integrations-cap-banner"></div>
-  <div class="card">
+  <div class="card glass-card">
     <table class="table"><thead><tr><th>Service</th><th>Env var</th><th>Configured</th><th>Probe</th><th>Feeds</th><th></th></tr></thead><tbody id="integrations-body"></tbody></table>
   </div>
 </div>
@@ -3188,15 +3386,27 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-metrics" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div></div>
-  <div id="metrics-summary" class="grid-4"></div>
+  
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Metrics Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="metrics-copilot-input" placeholder="Ask about cluster metrics and VM utilization…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('metrics-copilot-input', 'Cluster metrics and VM utilization');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('metrics-copilot-input', 'Cluster metrics and VM utilization')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">Monitoring</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('performance')">Performance</button>
+    </div>
+  </div>
+<div id="metrics-summary" class="grid-4 page-glass-stats"></div>
 </div>
 </div>
 
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div></div>
-  <div id="topology-summary" class="grid-4" style="margin-bottom:16px"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Topology Edges</span></div>
+  <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
 </div>
 </div>
@@ -3204,8 +3414,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-dependencies" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div></div>
-  <div id="dependencies-summary" class="grid-4" style="margin-bottom:16px"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Dependency Edges</span></div>
+  <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
 </div>
 </div>
@@ -3213,7 +3423,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div></div>
-  <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
 </div>
 </div>
@@ -3221,13 +3431,25 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div>
-    <button type="button" class="btn btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div>
-  <div id="forecast-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Forecast Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('forecast-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Forecast Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="forecasting-copilot-input" placeholder="Ask about capacity growth or resource forecasts…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('forecasting-copilot-input', 'Forecast capacity growth for 30 days');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('forecasting-copilot-input', 'Forecast capacity growth for 30 days')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('costs')">View costs</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div>
+  <div id="forecast-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Forecast Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('forecast-advisor-card')">Dismiss</button></div>
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="forecasting-cap-banner"></div>
-  <div class="card"><div class="card-header"><span class="card-title">Predictions</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Predictions</span></div>
   <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
 </div>
 </div>
@@ -3249,7 +3471,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="gitops-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue GitOps Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('gitops-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue GitOps Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('gitops-advisor-card')">Dismiss</button></div>
     <div id="gitops-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="gitops-cap-banner"></div>
@@ -3260,12 +3482,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div>
-    <button type="button" class="btn btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div>
-  <div id="scheduling-fleet-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Scheduling Fleet</span><button type="button" class="btn btn-sm" onclick="document.getElementById('scheduling-fleet-advisor-card').style.display='none'">Dismiss</button></div>
+    
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Scheduling Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="scheduling-copilot-input" placeholder="Ask about pending pods and node schedulability…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('scheduling-copilot-input', 'Which namespaces have pending pods?');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('scheduling-copilot-input', 'Which namespaces have pending pods?')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Run advisor</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('pods')">View pods</button>
+    </div>
+  </div>
+<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div>
+  <div id="scheduling-fleet-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Scheduling Fleet</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('scheduling-fleet-advisor-card')">Dismiss</button></div>
     <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div id="scheduling-summary" class="grid-4"></div>
+  <div id="scheduling-summary" class="grid-4 page-glass-stats"></div>
 </div>
 </div>
 
@@ -3286,7 +3520,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('cilium-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cilium-advisor-card')">Dismiss</button></div>
     <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="cilium-summary" class="grid-4 cilium-glass-stats" style="margin-bottom:16px"></div>
@@ -3321,7 +3555,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="observability-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Observability Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('observability-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Observability Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('observability-advisor-card')">Dismiss</button></div>
     <div id="observability-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="observability-summary" class="grid-4 page-glass-stats"></div>
@@ -3345,7 +3579,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="performance-page-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('performance-page-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-page-advisor-card')">Dismiss</button></div>
     <div id="performance-page-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="performance-cap-banner"></div>
@@ -3370,7 +3604,19 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-webhooks" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span></div>
+  
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Automation Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="webhooks-copilot-input" placeholder="Ask about webhook failures and outbound hooks…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('webhooks-copilot-input', 'Webhook failures and automation hooks');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('webhooks-copilot-input', 'Webhook failures and automation hooks')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('integrations')">Integrations</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('notifications')">Notifications</button>
+    </div>
+  </div>
+<div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
 </div>
 </div>
@@ -3392,7 +3638,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="compliance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Compliance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('compliance-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Compliance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('compliance-advisor-card')">Dismiss</button></div>
     <div id="compliance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="compliance-cap-banner"></div>
@@ -3423,11 +3669,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
   <div id="velero-dr-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Velero DR Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('velero-dr-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Velero DR Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('velero-dr-advisor-card')">Dismiss</button></div>
     <div id="velero-dr-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="migration-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Migration Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('migration-advisor-card').style.display='none'">Dismiss</button></div>
+    <div class="card-header"><span class="card-title">VMRogue Migration Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('migration-advisor-card')">Dismiss</button></div>
     <div id="migration-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="card glass-card" style="padding:16px">
@@ -3578,9 +3824,21 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-incidents" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Incidents</h1><p>Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p></div></div>
-  <div id="incidents-cap-banner"></div>
-  <div id="incidents-stats" class="grid-4"></div>
-  <div class="card">
+  
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Incident Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="incidents-copilot-input" placeholder="Ask about open incidents and SLO breaches…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('incidents-copilot-input', 'Open incidents and SLO breaches');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('incidents-copilot-input', 'Open incidents and SLO breaches')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('slo')">View SLO</button>
+    </div>
+  </div>
+<div id="incidents-cap-banner"></div>
+  <div id="incidents-stats" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Incident Timeline</span>
       <div style="display:flex;gap:8px">
@@ -3601,9 +3859,27 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 </div>
 </div>
 
+
+<!-- IMAGE IMPORT MODAL -->
+<div class="modal-overlay" id="image-import-modal" style="display:none">
+  <div class="modal glass-modal" style="max-width:520px">
+    <div class="modal-header"><h2>Import DataVolume</h2><button class="modal-close" onclick="closeImageImportModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">DataVolume name</label><input type="text" class="form-input" id="image-import-name" placeholder="my-dv"></div>
+      <div class="form-group"><label class="form-label">HTTP(S) image URL</label><input type="text" class="form-input" id="image-import-url" placeholder="https://…/image.qcow2"></div>
+      <div class="form-group"><label class="form-label">Or containerdisk registry image</label><input type="text" class="form-input" id="image-import-registry" placeholder="quay.io/…"></div>
+      <div class="form-group"><label class="form-label">Size</label><input type="text" class="form-input" id="image-import-size" value="20Gi"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="glass-btn-secondary" onclick="closeImageImportModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" onclick="submitImageImport()">Start import</button>
+    </div>
+  </div>
+</div>
+
 <!-- CRD CREATE MODAL -->
 <div class="modal-overlay" id="crd-create-modal" style="display:none">
-  <div class="modal" style="max-width:700px">
+  <div class="modal glass-modal" style="max-width:700px">
     <div class="modal-header">
       <h2>Create VMRogueVM</h2>
       <button class="modal-close" onclick="closeCrdCreateModal()">&#10005;</button>
@@ -3618,7 +3894,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <hr style="border-color:var(--border);margin:12px 0">
       <h3 class="section-subtitle">Disks</h3>
       <div id="crd-disks-list"></div>
-      <button class="btn btn-sm" onclick="addCrdDisk()" style="margin-top:4px">+ Add Disk</button>
+      <button class="glass-btn-secondary glass-btn-sm" onclick="addCrdDisk()" style="margin-top:4px">+ Add Disk</button>
       <hr style="border-color:var(--border);margin:12px 0">
       <h3 class="section-subtitle">Network</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -3639,8 +3915,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <div class="form-group" style="margin-top:12px"><label class="form-label">Cloud-Init (user-data)</label><textarea class="form-input" id="crd-vm-cloudinit" rows="4" placeholder="#cloud-config&#10;hostname: my-vm"></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeCrdCreateModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitCrdCreate()">Create VMRogueVM</button>
+      <button type="button" class="glass-btn-secondary" onclick="closeCrdCreateModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" onclick="submitCrdCreate()">Create VMRogueVM</button>
     </div>
   </div>
 </div>
@@ -3984,7 +4260,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531s';
+window.__VMROGUE_DASH_REV = '20260531x';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -6372,7 +6648,20 @@ async function fetchEvents(full) {
       }).join('');
     };
     renderEvents(events.slice(0, 5), document.getElementById('dash-event-list'));
-    if (full) renderEvents(events, document.getElementById('events-full-list'));
+    if (full) {
+      renderEvents(events, document.getElementById('events-full-list'));
+      const sumEl = document.getElementById('events-summary');
+      if (sumEl) {
+        const warnings = events.filter(e => e.type === 'Warning').length;
+        const normal = events.length - warnings;
+        sumEl.innerHTML = renderGlassStatPills([
+          { label: 'Events', value: events.length },
+          { label: 'Warnings', value: warnings, cls: warnings ? ' warn' : '', onclick: "navigate('alerts')", title: 'View alerts' },
+          { label: 'Normal', value: normal, cls: ' ok' },
+          { label: 'Incidents', value: '→', onclick: "navigate('incidents')", title: 'Incident timeline' }
+        ]);
+      }
+    }
     if (currentPage === 'dashboard') {
       try { renderDashboardCommandCenter(); } catch (e) { console.error('renderDashboardCommandCenter', e); }
     }
@@ -6390,16 +6679,26 @@ async function fetchSnapshots() {
   try {
     const j = await apiJson('/api/v1/snapshots' + nsParam());
     const snaps = asArray(j);
+    const summaryEl = document.getElementById('snap-summary');
     const el = document.getElementById('snap-list');
+    const readyCount = snaps.filter(s => s.ready).length;
+    if (summaryEl) {
+      summaryEl.innerHTML = renderGlassStatPills([
+        { label: 'Snapshots', value: snaps.length },
+        { label: 'Ready', value: readyCount, cls: readyCount === snaps.length && snaps.length ? ' ok' : ' warn' },
+        { label: 'Backups', value: '→', onclick: "navigate('backups')", title: 'Velero backups' },
+        { label: 'DR', value: '→', onclick: "navigate('dr')", title: 'Disaster recovery' }
+      ]);
+    }
     if (snaps.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="btn btn-start" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
       return;
     }
     el.innerHTML = snaps.map(s => {
       const ready = s.ready;
-      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="vm-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
-        (ready ? '<button class="btn btn-restart" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
-        '<button class="btn btn-delete" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
+      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="glass-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
+        (ready ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
+        '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
         '</div></div>';
     }).join('');
   } catch(e) {
@@ -6419,7 +6718,7 @@ async function fetchSchedules() {
       el.innerHTML = '<div class="empty-state"><p>No schedules — add one to automate snapshots.</p></div>';
       return;
     }
-    el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button class="btn btn-delete" ' + onHandler('deleteSchedule(' + jsArgs(s.namespace || 'default', s.name || '') + ')') + '>Delete</button></div></div>').join('');
+    el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSchedule(' + jsArgs(s.namespace || 'default', s.name || '') + ')') + '>Delete</button></div></div>').join('');
   } catch(e) {
     el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">'+esc(e.message)+'</p></div>';
   }
@@ -6503,7 +6802,7 @@ function vmrogueFeatureBanner(ctx) {
   const sc = ctx.scope != null ? String(ctx.scope) : '';
   const lim = ctx.limitations != null ? String(ctx.limitations) : '';
   if (!ds && !sc && !lim) return '';
-  return '<div class="vmrogue-cap-banner" role="note"><span class="vmrogue-cap-label">How to read this</span>' +
+  return '<div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">How to read this</span>' +
     (ds ? ' <code class="vmrogue-cap-ds">' + esc(ds) + '</code>' : '') +
     (sc ? '<span class="vmrogue-cap-scope">' + esc(sc) + '</span>' : '') +
     (lim ? '<span class="vmrogue-cap-lim">' + esc(lim) + '</span>' : '') +
@@ -6892,7 +7191,7 @@ document.addEventListener('keydown', e => {
     closeClassicNav();
     closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
-    closeCopilot(); closeGitOpsExportModal();
+    closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
   }
 });
 document.getElementById('spotlight-modal').addEventListener('click', e => {
@@ -7544,10 +7843,21 @@ async function fetchNodes() {
   try {
     const j = await apiJson('/api/v1/nodes');
     const nodes = asArray(j);
+    const summaryEl = document.getElementById('nodes-summary');
     const el = document.getElementById('node-list');
     if (nodes.length === 0) {
+      if (summaryEl) summaryEl.innerHTML = renderGlassStatPills([{ label: 'Nodes', value: 0 }]);
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
       return;
+    }
+    const ready = nodes.filter(n => n.status === 'Ready').length;
+    if (summaryEl) {
+      summaryEl.innerHTML = renderGlassStatPills([
+        { label: 'Nodes', value: nodes.length },
+        { label: 'Ready', value: ready, cls: ready === nodes.length ? ' ok' : ' warn' },
+        { label: 'Not ready', value: nodes.length - ready, cls: (nodes.length - ready) ? ' bad' : '' },
+        { label: 'Heatmap', value: '→', onclick: "navigate('heatmap')", title: 'Resource heatmap' }
+      ]);
     }
     document.getElementById('node-count').textContent = nodes.length + ' nodes';
     el.innerHTML = nodes.map(n => {
@@ -7555,7 +7865,7 @@ async function fetchNodes() {
       const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
       return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
         '<span class="cell-name">' + esc(n.name) + '</span>' +
-        '<span><span class="cell-badge ' + statusCls + '">' + esc(n.status) + '</span></span>' +
+        '<span><span class="glass-badge ' + nodeStatusBadgeClass(n.status) + '">' + esc(n.status) + '</span></span>' +
         '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
         '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
         '<span class="cell-mono">' + memGb + '</span>' +
@@ -7804,10 +8114,23 @@ async function fetchPods() {
   try {
     const j = await apiJson('/api/v1/pods' + nsParam());
     const pods = asArray(j);
+    const summaryEl = document.getElementById('pods-summary');
     const el = document.getElementById('pod-list');
     if (pods.length === 0) {
+      if (summaryEl) summaryEl.innerHTML = renderGlassStatPills([{ label: 'Pods', value: 0 }]);
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No pods found</p></div>';
       return;
+    }
+    const running = pods.filter(p => p.phase === 'Running').length;
+    const pending = pods.filter(p => p.phase === 'Pending').length;
+    const failed = pods.filter(p => p.phase === 'Failed').length;
+    if (summaryEl) {
+      summaryEl.innerHTML = renderGlassStatPills([
+        { label: 'Pods', value: pods.length },
+        { label: 'Running', value: running, cls: ' ok' },
+        { label: 'Pending', value: pending, cls: pending ? ' warn' : '', onclick: "navigate('scheduling')", title: 'Scheduling' },
+        { label: 'Failed', value: failed, cls: failed ? ' bad' : '' }
+      ]);
     }
     document.getElementById('pod-count').textContent = pods.length + ' pods';
     el.innerHTML = pods.map(p => {
@@ -7816,7 +8139,7 @@ async function fetchPods() {
       const age = formatPodAge(p.created_at) || p.age || '—';
       return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
         '<span class="cell-name">' + esc(p.name) + '</span>' +
-        '<span><span class="cell-badge ' + phaseCls + '">' + esc(p.phase) + '</span></span>' +
+        '<span><span class="glass-badge ' + podPhaseBadgeClass(p.phase) + '">' + esc(p.phase) + '</span></span>' +
         '<span class="cell-mono">' + esc(p.node_name || '—') + '</span>' +
         '<span class="cell-mono">' + esc(p.ip || '—') + '</span>' +
         '<span class="cell-mono">' + restarts + '</span>' +
@@ -8434,6 +8757,16 @@ async function fetchStorage() {
       }
     }
 
+    const summaryEl = document.getElementById('storage-summary');
+    if (summaryEl) {
+      const bound = pvcRows.filter(p => p.status === 'Bound').length;
+      summaryEl.innerHTML = renderGlassStatPills([
+        { label: 'PVCs', value: pvcRows.length },
+        { label: 'Bound', value: bound, cls: bound === pvcRows.length && pvcRows.length ? ' ok' : ' warn' },
+        { label: 'Storage classes', value: scRows.length },
+        { label: 'Snapshots', value: '→', onclick: "navigate('snapshots')", title: 'View snapshots' }
+      ]);
+    }
     if (pvcRows.length > 0) {
       pvcEl.innerHTML = pvcRows.map(function (p) {
         const k = (p.namespace || '') + '/' + (p.name || '');
@@ -8452,7 +8785,7 @@ async function fetchStorage() {
         }
         return '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) +
           '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
-          '</div><div class="snap-status"><span class="vm-badge ' + (p.status === 'Bound' ? 'running' : 'other') + '">' + esc(p.status) + '</span></div></div>';
+          '</div><div class="snap-status"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span></div></div>';
       }).join('');
     } else {
       pvcEl.innerHTML = '<div class="empty-state"><p>No PVCs</p></div>';
@@ -8479,7 +8812,7 @@ async function fetchCRDs() {
     const j = await apiJson('/api/v1/crds/vmroguevms');
     const { items, message } = crdItemsFromJson(j);
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
-    tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="vm-badge ' + sc(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
+    tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
   } catch (e) {
     tb.innerHTML = tbodyError(8, e.message || String(e));
   }
@@ -8610,7 +8943,7 @@ async function fetchPolicies() {
     const j = await apiJson('/api/v1/crds/policies');
     const { items, message } = crdItemsFromJson(j);
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
-    tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="vm-badge ' + (p.severity==='Critical'?'error':p.severity==='High'?'error':'other') + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
+    tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
   } catch (e) {
     tb.innerHTML = tbodyError(8, e.message || String(e));
   }
@@ -8622,7 +8955,7 @@ async function fetchInsights() {
     const j = await apiJson('/api/v1/crds/insights');
     const { items, message } = crdItemsFromJson(j);
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
-    tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="vm-badge ' + (i.severity==='Critical'||i.severity==='High'?'error':'other') + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
+    tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
   } catch (e) {
     tb.innerHTML = tbodyError(6, e.message || String(e));
   }
@@ -8634,7 +8967,7 @@ async function fetchActions() {
     const j = await apiJson('/api/v1/crds/actions');
     const { items, message } = crdItemsFromJson(j);
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
-    tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="vm-badge running">Yes</span>':'<span class="vm-badge stopped">No</span>') + '</td><td><span class="vm-badge ' + sc(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
+    tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
   } catch (e) {
     tb.innerHTML = tbodyError(6, e.message || String(e));
   }
@@ -8721,7 +9054,7 @@ function addCrdDisk() {
     '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Size</label><input type="text" class="form-input compact-field" id="crd-disk-size-'+n+'" value="20Gi"></div>' +
     '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Source</label><select class="form-select compact-field" id="crd-disk-source-'+n+'"><option value="blank">Blank</option><option value="containerDisk">Container Disk</option><option value="pvc">PVC</option></select></div>' +
     '<div class="form-group" style="margin:0"><label class="form-label tiny-label">Image / PVC</label><input type="text" class="form-input compact-field" id="crd-disk-ref-'+n+'" placeholder="image or pvc name"></div>' +
-    '<button class="btn btn-sm" ' + onHandler('document.getElementById(' + jsArgs('crd-disk-' + n) + ').remove()') + ' style="color:var(--ember)">X</button>';
+    '<button class="glass-btn-secondary glass-btn-sm" ' + onHandler('document.getElementById(' + jsArgs('crd-disk-' + n) + ').remove()') + ' style="color:var(--ember)">X</button>';
   document.getElementById('crd-disks-list').appendChild(el);
 }
 
@@ -8882,16 +9215,17 @@ async function fetchSecurityPage() {
     if (sum) {
       const sc = posture.overall_score || 0;
       const clr = sc >= 90 ? 'var(--success)' : sc >= 70 ? 'var(--warning)' : 'var(--error)';
-      sum.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Security Score</div><div class="stat-value" style="color:${clr}">${sc}/100</div></div>
-        <div class="stat-card"><div class="stat-label">Risk Level</div><div class="stat-value">${posture.risk_level||'N/A'}</div></div>
-        <div class="stat-card"><div class="stat-label">Total Findings</div><div class="stat-value">${posture.total_findings||0}</div></div>
-        <div class="stat-card"><div class="stat-label">Critical</div><div class="stat-value" style="color:var(--error)">${posture.critical_findings||0}</div></div>`;
+      sum.innerHTML = renderGlassStatPills([
+        { label: 'Security score', value: sc + '/100', cls: sc >= 90 ? ' ok' : sc >= 70 ? ' warn' : ' bad' },
+        { label: 'Risk level', value: posture.risk_level || 'N/A' },
+        { label: 'Total findings', value: posture.total_findings || 0, onclick: "navigate('audit')", title: 'View audit' },
+        { label: 'Critical', value: posture.critical_findings || 0, cls: (posture.critical_findings || 0) ? ' bad' : ' ok' }
+      ]);
     }
     if (tb) {
       tb.innerHTML = findings.map(f => {
-        const sclr = f.severity === 'Critical' ? 'var(--error)' : f.severity === 'High' ? 'var(--warning)' : 'var(--text-muted)';
-        return `<tr><td style="color:${sclr};font-weight:700">${f.severity}</td><td>${f.category}</td><td>${f.title}</td><td><code style="font-size:.84rem">${f.resource}</code></td><td>${f.recommendation}</td></tr>`;
+        const sevCls = glassTableBadge(f.severity);
+        return `<tr><td><span class="glass-badge ${sevCls}">${esc(f.severity)}</span></td><td>${esc(f.category)}</td><td>${esc(f.title)}</td><td><code style="font-size:.84rem">${esc(f.resource)}</code></td><td>${esc(f.recommendation)}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No security findings</td></tr>';
     }
   } catch (e) {
@@ -9020,8 +9354,8 @@ async function fetchWorkloads() {
     if (tb) {
       tb.innerHTML = data.map(w => {
         const ok = w.ready_replicas >= w.replicas;
-        const sclr = ok ? 'var(--success)' : 'var(--warning)';
-        return `<tr><td>${w.name}</td><td><span class="badge">${w.workload_type}</span></td><td>${w.replicas}</td><td style="color:${sclr}">${w.ready_replicas}</td><td style="color:${sclr}">${w.status}</td><td>${w.namespace}</td></tr>`;
+        const badgeCls = ok ? 'running' : 'other';
+        return `<tr><td>${esc(w.name)}</td><td><span class="glass-badge stopped">${esc(w.workload_type)}</span></td><td>${w.replicas}</td><td><span class="glass-badge ${badgeCls}">${w.ready_replicas}</span></td><td><span class="glass-badge ${badgeCls}">${esc(w.status)}</span></td><td>${esc(w.namespace)}</td></tr>`;
       }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);line-height:1.55">No Deployments, StatefulSets, or DaemonSets in <code>' + esc(currentNamespace) + '</code>. Try the <strong>all</strong> namespace filter if system workloads live elsewhere (cluster-wide listing falls back per-namespace when RBAC blocks <code>list</code> on all namespaces at once).</td></tr>';
     }
   } catch (e) {
@@ -9035,7 +9369,11 @@ async function fetchAlerts() {
   try {
     const alerts = asArray(await apiJson('/api/v1/alerts' + nsParam()));
     if (!tb) return;
-    tb.innerHTML = alerts.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.severity)}</td><td>${esc(a.status)}</td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`).join('')
+    tb.innerHTML = alerts.map(a => {
+      const sevCls = glassTableBadge(a.severity);
+      const stCls = glassTableBadge(a.status);
+      return `<tr class="clickable-row" onclick="pageCopilotChip('alerts-copilot-input', ${JSON.stringify('Explain alert ' + (a.name || ''))}, 'Active warning events in namespace')" title="Ask Copilot"><td>${esc(a.name)}</td><td><span class="glass-badge ${sevCls}">${esc(a.severity)}</span></td><td><span class="glass-badge ${stCls}">${esc(a.status)}</span></td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`;
+    }).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No active alerts</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -9053,11 +9391,12 @@ async function fetchAudit() {
     ]);
     const trail = asArray(trailRaw);
     if (sum) {
-      sum.innerHTML =
-        '<div class="stat-card"><div class="stat-label">Total Events</div><div class="stat-value">' + (stats.total_events || 0) + '</div></div>' +
-        '<div class="stat-card"><div class="stat-label">Actions</div><div class="stat-value">' + Object.keys(stats.by_action || {}).length + '</div></div>' +
-        '<div class="stat-card"><div class="stat-label">Users</div><div class="stat-value">' + Object.keys(stats.by_user || {}).length + '</div></div>' +
-        '<div class="stat-card"><div class="stat-label">Outcomes</div><div class="stat-value">' + Object.keys(stats.by_outcome || {}).length + '</div></div>';
+      sum.innerHTML = renderGlassStatPills([
+        { label: 'Total events', value: stats.total_events || 0 },
+        { label: 'Actions', value: Object.keys(stats.by_action || {}).length },
+        { label: 'Users', value: Object.keys(stats.by_user || {}).length },
+        { label: 'Outcomes', value: Object.keys(stats.by_outcome || {}).length }
+      ]);
     }
     if (!tb) return;
     tb.innerHTML = trail.map(a => `<tr><td>${fmtTime(a.timestamp)}</td><td>${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.resource_type)}</td><td>${esc(a.namespace)}/${esc(a.resource_name)}</td><td>${esc(a.outcome)}</td></tr>`).join('')
@@ -9075,7 +9414,20 @@ async function fetchNotifications() {
   try {
     const items = asArray(await apiJson('/api/v1/notifications' + nsParam()));
     if (!tb) return;
-    tb.innerHTML = items.map(n => `<tr><td>${esc(n.title)}</td><td>${esc(n.severity)}</td><td>${esc(n.message)}</td><td>${n.read ? 'Yes' : 'No'}</td><td>${fmtTime(n.created_at)}</td></tr>`).join('')
+    const unread = items.filter(n => !n.read).length;
+    const sumEl = document.getElementById('notifications-summary');
+    if (sumEl) {
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Total', value: items.length },
+        { label: 'Unread', value: unread, cls: unread ? ' warn' : ' ok' },
+        { label: 'Critical', value: items.filter(n => (n.severity || '').toLowerCase() === 'critical').length, cls: ' bad' },
+        { label: 'Events', value: '→', onclick: "navigate('events')", title: 'View events' }
+      ]);
+    }
+    tb.innerHTML = items.map(n => {
+      const sevCls = glassTableBadge(n.severity);
+      return `<tr><td>${esc(n.title)}</td><td><span class="glass-badge ${sevCls}">${esc(n.severity)}</span></td><td>${esc(n.message)}</td><td><span class="glass-badge ${n.read ? 'stopped' : 'running'}">${n.read ? 'Read' : 'Unread'}</span></td><td>${fmtTime(n.created_at)}</td></tr>`;
+    }).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No notifications</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
@@ -9085,11 +9437,21 @@ async function fetchNotifications() {
 
 async function fetchHelm() {
   const tb = document.getElementById('helm-body');
+  const sumEl = document.getElementById('helm-summary');
   try {
     const items = asArray(await apiJson('/api/v1/helm/releases'));
-    if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(h => h.namespace === currentNamespace);
-    tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td>${esc(h.status)}</td><td>${h.revision}</td></tr>`).join('')
+    if (sumEl) {
+      const deployed = filtered.filter(h => (h.status || '').toLowerCase() === 'deployed').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Releases', value: filtered.length },
+        { label: 'Deployed', value: deployed, cls: ' ok' },
+        { label: 'Failed', value: filtered.filter(h => (h.status || '').toLowerCase().indexOf('fail') >= 0).length, cls: ' bad' },
+        { label: 'Operators', value: '→', onclick: "navigate('operators')", title: 'View operators' }
+      ]);
+    }
+    if (!tb) return;
+    tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td><span class="glass-badge ${glassTableBadge(h.status)}">${esc(h.status)}</span></td><td>${h.revision}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Helm releases found</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -9099,11 +9461,20 @@ async function fetchHelm() {
 
 async function fetchOperators() {
   const tb = document.getElementById('operators-body');
+  const sumEl = document.getElementById('operators-summary');
   try {
     const items = asArray(await apiJson('/api/v1/operators'));
-    if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(o => o.namespace === currentNamespace);
-    tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td>${esc(o.status)}</td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
+    if (sumEl) {
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Operators', value: filtered.length },
+        { label: 'Healthy', value: filtered.filter(o => (o.status || '').toLowerCase() === 'healthy' || (o.status || '').toLowerCase() === 'running').length, cls: ' ok' },
+        { label: 'CRDs', value: '→', onclick: "navigate('custom-resources')", title: 'Custom resources' },
+        { label: 'Helm', value: '→', onclick: "navigate('helm')", title: 'Helm releases' }
+      ]);
+    }
+    if (!tb) return;
+    tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td><span class="glass-badge ${glassTableBadge(o.status)}">${esc(o.status)}</span></td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No operators found</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -9113,8 +9484,18 @@ async function fetchOperators() {
 
 async function fetchCustomResources() {
   const tb = document.getElementById('custom-resources-body');
+  const sumEl = document.getElementById('custom-resources-summary');
   try {
     const items = asArray(await apiJson('/api/v1/custom-resources'));
+    if (sumEl) {
+      const instances = items.reduce((n, cr) => n + (cr.instance_count || 0), 0);
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'CRD kinds', value: items.length },
+        { label: 'Instances', value: instances },
+        { label: 'Cluster', value: items.filter(cr => cr.scope === 'Cluster').length },
+        { label: 'VM CRDs', value: '→', onclick: "navigate('crds')", title: 'VMRogue VMs' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = items.map(cr => `<tr><td>${esc(cr.name)}</td><td>${esc(cr.group)}</td><td>${esc(cr.version)}</td><td>${esc(cr.kind)}</td><td>${esc(cr.scope)}</td><td>${cr.instance_count}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No custom resources found</td></tr>';
@@ -9135,7 +9516,7 @@ async function fetchSlo() {
     } catch (_) {
       burnRates = [];
     }
-    if (tb) tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td><span class="stat-badge ${s.status==='met'?'badge-green':'badge-muted'}">${esc(s.status)}</span></td></tr>`).join('')
+    if (tb) tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td><span class="glass-badge ${glassTableBadge(s.status)}">${esc(s.status)}</span></td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO objectives found</td></tr>';
 
     // Burn rate stats
@@ -9143,17 +9524,18 @@ async function fetchSlo() {
     if (stats && burnRates.length) {
       const br = burnRates[0];
       const statusColor = {healthy:'badge-green',at_risk:'badge-muted',burning_fast:'',exhausted:''}[br.status] || '';
-      stats.innerHTML = `
-        <div class="stat-card stat-card-blue"><div class="stat-label">Budget Total</div><div class="stat-value">${br.budget_total_percent}%</div></div>
-        <div class="stat-card ${br.budget_consumed_percent > 80 ? 'stat-card-red' : 'stat-card-orange'}"><div class="stat-label">Consumed</div><div class="stat-value">${br.budget_consumed_percent}%</div></div>
-        <div class="stat-card stat-card-orange"><div class="stat-label">Burn Rate 1h</div><div class="stat-value">${br.burn_rate_1h}x</div></div>
-        <div class="stat-card ${br.status==='healthy'?'stat-card-green':'stat-card-red'}"><div class="stat-label">Status</div><div class="stat-value" style="font-size:1.22rem">${esc(br.status)}</div></div>`;
+      stats.innerHTML = renderGlassStatPills([
+        { label: 'Budget total', value: br.budget_total_percent + '%' },
+        { label: 'Consumed', value: br.budget_consumed_percent + '%', cls: br.budget_consumed_percent > 80 ? ' bad' : ' warn' },
+        { label: 'Burn 1h', value: br.burn_rate_1h + 'x', cls: ' warn' },
+        { label: 'Status', value: br.status, cls: br.status === 'healthy' ? ' ok' : ' bad', valueStyle: 'font-size:1rem' }
+      ]);
     }
 
     if (burnTb) burnTb.innerHTML = burnRates.map(br => {
       const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
       const sColor = {healthy:'badge-green',at_risk:'badge-muted',burning_fast:'',exhausted:''}[br.status] || '';
-      return `<tr><td>${esc(br.slo_name)}</td><td>${br.budget_total_percent}%</td><td>${br.budget_consumed_percent}%</td><td>${br.burn_rate_1h}x</td><td>${br.burn_rate_24h}x</td><td>${ttl}</td><td><span class="stat-badge ${sColor}">${esc(br.status)}</span></td></tr>`;
+      return `<tr><td>${esc(br.slo_name)}</td><td>${br.budget_total_percent}%</td><td>${br.budget_consumed_percent}%</td><td>${br.burn_rate_1h}x</td><td>${br.burn_rate_24h}x</td><td>${ttl}</td><td><span class="glass-badge ${glassTableBadge(br.status)}">${esc(br.status)}</span></td></tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO data</td></tr>';
   } catch (e) {
     const msg = e.message || String(e);
@@ -9169,7 +9551,7 @@ async function fetchChaos() {
     const items = asArray(await apiJson('/api/v1/chaos/experiments'));
     if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(c => c.namespace === currentNamespace);
-    tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td>${esc(c.status)}</td><td>${esc(c.duration)}</td></tr>`).join('')
+    tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td><span class="glass-badge ${glassTableBadge(c.status)}">${esc(c.status)}</span></td><td>${esc(c.duration)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -9190,11 +9572,12 @@ async function fetchRbac() {
     const bindings = asArray(bRaw);
     if (summary) {
       const subjects = bindings.reduce((count, b) => count + (b.subjects || []).length, 0);
-      summary.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Cluster Roles</div><div class="stat-value">${roles.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Bindings</div><div class="stat-value">${bindings.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Subjects</div><div class="stat-value">${subjects}</div></div>
-        <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">Cluster</div></div>`;
+      summary.innerHTML = renderGlassStatPills([
+        { label: 'Cluster roles', value: roles.length },
+        { label: 'Bindings', value: bindings.length },
+        { label: 'Subjects', value: subjects },
+        { label: 'Scope', value: 'Cluster' }
+      ]);
     }
     if (rolesBody) {
       rolesBody.innerHTML = roles.map(role => {
@@ -9217,8 +9600,17 @@ async function fetchRbac() {
 
 async function fetchQuotas() {
   const tb = document.getElementById('quotas-body');
+  const sumEl = document.getElementById('quotas-summary');
   try {
     const items = asArray(await apiJson('/api/v1/quotas' + nsParam()));
+    if (sumEl) {
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Quotas', value: items.length },
+        { label: 'Namespaces', value: new Set(items.map(q => q.namespace)).size },
+        { label: 'VM limits', value: items.filter(q => q.vm_limit).length },
+        { label: 'Pods', value: '→', onclick: "navigate('pods')", title: 'View pods' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = items.map(q => `<tr><td>${esc(q.name)}</td><td>${esc(q.namespace)}</td><td>${esc(q.cpu_used || '0')} / ${esc(q.cpu_limit || '-')}</td><td>${esc(q.memory_used || '0')} / ${esc(q.memory_limit || '-')}</td><td>${q.vm_count}${q.vm_limit ? ' / ' + q.vm_limit : ''}</td></tr>`).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No quotas found</td></tr>';
@@ -9259,7 +9651,7 @@ async function fetchBackups() {
   try {
     const items = asArray(await apiJson('/api/v1/backups' + nsParam()));
     if (!tb) return;
-    tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td>${esc(b.status)}</td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
+    tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td><span class="glass-badge ${glassTableBadge(b.status)}">${esc(b.status)}</span></td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -9273,11 +9665,12 @@ async function fetchMetrics() {
   try {
     const metrics = await apiJson('/api/v1/metrics');
     if (!summary) return;
-    summary.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Total VMs</div><div class="stat-value">${metrics.total_vms || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">Running VMs</div><div class="stat-value">${metrics.running_vms || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">CPU Capacity</div><div class="stat-value">${metrics.total_cpu_cores || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">Memory Capacity</div><div class="stat-value">${fmtBytes(metrics.total_memory_bytes)}</div></div>`;
+    summary.innerHTML = renderGlassStatPills([
+      { label: 'Total VMs', value: metrics.total_vms || 0, onclick: "navigate('vms')", title: 'View VMs' },
+      { label: 'Running', value: metrics.running_vms || 0, cls: ' ok', onclick: "navigateToVmsFilter('Running')", title: 'Running VMs' },
+      { label: 'CPU capacity', value: metrics.total_cpu_cores || 0 },
+      { label: 'Memory', value: fmtBytes(metrics.total_memory_bytes) }
+    ]);
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('Metrics fetch error:', e);
@@ -9294,11 +9687,12 @@ async function fetchTopology() {
     const nodeCount = nodes.filter(n => n.kind === 'Node').length;
     const vmCount = nodes.filter(n => n.kind === 'VirtualMachine').length;
     if (summary) {
-      summary.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Nodes</div><div class="stat-value">${nodeCount}</div></div>
-        <div class="stat-card"><div class="stat-label">VM Nodes</div><div class="stat-value">${vmCount}</div></div>
-        <div class="stat-card"><div class="stat-label">Edges</div><div class="stat-value">${edges.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Namespace</div><div class="stat-value">${esc(currentNamespace || 'default')}</div></div>`;
+      summary.innerHTML = renderGlassStatPills([
+        { label: 'Nodes', value: nodeCount, onclick: "navigate('nodes')", title: 'View nodes' },
+        { label: 'VM nodes', value: vmCount, onclick: "navigate('vms')", title: 'View VMs' },
+        { label: 'Edges', value: edges.length },
+        { label: 'Scope', value: currentNamespace }
+      ]);
     }
     if (tb) {
       tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.source)}</td><td>${esc(edge.relation)}</td><td>${esc(edge.target)}</td></tr>`).join('')
@@ -9321,11 +9715,12 @@ async function fetchDependencies() {
     const nodeIds = new Set(nodes.map(n => n.id));
     const edges = (graph.edges || []).filter(e => nodeIds.has(e.from) || nodeIds.has(e.to));
     if (summary) {
-      summary.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Resources</div><div class="stat-value">${nodes.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Edges</div><div class="stat-value">${edges.length}</div></div>
-        <div class="stat-card"><div class="stat-label">Namespaces</div><div class="stat-value">${new Set(nodes.map(n => n.namespace)).size}</div></div>
-        <div class="stat-card"><div class="stat-label">Scope</div><div class="stat-value">${esc(currentNamespace || 'default')}</div></div>`;
+      summary.innerHTML = renderGlassStatPills([
+        { label: 'Resources', value: nodes.length },
+        { label: 'Edges', value: edges.length },
+        { label: 'Namespaces', value: new Set(nodes.map(n => n.namespace)).size },
+        { label: 'Scope', value: currentNamespace }
+      ]);
     }
     if (tb) {
       tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.from)}</td><td>${esc(edge.dependency_type)}</td><td>${esc(edge.to)}</td></tr>`).join('')
@@ -9392,11 +9787,12 @@ async function fetchScheduling() {
   try {
     const status = await apiJson('/api/v1/scheduling/status' + nsParam());
     if (!summary) return;
-    summary.innerHTML = `
-      <div class="stat-card"><div class="stat-label">Pending Pods</div><div class="stat-value">${status.pending_pods || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">Scheduled Pods</div><div class="stat-value">${status.scheduled_pods || 0}</div></div>
-      <div class="stat-card"><div class="stat-label">Unschedulable Nodes</div><div class="stat-value">${(status.unschedulable_nodes || []).length}</div></div>
-      <div class="stat-card"><div class="stat-label">Preemptions</div><div class="stat-value">${status.preemptions || 0}</div></div>`;
+    summary.innerHTML = renderGlassStatPills([
+      { label: 'Pending pods', value: status.pending_pods || 0, cls: (status.pending_pods || 0) ? ' warn' : '', onclick: "navigate('pods')", title: 'View pods' },
+      { label: 'Scheduled', value: status.scheduled_pods || 0, cls: ' ok' },
+      { label: 'Unschedulable nodes', value: (status.unschedulable_nodes || []).length, cls: (status.unschedulable_nodes || []).length ? ' bad' : '' },
+      { label: 'Preemptions', value: status.preemptions || 0 }
+    ]);
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('Scheduling fetch error:', e);
@@ -9498,6 +9894,56 @@ function runCiliumCopilotAsk() {
   setTimeout(runCopilotAsk, 80);
 }
 
+
+function renderGlassStatPills(items) {
+  return (items || []).map(function(item) {
+    const extra = (item.cls || '') + (item.onclick ? ' clickable-stat' : '');
+    const title = item.title ? ' title="' + esc(item.title) + '"' : '';
+    const valStyle = item.valueStyle ? ' style="' + item.valueStyle + '"' : '';
+    if (item.onclick) {
+      return '<button type="button" class="glass-stat-pill' + extra + '"' + title + ' onclick="' + item.onclick + '">' +
+        '<div class="gsl">' + esc(item.label) + '</div><div class="gsv"' + valStyle + '>' + esc(String(item.value)) + '</div></button>';
+    }
+    return '<div class="glass-stat-pill' + extra + '"' + title + '>' +
+      '<div class="gsl">' + esc(item.label) + '</div><div class="gsv"' + valStyle + '>' + esc(String(item.value)) + '</div></div>';
+  }).join('');
+}
+
+function wirePageCopilot(inputId, defaultQuery) {
+  const inp = document.getElementById(inputId);
+  const q = (inp && inp.value || '').trim() || defaultQuery || '';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
+}
+
+function pageCopilotChip(inputId, query, defaultQuery) {
+  const inp = document.getElementById(inputId);
+  if (inp) inp.value = query;
+  wirePageCopilot(inputId, defaultQuery || query);
+}
+
+function glassTableBadge(severity) {
+  const s = (severity || '').toLowerCase();
+  if (s === 'critical' || s === 'high' || s === 'failed' || s === 'error' || s === 'hot') return 'error';
+  if (s === 'medium' || s === 'warn' || s === 'warning' || s === 'pending') return 'other';
+  if (s === 'running' || s === 'ok' || s === 'ready' || s === 'success' || s === 'clear' || s === 'good') return 'running';
+  if (s === 'stopped' || s === 'low') return 'stopped';
+  return 'other';
+}
+
+function dismissAdvisorCard(cardId) {
+  const el = document.getElementById(cardId);
+  if (el) el.style.display = 'none';
+}
+
+function glassAdvisorCard(id, title, bodyId) {
+  const bid = bodyId || (id.replace(/-card$/, '') + '-body');
+  return '<div id="' + esc(id) + '" class="card glass-card" style="display:none;margin-bottom:16px">' +
+    '<div class="card-header"><span class="card-title">' + esc(title) + '</span>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard(' + jsArgs(id) + ')">Dismiss</button></div>' +
+    '<div id="' + esc(bid) + '" style="padding:12px 16px;font-size:.88rem"></div></div>';
+}
+
 function observabilityCopilotChip(query) {
   const inp = document.getElementById('observability-copilot-input');
   if (inp) inp.value = query;
@@ -9543,7 +9989,7 @@ function runPerformanceCopilotAsk() {
 
 function openPerformanceVm(vmName) {
   const vm = (vmData || []).find(v => v.name === vmName);
-  openVmDetailDeep(vm && vm.namespace ? vm.namespace : currentNs, vmName);
+  openVmDetailDeep(vm && vm.namespace ? vm.namespace : currentNamespace, vmName);
 }
 
 function drCopilotChip(query) {
@@ -9948,7 +10394,7 @@ async function fetchNetworkPolicies() {
         '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'cilium\')" title="Open Cilium"><div class="gsl">Policies</div><div class="gsv">' + rows.length + '</div></button>' +
         '<div class="glass-stat-pill"><div class="gsl">Ingress rules</div><div class="gsv">' + ingress + '</div></div>' +
         '<div class="glass-stat-pill"><div class="gsl">Egress rules</div><div class="gsv">' + egress + '</div></div>' +
-        '<div class="glass-stat-pill"><div class="gsl">Scope</div><div class="gsv" style="font-size:1rem">' + esc(currentNs) + '</div></div>';
+        '<div class="glass-stat-pill"><div class="gsl">Scope</div><div class="gsv" style="font-size:1rem">' + esc(currentNamespace) + '</div></div>';
     }
     if (!tb) return;
     tb.innerHTML = rows.map(p =>
@@ -9989,7 +10435,7 @@ async function fetchImages() {
 }
 
 function drFields() {
-  const ns = document.getElementById('dr-ns')?.value?.trim() || currentNs;
+  const ns = document.getElementById('dr-ns')?.value?.trim() || currentNamespace;
   const vm = document.getElementById('dr-vm')?.value?.trim();
   const target = document.getElementById('dr-target')?.value?.trim();
   return { ns: ns === 'all' ? 'default' : ns, vm, target };
@@ -10039,16 +10485,32 @@ async function drApply(dryRun) {
 }
 
 function openImageImportModal() {
-  const name = prompt('DataVolume name');
-  if (!name) return;
-  const url = prompt('HTTP(S) image URL (or leave blank for registry)');
-  const registry = url ? null : prompt('containerdisk registry image');
-  const ns = currentNs === 'all' ? 'default' : currentNs;
-  const size = prompt('Size', '20Gi') || '20Gi';
-  apiJson('/api/v1/images/import', {
-    method: 'POST',
-    body: JSON.stringify({ name, namespace: ns, url: url || undefined, registry: registry || undefined, size })
-  }).then(() => { toast('Import started', 'success'); fetchImages(); }).catch(e => toast(e.message, 'error'));
+  document.getElementById('image-import-name').value = '';
+  document.getElementById('image-import-url').value = '';
+  document.getElementById('image-import-registry').value = '';
+  document.getElementById('image-import-size').value = '20Gi';
+  document.getElementById('image-import-modal').style.display = 'flex';
+}
+function closeImageImportModal() {
+  document.getElementById('image-import-modal').style.display = 'none';
+}
+async function submitImageImport() {
+  const name = document.getElementById('image-import-name').value.trim();
+  const url = document.getElementById('image-import-url').value.trim();
+  const registry = document.getElementById('image-import-registry').value.trim();
+  const size = document.getElementById('image-import-size').value.trim() || '20Gi';
+  if (!name) { toast('Name required', 'error'); return; }
+  if (!url && !registry) { toast('Provide URL or registry image', 'error'); return; }
+  const ns = currentNamespace === 'all' ? 'default' : currentNamespace;
+  try {
+    await apiJson('/api/v1/images/import', {
+      method: 'POST',
+      body: JSON.stringify({ name, namespace: ns, url: url || undefined, registry: registry || undefined, size })
+    });
+    toast('Import started', 'success');
+    closeImageImportModal();
+    fetchImages();
+  } catch (e) { toast(e.message || String(e), 'error'); }
 }
 
 async function loadDoctorPanel(ns, name) {
@@ -10113,6 +10575,15 @@ async function fetchCatalog() {
     const inSync = status.in_sync === true;
     const missTpl = (status.missing_templates || []).length;
     const missProf = (status.missing_profiles || []).length;
+    const catSum = document.getElementById('catalog-summary');
+    if (catSum) {
+      catSum.innerHTML = renderGlassStatPills([
+        { label: 'Templates', value: tpl.items.length },
+        { label: 'Profiles', value: prof.items.length },
+        { label: 'In sync', value: inSync ? 'Yes' : 'No', cls: inSync ? ' ok' : ' warn' },
+        { label: 'Missing', value: missTpl + missProf, cls: (missTpl + missProf) ? ' bad' : '' }
+      ]);
+    }
     if (banner) {
       banner.className = 'catalog-banner ' + (inSync ? 'ok' : 'warn');
       banner.innerHTML = '<strong>' + (inSync ? 'Catalog in sync' : 'Catalog drift') + '</strong> — ' +
@@ -10243,15 +10714,15 @@ async function fetchIntegrations() {
       let openBtn = '';
       if (i.open) {
         if (i.open.kind === 'in_app') {
-          openBtn = '<button type="button" class="btn btn-sm" ' + onStopHandler('navigate(' + jsArgs(i.open.href) + ')') + '>' + esc(i.open.label) + '</button>';
+          openBtn = '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigate(' + jsArgs(i.open.href) + ')') + '>' + esc(i.open.label) + '</button>';
         } else if (i.open.kind === 'external') {
-          openBtn = '<button type="button" class="btn btn-sm" ' + onStopHandler('window.open(' + jsArgs(i.open.href, '_blank', 'noopener,noreferrer') + ')') + '>' + esc(i.open.label) + '</button>';
+          openBtn = '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.open(' + jsArgs(i.open.href, '_blank', 'noopener,noreferrer') + ')') + '>' + esc(i.open.label) + '</button>';
         } else {
-          openBtn = '<button type="button" class="btn btn-sm" ' + onStopHandler('window.open(' + jsArgs(i.open.href, '_blank', 'noopener,noreferrer') + ')') + '>' + esc(i.open.label) + '</button>';
+          openBtn = '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.open(' + jsArgs(i.open.href, '_blank', 'noopener,noreferrer') + ')') + '>' + esc(i.open.label) + '</button>';
         }
       }
       return '<tr><td>' + esc(i.name) + '</td><td><code style="font-size:.78em">' + esc(i.env_var) + '</code></td><td>' +
-        (i.configured ? '<span class="vm-badge running">Yes</span>' : '<span class="vm-badge stopped">No</span>') + '</td><td><span class="vm-badge ' + integrationProbeClass(i.probe) + '">' + esc(i.probe) + '</span></td><td style="max-width:280px;font-size:.82em">' + esc(i.feeds) + '</td><td>' + openBtn + '</td></tr>';
+        (i.configured ? '<span class="glass-badge running">Yes</span>' : '<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + integrationProbeClass(i.probe) + '">' + esc(i.probe) + '</span></td><td style="max-width:280px;font-size:.82em">' + esc(i.feeds) + '</td><td>' + openBtn + '</td></tr>';
     }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No integrations defined</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
@@ -10276,7 +10747,15 @@ async function fetchVelero() {
     }
     const backups = data.backups || [];
     const restores = data.restores || [];
-    if (sum) sum.textContent = backups.length + ' backup(s), ' + restores.length + ' restore(s)';
+    if (sum) {
+      sum.className = 'grid-4 page-glass-stats';
+      sum.innerHTML = renderGlassStatPills([
+        { label: 'Backups', value: backups.length },
+        { label: 'Restores', value: restores.length },
+        { label: 'Completed', value: backups.filter(b => (b.phase || '').toLowerCase() === 'completed').length, cls: ' ok' },
+        { label: 'Snapshots', value: '→', onclick: "navigate('snapshots')", title: 'KubeVirt snapshots' }
+      ]);
+    }
     if (bb) {
       bb.innerHTML = backups.map(b =>
         '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>'
@@ -10366,11 +10845,12 @@ async function fetchIncidents() {
     const kind = document.getElementById('incident-kind-filter')?.value || '';
     const data = await apiJson('/api/v1/incidents/timeline' + nsParam());
     setCapBanner('incidents-cap-banner', data.vmrogue_context);
-    if (stats) stats.innerHTML = `
-      <div class="stat-card stat-card-red"><div class="stat-label">Critical</div><div class="stat-value">${data.critical || 0}</div></div>
-      <div class="stat-card stat-card-orange"><div class="stat-label">Warning</div><div class="stat-value">${data.warning || 0}</div></div>
-      <div class="stat-card stat-card-blue"><div class="stat-label">Open</div><div class="stat-value">${data.open_incidents || 0}</div></div>
-      <div class="stat-card stat-card-green"><div class="stat-label">Resolved (heuristic)</div><div class="stat-value">${data.resolved_last_24h || 0}</div></div>`;
+    if (stats) stats.innerHTML = renderGlassStatPills([
+      { label: 'Critical', value: data.critical || 0, cls: (data.critical || 0) ? ' bad' : '', onclick: "navigate('events')", title: 'View events' },
+      { label: 'Warning', value: data.warning || 0, cls: (data.warning || 0) ? ' warn' : '', onclick: "navigate('alerts')", title: 'View alerts' },
+      { label: 'Open', value: data.open_incidents || 0 },
+      { label: 'Resolved 24h', value: data.resolved_last_24h || 0, cls: ' ok' }
+    ]);
     if (!tb) return;
     let events = data.events || [];
     if (sev) events = events.filter(e => e.severity === sev);
@@ -10386,7 +10866,7 @@ async function fetchIncidents() {
         <td>${esc(e.title)}</td>
         <td>${e.vm_name ? esc(e.vm_name) : '<span style="color:var(--text-dim)">—</span>'}</td>
         <td>${esc(e.namespace)}</td>
-        <td><span class="stat-badge ${e.resolved ? 'badge-green' : 'badge-muted'}">${e.resolved ? 'resolved' : 'open'}</span></td>
+        <td><span class="glass-badge ${e.resolved ? 'running' : 'other'}">${e.resolved ? 'resolved' : 'open'}</span></td>
       </tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
   } catch (e) {
