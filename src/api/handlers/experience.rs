@@ -63,6 +63,7 @@ pub struct ExperienceHomeResponse {
     pub stats: serde_json::Value,
     pub control_center: Vec<ControlCenterItem>,
     pub action_cards: Vec<HomeActionCard>,
+    pub copilot_briefing: Vec<crate::copilot::CopilotBriefingItem>,
     pub warnings: Vec<String>,
     pub pinned_vms: Vec<PinnedVmSummary>,
 }
@@ -634,6 +635,8 @@ async fn experience_home(
         }
     }
 
+    let copilot_briefing = crate::copilot::fleet_briefing(&client, &scope).await;
+
     Json(ExperienceHomeResponse {
         vmrogue_context: experience_context(),
         experience: ExperienceContext {
@@ -647,6 +650,7 @@ async fn experience_home(
         stats,
         control_center,
         action_cards,
+        copilot_briefing,
         warnings,
         pinned_vms,
     })

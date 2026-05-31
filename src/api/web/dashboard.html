@@ -1697,6 +1697,19 @@ html[data-theme="zinc"] .monitor-cap{
 .dc-cc-chip.ok{border-color:rgba(34,197,94,.28);color:var(--success)}
 .dc-cc-chip.warn{border-color:rgba(251,191,36,.35);color:var(--warning)}
 .dc-cc-chip.error{border-color:rgba(239,68,68,.35);color:var(--error)}
+.dc-briefing{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.dc-briefing-label{font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
+.dc-briefing-item{
+  display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+  background:rgba(255,255,255,.02);cursor:pointer;text-align:left;width:100%;font-family:inherit;color:inherit;
+  transition:border-color .15s,background .15s;
+}
+.dc-briefing-item:hover{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.04)}
+.dc-briefing-item.info{border-color:rgba(56,189,248,.2)}
+.dc-briefing-item.warn{border-color:rgba(251,191,36,.35)}
+.dc-briefing-item.error{border-color:rgba(239,68,68,.35)}
+.dc-briefing-title{font-size:.86rem;font-weight:600}
+.dc-briefing-detail{font-size:.78rem;color:var(--text-dim);line-height:1.4}
 .dc-section-label{font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:10px}
 .dc-pinned-section{margin-bottom:18px}
 .dc-today-panel{
@@ -2203,6 +2216,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
         <div>
           <div class="dc-health-summary" id="dc-health-summary">Loading fleet health…</div>
           <div class="dc-cc-chips" id="dc-cc-chips"></div>
+          <div id="dc-copilot-briefing" class="dc-briefing" style="display:none"></div>
         </div>
       </div>
     </div>
@@ -4580,6 +4594,7 @@ function renderDatacenterHome(data) {
       '</button>'
     ).join('');
   }
+  renderCopilotBriefing(data.copilot_briefing);
   if (data.pinned_vms && data.pinned_vms.length) {
     renderPinnedVms(data.pinned_vms);
   } else {
@@ -4628,6 +4643,36 @@ function runExperienceAction(action) {
   if (action === 'create_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
   if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
   toast('Action: ' + action, 'info');
+}
+
+function renderCopilotBriefing(items) {
+  const el = document.getElementById('dc-copilot-briefing');
+  if (!el) return;
+  const list = items || [];
+  window._copilotBriefingCache = list;
+  if (!list.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  let html = '<div class="dc-briefing-label">Copilot briefing</div>';
+  list.forEach(function(item, i) {
+    const sev = item.severity || 'info';
+    html += '<button type="button" class="dc-briefing-item ' + esc(sev) + '" ' +
+      onHandler('runCopilotBriefing(' + i + ')') + '>' +
+      '<span class="dc-briefing-title">' + esc(item.title) + '</span>' +
+      '<span class="dc-briefing-detail">' + esc(item.detail) + '</span></button>';
+  });
+  el.innerHTML = html;
+}
+
+function runCopilotBriefing(idx) {
+  const item = (window._copilotBriefingCache || [])[idx];
+  if (!item) return;
+  if (item.query) {
+    openCopilot(item.query);
+    setTimeout(runCopilotAsk, 80);
+    return;
+  }
+  if (item.action && handleCopilotAction(item.action)) return;
+  openCopilot('');
 }
 
 function handleCopilotAction(action) {
