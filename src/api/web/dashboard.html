@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531x">
+<meta name="vmrogue-dashboard-rev" content="20260531y">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531x';
+  var DASH_REV = '20260531y';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2312,7 +2312,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="topbar-location" id="topbar-location-wrap">
       <span class="topbar-location-meta" id="cluster-context-meta">Location: loading…</span>
       <select class="form-select topbar-location-select" id="cluster-activate-select" style="display:none"></select>
-      <button type="button" class="btn btn-sm btn-restart topbar-location-btn" id="cluster-activate-btn" onclick="activateClusterContext()" style="display:none">Switch</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm topbar-location-btn" id="cluster-activate-btn" onclick="activateClusterContext()" style="display:none">Switch</button>
     </div>
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
     <button type="button" class="btn-spotlight" onclick="openCopilot()" title="VMRogue Copilot">Copilot</button>
@@ -2669,7 +2669,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   </div>
   <details class="operator-details" id="operator-details">
     <summary>Show charts &amp; operator details</summary>
-  <div class="grid-4" id="stat-cards"></div>
+  <div class="grid-4 page-glass-stats" id="stat-cards"></div>
   <div class="grid-4" id="resource-bars"></div>
   <div class="dashboard-command-grid">
     <div class="dashboard-side-stack">
@@ -2737,6 +2737,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div>
+    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Backup Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -2748,7 +2749,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runBackupAdvisor()">Run advisor</button>
     </div>
   </div>
-<button class="btn-create" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
   <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm btn-restart" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
@@ -2760,7 +2760,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div>
-    
+    <div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span id="node-count"></span></div></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Node Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -2772,7 +2772,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Run advisor</button>
     </div>
   </div>
-<div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span id="node-count"></span></div></div>
   <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
@@ -2790,6 +2789,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-pods" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div>
+    <div class="page-header-right" id="pod-count"></div></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Workload Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -2801,7 +2801,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
     </div>
   </div>
-<div class="page-header-right" id="pod-count"></div></div>
   <div id="pods-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Pods</span></div>
@@ -2906,7 +2905,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div>
+__HDR__Insights__VMRogueInsight observability data</p></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Drift Copilot</div>
@@ -2919,8 +2918,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsFilter('');document.getElementById('vm-filter-drift').value='drift';filterVMs();">Filter drift</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runDriftAdvisor()">Drift Advisor</button></div>
-  <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+<div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Drift Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('drift-advisor-card')">Dismiss</button></div>
     <div id="drift-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
@@ -2977,7 +2975,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-security" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Security</h1><p>Security posture and vulnerability findings</p></div>
+__HDR__Security__Security posture and vulnerability findings</p></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Security Copilot</div>
@@ -2990,8 +2988,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('compliance')">Compliance</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSecuritySentinel()">Security Sentinel</button></div>
-  <div class="card glass-card" id="security-sentinel-card" style="display:none;margin-bottom:16px">
+<div class="card glass-card" id="security-sentinel-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Security Sentinel</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('security-sentinel-card')">Dismiss</button></div>
     <div id="security-sentinel-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
@@ -3075,7 +3072,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div>
+__HDR__Alerts__Warning events and alert acknowledgements</p></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Alert Copilot</div>
@@ -3088,8 +3085,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runAlertAdvisor()">Alert Advisor</button></div>
-  <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+<div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Alert Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('alert-advisor-card')">Dismiss</button></div>
     <div id="alert-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
@@ -3163,7 +3159,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
+__HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">SLO Copilot</div>
@@ -3176,8 +3172,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('incidents')">View incidents</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSloAdvisor()">SLO Advisor</button></div>
-  <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+<div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
     <div id="slo-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
@@ -3260,7 +3255,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div>
+__HDR__Backups__Snapshot-backed backups and restore points</p></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Backup Copilot</div>
@@ -3273,8 +3268,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('dr')">Open DR</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runBackupAdvisor()">Backup Advisor</button></div>
-  <div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
+<div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Backup Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('backup-advisor-card')">Dismiss</button></div>
     <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
@@ -3295,7 +3289,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="space-y animate-fade-in">
   <div class="page-header">
     <div><h1>Template catalog</h1><p>Cluster VMTemplate / VMProfile CRDs vs embedded library</p></div>
-    
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="catalogSync()">Sync cluster catalog</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCatalogPublishTemplate()">+ Publish template</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCatalogPublishProfile()">+ Publish profile</button>
+    </div></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Catalog Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -3305,13 +3304,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="dc-copilot-bar-chips">
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Run advisor</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="catalogSync()">Sync catalog</button>
-    </div>
-  </div>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
-      <button type="button" class="btn-create" onclick="catalogSync()">Sync cluster catalog</button>
-      <button type="button" class="btn" onclick="openCatalogPublishTemplate()">+ Publish template</button>
-      <button type="button" class="btn" onclick="openCatalogPublishProfile()">+ Publish profile</button>
     </div>
   </div>
   <div id="catalog-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -3357,7 +3349,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-integrations" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Integrations</h1><p>Optional observability, FinOps, security, and GitOps backends</p></div>
-    
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIntegrations()">Refresh</button></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Integrations Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -3369,10 +3362,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIntegrations()">Refresh</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runIntegrationsAdvisor()">Integrations Advisor</button>
-    <button type="button" class="btn" onclick="fetchIntegrations()">Refresh</button>
-  </div>
-  <div id="integrations-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+<div id="integrations-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Integrations Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('integrations-advisor-card')">Dismiss</button></div>
     <div id="integrations-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
@@ -3431,7 +3421,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div>
-    
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Forecast Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -3443,7 +3433,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('costs')">View costs</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div>
   <div id="forecast-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Forecast Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('forecast-advisor-card')">Dismiss</button></div>
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -3482,7 +3471,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div>
-    
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div>
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Scheduling Copilot</div>
     <div class="dc-copilot-bar-row">
@@ -3494,7 +3483,6 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('pods')">View pods</button>
     </div>
   </div>
-<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div>
   <div id="scheduling-fleet-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Scheduling Fleet</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('scheduling-fleet-advisor-card')">Dismiss</button></div>
     <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -3738,7 +3726,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-images" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div>
-    <button class="btn-create" onclick="openImageImportModal()">+ Import DataVolume</button>
+    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button>
   </div>
   <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
@@ -4260,7 +4248,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531x';
+window.__VMROGUE_DASH_REV = '20260531y';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5288,7 +5276,7 @@ async function fetchAppStore() {
         '<div class="app-store-icon">' + em + '</div>' +
         '<div class="app-store-title">' + esc(t.title) + '</div>' +
         '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-        '<button type="button" class="btn btn-sm btn-start" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
       '</div>';
     }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
   } catch (e) {
@@ -6587,11 +6575,13 @@ async function fetchVMs() {
     const onDashboard = currentPage === 'dashboard';
     const statCards = document.getElementById('stat-cards');
     if (statCards) {
-      statCards.innerHTML =
-        statCard('blue', '&#9889;', 'Virtual Machines', total, '<span class="stat-badge badge-green">' + running + ' active</span>') +
-        statCard('orange', '&#9881;', 'Allocated vCPUs', totalCpu, '') +
-        statCard('purple', '&#9830;', 'Total Memory', totalMemGb.toFixed(1) + ' GB', '') +
-        statCard('green', '&#9733;', 'Fleet Health', (total > 0 ? Math.round(running / total * 100) : 0) + '%', '');
+      const healthPct = total > 0 ? Math.round(running / total * 100) : 0;
+      statCards.innerHTML = renderGlassStatPills([
+        { label: 'Virtual Machines', value: total, onclick: "navigate('vms')", title: 'View VMs' },
+        { label: 'Running', value: running, cls: ' ok', onclick: "navigateToVmsFilter('Running')", title: 'Running VMs' },
+        { label: 'Allocated vCPUs', value: totalCpu },
+        { label: 'Fleet health', value: healthPct + '%', cls: healthPct >= 90 ? ' ok' : healthPct >= 70 ? ' warn' : ' bad' }
+      ]);
     }
 
     const subtitle = document.getElementById('subtitle');
