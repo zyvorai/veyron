@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531j">
+<meta name="vmrogue-dashboard-rev" content="20260531k">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531j';
+  var DASH_REV = '20260531k';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1105,6 +1105,23 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .btn-forge:hover{box-shadow:0 0 20px rgba(199,208,219,.28)}
 .btn-forge:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.modal.glass-modal{
+  background:var(--glass-bg-elevated);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
+  box-shadow:var(--glass-shadow),0 25px 80px rgba(0,0,0,.5);
+}
+.modal.glass-modal::before{
+  background:linear-gradient(90deg,transparent,var(--primary-blue),var(--primary-purple),transparent);
+}
+.modal.glass-modal .modal-header{border-bottom-color:var(--glass-border)}
+.modal.glass-modal .modal-footer{border-top-color:var(--glass-border)}
+.modal.glass-modal .form-input,.modal.glass-modal .form-select{
+  background:rgba(15,23,42,.55);border-color:var(--glass-border);
+}
+.modal.glass-modal .form-input:focus,.modal.glass-modal .form-select:focus{
+  border-color:var(--primary-blue);box-shadow:0 0 0 3px rgba(59,130,246,.15);
+}
 
 /* ═══════════════════════════════════════════════════
    LIQUID GLASS — shared primitives
@@ -1174,6 +1191,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   color:#fda4af;border:1px solid rgba(244,63,94,.28);
   background:rgba(244,63,94,.08);cursor:pointer;
 }
+.glass-btn-sm{padding:6px 12px;font-size:.72rem;border-radius:8px}
 .glass-stat-pill{
   padding:14px 18px;border-radius:var(--glass-radius);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -2575,7 +2593,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <!-- RESIZE VM MODAL -->
 <div class="modal-overlay" id="resize-modal">
-  <div class="modal" style="width:380px">
+  <div class="modal glass-modal" style="width:380px">
     <div class="modal-header"><h2>Resize VM</h2><button class="modal-close" onclick="closeResizeModal()">&#10005;</button></div>
     <div class="modal-body">
       <input type="hidden" id="resize-ns"><input type="hidden" id="resize-name">
@@ -2584,7 +2602,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
         <div class="form-group"><label class="form-label">Memory</label><input type="text" class="form-input" id="resize-memory" placeholder="4Gi"></div>
       </div>
     </div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeResizeModal()">Cancel</button><button class="btn-forge" onclick="submitResize()">Resize</button></div>
+    <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeResizeModal()">Cancel</button><button type="button" class="glass-btn-primary" onclick="submitResize()">Resize</button></div>
   </div>
 </div>
 
@@ -3368,7 +3386,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <!-- CREATE VM MODAL -->
 <div class="modal-overlay" id="create-modal">
-  <div class="modal">
+  <div class="modal glass-modal">
     <div class="modal-header">
       <h2>Forge New VM</h2>
       <button class="modal-close" onclick="closeCreateModal()">&#10005;</button>
@@ -3446,15 +3464,15 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
-      <button class="btn-forge" id="btn-forge-vm" onclick="forgeVM()">Forge VM</button>
+      <button type="button" class="glass-btn-secondary" onclick="closeCreateModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" id="btn-forge-vm" onclick="forgeVM()">Forge VM</button>
     </div>
   </div>
 </div>
 
 <!-- SNAPSHOT CREATE MODAL -->
 <div class="modal-overlay" id="snap-create-modal">
-  <div class="modal" style="width:420px">
+  <div class="modal glass-modal" style="width:420px">
     <div class="modal-header">
       <h2>Create Snapshot</h2>
       <button class="modal-close" onclick="closeSnapModal()">&#10005;</button>
@@ -3474,15 +3492,15 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeSnapModal()">Cancel</button>
-      <button class="btn-forge" id="btn-create-snap" onclick="createSnapshot()">Create Snapshot</button>
+      <button type="button" class="glass-btn-secondary" onclick="closeSnapModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" id="btn-create-snap" onclick="createSnapshot()">Create Snapshot</button>
     </div>
   </div>
 </div>
 
 <!-- SNAPSHOT SCHEDULE MODAL -->
 <div class="modal-overlay" id="snap-schedule-modal">
-  <div class="modal" style="width:440px">
+  <div class="modal glass-modal" style="width:440px">
     <div class="modal-header"><h2>Snapshot Schedule</h2><button class="modal-close" onclick="closeScheduleModal()">&#10005;</button></div>
     <div class="modal-body">
       <div class="form-group"><label class="form-label">VM Name</label><input type="text" class="form-input" id="sched-vm-name" placeholder="my-vm"></div>
@@ -3490,7 +3508,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <div class="form-group"><label class="form-label">Prefix</label><input type="text" class="form-input" id="sched-prefix" placeholder="sched" value="sched"></div>
       <div class="form-group"><label class="form-label">Max snapshots (retention)</label><input type="number" class="form-input" id="sched-max" min="0" value="5"></div>
     </div>
-    <div class="modal-footer"><button class="btn-cancel" onclick="closeScheduleModal()">Cancel</button><button class="btn-forge" onclick="createSchedule()">Save Schedule</button></div>
+    <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeScheduleModal()">Cancel</button><button type="button" class="glass-btn-primary" onclick="createSchedule()">Save Schedule</button></div>
   </div>
 </div>
 
@@ -3705,7 +3723,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531j';
+window.__VMROGUE_DASH_REV = '20260531k';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -3900,6 +3918,14 @@ function buildDashboardHash(page, detail) {
   if (detail && detail.kind === 'node') return '#nodes/' + dashHashEncode(detail.name);
   if (!page || page === 'dashboard') return '';
   return '#' + page;
+}
+
+function dashboardDeepLink(page, detail) {
+  return location.origin + location.pathname + location.search + buildDashboardHash(page, detail || null);
+}
+
+function copyDashboardDeepLink(page, detail) {
+  copyToClipboard(dashboardDeepLink(page, detail || null));
 }
 
 function setDashboardHash(page, detail, push) {
@@ -4726,19 +4752,19 @@ function vmCard(vm, showActions) {
   const icon = osFamilyIcon(family);
   const winHint = isRunning && isWindowsVm(vm) ? '<span class="vm-rdp-hint" title="Use RDP expose for Windows">RDP</span>' : '';
   const primary = isRunning
-    ? '<button type="button" class="btn btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' + winHint
-    : '<button type="button" class="btn btn-start btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
+    ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' + winHint
+    : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
   const stopBtn = isRunning && showActions
-    ? '<button type="button" class="btn btn-sm btn-stop" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
+    ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
     : '';
   const pendingHint = vm.status === 'Pending'
-    ? '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, vm.name) + ')') + '>Scheduling</button>'
+    ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, vm.name) + ')') + '>Scheduling</button>'
     : '';
   const actions = showActions ? primary + stopBtn + pendingHint +
-    '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
-    '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
-    '<button type="button" class="btn btn-sm btn-restart" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
-    '<button type="button" class="btn btn-sm btn-delete" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
+    '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   return '<div class="vm-card" ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
@@ -4859,12 +4885,12 @@ function vmRow(vm, showActions) {
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (isRunning ? '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.15);font-size:.74rem" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>VNC</button>' +
-    '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.18);font-size:.74rem" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, vm.name) + ')') + '>Serial</button>' : '') +
-    (!isRunning ? '<button class="btn btn-start" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>&#9654;</button>' : '') +
-    (isRunning ? '<button class="btn btn-stop" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>&#9632;</button>' : '') +
-    '<button class="btn btn-restart" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>&#8635;</button>' +
-    '<button class="btn btn-delete" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>&#10005;</button>' +
+    (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>VNC</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, vm.name) + ')') + '>Serial</button>' : '') +
+    (!isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>&#9654;</button>' : '') +
+    (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>&#9632;</button>' : '') +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>&#8635;</button>' +
+    '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>&#10005;</button>' +
     '</div>' : '';
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(vm.name) + ',this.checked)') + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
   const clickAttr = showActions ? (' ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"') : '';
@@ -6604,6 +6630,7 @@ function renderVmDetailHeader(vm, ns, name, vmi) {
   if (vmi.phase === 'Paused') {
     actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('unpauseVM(' + jsArgs(ns, name) + ')') + '>Unpause</button>';
   }
+  actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('vms', { kind: 'vm', ns: ns, name: name }) + ')') + '>Copy link</button>';
   actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
   actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
   actions += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
@@ -7201,6 +7228,7 @@ function podPhaseBadgeClass(phase) {
 function renderNodeDetailHeader(node) {
   const badgeCls = nodeStatusBadgeClass(node.status);
   const roles = (node.roles && node.roles.length) ? node.roles.join(', ') : 'worker';
+  const actions = '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('nodes', { kind: 'node', name: node.name }) + ')') + '>Copy link</button>';
   return '<div class="vm-detail-header">' +
     '<div class="vm-detail-header-left">' +
       '<div class="vm-detail-name">' + esc(node.name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(node.status || 'Unknown') + '</span></div>' +
@@ -7210,6 +7238,7 @@ function renderNodeDetailHeader(node) {
         (node.kubelet_version ? '<span>Kubelet: <strong>' + esc(node.kubelet_version) + '</strong></span>' : '') +
       '</div>' +
     '</div>' +
+    '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
   '</div>';
 }
 
@@ -7292,7 +7321,7 @@ function formatPodAge(createdAt) {
 
 function renderPodDetailHeader(pod) {
   const badgeCls = podPhaseBadgeClass(pod.phase);
-  let actions = '';
+  let actions = '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('pods', { kind: 'pod', ns: pod.namespace, name: pod.name }) + ')') + '>Copy link</button>';
   if (pod.node_name) {
     actions += '<button type="button" class="glass-btn-secondary" onclick="navigate(\'nodes\')">View nodes</button>';
   }
@@ -7305,7 +7334,7 @@ function renderPodDetailHeader(pod) {
         (pod.ip ? '<span>IP: <code>' + esc(pod.ip) + '</code></span>' : '') +
       '</div>' +
     '</div>' +
-    (actions ? '<div class="vm-detail-actions-hdr">' + actions + '</div>' : '') +
+    '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
   '</div>';
 }
 
