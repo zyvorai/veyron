@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531i">
+<meta name="vmrogue-dashboard-rev" content="20260531j">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531i';
+  var DASH_REV = '20260531j';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -3705,7 +3705,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531i';
+window.__VMROGUE_DASH_REV = '20260531j';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -3861,7 +3861,7 @@ function openIntegrationLink(link) {
   }
 }
 
-function navigate(page) {
+function navigate(page, opts) {
   closeClassicNav();
   currentPage = page;
   recordSpotlightRecent({ kind: 'page', title: page, action: 'navigate:' + page });
@@ -3879,6 +3879,84 @@ function navigate(page) {
   syncFinderActive(page);
   updatePageContext(page);
   loadPageData(page);
+  if (!opts || !opts.skipHash) setDashboardHash(page, null, false);
+}
+
+// ── Dashboard hash routing (#vms/ns/name, #pods/ns/name, #nodes/name) ──
+let _dashHashLock = false;
+let _applyingDashHash = false;
+
+function dashHashEncode(s) {
+  return encodeURIComponent(String(s || ''));
+}
+
+function dashHashDecode(s) {
+  try { return decodeURIComponent(String(s || '')); } catch (e) { return String(s || ''); }
+}
+
+function buildDashboardHash(page, detail) {
+  if (detail && detail.kind === 'vm') return '#vms/' + dashHashEncode(detail.ns) + '/' + dashHashEncode(detail.name);
+  if (detail && detail.kind === 'pod') return '#pods/' + dashHashEncode(detail.ns) + '/' + dashHashEncode(detail.name);
+  if (detail && detail.kind === 'node') return '#nodes/' + dashHashEncode(detail.name);
+  if (!page || page === 'dashboard') return '';
+  return '#' + page;
+}
+
+function setDashboardHash(page, detail, push) {
+  if (_dashHashLock) return;
+  const next = buildDashboardHash(page, detail);
+  if (location.hash === next) return;
+  _dashHashLock = true;
+  try {
+    const url = location.pathname + location.search + next;
+    if (push) history.pushState({ vmroguePage: page, vmrogueDetail: detail || null }, '', url);
+    else history.replaceState({ vmroguePage: page, vmrogueDetail: detail || null }, '', url);
+  } finally {
+    _dashHashLock = false;
+  }
+}
+
+function parseDashboardHash() {
+  const raw = (location.hash || '').replace(/^#/, '').trim();
+  if (!raw) return { page: 'dashboard' };
+  const parts = raw.split('/').map(dashHashDecode);
+  const page = parts[0];
+  if (page === 'vms' && parts.length >= 3) return { page: 'vms', detail: { kind: 'vm', ns: parts[1], name: parts[2] } };
+  if (page === 'pods' && parts.length >= 3) return { page: 'pods', detail: { kind: 'pod', ns: parts[1], name: parts[2] } };
+  if (page === 'nodes' && parts.length >= 2) return { page: 'nodes', detail: { kind: 'node', name: parts[1] } };
+  return { page: page || 'dashboard' };
+}
+
+function applyDashboardHash() {
+  if (_applyingDashHash) return;
+  const parsed = parseDashboardHash();
+  if (!document.getElementById('page-' + parsed.page)) return;
+  _applyingDashHash = true;
+  navigate(parsed.page, { skipHash: true });
+  if (!parsed.detail) {
+    _applyingDashHash = false;
+    return;
+  }
+  const d = parsed.detail;
+  setTimeout(function() {
+    try {
+      if (d.kind === 'vm') {
+        Promise.resolve(fetchVMs()).finally(function() { toggleVmDetail(d.ns, d.name, { skipHash: true }); });
+      } else if (d.kind === 'pod') {
+        Promise.resolve(fetchPods()).finally(function() { togglePodDetail(d.ns, d.name, { skipHash: true }); });
+      } else if (d.kind === 'node') {
+        Promise.resolve(fetchNodes()).finally(function() { toggleNodeDetail(d.name, { skipHash: true }); });
+      }
+    } finally {
+      _applyingDashHash = false;
+    }
+  }, 180);
+}
+
+function openPodDetailDeep(ns, name) {
+  navigate('pods', { skipHash: true });
+  setDashboardHash('pods', { kind: 'pod', ns: ns, name: name }, true);
+  Promise.resolve(fetchPods()).finally(function() { togglePodDetail(ns, name, { skipHash: true }); });
 }
 
 function loadPageData(page) {
@@ -6464,13 +6542,14 @@ document.getElementById('about-modal').addEventListener('click', e => {
 // ── VM Detail Panel ──
 let expandedVm = null;
 
-function toggleVmDetail(ns, name) {
+function toggleVmDetail(ns, name, opts) {
   const key = ns + '/' + name;
   const detailId = 'detail-' + name;
   const existing = document.getElementById(detailId);
   if (existing) {
     existing.remove();
     expandedVm = null;
+    if (!opts || !opts.skipHash) setDashboardHash('vms', null, false);
     return;
   }
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
@@ -6483,6 +6562,7 @@ function toggleVmDetail(ns, name) {
     if (row.querySelector('.vm-name')?.textContent === name) {
       row.insertAdjacentHTML('afterend', placeholder);
       fetchVmDetail(ns, name);
+      if (!opts || !opts.skipHash) setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
       return;
     }
   }
@@ -6491,6 +6571,7 @@ function toggleVmDetail(ns, name) {
     if (card.querySelector('.vm-card-name')?.textContent === name) {
       card.insertAdjacentHTML('afterend', placeholder);
       fetchVmDetail(ns, name);
+      if (!opts || !opts.skipHash) setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
       return;
     }
   }
@@ -7158,7 +7239,8 @@ function renderNodeWorkloadsColumn(nodeName, pods) {
       html += '<div class="detail-row" style="align-items:flex-start">';
       html += '<span class="lbl"><span style="font-family:var(--font-mono);font-size:.82em;color:var(--text-bright)">' + esc(p.name) + '</span>';
       html += '<br><span style="font-size:.76rem;color:var(--text-dim)">' + esc(p.namespace) + '</span></span>';
-      html += '<span class="val"><span class="glass-badge ' + cls + '">' + esc(p.phase || 'Unknown') + '</span></span></div>';
+      html += '<span class="val"><span class="glass-badge ' + cls + '">' + esc(p.phase || 'Unknown') + '</span>';
+      html += ' <button type="button" class="glass-btn-secondary" style="padding:4px 10px;font-size:.72rem;margin-left:8px" onclick="openPodDetailDeep(' + jsArgs(p.namespace, p.name) + ')">Open</button></span></div>';
     });
     html += '</div>';
   }
@@ -7287,10 +7369,14 @@ async function fetchPodDetail(ns, name) {
   }
 }
 
-function togglePodDetail(ns, name) {
+function togglePodDetail(ns, name, opts) {
   const detailId = 'pod-detail-' + ns + '-' + name;
   const existing = document.getElementById(detailId);
-  if (existing) { existing.remove(); return; }
+  if (existing) {
+    existing.remove();
+    if (!opts || !opts.skipHash) setDashboardHash('pods', null, false);
+    return;
+  }
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
 
   const placeholder = '<div class="vm-detail" id="' + detailId + '"><div class="detail-loading">Loading pod details\u2026</div></div>';
@@ -7299,6 +7385,7 @@ function togglePodDetail(ns, name) {
     if (row.dataset.podNs === ns && row.dataset.podName === name) {
       row.insertAdjacentHTML('afterend', placeholder);
       fetchPodDetail(ns, name);
+      if (!opts || !opts.skipHash) setDashboardHash('pods', { kind: 'pod', ns: ns, name: name }, true);
       return;
     }
   }
@@ -8279,9 +8366,13 @@ async function submitCrdCreate() {
 }
 
 // ── Node Detail ──
-function toggleNodeDetail(nodeName) {
+function toggleNodeDetail(nodeName, opts) {
   const existing = document.getElementById('node-detail-' + nodeName);
-  if (existing) { existing.remove(); return; }
+  if (existing) {
+    existing.remove();
+    if (!opts || !opts.skipHash) setDashboardHash('nodes', null, false);
+    return;
+  }
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
 
   const placeholder = '<div class="vm-detail" id="node-detail-' + nodeName + '"><div class="detail-loading">Loading node details\u2026</div></div>';
@@ -8290,6 +8381,7 @@ function toggleNodeDetail(nodeName) {
     if (row.querySelector('.cell-name')?.textContent === nodeName) {
       row.insertAdjacentHTML('afterend', placeholder);
       fetchNodeDetail(nodeName);
+      if (!opts || !opts.skipHash) setDashboardHash('nodes', { kind: 'node', name: nodeName }, true);
       return;
     }
   }
@@ -8347,6 +8439,8 @@ window.addEventListener('load', async () => {
   fetchClusterContext();
   fetchIntegrations();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
+  if (location.hash) applyDashboardHash();
+  window.addEventListener('popstate', function() { applyDashboardHash(); });
   window.addEventListener('resize', () => {
     if (isFinderMobile()) {
       document.body.classList.remove('finder-collapsed');
