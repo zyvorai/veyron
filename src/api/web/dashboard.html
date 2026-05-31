@@ -3932,6 +3932,8 @@ function applyDashboardHash() {
   const parsed = parseDashboardHash();
   if (!document.getElementById('page-' + parsed.page)) return;
   _applyingDashHash = true;
+  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
+  expandedVm = null;
   navigate(parsed.page, { skipHash: true });
   if (!parsed.detail) {
     _applyingDashHash = false;
