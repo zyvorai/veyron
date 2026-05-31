@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531n">
+<meta name="vmrogue-dashboard-rev" content="20260531p">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531n';
+  var DASH_REV = '20260531p';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1965,12 +1965,36 @@ html[data-theme="zinc"] .monitor-cap{
 /* ── Zyvor CloudOS experience layer ── */
 .dc-cc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .dc-cc-chip{
-  padding:5px 10px;border-radius:999px;font-size:.72rem;border:1px solid var(--border);
-  background:rgba(20,24,30,.5);color:var(--text-muted);
+  padding:5px 10px;border-radius:999px;font-size:.72rem;border:1px solid var(--glass-border);
+  background:var(--glass-bg);color:var(--text-muted);
 }
+.dc-cc-chip.clickable{
+  cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;
+  font-family:inherit;
+}
+.dc-cc-chip.clickable:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .dc-cc-chip.ok{border-color:rgba(34,197,94,.28);color:var(--success)}
 .dc-cc-chip.warn{border-color:rgba(251,191,36,.35);color:var(--warning)}
 .dc-cc-chip.error{border-color:rgba(239,68,68,.35);color:var(--error)}
+.clickable-stat{cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
+.clickable-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+button.glass-stat-pill.clickable-stat{text-align:left;width:100%;font-family:inherit;color:inherit}
+button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit;text-align:left}
+.dc-health-ring.clickable{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.dc-health-ring.clickable:hover{transform:scale(1.04);box-shadow:0 0 24px rgba(59,130,246,.25)}
+.command-metric.clickable{cursor:pointer;border-radius:12px;padding:4px;transition:background .15s}
+.command-metric.clickable:hover{background:rgba(59,130,246,.08)}
+.priority-item.clickable{cursor:pointer;transition:transform .15s,box-shadow .15s}
+.priority-item.clickable:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.cilium-glass-stats .glass-stat-pill{min-width:0}
+.flow-stat-chip{
+  padding:5px 12px;border-radius:999px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.45);cursor:pointer;font-family:var(--font-mono);font-size:.78rem;
+  transition:background .15s,border-color .15s;
+}
+.flow-stat-chip:hover{background:rgba(30,41,59,.65);border-color:rgba(59,130,246,.35)}
+.flow-stat-chip.active{border-color:var(--primary-blue);background:rgba(59,130,246,.12)}
+.cilium-copilot-bar{margin-bottom:16px;padding:14px 16px}
 .dc-briefing{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .dc-briefing-label{font-size:.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em}
 .dc-briefing-item{
@@ -3200,16 +3224,28 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div>
-    <button type="button" class="btn btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div>
-  <div id="cilium-advisor-card" class="card" style="display:none;margin-bottom:16px">
-    <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="btn btn-sm" onclick="document.getElementById('cilium-advisor-card').style.display='none'">Dismiss</button></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div>
+  <div class="dc-copilot-bar glass-card-hero cilium-copilot-bar">
+    <div class="dc-copilot-bar-label">Network Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="cilium-copilot-input" placeholder="Ask about Cilium policies, egress, or network posture…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();runCiliumCopilotAsk();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCiliumCopilotAsk()">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="ciliumCopilotChip('Cilium and network policy posture')">Policy posture</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="ciliumCopilotChip('Which VMs have internet egress blocked?')">Egress</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Run advisor</button>
+    </div>
+  </div>
+  <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
+    <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('cilium-advisor-card').style.display='none'">Dismiss</button></div>
     <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div id="cilium-summary" class="grid-4" style="margin-bottom:16px"></div>
+  <div id="cilium-summary" class="grid-4 cilium-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><span class="card-title">Policies</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
     <table class="table"><thead><tr><th>Kind</th><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
-    <div class="card">
+    <div class="card glass-card">
       <div class="card-header">
         <span class="card-title">Network Flows</span>
         <div id="flow-stats" class="flow-stats"></div>
@@ -3805,7 +3841,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531n';
+window.__VMROGUE_DASH_REV = '20260531p';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4079,6 +4115,46 @@ function openVmDetailDeep(ns, name) {
   navigate('vms', { skipHash: true });
   setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
   Promise.resolve(fetchVMs()).finally(function() { toggleVmDetail(ns, name, { skipHash: true }); });
+}
+
+function navigateToVmsFilter(status) {
+  navigate('vms');
+  setTimeout(function() {
+    const sel = document.getElementById('vm-filter-status');
+    if (sel) { sel.value = status || ''; filterVMs(); }
+  }, 220);
+}
+
+function navigateToVmsIssues() {
+  navigate('vms');
+  setTimeout(function() {
+    const sel = document.getElementById('vm-filter-status');
+    if (sel) { sel.value = 'Error'; filterVMs(); }
+  }, 220);
+}
+
+function dashboardChipAction(label) {
+  const L = (label || '').toLowerCase();
+  if (L.indexOf('running') >= 0) { navigateToVmsFilter('Running'); return; }
+  if (L.indexOf('node') >= 0) { navigate('nodes'); return; }
+  if (L.indexOf('warning') >= 0) { navigate('events'); return; }
+  if (L.indexOf('cluster') >= 0 || L.indexOf('health') >= 0) { navigate('monitoring'); return; }
+}
+
+function priorityNavigateByTitle(title) {
+  const t = (title || '').toLowerCase();
+  if (t.indexOf('failed') >= 0 || t.indexOf('error') >= 0) { navigateToVmsIssues(); return; }
+  if (t.indexOf('warning') >= 0 || t.indexOf('signal') >= 0) { navigate('events'); return; }
+  if (t.indexOf('idle') >= 0 || t.indexOf('stopped') >= 0) { navigateToVmsFilter('Stopped'); return; }
+  if (t.indexOf('integration') >= 0) { navigate('integrations'); return; }
+}
+
+function renderControlCenterChips(items) {
+  return (items || []).map(item =>
+    '<button type="button" class="dc-cc-chip ' + esc(item.status || 'ok') + ' clickable" ' +
+    onHandler('dashboardChipAction(' + jsArgs(item.label) + ')') + ' title="Open ' + esc(item.label) + '">' +
+    esc(item.label) + ': ' + esc(item.value) + '</button>'
+  ).join('');
 }
 
 function loadPageData(page) {
@@ -5038,13 +5114,13 @@ function renderDatacenterHome(data) {
   const score = data.health_score != null ? data.health_score : '--';
   if (ring) {
     ring.textContent = score + (typeof score === 'number' ? '%' : '');
-    ring.className = 'dc-health-ring' + (score >= 85 ? '' : score >= 65 ? ' warn' : ' error');
+    ring.className = 'dc-health-ring clickable' + (score >= 85 ? '' : score >= 65 ? ' warn' : ' error');
+    ring.title = 'Open monitoring';
+    ring.onclick = function() { navigate('monitoring'); };
   }
   if (summary) summary.textContent = data.health_summary || '';
   if (chips && data.control_center) {
-    chips.innerHTML = data.control_center.map(item =>
-      '<span class="dc-cc-chip ' + esc(item.status || 'ok') + '">' + esc(item.label) + ': ' + esc(item.value) + '</span>'
-    ).join('');
+    chips.innerHTML = renderControlCenterChips(data.control_center);
   }
   if (grid && data.action_cards) {
     grid.innerHTML = data.action_cards.map(card =>
@@ -5125,10 +5201,10 @@ function renderDcTodayStats() {
   const nodes = overview.nodes || {};
   const readyNodes = nodes.ready_nodes != null && nodes.total_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : 'n/a';
   el.innerHTML =
-    '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></div>' +
-    '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
-    '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyNodes + '</div></div>' +
-    (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
+    '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigateToVmsFilter(\'Running\')"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></button>' +
+    '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigate(\'events\')"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></button>' +
+    '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigate(\'nodes\')"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyNodes + '</div></button>' +
+    (failed ? '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigateToVmsIssues()"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></button>' : '');
 }
 
 function runExperienceAction(action) {
@@ -6417,18 +6493,18 @@ function renderDashboardCommandCenter() {
     ? nodesEarly.ready_nodes + '/' + nodesEarly.total_nodes : 'n/a';
   if (quickStatsEl) {
     quickStatsEl.innerHTML =
-      '<div class="glass-stat-pill"><div class="gsl">Total VMs</div><div class="gsv">' + vmData.length + '</div></div>' +
-      '<div class="glass-stat-pill ok"><div class="gsl">Running</div><div class="gsv">' + running + '</div></div>' +
-      '<div class="glass-stat-pill' + (failed ? ' bad' : '') + '"><div class="gsl">Issues</div><div class="gsv">' + failed + '</div></div>' +
-      '<div class="glass-stat-pill' + (warnings ? ' warn' : '') + '"><div class="gsl">Warnings</div><div class="gsv">' + warnings + '</div></div>' +
-      '<div class="glass-stat-pill"><div class="gsl">Nodes ready</div><div class="gsv">' + readyEarly + '</div></div>';
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')"><div class="gsl">Total VMs</div><div class="gsv">' + vmData.length + '</div></button>' +
+      '<button type="button" class="glass-stat-pill ok clickable-stat" onclick="navigateToVmsFilter(\'Running\')"><div class="gsl">Running</div><div class="gsv">' + running + '</div></button>' +
+      '<button type="button" class="glass-stat-pill' + (failed ? ' bad' : '') + ' clickable-stat" onclick="navigateToVmsIssues()"><div class="gsl">Issues</div><div class="gsv">' + failed + '</div></button>' +
+      '<button type="button" class="glass-stat-pill' + (warnings ? ' warn' : '') + ' clickable-stat" onclick="navigate(\'events\')"><div class="gsl">Warnings</div><div class="gsv">' + warnings + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'nodes\')"><div class="gsl">Nodes ready</div><div class="gsv">' + readyEarly + '</div></button>';
   }
   if (todayEl) {
     todayEl.innerHTML =
-      '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></div>' +
-      '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
-      '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyEarly + '</div></div>' +
-      (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
+      '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigateToVmsFilter(\'Running\')"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></button>' +
+      '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigate(\'events\')"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></button>' +
+      '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigate(\'nodes\')"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyEarly + '</div></button>' +
+      (failed ? '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigateToVmsIssues()"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></button>' : '');
   }
   if (!metricEl) return;
   const overview = lastOverview || {};
@@ -6438,9 +6514,9 @@ function renderDashboardCommandCenter() {
   const cpuAlloc = nodes.total_cpu_allocatable ? Math.round(((cluster.total_vcpus_allocated || 0) / nodes.total_cpu_allocatable) * 100) + '%' : 'n/a';
 
   metricEl.innerHTML =
-    '<div class="command-metric"><div class="command-metric-label">Running fleet</div><div class="command-metric-value">' + running + ' / ' + vmData.length + '</div></div>' +
-    '<div class="command-metric"><div class="command-metric-label">Warning pressure</div><div class="command-metric-value">' + warnings + ' signals</div></div>' +
-    '<div class="command-metric"><div class="command-metric-label">Node readiness</div><div class="command-metric-value">' + readyNodes + '</div></div>';
+    '<div class="command-metric clickable" onclick="navigateToVmsFilter(\'Running\')" title="View running VMs"><div class="command-metric-label">Running fleet</div><div class="command-metric-value">' + running + ' / ' + vmData.length + '</div></div>' +
+    '<div class="command-metric clickable" onclick="navigate(\'events\')" title="View warning events"><div class="command-metric-label">Warning pressure</div><div class="command-metric-value">' + warnings + ' signals</div></div>' +
+    '<div class="command-metric clickable" onclick="navigate(\'nodes\')" title="View cluster nodes"><div class="command-metric-label">Node readiness</div><div class="command-metric-value">' + readyNodes + '</div></div>';
 
   if (badgeEl) {
     badgeEl.innerHTML =
@@ -6478,7 +6554,7 @@ function renderDashboardCommandCenter() {
   }
 
   const priorityHtml = priorities.map(item =>
-    '<div class="priority-item state-' + item.state + '">' +
+    '<div class="priority-item state-' + item.state + ' clickable" ' + onHandler('priorityNavigateByTitle(' + jsArgs(item.title) + ')') + '>' +
       '<div class="priority-icon">' + item.icon + '</div>' +
       '<div class="priority-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(item.detail) + '</span></div>' +
       '<div class="priority-state ' + item.state + '">' + (item.state === 'hot' ? 'Critical' : item.state === 'warn' ? 'Watch' : 'Stable') + '</div>' +
@@ -9206,38 +9282,22 @@ async function fetchCilium() {
       flowData = { total_flows: 0, allowed: 0, denied: 0, flows: [], flow_source: 'none' };
     }
     if (summary) {
-      const insNs = status.installation_namespace ? '<div class="monitor-stat-note">' + esc(status.installation_namespace) + '</div>' : '';
-      summary.innerHTML = `
-        <div class="stat-card"><div class="stat-label">Version</div><div class="stat-value">${esc(status.version || '-')}${insNs}</div></div>
-        <div class="stat-card"><div class="stat-label">Agents</div><div class="stat-value">${status.healthy_agents || 0}/${status.agent_count || 0}</div></div>
-        <div class="stat-card"><div class="stat-label">Hubble</div><div class="stat-value">${status.hubble_enabled ? 'Enabled' : 'Off'}</div></div>
-        <div class="stat-card"><div class="stat-label">Encryption</div><div class="stat-value">${status.encryption_enabled ? 'Enabled' : 'Off'}</div></div>`;
+      const insNs = status.installation_namespace ? '<div class="gsl" style="margin-top:6px;font-size:.72rem">' + esc(status.installation_namespace) + '</div>' : '';
+      summary.innerHTML =
+        '<div class="glass-stat-pill"><div class="gsl">Version</div><div class="gsv" style="font-size:1rem">' + esc(status.version || '-') + '</div>' + insNs + '</div>' +
+        '<div class="glass-stat-pill ok"><div class="gsl">Agents</div><div class="gsv">' + (status.healthy_agents || 0) + '/' + (status.agent_count || 0) + '</div></div>' +
+        '<div class="glass-stat-pill"><div class="gsl">Hubble</div><div class="gsv">' + (status.hubble_enabled ? 'On' : 'Off') + '</div></div>' +
+        '<div class="glass-stat-pill"><div class="gsl">Encryption</div><div class="gsv">' + (status.encryption_enabled ? 'On' : 'Off') + '</div></div>';
     }
     if (tb) {
       const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace || p.policy_kind === 'CCNP');
-      tb.innerHTML = filtered.map(p => `<tr><td><span class="badge">${esc(p.policy_kind || '—')}</span></td><td>${esc(p.name)}</td><td>${esc(p.namespace)}</td><td>${esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-')}</td><td>${p.ingress_rules}</td><td>${p.egress_rules}</td></tr>`).join('')
+      tb.innerHTML = filtered.map(p => '<tr><td><span class="glass-badge other">' + esc(p.policy_kind || '—') + '</span></td><td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td>' + esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-') + '</td><td>' + p.ingress_rules + '</td><td>' + p.egress_rules + '</td></tr>').join('')
         || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies in this scope (install Cilium CRDs for CNP/CCNP, or add Kubernetes NetworkPolicies)</td></tr>';
     }
-    // Network flows (derived from Kubernetes NetworkPolicies, not live Hubble gRPC)
-    const flowSrcTag = (flowData.flow_source || '') === 'kubernetes_network_policies'
-      ? '<span class="flow-source-tag">Source: NetworkPolicy</span>'
-      : '';
-    if (flowStats) {
-      flowStats.innerHTML = flowSrcTag + `<span style="color:var(--success)">Allowed: ${flowData.allowed}</span> <span style="color:var(--error)">Denied: ${flowData.denied}</span> <span style="color:var(--text-muted)">Total: ${flowData.total_flows}</span>`;
-    }
-    if (flowsTb) {
-      const src = flowData.flow_source || 'none';
-      const emptyMsg = (flowData.flows || []).length ? '' : (
-        src === 'kubernetes_network_policies'
-          ? '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or install Hubble for live flows (not wired to this API yet).</td></tr>'
-          : '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy-derived rows. Live Hubble flows require a Hubble Relay integration (gRPC); this table shows policy-shaped hints only.</td></tr>'
-      );
-      flowsTb.innerHTML = (flowData.flows || []).map(f => `<tr>
-        <td>${esc(f.source)}</td><td>${esc(f.destination)}</td>
-        <td>${esc(f.protocol)}</td><td>${f.port || '-'}</td>
-        <td><span class="network-verdict" style="color:${f.verdict==='allowed'?'var(--success)':'var(--error)'}">${esc(f.verdict)}</span></td>
-      </tr>`).join('') || emptyMsg;
-    }
+    window._ciliumFlowsCache = flowData.flows || [];
+    window._ciliumFlowFilter = 'all';
+    renderCiliumFlowStats(flowData);
+    renderCiliumFlowsTable(flowData.flow_source);
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
@@ -9246,6 +9306,59 @@ async function fetchCilium() {
     if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg);
     console.error('Cilium fetch error:', e);
   }
+}
+
+function renderCiliumFlowStats(flowData) {
+  const flowStats = document.getElementById('flow-stats');
+  if (!flowStats) return;
+  const src = (flowData.flow_source || '') === 'kubernetes_network_policies'
+    ? '<span class="flow-source-tag">Source: NetworkPolicy</span>'
+    : '';
+  const f = window._ciliumFlowFilter || 'all';
+  flowStats.innerHTML = src +
+    '<button type="button" class="flow-stat-chip' + (f === 'allowed' ? ' active' : '') + '" onclick="setCiliumFlowFilter(\'allowed\')">Allowed: ' + (flowData.allowed || 0) + '</button>' +
+    '<button type="button" class="flow-stat-chip' + (f === 'denied' ? ' active' : '') + '" onclick="setCiliumFlowFilter(\'denied\')" style="color:var(--error)">Denied: ' + (flowData.denied || 0) + '</button>' +
+    '<button type="button" class="flow-stat-chip' + (f === 'all' ? ' active' : '') + '" onclick="setCiliumFlowFilter(\'all\')">Total: ' + (flowData.total_flows || 0) + '</button>';
+}
+
+function setCiliumFlowFilter(mode) {
+  window._ciliumFlowFilter = mode || 'all';
+  const flowData = window._lastCiliumFlowData || { allowed: 0, denied: 0, total_flows: 0, flow_source: 'none' };
+  renderCiliumFlowStats(flowData);
+  renderCiliumFlowsTable(flowData.flow_source);
+}
+
+function renderCiliumFlowsTable(flowSource) {
+  const flowsTb = document.getElementById('flows-body');
+  if (!flowsTb) return;
+  let flows = window._ciliumFlowsCache || [];
+  const mode = window._ciliumFlowFilter || 'all';
+  if (mode === 'allowed') flows = flows.filter(f => f.verdict === 'allowed');
+  else if (mode === 'denied') flows = flows.filter(f => f.verdict === 'denied');
+  const src = flowSource || 'none';
+  const emptyMsg = flows.length ? '' : (
+    src === 'kubernetes_network_policies'
+      ? '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or install Hubble for live flows (not wired to this API yet).</td></tr>'
+      : '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy-derived rows. Live Hubble flows require a Hubble Relay integration (gRPC); this table shows policy-shaped hints only.</td></tr>'
+  );
+  flowsTb.innerHTML = flows.map(f => '<tr>' +
+    '<td>' + esc(f.source) + '</td><td>' + esc(f.destination) + '</td>' +
+    '<td>' + esc(f.protocol) + '</td><td>' + (f.port || '-') + '</td>' +
+    '<td><span class="network-verdict" style="color:' + (f.verdict === 'allowed' ? 'var(--success)' : 'var(--error)') + '">' + esc(f.verdict) + '</span></td>' +
+    '</tr>').join('') || emptyMsg;
+}
+
+function ciliumCopilotChip(query) {
+  const inp = document.getElementById('cilium-copilot-input');
+  if (inp) inp.value = query;
+  runCiliumCopilotAsk();
+}
+
+function runCiliumCopilotAsk() {
+  const inp = document.getElementById('cilium-copilot-input');
+  const q = (inp && inp.value || '').trim() || 'Cilium and network policy posture';
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
 }
 
 async function fetchObservability() {
