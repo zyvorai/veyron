@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531e">
+<meta name="vmrogue-dashboard-rev" content="20260531i">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531e';
+  var DASH_REV = '20260531i';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -66,6 +66,16 @@
   --font-sans:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --font-display:'Sora','Space Grotesk',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* Liquid Glass design tokens */
+  --glass-bg:rgba(17,21,28,.72);
+  --glass-bg-elevated:rgba(22,27,36,.85);
+  --glass-border:rgba(148,163,184,.18);
+  --glass-blur:blur(20px);
+  --glass-radius:1.25rem;
+  --primary-blue:#3b82f6;
+  --primary-purple:#8b5cf6;
+  --glass-shadow:0 8px 32px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06);
+  --glass-shadow-hero:0 12px 48px rgba(0,0,0,.35),0 0 0 1px rgba(59,130,246,.12),inset 0 1px 0 rgba(255,255,255,.08);
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -189,10 +199,10 @@ body>*{position:relative;z-index:1}
    ═══════════════════════════════════════════════════ */
 .navbar{
   position:sticky;top:0;z-index:120;
-  background:rgba(10,12,15,.96);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(120,132,148,.22);
+  background:rgba(10,12,15,.82);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--glass-border);
   padding:0 16px;min-height:56px;height:56px;
   display:flex;align-items:center;justify-content:space-between;gap:12px;
   box-shadow:0 1px 0 rgba(255,255,255,.03),0 8px 24px rgba(0,0,0,.22);
@@ -242,9 +252,9 @@ body.classic-nav-open .browse-mega-header{display:flex}
 .browse-mega-menu{
   display:none;position:fixed;top:96px;left:0;right:0;z-index:130;
   padding:12px 20px 20px;margin:0;
-  border-bottom:1px solid rgba(120,132,148,.28);
+  border-bottom:1px solid var(--glass-border);
   max-height:min(68vh,520px);overflow-y:auto;overflow-x:hidden;
-  background:rgba(8,10,13,.98);
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   box-shadow:0 20px 48px rgba(0,0,0,.55);
   grid-template-columns:repeat(auto-fill,minmax(170px,1fr));
   gap:10px 22px;align-content:start;
@@ -331,9 +341,9 @@ body:not([data-page="dashboard"])::before{animation:none!important}
   text-shadow:none;
 }
 .nav-link.active{
-  background:linear-gradient(180deg,rgba(225,231,238,.12),rgba(159,176,196,.08));color:var(--text-bright);
-  border-color:rgba(199,208,219,.3);
-  box-shadow:none;
+  background:linear-gradient(180deg,rgba(59,130,246,.18),rgba(59,130,246,.06));color:var(--text-bright);
+  border-color:rgba(59,130,246,.35);
+  box-shadow:0 0 20px rgba(59,130,246,.12),inset 0 -2px 0 var(--primary-blue);
 }
 .nav-icon{font-size:1rem;line-height:1}
 .nav-label{display:inline-block}
@@ -460,10 +470,11 @@ body:not([data-page="dashboard"])::before{animation:none!important}
 
 .command-hero,
 .command-priority{
-  background:linear-gradient(145deg,rgba(19,24,30,.95) 0%,rgba(33,39,47,.86) 48%,rgba(14,18,23,.96) 100%);
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
 }
 .command-hero{
-  padding:24px;border-radius:var(--radius);border:1px solid var(--border);position:relative;overflow:hidden;
+  padding:24px;border-radius:var(--glass-radius);position:relative;overflow:hidden;
 }
 .command-hero::before{
   content:'';position:absolute;inset:0;
@@ -506,21 +517,27 @@ body:not([data-page="dashboard"])::before{animation:none!important}
   margin-top:10px;font-family:var(--font-display);font-size:1.3rem;color:var(--text-bright);
 }
 .command-priority{
-  border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;
+  border-radius:var(--glass-radius);border:1px solid var(--glass-border);overflow:hidden;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-shadow);
 }
 .priority-header{
-  padding:16px 20px;border-bottom:1px solid var(--border);
+  padding:16px 20px;border-bottom:1px solid var(--glass-border);
   display:flex;align-items:center;justify-content:space-between;gap:12px;
 }
 .priority-title{
   font-size:.9rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--text-bright);
 }
-.priority-list{display:grid}
+.priority-list{display:grid;padding-bottom:8px}
 .priority-item{
   display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;
-  padding:14px 20px;border-bottom:1px solid rgba(120,132,148,.12);
+  padding:14px 16px;margin:8px 12px;border-radius:14px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  border-left:3px solid var(--text-dim);
 }
-.priority-item:last-child{border-bottom:none}
+.priority-item.state-hot{border-left-color:var(--error)}
+.priority-item.state-warn{border-left-color:var(--warning)}
+.priority-item.state-good{border-left-color:var(--success)}
 .priority-icon{
   width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;
   font-size:.95rem;background:rgba(255,255,255,.05);border:1px solid rgba(120,132,148,.12);
@@ -555,8 +572,10 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
    STAT CARDS — v9s / virtspawn gradients
    ═══════════════════════════════════════════════════ */
 .stat-card{
-  border-radius:var(--radius);padding:22px;
-  border:1px solid var(--border);
+  border-radius:var(--glass-radius);padding:22px;
+  border:1px solid var(--glass-border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-shadow);
   position:relative;overflow:hidden;
   transition:border-color .3s,box-shadow .35s,transform .35s cubic-bezier(.16,1,.3,1);
   animation:stat-breathe 7s ease-in-out infinite;
@@ -668,8 +687,10 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
    CHARTS — Arc Reactor Display
    ═══════════════════════════════════════════════════ */
 .chart-card{
-  background:var(--bg-card);border-radius:var(--radius);padding:22px;
-  border:1px solid var(--border);position:relative;overflow:hidden;
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--glass-radius);padding:22px;
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
+  position:relative;overflow:hidden;
   transition:border-color .4s,box-shadow .4s;
   animation:chart-border-glow 10s ease-in-out infinite;
 }
@@ -697,9 +718,10 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
    CARDS — Armored Panels
    ═══════════════════════════════════════════════════ */
 .card{
-  background:var(--bg-card);border-radius:var(--radius);
-  border:1px solid var(--border);overflow:hidden;
-  position:relative;
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--glass-radius);
+  border:1px solid var(--glass-border);overflow:hidden;
+  position:relative;box-shadow:var(--glass-shadow);
 }
 .card::before{
   content:'';position:absolute;top:0;left:0;width:3px;height:100%;
@@ -1000,14 +1022,14 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   padding:10px 18px;border-radius:12px;
   font-family:var(--font-sans);font-size:.8rem;font-weight:700;
   letter-spacing:.06em;text-transform:uppercase;
-  background:linear-gradient(135deg,var(--molten),var(--ember));
-  color:#0d1116;border:none;cursor:pointer;
-  transition:all .2s;
-  box-shadow:0 0 16px rgba(199,208,219,.22);
+  color:#fff;border:1px solid rgba(59,130,246,.45);
+  background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 50%,#1e40af 100%);
+  box-shadow:0 4px 24px rgba(37,99,235,.35),inset 0 1px 0 rgba(255,255,255,.1);
+  cursor:pointer;transition:transform .2s,box-shadow .2s;
 }
 .btn-create:hover{
-  box-shadow:0 0 28px rgba(199,208,219,.3),0 0 48px rgba(159,176,196,.12);
   transform:translateY(-1px);
+  box-shadow:0 8px 32px rgba(37,99,235,.45);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1085,15 +1107,228 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .btn-forge:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 
 /* ═══════════════════════════════════════════════════
+   LIQUID GLASS — shared primitives
+   ═══════════════════════════════════════════════════ */
+.glass-card{
+  background:var(--glass-bg);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);
+  border-radius:var(--glass-radius);
+  box-shadow:var(--glass-shadow);
+  transition:border-color .25s,box-shadow .3s,transform .25s cubic-bezier(.16,1,.3,1);
+}
+.glass-card:hover{
+  border-color:rgba(148,163,184,.28);
+  box-shadow:0 12px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.glass-card-hero{
+  background:var(--glass-bg-elevated);
+  backdrop-filter:var(--glass-blur);
+  -webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid rgba(59,130,246,.22);
+  border-radius:var(--glass-radius);
+  box-shadow:var(--glass-shadow-hero);
+  position:relative;overflow:hidden;
+}
+.glass-card-hero::before{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 100% 0%,rgba(59,130,246,.12),transparent 55%),
+    radial-gradient(ellipse 50% 40% at 0% 100%,rgba(139,92,246,.08),transparent 50%);
+}
+.glass-card-hero > *{position:relative;z-index:1}
+.glass-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 12px;border-radius:999px;
+  font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  border:1px solid var(--glass-border);background:rgba(255,255,255,.04);
+}
+.glass-badge.running{background:var(--success-dim);color:var(--success);border-color:rgba(34,197,94,.28)}
+.glass-badge.stopped{background:rgba(100,116,139,.12);color:var(--text-muted);border-color:rgba(100,116,139,.2)}
+.glass-badge.error{background:var(--error-dim);color:var(--error);border-color:rgba(239,68,68,.28)}
+.glass-badge.other{background:rgba(59,130,246,.12);color:var(--primary-blue);border-color:rgba(59,130,246,.25)}
+.glass-btn-primary{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 18px;border-radius:12px;
+  font-family:var(--font-sans);font-size:.78rem;font-weight:700;
+  letter-spacing:.04em;text-transform:uppercase;
+  color:#fff;border:1px solid rgba(59,130,246,.45);
+  background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 50%,#1e40af 100%);
+  box-shadow:0 4px 24px rgba(37,99,235,.35),inset 0 1px 0 rgba(255,255,255,.1);
+  cursor:pointer;transition:transform .2s,box-shadow .2s;
+}
+.glass-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(37,99,235,.45)}
+.glass-btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.glass-btn-secondary{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 14px;border-radius:10px;
+  font-family:var(--font-sans);font-size:.74rem;font-weight:600;
+  color:var(--text);border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.55);cursor:pointer;transition:background .2s,border-color .2s;
+}
+.glass-btn-secondary:hover{background:rgba(30,41,59,.75);border-color:rgba(148,163,184,.35)}
+.glass-btn-destructive{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 14px;border-radius:10px;
+  font-family:var(--font-sans);font-size:.74rem;font-weight:600;
+  color:#fda4af;border:1px solid rgba(244,63,94,.28);
+  background:rgba(244,63,94,.08);cursor:pointer;
+}
+.glass-stat-pill{
+  padding:14px 18px;border-radius:var(--glass-radius);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
+  min-width:110px;flex:1;
+}
+.glass-stat-pill .gsl{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
+.glass-stat-pill .gsv{font-size:1.35rem;font-weight:700;font-family:var(--font-display);color:var(--text-bright);margin-top:6px}
+.glass-stat-pill.ok .gsv{color:var(--success)}
+.glass-stat-pill.warn .gsv{color:var(--warning)}
+.glass-stat-pill.bad .gsv{color:var(--error)}
+.glass-progress{margin-top:8px}
+.glass-progress-hdr{display:flex;justify-content:space-between;font-size:.76rem;color:var(--text-muted);margin-bottom:4px}
+.glass-progress-track{height:6px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.glass-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--primary-blue),#38bdf8);transition:width .4s}
+.glass-code-well{
+  margin-top:8px;padding:10px 12px;border-radius:10px;
+  background:rgba(0,0,0,.35);border:1px solid rgba(148,163,184,.12);
+  font-family:var(--font-mono);font-size:.82rem;color:var(--spark);
+  word-break:break-all;line-height:1.45;
+}
+.glass-details{margin-top:20px;border-radius:var(--glass-radius);border:1px solid rgba(139,92,246,.2);background:rgba(139,92,246,.04);overflow:hidden}
+.glass-details > summary{
+  padding:14px 18px;cursor:pointer;font-weight:700;font-size:.84rem;
+  color:var(--primary-purple);list-style:none;
+}
+.glass-details > summary::-webkit-details-marker{display:none}
+.glass-details-body{padding:0 18px 18px}
+.dashboard-quick-stats{
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:20px;
+}
+@media(max-width:960px){.dashboard-quick-stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.dashboard-quick-stats{grid-template-columns:1fr}}
+.dc-recent-activity{margin-top:16px;padding:16px 18px}
+.dc-recent-activity .ra-title{font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px}
+.dc-recent-item{padding:8px 0;border-bottom:1px solid rgba(148,163,184,.1);font-size:.82rem;color:var(--text-muted)}
+.dc-recent-item:last-child{border-bottom:none}
+.platform-readiness-header{display:flex;align-items:center;gap:20px;padding:18px 20px;flex-wrap:wrap}
+.platform-score-ring{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-display);font-size:1.1rem;font-weight:700;
+  border:4px solid var(--primary-blue);background:rgba(59,130,246,.08);
+}
+.platform-score-ring.ok{border-color:var(--success);background:var(--success-dim);color:var(--success)}
+.platform-score-ring.warn{border-color:var(--warning);background:var(--warning-dim);color:var(--warning)}
+.platform-check-row{
+  display:flex;gap:14px;align-items:flex-start;padding:14px 16px;
+  border-radius:14px;margin-bottom:10px;
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  border-left:3px solid var(--success);
+}
+.platform-check-row.bad{border-left-color:var(--error)}
+.platform-check-row.warn{border-left-color:var(--warning)}
+.command-badge.live::before{
+  content:'';display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--success);margin-right:6px;box-shadow:var(--glow-success);
+  animation:forge-pulse 2.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════
    VM DETAIL PANEL
    ═══════════════════════════════════════════════════ */
 .vm-detail{
-  padding:18px 24px 18px 48px;
-  border-bottom:1px solid rgba(51,65,85,.5);
-  background:rgba(15,23,42,.55);
+  padding:24px 28px 28px 48px;
+  border-bottom:1px solid var(--glass-border);
+  background:transparent;
   animation:fade-in .25s cubic-bezier(.16,1,.3,1);
 }
 .vm-detail .detail-loading{padding:14px 16px;color:var(--text-muted);font-size:.88rem}
+.vm-detail-header{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  padding:20px 22px;margin-bottom:22px;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
+  box-shadow:var(--glass-shadow);
+}
+.vm-detail-header-left{min-width:0;flex:1}
+.vm-detail-name{font-family:var(--font-display);font-size:1.65rem;font-weight:700;color:var(--text-bright);line-height:1.15}
+.vm-detail-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;font-size:.84rem;color:var(--text-muted)}
+.vm-detail-meta .ns-chip{padding:3px 10px;border-radius:999px;border:1px solid var(--glass-border);font-family:var(--font-mono);font-size:.76rem}
+.vm-detail-actions-hdr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.vm-detail-more{margin-top:0;border:none;background:transparent;padding:0}
+.vm-detail-more > summary{
+  padding:8px 14px;border-radius:10px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.55);font-size:.74rem;font-weight:600;color:var(--text-muted);cursor:pointer;list-style:none;
+}
+.vm-detail-more > summary::-webkit-details-marker{display:none}
+.vm-detail-more-body{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:flex-end}
+.vm-detail-columns{display:grid;grid-template-columns:1.15fr .85fr;gap:22px}
+@media(max-width:960px){.vm-detail-columns{grid-template-columns:1fr}}
+.vm-detail-col{display:flex;flex-direction:column;gap:18px}
+.remote-access-stack{display:flex;flex-direction:column;gap:16px}
+.remote-access-title{font-family:var(--font-display);font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:12px}
+.rdp-status-banner{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:12px;
+  font-size:.82rem;font-weight:600;
+}
+.rdp-status-banner.exposed{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.25)}
+.rdp-status-banner.hidden{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(234,179,8,.25)}
+.rdp-status-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
+.console-cta-card{padding:20px;text-align:center}
+.console-cta-card .glass-btn-primary{width:100%;padding:14px 20px;font-size:.85rem}
+.console-cta-hint{margin-top:10px;font-size:.76rem;color:var(--text-dim);line-height:1.45}
+.ssh-option-block{margin-top:14px}
+.ssh-option-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:6px}
+.vm-metrics-sparkline{margin-top:12px;height:48px;border-radius:8px;background:rgba(0,0,0,.2);overflow:hidden}
+.vm-metrics-sparkline canvas{width:100%;height:100%}
+.glass-details-ai{border-color:rgba(139,92,246,.25)}
+
+/* Console slide-over drawer */
+.console-drawer-overlay{
+  display:none;position:fixed;inset:0;z-index:250;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+.console-drawer-overlay.open{display:flex;justify-content:flex-end}
+.console-drawer-panel{
+  width:min(96vw,1400px);height:100vh;display:flex;flex-direction:column;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-left:1px solid var(--glass-border);
+  box-shadow:-16px 0 64px rgba(0,0,0,.45);
+  animation:console-slide-in .28s cubic-bezier(.16,1,.3,1);
+}
+@keyframes console-slide-in{from{transform:translateX(100%);opacity:.8}to{transform:translateX(0);opacity:1}}
+.console-drawer-header{
+  padding:16px 20px;border-bottom:1px solid var(--glass-border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0;
+}
+.console-drawer-header h2{font-family:var(--font-display);font-size:1rem;font-weight:700;color:var(--text-bright)}
+.console-drawer-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.console-drawer-body{flex:1;min-height:0;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.console-drawer-body #vnc-container{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.console-drawer-body.serial-body{
+  flex:1;min-height:0;background:#0b0d12;display:block;overflow:hidden;
+}
+.console-drawer-body.serial-body #serial-output{
+  height:100%;margin:0;padding:14px 16px;overflow:auto;
+  color:#c8e6c9;font-family:var(--font-mono);font-size:13px;line-height:1.35;
+  border:none;background:transparent;white-space:pre-wrap;word-break:break-word;
+}
+.serial-drawer-footer{
+  display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--glass-border);
+  background:var(--glass-bg-elevated);flex-shrink:0;
+}
+.serial-drawer-footer .serial-input{
+  flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.55);color:var(--text);font-family:var(--font-mono);font-size:.84rem;
+}
+.serial-drawer-footer .serial-input:focus{outline:none;border-color:var(--primary-blue)}
+.pod-log-preview{
+  margin:0;padding:12px 14px;max-height:320px;overflow:auto;
+  background:rgba(11,13,18,.85);border-radius:10px;border:1px solid var(--glass-border);
+  color:var(--text);font-family:var(--font-mono);font-size:.78rem;line-height:1.4;white-space:pre-wrap;word-break:break-word;
+}
+
 .drift-badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;vertical-align:middle}
 .drift-badge.sync{background:rgba(34,197,94,.15);color:#15803d}
 .drift-badge.drift{background:rgba(234,179,8,.2);color:#92400e}
@@ -1104,19 +1339,20 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .catalog-banner{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.88rem;line-height:1.45}
 .catalog-banner.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#166534}
 .catalog-banner.warn{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.28);color:#92400e}
-.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
 .detail-section{
-  background:var(--steel);border-radius:4px;padding:14px 16px;
-  border:1px solid var(--border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--glass-radius);padding:16px 18px;
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
 }
 .detail-section-title{
-  font-family:var(--font-sans);font-size:.55em;font-weight:600;
-  color:var(--ember);letter-spacing:2px;text-transform:uppercase;
-  margin-bottom:10px;display:flex;align-items:center;gap:6px;
+  font-family:var(--font-sans);font-size:.68rem;font-weight:700;
+  color:var(--spark);letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:12px;display:flex;align-items:center;gap:8px;
 }
 .detail-section-title::before{
-  content:'';display:inline-block;width:3px;height:12px;
-  background:var(--molten);border-radius:1px;
+  content:'';display:inline-block;width:3px;height:14px;
+  background:linear-gradient(180deg,var(--primary-blue),var(--primary-purple));border-radius:2px;
 }
 .detail-row{
   display:flex;justify-content:space-between;align-items:center;
@@ -1599,8 +1835,13 @@ html[data-theme="steel"] .table-row:hover{
 }
 
 html[data-theme="steel"] .vm-detail{
-  background:rgba(12,16,22,.65);
+  background:transparent;
   border-bottom-color:rgba(140,160,190,.14);
+}
+html[data-theme="steel"]{
+  --glass-bg:rgba(22,27,34,.78);
+  --glass-bg-elevated:rgba(26,31,39,.88);
+  --glass-border:rgba(160,180,210,.16);
 }
 
 @media(max-width:768px){
@@ -1608,6 +1849,9 @@ html[data-theme="steel"] .vm-detail{
 }
 
 html[data-theme="zinc"]{
+  --glass-bg:rgba(29,33,38,.82);
+  --glass-bg-elevated:rgba(36,41,48,.9);
+  --glass-border:rgba(166,173,184,.16);
   --bg:#17191d;
   --bg-deep:#0d0f12;
   --bg-card:rgba(36,39,44,.92);
@@ -1711,15 +1955,19 @@ html[data-theme="zinc"] .monitor-cap{
 .dc-briefing-title{font-size:.86rem;font-weight:600}
 .dc-briefing-detail{font-size:.78rem;color:var(--text-dim);line-height:1.4}
 .dc-section-label{font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:10px}
-.dc-pinned-section{margin-bottom:18px}
+.dc-pinned-section{
+  margin-bottom:18px;padding:16px 18px;border-radius:var(--glass-radius);border:1px solid var(--glass-border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+}
 .dc-today-panel{
-  margin-bottom:18px;padding:16px 18px;border-radius:14px;border:1px solid var(--border);
-  background:var(--bg-elevated);
+  margin-bottom:18px;padding:16px 18px;border-radius:var(--glass-radius);border:1px solid var(--glass-border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
 }
 .dc-today-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
 .dc-today-stats{display:flex;gap:10px;flex-wrap:wrap}
 .dc-stat-tile{
-  padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(15,23,42,.35);
+  padding:10px 14px;border-radius:12px;border:1px solid var(--glass-border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   min-width:100px;
 }
 .dc-stat-label{font-size:.72rem;color:var(--text-dim)}
@@ -1736,8 +1984,9 @@ html[data-theme="zinc"] .monitor-cap{
 }
 @media(max-width:960px){.cloudos-datacenter{grid-template-columns:1fr}}
 .dc-hero{
-  padding:22px 24px;border-radius:14px;border:1px solid var(--border);
-  background:linear-gradient(135deg,rgba(56,189,248,.08),rgba(15,23,42,.4));
+  padding:22px 24px;border-radius:var(--glass-radius);border:1px solid var(--glass-border);
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-shadow-hero);
 }
 .dc-greeting{font-size:1.35rem;font-weight:600;margin-bottom:4px}
 .dc-workspace{font-size:.85rem;color:var(--text-dim);margin-bottom:16px}
@@ -1751,10 +2000,12 @@ html[data-theme="zinc"] .monitor-cap{
 .dc-health-summary{font-size:.92rem;line-height:1.5;color:var(--text-muted);max-width:420px}
 .dc-action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start}
 .dc-action-card{
-  padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--bg-elevated);
-  cursor:pointer;transition:border-color .15s,transform .15s;text-align:left;
+  padding:14px 16px;border-radius:var(--glass-radius);border:1px solid var(--glass-border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;text-align:left;
+  box-shadow:var(--glass-shadow);
 }
-.dc-action-card:hover{border-color:rgba(56,189,248,.35);transform:translateY(-1px)}
+.dc-action-card:hover{border-color:rgba(59,130,246,.35);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.25)}
 .dc-action-title{font-weight:600;font-size:.92rem}
 .dc-action-sub{font-size:.78rem;color:var(--text-dim);margin-top:4px}
 .vm-view-toggle{display:flex;gap:4px;margin-left:auto}
@@ -1765,10 +2016,12 @@ html[data-theme="zinc"] .monitor-cap{
 .vm-view-toggle button.active{background:rgba(56,189,248,.12);color:var(--spark);border-color:rgba(56,189,248,.3)}
 .vm-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:12px}
 .vm-card{
-  border-radius:14px;border:1px solid var(--border);background:var(--bg-elevated);padding:16px;
-  cursor:pointer;transition:box-shadow .15s,border-color .15s;
+  border-radius:var(--glass-radius);border:1px solid var(--glass-border);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  padding:16px;box-shadow:var(--glass-shadow);
+  cursor:pointer;transition:box-shadow .2s,border-color .2s,transform .2s;
 }
-.vm-card:hover{border-color:rgba(56,189,248,.25);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.vm-card:hover{border-color:rgba(59,130,246,.35);box-shadow:0 12px 36px rgba(0,0,0,.28);transform:translateY(-2px)}
 .vm-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
 .vm-card-icon{
   width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
@@ -2207,6 +2460,8 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page active section-shell" id="page-dashboard" data-section="dashboard">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>ZeusOS Dashboard</h1><p id="subtitle">Forging connections...</p></div></div>
+  <div class="dashboard-quick-stats" id="dashboard-quick-stats"></div>
+  <div class="card platform-readiness-card glass-card" id="platform-readiness-card" style="display:none"></div>
   <div class="cloudos-datacenter" id="cloudos-datacenter">
     <div class="dc-hero">
       <div class="dc-greeting" id="dc-greeting">Welcome back.</div>
@@ -2231,12 +2486,14 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <span class="dc-section-label" style="margin:0">Today</span>
       <div class="dc-today-stats" id="dc-today-stats"></div>
     </div>
-    <div class="priority-list" id="dash-priority-list"></div>
+    <div class="priority-list" id="dc-priority-list"></div>
   </div>
-  <details class="operator-details" id="operator-details">
-    <summary>Show operator details</summary>
-  <div class="dashboard-command-grid">
-    <div class="command-hero">
+  <div class="dc-recent-activity glass-card" id="dc-recent-activity" style="display:none">
+    <div class="ra-title">Recent activity</div>
+    <div id="dc-recent-list"></div>
+  </div>
+  <div class="dashboard-command-grid" id="fleet-command-grid">
+    <div class="command-hero glass-card-hero">
       <div class="command-hero-top">
         <div>
           <div class="command-kicker">Fleet command</div>
@@ -2244,30 +2501,31 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
           <div class="command-copy" id="command-copy">Tracking VM capacity, live health, and operator signals across the active namespace.</div>
         </div>
         <div class="command-badges" id="command-badges">
-          <span class="command-badge">Live cluster</span>
+          <span class="command-badge live">Live cluster</span>
           <span class="command-badge">KubeVirt</span>
           <span class="command-badge">Realtime refresh</span>
         </div>
       </div>
       <div class="command-actions">
-        <button class="btn-create" onclick="openCreateModal()">Forge VM</button>
-        <button class="btn btn-restart" onclick="navigate('monitoring')">Open Monitoring</button>
-        <button class="btn btn-start" onclick="navigate('events')">Review Signals</button>
-        <button class="btn btn-stop" onclick="refresh()">Refresh Now</button>
+        <button class="btn-create glass-btn-primary" onclick="openCreateModal()">Forge VM</button>
+        <button class="btn btn-restart glass-btn-secondary" onclick="navigate('monitoring')">Open Monitoring</button>
+        <button class="btn btn-start glass-btn-secondary" onclick="navigate('events')">Review Signals</button>
+        <button class="btn btn-stop glass-btn-secondary" onclick="refresh()">Refresh Now</button>
       </div>
       <div class="command-metrics" id="command-metrics"></div>
     </div>
     <div class="command-priority">
       <div class="priority-header">
         <span class="priority-title">Priority Queue</span>
-        <button class="btn btn-restart" onclick="navigate('incidents')">Open Incidents</button>
+        <button class="btn btn-restart glass-btn-secondary" onclick="navigate('incidents')">Open Incidents</button>
       </div>
-      <div class="priority-list" id="dash-priority-list"></div>
+      <div class="priority-list" id="command-priority-list"></div>
     </div>
   </div>
+  <details class="operator-details" id="operator-details">
+    <summary>Show charts &amp; operator details</summary>
   <div class="grid-4" id="stat-cards"></div>
   <div class="grid-4" id="resource-bars"></div>
-  <div class="card platform-readiness-card" id="platform-readiness-card" style="display:none"></div>
   <div class="dashboard-command-grid">
     <div class="dashboard-side-stack">
       <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--spark)">&#9889;</span> CPU Usage</span><span class="chart-current" id="cpu-current">--</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
@@ -3265,46 +3523,54 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   </div>
 </div>
 
-<!-- VNC CONSOLE MODAL -->
-<div class="modal-overlay" id="vnc-modal">
-  <div class="modal" style="width:92vw;max-width:1280px;height:82vh">
-    <div class="modal-header">
+<!-- VNC CONSOLE DRAWER -->
+<div class="console-drawer-overlay" id="vnc-modal">
+  <div class="console-drawer-panel" onclick="event.stopPropagation()">
+    <div class="console-drawer-header">
       <h2 id="vnc-title">Console: --</h2>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="console-drawer-toolbar">
         <span id="vnc-status" style="font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
+        <button type="button" class="glass-btn-secondary" id="vnc-btn-start" onclick="vncDrawerAction('start')">Start</button>
+        <button type="button" class="glass-btn-secondary" id="vnc-btn-stop" onclick="vncDrawerAction('stop')">Stop</button>
+        <button type="button" class="glass-btn-secondary" onclick="vncDrawerAction('restart')">Restart</button>
         <label for="vnc-preset-select" style="font-size:.75rem;color:var(--text-dim);white-space:nowrap">Link quality</label>
-        <select id="vnc-preset-select" title="noVNC encoding preset (stored in browser)" style="padding:4px 8px;font-size:.75rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text);min-width:9rem" onchange="onVncPresetChange(this.value)">
+        <select id="vnc-preset-select" title="noVNC encoding preset (stored in browser)" class="form-select" style="padding:6px 10px;font-size:.75rem;min-width:9rem;width:auto" onchange="onVncPresetChange(this.value)">
           <option value="lan">LAN (fast)</option>
           <option value="balanced">Balanced</option>
           <option value="low">Low bandwidth</option>
         </select>
-        <button class="btn btn-restart" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
-        <button class="btn btn-start" onclick="toggleVncFullscreen()">Fullscreen</button>
-        <button class="btn btn-stop" onclick="reconnectVnc()">Reconnect</button>
-        <button class="modal-close" onclick="closeVncModal()">&#10005;</button>
+        <button type="button" class="glass-btn-secondary" onclick="sendCtrlAltDel()">Ctrl+Alt+Del</button>
+        <button type="button" class="glass-btn-secondary" onclick="vncScreenshot()">Screenshot</button>
+        <button type="button" class="glass-btn-secondary" onclick="toggleVncFullscreen()">Fullscreen</button>
+        <button type="button" class="glass-btn-secondary" onclick="reconnectVnc()">Reconnect</button>
+        <button type="button" class="modal-close" onclick="closeVncModal()">&#10005;</button>
       </div>
     </div>
-    <div id="vnc-container" style="width:100%;height:calc(100% - 56px);background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden">
-      <div id="vnc-placeholder" style="color:var(--text-dim);font-family:var(--font-sans);font-size:.8em;letter-spacing:2px">Loading VNC...</div>
+    <div class="console-drawer-body">
+      <div id="vnc-container">
+        <div id="vnc-placeholder" style="color:var(--text-dim);font-family:var(--font-sans);font-size:.8em;letter-spacing:2px">Loading VNC...</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- SERIAL CONSOLE MODAL (KubeVirt /console WebSocket proxy) -->
-<div class="modal-overlay" id="serial-modal">
-  <div class="modal" style="width:92vw;max-width:960px;height:82vh;display:flex;flex-direction:column">
-    <div class="modal-header">
+<!-- SERIAL CONSOLE DRAWER (KubeVirt /serial WebSocket proxy) -->
+<div class="console-drawer-overlay" id="serial-modal">
+  <div class="console-drawer-panel" onclick="event.stopPropagation()">
+    <div class="console-drawer-header">
       <h2 id="serial-title">Serial: --</h2>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div class="console-drawer-toolbar">
         <span id="serial-status" style="font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)">Disconnected</span>
-        <button class="btn btn-start" onclick="reconnectSerial()">Reconnect</button>
-        <button class="modal-close" onclick="closeSerialModal()">&#10005;</button>
+        <button type="button" class="glass-btn-secondary" onclick="reconnectSerial()">Reconnect</button>
+        <button type="button" class="modal-close" onclick="closeSerialModal()">&#10005;</button>
       </div>
     </div>
-    <pre id="serial-output" style="flex:1;min-height:0;margin:0;padding:12px;overflow:auto;background:#0b0d12;color:#c8e6c9;font-family:var(--font-mono);font-size:13px;line-height:1.35;border:none"></pre>
-    <div style="display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border)">
-      <input id="serial-input" type="text" autocomplete="off" spellcheck="false" placeholder="Type a line, press Enter to send (adds newline)" style="flex:1;padding:8px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text)" onkeydown="if(event.key==='Enter'){event.preventDefault();sendSerialLine();}">
-      <button class="btn btn-forge" type="button" onclick="sendSerialLine()">Send</button>
+    <div class="console-drawer-body serial-body">
+      <pre id="serial-output"></pre>
+    </div>
+    <div class="serial-drawer-footer">
+      <input id="serial-input" type="text" autocomplete="off" spellcheck="false" class="serial-input" placeholder="Type a line, press Enter to send (adds newline)" onkeydown="if(event.key==='Enter'){event.preventDefault();sendSerialLine();}">
+      <button type="button" class="glass-btn-primary" onclick="sendSerialLine()">Send</button>
     </div>
   </div>
 </div>
@@ -3439,7 +3705,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531e';
+window.__VMROGUE_DASH_REV = '20260531i';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4462,30 +4728,24 @@ function vmSshBlock(vm, showActions) {
   const virtFallback = 'virtctl ssh --user root ' + vm.name + ' -n ' + ns;
   if (!ipOk) {
     return '<div class="vm-ssh-line">' +
-      '<div class="ssh-block-title"><strong>SSH</strong> <span style="font-weight:400;opacity:.8">(KubeVirt / virtctl)</span></div>' +
-      '<div style="margin-top:6px;line-height:1.45">Guest IP not reported on the VMI yet. On any machine with <code>kubectl</code> and <code>virtctl</code>:</div>' +
-      '<div style="margin-top:6px"><code>' + esc(virtFallback) + '</code>' +
-      (showActions ? ' <button type="button" class="btn-mini" ' + onStopHandler('copyToClipboard(' + jsArgs(virtFallback) + ')') + '>Copy SSH command</button>' : '') +
-      '</div></div>';
+      '<div style="margin-top:6px;line-height:1.45;font-size:.84rem;color:var(--text-muted)">Guest IP not reported yet. Use virtctl from a machine with kubectl:</div>' +
+      '<div class="glass-code-well">' + esc(virtFallback) + '</div>' +
+      (showActions ? '<div class="ssh-actions" style="margin-top:10px"><button type="button" class="glass-btn-secondary" ' + onStopHandler('copyToClipboard(' + jsArgs(virtFallback) + ')') + '>Copy SSH (virtctl)</button></div>' : '') +
+      '</div>';
   }
   const u = guessSshUser(vm.name);
   if (!u) {
-    return '<div class="vm-ssh-line"><div class="ssh-block-title"><strong>Remote desktop</strong> <span style="font-weight:400;opacity:.8">(Windows — not SSH)</span></div>' +
-      '<div style="margin-top:6px">Use <strong>VNC</strong> above, or RDP from a host that can reach the guest network.</div></div>';
+    return '<div class="vm-ssh-line"><div style="font-size:.84rem;color:var(--text-muted);line-height:1.45">Windows guest — use <strong>RDP</strong> below or the browser console.</div></div>';
   }
   const ssh = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ' + u + '@' + ip;
   const virt = 'virtctl ssh --user ' + u + ' ' + vm.name + ' -n ' + ns;
-  let html = '<div class="vm-ssh-line">' +
-    '<div class="ssh-block-title"><strong>SSH</strong> <span style="font-weight:400;opacity:.8">— secure shell</span></div>' +
-    '<span class="ssh-kind">A. TCP to the guest (standard OpenSSH)</span>' +
-    '<div><code>' + esc(ssh) + '</code></div>' +
-    '<span class="ssh-kind">B. Through the Kubernetes API (virtctl)</span>' +
-    '<div><code>' + esc(virt) + '</code></div>' +
-    '<div style="margin-top:8px;opacity:.82;font-size:.95em;line-height:1.45"><strong>A</strong> works only if your machine can route to <code>' + esc(ip) + '</code> (same LAN, VPN, load balancer, etc.). <strong>B</strong> works wherever <code>kubectl</code> works; install the KubeVirt <code>virtctl</code> client.</div>';
+  let html = '<div class="vm-ssh-line">';
+  html += '<div class="ssh-option-block"><div class="ssh-option-label">A. TCP to guest</div><div class="glass-code-well">' + esc(ssh) + '</div></div>';
+  html += '<div class="ssh-option-block"><div class="ssh-option-label">B. via virtctl (Kubernetes API)</div><div class="glass-code-well">' + esc(virt) + '</div></div>';
   if (showActions) {
-    html += '<div class="ssh-actions">' +
-      '<button type="button" class="btn-mini" ' + onStopHandler('copyToClipboard(' + jsArgs(ssh) + ')') + '>Copy SSH (TCP)</button>' +
-      '<button type="button" class="btn-mini" ' + onStopHandler('copyToClipboard(' + jsArgs(virt) + ')') + '>Copy SSH (virtctl)</button>' +
+    html += '<div class="ssh-actions" style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px">' +
+      '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyToClipboard(' + jsArgs(ssh) + ')') + '>Copy SSH (TCP)</button>' +
+      '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyToClipboard(' + jsArgs(virt) + ')') + '>Copy SSH (virtctl)</button>' +
       '</div>';
   }
   html += '</div>';
@@ -5791,25 +6051,30 @@ function renderPlatformReadiness(platform) {
     card.style.display = 'none';
     return;
   }
+  const checks = [
+    { ok: platform.kubevirt_api_ok, label: 'KubeVirt API', detail: platform.kubevirt_api_ok ? 'VirtualMachine API list succeeded (CRDs + RBAC).' : (platform.kubevirt_api_message || 'Cannot list VirtualMachines.') },
+    { ok: platform.kubevirt_control_plane_ok, label: 'KubeVirt control plane', detail: platform.kubevirt_detail || '' },
+    { ok: platform.cdi_operator_ok, label: 'CDI operator', detail: platform.cdi_detail || '' },
+    { ok: platform.forge_vm_ready, label: 'Forge VM', detail: platform.forge_vm_ready ? 'Dashboard Forge VM can submit creates.' : 'Resolve KubeVirt API and control plane before forging VMs.' }
+  ];
+  const passed = checks.filter(c => c.ok).length;
+  const total = checks.length;
+  const allOk = passed === total;
   card.style.display = 'block';
+  const ringCls = allOk ? 'ok' : (passed >= 2 ? 'warn' : '');
   const row = function(ok, label, detail) {
-    return '<div class="platform-row"><span class="platform-dot ' + (ok ? 'ok' : 'bad') + '"></span><div><div class="platform-label">' +
+    const cls = ok ? '' : ' bad';
+    return '<div class="platform-check-row' + cls + '"><span class="platform-dot ' + (ok ? 'ok' : 'bad') + '"></span><div><div class="platform-label">' +
       esc(label) + '</div><div class="platform-detail">' + esc(detail || '') + '</div></div></div>';
   };
-  const apiDetail = platform.kubevirt_api_ok
-    ? 'VirtualMachine API list succeeded (CRDs + RBAC).'
-    : (platform.kubevirt_api_message || 'Cannot list VirtualMachines — install KubeVirt or fix RBAC.');
-  const forgeDetail = platform.forge_vm_ready
-    ? 'Dashboard Forge VM can submit creates (KubeVirt API + virt-api / virt-controller Running).'
-    : 'Resolve KubeVirt API and control plane rows before forging VMs.';
-  let html = '<div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
-    '<span class="card-title">Platform readiness</span>' +
-    '<button type="button" class="btn btn-sm btn-restart" onclick="openPlatformInstallModal()">Install stack</button>' +
-    '</div><div class="platform-readiness-body">';
-  html += row(platform.kubevirt_api_ok, 'KubeVirt API', apiDetail);
-  html += row(platform.kubevirt_control_plane_ok, 'KubeVirt control plane (kubevirt namespace)', platform.kubevirt_detail || '');
-  html += row(platform.cdi_operator_ok, 'CDI operator (namespace cdi)', platform.cdi_detail || '');
-  html += row(platform.forge_vm_ready, 'Forge VM', forgeDetail);
+  let html = '<div class="platform-readiness-header">';
+  html += '<div class="platform-score-ring ' + ringCls + '">' + passed + '/' + total + '</div>';
+  html += '<div style="flex:1;min-width:200px"><span class="card-title">Platform readiness</span>';
+  html += '<p style="font-size:.84rem;color:var(--text-muted);margin-top:6px;line-height:1.45">' +
+    (allOk ? 'All checks passed — cluster ready for VM operations.' : (total - passed) + ' check(s) need attention before full readiness.') + '</p></div>';
+  html += '<button type="button" class="glass-btn-primary" onclick="openPlatformInstallModal()">Install stack</button>';
+  html += '</div><div class="platform-readiness-body">';
+  checks.forEach(c => { html += row(c.ok, c.label, c.detail); });
   html += '<p class="platform-virtctl-note">' + esc(platform.virtctl_note || '') + '</p>';
   html += '</div>';
   card.innerHTML = html;
@@ -5879,26 +6144,38 @@ async function copyPlatformInstallScript() {
 function renderDashboardCommandCenter() {
   try {
   const metricEl = document.getElementById('command-metrics');
-  const priorityEl = document.getElementById('dash-priority-list');
+  const priorityEl = document.getElementById('dc-priority-list');
+  const cmdPriorityEl = document.getElementById('command-priority-list');
   const badgeEl = document.getElementById('command-badges');
   const copyEl = document.getElementById('command-copy');
   const todayEl = document.getElementById('dc-today-stats');
+  const quickStatsEl = document.getElementById('dashboard-quick-stats');
+  const recentWrap = document.getElementById('dc-recent-activity');
+  const recentList = document.getElementById('dc-recent-list');
   const running = vmData.filter(v => v.status === 'Running').length;
   const failed = vmData.filter(v => v.status === 'Failed' || v.status === 'Error').length;
   const stopped = vmData.filter(v => v.status === 'Stopped').length;
   const warnings = lastEvents.filter(e => e.type === 'Warning').length;
+  const overviewEarly = lastOverview || {};
+  const nodesEarly = overviewEarly.nodes || {};
+  const readyEarly = nodesEarly.ready_nodes != null && nodesEarly.total_nodes != null
+    ? nodesEarly.ready_nodes + '/' + nodesEarly.total_nodes : 'n/a';
+  if (quickStatsEl) {
+    quickStatsEl.innerHTML =
+      '<div class="glass-stat-pill"><div class="gsl">Total VMs</div><div class="gsv">' + vmData.length + '</div></div>' +
+      '<div class="glass-stat-pill ok"><div class="gsl">Running</div><div class="gsv">' + running + '</div></div>' +
+      '<div class="glass-stat-pill' + (failed ? ' bad' : '') + '"><div class="gsl">Issues</div><div class="gsv">' + failed + '</div></div>' +
+      '<div class="glass-stat-pill' + (warnings ? ' warn' : '') + '"><div class="gsl">Warnings</div><div class="gsv">' + warnings + '</div></div>' +
+      '<div class="glass-stat-pill"><div class="gsl">Nodes ready</div><div class="gsv">' + readyEarly + '</div></div>';
+  }
   if (todayEl) {
-    const overviewEarly = lastOverview || {};
-    const nodesEarly = overviewEarly.nodes || {};
-    const readyEarly = nodesEarly.ready_nodes != null && nodesEarly.total_nodes != null
-      ? nodesEarly.ready_nodes + '/' + nodesEarly.total_nodes : 'n/a';
     todayEl.innerHTML =
       '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></div>' +
       '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
       '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyEarly + '</div></div>' +
       (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
   }
-  if (!metricEl || !priorityEl) return;
+  if (!metricEl) return;
   const overview = lastOverview || {};
   const nodes = overview.nodes || {};
   const cluster = overview.cluster || {};
@@ -5912,7 +6189,7 @@ function renderDashboardCommandCenter() {
 
   if (badgeEl) {
     badgeEl.innerHTML =
-      '<span class="command-badge">' + (failed ? failed + ' degraded workloads' : 'No degraded workloads') + '</span>' +
+      '<span class="command-badge live">' + (failed ? failed + ' degraded workloads' : 'No degraded workloads') + '</span>' +
       '<span class="command-badge">' + (stopped ? stopped + ' idle VMs' : 'Fleet actively engaged') + '</span>' +
       '<span class="command-badge">' + (cpuAlloc !== 'n/a' ? cpuAlloc + ' CPU allocated' : 'Capacity pending') + '</span>';
   }
@@ -5945,13 +6222,23 @@ function renderDashboardCommandCenter() {
     });
   }
 
-  priorityEl.innerHTML = priorities.map(item =>
-    '<div class="priority-item">' +
+  const priorityHtml = priorities.map(item =>
+    '<div class="priority-item state-' + item.state + '">' +
       '<div class="priority-icon">' + item.icon + '</div>' +
       '<div class="priority-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(item.detail) + '</span></div>' +
       '<div class="priority-state ' + item.state + '">' + (item.state === 'hot' ? 'Critical' : item.state === 'warn' ? 'Watch' : 'Stable') + '</div>' +
     '</div>'
   ).join('');
+  if (priorityEl) priorityEl.innerHTML = priorityHtml;
+  if (cmdPriorityEl) cmdPriorityEl.innerHTML = priorityHtml;
+  if (recentWrap && recentList && lastEvents && lastEvents.length) {
+    recentWrap.style.display = 'block';
+    recentList.innerHTML = lastEvents.slice(0, 5).map(e =>
+      '<div class="dc-recent-item"><strong>' + esc(e.reason || e.type || 'Event') + '</strong> — ' + esc(e.message || e.note || '') + '</div>'
+    ).join('');
+  } else if (recentWrap) {
+    recentWrap.style.display = 'none';
+  }
   } catch (e) {
     console.error('renderDashboardCommandCenter', e);
   }
@@ -6209,6 +6496,132 @@ function toggleVmDetail(ns, name) {
   }
 }
 
+function vmStatusBadgeClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'running') return 'running';
+  if (s === 'stopped') return 'stopped';
+  if (s === 'error' || s === 'failed') return 'error';
+  return 'other';
+}
+
+function renderVmDetailHeader(vm, ns, name, vmi) {
+  const status = vmi.phase || vm.status || 'Unknown';
+  const badgeCls = vmStatusBadgeClass(vm.status || status);
+  let actions = '';
+  if (vm.status === 'Running') {
+    actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Open Console</button>';
+    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>Stop</button>';
+    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
+    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
+    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
+  } else {
+    actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>&#9654; Start</button>';
+    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
+  }
+  if (vmi.phase === 'Paused') {
+    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('unpauseVM(' + jsArgs(ns, name) + ')') + '>Unpause</button>';
+  }
+  actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
+  actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
+  actions += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
+  let more = '';
+  if (vm.status === 'Running') {
+    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
+  }
+  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
+  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
+  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
+  if (vm.status === 'Pending') {
+    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
+  }
+  actions += '<details class="vm-detail-more glass-details"><summary>More actions</summary><div class="vm-detail-more-body">' + more + '</div></details>';
+  return '<div class="vm-detail-header">' +
+    '<div class="vm-detail-header-left">' +
+      '<div class="vm-detail-name">' + esc(name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(String(status)) + '</span></div>' +
+      '<div class="vm-detail-meta">' +
+        '<span class="ns-chip">' + esc(ns) + '</span>' +
+        (vm.node ? '<span>Node: <strong>' + esc(vm.node) + '</strong></span>' : '') +
+        (vm.age ? '<span>Age: ' + esc(vm.age) + '</span>' : '') +
+        (vm.ip && vm.ip !== 'N/A' ? '<span>IP: <code>' + esc(vm.ip) + '</code></span>' : '') +
+        vmDriftBadge(vm) +
+      '</div>' +
+    '</div>' +
+    '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
+  '</div>';
+}
+
+function renderRemoteAccessColumn(vm, ns, name) {
+  let html = '<div class="remote-access-stack">';
+  html += '<div class="remote-access-title">Remote access</div>';
+  html += '<div class="glass-card-hero" style="padding:18px">';
+  html += '<div class="detail-section-title" style="margin-bottom:10px">SSH</div>';
+  html += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
+  html += '</div>';
+  html += '<div class="glass-card-hero" style="padding:18px"><div class="detail-section-title" style="margin-bottom:10px">RDP</div><div id="rdp-panel-' + name + '">Loading\u2026</div></div>';
+  html += '<div class="glass-card-hero console-cta-card">';
+  if (vm.status === 'Running') {
+    html += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Open Console (VNC)</button>';
+    html += '<div class="console-cta-hint">Browser console via noVNC. Adjust link quality in the console toolbar for bandwidth vs responsiveness.</div>';
+  } else {
+    html += '<div class="console-cta-hint">Start the VM to open the browser console.</div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function renderOpsColumn(vm, ns, name, vmi, ifaces, guestOS) {
+  let html = '<div class="vm-detail-col">';
+  html += '<div class="detail-section"><div class="detail-section-title">Status &amp; resources</div>';
+  html += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
+  html += detailRow('Ready', vm.ready ? 'Yes' : 'No');
+  html += detailRow('Node', vm.node || 'N/A');
+  html += detailRow('Age', vm.age || 'N/A');
+  html += detailRow('IP', vm.ip || 'N/A');
+  html += detailRow('CPU', vm.cpu || 'N/A');
+  html += detailRow('Memory', vm.memory || 'N/A');
+  html += detailRow('Disk', vm.disk || 'N/A');
+  html += '<div id="vm-metrics-panel-' + name + '"></div></div>';
+  if (ifaces.length > 0) {
+    html += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
+    html += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
+    ifaces.forEach(i => {
+      html += '<tr><td>' + esc(i.interface_name || i.name || '-') + '</td><td>' + esc(i.ip_address || i.ip || '-') + '</td><td>' + esc(i.mac || '-') + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  if (guestOS) {
+    html += '<div class="detail-section"><div class="detail-section-title">Guest OS</div>';
+    html += detailRow('OS', guestOS.name || guestOS.id || 'Unknown');
+    if (guestOS.version) html += detailRow('Version', guestOS.version);
+    if (guestOS.kernel_release) html += detailRow('Kernel', guestOS.kernel_release);
+    html += '</div>';
+  }
+  html += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>';
+  html += '<div class="detail-section"><div class="detail-section-title">Internet egress</div><div id="internet-panel-' + name + '">Loading\u2026</div></div>';
+  html += '<div class="detail-section"><div class="detail-section-title">Guest filesystem</div><div id="guest-fs-panel-' + name + '">Loading\u2026</div></div>';
+  html += '</div>';
+  return html;
+}
+
+function renderVmDetailCopilotSection(ns, name, vm) {
+  let inner = '<details class="glass-details glass-details-ai"><summary>VMRogue AI &amp; operator drift</summary><div class="glass-details-body">';
+  inner += '<div class="detail-actions" style="margin-top:0;margin-bottom:10px">';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotFilesystem(' + jsArgs(ns, name) + ')') + '>Guest FS</button>';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Security review for ' + name, ns, name) + ')') + '>Security</button>';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Cost for ' + name, ns, name) + ')') + '>Cost</button>';
+  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Tell me about ' + name, ns, name) + ')') + '>Ask Copilot</button>';
+  if (vm.status === 'Pending') {
+    inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
+  }
+  inner += '</div><div id="doctor-panel-' + name + '">Loading\u2026</div>';
+  inner += '<div class="detail-section" style="margin-top:14px"><div class="detail-section-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
+  inner += '</div></details>';
+  return inner;
+}
+
 async function fetchVmDetail(ns, name) {
   const holder = document.getElementById('detail-' + name);
   if (!holder) return;
@@ -6220,95 +6633,12 @@ async function fetchVmDetail(ns, name) {
     const ifaces = vmi.interfaces || [];
     const guestOS = vmi.guest_os_info;
 
-    let inner = '<div class="detail-grid">';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">VMRogue AI</div>';
-    inner += '<div class="detail-actions" style="margin-top:0;margin-bottom:10px">';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotFilesystem(' + jsArgs(ns, name) + ')') + '>Guest FS</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Security review for ' + name, ns, name) + ')') + '>Security</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Cost for ' + name, ns, name) + ')') + '>Cost</button>';
-    inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Tell me about ' + name, ns, name) + ')') + '>Ask Copilot</button>';
-    if (vm.status === 'Pending') {
-      inner += '<button type="button" class="btn btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
-    }
+    let inner = renderVmDetailHeader(vm, ns, name, vmi);
+    inner += '<div class="vm-detail-columns">';
+    inner += renderOpsColumn(vm, ns, name, vmi, ifaces, guestOS);
+    inner += renderRemoteAccessColumn(vm, ns, name);
     inner += '</div>';
-    inner += '<div id="doctor-panel-' + name + '">Loading\u2026</div></div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Status</div>';
-    inner += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
-    inner += detailRow('Ready', vm.ready ? 'Yes' : 'No');
-    inner += detailRow('Node', vm.node || 'N/A');
-    inner += detailRow('Age', vm.age || 'N/A');
-    inner += detailRow('IP', vm.ip || 'N/A');
-    inner += '</div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Remote access (SSH)</div>';
-    inner += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
-    inner += '</div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Remote access (RDP)</div><div id="rdp-panel-' + name + '">Loading\u2026</div></div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Resources</div>';
-    inner += detailRow('CPU', vm.cpu || 'N/A');
-    inner += detailRow('Memory', vm.memory || 'N/A');
-    inner += detailRow('Disk', vm.disk || 'N/A');
-    inner += '</div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Guest filesystem</div><div id="guest-fs-panel-' + name + '">Loading\u2026</div></div>';
-
-    if (ifaces.length > 0) {
-      inner += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
-      inner += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
-      ifaces.forEach(i => {
-        inner += '<tr><td>' + esc(i.interface_name || i.name || '-') + '</td><td>' + esc(i.ip_address || i.ip || '-') + '</td><td>' + esc(i.mac || '-') + '</td></tr>';
-      });
-      inner += '</tbody></table></div>';
-    }
-
-    if (guestOS) {
-      inner += '<div class="detail-section"><div class="detail-section-title">Guest OS</div>';
-      inner += detailRow('OS', guestOS.name || guestOS.id || 'Unknown');
-      if (guestOS.version) inner += detailRow('Version', guestOS.version);
-      if (guestOS.kernel_release) inner += detailRow('Kernel', guestOS.kernel_release);
-      inner += '</div>';
-    }
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>';
-
-    inner += '<div class="detail-section"><div class="detail-section-title">Internet egress</div><div id="internet-panel-' + name + '">Loading\u2026</div></div>';
-
-    inner += '</div>';
-
-    inner += '<div class="detail-actions">';
-    if (vm.status === 'Running') {
-      inner += '<button class="btn" style="background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.2)" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; VNC</button>';
-      inner += '<button class="btn" style="background:rgba(34,197,94,.1);color:var(--success);border:1px solid rgba(34,197,94,.22)" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>&#9618; Serial</button>';
-      inner += '<button class="btn" style="background:var(--warning-dim);color:var(--warning);border:1px solid rgba(255,170,0,.15)" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>&#10074;&#10074; Pause</button>';
-      inner += '<button class="btn btn-stop" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>&#9632; Stop</button>';
-      inner += '<button class="btn" style="background:rgba(123,104,238,.08);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>&#8644; Migrate</button>';
-    } else {
-      inner += '<button class="btn btn-start" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>&#9654; Start</button>';
-    }
-    if (vmi.phase === 'Paused') {
-      inner += '<button class="btn btn-start" ' + onStopHandler('unpauseVM(' + jsArgs(ns, name) + ')') + '>&#9654; Unpause</button>';
-    }
-    inner += '<button class="btn btn-restart" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>&#8635; Restart</button>';
-    inner += '<button class="btn" style="background:rgba(0,180,255,.08);color:var(--spark);border:1px solid rgba(0,180,255,.12)" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>&#10697; Clone</button>';
-    inner += '<button class="btn" style="background:rgba(59,130,246,.1);color:var(--ember);border:1px solid rgba(59,130,246,.22)" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>&#8693; Resize</button>';
-    if (vm.status === 'Pending') {
-      inner += '<button class="btn" style="background:rgba(251,191,36,.1);color:var(--warning);border:1px solid rgba(251,191,36,.25)" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
-    }
-    inner += '<button class="btn" style="background:rgba(56,189,248,.1);color:var(--spark);border:1px solid rgba(56,189,248,.2)" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
-    inner += '<button class="btn" style="background:rgba(34,197,94,.08);color:var(--success);border:1px solid rgba(34,197,94,.2)" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
-    inner += '<button class="btn" style="background:rgba(123,104,238,.1);color:var(--plasma);border:1px solid rgba(123,104,238,.15)" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>&#9670; Snapshot</button>';
-    inner += '<button class="btn btn-delete" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>&#10005; Delete</button>';
-    inner += '</div>';
-
+    inner += renderVmDetailCopilotSection(ns, name, vm);
     inner += '<div id="security-' + name + '"></div>';
 
     holder.innerHTML = inner;
@@ -6323,6 +6653,7 @@ async function fetchVmDetail(ns, name) {
     loadVmDriftPanel(ns, name, vm);
     loadInternetPanel(ns, name);
     loadDoctorPanel(ns, name);
+    loadVmMetricsPanel(ns, name);
   } catch (e) {
     holder.innerHTML =
       '<div class="detail-section"><div class="detail-section-title">Error</div><div class="detail-row"><span class="val" style="color:var(--error)">' +
@@ -6349,6 +6680,7 @@ function renderExposePanel(container, ns, name, ex) {
   const tid = 'expose-form-' + name.replace(/[^a-zA-Z0-9_-]/g, '_');
   let inner = '';
   if (enabled) {
+    inner += '<div class="rdp-status-banner exposed" style="margin-bottom:10px"><span class="rdp-status-dot"></span>SSH expose active</div>';
     inner += detailRow('Kubernetes Service', esc(String(ex.service_name || '')));
     inner += detailRow('Type', esc(String(ex.service_type || '')));
     inner += detailRow('Cluster IP', ex.cluster_ip && ex.cluster_ip !== 'None' ? esc(String(ex.cluster_ip)) : 'None');
@@ -6361,15 +6693,15 @@ function renderExposePanel(container, ns, name, ex) {
       inner += '</tbody></table>';
     }
   } else {
-    inner += '<div class="detail-row"><span class="lbl">Status</span><span class="val">No expose Service. Create one to forward a Service port to the guest (via virt-launcher when the VM is running).</span></div>';
+    inner += '<div class="rdp-status-banner hidden" style="margin-bottom:10px"><span class="rdp-status-dot"></span>No expose Service — forward a port to the guest via virt-launcher</div>';
   }
-  inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
+  inner += '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
   inner += '<label class="form-label tiny-label">Type<br><select id="' + tid + '-type" class="form-select compact-field" style="min-width:130px">';
   inner += '<option value="ClusterIP">ClusterIP</option><option value="NodePort">NodePort</option><option value="LoadBalancer">LoadBalancer</option></select></label>';
   inner += '<label class="form-label tiny-label">Service port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-port" min="1" max="65535" value="22"></label>';
   inner += '<label class="form-label tiny-label">Target port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-target" min="1" max="65535" value="22"></label>';
-  inner += '<button type="button" class="btn btn-start" ' + onStopHandler('applyVmExpose(' + jsArgs(ns, name, tid) + ')') + '>Apply</button>';
-  inner += '<button type="button" class="btn btn-stop" ' + onStopHandler('removeVmExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
+  inner += '<button type="button" class="glass-btn-primary" ' + onStopHandler('applyVmExpose(' + jsArgs(ns, name, tid) + ')') + '>Apply</button>';
+  inner += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('removeVmExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
   inner += '</div>';
   container.innerHTML = inner;
   if (enabled) {
@@ -6405,16 +6737,16 @@ function renderInternetPanel(container, ns, name, st) {
   let inner = '';
   if (on) {
     const kind = be === 'cilium' ? 'CiliumNetworkPolicy' : (be === 'kubernetes' ? 'Kubernetes NetworkPolicy' : be);
-    inner += detailRow('Status', 'On (' + esc(kind) + ')');
+    inner += '<div class="rdp-status-banner exposed" style="margin-bottom:10px"><span class="rdp-status-dot"></span>Internet egress enabled (' + esc(kind) + ')</div>';
     if (pol) inner += detailRow('Policy name', esc(pol));
   } else {
-    inner += '<div class="detail-row"><span class="lbl">Status</span><span class="val">Off — virt-launcher pods only get broad egress if your cluster default allows it, or you enable a policy here.</span></div>';
+    inner += '<div class="rdp-status-banner hidden" style="margin-bottom:10px"><span class="rdp-status-dot"></span>Egress off — enable for per-VM internet on default-deny clusters</div>';
   }
   inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px">';
-  inner += '<button type="button" class="btn btn-start" ' + onStopHandler('enableVmInternet(' + jsArgs(ns, name) + ')') + '>Enable internet</button>';
-  inner += '<button type="button" class="btn btn-stop" ' + onStopHandler('disableVmInternet(' + jsArgs(ns, name) + ')') + '>Remove policy</button>';
+  inner += '<button type="button" class="glass-btn-primary" ' + onStopHandler('enableVmInternet(' + jsArgs(ns, name) + ')') + '>Enable internet</button>';
+  inner += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('disableVmInternet(' + jsArgs(ns, name) + ')') + '>Remove policy</button>';
   inner += '</div>';
-  inner += '<p class="detail-hint" style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim);line-height:1.35">Selects pods with label <code>kubevirt.io/vm</code> = this VM. On default-deny Cilium clusters, this adds an explicit allow.</p>';
+  inner += '<p class="detail-hint" style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim);line-height:1.35">Selects pods with label <code>kubevirt.io/vm</code> = this VM.</p>';
   container.innerHTML = inner;
 }
 
@@ -6530,6 +6862,56 @@ function renderGuestFilesystemPanel(container, st) {
   container.innerHTML = inner;
 }
 
+function drawMiniSparkline(id, data, color, glowColor) {
+  if (!data || data.length < 2) return;
+  const nums = data.map(Number).filter(n => Number.isFinite(n));
+  if (nums.length < 2) return;
+  const max = Math.max(...nums, 1);
+  const normalized = nums.map(v => (v / max) * 100);
+  requestAnimationFrame(function() { drawChart(id, normalized, color, glowColor); });
+}
+
+function glassProgressBar(label, pct) {
+  const p = Math.min(100, Math.max(0, Number(pct) || 0));
+  return '<div class="glass-progress"><div class="glass-progress-hdr"><span>' + esc(label) + '</span><span>' + p.toFixed(1) + '%</span></div>' +
+    '<div class="glass-progress-track"><div class="glass-progress-fill" style="width:' + p + '%"></div></div></div>';
+}
+
+async function loadVmMetricsPanel(ns, name) {
+  const el = document.getElementById('vm-metrics-panel-' + name);
+  if (!el) return;
+  try {
+    const q = '?namespace=' + encodeURIComponent(ns);
+    const j = await apiJson('/api/v1/metrics/' + encodeURIComponent(name) + q);
+    const m = unwrapData(j);
+    if (!m || (m.cpu_usage_percent == null && m.memory_usage_percent == null)) return;
+    let html = '';
+    if (m.cpu_usage_percent != null) html += glassProgressBar('CPU live', m.cpu_usage_percent);
+    if (m.memory_usage_percent != null) html += glassProgressBar('Memory live', m.memory_usage_percent);
+    const cpuCanvasId = 'vm-cpu-spark-' + name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const memCanvasId = 'vm-mem-spark-' + name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    html += '<div class="vm-metrics-sparkline"><canvas id="' + cpuCanvasId + '"></canvas></div>';
+    html += '<div class="vm-metrics-sparkline" style="margin-top:8px"><canvas id="' + memCanvasId + '"></canvas></div>';
+    el.innerHTML = html;
+    try {
+      const tq = q + '&vm=' + encodeURIComponent(name) + '&metric=cpu&hours=1';
+      const tj = await apiJson('/api/v1/metrics/timeline' + tq);
+      const td = unwrapData(tj);
+      const pts = (td && td.points) ? td.points.map(p => p.value) : [];
+      if (pts.length) drawMiniSparkline(cpuCanvasId, pts, '#38bdf8', 'rgba(56,189,248,.35)');
+    } catch (e) { /* optional prometheus */ }
+    try {
+      const tq = q + '&vm=' + encodeURIComponent(name) + '&metric=memory&hours=1';
+      const tj = await apiJson('/api/v1/metrics/timeline' + tq);
+      const td = unwrapData(tj);
+      const pts = (td && td.points) ? td.points.map(p => p.value) : [];
+      if (pts.length) drawMiniSparkline(memCanvasId, pts, '#8b5cf6', 'rgba(139,92,246,.35)');
+    } catch (e) { /* optional */ }
+  } catch (e) {
+    /* metrics unavailable — static resource labels remain */
+  }
+}
+
 async function loadRdpPanel(ns, name, vmi, vm) {
   const el = document.getElementById('rdp-panel-' + name);
   if (!el) return;
@@ -6548,29 +6930,36 @@ function renderRdpPanel(container, ns, name, st, ctx) {
   ctx = ctx || {};
   const tid = 'rdp-form-' + name.replace(/[^a-zA-Z0-9_-]/g, '_');
   let inner = '';
+  if (st && st.exposed) {
+    inner += '<div class="rdp-status-banner exposed"><span class="rdp-status-dot"></span>RDP exposed' +
+      (st.node_port != null ? ' on NodePort ' + esc(String(st.node_port)) : '') + '</div>';
+  } else {
+    inner += '<div class="rdp-status-banner hidden"><span class="rdp-status-dot"></span>No RDP NodePort — expose to connect from outside the cluster</div>';
+  }
   if (st && st.is_windows_vm === false) {
-    inner += '<div class="detail-row"><span class="lbl">Note</span><span class="val">VM is not detected as Windows; RDP still works if port 3389 listens in the guest.</span></div>';
+    inner += '<div class="detail-row"><span class="lbl">Note</span><span class="val" style="font-size:.82rem">Not detected as Windows; RDP works if port 3389 listens.</span></div>';
   }
   inner += detailRow('Guest agent', ctx.agentUp ? 'Connected' : 'Not connected');
   if (st && st.exposed) {
     inner += detailRow('NodePort', st.node_port != null ? String(st.node_port) : '-');
-    if (st.rdp_via_nodeport_example) inner += detailRow('Connect', st.rdp_via_nodeport_example);
+    if (st.rdp_via_nodeport_example) {
+      inner += detailRow('Connect', st.rdp_via_nodeport_example);
+      inner += '<div style="margin-top:8px"><button type="button" class="glass-btn-secondary" ' + onStopHandler('copyToClipboard(' + jsArgs(String(st.rdp_via_nodeport_example)) + ')') + '>Copy RDP address</button></div>';
+    }
     inner += detailRow('Service', esc(String(st.service_name || '')));
-  } else {
-    inner += '<div class="detail-row"><span class="lbl">Expose</span><span class="val">No RDP NodePort Service (virt-launcher selector, guest TCP 3389).</span></div>';
   }
   if (st && st.suggested_node_port != null) {
-    inner += detailRow('Suggested NodePort', String(st.suggested_node_port) + ' (range 30100–30199)');
+    inner += detailRow('Suggested', String(st.suggested_node_port) + ' (30100–30199)');
   }
-  inner += '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
+  inner += '<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
   inner += '<label class="form-label tiny-label">NodePort<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-np" min="30000" max="32767" value="' + esc(String((st && st.suggested_node_port) || 30100)) + '"></label>';
-  inner += '<button type="button" class="btn btn-start" ' + onStopHandler('applyVmRdpExpose(' + jsArgs(ns, name, tid) + ')') + '>Expose RDP</button>';
-  inner += '<button type="button" class="btn btn-stop" ' + onStopHandler('removeVmRdpExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
+  inner += '<button type="button" class="glass-btn-primary" ' + onStopHandler('applyVmRdpExpose(' + jsArgs(ns, name, tid) + ')') + '>Expose RDP</button>';
   const enableDisabled = !(ctx.running && ctx.agentUp);
-  inner += '<button type="button" class="btn" style="background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.25)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' ' + onStopHandler('enableGuestRdpInVm(' + jsArgs(ns, name) + ')') + '>Enable RDP in guest (agent)</button>';
-  inner += '<button type="button" class="btn" style="background:rgba(244,63,94,.12);color:#fda4af;border:1px solid rgba(244,63,94,.28)"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' ' + onStopHandler('disableGuestRdpInVm(' + jsArgs(ns, name) + ')') + '>Disable RDP in guest (agent)</button>';
+  inner += '<button type="button" class="glass-btn-secondary"' + (enableDisabled ? ' disabled title="VM must be Running with guest agent connected"' : '') + ' ' + onStopHandler('enableGuestRdpInVm(' + jsArgs(ns, name) + ')') + '>Enable RDP in guest</button>';
+  inner += '<button type="button" class="glass-btn-secondary"' + (enableDisabled ? ' disabled' : '') + ' ' + onStopHandler('disableGuestRdpInVm(' + jsArgs(ns, name) + ')') + '>Disable RDP in guest</button>';
+  inner += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('removeVmRdpExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
   inner += '</div>';
-  inner += '<div class="detail-row" style="margin-top:8px"><span class="lbl">Hint</span><span class="val" style="font-size:.82rem">Enable RDP inside Windows first, then expose NodePort. Requires Windows Pro/Enterprise/Server and cluster guest-exec support.</span></div>';
+  inner += '<p class="detail-hint" style="margin:10px 0 0;font-size:.76rem;color:var(--text-dim);line-height:1.35">Enable RDP inside Windows first, then expose NodePort. Requires Windows Pro/Enterprise/Server.</p>';
   container.innerHTML = inner;
 }
 
@@ -6701,6 +7090,220 @@ function parseMemK8s(s) {
   return parseFloat(s) || 0;
 }
 
+function formatMemK8s(s) {
+  if (!s) return 'N/A';
+  const bytes = parseMemK8s(s);
+  if (!bytes) return s;
+  const gib = bytes / (1024 * 1024 * 1024);
+  if (gib >= 1) return gib.toFixed(1) + ' GiB';
+  const mib = bytes / (1024 * 1024);
+  if (mib >= 1) return mib.toFixed(0) + ' MiB';
+  return s;
+}
+
+function nodeStatusBadgeClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'ready') return 'running';
+  if (s === 'notready') return 'error';
+  return 'other';
+}
+
+function podPhaseBadgeClass(phase) {
+  const p = (phase || '').toLowerCase();
+  if (p === 'running') return 'running';
+  if (p === 'failed') return 'error';
+  return 'other';
+}
+
+function renderNodeDetailHeader(node) {
+  const badgeCls = nodeStatusBadgeClass(node.status);
+  const roles = (node.roles && node.roles.length) ? node.roles.join(', ') : 'worker';
+  return '<div class="vm-detail-header">' +
+    '<div class="vm-detail-header-left">' +
+      '<div class="vm-detail-name">' + esc(node.name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(node.status || 'Unknown') + '</span></div>' +
+      '<div class="vm-detail-meta">' +
+        '<span class="ns-chip">' + esc(roles) + '</span>' +
+        '<span class="ns-chip">' + (node.vm_count || 0) + ' VM' + ((node.vm_count || 0) === 1 ? '' : 's') + '</span>' +
+        (node.kubelet_version ? '<span>Kubelet: <strong>' + esc(node.kubelet_version) + '</strong></span>' : '') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderNodeCapacityColumn(node) {
+  let html = '<div class="vm-detail-col">';
+  html += '<div class="detail-section"><div class="detail-section-title">Capacity</div>';
+  html += detailRow('CPU capacity', node.cpu_capacity || 'N/A');
+  html += detailRow('CPU allocatable', node.cpu_allocatable || 'N/A');
+  html += detailRow('Memory capacity', formatMemK8s(node.memory_capacity));
+  html += detailRow('Memory allocatable', formatMemK8s(node.memory_allocatable));
+  html += '</div>';
+  html += '<div class="detail-section"><div class="detail-section-title">System</div>';
+  html += detailRow('OS image', node.os_image || 'N/A');
+  html += detailRow('Kernel', node.kernel_version || 'N/A');
+  html += detailRow('Kubelet', node.kubelet_version || 'N/A');
+  html += '</div></div>';
+  return html;
+}
+
+function renderNodeWorkloadsColumn(nodeName, pods) {
+  let html = '<div class="vm-detail-col">';
+  html += '<div class="detail-section"><div class="detail-section-title">Workloads on node</div>';
+  if (pods.length === 0) {
+    html += '<div style="color:var(--text-dim);font-size:.84rem">No pods scheduled on this node.</div>';
+  } else {
+    html += '<div style="display:flex;flex-direction:column;gap:6px">';
+    pods.forEach(p => {
+      const cls = podPhaseBadgeClass(p.phase);
+      html += '<div class="detail-row" style="align-items:flex-start">';
+      html += '<span class="lbl"><span style="font-family:var(--font-mono);font-size:.82em;color:var(--text-bright)">' + esc(p.name) + '</span>';
+      html += '<br><span style="font-size:.76rem;color:var(--text-dim)">' + esc(p.namespace) + '</span></span>';
+      html += '<span class="val"><span class="glass-badge ' + cls + '">' + esc(p.phase || 'Unknown') + '</span></span></div>';
+    });
+    html += '</div>';
+  }
+  html += '<div style="margin-top:14px"><button type="button" class="glass-btn-secondary" onclick="navigate(\'pods\')">View all pods</button></div>';
+  html += '</div></div>';
+  return html;
+}
+
+async function fetchNodeDetail(nodeName) {
+  const holder = document.getElementById('node-detail-' + nodeName);
+  if (!holder) return;
+  try {
+    const [nodeResp, podsResp] = await Promise.all([
+      apiJson('/api/v1/nodes/' + encodeURIComponent(nodeName)),
+      apiJson('/api/v1/pods?namespace=all'),
+    ]);
+    const node = unwrapData(nodeResp);
+    if (!node || !node.name) {
+      holder.innerHTML = '<div class="detail-loading" style="color:var(--error)">Node not found</div>';
+      return;
+    }
+    const pods = asArray(podsResp).filter(p => p.node_name === nodeName);
+    let inner = renderNodeDetailHeader(node);
+    inner += '<div class="vm-detail-columns">';
+    inner += renderNodeCapacityColumn(node);
+    inner += renderNodeWorkloadsColumn(nodeName, pods);
+    inner += '</div>';
+    holder.innerHTML = inner;
+  } catch (e) {
+    holder.innerHTML = '<div class="detail-loading" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+  }
+}
+
+function formatPodAge(createdAt) {
+  if (!createdAt) return '';
+  try {
+    const d = new Date(createdAt);
+    const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (sec < 60) return sec + 's';
+    if (sec < 3600) return Math.floor(sec / 60) + 'm';
+    if (sec < 86400) return Math.floor(sec / 3600) + 'h';
+    return Math.floor(sec / 86400) + 'd';
+  } catch (e) {
+    return createdAt.slice(0, 10);
+  }
+}
+
+function renderPodDetailHeader(pod) {
+  const badgeCls = podPhaseBadgeClass(pod.phase);
+  let actions = '';
+  if (pod.node_name) {
+    actions += '<button type="button" class="glass-btn-secondary" onclick="navigate(\'nodes\')">View nodes</button>';
+  }
+  return '<div class="vm-detail-header">' +
+    '<div class="vm-detail-header-left">' +
+      '<div class="vm-detail-name">' + esc(pod.name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(pod.phase || 'Unknown') + '</span></div>' +
+      '<div class="vm-detail-meta">' +
+        '<span class="ns-chip">' + esc(pod.namespace) + '</span>' +
+        (pod.node_name ? '<span>Node: <strong>' + esc(pod.node_name) + '</strong></span>' : '') +
+        (pod.ip ? '<span>IP: <code>' + esc(pod.ip) + '</code></span>' : '') +
+      '</div>' +
+    '</div>' +
+    (actions ? '<div class="vm-detail-actions-hdr">' + actions + '</div>' : '') +
+  '</div>';
+}
+
+function renderPodInfoColumn(pod) {
+  let html = '<div class="vm-detail-col">';
+  html += '<div class="detail-section"><div class="detail-section-title">Pod info</div>';
+  html += detailRow('Namespace', pod.namespace || 'N/A');
+  html += detailRow('Phase', pod.phase || 'N/A');
+  html += detailRow('Node', pod.node_name || 'N/A');
+  html += detailRow('IP', pod.ip || 'N/A');
+  html += detailRow('Restarts', pod.restart_count != null ? pod.restart_count : 0);
+  html += detailRow('Age', formatPodAge(pod.created_at) || 'N/A');
+  html += '</div>';
+  if (pod.containers && pod.containers.length) {
+    html += '<div class="detail-section"><div class="detail-section-title">Containers</div>';
+    pod.containers.forEach(c => { html += detailRow(c, '—'); });
+    html += '</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderPodLogsColumn(logs) {
+  let html = '<div class="vm-detail-col"><div class="detail-section"><div class="detail-section-title">Recent logs</div>';
+  if (!logs || logs.length === 0) {
+    html += '<div style="color:var(--text-dim);font-size:.84rem">No log lines available.</div>';
+  } else {
+    html += '<pre class="pod-log-preview">';
+    logs.slice(-50).forEach(l => {
+      html += esc(l.timestamp ? l.timestamp + ' ' : '') +
+        esc(l.container ? '[' + l.container + '] ' : '') +
+        esc(l.message || '') + '\n';
+    });
+    html += '</pre>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+async function fetchPodDetail(ns, name) {
+  const holder = document.getElementById('pod-detail-' + ns + '-' + name);
+  if (!holder) return;
+  try {
+    const nsQ = '?namespace=' + encodeURIComponent(ns);
+    const [podResp, logsResp] = await Promise.all([
+      apiJson('/api/v1/pods/' + encodeURIComponent(name) + nsQ),
+      apiJson('/api/v1/pods/' + encodeURIComponent(name) + '/logs' + nsQ).catch(() => []),
+    ]);
+    const pod = unwrapData(podResp);
+    if (!pod || !pod.name) {
+      holder.innerHTML = '<div class="detail-loading" style="color:var(--error)">Pod not found</div>';
+      return;
+    }
+    const logs = asArray(logsResp);
+    let inner = renderPodDetailHeader(pod);
+    inner += '<div class="vm-detail-columns">';
+    inner += renderPodInfoColumn(pod);
+    inner += renderPodLogsColumn(logs);
+    inner += '</div>';
+    holder.innerHTML = inner;
+  } catch (e) {
+    holder.innerHTML = '<div class="detail-loading" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+  }
+}
+
+function togglePodDetail(ns, name) {
+  const detailId = 'pod-detail-' + ns + '-' + name;
+  const existing = document.getElementById(detailId);
+  if (existing) { existing.remove(); return; }
+  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
+
+  const placeholder = '<div class="vm-detail" id="' + detailId + '"><div class="detail-loading">Loading pod details\u2026</div></div>';
+  const rows = document.querySelectorAll('#pod-list .pod-row');
+  for (const row of rows) {
+    if (row.dataset.podNs === ns && row.dataset.podName === name) {
+      row.insertAdjacentHTML('afterend', placeholder);
+      fetchPodDetail(ns, name);
+      return;
+    }
+  }
+}
+
 // ── Pods ──
 async function fetchPods() {
   try {
@@ -6714,13 +7317,15 @@ async function fetchPods() {
     document.getElementById('pod-count').textContent = pods.length + ' pods';
     el.innerHTML = pods.map(p => {
       const phaseCls = p.phase === 'Running' ? 'running' : p.phase === 'Pending' ? 'pending' : p.phase === 'Failed' ? 'failed' : 'succeeded';
-      return '<div class="table-row pod-row">' +
+      const restarts = p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0);
+      const age = formatPodAge(p.created_at) || p.age || '—';
+      return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
         '<span class="cell-name">' + esc(p.name) + '</span>' +
         '<span><span class="cell-badge ' + phaseCls + '">' + esc(p.phase) + '</span></span>' +
-        '<span class="cell-mono">' + esc(p.node_name) + '</span>' +
-        '<span class="cell-mono">' + esc(p.ip) + '</span>' +
-        '<span class="cell-mono">' + p.restarts + '</span>' +
-        '<span class="cell-mono">' + esc(p.age) + '</span>' +
+        '<span class="cell-mono">' + esc(p.node_name || '—') + '</span>' +
+        '<span class="cell-mono">' + esc(p.ip || '—') + '</span>' +
+        '<span class="cell-mono">' + restarts + '</span>' +
+        '<span class="cell-mono">' + esc(age) + '</span>' +
         '</div>';
     }).join('');
   } catch (e) {
@@ -6879,12 +7484,48 @@ function onVncPresetChange(value) {
 
 function openVncConsole(ns, name) {
   vncVmNs = ns; vncVmName = name;
-  document.getElementById('vnc-title').textContent = 'Console: ' + name;
+  document.getElementById('vnc-title').textContent = 'Console: ' + name + ' (' + ns + ')';
   document.getElementById('vnc-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
   document.getElementById('vnc-status').textContent = 'Connecting...';
+  document.getElementById('vnc-status').style.color = 'var(--text-dim)';
   document.getElementById('vnc-placeholder').style.display = 'block';
   syncVncPresetSelect();
   connectVnc();
+  if (!window._vncEscBound) {
+    window._vncEscBound = true;
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('vnc-modal').classList.contains('open')) closeVncModal();
+    });
+  }
+}
+
+async function vncDrawerAction(action) {
+  if (!vncVmNs || !vncVmName) return;
+  try {
+    await vmAction(vncVmNs, vncVmName, action);
+    toast(vncVmName + ' ' + action + ' initiated', 'success');
+  } catch (e) {
+    await translateApiError(e.message, 'vm_' + action);
+  }
+}
+
+function vncScreenshot() {
+  const container = document.getElementById('vnc-container');
+  const canvas = container && container.querySelector('canvas');
+  if (!canvas) {
+    toast('No VNC canvas to capture yet', 'error');
+    return;
+  }
+  try {
+    const link = document.createElement('a');
+    link.download = (vncVmName || 'console') + '-screenshot.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('Screenshot saved', 'success');
+  } catch (e) {
+    toast('Screenshot failed: ' + (e.message || String(e)), 'error');
+  }
 }
 
 async function connectVnc() {
@@ -6954,6 +7595,7 @@ async function connectVnc() {
 
 function closeVncModal() {
   document.getElementById('vnc-modal').classList.remove('open');
+  document.body.style.overflow = '';
   if (vncRfb) { vncRfb.disconnect(); vncRfb = null; }
 }
 
@@ -6968,8 +7610,9 @@ function sendCtrlAltDel() {
 }
 
 function toggleVncFullscreen() {
-  const el = document.getElementById('vnc-modal');
-  if (!document.fullscreenElement) el.requestFullscreen?.();
+  const el = document.querySelector('#vnc-modal .console-drawer-panel');
+  const target = el || document.getElementById('vnc-modal');
+  if (!document.fullscreenElement) target.requestFullscreen?.();
   else document.exitFullscreen?.();
 }
 
@@ -6992,10 +7635,19 @@ function openSerialConsole(ns, name) {
   serialVmName = name;
   document.getElementById('serial-title').textContent = 'Serial: ' + name + ' (' + ns + ')';
   document.getElementById('serial-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
   document.getElementById('serial-output').textContent = '';
   document.getElementById('serial-status').textContent = 'Connecting...';
   document.getElementById('serial-status').style.color = 'var(--text-dim)';
   connectSerial();
+  const serialInp = document.getElementById('serial-input');
+  if (serialInp) setTimeout(() => serialInp.focus(), 120);
+  if (!window._serialEscBound) {
+    window._serialEscBound = true;
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && document.getElementById('serial-modal').classList.contains('open')) closeSerialModal();
+    });
+  }
 }
 
 function connectSerial() {
@@ -7068,6 +7720,7 @@ function reconnectSerial() {
 
 function closeSerialModal() {
   document.getElementById('serial-modal').classList.remove('open');
+  document.body.style.overflow = '';
   if (serialWs) {
     try { serialWs.close(); } catch (e) {}
     serialWs = null;
@@ -7626,36 +8279,19 @@ async function submitCrdCreate() {
 }
 
 // ── Node Detail ──
-async function toggleNodeDetail(nodeName) {
+function toggleNodeDetail(nodeName) {
   const existing = document.getElementById('node-detail-' + nodeName);
   if (existing) { existing.remove(); return; }
   document.querySelectorAll('.vm-detail').forEach(d => d.remove());
 
-  try {
-    const j = await apiJson('/api/v1/pods?namespace=all');
-    const pods = asArray(j);
-    const nodePods = pods.filter(p => p.node_name === nodeName);
-
-    let html = '<div class="vm-detail" id="node-detail-' + nodeName + '"><div class="detail-grid">';
-    html += '<div class="detail-section"><div class="detail-section-title">Pods on Node</div>';
-    if (nodePods.length > 0) {
-      nodePods.forEach(p => {
-        html += detailRow(p.name, p.phase + ' (' + p.namespace + ')');
-      });
-    } else {
-      html += '<div style="color:var(--text-dim);font-size:.8em">No pods found</div>';
+  const placeholder = '<div class="vm-detail" id="node-detail-' + nodeName + '"><div class="detail-loading">Loading node details\u2026</div></div>';
+  const rows = document.querySelectorAll('#node-list .table-row');
+  for (const row of rows) {
+    if (row.querySelector('.cell-name')?.textContent === nodeName) {
+      row.insertAdjacentHTML('afterend', placeholder);
+      fetchNodeDetail(nodeName);
+      return;
     }
-    html += '</div></div></div>';
-
-    const rows = document.querySelectorAll('#node-list .table-row');
-    for (const row of rows) {
-      if (row.querySelector('.cell-name')?.textContent === nodeName) {
-        row.insertAdjacentHTML('afterend', html);
-        break;
-      }
-    }
-  } catch (e) {
-    toast('Pods: ' + (e.message || String(e)), 'error');
   }
 }
 
