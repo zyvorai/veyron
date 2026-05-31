@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531m">
+<meta name="vmrogue-dashboard-rev" content="20260531n">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531m';
+  var DASH_REV = '20260531n';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2110,14 +2110,44 @@ html[data-theme="zinc"] .monitor-cap{
 .dash-vm-name{font-family:var(--font-mono);font-weight:600;color:var(--text-bright);font-size:.88rem}
 .dash-vm-meta{font-size:.76rem;color:var(--text-dim);margin-top:2px}
 .dash-vm-actions{display:flex;gap:6px;flex-shrink:0}
+.dc-copilot-bar{
+  margin-bottom:18px;padding:16px 18px;border-radius:var(--glass-radius);
+  border:1px solid rgba(139,92,246,.25);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-shadow);
+}
+.dc-copilot-bar-label{
+  font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--primary-purple);margin-bottom:10px;
+}
+.dc-copilot-bar-row{display:flex;gap:10px;align-items:center}
+.dc-copilot-input{
+  flex:1;padding:11px 14px;border-radius:10px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.55);color:var(--text);font-size:.88rem;
+}
+.dc-copilot-input:focus{outline:none;border-color:var(--primary-purple);box-shadow:0 0 0 3px rgba(139,92,246,.12)}
+.dc-copilot-bar-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.gitops-drawer-panel{width:min(96vw,820px)}
+.gitops-drawer-body{
+  flex:1;min-height:0;overflow-y:auto;padding:16px 20px 24px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.gitops-drawer-body pre{
+  flex:1;min-height:200px;margin:0;padding:14px;border-radius:10px;
+  background:rgba(11,13,18,.85);border:1px solid var(--glass-border);
+  font-size:.76rem;overflow:auto;white-space:pre-wrap;word-break:break-word;
+}
 .fixit-title{font-size:1.1rem;font-weight:600;margin-bottom:8px}
 .fixit-explanation{font-size:.9rem;line-height:1.55;color:var(--text-muted);margin-bottom:16px}
 .fixit-actions{display:flex;gap:8px;flex-wrap:wrap}
 .btn-spotlight{
-  padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elevated);
-  color:var(--text-muted);font-size:.74rem;cursor:pointer;white-space:nowrap;
+  padding:7px 14px;border-radius:10px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  color:var(--text-muted);font-size:.74rem;font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:border-color .15s,color .15s,background .15s;
 }
-.btn-spotlight:hover{border-color:rgba(56,189,248,.3);color:var(--spark)}
+.btn-spotlight:hover{border-color:rgba(59,130,246,.35);color:var(--primary-blue);background:rgba(30,41,59,.75)}
+.btn-spotlight.finder-toggle{font-size:.9rem;padding:6px 11px}
 .cloudos-body-row{display:flex;align-items:stretch;min-height:calc(100vh - 56px)}
 .cloudos-finder{
   width:220px;flex-shrink:0;border-right:1px solid var(--border);background:var(--bg-secondary);
@@ -2471,14 +2501,18 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   </div>
 </div>
 
-<div class="modal-overlay" id="gitops-export-modal" role="dialog" aria-modal="true" aria-label="GitOps export">
-  <div class="fixit-panel glass-panel" onclick="event.stopPropagation()" style="width:min(720px,94vw);max-height:85vh;overflow:auto;margin:8vh auto 0">
-    <div class="fixit-title" id="gitops-export-title">GitOps export</div>
-    <p id="gitops-export-sub" style="font-size:.82rem;color:var(--text-dim);margin-bottom:10px"></p>
-    <pre id="gitops-export-body" style="margin:0;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.72rem;overflow:auto;max-height:55vh;white-space:pre-wrap"></pre>
-    <div style="margin-top:14px;display:flex;gap:8px">
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="copyGitOpsExport()">Copy bundle</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeGitOpsExportModal()">Close</button>
+<div class="console-drawer-overlay" id="gitops-export-modal" role="dialog" aria-modal="true" aria-label="GitOps export">
+  <div class="console-drawer-panel gitops-drawer-panel" onclick="event.stopPropagation()">
+    <div class="console-drawer-header">
+      <h2 id="gitops-export-title">GitOps export</h2>
+      <div class="console-drawer-toolbar">
+        <button type="button" class="glass-btn-primary glass-btn-sm" onclick="copyGitOpsExport()">Copy bundle</button>
+        <button type="button" class="modal-close" onclick="closeGitOpsExportModal()" aria-label="Close GitOps export">&#10005;</button>
+      </div>
+    </div>
+    <div class="gitops-drawer-body">
+      <p id="gitops-export-sub" style="font-size:.82rem;color:var(--text-dim);margin:0;line-height:1.45"></p>
+      <pre id="gitops-export-body"></pre>
     </div>
   </div>
 </div>
@@ -2527,6 +2561,21 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       </div>
     </div>
     <div class="dc-action-grid" id="dc-action-grid"></div>
+  </div>
+  <div class="dc-copilot-bar glass-card-hero" id="dc-copilot-bar">
+    <div class="dc-copilot-bar-label">Fleet Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="dc-copilot-input" placeholder="Ask about fleet health, VMs, storage, security…" autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter'){event.preventDefault();runDashboardCopilot();}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runDashboardCopilot()">Ask</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilot(document.getElementById('dc-copilot-input').value)">Open drawer</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dashboardCopilotChip('Show all unhealthy VMs')">Unhealthy VMs</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dashboardCopilotChip('Which VMs are pending scheduling?')">Pending</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dashboardCopilotChip('Which PVCs are almost full?')">Storage</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dashboardCopilotChip('Security review for production VMs')">Security</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dashboardCopilotChip('Node capacity and pressure')">Nodes</button>
+    </div>
   </div>
   <div class="dc-pinned-section" id="dc-pinned-section" style="display:none">
     <div class="dc-section-label">Pinned VMs</div>
@@ -3756,7 +3805,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531m';
+window.__VMROGUE_DASH_REV = '20260531n';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5496,9 +5545,9 @@ function renderCopilotResultInto(el, data, meta) {
   if (data.yaml_preview) {
     html += '<pre id="copilot-yaml-preview" style="margin-top:12px;padding:12px;border-radius:10px;background:rgba(0,0,0,.25);font-size:.75rem;overflow:auto;max-height:240px">' + esc(data.yaml_preview) + '</pre>';
     html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">';
-    html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(document.getElementById(' + jsArgs('copilot-yaml-preview') + ').textContent)') + '>Copy YAML</button>';
-    html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('copilotSaveBlueprint()') + '>Save as Blueprint</button>';
-    html += '<button type="button" class="btn btn-sm" ' + onHandler('copilotExportGitOps()') + '>Export GitOps</button>';
+    html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copyToClipboard(document.getElementById(' + jsArgs('copilot-yaml-preview') + ').textContent)') + '>Copy YAML</button>';
+    html += '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('copilotSaveBlueprint()') + '>Save as Blueprint</button>';
+    html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copilotExportGitOps()') + '>Export GitOps</button>';
     html += '</div>';
   }
   if (data.recommendations && data.recommendations.length) {
@@ -5578,6 +5627,7 @@ async function copilotExportGitOps() {
     document.getElementById('gitops-export-sub').textContent = (data.runbook || '').split('\n').slice(0, 3).join(' ');
     document.getElementById('gitops-export-body').textContent = window._gitopsExportBundle;
     document.getElementById('gitops-export-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
   } catch (e) {
     toast('GitOps export: ' + (e.message || String(e)), 'error');
   }
@@ -5592,6 +5642,24 @@ function formatGitOpsBundle(files) {
 function closeGitOpsExportModal() {
   const modal = document.getElementById('gitops-export-modal');
   if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function dashboardCopilotChip(query) {
+  const inp = document.getElementById('dc-copilot-input');
+  if (inp) inp.value = query;
+  runDashboardCopilot();
+}
+
+function runDashboardCopilot() {
+  const inp = document.getElementById('dc-copilot-input');
+  const q = (inp && inp.value || '').trim();
+  if (!q) {
+    openCopilot('');
+    return;
+  }
+  openCopilot(q);
+  setTimeout(runCopilotAsk, 80);
 }
 
 function copyGitOpsExport() {
@@ -6606,6 +6674,9 @@ document.addEventListener('keydown', e => {
 });
 document.getElementById('spotlight-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeSpotlight();
+});
+document.getElementById('gitops-export-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeGitOpsExportModal();
 });
 document.getElementById('copilot-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCopilot();
