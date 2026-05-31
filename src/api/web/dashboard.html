@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531l">
+<meta name="vmrogue-dashboard-rev" content="20260531m">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531l';
+  var DASH_REV = '20260531m';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2067,30 +2067,49 @@ html[data-theme="zinc"] .monitor-cap{
 .vm-card-meta{font-size:.78rem;color:var(--text-muted);margin:10px 0 12px}
 .vm-card-actions{display:flex;gap:6px;flex-wrap:wrap}
 .spotlight-panel{
-  width:min(640px,92vw);margin:12vh auto 0;background:var(--bg-elevated);border:1px solid var(--border);
-  border-radius:16px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.45);
+  width:min(640px,92vw);margin:12vh auto 0;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
+  overflow:hidden;box-shadow:var(--glass-shadow),0 24px 80px rgba(0,0,0,.45);
 }
-.spotlight-input-wrap{padding:14px 16px;border-bottom:1px solid var(--border)}
+.spotlight-input-wrap{padding:14px 16px;border-bottom:1px solid var(--glass-border)}
 .spotlight-input{
-  width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);
-  background:var(--bg);color:var(--text);font-size:1rem;
+  width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.55);color:var(--text);font-size:1rem;
 }
+.spotlight-input:focus{outline:none;border-color:var(--primary-blue)}
 .spotlight-results{max-height:320px;overflow-y:auto;padding:8px}
 .spotlight-section-label{
   font-size:.72rem;font-weight:600;color:var(--text-dim);padding:8px 12px 4px;text-transform:none;
 }
 .spotlight-footer{
-  padding:10px 14px;border-top:1px solid var(--border);font-size:.72rem;color:var(--text-dim);
+  padding:10px 14px;border-top:1px solid var(--glass-border);font-size:.72rem;color:var(--text-dim);
   display:flex;justify-content:space-between;gap:8px;
 }
 .spotlight-item{
   display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;
 }
-.spotlight-item:hover,.spotlight-item.active{background:rgba(56,189,248,.1)}
+.spotlight-item:hover,.spotlight-item.active{background:rgba(59,130,246,.12)}
 .spotlight-kind{font-size:.68rem;text-transform:uppercase;color:var(--text-dim);min-width:48px}
 .spotlight-title{font-weight:500}
 .spotlight-sub{font-size:.78rem;color:var(--text-dim)}
 .fixit-panel{width:min(520px,92vw);margin:15vh auto 0;padding:24px;border-radius:16px;background:var(--bg-elevated);border:1px solid var(--border)}
+.copilot-drawer-panel{width:min(96vw,720px)}
+.copilot-drawer-body{
+  flex:1;min-height:0;overflow-y:auto;padding:16px 20px 24px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.copilot-drawer-body .form-input{background:rgba(15,23,42,.55);border-color:var(--glass-border)}
+.dash-vm-row{
+  display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--glass-border);
+  cursor:pointer;transition:background .15s;
+}
+.dash-vm-row:hover{background:rgba(51,65,85,.22)}
+.dash-vm-row:last-child{border-bottom:none}
+.dash-vm-main{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.dash-vm-name{font-family:var(--font-mono);font-weight:600;color:var(--text-bright);font-size:.88rem}
+.dash-vm-meta{font-size:.76rem;color:var(--text-dim);margin-top:2px}
+.dash-vm-actions{display:flex;gap:6px;flex-shrink:0}
 .fixit-title{font-size:1.1rem;font-weight:600;margin-bottom:8px}
 .fixit-explanation{font-size:.9rem;line-height:1.55;color:var(--text-muted);margin-bottom:16px}
 .fixit-actions{display:flex;gap:8px;flex-wrap:wrap}
@@ -2410,16 +2429,22 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="toast-container" id="toasts"></div>
 
-<div class="modal-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-labelledby="copilot-title">
-  <div class="fixit-panel copilot-panel glass-panel" tabindex="-1" onclick="event.stopPropagation()" style="width:min(680px,94vw);max-height:85vh;overflow:auto;margin:8vh auto 0">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
-      <div class="fixit-title" id="copilot-title" style="margin:0">VMRogue Copilot</div>
-      <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
+<div class="console-drawer-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-labelledby="copilot-title">
+  <div class="console-drawer-panel copilot-drawer-panel copilot-panel" tabindex="-1" onclick="event.stopPropagation()">
+    <div class="console-drawer-header">
+      <h2 id="copilot-title">VMRogue Copilot</h2>
+      <div class="console-drawer-toolbar">
+        <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
+        <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCopilotAsk()">Ask</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="copilotNewChat()">New chat</button>
+        <button type="button" class="modal-close" onclick="closeCopilot()" aria-label="Close Copilot">&#10005;</button>
+      </div>
     </div>
+    <div class="copilot-drawer-body">
     <div id="copilot-context-banner" class="copilot-context-banner"></div>
     <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
-    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Why is my VM not starting?" aria-label="Copilot question" style="width:100%;margin-bottom:10px;font-size:.9rem"></textarea>
-    <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Why is my VM not starting?" aria-label="Copilot question" style="width:100%;font-size:.9rem"></textarea>
+    <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are pending scheduling?')">Pending</button>
@@ -2428,25 +2453,21 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which namespaces are near quota limits?')">Quotas</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Velero DR readiness')">Velero DR</button>
     </div></div>
-    <div class="copilot-chip-group"><div class="copilot-chip-label">Per-VM</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">
+    <div class="copilot-chip-group"><div class="copilot-chip-label">Per-VM</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Why is my VM stuck in scheduling?')">Scheduling</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show network for my VM')">Network</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show guest agent status')">Guest</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show guest filesystem')">Guest FS</button>
     </div></div>
-    <div class="copilot-chip-group"><div class="copilot-chip-label">Platform</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+    <div class="copilot-chip-group"><div class="copilot-chip-label">Platform</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Create Ubuntu 22.04 VM 2 CPU 4Gi')">YAML</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs are most expensive?')">Costs</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Is the template catalog in sync?')">Catalog</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Compliance score for production VMs')">Compliance</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Node capacity and pressure')">Nodes</button>
     </div></div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCopilotAsk()">Ask</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="copilotNewChat()">New chat</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeCopilot()">Close</button>
-    </div>
     <div id="copilot-result"></div>
+    </div>
   </div>
 </div>
 
@@ -2476,11 +2497,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 </div>
 
 <div class="modal-overlay" id="fixit-modal" role="dialog" aria-modal="true" aria-labelledby="fixit-title">
-  <div class="fixit-panel" onclick="event.stopPropagation()">
+  <div class="fixit-panel glass-panel" onclick="event.stopPropagation()">
     <div class="fixit-title" id="fixit-title">Something went wrong</div>
     <div class="fixit-explanation" id="fixit-explanation"></div>
     <div class="fixit-actions" id="fixit-actions"></div>
-    <div style="margin-top:16px"><button type="button" class="btn btn-sm" onclick="closeFixItModal()">Dismiss</button></div>
+    <div style="margin-top:16px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeFixItModal()">Dismiss</button></div>
   </div>
 </div>
 
@@ -3718,7 +3739,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 </p>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn" onclick="closeAboutModal()">Close</button>
+      <button type="button" class="glass-btn-secondary" onclick="closeAboutModal()">Close</button>
     </div>
   </div>
 </div>
@@ -3735,7 +3756,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531l';
+window.__VMROGUE_DASH_REV = '20260531m';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4003,6 +4024,12 @@ function openNodeDetailDeep(nodeName) {
   navigate('nodes', { skipHash: true });
   setDashboardHash('nodes', { kind: 'node', name: nodeName }, true);
   Promise.resolve(fetchNodes()).finally(function() { toggleNodeDetail(nodeName, { skipHash: true }); });
+}
+
+function openVmDetailDeep(ns, name) {
+  navigate('vms', { skipHash: true });
+  setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
+  Promise.resolve(fetchVMs()).finally(function() { toggleVmDetail(ns, name, { skipHash: true }); });
 }
 
 function loadPageData(page) {
@@ -4990,6 +5017,21 @@ function renderDatacenterHome(data) {
   }
 }
 
+function dashVmRow(vm) {
+  const cls = sc(vm.status);
+  const ns = vm.namespace || 'default';
+  const isRunning = vm.status === 'Running';
+  const badgeCls = vmStatusBadgeClass(vm.status);
+  return '<div class="dash-vm-row" ' + onHandler('openVmDetailDeep(' + jsArgs(ns, vm.name) + ')') + '>' +
+    '<div class="dash-vm-main"><span class="vm-dot ' + cls + '"></span><div><div class="dash-vm-name">' + esc(vm.name) + '</div>' +
+    '<div class="dash-vm-meta">' + esc(ns) + ' · ' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + '</div></div></div>' +
+    '<span class="glass-badge ' + badgeCls + '">' + esc(vm.status) + '</span>' +
+    '<div class="dash-vm-actions" onclick="event.stopPropagation()">' +
+    (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' : '') +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVmDetailDeep(' + jsArgs(ns, vm.name) + ')') + '>Details</button>' +
+    '</div></div>';
+}
+
 function pinnedVmCard(vm) {
   const cls = sc(vm.status);
   const ns = vm.namespace || 'default';
@@ -4997,7 +5039,7 @@ function pinnedVmCard(vm) {
   const isRunning = vm.status === 'Running';
   const family = guessOsFamily(vm);
   const actions =
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('toggleVmDetail(' + jsArgs(ns, name) + ')') + '>Details</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVmDetailDeep(' + jsArgs(ns, name) + ')') + '>Details</button>' +
     (isRunning
       ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>Console</button>'
       : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start</button>');
@@ -5118,6 +5160,7 @@ function openCopilotWithVm(prefill, vmNs, vmName) {
   if (!modal) return;
   copilotReturnFocus = document.activeElement;
   modal.classList.add('open');
+  document.body.style.overflow = 'hidden';
   document.getElementById('copilot-result').innerHTML = '';
   renderCopilotThread();
   loadCopilotStatus();
@@ -5366,6 +5409,7 @@ async function runCostAdvisor() {
 function closeCopilot() {
   const modal = document.getElementById('copilot-modal');
   if (modal) modal.classList.remove('open');
+  document.body.style.overflow = '';
   document.removeEventListener('keydown', onCopilotKeydown, true);
   if (copilotReturnFocus && typeof copilotReturnFocus.focus === 'function') {
     try { copilotReturnFocus.focus(); } catch (err) { /* ignore */ }
@@ -5440,7 +5484,7 @@ function renderCopilotResultInto(el, data, meta) {
     html += '<summary>Evidence (' + data.evidence.length + ')</summary><ul>';
     data.evidence.forEach(function(e) { html += '<li>' + esc(e) + '</li>'; });
     html += '</ul><div class="copilot-copy-row">';
-    html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(data.evidence.join('\n')) + ')') + '>Copy evidence</button>';
+    html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(data.evidence.join('\n')) + ')') + '>Copy evidence</button>';
     html += '</div></details>';
   }
   if (data.validation && data.validation.length) {
@@ -5467,18 +5511,18 @@ function renderCopilotResultInto(el, data, meta) {
     data.actions.forEach(a => {
       const page = a.page || '';
       if (a.action === 'navigate' && page) {
-        html += '<button type="button" class="btn btn-sm" ' + onHandler('closeCopilot();navigate(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
+        html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('closeCopilot();navigate(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'open_vm' && page) {
         const parts = page.split(':');
-        html += '<button type="button" class="btn btn-sm" ' + onHandler('closeCopilot();navigate(\'vms\');setTimeout(function(){toggleVmDetail(' + jsArgs(parts[0], parts[1] || '') + ');},400)') + '>' + esc(a.label) + '</button>';
+        html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('closeCopilot();openVmDetailDeep(' + jsArgs(parts[0], parts[1] || '') + ')') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'forge_vm') {
-        html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('closeCopilot();openCreateModal()') + '>' + esc(a.label) + '</button>';
+        html += '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('closeCopilot();openCreateModal()') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'copy_kubectl' && page) {
-        html += '<button type="button" class="btn btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
+        html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copyToClipboard(' + jsArgs(page) + ')') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'save_blueprint') {
-        html += '<button type="button" class="btn btn-sm btn-start" ' + onHandler('copilotSaveBlueprint()') + '>' + esc(a.label) + '</button>';
+        html += '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('copilotSaveBlueprint()') + '>' + esc(a.label) + '</button>';
       } else if (a.action === 'export_gitops') {
-        html += '<button type="button" class="btn btn-sm" ' + onHandler('copilotExportGitOps()') + '>' + esc(a.label) + '</button>';
+        html += '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('copilotExportGitOps()') + '>' + esc(a.label) + '</button>';
       }
     });
     html += '</div>';
@@ -5705,7 +5749,7 @@ function showFixItModal(data) {
   const actions = document.getElementById('fixit-actions');
   actions.innerHTML = (data.fixes || []).map(fix => {
     const page = fix.page ? fix.page : '';
-    return '<button type="button" class="btn btn-sm btn-restart" ' + onHandler('runFixAction(' + jsArgs(fix.action, page, fix.label) + ')') + '>' +
+    return '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('runFixAction(' + jsArgs(fix.action, page, fix.label) + ')') + '>' +
       esc(fix.label) + '</button>';
   }).join('');
   modal.classList.add('open');
@@ -5996,7 +6040,7 @@ async function fetchVMs() {
       if (dashVmList) {
         dashVmList.innerHTML = vmData.length === 0
           ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>'
-          : vmData.slice(0, 10).map(v => vmRow(v, false)).join('');
+          : vmData.slice(0, 10).map(v => dashVmRow(v)).join('');
       }
     }
 
