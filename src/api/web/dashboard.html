@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531y">
+<meta name="vmrogue-dashboard-rev" content="20260531z">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531y';
+  var DASH_REV = '20260531z';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2008,6 +2008,16 @@ html[data-theme="steel"] .vmrogue-cap-banner.glass-banner,
 html[data-theme="zinc"] .vmrogue-cap-banner.glass-banner{
   background:var(--glass-bg);border-color:var(--glass-border);
 }
+html[data-theme="steel"] .glass-stat-pill,
+html[data-theme="zinc"] .glass-stat-pill{
+  background:var(--glass-bg);border-color:var(--glass-border);
+}
+html[data-theme="steel"] .glass-stat-pill .gsv,
+html[data-theme="zinc"] .glass-stat-pill .gsv{color:var(--text-bright)}
+html[data-theme="steel"] button.glass-stat-pill.clickable-stat:hover,
+html[data-theme="zinc"] button.glass-stat-pill.clickable-stat:hover{
+  border-color:rgba(59,130,246,.35);box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
 
 .table tbody tr.clickable-row{cursor:pointer;transition:background .12s}
 .table tbody tr.clickable-row:hover{background:rgba(59,130,246,.06)}
@@ -2653,16 +2663,16 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       </div>
       <div class="command-actions">
         <button class="btn-create glass-btn-primary" onclick="openCreateModal()">Forge VM</button>
-        <button class="btn btn-restart glass-btn-secondary" onclick="navigate('monitoring')">Open Monitoring</button>
-        <button class="btn btn-start glass-btn-secondary" onclick="navigate('events')">Review Signals</button>
-        <button class="btn btn-stop glass-btn-secondary" onclick="refresh()">Refresh Now</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">Open Monitoring</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">Review Signals</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="refresh()">Refresh Now</button>
       </div>
       <div class="command-metrics" id="command-metrics"></div>
     </div>
     <div class="command-priority">
       <div class="priority-header">
         <span class="priority-title">Priority Queue</span>
-        <button class="btn btn-restart glass-btn-secondary" onclick="navigate('incidents')">Open Incidents</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('incidents')">Open Incidents</button>
       </div>
       <div class="priority-list" id="command-priority-list"></div>
     </div>
@@ -2688,7 +2698,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <!-- VMS PAGE -->
 <div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button class="btn-create" onclick="openCreateModal()">+ Forge VM</button></div></div>
+  <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button></div></div>
   <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Fleet Roster</span>
@@ -3277,7 +3287,7 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Velero (cluster)</span></div>
     <div id="velero-cap-banner"></div>
-    <div id="velero-summary" style="padding:0 16px 8px;font-size:.88rem;color:var(--text-muted)"></div>
+    <div id="velero-summary" class="grid-4 page-glass-stats"></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Storage location</th><th>Items</th><th>Completed</th></tr></thead><tbody id="velero-backups-body"></tbody></table>
     <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Backup</th><th>Completed</th></tr></thead><tbody id="velero-restores-body"></tbody></table>
@@ -3336,7 +3346,7 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="page section-shell" id="page-app-store" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Template Store</h1><p>Install-ready golden images — pick a template and forge a VM</p></div>
-    <button type="button" class="btn-create" onclick="openCreateModal()">Forge VM</button>
+    <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">Forge VM</button>
   </div>
   <div id="app-store-cap-banner"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Available templates</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAppStore()">Refresh</button></div>
@@ -4248,7 +4258,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531y';
+window.__VMROGUE_DASH_REV = '20260531z';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4990,7 +5000,7 @@ function tbodyError(colspan, msg) {
 }
 
 function summaryErrorHtml(msg) {
-  return '<div class="stat-card stat-card-red" style="grid-column:1/-1"><div class="stat-label">API error</div><div class="stat-value" style="font-size:.92rem;line-height:1.55;color:var(--error);font-weight:500">' +
+  return '<div class="glass-stat-pill bad" style="grid-column:1/-1"><div class="gsl">API error</div><div class="gsv" style="font-size:.92rem;line-height:1.35;font-weight:500">' +
     esc(msg || 'Request failed') + '</div></div>';
 }
 
@@ -6681,7 +6691,7 @@ async function fetchSnapshots() {
       ]);
     }
     if (snaps.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="btn btn-start" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
       return;
     }
     el.innerHTML = snaps.map(s => {
@@ -6780,9 +6790,6 @@ async function fetchOverview() {
 }
 
 // Helpers
-function statCard(color,icon,label,value,badge) {
-  return '<div class="stat-card stat-card-'+color+'"><div class="stat-top"><div class="stat-icon '+color+'">'+icon+'</div>'+badge+'</div><div class="stat-body"><div class="stat-value">'+value+'</div><div class="stat-label">'+label+'</div></div></div>';
-}
 function resBar(label,pct,color) {
   return '<div class="resource-bar"><div class="res-header"><span class="lbl">'+label+'</span><span class="pct">'+pct+'%</span></div><div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div></div>';
 }
