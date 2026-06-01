@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260601c">
+<meta name="vmrogue-dashboard-rev" content="20260601d">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260601c';
+  var DASH_REV = '20260601d';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2857,6 +2857,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="dc-copilot-input" id="policies-copilot-input" placeholder="Ask about compliance policy violations…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('policies-copilot-input', 'Compliance policy violations');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('policies-copilot-input', 'Compliance policy violations')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('policies-copilot-input', 'Which policies have violations?', 'Compliance policy violations')">Violations</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('compliance')">Compliance</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('insights')">Insights</button>
+    </div>
   </div>
   <div id="policies-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span></div>
@@ -2880,6 +2885,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsFilter('');document.getElementById('vm-filter-drift').value='drift';filterVMs();">Filter drift</button>
     </div>
   </div>
+  <div id="insights-summary" class="grid-4 page-glass-stats"></div>
 <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Drift Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('drift-advisor-card')">Dismiss</button></div>
     <div id="drift-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -2898,6 +2904,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="dc-copilot-bar-row">
       <input type="text" class="dc-copilot-input" id="actions-copilot-input" placeholder="Ask about pending VMRogue actions…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('actions-copilot-input', 'Pending VMRogue actions');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('actions-copilot-input', 'Pending VMRogue actions')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('actions-copilot-input', 'List pending actions awaiting approval', 'Pending VMRogue actions')">Pending</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('crds')">VMRogue VMs</button>
     </div>
   </div>
   <div id="actions-summary" class="grid-4 page-glass-stats"></div>
@@ -3034,6 +3044,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
     </div>
   </div>
+  <div id="workloads-summary" class="grid-4 page-glass-stats"></div>
 <div class="card glass-card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
   <table class="table" id="workloads-table"><thead><tr><th>Name</th><th>Type</th><th>Replicas</th><th>Ready</th><th>Status</th><th>Namespace</th></tr></thead><tbody id="workloads-body"></tbody></table>
   </div>
@@ -3055,6 +3066,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">View events</button>
     </div>
   </div>
+  <div id="alerts-summary" class="grid-4 page-glass-stats"></div>
 <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Alert Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('alert-advisor-card')">Dismiss</button></div>
     <div id="alert-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -3214,6 +3226,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="dc-copilot-input" id="chaos-copilot-input" placeholder="Ask about chaos experiments…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('chaos-copilot-input', 'Active chaos experiments');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('chaos-copilot-input', 'Active chaos experiments')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('chaos-copilot-input', 'Which chaos experiments are running?', 'Active chaos experiments')">Running</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">Events</button>
+    </div>
   </div>
   <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
@@ -3230,6 +3246,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="dc-copilot-bar-row">
       <input type="text" class="dc-copilot-input" id="rbac-copilot-input" placeholder="Ask about overprivileged bindings…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('rbac-copilot-input', 'RBAC overprivileged bindings');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('rbac-copilot-input', 'RBAC overprivileged bindings')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('rbac-copilot-input', 'Which bindings look overprivileged?', 'RBAC overprivileged bindings')">Overprivileged</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('security')">Security</button>
     </div>
   </div>
   <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
@@ -3296,6 +3316,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="dc-copilot-input" id="hpa-copilot-input" placeholder="Ask about horizontal pod autoscaling…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('hpa-copilot-input', 'HPA scaled workloads');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('hpa-copilot-input', 'HPA scaled workloads')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('hpa-copilot-input', 'Which HPAs are at max replicas?', 'HPA scaled workloads')">At max</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('autoscaler')">Autoscaler</button>
+    </div>
   </div>
   <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
@@ -3318,6 +3342,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('dr')">Open DR</button>
     </div>
   </div>
+  <div id="backups-summary" class="grid-4 page-glass-stats"></div>
 <div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Backup Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('backup-advisor-card')">Dismiss</button></div>
     <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4374,7 +4399,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260601c';
+window.__VMROGUE_DASH_REV = '20260601d';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -9222,9 +9247,20 @@ async function fetchPolicies() {
 
 async function fetchInsights() {
   const tb = document.getElementById('insights-body');
+  const sumEl = document.getElementById('insights-summary');
   try {
     const j = await apiJson('/api/v1/crds/insights');
     const { items, message } = crdItemsFromJson(j);
+    if (sumEl) {
+      const critical = items.filter(i => (i.severity || '').toLowerCase() === 'critical').length;
+      const open = items.filter(i => (i.state || 'New').toLowerCase() !== 'resolved').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Insights', value: items.length },
+        { label: 'Open', value: open, cls: open ? ' warn' : ' ok' },
+        { label: 'Critical', value: critical, cls: critical ? ' bad' : '' },
+        { label: 'Drift', value: '→', onclick: "runDriftAdvisor()", title: 'Run drift advisor' }
+      ]);
+    }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
     tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
   } catch (e) {
@@ -9630,8 +9666,19 @@ async function fetchMonitoring() {
 // Workloads page
 async function fetchWorkloads() {
   const tb = document.getElementById('workloads-body');
+  const sumEl = document.getElementById('workloads-summary');
   try {
     const data = asArray(await apiJson('/api/v1/workloads' + nsParam()));
+    if (sumEl) {
+      const unhealthy = data.filter(w => w.ready_replicas < w.replicas).length;
+      const replicas = data.reduce((n, w) => n + (w.replicas || 0), 0);
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Workloads', value: data.length },
+        { label: 'Unhealthy', value: unhealthy, cls: unhealthy ? ' bad' : ' ok' },
+        { label: 'Replicas', value: replicas },
+        { label: 'Pods', value: '→', onclick: "navigate('pods')", title: 'View pods' }
+      ]);
+    }
     if (tb) {
       tb.innerHTML = data.map(w => {
         const ok = w.ready_replicas >= w.replicas;
@@ -9647,8 +9694,19 @@ async function fetchWorkloads() {
 
 async function fetchAlerts() {
   const tb = document.getElementById('alerts-body');
+  const sumEl = document.getElementById('alerts-summary');
   try {
     const alerts = asArray(await apiJson('/api/v1/alerts' + nsParam()));
+    if (sumEl) {
+      const firing = alerts.filter(a => (a.status || '').toLowerCase() === 'firing').length;
+      const critical = alerts.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Alerts', value: alerts.length },
+        { label: 'Firing', value: firing, cls: firing ? ' warn' : ' ok' },
+        { label: 'Critical', value: critical, cls: critical ? ' bad' : '' },
+        { label: 'Events', value: '→', onclick: "navigate('events')", title: 'View events' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = alerts.map(a => {
       const sevCls = glassTableBadge(a.severity);
@@ -9960,8 +10018,18 @@ async function fetchHpa() {
 
 async function fetchBackups() {
   const tb = document.getElementById('backups-body');
+  const sumEl = document.getElementById('backups-summary');
   try {
     const items = asArray(await apiJson('/api/v1/backups' + nsParam()));
+    if (sumEl) {
+      const ready = items.filter(b => (b.status || '').toLowerCase() === 'ready' || (b.status || '').toLowerCase() === 'completed').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'VM backups', value: items.length },
+        { label: 'Ready', value: ready, cls: ' ok' },
+        { label: 'In progress', value: items.length - ready, cls: items.length - ready ? ' warn' : '' },
+        { label: 'Snapshots', value: '→', onclick: "navigate('snapshots')", title: 'KubeVirt snapshots' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td><span class="glass-badge ${glassTableBadge(b.status)}">${esc(b.status)}</span></td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
@@ -10228,6 +10296,10 @@ function openGlassConfirm(opts) {
   btn.className = (opts.destructive ? 'glass-btn-destructive' : 'glass-btn-primary');
   _glassConfirmSubmit = opts.onConfirm || null;
   document.getElementById('glass-confirm-modal').classList.add('open');
+  setTimeout(function() {
+    const btn = document.getElementById('glass-confirm-btn');
+    if (btn) btn.focus();
+  }, 50);
 }
 function closeGlassConfirm() {
   document.getElementById('glass-confirm-modal').classList.remove('open');
