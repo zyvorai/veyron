@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260601b">
+<meta name="vmrogue-dashboard-rev" content="20260601c">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260601b';
+  var DASH_REV = '20260601c';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2580,6 +2580,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="dc-copilot-input" id="vms-copilot-input" placeholder="Ask about VM health, drift, or scheduling…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('vms-copilot-input', 'KubeVirt fleet health and VM issues');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('vms-copilot-input', 'KubeVirt fleet health and VM issues')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('vms-copilot-input', 'Show all unhealthy VMs', 'KubeVirt fleet health and VM issues')">Unhealthy</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsIssues()">Issues</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('vms-copilot-input', 'Which VMs are pending scheduling?', 'KubeVirt fleet health and VM issues')">Pending</button>
+    </div>
   </div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
@@ -2795,8 +2800,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="dc-copilot-input" id="crds-copilot-input" placeholder="Ask about VMRogueVM CRD posture…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('crds-copilot-input', 'VMRogueVM operator posture');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('crds-copilot-input', 'VMRogueVM operator posture')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCrdCreateModal()">Create VMRogueVM</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('catalog')">Catalog</button>
+    </div>
   </div>
-
+  <div id="crds-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
   </div>
@@ -2813,7 +2822,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <input type="text" class="dc-copilot-input" id="blueprint-copilot-input" placeholder="Ask about blueprint drift or export…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('blueprint-copilot-input', 'Blueprint drift and export');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('blueprint-copilot-input', 'Blueprint drift and export')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">New blueprint</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="copilotExportGitOps()">Export GitOps</button>
+    </div>
   </div>
+  <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
   <div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">Operator CRDs</span><span class="vmrogue-cap-scope">Changes apply to <code>VMRogueBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="vmrogue-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
@@ -2837,6 +2851,14 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Policies</h1><p>VMRoguePolicy compliance enforcement</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Policy Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="policies-copilot-input" placeholder="Ask about compliance policy violations…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('policies-copilot-input', 'Compliance policy violations');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('policies-copilot-input', 'Compliance policy violations')">Ask</button>
+    </div>
+  </div>
+  <div id="policies-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
   </div>
@@ -2845,7 +2867,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-__HDR__Insights__VMRogueInsight observability data</p></div>
+<div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Drift Copilot</div>
@@ -2871,6 +2893,14 @@ __HDR__Insights__VMRogueInsight observability data</p></div>
 <div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Actions</h1><p>VMRogueAction autopilot proposals</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Actions Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="actions-copilot-input" placeholder="Ask about pending VMRogue actions…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('actions-copilot-input', 'Pending VMRogue actions');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('actions-copilot-input', 'Pending VMRogue actions')">Ask</button>
+    </div>
+  </div>
+  <div id="actions-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
   </div>
@@ -2915,7 +2945,7 @@ __HDR__Insights__VMRogueInsight observability data</p></div>
 
 <div class="page section-shell" id="page-security" data-section="security">
 <div class="space-y animate-fade-in">
-__HDR__Security__Security posture and vulnerability findings</p></div>
+<div class="page-header"><div><h1>Security</h1><p>Security posture and vulnerability findings</p></div></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Security Copilot</div>
@@ -3012,7 +3042,7 @@ __HDR__Security__Security posture and vulnerability findings</p></div>
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-__HDR__Alerts__Warning events and alert acknowledgements</p></div>
+<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Alert Copilot</div>
@@ -3066,6 +3096,10 @@ __HDR__Alerts__Warning events and alert acknowledgements</p></div>
       <input type="text" class="dc-copilot-input" id="notifications-copilot-input" placeholder="Ask about unread alerts…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('notifications-copilot-input', 'Unread notifications and critical alerts');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('notifications-copilot-input', 'Unread notifications and critical alerts')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">Events</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('alerts')">Alerts</button>
+    </div>
   </div>
 
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
@@ -3078,6 +3112,17 @@ __HDR__Alerts__Warning events and alert acknowledgements</p></div>
 <div class="page section-shell" id="page-helm" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Helm Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="helm-copilot-input" placeholder="Ask about Helm release health…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('helm-copilot-input', 'Helm release health');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('helm-copilot-input', 'Helm release health')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('operators')">Operators</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('helm-copilot-input', 'Failed Helm releases', 'Helm release health')">Failed</button>
+    </div>
+  </div>
   <div id="helm-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
@@ -3088,6 +3133,17 @@ __HDR__Alerts__Warning events and alert acknowledgements</p></div>
 <div class="page section-shell" id="page-operators" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Operators Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="operators-copilot-input" placeholder="Ask about operator health…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('operators-copilot-input', 'Operator health in cluster');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('operators-copilot-input', 'Operator health in cluster')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('helm')">Helm</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('custom-resources')">CRDs</button>
+    </div>
+  </div>
   <div id="operators-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
@@ -3098,6 +3154,17 @@ __HDR__Alerts__Warning events and alert acknowledgements</p></div>
 <div class="page section-shell" id="page-custom-resources" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">CR Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="custom-resources-copilot-input" placeholder="Ask about custom resource instances…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('custom-resources-copilot-input', 'Custom resource instance counts');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('custom-resources-copilot-input', 'Custom resource instance counts')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('crds')">VMRogue VMs</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('operators')">Operators</button>
+    </div>
+  </div>
   <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
@@ -3107,7 +3174,7 @@ __HDR__Alerts__Warning events and alert acknowledgements</p></div>
 
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
-__HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
+<div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">SLO Copilot</div>
@@ -3141,6 +3208,14 @@ __HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
 <div class="page section-shell" id="page-chaos" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Chaos Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="chaos-copilot-input" placeholder="Ask about chaos experiments…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('chaos-copilot-input', 'Active chaos experiments');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('chaos-copilot-input', 'Active chaos experiments')">Ask</button>
+    </div>
+  </div>
+  <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
   </div>
@@ -3150,6 +3225,13 @@ __HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">RBAC Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="rbac-copilot-input" placeholder="Ask about overprivileged bindings…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('rbac-copilot-input', 'RBAC overprivileged bindings');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('rbac-copilot-input', 'RBAC overprivileged bindings')">Ask</button>
+    </div>
+  </div>
   <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
@@ -3188,6 +3270,18 @@ __HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
 <div class="page section-shell" id="page-ingress" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Ingress Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="ingress-copilot-input" placeholder="Ask about ingress TLS coverage…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('ingress-copilot-input', 'Ingress TLS coverage');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('ingress-copilot-input', 'Ingress TLS coverage')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('ingress-copilot-input', 'Which ingresses lack TLS?', 'Ingress TLS coverage')">No TLS</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('network-policies')">NetPol</button>
+    </div>
+  </div>
+  <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
 </div>
@@ -3196,6 +3290,14 @@ __HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
 <div class="page section-shell" id="page-hpa" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">HPA Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="hpa-copilot-input" placeholder="Ask about horizontal pod autoscaling…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('hpa-copilot-input', 'HPA scaled workloads');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('hpa-copilot-input', 'HPA scaled workloads')">Ask</button>
+    </div>
+  </div>
+  <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
 </div>
@@ -3203,7 +3305,7 @@ __HDR__SLO__Availability objectives, error budgets, and burn rates</p></div>
 
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
-__HDR__Backups__Snapshot-backed backups and restore points</p></div>
+<div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div></div>
     
   <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
     <div class="dc-copilot-bar-label">Backup Copilot</div>
@@ -3286,6 +3388,18 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
   <div class="page-header"><div><h1>Template Store</h1><p>Install-ready golden images — pick a template and forge a VM</p></div>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">Forge VM</button>
   </div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Template Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="app-store-copilot-input" placeholder="Ask which template to pick…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('app-store-copilot-input', 'Template selection for new VMs');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('app-store-copilot-input', 'Template selection for new VMs')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Forge VM</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('app-store-copilot-input', 'Recommend a Windows template', 'Template selection for new VMs')">Windows</button>
+    </div>
+  </div>
+  <div id="app-store-summary" class="grid-4 page-glass-stats"></div>
   <div id="app-store-cap-banner"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Available templates</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAppStore()">Refresh</button></div>
     <div class="app-store-grid" id="app-store-grid"></div>
@@ -3343,6 +3457,17 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Topology Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="topology-copilot-input" placeholder="Ask about network topology…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('topology-copilot-input', 'Network topology paths');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('topology-copilot-input', 'Network topology paths')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('nodes')">Nodes</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('dependencies')">Dependencies</button>
+    </div>
+  </div>
   <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
@@ -3352,6 +3477,17 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="page section-shell" id="page-dependencies" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Dependencies Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="dependencies-copilot-input" placeholder="Ask about VM dependency blocks…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('dependencies-copilot-input', 'VM dependency blocks');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('dependencies-copilot-input', 'VM dependency blocks')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('topology')">Topology</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('vms')">VMs</button>
+    </div>
+  </div>
   <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
@@ -3361,6 +3497,14 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Autoscaler Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="autoscaler-copilot-input" placeholder="Ask about cluster autoscaler…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('autoscaler-copilot-input', 'Cluster autoscaler pending scale');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('autoscaler-copilot-input', 'Cluster autoscaler pending scale')">Ask</button>
+    </div>
+  </div>
+  <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
 </div>
@@ -3662,8 +3806,12 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
       <input type="text" class="dc-copilot-input" id="custom-dashboards-copilot-input" placeholder="Ask about Grafana dashboards…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('custom-dashboards-copilot-input', 'Grafana dashboard links');}">
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('custom-dashboards-copilot-input', 'Grafana dashboard links')">Ask</button>
     </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('observability')">Observability</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">Monitoring</button>
+    </div>
   </div>
-
+  <div id="custom-dashboards-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Description</th><th>Panels</th><th>Author</th><th>Updated</th></tr></thead><tbody id="custom-dashboards-body"></tbody></table></div>
 </div>
@@ -3673,6 +3821,17 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">NetPol Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="network-policies-copilot-input" placeholder="Ask about network policy gaps…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('network-policies-copilot-input', 'Network policy default-deny gaps');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('network-policies-copilot-input', 'Network policy default-deny gaps')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Cilium</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Advisor</button>
+    </div>
+  </div>
   <div id="netpol-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
@@ -3683,6 +3842,17 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button>
+  </div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Images Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="images-copilot-input" placeholder="Ask about CDI golden images…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('images-copilot-input', 'CDI image import status');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('images-copilot-input', 'CDI image import status')">Ask</button>
+    </div>
+    <div class="dc-copilot-bar-chips">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openImageImportModal()">Import</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('catalog')">Catalog</button>
+    </div>
   </div>
   <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
@@ -4204,7 +4374,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260601b';
+window.__VMROGUE_DASH_REV = '20260601c';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5224,6 +5394,16 @@ async function fetchAppStore() {
     const data = await apiJson('/api/v1/experience/templates');
     appStoreCache = data.templates || [];
     setCapBanner('app-store-cap-banner', data.vmrogue_context);
+    const sumEl = document.getElementById('app-store-summary');
+    if (sumEl) {
+      const windows = appStoreCache.filter(t => (t.os_family || '').toLowerCase() === 'windows').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Templates', value: appStoreCache.length },
+        { label: 'Windows', value: windows },
+        { label: 'Linux', value: appStoreCache.length - windows },
+        { label: 'Forge', value: '+', onclick: 'openCreateModal()', title: 'Forge a VM' }
+      ]);
+    }
     const grid = document.getElementById('app-store-grid');
     const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
     grid.innerHTML = appStoreCache.map(t => {
@@ -8852,9 +9032,19 @@ async function fetchStorage() {
 // ── CRD Pages ──
 async function fetchCRDs() {
   const tb = document.getElementById('crds-body');
+  const sumEl = document.getElementById('crds-summary');
   try {
     const j = await apiJson('/api/v1/crds/vmroguevms');
     const { items, message } = crdItemsFromJson(j);
+    if (sumEl) {
+      const running = items.filter(v => (v.phase || '').toLowerCase() === 'running').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'VMRogueVMs', value: items.length },
+        { label: 'Running', value: running, cls: ' ok' },
+        { label: 'Pending', value: items.filter(v => (v.phase || '').toLowerCase() === 'pending').length, cls: ' warn' },
+        { label: 'Catalog', value: '→', onclick: "navigate('catalog')", title: 'Template catalog' }
+      ]);
+    }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
     tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
   } catch (e) {
@@ -8866,10 +9056,20 @@ let _blueprintStudioSelection = null;
 
 async function fetchBlueprintStudio() {
   const tb = document.getElementById('blueprint-studio-body');
+  const sumEl = document.getElementById('blueprint-summary');
   if (!tb) return;
   try {
     const j = await apiJson('/api/v1/crds/blueprints' + nsParam());
     const { items, message } = crdItemsFromJson(j);
+    if (sumEl) {
+      const vmTotal = items.reduce((n, bp) => n + (bp.vm_count || 0), 0);
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Blueprints', value: items.length },
+        { label: 'VMs', value: vmTotal },
+        { label: 'Active', value: items.filter(bp => (bp.phase || '').toLowerCase() === 'ready' || (bp.phase || '').toLowerCase() === 'active').length, cls: ' ok' },
+        { label: 'GitOps', value: '→', onclick: 'copilotExportGitOps()', title: 'Export GitOps' }
+      ]);
+    }
     if (items.length === 0) {
       tb.innerHTML = crdEmptyRow(4, { message });
       return;
@@ -9000,9 +9200,19 @@ async function blueprintStudioDelete() {
 
 async function fetchPolicies() {
   const tb = document.getElementById('policies-body');
+  const sumEl = document.getElementById('policies-summary');
   try {
     const j = await apiJson('/api/v1/crds/policies');
     const { items, message } = crdItemsFromJson(j);
+    if (sumEl) {
+      const violations = items.reduce((n, p) => n + (p.violating_vms || 0), 0);
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Policies', value: items.length },
+        { label: 'Enabled', value: items.filter(p => p.enabled).length, cls: ' ok' },
+        { label: 'Violations', value: violations, cls: violations ? ' bad' : '' },
+        { label: 'Insights', value: '→', onclick: "navigate('insights')", title: 'View insights' }
+      ]);
+    }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
     tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
   } catch (e) {
@@ -9024,9 +9234,19 @@ async function fetchInsights() {
 
 async function fetchActions() {
   const tb = document.getElementById('actions-body');
+  const sumEl = document.getElementById('actions-summary');
   try {
     const j = await apiJson('/api/v1/crds/actions');
     const { items, message } = crdItemsFromJson(j);
+    if (sumEl) {
+      const pending = items.filter(a => (a.phase || 'Pending').toLowerCase() === 'pending').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Actions', value: items.length },
+        { label: 'Pending', value: pending, cls: pending ? ' warn' : '' },
+        { label: 'Approved', value: items.filter(a => a.approved).length, cls: ' ok' },
+        { label: 'VMs', value: '→', onclick: "navigate('crds')", title: 'VMRogue VMs' }
+      ]);
+    }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
     tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
   } catch (e) {
@@ -9608,10 +9828,20 @@ async function fetchSlo() {
 
 async function fetchChaos() {
   const tb = document.getElementById('chaos-body');
+  const sumEl = document.getElementById('chaos-summary');
   try {
     const items = asArray(await apiJson('/api/v1/chaos/experiments'));
-    if (!tb) return;
     const filtered = currentNamespace === 'all' ? items : items.filter(c => c.namespace === currentNamespace);
+    if (sumEl) {
+      const running = filtered.filter(c => (c.status || '').toLowerCase() === 'running').length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Experiments', value: filtered.length },
+        { label: 'Running', value: running, cls: running ? ' warn' : '' },
+        { label: 'Finished', value: filtered.filter(c => (c.status || '').toLowerCase() === 'finished').length, cls: ' ok' },
+        { label: 'Events', value: '→', onclick: "navigate('events')", title: 'Cluster events' }
+      ]);
+    }
+    if (!tb) return;
     tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td><span class="glass-badge ${glassTableBadge(c.status)}">${esc(c.status)}</span></td><td>${esc(c.duration)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
   } catch (e) {
@@ -9683,8 +9913,19 @@ async function fetchQuotas() {
 
 async function fetchIngress() {
   const tb = document.getElementById('ingress-body');
+  const sumEl = document.getElementById('ingress-summary');
   try {
     const items = asArray(await apiJson('/api/v1/ingress' + nsParam()));
+    if (sumEl) {
+      const withTls = items.filter(ing => ing.tls).length;
+      const hosts = items.reduce((n, ing) => n + (ing.hosts || []).length, 0);
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Ingresses', value: items.length },
+        { label: 'TLS', value: withTls, cls: ' ok' },
+        { label: 'No TLS', value: items.length - withTls, cls: items.length - withTls ? ' warn' : '' },
+        { label: 'Hosts', value: hosts }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = items.map(ing => `<tr><td>${esc(ing.name)}</td><td>${esc(ing.namespace)}</td><td>${esc(ing.class_name || '-')}</td><td>${esc((ing.hosts || []).join(', ') || '-')}</td><td>${ing.tls ? 'Yes' : 'No'}</td><td>${esc((ing.rules || []).map(r => (r.host || '*') + r.path + ' -> ' + r.service_name).join(', ') || '-')}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ingress resources found</td></tr>';
@@ -9696,8 +9937,18 @@ async function fetchIngress() {
 
 async function fetchHpa() {
   const tb = document.getElementById('hpa-body');
+  const sumEl = document.getElementById('hpa-summary');
   try {
     const items = asArray(await apiJson('/api/v1/hpa' + nsParam()));
+    if (sumEl) {
+      const atMax = items.filter(h => h.current_replicas >= h.max_replicas).length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'HPAs', value: items.length },
+        { label: 'At max', value: atMax, cls: atMax ? ' warn' : '' },
+        { label: 'Scaled', value: items.filter(h => h.desired_replicas !== h.current_replicas).length },
+        { label: 'Autoscaler', value: '→', onclick: "navigate('autoscaler')", title: 'Autoscaler policies' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = items.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.target_kind)}/${esc(h.target_name)}</td><td>${h.min_replicas}</td><td>${h.current_replicas}</td><td>${h.desired_replicas}</td><td>${h.max_replicas}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No HPAs found</td></tr>';
@@ -9797,8 +10048,18 @@ async function fetchDependencies() {
 
 async function fetchAutoscaler() {
   const tb = document.getElementById('autoscaler-body');
+  const sumEl = document.getElementById('autoscaler-summary');
   try {
     const items = asArray(await apiJson('/api/v1/autoscaler/policies' + nsParam()));
+    if (sumEl) {
+      const enabled = items.filter(a => a.enabled).length;
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Policies', value: items.length },
+        { label: 'Enabled', value: enabled, cls: ' ok' },
+        { label: 'Disabled', value: items.length - enabled },
+        { label: 'HPA', value: '→', onclick: "navigate('hpa')", title: 'Horizontal pod autoscalers' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = items.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.namespace)}</td><td>${esc(a.target_kind)}/${esc(a.target_name)}</td><td>${a.min_replicas}</td><td>${a.current_replicas}</td><td>${a.max_replicas}</td><td>${a.enabled ? 'Yes' : 'No'}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No autoscaler policies found</td></tr>';
@@ -10505,8 +10766,18 @@ async function fetchHeatmap() {
 
 async function fetchCustomDashboards() {
   const tb = document.getElementById('custom-dashboards-body');
+  const sumEl = document.getElementById('custom-dashboards-summary');
   try {
     const rows = asArray(await apiJson('/api/v1/dashboards' + nsParam()));
+    if (sumEl) {
+      const panels = rows.reduce((n, d) => n + (d.panels || []).length, 0);
+      sumEl.innerHTML = renderGlassStatPills([
+        { label: 'Dashboards', value: rows.length },
+        { label: 'Panels', value: panels },
+        { label: 'Authors', value: new Set(rows.map(d => d.created_by).filter(Boolean)).size },
+        { label: 'Observability', value: '→', onclick: "navigate('observability')", title: 'Observability hub' }
+      ]);
+    }
     if (!tb) return;
     tb.innerHTML = rows.map(d => `<tr>
       <td>${esc(d.name)}</td><td>${esc(d.description || '')}</td><td>${(d.panels || []).length}</td>
