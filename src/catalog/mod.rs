@@ -96,10 +96,7 @@ fn build_profile_crd(profile: &crate::profiles::Profile) -> VMProfile {
 }
 
 /// Upsert a cluster-scoped VMTemplate (create or replace on conflict).
-pub async fn upsert_template(
-    api: &kube::Api<VMTemplate>,
-    tpl: VMTemplate,
-) -> Result<()> {
+pub async fn upsert_template(api: &kube::Api<VMTemplate>, tpl: VMTemplate) -> Result<()> {
     use kube::api::PostParams;
 
     let name = tpl
@@ -118,10 +115,7 @@ pub async fn upsert_template(
 }
 
 /// Upsert a cluster-scoped VMProfile (create or replace on conflict).
-pub async fn upsert_profile(
-    api: &kube::Api<VMProfile>,
-    prof: VMProfile,
-) -> Result<()> {
+pub async fn upsert_profile(api: &kube::Api<VMProfile>, prof: VMProfile) -> Result<()> {
     use kube::api::PostParams;
 
     let name = prof
@@ -236,8 +230,10 @@ pub async fn catalog_status(client: &kube::Client) -> CatalogStatus {
         }
     };
 
-    let cluster_tpl_names: BTreeSet<_> = cluster_templates.iter().map(|t| t.name.as_str()).collect();
-    let cluster_prof_names: BTreeSet<_> = cluster_profiles.iter().map(|p| p.name.as_str()).collect();
+    let cluster_tpl_names: BTreeSet<_> =
+        cluster_templates.iter().map(|t| t.name.as_str()).collect();
+    let cluster_prof_names: BTreeSet<_> =
+        cluster_profiles.iter().map(|p| p.name.as_str()).collect();
 
     let missing_templates: Vec<String> = TEMPLATES
         .list()

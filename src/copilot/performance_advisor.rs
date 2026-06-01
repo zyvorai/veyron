@@ -23,7 +23,8 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
         .collect();
 
     if running.is_empty() {
-        r.summary = "No running VMs in scope — start workloads to collect performance signals.".into();
+        r.summary =
+            "No running VMs in scope — start workloads to collect performance signals.".into();
         return r;
     }
 
@@ -83,15 +84,12 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
             if prom { " (24h Prometheus p95)" } else { "" }
         )
     } else {
-        format!(
-            "{total_hot} VM(s) show high CPU or memory — review sizing or noisy neighbors."
-        )
+        format!("{total_hot} VM(s) show high CPU or memory — review sizing or noisy neighbors.")
     };
 
     if total_hot > 0 {
-        r.recommendations.push(
-            "Right-size CPU/memory or migrate noisy VMs before they throttle.".into(),
-        );
+        r.recommendations
+            .push("Right-size CPU/memory or migrate noisy VMs before they throttle.".into());
     }
     if !prom {
         r.recommendations.push(
@@ -120,7 +118,8 @@ async fn prom_percentiles(ns: &str, vm: &str) -> Option<(f64, f64)> {
     let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
     let end = chrono::Utc::now().timestamp();
     let start = end - 86400;
-    let cpu_q = format!("rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{ns}\", name=\"{vm}\"}}[5m]) * 100");
+    let cpu_q =
+        format!("rate(kubevirt_vmi_vcpu_seconds{{namespace=\"{ns}\", name=\"{vm}\"}}[5m]) * 100");
     let mem_q = format!("kubevirt_vmi_memory_resident_bytes{{namespace=\"{ns}\", name=\"{vm}\"}}");
     let cpu_p95 = prom_p95(&base, &cpu_q, start, end).await?;
     let mem_p95 = prom_p95(&base, &mem_q, start, end).await?;

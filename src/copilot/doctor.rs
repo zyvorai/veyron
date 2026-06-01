@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-use super::{CopilotAction, CopilotResponse};
 use super::fixit::vm_health_score;
+use super::{CopilotAction, CopilotResponse};
 use crate::kube::KubeClient;
 
 pub async fn vm_doctor(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
@@ -15,7 +15,8 @@ pub async fn vm_doctor(client: &KubeClient, namespace: &str, name: &str) -> Copi
         Ok(v) => v,
         Err(e) => {
             r.summary = format!("Could not load VirtualMachine: {e}");
-            r.recommendations.push("Verify workspace and VM name.".into());
+            r.recommendations
+                .push("Verify workspace and VM name.".into());
             return r;
         }
     };
@@ -67,7 +68,8 @@ pub async fn vm_doctor(client: &KubeClient, namespace: &str, name: &str) -> Copi
                 .push("Reduce CPU/memory or add capacity to the cluster.".into());
         }
         if msg_l.contains("persistentvolumeclaim") || msg_l.contains("unbound") {
-            r.recommendations.push("Check PVC binding and StorageClass.".into());
+            r.recommendations
+                .push("Check PVC binding and StorageClass.".into());
         }
     }
 
@@ -85,9 +87,8 @@ pub async fn vm_doctor(client: &KubeClient, namespace: &str, name: &str) -> Copi
                 .push("Inspect virt-launcher pod logs and recent warning events.".into());
         }
         "Pending" | "Scheduling" => {
-            r.recommendations.push(
-                "Run scheduling explainer: ask why this VM is pending.".into(),
-            );
+            r.recommendations
+                .push("Run scheduling explainer: ask why this VM is pending.".into());
         }
         _ => {}
     }

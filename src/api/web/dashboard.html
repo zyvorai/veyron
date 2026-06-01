@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260601e">
+<meta name="vmrogue-dashboard-rev" content="20260602a">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260601e';
+  var DASH_REV = '20260602a';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1276,6 +1276,82 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .vm-metrics-sparkline{margin-top:12px;height:48px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid var(--border);overflow:hidden}
 .vm-metrics-sparkline canvas{width:100%;height:100%}
 .glass-details-ai{border-color:rgba(139,92,246,.25)}
+/* ═══ ZeusOS VM-First UX ═══ */
+body.has-zeus-ai-bar{padding-bottom:88px}
+body.vm-focus-active .vm-list-pane{display:none}
+body.vm-focus-active .vm-workspace{grid-template-columns:1fr}
+body.vm-focus-active .vm-focus-back{display:inline-flex!important}
+@media(min-width:1025px){body.vm-focus-active .vm-list-pane{display:flex}body.vm-focus-active .vm-focus-back{display:none!important}}
+.zeus-nav-chips{display:flex;flex-wrap:wrap;gap:6px;margin-left:12px}
+.zeus-nav-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(0,0,0,.2);font-size:.72rem;font-weight:600;color:var(--text-muted);cursor:pointer}
+.zeus-nav-chip:hover,.zeus-nav-chip.active{color:var(--text-bright);border-color:rgba(93,144,247,.4);background:rgba(59,130,246,.12)}
+@media(min-width:901px){.btn-nav-browse,.browse-mega-header,.browse-mega-menu,.classic-nav-backdrop{display:none!important}}
+.vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
+.vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
+.vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vm-list-scroll{flex:1;overflow-y:auto;min-height:200px}
+.vm-list-scroll .vm-row,.vm-list-scroll .vm-card-grid .vm-card{border-radius:0;border-left:3px solid transparent}
+.vm-row.selected,.vm-card.selected{border-left-color:var(--primary-blue)!important;background:rgba(59,130,246,.1)!important}
+.vm-focus-pane{overflow-y:auto;padding:20px;background:linear-gradient(180deg,rgba(15,23,42,.4),rgba(0,0,0,.15));min-height:0}
+.vm-focus-empty{text-align:center;padding:48px 24px;color:var(--text-muted)}
+.vm-focus-empty h3{color:var(--text-bright);margin:0 0 8px;font-size:1.2rem}
+.zeus-glass{background:rgba(22,27,34,.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.35)}
+.vm-hero.zeus-glass{padding:24px 26px;margin-bottom:16px}
+.vm-hero-top{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px}
+.vm-hero-title{font-family:var(--font-display);font-size:2rem;font-weight:800;color:var(--text-bright);letter-spacing:-.03em;line-height:1.1;margin:0}
+.vm-hero-status{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:6px 14px;border-radius:999px;font-size:.78rem;font-weight:700;text-transform:uppercase}
+.vm-hero-status.running{background:var(--success-dim);color:var(--success)}
+.vm-hero-status.stopped{background:rgba(148,163,184,.15);color:var(--text-muted)}
+.vm-hero-status.error{background:var(--error-dim);color:var(--error)}
+.vm-hero-status.other{background:var(--warning-dim);color:var(--warning)}
+.vm-hero-status .status-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
+.vm-hero-status.running .status-dot{animation:zeus-pulse 2s ease-in-out infinite}
+@keyframes zeus-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+.vm-hero-metrics{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.vm-hero-metric{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,.2);font-size:.82rem}
+.vm-hero-metric strong{display:block;font-family:var(--font-mono);color:var(--text-bright);font-size:1rem;margin-top:2px}
+.vm-hero-rings{display:flex;gap:12px;margin-top:12px}
+.vm-hero-ring{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.9rem;border:2px solid var(--border)}
+.vm-hero-ring.ok{border-color:var(--success);color:var(--success)}
+.vm-hero-ring.warn{border-color:var(--warning);color:var(--warning)}
+.vm-hero-ring.bad{border-color:var(--error);color:var(--error)}
+.vm-action-rail{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.vm-action-rail .glass-btn-primary.connect-btn{padding:14px 28px;font-size:.92rem;font-weight:700}
+.vm-action-rail .glass-btn-secondary,.vm-action-rail .glass-btn-destructive{padding:12px 18px;font-size:.82rem}
+.zeus-inspector{margin-top:8px}
+.zeus-inspector-section.zeus-glass{margin-bottom:10px;overflow:hidden}
+.zeus-inspector-section summary{padding:14px 18px;cursor:pointer;font-weight:700;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);list-style:none}
+.zeus-inspector-section summary::-webkit-details-marker{display:none}
+.zeus-inspector-body{padding:0 18px 16px;font-size:.84rem}
+.connect-modal-panel{width:min(440px,92vw);padding:0}
+.connect-modal-panel .modal-header,.connect-modal-panel .modal-body,.connect-modal-panel .modal-footer{padding:20px 24px}
+.connect-protocol-list{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.connect-protocol-opt{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);cursor:pointer;background:rgba(0,0,0,.2)}
+.connect-protocol-opt:hover{border-color:rgba(93,144,247,.4)}
+.connect-protocol-opt.selected{border-color:var(--primary-blue);background:rgba(59,130,246,.12)}
+.connect-protocol-opt.disabled{opacity:.45;cursor:not-allowed}
+.connect-protocol-opt input{margin:0}
+#ssh-popover.zeus-glass{position:fixed;z-index:240;max-width:420px;padding:16px;display:none;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+#ssh-popover.open{display:block}
+.zeus-ai-bar{position:fixed;left:0;right:0;bottom:0;z-index:200;padding:12px 20px 16px;background:rgba(12,16,24,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(255,255,255,.08)}
+.zeus-ai-bar-inner{max-width:1200px;margin:0 auto;display:flex;gap:10px;align-items:center}
+.zeus-ai-input{flex:1;padding:12px 16px;border-radius:12px;border:1px solid var(--border);background:rgba(0,0,0,.35);color:var(--text);font-size:.9rem}
+.zeus-ai-input:focus{outline:none;border-color:var(--primary-purple)}
+.zeus-ai-results{max-width:1200px;margin:0 auto 8px;max-height:200px;overflow-y:auto}
+.spotlight-panel.zeus-spotlight{width:min(640px,94vw);border-radius:16px}
+.mission-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.mission-tile.zeus-glass{padding:20px;cursor:pointer;transition:transform .15s ease,border-color .15s}
+.mission-tile.zeus-glass:hover{transform:translateY(-2px);border-color:rgba(93,144,247,.35)}
+.mission-tile h3{margin:0 0 6px;font-size:1rem;color:var(--text-bright)}
+.mission-tile .mt-val{font-size:2rem;font-weight:800;font-family:var(--font-display);color:var(--primary-blue)}
+.security-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.security-finding-cards{display:flex;flex-direction:column;gap:10px}
+.security-finding-card.zeus-glass{padding:14px 16px;border-left:4px solid var(--border)}
+.security-finding-card.critical{border-left-color:var(--error)}
+.security-finding-card.high{border-left-color:var(--warning)}
+.security-finding-card.medium{border-left-color:var(--spark)}
+.vms-page-copilot-hidden{display:none!important}
+
 .vm-detail .detail-section{background:transparent;border:none;box-shadow:none;padding:0;backdrop-filter:none}
 .vm-detail .detail-section-title{font-size:.72rem;margin-bottom:10px}
 .vm-detail .detail-row{padding:6px 0;font-size:.84rem}
@@ -2268,6 +2344,12 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Hide sidebar" aria-expanded="true" title="Hide sidebar (⌘\)">☰</button>
     <span class="navbar-brand" onclick="navigate('dashboard')">ZeusOS</span>
     <span class="navbar-page-title" id="navbar-page-title">ZeusOS Dashboard</span>
+    <div class="zeus-nav-chips" id="zeus-nav-chips">
+      <button type="button" class="zeus-nav-chip" data-page="vms" onclick="navigate('vms')">VMs</button>
+      <button type="button" class="zeus-nav-chip" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
+      <button type="button" class="zeus-nav-chip" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
+      <button type="button" class="zeus-nav-chip" data-page="security" onclick="navigate('security')">Security</button>
+    </div>
   </div>
   <div class="navbar-right">
     <div class="topbar-location" id="topbar-location-wrap">
@@ -2276,7 +2358,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <button type="button" class="glass-btn-secondary glass-btn-sm topbar-location-btn" id="cluster-activate-btn" onclick="activateClusterContext()" style="display:none">Switch</button>
     </div>
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
-    <button type="button" class="btn-spotlight" onclick="openCopilot()" title="VMRogue Copilot">Copilot</button>
+    <button type="button" class="btn-spotlight" onclick="document.getElementById('zeus-ai-input').focus()" title="Zeus AI command bar">AI</button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <option value="slate">Slate Alloy</option>
@@ -2426,6 +2508,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div class="finder-section-body" id="finder-operations">
       <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon">⧉</span>Backups</button>
       <button type="button" class="cloudos-finder-item" data-page="monitoring" onclick="finderNavigate('monitoring')"><span class="fi-icon">⬢</span>Activity Monitor</button>
+      <button type="button" class="cloudos-finder-item" data-page="mission-control" onclick="finderNavigate('mission-control')"><span class="fi-icon">◫</span>Mission Control</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
@@ -2524,9 +2607,9 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 </div>
 
 <div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
-  <div class="spotlight-panel" onclick="event.stopPropagation()">
+  <div class="spotlight-panel zeus-spotlight zeus-glass" onclick="event.stopPropagation()">
     <div class="spotlight-input-wrap">
-      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Search VMs, pages, actions…" autocomplete="off" spellcheck="false">
+      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Open VNC for a VM, forge VM, show unhealthy workloads…" autocomplete="off" spellcheck="false">
     </div>
     <div class="spotlight-results" id="spotlight-results"></div>
     <div class="spotlight-footer" id="spotlight-footer">
@@ -2650,44 +2733,39 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button></div></div>
-  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
-    <div class="dc-copilot-bar-label">Fleet Copilot</div>
-    <div class="dc-copilot-bar-row">
-      <input type="text" class="dc-copilot-input" id="vms-copilot-input" placeholder="Ask about VM health, drift, or scheduling…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('vms-copilot-input', 'KubeVirt fleet health and VM issues');}">
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('vms-copilot-input', 'KubeVirt fleet health and VM issues')">Ask</button>
-    </div>
-    <div class="dc-copilot-bar-chips">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('vms-copilot-input', 'Show all unhealthy VMs', 'KubeVirt fleet health and VM issues')">Unhealthy</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsIssues()">Issues</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('vms-copilot-input', 'Which VMs are pending scheduling?', 'KubeVirt fleet health and VM issues')">Pending</button>
-    </div>
-  </div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card">
-    <div class="card-header">
-      <span class="card-title">Fleet Roster</span>
-      <div class="filter-bar">
-        <input type="text" class="form-input" id="vm-search" placeholder="Search VMs..." oninput="filterVMs()">
-        <select class="form-select" id="vm-filter-status" onchange="filterVMs()">
-          <option value="">All</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues (Failed/Error)</option><option value="Failed">Failed</option><option value="Error">Error</option>
-        </select>
-        <select class="form-select" id="vm-filter-drift" onchange="filterVMs()" title="Operator drift filter">
-          <option value="">All drift</option><option value="drift">Drift detected</option><option value="clear">In sync</option><option value="unmanaged">Unmanaged</option>
-        </select>
-        <div class="vm-view-toggle">
-          <button type="button" id="vm-view-list" onclick="setVmViewMode('list')">List</button>
-          <button type="button" id="vm-view-grid" class="active" onclick="setVmViewMode('grid')">Cards</button>
+  <div class="vm-workspace zeus-glass" id="vm-workspace">
+    <div class="vm-list-pane">
+      <div class="vm-list-toolbar">
+        <div class="filter-bar" style="margin:0">
+          <input type="text" class="form-input" id="vm-search" placeholder="Search VMs…" oninput="filterVMs()">
+          <select class="form-select" id="vm-filter-status" onchange="filterVMs()">
+            <option value="">All</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option>
+          </select>
+          <div class="vm-view-toggle">
+            <button type="button" id="vm-view-list" onclick="setVmViewMode('list')">List</button>
+            <button type="button" id="vm-view-grid" class="active" onclick="setVmViewMode('grid')">Cards</button>
+          </div>
+        </div>
+        <div class="bulk-bar" id="bulk-bar" style="margin-top:10px">
+          <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)">
+          <span id="bulk-count">0 selected</span>
         </div>
       </div>
+      <div class="vm-list-scroll" id="vm-full-list"></div>
     </div>
-    <div class="bulk-bar" id="bulk-bar">
-      <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)">
-      <span id="bulk-count">0 selected</span>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')">Start</button>
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')">Stop</button>
-      <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')">Delete</button>
+    <div class="vm-focus-pane" id="vm-focus-pane">
+      <button type="button" class="glass-btn-secondary glass-btn-sm vm-focus-back" style="display:none;margin-bottom:12px" onclick="clearVmSelection()">← Fleet list</button>
+      <div class="vm-focus-empty" id="vm-focus-empty">
+        <h3>Select a virtual machine</h3>
+        <p>Choose a VM from the fleet list to connect, inspect health, and manage resources.</p>
+        <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center">
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('vm-filter-status').value='Running';filterVMs()">Running</button>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsIssues()">Issues</button>
+        </div>
+      </div>
+      <div id="vm-focus-content" style="display:none"></div>
     </div>
-    <div id="vm-full-list"></div>
   </div>
 </div>
 </div>
@@ -3049,9 +3127,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     <div id="security-sentinel-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="security-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Security Findings</span></div>
-  <table class="table" id="security-table"><thead><tr><th>Severity</th><th>Category</th><th>Title</th><th>Resource</th><th>Recommendation</th></tr></thead><tbody id="security-body"></tbody></table>
-  </div>
+  <div id="security-finding-cards" class="security-finding-cards"></div>
+  <details class="glass-details" style="margin-top:16px"><summary>Table view</summary>
+  <div class="card glass-card" style="margin-top:12px"><table class="table" id="security-table"><thead><tr><th>Severity</th><th>Category</th><th>Title</th><th>Resource</th><th>Recommendation</th></tr></thead><tbody id="security-body"></tbody></table></div>
+  </details>
 </div>
 </div>
 
@@ -3552,6 +3631,17 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
     </div>
   </div>
 <div id="metrics-summary" class="grid-4 page-glass-stats"></div>
+</div>
+</div>
+
+
+<div class="page section-shell" id="page-mission-control" data-section="observe">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Mission Control</h1><p>Cluster relationships at a glance — hosts, VMs, networks, and storage</p></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMissionControl()">Refresh</button></div>
+  <div id="mission-wall" class="mission-wall"></div>
+  <div class="card glass-card zeus-glass"><div class="card-header"><span class="card-title">Topology</span></div>
+  <div id="mission-topology-body" style="padding:12px;font-size:.84rem;color:var(--text-muted)">Loading…</div></div>
 </div>
 </div>
 
@@ -4475,7 +4565,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260601e';
+window.__VMROGUE_DASH_REV = '20260602a';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4546,6 +4636,7 @@ const PAGE_META = {
   gitops: {kicker:'Platform', title:'Sync status and drift across GitOps sources', tags:['Drift','Branch','Sync state']},
   webhooks: {kicker:'Platform', title:'Outbound automation hooks and delivery controls', tags:['URLs','Events','Secrets']},
   ingress: {kicker:'Network', title:'Routes, traffic edges, and exposure state', tags:['Ingress','Policies','Topology']},
+  'mission-control': {kicker:'Observe', title:'Mission Control — cluster relationship wall', tags:['Hosts','VMs','Networks','Storage']},
   topology: {kicker:'Network', title:'Placement and dependency mapping', tags:['Nodes and edges','Dependency graph','Scope aware']},
   dependencies: {kicker:'Network', title:'Dependency edges between VM-facing resources', tags:['Edges','Labels','Annotations']},
   cilium: {kicker:'Network', title:'Policy view and cluster network flow surface', tags:['Policies','Flow hints','Agent status']},
@@ -4648,6 +4739,7 @@ function navigate(page, opts) {
   document.body.dataset.section = pageEl.dataset.section || page;
   syncFinderActive(page);
   updatePageContext(page);
+  document.querySelectorAll('.zeus-nav-chip').forEach(function(c) { c.classList.toggle('active', c.dataset.page === page); });
   loadPageData(page);
   if (!opts || !opts.skipHash) setDashboardHash(page, null, false);
 }
@@ -4710,8 +4802,7 @@ function applyDashboardHash() {
   const parsed = parseDashboardHash();
   if (!document.getElementById('page-' + parsed.page)) return;
   _applyingDashHash = true;
-  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
-  expandedVm = null;
+  clearVmSelection({ skipHash: true });
   navigate(parsed.page, { skipHash: true });
   if (!parsed.detail) {
     _applyingDashHash = false;
@@ -4721,7 +4812,7 @@ function applyDashboardHash() {
   setTimeout(function() {
     try {
       if (d.kind === 'vm') {
-        Promise.resolve(fetchVMs()).finally(function() { toggleVmDetail(d.ns, d.name, { skipHash: true }); });
+        Promise.resolve(fetchVMs()).finally(function() { selectVm(d.ns, d.name, { skipHash: true }); });
       } else if (d.kind === 'pod') {
         Promise.resolve(fetchPods()).finally(function() { togglePodDetail(d.ns, d.name, { skipHash: true }); });
       } else if (d.kind === 'node') {
@@ -4748,7 +4839,7 @@ function openNodeDetailDeep(nodeName) {
 function openVmDetailDeep(ns, name) {
   navigate('vms', { skipHash: true });
   setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
-  Promise.resolve(fetchVMs()).finally(function() { toggleVmDetail(ns, name, { skipHash: true }); });
+  Promise.resolve(fetchVMs()).finally(function() { selectVm(ns, name, { skipHash: true }); });
 }
 
 function navigateToVmsFilter(status) {
@@ -4825,6 +4916,7 @@ function loadPageData(page) {
   if (page === 'hpa') fetchHpa();
   if (page === 'backups') fetchBackups();
   if (page === 'metrics') fetchMetrics();
+  if (page === 'mission-control') fetchMissionControl();
   if (page === 'topology') fetchTopology();
   if (page === 'dependencies') fetchDependencies();
   if (page === 'autoscaler') fetchAutoscaler();
@@ -5566,7 +5658,7 @@ function vmCard(vm, showActions) {
   const icon = osFamilyIcon(family);
   const winHint = isRunning && isWindowsVm(vm) ? '<span class="vm-rdp-hint" title="Use RDP expose for Windows">RDP</span>' : '';
   const primary = isRunning
-    ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' + winHint
+    ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Connect</button>' + winHint
     : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
   const stopBtn = isRunning && showActions
     ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
@@ -5579,7 +5671,8 @@ function vmCard(vm, showActions) {
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
-  return '<div class="vm-card" ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + '>' +
+  const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
+  return '<div class="vm-card' + sel + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
     '<span class="vm-workspace-chip">workspace · ' + esc(ns) + '</span>' +
@@ -5599,6 +5692,7 @@ function renderVmFullList(vms) {
   } else {
     el.innerHTML = vms.map(v => vmRow(v, true)).join('');
   }
+  syncVmSelectionUi();
 }
 
 // VM Action
@@ -5706,18 +5800,18 @@ function vmRow(vm, showActions) {
   const ns = vm.namespace || 'default';
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
-    (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>VNC</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, vm.name) + ')') + '>Serial</button>' : '') +
+    (isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Connect</button>' : '') +
     (!isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>&#9654;</button>' : '') +
     (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>&#9632;</button>' : '') +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>&#8635;</button>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>&#10005;</button>' +
     '</div>' : '';
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(vm.name) + ',this.checked)') + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
-  const clickAttr = showActions ? (' ' + onHandler('toggleVmDetail(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"') : '';
+  const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
+  const clickAttr = showActions ? (' class="vm-row' + sel + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"') : (' class="vm-row' + sel + '"');
   const sshBlock = vmSshBlock(vm, showActions);
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
-  return '<div class="vm-row"'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div><div class="vm-ns">'+esc(ns)+'</div></div></div>'+rightCol+'</div>';
+  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div><div class="vm-ns">'+esc(ns)+'</div></div></div>'+rightCol+'</div>';
 }
 
 function initVmViewMode() {
@@ -6511,7 +6605,39 @@ function runSpotlightAction(action) {
     const parts = action.split(':');
     if (parts.length >= 3) {
       navigate('vms');
-      setTimeout(() => toggleVmDetail(parts[1], parts[2]), 300);
+      setTimeout(function() { selectVm(parts[1], parts[2]); }, 300);
+    }
+    return;
+  }
+  if (action.indexOf('open_vnc:') === 0) {
+    const parts = action.split(':');
+    if (parts.length >= 3) {
+      navigate('vms');
+      setTimeout(function() { selectVm(parts[1], parts[2]); openConnectModal(parts[1], parts[2], 'vnc'); }, 300);
+    }
+    return;
+  }
+  if (action.indexOf('open_serial:') === 0) {
+    const parts = action.split(':');
+    if (parts.length >= 3) {
+      navigate('vms');
+      setTimeout(function() { selectVm(parts[1], parts[2]); openConnectModal(parts[1], parts[2], 'serial'); }, 300);
+    }
+    return;
+  }
+  if (action.indexOf('open_ssh:') === 0) {
+    const parts = action.split(':');
+    if (parts.length >= 3) {
+      navigate('vms');
+      setTimeout(function() { selectVm(parts[1], parts[2]); showSshPopover(parts[1], parts[2]); }, 300);
+    }
+    return;
+  }
+  if (action.indexOf('migrate:') === 0) {
+    const parts = action.split(':');
+    if (parts.length >= 3) {
+      navigate('vms');
+      setTimeout(function() { selectVm(parts[1], parts[2]); migrateVM(parts[1], parts[2]); }, 300);
     }
     return;
   }
@@ -6881,8 +7007,11 @@ async function fetchVMs() {
     if (subEl) {
       subEl.textContent = 'KubeVirt fleet command' + (driftN ? ' — ' + driftN + ' with operator drift' : '');
     }
-    if (!expandedVm) {
-      renderVmFullList(vmData);
+    if (currentPage === 'vms') {
+      filterVMs();
+      if (selectedVmNs && selectedVmName) {
+        fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
+      }
     }
   } catch (e) {
     console.error('fetchVMs', e);
@@ -7451,10 +7580,27 @@ document.addEventListener('keydown', e => {
     openSpotlight();
     return;
   }
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'c' && currentPage === 'vms' && selectedVmNs && selectedVmName) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      openConnectModal(selectedVmNs, selectedVmName);
+      return;
+    }
+  }
+  const connectModal = document.getElementById('connect-modal');
+  if (connectModal && connectModal.classList.contains('open') && e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'textarea') {
+      e.preventDefault();
+      submitConnectModal();
+      return;
+    }
+  }
   onSpotlightKeydown(e);
   if (e.key === 'Escape') {
     closeClassicNav();
-    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt();
+    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt(); closeConnectModal(); closeSshPopover();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
   }
@@ -7517,50 +7663,76 @@ document.getElementById('about-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeAboutModal();
 });
 
-// ── VM Detail Panel ──
-let expandedVm = null;
 
-function toggleVmDetail(ns, name, opts) {
-  const key = ns + '/' + name;
-  const detailId = 'detail-' + name;
-  const existing = document.getElementById(detailId);
-  if (existing) {
-    existing.remove();
-    expandedVm = null;
-    if (!opts || !opts.skipHash) setDashboardHash('vms', null, false);
-    return;
-  }
-  document.querySelectorAll('.vm-detail').forEach(d => d.remove());
-  expandedVm = key;
-  rememberVmForSnap(ns, name);
+// ── ZeusOS VM Workspace ──
+let selectedVmKey = null;
+let selectedVmNs = null;
+let selectedVmName = null;
+let _connectVm = { ns: '', name: '' };
+let _vmDetailCache = null;
+const ZEUS_CONNECT_PROTO_KEY = 'zeus_connect_protocol';
 
-  const placeholder = '<div class="vm-detail" id="' + detailId + '"><div class="detail-loading">Loading VM details\u2026</div></div>';
-  const rows = document.querySelectorAll('#vm-full-list .vm-row');
-  for (const row of rows) {
-    if (row.querySelector('.vm-name')?.textContent === name) {
-      row.insertAdjacentHTML('afterend', placeholder);
-      fetchVmDetail(ns, name);
-      if (!opts || !opts.skipHash) setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
-      return;
-    }
-  }
-  const cards = document.querySelectorAll('#vm-full-list .vm-card');
-  for (const card of cards) {
-    if (card.querySelector('.vm-card-name')?.textContent === name) {
-      card.insertAdjacentHTML('afterend', placeholder);
-      fetchVmDetail(ns, name);
-      if (!opts || !opts.skipHash) setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
-      return;
-    }
-  }
+function parseSelectedVmKey() {
+  if (!selectedVmKey) return null;
+  const i = selectedVmKey.indexOf('/');
+  if (i < 0) return null;
+  return { ns: selectedVmKey.slice(0, i), name: selectedVmKey.slice(i + 1) };
 }
 
-function vmStatusBadgeClass(status) {
-  const s = (status || '').toLowerCase();
-  if (s === 'running') return 'running';
-  if (s === 'stopped') return 'stopped';
-  if (s === 'error' || s === 'failed') return 'error';
-  return 'other';
+function syncVmSelectionUi() {
+  document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card').forEach(function(el) {
+    const name = el.querySelector('.vm-name, .vm-card-name');
+    const n = name ? name.textContent : '';
+    const key = selectedVmKey;
+    let match = false;
+    if (key && n) {
+      const p = parseSelectedVmKey();
+      if (p && p.name === n) match = true;
+    }
+    el.classList.toggle('selected', match);
+  });
+  document.body.classList.toggle('vm-focus-active', !!selectedVmKey);
+  const empty = document.getElementById('vm-focus-empty');
+  const content = document.getElementById('vm-focus-content');
+  if (empty) empty.style.display = selectedVmKey ? 'none' : 'block';
+  if (content) content.style.display = selectedVmKey ? 'block' : 'none';
+  document.querySelectorAll('.zeus-nav-chip').forEach(function(c) {
+    c.classList.toggle('active', c.dataset.page === currentPage);
+  });
+  updateZeusAiPlaceholder();
+}
+
+function toggleVmDetail(ns, name, opts) {
+  selectVm(ns, name, opts);
+}
+
+function clearVmSelection(opts) {
+  selectedVmKey = null;
+  selectedVmNs = null;
+  selectedVmName = null;
+  _vmDetailCache = null;
+  expandedVm = null;
+  syncVmSelectionUi();
+  if (!opts || !opts.skipHash) setDashboardHash('vms', null, false);
+}
+
+function selectVm(ns, name, opts) {
+  if (!name) { clearVmSelection(opts); return; }
+  const key = ns + '/' + name;
+  if (selectedVmKey === key && !(opts && opts.force)) {
+    if (!(opts && opts.skipHash)) setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
+    return;
+  }
+  selectedVmKey = key;
+  selectedVmNs = ns;
+  selectedVmName = name;
+  expandedVm = key;
+  rememberVmForSnap(ns, name);
+  syncVmSelectionUi();
+  const content = document.getElementById('vm-focus-content');
+  if (content) content.innerHTML = '<div class="detail-loading" style="padding:24px;color:var(--text-muted)">Loading VM…</div>';
+  if (!opts || !opts.skipHash) setDashboardHash('vms', { kind: 'vm', ns: ns, name: name }, true);
+  fetchVmWorkspaceDetail(ns, name);
 }
 
 function vdKv(label, value) {
@@ -7598,167 +7770,112 @@ function vmSshBlockDetail(vm) {
   return codeRow(ssh, 'A · Direct TCP') + codeRow(virt, 'B · via virtctl / Kubernetes API');
 }
 
-function renderVmDetailHeader(vm, ns, name, vmi) {
+function renderVmHero(vm, ns, name, vmi, extras) {
+  extras = extras || {};
   const status = vmi.phase || vm.status || 'Unknown';
   const pillCls = vdStatusPillClass(vm.status || status);
-  let actions = '';
+  const secScore = extras.securityScore;
+  const healthScore = extras.healthScore;
+  let secRing = '<div class="vm-hero-ring" title="Security">—</div>';
+  if (secScore != null) {
+    const cls = secScore >= 80 ? 'ok' : secScore >= 50 ? 'warn' : 'bad';
+    secRing = '<div class="vm-hero-ring ' + cls + '" title="Security posture">' + esc(String(secScore)) + '</div>';
+  }
+  let healthRing = '<div class="vm-hero-ring" title="AI health">—</div>';
+  if (healthScore != null) {
+    const cls = healthScore >= 85 ? 'ok' : healthScore >= 65 ? 'warn' : 'bad';
+    healthRing = '<div class="vm-hero-ring ' + cls + '" title="Fleet health">' + esc(String(healthScore)) + '</div>';
+  }
+  const canWrite = cloudOsSession.can_write !== false;
+  let rail = '';
   if (vm.status === 'Running') {
-    actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Console</button>';
-    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>Stop</button>';
-    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
+    rail += '<button type="button" class="glass-btn-primary connect-btn" ' + onStopHandler('openConnectModal(' + jsArgs(ns, name) + ')') + (canWrite ? '' : ' disabled') + '>Connect</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
   } else {
-    actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>&#9654; Start</button>';
+    rail += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
   }
-  if (vmi.phase === 'Paused') {
-    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('unpauseVM(' + jsArgs(ns, name) + ')') + '>Unpause</button>';
-  }
-  actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
-  let more = '';
+  rail += '<details class="vm-detail-more"><summary>More</summary><div class="vm-detail-more-body">';
   if (vm.status === 'Running') {
-    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
-    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
-    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>Stop</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
   }
-  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
-  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
-  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
-  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('vms', { kind: 'vm', ns: ns, name: name }) + ')') + '>Copy link</button>';
-  more += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
-  if (vm.status === 'Pending') {
-    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
-  }
-  actions += '<details class="vm-detail-more"><summary>More</summary><div class="vm-detail-more-body">' + more + '</div></details>';
-  return '<div class="vd-header">' +
-    '<div class="vd-header-main">' +
-      '<div class="vd-title-row"><h2 class="vd-vm-name">' + esc(name) + '</h2><span class="vd-status-pill ' + pillCls + '">' + esc(String(status)) + '</span></div>' +
-      '<div class="vd-meta-row">' +
-        '<span class="vd-meta-chip">' + esc(ns) + '</span>' +
-        (vm.node ? '<span class="vd-meta-chip">Node <strong>' + esc(vm.node) + '</strong></span>' : '') +
-        (vm.age ? '<span class="vd-meta-chip">Age <strong>' + esc(vm.age) + '</strong></span>' : '') +
-        (vm.ip && vm.ip !== 'N/A' ? '<span class="vd-meta-chip">IP <strong>' + esc(vm.ip) + '</strong></span>' : '') +
-        vmDriftBadge(vm) +
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
+  rail += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
+  rail += '</div></details>';
+  return '<div class="vm-hero zeus-glass">' +
+    '<div class="vm-hero-top"><div>' +
+      '<h2 class="vm-hero-title">' + esc(name) + '</h2>' +
+      '<div class="vm-hero-status ' + pillCls + '"><span class="status-dot"></span>' + esc(String(status)) + '</div>' +
+      '<div class="vm-hero-metrics">' +
+        '<div class="vm-hero-metric">CPU<strong>' + esc(vm.cpu || '—') + '</strong></div>' +
+        '<div class="vm-hero-metric">Memory<strong>' + esc(vm.memory || '—') + '</strong></div>' +
+        '<div class="vm-hero-metric">IP<strong>' + esc(vm.ip || '—') + '</strong></div>' +
+        '<div class="vm-hero-metric">Node<strong>' + esc(vm.node || '—') + '</strong></div>' +
       '</div>' +
-    '</div>' +
-    '<div class="vd-header-actions">' + actions + '</div>' +
-  '</div>';
+      '<div class="vm-hero-rings">' + secRing + healthRing + '<span style="font-size:.72rem;color:var(--text-dim);align-self:center">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
+    '</div></div>' +
+    '<div class="vm-action-rail">' + rail + '</div></div>';
 }
 
-function renderVmOverviewSection(vm, ns, name, vmi, ifaces, guestOS) {
-  let html = '<div class="vd-surface"><div class="vd-section-head">Overview</div>';
-  html += '<div class="vd-kv-grid">';
-  html += vdKv('Phase', vmi.phase || vm.status || 'Unknown');
-  html += vdKv('Ready', vm.ready ? 'Yes' : 'No');
-  html += vdKv('Node', vm.node || '—');
-  html += vdKv('Age', vm.age || '—');
-  html += vdKv('IP', vm.ip || '—');
-  if (guestOS) html += vdKv('Guest OS', (guestOS.name || guestOS.id || 'Unknown') + (guestOS.version ? ' · ' + guestOS.version : ''));
-  html += '</div>';
-  html += '<div class="vd-resource-row">';
-  html += '<div class="vd-resource-card"><div class="vd-kv-label">CPU</div><div class="vd-kv-value">' + esc(vm.cpu || '—') + '</div></div>';
-  html += '<div class="vd-resource-card"><div class="vd-kv-label">Memory</div><div class="vd-kv-value">' + esc(vm.memory || '—') + '</div></div>';
-  html += '<div class="vd-resource-card"><div class="vd-kv-label">Disk</div><div class="vd-kv-value">' + esc(vm.disk || '—') + '</div></div>';
-  html += '</div>';
-  html += '<div id="vm-metrics-panel-' + name + '"></div>';
-  if (ifaces.length > 0) {
-    html += '<div class="vd-subsection"><div class="vd-subsection-title">Network interfaces</div>';
-    html += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
+function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
+  const runOpen = vm.status === 'Running';
+  let ifaceTable = '';
+  if (ifaces.length) {
+    ifaceTable = '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
     ifaces.forEach(function(i) {
-      html += '<tr><td>' + esc(i.interface_name || i.name || '—') + '</td><td>' + esc(i.ip_address || i.ip || '—') + '</td><td>' + esc(i.mac || '—') + '</td></tr>';
+      ifaceTable += '<tr><td>' + esc(i.interface_name || i.name || '—') + '</td><td>' + esc(i.ip_address || i.ip || '—') + '</td><td>' + esc(i.mac || '—') + '</td></tr>';
     });
-    html += '</tbody></table></div>';
+    ifaceTable += '</tbody></table>';
   }
-  html += '</div>';
-  return html;
-}
-
-function renderVmNetworkingSection(name) {
-  return '<div class="vd-surface"><div class="vd-section-head">Networking &amp; exposure</div>' +
-    '<div class="vd-subsection" style="margin-top:0;padding-top:0;border-top:none"><div class="vd-subsection-title">Service expose (SSH)</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>' +
-    '<div class="vd-subsection"><div class="vd-subsection-title">Internet egress</div><div id="internet-panel-' + name + '">Loading\u2026</div></div>' +
-    '<div class="vd-subsection"><div class="vd-subsection-title">Guest filesystem</div><div id="guest-fs-panel-' + name + '">Loading\u2026</div></div>' +
+  return '<div class="zeus-inspector">' +
+    '<details class="zeus-inspector-section zeus-glass" open><summary>Overview</summary><div class="zeus-inspector-body"><div class="vd-kv-grid">' +
+      vdKv('Phase', vmi.phase || vm.status) + vdKv('Ready', vm.ready ? 'Yes' : 'No') + vdKv('Age', vm.age || '—') +
+      (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
+    '</div></div></details>' +
+    '<details class="zeus-inspector-section zeus-glass"><summary>Performance</summary><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '"></div></div></details>' +
+    '<details class="zeus-inspector-section zeus-glass"' + (runOpen ? ' open' : '') + '><summary>Network</summary><div class="zeus-inspector-body">' + ifaceTable +
+      '<div class="vd-subsection-title" style="margin-top:12px">RDP</div><div id="rdp-panel-' + name + '">Loading…</div>' +
+      '<div class="vd-subsection-title">Service expose</div><div id="expose-panel-' + name + '">Loading…</div>' +
+      '<div class="vd-subsection-title">Internet egress</div><div id="internet-panel-' + name + '">Loading…</div>' +
+    '</div></details>' +
+    '<details class="zeus-inspector-section zeus-glass"><summary>Storage</summary><div class="zeus-inspector-body"><div id="guest-fs-panel-' + name + '">Loading…</div></div></details>' +
+    '<details class="zeus-inspector-section zeus-glass"><summary>Security</summary><div class="zeus-inspector-body"><div id="security-' + name + '">Loading…</div></div></details>' +
+    '<details class="zeus-inspector-section zeus-glass"><summary>Backups</summary><div class="zeus-inspector-body">' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">Open snapshots</button>' +
+      ' <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Backups &amp; Velero</button></div></details>' +
+    '<details class="zeus-inspector-section zeus-glass"><summary>AI Insights</summary><div class="zeus-inspector-body">' +
+      '<div id="doctor-panel-' + name + '">Loading…</div><div id="drift-panel-' + name + '" style="margin-top:12px">Loading…</div></div></details>' +
     '</div>';
 }
 
-function renderVmRemoteAccessSection(vm, ns, name) {
-  let html = '<div class="vd-surface vd-surface-accent"><div class="vd-section-head">Remote access</div>';
-  html += '<div class="vd-remote-console">';
-  if (vm.status === 'Running') {
-    html += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Open Console (VNC)</button>';
-    html += '<div class="vd-remote-console-hint">Browser console via noVNC — use the toolbar to tune link quality for bandwidth vs responsiveness.</div>';
-  } else {
-    html += '<div class="vd-remote-console-hint" style="margin:0">Start the VM to open the interactive browser console.</div>';
-  }
-  html += '</div>';
-  html += '<div class="vd-subsection-title">SSH</div>';
-  html += vmSshBlockDetail(vm);
-  html += '<div class="vd-remote-divider"></div>';
-  html += '<div class="vd-subsection-title">RDP (Windows)</div>';
-  html += '<div id="rdp-panel-' + name + '">Loading\u2026</div>';
-  html += '</div>';
-  return html;
-}
-
-function renderVmQuickActionsSection(vm, ns, name) {
-  let html = '<div class="vd-surface"><div class="vd-section-head">Actions</div><div class="vd-actions-grid">';
-  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
-  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
-  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
-  if (vm.status === 'Running') {
-    html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
-  }
-  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
-  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network AI</button>';
-  html += '<button type="button" class="glass-btn-destructive" style="grid-column:1/-1" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete VM</button>';
-  html += '</div></div>';
-  return html;
-}
-
-function renderVmDetailCopilotSection(ns, name, vm) {
-  let inner = '<div class="vd-surface"><details class="glass-details glass-details-ai" style="border:none;background:transparent"><summary>VMRogue AI &amp; operator drift</summary><div class="glass-details-body">';
-  inner += '<div class="detail-actions" style="margin-top:0;margin-bottom:10px">';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotFilesystem(' + jsArgs(ns, name) + ')') + '>Guest FS</button>';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Security review for ' + name, ns, name) + ')') + '>Security</button>';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Cost for ' + name, ns, name) + ')') + '>Cost</button>';
-  inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('Tell me about ' + name, ns, name) + ')') + '>Ask Copilot</button>';
-  if (vm.status === 'Pending') {
-    inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
-  }
-  inner += '</div><div id="doctor-panel-' + name + '">Loading\u2026</div>';
-  inner += '<div class="vd-subsection" style="margin-top:14px"><div class="vd-subsection-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
-  inner += '</div></details></div>';
-  return inner;
-}
-
-async function fetchVmDetail(ns, name) {
-  const holder = document.getElementById('detail-' + name);
-  if (!holder) return;
+async function fetchVmWorkspaceDetail(ns, name) {
+  const content = document.getElementById('vm-focus-content');
+  if (!content || selectedVmKey !== ns + '/' + name) return;
   try {
     const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
     const vm = unwrapData(j);
-    if (!vm) return;
+    if (!vm || selectedVmKey !== ns + '/' + name) return;
+    _vmDetailCache = vm;
     const vmi = vm.vmi_status || {};
     const ifaces = vmi.interfaces || [];
     const guestOS = vmi.guest_os_info;
-
-    let inner = renderVmDetailHeader(vm, ns, name, vmi);
-    inner += '<div class="vd-grid">';
-    inner += '<div class="vd-col-main">';
-    inner += renderVmOverviewSection(vm, ns, name, vmi, ifaces, guestOS);
-    inner += renderVmNetworkingSection(name);
-    inner += renderVmDetailCopilotSection(ns, name, vm);
-    inner += '</div>';
-    inner += '<div class="vd-col-side">';
-    inner += renderVmRemoteAccessSection(vm, ns, name);
-    inner += '<div id="security-' + name + '"></div>';
-    inner += renderVmQuickActionsSection(vm, ns, name);
-    inner += '</div></div>';
-
-    holder.innerHTML = inner;
-
-    fetchSecurity(ns, name).then(secHtml => {
+    let extras = { securityScore: null, healthScore: null };
+    const h = fleetHealthMap[name];
+    if (h && h.health_score != null) extras.healthScore = h.health_score;
+    try {
+      const secJ = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/security');
+      const secD = unwrapData(secJ);
+      if (secD && secD.score != null) extras.securityScore = secD.score;
+    } catch (_) {}
+    content.innerHTML = renderVmHero(vm, ns, name, vmi, extras) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS);
+    fetchSecurity(ns, name).then(function(secHtml) {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
     });
@@ -7770,12 +7887,139 @@ async function fetchVmDetail(ns, name) {
     loadDoctorPanel(ns, name);
     loadVmMetricsPanel(ns, name);
   } catch (e) {
-    holder.innerHTML =
-      '<div class="detail-section"><div class="detail-section-title">Error</div><div class="detail-row"><span class="val" style="color:var(--error)">' +
-      esc(e.message || String(e)) +
-      '</span></div></div>';
-    toast('Failed to load VM details: ' + (e.message || String(e)), 'error');
+    if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    toast('Failed to load VM: ' + (e.message || String(e)), 'error');
   }
+}
+
+async function fetchVmDetail(ns, name) {
+  selectVm(ns, name, { skipHash: true, force: true });
+}
+
+function getConnectProtocol() {
+  try { return localStorage.getItem(ZEUS_CONNECT_PROTO_KEY) || 'vnc'; } catch (e) { return 'vnc'; }
+}
+function setConnectProtocol(p) {
+  try { localStorage.setItem(ZEUS_CONNECT_PROTO_KEY, p); } catch (e) {}
+}
+
+function openConnectModal(ns, name, preset) {
+  _connectVm = { ns: ns || selectedVmNs, name: name || selectedVmName };
+  if (!_connectVm.name) { toast('Select a VM first', 'error'); return; }
+  const modal = document.getElementById('connect-modal');
+  const sub = document.getElementById('connect-modal-sub');
+  if (sub) sub.textContent = _connectVm.ns + '/' + _connectVm.name;
+  const proto = preset || getConnectProtocol();
+  document.querySelectorAll('#connect-protocol-list .connect-protocol-opt').forEach(function(el) {
+    const p = el.dataset.protocol;
+    const radio = el.querySelector('input');
+    const sel = p === proto && !el.classList.contains('disabled');
+    el.classList.toggle('selected', sel);
+    if (radio && !radio.disabled) radio.checked = sel;
+  });
+  if (modal) modal.classList.add('open');
+}
+function closeConnectModal() {
+  const modal = document.getElementById('connect-modal');
+  if (modal) modal.classList.remove('open');
+}
+function submitConnectModal() {
+  const ns = _connectVm.ns;
+  const name = _connectVm.name;
+  const checked = document.querySelector('#connect-protocol-list input[name="connect-proto"]:checked');
+  const proto = checked ? checked.value : 'vnc';
+  setConnectProtocol(proto);
+  closeConnectModal();
+  if (proto === 'vnc') openVncConsole(ns, name);
+  else if (proto === 'serial') openSerialConsole(ns, name);
+  else if (proto === 'ssh') showSshPopover(ns, name);
+}
+
+function showSshPopover(ns, name) {
+  const vm = _vmDetailCache || vmData.find(function(v) { return v.name === name && (v.namespace || 'default') === ns; });
+  const pop = document.getElementById('ssh-popover');
+  if (!pop || !vm) { toast('Load VM details first', 'error'); return; }
+  pop.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>SSH</strong><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeSshPopover()">Close</button></div>' + vmSshBlockDetail(vm);
+  pop.classList.add('open');
+  pop.style.top = '120px';
+  pop.style.right = '24px';
+}
+function closeSshPopover() {
+  const pop = document.getElementById('ssh-popover');
+  if (pop) pop.classList.remove('open');
+}
+
+function updateZeusAiPlaceholder() {
+  const inp = document.getElementById('zeus-ai-input');
+  if (!inp) return;
+  if (selectedVmName) inp.placeholder = 'Ask about ' + selectedVmName + '…';
+  else inp.placeholder = 'Ask Zeus… fleet health, storage, security';
+}
+
+async function runZeusAiBar() {
+  const inp = document.getElementById('zeus-ai-input');
+  const out = document.getElementById('zeus-ai-results');
+  if (!inp || !out) return;
+  const q = inp.value.trim();
+  if (!q) return;
+  out.style.display = 'block';
+  out.innerHTML = '<div class="zeus-glass" style="padding:14px;margin:0 20px;color:var(--text-muted)">Thinking…</div>';
+  try {
+    const body = { question: q };
+    if (selectedVmNs && selectedVmName) body.vm_context = { namespace: selectedVmNs, name: selectedVmName };
+    const j = await apiJson('/api/v1/experience/copilot/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const ans = j.answer || j.summary || JSON.stringify(j);
+    out.innerHTML = '<div class="copilot-msg-assistant zeus-glass" style="margin:0 20px;padding:14px">' + esc(String(ans)) + '</div>';
+  } catch (e) {
+    out.innerHTML = '<div class="zeus-glass" style="padding:14px;margin:0 20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+  }
+}
+function focusZeusAiDrawer() {
+  const inp = document.getElementById('zeus-ai-input');
+  openCopilot(inp ? inp.value : '');
+}
+
+async function fetchMissionControl() {
+  const wall = document.getElementById('mission-wall');
+  const topo = document.getElementById('mission-topology-body');
+  if (!wall) return;
+  try {
+    const [nodes, vms, map, netpol] = await Promise.all([
+      apiJson('/api/v1/nodes').catch(function() { return []; }),
+      apiJson('/api/v1/vms' + nsParam()).catch(function() { return { vms: [] }; }),
+      apiJson('/api/v1/topology/map' + nsParam()).catch(function() { return { nodes: [], edges: [] }; }),
+      apiJson('/api/v1/network-policies' + nsParam()).catch(function() { return []; }),
+    ]);
+    const nodeList = asArray(nodes);
+    const vmList = vms.vms != null ? vms.vms : asArray(vms);
+    const running = vmList.filter(function(v) { return v.status === 'Running'; }).length;
+    const edges = (map && map.edges) ? map.edges : [];
+    const policies = asArray(netpol);
+    wall.innerHTML =
+      '<div class="mission-tile zeus-glass" onclick="navigate(\'nodes\')"><h3>Hosts</h3><div class="mt-val">' + nodeList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">Kubernetes nodes</p></div>' +
+      '<div class="mission-tile zeus-glass" onclick="navigate(\'vms\')"><h3>VMs</h3><div class="mt-val">' + vmList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">' + running + ' running</p></div>' +
+      '<div class="mission-tile zeus-glass" onclick="navigate(\'network-policies\')"><h3>Networks</h3><div class="mt-val">' + policies.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Network policies</p></div>' +
+      '<div class="mission-tile zeus-glass" onclick="navigate(\'storage\')"><h3>Storage</h3><div class="mt-val">' + edges.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Topology edges</p></div>';
+    if (topo) topo.textContent = (map.nodes || []).length + ' nodes, ' + edges.length + ' edges in scope ' + currentNamespace;
+  } catch (e) {
+    if (wall) wall.innerHTML = '<p style="color:var(--error)">' + esc(e.message) + '</p>';
+  }
+}
+
+function initZeusShell() {
+  document.body.classList.add('has-zeus-ai-bar');
+  document.querySelectorAll('#connect-protocol-list .connect-protocol-opt').forEach(function(el) {
+    if (el.classList.contains('disabled')) return;
+    el.addEventListener('click', function() {
+      const radio = el.querySelector('input');
+      if (radio && !radio.disabled) {
+        radio.checked = true;
+        document.querySelectorAll('#connect-protocol-list .connect-protocol-opt').forEach(function(x) { x.classList.toggle('selected', x === el); });
+      }
+    });
+  });
+  const connectModal = document.getElementById('connect-modal');
+  if (connectModal) connectModal.addEventListener('click', function(e) { if (e.target === connectModal) closeConnectModal(); });
 }
 
 async function loadExposePanel(ns, name) {
@@ -9635,6 +9879,7 @@ window.addEventListener('load', async () => {
   await initAuth();
   initVmViewMode();
   initFinderCollapsed();
+  initZeusShell();
   initFinderSections();
   initBrowsePinButtons();
   fetchExperienceSession();
@@ -9672,15 +9917,22 @@ async function fetchSecurityPage() {
       apiJson('/api/v1/security/findings' + nsParam()),
     ]);
     const findings = asArray(findingsRaw);
+    const cardsEl = document.getElementById('security-finding-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML = findings.map(function(f) {
+        const sev = (f.severity || '').toLowerCase();
+        const cardCls = sev === 'critical' ? 'critical' : sev === 'high' ? 'high' : 'medium';
+        return '<div class="security-finding-card zeus-glass ' + cardCls + '"><div style="display:flex;justify-content:space-between;gap:8px"><strong>' + esc(f.title) + '</strong><span class="glass-badge ' + glassTableBadge(f.severity) + '">' + esc(f.severity) + '</span></div><div style="font-size:.82rem;color:var(--text-dim);margin-top:6px">' + esc(f.category) + ' · ' + esc(f.resource) + '</div><div style="font-size:.8rem;margin-top:8px;line-height:1.4">' + esc(f.recommendation) + '</div></div>';
+      }).join('') || '<div class="zeus-glass" style="padding:20px;text-align:center;color:var(--success)">No security findings</div>';
+    }
     if (sum) {
       const sc = posture.overall_score || 0;
-      const clr = sc >= 90 ? 'var(--success)' : sc >= 70 ? 'var(--warning)' : 'var(--error)';
-      sum.innerHTML = renderGlassStatPills([
-        { label: 'Security score', value: sc + '/100', cls: sc >= 90 ? ' ok' : sc >= 70 ? ' warn' : ' bad' },
-        { label: 'Risk level', value: posture.risk_level || 'N/A' },
-        { label: 'Total findings', value: posture.total_findings || 0, onclick: "navigate('audit')", title: 'View audit' },
-        { label: 'Critical', value: posture.critical_findings || 0, cls: (posture.critical_findings || 0) ? ' bad' : ' ok' }
-      ]);
+      sum.className = 'security-cards-grid';
+      sum.innerHTML =
+        '<div class="mission-tile zeus-glass"><h3>Threat score</h3><div class="mt-val">' + sc + '</div></div>' +
+        '<div class="mission-tile zeus-glass"><h3>Risk</h3><div class="mt-val" style="font-size:1.2rem">' + esc(posture.risk_level || 'N/A') + '</div></div>' +
+        '<div class="mission-tile zeus-glass"><h3>Findings</h3><div class="mt-val">' + (posture.total_findings || 0) + '</div></div>' +
+        '<div class="mission-tile zeus-glass"><h3>Critical</h3><div class="mt-val">' + (posture.critical_findings || 0) + '</div></div>';
     }
     if (tb) {
       tb.innerHTML = findings.map(f => {
@@ -11515,5 +11767,33 @@ async function fetchIncidents() {
   }
 }
 </script>
+<div class="modal-overlay" id="connect-modal" role="dialog" aria-modal="true" aria-label="Connect to VM">
+  <div class="modal glass-modal connect-modal-panel zeus-glass" onclick="event.stopPropagation()">
+    <div class="modal-header"><h2 id="connect-modal-title">Connect to VM</h2><button type="button" class="modal-close" onclick="closeConnectModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px;color:var(--text-muted);font-size:.88rem" id="connect-modal-sub">Choose how to reach the guest.</p>
+      <div class="connect-protocol-list" id="connect-protocol-list">
+        <label class="connect-protocol-opt selected" data-protocol="vnc"><input type="radio" name="connect-proto" value="vnc" checked> <span><strong>VNC</strong> (Recommended) — browser console</span></label>
+        <label class="connect-protocol-opt" data-protocol="serial"><input type="radio" name="connect-proto" value="serial"> <span><strong>Serial</strong> — virt-launcher serial</span></label>
+        <label class="connect-protocol-opt" data-protocol="ssh"><input type="radio" name="connect-proto" value="ssh"> <span><strong>SSH</strong> — copy connection commands</span></label>
+        <label class="connect-protocol-opt disabled" data-protocol="spice" title="SPICE not available in this build"><input type="radio" name="connect-proto" value="spice" disabled> <span><strong>SPICE</strong> — not available</span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="glass-btn-secondary" onclick="closeConnectModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" id="connect-modal-go" onclick="submitConnectModal()">Connect</button>
+    </div>
+  </div>
+</div>
+<div id="ssh-popover" class="zeus-glass" role="dialog" aria-label="SSH commands"></div>
+<div class="zeus-ai-results" id="zeus-ai-results" style="display:none"></div>
+<div class="zeus-ai-bar" id="zeus-ai-bar">
+  <div class="zeus-ai-bar-inner">
+    <input type="text" class="zeus-ai-input" id="zeus-ai-input" placeholder="Ask Zeus… e.g. What is wrong with this VM?" autocomplete="off" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();runZeusAiBar();}">
+    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runZeusAiBar()">Ask</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="focusZeusAiDrawer()">Drawer</button>
+  </div>
+</div>
+
 </body>
 </html>

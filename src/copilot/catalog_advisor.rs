@@ -53,8 +53,9 @@ pub async fn catalog_advisor(client: &KubeClient) -> CopilotResponse {
     };
 
     if !status.in_sync && status.crds_available {
-        r.recommendations
-            .push("Run catalog sync from the Template Catalog page or `vmrogue catalog sync`.".into());
+        r.recommendations.push(
+            "Run catalog sync from the Template Catalog page or `vmrogue catalog sync`.".into(),
+        );
     }
 
     r.actions = vec![

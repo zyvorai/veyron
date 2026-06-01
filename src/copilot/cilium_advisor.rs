@@ -32,11 +32,7 @@ pub async fn cilium_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
                         .as_ref()
                         .map(|s| s.desired_number_scheduled)
                         .unwrap_or(0) as u32;
-                    agent_ready = ds
-                        .status
-                        .as_ref()
-                        .map(|s| s.number_ready)
-                        .unwrap_or(0) as u32;
+                    agent_ready = ds.status.as_ref().map(|s| s.number_ready).unwrap_or(0) as u32;
                 }
             }
         }
@@ -96,14 +92,13 @@ pub async fn cilium_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
 
     let vm_count = vms.len();
     if vm_count > 0 && np_count == 0 && cnp_count == 0 {
-        r.evidence
-            .push(format!("{vm_count} VM(s) with no namespace NetworkPolicy in scope"));
+        r.evidence.push(format!(
+            "{vm_count} VM(s) with no namespace NetworkPolicy in scope"
+        ));
     }
 
     r.summary = if cilium_installed && agent_ready < agent_desired {
-        format!(
-            "Cilium degraded ({agent_ready}/{agent_desired} agents) — check {agent_ns} pods."
-        )
+        format!("Cilium degraded ({agent_ready}/{agent_desired} agents) — check {agent_ns} pods.")
     } else if cilium_installed {
         format!("Cilium healthy — {cnp_count} CNP + {np_count} NetworkPolicy in scope.")
     } else if np_count > 0 {
@@ -114,7 +109,8 @@ pub async fn cilium_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
 
     if np_count == 0 && cnp_count == 0 {
         r.recommendations.push(
-            "Define default-deny egress/ingress for VM namespaces or use Cilium cluster policies.".into(),
+            "Define default-deny egress/ingress for VM namespaces or use Cilium cluster policies."
+                .into(),
         );
     }
     if cilium_installed && agent_ready < agent_desired {

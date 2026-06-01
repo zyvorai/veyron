@@ -944,14 +944,12 @@ async fn create_catalog_template(
             "from_embedded required (built-in template name)".to_string(),
         ));
     }
-    let config = crate::templates::TEMPLATES
-        .get(embedded)
-        .ok_or_else(|| {
-            (
-                StatusCode::BAD_REQUEST,
-                format!("unknown embedded template: {embedded}"),
-            )
-        })?;
+    let config = crate::templates::TEMPLATES.get(embedded).ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            format!("unknown embedded template: {embedded}"),
+        )
+    })?;
     let default_spec = VMRogueVMSpec::from(&config);
     let family = body
         .family

@@ -31,10 +31,7 @@ pub fn spec_from_yaml_build(
     description: Option<String>,
     tags: Vec<String>,
 ) -> VMRogueBlueprintSpec {
-    let name = req
-        .name
-        .clone()
-        .unwrap_or_else(|| "copilot-vm".to_string());
+    let name = req.name.clone().unwrap_or_else(|| "copilot-vm".to_string());
     let template = req
         .template
         .clone()

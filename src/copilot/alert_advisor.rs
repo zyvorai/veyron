@@ -30,11 +30,7 @@ pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
             .chars()
             .take(100)
             .collect::<String>();
-        let involved = ev
-            .involved_object
-            .name
-            .as_deref()
-            .unwrap_or("?");
+        let involved = ev.involved_object.name.as_deref().unwrap_or("?");
         let key = format!("{reason}:{involved}:{msg}");
         if seen.insert(key) {
             r.evidence.push(format!("{involved} — {reason}: {msg}"));
@@ -49,8 +45,9 @@ pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
         .filter(|u| !u.trim().is_empty())
         .is_some();
     if prom {
-        r.evidence
-            .push("VMROGUE_ALERTMANAGER_URL set — dashboard Alerts page can join firing alerts".into());
+        r.evidence.push(
+            "VMROGUE_ALERTMANAGER_URL set — dashboard Alerts page can join firing alerts".into(),
+        );
     }
 
     r.summary = if warnings.is_empty() {

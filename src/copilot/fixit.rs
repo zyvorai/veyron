@@ -31,74 +31,74 @@ pub fn explain_error_message(message: &str, context: Option<&str>) -> CopilotRes
     let lower = message.to_lowercase();
     let ctx = context.unwrap_or("general");
 
-    let (title, explanation, fixes): (&str, &str, Vec<(&str, &str, Option<&str>)>) =
-        if lower.contains("persistentvolumeclaim")
-            || lower.contains("unbound immediate persistentvolumeclaims")
-            || lower.contains("waiting for a volume")
-        {
-            (
-                "Disk storage is not ready",
-                "This VM cannot start because its disk volume is still being provisioned or no storage is available for the requested StorageClass.",
-                vec![
-                    ("Check storage tiers", "navigate", Some("storage")),
-                    ("Retry start", "retry", None),
-                ],
-            )
-        } else if lower.contains("network attachment definition")
-            || lower.contains("networkattachmentdefinition")
-            || lower.contains("multus")
-        {
-            (
-                "VM network is missing",
-                "The VM references a network that does not exist in this workspace. Create the network or choose an existing one.",
-                vec![
-                    ("Open networks", "navigate", Some("cilium")),
-                    ("Edit VM network", "edit_network", Some("vms")),
-                ],
-            )
-        } else if lower.contains("insufficient cpu")
-            || lower.contains("insufficient memory")
-            || (lower.contains("0/") && lower.contains("nodes are available"))
-        {
-            (
-                "Not enough cluster capacity",
-                "No node can schedule this VM with its current CPU, memory, or placement rules.",
-                vec![
-                    ("View nodes", "navigate", Some("nodes")),
-                    ("Resize VM", "resize", Some("vms")),
-                ],
-            )
-        } else if lower.contains("forbidden") || lower.contains("403") {
-            (
-                "Permission denied",
-                "Your API key or SSO role cannot perform this action on this resource.",
-                vec![("Review access", "navigate", Some("rbac"))],
-            )
-        } else if ctx == "migrate" && (lower.contains("migration") || lower.contains("live migrate")) {
-            (
-                "Live migration blocked",
-                "KubeVirt could not migrate this running VM. Common causes: shared storage missing, VM not running, or network/storage policy.",
-                vec![
-                    ("Check VM status", "navigate", Some("vms")),
-                    ("View nodes", "navigate", Some("nodes")),
-                ],
-            )
-        } else if lower.contains("not found") || lower.contains("404") {
-            (
-                "Resource not found",
-                "The VM or related object may have been deleted or is in another workspace.",
-                vec![("Refresh VM list", "refresh", Some("vms"))],
-            )
-        } else {
-            (
-                "Operation failed",
-                "The platform returned an error. Check events and VM details for the underlying Kubernetes or KubeVirt cause.",
-                vec![
-                    ("View events", "navigate", Some("events")),
-                    ("Open VM", "navigate", Some("vms")),
-                ],
-            )
-        };
+    let (title, explanation, fixes): (&str, &str, Vec<(&str, &str, Option<&str>)>) = if lower
+        .contains("persistentvolumeclaim")
+        || lower.contains("unbound immediate persistentvolumeclaims")
+        || lower.contains("waiting for a volume")
+    {
+        (
+            "Disk storage is not ready",
+            "This VM cannot start because its disk volume is still being provisioned or no storage is available for the requested StorageClass.",
+            vec![
+                ("Check storage tiers", "navigate", Some("storage")),
+                ("Retry start", "retry", None),
+            ],
+        )
+    } else if lower.contains("network attachment definition")
+        || lower.contains("networkattachmentdefinition")
+        || lower.contains("multus")
+    {
+        (
+            "VM network is missing",
+            "The VM references a network that does not exist in this workspace. Create the network or choose an existing one.",
+            vec![
+                ("Open networks", "navigate", Some("cilium")),
+                ("Edit VM network", "edit_network", Some("vms")),
+            ],
+        )
+    } else if lower.contains("insufficient cpu")
+        || lower.contains("insufficient memory")
+        || (lower.contains("0/") && lower.contains("nodes are available"))
+    {
+        (
+            "Not enough cluster capacity",
+            "No node can schedule this VM with its current CPU, memory, or placement rules.",
+            vec![
+                ("View nodes", "navigate", Some("nodes")),
+                ("Resize VM", "resize", Some("vms")),
+            ],
+        )
+    } else if lower.contains("forbidden") || lower.contains("403") {
+        (
+            "Permission denied",
+            "Your API key or SSO role cannot perform this action on this resource.",
+            vec![("Review access", "navigate", Some("rbac"))],
+        )
+    } else if ctx == "migrate" && (lower.contains("migration") || lower.contains("live migrate")) {
+        (
+            "Live migration blocked",
+            "KubeVirt could not migrate this running VM. Common causes: shared storage missing, VM not running, or network/storage policy.",
+            vec![
+                ("Check VM status", "navigate", Some("vms")),
+                ("View nodes", "navigate", Some("nodes")),
+            ],
+        )
+    } else if lower.contains("not found") || lower.contains("404") {
+        (
+            "Resource not found",
+            "The VM or related object may have been deleted or is in another workspace.",
+            vec![("Refresh VM list", "refresh", Some("vms"))],
+        )
+    } else {
+        (
+            "Operation failed",
+            "The platform returned an error. Check events and VM details for the underlying Kubernetes or KubeVirt cause.",
+            vec![
+                ("View events", "navigate", Some("events")),
+                ("Open VM", "navigate", Some("vms")),
+            ],
+        )
+    };
 
     let mut r = CopilotResponse::new("VMRogue Error Explainer", "explain", title);
     r.summary = explanation.to_string();

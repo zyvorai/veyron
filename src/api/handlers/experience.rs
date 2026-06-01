@@ -8,7 +8,7 @@
 use axum::{
     Json, Router,
     extract::{Query, State},
-    http::{HeaderMap},
+    http::HeaderMap,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -120,7 +120,10 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/experience/home", get(experience_home))
         .route("/experience/search", get(experience_search))
-        .route("/experience/errors/translate", post(translate_error_handler))
+        .route(
+            "/experience/errors/translate",
+            post(translate_error_handler),
+        )
         .route("/experience/session", get(experience_session))
         .route("/experience/fleet/health", get(fleet_health))
         .route("/experience/templates", get(template_store))
@@ -284,7 +287,11 @@ async fn fleet_health(
     if let Ok(vms) = client.list_vms(&scope).await {
         for vm in vms {
             let name = vm.metadata.name.clone().unwrap_or_default();
-            let ns = vm.metadata.namespace.clone().unwrap_or_else(|| "default".to_string());
+            let ns = vm
+                .metadata
+                .namespace
+                .clone()
+                .unwrap_or_else(|| "default".to_string());
             let status = vm
                 .status
                 .as_ref()
@@ -497,7 +504,9 @@ async fn experience_home(
             (ready_nodes as f64 / nodes.len() as f64 * 20.0) as u8
         };
         let warn_penalty = (warnings.len() as u8).min(15) * 3;
-        (run_pct + node_pct + 10).saturating_sub(warn_penalty).min(100)
+        (run_pct + node_pct + 10)
+            .saturating_sub(warn_penalty)
+            .min(100)
     };
 
     let health_summary = if health_score >= 90 {
@@ -534,7 +543,11 @@ async fn experience_home(
         ControlCenterItem {
             label: "Running VMs".to_string(),
             value: format!("{running} / {total}"),
-            status: if failed > 0 { "warn".to_string() } else { "ok".to_string() },
+            status: if failed > 0 {
+                "warn".to_string()
+            } else {
+                "ok".to_string()
+            },
         },
         ControlCenterItem {
             label: "Nodes ready".to_string(),
@@ -678,21 +691,75 @@ async fn experience_search(
     let scope = namespace_scope::resolve_opt(q.ns.namespace.clone(), &default_ns);
 
     if let Ok(vms) = client.list_vms(&scope).await {
+        let wants_vnc = needle.contains("vnc") || needle.contains("console");
+        let wants_serial = needle.contains("serial");
+        let wants_migrate = needle.contains("migrate");
+        let wants_ssh = needle.contains("ssh");
+        let wants_connect =
+            needle.contains("connect") || needle.contains("open") || needle.contains("show");
+        let verb_tokens = ["open", "connect", "show", "vnc", "serial", "migrate", "ssh"];
+        let name_needle = {
+            let mut tokens: Vec<&str> = needle.split_whitespace().collect();
+            tokens.retain(|t| !verb_tokens.contains(t));
+            tokens.join(" ")
+        };
         for vm in vms {
             let name = vm.metadata.name.as_deref().unwrap_or("");
             let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
-            if name.to_lowercase().contains(&needle) || ns.to_lowercase().contains(&needle) {
-                let status = vm
-                    .status
-                    .as_ref()
-                    .and_then(|s| s.printable_status.clone())
-                    .unwrap_or_else(|| "Unknown".to_string());
+            let name_lc = name.to_lowercase();
+            let ns_lc = ns.to_lowercase();
+            let matches_name = name_lc.contains(&needle)
+                || ns_lc.contains(&needle)
+                || (!name_needle.is_empty() && name_lc.contains(&name_needle));
+            if !matches_name {
+                continue;
+            }
+            let status = vm
+                .status
+                .as_ref()
+                .and_then(|s| s.printable_status.clone())
+                .unwrap_or_else(|| "Unknown".to_string());
+            results.push(SearchResultItem {
+                kind: "vm".to_string(),
+                id: format!("{ns}/{name}"),
+                title: name.to_string(),
+                subtitle: format!("{ns} · {status}"),
+                action: format!("open_vm:{ns}:{name}"),
+            });
+            if wants_vnc || (wants_connect && !wants_serial && !wants_ssh && !wants_migrate) {
                 results.push(SearchResultItem {
-                    kind: "vm".to_string(),
-                    id: format!("{ns}/{name}"),
-                    title: name.to_string(),
-                    subtitle: format!("{ns} · {status}"),
-                    action: format!("open_vm:{ns}:{name}"),
+                    kind: "action".to_string(),
+                    id: format!("vnc-{ns}-{name}"),
+                    title: format!("Open VNC for {name}"),
+                    subtitle: format!("{ns} · Connect console"),
+                    action: format!("open_vnc:{ns}:{name}"),
+                });
+            }
+            if wants_serial {
+                results.push(SearchResultItem {
+                    kind: "action".to_string(),
+                    id: format!("serial-{ns}-{name}"),
+                    title: format!("Open serial console for {name}"),
+                    subtitle: format!("{ns} · Serial"),
+                    action: format!("open_serial:{ns}:{name}"),
+                });
+            }
+            if wants_ssh {
+                results.push(SearchResultItem {
+                    kind: "action".to_string(),
+                    id: format!("ssh-{ns}-{name}"),
+                    title: format!("SSH to {name}"),
+                    subtitle: format!("{ns} · Copy commands"),
+                    action: format!("open_ssh:{ns}:{name}"),
+                });
+            }
+            if wants_migrate {
+                results.push(SearchResultItem {
+                    kind: "action".to_string(),
+                    id: format!("migrate-{ns}-{name}"),
+                    title: format!("Live migrate {name}"),
+                    subtitle: format!("{ns} · Migration"),
+                    action: format!("migrate:{ns}:{name}"),
                 });
             }
         }
@@ -729,6 +796,16 @@ async fn experience_search(
             title: "Live migrate a VM".to_string(),
             subtitle: "Open Virtual Machines".to_string(),
             action: "navigate:vms".to_string(),
+        });
+    }
+
+    if needle.contains("workloads") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "workloads-page".to_string(),
+            title: "Show workloads".to_string(),
+            subtitle: "Deployments and replica health".to_string(),
+            action: "navigate:workloads".to_string(),
         });
     }
 
@@ -780,8 +857,16 @@ async fn experience_search(
             subtitle: "VMRogue Doctor fleet scan".to_string(),
             action: "copilot:unhealthy".to_string(),
         });
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "workloads-unhealthy".to_string(),
+            title: "Show workloads".to_string(),
+            subtitle: "Deployments and replica health".to_string(),
+            action: "navigate:workloads".to_string(),
+        });
     }
-    if needle.contains("network") || needle.contains("connectivity") || needle.contains("firewall") {
+    if needle.contains("network") || needle.contains("connectivity") || needle.contains("firewall")
+    {
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "network-lens".to_string(),
@@ -790,7 +875,10 @@ async fn experience_search(
             action: "open_copilot".to_string(),
         });
     }
-    if needle.contains("scheduling") || needle.contains("pending") || needle.contains("unschedulable") {
+    if needle.contains("scheduling")
+        || needle.contains("pending")
+        || needle.contains("unschedulable")
+    {
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "scheduling-explainer".to_string(),
@@ -849,7 +937,6 @@ async fn experience_search(
     Json(ExperienceSearchResponse { query, results })
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::{translate_error_message, vm_health_score};
@@ -869,10 +956,8 @@ mod tests {
 
     #[test]
     fn translate_nad_missing() {
-        let t = translate_error_message(
-            "NetworkAttachmentDefinition \"prod-vlan\" not found",
-            None,
-        );
+        let t =
+            translate_error_message("NetworkAttachmentDefinition \"prod-vlan\" not found", None);
         assert!(t.explanation.contains("network"));
     }
 }

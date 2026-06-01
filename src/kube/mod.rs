@@ -73,8 +73,7 @@ pub struct PlatformReadiness {
 
 pub(crate) static KUBECONFIG_PATH: OnceLock<String> = OnceLock::new();
 static CACHED_CONFIG: tokio::sync::OnceCell<Config> = tokio::sync::OnceCell::const_new();
-static ACTIVE_KUBECONFIG_CONTEXT: std::sync::RwLock<Option<String>> =
-    std::sync::RwLock::new(None);
+static ACTIVE_KUBECONFIG_CONTEXT: std::sync::RwLock<Option<String>> = std::sync::RwLock::new(None);
 
 /// Override kube client context for the API process (multi-cluster kubeconfig).
 pub fn set_active_kube_context(ctx: Option<String>) {
@@ -85,16 +84,20 @@ pub fn set_active_kube_context(ctx: Option<String>) {
 
 /// Active kubeconfig context override, if any.
 pub fn active_kube_context() -> Option<String> {
-    ACTIVE_KUBECONFIG_CONTEXT.read().ok().and_then(|g| g.clone())
+    ACTIVE_KUBECONFIG_CONTEXT
+        .read()
+        .ok()
+        .and_then(|g| g.clone())
 }
 
 fn kubeconfig_path_string() -> Option<String> {
     if let Some(path) = KUBECONFIG_PATH.get() {
         return Some(path.clone());
     }
-    std::env::var("KUBECONFIG").ok().filter(|p| !p.is_empty()).or_else(|| {
-        dirs::home_dir().map(|h| h.join(".kube/config").to_string_lossy().into_owned())
-    })
+    std::env::var("KUBECONFIG")
+        .ok()
+        .filter(|p| !p.is_empty())
+        .or_else(|| dirs::home_dir().map(|h| h.join(".kube/config").to_string_lossy().into_owned()))
 }
 
 /// Set the global kubeconfig path (called once at startup)
@@ -126,8 +129,8 @@ async fn resolve_config() -> Result<Config> {
     }
     let config = CACHED_CONFIG
         .get_or_try_init(|| async {
-            let cfg = if let Some(path) = kubeconfig_path_string()
-                .filter(|p| std::path::Path::new(p).exists())
+            let cfg = if let Some(path) =
+                kubeconfig_path_string().filter(|p| std::path::Path::new(p).exists())
             {
                 let kubeconfig =
                     kube::config::Kubeconfig::read_from(&path).map_err(|e| anyhow::anyhow!(e))?;
@@ -1300,8 +1303,7 @@ impl KubeClient {
         }
 
         if !prom_mounts.is_empty() {
-            let family =
-                guest_os::detect_guest_os_family(Some(&vm_json), vmi_json.as_ref());
+            let family = guest_os::detect_guest_os_family(Some(&vm_json), vmi_json.as_ref());
             return Ok(guest_filesystem::GuestFilesystemResponse {
                 namespace: namespace.to_string(),
                 vm_name: vm_name.to_string(),

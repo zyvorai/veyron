@@ -3,7 +3,11 @@
 use super::{CopilotAction, CopilotResponse};
 use crate::kube::KubeClient;
 
-pub async fn scheduling_explainer(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
+pub async fn scheduling_explainer(
+    client: &KubeClient,
+    namespace: &str,
+    name: &str,
+) -> CopilotResponse {
     let mut r = CopilotResponse::new(
         "VMRogue Scheduling Explainer",
         "scheduling",
@@ -60,8 +64,7 @@ pub async fn scheduling_explainer(client: &KubeClient, namespace: &str, name: &s
             let ml = msg.to_lowercase();
             if ml.contains("insufficient memory") {
                 r.recommendations.push(
-                    "Best fix: reduce guest memory or free memory on nodes (stop idle VMs)."
-                        .into(),
+                    "Best fix: reduce guest memory or free memory on nodes (stop idle VMs).".into(),
                 );
             }
             if ml.contains("insufficient cpu") {
@@ -75,9 +78,8 @@ pub async fn scheduling_explainer(client: &KubeClient, namespace: &str, name: &s
                 );
             }
             if ml.contains("affinity") || ml.contains("selector") {
-                r.recommendations.push(
-                    "Best fix: relax nodeSelector/affinity or label a capable node.".into(),
-                );
+                r.recommendations
+                    .push("Best fix: relax nodeSelector/affinity or label a capable node.".into());
             }
             if ml.contains("persistentvolumeclaim") || ml.contains("unbound") {
                 r.recommendations.push(
@@ -202,7 +204,8 @@ pub async fn scheduling_fleet_advisor(client: &KubeClient, scope: &str) -> Copil
         "{} VM(s) Pending — inspect scheduling events and node capacity.",
         pending.len()
     );
-    r.recommendations.push("Use Copilot Scheduling on a VM name for targeted fixes.".into());
+    r.recommendations
+        .push("Use Copilot Scheduling on a VM name for targeted fixes.".into());
     r.recommendations
         .push("Reduce CPU/memory requests or add nodes / fix PVC binding.".into());
 

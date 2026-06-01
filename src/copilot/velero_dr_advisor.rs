@@ -43,12 +43,17 @@ pub async fn velero_dr_advisor(client: &KubeClient, scope: &str) -> CopilotRespo
         .map(|l| l.items)
         .unwrap_or_default();
 
-    let velero_installed = !backups.is_empty() || !restores.is_empty()
-        || backup_api.list(&ListParams::default().limit(1)).await.is_ok();
+    let velero_installed = !backups.is_empty()
+        || !restores.is_empty()
+        || backup_api
+            .list(&ListParams::default().limit(1))
+            .await
+            .is_ok();
 
     if !velero_installed {
         r.summary =
-            "Velero not detected — use KubeVirt snapshots + Backup Advisor for tier-1 coverage.".into();
+            "Velero not detected — use KubeVirt snapshots + Backup Advisor for tier-1 coverage."
+                .into();
         r.evidence
             .push("No Velero Backup/Restore CRs found in cluster.".into());
         r.recommendations
@@ -95,10 +100,15 @@ pub async fn velero_dr_advisor(client: &KubeClient, scope: &str) -> CopilotRespo
     }
 
     let vms = client.list_vms_for_scope(scope).await.len();
-    r.evidence.push(format!("Velero backups listed: {}", backups.len()));
     r.evidence
-        .push(format!("Completed backups: {recent_ok}, failed: {failed_backups}"));
-    r.evidence.push(format!("Restore CRs: {} (failed: {failed_restores})", restores.len()));
+        .push(format!("Velero backups listed: {}", backups.len()));
+    r.evidence.push(format!(
+        "Completed backups: {recent_ok}, failed: {failed_backups}"
+    ));
+    r.evidence.push(format!(
+        "Restore CRs: {} (failed: {failed_restores})",
+        restores.len()
+    ));
     r.evidence.push(format!("VMs in scope: {vms}"));
 
     r.summary = if failed_backups > 0 || failed_restores > 0 {

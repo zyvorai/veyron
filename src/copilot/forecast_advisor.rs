@@ -41,14 +41,14 @@ pub async fn forecast_advisor(client: &KubeClient, scope: &str) -> CopilotRespon
     ));
 
     if density > 8.0 {
-        r.evidence.push("High VM density per node — plan capacity or spread workloads.".into());
+        r.evidence
+            .push("High VM density per node — plan capacity or spread workloads.".into());
         r.recommendations
             .push("Add worker nodes or enable live migration before density limits.".into());
     }
     if running_ratio < 0.5 && total > 3.0 {
-        r.recommendations.push(
-            "Many stopped VMs — review idle capacity and snapshot before delete.".into(),
-        );
+        r.recommendations
+            .push("Many stopped VMs — review idle capacity and snapshot before delete.".into());
     }
 
     #[cfg(feature = "web")]

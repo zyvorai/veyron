@@ -50,11 +50,7 @@ pub async fn migration_advisor(client: &KubeClient, scope: &str) -> CopilotRespo
                 .as_deref()
                 .or(mig.metadata.name.as_deref())
                 .unwrap_or("?");
-            let ns = mig
-                .metadata
-                .namespace
-                .as_deref()
-                .unwrap_or("default");
+            let ns = mig.metadata.namespace.as_deref().unwrap_or("default");
             let src = mig
                 .status
                 .as_ref()

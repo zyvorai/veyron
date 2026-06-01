@@ -5,10 +5,10 @@ use std::collections::{HashMap, HashSet};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 
 use super::{CopilotAction, CopilotResponse};
-use crate::kube::guest_filesystem::format_mount_evidence;
-use crate::kube::windows_rdp::vmi_guest_agent_connected;
 use crate::kube::KubeClient;
+use crate::kube::guest_filesystem::format_mount_evidence;
 use crate::kube::types::VirtualMachine;
+use crate::kube::windows_rdp::vmi_guest_agent_connected;
 use crate::snapshots::SnapshotManager;
 
 /// Fleet storage posture: PVC pressure, snapshot sprawl, and unbound volumes.
@@ -43,7 +43,11 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
         let ns = pvc.metadata.namespace.as_deref().unwrap_or("default");
         let name = pvc.metadata.name.as_deref().unwrap_or("");
         let key = format!("{ns}/{name}");
-        let phase = pvc.status.as_ref().and_then(|s| s.phase.as_deref()).unwrap_or("?");
+        let phase = pvc
+            .status
+            .as_ref()
+            .and_then(|s| s.phase.as_deref())
+            .unwrap_or("?");
         if phase == "Pending" {
             pending.push(key.clone());
         }
@@ -90,7 +94,8 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
         r.evidence.push(format!("Pending PVC: {row}"));
     }
     for row in orphan.iter().take(6) {
-        r.evidence.push(format!("Orphan PVC (no VM volume ref): {row}"));
+        r.evidence
+            .push(format!("Orphan PVC (no VM volume ref): {row}"));
     }
     for row in snap_sprawl.iter().take(6) {
         r.evidence.push(format!("Snapshot sprawl: {row}"));
@@ -100,9 +105,15 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
     r.summary = if pvcs.is_empty() {
         "No PVCs in the active workspace scope.".into()
     } else if issues == 0 {
-        format!("{} PVC(s) look healthy; no critical storage pressure.", pvcs.len())
+        format!(
+            "{} PVC(s) look healthy; no critical storage pressure.",
+            pvcs.len()
+        )
     } else {
-        format!("{issues} storage signal(s) need attention across {} PVC(s).", pvcs.len())
+        format!(
+            "{issues} storage signal(s) need attention across {} PVC(s).",
+            pvcs.len()
+        )
     };
 
     if !high_usage.is_empty() {
@@ -115,14 +126,12 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
             .push("Pending PVCs block VM start — verify StorageClass and CSI drivers.".into());
     }
     if !snap_sprawl.is_empty() {
-        r.recommendations.push(
-            "Apply snapshot retention schedules to control backup sprawl.".into(),
-        );
+        r.recommendations
+            .push("Apply snapshot retention schedules to control backup sprawl.".into());
     }
     if !orphan.is_empty() {
-        r.recommendations.push(
-            "Review orphan PVCs — delete only after confirming they are unused.".into(),
-        );
+        r.recommendations
+            .push("Review orphan PVCs — delete only after confirming they are unused.".into());
     }
 
     if prom_usage.is_empty() {
@@ -196,8 +205,10 @@ async fn sample_guest_filesystem(
         .await
         {
             for m in resp.mounts.iter().take(4) {
-                r.evidence
-                    .push(format!("Guest FS {ns}/{name}: {}", format_mount_evidence(m)));
+                r.evidence.push(format!(
+                    "Guest FS {ns}/{name}: {}",
+                    format_mount_evidence(m)
+                ));
             }
             return;
         }
@@ -237,12 +248,10 @@ async fn prometheus_pvc_usage() -> HashMap<(String, String), u64> {
         Ok(u) if !u.trim().is_empty() => u,
         _ => return HashMap::new(),
     };
-    let rows = crate::api::prometheus::instant_query_vector(
-        &url,
-        "kubelet_volume_stats_used_bytes",
-    )
-    .await
-    .unwrap_or_default();
+    let rows =
+        crate::api::prometheus::instant_query_vector(&url, "kubelet_volume_stats_used_bytes")
+            .await
+            .unwrap_or_default();
     let mut out = HashMap::new();
     for (metric, val) in rows {
         let ns = metric.get("namespace").cloned().unwrap_or_default();

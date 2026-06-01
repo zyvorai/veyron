@@ -5,9 +5,9 @@
 use anyhow::Result;
 use kube::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
-use super::guest_os::{detect_guest_os_family, GuestOsFamily};
+use super::guest_os::{GuestOsFamily, detect_guest_os_family};
 use super::kubevirt_subresources::{vmi_guest_exec, wait_guest_exec};
 use super::windows_rdp::{is_windows_guest, parse_guest_exec_response, vmi_guest_agent_connected};
 
@@ -189,8 +189,8 @@ pub async fn collect_guest_filesystem(
         anyhow::bail!("QEMU guest agent is not connected (AgentConnected condition is not True)");
     }
 
-    let windows = is_windows_guest(Some(vm_json), Some(vmi_json))
-        || family == GuestOsFamily::Windows;
+    let windows =
+        is_windows_guest(Some(vm_json), Some(vmi_json)) || family == GuestOsFamily::Windows;
     let body = if windows {
         windows_fs_guest_exec_body()
     } else {
@@ -243,10 +243,7 @@ pub async fn collect_guest_filesystem(
 pub fn format_mount_evidence(m: &GuestFilesystemMount) -> String {
     format!(
         "{} — {:.1}% used ({}/{} bytes free)",
-        m.mount,
-        m.use_percent,
-        m.used_bytes,
-        m.avail_bytes
+        m.mount, m.use_percent, m.used_bytes, m.avail_bytes
     )
 }
 
@@ -273,6 +270,8 @@ tmpfs             1048576        0   1048576       0% /dev/shm\n";
         assert_eq!(mounts.len(), 2);
         assert_eq!(mounts[0].mount, "C:\\");
         assert_eq!(mounts[0].size_bytes, 65_000_000_000);
-        assert!((mounts[0].use_percent - (50_000_000_000.0 / 65_000_000_000.0 * 100.0)).abs() < 0.01);
+        assert!(
+            (mounts[0].use_percent - (50_000_000_000.0 / 65_000_000_000.0 * 100.0)).abs() < 0.01
+        );
     }
 }

@@ -5,7 +5,7 @@
 use std::collections::HashMap;
 
 use k8s_openapi::api::core::v1::Pod;
-use kube::{api::ListParams, Api, Client};
+use kube::{Api, Client, api::ListParams};
 
 use super::guest_filesystem::GuestFilesystemMount;
 use super::types::VirtualMachine;
@@ -48,12 +48,8 @@ async fn prometheus_pvc_mounts(
         return Vec::new();
     }
 
-    let used_q = format!(
-        "kubelet_volume_stats_used_bytes{{namespace=\"{namespace}\"}}"
-    );
-    let cap_q = format!(
-        "kubelet_volume_stats_capacity_bytes{{namespace=\"{namespace}\"}}"
-    );
+    let used_q = format!("kubelet_volume_stats_used_bytes{{namespace=\"{namespace}\"}}");
+    let cap_q = format!("kubelet_volume_stats_capacity_bytes{{namespace=\"{namespace}\"}}");
 
     let used = crate::api::prometheus::instant_query_vector(prom_base, &used_q)
         .await
@@ -99,20 +95,12 @@ async fn prometheus_guest_exporter_mounts(
     // Linux node_exporter-style (if scraped from the guest network namespace / sidecar).
     let linux_size_q = format!("node_filesystem_size_bytes{pod_filter}");
     let linux_avail_q = format!("node_filesystem_avail_bytes{pod_filter}");
-    mounts.extend(merge_fs_pair(
-        prom_base,
-        &linux_size_q,
-        &linux_avail_q,
-        "node_exporter",
-    )
-    .await);
+    mounts.extend(merge_fs_pair(prom_base, &linux_size_q, &linux_avail_q, "node_exporter").await);
 
     // Windows perf counters (guest exporter / windows_exporter).
     let win_size_q = format!("windows_logical_disk_size_bytes{pod_filter}");
     let win_free_q = format!("windows_logical_disk_free_bytes{pod_filter}");
-    mounts.extend(
-        merge_fs_pair(prom_base, &win_size_q, &win_free_q, "windows_exporter").await,
-    );
+    mounts.extend(merge_fs_pair(prom_base, &win_size_q, &win_free_q, "windows_exporter").await);
 
     mounts
 }
@@ -197,9 +185,7 @@ async fn virt_launcher_pod_name(client: &Client, namespace: &str, vm_name: &str)
     let pods: Api<Pod> = Api::namespaced(client.clone(), namespace);
     let lp = ListParams::default().labels(&format!("kubevirt.io/domain={vm_name}"));
     let list = pods.list(&lp).await.ok()?;
-    list.items
-        .into_iter()
-        .find_map(|p| p.metadata.name)
+    list.items.into_iter().find_map(|p| p.metadata.name)
 }
 
 #[cfg(test)]

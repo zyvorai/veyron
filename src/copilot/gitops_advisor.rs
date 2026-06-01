@@ -83,7 +83,8 @@ pub async fn gitops_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
         .ok()
         .filter(|u| !u.trim().is_empty());
     if argo_url.is_some() {
-        r.evidence.push("VMROGUE_ARGOCD_URL is set — POST /gitops/sync can refresh apps".into());
+        r.evidence
+            .push("VMROGUE_ARGOCD_URL is set — POST /gitops/sync can refresh apps".into());
     } else {
         r.recommendations.push(
             "Set VMROGUE_ARGOCD_URL + token to trigger Argo CD sync from the dashboard.".into(),
@@ -99,7 +100,10 @@ pub async fn gitops_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
     } else if drift_ns.is_empty() {
         format!("{repos} GitOps config(s); live VM counts match stored snapshots.")
     } else {
-        format!("{repos} GitOps config(s); {} namespace(s) show VM count drift.", drift_ns.len())
+        format!(
+            "{repos} GitOps config(s); {} namespace(s) show VM count drift.",
+            drift_ns.len()
+        )
     };
 
     r.actions = vec![

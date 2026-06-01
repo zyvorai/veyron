@@ -11,16 +11,15 @@ use axum::{
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
 use crate::copilot::{
-    copilot_chat, CopilotAskRequest, CopilotChatRequest, CopilotResponse, YamlBuildRequest,
-    BlueprintSaveRequest, BlueprintSaveResponse, GitOpsExportRequest, GitOpsExportResponse,
-    alert_advisor, backup_advisor, catalog_advisor, cilium_advisor, compliance_advisor,
-    copilot_ask, cost_advisor, cost_advisor_vm, drift_advisor, export_gitops, forecast_advisor,
-    gitops_advisor, integrations_advisor, migration_advisor, finalize_copilot,
-    guest_inspector, guest_filesystem_report, network_lens, node_advisor,
-    observability_advisor, performance_advisor, quota_advisor, recommend_template,
-    save_blueprint, scheduling_explainer, scheduling_fleet_advisor, security_sentinel,
-    security_sentinel_fleet, slo_advisor, status_snapshot, storage_doctor,
-    velero_dr_advisor, vm_doctor, yaml_preview,
+    BlueprintSaveRequest, BlueprintSaveResponse, CopilotAskRequest, CopilotChatRequest,
+    CopilotResponse, GitOpsExportRequest, GitOpsExportResponse, YamlBuildRequest, alert_advisor,
+    backup_advisor, catalog_advisor, cilium_advisor, compliance_advisor, copilot_ask, copilot_chat,
+    cost_advisor, cost_advisor_vm, drift_advisor, export_gitops, finalize_copilot,
+    forecast_advisor, gitops_advisor, guest_filesystem_report, guest_inspector,
+    integrations_advisor, migration_advisor, network_lens, node_advisor, observability_advisor,
+    performance_advisor, quota_advisor, recommend_template, save_blueprint, scheduling_explainer,
+    scheduling_fleet_advisor, security_sentinel, security_sentinel_fleet, slo_advisor,
+    status_snapshot, storage_doctor, velero_dr_advisor, vm_doctor, yaml_preview,
 };
 
 #[cfg(feature = "web")]
@@ -32,12 +31,18 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/copilot/ask", post(copilot_ask_handler))
         .route("/experience/copilot/chat", post(copilot_chat_handler))
         .route("/experience/copilot/status", get(copilot_status_handler))
-        .route("/experience/copilot/doctor/:ns/:name", get(copilot_doctor_handler))
+        .route(
+            "/experience/copilot/doctor/:ns/:name",
+            get(copilot_doctor_handler),
+        )
         .route(
             "/experience/copilot/scheduling/:ns/:name",
             get(copilot_scheduling_handler),
         )
-        .route("/experience/copilot/yaml/preview", post(copilot_yaml_handler))
+        .route(
+            "/experience/copilot/yaml/preview",
+            post(copilot_yaml_handler),
+        )
         .route(
             "/experience/copilot/blueprint/save",
             post(copilot_blueprint_save_handler),
@@ -46,7 +51,10 @@ pub fn router(state: SharedState) -> Router {
             "/experience/copilot/gitops/export",
             post(copilot_gitops_export_handler),
         )
-        .route("/experience/copilot/recommend", post(copilot_recommend_handler))
+        .route(
+            "/experience/copilot/recommend",
+            post(copilot_recommend_handler),
+        )
         .route("/experience/copilot/backup", get(copilot_backup_handler))
         .route("/experience/copilot/cost", get(copilot_cost_handler))
         .route(
@@ -70,23 +78,50 @@ pub fn router(state: SharedState) -> Router {
             "/experience/copilot/security/:ns/:name",
             get(copilot_security_handler),
         )
-        .route("/experience/copilot/security", get(copilot_security_fleet_handler))
-        .route("/experience/copilot/performance", get(copilot_performance_handler))
+        .route(
+            "/experience/copilot/security",
+            get(copilot_security_fleet_handler),
+        )
+        .route(
+            "/experience/copilot/performance",
+            get(copilot_performance_handler),
+        )
         .route("/experience/copilot/gitops", get(copilot_gitops_handler))
-        .route("/experience/copilot/forecast", get(copilot_forecast_handler))
-        .route("/experience/copilot/integrations", get(copilot_integrations_handler))
-        .route("/experience/copilot/scheduling", get(copilot_scheduling_fleet_handler))
-        .route("/experience/copilot/compliance", get(copilot_compliance_handler))
-        .route("/experience/copilot/observability", get(copilot_observability_handler))
+        .route(
+            "/experience/copilot/forecast",
+            get(copilot_forecast_handler),
+        )
+        .route(
+            "/experience/copilot/integrations",
+            get(copilot_integrations_handler),
+        )
+        .route(
+            "/experience/copilot/scheduling",
+            get(copilot_scheduling_fleet_handler),
+        )
+        .route(
+            "/experience/copilot/compliance",
+            get(copilot_compliance_handler),
+        )
+        .route(
+            "/experience/copilot/observability",
+            get(copilot_observability_handler),
+        )
         .route("/experience/copilot/cilium", get(copilot_cilium_handler))
         .route("/experience/copilot/nodes", get(copilot_nodes_handler))
         .route("/experience/copilot/drift", get(copilot_drift_handler))
         .route("/experience/copilot/alerts", get(copilot_alerts_handler))
         .route("/experience/copilot/slo", get(copilot_slo_handler))
-        .route("/experience/copilot/migrations", get(copilot_migrations_handler))
+        .route(
+            "/experience/copilot/migrations",
+            get(copilot_migrations_handler),
+        )
         .route("/experience/copilot/quotas", get(copilot_quotas_handler))
         .route("/experience/copilot/catalog", get(copilot_catalog_handler))
-        .route("/experience/copilot/velero-dr", get(copilot_velero_dr_handler))
+        .route(
+            "/experience/copilot/velero-dr",
+            get(copilot_velero_dr_handler),
+        )
         .with_state(state)
 }
 
@@ -105,10 +140,8 @@ async fn copilot_chat_handler(
         let s = state.read().await;
         (s.kube_client.clone(), s.namespace.clone())
     };
-    let scope = namespace_scope::resolve_opt(
-        body.namespace.clone().or(q.namespace.clone()),
-        &default_ns,
-    );
+    let scope =
+        namespace_scope::resolve_opt(body.namespace.clone().or(q.namespace.clone()), &default_ns);
     Json(copilot_chat(&client, &scope, &body).await)
 }
 
@@ -122,10 +155,8 @@ async fn copilot_ask_handler(
         let s = state.read().await;
         (s.kube_client.clone(), s.namespace.clone())
     };
-    let scope = namespace_scope::resolve_opt(
-        body.namespace.clone().or(q.namespace.clone()),
-        &default_ns,
-    );
+    let scope =
+        namespace_scope::resolve_opt(body.namespace.clone().or(q.namespace.clone()), &default_ns);
     Json(finalize_copilot(copilot_ask(&client, &scope, &body).await).await)
 }
 
@@ -163,10 +194,8 @@ async fn copilot_yaml_handler(
         let s = state.read().await;
         (s.kube_client.clone(), s.namespace.clone())
     };
-    let scope = namespace_scope::resolve_opt(
-        body.namespace.clone().or(q.namespace.clone()),
-        &default_ns,
-    );
+    let scope =
+        namespace_scope::resolve_opt(body.namespace.clone().or(q.namespace.clone()), &default_ns);
     Json(finalize_copilot(yaml_preview(&client, &scope, body).await).await)
 }
 
@@ -406,9 +435,7 @@ copilot_scope_handler!(copilot_quotas_handler, quota_advisor);
 copilot_scope_handler!(copilot_velero_dr_handler, velero_dr_advisor);
 
 #[cfg(feature = "web")]
-async fn copilot_catalog_handler(
-    State(state): State<SharedState>,
-) -> Json<CopilotResponse> {
+async fn copilot_catalog_handler(State(state): State<SharedState>) -> Json<CopilotResponse> {
     let client = {
         let s = state.read().await;
         s.kube_client.clone()

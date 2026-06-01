@@ -18,13 +18,13 @@ mod compliance_advisor;
 mod cost_advisor;
 mod dispatch;
 mod doctor;
-pub mod fixit;
-mod guest_inspector;
-mod guest_filesystem;
 mod drift_advisor;
+pub mod fixit;
 mod forecast_advisor;
 mod gitops_advisor;
 mod gitops_generator;
+mod guest_filesystem;
+mod guest_inspector;
 mod integrations_advisor;
 mod intent;
 mod llm;
@@ -45,37 +45,37 @@ mod yaml_build;
 pub use agent::copilot_chat;
 pub use alert_advisor::alert_advisor;
 pub use backup_advisor::backup_advisor;
+pub use blueprint_studio::{BlueprintSaveRequest, BlueprintSaveResponse, save_blueprint};
+pub use briefing::{CopilotBriefingItem, fleet_briefing};
 pub use catalog_advisor::catalog_advisor;
 pub use cilium_advisor::cilium_advisor;
 pub use compliance_advisor::compliance_advisor;
 pub use cost_advisor::{cost_advisor, cost_advisor_vm};
+pub use doctor::vm_doctor;
 pub use drift_advisor::drift_advisor;
 pub use forecast_advisor::forecast_advisor;
 pub use gitops_advisor::gitops_advisor;
+pub use gitops_generator::{GitOpsExportRequest, GitOpsExportResponse, export_gitops};
+pub use guest_filesystem::guest_filesystem_report;
+pub use guest_inspector::guest_inspector;
 pub use integrations_advisor::integrations_advisor;
+pub use intent::CopilotIntent;
+pub use llm::{AiMode, ai_mode, ai_rate_limit_per_min, status_snapshot};
 pub use migration_advisor::migration_advisor;
+pub use network_lens::network_lens;
 pub use node_advisor::node_advisor;
 pub use observability_advisor::observability_advisor;
 pub use performance_advisor::performance_advisor;
 pub use quota_advisor::quota_advisor;
-pub use slo_advisor::slo_advisor;
-pub use llm::{ai_mode, ai_rate_limit_per_min, status_snapshot, AiMode};
-pub use velero_dr_advisor::velero_dr_advisor;
-pub use blueprint_studio::{save_blueprint, BlueprintSaveRequest, BlueprintSaveResponse};
-pub use briefing::{fleet_briefing, CopilotBriefingItem};
-pub use doctor::vm_doctor;
-pub use gitops_generator::{export_gitops, GitOpsExportRequest, GitOpsExportResponse};
-pub use guest_inspector::guest_inspector;
-pub use guest_filesystem::guest_filesystem_report;
-pub use intent::CopilotIntent;
-pub use network_lens::network_lens;
 pub use scheduling::{scheduling_explainer, scheduling_fleet_advisor};
 pub use security_sentinel::{security_sentinel, security_sentinel_fleet};
+pub use slo_advisor::slo_advisor;
 pub use storage_doctor::storage_doctor;
+pub use velero_dr_advisor::velero_dr_advisor;
 pub use yaml_build::{YamlBuildRequest, yaml_preview};
 
-use dispatch::dispatch_intent;
 use crate::kube::KubeClient;
+use dispatch::dispatch_intent;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -220,7 +220,9 @@ pub fn general_help() -> CopilotResponse {
         "help",
         "AI-native VM operator for KubeVirt",
     );
-    r.summary = "Ask about VM health, scheduling, YAML, backups, security, or paste a Kubernetes error.".into();
+    r.summary =
+        "Ask about VM health, scheduling, YAML, backups, security, or paste a Kubernetes error."
+            .into();
     r.evidence = vec![
         "VMRogue Doctor — inspect a VM and get a health score".into(),
         "VMRogue Scheduling Explainer — why a VM is Pending".into(),
@@ -323,7 +325,8 @@ pub fn recommend_template(description: &str) -> CopilotResponse {
             "Disk: 40Gi".into(),
         ];
     }
-    r.recommendations.push("Use YAML Builder to preview manifests with cluster validation.".into());
+    r.recommendations
+        .push("Use YAML Builder to preview manifests with cluster validation.".into());
     r.actions.push(CopilotAction {
         label: "Forge from Template Store".into(),
         action: "navigate".into(),
