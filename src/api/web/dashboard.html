@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260531z">
+<meta name="vmrogue-dashboard-rev" content="20260601a">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260531z';
+  var DASH_REV = '20260601a';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -650,11 +650,12 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
    RESOURCE BARS — Molten Progress
    ═══════════════════════════════════════════════════ */
 .resource-bar{
-  background:var(--bg-card);border-radius:var(--radius);padding:14px 18px;
-  border:1px solid var(--border);
-  transition:border-color .2s;
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border-radius:var(--glass-radius);padding:14px 18px;
+  border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
+  transition:border-color .2s,box-shadow .2s;
 }
-.resource-bar:hover{border-color:var(--border-hot)}
+.resource-bar:hover{border-color:rgba(59,130,246,.28);box-shadow:0 8px 24px rgba(0,0,0,.2)}
 .res-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .res-header .lbl{
   color:var(--text-muted);flex:1;letter-spacing:.08em;text-transform:uppercase;
@@ -2018,6 +2019,14 @@ html[data-theme="steel"] button.glass-stat-pill.clickable-stat:hover,
 html[data-theme="zinc"] button.glass-stat-pill.clickable-stat:hover{
   border-color:rgba(59,130,246,.35);box-shadow:0 6px 20px rgba(0,0,0,.25);
 }
+html[data-theme="steel"] .resource-bar,
+html[data-theme="zinc"] .resource-bar{
+  background:var(--glass-bg);border-color:var(--glass-border);
+}
+html[data-theme="steel"] .operator-details,
+html[data-theme="zinc"] .operator-details{
+  background:var(--glass-bg);border-color:var(--glass-border);
+}
 
 .table tbody tr.clickable-row{cursor:pointer;transition:background .12s}
 .table tbody tr.clickable-row:hover{background:rgba(59,130,246,.06)}
@@ -2057,9 +2066,15 @@ html[data-theme="zinc"] button.glass-stat-pill.clickable-stat:hover{
 }
 .dc-stat-label{font-size:.72rem;color:var(--text-dim)}
 .dc-stat-value{font-size:1rem;font-weight:600;margin-top:2px}
-.operator-details{margin-top:8px}
+.operator-details{
+  margin-top:12px;padding:16px 18px 18px;border-radius:var(--glass-radius);
+  background:var(--glass-bg);border:1px solid var(--glass-border);
+  backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  box-shadow:var(--glass-shadow);
+}
 .operator-details>summary{
-  cursor:pointer;font-size:.82rem;color:var(--text-dim);padding:8px 0;list-style:none;
+  cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text-muted);padding:4px 0 8px;list-style:none;
+  letter-spacing:.04em;
 }
 .operator-details>summary::-webkit-details-marker{display:none}
 .operator-details[open]>summary{margin-bottom:12px;color:var(--text-muted)}
@@ -2095,10 +2110,12 @@ html[data-theme="zinc"] button.glass-stat-pill.clickable-stat:hover{
 .dc-action-sub{font-size:.78rem;color:var(--text-dim);margin-top:4px}
 .vm-view-toggle{display:flex;gap:4px;margin-left:auto}
 .vm-view-toggle button{
-  padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;
-  color:var(--text-muted);font-size:.78rem;cursor:pointer;
+  padding:6px 12px;border-radius:8px;border:1px solid var(--glass-border);
+  background:rgba(15,23,42,.45);color:var(--text-muted);font-size:.78rem;cursor:pointer;
+  transition:border-color .15s,background .15s,color .15s;
 }
-.vm-view-toggle button.active{background:rgba(56,189,248,.12);color:var(--spark);border-color:rgba(56,189,248,.3)}
+.vm-view-toggle button:hover{border-color:rgba(59,130,246,.28);color:var(--text-bright)}
+.vm-view-toggle button.active{background:rgba(59,130,246,.15);color:var(--primary-blue);border-color:rgba(59,130,246,.35)}
 .vm-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:12px}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
@@ -2662,7 +2679,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
         </div>
       </div>
       <div class="command-actions">
-        <button class="btn-create glass-btn-primary" onclick="openCreateModal()">Forge VM</button>
+        <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">Forge VM</button>
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">Open Monitoring</button>
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('events')">Review Signals</button>
         <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="refresh()">Refresh Now</button>
@@ -2743,6 +2760,19 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   </div>
 </div>
 
+<!-- CLONE VM MODAL -->
+<div class="modal-overlay" id="clone-modal">
+  <div class="modal glass-modal" style="width:420px">
+    <div class="modal-header"><h2>Clone VM</h2><button type="button" class="modal-close" onclick="closeCloneModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="clone-ns"><input type="hidden" id="clone-src-name">
+      <p style="font-size:.88rem;color:var(--text-muted);margin:0 0 14px;line-height:1.45">Create a copy of <strong id="clone-src-label"></strong> in the same namespace.</p>
+      <div class="form-group"><label class="form-label">New VM name</label><input type="text" class="form-input" id="clone-new-name" placeholder="my-vm-clone" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitClone();}"></div>
+    </div>
+    <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeCloneModal()">Cancel</button><button type="button" class="glass-btn-primary" onclick="submitClone()">Clone</button></div>
+  </div>
+</div>
+
 <!-- SNAPSHOTS PAGE -->
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
@@ -2761,7 +2791,7 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   </div>
   <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm btn-restart" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
 </div>
 </div>
@@ -3329,7 +3359,7 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
       <div class="form-group" style="margin:0"><label class="form-label">Name (optional)</label><input class="form-input" id="catalog-deploy-name" placeholder="auto" style="width:140px"></div>
       <div class="form-group" style="margin:0"><label class="form-label">Template</label><select class="form-select" id="catalog-deploy-template" style="min-width:160px"></select></div>
       <div class="form-group" style="margin:0"><label class="form-label">Profile</label><select class="form-select" id="catalog-deploy-profile" style="min-width:140px"></select></div>
-      <button type="button" class="btn-forge" onclick="catalogDeployVmrogueVm()">Deploy VMRogueVM</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="catalogDeployVmrogueVm()">Deploy VMRogueVM</button>
     </div>
   </div>
   <div class="card glass-card">
@@ -4258,7 +4288,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260531z';
+window.__VMROGUE_DASH_REV = '20260601a';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -7186,7 +7216,7 @@ document.addEventListener('keydown', e => {
   onSpotlightKeydown(e);
   if (e.key === 'Escape') {
     closeClassicNav();
-    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal();
+    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); closeCloneModal();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
   }
@@ -8609,14 +8639,32 @@ function fmtBytes(v) {
 }
 
 // ── Clone, Resize, Pause, Migrate ──
-async function cloneVM(ns, name) {
-  const newName = prompt('Clone "' + name + '" — enter new VM name:');
-  if (!newName) return;
+function cloneVM(ns, name) {
+  openCloneModal(ns, name);
+}
+function openCloneModal(ns, name) {
+  document.getElementById('clone-ns').value = ns;
+  document.getElementById('clone-src-name').value = name;
+  document.getElementById('clone-src-label').textContent = ns + '/' + name;
+  document.getElementById('clone-new-name').value = name + '-clone';
+  document.getElementById('clone-modal').classList.add('open');
+  setTimeout(function() {
+    const input = document.getElementById('clone-new-name');
+    if (input) { input.focus(); input.select(); }
+  }, 50);
+}
+function closeCloneModal() { document.getElementById('clone-modal').classList.remove('open'); }
+async function submitClone() {
+  const ns = document.getElementById('clone-ns').value;
+  const name = document.getElementById('clone-src-name').value;
+  const newName = (document.getElementById('clone-new-name').value || '').trim();
+  if (!newName) { toast('Enter a name for the clone', 'error'); return; }
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/clone', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({new_name: newName.trim()}),
+      body: JSON.stringify({new_name: newName}),
     });
+    closeCloneModal();
     toast('Cloned to ' + newName, 'success');
     setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
