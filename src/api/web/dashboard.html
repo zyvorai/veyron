@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260601a">
+<meta name="vmrogue-dashboard-rev" content="20260601b">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260601a';
+  var DASH_REV = '20260601b';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -190,7 +190,7 @@ body>*{position:relative;z-index:1}
 .animate-fade-in{animation:fade-in .5s cubic-bezier(.16,1,.3,1)}
 
 @media(prefers-reduced-motion:reduce){
-  body::before,body::after,.container::before,.stat-card,.stat-card::before,.stat-card::after,.navbar::after,.navbar-brand,.chart-card,.chart-card::before{animation:none!important}
+  body::before,body::after,.container::before,.navbar::after,.navbar-brand,.chart-card,.chart-card::before{animation:none!important}
   .classic-nav-backdrop{transition:none}
 }
 
@@ -569,84 +569,6 @@ body[data-section="finops"] .page.active .card-header{background:linear-gradient
 body[data-section="ops"] .page.active .card-header{background:linear-gradient(90deg,rgba(244,177,131,.1),transparent)}
 
 /* ═══════════════════════════════════════════════════
-   STAT CARDS — v9s / virtspawn gradients
-   ═══════════════════════════════════════════════════ */
-.stat-card{
-  border-radius:var(--glass-radius);padding:22px;
-  border:1px solid var(--glass-border);
-  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-  box-shadow:var(--glass-shadow);
-  position:relative;overflow:hidden;
-  transition:border-color .3s,box-shadow .35s,transform .35s cubic-bezier(.16,1,.3,1);
-  animation:stat-breathe 7s ease-in-out infinite;
-}
-.stat-card:nth-child(4n+1){animation-delay:0s}
-.stat-card:nth-child(4n+2){animation-delay:1.2s}
-.stat-card:nth-child(4n+3){animation-delay:2.4s}
-.stat-card:nth-child(4n+4){animation-delay:3.6s}
-.stat-card::before{
-  content:'';position:absolute;inset:0;opacity:.06;
-  background:
-    repeating-linear-gradient(
-      0deg,transparent,transparent 1px,rgba(255,255,255,.04) 1px,rgba(255,255,255,.04) 2px
-    ),
-    linear-gradient(105deg,transparent 35%,rgba(255,255,255,.14) 50%,transparent 65%);
-  background-size:auto,220% 100%;
-  pointer-events:none;
-  animation:stat-shimmer-bg 6.5s ease-in-out infinite;
-}
-.stat-card::after{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,var(--molten),var(--plasma),var(--spark),transparent);
-  background-size:200% 100%;
-  opacity:0;transition:opacity .3s;
-  animation:metal-shimmer 4s linear infinite;
-}
-.stat-card:hover{
-  transform:translateY(-4px) scale(1.01);
-  border-color:var(--border-hot);
-  box-shadow:var(--glow-molten),0 0 0 1px rgba(59,130,246,.12);
-}
-.stat-card:hover::after{opacity:1}
-
-.stat-card-blue{background:linear-gradient(135deg,#1e3a5f 0%,#1e293b 100%)}
-.stat-card-purple{background:linear-gradient(135deg,#2d1f5e 0%,#1e293b 100%)}
-.stat-card-orange{background:linear-gradient(135deg,#5f3a1e 0%,#1e293b 100%)}
-.stat-card-green{background:linear-gradient(135deg,#1e5f3a 0%,#1e293b 100%)}
-.stat-card-cyan{background:linear-gradient(135deg,#1e4f5f 0%,#1e293b 100%)}
-.stat-card-red{background:linear-gradient(135deg,#5f1e1e 0%,#1e293b 100%)}
-
-.stat-top{display:flex;align-items:flex-start;justify-content:space-between}
-.stat-icon{
-  width:48px;height:48px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:1.3em;position:relative;
-}
-.stat-icon::after{
-  content:'';position:absolute;inset:-1px;border-radius:9px;
-  background:linear-gradient(135deg,rgba(255,255,255,.1),transparent);
-  pointer-events:none;
-}
-.stat-icon.blue{background:rgba(0,180,255,.12);color:var(--spark);border:1px solid rgba(0,180,255,.2)}
-.stat-icon.purple{background:rgba(123,104,238,.12);color:var(--plasma);border:1px solid rgba(123,104,238,.2)}
-.stat-icon.orange{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(234,179,8,.22)}
-.stat-icon.green{background:rgba(34,197,94,.12);color:var(--success);border:1px solid rgba(34,197,94,.2)}
-
-.stat-body{margin-top:14px}
-.stat-value{
-  font-family:var(--font-display);font-size:2.2rem;font-weight:700;
-  color:var(--text-bright);
-  text-shadow:0 0 20px rgba(255,255,255,.1);
-}
-.stat-label{
-  font-size:.86rem;color:var(--text-muted);margin-top:6px;
-  letter-spacing:.08em;text-transform:uppercase;font-weight:700;
-}
-.stat-badge{font-size:.72rem;padding:4px 10px;border-radius:999px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
-.badge-muted{color:var(--text-dim)}
-
-/* ═══════════════════════════════════════════════════
    RESOURCE BARS — Molten Progress
    ═══════════════════════════════════════════════════ */
 .resource-bar{
@@ -819,18 +741,6 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   transition:all .2s;display:inline-flex;align-items:center;gap:5px;
   letter-spacing:.04em;text-transform:uppercase;
 }
-.btn-start{
-  background:var(--success-dim);color:var(--success);border-color:rgba(34,197,94,.2);
-}
-.btn-start:hover{background:rgba(34,197,94,.18);box-shadow:0 0 12px rgba(34,197,94,.12)}
-.btn-stop{
-  background:var(--warning-dim);color:var(--warning);border-color:rgba(255,170,0,.15);
-}
-.btn-stop:hover{background:rgba(255,170,0,.2);box-shadow:0 0 12px rgba(255,170,0,.15)}
-.btn-restart{
-  background:rgba(0,180,255,.08);color:var(--spark);border-color:rgba(0,180,255,.15);
-}
-.btn-restart:hover{background:rgba(0,180,255,.15);box-shadow:0 0 12px rgba(0,180,255,.15)}
 .btn-delete{
   background:var(--error-dim);color:var(--error);border-color:rgba(255,34,68,.15);
 }
@@ -914,14 +824,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .monitor-stack-sub{
   font-size:.72em;color:var(--text-muted);margin-top:10px;line-height:1.45;letter-spacing:.2px;
 }
-.stat-card.stat-card-neutral{
-  border-color:rgba(100,140,255,.14);
-  background:linear-gradient(145deg,rgba(25,35,55,.45),var(--bg-card));
-}
-.stat-card.stat-card-optional{
-  border-color:rgba(234,179,8,.18);
-  background:linear-gradient(145deg,rgba(55,48,26,.35),var(--bg-card));
-}
+.badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
+.badge-muted{color:var(--text-dim)}
 .monitor-stat-note{font-size:.76rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);letter-spacing:.02em}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
 .table-scroll .table{min-width:560px}
@@ -1097,15 +1001,6 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   color:var(--text-muted);cursor:pointer;transition:all .15s;
 }
 .btn-cancel:hover{border-color:var(--text-muted);color:var(--text)}
-.btn-forge{
-  padding:10px 24px;border-radius:12px;
-  font-family:var(--font-sans);font-size:.74rem;font-weight:700;
-  letter-spacing:.06em;text-transform:uppercase;
-  background:linear-gradient(135deg,var(--molten),var(--ember));
-  color:#0d1116;border:none;cursor:pointer;transition:all .15s;
-}
-.btn-forge:hover{box-shadow:0 0 20px rgba(199,208,219,.28)}
-.btn-forge:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
 .modal.glass-modal{
   background:var(--glass-bg-elevated);
   backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -1616,7 +1511,6 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 @media(max-width:480px){
   .grid-4,.grid-3{grid-template-columns:1fr}
   .form-row{grid-template-columns:1fr}
-  .stat-value{font-size:1.7rem}
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1786,35 +1680,6 @@ html[data-theme="steel"] .refresh-select{
   color:var(--text);
 }
 
-html[data-theme="steel"] .stat-card,
-html[data-theme="steel"] .stat-card-blue,
-html[data-theme="steel"] .stat-card-purple,
-html[data-theme="steel"] .stat-card-orange,
-html[data-theme="steel"] .stat-card-green,
-html[data-theme="steel"] .stat-card-cyan,
-html[data-theme="steel"] .stat-card-red{
-  background:linear-gradient(145deg,#1a1f27 0%,#2a313c 50%,#161b22 100%);
-  border:1px solid rgba(160,180,210,.18);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.05),
-    0 12px 32px rgba(0,0,0,.35);
-}
-html[data-theme="steel"] .stat-card:hover{
-  transform:translateY(-3px);
-  border-color:rgba(170,190,220,.28);
-}
-html[data-theme="steel"] .stat-card::after{opacity:0}
-html[data-theme="steel"] .stat-card:hover::after{opacity:.35}
-
-html[data-theme="steel"] .stat-card.stat-card-neutral{
-  border-color:rgba(140,160,190,.2);
-  background:linear-gradient(145deg,#1a1f27 0%,#252d38 50%,#161b22 100%);
-}
-html[data-theme="steel"] .stat-card.stat-card-optional{
-  border-color:rgba(255,179,71,.22);
-  background:linear-gradient(145deg,#2a2418 0%,#2a313c 45%,#161b22 100%);
-}
-
 html[data-theme="steel"] .card,
 html[data-theme="steel"] .chart-card,
 html[data-theme="steel"] .resource-bar,
@@ -1948,13 +1813,6 @@ html[data-theme="zinc"] .nav-group-btn.active{
   color:var(--text-bright);
   border-color:rgba(255,255,255,.18);
 }
-html[data-theme="zinc"] .stat-card,
-html[data-theme="zinc"] .stat-card-blue,
-html[data-theme="zinc"] .stat-card-purple,
-html[data-theme="zinc"] .stat-card-orange,
-html[data-theme="zinc"] .stat-card-green,
-html[data-theme="zinc"] .stat-card-cyan,
-html[data-theme="zinc"] .stat-card-red,
 html[data-theme="zinc"] .card,
 html[data-theme="zinc"] .chart-card,
 html[data-theme="zinc"] .resource-bar,
@@ -2716,6 +2574,14 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Fleet Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="vms-copilot-input" placeholder="Ask about VM health, drift, or scheduling…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('vms-copilot-input', 'KubeVirt fleet health and VM issues');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('vms-copilot-input', 'KubeVirt fleet health and VM issues')">Ask</button>
+    </div>
+  </div>
+  <div id="vm-page-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Fleet Roster</span>
@@ -2770,6 +2636,24 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
       <div class="form-group"><label class="form-label">New VM name</label><input type="text" class="form-input" id="clone-new-name" placeholder="my-vm-clone" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitClone();}"></div>
     </div>
     <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeCloneModal()">Cancel</button><button type="button" class="glass-btn-primary" onclick="submitClone()">Clone</button></div>
+  </div>
+</div>
+
+<!-- GLASS CONFIRM MODAL -->
+<div class="modal-overlay" id="glass-confirm-modal">
+  <div class="modal glass-modal" style="width:420px">
+    <div class="modal-header"><h2 id="glass-confirm-title">Confirm</h2><button type="button" class="modal-close" onclick="closeGlassConfirm()">&#10005;</button></div>
+    <div class="modal-body"><p id="glass-confirm-body" style="font-size:.9rem;color:var(--text-muted);margin:0;line-height:1.5"></p></div>
+    <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeGlassConfirm()">Cancel</button><button type="button" class="glass-btn-primary" id="glass-confirm-btn" onclick="submitGlassConfirm()">Confirm</button></div>
+  </div>
+</div>
+
+<!-- GLASS PROMPT MODAL -->
+<div class="modal-overlay" id="glass-prompt-modal">
+  <div class="modal glass-modal" style="width:440px">
+    <div class="modal-header"><h2 id="glass-prompt-title">Input</h2><button type="button" class="modal-close" onclick="closeGlassPrompt()">&#10005;</button></div>
+    <div class="modal-body" id="glass-prompt-fields"></div>
+    <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeGlassPrompt()">Cancel</button><button type="button" class="glass-btn-primary" id="glass-prompt-submit-btn" onclick="submitGlassPrompt()">Submit</button></div>
   </div>
 </div>
 
@@ -2905,6 +2789,14 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Operator Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="crds-copilot-input" placeholder="Ask about VMRogueVM CRD posture…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('crds-copilot-input', 'VMRogueVM operator posture');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('crds-copilot-input', 'VMRogueVM operator posture')">Ask</button>
+    </div>
+  </div>
+
   <div class="card glass-card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
   </div>
@@ -2915,6 +2807,14 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VMRogueBlueprint CRDs saved from Copilot or created here</p></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Blueprint Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="blueprint-copilot-input" placeholder="Ask about blueprint drift or export…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('blueprint-copilot-input', 'Blueprint drift and export');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('blueprint-copilot-input', 'Blueprint drift and export')">Ask</button>
+    </div>
+  </div>
+
   <div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">Operator CRDs</span><span class="vmrogue-cap-scope">Changes apply to <code>VMRogueBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="vmrogue-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span></div>
@@ -3160,6 +3060,14 @@ __HDR__Alerts__Warning events and alert acknowledgements</p></div>
 <div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Notifications Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="notifications-copilot-input" placeholder="Ask about unread alerts…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('notifications-copilot-input', 'Unread notifications and critical alerts');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('notifications-copilot-input', 'Unread notifications and critical alerts')">Ask</button>
+    </div>
+  </div>
+
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span></div>
   <table class="table"><thead><tr><th>Title</th><th>Severity</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifications-body"></tbody></table>
@@ -3748,6 +3656,14 @@ __HDR__Backups__Snapshot-backed backups and restore points</p></div>
 <div class="page section-shell" id="page-custom-dashboards" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Dashboards</h1><p>ConfigMap-backed panel layouts (vmrogue.io/type=dashboard)</p></div></div>
+  <div class="dc-copilot-bar glass-card-hero page-copilot-bar">
+    <div class="dc-copilot-bar-label">Dashboards Copilot</div>
+    <div class="dc-copilot-bar-row">
+      <input type="text" class="dc-copilot-input" id="custom-dashboards-copilot-input" placeholder="Ask about Grafana dashboards…" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();wirePageCopilot('custom-dashboards-copilot-input', 'Grafana dashboard links');}">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="wirePageCopilot('custom-dashboards-copilot-input', 'Grafana dashboard links')">Ask</button>
+    </div>
+  </div>
+
   <div class="card glass-card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Description</th><th>Panels</th><th>Author</th><th>Updated</th></tr></thead><tbody id="custom-dashboards-body"></tbody></table></div>
 </div>
@@ -4288,7 +4204,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260601a';
+window.__VMROGUE_DASH_REV = '20260601b';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5415,12 +5331,19 @@ async function vmAction(ns, name, action) {
 }
 
 async function vmDelete(ns, name) {
-  if (!confirm('Delete VM "'+name+'"? This cannot be undone.')) return;
-  try {
-    await apiJson('/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), {method:'DELETE'});
-    toast(name+' deleted', 'success');
-    setTimeout(refresh, 1500);
-  } catch(e) { await translateApiError(e.message, 'vm_delete'); }
+  openGlassConfirm({
+    title: 'Delete VM',
+    body: 'Delete VM "' + name + '"? This cannot be undone.',
+    confirmLabel: 'Delete',
+    destructive: true,
+    onConfirm: async function() {
+      try {
+        await apiJson('/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), {method:'DELETE'});
+        toast(name+' deleted', 'success');
+        setTimeout(refresh, 1500);
+      } catch(e) { await translateApiError(e.message, 'vm_delete'); }
+    }
+  });
 }
 
 // ── SSH / remote shell hints (guest IP from VMI; user is a best-effort guess) ──
@@ -6109,26 +6032,34 @@ async function copilotSaveBlueprint() {
     toast('Run YAML Builder first (e.g. “Create Ubuntu 22.04 VM 2 CPU 4Gi”)', 'error');
     return;
   }
-  const description = prompt('Blueprint description (optional):') || undefined;
-  const blueprintName = prompt('Blueprint name (optional — auto-generated if empty):') || undefined;
-  try {
-    const body = Object.assign({}, build, {
-      description: description,
-      blueprint_name: blueprintName && blueprintName.trim() ? blueprintName.trim() : undefined,
-      tags: ['zeusos-copilot']
-    });
-    const data = await apiJson('/api/v1/experience/copilot/blueprint/save' + nsParam(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    toast(data.message || ('Blueprint saved: ' + data.name), 'success');
-    navigate('blueprint-studio');
-    _blueprintStudioSelection = { ns: data.namespace || 'default', name: data.name };
-    fetchBlueprintStudio();
-  } catch (e) {
-    toast('Blueprint save: ' + (e.message || String(e)), 'error');
-  }
+  openGlassPrompt({
+    title: 'Save Blueprint',
+    submitLabel: 'Save',
+    fields: [
+      { id: 'description', label: 'Description (optional)', placeholder: 'Fleet baseline for dev VMs' },
+      { id: 'blueprint_name', label: 'Blueprint name (optional)', placeholder: 'Auto-generated if empty' }
+    ],
+    onSubmit: async function(v) {
+      try {
+        const body = Object.assign({}, build, {
+          description: (v.description || '').trim() || undefined,
+          blueprint_name: (v.blueprint_name || '').trim() || undefined,
+          tags: ['zeusos-copilot']
+        });
+        const data = await apiJson('/api/v1/experience/copilot/blueprint/save' + nsParam(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        toast(data.message || ('Blueprint saved: ' + data.name), 'success');
+        navigate('blueprint-studio');
+        _blueprintStudioSelection = { ns: data.namespace || 'default', name: data.name };
+        fetchBlueprintStudio();
+      } catch (e) {
+        toast('Blueprint save: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 async function copilotExportGitOps() {
@@ -6137,23 +6068,33 @@ async function copilotExportGitOps() {
     toast('No YAML preview — ask Copilot to build a VM manifest first', 'error');
     return;
   }
-  const appName = prompt('App name for the GitOps folder:', 'vmrogue-app') || 'vmrogue-app';
-  const ns = prompt('Target namespace:', currentNamespace === 'all' ? 'default' : currentNamespace) || 'default';
-  try {
-    const data = await apiJson('/api/v1/experience/copilot/gitops/export', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ yaml: yaml, app_name: appName, namespace: ns })
-    });
-    window._gitopsExportBundle = formatGitOpsBundle(data.files || {});
-    document.getElementById('gitops-export-title').textContent = 'GitOps export — ' + (data.app_name || appName);
-    document.getElementById('gitops-export-sub').textContent = (data.runbook || '').split('\n').slice(0, 3).join(' ');
-    document.getElementById('gitops-export-body').textContent = window._gitopsExportBundle;
-    document.getElementById('gitops-export-modal').classList.add('open');
-    document.body.style.overflow = 'hidden';
-  } catch (e) {
-    toast('GitOps export: ' + (e.message || String(e)), 'error');
-  }
+  openGlassPrompt({
+    title: 'Export GitOps Bundle',
+    submitLabel: 'Export',
+    fields: [
+      { id: 'app_name', label: 'App folder name', value: 'vmrogue-app', required: true },
+      { id: 'namespace', label: 'Target namespace', value: currentNamespace === 'all' ? 'default' : currentNamespace, required: true }
+    ],
+    onSubmit: async function(v) {
+      const appName = (v.app_name || '').trim() || 'vmrogue-app';
+      const ns = (v.namespace || '').trim() || 'default';
+      try {
+        const data = await apiJson('/api/v1/experience/copilot/gitops/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ yaml: yaml, app_name: appName, namespace: ns })
+        });
+        window._gitopsExportBundle = formatGitOpsBundle(data.files || {});
+        document.getElementById('gitops-export-title').textContent = 'GitOps export — ' + (data.app_name || appName);
+        document.getElementById('gitops-export-sub').textContent = (data.runbook || '').split('\n').slice(0, 3).join(' ');
+        document.getElementById('gitops-export-body').textContent = window._gitopsExportBundle;
+        document.getElementById('gitops-export-modal').classList.add('open');
+        document.body.style.overflow = 'hidden';
+      } catch (e) {
+        toast('GitOps export: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 function formatGitOpsBundle(files) {
@@ -6646,6 +6587,15 @@ async function fetchVMs() {
       vmCount.textContent = total + ' VMs // ' + running + ' active / ' + stopped + ' idle' +
         (failed ? ' / ' + failed + ' failed' : '') + (driftN ? ' / ' + driftN + ' drift' : '');
     }
+    const vmSummary = document.getElementById('vm-page-summary');
+    if (vmSummary) {
+      vmSummary.innerHTML = renderGlassStatPills([
+        { label: 'Total', value: total },
+        { label: 'Running', value: running, cls: ' ok', onclick: "navigateToVmsFilter('Running')", title: 'Filter running' },
+        { label: 'Issues', value: failed, cls: failed ? ' bad' : '', onclick: "navigateToVmsFilter('__issues__')", title: 'Failed or error VMs' },
+        { label: 'Drift', value: driftN, cls: driftN ? ' warn' : '', onclick: "document.getElementById('vm-filter-drift').value='drift';filterVMs();", title: 'Operator drift detected' }
+      ]);
+    }
     const subEl = document.getElementById('vm-page-subtitle');
     if (subEl) {
       subEl.textContent = 'KubeVirt fleet command' + (driftN ? ' — ' + driftN + ' with operator drift' : '');
@@ -6765,9 +6715,16 @@ async function createSchedule() {
   closeScheduleModal(); toast('Schedule created','success'); fetchSchedules();
 }
 async function deleteSchedule(ns, name) {
-  if (!confirm('Delete schedule '+name+'?')) return;
-  await apiJson('/api/v1/snapshot-schedules/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), { method: 'DELETE' });
-  toast('Schedule deleted','success'); fetchSchedules();
+  openGlassConfirm({
+    title: 'Delete schedule',
+    body: 'Delete schedule ' + name + '?',
+    confirmLabel: 'Delete',
+    destructive: true,
+    onConfirm: async function() {
+      await apiJson('/api/v1/snapshot-schedules/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), { method: 'DELETE' });
+      toast('Schedule deleted','success'); fetchSchedules();
+    }
+  });
 }
 
 // Fetch cluster overview for real resource bars
@@ -7216,7 +7173,7 @@ document.addEventListener('keydown', e => {
   onSpotlightKeydown(e);
   if (e.key === 'Escape') {
     closeClassicNav();
-    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); closeCloneModal();
+    closeCreateModal(); closeSnapModal(); closeVncModal(); closeSerialModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
   }
@@ -7238,6 +7195,17 @@ document.getElementById('copilot-input').addEventListener('keydown', e => {
 });
 document.getElementById('fixit-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFixItModal();
+});
+['glass-confirm-modal', 'glass-prompt-modal', 'clone-modal', 'resize-modal'].forEach(function(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', function(e) {
+    if (e.target !== e.currentTarget) return;
+    if (id === 'glass-confirm-modal') closeGlassConfirm();
+    else if (id === 'glass-prompt-modal') closeGlassPrompt();
+    else if (id === 'clone-modal') closeCloneModal();
+    else if (id === 'resize-modal') closeResizeModal();
+  });
 });
 document.getElementById('spotlight-input').addEventListener('input', e => {
   clearTimeout(spotlightDebounce);
@@ -8281,21 +8249,34 @@ async function createSnapshot() {
 }
 
 async function deleteSnapshot(ns, snapName) {
-  if (!confirm('Delete snapshot "' + snapName + '"? This cannot be undone.')) return;
-  try {
-    await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(snapName) + '/delete', { method: 'POST' });
-    toast('Snapshot "' + snapName + '" deleted', 'success');
-    fetchSnapshots();
-  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  openGlassConfirm({
+    title: 'Delete snapshot',
+    body: 'Delete snapshot "' + snapName + '"? This cannot be undone.',
+    confirmLabel: 'Delete',
+    destructive: true,
+    onConfirm: async function() {
+      try {
+        await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(snapName) + '/delete', { method: 'POST' });
+        toast('Snapshot "' + snapName + '" deleted', 'success');
+        fetchSnapshots();
+      } catch (e) { toast('Error: ' + e.message, 'error'); }
+    }
+  });
 }
 
 async function restoreSnapshot(ns, snapName) {
-  if (!confirm('Restore snapshot "' + snapName + '"? The VM must be stopped.')) return;
-  try {
-    await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(snapName) + '/restore', { method: 'POST' });
-    toast('Restore initiated for ' + snapName, 'success');
-    setTimeout(refresh, 2000);
-  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  openGlassConfirm({
+    title: 'Restore snapshot',
+    body: 'Restore snapshot "' + snapName + '"? The VM must be stopped.',
+    confirmLabel: 'Restore',
+    onConfirm: async function() {
+      try {
+        await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(snapName) + '/restore', { method: 'POST' });
+        toast('Restore initiated for ' + snapName, 'success');
+        setTimeout(refresh, 2000);
+      } catch (e) { toast('Error: ' + e.message, 'error'); }
+    }
+  });
 }
 
 // ── VNC Console ──
@@ -8712,12 +8693,18 @@ async function unpauseVM(ns, name) {
 }
 
 async function migrateVM(ns, name) {
-  if (!confirm('Migrate "' + name + '" to another node?')) return;
-  try {
-    await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/migrate', {method:'POST'});
-    toast(name + ' migration initiated', 'success');
-    setTimeout(refresh, 2000);
-  } catch(e) { await translateApiError(e.message, 'migrate'); }
+  openGlassConfirm({
+    title: 'Migrate VM',
+    body: 'Migrate "' + name + '" to another node?',
+    confirmLabel: 'Migrate',
+    onConfirm: async function() {
+      try {
+        await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/migrate', {method:'POST'});
+        toast(name + ' migration initiated', 'success');
+        setTimeout(refresh, 2000);
+      } catch(e) { await translateApiError(e.message, 'migrate'); }
+    }
+  });
 }
 
 // ── Bulk Operations ──
@@ -8746,27 +8733,39 @@ function toggleSelectAll(checked) {
 
 async function bulkAction(action) {
   if (selectedVMs.size === 0) return;
-  if (action === 'delete' && !confirm('Delete ' + selectedVMs.size + ' VMs? This cannot be undone.')) return;
-  const names = [...selectedVMs];
-  const errs = [];
-  for (const name of names) {
-    try {
-      const vm = vmData.find(v => v.name === name);
-      const ns = (vm && vm.namespace) ? vm.namespace : 'default';
-      if (action === 'delete') {
-        await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {method:'DELETE'});
-      } else {
-        await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/' + encodeURIComponent(action), {method:'POST'});
+  const runBulk = async function() {
+    const names = [...selectedVMs];
+    const errs = [];
+    for (const name of names) {
+      try {
+        const vm = vmData.find(v => v.name === name);
+        const ns = (vm && vm.namespace) ? vm.namespace : 'default';
+        if (action === 'delete') {
+          await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {method:'DELETE'});
+        } else {
+          await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/' + encodeURIComponent(action), {method:'POST'});
+        }
+      } catch (e) {
+        errs.push(name + ': ' + (e.message || e));
       }
-    } catch (e) {
-      errs.push(name + ': ' + (e.message || e));
     }
+    if (errs.length) toast(errs.slice(0, 5).join(' · ') + (errs.length > 5 ? ' …' : ''), 'error');
+    else toast(names.length + ' VMs: ' + action, 'success');
+    selectedVMs.clear();
+    toggleBulkBar();
+    setTimeout(refresh, 1500);
+  };
+  if (action === 'delete') {
+    openGlassConfirm({
+      title: 'Delete VMs',
+      body: 'Delete ' + selectedVMs.size + ' VMs? This cannot be undone.',
+      confirmLabel: 'Delete all',
+      destructive: true,
+      onConfirm: runBulk
+    });
+    return;
   }
-  if (errs.length) toast(errs.slice(0, 5).join(' · ') + (errs.length > 5 ? ' …' : ''), 'error');
-  else toast(names.length + ' VMs: ' + action, 'success');
-  selectedVMs.clear();
-  toggleBulkBar();
-  setTimeout(refresh, 1500);
+  await runBulk();
 }
 
 // ── Storage ──
@@ -8918,23 +8917,33 @@ async function blueprintStudioSelect(ns, name, quiet) {
 
 function blueprintStudioNew() {
   const ns = (document.getElementById('workspace-ns') && document.getElementById('workspace-ns').value) || 'default';
-  const name = prompt('New blueprint name:', 'bp-studio-' + Date.now().toString(36)) || '';
-  if (!name.trim()) return;
-  const template = prompt('Template for first VM:', 'ubuntu-22.04') || 'ubuntu-22.04';
-  const spec = {
-    description: 'Created in Blueprint Studio',
-    vms: [{ name: 'vm-1', template: template, cpu: 2, memory: '4Gi', diskSize: '40Gi', dependsOn: [], labels: {} }],
-    tags: ['studio']
-  };
-  apiJson('/api/v1/crds/blueprints', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: name.trim(), description: spec.description, vms: spec.vms, tags: spec.tags })
-  }).then(function() {
-    toast('Blueprint created: ' + name.trim(), 'success');
-    _blueprintStudioSelection = { ns: ns, name: name.trim() };
-    fetchBlueprintStudio();
-  }).catch(function(e) { toast('Create: ' + (e.message || String(e)), 'error'); });
+  openGlassPrompt({
+    title: 'New Blueprint',
+    submitLabel: 'Create',
+    fields: [
+      { id: 'name', label: 'Blueprint name', value: 'bp-studio-' + Date.now().toString(36), required: true },
+      { id: 'template', label: 'Template for first VM', value: 'ubuntu-22.04', required: true }
+    ],
+    onSubmit: function(v) {
+      const name = (v.name || '').trim();
+      const template = (v.template || '').trim() || 'ubuntu-22.04';
+      if (!name) return;
+      const spec = {
+        description: 'Created in Blueprint Studio',
+        vms: [{ name: 'vm-1', template: template, cpu: 2, memory: '4Gi', diskSize: '40Gi', dependsOn: [], labels: {} }],
+        tags: ['studio']
+      };
+      apiJson('/api/v1/crds/blueprints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, description: spec.description, vms: spec.vms, tags: spec.tags })
+      }).then(function() {
+        toast('Blueprint created: ' + name, 'success');
+        _blueprintStudioSelection = { ns: ns, name: name };
+        fetchBlueprintStudio();
+      }).catch(function(e) { toast('Create: ' + (e.message || String(e)), 'error'); });
+    }
+  });
 }
 
 async function blueprintStudioSave() {
@@ -8965,21 +8974,28 @@ async function blueprintStudioSave() {
 
 async function blueprintStudioDelete() {
   if (!_blueprintStudioSelection) return;
-  if (!confirm('Delete blueprint ' + _blueprintStudioSelection.name + '?')) return;
   const ns = _blueprintStudioSelection.ns;
   const name = _blueprintStudioSelection.name;
-  try {
-    await apiJson('/api/v1/crds/blueprints/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), { method: 'DELETE' });
-    toast('Blueprint deleted', 'success');
-    _blueprintStudioSelection = null;
-    const specEl = document.getElementById('blueprint-studio-spec');
-    if (specEl) { specEl.value = ''; specEl.disabled = true; }
-    document.getElementById('blueprint-studio-save-btn').disabled = true;
-    document.getElementById('blueprint-studio-delete-btn').disabled = true;
-    fetchBlueprintStudio();
-  } catch (e) {
-    toast('Delete: ' + (e.message || String(e)), 'error');
-  }
+  openGlassConfirm({
+    title: 'Delete blueprint',
+    body: 'Delete blueprint ' + name + '?',
+    confirmLabel: 'Delete',
+    destructive: true,
+    onConfirm: async function() {
+      try {
+        await apiJson('/api/v1/crds/blueprints/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), { method: 'DELETE' });
+        toast('Blueprint deleted', 'success');
+        _blueprintStudioSelection = null;
+        const specEl = document.getElementById('blueprint-studio-spec');
+        if (specEl) { specEl.value = ''; specEl.disabled = true; }
+        document.getElementById('blueprint-studio-save-btn').disabled = true;
+        document.getElementById('blueprint-studio-delete-btn').disabled = true;
+        fetchBlueprintStudio();
+      } catch (e) {
+        toast('Delete: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
 }
 
 async function fetchPolicies() {
@@ -9939,6 +9955,79 @@ function runCiliumCopilotAsk() {
   setTimeout(runCopilotAsk, 80);
 }
 
+let _glassConfirmSubmit = null;
+let _glassPromptSubmit = null;
+
+function openGlassConfirm(opts) {
+  opts = opts || {};
+  document.getElementById('glass-confirm-title').textContent = opts.title || 'Confirm';
+  document.getElementById('glass-confirm-body').textContent = opts.body || '';
+  const btn = document.getElementById('glass-confirm-btn');
+  btn.textContent = opts.confirmLabel || 'Confirm';
+  btn.className = (opts.destructive ? 'glass-btn-destructive' : 'glass-btn-primary');
+  _glassConfirmSubmit = opts.onConfirm || null;
+  document.getElementById('glass-confirm-modal').classList.add('open');
+}
+function closeGlassConfirm() {
+  document.getElementById('glass-confirm-modal').classList.remove('open');
+  _glassConfirmSubmit = null;
+}
+function submitGlassConfirm() {
+  const fn = _glassConfirmSubmit;
+  closeGlassConfirm();
+  if (fn) fn();
+}
+
+function openGlassPrompt(opts) {
+  opts = opts || {};
+  document.getElementById('glass-prompt-title').textContent = opts.title || 'Input';
+  const fieldsEl = document.getElementById('glass-prompt-fields');
+  fieldsEl.innerHTML = '';
+  (opts.fields || []).forEach(function(f) {
+    const fg = document.createElement('div');
+    fg.className = 'form-group';
+    const req = f.required ? ' required' : '';
+    let control = '';
+    if (f.type === 'textarea') {
+      control = '<textarea class="form-input" data-field-id="' + esc(f.id) + '" rows="' + (f.rows || 3) + '" placeholder="' + esc(f.placeholder || '') + '"' + req + '>' + esc(f.value || '') + '</textarea>';
+    } else if (f.type === 'number') {
+      control = '<input type="number" class="form-input" data-field-id="' + esc(f.id) + '" value="' + esc(String(f.value != null ? f.value : '')) + '" placeholder="' + esc(f.placeholder || '') + '"' + req + '>';
+    } else {
+      control = '<input type="text" class="form-input" data-field-id="' + esc(f.id) + '" value="' + esc(f.value || '') + '" placeholder="' + esc(f.placeholder || '') + '"' + req + '>';
+    }
+    fg.innerHTML = (f.label ? '<label class="form-label">' + esc(f.label) + '</label>' : '') + control;
+    fieldsEl.appendChild(fg);
+  });
+  _glassPromptSubmit = opts.onSubmit || null;
+  document.getElementById('glass-prompt-submit-btn').textContent = opts.submitLabel || 'Submit';
+  document.getElementById('glass-prompt-modal').classList.add('open');
+  setTimeout(function() {
+    const first = fieldsEl.querySelector('input, textarea, select');
+    if (first) { first.focus(); if (first.select) first.select(); }
+  }, 50);
+}
+function closeGlassPrompt() {
+  document.getElementById('glass-prompt-modal').classList.remove('open');
+  _glassPromptSubmit = null;
+}
+function submitGlassPrompt() {
+  const fieldsEl = document.getElementById('glass-prompt-fields');
+  const values = {};
+  fieldsEl.querySelectorAll('[data-field-id]').forEach(function(el) {
+    values[el.getAttribute('data-field-id')] = el.value;
+  });
+  const required = fieldsEl.querySelectorAll('[required]');
+  for (let i = 0; i < required.length; i++) {
+    if (!required[i].value || !String(required[i].value).trim()) {
+      toast('Fill in required fields', 'error');
+      return;
+    }
+  }
+  const fn = _glassPromptSubmit;
+  const vals = values;
+  closeGlassPrompt();
+  if (fn) fn(vals);
+}
 
 function renderGlassStatPills(items) {
   return (items || []).map(function(item) {
@@ -10671,44 +10760,62 @@ async function catalogSync() {
 }
 
 async function openCatalogPublishTemplate() {
-  const name = prompt('VMTemplate CRD name (e.g. my-ubuntu-22):');
-  if (!name || !name.trim()) return;
-  const fromEmbedded = prompt('Built-in template name to copy (from embedded library):');
-  if (!fromEmbedded || !fromEmbedded.trim()) return;
-  const description = prompt('Description (optional):') || undefined;
-  try {
-    await apiJson('/api/v1/crds/templates', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), from_embedded: fromEmbedded.trim(), description: description || undefined }),
-    });
-    toast('Published VMTemplate: ' + name.trim(), 'success');
-    fetchCatalog();
-  } catch (e) { toast('Publish template: ' + (e.message || String(e)), 'error'); }
+  openGlassPrompt({
+    title: 'Publish VMTemplate',
+    submitLabel: 'Publish',
+    fields: [
+      { id: 'name', label: 'CRD name', placeholder: 'my-ubuntu-22', required: true },
+      { id: 'from_embedded', label: 'Built-in template to copy', placeholder: 'ubuntu-22.04', required: true },
+      { id: 'description', label: 'Description (optional)' }
+    ],
+    onSubmit: async function(v) {
+      const name = (v.name || '').trim();
+      const fromEmbedded = (v.from_embedded || '').trim();
+      if (!name || !fromEmbedded) { toast('Name and template source required', 'error'); return; }
+      try {
+        await apiJson('/api/v1/crds/templates', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name, from_embedded: fromEmbedded, description: (v.description || '').trim() || undefined }),
+        });
+        toast('Published VMTemplate: ' + name, 'success');
+        fetchCatalog();
+      } catch (e) { toast('Publish template: ' + (e.message || String(e)), 'error'); }
+    }
+  });
 }
 
 async function openCatalogPublishProfile() {
-  const name = prompt('VMProfile CRD name (e.g. dev-small):');
-  if (!name || !name.trim()) return;
-  const fromEmbedded = prompt('Copy from embedded profile name (leave empty to set cores/memory/disk manually):');
-  let body;
-  if (fromEmbedded && fromEmbedded.trim()) {
-    body = { name: name.trim(), from_embedded: fromEmbedded.trim() };
-  } else {
-    const cores = parseInt(prompt('CPU cores:', '2') || '2', 10);
-    const memory = prompt('Memory (e.g. 4Gi):', '4Gi') || '4Gi';
-    const disk_size = prompt('Disk size (e.g. 40Gi):', '40Gi') || '40Gi';
-    body = { name: name.trim(), cores: cores || 2, memory, disk_size };
-  }
-  try {
-    await apiJson('/api/v1/crds/profiles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    toast('Published VMProfile: ' + name.trim(), 'success');
-    fetchCatalog();
-  } catch (e) { toast('Publish profile: ' + (e.message || String(e)), 'error'); }
+  openGlassPrompt({
+    title: 'Publish VMProfile',
+    submitLabel: 'Publish',
+    fields: [
+      { id: 'name', label: 'CRD name', placeholder: 'dev-small', required: true },
+      { id: 'from_embedded', label: 'Copy from embedded profile (optional)', placeholder: 'Leave empty to set CPU/memory/disk' },
+      { id: 'cores', label: 'CPU cores', value: '2', type: 'number' },
+      { id: 'memory', label: 'Memory', value: '4Gi' },
+      { id: 'disk_size', label: 'Disk size', value: '40Gi' }
+    ],
+    onSubmit: async function(v) {
+      const name = (v.name || '').trim();
+      if (!name) { toast('Name required', 'error'); return; }
+      let body;
+      if ((v.from_embedded || '').trim()) {
+        body = { name: name, from_embedded: v.from_embedded.trim() };
+      } else {
+        body = { name: name, cores: parseInt(v.cores, 10) || 2, memory: v.memory || '4Gi', disk_size: v.disk_size || '40Gi' };
+      }
+      try {
+        await apiJson('/api/v1/crds/profiles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        toast('Published VMProfile: ' + name, 'success');
+        fetchCatalog();
+      } catch (e) { toast('Publish profile: ' + (e.message || String(e)), 'error'); }
+    }
+  });
 }
 
 async function catalogDeployVmrogueVm() {
