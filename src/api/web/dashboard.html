@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260601d">
+<meta name="vmrogue-dashboard-rev" content="20260601e">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260601d';
+  var DASH_REV = '20260601e';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1161,54 +1161,125 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 
 /* ═══════════════════════════════════════════════════
-   VM DETAIL PANEL
+   VM DETAIL — Secure Dark Professional
    ═══════════════════════════════════════════════════ */
 .vm-detail{
-  padding:24px 28px 28px 48px;
-  border-bottom:1px solid var(--glass-border);
-  background:transparent;
+  padding:22px 28px 32px 48px;
+  border-bottom:1px solid var(--border);
+  background:var(--bg-deep);
   animation:fade-in .25s cubic-bezier(.16,1,.3,1);
 }
-.vm-detail .detail-loading{padding:14px 16px;color:var(--text-muted);font-size:.88rem}
-.vm-detail-header{
+.vm-detail .detail-loading{padding:18px 20px;color:var(--text-muted);font-size:.88rem}
+.vd-header{
   display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;
-  padding:20px 22px;margin-bottom:22px;
-  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid var(--glass-border);border-radius:var(--glass-radius);
-  box-shadow:var(--glass-shadow);
+  padding:20px 24px;margin-bottom:20px;
+  background:var(--bg-card-solid);
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset;
 }
-.vm-detail-header-left{min-width:0;flex:1}
-.vm-detail-name{font-family:var(--font-display);font-size:1.65rem;font-weight:700;color:var(--text-bright);line-height:1.15}
-.vm-detail-meta{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:10px;font-size:.84rem;color:var(--text-muted)}
-.vm-detail-meta .ns-chip{padding:3px 10px;border-radius:999px;border:1px solid var(--glass-border);font-family:var(--font-mono);font-size:.76rem}
-.vm-detail-actions-hdr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
-.vm-detail-more{margin-top:0;border:none;background:transparent;padding:0}
+.vd-header-main{min-width:0;flex:1}
+.vd-title-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.vd-vm-name{font-family:var(--font-display);font-size:1.75rem;font-weight:700;color:var(--text-bright);line-height:1.12;letter-spacing:-.02em}
+.vd-status-pill{font-size:.72rem;padding:5px 12px;border-radius:999px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.vd-status-pill.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.3)}
+.vd-status-pill.stopped{background:rgba(148,163,184,.12);color:var(--text-muted);border:1px solid var(--border)}
+.vd-status-pill.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(239,68,68,.28)}
+.vd-status-pill.other{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(234,179,8,.25)}
+.vd-meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:12px;font-size:.84rem;color:var(--text-muted)}
+.vd-meta-chip{padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.2);font-family:var(--font-mono);font-size:.76rem;color:var(--text)}
+.vd-meta-chip strong{color:var(--text-bright);font-weight:600}
+.vd-header-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:flex-end}
+.vd-header-actions .glass-btn-primary{padding:10px 18px;font-size:.82rem}
+.vm-detail-more{margin:0;border:none;background:transparent;padding:0}
 .vm-detail-more > summary{
-  padding:8px 14px;border-radius:10px;border:1px solid var(--glass-border);
-  background:rgba(15,23,42,.55);font-size:.74rem;font-weight:600;color:var(--text-muted);cursor:pointer;list-style:none;
+  padding:9px 14px;border-radius:10px;border:1px solid var(--border);
+  background:var(--bg-tertiary);font-size:.74rem;font-weight:600;color:var(--text-muted);cursor:pointer;list-style:none;
 }
 .vm-detail-more > summary::-webkit-details-marker{display:none}
 .vm-detail-more-body{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;justify-content:flex-end}
-.vm-detail-columns{display:grid;grid-template-columns:1.15fr .85fr;gap:22px}
-@media(max-width:960px){.vm-detail-columns{grid-template-columns:1fr}}
-.vm-detail-col{display:flex;flex-direction:column;gap:18px}
-.remote-access-stack{display:flex;flex-direction:column;gap:16px}
-.remote-access-title{font-family:var(--font-display);font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:12px}
+.vd-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:20px;align-items:start}
+@media(max-width:1024px){.vd-grid{grid-template-columns:1fr}}
+.vd-col-main,.vd-col-side{display:flex;flex-direction:column;gap:16px}
+.vd-surface{
+  background:var(--bg-card-solid);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  box-shadow:0 1px 0 rgba(255,255,255,.03) inset;
+}
+.vd-surface-accent{border-color:rgba(93,144,247,.35);background:linear-gradient(165deg,rgba(30,41,59,.95),var(--bg-card-solid))}
+.vd-section-head{
+  font-family:var(--font-display);font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);
+}
+.vd-kv-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
+@media(max-width:560px){.vd-kv-grid{grid-template-columns:1fr}}
+.vd-kv{background:rgba(0,0,0,.18);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.vd-kv-label{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:4px}
+.vd-kv-value{font-family:var(--font-mono);font-size:.86rem;color:var(--text-bright);word-break:break-word}
+.vd-resource-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+@media(max-width:560px){.vd-resource-row{grid-template-columns:1fr}}
+.vd-resource-card{text-align:center;padding:14px 10px;border-radius:10px;border:1px solid var(--border);background:rgba(0,0,0,.15)}
+.vd-resource-card .vd-kv-value{font-size:1.05rem;font-weight:700}
+.vd-subsection{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.vd-subsection-title{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:10px}
+.vd-remote-console{
+  text-align:center;padding:20px 16px;margin-bottom:18px;
+  border-radius:10px;border:1px solid rgba(93,144,247,.35);
+  background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(0,0,0,.2));
+}
+.vd-remote-console .glass-btn-primary{width:100%;max-width:320px;padding:14px 22px;font-size:.88rem;font-weight:700}
+.vd-remote-console-hint{margin-top:10px;font-size:.76rem;color:var(--text-dim);line-height:1.45;max-width:360px;margin-left:auto;margin-right:auto}
+.vd-remote-divider{height:1px;background:var(--border);margin:18px 0}
+.vd-code-row{display:flex;gap:8px;align-items:stretch;margin-top:8px}
+.vd-code-row .glass-code-well{flex:1;margin:0;font-size:.78rem;padding:10px 12px}
+.vd-code-row .glass-btn-secondary{flex-shrink:0;align-self:stretch;padding:0 12px;font-size:.72rem}
+.ssh-option-block{margin-top:12px}
+.ssh-option-block:first-child{margin-top:0}
+.ssh-option-label{font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+.ssh-actions{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+.vd-actions-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vd-actions-grid .glass-btn-secondary,.vd-actions-grid .glass-btn-destructive{justify-content:center;width:100%}
+.vd-security-hero{display:flex;align-items:center;gap:18px;margin-bottom:16px}
+.vd-score-ring{
+  width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  font-family:var(--font-display);font-size:1.35rem;font-weight:800;
+  border:3px solid var(--border);background:rgba(0,0,0,.25);
+}
+.vd-score-ring.ok{border-color:var(--success);color:var(--success);box-shadow:0 0 20px rgba(34,197,94,.15)}
+.vd-score-ring.warn{border-color:var(--warning);color:var(--warning);box-shadow:0 0 20px rgba(234,179,8,.12)}
+.vd-score-ring.bad{border-color:var(--error);color:var(--error);box-shadow:0 0 20px rgba(239,68,68,.12)}
+.vd-security-summary{flex:1;min-width:0}
+.vd-security-summary h4{margin:0 0 6px;font-size:.95rem;font-weight:700;color:var(--text-bright)}
+.vd-security-summary p{margin:0;font-size:.8rem;color:var(--text-muted);line-height:1.45}
+.vd-check-list{display:flex;flex-direction:column;gap:6px;max-height:280px;overflow:auto}
+.vd-check{
+  display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:start;
+  padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.12);font-size:.8rem;
+}
+.vd-check.pass{border-color:rgba(34,197,94,.2)}
+.vd-check.fail{border-color:rgba(239,68,68,.22)}
+.vd-check-icon{font-size:1rem;line-height:1;font-weight:700}
+.vd-check.pass .vd-check-icon{color:var(--success)}
+.vd-check.fail .vd-check-icon{color:var(--error)}
+.vd-check-body{min-width:0}
+.vd-check-name{font-weight:600;color:var(--text-bright);display:block}
+.vd-check-detail{font-size:.76rem;color:var(--text-dim);margin-top:2px;line-height:1.35}
 .rdp-status-banner{
   display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:12px;
   font-size:.82rem;font-weight:600;
 }
 .rdp-status-banner.exposed{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.25)}
-.rdp-status-banner.hidden{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(234,179,8,.25)}
+.rdp-status-banner.hidden{background:rgba(148,163,184,.1);color:var(--text-muted);border:1px solid var(--border)}
 .rdp-status-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
-.console-cta-card{padding:20px;text-align:center}
-.console-cta-card .glass-btn-primary{width:100%;padding:14px 20px;font-size:.85rem}
-.console-cta-hint{margin-top:10px;font-size:.76rem;color:var(--text-dim);line-height:1.45}
-.ssh-option-block{margin-top:14px}
-.ssh-option-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--primary-blue);margin-bottom:6px}
-.vm-metrics-sparkline{margin-top:12px;height:48px;border-radius:8px;background:rgba(0,0,0,.2);overflow:hidden}
+.vm-metrics-sparkline{margin-top:12px;height:48px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid var(--border);overflow:hidden}
 .vm-metrics-sparkline canvas{width:100%;height:100%}
 .glass-details-ai{border-color:rgba(139,92,246,.25)}
+.vm-detail .detail-section{background:transparent;border:none;box-shadow:none;padding:0;backdrop-filter:none}
+.vm-detail .detail-section-title{font-size:.72rem;margin-bottom:10px}
+.vm-detail .detail-row{padding:6px 0;font-size:.84rem}
+.vm-detail .iface-table{font-size:.82rem}
 
 /* Console slide-over drawer */
 .console-drawer-overlay{
@@ -1731,8 +1802,13 @@ html[data-theme="steel"] .table-row:hover{
 }
 
 html[data-theme="steel"] .vm-detail{
-  background:transparent;
+  background:var(--bg-deep);
   border-bottom-color:rgba(140,160,190,.14);
+}
+html[data-theme="steel"] .vd-surface,
+html[data-theme="steel"] .vd-header{
+  background:var(--bg-card-solid);
+  border-color:rgba(140,160,190,.16);
 }
 html[data-theme="steel"]{
   --glass-bg:rgba(22,27,34,.78);
@@ -4399,7 +4475,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260601d';
+window.__VMROGUE_DASH_REV = '20260601e';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -7487,108 +7563,158 @@ function vmStatusBadgeClass(status) {
   return 'other';
 }
 
+function vdKv(label, value) {
+  return '<div class="vd-kv"><div class="vd-kv-label">' + esc(label) + '</div><div class="vd-kv-value">' + esc(String(value)) + '</div></div>';
+}
+
+function vdStatusPillClass(status) {
+  const s = String(status || '').toLowerCase();
+  if (s === 'running') return 'running';
+  if (s === 'stopped') return 'stopped';
+  if (s === 'error' || s === 'failed') return 'error';
+  return 'other';
+}
+
+function vmSshBlockDetail(vm) {
+  if (vm.status !== 'Running') {
+    return '<p style="margin:0;font-size:.84rem;color:var(--text-muted);line-height:1.45">Start the VM to generate SSH connection commands.</p>';
+  }
+  const ns = vm.namespace || 'default';
+  const ip = vm.ip;
+  const ipOk = ip && ip !== 'N/A';
+  const virtFallback = 'virtctl ssh --user root ' + vm.name + ' -n ' + ns;
+  function codeRow(cmd, label) {
+    return '<div class="ssh-option-block"><div class="ssh-option-label">' + esc(label) + '</div>' +
+      '<div class="vd-code-row"><div class="glass-code-well">' + esc(cmd) + '</div>' +
+      '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyToClipboard(' + jsArgs(cmd) + ')') + '>Copy</button></div></div>';
+  }
+  if (!ipOk) return codeRow(virtFallback, 'via virtctl (guest IP pending)');
+  const u = guessSshUser(vm.name);
+  if (!u) {
+    return '<p style="margin:0;font-size:.84rem;color:var(--text-muted);line-height:1.45">Windows guest — use <strong>RDP</strong> below or the browser console.</p>';
+  }
+  const ssh = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ' + u + '@' + ip;
+  const virt = 'virtctl ssh --user ' + u + ' ' + vm.name + ' -n ' + ns;
+  return codeRow(ssh, 'A · Direct TCP') + codeRow(virt, 'B · via virtctl / Kubernetes API');
+}
+
 function renderVmDetailHeader(vm, ns, name, vmi) {
   const status = vmi.phase || vm.status || 'Unknown';
-  const badgeCls = vmStatusBadgeClass(vm.status || status);
+  const pillCls = vdStatusPillClass(vm.status || status);
   let actions = '';
   if (vm.status === 'Running') {
-    actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Open Console</button>';
+    actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Console</button>';
     actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>Stop</button>';
     actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
-    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
-    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
   } else {
     actions += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>&#9654; Start</button>';
-    actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
   }
   if (vmi.phase === 'Paused') {
     actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('unpauseVM(' + jsArgs(ns, name) + ')') + '>Unpause</button>';
   }
-  actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('vms', { kind: 'vm', ns: ns, name: name }) + ')') + '>Copy link</button>';
   actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
-  actions += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
-  actions += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
   let more = '';
   if (vm.status === 'Running') {
+    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
+    more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
     more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
   }
   more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
+  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
   more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
-  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network</button>';
+  more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('vms', { kind: 'vm', ns: ns, name: name }) + ')') + '>Copy link</button>';
+  more += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
   if (vm.status === 'Pending') {
     more += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
   }
-  actions += '<details class="vm-detail-more glass-details"><summary>More actions</summary><div class="vm-detail-more-body">' + more + '</div></details>';
-  return '<div class="vm-detail-header">' +
-    '<div class="vm-detail-header-left">' +
-      '<div class="vm-detail-name">' + esc(name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(String(status)) + '</span></div>' +
-      '<div class="vm-detail-meta">' +
-        '<span class="ns-chip">' + esc(ns) + '</span>' +
-        (vm.node ? '<span>Node: <strong>' + esc(vm.node) + '</strong></span>' : '') +
-        (vm.age ? '<span>Age: ' + esc(vm.age) + '</span>' : '') +
-        (vm.ip && vm.ip !== 'N/A' ? '<span>IP: <code>' + esc(vm.ip) + '</code></span>' : '') +
+  actions += '<details class="vm-detail-more"><summary>More</summary><div class="vm-detail-more-body">' + more + '</div></details>';
+  return '<div class="vd-header">' +
+    '<div class="vd-header-main">' +
+      '<div class="vd-title-row"><h2 class="vd-vm-name">' + esc(name) + '</h2><span class="vd-status-pill ' + pillCls + '">' + esc(String(status)) + '</span></div>' +
+      '<div class="vd-meta-row">' +
+        '<span class="vd-meta-chip">' + esc(ns) + '</span>' +
+        (vm.node ? '<span class="vd-meta-chip">Node <strong>' + esc(vm.node) + '</strong></span>' : '') +
+        (vm.age ? '<span class="vd-meta-chip">Age <strong>' + esc(vm.age) + '</strong></span>' : '') +
+        (vm.ip && vm.ip !== 'N/A' ? '<span class="vd-meta-chip">IP <strong>' + esc(vm.ip) + '</strong></span>' : '') +
         vmDriftBadge(vm) +
       '</div>' +
     '</div>' +
-    '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
+    '<div class="vd-header-actions">' + actions + '</div>' +
   '</div>';
 }
 
-function renderRemoteAccessColumn(vm, ns, name) {
-  let html = '<div class="remote-access-stack">';
-  html += '<div class="remote-access-title">Remote access</div>';
-  html += '<div class="glass-card-hero" style="padding:18px">';
-  html += '<div class="detail-section-title" style="margin-bottom:10px">SSH</div>';
-  html += vmSshBlock(vm, true) || '<div class="detail-row"><span class="lbl">SSH</span><span class="val">Start the VM for ssh / virtctl commands</span></div>';
+function renderVmOverviewSection(vm, ns, name, vmi, ifaces, guestOS) {
+  let html = '<div class="vd-surface"><div class="vd-section-head">Overview</div>';
+  html += '<div class="vd-kv-grid">';
+  html += vdKv('Phase', vmi.phase || vm.status || 'Unknown');
+  html += vdKv('Ready', vm.ready ? 'Yes' : 'No');
+  html += vdKv('Node', vm.node || '—');
+  html += vdKv('Age', vm.age || '—');
+  html += vdKv('IP', vm.ip || '—');
+  if (guestOS) html += vdKv('Guest OS', (guestOS.name || guestOS.id || 'Unknown') + (guestOS.version ? ' · ' + guestOS.version : ''));
   html += '</div>';
-  html += '<div class="glass-card-hero" style="padding:18px"><div class="detail-section-title" style="margin-bottom:10px">RDP</div><div id="rdp-panel-' + name + '">Loading\u2026</div></div>';
-  html += '<div class="glass-card-hero console-cta-card">';
+  html += '<div class="vd-resource-row">';
+  html += '<div class="vd-resource-card"><div class="vd-kv-label">CPU</div><div class="vd-kv-value">' + esc(vm.cpu || '—') + '</div></div>';
+  html += '<div class="vd-resource-card"><div class="vd-kv-label">Memory</div><div class="vd-kv-value">' + esc(vm.memory || '—') + '</div></div>';
+  html += '<div class="vd-resource-card"><div class="vd-kv-label">Disk</div><div class="vd-kv-value">' + esc(vm.disk || '—') + '</div></div>';
+  html += '</div>';
+  html += '<div id="vm-metrics-panel-' + name + '"></div>';
+  if (ifaces.length > 0) {
+    html += '<div class="vd-subsection"><div class="vd-subsection-title">Network interfaces</div>';
+    html += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
+    ifaces.forEach(function(i) {
+      html += '<tr><td>' + esc(i.interface_name || i.name || '—') + '</td><td>' + esc(i.ip_address || i.ip || '—') + '</td><td>' + esc(i.mac || '—') + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderVmNetworkingSection(name) {
+  return '<div class="vd-surface"><div class="vd-section-head">Networking &amp; exposure</div>' +
+    '<div class="vd-subsection" style="margin-top:0;padding-top:0;border-top:none"><div class="vd-subsection-title">Service expose (SSH)</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>' +
+    '<div class="vd-subsection"><div class="vd-subsection-title">Internet egress</div><div id="internet-panel-' + name + '">Loading\u2026</div></div>' +
+    '<div class="vd-subsection"><div class="vd-subsection-title">Guest filesystem</div><div id="guest-fs-panel-' + name + '">Loading\u2026</div></div>' +
+    '</div>';
+}
+
+function renderVmRemoteAccessSection(vm, ns, name) {
+  let html = '<div class="vd-surface vd-surface-accent"><div class="vd-section-head">Remote access</div>';
+  html += '<div class="vd-remote-console">';
   if (vm.status === 'Running') {
     html += '<button type="button" class="glass-btn-primary" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>&#9000; Open Console (VNC)</button>';
-    html += '<div class="console-cta-hint">Browser console via noVNC. Adjust link quality in the console toolbar for bandwidth vs responsiveness.</div>';
+    html += '<div class="vd-remote-console-hint">Browser console via noVNC — use the toolbar to tune link quality for bandwidth vs responsiveness.</div>';
   } else {
-    html += '<div class="console-cta-hint">Start the VM to open the browser console.</div>';
+    html += '<div class="vd-remote-console-hint" style="margin:0">Start the VM to open the interactive browser console.</div>';
   }
+  html += '</div>';
+  html += '<div class="vd-subsection-title">SSH</div>';
+  html += vmSshBlockDetail(vm);
+  html += '<div class="vd-remote-divider"></div>';
+  html += '<div class="vd-subsection-title">RDP (Windows)</div>';
+  html += '<div id="rdp-panel-' + name + '">Loading\u2026</div>';
+  html += '</div>';
+  return html;
+}
+
+function renderVmQuickActionsSection(vm, ns, name) {
+  let html = '<div class="vd-surface"><div class="vd-section-head">Actions</div><div class="vd-actions-grid">';
+  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
+  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
+  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
+  if (vm.status === 'Running') {
+    html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
+  }
+  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
+  html += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, name) + ')') + '>Network AI</button>';
+  html += '<button type="button" class="glass-btn-destructive" style="grid-column:1/-1" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete VM</button>';
   html += '</div></div>';
   return html;
 }
 
-function renderOpsColumn(vm, ns, name, vmi, ifaces, guestOS) {
-  let html = '<div class="vm-detail-col">';
-  html += '<div class="detail-section"><div class="detail-section-title">Status &amp; resources</div>';
-  html += detailRow('Phase', vmi.phase || vm.status || 'Unknown');
-  html += detailRow('Ready', vm.ready ? 'Yes' : 'No');
-  html += detailRow('Node', vm.node || 'N/A');
-  html += detailRow('Age', vm.age || 'N/A');
-  html += detailRow('IP', vm.ip || 'N/A');
-  html += detailRow('CPU', vm.cpu || 'N/A');
-  html += detailRow('Memory', vm.memory || 'N/A');
-  html += detailRow('Disk', vm.disk || 'N/A');
-  html += '<div id="vm-metrics-panel-' + name + '"></div></div>';
-  if (ifaces.length > 0) {
-    html += '<div class="detail-section"><div class="detail-section-title">Interfaces</div>';
-    html += '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
-    ifaces.forEach(i => {
-      html += '<tr><td>' + esc(i.interface_name || i.name || '-') + '</td><td>' + esc(i.ip_address || i.ip || '-') + '</td><td>' + esc(i.mac || '-') + '</td></tr>';
-    });
-    html += '</tbody></table></div>';
-  }
-  if (guestOS) {
-    html += '<div class="detail-section"><div class="detail-section-title">Guest OS</div>';
-    html += detailRow('OS', guestOS.name || guestOS.id || 'Unknown');
-    if (guestOS.version) html += detailRow('Version', guestOS.version);
-    if (guestOS.kernel_release) html += detailRow('Kernel', guestOS.kernel_release);
-    html += '</div>';
-  }
-  html += '<div class="detail-section"><div class="detail-section-title">Service expose</div><div id="expose-panel-' + name + '">Loading\u2026</div></div>';
-  html += '<div class="detail-section"><div class="detail-section-title">Internet egress</div><div id="internet-panel-' + name + '">Loading\u2026</div></div>';
-  html += '<div class="detail-section"><div class="detail-section-title">Guest filesystem</div><div id="guest-fs-panel-' + name + '">Loading\u2026</div></div>';
-  html += '</div>';
-  return html;
-}
-
 function renderVmDetailCopilotSection(ns, name, vm) {
-  let inner = '<details class="glass-details glass-details-ai"><summary>VMRogue AI &amp; operator drift</summary><div class="glass-details-body">';
+  let inner = '<div class="vd-surface"><details class="glass-details glass-details-ai" style="border:none;background:transparent"><summary>VMRogue AI &amp; operator drift</summary><div class="glass-details-body">';
   inner += '<div class="detail-actions" style="margin-top:0;margin-bottom:10px">';
   inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Doctor</button>';
   inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotGuest(' + jsArgs(ns, name) + ')') + '>Guest</button>';
@@ -7601,8 +7727,8 @@ function renderVmDetailCopilotSection(ns, name, vm) {
     inner += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, name) + ')') + '>Scheduling</button>';
   }
   inner += '</div><div id="doctor-panel-' + name + '">Loading\u2026</div>';
-  inner += '<div class="detail-section" style="margin-top:14px"><div class="detail-section-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
-  inner += '</div></details>';
+  inner += '<div class="vd-subsection" style="margin-top:14px"><div class="vd-subsection-title">Operator drift</div><div id="drift-panel-' + name + '">Loading\u2026</div></div>';
+  inner += '</div></details></div>';
   return inner;
 }
 
@@ -7618,12 +7744,17 @@ async function fetchVmDetail(ns, name) {
     const guestOS = vmi.guest_os_info;
 
     let inner = renderVmDetailHeader(vm, ns, name, vmi);
-    inner += '<div class="vm-detail-columns">';
-    inner += renderOpsColumn(vm, ns, name, vmi, ifaces, guestOS);
-    inner += renderRemoteAccessColumn(vm, ns, name);
-    inner += '</div>';
+    inner += '<div class="vd-grid">';
+    inner += '<div class="vd-col-main">';
+    inner += renderVmOverviewSection(vm, ns, name, vmi, ifaces, guestOS);
+    inner += renderVmNetworkingSection(name);
     inner += renderVmDetailCopilotSection(ns, name, vm);
+    inner += '</div>';
+    inner += '<div class="vd-col-side">';
+    inner += renderVmRemoteAccessSection(vm, ns, name);
     inner += '<div id="security-' + name + '"></div>';
+    inner += renderVmQuickActionsSection(vm, ns, name);
+    inner += '</div></div>';
 
     holder.innerHTML = inner;
 
@@ -8764,14 +8895,26 @@ async function fetchSecurity(ns, name) {
     const j = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/security');
     const d = unwrapData(j);
     if (!d) return '';
-    const scoreColor = d.score >= 80 ? 'var(--success)' : d.score >= 50 ? 'var(--warning)' : 'var(--error)';
-    let html = '<div class="detail-section"><div class="detail-section-title">Security Posture</div>';
-    html += '<div class="detail-row"><span class="lbl">Score</span><span class="val" style="color:' + scoreColor + ';font-weight:700;font-size:1.1em">' + d.score + '/100</span></div>';
-    d.checks.forEach(c => {
-      const icon = c.pass ? '<span style="color:var(--success)">&#10003;</span>' : '<span style="color:var(--error)">&#10007;</span>';
-      html += '<div class="detail-row"><span class="lbl">' + icon + ' ' + esc(c.name) + '</span><span class="val detail-value-compact">' + esc(c.detail) + '</span></div>';
+    const score = d.score != null ? Number(d.score) : 0;
+    const ringCls = score >= 80 ? 'ok' : score >= 50 ? 'warn' : 'bad';
+    const riskLabel = score >= 80 ? 'Low risk' : score >= 50 ? 'Moderate risk' : 'Elevated risk';
+    const passed = (d.checks || []).filter(function(c) { return c.pass; }).length;
+    const failed = (d.checks || []).length - passed;
+    let html = '<div class="vd-surface"><div class="vd-section-head">Security posture</div>';
+    html += '<div class="vd-security-hero">';
+    html += '<div class="vd-score-ring ' + ringCls + '">' + esc(String(score)) + '</div>';
+    html += '<div class="vd-security-summary"><h4>' + esc(riskLabel) + '</h4>';
+    html += '<p>' + passed + ' passed · ' + failed + ' failed · score ' + esc(String(score)) + '/100</p></div></div>';
+    html += '<div class="vd-check-list">';
+    (d.checks || []).forEach(function(c) {
+      const cls = c.pass ? 'pass' : 'fail';
+      const icon = c.pass ? '&#10003;' : '&#10007;';
+      html += '<div class="vd-check ' + cls + '"><span class="vd-check-icon">' + icon + '</span><div class="vd-check-body">';
+      html += '<span class="vd-check-name">' + esc(c.name) + '</span>';
+      if (c.detail) html += '<span class="vd-check-detail">' + esc(c.detail) + '</span>';
+      html += '</div></div>';
     });
-    html += '</div>';
+    html += '</div></div>';
     return html;
   } catch { return ''; }
 }
