@@ -5,11 +5,7 @@ use crate::kube::KubeClient;
 
 /// VM availability SLO narrative derived from printable status.
 pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
-    let mut r = CopilotResponse::new(
-        "VMRogue SLO Advisor",
-        "slo_advisor",
-        "VM availability SLO",
-    );
+    let mut r = CopilotResponse::new("VMRogue SLO Advisor", "slo_advisor", "VM availability SLO");
 
     let vms = client.list_vms_for_scope(scope).await;
     if vms.is_empty() {
@@ -53,8 +49,12 @@ pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let budget_remaining = (availability - target).max(0.0);
 
     r.evidence.push(format!("VMs in scope: {}", vms.len()));
-    r.evidence.push(format!("Running: {:.0}% ({running:.0}/{total:.0})", availability));
-    r.evidence.push(format!("SLO target (heuristic): {target:.0}%"));
+    r.evidence.push(format!(
+        "Running: {:.0}% ({running:.0}/{total:.0})",
+        availability
+    ));
+    r.evidence
+        .push(format!("SLO target (heuristic): {target:.0}%"));
     r.evidence
         .push(format!("Error budget headroom: {budget_remaining:.1} pts"));
     if failed > 0 {
@@ -64,14 +64,18 @@ pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
         r.evidence.push(format!("Pending VMs: {pending}"));
     }
 
-    for vm in vms.iter().filter(|vm| {
-        matches!(
-            vm.status
-                .as_ref()
-                .and_then(|s| s.printable_status.as_deref()),
-            Some("Failed") | Some("Error") | Some("Pending")
-        )
-    }).take(8) {
+    for vm in vms
+        .iter()
+        .filter(|vm| {
+            matches!(
+                vm.status
+                    .as_ref()
+                    .and_then(|s| s.printable_status.as_deref()),
+                Some("Failed") | Some("Error") | Some("Pending")
+            )
+        })
+        .take(8)
+    {
         let name = vm.metadata.name.as_deref().unwrap_or("?");
         let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
         let st = vm
@@ -83,9 +87,7 @@ pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     }
 
     r.summary = if availability >= target {
-        format!(
-            "Fleet availability {availability:.0}% meets the {target:.0}% heuristic SLO."
-        )
+        format!("Fleet availability {availability:.0}% meets the {target:.0}% heuristic SLO.")
     } else {
         format!(
             "Fleet availability {availability:.0}% is below {target:.0}% — {failed} failed, {pending} pending."
@@ -93,8 +95,9 @@ pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     };
 
     if availability < target {
-        r.recommendations
-            .push("Run VMRogue Doctor on failed VMs and Scheduling Fleet on pending workloads.".into());
+        r.recommendations.push(
+            "Run VMRogue Doctor on failed VMs and Scheduling Fleet on pending workloads.".into(),
+        );
     }
 
     r.actions = vec![

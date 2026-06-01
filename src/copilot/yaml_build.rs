@@ -3,8 +3,8 @@
 use super::{CopilotAction, CopilotResponse, ValidationItem};
 use crate::config::VMConfig;
 use crate::config::VMConfigBuilder;
-use crate::kube::vm_config_to_kubevirt;
 use crate::kube::KubeClient;
+use crate::kube::vm_config_to_kubevirt;
 use crate::output::to_yaml;
 use crate::templates::TEMPLATES;
 use serde::{Deserialize, Serialize};
@@ -75,10 +75,10 @@ pub async fn yaml_preview(
     );
 
     let name = req.name.as_deref().unwrap_or("copilot-vm");
-    let namespace = req
-        .namespace
-        .as_deref()
-        .unwrap_or(if scope == "all" { "default" } else { scope });
+    let namespace =
+        req.namespace
+            .as_deref()
+            .unwrap_or(if scope == "all" { "default" } else { scope });
 
     let template_name = req.template.as_deref().unwrap_or("ubuntu-22.04");
 
@@ -115,16 +115,16 @@ pub async fn yaml_preview(
             Ok(yaml) => {
                 r.yaml_preview = Some(yaml);
                 r.yaml_build = Some(req.clone());
-                r.summary = format!(
-                    "Preview for {namespace}/{name} from template {template_name}."
-                );
+                r.summary =
+                    format!("Preview for {namespace}/{name} from template {template_name}.");
                 let failed = validation.iter().any(|v| v.status == "error");
                 if failed {
                     r.recommendations
                         .push("Fix validation errors before applying.".into());
                 } else {
-                    r.recommendations
-                        .push("Validation passed — review YAML then apply or save as blueprint.".into());
+                    r.recommendations.push(
+                        "Validation passed — review YAML then apply or save as blueprint.".into(),
+                    );
                 }
             }
             Err(e) => r.summary = format!("YAML serialize error: {e}"),
@@ -164,7 +164,10 @@ async fn validate_against_cluster(
     if let Some(ref sc) = req.storage_class {
         match client.list_storage_classes().await {
             Ok(classes) => {
-                let names: Vec<_> = classes.iter().filter_map(|c| c.metadata.name.clone()).collect();
+                let names: Vec<_> = classes
+                    .iter()
+                    .filter_map(|c| c.metadata.name.clone())
+                    .collect();
                 if names.iter().any(|n| n == sc) {
                     items.push(ValidationItem {
                         check: "StorageClass".into(),

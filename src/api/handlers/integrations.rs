@@ -5,11 +5,7 @@
 //! Optional backend wiring status for the web dashboard (env + lightweight probe).
 
 #[cfg(feature = "web")]
-use axum::{
-    Json, Router,
-    extract::State,
-    routing::get,
-};
+use axum::{Json, Router, extract::State, routing::get};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -259,7 +255,9 @@ async fn discover_nodeport_url(
             continue;
         }
         let ports = svc.spec.as_ref().and_then(|s| s.ports.as_ref())?;
-        let node_port = ports.iter().find_map(|p| p.node_port.filter(|np| *np > 0))?;
+        let node_port = ports
+            .iter()
+            .find_map(|p| p.node_port.filter(|np| *np > 0))?;
         let scheme = if name.contains("grafana") || name.contains("argocd") {
             "http"
         } else {
@@ -426,22 +424,27 @@ async fn get_integrations_status(
         open: None,
     });
 
-    let probe_results: Vec<(String, bool)> = futures_util::future::join_all(probe_futures.into_iter().map(
-        |(id, url, token)| async move {
-            let ok = if let Some(t) = token {
-                probe_url_bearer(&url, &t).await
-            } else {
-                probe_url(&url).await
-            };
-            (id.to_string(), ok)
-        },
-    ))
-    .await;
+    let probe_results: Vec<(String, bool)> =
+        futures_util::future::join_all(probe_futures.into_iter().map(
+            |(id, url, token)| async move {
+                let ok = if let Some(t) = token {
+                    probe_url_bearer(&url, &t).await
+                } else {
+                    probe_url(&url).await
+                };
+                (id.to_string(), ok)
+            },
+        ))
+        .await;
 
     for (id, ok) in probe_results {
         if let Some(item) = integrations.iter_mut().find(|i| i.id == id) {
             if item.configured {
-                item.probe = if ok { "ok".to_string() } else { "failed".to_string() };
+                item.probe = if ok {
+                    "ok".to_string()
+                } else {
+                    "failed".to_string()
+                };
             }
         }
     }

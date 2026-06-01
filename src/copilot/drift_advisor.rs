@@ -22,8 +22,7 @@ pub async fn drift_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
     };
 
     let Ok(list) = api.list(&ListParams::default()).await else {
-        r.summary =
-            "Could not list VMRogueVM CRs — operator may not be installed in scope.".into();
+        r.summary = "Could not list VMRogueVM CRs — operator may not be installed in scope.".into();
         return r;
     };
 
@@ -33,11 +32,7 @@ pub async fn drift_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
     for vrvm in &list.items {
         if vrvm.status.as_ref().is_some_and(|s| s.drift_detected) {
             let name = vrvm.metadata.name.as_deref().unwrap_or("?");
-            let ns = vrvm
-                .metadata
-                .namespace
-                .as_deref()
-                .unwrap_or("default");
+            let ns = vrvm.metadata.namespace.as_deref().unwrap_or("default");
             let msg = vrvm
                 .status
                 .as_ref()
@@ -55,7 +50,8 @@ pub async fn drift_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
         r.evidence.push(format!("Drift: {row}"));
     }
     if drifted.len() > 10 {
-        r.evidence.push(format!("… and {} more", drifted.len() - 10));
+        r.evidence
+            .push(format!("… and {} more", drifted.len() - 10));
     }
 
     r.summary = if total == 0 {

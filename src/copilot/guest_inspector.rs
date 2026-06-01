@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use super::{CopilotAction, CopilotResponse};
-use crate::kube::guest_filesystem::{collect_guest_filesystem, format_mount_evidence};
 use crate::kube::KubeClient;
+use crate::kube::guest_filesystem::{collect_guest_filesystem, format_mount_evidence};
 use crate::kube::guest_os::detect_guest_os_family;
 use crate::kube::types::VirtualMachineInstance;
 use crate::kube::windows_rdp::vmi_guest_agent_connected;
@@ -79,7 +79,8 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
                 }
                 if resp.mounts.iter().any(|m| m.use_percent >= 85.0) {
                     r.recommendations.push(
-                        "A guest mount is above 85% — expand PVC or prune data; snapshot first.".into(),
+                        "A guest mount is above 85% — expand PVC or prune data; snapshot first."
+                            .into(),
                     );
                 }
             }
@@ -89,12 +90,14 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
         r.recommendations.push(
             "Install and enable qemu-guest-agent (Linux) or QEMU Guest Agent + Cloudbase-Init (Windows).".into(),
         );
-        r.recommendations
-            .push("Restart the VM after installing the agent so KubeVirt reports AgentConnected.".into());
+        r.recommendations.push(
+            "Restart the VM after installing the agent so KubeVirt reports AgentConnected.".into(),
+        );
     }
 
     if family == crate::kube::guest_os::GuestOsFamily::Windows {
-        r.evidence.push("Windows guest — prefer RDP over browser VNC for daily use.".into());
+        r.evidence
+            .push("Windows guest — prefer RDP over browser VNC for daily use.".into());
         if agent_up {
             r.recommendations.push(
                 "Use guest-agent enable-rdp or golden-image sysprep for Remote Desktop.".into(),
@@ -103,7 +106,10 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
     }
 
     r.summary = if agent_up {
-        format!("Guest agent connected for {name}; OS family is {}.", family.as_str())
+        format!(
+            "Guest agent connected for {name}; OS family is {}.",
+            family.as_str()
+        )
     } else {
         format!("Guest agent not connected for {name} — limited in-guest visibility.")
     };
@@ -132,7 +138,8 @@ pub fn enrich_doctor_with_guest(r: &mut CopilotResponse, vmi: &VirtualMachineIns
         .is_some_and(|j| vmi_guest_agent_connected(j));
     if !agent_up {
         r.recommendations.push(
-            "Guest agent not connected — install qemu-guest-agent for metrics and guest-exec.".into(),
+            "Guest agent not connected — install qemu-guest-agent for metrics and guest-exec."
+                .into(),
         );
         if let Some(score) = r.health_score {
             r.health_score = Some(score.saturating_sub(8));

@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use super::{CopilotAction, CopilotResponse};
-use crate::kube::guest_filesystem::{collect_guest_filesystem, format_mount_evidence};
 use crate::kube::KubeClient;
+use crate::kube::guest_filesystem::{collect_guest_filesystem, format_mount_evidence};
 use serde_json::to_value;
 
 /// Copilot report for in-guest filesystem usage (guest-exec).
@@ -47,7 +47,11 @@ pub async fn guest_filesystem_report(
 
     let vm_json = to_value(&vm).ok();
     let vmi_json = to_value(&vmi).ok();
-    let vmi_name = vmi.metadata.name.clone().unwrap_or_else(|| name.to_string());
+    let vmi_name = vmi
+        .metadata
+        .name
+        .clone()
+        .unwrap_or_else(|| name.to_string());
 
     match collect_guest_filesystem(
         client.client().clone(),
@@ -61,9 +65,7 @@ pub async fn guest_filesystem_report(
     {
         Ok(resp) => {
             if resp.mounts.is_empty() {
-                r.summary = format!(
-                    "Guest agent ran but no mounts were parsed for {name}."
-                );
+                r.summary = format!("Guest agent ran but no mounts were parsed for {name}.");
                 if let Some(msg) = resp.message {
                     r.evidence.push(msg);
                 }
@@ -89,7 +91,8 @@ pub async fn guest_filesystem_report(
                 }
                 if !hot.is_empty() {
                     r.recommendations.push(
-                        "Snapshot the VM before expanding PVCs or resizing guest partitions.".into(),
+                        "Snapshot the VM before expanding PVCs or resizing guest partitions."
+                            .into(),
                     );
                 }
             }

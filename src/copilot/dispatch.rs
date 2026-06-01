@@ -1,14 +1,14 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
-use super::{
-    alert_advisor, backup_advisor, cilium_advisor, compliance_advisor, cost_advisor,
-    cost_advisor_vm, drift_advisor, forecast_advisor, gitops_advisor, guest_filesystem_report,
-    guest_inspector, integrations_advisor, migration_advisor, network_lens, node_advisor,
-    observability_advisor, performance_advisor, scheduling_explainer, scheduling_fleet_advisor,
-    security_sentinel, security_sentinel_fleet, slo_advisor, storage_doctor, vm_doctor,
-    yaml_build, CopilotAction, CopilotAskRequest, CopilotIntent, CopilotResponse,
-};
 use super::fixit::explain_error_message;
+use super::{
+    CopilotAction, CopilotAskRequest, CopilotIntent, CopilotResponse, alert_advisor,
+    backup_advisor, cilium_advisor, compliance_advisor, cost_advisor, cost_advisor_vm,
+    drift_advisor, forecast_advisor, gitops_advisor, guest_filesystem_report, guest_inspector,
+    integrations_advisor, migration_advisor, network_lens, node_advisor, observability_advisor,
+    performance_advisor, scheduling_explainer, scheduling_fleet_advisor, security_sentinel,
+    security_sentinel_fleet, slo_advisor, storage_doctor, vm_doctor, yaml_build,
+};
 use crate::kube::KubeClient;
 
 pub fn resolve_vm_target<'a>(

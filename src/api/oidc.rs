@@ -62,11 +62,12 @@ pub async fn exchange_oidc_authorization_code(
         return Err("code, redirect_uri, and code_verifier are required".to_string());
     }
 
-    let token_url = crate::api::integrations::env_var("VMROGUE_OIDC_TOKEN_URL").unwrap_or_else(|| {
-        crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
-            .map(|i| format!("{i}/protocol/openid-connect/token"))
-            .unwrap_or_default()
-    });
+    let token_url =
+        crate::api::integrations::env_var("VMROGUE_OIDC_TOKEN_URL").unwrap_or_else(|| {
+            crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
+                .map(|i| format!("{i}/protocol/openid-connect/token"))
+                .unwrap_or_default()
+        });
     if token_url.is_empty() {
         return Err("VMROGUE_OIDC_TOKEN_URL or VMROGUE_OIDC_ISSUER must be set".to_string());
     }

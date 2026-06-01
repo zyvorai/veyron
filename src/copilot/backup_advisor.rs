@@ -45,7 +45,10 @@ pub async fn backup_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
         .unwrap_or_default();
     let mut scheduled_vms: HashSet<String> = HashSet::new();
     for cm in schedules {
-        let ns = cm.metadata.namespace.unwrap_or_else(|| "default".to_string());
+        let ns = cm
+            .metadata
+            .namespace
+            .unwrap_or_else(|| "default".to_string());
         if let Some(data) = cm.data {
             if let Ok(rec) = serde_json::from_str::<vm_snapshot_schedule::SnapshotScheduleRecord>(
                 data.get(vm_snapshot_schedule::SCHEDULE_CM_DATA_KEY)
@@ -103,8 +106,9 @@ pub async fn backup_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
         scheduled_vms.len()
     ));
     if velero_available {
-        r.evidence
-            .push(format!("Velero installed — {velero_backups} Backup CR(s) listed"));
+        r.evidence.push(format!(
+            "Velero installed — {velero_backups} Backup CR(s) listed"
+        ));
     } else {
         r.evidence
             .push("Velero not detected — tier-1 backup is KubeVirt snapshots + schedules".into());
@@ -114,13 +118,13 @@ pub async fn backup_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
         r.evidence.push(format!("Unprotected: {key}"));
     }
     if unprotected.len() > 12 {
-        r.evidence.push(format!("… and {} more", unprotected.len() - 12));
+        r.evidence
+            .push(format!("… and {} more", unprotected.len() - 12));
     }
 
     if !unprotected.is_empty() {
-        r.recommendations.push(
-            "Create a snapshot or enable a cron schedule before risky changes.".into(),
-        );
+        r.recommendations
+            .push("Create a snapshot or enable a cron schedule before risky changes.".into());
         r.recommendations
             .push("For DR off-cluster, install Velero and label production VMs.".into());
     }

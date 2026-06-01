@@ -84,13 +84,29 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
 
     r.evidence.push(format!(
         "Metrics: {} (cluster {})",
-        if metrics || prom_env { "available" } else { "not detected" },
-        if prom_env { "+ VMROGUE_PROMETHEUS_URL" } else { "services only" }
+        if metrics || prom_env {
+            "available"
+        } else {
+            "not detected"
+        },
+        if prom_env {
+            "+ VMROGUE_PROMETHEUS_URL"
+        } else {
+            "services only"
+        }
     ));
     r.evidence.push(format!(
         "Logs: {} (cluster {})",
-        if logs || loki_env { "available" } else { "not detected" },
-        if loki_env { "+ VMROGUE_LOKI_URL" } else { "services only" }
+        if logs || loki_env {
+            "available"
+        } else {
+            "not detected"
+        },
+        if loki_env {
+            "+ VMROGUE_LOKI_URL"
+        } else {
+            "services only"
+        }
     ));
     r.evidence.push(format!(
         "Traces: {} (cluster {})",
@@ -115,7 +131,10 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
 
     r.summary = match active {
         3 => "Full observability pillars detected — metrics, logs, and traces.".into(),
-        0 => "No observability stack detected — install kube-prometheus-stack or set VMROGUE_* URLs.".into(),
+        0 => {
+            "No observability stack detected — install kube-prometheus-stack or set VMROGUE_* URLs."
+                .into()
+        }
         n => format!("{n}/3 observability pillars active in cluster or via env vars."),
     };
 
@@ -125,8 +144,9 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
         );
     }
     if !logs && !loki_env {
-        r.recommendations
-            .push("Add Loki or Elasticsearch and set VMROGUE_LOKI_URL for LogQL in the dashboard.".into());
+        r.recommendations.push(
+            "Add Loki or Elasticsearch and set VMROGUE_LOKI_URL for LogQL in the dashboard.".into(),
+        );
     }
 
     r.actions = vec![

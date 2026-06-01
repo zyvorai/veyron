@@ -3,8 +3,8 @@
 use crate::copilot::{
     CopilotAskRequest, CopilotResponse, YamlBuildRequest, alert_advisor, backup_advisor,
     catalog_advisor, cilium_advisor, compliance_advisor, copilot_ask, cost_advisor,
-    cost_advisor_vm, drift_advisor, forecast_advisor, gitops_advisor, integrations_advisor,
-    migration_advisor, finalize_copilot, guest_inspector, guest_filesystem_report,
+    cost_advisor_vm, drift_advisor, finalize_copilot, forecast_advisor, gitops_advisor,
+    guest_filesystem_report, guest_inspector, integrations_advisor, migration_advisor,
     network_lens, node_advisor, observability_advisor, performance_advisor, quota_advisor,
     recommend_template, scheduling_explainer, scheduling_fleet_advisor, security_sentinel,
     security_sentinel_fleet, slo_advisor, storage_doctor, velero_dr_advisor, vm_doctor,
@@ -15,7 +15,11 @@ use anyhow::Result;
 
 pub async fn handle_ai_ask(query: &str, namespace: &str, vm_name: Option<&str>) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(
         copilot_ask(
             &client,
@@ -99,19 +103,23 @@ pub async fn handle_ai_recommend(description: &str) -> Result<()> {
 
 pub async fn handle_ai_backup(namespace: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(backup_advisor(&client, scope).await).await;
     print_copilot(&resp, "text");
     Ok(())
 }
 
-pub async fn handle_ai_cost(
-    namespace: &str,
-    name: Option<&str>,
-    output: &str,
-) -> Result<()> {
+pub async fn handle_ai_cost(namespace: &str, name: Option<&str>, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = if let Some(vm) = name {
         finalize_copilot(cost_advisor_vm(&client, scope, vm).await).await
     } else {
@@ -144,19 +152,23 @@ pub async fn handle_ai_filesystem(name: &str, namespace: &str, output: &str) -> 
 
 pub async fn handle_ai_storage(namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(storage_doctor(&client, scope).await).await;
     print_copilot(&resp, output);
     Ok(())
 }
 
-pub async fn handle_ai_security(
-    namespace: &str,
-    name: Option<&str>,
-    output: &str,
-) -> Result<()> {
+pub async fn handle_ai_security(namespace: &str, name: Option<&str>, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = if let Some(vm) = name {
         finalize_copilot(security_sentinel(&client, scope, vm).await).await
     } else {
@@ -168,7 +180,11 @@ pub async fn handle_ai_security(
 
 pub async fn handle_ai_performance(namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(performance_advisor(&client, scope).await).await;
     print_copilot(&resp, output);
     Ok(())
@@ -176,7 +192,11 @@ pub async fn handle_ai_performance(namespace: &str, output: &str) -> Result<()> 
 
 pub async fn handle_ai_gitops(namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(gitops_advisor(&client, scope).await).await;
     print_copilot(&resp, output);
     Ok(())
@@ -184,7 +204,11 @@ pub async fn handle_ai_gitops(namespace: &str, output: &str) -> Result<()> {
 
 pub async fn handle_ai_forecast(namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(forecast_advisor(&client, scope).await).await;
     print_copilot(&resp, output);
     Ok(())
@@ -198,7 +222,11 @@ pub async fn handle_ai_integrations(output: &str) -> Result<()> {
 
 pub async fn handle_ai_pending(namespace: &str, output: &str) -> Result<()> {
     let client = KubeClient::new().await?;
-    let scope = if namespace.is_empty() { "default" } else { namespace };
+    let scope = if namespace.is_empty() {
+        "default"
+    } else {
+        namespace
+    };
     let resp = finalize_copilot(scheduling_fleet_advisor(&client, scope).await).await;
     print_copilot(&resp, output);
     Ok(())
@@ -208,7 +236,11 @@ macro_rules! ai_scope_handler {
     ($name:ident, $advisor:ident) => {
         pub async fn $name(namespace: &str, output: &str) -> Result<()> {
             let client = KubeClient::new().await?;
-            let scope = if namespace.is_empty() { "default" } else { namespace };
+            let scope = if namespace.is_empty() {
+                "default"
+            } else {
+                namespace
+            };
             let resp = finalize_copilot($advisor(&client, scope).await).await;
             print_copilot(&resp, output);
             Ok(())

@@ -50,8 +50,9 @@ pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     }
 
     r.evidence.push(format!("VMs in scope: {}", rows.len()));
-    r.evidence
-        .push(format!("Estimated monthly total: ${total:.2} USD ({pricing_model})"));
+    r.evidence.push(format!(
+        "Estimated monthly total: ${total:.2} USD ({pricing_model})"
+    ));
 
     let mut top: Vec<_> = rows.iter().collect();
     top.sort_by(|a, b| {
@@ -93,9 +94,7 @@ pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     }
 
     r.summary = if pricing_model == "opencost_allocation" {
-        format!(
-            "Fleet monthly spend is about ${total:.2} from OpenCost (30d window)."
-        )
+        format!("Fleet monthly spend is about ${total:.2} from OpenCost (30d window).")
     } else {
         format!(
             "Fleet monthly estimate is ${total:.2} using VMRogue reference rates (not cloud billing)."
@@ -118,11 +117,7 @@ pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
 }
 
 /// Per-VM cost breakdown.
-pub async fn cost_advisor_vm(
-    client: &KubeClient,
-    namespace: &str,
-    name: &str,
-) -> CopilotResponse {
+pub async fn cost_advisor_vm(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
         "VMRogue Cost Advisor",
         "cost_advisor_vm",
@@ -146,14 +141,20 @@ pub async fn cost_advisor_vm(
     r.evidence.push(format!("Pricing model: {pricing_model}"));
     if pricing_model == "reference_rates" {
         r.evidence.push(format!("CPU: ${:.2}/mo", row.cpu_cost));
-        r.evidence.push(format!("Memory: ${:.2}/mo", row.memory_cost));
-        r.evidence.push(format!("Storage: ${:.2}/mo", row.storage_cost));
-        r.evidence.push(format!("Network (flat): ${:.2}/mo", row.network_cost));
+        r.evidence
+            .push(format!("Memory: ${:.2}/mo", row.memory_cost));
+        r.evidence
+            .push(format!("Storage: ${:.2}/mo", row.storage_cost));
+        r.evidence
+            .push(format!("Network (flat): ${:.2}/mo", row.network_cost));
     }
     r.evidence
         .push(format!("Total monthly: ${:.2} USD", row.total_cost));
 
-    r.summary = format!("{name} estimated at ${:.2}/mo ({pricing_model}).", row.total_cost);
+    r.summary = format!(
+        "{name} estimated at ${:.2}/mo ({pricing_model}).",
+        row.total_cost
+    );
     if pricing_model == "reference_rates" {
         r.recommendations.push(
             "Reference rates are illustrative — configure OpenCost for real allocation.".into(),

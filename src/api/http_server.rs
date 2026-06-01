@@ -10,8 +10,8 @@
 pub mod web {
     use crate::api::dashboard_paths;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
-    use crate::copilot::{self, AiMode};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
+    use crate::copilot::{self, AiMode};
     use crate::kube::{
         KubeClient, MigrateVmOptions, vm_expose_service_name, vm_internet, vm_rdp, windows_rdp,
     };
@@ -744,183 +744,186 @@ pub mod web {
             .route("/api/v1/ws/metrics", get(metrics_websocket_handler))
             .with_state(state.clone());
 
-        let timed_rest = Router::new()
-            // Dashboard & static assets
-            .route("/", get(root_redirect))
-            .route("/dashboard", get(dashboard_handler))
-            .route("/assets/novnc.min.js", get(novnc_handler))
-            .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
-            // VM endpoints
-            .route("/api/v1/vms", get(list_vms_handler))
-            .route("/api/v1/vms", post(create_vm_handler))
-            // Batch must be before parameterized :ns/:name routes to avoid ambiguity
-            .route("/api/v1/vms/batch", post(batch_vm_handler))
-            .route("/api/v1/vms/:ns/:name", get(get_vm_handler))
-            .route("/api/v1/vms/:ns/:name/drift", get(get_vm_drift_handler))
-            .route("/api/v1/vms/:ns/:name", delete(delete_vm_handler))
-            // Templates
-            .route("/api/v1/templates", get(list_templates_handler))
-            .route("/api/v1/vms/:ns/:name/start", post(start_vm_handler))
-            .route("/api/v1/vms/:ns/:name/stop", post(stop_vm_handler))
-            .route("/api/v1/vms/:ns/:name/restart", post(restart_vm_handler))
-            .route("/api/v1/vms/:ns/:name/clone", post(clone_vm_handler))
-            .route("/api/v1/vms/:ns/:name/pause", post(pause_vm_handler))
-            .route("/api/v1/vms/:ns/:name/unpause", post(unpause_vm_handler))
-            .route("/api/v1/vms/:ns/:name/migrate", post(migrate_vm_handler))
-            .route(
-                "/api/v1/vms/:ns/:name/migrations",
-                get(list_vm_migrations_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/migrations/:migname",
-                delete(delete_vm_migration_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/guest/freeze",
-                post(guest_freeze_vm_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/guest/unfreeze",
-                post(guest_unfreeze_vm_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/guest/softreboot",
-                post(guest_softreboot_vm_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/volumes/status",
-                get(vm_volume_status_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/volumes/hotplug",
-                post(vm_hotplug_volume_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/storage/data-disk/defaults",
-                get(vm_data_disk_defaults_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/storage/data-disk",
-                post(vm_add_data_disk_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/volumes/hotremove",
-                post(vm_hotremove_volume_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/console/serial",
-                get(vm_serial_console_hint_handler),
-            )
-            .route("/api/v1/vms/:ns/:name/expose", get(get_vm_expose_handler))
-            .route("/api/v1/vms/:ns/:name/expose", put(put_vm_expose_handler))
-            .route(
-                "/api/v1/vms/:ns/:name/expose",
-                delete(delete_vm_expose_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/network/internet",
-                get(vm_internet_get_handler)
-                    .put(vm_internet_put_handler)
-                    .delete(vm_internet_delete_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/rdp-expose",
-                get(get_vm_rdp_expose_handler)
-                    .put(put_vm_rdp_expose_handler)
-                    .delete(delete_vm_rdp_expose_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/guest-agent/enable-rdp",
-                post(guest_agent_enable_rdp_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/guest-agent/disable-rdp",
-                post(guest_agent_disable_rdp_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name/guest-filesystem",
-                get(guest_filesystem_handler),
-            )
-            .route(
-                "/api/v1/vms/:ns/:name",
-                axum::routing::put(update_vm_handler),
-            )
-            .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
-            .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
-            // Snapshots
-            .route("/api/v1/snapshots", get(list_snapshots_handler))
-            .route("/api/v1/snapshots/:ns/:vm", get(list_vm_snapshots_handler))
-            .route(
-                "/api/v1/snapshots/:ns/:name/delete",
-                post(delete_snapshot_handler),
-            )
-            // Snapshots - create & restore
-            .route(
-                "/api/v1/snapshots/:ns/:vm/create",
-                post(create_snapshot_handler),
-            )
-            .route(
-                "/api/v1/snapshots/:ns/:name/restore",
-                post(restore_snapshot_handler),
-            )
-            .route(
-                "/api/v1/snapshot-schedules",
-                get(list_snapshot_schedules_handler),
-            )
-            .route(
-                "/api/v1/snapshot-schedules",
-                post(create_snapshot_schedule_handler),
-            )
-            .route(
-                "/api/v1/snapshot-schedules/:ns/:cm_name",
-                delete(delete_snapshot_schedule_handler),
-            )
-            // Events
-            .route("/api/v1/events", get(list_events_handler))
-            .route("/api/v1/events/recent", get(recent_events_handler))
-            // Cluster resources
-            .route("/api/v1/nodes", get(list_nodes_handler))
-            .route("/api/v1/pods", get(list_pods_handler))
-            .route("/api/v1/profiles", get(list_profiles_handler))
-            .route("/api/v1/namespaces", get(list_namespaces_handler))
-            .route("/api/v1/activity", get(activity_feed_handler))
-            // Storage
-            .route("/api/v1/storage/pvcs", get(list_pvcs_handler))
-            .route("/api/v1/storage/classes", get(list_storage_classes_handler))
-            // OpenAPI
-            .route("/api/openapi.json", get(openapi_handler))
-            // Dashboard overview
-            .route(
-                "/api/v1/dashboard/overview",
-                get(dashboard_overview_handler),
-            )
-            // Health + public OIDC discovery
-            .route("/api/v1/health", get(health_handler))
-            .route(
-                "/api/v1/auth/oidc/config",
-                get(|| async { axum::Json(crate::api::oidc::oidc_public_config()) }),
-            )
-            .route(
-                "/api/v1/auth/oidc/token",
-                post(|axum::Json(body): axum::Json<crate::api::oidc::OidcTokenExchangeRequest>| async move {
-                    match crate::api::oidc::exchange_oidc_authorization_code(body).await {
-                        Ok(json) => axum::Json(json).into_response(),
-                        Err(e) => (
-                            axum::http::StatusCode::BAD_REQUEST,
-                            e,
-                        )
-                            .into_response(),
-                    }
-                }),
-            )
-            .with_state(state.clone())
-            // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
-            // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.
-            .merge(Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())))
-            .layer(TimeoutLayer::with_status_code(
-                StatusCode::REQUEST_TIMEOUT,
-                std::time::Duration::from_secs(request_timeout_secs),
-            ));
+        let timed_rest =
+            Router::new()
+                // Dashboard & static assets
+                .route("/", get(root_redirect))
+                .route("/dashboard", get(dashboard_handler))
+                .route("/assets/novnc.min.js", get(novnc_handler))
+                .route("/assets/zyvor-logo.png", get(zyvor_logo_handler))
+                // VM endpoints
+                .route("/api/v1/vms", get(list_vms_handler))
+                .route("/api/v1/vms", post(create_vm_handler))
+                // Batch must be before parameterized :ns/:name routes to avoid ambiguity
+                .route("/api/v1/vms/batch", post(batch_vm_handler))
+                .route("/api/v1/vms/:ns/:name", get(get_vm_handler))
+                .route("/api/v1/vms/:ns/:name/drift", get(get_vm_drift_handler))
+                .route("/api/v1/vms/:ns/:name", delete(delete_vm_handler))
+                // Templates
+                .route("/api/v1/templates", get(list_templates_handler))
+                .route("/api/v1/vms/:ns/:name/start", post(start_vm_handler))
+                .route("/api/v1/vms/:ns/:name/stop", post(stop_vm_handler))
+                .route("/api/v1/vms/:ns/:name/restart", post(restart_vm_handler))
+                .route("/api/v1/vms/:ns/:name/clone", post(clone_vm_handler))
+                .route("/api/v1/vms/:ns/:name/pause", post(pause_vm_handler))
+                .route("/api/v1/vms/:ns/:name/unpause", post(unpause_vm_handler))
+                .route("/api/v1/vms/:ns/:name/migrate", post(migrate_vm_handler))
+                .route(
+                    "/api/v1/vms/:ns/:name/migrations",
+                    get(list_vm_migrations_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/migrations/:migname",
+                    delete(delete_vm_migration_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/freeze",
+                    post(guest_freeze_vm_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/unfreeze",
+                    post(guest_unfreeze_vm_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/softreboot",
+                    post(guest_softreboot_vm_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/volumes/status",
+                    get(vm_volume_status_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/volumes/hotplug",
+                    post(vm_hotplug_volume_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/storage/data-disk/defaults",
+                    get(vm_data_disk_defaults_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/storage/data-disk",
+                    post(vm_add_data_disk_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/volumes/hotremove",
+                    post(vm_hotremove_volume_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/console/serial",
+                    get(vm_serial_console_hint_handler),
+                )
+                .route("/api/v1/vms/:ns/:name/expose", get(get_vm_expose_handler))
+                .route("/api/v1/vms/:ns/:name/expose", put(put_vm_expose_handler))
+                .route(
+                    "/api/v1/vms/:ns/:name/expose",
+                    delete(delete_vm_expose_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/network/internet",
+                    get(vm_internet_get_handler)
+                        .put(vm_internet_put_handler)
+                        .delete(vm_internet_delete_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/rdp-expose",
+                    get(get_vm_rdp_expose_handler)
+                        .put(put_vm_rdp_expose_handler)
+                        .delete(delete_vm_rdp_expose_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest-agent/enable-rdp",
+                    post(guest_agent_enable_rdp_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest-agent/disable-rdp",
+                    post(guest_agent_disable_rdp_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest-filesystem",
+                    get(guest_filesystem_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name",
+                    axum::routing::put(update_vm_handler),
+                )
+                .route("/api/v1/vms/:ns/:name/security", get(vm_security_handler))
+                .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
+                // Snapshots
+                .route("/api/v1/snapshots", get(list_snapshots_handler))
+                .route("/api/v1/snapshots/:ns/:vm", get(list_vm_snapshots_handler))
+                .route(
+                    "/api/v1/snapshots/:ns/:name/delete",
+                    post(delete_snapshot_handler),
+                )
+                // Snapshots - create & restore
+                .route(
+                    "/api/v1/snapshots/:ns/:vm/create",
+                    post(create_snapshot_handler),
+                )
+                .route(
+                    "/api/v1/snapshots/:ns/:name/restore",
+                    post(restore_snapshot_handler),
+                )
+                .route(
+                    "/api/v1/snapshot-schedules",
+                    get(list_snapshot_schedules_handler),
+                )
+                .route(
+                    "/api/v1/snapshot-schedules",
+                    post(create_snapshot_schedule_handler),
+                )
+                .route(
+                    "/api/v1/snapshot-schedules/:ns/:cm_name",
+                    delete(delete_snapshot_schedule_handler),
+                )
+                // Events
+                .route("/api/v1/events", get(list_events_handler))
+                .route("/api/v1/events/recent", get(recent_events_handler))
+                // Cluster resources
+                .route("/api/v1/nodes", get(list_nodes_handler))
+                .route("/api/v1/pods", get(list_pods_handler))
+                .route("/api/v1/profiles", get(list_profiles_handler))
+                .route("/api/v1/namespaces", get(list_namespaces_handler))
+                .route("/api/v1/activity", get(activity_feed_handler))
+                // Storage
+                .route("/api/v1/storage/pvcs", get(list_pvcs_handler))
+                .route("/api/v1/storage/classes", get(list_storage_classes_handler))
+                // OpenAPI
+                .route("/api/openapi.json", get(openapi_handler))
+                // Dashboard overview
+                .route(
+                    "/api/v1/dashboard/overview",
+                    get(dashboard_overview_handler),
+                )
+                // Health + public OIDC discovery
+                .route("/api/v1/health", get(health_handler))
+                .route(
+                    "/api/v1/auth/oidc/config",
+                    get(|| async { axum::Json(crate::api::oidc::oidc_public_config()) }),
+                )
+                .route(
+                    "/api/v1/auth/oidc/token",
+                    post(
+                        |axum::Json(body): axum::Json<
+                            crate::api::oidc::OidcTokenExchangeRequest,
+                        >| async move {
+                            match crate::api::oidc::exchange_oidc_authorization_code(body).await {
+                                Ok(json) => axum::Json(json).into_response(),
+                                Err(e) => (axum::http::StatusCode::BAD_REQUEST, e).into_response(),
+                            }
+                        },
+                    ),
+                )
+                .with_state(state.clone())
+                // Handler modules register paths like `/ingress`, `/monitoring/status`; nest under `/api/v1`
+                // so the dashboard (`/api/v1/...`) and OpenAPI stay aligned.
+                .merge(
+                    Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())),
+                )
+                .layer(TimeoutLayer::with_status_code(
+                    StatusCode::REQUEST_TIMEOUT,
+                    std::time::Duration::from_secs(request_timeout_secs),
+                ));
 
         Router::new()
             .merge(long_lived_ws)
@@ -1284,7 +1287,8 @@ pub mod web {
 
         let mut index = HashMap::new();
         let client = kube_client.client();
-        let Ok(list) = namespace_scope::list_namespaced_resource::<VMRogueVM>(&client, scope_ns).await
+        let Ok(list) =
+            namespace_scope::list_namespaced_resource::<VMRogueVM>(&client, scope_ns).await
         else {
             return index;
         };
@@ -1349,8 +1353,8 @@ pub mod web {
                             .cloned()
                             .unwrap_or((None, None));
                         let mut info = VmInfo::from_vm_with_vmi_data(vm, ip, node);
-                        if let Some((drift, message)) = drift_index
-                            .get(&(ns.to_string(), name.to_string()))
+                        if let Some((drift, message)) =
+                            drift_index.get(&(ns.to_string(), name.to_string()))
                         {
                             info.vmrogue_managed = Some(true);
                             info.drift_detected = Some(*drift);
@@ -1928,10 +1932,7 @@ pub mod web {
         };
         match kube.guest_filesystem_metrics(&ns, &name).await {
             Ok(resp) => {
-                let ctx = req_ctx(
-                    HttpMethod::GET,
-                    "/api/v1/vms/:ns/:name/guest-filesystem",
-                );
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest-filesystem");
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_FILESYSTEM_FAILED", &sanitize_error(&e)),
@@ -3434,8 +3435,7 @@ pub mod web {
             s.kube_client.client()
         };
 
-        match crate::snapshots::SnapshotManager::list_snapshots_in_scope(client, &namespace).await
-        {
+        match crate::snapshots::SnapshotManager::list_snapshots_in_scope(client, &namespace).await {
             Ok(snapshots) => {
                 let items: Vec<SnapshotItem> = snapshots
                     .into_iter()

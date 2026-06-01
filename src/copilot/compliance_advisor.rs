@@ -98,18 +98,23 @@ pub async fn compliance_advisor(client: &KubeClient, scope: &str) -> CopilotResp
         "Eviction strategy: {eviction}/{total} ({}%)",
         pct(eviction)
     ));
-    r.evidence.push(format!("Virtio RNG: {rng}/{total} ({}%)", pct(rng)));
+    r.evidence
+        .push(format!("Virtio RNG: {rng}/{total} ({}%)", pct(rng)));
     r.evidence.push(format!(
         "No host networking: {no_host_net}/{total} ({}%)",
         pct(no_host_net)
     ));
     r.evidence
         .push(format!("NetworkPolicies across namespaces: {np_total}"));
-    r.evidence.push(format!("RoleBindings across namespaces: {rb_total}"));
+    r.evidence
+        .push(format!("RoleBindings across namespaces: {rb_total}"));
 
     let mut gaps = Vec::new();
     if limits < total {
-        gaps.push(format!("{} VM(s) missing CPU/memory limits", total - limits));
+        gaps.push(format!(
+            "{} VM(s) missing CPU/memory limits",
+            total - limits
+        ));
     }
     if eviction < total {
         gaps.push(format!(
@@ -124,8 +129,8 @@ pub async fn compliance_advisor(client: &KubeClient, scope: &str) -> CopilotResp
         r.evidence.push(format!("Gap: {g}"));
     }
 
-    let score = ((limits + eviction + rng + no_host_net) as f64 / (total * 4) as f64 * 100.0)
-        .round() as u8;
+    let score =
+        ((limits + eviction + rng + no_host_net) as f64 / (total * 4) as f64 * 100.0).round() as u8;
     r.health_score = Some(score);
 
     r.summary = if gaps.is_empty() {

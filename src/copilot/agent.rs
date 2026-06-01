@@ -1,11 +1,11 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use super::dispatch::dispatch_intent;
-use super::llm::{self, ai_mode, max_tool_rounds, AiMode};
+use super::llm::{self, AiMode, ai_mode, max_tool_rounds};
 use super::tools::invoke_tool;
 use super::{
-    finalize_copilot, general_help, intent, CopilotAskRequest, CopilotChatMessage,
-    CopilotChatRequest, CopilotChatResponse, CopilotResponse, CopilotToolTrace,
+    CopilotAskRequest, CopilotChatMessage, CopilotChatRequest, CopilotChatResponse,
+    CopilotResponse, CopilotToolTrace, finalize_copilot, general_help, intent,
 };
 use crate::kube::KubeClient;
 
@@ -49,8 +49,7 @@ pub async fn copilot_chat(
                     tool: call.name.clone(),
                     args: serde_json::to_value(&call.args).unwrap_or_default(),
                 });
-                if let Some(resp) =
-                    invoke_tool(&call.name, &call.args, client, scope, query).await
+                if let Some(resp) = invoke_tool(&call.name, &call.args, client, scope, query).await
                 {
                     last = Some(resp);
                 }

@@ -34,10 +34,7 @@ pub async fn node_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
 
     for node in &nodes {
         let name = node.metadata.name.as_deref().unwrap_or("?");
-        let conditions = node
-            .status
-            .as_ref()
-            .and_then(|s| s.conditions.as_ref());
+        let conditions = node.status.as_ref().and_then(|s| s.conditions.as_ref());
         let is_ready = conditions
             .and_then(|c| c.iter().find(|x| x.type_ == "Ready"))
             .is_some_and(|c| c.status == "True");
@@ -56,9 +53,9 @@ pub async fn node_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
         }
     }
 
-    r.evidence.push(format!("Nodes: {} ({} ready)", nodes.len(), ready));
     r.evidence
-        .push(format!("Running VMs in scope: {running}"));
+        .push(format!("Nodes: {} ({} ready)", nodes.len(), ready));
+    r.evidence.push(format!("Running VMs in scope: {running}"));
     if nodes.len() > 0 {
         r.evidence.push(format!(
             "VM density: {:.1} running VMs / node",

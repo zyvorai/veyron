@@ -45,26 +45,20 @@ pub async fn quota_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
     let mut pressured = Vec::new();
     for q in &list.items {
         let name = q.metadata.name.as_deref().unwrap_or("?");
-        let ns = q
-            .metadata
-            .namespace
-            .as_deref()
-            .unwrap_or("default");
+        let ns = q.metadata.namespace.as_deref().unwrap_or("default");
         let hard = q.status.as_ref().and_then(|s| s.hard.as_ref());
         let used = q.status.as_ref().and_then(|s| s.used.as_ref());
 
         let cpu_pct = hard
             .and_then(|h| h.get("limits.cpu").or_else(|| h.get("cpu")))
             .and_then(|l| {
-                used
-                    .and_then(|u| u.get("limits.cpu").or_else(|| u.get("cpu")))
+                used.and_then(|u| u.get("limits.cpu").or_else(|| u.get("cpu")))
                     .and_then(|u| parse_ratio(&u.0, &l.0))
             });
         let mem_pct = hard
             .and_then(|h| h.get("limits.memory").or_else(|| h.get("memory")))
             .and_then(|l| {
-                used
-                    .and_then(|u| u.get("limits.memory").or_else(|| u.get("memory")))
+                used.and_then(|u| u.get("limits.memory").or_else(|| u.get("memory")))
                     .and_then(|u| parse_ratio(&u.0, &l.0))
             });
 

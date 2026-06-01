@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use super::dispatch::dispatch_intent;
 use super::{CopilotAskRequest, CopilotIntent, CopilotResponse};
@@ -26,7 +26,11 @@ pub struct ToolDefinition {
 
 pub fn tool_definitions() -> Vec<ToolDefinition> {
     vec![
-        tool("vm_doctor", "Inspect a single VM health, events, and score", vm_params()),
+        tool(
+            "vm_doctor",
+            "Inspect a single VM health, events, and score",
+            vm_params(),
+        ),
         tool(
             "scheduling_explainer",
             "Explain why a VM is Pending or unschedulable",
@@ -53,8 +57,16 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
                 }
             }),
         ),
-        tool("network_lens", "Per-VM network interfaces, expose, policies", vm_params()),
-        tool("guest_inspector", "QEMU guest-agent and in-guest OS signals", vm_params()),
+        tool(
+            "network_lens",
+            "Per-VM network interfaces, expose, policies",
+            vm_params(),
+        ),
+        tool(
+            "guest_inspector",
+            "QEMU guest-agent and in-guest OS signals",
+            vm_params(),
+        ),
         tool(
             "guest_filesystem",
             "In-guest disk usage via guest-exec",

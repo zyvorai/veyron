@@ -78,8 +78,7 @@ pub fn is_ai_rate_limited_path(path: &str, method: &str) -> bool {
     if method != "POST" {
         return false;
     }
-    path == "/api/v1/experience/copilot/chat"
-        || path == "/api/v1/experience/copilot/ask"
+    path == "/api/v1/experience/copilot/chat" || path == "/api/v1/experience/copilot/ask"
 }
 
 #[cfg(test)]
@@ -163,6 +162,9 @@ mod tests {
             "/api/v1/experience/copilot/chat",
             "GET"
         ));
-        assert!(!is_ai_rate_limited_path("/api/v1/experience/copilot/status", "GET"));
+        assert!(!is_ai_rate_limited_path(
+            "/api/v1/experience/copilot/status",
+            "GET"
+        ));
     }
 }

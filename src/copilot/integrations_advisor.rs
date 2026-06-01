@@ -3,9 +3,18 @@
 use super::{CopilotAction, CopilotResponse};
 
 const INTEGRATIONS: &[(&str, &str)] = &[
-    ("VMROGUE_PROMETHEUS_URL", "Metrics, PVC usage, performance p95"),
-    ("VMROGUE_OPENCOST_URL", "Real allocation costs (with VMROGUE_COST_BACKEND=opencost)"),
-    ("VMROGUE_TRIVY_URL", "CVE findings merged into security posture"),
+    (
+        "VMROGUE_PROMETHEUS_URL",
+        "Metrics, PVC usage, performance p95",
+    ),
+    (
+        "VMROGUE_OPENCOST_URL",
+        "Real allocation costs (with VMROGUE_COST_BACKEND=opencost)",
+    ),
+    (
+        "VMROGUE_TRIVY_URL",
+        "CVE findings merged into security posture",
+    ),
     ("VMROGUE_LOKI_URL", "Cluster-wide logs (LogQL)"),
     ("VMROGUE_ALERTMANAGER_URL", "Active alert timeline"),
     ("VMROGUE_ARGOCD_URL", "GitOps sync triggers"),
@@ -36,8 +45,11 @@ pub async fn integrations_advisor() -> CopilotResponse {
         }
     }
 
-    r.evidence
-        .push(format!("Configured: {} / {}", configured.len(), INTEGRATIONS.len()));
+    r.evidence.push(format!(
+        "Configured: {} / {}",
+        configured.len(),
+        INTEGRATIONS.len()
+    ));
     for row in configured.iter().take(8) {
         r.evidence.push(format!("✔ {row}"));
     }

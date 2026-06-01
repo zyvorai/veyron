@@ -5,9 +5,9 @@
 //! `VMROGUE_AI_URL`, `VMROGUE_AI_API_KEY`, `VMROGUE_AI_MODEL` (default `gpt-4o-mini`).
 //! `VMROGUE_AI_MODE`: `off` | `paraphrase` | `routing` | `agent`.
 
-use super::tools::{parse_tool_args, tool_definitions, ToolInvokeArgs};
-use super::{CopilotChatMessage, CopilotResponse};
 use super::intent::{self, CopilotIntent};
+use super::tools::{ToolInvokeArgs, parse_tool_args, tool_definitions};
+use super::{CopilotChatMessage, CopilotResponse};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AiMode {
@@ -137,7 +137,10 @@ pub fn status_snapshot() -> super::CopilotStatusResponse {
 /// Rewrite summary and recommendations when LLM is configured and mode allows paraphrase.
 #[cfg(feature = "web")]
 pub async fn maybe_enhance_response(mut resp: CopilotResponse) -> CopilotResponse {
-    if !matches!(ai_mode(), AiMode::Paraphrase | AiMode::Routing | AiMode::Agent) {
+    if !matches!(
+        ai_mode(),
+        AiMode::Paraphrase | AiMode::Routing | AiMode::Agent
+    ) {
         return resp;
     }
     let Some(cfg) = llm_config() else {

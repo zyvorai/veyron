@@ -91,7 +91,10 @@ resources:\n\
     files.insert("base/kustomization.yaml".into(), kustomization);
     files.insert("base/namespace.yaml".into(), namespace_yaml);
     files.insert("base/virtualmachine.yaml".into(), vm_yaml);
-    files.insert("overlays/prod/kustomization.yaml".into(), overlay_kustomization);
+    files.insert(
+        "overlays/prod/kustomization.yaml".into(),
+        overlay_kustomization,
+    );
     files.insert("README.md".into(), runbook.clone());
 
     GitOpsExportResponse {
@@ -136,10 +139,11 @@ mod tests {
         assert_eq!(resp.app_name, "my-app");
         assert_eq!(resp.namespace, "prod-ns");
         assert!(resp.files.contains_key("base/virtualmachine.yaml"));
-        assert!(resp
-            .files
-            .get("base/kustomization.yaml")
-            .unwrap()
-            .contains("namespace: prod-ns"));
+        assert!(
+            resp.files
+                .get("base/kustomization.yaml")
+                .unwrap()
+                .contains("namespace: prod-ns")
+        );
     }
 }

@@ -61,16 +61,20 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
                 .push(format!("Interface {} — {kind}{port_note}", iface.name));
         }
     } else {
-        r.evidence.push("No interfaces declared on domain.devices".into());
+        r.evidence
+            .push("No interfaces declared on domain.devices".into());
     }
 
     if let Some(nets) = networks {
         for net in nets {
             if let Some(multus) = &net.multus {
-                r.evidence
-                    .push(format!("Network {} — Multus {}", net.name, multus.network_name));
+                r.evidence.push(format!(
+                    "Network {} — Multus {}",
+                    net.name, multus.network_name
+                ));
             } else if net.pod.is_some() {
-                r.evidence.push(format!("Network {} — pod (default CNI)", net.name));
+                r.evidence
+                    .push(format!("Network {} — pod (default CNI)", net.name));
             }
         }
     }
@@ -88,15 +92,24 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
 
     match client.get_vm_expose_service(namespace, name).await {
         Ok(Some(svc)) => {
-            let st = svc.spec.as_ref().and_then(|s| s.type_.as_deref()).unwrap_or("ClusterIP");
-            r.evidence.push(format!("SSH expose Service `{}` — {st}", svc.metadata.name.as_deref().unwrap_or("ssh")));
+            let st = svc
+                .spec
+                .as_ref()
+                .and_then(|s| s.type_.as_deref())
+                .unwrap_or("ClusterIP");
+            r.evidence.push(format!(
+                "SSH expose Service `{}` — {st}",
+                svc.metadata.name.as_deref().unwrap_or("ssh")
+            ));
             if st == "NodePort" {
                 r.recommendations.push(
                     "SSH NodePort exposes the guest — restrict with firewall or use VPN.".into(),
                 );
             }
         }
-        Ok(None) => r.evidence.push("No SSH expose Service (kubevirt.io/domain)".into()),
+        Ok(None) => r
+            .evidence
+            .push("No SSH expose Service (kubevirt.io/domain)".into()),
         Err(e) => r.evidence.push(format!("SSH expose lookup: {e}")),
     }
 
@@ -106,18 +119,16 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
             r.evidence.push(format!(
                 "RDP expose Service `{}`{}",
                 vmrogue_rdp_service_name(name),
-                np.map(|p| format!(" — NodePort {p}"))
-                    .unwrap_or_default()
+                np.map(|p| format!(" — NodePort {p}")).unwrap_or_default()
             ));
-            r.recommendations.push(
-                "Windows RDP via NodePort should be gateway-only in production.".into(),
-            );
+            r.recommendations
+                .push("Windows RDP via NodePort should be gateway-only in production.".into());
         }
         Ok(None) => r.evidence.push("No RDP NodePort Service".into()),
         Err(e) => r.evidence.push(format!("RDP expose lookup: {e}")),
     }
 
-  if let Ok(ip) = client.get_vm_ip(namespace, name).await {
+    if let Ok(ip) = client.get_vm_ip(namespace, name).await {
         if let Some(ip) = ip {
             r.evidence.push(format!("Guest IP (VMI): {ip}"));
         }
@@ -142,10 +153,7 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
     r.summary = if r.evidence.is_empty() {
         "No network details found.".into()
     } else {
-        format!(
-            "Mapped {} network signal(s) for {name}.",
-            r.evidence.len()
-        )
+        format!("Mapped {} network signal(s) for {name}.", r.evidence.len())
     };
 
     if policies == 0 {

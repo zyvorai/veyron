@@ -60,16 +60,14 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
         return CopilotIntent::QuotaAdvisor;
     }
 
-    if lower.contains("cve")
-        || lower.contains("trivy")
-        || lower.contains("vulnerability")
-    {
+    if lower.contains("cve") || lower.contains("trivy") || lower.contains("vulnerability") {
         return CopilotIntent::SecuritySentinel;
     }
 
     if lower.contains("migration advisor")
         || lower.contains("live migration")
-        || (lower.contains("migration") && (lower.contains("running") || lower.contains("in progress")))
+        || (lower.contains("migration")
+            && (lower.contains("running") || lower.contains("in progress")))
     {
         return CopilotIntent::MigrationAdvisor;
     }
@@ -144,7 +142,8 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
 
     if lower.contains("gitops advisor")
         || lower.contains("gitops drift")
-        || (lower.contains("gitops") && (lower.contains("drift") || lower.contains("argo") || lower.contains("flux")))
+        || (lower.contains("gitops")
+            && (lower.contains("drift") || lower.contains("argo") || lower.contains("flux")))
     {
         return CopilotIntent::GitopsAdvisor;
     }

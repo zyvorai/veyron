@@ -106,7 +106,10 @@ pub async fn fleet_briefing(client: &KubeClient, scope: &str) -> Vec<CopilotBrie
         let summary = if vms.is_empty() {
             "No VMs in scope — forge one from the Template Store.".to_string()
         } else {
-            format!("{running} of {} VM(s) running — no urgent Copilot actions.", vms.len())
+            format!(
+                "{running} of {} VM(s) running — no urgent Copilot actions.",
+                vms.len()
+            )
         };
         items.push(CopilotBriefingItem {
             id: "fleet-ok".into(),

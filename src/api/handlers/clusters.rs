@@ -72,14 +72,8 @@ fn kubeconfig_file_current_context() -> String {
     let path = std::env::var("KUBECONFIG")
         .ok()
         .filter(|p| !p.is_empty())
-        .or_else(|| {
-            crate::kube::KUBECONFIG_PATH
-                .get()
-                .map(|s| s.to_string())
-        })
-        .or_else(|| {
-            dirs::home_dir().map(|h| h.join(".kube/config").to_string_lossy().into_owned())
-        })
+        .or_else(|| crate::kube::KUBECONFIG_PATH.get().map(|s| s.to_string()))
+        .or_else(|| dirs::home_dir().map(|h| h.join(".kube/config").to_string_lossy().into_owned()))
         .unwrap_or_default();
     if path.is_empty() {
         return String::new();
@@ -127,10 +121,7 @@ async fn persist_kube_context(
 
     let mut labels = std::collections::BTreeMap::new();
     labels.insert("app.kubernetes.io/name".to_string(), "vmrogue".to_string());
-    labels.insert(
-        "app.kubernetes.io/component".to_string(),
-        "api".to_string(),
-    );
+    labels.insert("app.kubernetes.io/component".to_string(), "api".to_string());
     labels.insert(ACTIVE_CONTEXT_LABEL.to_string(), "true".to_string());
 
     let mut data = std::collections::BTreeMap::new();
@@ -177,10 +168,7 @@ fn health_label(h: &crate::multi_cluster::ClusterHealth) -> String {
 }
 
 #[cfg(feature = "web")]
-fn summary_from_cluster(
-    c: &crate::multi_cluster::ClusterInfo,
-    active_ctx: &str,
-) -> ClusterSummary {
+fn summary_from_cluster(c: &crate::multi_cluster::ClusterInfo, active_ctx: &str) -> ClusterSummary {
     ClusterSummary {
         name: c.name.clone(),
         context: c.context.clone(),
@@ -282,14 +270,12 @@ async fn activate_cluster(
 
     {
         let mut s = state.write().await;
-        s.apply_kube_context(Some(ctx.clone()))
-            .await
-            .map_err(|e| {
-                (
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(serde_json::json!({ "error": e.to_string() })),
-                )
-            })?;
+        s.apply_kube_context(Some(ctx.clone())).await.map_err(|e| {
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            )
+        })?;
         if let Err(e) = persist_kube_context(s.client(), &ns, &name, &ctx).await {
             log::warn!("persist active kube context: {e}");
         }

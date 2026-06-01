@@ -24,7 +24,9 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn catalog_status_handler(State(state): State<SharedState>) -> Json<crate::catalog::CatalogStatus> {
+async fn catalog_status_handler(
+    State(state): State<SharedState>,
+) -> Json<crate::catalog::CatalogStatus> {
     let s = state.read().await;
     let client = s.client().client();
     drop(s);

@@ -10,7 +10,11 @@ use crate::kube::windows_rdp::vmrogue_rdp_service_name;
 use crate::operator_crds::VMRogueVM;
 
 /// Per-VM security posture: exposure, policies, and operator drift.
-pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
+pub async fn security_sentinel(
+    client: &KubeClient,
+    namespace: &str,
+    name: &str,
+) -> CopilotResponse {
     let mut r = CopilotResponse::new(
         "VMRogue Security Sentinel",
         "security_sentinel",
@@ -38,11 +42,11 @@ pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str)
             r.evidence.push(format!(
                 "RDP exposed via NodePort Service `{}`{}",
                 vmrogue_rdp_service_name(name),
-                np.map(|p| format!(" on port {p}"))
-                    .unwrap_or_default()
+                np.map(|p| format!(" on port {p}")).unwrap_or_default()
             ));
             r.recommendations.push(
-                "Restrict RDP NodePort with firewall, VPN, or Gateway API — avoid public exposure.".into(),
+                "Restrict RDP NodePort with firewall, VPN, or Gateway API — avoid public exposure."
+                    .into(),
             );
         }
         Ok(None) => r.evidence.push("No RDP NodePort Service".into()),
@@ -58,8 +62,9 @@ pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str)
                 .unwrap_or("ClusterIP");
             if st == "NodePort" || st == "LoadBalancer" {
                 findings += 1;
-                r.evidence
-                    .push(format!("SSH expose Service is {st} — guest reachable from outside cluster"));
+                r.evidence.push(format!(
+                    "SSH expose Service is {st} — guest reachable from outside cluster"
+                ));
             } else {
                 r.evidence.push(format!("SSH expose Service — {st}"));
             }
@@ -82,10 +87,13 @@ pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str)
                 r.recommendations
                     .push("Reconcile VMRogueVM or update template/profile to clear drift.".into());
             } else {
-                r.evidence.push("VMRogueVM operator: in sync (no drift)".into());
+                r.evidence
+                    .push("VMRogueVM operator: in sync (no drift)".into());
             }
         }
-        Err(_) => r.evidence.push("Not operator-managed (no VMRogueVM CR)".into()),
+        Err(_) => r
+            .evidence
+            .push("Not operator-managed (no VMRogueVM CR)".into()),
     }
 
     let allow_inet = client
@@ -103,7 +111,8 @@ pub async fn security_sentinel(client: &KubeClient, namespace: &str, name: &str)
     if allow_inet {
         r.evidence.push("Internet egress: allowed (default)".into());
     } else {
-        r.evidence.push("Internet egress: restricted by label".into());
+        r.evidence
+            .push("Internet egress: restricted by label".into());
     }
 
     append_trivy_evidence(&mut r, name, &mut findings).await;
@@ -168,7 +177,9 @@ async fn append_trivy_evidence(r: &mut CopilotResponse, vm_name: &str, findings:
                     .push(format!("Trivy: no critical/high CVEs on {vm_name}"));
             }
         }
-        None => r.evidence.push(format!("Trivy scan unavailable for {vm_name}")),
+        None => r
+            .evidence
+            .push(format!("Trivy scan unavailable for {vm_name}")),
     }
 }
 
@@ -267,9 +278,8 @@ pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> Copilo
                 .push("Trivy: no critical/high CVEs in sampled VMs".into());
         }
     } else {
-        r.evidence.push(
-            "Trivy not configured — set VMROGUE_TRIVY_URL for CVE merge".into(),
-        );
+        r.evidence
+            .push("Trivy not configured — set VMROGUE_TRIVY_URL for CVE merge".into());
     }
 
     let issues = exposed_rdp.len() + drift.len();

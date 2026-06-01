@@ -1598,12 +1598,8 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                     handlers::copilot::handle_ai_backup(&cli.namespace).await?;
                 }
                 Some(AiCommands::Cost { name, output }) => {
-                    handlers::copilot::handle_ai_cost(
-                        &cli.namespace,
-                        name.as_deref(),
-                        &output,
-                    )
-                    .await?;
+                    handlers::copilot::handle_ai_cost(&cli.namespace, name.as_deref(), &output)
+                        .await?;
                 }
                 Some(AiCommands::Network { name }) => {
                     handlers::copilot::handle_ai_network(&name, &cli.namespace).await?;
@@ -1618,12 +1614,8 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                     handlers::copilot::handle_ai_storage(&cli.namespace, "text").await?;
                 }
                 Some(AiCommands::Security { name }) => {
-                    handlers::copilot::handle_ai_security(
-                        &cli.namespace,
-                        name.as_deref(),
-                        "text",
-                    )
-                    .await?;
+                    handlers::copilot::handle_ai_security(&cli.namespace, name.as_deref(), "text")
+                        .await?;
                 }
                 Some(AiCommands::Performance { output }) => {
                     handlers::copilot::handle_ai_performance(&cli.namespace, &output).await?;
