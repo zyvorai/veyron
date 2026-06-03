@@ -94,6 +94,23 @@ pub fn rdp_node_port_from_service(svc: &Service) -> Option<i32> {
         .find_map(|p| p.node_port)
 }
 
+/// All NodePorts allocated on Services in the cluster (any app).
+pub async fn list_cluster_node_ports(client: Client) -> Result<HashSet<i32>> {
+    let svc_api: Api<Service> = Api::all(client);
+    let list = svc_api.list(&ListParams::default()).await?;
+    let mut ports = HashSet::new();
+    for svc in list.items {
+        if let Some(spec_ports) = svc.spec.as_ref().and_then(|s| s.ports.as_ref()) {
+            for p in spec_ports {
+                if let Some(np) = p.node_port {
+                    ports.insert(np);
+                }
+            }
+        }
+    }
+    Ok(ports)
+}
+
 pub async fn list_rdp_nodeport_entries(client: Client) -> Result<Vec<RdpNodePortInUse>> {
     let svc_api: Api<Service> = Api::all(client);
     let list = svc_api
@@ -194,7 +211,7 @@ async fn validate_node_ports_available(
     if own.contains(&node_port) {
         return Ok(());
     }
-    let entries = list_rdp_nodeport_entries(client).await?;
+    let entries = list_rdp_nodeport_entries(client.clone()).await?;
     if let Some(conflict) = entries
         .iter()
         .find(|e| e.node_port == node_port && !(e.namespace == namespace && e.vm_name == vm_name))
@@ -205,6 +222,13 @@ async fn validate_node_ports_available(
             conflict.namespace,
             conflict.vm_name,
             conflict.service_name.as_deref().unwrap_or("?")
+        ));
+    }
+    let cluster_ports = list_cluster_node_ports(client).await?;
+    if cluster_ports.contains(&node_port) {
+        return Err(anyhow!(
+            "NodePort {} is already allocated on this cluster. Choose a different port (e.g. 30101–30199).",
+            node_port
         ));
     }
     Ok(())
@@ -328,7 +352,10 @@ pub async fn assemble_rdp_access(
     let used_entries = list_rdp_nodeport_entries(client.clone())
         .await
         .unwrap_or_default();
-    let used_set: HashSet<i32> = used_entries.iter().map(|e| e.node_port).collect();
+    let mut used_set: HashSet<i32> = used_entries.iter().map(|e| e.node_port).collect();
+    if let Ok(cluster_ports) = list_cluster_node_ports(client.clone()).await {
+        used_set.extend(cluster_ports);
+    }
     let used_node_ports: Vec<RdpNodePortInUse> = used_entries
         .into_iter()
         .filter(|e| !(e.namespace == namespace && e.vm_name == vm_name))

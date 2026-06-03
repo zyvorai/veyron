@@ -1051,30 +1051,16 @@ impl KubeClient {
         Ok(created)
     }
 
-    /// Pause a running VM instance via virtctl
+    /// Pause a running VM instance via KubeVirt VMI pause subresource.
     pub async fn pause_vm(&self, namespace: &str, name: &str) -> Result<()> {
-        let output = tokio::process::Command::new("virtctl")
-            .args(["pause", "vmi", name, "-n", namespace])
-            .output()
-            .await?;
-        if !output.status.success() {
-            let err = String::from_utf8_lossy(&output.stderr);
-            return Err(anyhow::anyhow!("Failed to pause VM: {}", err));
-        }
-        Ok(())
+        let vmi = self.resolve_vmi_name_for_console(namespace, name).await?;
+        kubevirt_subresources::vmi_pause(self.client.clone(), namespace, &vmi).await
     }
 
-    /// Unpause a paused VM instance via virtctl
+    /// Unpause a paused VM instance via KubeVirt VMI unpause subresource.
     pub async fn unpause_vm(&self, namespace: &str, name: &str) -> Result<()> {
-        let output = tokio::process::Command::new("virtctl")
-            .args(["unpause", "vmi", name, "-n", namespace])
-            .output()
-            .await?;
-        if !output.status.success() {
-            let err = String::from_utf8_lossy(&output.stderr);
-            return Err(anyhow::anyhow!("Failed to unpause VM: {}", err));
-        }
-        Ok(())
+        let vmi = self.resolve_vmi_name_for_console(namespace, name).await?;
+        kubevirt_subresources::vmi_unpause(self.client.clone(), namespace, &vmi).await
     }
 
     /// Trigger live migration of a VM to another node.

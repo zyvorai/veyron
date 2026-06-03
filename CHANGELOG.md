@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`scripts/test-vm-daily-ops-remote.sh`** — curl-based HTTPS E2E for daily VM API workflows (create, lifecycle, SSH/RDP expose, snapshots); optional `VMROGUE_E2E_RESTORE=1`.
 - **SOC (Security Operations)** — `src/soc/` with normalized `SecurityEvent` stream, ConfigMap-backed store, built-in detections (RDP/SSH expose, drift, privileged VM, scheduling burst, namespace without NetworkPolicy), SIEM push (Elastic ECS, Splunk HEC, Sentinel DCE, QRadar LEEF), Elastic/Splunk threat hunts, attack-surface scan, SOAR webhooks; API `/api/v1/soc/*` and dashboard **Security → SOC** (`docs/SOC.md`).
 - **Ask Zeus OpenRouter** — `src/copilot/llm.rs` reads `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` from env; `scripts/configure-zeus-openrouter.sh` wires remote `vmrogue-integrations` from `~/.zshrc`.
 - **Windows RDP NodePort expose** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/rdp-expose` with per-VM NodePort (`30100`–`30199`, valid range `30000`–`32767`), Service selector `kubevirt.io/vm`, and Windows spec/userdata bootstrap (`src/kube/windows_rdp.rs`, `src/kube/vm_rdp.rs`).
 - **Cilium virt-launcher clusterwide egress** — `deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml` applied by deploy scripts when CCNP CRD exists (guest internet on default-deny clusters).
 - **Per-VM internet egress API** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/network/internet` (`src/kube/vm_internet.rs`).
+
+### Changed
+
+- **Pause/unpause API** — uses KubeVirt `virtualmachineinstances/pause` and `unpause` subresources instead of in-pod `virtctl` (`src/kube/kubevirt_subresources.rs`).
+- **RDP NodePort validation** — suggested ports and conflict checks scan all cluster Service NodePorts, not only VMRogue RDP services.
 
 ### Documentation
 
