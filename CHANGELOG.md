@@ -9,12 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **SOC (Security Operations)** — `src/soc/` with normalized `SecurityEvent` stream, ConfigMap-backed store, built-in detections (RDP/SSH expose, drift, privileged VM, scheduling burst, namespace without NetworkPolicy), SIEM push (Elastic ECS, Splunk HEC, Sentinel DCE, QRadar LEEF), Elastic/Splunk threat hunts, attack-surface scan, SOAR webhooks; API `/api/v1/soc/*` and dashboard **Security → SOC** (`docs/SOC.md`).
+- **Ask Zeus OpenRouter** — `src/copilot/llm.rs` reads `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` from env; `scripts/configure-zeus-openrouter.sh` wires remote `vmrogue-integrations` from `~/.zshrc`.
 - **Windows RDP NodePort expose** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/rdp-expose` with per-VM NodePort (`30100`–`30199`, valid range `30000`–`32767`), Service selector `kubevirt.io/vm`, and Windows spec/userdata bootstrap (`src/kube/windows_rdp.rs`, `src/kube/vm_rdp.rs`).
 - **Cilium virt-launcher clusterwide egress** — `deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml` applied by deploy scripts when CCNP CRD exists (guest internet on default-deny clusters).
 - **Per-VM internet egress API** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/network/internet` (`src/kube/vm_internet.rs`).
 
 ### Documentation
 
+- Added `docs/SOC.md`; updated `docs/FEATURE_MATRIX.md`, `docs/OPTIONAL_INTEGRATIONS.md`, `docs/README.md`, `CLAUDE.md`, and `deploy/k8s/optional-integrations.env.example.yaml` for SOC/SIEM env vars.
 - Refreshed `docs/README.md` as the canonical index (branch note: `main` vs `main-go`, monitoring chart, CONTRIBUTING/SECURITY links).
 - Cross-linked guides (TUI, snapshots, disk, network, Windows, feature matrix) and normalized deploy examples to `HOST USER` placeholders in README, QUICK_REFERENCE, and `CLAUDE.md`.
 - CONTRIBUTING clone path uses `VMRogue` directory name.

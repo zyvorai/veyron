@@ -33,6 +33,7 @@ Status legend:
 | Workloads | `page-workloads` | `/api/v1/workloads` | `handlers/workloads.rs` | Working | CPU/memory request aggregation now populated |
 | Alerts | `page-alerts` | `/api/v1/alerts` | `handlers/alerts.rs` | Working | Namespace-aware |
 | Audit | `page-audit` | `/api/v1/audit/trail`, `/api/v1/audit/stats` | `handlers/audit.rs` | Working | Namespace-aware |
+| SOC | `page-soc` | `/api/v1/soc/events`, `/soc/detections`, `/soc/export/status`, `/soc/hunts/run`, `/soc/attack-surface` | `handlers/soc.rs`, `src/soc/*` | Working | Detections, SIEM push, hunts, ASM; see [SOC.md](SOC.md) |
 | Notifications | `page-notifications` | `/api/v1/notifications` | `handlers/notifications.rs` | Working | Namespace-aware |
 | Helm | `page-helm` | `/api/v1/helm/releases` | `handlers/helm.rs` | Working | Client-side namespace filtering |
 | Operators | `page-operators` | `/api/v1/operators` | `handlers/operators.rs` | Working | Client-side namespace filtering |
@@ -92,13 +93,14 @@ These route groups now have first-class dashboard pages:
 | Multi-cluster | `/api/v1/clusters`, `POST .../activate` | Surfaced (navbar context bar) |
 | Golden images | `/api/v1/images/catalog`, `/api/v1/images/import` | Surfaced (classic **Images** page + operator Platform) |
 | Compliance | `/api/v1/compliance/status`, `/reports` | Surfaced (classic **Compliance**) |
+| SOC | `/api/v1/soc/*` | Surfaced (classic **SOC** page) |
 | DR | `/api/v1/dr/export`, `/failover`, `/apply` | Surfaced (classic **Disaster Recovery**) |
 | Heatmap | `/api/v1/heatmap/resources` | Surfaced (classic **Heatmap**) |
 | Custom dashboards | `/api/v1/dashboards` | Surfaced (classic **Custom Dashboards**) |
 | Network policies | `/api/v1/network-policies` | Surfaced (classic **Network Policies**) |
 | Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
 | VM drift | `/api/v1/vms` (list fields), `/api/v1/vms/:ns/:name/drift` | Surfaced (VM list badges, filter, detail panel) |
-| CloudOS experience | `/api/v1/experience/*` | Datacenter Home, Spotlight, Fix-it, App Store, fleet health, locations, session |
+| CloudOS experience | `/api/v1/experience/*` | Datacenter Home, Spotlight, Fix-it, App Store, fleet health, locations, session, **desktop** (dock shell) |
 
 ## Known Partial Areas
 
@@ -134,6 +136,8 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | CloudOS Fix-it errors | Working | VM actions → `/experience/errors/translate` modal |
 | Template App Store | Working | `page-app-store` — `/experience/templates` grid + Forge VM |
 | CloudOS Finder sidebar | Working | Favorites / Operations / Network (collapsible); Browse pin-to-Finder |
+| CloudOS macOS dock shell | Working | Dock bounce, Notification Center (menubar), VM context menu, Launchpad keyboard nav, `GET /experience/desktop` (+ shortcuts) |
+| VNC / Serial / RDP (Screen Sharing) | Working | VNC/Serial window chrome; RDP macOS sheet + Connect protocol; Spotlight `open_rdp` |
 | VM guest health scores | Working | `/experience/fleet/health` pills on cards-first VM grid |
 | CloudOS session / RBAC UI | Working | `/experience/session` hides mutating controls for readonly |
 | CloudOS Locations | Working | Location in top bar; `/experience/locations` |

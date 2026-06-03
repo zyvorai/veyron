@@ -147,12 +147,20 @@ Natural-language routing via `POST /experience/copilot/ask` recognizes the same 
 
 ## LLM upgrade (agent layer)
 
-When `VMROGUE_AI_URL` + `VMROGUE_AI_API_KEY` are set:
+When an API key is set (`VMROGUE_AI_API_KEY`, `OPENROUTER_API_KEY`, or `ANTHROPIC_AUTH_TOKEN` with `sk-or-v1-…`):
 
 | Env | Purpose |
 |-----|---------|
+| `VMROGUE_AI_URL` | OpenAI-compatible base (OpenRouter default `https://openrouter.ai/api/v1`) |
+| `VMROGUE_AI_API_KEY` | Bearer token |
 | `VMROGUE_AI_MODE` | `off` / `paraphrase` (default) / `routing` / `agent` |
-| `VMROGUE_AI_MODEL` | OpenAI-compatible model (default `gpt-4o-mini`) |
+| `VMROGUE_AI_MODEL` | Model id (`openrouter/free` default for OpenRouter keys) |
+| `VMROGUE_AI_APP_TITLE` | Optional OpenRouter `X-Title` (e.g. **ZeusOS**) |
+
+**OpenRouter from `~/.zshrc`:** `./scripts/configure-zeus-openrouter.sh --print-env` or `./scripts/configure-zeus-openrouter.sh HOST USER` to patch `vmrogue-integrations` and restart the API.
+
+| Env | Purpose |
+|-----|---------|
 | `VMROGUE_AI_MAX_TOOL_ROUNDS` | Agent tool invocations per message (default `2`) |
 | `VMROGUE_AI_TIMEOUT_SECS` | LLM HTTP timeout (default `30`) |
 | `VMROGUE_AI_RATE_LIMIT_PER_MIN` | Separate rate bucket for `POST /copilot/chat` and `/copilot/ask` when LLM active (default `20`) |

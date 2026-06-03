@@ -617,6 +617,9 @@ mod tests {
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {
+                        architecture: None,
+                        dns_policy: None,
+                        dns_config: None,
                         domain: DomainSpec {
                             resources: ResourceRequirements {
                                 requests: None,
@@ -678,6 +681,9 @@ mod tests {
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {
+                        architecture: None,
+                        dns_policy: None,
+                        dns_config: None,
                         domain: DomainSpec {
                             resources: ResourceRequirements {
                                 requests: Some(requests),

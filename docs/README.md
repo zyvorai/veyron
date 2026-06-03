@@ -40,6 +40,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 - [`ADVANCED_FEATURES.md`](ADVANCED_FEATURES.md): advanced workflows and capabilities
 - [`INNOVATIVE_FEATURES.md`](INNOVATIVE_FEATURES.md): differentiating feature set
 - [`FEATURE_MATRIX.md`](FEATURE_MATRIX.md): capability map and implementation status
+- [`SOC.md`](SOC.md): security operations — detections, event stream, SIEM export (Elastic/Splunk/Sentinel/QRadar), threat hunts, attack surface
 
 ## Windows on KubeVirt
 

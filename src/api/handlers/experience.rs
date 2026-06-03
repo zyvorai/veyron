@@ -128,6 +128,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/experience/fleet/health", get(fleet_health))
         .route("/experience/templates", get(template_store))
         .route("/experience/locations", get(experience_locations))
+        .route("/experience/desktop", get(experience_desktop))
         .with_state(state)
 }
 
@@ -254,7 +255,229 @@ pub struct LocationsResponse {
     pub locations: Vec<LocationItem>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct DesktopTierItem {
+    pub id: String,
+    pub label: String,
+    pub hint: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DockCatalogItem {
+    pub page: String,
+    pub label: String,
+    pub icon: String,
+    pub min_tier: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct DockDefaultsByTier {
+    pub normal: Vec<String>,
+    pub power: Vec<String>,
+    pub advanced: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WallpaperOption {
+    pub id: String,
+    pub label: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct KeyboardShortcutItem {
+    pub keys: String,
+    pub label: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ExperienceDesktopResponse {
+    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub product: String,
+    pub tiers: Vec<DesktopTierItem>,
+    pub dock_defaults: DockDefaultsByTier,
+    pub dock_preview_pages: Vec<String>,
+    pub dock_catalog: Vec<DockCatalogItem>,
+    pub wallpaper_options: Vec<WallpaperOption>,
+    pub keyboard_shortcuts: Vec<KeyboardShortcutItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
+}
+
+fn keyboard_shortcuts_catalog() -> Vec<KeyboardShortcutItem> {
+    vec![
+        KeyboardShortcutItem {
+            keys: "⌘K".into(),
+            label: "Spotlight".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "⌘J".into(),
+            label: "Ask Zeus".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "F3".into(),
+            label: "Mission Control".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "⌃↑".into(),
+            label: "Mission Control".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "⌘\\".into(),
+            label: "Toggle Finder".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "Esc".into(),
+            label: "Close overlay / return from console".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "⌘W".into(),
+            label: "Close Screen Sharing / RDP sheet".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "⌘,".into(),
+            label: "ZeusOS Preferences".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "/".into(),
+            label: "Launchpad — focus search".into(),
+        },
+        KeyboardShortcutItem {
+            keys: "1–4".into(),
+            label: "Mission Control — jump to zone".into(),
+        },
+    ]
+}
+
+fn wallpaper_options() -> Vec<WallpaperOption> {
+    vec![
+        WallpaperOption {
+            id: "tahoe".into(),
+            label: "Tahoe (default)".into(),
+        },
+        WallpaperOption {
+            id: "aurora".into(),
+            label: "Aurora".into(),
+        },
+        WallpaperOption {
+            id: "midnight".into(),
+            label: "Midnight".into(),
+        },
+        WallpaperOption {
+            id: "ocean".into(),
+            label: "Ocean".into(),
+        },
+    ]
+}
+
+fn desktop_tiers() -> Vec<DesktopTierItem> {
+    vec![
+        DesktopTierItem {
+            id: "normal".to_string(),
+            label: "Normal".to_string(),
+            hint: "Dock-first desktop — Finder hidden by default.".to_string(),
+        },
+        DesktopTierItem {
+            id: "power".to_string(),
+            label: "Power user".to_string(),
+            hint: "Operations toolkit — monitoring, backups, and preview hubs unlocked."
+                .to_string(),
+        },
+        DesktopTierItem {
+            id: "advanced".to_string(),
+            label: "Advanced".to_string(),
+            hint: "Full cluster surface — nodes, storage, mission control, and classic browse."
+                .to_string(),
+        },
+    ]
+}
+
+fn dock_catalog() -> Vec<DockCatalogItem> {
+    vec![
+        dock_cat("dashboard", "Home", "◫", "normal"),
+        dock_cat("vms", "Virtual Machines", "▣", "normal"),
+        dock_cat("app-store", "Template Store", "⬡", "normal"),
+        dock_cat("integrations", "Integrations", "⚙", "normal"),
+        dock_cat("monitoring", "Activity Monitor", "⬢", "power"),
+        dock_cat("backups", "Backups", "⧉", "power"),
+        dock_cat("nodes", "Nodes", "◇", "power"),
+        dock_cat("mission-control", "Mission Control", "◫", "advanced"),
+        dock_cat("storage", "Storage", "▣", "advanced"),
+        dock_cat("security", "Security", "⛨", "advanced"),
+        dock_cat("ingress", "Ingress", "⟷", "advanced"),
+        dock_cat("topology", "Topology", "⬢", "advanced"),
+        dock_cat("catalog", "Catalog", "⬡", "advanced"),
+        dock_cat("costs", "Costs", "$", "advanced"),
+        dock_cat("snapshots", "Snapshots", "⧉", "advanced"),
+        dock_cat("events", "Events", "◌", "advanced"),
+    ]
+}
+
+fn dock_cat(page: &str, label: &str, icon: &str, min_tier: &str) -> DockCatalogItem {
+    DockCatalogItem {
+        page: page.to_string(),
+        label: label.to_string(),
+        icon: icon.to_string(),
+        min_tier: min_tier.to_string(),
+    }
+}
+
+fn dock_defaults() -> DockDefaultsByTier {
+    DockDefaultsByTier {
+        normal: vec![
+            "dashboard".into(),
+            "vms".into(),
+            "app-store".into(),
+            "integrations".into(),
+        ],
+        power: vec![
+            "dashboard".into(),
+            "vms".into(),
+            "app-store".into(),
+            "monitoring".into(),
+            "backups".into(),
+            "integrations".into(),
+        ],
+        advanced: vec![
+            "dashboard".into(),
+            "vms".into(),
+            "nodes".into(),
+            "storage".into(),
+            "mission-control".into(),
+            "integrations".into(),
+        ],
+    }
+}
+
 // ── Fix-it translator (shared with tests) ───────────────────────────
+
+#[cfg(feature = "web")]
+async fn experience_desktop(
+    State(state): State<SharedState>,
+    Query(q): Query<DashboardNamespaceQuery>,
+) -> Json<ExperienceDesktopResponse> {
+    let (client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let summary = if let Ok(vms) = client.list_vms(&scope).await {
+        let n = vms.len();
+        Some(format!("ZeusOS · {n} virtual machine(s) in scope"))
+    } else {
+        None
+    };
+    Json(ExperienceDesktopResponse {
+        vmrogue_context: experience_context(),
+        product: "ZeusOS".to_string(),
+        tiers: desktop_tiers(),
+        dock_defaults: dock_defaults(),
+        dock_preview_pages: vec!["monitoring".into(), "nodes".into()],
+        dock_catalog: dock_catalog(),
+        wallpaper_options: wallpaper_options(),
+        keyboard_shortcuts: keyboard_shortcuts_catalog(),
+        summary,
+    })
+}
 
 #[cfg(feature = "web")]
 async fn experience_session(
@@ -593,7 +816,7 @@ async fn experience_home(
         },
         HomeActionCard {
             id: "copilot".to_string(),
-            title: "VMRogue Copilot".to_string(),
+            title: "Ask Zeus".to_string(),
             subtitle: "Doctor, YAML, backups, network".to_string(),
             icon: "copilot".to_string(),
             action: "open_copilot".to_string(),
@@ -693,11 +916,12 @@ async fn experience_search(
     if let Ok(vms) = client.list_vms(&scope).await {
         let wants_vnc = needle.contains("vnc") || needle.contains("console");
         let wants_serial = needle.contains("serial");
+        let wants_rdp = needle.contains("rdp") || needle.contains("remote desktop");
         let wants_migrate = needle.contains("migrate");
         let wants_ssh = needle.contains("ssh");
         let wants_connect =
             needle.contains("connect") || needle.contains("open") || needle.contains("show");
-        let verb_tokens = ["open", "connect", "show", "vnc", "serial", "migrate", "ssh"];
+        let verb_tokens = ["open", "connect", "show", "vnc", "serial", "rdp", "migrate", "ssh"];
         let name_needle = {
             let mut tokens: Vec<&str> = needle.split_whitespace().collect();
             tokens.retain(|t| !verb_tokens.contains(t));
@@ -726,13 +950,22 @@ async fn experience_search(
                 subtitle: format!("{ns} · {status}"),
                 action: format!("open_vm:{ns}:{name}"),
             });
-            if wants_vnc || (wants_connect && !wants_serial && !wants_ssh && !wants_migrate) {
+            if wants_vnc || (wants_connect && !wants_serial && !wants_ssh && !wants_migrate && !wants_rdp) {
                 results.push(SearchResultItem {
                     kind: "action".to_string(),
                     id: format!("vnc-{ns}-{name}"),
                     title: format!("Open VNC for {name}"),
                     subtitle: format!("{ns} · Connect console"),
                     action: format!("open_vnc:{ns}:{name}"),
+                });
+            }
+            if wants_rdp || (wants_connect && needle.contains("rdp")) {
+                results.push(SearchResultItem {
+                    kind: "action".to_string(),
+                    id: format!("rdp-{ns}-{name}"),
+                    title: format!("Remote Desktop (RDP) for {name}"),
+                    subtitle: format!("{ns} · NodePort expose"),
+                    action: format!("open_rdp:{ns}:{name}"),
                 });
             }
             if wants_serial {
@@ -844,7 +1077,7 @@ async fn experience_search(
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "copilot".to_string(),
-            title: "VMRogue Copilot".to_string(),
+            title: "Ask Zeus".to_string(),
             subtitle: "Ask about VM health, YAML, errors".to_string(),
             action: "open_copilot".to_string(),
         });
@@ -933,6 +1166,88 @@ async fn experience_search(
         });
     }
 
+    if needle.contains("mission") || needle == "f3" {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "mission-control".to_string(),
+            title: "Mission Control".to_string(),
+            subtitle: "Fleet overview overlay (F3)".to_string(),
+            action: "mac:mission_control".to_string(),
+        });
+    }
+    if needle.contains("launchpad") || (needle.contains("template") && needle.contains("store")) {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "launchpad".to_string(),
+            title: "Launchpad".to_string(),
+            subtitle: "Template quick launch grid".to_string(),
+            action: "mac:launchpad".to_string(),
+        });
+    }
+    if needle.contains("dock") && (needle.contains("custom") || needle.contains("edit") || needle.contains("pin")) {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "dock-editor".to_string(),
+            title: "Customize Dock".to_string(),
+            subtitle: "Reorder pinned apps".to_string(),
+            action: "mac:dock_editor".to_string(),
+        });
+    }
+    if needle.contains("control center") || (needle.contains("control") && needle.contains("center")) {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "control-center".to_string(),
+            title: "Control Center".to_string(),
+            subtitle: "Theme, wallpaper, workspace".to_string(),
+            action: "mac:control_center".to_string(),
+        });
+    }
+    if needle.contains("finder") || needle.contains("sidebar") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "finder-toggle".to_string(),
+            title: "Toggle Finder sidebar".to_string(),
+            subtitle: "Show or hide CloudOS sidebar (⌘\\)".to_string(),
+            action: "mac:finder".to_string(),
+        });
+    }
+    if needle.contains("screen sharing") || needle.contains("screen share") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "screen-sharing".to_string(),
+            title: "Screen Sharing (VNC)".to_string(),
+            subtitle: "Open Virtual Machines to connect".to_string(),
+            action: "navigate:vms".to_string(),
+        });
+    }
+    if needle == "rdp" || needle.contains("remote desktop") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "rdp-vms".to_string(),
+            title: "Remote Desktop (RDP)".to_string(),
+            subtitle: "Windows VMs — NodePort 3389".to_string(),
+            action: "navigate:vms".to_string(),
+        });
+    }
+    if needle.contains("wallpaper") || needle.contains("tahoe") || needle.contains("aurora") {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "wallpaper".to_string(),
+            title: "Change desktop wallpaper".to_string(),
+            subtitle: "Tahoe, Aurora, Midnight, Ocean".to_string(),
+            action: "mac:control_center".to_string(),
+        });
+    }
+    if needle.contains("preference") || needle.contains("settings") || needle == "system" {
+        results.push(SearchResultItem {
+            kind: "action".to_string(),
+            id: "preferences".to_string(),
+            title: "ZeusOS Preferences".to_string(),
+            subtitle: "Theme, wallpaper, desktop tier, workspace".to_string(),
+            action: "mac:preferences".to_string(),
+        });
+    }
+
     results.truncate(25);
     Json(ExperienceSearchResponse { query, results })
 }
@@ -959,5 +1274,18 @@ mod tests {
         let t =
             translate_error_message("NetworkAttachmentDefinition \"prod-vlan\" not found", None);
         assert!(t.explanation.contains("network"));
+    }
+
+    #[test]
+    fn desktop_catalog_includes_core_pages() {
+        let catalog = super::dock_catalog();
+        let pages: Vec<_> = catalog.iter().map(|c| c.page.as_str()).collect();
+        assert!(pages.contains(&"dashboard"));
+        assert!(pages.contains(&"vms"));
+        assert!(pages.contains(&"integrations"));
+        let defaults = super::dock_defaults();
+        assert_eq!(defaults.normal.len(), 4);
+        assert!(defaults.power.contains(&"monitoring".to_string()));
+        assert!(defaults.advanced.contains(&"mission-control".to_string()));
     }
 }

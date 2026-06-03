@@ -3,6 +3,8 @@
 //! Optional OpenAI-compatible LLM layer for Copilot.
 //!
 //! `VMROGUE_AI_URL`, `VMROGUE_AI_API_KEY`, `VMROGUE_AI_MODEL` (default `gpt-4o-mini`).
+//! OpenRouter (Zeus): also accepts `OPENROUTER_API_KEY`, `ANTHROPIC_AUTH_TOKEN` (`sk-or-v1-…`),
+//! `ANTHROPIC_BASE_URL` / `OPENROUTER_API_URL`, and `ANTHROPIC_MODEL` / `OPENROUTER_MODEL`.
 //! `VMROGUE_AI_MODE`: `off` | `paraphrase` | `routing` | `agent`.
 
 use super::intent::{self, CopilotIntent};
@@ -69,16 +71,66 @@ struct ToolFunctionOut {
     arguments: Option<String>,
 }
 
+fn env_nonempty(name: &str) -> Option<String> {
+    std::env::var(name)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+}
+
+fn is_openrouter_key(key: &str) -> bool {
+    key.starts_with("sk-or-")
+}
+
+fn normalize_openai_base_url(url: &str) -> String {
+    let mut base = url.trim().trim_end_matches('/').to_string();
+    if base.contains("openrouter.ai/api") && !base.ends_with("/v1") {
+        base.push_str("/v1");
+    }
+    base
+}
+
+fn resolve_api_key() -> Option<String> {
+    env_nonempty("VMROGUE_AI_API_KEY")
+        .or_else(|| env_nonempty("OPENROUTER_API_KEY"))
+        .or_else(|| {
+            env_nonempty("ANTHROPIC_AUTH_TOKEN").filter(|k| is_openrouter_key(k))
+        })
+}
+
+fn resolve_base_url(key: &str) -> String {
+    if let Some(url) = env_nonempty("VMROGUE_AI_URL")
+        .or_else(|| env_nonempty("OPENROUTER_API_URL"))
+        .or_else(|| env_nonempty("OPENROUTER_BASE_URL"))
+        .or_else(|| env_nonempty("ANTHROPIC_BASE_URL"))
+    {
+        return normalize_openai_base_url(&url);
+    }
+    if is_openrouter_key(key) {
+        return "https://openrouter.ai/api/v1".to_string();
+    }
+    "https://api.openai.com/v1".to_string()
+}
+
+fn resolve_model(key: &str) -> String {
+    env_nonempty("VMROGUE_AI_MODEL")
+        .or_else(|| env_nonempty("OPENROUTER_MODEL"))
+        .or_else(|| env_nonempty("ANTHROPIC_MODEL"))
+        .unwrap_or_else(|| {
+            if is_openrouter_key(key) {
+                "openrouter/free".into()
+            } else {
+                "gpt-4o-mini".into()
+            }
+        })
+}
+
 pub fn llm_config() -> Option<LlmConfig> {
-    let base = std::env::var("VMROGUE_AI_URL")
-        .ok()
-        .filter(|s| !s.trim().is_empty())?;
-    let key = std::env::var("VMROGUE_AI_API_KEY")
-        .ok()
-        .filter(|s| !s.trim().is_empty())?;
-    let model = std::env::var("VMROGUE_AI_MODEL").unwrap_or_else(|_| "gpt-4o-mini".into());
+    let key = resolve_api_key()?;
+    let base_url = resolve_base_url(&key);
+    let model = resolve_model(&key);
     Some(LlmConfig {
-        base_url: base.trim_end_matches('/').to_string(),
+        base_url,
         api_key: key,
         model,
     })
@@ -364,12 +416,18 @@ async fn post_chat_raw(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Res
     } else {
         format!("{}/chat/completions", cfg.base_url)
     };
-    let resp = client
-        .post(url)
-        .bearer_auth(&cfg.api_key)
-        .json(body)
-        .send()
-        .await?;
+    let mut req = client.post(url).bearer_auth(&cfg.api_key);
+    if let Some(referer) = env_nonempty("VMROGUE_AI_HTTP_REFERER")
+        .or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
+    {
+        req = req.header("HTTP-Referer", referer);
+    }
+    if let Some(title) =
+        env_nonempty("VMROGUE_AI_APP_TITLE").or_else(|| env_nonempty("OPENROUTER_APP_TITLE"))
+    {
+        req = req.header("X-Title", title);
+    }
+    let resp = req.json(body).send().await?;
     if !resp.status().is_success() {
         anyhow::bail!("LLM HTTP {}", resp.status());
     }
@@ -421,5 +479,23 @@ mod tests {
         if std::env::var("VMROGUE_AI_MAX_TOOL_ROUNDS").is_err() {
             assert_eq!(max_tool_rounds(), 2);
         }
+    }
+
+    #[test]
+    fn normalize_openrouter_base_appends_v1() {
+        assert_eq!(
+            normalize_openai_base_url("https://openrouter.ai/api"),
+            "https://openrouter.ai/api/v1"
+        );
+        assert_eq!(
+            normalize_openai_base_url("https://openrouter.ai/api/v1/"),
+            "https://openrouter.ai/api/v1"
+        );
+    }
+
+    #[test]
+    fn is_openrouter_key_prefix() {
+        assert!(is_openrouter_key("sk-or-v1-abc"));
+        assert!(!is_openrouter_key("sk-abc"));
     }
 }

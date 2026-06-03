@@ -44,6 +44,20 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 | `VMROGUE_AI_MODE` | `off` / `paraphrase` / `routing` / `agent` | `routing` |
 | `VMROGUE_SLACK_WEBHOOK_URL` | Slack notifications | incoming webhook |
 | `VMROGUE_PAGERDUTY_ROUTING_KEY` | PagerDuty events | routing key |
+| `VMROGUE_ELASTIC_URL` | SOC SIEM push + Elastic hunts | `https://elastic:9200` |
+| `VMROGUE_ELASTIC_API_KEY` | Elastic auth | (secret) |
+| `VMROGUE_ELASTIC_INDEX` | Elastic index (optional) | `vmrogue-security` |
+| `VMROGUE_ELASTIC_HUNT_ENABLED` | Dashboard/API KQL hunts | `true` |
+| `VMROGUE_SPLUNK_HEC_URL` | Splunk HEC push | `https://splunk:8088/services/collector/event` |
+| `VMROGUE_SPLUNK_HEC_TOKEN` | Splunk HEC token | (secret) |
+| `VMROGUE_SPLUNK_HUNT_ENABLED` | Splunk SPL hunts | `true` |
+| `VMROGUE_SENTINEL_DCE_URL` | Microsoft Sentinel DCE | Log Analytics DCE endpoint |
+| `VMROGUE_SENTINEL_TENANT_ID` | Sentinel OAuth | tenant UUID |
+| `VMROGUE_SENTINEL_CLIENT_ID` | Sentinel OAuth | app client id |
+| `VMROGUE_SENTINEL_CLIENT_SECRET` | Sentinel OAuth | (secret) |
+| `VMROGUE_QRADAR_HOST` | QRadar LEEF UDP | `qradar.example` |
+| `VMROGUE_QRADAR_PORT` | QRadar UDP port | `514` |
+| `VMROGUE_SOAR_WEBHOOK_URL` | SOAR on new SOC detections | HTTPS webhook |
 
 Responses include `vmrogue_context` describing the active data source when integrations are used or skipped.
 
@@ -66,6 +80,18 @@ Deploy [OpenCost](https://www.opencost.io/) in the cluster, expose the allocatio
 ## Security (Trivy)
 
 Deploy a Trivy operator or scanner HTTP API compatible with VMRogue's client (`src/security/scan.rs`). Set `VMROGUE_TRIVY_URL` to merge CVE rows with VM-spec posture checks.
+
+## SOC / SIEM
+
+The **SOC** dashboard page (`Security → SOC`) uses `src/soc/` for normalized events, built-in detections, optional push to Elastic (ECS), Splunk (HEC), Sentinel (DCE), and QRadar (LEEF), plus read-only hunts when `VMROGUE_*_HUNT_ENABLED=true`. See [SOC.md](SOC.md).
+
+Configure variables in [optional-integrations.env.example.yaml](../deploy/k8s/optional-integrations.env.example.yaml) and verify with:
+
+```bash
+curl -sk -H "X-API-Key: $VMROGUE_API_KEY" https://HOST:30151/api/v1/soc/export/status
+```
+
+**OpenRouter / Ask Zeus:** `./scripts/configure-zeus-openrouter.sh HOST USER` reads `~/.zshrc` and patches `vmrogue-integrations` — see [VMROGUE_AI.md](VMROGUE_AI.md).
 
 ## GitOps controllers
 

@@ -57,6 +57,12 @@ fn metadata_schema(_generator: &mut schemars::r#gen::SchemaGenerator) -> schemar
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct VirtualMachineInstanceSpec {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub architecture: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dns_policy: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dns_config: Option<JsonValue>,
     pub domain: DomainSpec,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub volumes: Option<Vec<Volume>>,
@@ -183,9 +189,21 @@ pub struct Devices {
     pub autoattach_mem_balloon: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_interface_multiqueue: Option<bool>,
-    /// KubeVirt `devices.video` entries (requires `VideoConfig` feature gate for custom types).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub video: Option<Vec<JsonValue>>,
+    /// KubeVirt `devices.video` — API may return a single object or an array of devices.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "deserialize_devices_video"
+    )]
+    pub video: Option<JsonValue>,
+}
+
+fn deserialize_devices_video<'de, D>(deserializer: D) -> Result<Option<JsonValue>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let v = Option::<JsonValue>::deserialize(deserializer)?;
+    Ok(v.filter(|j| !j.is_null()))
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
@@ -869,6 +887,47 @@ mod tests {
             deserialized.interfaces[0].ip_address,
             status.interfaces[0].ip_address
         );
+    }
+
+    /// Regression: KubeVirt returns `devices.video` as a single object, not an array.
+    #[test]
+    fn test_vm_deserialize_video_object_not_array() {
+        let json = serde_json::json!({
+            "apiVersion": "kubevirt.io/v1",
+            "kind": "VirtualMachine",
+            "metadata": { "name": "zeus-ubuntu-desktop-01", "namespace": "ragnarok-vms" },
+            "spec": {
+                "runStrategy": "Always",
+                "template": {
+                    "spec": {
+                        "architecture": "amd64",
+                        "domain": {
+                            "devices": {
+                                "disks": [{ "disk": { "bus": "virtio" }, "name": "rootdisk" }],
+                                "interfaces": [{ "masquerade": {}, "model": "virtio", "name": "default" }],
+                                "rng": {},
+                                "video": { "type": "virtio" }
+                            },
+                            "resources": { "requests": { "memory": "4Gi" } }
+                        },
+                        "networks": [{ "name": "default", "pod": {} }],
+                        "volumes": [{ "containerDisk": { "image": "quay.io/containerdisks/ubuntu:24.04" }, "name": "rootdisk" }]
+                    }
+                }
+            },
+            "status": { "printableStatus": "Running", "ready": true }
+        });
+        let vm: VirtualMachine = serde_json::from_value(json).unwrap();
+        let video = vm
+            .spec
+            .template
+            .spec
+            .domain
+            .devices
+            .as_ref()
+            .and_then(|d| d.video.as_ref())
+            .expect("video");
+        assert_eq!(video.get("type").and_then(|v| v.as_str()), Some("virtio"));
     }
 
     #[test]

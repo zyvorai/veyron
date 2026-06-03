@@ -332,13 +332,15 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
                 })
                 .collect();
         }
-        if let Some(ref videos) = dev.video {
-            if let Some(first) = videos.first() {
-                if let Some(t) = first.get("type").and_then(|v| v.as_str()) {
-                    config.kubevirt_video_type = Some(t.to_string());
-                } else if let Some(m) = first.get("model").and_then(|v| v.as_str()) {
-                    config.kubevirt_video_type = Some(m.to_string());
-                }
+        if let Some(ref video) = dev.video {
+            let first = video
+                .as_array()
+                .and_then(|a| a.first())
+                .unwrap_or(video);
+            if let Some(t) = first.get("type").and_then(|v| v.as_str()) {
+                config.kubevirt_video_type = Some(t.to_string());
+            } else if let Some(m) = first.get("model").and_then(|v| v.as_str()) {
+                config.kubevirt_video_type = Some(m.to_string());
             }
         }
     }
@@ -2858,6 +2860,9 @@ mod tests {
                 template: VirtualMachineInstanceTemplateSpec {
                     metadata: None,
                     spec: VirtualMachineInstanceSpec {
+                        architecture: None,
+                        dns_policy: None,
+                        dns_config: None,
                         domain: DomainSpec {
                             resources: ResourceRequirements {
                                 requests: Some({

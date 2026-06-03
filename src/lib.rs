@@ -71,6 +71,7 @@ pub mod observability;
 pub mod profiles;
 pub mod secrets;
 pub mod security;
+pub mod soc;
 pub mod servicemesh;
 pub mod snapshots;
 
