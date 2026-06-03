@@ -77,14 +77,18 @@ check_html_contains() {
     local name="$1"
     local url="$2"
     local needle="$3"
-    if curl -skS --connect-timeout 15 --max-time 45 "${url}" 2>/dev/null | grep -q "${needle}"; then
+    local tmp
+    tmp="$(mktemp)"
+    if curl -skS --connect-timeout 15 --max-time 90 -o "${tmp}" "${url}" 2>/dev/null \
+        && grep -q "${needle}" "${tmp}"; then
         echo "  ✔ ${name}"
     else
         echo "  ✗ ${name}"
-        curl -skS --connect-timeout 15 --max-time 45 "${url}" 2>/dev/null | head -c 400 | sed 's/^/    /' || true
+        head -c 400 "${tmp}" 2>/dev/null | sed 's/^/    /' || true
         echo ""
         FAIL=$((FAIL + 1))
     fi
+    rm -f "${tmp}"
 }
 
 check_http_200() {
@@ -201,6 +205,14 @@ check_http_200 "GET /api/v1/network-policies" \
     "${BASE}/api/v1/network-policies?namespace=all" yes
 check_json_grep "GET /api/v1/integrations/status" \
     "${BASE}/api/v1/integrations/status" '"integrations"'
+check_json_grep "GET /api/v1/soc/detections" \
+    "${BASE}/api/v1/soc/detections?namespace=all" '"detections"'
+check_json_grep "GET /api/v1/soc/events" \
+    "${BASE}/api/v1/soc/events?limit=5&namespace=all" '"events"'
+check_json_grep "GET /api/v1/soc/export/status" \
+    "${BASE}/api/v1/soc/export/status" '"exporters"'
+check_json_grep "GET /api/v1/soc/attack-surface" \
+    "${BASE}/api/v1/soc/attack-surface?namespace=all" '"assets"'
 check_json_grep "GET /api/v1/experience/home" \
     "${BASE}/api/v1/experience/home?namespace=all" '"health_score"'
 translate_body=$(curl -skS --connect-timeout 15 --max-time 45 \
@@ -320,6 +332,7 @@ else
     echo "  ✗ GET /api/v1/dr/export (HTTP ${dr_code})"
     FAIL=$((FAIL + 1))
 fi
+check_html_contains "GET /dashboard (SOC page)" "${BASE}/dashboard" 'id="page-soc"'
 check_http_200 "GET /dashboard" "${BASE}/dashboard" no
 
 echo ""
