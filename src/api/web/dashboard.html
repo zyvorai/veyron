@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260602u">
+<meta name="vmrogue-dashboard-rev" content="20260602v">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260602u';
+  var DASH_REV = '20260602v';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -63,23 +63,26 @@
   --glow-molten:0 0 20px rgba(199,208,219,.16),0 0 48px rgba(110,122,138,.08);
   --glow-spark:0 0 16px rgba(214,221,230,.15),0 0 40px rgba(214,221,230,.06);
   --glow-success:0 0 12px rgba(34,197,94,.2);
-  --font-sans:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --font-display:'Sora','Space Grotesk',sans-serif;
+  --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
+  --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --space-page:14px;
+  --space-card:12px;
+  --space-row:10px;
   /* Liquid Glass design tokens */
-  --glass-bg:rgba(17,21,28,.72);
-  --glass-bg-elevated:rgba(22,27,36,.85);
-  --glass-border:rgba(148,163,184,.18);
-  --glass-blur:blur(20px);
-  --glass-radius:1.25rem;
+  --glass-bg:rgba(20,22,28,.68);
+  --glass-bg-elevated:rgba(28,31,40,.82);
+  --glass-border:rgba(255,255,255,.08);
+  --glass-blur:blur(24px) saturate(1.4);
+  --glass-radius:1rem;
   --primary-blue:#3b82f6;
   --primary-purple:#8b5cf6;
   --glass-shadow:0 8px 32px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.06);
   --glass-shadow-hero:0 12px 48px rgba(0,0,0,.35),0 0 0 1px rgba(59,130,246,.12),inset 0 1px 0 rgba(255,255,255,.08);
   --radius-liquid:22px;
   --radius-liquid-lg:28px;
-  --blur-liquid:20px;
-  --glass-border-strong:rgba(148,163,184,.28);
+  --blur-liquid:24px;
+  --glass-border-strong:rgba(255,255,255,.15);
 }
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -415,33 +418,6 @@ body:not([data-page="dashboard"])::before{animation:none!important}
   letter-spacing:.5px;font-weight:600;
 }
 
-.page-context-bar{
-  padding:14px 24px 0;
-}
-.page-context-inner{
-  max-width:1440px;margin:0 auto;
-  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
-  padding:14px 18px;border-radius:18px;
-  background:linear-gradient(180deg,rgba(20,24,30,.72),rgba(20,24,30,.45));
-  border:1px solid rgba(120,132,148,.16);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
-}
-.context-kicker{
-  font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--spark);
-}
-.context-breadcrumb{
-  font-family:var(--font-display);font-size:1rem;font-weight:600;color:var(--text-bright);margin-top:4px;
-}
-.context-tags{display:flex;gap:8px;flex-wrap:wrap}
-.context-chip{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:7px 10px;border-radius:999px;
-  border:1px solid rgba(120,132,148,.16);
-  background:rgba(57,66,78,.25);
-  color:var(--text-muted);
-  font-size:.76rem;font-weight:600;
-}
-
 /* ═══════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════ */
@@ -457,6 +433,10 @@ body:not([data-page="dashboard"])::before{animation:none!important}
 }
 .page-header p{font-size:.95rem;color:var(--text-muted);margin-top:6px;letter-spacing:.01em;max-width:88ch}
 .page-header-right{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  font-family:inherit;
+}
+.page-header-right.page-header-meta{
   font-size:.78rem;color:var(--text-dim);font-family:var(--font-mono);
   padding:8px 14px;border:1px solid var(--border);border-radius:12px;
   background:rgba(199,208,219,.06);
@@ -1773,8 +1753,6 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   /* min-height + no fixed height: wrapped nav must not clip dropdowns */
   .navbar{padding:0 12px;min-height:58px;height:auto;align-items:flex-start;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
   .navbar-left{width:100%;flex-wrap:wrap;gap:10px}
-  .page-context-bar{padding:12px 12px 0}
-  .page-context-inner{padding:12px 14px}
   .context-breadcrumb{font-size:.92rem}
   /* overflow-x:auto on .nav-links clips position:absolute dropdowns (submenus look empty) */
   .nav-links{gap:6px;margin-left:0;flex-wrap:wrap;overflow:visible;row-gap:6px;max-width:100%;padding:8px}
@@ -2469,13 +2447,34 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 }
 
 /* ── macOS 26 Tahoe shell — menubar + dock ── */
-body.mac-desktop-root{padding-bottom:calc(5rem + env(safe-area-inset-bottom,0px))}
-body.mac-desktop-root .cloudos-body-row{min-height:calc(100vh - 44px)}
-body.mac-desktop-root .cloudos-finder{top:44px}
-@media(max-width:960px){
-  body.mac-desktop-root .cloudos-finder{top:44px}
+body.mac-desktop-root{
+  font-family:var(--font-sans);
+  --glass-bg:rgba(20,22,28,.68);
+  --glass-bg-elevated:rgba(28,31,40,.82);
+  --glass-border:rgba(255,255,255,.08);
+  --glass-border-strong:rgba(255,255,255,.15);
+  --glass-blur:blur(24px) saturate(1.4);
+  --glass-radius:1rem;
 }
-.mac-menubar.navbar{min-height:44px;height:44px;padding:0 12px}
+body.mac-desktop-root::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(56,189,248,.06),transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 100%,rgba(99,102,241,.05),transparent 50%);
+}
+body.mac-desktop-root[data-wallpaper="tahoe"]::before{
+  background:
+    radial-gradient(ellipse 70% 55% at 20% 10%,rgba(148,163,184,.12),transparent 52%),
+    radial-gradient(ellipse 55% 45% at 85% 30%,rgba(56,189,248,.1),transparent 48%),
+    radial-gradient(ellipse 90% 70% at 50% 100%,rgba(15,23,42,.35),transparent 58%);
+}
+body.mac-desktop-root{padding-bottom:calc(4.5rem + env(safe-area-inset-bottom,0px))}
+body.mac-desktop-root .container{padding:16px 14px}
+body.mac-desktop-root .cloudos-body-row{min-height:calc(100vh - 40px)}
+body.mac-desktop-root .cloudos-finder{top:40px}
+@media(max-width:960px){
+  body.mac-desktop-root .cloudos-finder{top:40px}
+}
+.mac-menubar.navbar{min-height:40px;height:40px;padding:0 10px}
 .mac-menubar-left{display:flex;align-items:center;gap:4px;min-width:0;flex:1}
 .mac-menubar-menus{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .mac-menu-wrap{position:relative}
@@ -2517,7 +2516,7 @@ body[data-desktop-tier="normal"] .navbar-page-title{display:none!important}
 body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:72px}
 body[data-desktop-tier="normal"] .btn-nav-browse.tier-advanced-only{display:none}
 body[data-desktop-tier="power"] .btn-nav-browse.tier-advanced-only{display:none}
-body[data-desktop-tier="power"] .mac-desktop-tabs{max-height:36px;overflow:hidden}
+body[data-desktop-tier="power"] .mac-desktop-tabs{max-height:32px;overflow:hidden}
 body[data-desktop-tier="advanced"] .menubar-tier-advanced-only{display:flex}
 body:not([data-desktop-tier="advanced"]) .menubar-tier-advanced-only{display:none!important}
 body[data-desktop-tier="normal"] .menubar-tier-collapsible,
@@ -2530,7 +2529,7 @@ body[data-desktop-tier="power"] #fleet-command-grid{display:none!important}
 body[data-desktop-tier="normal"] #page-dashboard .dashboard-quick-stats{display:none!important}
 /* macOS content window — one glass pane per active page */
 .mac-page-toolbar-wrap{
-  max-width:min(1400px,100%);margin:0 auto 10px;padding:0 12px;
+  max-width:min(1400px,100%);margin:0 auto 8px;padding:0 12px;
 }
 body[data-desktop-tier="advanced"] .mac-page-toolbar-wrap{display:none}
 .mac-page-toolbar{
@@ -2540,31 +2539,31 @@ body[data-desktop-tier="advanced"] .mac-page-toolbar-wrap{display:none}
   box-shadow:0 4px 24px rgba(0,0,0,.2);
 }
 .mac-page-toolbar-chrome{
-  display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:44px;
+  display:flex;align-items:center;gap:10px;padding:8px 14px;min-height:36px;
 }
 .mac-page-toolbar-traffic{display:flex;gap:6px;flex-shrink:0;pointer-events:none}
 .mac-page-toolbar-titles{flex:1;min-width:0}
 .mac-page-toolbar-kicker{
-  display:block;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  display:block;font-size:.62rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
   color:var(--text-dim);line-height:1.2;
 }
 .mac-page-toolbar-title{
-  margin:2px 0 0;font-size:1.05rem;font-weight:700;color:var(--text-bright);
+  margin:2px 0 0;font-size:.95rem;font-weight:600;color:var(--text-bright);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em;
 }
 .mac-page-toolbar-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
-  max-width:min(1400px,100%);margin:0 auto 24px;padding:0 0 20px;
+  max-width:min(1400px,100%);margin:0 auto 18px;padding:0 0 14px;
   border-radius:0 0 var(--glass-radius) var(--glass-radius);
   border:1px solid var(--glass-border);border-top:none;
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   box-shadow:var(--glass-shadow);
 }
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > :not(.vm-workspace):not(.mac-vm-workspace){
-  padding-left:20px;padding-right:20px;
+  padding-left:var(--space-page);padding-right:var(--space-page);
 }
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > :first-child{
-  padding-top:18px;
+  padding-top:var(--space-card);
 }
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > .vm-workspace,
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > .mac-vm-workspace{
@@ -2644,8 +2643,8 @@ body.vm-focus-active .mac-inspector-header{display:flex}
   pointer-events:none;
 }
 .mac-dock-inner{
-  pointer-events:auto;display:flex;align-items:flex-end;gap:.35rem;
-  padding:.45rem .75rem;border-radius:var(--radius-liquid);
+  pointer-events:auto;display:flex;align-items:flex-end;gap:.3rem;
+  padding:.35rem .6rem;border-radius:var(--radius-liquid);
   background:var(--glass-bg-elevated);
   backdrop-filter:blur(calc(var(--blur-liquid) + 2px)) saturate(1.45);
   -webkit-backdrop-filter:blur(calc(var(--blur-liquid) + 2px)) saturate(1.45);
@@ -2656,11 +2655,11 @@ body.vm-focus-active .mac-inspector-header{display:flex}
 .mac-dock-inner-scroll::-webkit-scrollbar{display:none}
 .mac-dock-item{
   position:relative;display:flex;align-items:center;justify-content:center;
-  width:2.75rem;height:2.75rem;border-radius:.75rem;color:rgba(248,250,252,.9);
+  width:2.5rem;height:2.5rem;border-radius:.7rem;color:rgba(248,250,252,.9);
   border:none;background:transparent;cursor:pointer;font-family:inherit;
   transition:transform .2s cubic-bezier(.34,1.56,.64,1),background .15s ease;
 }
-.mac-dock-item:hover{transform:scale(1.14) translateY(-5px);background:rgba(255,255,255,.08)}
+.mac-dock-item:hover{transform:scale(1.12) translateY(-4px);background:rgba(255,255,255,.08)}
 .mac-dock-item.mac-dock-bounce{animation:mac-dock-bounce .42s cubic-bezier(.34,1.56,.64,1)}
 @keyframes mac-dock-bounce{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.12)}}
 .mac-dock-item:hover .mac-dock-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -2682,8 +2681,8 @@ body.vm-focus-active .mac-inspector-header{display:flex}
 }
 .mac-dock-divider{width:1px;height:2.25rem;margin:0 .25rem;background:rgba(255,255,255,.12)}
 .mac-dock-spotlight{
-  display:flex;align-items:center;gap:.4rem;margin-left:.35rem;padding:.45rem .85rem;
-  border-radius:999px;font-size:.75rem;color:rgba(248,250,252,.85);
+  display:flex;align-items:center;gap:.4rem;margin-left:.35rem;padding:.4rem .75rem;
+  border-radius:999px;font-size:.72rem;color:rgba(248,250,252,.85);
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);cursor:pointer;font-family:inherit;
   transition:transform .2s ease,background .15s ease;
 }
@@ -2707,6 +2706,56 @@ body[data-wallpaper]{transition:background .5s ease}
   background:rgba(12,18,32,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border-right:1px solid var(--glass-border);
 }
+
+/* Tahoe density — compact stats, cards, tables (mac shell) */
+body.mac-desktop-root .grid-4,
+body.mac-desktop-root .grid-3{gap:10px}
+body.mac-desktop-root .space-y>*+*{margin-top:14px}
+body.mac-desktop-root .card.glass-card .card-header{padding:var(--space-card) 14px}
+body.mac-desktop-root .card.glass-card .card-title{font-size:.88rem}
+body.mac-desktop-root .table th,
+body.mac-desktop-root .table td{padding:var(--space-row) 12px;font-size:.82rem}
+body.mac-desktop-root .glass-stat-pill,
+body.mac-desktop-root .tahoe-stat-pill{
+  padding:10px 12px;border-radius:1rem;min-width:96px;
+}
+body.mac-desktop-root .glass-stat-pill .gsl,
+body.mac-desktop-root .tahoe-stat-pill .gsl{font-size:.72rem;letter-spacing:.08em;margin-top:0}
+body.mac-desktop-root .glass-stat-pill .gsv,
+body.mac-desktop-root .tahoe-stat-pill .gsv{font-size:1.1rem;font-weight:600;margin-top:4px;font-family:var(--font-sans)}
+body.mac-desktop-root[data-desktop-tier="advanced"] .page-header h1{font-size:1.28rem}
+body.mac-desktop-root[data-desktop-tier="advanced"] .page-header p{font-size:.82rem;margin-top:4px;line-height:1.4}
+body.mac-desktop-root .dc-hero{padding:16px 18px}
+body.mac-desktop-root .dc-greeting{font-size:1.35rem}
+body.mac-desktop-root .mac-inspector-header{padding:8px 12px}
+body.mac-desktop-root .mac-sheet-titlebar{min-height:40px;padding:8px 14px}
+.tahoe-stat-pill{
+  padding:10px 12px;border-radius:1rem;
+  background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.07);box-shadow:0 1px 0 rgba(255,255,255,.05) inset;
+  min-width:96px;flex:1;
+}
+.tahoe-stat-pill .gsl{font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.tahoe-stat-pill .gsv{font-size:1.1rem;font-weight:600;color:var(--text-bright);margin-top:4px;letter-spacing:-.02em}
+.tahoe-stat-pill.ok .gsv{color:var(--success)}
+.tahoe-stat-pill.warn .gsv{color:var(--warning)}
+.tahoe-stat-pill.bad .gsv{color:var(--error)}
+button.tahoe-stat-pill.clickable-stat{text-align:left;width:100%;font-family:inherit;color:inherit;cursor:pointer;border:none}
+button.tahoe-stat-pill.clickable-stat:hover{border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.08)}
+.mac-toolbar-overflow-wrap{position:relative}
+.mac-toolbar-overflow-btn{padding:6px 10px;font-size:.72rem}
+.mac-toolbar-overflow-menu{
+  position:absolute;top:calc(100% + 4px);right:0;min-width:140px;z-index:50;
+  padding:6px;border-radius:10px;background:var(--glass-bg-elevated);
+  border:1px solid var(--glass-border-strong);box-shadow:var(--glass-shadow);display:none;
+}
+.mac-toolbar-overflow-menu.open{display:block}
+.mac-toolbar-overflow-menu button{
+  display:block;width:100%;text-align:left;padding:7px 10px;border:none;border-radius:6px;
+  background:transparent;color:var(--text);font-size:.78rem;cursor:pointer;font-family:inherit;
+}
+.mac-toolbar-overflow-menu button:hover{background:rgba(56,189,248,.1)}
 .mac-cc-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
 .mac-cc-tile{
   padding:10px 6px;border-radius:10px;border:1px solid var(--glass-border);
@@ -2721,10 +2770,10 @@ body[data-wallpaper]{transition:background .5s ease}
 /* Dynamic Island */
 .mac-dynamic-island-wrap{position:relative;display:flex;justify-content:center}
 .mac-dynamic-island{
-  display:inline-flex;align-items:center;gap:8px;padding:5px 16px;border-radius:999px;
+  display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;
   border:1px solid var(--glass-border-strong);background:var(--glass-bg-elevated);
   backdrop-filter:blur(calc(var(--blur-liquid) + 4px));-webkit-backdrop-filter:blur(calc(var(--blur-liquid) + 4px));
-  font-size:.74rem;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit;
+  font-size:.72rem;font-weight:600;color:var(--text-muted);cursor:pointer;font-family:inherit;
   transition:padding .25s ease,border-radius .25s ease,min-width .25s ease,box-shadow .2s;
   max-width:min(420px,55vw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
@@ -2746,7 +2795,7 @@ body[data-wallpaper]{transition:background .5s ease}
 }
 .mac-cc-toggle:hover{border-color:rgba(56,189,248,.35);color:var(--spark)}
 .mac-control-center{
-  position:fixed;top:48px;right:12px;z-index:190;width:min(320px,calc(100vw - 24px));
+  position:fixed;top:42px;right:12px;z-index:190;width:min(320px,calc(100vw - 24px));
   padding:14px;border-radius:var(--radius-liquid);
   background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-border-strong);box-shadow:var(--glass-shadow),0 20px 60px rgba(0,0,0,.45);
@@ -2767,9 +2816,9 @@ body[data-wallpaper]{transition:background .5s ease}
 .mac-desktop-tabs:empty{display:none}
 .mac-desktop-tabs::-webkit-scrollbar{display:none}
 .mac-desktop-tab{
-  flex-shrink:0;padding:5px 12px;border-radius:8px 8px 0 0;border:1px solid transparent;
+  flex-shrink:0;padding:4px 10px;border-radius:8px 8px 0 0;border:1px solid transparent;
   border-bottom:none;background:rgba(255,255,255,.04);color:var(--text-dim);
-  font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;max-width:160px;
+  font-size:.68rem;font-weight:600;cursor:pointer;font-family:inherit;max-width:150px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .mac-desktop-tab:hover{background:rgba(56,189,248,.08);color:var(--text)}
@@ -3453,7 +3502,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- VMS PAGE -->
 <div class="page section-shell" id="page-vms" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div style="display:flex;align-items:center;gap:14px"><div class="page-header-right" id="vm-count"></div><button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button></div></div>
+  <div class="page-header"><div><h1>Virtual Machines</h1><p id="vm-page-subtitle">KubeVirt fleet command</p></div><div class="page-header-right"><span class="page-header-meta" id="vm-count"></span><button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button></div></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats"></div>
   <div class="vm-workspace zeus-glass mac-vm-workspace" id="vm-workspace">
     <div class="vm-list-pane">
@@ -3572,8 +3621,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- SNAPSHOTS PAGE -->
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div>
-    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button></div>
+  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button></div></div>
     <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
@@ -3584,8 +3632,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- NODES PAGE -->
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div>
-    <div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span id="node-count"></span></div></div>
+  <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span class="page-header-meta" id="node-count"></span></div></div>
     <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
@@ -3645,7 +3692,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- CRD PAGES -->
 <div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div>
+  <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div></div>
     <div id="crds-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
@@ -4145,8 +4192,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div>
+  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div></div>
     <div id="scheduling-fleet-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Scheduling Fleet</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('scheduling-fleet-advisor-card')">Dismiss</button></div>
     <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4157,8 +4203,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div>
+  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
     <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cilium-advisor-card')">Dismiss</button></div>
     <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4863,7 +4908,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260602u';
+window.__VMROGUE_DASH_REV = '20260602v';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -4964,6 +5009,24 @@ const PAGE_META = {
   'app-store': {kicker:'Platform', title:'Template Store — App Store for VM images', tags:['Golden images','One-click forge','Catalog sync']}
 };
 
+/** Toolbar actions when page-header is hidden (Normal/Power). */
+const PAGE_TOOLBAR_ACTIONS = {
+  dashboard: [{ label: '+ Forge VM', onclick: 'openCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
+  vms: [{ label: '+ Forge VM', onclick: 'openCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
+  soc: [
+    { label: 'Refresh', onclick: 'fetchSocPage(true)', className: 'glass-btn-secondary glass-btn-sm' },
+    { label: 'Integrations', onclick: "navigate('integrations')", className: 'glass-btn-secondary glass-btn-sm' }
+  ],
+  snapshots: [{ label: '+ Snapshot', onclick: 'openSnapModalPick()', className: 'glass-btn-primary glass-btn-sm' }],
+  crds: [{ label: '+ VMRogueVM', onclick: 'openCrdCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
+  catalog: [{ label: 'Sync catalog', onclick: 'catalogSync()', className: 'glass-btn-secondary glass-btn-sm' }],
+  'app-store': [{ label: 'Forge VM', onclick: "navigate('vms');setTimeout(openCreateModal,200)", className: 'glass-btn-primary glass-btn-sm' }],
+  integrations: [{ label: 'Refresh', onclick: 'fetchIntegrations()', className: 'glass-btn-secondary glass-btn-sm' }],
+  gitops: [{ label: 'Refresh', onclick: 'fetchGitOps()', className: 'glass-btn-secondary glass-btn-sm' }],
+  events: [{ label: 'Refresh', onclick: "fetchEvents(true)", className: 'glass-btn-secondary glass-btn-sm' }],
+  monitoring: [{ label: 'Refresh', onclick: 'fetchMonitoring()', className: 'glass-btn-secondary glass-btn-sm' }]
+};
+
 function applyTheme(theme, writeStorage) {
   const t = (theme === 'steel' || theme === 'zinc') ? theme : 'slate';
   if (t === 'steel' || t === 'zinc') {
@@ -5015,6 +5078,40 @@ function initMacPageWindows() {
   });
 }
 
+function collectPageHeaderToolbarButtons(pageEl) {
+  if (!pageEl) return [];
+  const header = pageEl.querySelector('.page-header');
+  if (!header) return [];
+  const buttons = [];
+  header.querySelectorAll('button.glass-btn-primary, button.glass-btn-secondary, button.btn-create').forEach(function(btn) {
+    if (btn.closest('.page-header-meta')) return;
+    const label = (btn.textContent || '').trim();
+    const onclick = btn.getAttribute('onclick');
+    if (!label && !onclick) return;
+    buttons.push({
+      label: label || 'Action',
+      onclick: onclick || '',
+      className: btn.className || 'glass-btn-secondary glass-btn-sm'
+    });
+  });
+  const seen = new Set();
+  return buttons.filter(function(b) {
+    const k = b.label + '|' + b.onclick;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function appendToolbarActionButton(container, spec) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = spec.className || 'glass-btn-secondary glass-btn-sm';
+  btn.textContent = spec.label || 'Action';
+  if (spec.onclick) btn.setAttribute('onclick', spec.onclick);
+  container.appendChild(btn);
+}
+
 function updateMacPageToolbar(page, metaIn) {
   const wrap = document.getElementById('mac-page-toolbar-wrap');
   const kickerEl = document.getElementById('mac-page-toolbar-kicker');
@@ -5034,19 +5131,43 @@ function updateMacPageToolbar(page, metaIn) {
   if (!actionsEl) return;
   actionsEl.innerHTML = '';
   const pageEl = document.getElementById('page-' + page);
-  let primary = pageEl ? pageEl.querySelector('.page-header .glass-btn-primary, .page-header .btn-create') : null;
-  if (!primary && page === 'dashboard') {
-    primary = { textContent: 'Forge VM', className: 'btn-create glass-btn-primary glass-btn-sm', getAttribute: function(n) { return n === 'onclick' ? 'openCreateModal()' : null; } };
+  let specs = PAGE_TOOLBAR_ACTIONS[page];
+  if (!specs || !specs.length) specs = collectPageHeaderToolbarButtons(pageEl);
+  if (!specs.length) return;
+  const visible = specs.slice(0, 2);
+  const overflow = specs.slice(2);
+  visible.forEach(function(s) { appendToolbarActionButton(actionsEl, s); });
+  if (overflow.length) {
+    const ow = document.createElement('div');
+    ow.className = 'mac-toolbar-overflow-wrap';
+    const ob = document.createElement('button');
+    ob.type = 'button';
+    ob.className = 'glass-btn-secondary glass-btn-sm mac-toolbar-overflow-btn';
+    ob.textContent = '…';
+    ob.setAttribute('aria-label', 'More actions');
+    const menu = document.createElement('div');
+    menu.className = 'mac-toolbar-overflow-menu';
+    overflow.forEach(function(s) {
+      const mb = document.createElement('button');
+      mb.type = 'button';
+      mb.textContent = s.label;
+      if (s.onclick) mb.setAttribute('onclick', s.onclick + ';closeMacToolbarOverflow()');
+      menu.appendChild(mb);
+    });
+    ob.onclick = function(e) {
+      e.stopPropagation();
+      menu.classList.toggle('open');
+    };
+    ow.appendChild(ob);
+    ow.appendChild(menu);
+    actionsEl.appendChild(ow);
   }
-  if (!primary) return;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = primary.className || 'glass-btn-primary glass-btn-sm';
-  btn.textContent = (primary.textContent || '').trim();
-  const onclick = primary.getAttribute && primary.getAttribute('onclick');
-  if (onclick) btn.setAttribute('onclick', onclick);
-  actionsEl.appendChild(btn);
 }
+
+function closeMacToolbarOverflow() {
+  document.querySelectorAll('.mac-toolbar-overflow-menu.open').forEach(function(m) { m.classList.remove('open'); });
+}
+document.addEventListener('click', function() { closeMacToolbarOverflow(); });
 
 function initTheme() {
   let t = 'slate';
@@ -12537,16 +12658,21 @@ function submitGlassPrompt() {
   if (fn) fn(vals);
 }
 
+function tahoeStatPillClass() {
+  return document.body.classList.contains('mac-desktop-root') ? 'tahoe-stat-pill' : 'glass-stat-pill';
+}
+
 function renderGlassStatPills(items) {
+  const pillCls = tahoeStatPillClass();
   return (items || []).map(function(item) {
     const extra = (item.cls || '') + (item.onclick ? ' clickable-stat' : '');
     const title = item.title ? ' title="' + esc(item.title) + '"' : '';
     const valStyle = item.valueStyle ? ' style="' + item.valueStyle + '"' : '';
     if (item.onclick) {
-      return '<button type="button" class="glass-stat-pill' + extra + '"' + title + ' onclick="' + item.onclick + '">' +
+      return '<button type="button" class="' + pillCls + extra + '"' + title + ' onclick="' + item.onclick + '">' +
         '<div class="gsl">' + esc(item.label) + '</div><div class="gsv"' + valStyle + '>' + esc(String(item.value)) + '</div></button>';
     }
-    return '<div class="glass-stat-pill' + extra + '"' + title + '>' +
+    return '<div class="' + pillCls + extra + '"' + title + '>' +
       '<div class="gsl">' + esc(item.label) + '</div><div class="gsv"' + valStyle + '>' + esc(String(item.value)) + '</div></div>';
   }).join('');
 }
