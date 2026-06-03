@@ -1254,13 +1254,28 @@ pub mod web {
             return "Namespace not found — create the namespace first or use one that exists"
                 .to_string();
         }
+
+        // Named KubeVirt resources (VM/VMI not found) — must precede the API-discovery heuristic below.
+        if (lower.contains("virtualmachines.kubevirt.io")
+            || lower.contains("virtualmachineinstances.kubevirt.io")
+            || lower.contains("virtualmachinesnapshot"))
+            && lower.contains("not found")
+        {
+            return "Resource not found".to_string();
+        }
+
         if lower.contains("could not find the requested resource")
             || lower.contains("doesn't have a resource type")
-            || (lower.contains("kubevirt")
-                && (lower.contains("not found") || lower.contains("could not find")))
+            || (lower.contains("kubevirt.io")
+                && lower.contains("could not find")
+                && !lower.contains("virtualmachine"))
         {
             return "KubeVirt API unavailable — install KubeVirt (VirtualMachine CRDs must exist on this cluster)"
                 .to_string();
+        }
+
+        if msg.contains("NodePort") && msg.contains("already used") {
+            return msg;
         }
 
         // Map known error patterns to safe, generic messages
@@ -1607,7 +1622,10 @@ pub mod web {
                 Ok(_) => {}
                 Err(e) => {
                     let msg = sanitize_error(&e);
-                    if msg.contains("NotFound") || msg.contains("not found") {
+                    if msg.contains("NotFound")
+                        || msg.contains("not found")
+                        || msg.eq("Resource not found")
+                    {
                         return err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name));
                     }
                     return err_json(500, "INTERNAL_ERROR", &msg);
@@ -1867,20 +1885,7 @@ pub mod web {
                 },
                 Err(e) => err_json(500, "RDP_EXPOSE_DELETE_FAILED", &sanitize_error(&e)),
             }
-        } else if let Err(e) = kube.get_vm(&ns, &name).await {
-            let msg = sanitize_error(&e);
-            if msg.contains("NotFound") || msg.contains("not found") {
-                err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name))
-            } else {
-                err_json(500, "INTERNAL_ERROR", &msg)
-            }
         } else {
-            let svc_type = req.service_type.as_deref().unwrap_or("NodePort");
-            let svc_type = match svc_type.to_ascii_lowercase().as_str() {
-                "loadbalancer" => "LoadBalancer",
-                "clusterip" => "ClusterIP",
-                _ => "NodePort",
-            };
             let Some(node_port) = req.node_port else {
                 return err_json(
                     400,
@@ -1895,6 +1900,22 @@ pub mod web {
                     "node_port must be in range 30000–32767",
                 );
             }
+            if let Err(e) = kube.get_vm(&ns, &name).await {
+                let msg = sanitize_error(&e);
+                if msg.contains("NotFound")
+                    || msg.contains("not found")
+                    || msg.eq("Resource not found")
+                {
+                    return err_json(404, "NOT_FOUND", &format!("VM '{}' not found", name));
+                }
+                return err_json(500, "INTERNAL_ERROR", &msg);
+            }
+            let svc_type = req.service_type.as_deref().unwrap_or("NodePort");
+            let svc_type = match svc_type.to_ascii_lowercase().as_str() {
+                "loadbalancer" => "LoadBalancer",
+                "clusterip" => "ClusterIP",
+                _ => "NodePort",
+            };
             match vm_rdp::upsert_rdp_expose_service(kube.client(), &ns, &name, svc_type, node_port)
                 .await
             {

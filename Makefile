@@ -34,6 +34,10 @@ install: ## Install to ~/.cargo/bin
 
 ci: fmt-check clippy test ## Run full CI pipeline locally
 
+test-vm-e2e-remote: ## Run daily VM ops E2E against remote API (HOST=... PORT=30151)
+	@test -n "$(HOST)" || (echo "Usage: make test-vm-e2e-remote HOST=<ip> [PORT=30151]" >&2; exit 1)
+	./scripts/test-vm-daily-ops-remote.sh "$(HOST)" "$(if $(PORT),$(PORT),30151)"
+
 helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
 	helm dependency build charts/vmrogue-monitoring
 	helm template vmrogue-monitoring-ci charts/vmrogue-monitoring -n monitoring >/dev/null

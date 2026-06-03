@@ -37,6 +37,10 @@ make ci
 # Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VMROGUE_API_KEY)
 ./scripts/verify-vmrogue-remote.sh HOST [30151]
 
+# Daily VM ops E2E via HTTPS API (create, start/stop, pause/unpause, SSH/RDP expose, snapshots; ~10–15 min)
+VMROGUE_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
+# Optional: VMROGUE_E2E_RESTORE=1 for destructive snapshot restore; VMROGUE_E2E_SKIP_TIER_B=1 for contract checks only
+
 # Client deliverable: static linux/amd64 tarball (remote podman build, no cluster deploy)
 ./scripts/package-binary-remote.sh HOST USER --fetch   # → dist/vmrogue-<ver>-linux-amd64.tar.gz
 # See docs/PACKAGE_BINARY_REMOTE.md

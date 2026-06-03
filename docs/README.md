@@ -19,6 +19,11 @@ This directory contains focused guides for VMRogue features and operations. Star
 - [`../SECURITY.md`](../SECURITY.md): vulnerability reporting
 - [`../CHANGELOG.md`](../CHANGELOG.md): release notes
 
+## Testing and validation
+
+- [`../scripts/verify-vmrogue-remote.sh`](../scripts/verify-vmrogue-remote.sh): post-deploy API smoke (fast; no VM lifecycle)
+- [`../scripts/test-vm-daily-ops-remote.sh`](../scripts/test-vm-daily-ops-remote.sh): HTTPS E2E for daily VM workflows (create, stop, pause, snapshot, SSH/RDP expose)
+
 ## Core Operations
 
 - [`SNAPSHOTS.md`](SNAPSHOTS.md): snapshot and restore workflows

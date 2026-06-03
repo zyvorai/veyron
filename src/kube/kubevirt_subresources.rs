@@ -28,6 +28,44 @@ fn format_kube_error(e: &kube::Error) -> String {
 
 const SUB: &str = "/apis/subresources.kubevirt.io/v1";
 
+/// Freeze a running VMI in place (`PUT .../pause`).
+pub async fn vmi_pause(client: Client, namespace: &str, vmi: &str) -> Result<()> {
+    vmi_imperative_subresource(client, namespace, vmi, "pause").await
+}
+
+/// Resume a paused VMI (`PUT .../unpause`).
+pub async fn vmi_unpause(client: Client, namespace: &str, vmi: &str) -> Result<()> {
+    vmi_imperative_subresource(client, namespace, vmi, "unpause").await
+}
+
+async fn vmi_imperative_subresource(
+    client: Client,
+    namespace: &str,
+    vmi: &str,
+    action: &str,
+) -> Result<()> {
+    let uri = format!(
+        "{SUB}/namespaces/{}/virtualmachineinstances/{}/{action}",
+        segment(namespace),
+        segment(vmi)
+    );
+    let req = http::Request::builder()
+        .method(http::Method::PUT)
+        .uri(&uri)
+        .body(Vec::new())
+        .map_err(|e| anyhow::anyhow!("{e}"))?;
+    let text = client
+        .request_text(req)
+        .await
+        .map_err(|e| anyhow::anyhow!("{}", format_kube_error(&e)))?;
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+    let _status: Value = serde_json::from_str(&text)
+        .map_err(|e| anyhow::anyhow!("pause/unpause response parse failed: {e}"))?;
+    Ok(())
+}
+
 /// Run a command in the guest via QEMU guest-agent (`guest-exec`).
 pub async fn vmi_guest_exec(
     client: Client,
