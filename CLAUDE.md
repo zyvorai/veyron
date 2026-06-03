@@ -93,7 +93,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 - `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
 - `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS-style menubar, fixed glass **dock** (pins in `vmrogue_dock_pins`, defaults from `GET /api/v1/experience/desktop`), desktop tiers Normal/Power/Advanced, Finder sidebar. VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `vmrogue_vnc_preset` and maps to noVNC `qualityLevel`, `compressionLevel`, and `clipViewport`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
+- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar. VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `vmrogue_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
 ```rust

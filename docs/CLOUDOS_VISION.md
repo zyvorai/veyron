@@ -71,6 +71,14 @@ Namespace scope follows the dashboard namespace selector (`?namespace=` or `all`
 | **Power** | Visible | Slim strip | Hidden | Toolbar + stats row | Datacenter + optional charts in `<details>` |
 | **Advanced** | Visible | Full tabs | Browse button | Classic `.page-header` optional | Full command grid + charts |
 
+### Tahoe density (visual system)
+
+Default wallpaper **Tahoe** uses a soft neutral gradient wash. Typography is **SF system-first** (`-apple-system`, SF Pro Text/Display). Liquid glass uses lighter borders (`rgba(255,255,255,.08)`), **16px** card radius, and compact stat tiles (`.tahoe-stat-pill` on the mac shell).
+
+On **Normal** and **Power**, each page shows a **36px window toolbar** (traffic lights + kicker + title + actions) and a single **`.mac-page-window`** pane; legacy `.page-header` blocks are hidden. Primary actions are cloned from `PAGE_TOOLBAR_ACTIONS` or `.page-header` buttons into the toolbar (overflow **…** menu when more than two actions). **Advanced** keeps full `.page-header` chrome for operators who need subtitles and Browse.
+
+Shell sizing: menubar **40px**, dock icons **2.5rem**, slimmer desktop tabs on Power. Cache-bust after deploy: `?dash=20260602v` (see `vmrogue-dashboard-rev` meta).
+
 Dock pins persist in `localStorage` (`vmrogue_dock_pins`); tier changes reset to API `dock_defaults` for that tier. **Customize Dock…** reorders pins from `dock_catalog`.
 
 **Desktop tabs** (Stage Manager lite): recent pages show below the menubar with a close control (×) and middle-click to dismiss; **Home** is always pinned.
@@ -109,7 +117,7 @@ Keyboard: `⌘K` Spotlight, `⌘J` Ask Zeus, `⌘\` Finder, `⌘⌥S` Finder (Ma
 
 **Remote console (VNC / Serial / RDP):** VNC and Serial use macOS Screen Sharing window chrome — traffic lights, **‹ Back**, `Esc` / `⌘W`, minimize pill above the dock. **Remote Desktop (RDP)** opens a macOS sheet with NodePort expose, guest-agent enable/disable, and copy-to-clipboard connect strings (Microsoft Remote Desktop / FreeRDP).
 
-Cache-bust the dashboard after deploy: `?dash=20260602r` (or current `vmrogue-dashboard-rev` meta tag).
+Cache-bust the dashboard after deploy: `?dash=20260602v` (or current `vmrogue-dashboard-rev` meta tag).
 
 ## UI surfaces
 
