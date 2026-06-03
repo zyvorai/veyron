@@ -12,6 +12,20 @@ This guide covers advanced VM workflows in `vmrogue`, with practical CLI/API exa
 
 ---
 
+## Security Operations (SOC)
+
+VMRogue includes a first-class SOC surface on the API and dashboard:
+
+- **Events** — `GET /api/v1/soc/events?refresh=true` collects Kubernetes events, VM findings, and API audit mutations into ECS-friendly JSON (ConfigMap buffer in the API namespace).
+- **Detections** — `GET /api/v1/soc/detections` evaluates rules (RDP/SSH NodePort expose, drift, privileged domain, scheduling burst, namespaces without NetworkPolicy). Acknowledge with `POST /api/v1/soc/detections/:id/ack`.
+- **SIEM** — set `VMROGUE_ELASTIC_*`, `VMROGUE_SPLUNK_*`, `VMROGUE_SENTINEL_*`, or `VMROGUE_QRADAR_*` on the API Deployment; status at `GET /api/v1/soc/export/status`.
+- **Hunts** — `POST /api/v1/soc/hunts/run` with Elastic KQL or Splunk SPL when hunt env flags are enabled.
+- **Attack surface** — `GET /api/v1/soc/attack-surface` lists internet-facing VM exposures.
+
+Dashboard: **Security → SOC**. Full reference: [SOC.md](SOC.md).
+
+---
+
 ## 📊 Status Command - Detailed VM Information
 
 Get comprehensive status information about a VM including resources, volumes, networks, and conditions.

@@ -132,6 +132,7 @@ mod tests {
             "/api/v1/crds/profiles",
             "/api/v1/catalog/status",
             "/api/v1/experience/home",
+            "/api/v1/experience/desktop",
             "/api/v1/metrics/timeline",
             "/api/v1/traces",
             "/api/v1/integrations/status",

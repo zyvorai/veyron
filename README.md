@@ -111,6 +111,7 @@ Open `http://localhost:5151/dashboard` in your browser. The dashboard will promp
 - **Pods** - Namespace pod listing with phase, node, IP, restarts, age
 - **Events** - Cluster event feed with auto-refresh
 - **Security** - Per-VM security posture scoring (Secure Boot, TPM, RNG, eviction strategy, resource limits) with findings table
+- **SOC** - Security Operations page: threat detections, normalized event stream, SIEM export (Elastic/Splunk/Sentinel/QRadar), threat hunts, attack-surface inventory — see [docs/SOC.md](docs/SOC.md)
 - **Monitoring** - Prometheus/Grafana detection with health status and recommendations
 - **Workloads** - Deployment, StatefulSet, and DaemonSet listing with replica status
 - **WebSocket Metrics** - Live cluster metrics streamed over WebSocket (`/api/v1/ws/metrics`) at 5-second intervals

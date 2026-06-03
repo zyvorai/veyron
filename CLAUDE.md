@@ -92,8 +92,8 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 ### Web API (feature = "web")
 
 - `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
-- `src/api/handlers/` — 49 modules, one per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, etc.)
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `vmrogue_vnc_preset` and maps to noVNC `qualityLevel`, `compressionLevel`, and `clipViewport`.
+- `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
+- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS-style menubar, fixed glass **dock** (pins in `vmrogue_dock_pins`, defaults from `GET /api/v1/experience/desktop`), desktop tiers Normal/Power/Advanced, Finder sidebar. VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `vmrogue_vnc_preset` and maps to noVNC `qualityLevel`, `compressionLevel`, and `clipViewport`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
 ```rust
@@ -131,6 +131,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/tui/` | Full ratatui-based TUI; `AppState` (VMs, namespaces, selection), `interactive_app.rs`, theming |
 | `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
 | `src/operator_crds/` | VMRogue CRD types under `vmrogue.io/v1alpha1` |
+| `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`, dashboard **Security → SOC**. See `docs/SOC.md`. |
 
 **Windows templates in code** (`windows*` in `src/templates/mod.rs`): Hyper-V feature set, `windows_clock()`, UEFI, virtio driver CDROM, blank SATA disk, virtio NIC, RNG, USB tablet, IO threads, TPM on 2022/11. **No** embedded Cloudbase-Init config or `cloudInitConfigDrive` userData (guest image / your YAML). See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` (includes **automation**: Packer/CDI/GitOps; `cloud_init` in `converter.rs` emits **NoCloud** only—patch YAML or extend schema for Windows config-drive).
 
@@ -163,6 +164,8 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `RUST_MIN_STACK` | Set to `8388608` when running tests |
 | `RUST_LOG` | Log level: error/warn/info/debug/trace |
 | `VMROGUE_HTTP_REQUEST_TIMEOUT_SECS` | Optional. HTTP request timeout in seconds for non-WebSocket routes (default `30`). VNC, serial, and `/api/v1/ws/metrics` are **not** subject to this layer. |
+| `VMROGUE_ELASTIC_*`, `VMROGUE_SPLUNK_*`, `VMROGUE_SENTINEL_*`, `VMROGUE_QRADAR_*` | SOC SIEM push and hunt backends — see `docs/SOC.md` |
+| `VMROGUE_SOAR_WEBHOOK_URL` | POST JSON when a new SOC detection fires |
 
 ### VNC and console performance
 

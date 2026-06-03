@@ -103,6 +103,36 @@ const DEFINITIONS: &[IntegrationDef] = &[
         env_var: "VMROGUE_ARGOCD_TOKEN",
         feeds: "Bearer auth for Argo CD API",
     },
+    IntegrationDef {
+        id: "elastic",
+        name: "Elastic Security",
+        env_var: "VMROGUE_ELASTIC_URL",
+        feeds: "SOC events export (ECS bulk) + optional hunts",
+    },
+    IntegrationDef {
+        id: "splunk",
+        name: "Splunk",
+        env_var: "VMROGUE_SPLUNK_HEC_URL",
+        feeds: "SOC events via HEC + optional SPL hunts",
+    },
+    IntegrationDef {
+        id: "sentinel",
+        name: "Microsoft Sentinel",
+        env_var: "VMROGUE_SENTINEL_DCE_URL",
+        feeds: "SOC events via Log Analytics DCE",
+    },
+    IntegrationDef {
+        id: "qradar",
+        name: "IBM QRadar",
+        env_var: "VMROGUE_QRADAR_SYSLOG_HOST",
+        feeds: "SOC events via LEEF syslog",
+    },
+    IntegrationDef {
+        id: "soar",
+        name: "SOAR webhook",
+        env_var: "VMROGUE_SOAR_WEBHOOK_URL",
+        feeds: "Detection fired / playbook triggers",
+    },
 ];
 
 #[cfg(feature = "web")]
@@ -159,6 +189,7 @@ fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
         "opencost" => ("costs", "Open costs"),
         "trivy" => ("security", "Open security"),
         "jaeger" => ("traces", "Open traces"),
+        "elastic" | "splunk" | "sentinel" | "qradar" | "soar" => ("soc", "Open SOC"),
         _ => return None,
     };
     Some(IntegrationOpenLink {
@@ -447,6 +478,24 @@ async fn get_integrations_status(
                 };
             }
         }
+    }
+
+    for item in integrations.iter_mut() {
+        if !item.configured {
+            continue;
+        }
+        let ok = match item.id.as_str() {
+            "elastic" => crate::soc::export::elastic::probe().await,
+            "splunk" => crate::soc::export::splunk::probe().await,
+            "sentinel" => crate::soc::export::sentinel::probe().await,
+            "qradar" => crate::soc::export::qradar::probe().await,
+            _ => continue,
+        };
+        item.probe = if ok {
+            "ok".to_string()
+        } else {
+            "failed".to_string()
+        };
     }
 
     Json(IntegrationsStatusResponse {

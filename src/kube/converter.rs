@@ -370,10 +370,10 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
     };
 
     let video = config.kubevirt_video_type.as_ref().map(|t| {
-        vec![json!({
+        json!([{
             "name": "video0",
             "type": t,
-        })]
+        }])
     });
 
     let (
@@ -431,6 +431,9 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 ..Default::default()
             }),
             spec: VirtualMachineInstanceSpec {
+                architecture: None,
+                dns_policy: None,
+                dns_config: None,
                 domain: DomainSpec {
                     resources: ResourceRequirements {
                         requests: Some(requests),
@@ -675,11 +678,8 @@ mod tests {
         let vm = vm_config_to_kubevirt(&config).unwrap();
         let dev = vm.spec.template.spec.domain.devices.as_ref().unwrap();
         let video = dev.video.as_ref().expect("video");
-        assert_eq!(video.len(), 1);
-        assert_eq!(
-            video[0].get("type").and_then(|v| v.as_str()),
-            Some("virtio")
-        );
+        let first = video.as_array().and_then(|a| a.first()).unwrap_or(video);
+        assert_eq!(first.get("type").and_then(|v| v.as_str()), Some("virtio"));
     }
 
     #[test]

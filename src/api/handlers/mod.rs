@@ -56,6 +56,7 @@ pub mod recommendations;
 pub mod scheduling;
 pub mod security;
 pub mod slo;
+pub mod soc;
 pub mod snapshots;
 pub mod storage;
 pub mod templates;
@@ -112,6 +113,7 @@ pub fn all_routes(
         .merge(experience::router(state.clone()))
         .merge(copilot::router(state.clone()))
         .merge(security::router(state.clone()))
+        .merge(soc::router(state.clone()))
         .merge(compliance::router(state.clone()))
         .merge(monitoring::router(state.clone()))
         // K8s-wired handlers (Phase 2 batch 2)

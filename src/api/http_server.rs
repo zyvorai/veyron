@@ -410,6 +410,37 @@ pub mod web {
         result == 0
     }
 
+    /// Record mutating API calls into the SOC event buffer (after auth succeeds).
+    async fn soc_audit_middleware(
+        State(state): State<SharedState>,
+        request: axum::extract::Request,
+        next: middleware::Next,
+    ) -> impl IntoResponse {
+        let method = request.method().to_string();
+        let path = request.uri().path().to_string();
+        let response = next.run(request).await;
+        let outcome = if response.status().is_success() {
+            "success"
+        } else {
+            "failure"
+        };
+        let state_c = state.clone();
+        let method_c = method.clone();
+        let path_c = path.clone();
+        let outcome_c = outcome.to_string();
+        tokio::spawn(async move {
+            crate::api::handlers::soc::record_api_audit(
+                &state_c,
+                "api",
+                &method_c,
+                &path_c,
+                &outcome_c,
+            )
+            .await;
+        });
+        response
+    }
+
     /// API key authentication middleware.
     ///
     /// If the `VMROGUE_API_KEY` env var was set at startup, every request must present
@@ -934,6 +965,10 @@ pub mod web {
                 state.clone(),
                 rate_limit_middleware,
             ))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                soc_audit_middleware,
+            ))
             .layer(middleware::from_fn_with_state(state, auth_middleware))
             .layer(build_cors_layer())
             .layer(DefaultBodyLimit::max(10 * 1024 * 1024)) // 10 MiB
@@ -964,8 +999,16 @@ pub mod web {
 
         // Initialize kube client at startup instead of lazily per-request
         let state = Arc::new(RwLock::new(
-            WebState::new(namespace, rate_limit_per_minute).await?,
+            WebState::new(namespace.clone(), rate_limit_per_minute).await?,
         ));
+        {
+            let ns = namespace.clone();
+            let k8s = {
+                let s = state.read().await;
+                s.kube_client.client()
+            };
+            crate::soc::export::spawn_export_loop(ns, k8s, 30);
+        }
         let schedule_state = state.clone();
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
@@ -1243,6 +1286,9 @@ pub mod web {
     #[derive(Deserialize)]
     pub struct VmQuery {
         pub namespace: Option<String>,
+        /// Alias for `namespace` (dashboard legacy `?ns=`).
+        #[serde(alias = "ns")]
+        pub ns: Option<String>,
     }
 
     /// First guest IP + node name from VMI status (VMI name matches VM name in KubeVirt).
@@ -1331,45 +1377,36 @@ pub mod web {
         let scope_ns = query
             .namespace
             .as_deref()
+            .or(query.ns.as_deref())
             .unwrap_or(default_namespace.as_str());
 
-        let vms_result = if scope_ns == "all" {
-            client.list_all_vms().await
-        } else {
-            client.list_vms(scope_ns).await
-        };
-
-        match vms_result {
-            Ok(vms) => {
-                let vmi_index = vmi_ip_node_index(&client, scope_ns).await;
-                let drift_index = vrvm_drift_index(&client, scope_ns).await;
-                let vm_infos: Vec<VmInfo> = vms
-                    .iter()
-                    .map(|vm| {
-                        let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
-                        let name = vm.metadata.name.as_deref().unwrap_or("");
-                        let (ip, node) = vmi_index
-                            .get(&(ns.to_string(), name.to_string()))
-                            .cloned()
-                            .unwrap_or((None, None));
-                        let mut info = VmInfo::from_vm_with_vmi_data(vm, ip, node);
-                        if let Some((drift, message)) =
-                            drift_index.get(&(ns.to_string(), name.to_string()))
-                        {
-                            info.vmrogue_managed = Some(true);
-                            info.drift_detected = Some(*drift);
-                            info.drift_message = message.clone();
-                        } else {
-                            info.vmrogue_managed = Some(false);
-                        }
-                        info
-                    })
-                    .collect();
-                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms");
-                ok_json(&ApiResponse::success(&vm_infos, &ctx.request_id))
-            }
-            Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
-        }
+        let vms = client.list_vms_for_scope(scope_ns).await;
+        let vmi_index = vmi_ip_node_index(&client, scope_ns).await;
+        let drift_index = vrvm_drift_index(&client, scope_ns).await;
+        let vm_infos: Vec<VmInfo> = vms
+            .iter()
+            .map(|vm| {
+                let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+                let name = vm.metadata.name.as_deref().unwrap_or("");
+                let (ip, node) = vmi_index
+                    .get(&(ns.to_string(), name.to_string()))
+                    .cloned()
+                    .unwrap_or((None, None));
+                let mut info = VmInfo::from_vm_with_vmi_data(vm, ip, node);
+                if let Some((drift, message)) =
+                    drift_index.get(&(ns.to_string(), name.to_string()))
+                {
+                    info.vmrogue_managed = Some(true);
+                    info.drift_detected = Some(*drift);
+                    info.drift_message = message.clone();
+                } else {
+                    info.vmrogue_managed = Some(false);
+                }
+                info
+            })
+            .collect();
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms");
+        ok_json(&ApiResponse::success(&vm_infos, &ctx.request_id))
     }
 
     async fn get_vm_handler(
