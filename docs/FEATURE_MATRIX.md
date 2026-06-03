@@ -136,7 +136,7 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | CloudOS Fix-it errors | Working | VM actions → `/experience/errors/translate` modal |
 | Template App Store | Working | `page-app-store` — `/experience/templates` grid + Forge VM |
 | CloudOS Finder sidebar | Working | Favorites / Operations / Network (collapsible); Browse pin-to-Finder |
-| CloudOS macOS dock shell | Working | Dock bounce, Notification Center (menubar), VM context menu, Launchpad keyboard nav, `GET /experience/desktop` (+ shortcuts) |
+| CloudOS macOS dock shell | Working | Dock bounce, Notification Center (menubar), VM context menu, Launchpad keyboard nav, `GET /experience/desktop` (+ shortcuts); Tahoe density (SF type, 40px menubar, toolbar-only Normal/Power, compact stat pills) |
 | VNC / Serial / RDP (Screen Sharing) | Working | VNC/Serial window chrome; RDP macOS sheet + Connect protocol; Spotlight `open_rdp` |
 | VM guest health scores | Working | `/experience/fleet/health` pills on cards-first VM grid |
 | CloudOS session / RBAC UI | Working | `/experience/session` hides mutating controls for readonly |

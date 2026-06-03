@@ -333,6 +333,8 @@ else
     FAIL=$((FAIL + 1))
 fi
 check_html_contains "GET /dashboard (SOC page)" "${BASE}/dashboard" 'id="page-soc"'
+check_html_contains "GET /dashboard (Tahoe toolbar)" "${BASE}/dashboard" 'id="mac-page-toolbar"'
+check_html_contains "GET /dashboard (SF typography)" "${BASE}/dashboard" 'SF Pro Text'
 check_http_200 "GET /dashboard" "${BASE}/dashboard" no
 
 echo ""
