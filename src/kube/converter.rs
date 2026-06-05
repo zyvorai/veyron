@@ -24,6 +24,15 @@ fn qemu_guest_agent_channel() -> Channel {
     }
 }
 
+/// When true, emit `domain.devices.channels` for the QEMU guest agent virtio-serial socket.
+/// KubeVirt 1.8+ auto-injects this channel; explicit channels fail strict validation unless needed.
+fn emit_guest_agent_channels() -> bool {
+    matches!(
+        std::env::var("VMROGUE_EMIT_GUEST_AGENT_CHANNELS").as_deref(),
+        Ok("1") | Ok("true") | Ok("yes")
+    )
+}
+
 /// Convert a [`VMConfig`] to a KubeVirt `VirtualMachine` custom resource.
 ///
 /// ```
@@ -482,7 +491,11 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         },
                         network_interface_multiqueue: None,
                         video,
-                        channels: Some(vec![qemu_guest_agent_channel()]),
+                        channels: if emit_guest_agent_channels() {
+                            Some(vec![qemu_guest_agent_channel()])
+                        } else {
+                            None
+                        },
                     }),
                     filesystems,
                     features,
@@ -736,5 +749,20 @@ mod tests {
         let cloud_init_vol = volumes.iter().find(|v| v.name == "cloudinitdisk");
         assert!(cloud_init_vol.is_some());
         assert!(cloud_init_vol.unwrap().cloud_init_no_cloud.is_some());
+    }
+
+    #[test]
+    fn test_guest_agent_channels_omitted_by_default() {
+        let config = VMConfigBuilder::new("no-channel-vm")
+            .namespace("default")
+            .cpu(1, 1, 1)
+            .memory("1Gi")
+            .add_blank_disk("rootdisk", "10Gi", 1)
+            .add_pod_network("default")
+            .build();
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let dev = vm.spec.template.spec.domain.devices.as_ref().unwrap();
+        assert!(dev.channels.is_none());
     }
 }

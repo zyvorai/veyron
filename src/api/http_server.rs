@@ -890,6 +890,18 @@ pub mod web {
                     post(guest_fix_plan_handler),
                 )
                 .route(
+                    "/api/v1/vms/:ns/:name/guest/metrics",
+                    get(guest_metrics_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/migrate-score",
+                    get(guest_migrate_score_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/exec",
+                    post(guest_exec_handler),
+                )
+                .route(
                     "/api/v1/platform/guestkit/binary",
                     get(guestkit_binary_handler),
                 )
@@ -2109,6 +2121,75 @@ pub mod web {
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_FIX_PLAN_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_metrics_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_metrics(&ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/metrics");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_METRICS_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_migrate_score_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Query(params): Query<std::collections::HashMap<String, String>>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let target = params
+            .get("target")
+            .map(String::as_str)
+            .unwrap_or("kvm");
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_migrate_score(&ns, &name, target).await {
+            Ok(resp) => {
+                let ctx = req_ctx(
+                    HttpMethod::GET,
+                    "/api/v1/vms/:ns/:name/guest/migrate-score",
+                );
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_MIGRATE_SCORE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_exec_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(body): Json<serde_json::Value>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_exec_via_guestkit(&ns, &name, body).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/exec");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_EXEC_FAILED", &sanitize_error(&e)),
         }
     }
 

@@ -8,5 +8,5 @@ use serde_json::{json, Value};
 
 pub async fn guest_info(client: Client, namespace: &str, vmi_name: &str) -> Result<Value> {
     let body = json!({ "execute": "guest-info" });
-    vmi_guest_exec(client, namespace, vmi_name, body).await
+    crate::kube::guestkit_client::qga_execute_for_vmi(client, namespace, vmi_name, body).await
 }

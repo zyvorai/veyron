@@ -147,6 +147,105 @@ pub fn parse_windows_psdrive_output(stdout: &str) -> Vec<GuestFilesystemMount> {
     mounts
 }
 
+/// Parse GuestKit `guestkit.getFilesystem` / `guest-get-fsinfo` normalized payload.
+pub fn parse_guestkit_filesystem_mounts(value: &serde_json::Value) -> Vec<GuestFilesystemMount> {
+    let arr = value
+        .get("mounts")
+        .and_then(|v| v.as_array())
+        .or_else(|| value.as_array());
+    let Some(entries) = arr else {
+        return Vec::new();
+    };
+    entries
+        .iter()
+        .filter_map(|entry| {
+            let mount = entry
+                .get("mount")
+                .or_else(|| entry.get("mountpoint"))
+                .and_then(|v| v.as_str())?
+                .to_string();
+            let size_bytes = entry
+                .get("size_bytes")
+                .or_else(|| entry.get("total-bytes"))
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
+            let used_bytes = entry
+                .get("used_bytes")
+                .or_else(|| entry.get("used-bytes"))
+                .and_then(|v| v.as_u64())
+                .unwrap_or(0);
+            let avail_bytes = entry
+                .get("avail_bytes")
+                .or_else(|| entry.get("avail-bytes"))
+                .and_then(|v| v.as_u64())
+                .unwrap_or(size_bytes.saturating_sub(used_bytes));
+            let use_percent = entry
+                .get("use_percent")
+                .or_else(|| entry.get("use-percent"))
+                .and_then(|v| v.as_f64())
+                .unwrap_or_else(|| {
+                    if size_bytes > 0 {
+                        (used_bytes as f64 / size_bytes as f64) * 100.0
+                    } else {
+                        0.0
+                    }
+                });
+            let filesystem = entry
+                .get("filesystem")
+                .or_else(|| entry.get("name"))
+                .and_then(|v| v.as_str())
+                .map(str::to_string);
+            Some(GuestFilesystemMount {
+                mount,
+                filesystem,
+                size_bytes,
+                used_bytes,
+                avail_bytes,
+                use_percent,
+            })
+        })
+        .collect()
+}
+
+/// Collect filesystem usage via GuestKit (virsh QGA — no K8s guest-exec subresource).
+pub async fn collect_guest_filesystem_guestkit(
+    client: Client,
+    namespace: &str,
+    vm_name: &str,
+    vmi_name: &str,
+    vm_json: &Value,
+    vmi_json: &Value,
+) -> Result<GuestFilesystemResponse> {
+    use super::guestkit_client;
+    let family = detect_guest_os_family(Some(vm_json), Some(vmi_json));
+    let raw = guestkit_client::guestkit_rpc_for_vmi(
+        client,
+        namespace,
+        vmi_name,
+        "guestkit.getFilesystem",
+        serde_json::json!({}),
+    )
+    .await?;
+    let mounts = parse_guestkit_filesystem_mounts(&raw);
+    if mounts.is_empty() {
+        anyhow::bail!("GuestKit filesystem response contained no mounts");
+    }
+    Ok(GuestFilesystemResponse {
+        namespace: namespace.to_string(),
+        vm_name: vm_name.to_string(),
+        vmi_name: vmi_name.to_string(),
+        guest_agent_connected: true,
+        guest_runtime: Some("guestkit".into()),
+        os_family: family.as_str().to_string(),
+        mounts,
+        prometheus_mounts: Vec::new(),
+        sources: vec!["guestkit-get-filesystem".into()],
+        message: Some("Collected mount usage via GuestKit.".into()),
+        exit_code: Some(0),
+        stderr: None,
+    })
+}
+
 async fn run_guest_exec_collect(
     client: Client,
     namespace: &str,
@@ -276,5 +375,22 @@ tmpfs             1048576        0   1048576       0% /dev/shm\n";
         assert!(
             (mounts[0].use_percent - (50_000_000_000.0 / 65_000_000_000.0 * 100.0)).abs() < 0.01
         );
+    }
+
+    #[test]
+    fn parse_guestkit_filesystem_payload() {
+        let raw = serde_json::json!({
+            "mounts": [{
+                "mount": "/",
+                "size_bytes": 1000,
+                "used_bytes": 400,
+                "avail_bytes": 600,
+                "use_percent": 40.0
+            }]
+        });
+        let mounts = parse_guestkit_filesystem_mounts(&raw);
+        assert_eq!(mounts.len(), 1);
+        assert_eq!(mounts[0].mount, "/");
+        assert_eq!(mounts[0].used_bytes, 400);
     }
 }

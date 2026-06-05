@@ -123,6 +123,22 @@ wait_vm_status() {
     return 1
 }
 
+wait_guest_connected() {
+    local timeout="${1:-360}"
+    local elapsed=0
+    local body
+    while [[ "${elapsed}" -lt "${timeout}" ]]; do
+        curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/status"
+        body="${_CURL_BODY}"
+        if body_success "${body}" && echo "${body}" | grep -qE '"connected"[[:space:]]*:[[:space:]]*true'; then
+            return 0
+        fi
+        sleep 10
+        elapsed=$((elapsed + 10))
+    done
+    return 1
+}
+
 cleanup_vm() {
     if [[ "${CREATED_VM}" -eq 0 ]]; then
         return 0
@@ -211,6 +227,58 @@ EOF
         else
             fail "VM did not reach Running within 6m"
             skip "lifecycle checks after Running timeout"
+        fi
+
+        if [[ "${FAIL}" -eq 0 ]]; then
+            GUEST_CONNECTED=0
+            if wait_guest_connected 360; then
+                GUEST_CONNECTED=1
+                pass "Guest agent connected"
+            else
+                skip "Guest agent not connected within 6m — skipping guest/evidence/doctor"
+            fi
+
+            if [[ "${GUEST_CONNECTED}" -eq 1 ]]; then
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/status"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"connected"[[:space:]]*:[[:space:]]*true'; then
+                    pass "GET guest/status connected"
+                else
+                    fail "GET guest/status" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/evidence"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"evidence"'; then
+                    pass "GET guest/evidence"
+                else
+                    fail "GET guest/evidence" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/doctor"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"boot_report"|"evidence"'; then
+                    pass "GET guest/doctor"
+                else
+                    fail "GET guest/doctor" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/metrics"
+                body="${_CURL_BODY}"
+                if body_success "${body}" && echo "${body}" | grep -qE '"cpu"|"memory"'; then
+                    pass "GET guest/metrics"
+                else
+                    fail "GET guest/metrics" "$(echo "${body}" | head -c 300)"
+                fi
+
+                curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/migrate-score?target=kvm"
+                body="${_CURL_BODY}"
+                if body_success "${body}"; then
+                    pass "GET guest/migrate-score"
+                else
+                    fail "GET guest/migrate-score" "$(echo "${body}" | head -c 300)"
+                fi
+            fi
         fi
 
         if [[ "${FAIL}" -eq 0 ]]; then
