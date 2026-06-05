@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 // Proprietary software — see LICENSE in the repository root.
 
-//! Host-side GuestKit JSON-RPC client via virt-launcher pod exec.
+//! Host-side GuestKit client via virt-launcher `virsh qemu-agent-command`.
 
 use anyhow::{Context, Result};
 use guestkit_agent_protocol::{read_line, write_line};
@@ -14,6 +14,7 @@ use tokio::io::AsyncReadExt;
 
 pub const GUESTKIT_BIN_HOST: &str = "/usr/local/bin/guestkit";
 pub const GUEST_AGENT_CHANNEL: &str = "org.qemu.guest_agent.0";
+const VIRT_LAUNCHER_CONTAINER: &str = "compute";
 
 /// Resolve virt-launcher pod name for a running VM.
 pub async fn find_virt_launcher_pod(
@@ -57,16 +58,21 @@ pub fn socket_discovery_shell() -> &'static str {
     "find /run/libvirt /var/run/kubevirt-private /var/lib/libvirt -name 'org.qemu.guest_agent.0' 2>/dev/null | head -1"
 }
 
-async fn exec_capture(
+async fn exec_in_virt_launcher(
     pods: &Api<Pod>,
     pod_name: &str,
     cmd: Vec<String>,
-) -> Result<(String, String, i32)> {
-    let ap = AttachParams::default().stdout(true).stderr(true);
+) -> Result<(String, String)> {
+    let ap = AttachParams {
+        container: Some(VIRT_LAUNCHER_CONTAINER.into()),
+        stdout: true,
+        stderr: true,
+        ..Default::default()
+    };
     let mut attached = pods
         .exec(pod_name, cmd, &ap)
         .await
-        .context("pod exec attach")?;
+        .context("virt-launcher pod exec attach")?;
     let mut stdout = Vec::new();
     let mut stderr = Vec::new();
     if let Some(mut out) = attached.stdout() {
@@ -75,16 +81,15 @@ async fn exec_capture(
     if let Some(mut err) = attached.stderr() {
         err.read_to_end(&mut stderr).await?;
     }
-    attached.join().await.context("pod exec join")?;
+    attached.join().await.context("virt-launcher pod exec join")?;
     Ok((
         String::from_utf8_lossy(&stdout).to_string(),
         String::from_utf8_lossy(&stderr).to_string(),
-        0,
     ))
 }
 
 async fn discover_libvirt_domain(pods: &Api<Pod>, pod_name: &str) -> Result<String> {
-    let (stdout, stderr, _) = exec_capture(
+    let (stdout, stderr) = exec_in_virt_launcher(
         pods,
         pod_name,
         vec![
@@ -119,40 +124,41 @@ fn jsonrpc_method_to_qga_execute(method: &str, params: &Value) -> Result<Value> 
     }
 }
 
-fn parse_qga_response(stdout: &str, stderr: &str) -> Result<Value> {
-    let combined = if stdout.trim().is_empty() {
-        stderr.trim()
-    } else {
-        stdout.trim()
-    };
-    if combined.is_empty() {
-        anyhow::bail!("virsh qemu-agent-command returned no output");
+fn parse_virsh_qga_output(stdout: &str, stderr: &str) -> Result<Value> {
+    let out = stdout.trim();
+    if !out.is_empty() {
+        if let Ok(value) = serde_json::from_str::<Value>(out) {
+            if let Some(ret) = value.get("return") {
+                return Ok(ret.clone());
+            }
+            if let Some(err) = value.get("error") {
+                anyhow::bail!("guest agent error: {err}");
+            }
+            return Ok(value);
+        }
     }
-    let value: Value = serde_json::from_str(combined)
-        .with_context(|| format!("parse virsh output: {combined}"))?;
-    if let Some(ret) = value.get("return") {
-        return Ok(ret.clone());
+    let err = stderr.trim();
+    if !err.is_empty() {
+        let msg = err.strip_prefix("error: ").unwrap_or(err);
+        anyhow::bail!("{msg}");
     }
-    if let Some(err) = value.get("error") {
-        anyhow::bail!("guest agent error: {err}");
-    }
-    Ok(value)
+    anyhow::bail!("virsh qemu-agent-command returned no output");
 }
 
-/// Invoke GuestKit JSON-RPC inside virt-launcher via `virsh qemu-agent-command`.
-pub async fn guestkit_rpc_for_vm(
+/// Invoke GuestKit JSON-RPC on a running VM via virt-launcher `virsh qemu-agent-command`.
+pub async fn guestkit_rpc_for_vmi(
     client: Client,
     namespace: &str,
-    vm_name: &str,
+    vmi_name: &str,
     method: &str,
     params: Value,
 ) -> Result<Value> {
-    let pod_name = find_virt_launcher_pod(&client, namespace, vm_name).await?;
+    let pod_name = find_virt_launcher_pod(&client, namespace, vmi_name).await?;
     let pods: Api<Pod> = Api::namespaced(client, namespace);
     let domain = discover_libvirt_domain(&pods, &pod_name).await?;
     let qga_cmd = jsonrpc_method_to_qga_execute(method, &params)?;
     let payload = serde_json::to_string(&qga_cmd)?;
-    let (stdout, stderr, _) = exec_capture(
+    let (stdout, stderr) = exec_in_virt_launcher(
         &pods,
         &pod_name,
         vec![
@@ -163,7 +169,18 @@ pub async fn guestkit_rpc_for_vm(
         ],
     )
     .await?;
-    parse_qga_response(&stdout, &stderr)
+    parse_virsh_qga_output(&stdout, &stderr)
+}
+
+/// Back-compat wrapper keyed by VM name (VMI name matches VM name on KubeVirt).
+pub async fn guestkit_rpc_for_vm(
+    client: Client,
+    namespace: &str,
+    vm_name: &str,
+    method: &str,
+    params: Value,
+) -> Result<Value> {
+    guestkit_rpc_for_vmi(client, namespace, vm_name, method, params).await
 }
 
 /// Direct unix-socket JSON-RPC (host-side libvirt socket on node or virt-launcher).
@@ -207,5 +224,22 @@ mod tests {
             discover_agent_socket_from_find_output(out),
             Some("/var/run/kubevirt-private/abc/org.qemu.guest_agent.0".into())
         );
+    }
+
+    #[test]
+    fn parse_virsh_qga_output_extracts_return() {
+        let out = r#"{"return":{"pong":true}}"#;
+        let value = super::parse_virsh_qga_output(out, "").unwrap();
+        assert_eq!(value["pong"], true);
+    }
+
+    #[test]
+    fn parse_virsh_qga_output_surfaces_virsh_error() {
+        let err = super::parse_virsh_qga_output("", "error: Guest agent is not connected");
+        assert!(err.is_err());
+        assert!(err
+            .unwrap_err()
+            .to_string()
+            .contains("Guest agent is not connected"));
     }
 }

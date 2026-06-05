@@ -82,6 +82,6 @@ spec:
     enableRng: true
     machineType: q35
     labels:
-      os: windows
       os.version: '2022'
+      os: windows
     allowInternet: true

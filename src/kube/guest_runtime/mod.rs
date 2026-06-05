@@ -59,6 +59,15 @@ pub async fn detect_runtime_kind(
         return GuestRuntimeKind::Unknown;
     }
     if let Ok(raw) = kubevirt::guest_info(client.clone(), namespace, vmi_name).await {
+        let commands = raw
+            .pointer("/return/supported_commands")
+            .or_else(|| raw.get("supported_commands"))
+            .and_then(|v| v.as_array());
+        if let Some(list) = commands {
+            if list.iter().any(|c| c.as_str() == Some("guestkit-get-evidence")) {
+                return GuestRuntimeKind::GuestKit;
+            }
+        }
         if let Some(version) = raw
             .get("version")
             .or_else(|| raw.pointer("/return/version"))
@@ -157,10 +166,10 @@ pub async fn guest_exec(
 }
 
 pub async fn guestkit_evidence(ctx: &GuestContext) -> Result<EvidenceSnapshot> {
-    let value = guestkit_client::guestkit_rpc_for_vm(
+    let value = guestkit_client::guestkit_rpc_for_vmi(
         ctx.client.clone(),
         &ctx.namespace,
-        &ctx.vm_name,
+        &ctx.vmi_name,
         "guestkit.getEvidence",
         json!({}),
     )
@@ -169,10 +178,10 @@ pub async fn guestkit_evidence(ctx: &GuestContext) -> Result<EvidenceSnapshot> {
 }
 
 pub async fn guestkit_doctor(ctx: &GuestContext, target: &str) -> Result<Value> {
-    guestkit_client::guestkit_rpc_for_vm(
+    guestkit_client::guestkit_rpc_for_vmi(
         ctx.client.clone(),
         &ctx.namespace,
-        &ctx.vm_name,
+        &ctx.vmi_name,
         "guestkit.doctor",
         json!({ "target": target }),
     )
@@ -180,10 +189,10 @@ pub async fn guestkit_doctor(ctx: &GuestContext, target: &str) -> Result<Value> 
 }
 
 pub async fn guestkit_fix_plan(ctx: &GuestContext, plan: Value) -> Result<Value> {
-    guestkit_client::guestkit_rpc_for_vm(
+    guestkit_client::guestkit_rpc_for_vmi(
         ctx.client.clone(),
         &ctx.namespace,
-        &ctx.vm_name,
+        &ctx.vmi_name,
         "guestkit.runFixPlan",
         plan,
     )
@@ -191,10 +200,10 @@ pub async fn guestkit_fix_plan(ctx: &GuestContext, plan: Value) -> Result<Value>
 }
 
 pub async fn guestkit_capabilities(ctx: &GuestContext) -> Result<Value> {
-    guestkit_client::guestkit_rpc_for_vm(
+    guestkit_client::guestkit_rpc_for_vmi(
         ctx.client.clone(),
         &ctx.namespace,
-        &ctx.vm_name,
+        &ctx.vmi_name,
         "guestkit.getCapabilities",
         json!({}),
     )
@@ -202,10 +211,10 @@ pub async fn guestkit_capabilities(ctx: &GuestContext) -> Result<Value> {
 }
 
 pub async fn guestkit_version(ctx: &GuestContext) -> Result<Value> {
-    guestkit_client::guestkit_rpc_for_vm(
+    guestkit_client::guestkit_rpc_for_vmi(
         ctx.client.clone(),
         &ctx.namespace,
-        &ctx.vm_name,
+        &ctx.vmi_name,
         "guestkit.getVersion",
         json!({}),
     )

@@ -420,6 +420,14 @@ spec:
                   key: api-key
             - name: RUST_LOG
               value: info
+            - name: VMROGUE_API_NODE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: VMROGUE_API_NODE_PORT
+              value: "30151"
+            - name: VMROGUE_CLUSTER_DNS
+              value: "10.43.0.10"
           ports:
             - containerPort: 5151
               name: https

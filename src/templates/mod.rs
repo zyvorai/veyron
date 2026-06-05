@@ -916,75 +916,179 @@ WantedBy=multi-user.target
 
 /// Default URL cloud-init uses to fetch the GuestKit binary (override via VMROGUE_GUESTKIT_BINARY_URL).
 pub fn default_guestkit_binary_url() -> String {
-    std::env::var("VMROGUE_GUESTKIT_BINARY_URL").unwrap_or_else(|_| {
-        "https://vmrogue-api.vmrogue-system.svc/api/v1/platform/guestkit/binary".into()
-    })
+    guestkit_binary_urls()
+        .into_iter()
+        .next()
+        .unwrap_or_else(|| {
+            "https://vmrogue-api.vmrogue-system.svc.cluster.local/api/v1/platform/guestkit/binary"
+                .into()
+        })
+}
+
+/// Ordered GuestKit binary download URLs (tried in sequence during cloud-init).
+pub fn guestkit_binary_urls() -> Vec<String> {
+    let mut urls = Vec::new();
+    if let Ok(u) = std::env::var("VMROGUE_GUESTKIT_BINARY_URL") {
+        if !u.is_empty() {
+            urls.push(u);
+        }
+    }
+    if let Ok(host) = std::env::var("VMROGUE_API_NODE_HOST") {
+        if !host.is_empty() {
+            let port = std::env::var("VMROGUE_API_NODE_PORT").unwrap_or_else(|_| "30151".into());
+            urls.push(format!(
+                "https://{host}:{port}/api/v1/platform/guestkit/binary"
+            ));
+        }
+    }
+    if let Ok(ip) = std::env::var("VMROGUE_API_CLUSTER_IP") {
+        if !ip.is_empty() {
+            urls.push(format!("https://{ip}/api/v1/platform/guestkit/binary"));
+        }
+    }
+    urls.push(
+        "https://vmrogue-api.vmrogue-system.svc.cluster.local/api/v1/platform/guestkit/binary"
+            .into(),
+    );
+    urls.dedup();
+    urls
+}
+
+fn guestkit_resolv_conf_yaml() -> String {
+    let dns = std::env::var("VMROGUE_CLUSTER_DNS").unwrap_or_else(|_| "10.43.0.10".into());
+    format!(
+        r#"manage_resolv_conf: true
+resolv_conf:
+  nameservers: ['{dns}']
+  searchdomains:
+    - vmrogue-system.svc.cluster.local
+    - svc.cluster.local
+    - cluster.local
+"#
+    )
+}
+
+fn guestkit_install_script() -> String {
+    let urls = guestkit_binary_urls();
+    let url_lines = urls
+        .iter()
+        .map(|u| format!("{u}"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!(
+        r#"#!/bin/sh
+set -eu
+URLS="
+{url_lines}
+"
+mkdir -p /usr/local/bin
+for attempt in $(seq 1 30); do
+  for url in $URLS; do
+    [ -z "$url" ] && continue
+    if curl -fkSL -o /usr/local/bin/guestkit "$url" 2>/dev/null && [ -s /usr/local/bin/guestkit ]; then
+      chmod 0755 /usr/local/bin/guestkit
+      exit 0
+    fi
+  done
+  sleep 10
+done
+echo "GuestKit binary download failed after 30 attempts" >&2
+exit 1
+"#
+    )
+}
+
+fn guestkit_write_files_block() -> String {
+    format!(
+        r#"  - path: /usr/local/sbin/vmrogue-install-guestkit.sh
+    permissions: '0755'
+    content: |
+{}
+  - path: /etc/systemd/system/guestkit-agent.service
+    content: |
+{}"#,
+        guestkit_install_script()
+            .lines()
+            .map(|l| format!("      {l}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        guestkit_agent_systemd_unit()
+            .lines()
+            .map(|l| format!("      {l}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+    )
+}
+
+/// Refresh GuestKit install script URLs in an existing cloud-init payload (call at VM create time).
+pub fn refresh_guestkit_cloud_init(user_data: &str) -> String {
+    if !user_data.contains("guestkit-agent") {
+        return user_data.to_string();
+    }
+    if user_data.contains("/usr/local/sbin/vmrogue-install-guestkit.sh") {
+        let script = guestkit_install_script();
+        let indented = script
+            .lines()
+            .map(|l| format!("      {l}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        if let Some(start) = user_data.find("  - path: /usr/local/sbin/vmrogue-install-guestkit.sh")
+        {
+            if let Some(content_start) = user_data[start..].find("content: |\n") {
+                let abs_content = start + content_start + "content: |\n".len();
+                if let Some(end) = user_data[abs_content..].find("\n  - path: /etc/systemd/system/guestkit-agent.service")
+                {
+                    let mut out = String::new();
+                    out.push_str(&user_data[..abs_content]);
+                    out.push_str(&indented);
+                    out.push('\n');
+                    out.push_str(&user_data[abs_content + end..]);
+                    return out;
+                }
+            }
+        }
+    }
+    user_data.replace(
+        &default_guestkit_binary_url(),
+        &guestkit_binary_urls().first().cloned().unwrap_or_default(),
+    )
+}
+
+fn linux_guestkit_cloud_init(user: &str, password: &str, package_update: bool) -> String {
+    let package_update_line = if package_update {
+        "package_update: true\n"
+    } else {
+        ""
+    };
+    format!(
+        r#"#cloud-config
+user: {user}
+password: {password}
+lock_passwd: false
+chpasswd: {{ expire: True }}
+ssh_pwauth: False
+{package_update_line}packages:
+  - curl
+{resolv_conf}
+write_files:
+{write_files}
+runcmd:
+  - /usr/local/sbin/vmrogue-install-guestkit.sh
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, guestkit-agent ]
+  - [ systemctl, start, guestkit-agent ]
+"#,
+        resolv_conf = guestkit_resolv_conf_yaml(),
+        write_files = guestkit_write_files_block(),
+    )
 }
 
 fn default_cloud_init() -> String {
-    let password = generate_random_password();
-    format!(
-        r#"#cloud-config
-user: vmrogue
-password: {}
-lock_passwd: false
-chpasswd: {{ expire: True }}
-ssh_pwauth: False
-package_update: true
-packages:
-  - curl
-write_files:
-  - path: /etc/systemd/system/guestkit-agent.service
-    content: |
-{}
-runcmd:
-  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit "{}" && break; sleep 10; done' ]
-  - [ chmod, '0755', /usr/local/bin/guestkit ]
-  - [ systemctl, daemon-reload ]
-  - [ systemctl, enable, guestkit-agent ]
-  - [ systemctl, start, guestkit-agent ]
-"#,
-        password,
-        guestkit_agent_systemd_unit()
-            .lines()
-            .map(|l| format!("      {l}"))
-            .collect::<Vec<_>>()
-            .join("\n"),
-        default_guestkit_binary_url()
-    )
+    linux_guestkit_cloud_init("vmrogue", &generate_random_password(), true)
 }
 
 fn default_ubuntu_cloud_init() -> String {
-    let password = generate_random_password();
-    format!(
-        r#"#cloud-config
-user: ubuntu
-password: {}
-lock_passwd: false
-chpasswd: {{ expire: True }}
-ssh_pwauth: False
-package_update: true
-packages:
-  - curl
-write_files:
-  - path: /etc/systemd/system/guestkit-agent.service
-    content: |
-{}
-runcmd:
-  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit "{}" && break; sleep 10; done' ]
-  - [ chmod, '0755', /usr/local/bin/guestkit ]
-  - [ systemctl, daemon-reload ]
-  - [ systemctl, enable, guestkit-agent ]
-  - [ systemctl, start, guestkit-agent ]
-"#,
-        password,
-        guestkit_agent_systemd_unit()
-            .lines()
-            .map(|l| format!("      {l}"))
-            .collect::<Vec<_>>()
-            .join("\n"),
-        default_guestkit_binary_url()
-    )
+    linux_guestkit_cloud_init("ubuntu", &generate_random_password(), true)
 }
 
 fn alpine_cloud_init() -> String {
@@ -992,29 +1096,22 @@ fn alpine_cloud_init() -> String {
     format!(
         r#"#cloud-config
 user: alpine
-password: {}
+password: {password}
 lock_passwd: false
 chpasswd: {{ expire: True }}
 ssh_pwauth: False
 packages:
   - curl
+{resolv_conf}
 write_files:
-  - path: /etc/systemd/system/guestkit-agent.service
-    content: |
-{}
+{write_files}
 runcmd:
-  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit "{}" && break; sleep 10; done' ]
-  - [ chmod, '0755', /usr/local/bin/guestkit ]
+  - /usr/local/sbin/vmrogue-install-guestkit.sh
   - [ rc-update, add, guestkit-agent, default ]
   - [ rc-service, guestkit-agent, start ]
 "#,
-        password,
-        guestkit_agent_systemd_unit()
-            .lines()
-            .map(|l| format!("      {l}"))
-            .collect::<Vec<_>>()
-            .join("\n"),
-        default_guestkit_binary_url()
+        resolv_conf = guestkit_resolv_conf_yaml(),
+        write_files = guestkit_write_files_block(),
     )
 }
 
