@@ -15,7 +15,7 @@ Status legend:
 | Page | Frontend Page ID | Primary Routes | Backend Source | Status | Notes |
 |---|---|---|---|---|---|
 | Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview`, `/api/v1/experience/home` | `http_server.rs`, `handlers/experience.rs` | Working | Datacenter Home, control center, overview cards |
-| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest-agent/*-rdp` | `http_server.rs` | Working | List/card views, drift badges + filter; detail panel via `/drift` |
+| VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest/*`, `/guest-agent/*-rdp` | `http_server.rs` | Working | GuestKit status/evidence/doctor on Linux; RDP guest-agent on Windows |
 | Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes | `http_server.rs` | Working | Uses direct handlers in `http_server.rs` |
 | Nodes | `page-nodes` | `/api/v1/nodes` | `http_server.rs`, `handlers/nodes.rs` | Working | Real allocatable/capacity data |
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |

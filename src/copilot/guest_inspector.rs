@@ -88,7 +88,7 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
     } else {
         r.evidence.push("QEMU guest agent: not connected".into());
         r.recommendations.push(
-            "Install and enable qemu-guest-agent (Linux) or QEMU Guest Agent + Cloudbase-Init (Windows).".into(),
+            "Linux VMs install GuestKit via cloud-init; Windows uses QEMU Guest Agent + Cloudbase-Init.".into(),
         );
         r.recommendations.push(
             "Restart the VM after installing the agent so KubeVirt reports AgentConnected.".into(),
@@ -138,7 +138,7 @@ pub fn enrich_doctor_with_guest(r: &mut CopilotResponse, vmi: &VirtualMachineIns
         .is_some_and(|j| vmi_guest_agent_connected(j));
     if !agent_up {
         r.recommendations.push(
-            "Guest agent not connected — install qemu-guest-agent for metrics and guest-exec."
+            "Guest runtime not connected — Linux VMs use GuestKit; Windows uses QEMU Guest Agent."
                 .into(),
         );
         if let Some(score) = r.health_score {

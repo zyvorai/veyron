@@ -170,8 +170,19 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `VMROGUE_HTTP_REQUEST_TIMEOUT_SECS` | Optional. HTTP request timeout in seconds for non-WebSocket routes (default `30`). VNC, serial, and `/api/v1/ws/metrics` are **not** subject to this layer. |
 | `VMROGUE_ELASTIC_*`, `VMROGUE_SPLUNK_*`, `VMROGUE_SENTINEL_*`, `VMROGUE_QRADAR_*` | SOC SIEM push and hunt backends — see `docs/SOC.md` |
 | `VMROGUE_SOAR_WEBHOOK_URL` | POST JSON when a new SOC detection fires |
+| `VMROGUE_GUESTKIT_BINARY_URL` | Override URL cloud-init uses to download GuestKit (default: cluster Service FQDN + fallbacks) |
+| `VMROGUE_API_NODE_HOST` | Node IP for NodePort bootstrap URL (set automatically via `status.hostIP` in deploy manifests) |
+| `VMROGUE_API_NODE_PORT` | NodePort for GuestKit binary download (default `30151`) |
+| `VMROGUE_CLUSTER_DNS` | Cluster DNS IP injected into Linux cloud-init resolv.conf (default `10.43.0.10`) |
+| `VMROGUE_GUEST_RUNTIME` | Guest runtime mode: `auto` (default), `guestkit`, or `qga` |
 
-### VNC and console performance
+### GuestKit (Linux guest runtime)
+
+- Linux templates bootstrap **GuestKit** via cloud-init (`src/templates/mod.rs`); Windows keeps QEMU Guest Agent.
+- API routes: `GET /api/v1/vms/:ns/:name/guest/status`, `/guest/evidence`, `/guest/doctor`, `/guest/fix-plan` (aliases under `/guest-agent/*` for RDP).
+- Unauthenticated binary endpoint for cloud-init: `GET /api/v1/platform/guestkit/binary`.
+- Host RPC uses virt-launcher pod exec → `virsh qemu-agent-command` with QGA commands (`guestkit-get-evidence`, etc.).
+
 
 - **Dashboard noVNC**: use **Link quality** to trade bandwidth vs responsiveness; reconnect applies the selected preset.
 - **Linux templates** (`src/templates/mod.rs`): `.interactive_console_defaults()` enables **USB tablet**, **disables virtio-balloon**, and sets **`ioThreadsPolicy: shared`** for smoother browser consoles. Windows templates already set the same levers explicitly.
