@@ -39,19 +39,7 @@ spec:
       networkType:
         type: pod
     cloudInit:
-      userData: |
-        #cloud-config
-        user: vmrogue
-        password: ppx6MW5Gpzfan%hN
-        lock_passwd: false
-        chpasswd: { expire: True }
-        ssh_pwauth: False
-        package_update: true
-        packages:
-          - qemu-guest-agent
-        runcmd:
-          - [ systemctl, enable, qemu-guest-agent ]
-          - [ systemctl, start, qemu-guest-agent ]
+      userData: "#cloud-config\nuser: vmrogue\npassword: Q0eBkkJXgMjTnH38\nlock_passwd: false\nchpasswd: { expire: True }\nssh_pwauth: False\npackage_update: true\npackages:\n  - curl\nwrite_files:\n  - path: /etc/systemd/system/guestkit-agent.service\n    content: |\n      [Unit]\n      Description=GuestKit Agent (Zyvor)\n      After=network.target\n      ConditionPathExists=/dev/virtio-ports/org.qemu.guest_agent.0\n      \n      [Service]\n      ExecStart=/usr/local/bin/guestkit agent --channel virtio\n      Restart=on-failure\n      User=root\n      StandardOutput=journal\n      StandardError=journal\n      \n      [Install]\n      WantedBy=multi-user.target\nruncmd:\n  - [ sh, -c, 'curl -fsSL -o /usr/local/bin/guestkit \"http://vmrogue.vmrogue-system.svc:5151/api/v1/platform/guestkit/binary\"' ]\n  - [ chmod, '0755', /usr/local/bin/guestkit ]\n  - [ systemctl, daemon-reload ]\n  - [ systemctl, enable, guestkit-agent ]\n  - [ systemctl, start, guestkit-agent ]\n"
     clock:
       utc: true
       timers:

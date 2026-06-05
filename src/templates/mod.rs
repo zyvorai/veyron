@@ -894,6 +894,33 @@ fn generate_random_password() -> String {
         .collect()
 }
 
+/// Shared GuestKit agent systemd unit (Linux cloud-init).
+pub fn guestkit_agent_systemd_unit() -> &'static str {
+    r#"[Unit]
+Description=GuestKit Agent (Zyvor)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/bin/sh -c 'until [ -e /dev/virtio-ports/org.qemu.guest_agent.0 ]; do sleep 2; done; exec /usr/local/bin/guestkit agent --channel virtio'
+Restart=always
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+"#
+}
+
+/// Default URL cloud-init uses to fetch the GuestKit binary (override via VMROGUE_GUESTKIT_BINARY_URL).
+pub fn default_guestkit_binary_url() -> String {
+    std::env::var("VMROGUE_GUESTKIT_BINARY_URL").unwrap_or_else(|_| {
+        "https://vmrogue-api.vmrogue-system.svc/api/v1/platform/guestkit/binary".into()
+    })
+}
+
 fn default_cloud_init() -> String {
     let password = generate_random_password();
     format!(
@@ -905,12 +932,25 @@ chpasswd: {{ expire: True }}
 ssh_pwauth: False
 package_update: true
 packages:
-  - qemu-guest-agent
+  - curl
+write_files:
+  - path: /etc/systemd/system/guestkit-agent.service
+    content: |
+{}
 runcmd:
-  - [ systemctl, enable, qemu-guest-agent ]
-  - [ systemctl, start, qemu-guest-agent ]
+  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit "{}" && break; sleep 10; done' ]
+  - [ chmod, '0755', /usr/local/bin/guestkit ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, guestkit-agent ]
+  - [ systemctl, start, guestkit-agent ]
 "#,
-        password
+        password,
+        guestkit_agent_systemd_unit()
+            .lines()
+            .map(|l| format!("      {l}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        default_guestkit_binary_url()
     )
 }
 
@@ -925,12 +965,25 @@ chpasswd: {{ expire: True }}
 ssh_pwauth: False
 package_update: true
 packages:
-  - qemu-guest-agent
+  - curl
+write_files:
+  - path: /etc/systemd/system/guestkit-agent.service
+    content: |
+{}
 runcmd:
-  - [ systemctl, enable, qemu-guest-agent ]
-  - [ systemctl, start, qemu-guest-agent ]
+  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit "{}" && break; sleep 10; done' ]
+  - [ chmod, '0755', /usr/local/bin/guestkit ]
+  - [ systemctl, daemon-reload ]
+  - [ systemctl, enable, guestkit-agent ]
+  - [ systemctl, start, guestkit-agent ]
 "#,
-        password
+        password,
+        guestkit_agent_systemd_unit()
+            .lines()
+            .map(|l| format!("      {l}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        default_guestkit_binary_url()
     )
 }
 
@@ -944,12 +997,24 @@ lock_passwd: false
 chpasswd: {{ expire: True }}
 ssh_pwauth: False
 packages:
-  - qemu-guest-agent
+  - curl
+write_files:
+  - path: /etc/systemd/system/guestkit-agent.service
+    content: |
+{}
 runcmd:
-  - rc-update add qemu-guest-agent
-  - rc-service qemu-guest-agent start
+  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit "{}" && break; sleep 10; done' ]
+  - [ chmod, '0755', /usr/local/bin/guestkit ]
+  - [ rc-update, add, guestkit-agent, default ]
+  - [ rc-service, guestkit-agent, start ]
 "#,
-        password
+        password,
+        guestkit_agent_systemd_unit()
+            .lines()
+            .map(|l| format!("      {l}"))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        default_guestkit_binary_url()
     )
 }
 

@@ -874,6 +874,26 @@ pub mod web {
                     get(guest_filesystem_handler),
                 )
                 .route(
+                    "/api/v1/vms/:ns/:name/guest/status",
+                    get(guest_runtime_status_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/evidence",
+                    get(guest_evidence_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/doctor",
+                    get(guest_doctor_handler),
+                )
+                .route(
+                    "/api/v1/vms/:ns/:name/guest/fix-plan",
+                    post(guest_fix_plan_handler),
+                )
+                .route(
+                    "/api/v1/platform/guestkit/binary",
+                    get(guestkit_binary_handler),
+                )
+                .route(
                     "/api/v1/vms/:ns/:name",
                     axum::routing::put(update_vm_handler),
                 )
@@ -1994,6 +2014,114 @@ pub mod web {
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_FILESYSTEM_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_runtime_status_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_runtime_status(&ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/status");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_STATUS_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_evidence_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_evidence(&ns, &name).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/evidence");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_EVIDENCE_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_doctor_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Query(params): Query<std::collections::HashMap<String, String>>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let target = params
+            .get("target")
+            .map(String::as_str)
+            .unwrap_or("kvm");
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_doctor(&ns, &name, target).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/doctor");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_DOCTOR_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guest_fix_plan_handler(
+        State(state): State<SharedState>,
+        Path((ns, name)): Path<(String, String)>,
+        Json(body): Json<serde_json::Value>,
+    ) -> impl IntoResponse {
+        if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
+            return resp;
+        }
+        let kube = {
+            let s = state.read().await;
+            s.kube_client.clone()
+        };
+        match kube.guest_fix_plan(&ns, &name, body).await {
+            Ok(resp) => {
+                let ctx = req_ctx(HttpMethod::POST, "/api/v1/vms/:ns/:name/guest/fix-plan");
+                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
+            }
+            Err(e) => err_json(500, "GUEST_FIX_PLAN_FAILED", &sanitize_error(&e)),
+        }
+    }
+
+    async fn guestkit_binary_handler() -> impl IntoResponse {
+        match crate::kube::KubeClient::guestkit_binary_bytes() {
+            Ok(bytes) => (
+                [
+                    (axum::http::header::CONTENT_TYPE, "application/octet-stream"),
+                    (
+                        axum::http::header::CONTENT_DISPOSITION,
+                        "attachment; filename=\"guestkit\"",
+                    ),
+                ],
+                bytes,
+            )
+                .into_response(),
+            Err(e) => err_json(
+                503,
+                "GUESTKIT_BINARY_UNAVAILABLE",
+                &sanitize_error(&e),
+            )
+            .into_response(),
         }
     }
 

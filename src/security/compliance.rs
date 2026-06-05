@@ -734,6 +734,7 @@ mod tests {
                                 autoattach_mem_balloon: None,
                                 network_interface_multiqueue: None,
                                 video: None,
+                                ..Default::default()
                             }),
                             filesystems: None,
                             features: None,

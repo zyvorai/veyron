@@ -466,7 +466,7 @@ pub async fn set_rdp_via_guest_agent(
     enable: bool,
 ) -> anyhow::Result<RdpGuestAgentResponse> {
     if !vmi_guest_agent_connected(vmi_json) {
-        anyhow::bail!("QEMU guest agent is not connected (AgentConnected condition is not True)");
+        anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
     }
 
     let is_windows = is_windows_guest(Some(vm_json), Some(vmi_json));

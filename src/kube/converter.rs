@@ -12,6 +12,18 @@ use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use serde_json::json;
 use std::collections::BTreeMap;
 
+const QEMU_GUEST_AGENT_CHANNEL: &str = "org.qemu.guest_agent.0";
+
+fn qemu_guest_agent_channel() -> Channel {
+    Channel {
+        name: "qemu".into(),
+        target: ChannelTarget {
+            name: QEMU_GUEST_AGENT_CHANNEL.into(),
+            channel_type: "virtio".into(),
+        },
+    }
+}
+
 /// Convert a [`VMConfig`] to a KubeVirt `VirtualMachine` custom resource.
 ///
 /// ```
@@ -470,6 +482,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         },
                         network_interface_multiqueue: None,
                         video,
+                        channels: Some(vec![qemu_guest_agent_channel()]),
                     }),
                     filesystems,
                     features,

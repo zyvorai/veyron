@@ -3069,6 +3069,7 @@ mod tests {
             autoattach_mem_balloon: None,
             network_interface_multiqueue: None,
             video: None,
+            ..Default::default()
         });
         vm.spec.template.spec.networks = Some(vec![Network {
             name: "default".to_string(),
@@ -3107,6 +3108,7 @@ mod tests {
             autoattach_mem_balloon: None,
             network_interface_multiqueue: None,
             video: None,
+            ..Default::default()
         });
         vm.spec.template.spec.networks = Some(vec![Network {
             name: "data-net".to_string(),

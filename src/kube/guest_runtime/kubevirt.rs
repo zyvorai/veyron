@@ -1,0 +1,12 @@
+// Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
+
+pub use crate::kube::kubevirt_subresources::vmi_guest_exec;
+
+use anyhow::Result;
+use kube::Client;
+use serde_json::{json, Value};
+
+pub async fn guest_info(client: Client, namespace: &str, vmi_name: &str) -> Result<Value> {
+    let body = json!({ "execute": "guest-info" });
+    vmi_guest_exec(client, namespace, vmi_name, body).await
+}

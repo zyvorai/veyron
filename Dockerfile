@@ -1,4 +1,5 @@
 # Multi-stage build for minimal production image
+# Run scripts/prepare-guestkit-docker.sh before docker build (copies ../guestkit -> ./guestkit).
 FROM rust:1.94-slim-bookworm AS builder
 
 RUN apt-get update && apt-get install -y musl-tools curl && rm -rf /var/lib/apt/lists/*
@@ -6,7 +7,14 @@ RUN rustup target add x86_64-unknown-linux-musl
 
 WORKDIR /build
 
-# Cache dependency compilation
+# GuestKit in-guest agent binary
+COPY guestkit/ ./guestkit/
+RUN cd guestkit \
+    && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --features agent --no-default-features \
+       --target x86_64-unknown-linux-musl \
+    && strip target/x86_64-unknown-linux-musl/release/guestkit
+
+# Cache VMRogue dependency compilation
 COPY Cargo.toml Cargo.lock ./
 RUN mkdir src && echo "fn main() {}" > src/main.rs && echo "" > src/lib.rs \
     && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || true \
@@ -27,6 +35,7 @@ FROM alpine:3.20
 
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /build/target/x86_64-unknown-linux-musl/release/vmrogue /usr/local/bin/vmrogue
+COPY --from=builder /build/guestkit/target/x86_64-unknown-linux-musl/release/guestkit /usr/local/bin/guestkit
 COPY --from=builder /usr/local/bin/virtctl /usr/local/bin/virtctl
 
 USER 10001
