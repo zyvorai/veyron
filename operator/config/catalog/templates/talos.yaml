@@ -40,6 +40,6 @@ spec:
     enableTpm: false
     enableRng: true
     labels:
-      os: talos
       os.version: latest
+      os: talos
     allowInternet: true

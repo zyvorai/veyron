@@ -1298,6 +1298,15 @@ pub mod web {
             return msg;
         }
 
+        if lower.contains("guest agent")
+            || lower.contains("guest runtime")
+            || lower.contains("guestkit")
+            || lower.contains("virt-launcher")
+            || lower.contains("qemu-agent-command")
+        {
+            return msg;
+        }
+
         // Map known error patterns to safe, generic messages
         if msg.starts_with("NotFound") || msg.contains("not found") {
             "Resource not found".to_string()
@@ -3399,7 +3408,9 @@ pub mod web {
                 }
                 // Preserve cloud-init, features, clock from template
                 if let Some(ref ci) = tpl_config.cloud_init {
-                    b = b.cloud_init(&ci.user_data);
+                    b = b.cloud_init(crate::templates::refresh_guestkit_cloud_init(
+                        &ci.user_data,
+                    ));
                 }
                 if tpl_config.enable_rng {
                     b = b.enable_rng();
