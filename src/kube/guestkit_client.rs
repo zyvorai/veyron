@@ -8,18 +8,12 @@ use guestkit_agent_protocol::{read_line, write_line};
 use k8s_openapi::api::core::v1::Pod;
 use kube::api::{AttachParams, Api, ListParams};
 use kube::Client;
-use once_cell::sync::Lazy;
-use serde_json::Value;
-use std::collections::HashSet;
+use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncReadExt;
 
 pub const GUESTKIT_BIN_HOST: &str = "/usr/local/bin/guestkit";
-pub const GUESTKIT_BIN_LAUNCHER: &str = "/tmp/vmrogue-guestkit";
 pub const GUEST_AGENT_CHANNEL: &str = "org.qemu.guest_agent.0";
-
-static INSTALLED_PODS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 /// Resolve virt-launcher pod name for a running VM.
 pub async fn find_virt_launcher_pod(
@@ -60,7 +54,7 @@ pub fn discover_agent_socket_from_find_output(output: &str) -> Option<String> {
 
 /// Shell snippet to locate the QGA-compatible channel socket in virt-launcher.
 pub fn socket_discovery_shell() -> &'static str {
-    "find /var/run/kubevirt-private /var/lib/libvirt -name 'org.qemu.guest_agent.0' 2>/dev/null | head -1"
+    "find /run/libvirt /var/run/kubevirt-private /var/lib/libvirt -name 'org.qemu.guest_agent.0' 2>/dev/null | head -1"
 }
 
 async fn exec_capture(
@@ -89,85 +83,63 @@ async fn exec_capture(
     ))
 }
 
-async fn ensure_guestkit_binary_in_pod(pods: &Api<Pod>, pod_name: &str) -> Result<()> {
-    {
-        let guard = INSTALLED_PODS.lock().map_err(|e| anyhow::anyhow!("{e}"))?;
-        if guard.contains(pod_name) {
-            return Ok(());
-        }
-    }
-
-    let (stdout, _, _) = exec_capture(
-        pods,
-        pod_name,
-        vec![
-            "sh".to_string(),
-            "-c".to_string(),
-            format!("test -x {GUESTKIT_BIN_LAUNCHER} && echo ok"),
-        ],
-    )
-    .await?;
-    if stdout.trim() == "ok" {
-        let mut guard = INSTALLED_PODS.lock().map_err(|e| anyhow::anyhow!("{e}"))?;
-        guard.insert(pod_name.to_string());
-        return Ok(());
-    }
-
-    let binary = std::fs::read(guestkit_binary_path()).with_context(|| {
-        format!(
-            "read guestkit binary at {} — rebuild API image with guestkit bundled",
-            guestkit_binary_path().display()
-        )
-    })?;
-
-    let ap = AttachParams::default().stdin(true).stdout(true).stderr(true);
-    let mut attached = pods
-        .exec(
-            pod_name,
-            vec![
-                "tee".to_string(),
-                GUESTKIT_BIN_LAUNCHER.to_string(),
-            ],
-            &ap,
-        )
-        .await
-        .context("pod exec tee guestkit binary")?;
-    if let Some(mut stdin) = attached.stdin() {
-        stdin.write_all(&binary).await?;
-    }
-    attached.join().await.context("pod exec tee join")?;
-
-    exec_capture(
-        pods,
-        pod_name,
-        vec![
-            "chmod".to_string(),
-            "+x".to_string(),
-            GUESTKIT_BIN_LAUNCHER.to_string(),
-        ],
-    )
-    .await?;
-
-    let mut guard = INSTALLED_PODS.lock().map_err(|e| anyhow::anyhow!("{e}"))?;
-    guard.insert(pod_name.to_string());
-    Ok(())
-}
-
-async fn discover_socket_in_pod(pods: &Api<Pod>, pod_name: &str) -> Result<String> {
+async fn discover_libvirt_domain(pods: &Api<Pod>, pod_name: &str) -> Result<String> {
     let (stdout, stderr, _) = exec_capture(
         pods,
         pod_name,
-        vec!["sh".to_string(), "-c".to_string(), socket_discovery_shell().to_string()],
+        vec![
+            "virsh".to_string(),
+            "list".to_string(),
+            "--name".to_string(),
+        ],
     )
     .await?;
-    discover_agent_socket_from_find_output(&stdout).ok_or_else(|| {
-        anyhow::anyhow!(
-            "guest agent socket not found in virt-launcher {pod_name}: {stderr}{stdout}"
-        )
-    })
+    stdout
+        .lines()
+        .map(str::trim)
+        .find(|line| !line.is_empty())
+        .map(str::to_string)
+        .ok_or_else(|| anyhow::anyhow!("no libvirt domain in virt-launcher {pod_name}: {stderr}"))
 }
 
-/// Invoke GuestKit JSON-RPC inside virt-launcher via bundled `guestkit agent-call`.
+fn jsonrpc_method_to_qga_execute(method: &str, params: &Value) -> Result<Value> {
+    match method {
+        "guestkit.getEvidence" => Ok(json!({ "execute": "guestkit-get-evidence" })),
+        "guestkit.doctor" => Ok(json!({
+            "execute": "guestkit-doctor",
+            "arguments": params,
+        })),
+        "guestkit.getCapabilities" => Ok(json!({ "execute": "guestkit-get-capabilities" })),
+        "guestkit.getVersion" => Ok(json!({ "execute": "guestkit-get-version" })),
+        "guestkit.runFixPlan" => Ok(json!({
+            "execute": "guestkit-run-fix-plan",
+            "arguments": params,
+        })),
+        other => anyhow::bail!("unsupported GuestKit RPC method for KubeVirt: {other}"),
+    }
+}
+
+fn parse_qga_response(stdout: &str, stderr: &str) -> Result<Value> {
+    let combined = if stdout.trim().is_empty() {
+        stderr.trim()
+    } else {
+        stdout.trim()
+    };
+    if combined.is_empty() {
+        anyhow::bail!("virsh qemu-agent-command returned no output");
+    }
+    let value: Value = serde_json::from_str(combined)
+        .with_context(|| format!("parse virsh output: {combined}"))?;
+    if let Some(ret) = value.get("return") {
+        return Ok(ret.clone());
+    }
+    if let Some(err) = value.get("error") {
+        anyhow::bail!("guest agent error: {err}");
+    }
+    Ok(value)
+}
+
+/// Invoke GuestKit JSON-RPC inside virt-launcher via `virsh qemu-agent-command`.
 pub async fn guestkit_rpc_for_vm(
     client: Client,
     namespace: &str,
@@ -177,29 +149,21 @@ pub async fn guestkit_rpc_for_vm(
 ) -> Result<Value> {
     let pod_name = find_virt_launcher_pod(&client, namespace, vm_name).await?;
     let pods: Api<Pod> = Api::namespaced(client, namespace);
-    ensure_guestkit_binary_in_pod(&pods, &pod_name).await?;
-    let socket = discover_socket_in_pod(&pods, &pod_name).await?;
-    let params_json = serde_json::to_string(&params)?;
+    let domain = discover_libvirt_domain(&pods, &pod_name).await?;
+    let qga_cmd = jsonrpc_method_to_qga_execute(method, &params)?;
+    let payload = serde_json::to_string(&qga_cmd)?;
     let (stdout, stderr, _) = exec_capture(
         &pods,
         &pod_name,
         vec![
-            GUESTKIT_BIN_LAUNCHER.to_string(),
-            "agent-call".to_string(),
-            "--socket".to_string(),
-            socket,
-            "--method".to_string(),
-            method.to_string(),
-            "--params".to_string(),
-            params_json,
+            "virsh".to_string(),
+            "qemu-agent-command".to_string(),
+            domain,
+            payload,
         ],
     )
     .await?;
-    let trimmed = stdout.trim();
-    if trimmed.is_empty() {
-        anyhow::bail!("guestkit agent-call returned empty output: {stderr}");
-    }
-    serde_json::from_str(trimmed).context("parse guestkit agent-call JSON output")
+    parse_qga_response(&stdout, &stderr)
 }
 
 /// Direct unix-socket JSON-RPC (host-side libvirt socket on node or virt-launcher).
