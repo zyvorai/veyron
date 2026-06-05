@@ -4,7 +4,7 @@
 //! Host-side GuestKit JSON-RPC client via virt-launcher pod exec.
 
 use anyhow::{Context, Result};
-use guestkit_agent_protocol::{read_frame, write_frame};
+use guestkit_agent_protocol::{read_line, write_line};
 use k8s_openapi::api::core::v1::Pod;
 use kube::api::{AttachParams, Api, ListParams};
 use kube::Client;
@@ -180,13 +180,19 @@ pub async fn guestkit_rpc_for_vm(
     ensure_guestkit_binary_in_pod(&pods, &pod_name).await?;
     let socket = discover_socket_in_pod(&pods, &pod_name).await?;
     let params_json = serde_json::to_string(&params)?;
-    let shell = format!(
-        "{GUESTKIT_BIN_LAUNCHER} agent-call --socket {socket} --method {method} --params {params_json}"
-    );
     let (stdout, stderr, _) = exec_capture(
         &pods,
         &pod_name,
-        vec!["sh".to_string(), "-c".to_string(), shell],
+        vec![
+            GUESTKIT_BIN_LAUNCHER.to_string(),
+            "agent-call".to_string(),
+            "--socket".to_string(),
+            socket,
+            "--method".to_string(),
+            method.to_string(),
+            "--params".to_string(),
+            params_json,
+        ],
     )
     .await?;
     let trimmed = stdout.trim();
@@ -196,8 +202,9 @@ pub async fn guestkit_rpc_for_vm(
     serde_json::from_str(trimmed).context("parse guestkit agent-call JSON output")
 }
 
-/// Direct unix-socket JSON-RPC (host-side, e.g. libvirt socket on node).
+/// Direct unix-socket JSON-RPC (host-side libvirt socket on node or virt-launcher).
 pub fn call_agent_socket(socket_path: &str, method: &str, params: Value) -> Result<Value> {
+    use std::io::BufReader;
     use std::os::unix::net::UnixStream;
     let mut stream = UnixStream::connect(socket_path)
         .with_context(|| format!("connect to agent socket {socket_path}"))?;
@@ -209,8 +216,9 @@ pub fn call_agent_socket(socket_path: &str, method: &str, params: Value) -> Resu
         "params": params,
         "id": 1
     });
-    write_frame(&mut stream, &serde_json::to_vec(&req)?)?;
-    let frame = read_frame(&mut stream).map_err(|e| anyhow::anyhow!("{e}"))?;
+    write_line(&mut stream, &serde_json::to_vec(&req)?).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let mut reader = BufReader::new(stream);
+    let frame = read_line(&mut reader).map_err(|e| anyhow::anyhow!("{e}"))?;
     let resp: Value = serde_json::from_slice(&frame).context("parse agent frame")?;
     if let Some(err) = resp.get("error") {
         anyhow::bail!("agent RPC error: {err}");
