@@ -100,7 +100,7 @@ pub async fn guest_filesystem_report(
         Err(e) => {
             r.summary = format!("Guest filesystem probe failed: {e}");
             r.recommendations.push(
-                "Install qemu-guest-agent (Linux) or QEMU Guest Agent (Windows) and restart the VM.".into(),
+                "Ensure GuestKit (Linux) or QEMU Guest Agent (Windows) is running and restart the VM if needed.".into(),
             );
         }
     }
