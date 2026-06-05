@@ -39,7 +39,7 @@ spec:
       networkType:
         type: pod
     cloudInit:
-      userData: "#cloud-config\nuser: vmrogue\npassword: 2HJ5Zl8wYYyyn9t!\nlock_passwd: false\nchpasswd: { expire: True }\nssh_pwauth: False\npackage_update: true\npackages:\n  - curl\nwrite_files:\n  - path: /etc/systemd/system/guestkit-agent.service\n    content: |\n      [Unit]\n      Description=GuestKit Agent (Zyvor)\n      After=network.target\n      ConditionPathExists=/dev/virtio-ports/org.qemu.guest_agent.0\n      \n      [Service]\n      ExecStart=/usr/local/bin/guestkit agent --channel virtio\n      Restart=on-failure\n      User=root\n      StandardOutput=journal\n      StandardError=journal\n      \n      [Install]\n      WantedBy=multi-user.target\nruncmd:\n  - [ sh, -c, 'curl -fsSL -o /usr/local/bin/guestkit \"http://vmrogue.vmrogue-system.svc:5151/api/v1/platform/guestkit/binary\"' ]\n  - [ chmod, '0755', /usr/local/bin/guestkit ]\n  - [ systemctl, daemon-reload ]\n  - [ systemctl, enable, guestkit-agent ]\n  - [ systemctl, start, guestkit-agent ]\n"
+      userData: "#cloud-config\nuser: vmrogue\npassword: LeDSW%GU3E#ldPki\nlock_passwd: false\nchpasswd: { expire: True }\nssh_pwauth: False\npackage_update: true\npackages:\n  - curl\nwrite_files:\n  - path: /etc/systemd/system/guestkit-agent.service\n    content: |\n      [Unit]\n      Description=GuestKit Agent (Zyvor)\n      After=network-online.target\n      Wants=network-online.target\n      \n      [Service]\n      ExecStart=/bin/sh -c 'until [ -e /dev/virtio-ports/org.qemu.guest_agent.0 ]; do sleep 2; done; exec /usr/local/bin/guestkit agent --channel virtio'\n      Restart=always\n      RestartSec=5\n      User=root\n      StandardOutput=journal\n      StandardError=journal\n      \n      [Install]\n      WantedBy=multi-user.target\nruncmd:\n  - [ sh, -c, 'for i in $(seq 1 30); do curl -fkSL -o /usr/local/bin/guestkit \"https://vmrogue-api.vmrogue-system.svc/api/v1/platform/guestkit/binary\" && break; sleep 10; done' ]\n  - [ chmod, '0755', /usr/local/bin/guestkit ]\n  - [ systemctl, daemon-reload ]\n  - [ systemctl, enable, guestkit-agent ]\n  - [ systemctl, start, guestkit-agent ]\n"
     clock:
       utc: true
       timers:
@@ -49,6 +49,6 @@ spec:
     enableTpm: false
     enableRng: true
     labels:
-      os.version: '12'
       os: debian
+      os.version: '12'
     allowInternet: true

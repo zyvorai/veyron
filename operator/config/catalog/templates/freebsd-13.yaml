@@ -40,6 +40,6 @@ spec:
     enableTpm: false
     enableRng: true
     labels:
-      os.version: '13'
       os: freebsd
+      os.version: '13'
     allowInternet: true
