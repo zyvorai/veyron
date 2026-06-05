@@ -31,6 +31,8 @@ pub struct GuestFilesystemResponse {
     pub vm_name: String,
     pub vmi_name: String,
     pub guest_agent_connected: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guest_runtime: Option<String>,
     pub os_family: String,
     pub mounts: Vec<GuestFilesystemMount>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -186,7 +188,7 @@ pub async fn collect_guest_filesystem(
     let family = detect_guest_os_family(Some(vm_json), Some(vmi_json));
     let agent_up = vmi_guest_agent_connected(vmi_json);
     if !agent_up {
-        anyhow::bail!("QEMU guest agent is not connected (AgentConnected condition is not True)");
+        anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
     }
 
     let windows =
@@ -229,6 +231,7 @@ pub async fn collect_guest_filesystem(
         vm_name: vm_name.to_string(),
         vmi_name: vmi_name.to_string(),
         guest_agent_connected: true,
+        guest_runtime: None,
         os_family: family.as_str().to_string(),
         mounts,
         prometheus_mounts: Vec::new(),

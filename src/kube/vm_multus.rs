@@ -37,6 +37,7 @@ impl KubeClient {
                 autoattach_mem_balloon: None,
                 network_interface_multiqueue: None,
                 video: None,
+                ..Default::default()
             });
         }
         let devices = spec.domain.devices.as_mut().unwrap();

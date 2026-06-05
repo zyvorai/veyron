@@ -2,6 +2,8 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
+pub mod guest_runtime;
+pub mod guestkit_client;
 pub mod converter;
 pub mod guest_filesystem;
 pub mod guest_os;
@@ -1283,6 +1285,16 @@ impl KubeClient {
                 vmi_j,
             )
             .await?;
+            let kind = guest_runtime::detect_runtime_kind(
+                self.client.clone(),
+                namespace,
+                &vmi_name,
+                Some(&vm_json),
+                Some(vmi_j),
+            )
+            .await;
+            resp.guest_runtime =
+                Some(guest_runtime::runtime_kind_label(kind).to_string());
             resp.prometheus_mounts = prom_mounts.clone();
             resp.sources.extend(prom_sources);
             return Ok(resp);
@@ -1295,6 +1307,7 @@ impl KubeClient {
                 vm_name: vm_name.to_string(),
                 vmi_name,
                 guest_agent_connected: false,
+                guest_runtime: None,
                 os_family: family.as_str().to_string(),
                 mounts: prom_mounts.clone(),
                 prometheus_mounts: prom_mounts,
@@ -1309,8 +1322,122 @@ impl KubeClient {
         }
 
         anyhow::bail!(
-            "QEMU guest agent is not connected and no Prometheus storage metrics were found (set VMROGUE_PROMETHEUS_URL)"
+            "Guest runtime is not connected and no Prometheus storage metrics were found (set VMROGUE_PROMETHEUS_URL)"
         );
+    }
+
+    async fn build_guest_context(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<guest_runtime::GuestContext> {
+        let vm = self.get_vm(namespace, vm_name).await?;
+        let vmi_name = self
+            .resolve_vmi_name_for_console(namespace, vm_name)
+            .await
+            .unwrap_or_else(|_| vm_name.to_string());
+        let vmi = self.get_vmi(namespace, &vmi_name).await?;
+        let vm_json = serde_json::to_value(&vm)?;
+        let vmi_json = serde_json::to_value(&vmi)?;
+        let mut ctx = guest_runtime::GuestContext::with_json(
+            self.client.clone(),
+            namespace,
+            vm_name,
+            &vmi_name,
+            vm_json,
+            vmi_json,
+        );
+        ctx.resolve_runtime_kind().await;
+        Ok(ctx)
+    }
+
+    /// Guest runtime status (GuestKit or QGA) for a running VM.
+    pub async fn guest_runtime_status(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<guest_runtime::GuestRuntimeStatus> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        let connected = ctx.connected();
+        let mut version = None;
+        let mut capabilities = None;
+        if connected && ctx.runtime_kind == guest_runtime::GuestRuntimeKind::GuestKit {
+            if let Ok(v) = guest_runtime::guestkit_version(&ctx).await {
+                version = v
+                    .get("version")
+                    .or_else(|| v.get("agent_version"))
+                    .and_then(|x| x.as_str())
+                    .map(str::to_string);
+            }
+            capabilities = guest_runtime::guestkit_capabilities(&ctx).await.ok();
+        }
+        Ok(guest_runtime::GuestRuntimeStatus {
+            connected,
+            runtime_kind: guest_runtime::runtime_kind_label(ctx.runtime_kind).to_string(),
+            guest_agent_connected: connected,
+            version,
+            capabilities,
+        })
+    }
+
+    /// Live GuestKit evidence snapshot (Linux GuestKit VMs).
+    pub async fn guest_evidence(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<guestkit::evidence::EvidenceSnapshot> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("GuestKit evidence requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_evidence(&ctx).await
+    }
+
+    /// Live GuestKit doctor report.
+    pub async fn guest_doctor(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        target: &str,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("GuestKit doctor requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_doctor(&ctx, target).await
+    }
+
+    /// Apply a GuestKit fix plan in the guest.
+    pub async fn guest_fix_plan(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        plan: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("GuestKit fix-plan requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_fix_plan(&ctx, plan).await
+    }
+
+    /// Read bundled GuestKit musl binary for cloud-init / platform endpoint.
+    pub fn guestkit_binary_bytes() -> Result<Vec<u8>> {
+        std::fs::read(guestkit_client::guestkit_binary_path()).with_context(|| {
+            format!(
+                "read guestkit binary at {}",
+                guestkit_client::guestkit_binary_path().display()
+            )
+        })
     }
 
     /// Hotplug a PVC volume onto a VM (`virtctl addvolume`).

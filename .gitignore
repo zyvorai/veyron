@@ -1,3 +1,6 @@
+# Docker build context copy of sibling guestkit repo (scripts/prepare-guestkit-docker.sh)
+/guestkit/
+
 # Rust
 /target/
 /dist/

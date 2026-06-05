@@ -166,7 +166,7 @@ pub struct Memory {
     pub max_guest: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Devices {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -196,6 +196,23 @@ pub struct Devices {
         deserialize_with = "deserialize_devices_video"
     )]
     pub video: Option<JsonValue>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub channels: Option<Vec<Channel>>,
+}
+
+/// Virtio-serial channel (e.g. QEMU guest agent at `org.qemu.guest_agent.0`).
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct Channel {
+    pub name: String,
+    pub target: ChannelTarget,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
+pub struct ChannelTarget {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub channel_type: String,
 }
 
 fn deserialize_devices_video<'de, D>(deserializer: D) -> Result<Option<JsonValue>, D::Error>

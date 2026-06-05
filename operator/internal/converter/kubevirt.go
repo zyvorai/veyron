@@ -403,6 +403,17 @@ func buildDevices(disks, interfaces []interface{}, spec *vmroguev1alpha1.VMRogue
 		},
 	}
 
+	// Virtio-serial channel for QEMU guest agent / GuestKit (Linux) or QGA (Windows).
+	devices["channels"] = []interface{}{
+		map[string]interface{}{
+			"name": "qemu",
+			"target": map[string]interface{}{
+				"type": "virtio",
+				"name": "org.qemu.guest_agent.0",
+			},
+		},
+	}
+
 	return devices
 }
 

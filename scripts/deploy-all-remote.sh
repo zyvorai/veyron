@@ -130,6 +130,10 @@ deploy_phase_end
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
+if [ -x "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]; then
+    deploy_substep "Preparing GuestKit build context (guestkit/ → VMRogue)"
+    bash "${REPO_DIR}/scripts/prepare-guestkit-docker.sh"
+fi
 deploy_ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -avz --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \

@@ -82,6 +82,6 @@ spec:
     enableRng: true
     machineType: q35
     labels:
-      os.version: '2019'
       os: windows
+      os.version: '2019'
     allowInternet: true
