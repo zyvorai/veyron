@@ -120,8 +120,45 @@ fn jsonrpc_method_to_qga_execute(method: &str, params: &Value) -> Result<Value> 
             "execute": "guestkit-run-fix-plan",
             "arguments": params,
         })),
+        "guestkit.migrateScore" => Ok(json!({
+            "execute": "guestkit-migrate-score",
+            "arguments": params,
+        })),
+        "guestkit.getMetrics" => Ok(json!({ "execute": "guestkit-get-metrics" })),
+        "guestkit.getFilesystem" => Ok(json!({ "execute": "guestkit-get-filesystem" })),
+        "guestkit.exec" => Ok(json!({
+            "execute": "guestkit-exec",
+            "arguments": params,
+        })),
+        "guestkit.enableRdp" => Ok(json!({ "execute": "guestkit-enable-rdp" })),
+        "guestkit.disableRdp" => Ok(json!({ "execute": "guestkit-disable-rdp" })),
         other => anyhow::bail!("unsupported GuestKit RPC method for KubeVirt: {other}"),
     }
+}
+
+/// Raw QGA `{ "execute": "...", "arguments": ... }` via virt-launcher virsh.
+pub async fn qga_execute_for_vmi(
+    client: Client,
+    namespace: &str,
+    vmi_name: &str,
+    execute: Value,
+) -> Result<Value> {
+    let pod_name = find_virt_launcher_pod(&client, namespace, vmi_name).await?;
+    let pods: Api<Pod> = Api::namespaced(client, namespace);
+    let domain = discover_libvirt_domain(&pods, &pod_name).await?;
+    let payload = serde_json::to_string(&execute)?;
+    let (stdout, stderr) = exec_in_virt_launcher(
+        &pods,
+        &pod_name,
+        vec![
+            "virsh".to_string(),
+            "qemu-agent-command".to_string(),
+            domain,
+            payload,
+        ],
+    )
+    .await?;
+    parse_virsh_qga_output(&stdout, &stderr)
 }
 
 fn parse_virsh_qga_output(stdout: &str, stderr: &str) -> Result<Value> {

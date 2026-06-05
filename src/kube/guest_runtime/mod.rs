@@ -35,6 +35,32 @@ pub fn vmi_guest_runtime_connected(vmi: &Value) -> bool {
     vmi_guest_agent_connected(vmi)
 }
 
+/// Classify guest runtime from a `guest-info` JSON payload (testable without kube).
+fn runtime_kind_from_guest_info(raw: &Value) -> Option<GuestRuntimeKind> {
+    let commands = raw
+        .pointer("/return/supported_commands")
+        .or_else(|| raw.get("supported_commands"))
+        .and_then(|v| v.as_array());
+    if let Some(list) = commands {
+        if list.iter().any(|c| c.as_str() == Some("guestkit-get-evidence")) {
+            return Some(GuestRuntimeKind::GuestKit);
+        }
+    }
+    if let Some(version) = raw
+        .get("version")
+        .or_else(|| raw.pointer("/return/version"))
+        .and_then(|v| v.as_str())
+    {
+        if version.starts_with("guestkit-") {
+            return Some(GuestRuntimeKind::GuestKit);
+        }
+        if version.contains("qemu") {
+            return Some(GuestRuntimeKind::QemuGa);
+        }
+    }
+    None
+}
+
 /// Detect runtime kind from guest-info version string (via guest-exec when connected).
 pub async fn detect_runtime_kind(
     client: Client,
@@ -59,26 +85,8 @@ pub async fn detect_runtime_kind(
         return GuestRuntimeKind::Unknown;
     }
     if let Ok(raw) = kubevirt::guest_info(client.clone(), namespace, vmi_name).await {
-        let commands = raw
-            .pointer("/return/supported_commands")
-            .or_else(|| raw.get("supported_commands"))
-            .and_then(|v| v.as_array());
-        if let Some(list) = commands {
-            if list.iter().any(|c| c.as_str() == Some("guestkit-get-evidence")) {
-                return GuestRuntimeKind::GuestKit;
-            }
-        }
-        if let Some(version) = raw
-            .get("version")
-            .or_else(|| raw.pointer("/return/version"))
-            .and_then(|v| v.as_str())
-        {
-            if version.starts_with("guestkit-") {
-                return GuestRuntimeKind::GuestKit;
-            }
-            if version.contains("qemu") {
-                return GuestRuntimeKind::QemuGa;
-            }
+        if let Some(kind) = runtime_kind_from_guest_info(&raw) {
+            return kind;
         }
     }
     if detect_guest_os_family(vm_json, vmi_json) == GuestOsFamily::Linux {
@@ -221,10 +229,110 @@ pub async fn guestkit_version(ctx: &GuestContext) -> Result<Value> {
     .await
 }
 
+pub async fn guestkit_metrics(ctx: &GuestContext) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.getMetrics",
+        json!({}),
+    )
+    .await
+}
+
+pub async fn guestkit_migrate_score(ctx: &GuestContext, target: &str) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.migrateScore",
+        json!({ "target": target }),
+    )
+    .await
+}
+
+pub async fn guestkit_filesystem(ctx: &GuestContext) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.getFilesystem",
+        json!({}),
+    )
+    .await
+}
+
+pub async fn guestkit_exec(ctx: &GuestContext, params: Value) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.exec",
+        params,
+    )
+    .await
+}
+
+pub async fn guestkit_enable_rdp(ctx: &GuestContext) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.enableRdp",
+        json!({}),
+    )
+    .await
+}
+
+pub async fn guestkit_disable_rdp(ctx: &GuestContext) -> Result<Value> {
+    guestkit_client::guestkit_rpc_for_vmi(
+        ctx.client.clone(),
+        &ctx.namespace,
+        &ctx.vmi_name,
+        "guestkit.disableRdp",
+        json!({}),
+    )
+    .await
+}
+
 pub fn runtime_kind_label(kind: GuestRuntimeKind) -> &'static str {
     match kind {
         GuestRuntimeKind::GuestKit => "guestkit",
         GuestRuntimeKind::QemuGa => "qemu-ga",
         GuestRuntimeKind::Unknown => "unknown",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn runtime_kind_from_guest_info_detects_guestkit_commands() {
+        let raw = json!({
+            "return": {
+                "supported_commands": ["guest-ping", "guestkit-get-evidence"]
+            }
+        });
+        assert_eq!(
+            runtime_kind_from_guest_info(&raw),
+            Some(GuestRuntimeKind::GuestKit)
+        );
+    }
+
+    #[test]
+    fn runtime_kind_from_guest_info_detects_qemu_version() {
+        let raw = json!({ "return": { "version": "qemu-guest-agent-6.2.0" } });
+        assert_eq!(
+            runtime_kind_from_guest_info(&raw),
+            Some(GuestRuntimeKind::QemuGa)
+        );
+    }
+
+    #[test]
+    fn runtime_kind_from_guest_info_unknown_without_signals() {
+        let raw = json!({ "return": { "supported_commands": ["guest-ping"] } });
+        assert_eq!(runtime_kind_from_guest_info(&raw), None);
     }
 }

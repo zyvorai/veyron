@@ -1276,6 +1276,32 @@ impl KubeClient {
 
         if agent_up {
             let vmi_j = vmi_json.as_ref().unwrap_or(&serde_json::Value::Null);
+            let kind = guest_runtime::detect_runtime_kind(
+                self.client.clone(),
+                namespace,
+                &vmi_name,
+                Some(&vm_json),
+                Some(vmi_j),
+            )
+            .await;
+            let windows = guest_os::detect_guest_os_family(Some(&vm_json), vmi_json.as_ref())
+                == guest_os::GuestOsFamily::Windows;
+            if kind == guest_runtime::GuestRuntimeKind::GuestKit && !windows {
+                if let Ok(mut resp) = guest_filesystem::collect_guest_filesystem_guestkit(
+                    self.client.clone(),
+                    namespace,
+                    vm_name,
+                    &vmi_name,
+                    &vm_json,
+                    vmi_j,
+                )
+                .await
+                {
+                    resp.prometheus_mounts = prom_mounts.clone();
+                    resp.sources.extend(prom_sources);
+                    return Ok(resp);
+                }
+            }
             let mut resp = guest_filesystem::collect_guest_filesystem(
                 self.client.clone(),
                 namespace,
@@ -1285,14 +1311,6 @@ impl KubeClient {
                 vmi_j,
             )
             .await?;
-            let kind = guest_runtime::detect_runtime_kind(
-                self.client.clone(),
-                namespace,
-                &vmi_name,
-                Some(&vm_json),
-                Some(vmi_j),
-            )
-            .await;
             resp.guest_runtime =
                 Some(guest_runtime::runtime_kind_label(kind).to_string());
             resp.prometheus_mounts = prom_mounts.clone();
@@ -1428,6 +1446,56 @@ impl KubeClient {
             anyhow::bail!("GuestKit fix-plan requires GuestKit guest runtime (Linux VM)");
         }
         guest_runtime::guestkit_fix_plan(&ctx, plan).await
+    }
+
+    /// Live GuestKit runtime metrics (CPU, memory, disk, network).
+    pub async fn guest_metrics(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("GuestKit metrics require GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_metrics(&ctx).await
+    }
+
+    /// GuestKit P2V / migration readiness score for a VM.
+    pub async fn guest_migrate_score(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        target: &str,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("GuestKit migrate score requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_migrate_score(&ctx, target).await
+    }
+
+    /// Run a command in the guest via GuestKit exec (replaces K8s guest-exec when unavailable).
+    pub async fn guest_exec_via_guestkit(
+        &self,
+        namespace: &str,
+        vm_name: &str,
+        params: serde_json::Value,
+    ) -> Result<serde_json::Value> {
+        let ctx = self.build_guest_context(namespace, vm_name).await?;
+        if !ctx.connected() {
+            anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
+        }
+        if ctx.runtime_kind != guest_runtime::GuestRuntimeKind::GuestKit {
+            anyhow::bail!("GuestKit exec requires GuestKit guest runtime (Linux VM)");
+        }
+        guest_runtime::guestkit_exec(&ctx, params).await
     }
 
     /// Read bundled GuestKit musl binary for cloud-init / platform endpoint.

@@ -6,6 +6,7 @@ use crate::kube::guest_filesystem::{collect_guest_filesystem, format_mount_evide
 use crate::kube::guest_os::detect_guest_os_family;
 use crate::kube::types::VirtualMachineInstance;
 use crate::kube::windows_rdp::vmi_guest_agent_connected;
+use guestkit::evidence::EvidenceSnapshot;
 use serde_json::to_value;
 
 /// QEMU guest-agent posture and in-guest signals for a running VM.
@@ -58,11 +59,13 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
         .is_some_and(|j| vmi_guest_agent_connected(j));
     if agent_up {
         r.evidence
-            .push("QEMU guest agent: connected (AgentConnected=True)".into());
+            .push("Guest runtime: connected (AgentConnected=True)".into());
         r.recommendations.push(
-            "Guest agent is up — freeze/unfreeze, guest-exec RDP, and consistent backups are available.".into(),
+            "Guest agent is up — GuestKit evidence, doctor, metrics, and snapshot quiesce are available.".into(),
         );
-        if let Ok(vm_json) = to_value(&vm) {
+        if let Ok(evidence) = client.guest_evidence(namespace, name).await {
+            append_guestkit_evidence(&mut r, &evidence);
+        } else if let Ok(vm_json) = to_value(&vm) {
             if let Ok(resp) = collect_guest_filesystem(
                 client.client().clone(),
                 namespace,
@@ -144,6 +147,52 @@ pub fn enrich_doctor_with_guest(r: &mut CopilotResponse, vmi: &VirtualMachineIns
         if let Some(score) = r.health_score {
             r.health_score = Some(score.saturating_sub(8));
         }
+    }
+}
+
+fn append_guestkit_evidence(r: &mut CopilotResponse, evidence: &EvidenceSnapshot) {
+    r.evidence.push(format!(
+        "GuestKit OS: {} {} ({})",
+        evidence.os.distribution, evidence.os.version, evidence.os.architecture
+    ));
+    if let Some(kv) = &evidence.kubevirt {
+        r.evidence.push(format!(
+            "KubeVirt guest: agent_active={} virtio_channel={}",
+            kv.agent_service_active, kv.virtio_channel_present
+        ));
+        for disk in kv.virtio_disks.iter().take(3) {
+            r.evidence.push(format!(
+                "VirtIO disk {} serial={} mounts={}",
+                disk.device,
+                disk.serial,
+                disk.mountpoints.join(",")
+            ));
+        }
+    }
+    if let Some(ci) = &evidence.cloud_init {
+        r.evidence.push(format!(
+            "cloud-init: status={} datasource={} boot_finished={}",
+            ci.status, ci.datasource, ci.boot_finished
+        ));
+        for err in ci.errors.iter().take(2) {
+            r.evidence.push(format!("cloud-init issue: {err}"));
+        }
+    }
+    if let Some(np) = &evidence.network_probes {
+        r.evidence.push(format!(
+            "Network probes: cluster_dns={} api={} internet={}",
+            np.cluster_dns_reachable, np.api_service_reachable, np.internet_reachable
+        ));
+    }
+    if let Some(sr) = &evidence.snapshot_readiness {
+        r.evidence.push(format!(
+            "Snapshot readiness: quiesce={} fs_frozen={}",
+            sr.quiesce_supported, sr.fs_frozen
+        ));
+    }
+    if evidence.security.pending_security_updates {
+        r.recommendations
+            .push("Guest reports pending security updates — patch during a maintenance window.".into());
     }
 }
 

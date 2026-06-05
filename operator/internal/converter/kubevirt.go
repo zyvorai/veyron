@@ -7,6 +7,7 @@
 package converter
 
 import (
+	"os"
 	"strings"
 
 	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
@@ -403,18 +404,29 @@ func buildDevices(disks, interfaces []interface{}, spec *vmroguev1alpha1.VMRogue
 		},
 	}
 
-	// Virtio-serial channel for QEMU guest agent / GuestKit (Linux) or QGA (Windows).
-	devices["channels"] = []interface{}{
-		map[string]interface{}{
-			"name": "qemu",
-			"target": map[string]interface{}{
-				"type": "virtio",
-				"name": "org.qemu.guest_agent.0",
+	// KubeVirt 1.8+ auto-injects the guest-agent channel; explicit channels fail strict validation.
+	if emitGuestAgentChannels() {
+		devices["channels"] = []interface{}{
+			map[string]interface{}{
+				"name": "qemu",
+				"target": map[string]interface{}{
+					"type": "virtio",
+					"name": "org.qemu.guest_agent.0",
+				},
 			},
-		},
+		}
 	}
 
 	return devices
+}
+
+func emitGuestAgentChannels() bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv("VMROGUE_EMIT_GUEST_AGENT_CHANNELS"))) {
+	case "1", "true", "yes":
+		return true
+	default:
+		return false
+	}
 }
 
 func buildFeatures(f *vmroguev1alpha1.FeaturesSpec) map[string]interface{} {

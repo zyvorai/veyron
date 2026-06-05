@@ -1164,4 +1164,31 @@ mod tests {
         let ubuntu_templates = families.get("Ubuntu").unwrap();
         assert!(ubuntu_templates.len() >= 4);
     }
+
+    #[test]
+    fn test_guestkit_binary_urls_always_include_cluster_service() {
+        let urls = guestkit_binary_urls();
+        assert!(urls
+            .iter()
+            .any(|u| u.contains("vmrogue-api.vmrogue-system.svc")));
+    }
+
+    #[test]
+    fn test_refresh_guestkit_cloud_init_noop_without_marker() {
+        let plain = "#cloud-config\nuser: ubuntu\n";
+        assert_eq!(refresh_guestkit_cloud_init(plain), plain);
+    }
+
+    #[test]
+    fn test_ubuntu_template_includes_guestkit_bootstrap() {
+        let manager = TemplateManager::new();
+        let cfg = manager.get("ubuntu-22.04").unwrap();
+        let cloud_init = cfg
+            .cloud_init
+            .as_ref()
+            .map(|c| c.user_data.as_str())
+            .unwrap_or("");
+        assert!(cloud_init.contains("guestkit-agent"));
+        assert!(cloud_init.contains("vmrogue-install-guestkit.sh"));
+    }
 }

@@ -95,6 +95,9 @@ pub async fn migration_advisor(client: &KubeClient, scope: &str) -> CopilotRespo
         r.recommendations
             .push("Defer node maintenance until Running migrations reach Succeeded.".into());
     }
+    r.recommendations.push(
+        "For P2V readiness on Linux VMs, use GET /api/v1/vms/:ns/:name/guest/migrate-score?target=kvm.".into(),
+    );
 
     r.actions = vec![
         CopilotAction {
