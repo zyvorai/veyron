@@ -52,7 +52,7 @@ Status legend:
 | Forecasting | `page-forecasting` | `/api/v1/forecasting/predictions` | `handlers/forecasting.rs` | Partial | Forecasts are heuristic projections |
 | GitOps | `page-gitops` | `/api/v1/gitops/status`, `/api/v1/gitops/sync` | `handlers/gitops.rs` | Partial | Real config detection, sync action is advisory |
 | Scheduling | `page-scheduling` | `/api/v1/scheduling/status` | `handlers/scheduling.rs` | Partial | Latency/preemption fields still basic |
-| Cilium | `page-cilium` | `/api/v1/cilium/status`, `/api/v1/cilium/policies` | `handlers/cilium.rs` | Partial | Falls back to NetworkPolicies |
+| Cilium | `page-cilium` | `/api/v1/cilium/status`, `/api/v1/cilium/policies`, `/api/v1/packetwolf/status` | `handlers/cilium.rs`, `handlers/packetwolf.rs` | Partial | Policy/flow table is NetworkPolicy-derived; PacketWolf banner when `VMROGUE_PACKETWOLF_URL` set |
 | Observability | `page-observability` | `/api/v1/observability/overview` | `handlers/observability.rs` | Partial | Stack detection and counts are heuristic |
 | Performance | `page-performance` | `/api/v1/performance/profiles` | `handlers/performance.rs` | Partial | Percentiles are single-sample proxies |
 | Webhooks | `page-webhooks` | `/api/v1/webhooks` | `handlers/webhooks.rs` | Working | Namespace-aware |
@@ -89,6 +89,7 @@ These route groups now have first-class dashboard pages:
 | Webhooks | `/api/v1/webhooks` | Surfaced |
 | Template catalog | `/api/v1/catalog/*`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | Surfaced (classic **Catalog** page) |
 | Integrations status | `/api/v1/integrations/status` | Surfaced (classic **Integrations** page) |
+| PacketWolf status | `/api/v1/packetwolf/status` | Surfaced (Cilium banner + Integrations row when configured) |
 | Velero | `/api/v1/velero/status` | Surfaced (classic **Backups** page) |
 | Multi-cluster | `/api/v1/clusters`, `POST .../activate` | Surfaced (navbar context bar) |
 | Golden images | `/api/v1/images/catalog`, `/api/v1/images/import` | Surfaced (classic **Images** page + operator Platform) |
@@ -115,7 +116,7 @@ These route groups now have first-class dashboard pages:
 | Forecasting | Predictions are derived from simple growth assumptions |
 | GitOps | Sync status is config-derived; sync action does not drive ArgoCD/Flux directly |
 | Scheduling | Scheduling latency and preemptions are not yet measured from scheduler metrics |
-| Cilium | Policy view falls back to standard NetworkPolicy rather than native Cilium CRDs |
+| Cilium | Policy view falls back to standard NetworkPolicy; flow table is not live Hubble gRPC (use PacketWolf for Network Brain) |
 | Observability | Counts and ingestion/storage values are approximations |
 | Performance | Percentiles are based on the latest metric sample, not historical windows |
 

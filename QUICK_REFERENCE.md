@@ -12,6 +12,10 @@ This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue comman
 # Quick mode (skip image build/import)
 ./scripts/deploy-all-remote.sh HOST USER --quick
 
+# Deploy tuning (defaults: layer cache on, parallel API+operator builds)
+VMROGUE_DEPLOY_NO_CACHE=1 ./scripts/deploy-remote.sh HOST USER   # clean rebuild
+VMROGUE_DEPLOY_DIAGNOSTICS=1 ./scripts/deploy-remote.sh HOST USER  # full preflight
+
 # API-only remote deploy
 ./scripts/deploy-k8s-remote.sh HOST USER
 

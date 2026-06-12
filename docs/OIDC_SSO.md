@@ -29,6 +29,8 @@ Role mapping (first matching group wins):
 
 Clients read `GET /api/v1/auth/oidc/config` for issuer, client id, and endpoints. The classic dashboard uses PKCE (`POST /api/v1/auth/oidc/token` exchanges the authorization code server-side) and sends `Authorization: Bearer <access_token>` on API calls.
 
+Route-level RBAC after authentication is enforced in `src/api/auth_context.rs` (e.g. mutating VM routes require **write**; cluster activate and DR routes require **admin**). VNC and serial WebSocket upgrades can use a one-time ticket from `POST /api/v1/ws/ticket` instead of embedding long-lived API keys in query strings.
+
 ## Keycloak quick start
 
 1. Create realm `vmrogue`, client `vmrogue-dashboard`, access type **public**, PKCE enabled.

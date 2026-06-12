@@ -6,7 +6,7 @@ VMRogue API handlers work without external services using Kubernetes data and he
 
 ## Quick apply
 
-**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability or Argo CD namespaces exist. It can set `VMROGUE_ARGOCD_URL`, obtain a session token from `argocd-initial-admin-secret` (ClusterIP login), and `VMROGUE_ARGOCD_DEFAULT_APP` from the first Application CR. Set `VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VMROGUE_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for URL-only.
+**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability, Argo CD, or PacketWolf services exist. It can set Prometheus/Grafana/Alertmanager URLs, `VMROGUE_ARGOCD_URL` (+ session token from `argocd-initial-admin-secret`), and **`VMROGUE_PACKETWOLF_URL`** when `packetwolf-api` is found in `cilium-system` or `packetwolf` (optional `VMROGUE_PACKETWOLF_EXTERNAL_URL` from `packetwolf-ui` NodePort). Set `VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VMROGUE_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for Argo URL-only.
 
 **Manual:**
 
@@ -58,6 +58,9 @@ With Helm, set `integrations.*` in [charts/vmrogue/values.yaml](../charts/vmrogu
 | `VMROGUE_QRADAR_HOST` | QRadar LEEF UDP | `qradar.example` |
 | `VMROGUE_QRADAR_PORT` | QRadar UDP port | `514` |
 | `VMROGUE_SOAR_WEBHOOK_URL` | SOAR on new SOC detections | HTTPS webhook |
+| `VMROGUE_PACKETWOLF_URL` | PacketWolf Network Brain health (`GET /api/v1/packetwolf/status`), Cilium page banner | `http://packetwolf-api.cilium-system.svc:9191` |
+| `VMROGUE_PACKETWOLF_EXTERNAL_URL` | Integrations **Open PacketWolf UI** (browser) | `http://HOST:30808` |
+| `VMROGUE_PACKETWOLF_API_KEY` | PacketWolf API auth (optional when in-cluster trust is enabled) | (secret) |
 
 Responses include `vmrogue_context` describing the active data source when integrations are used or skipped.
 
@@ -97,6 +100,25 @@ curl -sk -H "X-API-Key: $VMROGUE_API_KEY" https://HOST:30151/api/v1/soc/export/s
 
 - **Argo CD:** `VMROGUE_ARGOCD_URL` + `VMROGUE_ARGOCD_TOKEN` — `POST /api/v1/gitops/sync` triggers application refresh when `application` is set in the GitOps ConfigMap.
 - **Flux:** set `flux_kustomization` in the GitOps ConfigMap; sync adds the reconcile annotation (no extra env).
+
+## PacketWolf (Network Brain)
+
+When [PacketWolf](https://zyvor.dev) runs in the same cluster (typical Helm release: `packetwolf-api` in `cilium-system`), VMRogue can probe its health and surface status on the **Integrations** and **Cilium** dashboard pages.
+
+**Automatic wiring:** `bootstrap-integrations.sh` sets `VMROGUE_PACKETWOLF_URL` to `http://packetwolf-api.<ns>.svc:9191` when the Service exists. Restart `vmrogue-api` after the Secret is applied (deploy script does this on rollout).
+
+**Manual verify:**
+
+```bash
+curl -sk -H "X-API-Key: $VMROGUE_API_KEY" \
+  https://HOST:30151/api/v1/packetwolf/status
+curl -sk -H "X-API-Key: $VMROGUE_API_KEY" \
+  https://HOST:30151/api/v1/integrations/status | grep packetwolf
+```
+
+**In-cluster trust:** when PacketWolf is deployed with `PACKETWOLF_TRUST_CLUSTER_NETWORKS=true` (default), the API pod can reach PacketWolf without `VMROGUE_PACKETWOLF_API_KEY`. Set the key only for external or authenticated endpoints.
+
+VMRogue does not proxy the full PacketWolf UI/API (unlike v9s Zeus OS); use **Open PacketWolf** on the Cilium page or the external URL for the Network Brain console. Live Hubble flows in the Cilium page remain policy-derived; PacketWolf provides the production Network Brain layer.
 
 ## OIDC / SSO
 

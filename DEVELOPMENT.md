@@ -15,7 +15,7 @@ Current source footprint from the repository tree:
 
 - `343` Rust/Go source files under `src/` and `operator/`
 - `57` top-level public Rust modules exported from `src/lib.rs`
-- `49` API handler modules declared in `src/api/handlers/mod.rs`
+- `50` API handler modules declared in `src/api/handlers/mod.rs` (includes `packetwolf`)
 - `186` command dispatch arms in `src/lib.rs`
 
 ## Entry Points
@@ -71,9 +71,13 @@ Current source footprint from the repository tree:
 
 - `src/api/http_server.rs` contains the Axum server wiring.
 - `src/api/handlers` contains endpoint handlers for the web dashboard and REST API.
+- `src/api/auth_context.rs` maps routes to minimum `ApiRole` (readonly / write / admin).
+- `src/api/ws_ticket.rs` issues single-use tickets for VNC/serial WebSocket upgrades (`POST /api/v1/ws/ticket`).
+- `src/api/handlers/packetwolf.rs` probes PacketWolf when `VMROGUE_PACKETWOLF_URL` is set.
 - `src/api/openapi.rs` builds the OpenAPI document.
 - `src/api/websocket` contains WebSocket handlers for console, metrics, watch, and RDP flows.
 - Static dashboard assets are under `src/api/web`.
+- Optional backends: `src/api/integrations.rs`, `scripts/lib/bootstrap-integrations.sh` — see [docs/OPTIONAL_INTEGRATIONS.md](docs/OPTIONAL_INTEGRATIONS.md).
 
 ### TUI
 

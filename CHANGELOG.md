@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **PacketWolf integration** — `VMROGUE_PACKETWOLF_URL` / optional `VMROGUE_PACKETWOLF_EXTERNAL_URL` and `VMROGUE_PACKETWOLF_API_KEY`; auto-wired by `scripts/lib/bootstrap-integrations.sh` when `packetwolf-api` exists in `cilium-system` or `packetwolf`; `GET /api/v1/packetwolf/status`; Integrations page probe; Cilium dashboard banner (`src/api/handlers/packetwolf.rs`).
+- **API auth hardening** — route-level RBAC via `src/api/auth_context.rs`; short-lived single-use WebSocket console tickets (`POST /api/v1/ws/ticket`, `src/api/ws_ticket.rs`) for VNC/serial upgrades.
 - **`scripts/test-vm-daily-ops-remote.sh`** — curl-based HTTPS E2E for daily VM API workflows (create, lifecycle, SSH/RDP expose, snapshots); optional `VMROGUE_E2E_RESTORE=1`.
 - **SOC (Security Operations)** — `src/soc/` with normalized `SecurityEvent` stream, ConfigMap-backed store, built-in detections (RDP/SSH expose, drift, privileged VM, scheduling burst, namespace without NetworkPolicy), SIEM push (Elastic ECS, Splunk HEC, Sentinel DCE, QRadar LEEF), Elastic/Splunk threat hunts, attack-surface scan, SOAR webhooks; API `/api/v1/soc/*` and dashboard **Security → SOC** (`docs/SOC.md`).
 - **Ask Zeus OpenRouter** — `src/copilot/llm.rs` reads `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` from env; `scripts/configure-zeus-openrouter.sh` wires remote `vmrogue-integrations` from `~/.zshrc`.
@@ -18,11 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Remote deploy speed** — `deploy-all-remote.sh` uses layer cache by default (removed `--no-cache`); parallel API + operator image builds; lighter rsync excludes; diagnostics opt-in via `VMROGUE_DEPLOY_DIAGNOSTICS=1`; `VMROGUE_DEPLOY_NO_CACHE=1` for clean rebuilds; Dockerfile BuildKit cargo cache mounts with `/out` binary staging.
 - **Pause/unpause API** — uses KubeVirt `virtualmachineinstances/pause` and `unpause` subresources instead of in-pod `virtctl` (`src/kube/kubevirt_subresources.rs`).
 - **RDP NodePort validation** — suggested ports and conflict checks scan all cluster Service NodePorts, not only VMRogue RDP services.
 
 ### Documentation
 
+- PacketWolf, deploy-speed env vars, and auth/ws-ticket notes across `CLAUDE.md`, `README.md`, `QUICK_REFERENCE.md`, `DEVELOPMENT.md`, `docs/OPTIONAL_INTEGRATIONS.md`, `docs/NETWORK_MANAGEMENT.md`, `docs/FEATURE_MATRIX.md`, and `docs/README.md`.
 - Added `docs/SOC.md`; updated `docs/FEATURE_MATRIX.md`, `docs/OPTIONAL_INTEGRATIONS.md`, `docs/README.md`, `CLAUDE.md`, and `deploy/k8s/optional-integrations.env.example.yaml` for SOC/SIEM env vars.
 - Refreshed `docs/README.md` as the canonical index (branch note: `main` vs `main-go`, monitoring chart, CONTRIBUTING/SECURITY links).
 - Cross-linked guides (TUI, snapshots, disk, network, Windows, feature matrix) and normalized deploy examples to `HOST USER` placeholders in README, QUICK_REFERENCE, and `CLAUDE.md`.

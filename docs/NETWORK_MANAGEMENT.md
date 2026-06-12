@@ -9,6 +9,7 @@ VMRogue provides comprehensive network management capabilities for KubeVirt VMs,
 - Kubernetes cluster with KubeVirt VMs running
 - `vmrogue` configured against the target cluster
 - Optional: Cilium + Hubble installed for advanced policy and flow observability
+- Optional: [PacketWolf](OPTIONAL_INTEGRATIONS.md#packetwolf-network-brain) for live Network Brain / Hubble intelligence (`VMROGUE_PACKETWOLF_URL`)
 
 ## Features
 
@@ -188,6 +189,18 @@ database-policy           2            1            app=database
 ## Cilium Integration
 
 VMRogue provides advanced network policy capabilities through Cilium integration, leveraging eBPF for high-performance, identity-based security.
+
+### PacketWolf (Network Brain)
+
+When PacketWolf is installed in the cluster, set **`VMROGUE_PACKETWOLF_URL`** (or let [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) wire it on deploy) so the API can probe `GET /health` and the dashboard **Cilium** page shows a PacketWolf connection banner with an **Open PacketWolf** link when `VMROGUE_PACKETWOLF_EXTERNAL_URL` or a `packetwolf-ui` NodePort is available.
+
+```bash
+# Status from VMRogue API (in-cluster URL is typical)
+curl -sk -H "X-API-Key: $VMROGUE_API_KEY" \
+  https://HOST:30151/api/v1/packetwolf/status
+```
+
+The Cilium page **Network Flows** table remains derived from Kubernetes/Cilium NetworkPolicy rules in VMRogue. For live Hubble flows, threat intelligence, and Zeus Network Copilot, use the PacketWolf UI or its API directly. See [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md#packetwolf-network-brain).
 
 ### Cilium Features
 
