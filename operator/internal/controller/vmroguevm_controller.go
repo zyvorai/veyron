@@ -5,7 +5,9 @@
 package controller
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -146,14 +148,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	if errors.IsNotFound(err) {
 		// Create new KubeVirt VM
 		logger.Info("creating KubeVirt VirtualMachine", "name", vm.Name)
-		if specHash != "" {
-			ann := desired.GetAnnotations()
-			if ann == nil {
-				ann = map[string]string{}
-			}
-			ann["vmrogue.io/resolved-spec-hash"] = specHash
-			desired.SetAnnotations(ann)
-		}
+		r.applyKubeVirtAnnotations(desired, specHash)
 
 		if err := r.Create(ctx, desired); err != nil {
 			logger.Error(err, "failed to create KubeVirt VM")
@@ -167,20 +162,21 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
-		// Update existing KubeVirt VM spec
-		if specHash != "" {
-			ann := existing.GetAnnotations()
-			if ann == nil {
-				ann = map[string]string{}
-			}
-			ann["vmrogue.io/resolved-spec-hash"] = specHash
-			existing.SetAnnotations(ann)
-		}
+		// Update existing KubeVirt VM spec only when it changed
 		existingSpec, _, _ := unstructured.NestedMap(existing.Object, "spec")
 		desiredSpec, _, _ := unstructured.NestedMap(desired.Object, "spec")
 
+		specChanged := false
 		if existingSpec != nil && desiredSpec != nil {
-			existing.Object["spec"] = desiredSpec
+			existingBytes, errExisting := json.Marshal(existingSpec)
+			desiredBytes, errDesired := json.Marshal(desiredSpec)
+			if errExisting == nil && errDesired == nil && !bytes.Equal(existingBytes, desiredBytes) {
+				specChanged = true
+				existing.Object["spec"] = desiredSpec
+			}
+		}
+		annChanged := r.applyKubeVirtAnnotations(existing, specHash)
+		if specChanged || annChanged {
 			if err := r.Update(ctx, existing); err != nil {
 				logger.Error(err, "failed to update KubeVirt VM")
 				return ctrl.Result{}, err
@@ -248,6 +244,28 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
+}
+
+func (r *VMRogueVMReconciler) applyKubeVirtAnnotations(kvVM *unstructured.Unstructured, specHash string) bool {
+	ann := kvVM.GetAnnotations()
+	if ann == nil {
+		ann = map[string]string{}
+	}
+	changed := false
+	if specHash != "" && ann["vmrogue.io/resolved-spec-hash"] != specHash {
+		ann["vmrogue.io/resolved-spec-hash"] = specHash
+		changed = true
+	}
+	if domainHash, err := catalog.KubeVirtDomainHash(kvVM); err == nil && domainHash != "" {
+		if ann["vmrogue.io/kubevirt-domain-hash"] != domainHash {
+			ann["vmrogue.io/kubevirt-domain-hash"] = domainHash
+			changed = true
+		}
+	}
+	if changed || kvVM.GetAnnotations() == nil {
+		kvVM.SetAnnotations(ann)
+	}
+	return changed
 }
 
 func (r *VMRogueVMReconciler) reconcileInternetEgress(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) error {
@@ -484,7 +502,7 @@ func (r *VMRogueVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&vmroguev1alpha1.VMRogueVM{}).
 		Owns(kvVM).
-		Watches(kvVMI, &EnqueueForOwner{OwnerKind: "VMRogueVM"}).
+		Watches(kvVMI, &EnqueueVmiForVMRogueVM{}).
 		Complete(r)
 }
 

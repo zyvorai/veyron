@@ -5,21 +5,21 @@
 package catalog
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// CompareKubeVirtSpec returns true and a message when KubeVirt VM domain spec differs from resolved hash baseline.
-// Uses a simplified JSON comparison of domain CPU, memory, and disk count.
-func CompareKubeVirtSpec(resolvedHash string, kvVM *unstructured.Unstructured) (bool, string) {
+func domainSnapshotFromKV(kvVM *unstructured.Unstructured) map[string]interface{} {
 	if kvVM == nil {
-		return false, ""
+		return nil
 	}
 	domain, found, err := unstructured.NestedMap(kvVM.Object, "spec", "template", "spec", "domain")
 	if !found || err != nil {
-		return false, ""
+		return nil
 	}
 	snapshot := map[string]interface{}{
 		"cpu":    domain["cpu"],
@@ -30,25 +30,42 @@ func CompareKubeVirtSpec(resolvedHash string, kvVM *unstructured.Unstructured) (
 		snapshot["disks"] = devices["disks"]
 		snapshot["interfaces"] = devices["interfaces"]
 	}
+	return snapshot
+}
+
+// KubeVirtDomainHash returns a stable SHA-256 hash of the KubeVirt VM domain snapshot.
+func KubeVirtDomainHash(kvVM *unstructured.Unstructured) (string, error) {
+	snapshot := domainSnapshotFromKV(kvVM)
+	if snapshot == nil {
+		return "", fmt.Errorf("no domain spec on KubeVirt VM")
+	}
 	b, err := json.Marshal(snapshot)
 	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+// CompareKubeVirtSpec returns true when the live KubeVirt domain differs from the last applied hash.
+func CompareKubeVirtSpec(_ string, kvVM *unstructured.Unstructured) (bool, string) {
+	if kvVM == nil {
 		return false, ""
 	}
-	actual := fmt.Sprintf("%x", b)
-	if resolvedHash == "" {
-		return false, ""
-	}
-	// Drift when cluster was manually patched — compare structural snapshot hash stored in annotation.
 	ann := kvVM.GetAnnotations()
 	if ann == nil {
 		return false, ""
 	}
-	expected := ann["vmrogue.io/resolved-spec-hash"]
+	expected := ann["vmrogue.io/kubevirt-domain-hash"]
 	if expected == "" {
 		return false, ""
 	}
-	if expected != resolvedHash {
-		return true, fmt.Sprintf("KubeVirt VM spec drift detected (stored=%s resolved=%s snapshot=%s)", expected, resolvedHash, actual)
+	actual, err := KubeVirtDomainHash(kvVM)
+	if err != nil {
+		return false, ""
+	}
+	if actual != expected {
+		return true, fmt.Sprintf("KubeVirt VM spec drift detected (expected=%s actual=%s)", expected, actual)
 	}
 	return false, ""
 }

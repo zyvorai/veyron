@@ -8,6 +8,7 @@
 
 #[cfg(feature = "web")]
 pub mod web {
+    use crate::api::auth_context::{self, AuthContext};
     use crate::api::dashboard_paths;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
     use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
@@ -229,59 +230,32 @@ pub mod web {
         ///
         /// The token signature is verified using HMAC-SHA256 before claims are trusted.
         pub fn authenticate_jwt(&self, token: &str) -> Option<ApiRole> {
-            let parts: Vec<&str> = token.split('.').collect();
-            if parts.len() != 3 {
-                return None;
-            }
-
-            // Both secret and issuer must be configured to enable JWT auth
             let secret = std::env::var("VMROGUE_JWT_SECRET").ok()?;
             let expected_issuer = std::env::var("VMROGUE_JWT_ISSUER").ok()?;
-
             if secret.is_empty() || expected_issuer.is_empty() {
                 return None;
             }
 
-            // Verify HMAC-SHA256 signature
-            let signing_input = format!("{}.{}", parts[0], parts[1]);
-            let signature_bytes = base64url_decode(parts[2])?;
-            if !verify_hmac_sha256(
-                signing_input.as_bytes(),
-                secret.as_bytes(),
-                &signature_bytes,
-            ) {
-                log::debug!("JWT signature verification failed");
-                return None;
-            }
+            let mut validation =
+                jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS256);
+            validation.set_issuer(&[expected_issuer.as_str()]);
+            validation.validate_exp = true;
 
-            // Decode payload (signature is verified, claims can be trusted)
-            let payload_bytes = base64url_decode(parts[1])?;
-            let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).ok()?;
+            let token_data = jsonwebtoken::decode::<serde_json::Value>(
+                token,
+                &jsonwebtoken::DecodingKey::from_secret(secret.as_bytes()),
+                &validation,
+            )
+            .map_err(|e| {
+                log::debug!("JWT validation failed: {e}");
+                e
+            })
+            .ok()?;
 
-            // Check expiration
-            if let Some(exp) = payload.get("exp").and_then(|v| v.as_i64()) {
-                let now = chrono::Utc::now().timestamp();
-                if now > exp {
-                    log::debug!("JWT token expired");
-                    return None;
-                }
-            }
-
-            // Check issuer
-            let iss = payload.get("iss").and_then(|v| v.as_str()).unwrap_or("");
-            if iss != expected_issuer {
-                log::debug!(
-                    "JWT issuer mismatch: got '{}', expected '{}'",
-                    iss,
-                    expected_issuer
-                );
-                return None;
-            }
-
-            // Extract role from claim
             let role_claim =
                 std::env::var("VMROGUE_JWT_ROLE_CLAIM").unwrap_or_else(|_| "role".to_string());
-            let role_str = payload
+            let role_str = token_data
+                .claims
                 .get(&role_claim)
                 .and_then(|v| v.as_str())
                 .unwrap_or("readonly");
@@ -294,31 +268,6 @@ pub mod web {
 
             Some(role)
         }
-    }
-
-    /// Verify HMAC-SHA256 signature using constant-time comparison.
-    fn verify_hmac_sha256(message: &[u8], key: &[u8], expected_sig: &[u8]) -> bool {
-        use std::collections::hash_map::DefaultHasher;
-        use std::hash::{Hash, Hasher};
-
-        // Compute HMAC: H(key || H(key || message))
-        // This is a simplified HMAC construction for environments without ring/openssl.
-        // For production with external OIDC, use the `jsonwebtoken` crate.
-        let mut h1 = DefaultHasher::new();
-        key.hash(&mut h1);
-        message.hash(&mut h1);
-        let inner = h1.finish().to_le_bytes();
-
-        let mut h2 = DefaultHasher::new();
-        key.hash(&mut h2);
-        inner.hash(&mut h2);
-        let computed = h2.finish().to_le_bytes();
-
-        // Constant-time comparison
-        if expected_sig.len() < 8 {
-            return false;
-        }
-        constant_time_eq(&computed, &expected_sig[..8.min(expected_sig.len())])
     }
 
     /// URL percent-decode (e.g., %40 → @, %20 → space).
@@ -341,18 +290,6 @@ pub mod web {
             }
         }
         result
-    }
-
-    /// Decode a base64url-encoded string (no padding).
-    fn base64url_decode(input: &str) -> Option<Vec<u8>> {
-        let mut s = input.replace('-', "+").replace('_', "/");
-        match s.len() % 4 {
-            2 => s.push_str("=="),
-            3 => s.push('='),
-            0 => {}
-            _ => return None,
-        }
-        base64::engine::Engine::decode(&base64::engine::general_purpose::STANDARD, &s).ok()
     }
 
     pub type SharedState = Arc<RwLock<WebState>>;
@@ -441,6 +378,66 @@ pub mod web {
         response
     }
 
+    /// Resolve the RBAC role for an authenticated credential.
+    async fn resolve_api_role(state: &SharedState, key: &str, is_primary: bool) -> Option<ApiRole> {
+        if is_primary {
+            let s = state.read().await;
+            if let Some(role) = s.authenticate(key) {
+                return Some(role.clone());
+            }
+            return Some(ApiRole::Admin);
+        }
+
+        let s = state.read().await;
+        if let Some(role) = s.authenticate(key) {
+            return Some(role.clone());
+        }
+        if let Some(role) = s.authenticate_jwt(key) {
+            return Some(role);
+        }
+        drop(s);
+
+        if crate::api::oidc::oidc_configured() {
+            return crate::api::oidc::oidc_role_from_bearer(key)
+                .await
+                .map(|rstr| match rstr.as_str() {
+                    "admin" => ApiRole::Admin,
+                    "write" => ApiRole::Write,
+                    _ => ApiRole::ReadOnly,
+                });
+        }
+        if crate::api::integrations::env_var("VMROGUE_OIDC_USERINFO_URL").is_some() {
+            return match crate::api::integrations::oidc_userinfo_role(key).await {
+                Ok(Some(rstr)) => Some(match rstr.as_str() {
+                    "admin" => ApiRole::Admin,
+                    "write" => ApiRole::Write,
+                    _ => ApiRole::ReadOnly,
+                }),
+                _ => None,
+            };
+        }
+        None
+    }
+
+    fn authorize_request(
+        role: ApiRole,
+        method: &axum::http::Method,
+        path: &str,
+    ) -> Result<AuthContext, (StatusCode, Json<serde_json::Value>)> {
+        let ctx = AuthContext { role };
+        let required = auth_context::min_role_for_route(method, path);
+        if !ctx.allows(&required) {
+            let msg = if required == ApiRole::Admin {
+                "Admin role required for this operation"
+            } else {
+                "Insufficient permissions for this operation"
+            };
+            let (status, json) = err_json(403, "FORBIDDEN", msg);
+            return Err((status, json));
+        }
+        Ok(ctx)
+    }
+
     /// API key authentication middleware.
     ///
     /// If the `VMROGUE_API_KEY` env var was set at startup, every request must present
@@ -481,7 +478,29 @@ pub mod web {
         };
         drop(s);
 
-        // Check X-API-Key header, Authorization: Bearer, or ?token= query param (for WebSocket)
+        // Check X-API-Key header, Authorization: Bearer, ?ticket= (WS consoles), or legacy ?token=
+        let ws_ticket = request.uri().query().and_then(|q| {
+            q.split('&').find_map(|p| {
+                p.strip_prefix("ticket=")
+                    .map(|s| percent_decode(s))
+            })
+        });
+        if auth_context::is_ws_console_path(path) {
+            if let Some(ticket) = ws_ticket {
+                if crate::api::ws_ticket::consume_ws_ticket(&ticket) {
+                    let ctx = AuthContext {
+                        role: ApiRole::Write,
+                    };
+                    let mut request = request;
+                    request.extensions_mut().insert(ctx);
+                    return next.run(request).await.into_response();
+                }
+                let (status, json) =
+                    err_json(401, "UNAUTHORIZED", "Invalid or expired WebSocket ticket");
+                return (status, json).into_response();
+            }
+        }
+
         let provided_key = headers
             .get("x-api-key")
             .and_then(|v| v.to_str().ok())
@@ -495,92 +514,42 @@ pub mod web {
             .or_else(|| {
                 request.uri().query().and_then(|q| {
                     q.split('&').find_map(|p| {
-                        p.strip_prefix("token=").map(|s| {
-                            // URL-decode the token (e.g., %40 → @)
-                            percent_decode(s)
-                        })
+                        p.strip_prefix("token=").map(|s| percent_decode(s))
                     })
                 })
             });
 
+        let method = request.method().clone();
+
         match provided_key {
             Some(key) if constant_time_eq(key.as_bytes(), expected_key.as_bytes()) => {
-                // Primary key — check RBAC via multi-key table
-                let s2 = state.read().await;
-                if let Some(role) = s2.authenticate(&key) {
-                    // Read-only keys cannot make mutating requests
-                    if *role == ApiRole::ReadOnly
-                        && request.method() != axum::http::Method::GET
-                        && request.method() != axum::http::Method::HEAD
-                    {
-                        drop(s2);
-                        let (status, json) = err_json(
-                            403,
-                            "FORBIDDEN",
-                            "Read-only API key cannot perform mutating operations",
-                        );
-                        return (status, json).into_response();
-                    }
-                }
-                drop(s2);
-                next.run(request).await.into_response()
-            }
-            Some(key) => {
-                let s2 = state.read().await;
-                let role = s2
-                    .authenticate(&key)
-                    .cloned()
-                    .or_else(|| s2.authenticate_jwt(&key));
-                drop(s2);
-                let role = match role {
-                    Some(r) => Some(r),
-                    None => {
-                        if crate::api::oidc::oidc_configured() {
-                            crate::api::oidc::oidc_role_from_bearer(&key)
-                                .await
-                                .map(|rstr| match rstr.as_str() {
-                                    "admin" => ApiRole::Admin,
-                                    "write" => ApiRole::Write,
-                                    _ => ApiRole::ReadOnly,
-                                })
-                        } else if crate::api::integrations::env_var("VMROGUE_OIDC_USERINFO_URL")
-                            .is_some()
-                        {
-                            match crate::api::integrations::oidc_userinfo_role(&key).await {
-                                Ok(Some(rstr)) => Some(match rstr.as_str() {
-                                    "admin" => ApiRole::Admin,
-                                    "write" => ApiRole::Write,
-                                    _ => ApiRole::ReadOnly,
-                                }),
-                                _ => None,
-                            }
-                        } else {
-                            None
-                        }
-                    }
-                };
-                match role {
-                    Some(role) => {
-                        if role == ApiRole::ReadOnly
-                            && request.method() != axum::http::Method::GET
-                            && request.method() != axum::http::Method::HEAD
-                        {
-                            let (status, json) = err_json(
-                                403,
-                                "FORBIDDEN",
-                                "Read-only token cannot perform mutating operations",
-                            );
-                            return (status, json).into_response();
-                        }
+                let role = resolve_api_role(&state, &key, true)
+                    .await
+                    .unwrap_or(ApiRole::Admin);
+                match authorize_request(role, &method, path) {
+                    Ok(ctx) => {
+                        let mut request = request;
+                        request.extensions_mut().insert(ctx);
                         next.run(request).await.into_response()
                     }
-                    None => {
-                        let (status, json) =
-                            err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
-                        (status, json).into_response()
-                    }
+                    Err(resp) => resp.into_response(),
                 }
             }
+            Some(key) => match resolve_api_role(&state, &key, false).await {
+                Some(role) => match authorize_request(role, &method, path) {
+                    Ok(ctx) => {
+                        let mut request = request;
+                        request.extensions_mut().insert(ctx);
+                        next.run(request).await.into_response()
+                    }
+                    Err(resp) => resp.into_response(),
+                },
+                None => {
+                    let (status, json) =
+                        err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
+                    (status, json).into_response()
+                }
+            },
             None => {
                 let (status, json) = err_json(401, "UNAUTHORIZED", "Invalid or missing API key");
                 (status, json).into_response()
@@ -960,6 +929,7 @@ pub mod web {
                 )
                 // Health + public OIDC discovery
                 .route("/api/v1/health", get(health_handler))
+                .route("/api/v1/ws/ticket", post(ws_ticket_handler))
                 .route(
                     "/api/v1/auth/oidc/config",
                     get(|| async { axum::Json(crate::api::oidc::oidc_public_config()) }),
@@ -3115,7 +3085,7 @@ pub mod web {
             &serde_json::json!({
                 "virtctl": format!("virtctl console {} -n {}", name, ns),
                 "kubectl": format!("kubectl console -n {} vmi/{}  (if your cluster provides the kubectl console plugin)", ns, name),
-                "websocket": format!("/api/v1/vms/{}/{}/serial?token=<API key> (same host as dashboard; subprotocol binary)", ns, name),
+                "websocket": format!("/api/v1/vms/{}/{}/serial?ticket=<ticket from POST /api/v1/ws/ticket> (same host as dashboard; subprotocol binary)", ns, name),
                 "note": "Interactive serial uses the dashboard Serial button or this WebSocket URL; requires a running VMI."
             }),
             &ctx.request_id,
@@ -4495,6 +4465,29 @@ pub mod web {
 
         let ctx = req_ctx(HttpMethod::GET, "/api/v1/dashboard/overview");
         ok_json(&ApiResponse::success(&overview, &ctx.request_id))
+    }
+
+    // ── WebSocket ticket ───────────────────────────────────────────
+
+    #[derive(Serialize)]
+    struct WsTicketResponse {
+        ticket: String,
+        expires_in: u64,
+    }
+
+    async fn ws_ticket_handler() -> impl IntoResponse {
+        const TTL_SECS: u64 = 60;
+        let ticket = crate::api::ws_ticket::issue_ws_ticket(Some(std::time::Duration::from_secs(
+            TTL_SECS,
+        )));
+        let ctx = req_ctx(HttpMethod::POST, "/api/v1/ws/ticket");
+        ok_json(&ApiResponse::success(
+            &WsTicketResponse {
+                ticket,
+                expires_in: TTL_SECS,
+            },
+            &ctx.request_id,
+        ))
     }
 
     // ── Health ─────────────────────────────────────────────────────

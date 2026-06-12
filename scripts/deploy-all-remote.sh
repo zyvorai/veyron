@@ -25,6 +25,11 @@
 #
 # Preferred wrapper (SSH preflight): ./scripts/deploy-remote.sh [host] [user] [--quick]
 # After deploy, smoke-test HTTPS API: ./scripts/verify-vmrogue-remote.sh <host> [node_port]
+#
+# Speed (default: fast incremental builds):
+#   VMROGUE_DEPLOY_NO_CACHE=1           Force clean image build (slow; was the old default)
+#   VMROGUE_DEPLOY_DIAGNOSTICS=1        Full cluster diagnostics before rsync (slow on large clusters)
+#   VMROGUE_SKIP_GUESTKIT_PREP=1        Skip local guestkit rsync when guestkit/ is already current
 # ============================================================================
 
 set -euo pipefail
@@ -71,7 +76,7 @@ HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-HOST}}"
 USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
 REMOTE="${USER}@${HOST}"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-API_KEY="CHANGE_ME"
+API_KEY="${VMROGUE_API_KEY:-CHANGE_ME}"
 VMROGUE_IMAGE="docker.io/library/vmrogue:latest"
 OPERATOR_IMAGE="docker.io/library/vmrogue-operator:latest"
 NAMESPACE="vmrogue-system"
@@ -122,22 +127,29 @@ if [ "$CTR_BUILD" = "none" ] && ! $QUICK; then
     deploy_build_fail "${HOST}"
 fi
 
-# ── Step 0: Remote diagnostics ──
-deploy_phase_start "🩺 [0/7] Remote system and cluster diagnostics"
-stream_remote "sysinfo" "set -o pipefail; uname -a; echo ''; cat /etc/os-release 2>/dev/null | sed -n '1,6p'; echo ''; echo \"CPU: \$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo unknown) cores\"; echo \"Memory:\"; free -h 2>/dev/null || vm_stat 2>/dev/null || true; echo ''; echo 'Disk:'; df -h / 2>/dev/null || true"
-stream_remote "k8s-info" "set -o pipefail; printf '%s\n' \"Cluster flavor: ${CLUSTER_FLAVOR}\" \"Runtime import path: ${K8S_RUNTIME}\" \"kubectl command: ${K8S_CMD}\"; if command -v kubectl >/dev/null 2>&1 || [ \"${CLUSTER_FLAVOR}\" = \"k3s\" ] || [ \"${CLUSTER_FLAVOR}\" = \"rke2\" ]; then printf '%s\n' ''; ${K8S_CMD} version --short 2>/dev/null || ${K8S_CMD} version 2>/dev/null || true; printf '%s\n' '' 'Nodes:'; ${K8S_CMD} get nodes -o wide 2>/dev/null || true; printf '%s\n' '' 'All namespaces:'; ${K8S_CMD} get ns 2>/dev/null || true; printf '%s\n' '' 'All pods cluster-wide:'; ${K8S_CMD} get pods -A -o wide 2>/dev/null || true; else printf '%s\n' 'kubectl not found on remote host'; fi"
-deploy_phase_end
+# ── Step 0: Remote diagnostics (light by default) ──
+if [[ "${VMROGUE_DEPLOY_DIAGNOSTICS:-}" == "1" || "${VMROGUE_DEPLOY_DIAGNOSTICS:-}" == "true" ]]; then
+    deploy_phase_start "🩺 [0/7] Remote system and cluster diagnostics"
+    stream_remote "sysinfo" "set -o pipefail; uname -a; echo ''; cat /etc/os-release 2>/dev/null | sed -n '1,6p'; echo ''; echo \"CPU: \$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo unknown) cores\"; echo \"Memory:\"; free -h 2>/dev/null || vm_stat 2>/dev/null || true; echo ''; echo 'Disk:'; df -h / 2>/dev/null || true"
+    stream_remote "k8s-info" "set -o pipefail; printf '%s\n' \"Cluster flavor: ${CLUSTER_FLAVOR}\" \"Runtime import path: ${K8S_RUNTIME}\" \"kubectl command: ${K8S_CMD}\"; if command -v kubectl >/dev/null 2>&1 || [ \"${CLUSTER_FLAVOR}\" = \"k3s\" ] || [ \"${CLUSTER_FLAVOR}\" = \"rke2\" ]; then printf '%s\n' ''; ${K8S_CMD} version --short 2>/dev/null || ${K8S_CMD} version 2>/dev/null || true; printf '%s\n' '' 'Nodes:'; ${K8S_CMD} get nodes -o wide 2>/dev/null || true; printf '%s\n' '' 'All namespaces:'; ${K8S_CMD} get ns 2>/dev/null || true; printf '%s\n' '' 'All pods cluster-wide:'; ${K8S_CMD} get pods -A -o wide 2>/dev/null || true; else printf '%s\n' 'kubectl not found on remote host'; fi"
+    deploy_phase_end
+else
+    deploy_skip_phase "⏭️  [0/7] Skipping full diagnostics (set VMROGUE_DEPLOY_DIAGNOSTICS=1 for cluster-wide pod listing)"
+fi
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
-if [ -x "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]; then
+if [[ "${VMROGUE_SKIP_GUESTKIT_PREP:-}" != "1" && "${VMROGUE_SKIP_GUESTKIT_PREP:-}" != "true" ]] \
+    && [ -x "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]; then
     deploy_substep "Preparing GuestKit build context (guestkit/ → VMRogue)"
     bash "${REPO_DIR}/scripts/prepare-guestkit-docker.sh"
 fi
 deploy_ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
-rsync -avz --delete \
+rsync -az --delete \
     --exclude='target/' --exclude='.git' --exclude='operator/bin/' \
-    --exclude='node_modules/' --exclude='e2e/node_modules/' \
+    --exclude='node_modules/' --exclude='e2e/' --exclude='examples/' \
+    --exclude='docs/' --exclude='.cursor/' --exclude='charts/' \
+    --exclude='guestkit/target/' --exclude='*.plan.md' \
     --exclude='*.qcow2' --exclude='*.vmdk' --exclude='*.iso' \
     -e "$(deploy_rsync_ssh)" \
     "$REPO_DIR/" "${REMOTE}:${DEPLOY_DIR}/" 2>&1 | stream_local_rsync
@@ -148,22 +160,58 @@ echo ""
 if $QUICK; then
     deploy_skip_phase "⏭️  [2/7] Skipping image builds (--quick)"
 else
-    deploy_phase_start "🐳 [2/7] Building container images on remote"
+    deploy_phase_start "🐳 [2/7] Building container images on remote (parallel, layer cache enabled)"
 
-    API_BUILD_CMD="cd ${DEPLOY_DIR} && ${CTR_BUILD} build --no-cache -t ${VMROGUE_IMAGE} ."
-    OP_BUILD_CMD="cd ${DEPLOY_DIR}/operator && ${CTR_BUILD} build -t ${OPERATOR_IMAGE} ."
-    if [ "${CTR_BUILD}" = "docker" ]; then
-        API_BUILD_CMD="cd ${DEPLOY_DIR} && DOCKER_BUILDKIT=1 docker build --progress=plain --no-cache -t ${VMROGUE_IMAGE} ."
-        OP_BUILD_CMD="cd ${DEPLOY_DIR}/operator && DOCKER_BUILDKIT=1 docker build --progress=plain -t ${OPERATOR_IMAGE} ."
+    CACHE_FROM_ARGS=""
+    if [[ "${VMROGUE_DEPLOY_NO_CACHE:-}" != "1" && "${VMROGUE_DEPLOY_NO_CACHE:-}" != "true" ]]; then
+        # podman --cache-from requires a repository without tag/digest
+        VM_CACHE_REF="${VMROGUE_IMAGE%%:*}"
+        OP_CACHE_REF="${OPERATOR_IMAGE%%:*}"
+        if [ "${CTR_BUILD}" = "docker" ]; then
+            VM_CACHE_REF="${VMROGUE_IMAGE}"
+            OP_CACHE_REF="${OPERATOR_IMAGE}"
+        fi
+        if deploy_ssh "${REMOTE}" "${CTR_BUILD} image exists ${VMROGUE_IMAGE} >/dev/null 2>&1"; then
+            CACHE_FROM_ARGS="--cache-from ${VM_CACHE_REF}"
+        fi
+        if deploy_ssh "${REMOTE}" "${CTR_BUILD} image exists ${OPERATOR_IMAGE} >/dev/null 2>&1"; then
+            CACHE_FROM_ARGS="${CACHE_FROM_ARGS} --cache-from ${OP_CACHE_REF}"
+        fi
+    fi
+    NO_CACHE_ARG=""
+    if [[ "${VMROGUE_DEPLOY_NO_CACHE:-}" == "1" || "${VMROGUE_DEPLOY_NO_CACHE:-}" == "true" ]]; then
+        NO_CACHE_ARG="--no-cache"
+        deploy_note "VMROGUE_DEPLOY_NO_CACHE=1 — full rebuild (slow)"
     fi
 
-    deploy_substep "📦 VMRogue API image build started"
-    stream_remote "api-build" "${API_BUILD_CMD}"
-    pkg_ok "VMRogue API image build complete"
+    EXPORT_LINE=""
+    PROGRESS_ARG=""
+    if [ "${CTR_BUILD}" = "docker" ]; then
+        EXPORT_LINE="export DOCKER_BUILDKIT=1"
+        if [[ "${VMROGUE_DEPLOY_VERBOSE:-}" == "1" ]]; then
+            PROGRESS_ARG="--progress=plain"
+        fi
+    elif [ "${CTR_BUILD}" = "podman" ]; then
+        EXPORT_LINE="export BUILDAH_FORMAT=docker"
+    fi
 
-    deploy_substep "📦 Operator image build started"
-    stream_remote "operator-build" "${OP_BUILD_CMD}"
-    pkg_ok "Operator image build complete"
+    PARALLEL_BUILD=$(cat <<REMOTE_BUILD_EOF
+set -euo pipefail
+${EXPORT_LINE}
+API_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${VMROGUE_IMAGE} .'
+OP_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${OPERATOR_IMAGE} .'
+( cd '${DEPLOY_DIR}' && eval "\$API_CMD" ) &
+api_pid=\$!
+( cd '${DEPLOY_DIR}/operator' && eval "\$OP_CMD" ) &
+op_pid=\$!
+wait \$api_pid
+wait \$op_pid
+REMOTE_BUILD_EOF
+)
+
+    deploy_substep "📦 VMRogue API + Operator image builds (parallel)"
+    stream_remote "image-build" "${PARALLEL_BUILD}"
+    pkg_ok "Container image builds complete"
 
     deploy_phase_end
 fi

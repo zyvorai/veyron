@@ -22,6 +22,9 @@
 #   VMROGUE_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
 #   VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
 #   VMROGUE_REQUIRE_KUBEVIRT=1               deploy-k8s-remote.sh: fail if KubeVirt CRD missing
+#   VMROGUE_DEPLOY_NO_CACHE=1                Force clean image rebuild (slow; default uses layer cache)
+#   VMROGUE_DEPLOY_DIAGNOSTICS=1             Full cluster pod listing before deploy
+#   VMROGUE_SKIP_GUESTKIT_PREP=1             Skip local guestkit rsync when guestkit/ is current
 #
 # Examples:
 #   ./scripts/deploy-remote.sh 192.0.2.1 ubuntu

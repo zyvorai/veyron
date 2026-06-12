@@ -108,7 +108,7 @@ bootstrap_vmrogue_integrations() {
     fi
 
     local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url="" grafana_url=""
-    local grafana_ext="" prom_ext="" am_ext="" jaeger_ext=""
+    local grafana_ext="" prom_ext="" am_ext="" jaeger_ext="" packetwolf_url="" packetwolf_ext=""
     local argocd_url="" argocd_token="" argocd_default_app=""
     local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc="" grafana_svc=""
 
@@ -184,6 +184,15 @@ bootstrap_vmrogue_integrations() {
         echo "Velero CRDs detected — cluster backups available in dashboard Backups page"
     fi
 
+    for pw_ns in cilium-system packetwolf; do
+        if ${k8s} get svc packetwolf-api -n "${pw_ns}" &>/dev/null; then
+            packetwolf_url="http://packetwolf-api.${pw_ns}.svc:9191"
+            packetwolf_ext=$(bootstrap_nodeport_external_url "${k8s}" "${pw_ns}" packetwolf-ui http || true)
+            echo "PacketWolf API detected in ${pw_ns}: ${packetwolf_url}"
+            break
+        fi
+    done
+
     local argo_lines argo_ns_discovered=""
     argo_lines=$(bootstrap_argocd_credentials "${k8s}" || true)
     if [[ -n "${argo_lines}" ]]; then
@@ -196,7 +205,7 @@ bootstrap_vmrogue_integrations() {
         fi
     fi
 
-    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" ]]; then
+    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${packetwolf_url}" ]]; then
         echo "No integration services detected — skip vmrogue-integrations Secret"
         return 0
     fi
@@ -229,6 +238,8 @@ EOF
     [[ -n "${prom_ext}" ]] && echo "  VMROGUE_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
     [[ -n "${am_ext}" ]] && echo "  VMROGUE_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
     [[ -n "${jaeger_ext}" ]] && echo "  VMROGUE_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
+    [[ -n "${packetwolf_url}" ]] && echo "  VMROGUE_PACKETWOLF_URL: \"${packetwolf_url}\"" >>"${tmp}"
+    [[ -n "${packetwolf_ext}" ]] && echo "  VMROGUE_PACKETWOLF_EXTERNAL_URL: \"${packetwolf_ext}\"" >>"${tmp}"
     [[ -n "${argocd_url}" ]] && echo "  VMROGUE_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
     [[ -n "${argocd_token}" ]] && echo "  VMROGUE_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
     [[ -n "${argocd_default_app}" ]] && echo "  VMROGUE_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"

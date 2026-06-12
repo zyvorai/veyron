@@ -267,7 +267,7 @@ fn token_not_expired(payload: &serde_json::Value) -> bool {
     chrono::Utc::now().timestamp() <= exp
 }
 
-/// Validate OIDC bearer via JWKS (signature check deferred to issuer + exp + userinfo fallback).
+/// Validate OIDC bearer via JWKS signature verification or userinfo fallback.
 /// Returns role string: admin | write | readonly.
 #[cfg(feature = "web")]
 pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
@@ -313,7 +313,7 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
         return Some(role);
     }
 
-    Some(map_role_claim(&payload))
+    None
 }
 
 #[cfg(not(feature = "web"))]

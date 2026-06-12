@@ -8,7 +8,6 @@ if [[ -z "$SRC" || ! -d "$SRC" ]]; then
   echo "guestkit source not found — set GUESTKIT_SRC or place repo at ../guestkit" >&2
   exit 1
 fi
-rm -rf "$DEST"
 mkdir -p "$DEST"
-rsync -a --exclude target --exclude .git "$SRC/" "$DEST/"
+rsync -a --delete --exclude target --exclude .git "$SRC/" "$DEST/"
 echo "Prepared $DEST from $SRC"

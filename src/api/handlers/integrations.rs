@@ -133,6 +133,12 @@ const DEFINITIONS: &[IntegrationDef] = &[
         env_var: "VMROGUE_SOAR_WEBHOOK_URL",
         feeds: "Detection fired / playbook triggers",
     },
+    IntegrationDef {
+        id: "packetwolf",
+        name: "PacketWolf",
+        env_var: "VMROGUE_PACKETWOLF_URL",
+        feeds: "Network Brain health, Cilium/Hubble intelligence (GET /api/v1/packetwolf/status)",
+    },
 ];
 
 #[cfg(feature = "web")]
@@ -190,6 +196,7 @@ fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
         "trivy" => ("security", "Open security"),
         "jaeger" => ("traces", "Open traces"),
         "elastic" | "splunk" | "sentinel" | "qradar" | "soar" => ("soc", "Open SOC"),
+        "packetwolf" => ("cilium", "Open Cilium"),
         _ => return None,
     };
     Some(IntegrationOpenLink {
@@ -311,6 +318,7 @@ async fn resolve_external_open(
         "alertmanager" => "VMROGUE_ALERTMANAGER_EXTERNAL_URL",
         "argocd" => "VMROGUE_ARGOCD_EXTERNAL_URL",
         "jaeger" => "VMROGUE_JAEGER_EXTERNAL_URL",
+        "packetwolf" => "VMROGUE_PACKETWOLF_EXTERNAL_URL",
         _ => return None,
     };
     if let Some(url) = crate::api::integrations::env_var(external_env) {
@@ -339,6 +347,16 @@ async fn resolve_external_open(
                 .map(|u| external_open("Open Argo CD", u));
         }
         "jaeger" => ("monitoring", "jaeger"),
+        "packetwolf" => {
+            for ns in ["cilium-system", "packetwolf"] {
+                if let Some(u) = discover_nodeport_url(client, ns, "packetwolf-ui").await {
+                    return Some(external_open("Open PacketWolf UI", u));
+                }
+            }
+            return raw_url
+                .and_then(base_url_from_env)
+                .map(|u| external_open("Open PacketWolf API", u));
+        }
         _ => return None,
     };
     discover_nodeport_url(client, ns, hint)
@@ -396,6 +414,13 @@ async fn get_integrations_status(
                 } else {
                     probe_futures.push((def.id, url.to_string(), None));
                 }
+            } else if def.id == "packetwolf" {
+                let health = if url.trim_end_matches('/').ends_with("/health") {
+                    url.to_string()
+                } else {
+                    format!("{}/health", url.trim_end_matches('/'))
+                };
+                probe_futures.push((def.id, health, None));
             } else {
                 probe_futures.push((def.id, url.to_string(), None));
             }
@@ -404,7 +429,7 @@ async fn get_integrations_status(
             None
         } else if matches!(
             def.id,
-            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger"
+            "grafana" | "argocd" | "prometheus" | "alertmanager" | "jaeger" | "packetwolf"
         ) {
             resolve_external_open(&kube_client, def.id, raw.as_deref())
                 .await
