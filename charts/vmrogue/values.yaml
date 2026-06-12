@@ -73,6 +73,9 @@ integrations:
   alertmanagerUrl: ""
   argocdUrl: ""
   argocdToken: ""
+  packetwolfUrl: ""
+  packetwolfExternalUrl: ""
+  packetwolfApiKey: ""
   # Reference an existing Secret (all keys become env vars), e.g. vmrogue-integrations
   existingSecret: ""
 

@@ -31,8 +31,13 @@ make ci
 # Build image, import into the node runtime, deploy to vmrogue-system (auto-detects k3s vs kubectl; installs CDI if DataVolume CRD missing — VMROGUE_SKIP_CDI=1 to skip; VMROGUE_CONTAINER_RUNTIME_IMPORT overrides image import)
 ./scripts/deploy-k8s-remote.sh HOST USER
 
-# Full deployment (builds both API + operator images; streams remote build logs + preflight diagnostics)
+# Full deployment (builds both API + operator images; parallel builds, layer cache by default)
 ./scripts/deploy-remote.sh HOST USER
+
+# Deploy speed (default: fast incremental builds)
+#   VMROGUE_DEPLOY_NO_CACHE=1        Force clean image rebuild (slow)
+#   VMROGUE_DEPLOY_DIAGNOSTICS=1     Full cluster pod listing before rsync
+#   VMROGUE_SKIP_GUESTKIT_PREP=1     Skip local guestkit rsync when guestkit/ is current
 
 # Post-deploy HTTPS API smoke test (NodePort health, templates, VM list — uses VMROGUE_API_KEY)
 ./scripts/verify-vmrogue-remote.sh HOST [30151]
@@ -108,7 +113,9 @@ pub type SharedState = Arc<RwLock<WebState>>;
 
 Each handler module exports `pub fn router(state: SharedState) -> Router` and is merged in `src/api/handlers/mod.rs`.
 
-**Auth**: `X-API-Key` header, `Authorization: Bearer <jwt>` (HMAC-SHA256), or `?token=` query param. Multi-key RBAC via `VMROGUE_API_KEYS="admin:key1,write:key2,readonly:key3"`.
+**Auth**: `X-API-Key` header, `Authorization: Bearer <jwt>` (HMAC-SHA256 or OIDC), or `?token=` query param. Multi-key RBAC via `VMROGUE_API_KEYS="admin:key1,write:key2,readonly:key3"`. Route-level minimum roles in `src/api/auth_context.rs`. VNC/serial WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`).
+
+**PacketWolf**: when `VMROGUE_PACKETWOLF_URL` is set (or auto-wired by `bootstrap-integrations.sh`), `GET /api/v1/packetwolf/status` probes Network Brain health; dashboard **Cilium** page shows connection banner. In-cluster PacketWolf with `trustClusterNetworks=true` typically needs no API key. See `docs/OPTIONAL_INTEGRATIONS.md`.
 
 ### Kubernetes integration
 

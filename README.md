@@ -146,6 +146,11 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 # Fast redeploy: skip image rebuild/import
 ./scripts/deploy-all-remote.sh HOST USER --quick
 
+# Deploy tuning (default: incremental layer cache, parallel image builds)
+# VMROGUE_DEPLOY_NO_CACHE=1          # full rebuild (slow)
+# VMROGUE_DEPLOY_DIAGNOSTICS=1       # cluster-wide pod list before rsync
+# VMROGUE_SKIP_GUESTKIT_PREP=1       # skip local guestkit rsync
+
 # API-only deployment helper
 ./scripts/deploy-k8s-remote.sh HOST USER
 ```
@@ -166,11 +171,7 @@ See **[docs/PACKAGE_BINARY_REMOTE.md](docs/PACKAGE_BINARY_REMOTE.md)** for clien
 
 `deploy-all-remote.sh` now runs with detailed, timestamped logs and phase timings. During image builds it streams full remote output (including Cargo `Compiling ...` lines), so long Rust builds do not look stuck.
 
-Preflight diagnostics are printed before deployment:
-
-- remote OS/kernel, CPU, memory, and root disk information
-- detected cluster flavor (`k3s`, `rke2`, `kubeadm`, generic Kubernetes, or unknown)
-- Kubernetes client/server version, nodes, namespaces, and cluster-wide pod list
+By default, full preflight diagnostics are **skipped** (faster on large clusters). Set `VMROGUE_DEPLOY_DIAGNOSTICS=1` to print remote OS/kernel, CPU, memory, disk, cluster flavor, and a cluster-wide pod list before rsync.
 
 Runtime import handling auto-detects `k3s`, `rke2`, `microk8s`, `kind`, `minikube`, `containerd`, and `docker-desktop` paths.
 
