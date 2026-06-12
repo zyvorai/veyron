@@ -70,3 +70,35 @@ func (e *EnqueueForOwner) enqueueOwner(obj client.Object, q workqueue.TypedRateL
 		}
 	}
 }
+
+// EnqueueVmiForVMRogueVM enqueues the VMRogueVM with the same name/namespace as a VMI.
+// VMI owner references point at the KubeVirt VirtualMachine, which shares its name with VMRogueVM.
+type EnqueueVmiForVMRogueVM struct{}
+
+func (e *EnqueueVmiForVMRogueVM) Create(ctx context.Context, evt event.CreateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	e.enqueue(evt.Object, q)
+}
+
+func (e *EnqueueVmiForVMRogueVM) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	e.enqueue(evt.ObjectNew, q)
+}
+
+func (e *EnqueueVmiForVMRogueVM) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	e.enqueue(evt.Object, q)
+}
+
+func (e *EnqueueVmiForVMRogueVM) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	e.enqueue(evt.Object, q)
+}
+
+func (e *EnqueueVmiForVMRogueVM) enqueue(obj client.Object, q workqueue.TypedRateLimitingInterface[reconcile.Request]) {
+	if obj == nil {
+		return
+	}
+	q.Add(reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+		},
+	})
+}

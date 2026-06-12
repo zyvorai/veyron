@@ -7,9 +7,13 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[cfg(feature = "web")]
+pub mod auth_context;
+#[cfg(feature = "web")]
 pub mod dashboard_paths;
 pub mod handlers;
 pub mod http_server;
+#[cfg(feature = "web")]
+pub mod ws_ticket;
 #[cfg(feature = "web")]
 pub mod integrations;
 #[cfg(feature = "web")]

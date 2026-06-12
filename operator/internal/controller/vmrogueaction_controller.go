@@ -25,6 +25,8 @@ import (
 	vmmetrics "github.com/ssahani/vmrogue/operator/internal/metrics"
 )
 
+const restartPhaseAnnotation = "vmrogue.io/restart-phase"
+
 // VMRogueActionReconciler reconciles a VMRogueAction object.
 type VMRogueActionReconciler struct {
 	client.Client
@@ -55,17 +57,29 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{}, nil
 	}
 
-	// Handle auto-approve
-	if action.Spec.AutoApprove && !action.Spec.Approved {
-		action.Spec.Approved = true
-		if err := r.Update(ctx, &action); err != nil {
+	// Auto-approve via status (do not mutate spec.Approved)
+	if action.Spec.AutoApprove && action.Status.Phase == vmroguev1alpha1.ActionPhasePending {
+		now := metav1.Now()
+		action.Status.Phase = vmroguev1alpha1.ActionPhaseApproved
+		setCondition(&action.Status.Conditions, metav1.Condition{
+			Type:               "Approved",
+			Status:             metav1.ConditionTrue,
+			Reason:             "AutoApproved",
+			Message:            "Action auto-approved",
+			LastTransitionTime: now,
+		})
+		if err := r.Status().Update(ctx, &action); err != nil {
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
+	approved := action.Spec.Approved ||
+		action.Status.Phase == vmroguev1alpha1.ActionPhaseApproved ||
+		action.Status.Phase == vmroguev1alpha1.ActionPhaseExecuting
+
 	// If not approved, set status to Pending
-	if !action.Spec.Approved {
+	if !approved {
 		if action.Status.Phase != vmroguev1alpha1.ActionPhasePending {
 			action.Status.Phase = vmroguev1alpha1.ActionPhasePending
 			now := metav1.Now()
@@ -81,20 +95,28 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
+	if action.Spec.ActionType == "RestartVM" {
+		return r.reconcileRestartVM(ctx, &action)
+	}
+
 	// Execute the action
 	logger.Info("executing action", "type", action.Spec.ActionType, "vm", action.Spec.VMRef)
 
-	now := metav1.Now()
-	action.Status.Phase = vmroguev1alpha1.ActionPhaseExecuting
-	action.Status.StartedAt = &now
-	setCondition(&action.Status.Conditions, metav1.Condition{
-		Type:               "Approved",
-		Status:             metav1.ConditionTrue,
-		Reason:             "Approved",
-		Message:            "Action has been approved",
-		LastTransitionTime: now,
-	})
-	_ = r.Status().Update(ctx, &action)
+	if action.Status.Phase != vmroguev1alpha1.ActionPhaseExecuting {
+		now := metav1.Now()
+		action.Status.Phase = vmroguev1alpha1.ActionPhaseExecuting
+		action.Status.StartedAt = &now
+		setCondition(&action.Status.Conditions, metav1.Condition{
+			Type:               "Approved",
+			Status:             metav1.ConditionTrue,
+			Reason:             "Approved",
+			Message:            "Action has been approved",
+			LastTransitionTime: now,
+		})
+		if err := r.Status().Update(ctx, &action); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	err := r.executeAction(ctx, &action)
 
@@ -131,6 +153,108 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
+func (r *VMRogueActionReconciler) reconcileRestartVM(ctx context.Context, action *vmroguev1alpha1.VMRogueAction) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	namespace := action.Spec.Namespace
+	if namespace == "" {
+		namespace = action.Namespace
+	}
+	if action.Spec.VMRef == "" {
+		return r.failRestart(ctx, action, fmt.Errorf("RestartVM requires vmRef"))
+	}
+
+	ann := action.GetAnnotations()
+	if ann == nil {
+		ann = map[string]string{}
+	}
+	phase := ann[restartPhaseAnnotation]
+
+	switch phase {
+	case "":
+		now := metav1.Now()
+		if action.Status.Phase != vmroguev1alpha1.ActionPhaseExecuting {
+			action.Status.Phase = vmroguev1alpha1.ActionPhaseExecuting
+			action.Status.StartedAt = &now
+			action.Status.Message = "Restart: stopping VM"
+			if err := r.Status().Update(ctx, action); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		if err := r.patchVMRunning(ctx, namespace, action.Spec.VMRef, false); err != nil {
+			return r.failRestart(ctx, action, fmt.Errorf("stop phase: %w", err))
+		}
+		ann[restartPhaseAnnotation] = "wait-stop"
+		action.SetAnnotations(ann)
+		if err := r.Update(ctx, action); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+
+	case "wait-stop":
+		vmi := &unstructured.Unstructured{}
+		vmi.SetGroupVersionKind(schema.GroupVersionKind{Group: "kubevirt.io", Version: "v1", Kind: "VirtualMachineInstance"})
+		err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: action.Spec.VMRef}, vmi)
+		if err == nil {
+			action.Status.Message = "Restart: waiting for VM to stop"
+			_ = r.Status().Update(ctx, action)
+			return ctrl.Result{RequeueAfter: 5 * time.Second}, nil
+		}
+		if !errors.IsNotFound(err) {
+			return r.failRestart(ctx, action, err)
+		}
+		if err := r.patchVMRunning(ctx, namespace, action.Spec.VMRef, true); err != nil {
+			return r.failRestart(ctx, action, fmt.Errorf("start phase: %w", err))
+		}
+		delete(ann, restartPhaseAnnotation)
+		action.SetAnnotations(ann)
+		if err := r.Update(ctx, action); err != nil {
+			return ctrl.Result{}, err
+		}
+
+		completedAt := metav1.Now()
+		action.Status.Phase = vmroguev1alpha1.ActionPhaseCompleted
+		action.Status.CompletedAt = &completedAt
+		action.Status.Message = "Restart completed successfully"
+		setCondition(&action.Status.Conditions, metav1.Condition{
+			Type:               "Executed",
+			Status:             metav1.ConditionTrue,
+			Reason:             string(vmroguev1alpha1.ActionPhaseCompleted),
+			Message:            action.Status.Message,
+			LastTransitionTime: completedAt,
+		})
+		if err := r.Status().Update(ctx, action); err != nil {
+			return ctrl.Result{}, err
+		}
+		r.Recorder.Eventf(action, "Normal", "Executed", "RestartVM completed for VM %s", action.Spec.VMRef)
+		r.publishActionEvent(eventbus.SubjectActionExecuted, action)
+		vmmetrics.ActionExecutions.WithLabelValues("RestartVM", "success").Inc()
+		logger.Info("RestartVM completed", "vm", action.Spec.VMRef)
+		return ctrl.Result{}, nil
+
+	default:
+		return r.failRestart(ctx, action, fmt.Errorf("unknown restart phase %q", phase))
+	}
+}
+
+func (r *VMRogueActionReconciler) failRestart(ctx context.Context, action *vmroguev1alpha1.VMRogueAction, err error) (ctrl.Result, error) {
+	completedAt := metav1.Now()
+	action.Status.Phase = vmroguev1alpha1.ActionPhaseFailed
+	action.Status.CompletedAt = &completedAt
+	action.Status.Message = fmt.Sprintf("Execution failed: %v", err)
+	setCondition(&action.Status.Conditions, metav1.Condition{
+		Type:               "Executed",
+		Status:             metav1.ConditionFalse,
+		Reason:             string(vmroguev1alpha1.ActionPhaseFailed),
+		Message:            action.Status.Message,
+		LastTransitionTime: completedAt,
+	})
+	_ = r.Status().Update(ctx, action)
+	r.Recorder.Eventf(action, "Warning", "ExecutionFailed", "RestartVM failed: %v", err)
+	r.publishActionEvent(eventbus.SubjectActionFailed, action)
+	vmmetrics.ActionExecutions.WithLabelValues("RestartVM", "failed").Inc()
+	return ctrl.Result{}, err
+}
+
 func (r *VMRogueActionReconciler) executeAction(ctx context.Context, action *vmroguev1alpha1.VMRogueAction) error {
 	if action.Spec.VMRef == "" && requiresVMRef(action.Spec.ActionType) {
 		return fmt.Errorf("action type %s requires a vmRef", action.Spec.ActionType)
@@ -146,23 +270,6 @@ func (r *VMRogueActionReconciler) executeAction(ctx context.Context, action *vmr
 		return r.patchVMRunning(ctx, namespace, action.Spec.VMRef, true)
 	case "StopVM":
 		return r.patchVMRunning(ctx, namespace, action.Spec.VMRef, false)
-	case "RestartVM":
-		// Stop VM, wait for VMI to terminate, then start
-		if err := r.patchVMRunning(ctx, namespace, action.Spec.VMRef, false); err != nil {
-			return fmt.Errorf("stop phase: %w", err)
-		}
-		// Wait for VMI to disappear (up to 60 seconds)
-		vmiGVK := schema.GroupVersionKind{Group: "kubevirt.io", Version: "v1", Kind: "VirtualMachineInstance"}
-		for i := 0; i < 12; i++ {
-			time.Sleep(5 * time.Second)
-			vmi := &unstructured.Unstructured{}
-			vmi.SetGroupVersionKind(vmiGVK)
-			err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: action.Spec.VMRef}, vmi)
-			if errors.IsNotFound(err) {
-				break // VMI terminated
-			}
-		}
-		return r.patchVMRunning(ctx, namespace, action.Spec.VMRef, true)
 	case "ScaleResources":
 		return r.scaleVM(ctx, namespace, action.Spec.VMRef, action.Spec.Parameters)
 	case "CreateSnapshot":
@@ -172,7 +279,6 @@ func (r *VMRogueActionReconciler) executeAction(ctx context.Context, action *vmr
 	case "Migrate":
 		return r.migrateVM(ctx, namespace, action.Spec.VMRef)
 	case "SendNotification":
-		// Log-based notification (webhook delivery requires HTTP client)
 		msg := action.Spec.Parameters["message"]
 		if msg == "" {
 			msg = fmt.Sprintf("Action notification for VM %s", action.Spec.VMRef)

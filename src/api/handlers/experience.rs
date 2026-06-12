@@ -162,7 +162,7 @@ async fn resolve_client_role(
         });
 
     let Some(key) = key else {
-        return ApiRole::Admin;
+        return ApiRole::ReadOnly;
     };
 
     if let Some(role) = state.authenticate(&key) {

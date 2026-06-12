@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260602v">
+<meta name="vmrogue-dashboard-rev" content="20260608c">
 <title>VMRogue // Forged in Rust</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260602v';
+  var DASH_REV = '20260608c';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -247,6 +247,9 @@ body>*{position:relative;z-index:1}
   align-items:center;justify-content:space-between;gap:12px;
 }
 body.classic-nav-open .browse-mega-header{display:flex}
+@media(min-width:901px){
+  body.classic-nav-open .browse-mega-header{display:flex!important}
+}
 @media(min-width:961px){
   body.classic-nav-open .browse-mega-header{left:220px}
   body.finder-collapsed.classic-nav-open .browse-mega-header{left:0}
@@ -267,6 +270,9 @@ body.classic-nav-open .browse-mega-header{display:flex}
   gap:10px 22px;align-content:start;
 }
 body.classic-nav-open .browse-mega-menu{display:grid}
+@media(min-width:901px){
+  body.classic-nav-open .browse-mega-menu{display:grid!important}
+}
 .browse-mega-menu .nav-group.browse-hidden{display:none}
 .browse-pin-btn{
   margin-left:auto;padding:0 4px;border:none;background:transparent;color:var(--text-dim);
@@ -296,6 +302,9 @@ body.classic-nav-open .browse-mega-menu{display:grid}
   display:none;position:fixed;inset:96px 0 0 0;z-index:125;background:rgba(0,0,0,.4);
 }
 body.classic-nav-open .classic-nav-backdrop{display:block}
+@media(min-width:901px){
+  body.classic-nav-open .classic-nav-backdrop{display:block!important}
+}
 body:not([data-page="dashboard"])::before{animation:none!important}
 .navbar::after{
   content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
@@ -1284,7 +1293,31 @@ body.vm-focus-active .vm-focus-back{display:inline-flex!important}
 .zeus-nav-chips{display:flex;flex-wrap:wrap;gap:6px;margin-left:12px}
 .zeus-nav-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:rgba(0,0,0,.2);font-size:.72rem;font-weight:600;color:var(--text-muted);cursor:pointer}
 .zeus-nav-chip:hover,.zeus-nav-chip.active{color:var(--text-bright);border-color:rgba(93,144,247,.4);background:rgba(59,130,246,.12)}
-@media(min-width:901px){.btn-nav-browse,.browse-mega-header,.browse-mega-menu,.classic-nav-backdrop{display:none!important}}
+@media(min-width:901px){
+  .btn-nav-browse{display:none!important}
+  body:not(.classic-nav-open) .browse-mega-header,
+  body:not(.classic-nav-open) .browse-mega-menu,
+  body:not(.classic-nav-open) .classic-nav-backdrop{display:none!important}
+}
+/* Tahoe menubar (40px): align browse overlay below shell chrome */
+body.mac-desktop-root .browse-mega-header{top:40px}
+body.mac-desktop-root .browse-mega-menu{top:92px}
+body.mac-desktop-root .classic-nav-backdrop{top:92px}
+/* Finder collapsed (Normal/Power): keep Browse all reachable on desktop */
+.cloudos-browse-rail{
+  display:none;position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:124;
+  flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  width:28px;padding:10px 0;border-radius:0 10px 10px 0;
+  border:1px solid var(--glass-border);border-left:none;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  color:var(--text-muted);cursor:pointer;font-family:inherit;font-size:.62rem;font-weight:700;
+  letter-spacing:.04em;writing-mode:vertical-rl;text-orientation:mixed;
+  box-shadow:4px 0 20px rgba(0,0,0,.25);
+}
+.cloudos-browse-rail:hover,.cloudos-browse-rail.active{color:var(--spark);border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.08)}
+body.finder-collapsed:not([data-desktop-tier="advanced"]) .cloudos-browse-rail{display:flex}
+body.classic-nav-open .cloudos-browse-rail{display:none!important}
+@media(max-width:960px){.cloudos-browse-rail{display:none!important}}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
@@ -3015,7 +3048,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
           <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('monitoring');closeMacMenus()">Activity Monitor</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('backups');closeMacMenus()">Backups</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()">Ask Zeus… <span class="mac-menu-shortcut">⌘J</span></button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleClassicNav();closeMacMenus()">Browse all pages…</button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleClassicNav();closeMacMenus()">Browse all pages… <span class="mac-menu-shortcut">⌘⇧B</span></button>
         </div>
       </div>
       <div class="mac-menu-wrap">
@@ -3105,6 +3138,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
   <div class="mac-cc-section">
     <div class="mac-cc-section-title">Quick actions</div>
     <div class="mac-cc-tiles">
+      <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();toggleClassicNav()"><span class="mac-cc-tile-icon">⋯</span>Browse</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openAskZeus()"><span class="mac-cc-tile-icon">✦</span>Ask Zeus</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openSpotlight()"><span class="mac-cc-tile-icon">⌘</span>Spotlight</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openMissionControlOverlay()"><span class="mac-cc-tile-icon">◫</span>Mission</button>
@@ -3232,6 +3266,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
   </div>
 </div>
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
+<button type="button" class="cloudos-browse-rail" id="cloudos-browse-rail" onclick="toggleClassicNav()" title="Browse all pages (⌘⇧B)" aria-label="Browse all pages">Browse</button>
 
 <div class="cloudos-body-row">
 <aside class="cloudos-finder" id="cloudos-finder" aria-label="ZeusOS Finder">
@@ -4203,7 +4238,8 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC.</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
+  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VMROGUE_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
+  <div id="cilium-packetwolf-banner" class="vmrogue-cap-banner glass-banner" style="display:none;margin-bottom:16px" role="status"></div>
     <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">VMRogue Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cilium-advisor-card')">Dismiss</button></div>
     <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4679,7 +4715,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
         </div>
       </div>
       <div class="remember-row">
-        <input type="checkbox" id="apikey-remember" checked>
+        <input type="checkbox" id="apikey-remember">
         <label for="apikey-remember">Remember me</label>
       </div>
     </div>
@@ -4908,7 +4944,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260602v';
+window.__VMROGUE_DASH_REV = '20260608c';
 (function () {
   try {
     const k = 'vmrogue_dashboard_rev';
@@ -5355,17 +5391,17 @@ function renderControlCenterChips(items) {
   ).join('');
 }
 
-function loadPageData(page) {
+function loadPageData(page, opts) {
   if (page === 'dashboard') {
-    fetchVMs();
-    fetchEvents(false);
+    fetchVMs(opts);
+    fetchEvents(false, opts);
   }
-  if (page === 'vms') fetchVMs();
-  if (page === 'snapshots') { fetchVMs(); fetchSnapshots(); fetchSchedules(); }
-  if (page === 'events') fetchEvents(true);
-  if (page === 'nodes') fetchNodes();
-  if (page === 'pods') fetchPods();
-  if (page === 'storage') fetchStorage();
+  if (page === 'vms') fetchVMs(opts);
+  if (page === 'snapshots') { fetchVMs(opts); fetchSnapshots(opts); fetchSchedules(); }
+  if (page === 'events') fetchEvents(true, opts);
+  if (page === 'nodes') fetchNodes(opts);
+  if (page === 'pods') fetchPods(opts);
+  if (page === 'storage') fetchStorage(opts);
   if (page === 'crds') fetchCRDs();
   if (page === 'blueprint-studio') fetchBlueprintStudio();
   if (page === 'policies') fetchPolicies();
@@ -5692,6 +5728,14 @@ function crdEmptyRow(colspan, payload) {
   return '<tr><td colspan="'+colspan+'" style="text-align:center;color:var(--text-dim);max-width:720px">' + hint + '</td></tr>';
 }
 
+async function wsConsoleUrl(path) {
+  const ticketResp = await apiJson('/api/v1/ws/ticket', { method: 'POST' });
+  const ticket = ticketResp && ticketResp.ticket ? ticketResp.ticket : '';
+  if (!ticket) throw new Error('Could not obtain WebSocket ticket');
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return proto + '//' + location.host + path + '?ticket=' + encodeURIComponent(ticket);
+}
+
 async function apiFetch(url, opts) {
   let cred = getAuthCredential();
   if (!cred) {
@@ -5727,7 +5771,13 @@ async function apiFetch(url, opts) {
 
 /** Parse JSON from apiFetch; throws Error with server message when HTTP status is not OK */
 async function apiJson(url, opts) {
-  const resp = await apiFetch(url, opts);
+  let resp;
+  try {
+    resp = await apiFetch(url, opts);
+  } catch (e) {
+    if (e && e.name === 'AbortError') return null;
+    throw e;
+  }
   const text = await resp.text();
   let body = null;
   if (text) {
@@ -5813,6 +5863,7 @@ const SPOTLIGHT_RECENTS_KEY = 'vmrogue_spotlight_recents';
 const RECENT_VMS_KEY = 'vmrogue_recent_vms';
 /** macOS shell shortcuts surfaced in Spotlight (client-side; API adds cluster matches). */
 const SPOTLIGHT_SHELL = [
+  { kind: 'action', title: 'Browse all pages', subtitle: 'Full page catalog (⌘⇧B)', action: 'mac:browse_all', keys: ['browse', 'all pages', 'catalog', 'advanced'] },
   { kind: 'action', title: 'Mission Control', subtitle: 'Fleet overview (F3)', action: 'mac:mission_control', keys: ['mission', 'f3', 'windows', 'overview'] },
   { kind: 'action', title: 'Customize Dock', subtitle: 'Reorder pinned apps', action: 'mac:dock_editor', keys: ['dock', 'customize', 'pin'] },
   { kind: 'action', title: 'Launchpad', subtitle: 'Template quick launch', action: 'mac:launchpad', keys: ['launchpad', 'templates', 'store'] },
@@ -6893,16 +6944,31 @@ function toggleFinder() {
   setFinderCollapsed(!document.body.classList.contains('finder-collapsed'));
 }
 
-function toggleClassicNav() {
-  document.body.classList.toggle('classic-nav-open');
+function syncClassicNavUi() {
+  const open = document.body.classList.contains('classic-nav-open');
   const btn = document.getElementById('btn-classic-nav');
-  if (btn) btn.classList.toggle('active', document.body.classList.contains('classic-nav-open'));
+  if (btn) btn.classList.toggle('active', open);
+  const rail = document.getElementById('cloudos-browse-rail');
+  if (rail) rail.classList.toggle('active', open);
+}
+
+function toggleClassicNav() {
+  const opening = !document.body.classList.contains('classic-nav-open');
+  document.body.classList.toggle('classic-nav-open');
+  syncClassicNavUi();
+  if (opening) {
+    const filter = document.getElementById('browse-filter-input');
+    if (filter) {
+      filter.value = '';
+      filterBrowseMenu();
+      setTimeout(function() { filter.focus(); }, 40);
+    }
+  }
 }
 
 function closeClassicNav() {
   document.body.classList.remove('classic-nav-open');
-  const btn = document.getElementById('btn-classic-nav');
-  if (btn) btn.classList.remove('active');
+  syncClassicNavUi();
 }
 
 function finderNavigate(page) {
@@ -7291,13 +7357,13 @@ function vmRow(vm, showActions) {
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>&#8635;</button>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>&#10005;</button>' +
     '</div>' : '';
-  const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(vm.name) + ',this.checked)') + (selectedVMs.has(vm.name)?' checked':'') + '>' : '';
+  const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(ns, vm.name) + ',this.checked)') + (selectedVMs.has(vmSelectionKey(ns, vm.name))?' checked':'') + '>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   const clickAttr = showActions
     ? (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"')
     : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"');
   const sshBlock = vmSshBlock(vm, showActions);
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+vm.cpu+' &bull; '+vm.memory+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+vm.status+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
   const nsLine = currentNamespace === 'all' ? '<div class="vm-ns">' + esc(ns) + '</div>' : '';
   return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div>'+nsLine+'</div></div>'+rightCol+'</div>';
 }
@@ -8121,6 +8187,7 @@ function activateSpotlightResult(idx) {
 }
 
 function runMacShellAction(action) {
+  if (action === 'mac:browse_all') { toggleClassicNav(); return true; }
   if (action === 'mac:mission_control') { openMissionControlOverlay(); return true; }
   if (action === 'mac:dock_editor') { openDockEditor(); return true; }
   if (action === 'mac:launchpad') { openLaunchpad(); return true; }
@@ -8521,9 +8588,10 @@ function runCopilotQuick(query) {
 
 
 // Fetch VMs — shared vmData; only touch widgets that exist on the active page.
-async function fetchVMs() {
+async function fetchVMs(opts) {
   try {
-    const j = await apiJson('/api/v1/vms' + nsParam());
+    const j = await apiJson('/api/v1/vms' + nsParam(), opts);
+    if (j == null) return;
     const list = asArray(j);
     vmData = list;
     const total = vmData.length;
@@ -8611,9 +8679,10 @@ async function fetchVMs() {
 }
 
 // Fetch Events
-async function fetchEvents(full) {
+async function fetchEvents(full, opts) {
   try {
-    const j = await apiJson('/api/v1/events' + nsParam());
+    const j = await apiJson('/api/v1/events' + nsParam(), opts);
+    if (j == null) return;
     const events = asArray(j);
     lastEvents = events;
     const renderEvents = (items, target) => {
@@ -8653,9 +8722,10 @@ async function fetchEvents(full) {
 }
 
 // Fetch Snapshots
-async function fetchSnapshots() {
+async function fetchSnapshots(opts) {
   try {
-    const j = await apiJson('/api/v1/snapshots' + nsParam());
+    const j = await apiJson('/api/v1/snapshots' + nsParam(), opts);
+    if (j == null) return;
     const snaps = asArray(j);
     const summaryEl = document.getElementById('snap-summary');
     const el = document.getElementById('snap-list');
@@ -8875,6 +8945,7 @@ function renderAboutShortcuts() {
   if (!ul) return;
   const fromApi = (lastExperienceDesktop && lastExperienceDesktop.keyboard_shortcuts) || [];
   const fallback = [
+    { keys: '⌘⇧B', label: 'Browse all pages' },
     { keys: '⌘K', label: 'Spotlight search' },
     { keys: 'F3', label: 'Mission Control' },
     { keys: '⌃↑', label: 'Mission Control' },
@@ -9234,6 +9305,14 @@ document.addEventListener('keydown', e => {
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
       e.preventDefault();
       toggleFinder();
+      return;
+    }
+  }
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'b') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      toggleClassicNav();
       return;
     }
   }
@@ -10237,9 +10316,10 @@ function filterVMs() {
 }
 
 // ── Nodes ──
-async function fetchNodes() {
+async function fetchNodes(opts) {
   try {
-    const j = await apiJson('/api/v1/nodes');
+    const j = await apiJson('/api/v1/nodes', opts);
+    if (j == null) return;
     const nodes = asArray(j);
     const summaryEl = document.getElementById('nodes-summary');
     const el = document.getElementById('node-list');
@@ -10508,9 +10588,10 @@ function togglePodDetail(ns, name, opts) {
 }
 
 // ── Pods ──
-async function fetchPods() {
+async function fetchPods(opts) {
   try {
-    const j = await apiJson('/api/v1/pods' + nsParam());
+    const j = await apiJson('/api/v1/pods' + nsParam(), opts);
+    if (j == null) return;
     const pods = asArray(j);
     const summaryEl = document.getElementById('pods-summary');
     const el = document.getElementById('pod-list');
@@ -10868,9 +10949,14 @@ async function connectVnc() {
     }
   }
 
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const apiKey = (getAuthCredential() || {}).token || getApiKey();
-  const url = proto + '//' + location.host + '/api/v1/vms/' + vncVmNs + '/' + vncVmName + '/vnc?token=' + encodeURIComponent(apiKey);
+  let url;
+  try {
+    url = await wsConsoleUrl('/api/v1/vms/' + encodeURIComponent(vncVmNs) + '/' + encodeURIComponent(vncVmName) + '/vnc');
+  } catch (e) {
+    placeholder.style.display = 'block';
+    placeholder.textContent = 'VNC ticket error: ' + (e.message || String(e));
+    return;
+  }
 
   placeholder.style.display = 'none';
 
@@ -10990,7 +11076,7 @@ function openSerialConsole(ns, name) {
   if (serialInp) setTimeout(() => serialInp.focus(), 120);
 }
 
-function connectSerial() {
+async function connectSerial() {
   if (serialWs) {
     serialWs.onopen = null;
     serialWs.onclose = null;
@@ -11000,9 +11086,14 @@ function connectSerial() {
     serialWs = null;
   }
   const out = document.getElementById('serial-output');
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const apiKey = (getAuthCredential() || {}).token || getApiKey();
-  const url = proto + '//' + location.host + '/api/v1/vms/' + encodeURIComponent(serialVmNs) + '/' + encodeURIComponent(serialVmName) + '/serial?token=' + encodeURIComponent(apiKey);
+  let url;
+  try {
+    url = await wsConsoleUrl('/api/v1/vms/' + encodeURIComponent(serialVmNs) + '/' + encodeURIComponent(serialVmName) + '/serial');
+  } catch (e) {
+    setMacConsoleStatus('serial', 'Ticket error', 'error');
+    if (out) out.textContent = 'Serial ticket error: ' + (e.message || String(e));
+    return;
+  }
 
   try {
     serialWs = new WebSocket(url, ['binary']);
@@ -11241,22 +11332,34 @@ async function migrateVM(ns, name) {
 // ── Bulk Operations ──
 let selectedVMs = new Set();
 
+function vmSelectionKey(ns, name) {
+  return (ns || 'default') + '/' + name;
+}
+
+function parseVmSelectionKey(key) {
+  const i = key.indexOf('/');
+  if (i < 0) return { ns: 'default', name: key };
+  return { ns: key.slice(0, i), name: key.slice(i + 1) };
+}
+
 function toggleBulkBar() {
   const bar = document.getElementById('bulk-bar');
   bar.classList.toggle('visible', selectedVMs.size > 0);
   document.getElementById('bulk-count').textContent = selectedVMs.size + ' selected';
 }
 
-function toggleVMSelect(name, checked) {
-  if (checked) selectedVMs.add(name);
-  else selectedVMs.delete(name);
+function toggleVMSelect(ns, name, checked) {
+  const key = vmSelectionKey(ns, name);
+  if (checked) selectedVMs.add(key);
+  else selectedVMs.delete(key);
   toggleBulkBar();
 }
 
 function toggleSelectAll(checked) {
   vmData.forEach(v => {
-    if (checked) selectedVMs.add(v.name);
-    else selectedVMs.delete(v.name);
+    const key = vmSelectionKey(v.namespace, v.name);
+    if (checked) selectedVMs.add(key);
+    else selectedVMs.delete(key);
   });
   document.querySelectorAll('.vm-check').forEach(cb => cb.checked = checked);
   toggleBulkBar();
@@ -11265,23 +11368,22 @@ function toggleSelectAll(checked) {
 async function bulkAction(action) {
   if (selectedVMs.size === 0) return;
   const runBulk = async function() {
-    const names = [...selectedVMs];
+    const keys = [...selectedVMs];
     const errs = [];
-    for (const name of names) {
+    for (const key of keys) {
       try {
-        const vm = vmData.find(v => v.name === name);
-        const ns = (vm && vm.namespace) ? vm.namespace : 'default';
+        const { ns, name } = parseVmSelectionKey(key);
         if (action === 'delete') {
           await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {method:'DELETE'});
         } else {
           await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/' + encodeURIComponent(action), {method:'POST'});
         }
       } catch (e) {
-        errs.push(name + ': ' + (e.message || e));
+        errs.push(key + ': ' + (e.message || e));
       }
     }
     if (errs.length) toast(errs.slice(0, 5).join(' · ') + (errs.length > 5 ? ' …' : ''), 'error');
-    else toast(names.length + ' VMs: ' + action, 'success');
+    else toast(keys.length + ' VMs: ' + action, 'success');
     selectedVMs.clear();
     toggleBulkBar();
     setTimeout(refresh, 1500);
@@ -11300,19 +11402,20 @@ async function bulkAction(action) {
 }
 
 // ── Storage ──
-async function fetchStorage() {
+async function fetchStorage(opts) {
   const pvcEl = document.getElementById('pvc-list');
   const scEl = document.getElementById('sc-list');
   const promHint = document.getElementById('storage-prometheus-hint');
   try {
     const [pj, sj, ur] = await Promise.all([
-      apiJson('/api/v1/storage/pvcs' + nsParam()),
-      apiJson('/api/v1/storage/classes'),
-      apiJson('/api/v1/storage/usage' + nsParam()).catch(function (e) {
+      apiJson('/api/v1/storage/pvcs' + nsParam(), opts),
+      apiJson('/api/v1/storage/classes', opts),
+      apiJson('/api/v1/storage/usage' + nsParam(), opts).catch(function (e) {
         console.warn('storage/usage:', e);
         return null;
       }),
     ]);
+    if (pj == null || sj == null) return;
     const pvcRows = asArray(pj);
     const scRows = asArray(sj);
     const usageRows = (ur && Array.isArray(ur.usage)) ? ur.usage : [];
@@ -11778,10 +11881,17 @@ function toggleNodeDetail(nodeName, opts) {
 
 // ── Refresh Interval ──
 let refreshTimer = null;
-let refreshInterval = parseInt(localStorage.getItem('vmrogue_refresh') || '5000');
+let refreshInterval = parseInt(localStorage.getItem('vmrogue_refresh') || '30000', 10);
+let refreshPaused = false;
+let refreshAbortController = null;
+
+document.addEventListener('visibilitychange', () => {
+  refreshPaused = document.hidden;
+  if (!refreshPaused && refreshInterval > 0) refresh();
+});
 
 function setRefreshInterval(val) {
-  refreshInterval = parseInt(val);
+  refreshInterval = parseInt(val, 10);
   localStorage.setItem('vmrogue_refresh', val);
   if (refreshTimer) clearInterval(refreshTimer);
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
@@ -11789,17 +11899,21 @@ function setRefreshInterval(val) {
 
 // Main refresh loop
 function refresh() {
-  fetchClusterContext();
-  fetchIntegrations();
-  fetchVMs();
-  if (currentPage === 'events') fetchEvents(true);
-  else fetchEvents(false);
-  if (currentPage==='snapshots') fetchSnapshots();
-  if (currentPage==='nodes') fetchNodes();
-  if (currentPage==='pods') fetchPods();
-  if (currentPage==='storage') fetchStorage();
+  if (refreshPaused) return;
+  if (refreshAbortController) refreshAbortController.abort();
+  refreshAbortController = new AbortController();
+  const signal = refreshAbortController.signal;
+  fetchClusterContext({ signal });
+  fetchIntegrations({ signal });
+  fetchVMs({ signal });
+  if (currentPage === 'events') fetchEvents(true, { signal });
+  else fetchEvents(false, { signal });
+  if (currentPage==='snapshots') fetchSnapshots({ signal });
+  if (currentPage==='nodes') fetchNodes({ signal });
+  if (currentPage==='pods') fetchPods({ signal });
+  if (currentPage==='storage') fetchStorage({ signal });
   if (!['dashboard', 'vms', 'events', 'snapshots', 'nodes', 'pods', 'storage'].includes(currentPage)) {
-    loadPageData(currentPage);
+    loadPageData(currentPage, { signal });
   }
   document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
   refreshIslandAlerts();
@@ -11814,7 +11928,7 @@ window.addEventListener('load', async () => {
 
   // Set saved refresh interval
   const sel = document.getElementById('refresh-interval');
-  sel.value = refreshInterval || '5000';
+  sel.value = refreshInterval || '30000';
 
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
@@ -12559,6 +12673,7 @@ async function fetchCilium() {
     window._lastCiliumFlowData = flowData;
     renderCiliumFlowStats(flowData);
     renderCiliumFlowsTable(flowData.flow_source);
+    fetchPacketWolfCiliumBanner();
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
@@ -12567,6 +12682,39 @@ async function fetchCilium() {
     if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg);
     console.error('Cilium fetch error:', e);
   }
+}
+
+async function fetchPacketWolfCiliumBanner() {
+  const banner = document.getElementById('cilium-packetwolf-banner');
+  const openBtn = document.getElementById('cilium-packetwolf-open');
+  if (!banner) return;
+  try {
+    const pw = await apiJson('/api/v1/packetwolf/status');
+    window._packetwolfExternalUrl = pw.external_url || null;
+    if (!pw.configured) {
+      banner.style.display = 'none';
+      if (openBtn) openBtn.style.display = 'none';
+      return;
+    }
+    const ok = pw.reachable && (pw.health_status === 'healthy' || pw.api_authorized);
+    const mode = pw.health_mode ? ' · ' + pw.health_mode : '';
+    banner.style.display = 'block';
+    banner.innerHTML =
+      '<span class="vmrogue-cap-label">PacketWolf Network Brain</span>' +
+      '<span class="vmrogue-cap-scope">' + (ok ? 'Connected' : 'Configured but unreachable') +
+      (pw.health_status ? ' — ' + esc(pw.health_status) + mode : '') + '</span>' +
+      '<span class="vmrogue-cap-lim">Endpoint: <code>' + esc(pw.base_url || '') + '</code>. Live Hubble flows and threat intelligence via PacketWolf UI.</span>';
+    if (openBtn) openBtn.style.display = pw.external_url ? '' : 'none';
+  } catch (_) {
+    banner.style.display = 'none';
+    if (openBtn) openBtn.style.display = 'none';
+  }
+}
+
+function openPacketWolfUi() {
+  const url = window._packetwolfExternalUrl;
+  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  else navigate('integrations');
 }
 
 function renderCiliumFlowStats(flowData) {
@@ -13666,10 +13814,11 @@ function integrationProbeClass(probe) {
   return 'stopped';
 }
 
-async function fetchIntegrations() {
+async function fetchIntegrations(opts) {
   const tb = document.getElementById('integrations-body');
   try {
-    const data = await apiJson('/api/v1/integrations/status');
+    const data = await apiJson('/api/v1/integrations/status', opts);
+    if (data == null) return;
     setCapBanner('integrations-cap-banner', data.vmrogue_context);
     const items = data.integrations || [];
     const unconfigured = items.filter(i => !i.configured).length;
@@ -13740,14 +13889,15 @@ async function fetchVelero() {
   }
 }
 
-async function fetchClusterContext() {
+async function fetchClusterContext(opts) {
   const wrap = document.getElementById('topbar-location-wrap');
   const meta = document.getElementById('cluster-context-meta');
   const sel = document.getElementById('cluster-activate-select');
   const btn = document.getElementById('cluster-activate-btn');
   const finderLoc = document.getElementById('finder-location-cluster');
   try {
-    const data = await apiJson('/api/v1/clusters');
+    const data = await apiJson('/api/v1/clusters', opts);
+    if (data == null) return;
     const clusters = data.clusters || [];
     const current = data.current_context || data.kubeconfig_current_context || 'default';
     if (wrap) wrap.style.display = '';

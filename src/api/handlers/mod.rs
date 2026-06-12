@@ -47,6 +47,7 @@ pub mod nodes;
 pub mod notifications;
 pub mod observability;
 pub mod operators;
+pub mod packetwolf;
 pub mod performance;
 pub mod pods;
 pub mod quotas;
@@ -148,4 +149,5 @@ pub fn all_routes(
         .merge(velero::router(state.clone()))
         .merge(clusters::router(state.clone()))
         .merge(integrations::router(state.clone()))
+        .merge(packetwolf::router(state.clone()))
 }
