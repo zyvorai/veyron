@@ -65,7 +65,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "veyron.apiKeySecretName" . }}
                   key: api-key
-            - name: VEYRON_API_KEY
+            - name: VMROGUE_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "veyron.apiKeySecretName" . }}
@@ -73,7 +73,7 @@ spec:
             {{- if .Values.auth.additionalKeys }}
             - name: VEYRON_API_KEYS
               value: {{ .Values.auth.additionalKeys | quote }}
-            - name: VEYRON_API_KEYS
+            - name: VMROGUE_API_KEYS
               value: {{ .Values.auth.additionalKeys | quote }}
             {{- end }}
             - name: RUST_LOG

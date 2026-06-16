@@ -85,14 +85,14 @@ From the Veyron repo root:
 
 ```bash
 # Full build on remote + copy tarball to ./dist/
-./scripts/package-binary-remote.sh HOST sus --fetch
+./scripts/package-binary-remote.sh <host> <user> --fetch
 ```
 
 First run typically takes **10–15 minutes** (Rust compile inside the container build). Later runs:
 
 ```bash
 # Re-package from an existing image (seconds)
-./scripts/package-binary-remote.sh HOST sus --reuse-image --fetch
+./scripts/package-binary-remote.sh <host> <user> --reuse-image --fetch
 ```
 
 ### Options
@@ -116,8 +116,8 @@ First run typically takes **10–15 minutes** (Rust compile inside the container
 ### Manual download
 
 ```bash
-scp sus@HOST:~/veyron-dist/veyron-0.2.0-linux-amd64.tar.gz .
-scp sus@HOST:~/veyron-dist/veyron-0.2.0-linux-amd64.tar.gz.sha256 .
+scp user@<host>:~/veyron-dist/veyron-0.2.0-linux-amd64.tar.gz .
+scp user@<host>:~/veyron-dist/veyron-0.2.0-linux-amd64.tar.gz.sha256 .
 sha256sum -c veyron-0.2.0-linux-amd64.tar.gz.sha256
 ```
 

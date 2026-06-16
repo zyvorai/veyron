@@ -335,6 +335,34 @@ fi
 check_html_contains "GET /dashboard (SOC page)" "${BASE}/dashboard" 'id="page-soc"'
 check_html_contains "GET /dashboard (Tahoe toolbar)" "${BASE}/dashboard" 'id="mac-page-toolbar"'
 check_html_contains "GET /dashboard (SF typography)" "${BASE}/dashboard" 'SF Pro Text'
+
+echo "  (dashboard shell — Template Foundry, Cost Explorer, Network Intelligence)"
+check_json_grep "GET /api/v1/experience/templates (store)" \
+    "${BASE}/api/v1/experience/templates" '"templates"\s*:\s*\['
+tpl_body=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -H "X-API-Key: ${KEY}" "${BASE}/api/v1/experience/templates" || true)
+tpl_n=$(echo "${tpl_body}" | grep -o '"id"' | wc -l | tr -d ' ')
+if [[ "${tpl_n}" -ge 30 ]]; then
+    echo "  ✔ GET /api/v1/experience/templates (≥30 templates: ${tpl_n})"
+else
+    echo "  ✗ GET /api/v1/experience/templates (count ${tpl_n:-0}, expected ≥30)"
+    FAIL=$((FAIL + 1))
+fi
+check_json_grep "GET /api/v1/costs (list)" \
+    "${BASE}/api/v1/costs?namespace=all" '"costs"\s*:'
+check_json_grep "GET /api/v1/costs/forecast" \
+    "${BASE}/api/v1/costs/forecast?namespace=all" 'projected_monthly'
+check_json_grep "GET /api/v1/packetwolf/status" \
+    "${BASE}/api/v1/packetwolf/status" '"reachable"\s*:\s*true'
+check_json_grep "GET /api/v1/packetwolf/network/overview" \
+    "${BASE}/api/v1/packetwolf/network/overview?namespace=all" 'live_connections'
+check_json_grep "GET /api/v1/packetwolf/flows" \
+    "${BASE}/api/v1/packetwolf/flows?limit=5" '"flows"\s*:'
+check_json_grep "GET /api/v1/cilium/flows" \
+    "${BASE}/api/v1/cilium/flows?namespace=all" 'flow_source'
+check_html_contains "GET /dashboard (Template Foundry page)" "${BASE}/dashboard" 'id="page-app-store"'
+check_html_contains "GET /dashboard (Cost Explorer page)" "${BASE}/dashboard" 'id="page-costs"'
+check_html_contains "GET /dashboard (Network Intelligence loader)" "${BASE}/dashboard" 'fetchNetworkIntelData'
 check_http_200 "GET /dashboard" "${BASE}/dashboard" no
 
 echo ""

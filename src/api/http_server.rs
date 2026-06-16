@@ -151,10 +151,10 @@ pub mod web {
 
     impl WebState {
         pub async fn new(namespace: String, rate_limit_per_minute: u64) -> anyhow::Result<Self> {
-            let api_key = env_var_first(&["VEYRON_API_KEY", "VEYRON_API_KEY"]);
+            let api_key = env_var_first(&["VEYRON_API_KEY", "VMROGUE_API_KEY"]);
             if api_key.is_none() {
                 log::warn!(
-                    "VEYRON_API_KEY (or VEYRON_API_KEY) is not set - API will reject all requests. \
+                    "VEYRON_API_KEY (or VMROGUE_API_KEY) is not set - API will reject all requests. \
                      Set VEYRON_API_KEY to enable access."
                 );
             }
@@ -169,7 +169,7 @@ pub mod web {
                     name: "primary".to_string(),
                 });
             }
-            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VEYRON_API_KEYS"]) {
+            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VMROGUE_API_KEYS"]) {
                 for entry in keys_str.split(',') {
                     let parts: Vec<&str> = entry.trim().split(':').collect();
                     if parts.len() >= 2 {
@@ -480,7 +480,7 @@ pub mod web {
                 let (status, json) = err_json(
                     503,
                     "AUTH_NOT_CONFIGURED",
-                    "API key not configured. Set VEYRON_API_KEY (or VEYRON_API_KEY) environment variable.",
+                    "API key not configured. Set VEYRON_API_KEY (or VMROGUE_API_KEY) environment variable.",
                 );
                 return (status, json).into_response();
             }

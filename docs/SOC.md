@@ -108,7 +108,7 @@ A background task pushes recent events every 30 seconds when exporters are confi
 
 ```bash
 export VEYRON_API_KEY=CHANGE_ME
-BASE=https://HOST:30151
+BASE=https://YOUR_NODE_IP:30151
 
 curl -sk -H "X-API-Key: $VEYRON_API_KEY" "$BASE/api/v1/soc/detections?namespace=all"
 curl -sk -H "X-API-Key: $VEYRON_API_KEY" "$BASE/api/v1/soc/events?limit=10&refresh=true"

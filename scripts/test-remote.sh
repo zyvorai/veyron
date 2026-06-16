@@ -67,6 +67,34 @@ fail() { FAIL=$((FAIL + 1)); echo -e "  ${R}FAIL${N} $1 — $2"; }
 skip() { SKIP=$((SKIP + 1)); echo -e "  ${Y}SKIP${N} $1"; }
 tier() { echo -e "\n${B}${C}═══ TIER $1: $2 ═══${N}"; }
 
+check_api_json() {
+  local name="$1"
+  local path="$2"
+  local pattern="$3"
+  local body
+  body=$(curl_api "$path" "${AUTH[@]}" 2>/dev/null || true)
+  if echo "${body}" | grep -qE "${pattern}"; then
+    pass "${name}"
+  else
+    fail "${name}" "$(echo "${body}" | head -c 160 | tr -d '\n')"
+  fi
+}
+
+# Large dashboard HTML (~900KB); grep a temp file instead of piping a variable.
+check_dashboard_html() {
+  local name="$1"
+  local needle="$2"
+  local tmp
+  tmp="$(mktemp)"
+  if curl -sk --connect-timeout 15 --max-time 90 -o "${tmp}" "${BASE_URL}/dashboard" 2>/dev/null \
+      && grep -q "${needle}" "${tmp}"; then
+    pass "${name}"
+  else
+    fail "${name}" "missing ${needle}"
+  fi
+  rm -f "${tmp}"
+}
+
 _ssh() { ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no "${REMOTE}" "$@" 2>&1; }
 
 # kubectl on the remote node (k3s is the common case). Use an argv array so SSH
@@ -91,7 +119,7 @@ BASE_URL="https://${HOST}:${NODE_PORT}"
 curl_api() {
   local path="$1"
   shift
-  curl -sk "$@" "${BASE_URL}${path}"
+  curl -sk --connect-timeout 15 --max-time 90 "$@" "${BASE_URL}${path}"
 }
 
 echo -e "${B}${C}"
@@ -145,7 +173,7 @@ elif [[ "${CRD_COUNT}" -ge 7 ]]; then
 fi
 
 if [[ "${CRD_COUNT}" -ge 1 ]]; then
-  if run_k get vrvm sample-ubuntu -n default >/dev/null 2>&1; then
+  if run_k get veyronvms sample-ubuntu -n default >/dev/null 2>&1; then
     pass "sample-ubuntu VeyronVM exists in default"
   else
     skip "sample-ubuntu VeyronVM not in default (optional sample)"
@@ -179,7 +207,7 @@ else
   if [[ "$OP_READY" != "1/1" ]]; then
     skip "entire tier — veyron-operator not ready (${OP_READY})"
   else
-    run_k delete vrvm test-e2e -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete veyronvms test-e2e -n default --ignore-not-found >/dev/null 2>&1 || true
     sleep 2
 
     CREATE_OUT=$(
@@ -233,24 +261,24 @@ EOF
       fail "KubeVirt VM test-e2e" "not found yet (operator / KubeVirt / CDI?)"
     fi
 
-    PHASE=$(run_k get vrvm test-e2e -n default -o 'jsonpath={.status.phase}' 2>/dev/null | tr -d '\r' || true)
+    PHASE=$(run_k get veyronvms test-e2e -n default -o 'jsonpath={.status.phase}' 2>/dev/null | tr -d '\r' || true)
     if [[ -n "$PHASE" ]]; then
       pass "VeyronVM status phase: ${PHASE}"
     else
       skip "VeyronVM phase not set yet"
     fi
 
-    GET_JSON=$(run_k get vrvm test-e2e -n default -o 'jsonpath={.spec.cpu.cores}' 2>/dev/null | tr -d '\r' || true)
+    GET_JSON=$(run_k get veyronvms test-e2e -n default -o 'jsonpath={.spec.cpu.cores}' 2>/dev/null | tr -d '\r' || true)
     if [[ "$GET_JSON" == "1" ]]; then
-      pass "kubectl get vrvm shows spec.cpu.cores=1"
+      pass "kubectl get veyronvms shows spec.cpu.cores=1"
     else
-      fail "kubectl get vrvm spec" "cores='${GET_JSON:-}'"
+      fail "kubectl get veyronvms spec" "cores='${GET_JSON:-}'"
     fi
 
-    if run_k delete vrvm test-e2e -n default --ignore-not-found >/dev/null 2>&1; then
-      pass "kubectl delete vrvm test-e2e"
+    if run_k delete veyronvms test-e2e -n default --ignore-not-found >/dev/null 2>&1; then
+      pass "kubectl delete veyronvms test-e2e"
     else
-      fail "kubectl delete vrvm test-e2e" "kubectl returned non-zero"
+      fail "kubectl delete veyronvms test-e2e" "kubectl returned non-zero"
     fi
 
     sleep 8
@@ -305,7 +333,7 @@ else
 
     run_k delete veyronblueprint lamp-stack -n default --ignore-not-found >/dev/null 2>&1 || true
     sleep 3
-    run_k delete vrvm -n default -l 'veyron.io/blueprint=lamp-stack' --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete veyronvms -n default -l 'veyron.io/blueprint=lamp-stack' --ignore-not-found >/dev/null 2>&1 || true
     pass "Blueprint cleaned up"
   fi
 fi
@@ -430,6 +458,40 @@ if [[ "${root_loc}" == */dashboard/* || "${root_loc}" == */dashboard ]]; then
 else
   fail "GET / root redirect" "expected /dashboard, got: ${root_loc:-none}"
 fi
+
+# ═══════════════════════════════════════════════
+tier 6 "DASHBOARD SHELL (Template Foundry, Costs, Network Intelligence)"
+# ═══════════════════════════════════════════════
+
+check_api_json "Template Foundry /experience/templates" \
+  "/api/v1/experience/templates" '"templates"\s*:\s*\['
+tpl_body=$(curl_api "/api/v1/experience/templates" "${AUTH[@]}" 2>/dev/null || true)
+tpl_n=$(echo "${tpl_body}" | grep -o '"id"' | wc -l | tr -d ' ')
+if [[ "${tpl_n}" -ge 30 ]]; then
+  pass "Template Foundry template count (≥30: ${tpl_n})"
+else
+  fail "Template Foundry template count" "got ${tpl_n:-0}, expected ≥30"
+fi
+
+check_api_json "Cost Explorer /costs list" \
+  "/api/v1/costs?namespace=all" '"costs"\s*:'
+check_api_json "Cost Explorer /costs/summary" \
+  "/api/v1/costs/summary?namespace=all" 'total_cost'
+check_api_json "Cost Explorer /costs/forecast" \
+  "/api/v1/costs/forecast?namespace=all" 'projected_monthly'
+
+check_api_json "PacketWolf /packetwolf/status" \
+  "/api/v1/packetwolf/status" '"reachable"\s*:\s*true'
+check_api_json "PacketWolf /packetwolf/network/overview" \
+  "/api/v1/packetwolf/network/overview?namespace=all" 'live_connections'
+check_api_json "PacketWolf /packetwolf/flows" \
+  "/api/v1/packetwolf/flows?limit=5" '"flows"\s*:'
+check_api_json "Network Intelligence /cilium/flows" \
+  "/api/v1/cilium/flows?namespace=all" 'flow_source'
+
+check_dashboard_html "Dashboard embeds Template Foundry page" 'id="page-app-store"'
+check_dashboard_html "Dashboard embeds Cost Explorer page" 'id="page-costs"'
+check_dashboard_html "Dashboard embeds Network Intelligence loader" 'fetchNetworkIntelData'
 
 # ═══════════════════════════════════════════════
 echo ""
