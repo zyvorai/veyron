@@ -58,7 +58,7 @@ const DEFINITIONS: &[IntegrationDef] = &[
     IntegrationDef {
         id: "prometheus",
         name: "Prometheus",
-        env_var: "VMROGUE_PROMETHEUS_URL",
+        env_var: "VEYRON_PROMETHEUS_URL",
         feeds: "Storage usage (PVC), metrics timeline, forecasting",
     },
     IntegrationDef {
@@ -106,37 +106,37 @@ const DEFINITIONS: &[IntegrationDef] = &[
     IntegrationDef {
         id: "elastic",
         name: "Elastic Security",
-        env_var: "VMROGUE_ELASTIC_URL",
+        env_var: "VEYRON_ELASTIC_URL",
         feeds: "SOC events export (ECS bulk) + optional hunts",
     },
     IntegrationDef {
         id: "splunk",
         name: "Splunk",
-        env_var: "VMROGUE_SPLUNK_HEC_URL",
+        env_var: "VEYRON_SPLUNK_HEC_URL",
         feeds: "SOC events via HEC + optional SPL hunts",
     },
     IntegrationDef {
         id: "sentinel",
         name: "Microsoft Sentinel",
-        env_var: "VMROGUE_SENTINEL_DCE_URL",
+        env_var: "VEYRON_SENTINEL_DCE_URL",
         feeds: "SOC events via Log Analytics DCE",
     },
     IntegrationDef {
         id: "qradar",
         name: "IBM QRadar",
-        env_var: "VMROGUE_QRADAR_SYSLOG_HOST",
+        env_var: "VEYRON_QRADAR_SYSLOG_HOST",
         feeds: "SOC events via LEEF syslog",
     },
     IntegrationDef {
         id: "soar",
         name: "SOAR webhook",
-        env_var: "VMROGUE_SOAR_WEBHOOK_URL",
+        env_var: "VEYRON_SOAR_WEBHOOK_URL",
         feeds: "Detection fired / playbook triggers",
     },
     IntegrationDef {
         id: "packetwolf",
         name: "PacketWolf",
-        env_var: "VMROGUE_PACKETWOLF_URL",
+        env_var: "VEYRON_PACKETWOLF_URL",
         feeds: "Network Brain health, Cilium/Hubble intelligence (GET /api/v1/packetwolf/status)",
     },
 ];
@@ -296,11 +296,7 @@ async fn discover_nodeport_url(
         let node_port = ports
             .iter()
             .find_map(|p| p.node_port.filter(|np| *np > 0))?;
-        let scheme = if name.contains("grafana") || name.contains("argocd") {
-            "http"
-        } else {
-            "http"
-        };
+        let scheme = "http";
         return Some(format!("{scheme}://{node_ip}:{node_port}"));
     }
     None
@@ -314,11 +310,11 @@ async fn resolve_external_open(
 ) -> Option<IntegrationOpenLink> {
     let external_env = match id {
         "grafana" => "VMROGUE_GRAFANA_EXTERNAL_URL",
-        "prometheus" => "VMROGUE_PROMETHEUS_EXTERNAL_URL",
+        "prometheus" => "VEYRON_PROMETHEUS_EXTERNAL_URL",
         "alertmanager" => "VMROGUE_ALERTMANAGER_EXTERNAL_URL",
         "argocd" => "VMROGUE_ARGOCD_EXTERNAL_URL",
         "jaeger" => "VMROGUE_JAEGER_EXTERNAL_URL",
-        "packetwolf" => "VMROGUE_PACKETWOLF_EXTERNAL_URL",
+        "packetwolf" => "VEYRON_PACKETWOLF_EXTERNAL_URL",
         _ => return None,
     };
     if let Some(url) = crate::api::integrations::env_var(external_env) {

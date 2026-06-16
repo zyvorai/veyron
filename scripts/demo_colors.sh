@@ -11,7 +11,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "1. Templates (shows OS-specific colors)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-./target/release/vmrogue templates
+./target/release/veyron templates
 echo ""
 
 # Show validation message
@@ -19,7 +19,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "2. Validation (shows success message)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ -f "examples/basic-vm.yaml" ]; then
-    ./target/release/vmrogue validate examples/basic-vm.yaml
+    ./target/release/veyron validate examples/basic-vm.yaml
 else
     echo "  (No example file found - would show: ✓ Configuration is valid)"
 fi
@@ -29,7 +29,7 @@ echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "3. Help Menu"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-./target/release/vmrogue --help
+./target/release/veyron --help
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

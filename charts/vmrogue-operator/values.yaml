@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/ssahani/vmrogue-operator
+  repository: ghcr.io/ssahani/veyron-operator
   tag: ""
   pullPolicy: IfNotPresent
 
@@ -26,7 +26,7 @@ crds:
 # NATS event bus
 nats:
   enabled: false
-  url: "nats://nats.vmrogue-system.svc:4222"
+  url: "nats://nats.veyron-system.svc:4222"
 
 resources:
   requests:

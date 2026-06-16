@@ -78,7 +78,7 @@ pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse
         .push(format!("KubeVirt snapshots: {} total", snapshots.len()));
     if prom_usage.is_empty() {
         r.evidence.push(
-            "PVC usage %: set VMROGUE_PROMETHEUS_URL for kubelet volume stats (optional).".into(),
+            "PVC usage %: set VEYRON_PROMETHEUS_URL for kubelet volume stats (optional).".into(),
         );
     } else {
         r.evidence.push(format!(
@@ -189,7 +189,7 @@ async fn sample_guest_filesystem(
         let vmi_json = to_value(&vmi).ok();
         if !vmi_json
             .as_ref()
-            .is_some_and(|j| vmi_guest_agent_connected(j))
+            .is_some_and(vmi_guest_agent_connected)
         {
             continue;
         }
@@ -244,7 +244,7 @@ fn pvc_capacity_bytes(pvc: &PersistentVolumeClaim) -> u64 {
 
 #[cfg(feature = "web")]
 async fn prometheus_pvc_usage() -> HashMap<(String, String), u64> {
-    let url = match std::env::var("VMROGUE_PROMETHEUS_URL") {
+    let url = match std::env::var("VEYRON_PROMETHEUS_URL") {
         Ok(u) if !u.trim().is_empty() => u,
         _ => return HashMap::new(),
     };

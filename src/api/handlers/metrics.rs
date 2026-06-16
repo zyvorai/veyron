@@ -223,7 +223,7 @@ async fn get_metrics_timeline(
     let ctx = super::feature_context::VmrogueFeatureContext {
         data_source: "prometheus_range_query".to_string(),
         scope: format!("Prometheus range series for VM {vm_name} ({metric}) over {hours}h."),
-        limitations: "Requires VMROGUE_PROMETHEUS_URL. Uses kubevirt_vmi_* metrics when present."
+        limitations: "Requires VEYRON_PROMETHEUS_URL. Uses kubevirt_vmi_* metrics when present."
             .to_string(),
     };
 
@@ -234,7 +234,7 @@ async fn get_metrics_timeline(
         "percent".to_string()
     };
 
-    if let Some(prom_base) = std::env::var("VMROGUE_PROMETHEUS_URL").ok() {
+    if let Ok(prom_base) = std::env::var("VEYRON_PROMETHEUS_URL") {
         if !vm_name.is_empty() && !namespace_scope::is_all_namespaces(&scope) {
             let end = chrono::Utc::now().timestamp();
             let start = end - (hours as i64 * 3600);

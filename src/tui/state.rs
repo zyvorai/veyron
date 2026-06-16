@@ -750,10 +750,10 @@ impl AppState {
             SortMode::StatusDesc => self.vms.sort_by(|a, b| b.status.cmp(&a.status)),
             SortMode::AgeAsc => self
                 .vms
-                .sort_by(|a, b| parse_age_to_seconds(&a.age).cmp(&parse_age_to_seconds(&b.age))),
+                .sort_by_key(|a| parse_age_to_seconds(&a.age)),
             SortMode::AgeDesc => self
                 .vms
-                .sort_by(|a, b| parse_age_to_seconds(&b.age).cmp(&parse_age_to_seconds(&a.age))),
+                .sort_by_key(|b| std::cmp::Reverse(parse_age_to_seconds(&b.age))),
         }
     }
 
@@ -865,12 +865,11 @@ impl AppState {
             new_statuses.insert(vm.name.clone(), vm.status.clone());
 
             match self.previous_vm_statuses.get(&vm.name) {
-                None => {
+                None
                     // New VM discovered
-                    if !self.previous_vm_statuses.is_empty() {
+                    if !self.previous_vm_statuses.is_empty() => {
                         self.record_activity("🆕", &vm.name, "discovered");
                     }
-                }
                 Some(old_status) if old_status != &vm.status => {
                     let (icon, action) = match vm.status.as_str() {
                         "Running" => ("🟢", "started"),

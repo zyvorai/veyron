@@ -6,7 +6,7 @@
 #
 # Prerequisites:
 #   - gh CLI authenticated (gh auth login)
-#   - dist/vmrogue-<ver>-linux-amd64.tar.gz (+ .sha256) from package-binary-remote.sh --fetch
+#   - dist/veyron-<ver>-linux-amd64.tar.gz (+ .sha256) from package-binary-remote.sh --fetch
 #
 # Example:
 #   ./scripts/package-binary-remote.sh HOST sus --fetch

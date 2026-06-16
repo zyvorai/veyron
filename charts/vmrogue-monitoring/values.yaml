@@ -7,7 +7,7 @@
 kps:
   enabled: true
   # Cluster-wide ServiceMonitor / PrometheusRule discovery so resources in
-  # vmrogue-system (and kubevirt) are picked up without Helm release labels.
+  # veyron-system (and kubevirt) are picked up without Helm release labels.
   prometheus:
     enabled: true
     prometheusSpec:
@@ -56,9 +56,9 @@ kps:
   kubeProxy:
     enabled: true
 
-# VMRogue API / operator scrape (namespace must match API deployment).
+# Veyron API / operator scrape (namespace must match API deployment).
 vmrogue:
-  namespace: vmrogue-system
+  namespace: veyron-system
   serviceMonitor:
     enabled: true
   prometheusRule:

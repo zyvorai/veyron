@@ -5,7 +5,7 @@ metadata:
   name: {{ .Release.Name }}-vmrogue-grafana-dashboard
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
+    {{- include "veyron-monitoring.labels" . | nindent 4 }}
     grafana_dashboard: "1"
 data:
   vmrogue-overview.json: |-

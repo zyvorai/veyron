@@ -67,7 +67,7 @@ pub async fn query_range(
         "{}/loki/api/v1/query_range?query={}&limit={}&start={}&end={}",
         base.trim_end_matches('/'),
         urlencoding_encode(&query),
-        limit.max(1).min(5000),
+        limit.clamp(1, 5000),
         start,
         end
     );

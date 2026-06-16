@@ -16,9 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
-	"github.com/ssahani/vmrogue/operator/internal/controller"
-	"github.com/ssahani/vmrogue/operator/internal/eventbus"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	"github.com/ssahani/Veyron/operator/internal/controller"
+	"github.com/ssahani/Veyron/operator/internal/eventbus"
 )
 
 var (
@@ -55,7 +55,7 @@ func main() {
 		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "vmrogue-operator.vmrogue.io",
+		LeaderElectionID:       "veyron-operator.vmrogue.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

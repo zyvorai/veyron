@@ -37,7 +37,7 @@ jobs:
         with:
           version: v4.1.4
 
-      - name: Template vmrogue-monitoring
+      - name: Template veyron-monitoring
         run: make helm-monitoring-validate
 
   clippy:
@@ -128,8 +128,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vmrogue-${{ matrix.os }}
-          path: target/release/vmrogue
+          name: veyron-${{ matrix.os }}
+          path: target/release/veyron
 
   integration:
     name: Integration Tests (Kind + KubeVirt)
@@ -143,11 +143,11 @@ jobs:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
-          name: vmrogue-ubuntu-latest
+          name: veyron-ubuntu-latest
           path: ./bin
 
       - name: Make binary executable
-        run: chmod +x ./bin/vmrogue
+        run: chmod +x ./bin/veyron
 
       - name: Install Kind
         run: |
@@ -156,7 +156,7 @@ jobs:
           sudo mv ./kind /usr/local/bin/kind
 
       - name: Create Kind cluster
-        run: kind create cluster --name vmrogue-test --wait 60s
+        run: kind create cluster --name veyron-test --wait 60s
 
       - name: Install KubeVirt operator
         run: |
@@ -168,26 +168,26 @@ jobs:
           kubectl -n kubevirt wait kv kubevirt --for condition=Available --timeout=300s
 
       - name: Run doctor check
-        run: ./bin/vmrogue doctor
+        run: ./bin/veyron doctor
 
       - name: Test template listing
-        run: ./bin/vmrogue templates
+        run: ./bin/veyron templates
 
       - name: Test profile listing
-        run: ./bin/vmrogue profiles
+        run: ./bin/veyron profiles
 
       - name: Test VM creation (dry-run)
-        run: ./bin/vmrogue generate --name test-vm --template ubuntu
+        run: ./bin/veyron generate --name test-vm --template ubuntu
 
       - name: Test VM create, list, delete
         run: |
-          ./bin/vmrogue create test-integration-vm --template ubuntu --no-start
-          ./bin/vmrogue list
-          ./bin/vmrogue delete test-integration-vm --yes
+          ./bin/veyron create test-integration-vm --template ubuntu --no-start
+          ./bin/veyron list
+          ./bin/veyron delete test-integration-vm --yes
 
       - name: Cleanup
         if: always()
-        run: kind delete cluster --name vmrogue-test
+        run: kind delete cluster --name veyron-test
 
   docker:
     name: Docker Build
@@ -198,4 +198,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t vmrogue:ci .
+        run: docker build -t veyron:ci .

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VMRogue Kubernetes Deploy Script
+# Veyron Kubernetes Deploy Script
 # Auto-detects container runtime (docker/podman) and K8s distribution (k8s/k3s/kind/minikube)
 # Builds container image and deploys to the current K8s cluster
 #
@@ -16,7 +16,7 @@
 
 set -euo pipefail
 
-REPO="${VMROGUE_REGISTRY:-ghcr.io/ssahani/vmrogue}"
+REPO="${VEYRON_REGISTRY:-ghcr.io/ssahani/veyron}"
 VERSION="${VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
 IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"
@@ -352,7 +352,7 @@ cmd_help() {
     echo ""
     echo "Environment:"
     echo "  VERSION            Override version (default: from Cargo.toml)"
-    echo "  VMROGUE_REGISTRY   Override registry (default: ghcr.io/ssahani/vmrogue)"
+    echo "  VEYRON_REGISTRY   Override registry (default: ghcr.io/ssahani/veyron)"
     echo "  CONTAINER_RUNTIME  Override runtime (default: auto-detect docker/podman/nerdctl)"
     echo "  K8S_DISTRO         Override distro  (default: auto-detect k8s/k3s/kind/minikube)"
     echo "  KUBECTL            Override kubectl binary (default: auto-detect)"

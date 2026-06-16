@@ -175,7 +175,7 @@ async fn list_performance_profiles(
 
 #[cfg(feature = "web")]
 async fn prometheus_vm_cpu_percentiles(ns: &str, vm: &str) -> Option<(f64, f64, f64)> {
-    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let base = std::env::var("VEYRON_PROMETHEUS_URL").ok()?;
     let end = chrono::Utc::now().timestamp();
     let start = end - 3600;
     let query =
@@ -185,7 +185,7 @@ async fn prometheus_vm_cpu_percentiles(ns: &str, vm: &str) -> Option<(f64, f64, 
 
 #[cfg(feature = "web")]
 async fn prometheus_vm_memory_percentiles(ns: &str, vm: &str) -> Option<(f64, f64, f64)> {
-    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let base = std::env::var("VEYRON_PROMETHEUS_URL").ok()?;
     let end = chrono::Utc::now().timestamp();
     let start = end - 3600;
     let query = format!("kubevirt_vmi_memory_resident_bytes{{namespace=\"{ns}\", name=\"{vm}\"}}");

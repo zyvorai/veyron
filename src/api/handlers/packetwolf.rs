@@ -28,15 +28,15 @@ pub struct PacketWolfStatusResponse {
 }
 
 pub fn packetwolf_base_url() -> Option<String> {
-    crate::api::integrations::env_var("VMROGUE_PACKETWOLF_URL")
+    crate::api::integrations::env_var("VEYRON_PACKETWOLF_URL")
 }
 
 pub fn packetwolf_external_url() -> Option<String> {
-    crate::api::integrations::env_var("VMROGUE_PACKETWOLF_EXTERNAL_URL")
+    crate::api::integrations::env_var("VEYRON_PACKETWOLF_EXTERNAL_URL")
 }
 
 pub fn packetwolf_api_key() -> Option<String> {
-    crate::api::integrations::env_var("VMROGUE_PACKETWOLF_API_KEY")
+    crate::api::integrations::env_var("VEYRON_PACKETWOLF_API_KEY")
 }
 
 #[cfg(feature = "web")]
@@ -83,7 +83,7 @@ async fn get_packetwolf_status(State(_state): State<SharedState>) -> Json<Packet
             api_authorized: false,
             base_url: None,
             message: Some(
-                "PacketWolf not configured — set VMROGUE_PACKETWOLF_URL or run integrations bootstrap"
+                "PacketWolf not configured — set VEYRON_PACKETWOLF_URL or run integrations bootstrap"
                     .to_string(),
             ),
             health_status: None,

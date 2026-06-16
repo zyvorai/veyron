@@ -370,7 +370,7 @@ impl GitOpsManager {
 
     pub fn recent_operations(&self, limit: usize) -> Vec<&SyncOperation> {
         let mut ops: Vec<&SyncOperation> = self.operations.iter().collect();
-        ops.sort_by(|a, b| b.started_at.cmp(&a.started_at));
+        ops.sort_by_key(|b| std::cmp::Reverse(b.started_at));
         ops.into_iter().take(limit).collect()
     }
 

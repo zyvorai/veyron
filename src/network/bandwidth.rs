@@ -259,8 +259,8 @@ impl BandwidthMonitor {
             }
         }
 
-        let avg_rx = if count > 0 { sum_rx / count } else { rx_rate };
-        let avg_tx = if count > 0 { sum_tx / count } else { tx_rate };
+        let avg_rx = sum_rx.checked_div(count).unwrap_or(rx_rate);
+        let avg_tx = sum_tx.checked_div(count).unwrap_or(tx_rate);
 
         Some(BandwidthStats {
             interface_name: self.interface_name.clone(),

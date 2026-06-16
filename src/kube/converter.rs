@@ -36,7 +36,7 @@ fn emit_guest_agent_channels() -> bool {
 /// Convert a [`VMConfig`] to a KubeVirt `VirtualMachine` custom resource.
 ///
 /// ```
-/// use vmrogue::{VMConfigBuilder, vm_config_to_kubevirt};
+/// use veyron::{VMConfigBuilder, vm_config_to_kubevirt};
 ///
 /// let config = VMConfigBuilder::new("my-vm")
 ///     .namespace("default")

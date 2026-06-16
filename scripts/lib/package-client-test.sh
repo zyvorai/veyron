@@ -46,14 +46,14 @@ else
   pkg_skip "vmrogue doctor (set KUBECONFIG)"
 fi
 
-if [[ -n "${VMROGUE_API_KEY:-}" ]]; then
+if [[ -n "${VEYRON_API_KEY:-}" ]]; then
   if curl -sf "http://127.0.0.1:${VMROGUE_PORT:-5151}/api/v1/health" >/dev/null 2>&1; then
     pkg_ok "API health :${VMROGUE_PORT:-5151}"
   else
     pkg_skip "API not listening — start: ./vmrogue api-serve --host 0.0.0.0 --port ${VMROGUE_PORT:-5151}"
   fi
 else
-  pkg_skip "HTTP health (set VMROGUE_API_KEY and start api-serve)"
+  pkg_skip "HTTP health (set VEYRON_API_KEY and start api-serve)"
 fi
 
 pkg_summary "Package test"

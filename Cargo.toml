@@ -1,28 +1,24 @@
 [package]
-name = "vmrogue"
+name = "veyron"
 version = "0.2.0"
 edition = "2024"
 description = "Veyron — Kubernetes-native VM command center (KubeVirt management, Rust-powered)"
 license = "LicenseRef-Zyvor-Proprietary"
 authors = ["ZyvorAI Labs Private Limited"]
-repository = "https://github.com/ssahani/VMRogue"
-homepage = "https://github.com/ssahani/VMRogue"
-documentation = "https://docs.rs/vmrogue"
+repository = "https://github.com/ssahani/Veyron"
+homepage = "https://github.com/ssahani/Veyron"
+documentation = "https://docs.rs/veyron"
 readme = "README.md"
 keywords = ["kubevirt", "kubernetes", "virtual-machine", "kvm", "cli"]
 categories = ["command-line-utilities", "virtualization"]
 rust-version = "1.85"
 
 [[bin]]
-name = "vmrogue"
-path = "src/main.rs"
-
-[[bin]]
 name = "veyron"
 path = "src/main.rs"
 
 [lib]
-name = "vmrogue"
+name = "veyron"
 path = "src/lib.rs"
 
 [dependencies]

@@ -78,14 +78,12 @@ kubectl apply -k overlays/prod/\n\
 - Review `virtualmachine.yaml` for storage class, networks, and cloud-init secrets.\n"
     );
 
-    let overlay_kustomization = format!(
-        "apiVersion: kustomize.config.k8s.io/v1beta1\n\
+    let overlay_kustomization = "apiVersion: kustomize.config.k8s.io/v1beta1\n\
 kind: Kustomization\n\
 resources:\n\
   - ../../base\n\
 # patches:\n\
-#   - path: vm-patch.yaml\n"
-    );
+#   - path: vm-patch.yaml\n".to_string();
 
     let mut files = BTreeMap::new();
     files.insert("base/kustomization.yaml".into(), kustomization);
@@ -111,11 +109,10 @@ fn sanitize_slug(s: &str) -> String {
     for ch in lower.chars() {
         if ch.is_ascii_alphanumeric() || ch == '-' {
             out.push(ch);
-        } else if ch.is_whitespace() || ch == '_' {
-            if !out.ends_with('-') && !out.is_empty() {
+        } else if (ch.is_whitespace() || ch == '_')
+            && !out.ends_with('-') && !out.is_empty() {
                 out.push('-');
             }
-        }
     }
     let trimmed = out.trim_matches('-');
     if trimmed.is_empty() {

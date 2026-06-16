@@ -17,17 +17,17 @@ pub struct SentinelConfig {
 }
 
 pub fn config() -> Option<SentinelConfig> {
-    let dce_url = std::env::var("VMROGUE_SENTINEL_DCE_URL")
+    let dce_url = std::env::var("VEYRON_SENTINEL_DCE_URL")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let dcr_rule = std::env::var("VMROGUE_SENTINEL_DCR_RULE")
+    let dcr_rule = std::env::var("VEYRON_SENTINEL_DCR_RULE")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let stream = std::env::var("VMROGUE_SENTINEL_STREAM")
+    let stream = std::env::var("VEYRON_SENTINEL_STREAM")
         .unwrap_or_else(|_| "Custom-VMRogueSecurity".into());
-    let tenant_id = std::env::var("VMROGUE_SENTINEL_TENANT_ID").ok()?;
-    let client_id = std::env::var("VMROGUE_SENTINEL_CLIENT_ID").ok()?;
-    let client_secret = std::env::var("VMROGUE_SENTINEL_CLIENT_SECRET").ok()?;
+    let tenant_id = std::env::var("VEYRON_SENTINEL_TENANT_ID").ok()?;
+    let client_id = std::env::var("VEYRON_SENTINEL_CLIENT_ID").ok()?;
+    let client_secret = std::env::var("VEYRON_SENTINEL_CLIENT_SECRET").ok()?;
     Some(SentinelConfig {
         dce_url: dce_url.trim_end_matches('/').to_string(),
         dcr_rule,

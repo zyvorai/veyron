@@ -5,8 +5,8 @@
 // Demo program to showcase VMRogue CLI theme colors
 // Run with: cargo run --example demo_theme
 
-use vmrogue::tui::colors::cli;
-use vmrogue::tui::colors::{resource_bar, vm_status_symbol};
+use veyron::tui::colors::cli;
+use veyron::tui::colors::{resource_bar, vm_status_symbol};
 
 fn main() {
     println!("\n{}", cli::header("🎨 VMRogue CLI Theme Demonstration"));

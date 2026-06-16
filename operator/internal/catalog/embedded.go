@@ -5,7 +5,7 @@
 package catalog
 
 import (
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 )
 
 func strPtr(s string) *string { return &s }

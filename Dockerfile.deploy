@@ -2,9 +2,9 @@
 # For full multi-stage build from source, use Dockerfile instead.
 #
 # Usage:
-#   cargo build --release
-#   cp target/release/vmrogue /tmp/vmrogue-binary
-#   docker build -t vmrogue:latest -f Dockerfile.deploy /tmp
+#   cargo build --release --bin veyron
+#   cp target/release/veyron /tmp/veyron-binary
+#   docker build -t veyron:latest -f Dockerfile.deploy /tmp
 #
 FROM debian:bookworm-slim
 
@@ -18,10 +18,10 @@ RUN curl -sL "https://github.com/kubevirt/kubevirt/releases/download/${VIRTCTL_V
     -o /usr/local/bin/virtctl \
     && chmod +x /usr/local/bin/virtctl
 
-COPY vmrogue-binary /usr/local/bin/vmrogue
-RUN chmod +x /usr/local/bin/vmrogue
+COPY veyron-binary /usr/local/bin/veyron
+RUN chmod +x /usr/local/bin/veyron && ln -sf /usr/local/bin/veyron /usr/local/bin/vmrogue
 
 USER 10001
 
-ENTRYPOINT ["vmrogue"]
+ENTRYPOINT ["veyron"]
 CMD ["api-serve", "--port", "5151", "--host", "0.0.0.0"]

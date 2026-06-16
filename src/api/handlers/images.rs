@@ -128,15 +128,15 @@ async fn list_image_catalog(
                 .data
                 .get("spec")
                 .and_then(|sp| sp.get("source"))
-                .and_then(|src| {
+                .map(|src| {
                     if src.get("http").is_some() {
-                        Some("http")
+                        "http"
                     } else if src.get("registry").is_some() {
-                        Some("registry")
+                        "registry"
                     } else if src.get("pvc").is_some() {
-                        Some("pvc")
+                        "pvc"
                     } else {
-                        Some("other")
+                        "other"
                     }
                 })
                 .unwrap_or("unknown");

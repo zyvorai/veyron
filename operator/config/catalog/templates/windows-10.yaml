@@ -44,7 +44,7 @@ spec:
     cloudInit:
       userData: |
         #ps1_sysnative
-        # VMRogue Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
+        # Veyron Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
         Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
         Write-Host 'Cloudbase-Init config-drive applied by VMRogue template.'

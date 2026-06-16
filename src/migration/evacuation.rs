@@ -233,7 +233,7 @@ impl EvacuationPlanner {
     pub fn plan_evacuation(&self, vms: Vec<(String, u8)>) -> Vec<Vec<String>> {
         // Sort VMs by priority (higher first)
         let mut sorted_vms = vms;
-        sorted_vms.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted_vms.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         // Group into batches for parallel migration
         let mut batches = Vec::new();

@@ -14,7 +14,7 @@ patch_repo() {
   perl -i -0pe 's/(cp "\$\{LIB\}\/package-ui\.sh" "\$\{STAGE\}\/\.package-lib\/"\n)/$1cp "\${LIB}\/install-everything.sh" "\${STAGE}\/"\n/s' "${f}"
   perl -i -pe 's/(chmod \+x "\$\{STAGE\}\/install\.sh"[^\n]*test-package\.sh" )/\1"\\\${STAGE}\/install-everything.sh" /' "${f}" 2>/dev/null || true
   perl -i -pe 's/("\$\{STAGE\}\/test-package\.sh" )/\1"\\\${STAGE}\/install-everything.sh" /' "${f}" 2>/dev/null || true
-  # VMRogue uses OUT_DIR/ARTIFACT — skip here
+  # Veyron uses OUT_DIR/ARTIFACT — skip here
   local stage_var='${STAGE}'
   local lib_var='${LIB}'
   cat >> "${f}.meta.tmp" <<METAEOF

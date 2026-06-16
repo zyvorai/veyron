@@ -4,15 +4,15 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: vmrogue-alerts
-  namespace: vmrogue-system
+  name: veyron-alerts
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     prometheus: kube-prometheus
     role: alert-rules
 spec:
   groups:
-    - name: vmrogue.vm.rules
+    - name: veyron.vm.rules
       rules:
         - alert: VMRogueVMFailed
           expr: kubevirt_vmi_phase_count{phase="Failed"} > 0
@@ -50,7 +50,7 @@ spec:
             summary: "VM migration not completing"
             description: "A VM migration has been running for more than 15 minutes without completing."
 
-    - name: vmrogue.cluster.rules
+    - name: veyron.cluster.rules
       rules:
         - alert: VMRogueNodeNotReady
           expr: kube_node_status_condition{condition="Ready",status="true"} == 0

@@ -38,7 +38,7 @@ rules:
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # VMRogue CRDs
+  # Veyron CRDs
   - apiGroups: ["vmrogue.io"]
     resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions", "vmtemplates", "vmprofiles"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

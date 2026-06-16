@@ -679,7 +679,7 @@ fn oracle_8_template() -> VMConfig {
 /// Replace credentials via GitOps secrets before production use.
 fn windows_cloud_init_userdata() -> &'static str {
     r#"#ps1_sysnative
-# VMRogue Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
+# Veyron Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
 Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
 Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
 Write-Host 'Cloudbase-Init config-drive applied by VMRogue template.'
@@ -914,13 +914,13 @@ WantedBy=multi-user.target
 "#
 }
 
-/// Default URL cloud-init uses to fetch the GuestKit binary (override via VMROGUE_GUESTKIT_BINARY_URL).
+/// Default URL cloud-init uses to fetch the GuestKit binary (override via VEYRON_GUESTKIT_BINARY_URL).
 pub fn default_guestkit_binary_url() -> String {
     guestkit_binary_urls()
         .into_iter()
         .next()
         .unwrap_or_else(|| {
-            "https://vmrogue-api.vmrogue-system.svc.cluster.local/api/v1/platform/guestkit/binary"
+            "https://veyron-api.veyron-system.svc.cluster.local/api/v1/platform/guestkit/binary"
                 .into()
         })
 }
@@ -928,14 +928,14 @@ pub fn default_guestkit_binary_url() -> String {
 /// Ordered GuestKit binary download URLs (tried in sequence during cloud-init).
 pub fn guestkit_binary_urls() -> Vec<String> {
     let mut urls = Vec::new();
-    if let Ok(u) = std::env::var("VMROGUE_GUESTKIT_BINARY_URL") {
+    if let Ok(u) = std::env::var("VEYRON_GUESTKIT_BINARY_URL") {
         if !u.is_empty() {
             urls.push(u);
         }
     }
-    if let Ok(host) = std::env::var("VMROGUE_API_NODE_HOST") {
+    if let Ok(host) = std::env::var("VEYRON_API_NODE_HOST") {
         if !host.is_empty() {
-            let port = std::env::var("VMROGUE_API_NODE_PORT").unwrap_or_else(|_| "30151".into());
+            let port = std::env::var("VEYRON_API_NODE_PORT").unwrap_or_else(|_| "30151".into());
             urls.push(format!(
                 "https://{host}:{port}/api/v1/platform/guestkit/binary"
             ));
@@ -947,7 +947,7 @@ pub fn guestkit_binary_urls() -> Vec<String> {
         }
     }
     urls.push(
-        "https://vmrogue-api.vmrogue-system.svc.cluster.local/api/v1/platform/guestkit/binary"
+        "https://veyron-api.veyron-system.svc.cluster.local/api/v1/platform/guestkit/binary"
             .into(),
     );
     urls.dedup();
@@ -955,13 +955,13 @@ pub fn guestkit_binary_urls() -> Vec<String> {
 }
 
 fn guestkit_resolv_conf_yaml() -> String {
-    let dns = std::env::var("VMROGUE_CLUSTER_DNS").unwrap_or_else(|_| "10.43.0.10".into());
+    let dns = std::env::var("VEYRON_CLUSTER_DNS").unwrap_or_else(|_| "10.43.0.10".into());
     format!(
         r#"manage_resolv_conf: true
 resolv_conf:
   nameservers: ['{dns}']
   searchdomains:
-    - vmrogue-system.svc.cluster.local
+    - veyron-system.svc.cluster.local
     - svc.cluster.local
     - cluster.local
 "#
@@ -972,7 +972,7 @@ fn guestkit_install_script() -> String {
     let urls = guestkit_binary_urls();
     let url_lines = urls
         .iter()
-        .map(|u| format!("{u}"))
+        .map(|u| u.to_string())
         .collect::<Vec<_>>()
         .join("\n");
     format!(
@@ -1000,7 +1000,7 @@ exit 1
 
 fn guestkit_write_files_block() -> String {
     format!(
-        r#"  - path: /usr/local/sbin/vmrogue-install-guestkit.sh
+        r#"  - path: /usr/local/sbin/veyron-install-guestkit.sh
     permissions: '0755'
     content: |
 {}
@@ -1025,14 +1025,14 @@ pub fn refresh_guestkit_cloud_init(user_data: &str) -> String {
     if !user_data.contains("guestkit-agent") {
         return user_data.to_string();
     }
-    if user_data.contains("/usr/local/sbin/vmrogue-install-guestkit.sh") {
+    if user_data.contains("/usr/local/sbin/veyron-install-guestkit.sh") {
         let script = guestkit_install_script();
         let indented = script
             .lines()
             .map(|l| format!("      {l}"))
             .collect::<Vec<_>>()
             .join("\n");
-        if let Some(start) = user_data.find("  - path: /usr/local/sbin/vmrogue-install-guestkit.sh")
+        if let Some(start) = user_data.find("  - path: /usr/local/sbin/veyron-install-guestkit.sh")
         {
             if let Some(content_start) = user_data[start..].find("content: |\n") {
                 let abs_content = start + content_start + "content: |\n".len();
@@ -1073,7 +1073,7 @@ ssh_pwauth: False
 write_files:
 {write_files}
 runcmd:
-  - /usr/local/sbin/vmrogue-install-guestkit.sh
+  - /usr/local/sbin/veyron-install-guestkit.sh
   - [ systemctl, daemon-reload ]
   - [ systemctl, enable, guestkit-agent ]
   - [ systemctl, start, guestkit-agent ]
@@ -1106,7 +1106,7 @@ packages:
 write_files:
 {write_files}
 runcmd:
-  - /usr/local/sbin/vmrogue-install-guestkit.sh
+  - /usr/local/sbin/veyron-install-guestkit.sh
   - [ rc-update, add, guestkit-agent, default ]
   - [ rc-service, guestkit-agent, start ]
 "#,
@@ -1170,7 +1170,7 @@ mod tests {
         let urls = guestkit_binary_urls();
         assert!(urls
             .iter()
-            .any(|u| u.contains("vmrogue-api.vmrogue-system.svc")));
+            .any(|u| u.contains("veyron-api.veyron-system.svc")));
     }
 
     #[test]

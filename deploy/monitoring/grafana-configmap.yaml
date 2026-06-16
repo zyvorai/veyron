@@ -4,10 +4,10 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: vmrogue-grafana-dashboard
-  namespace: vmrogue-system
+  name: veyron-grafana-dashboard
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     grafana_dashboard: "1"
 data:
   vmrogue-dashboard.json: |

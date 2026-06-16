@@ -22,7 +22,7 @@ Current source footprint from the repository tree:
 
 ### Rust binary
 
-- `src/main.rs` parses CLI args and calls `vmrogue::run`.
+- `src/main.rs` parses CLI args and calls `veyron::run`.
 - `src/lib.rs` is the central dispatch layer for the CLI and the public library surface.
 
 ### Operator
@@ -73,7 +73,7 @@ Current source footprint from the repository tree:
 - `src/api/handlers` contains endpoint handlers for the web dashboard and REST API.
 - `src/api/auth_context.rs` maps routes to minimum `ApiRole` (readonly / write / admin).
 - `src/api/ws_ticket.rs` issues single-use tickets for VNC/serial WebSocket upgrades (`POST /api/v1/ws/ticket`).
-- `src/api/handlers/packetwolf.rs` probes PacketWolf when `VMROGUE_PACKETWOLF_URL` is set.
+- `src/api/handlers/packetwolf.rs` probes PacketWolf when `VEYRON_PACKETWOLF_URL` is set.
 - `src/api/openapi.rs` builds the OpenAPI document.
 - `src/api/websocket` contains WebSocket handlers for console, metrics, watch, and RDP flows.
 - Static dashboard assets are under `src/api/web`.

@@ -52,7 +52,7 @@ pub async fn forecast_advisor(client: &KubeClient, scope: &str) -> CopilotRespon
     }
 
     #[cfg(feature = "web")]
-    if std::env::var("VMROGUE_PROMETHEUS_URL")
+    if std::env::var("VEYRON_PROMETHEUS_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some()
@@ -62,7 +62,7 @@ pub async fn forecast_advisor(client: &KubeClient, scope: &str) -> CopilotRespon
         );
     } else {
         r.recommendations.push(
-            "Set VMROGUE_PROMETHEUS_URL for trend-based forecasts instead of heuristics only."
+            "Set VEYRON_PROMETHEUS_URL for trend-based forecasts instead of heuristics only."
                 .into(),
         );
     }

@@ -7,23 +7,23 @@
 # curl-only (no jq). Exits 1 if any check fails.
 #
 # Usage:
-#   VMROGUE_API_KEY='CHANGE_ME' ./scripts/test-vm-daily-ops-remote.sh <host> [port]
+#   VEYRON_API_KEY='CHANGE_ME' ./scripts/test-vm-daily-ops-remote.sh <host> [port]
 #
 # Environment:
-#   VMROGUE_API_KEY          API key (default: CHANGE_ME)
-#   VMROGUE_E2E_NAMESPACE    Target namespace (default: default)
-#   VMROGUE_E2E_RESTORE      Set to 1 to run destructive snapshot restore
-#   VMROGUE_E2E_SKIP_TIER_B  Set to 1 to run Tier A only (no VM create)
+#   VEYRON_API_KEY          API key (default: CHANGE_ME)
+#   VEYRON_E2E_NAMESPACE    Target namespace (default: default)
+#   VEYRON_E2E_RESTORE      Set to 1 to run destructive snapshot restore
+#   VEYRON_E2E_SKIP_TIER_B  Set to 1 to run Tier A only (no VM create)
 # ============================================================================
 
 set -euo pipefail
 
 HOST="${1:-${DEPLOY_HOST:-}}"
 PORT="${2:-${VMROGUE_NODE_PORT:-30151}}"
-KEY="${VMROGUE_API_KEY:-CHANGE_ME}"
-NS="${VMROGUE_E2E_NAMESPACE:-default}"
-RESTORE="${VMROGUE_E2E_RESTORE:-0}"
-SKIP_TIER_B="${VMROGUE_E2E_SKIP_TIER_B:-0}"
+KEY="${VEYRON_API_KEY:-CHANGE_ME}"
+NS="${VEYRON_E2E_NAMESPACE:-default}"
+RESTORE="${VEYRON_E2E_RESTORE:-0}"
+SKIP_TIER_B="${VEYRON_E2E_SKIP_TIER_B:-0}"
 
 if [[ -z "${HOST}" ]]; then
     echo "Usage: $0 <host> [https_node_port]" >&2
@@ -39,7 +39,7 @@ BASE="https://${HOST}:${PORT}"
 TS="$(date +%s)"
 VM_NAME="vmrogue-e2e-${TS}"
 SNAP_NAME="${VM_NAME}-snap-e2e"
-RDP_PORT="${VMROGUE_E2E_RDP_PORT:-30150}"
+RDP_PORT="${VEYRON_E2E_RDP_PORT:-30150}"
 
 PASS=0
 FAIL=0
@@ -192,7 +192,7 @@ else
 fi
 
 if [[ "${SKIP_TIER_B}" == "1" ]]; then
-    skip "Tier B skipped (VMROGUE_E2E_SKIP_TIER_B=1)"
+    skip "Tier B skipped (VEYRON_E2E_SKIP_TIER_B=1)"
 else
     # ═══════════════════════════════════════════════
     tier "Tier B — disposable VM lifecycle"
@@ -415,7 +415,7 @@ EOF
                         curl_api POST "/api/v1/snapshots/${NS}/${SNAP_NAME}/restore" '{}'
                         body="${_CURL_BODY}"
                         if body_success "${body}"; then
-                            pass "POST snapshot restore (VMROGUE_E2E_RESTORE=1)"
+                            pass "POST snapshot restore (VEYRON_E2E_RESTORE=1)"
                         elif echo "${body}" | grep -qE 'RESTORE_FAILED|Internal server error'; then
                             skip "snapshot restore (API/CR accepted but restore failed — common with containerDisk-only VMs)"
                         else
@@ -425,7 +425,7 @@ EOF
                         skip "snapshot restore (snapshot not ready within 6m)"
                     fi
                 else
-                    skip "snapshot restore (set VMROGUE_E2E_RESTORE=1 to enable)"
+                    skip "snapshot restore (set VEYRON_E2E_RESTORE=1 to enable)"
                 fi
             fi
 

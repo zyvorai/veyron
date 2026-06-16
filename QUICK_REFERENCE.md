@@ -1,4 +1,4 @@
-# VMRogue Quick Reference
+# Veyron Quick Reference
 
 This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue commands` and `vmrogue <command> --help` for the full surface.
 
@@ -13,8 +13,8 @@ This file is aligned to the current CLI in `src/cli/mod.rs`. Use `vmrogue comman
 ./scripts/deploy-all-remote.sh HOST USER --quick
 
 # Deploy tuning (defaults: layer cache on, parallel API+operator builds)
-VMROGUE_DEPLOY_NO_CACHE=1 ./scripts/deploy-remote.sh HOST USER   # clean rebuild
-VMROGUE_DEPLOY_DIAGNOSTICS=1 ./scripts/deploy-remote.sh HOST USER  # full preflight
+VEYRON_DEPLOY_NO_CACHE=1 ./scripts/deploy-remote.sh HOST USER   # clean rebuild
+VEYRON_DEPLOY_DIAGNOSTICS=1 ./scripts/deploy-remote.sh HOST USER  # full preflight
 
 # API-only remote deploy
 ./scripts/deploy-k8s-remote.sh HOST USER
@@ -26,7 +26,7 @@ VMROGUE_DEPLOY_DIAGNOSTICS=1 ./scripts/deploy-remote.sh HOST USER  # full prefli
 
 ## In-cluster operator (CRDs / GitOps)
 
-`VMRogueVM` and related **`vmrogue.io/v1alpha1`** objects are reconciled by the **Go operator** in `operator/` (controller-runtime): it materializes **KubeVirt `VirtualMachine`** objects from `VMRogueVM` specs, manages finalizers/status, and runs sibling controllers for blueprints, policies, insights, and actions. Rust `src/operator_crds/` mirrors CRD shapes for CLI/API only. See **`DEVELOPMENT.md`** (Operator Architecture) and **`charts/vmrogue-operator`**. Export manifests with `vmrogue gitops-export`.
+`VMRogueVM` and related **`vmrogue.io/v1alpha1`** objects are reconciled by the **Go operator** in `operator/` (controller-runtime): it materializes **KubeVirt `VirtualMachine`** objects from `VMRogueVM` specs, manages finalizers/status, and runs sibling controllers for blueprints, policies, insights, and actions. Rust `src/operator_crds/` mirrors CRD shapes for CLI/API only. See **`DEVELOPMENT.md`** (Operator Architecture) and **`charts/veyron-operator`**. Export manifests with `vmrogue gitops-export`.
 
 ## Core VM Lifecycle
 
@@ -132,7 +132,7 @@ vmrogue trends-analyze cpu_usage --window 24
 ## API, Dashboard, and TUI
 
 ```bash
-export VMROGUE_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
+export VEYRON_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
 
 vmrogue api-serve --host 0.0.0.0 --port 5151
 vmrogue api-status

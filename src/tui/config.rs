@@ -23,7 +23,7 @@ pub struct TuiConfig {
 }
 
 impl TuiConfig {
-    /// Load configuration from default location (~/.config/vmrogue/tui.toml)
+    /// Load configuration from default location (~/.config/veyron/tui.toml)
     pub fn load() -> anyhow::Result<Self> {
         let path = Self::default_path()?;
         Self::load_from_path(&path)

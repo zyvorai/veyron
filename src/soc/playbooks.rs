@@ -51,7 +51,7 @@ pub async fn list_playbooks(client: &kube::Client, namespace: &str) -> Vec<SocPl
 }
 
 fn default_playbooks() -> Vec<SocPlaybook> {
-    let url = std::env::var("VMROGUE_SOAR_WEBHOOK_URL")
+    let url = std::env::var("VEYRON_SOAR_WEBHOOK_URL")
         .ok()
         .filter(|s| !s.is_empty());
     match url {
@@ -103,7 +103,7 @@ pub async fn trigger_playbook(
 
 #[cfg(feature = "web")]
 pub async fn fire_detection_webhooks(event_type: &str, detection: &serde_json::Value) {
-    if let Ok(url) = std::env::var("VMROGUE_SOAR_WEBHOOK_URL") {
+    if let Ok(url) = std::env::var("VEYRON_SOAR_WEBHOOK_URL") {
         if !url.is_empty() {
             let client = reqwest::Client::new();
             let body = serde_json::json!({

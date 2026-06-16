@@ -19,19 +19,19 @@
 #   DEPLOY_SSH_TIMEOUT            Seconds for SSH connect (default: 20)
 #   DEPLOY_SSH_PORT                 SSH port (default: 22)
 #   DEPLOY_SSH_PASSWORD             SSH password (uses sshpass; disables BatchMode)
-#   VMROGUE_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
-#   VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
-#   VMROGUE_REQUIRE_KUBEVIRT=1               deploy-k8s-remote.sh: fail if KubeVirt CRD missing
-#   VMROGUE_DEPLOY_NO_CACHE=1                Force clean image rebuild (slow; default uses layer cache)
-#   VMROGUE_DEPLOY_DIAGNOSTICS=1             Full cluster pod listing before deploy
-#   VMROGUE_SKIP_GUESTKIT_PREP=1             Skip local guestkit rsync when guestkit/ is current
+#   VEYRON_SKIP_CDI, ...         See deploy-all-remote.sh / ensure-cdi-remote.sh
+#   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip apply of deploy/k8s/bootstrap/cilium-veyron-egress.yaml
+#   VEYRON_REQUIRE_KUBEVIRT=1               deploy-k8s-remote.sh: fail if KubeVirt CRD missing
+#   VEYRON_DEPLOY_NO_CACHE=1                Force clean image rebuild (slow; default uses layer cache)
+#   VEYRON_DEPLOY_DIAGNOSTICS=1             Full cluster pod listing before deploy
+#   VEYRON_SKIP_GUESTKIT_PREP=1             Skip local guestkit rsync when guestkit/ is current
 #
 # Examples:
 #   ./scripts/deploy-remote.sh 192.0.2.1 ubuntu
 #   ./scripts/deploy-remote.sh --quick
 #   DEPLOY_REMOTE_SKIP_CHECK=1 ./scripts/deploy-remote.sh myhost deploy
 #
-# After deploy: ./scripts/verify-vmrogue-remote.sh <host> [https_node_port]
+# After deploy: ./scripts/verify-veyron-remote.sh <host> [https_node_port]
 # ============================================================================
 
 set -euo pipefail

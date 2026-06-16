@@ -19,7 +19,7 @@ use std::env;
 
 /// Preferred guest runtime backend from environment.
 pub fn guest_runtime_mode_from_env() -> GuestRuntimeMode {
-    match env::var("VMROGUE_GUEST_RUNTIME")
+    match env::var("VEYRON_GUEST_RUNTIME")
         .unwrap_or_else(|_| "auto".into())
         .to_lowercase()
         .as_str()

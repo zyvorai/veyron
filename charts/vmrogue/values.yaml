@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/ssahani/vmrogue
+  repository: ghcr.io/ssahani/veyron
   tag: ""  # defaults to Chart.appVersion
   pullPolicy: IfNotPresent
 
@@ -76,7 +76,7 @@ integrations:
   packetwolfUrl: ""
   packetwolfExternalUrl: ""
   packetwolfApiKey: ""
-  # Reference an existing Secret (all keys become env vars), e.g. vmrogue-integrations
+  # Reference an existing Secret (all keys become env vars), e.g. veyron-integrations
   existingSecret: ""
 
 # Optional OpenAI-compatible LLM for Copilot (see docs/VMROGUE_AI.md).

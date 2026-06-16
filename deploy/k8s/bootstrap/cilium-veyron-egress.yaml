@@ -1,20 +1,20 @@
 # Cilium clusters that enforce default-egress via allow-dns + allow-intra-namespace
-# need an explicit policy so VMRogue API/operator/NATS can reach kube-apiserver and
+# need an explicit policy so Veyron API/operator/NATS can reach kube-apiserver and
 # other in-cluster endpoints. Applied by deploy-all-remote.sh / deploy-k8s-remote.sh
 # when the CiliumNetworkPolicy CRD is present.
 #
-# Per-VM internet egress is managed separately by VMRogue (CiliumNetworkPolicy or
+# Per-VM internet egress is managed separately by Veyron (CiliumNetworkPolicy or
 # Kubernetes NetworkPolicy on kubevirt.io/vm=<vm>) via the API and dashboard; see CLAUDE.md.
 #
-# Namespace must match NAMESPACE in deploy scripts (default: vmrogue-system).
+# Namespace must match NAMESPACE in deploy scripts (default: veyron-system).
 # Two policies so both Helm/chart labels and scripts/deploy-k8s-remote.sh labels match
 # (Cilium endpointSelector keys are ANDed; OR requires separate CNPs).
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: allow-vmrogue-system-egress-chart
-  namespace: vmrogue-system
+  name: allow-veyron-system-egress-chart
+  namespace: veyron-system
 spec:
   endpointSelector:
     matchExpressions:
@@ -30,12 +30,12 @@ spec:
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
-  name: allow-vmrogue-system-egress-api-legacy
-  namespace: vmrogue-system
+  name: allow-veyron-system-egress-api-legacy
+  namespace: veyron-system
 spec:
   endpointSelector:
     matchLabels:
-      app: vmrogue-api
+      app: veyron-api
   egress:
     - toEntities:
         - all

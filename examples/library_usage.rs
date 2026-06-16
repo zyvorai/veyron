@@ -4,9 +4,9 @@
 
 //! Example of using vmrogue as a library
 
-use vmrogue::config::VMConfigBuilder;
-use vmrogue::output::to_yaml;
-use vmrogue::templates::TEMPLATES;
+use veyron::config::VMConfigBuilder;
+use veyron::output::to_yaml;
+use veyron::templates::TEMPLATES;
 
 fn main() -> anyhow::Result<()> {
     println!("=== Example 1: Building a VM from scratch ===\n");

@@ -1,5 +1,5 @@
-# VMRogue TUI Configuration
-# Save this file to ~/.config/vmrogue/tui.toml
+# Veyron TUI Configuration
+# Save this file to ~/.config/veyron/tui.toml
 
 [theme]
 # Theme name: "default", "dark", "light", "kubernetes"

@@ -6,7 +6,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 
 ## Platform positioning
 
-- [`VMROGUE_HYPERSDK_BOUNDARY.md`](VMROGUE_HYPERSDK_BOUNDARY.md): VMRogue (KubeVirt ops) vs HyperSDK (migration/portability)
+- [`VMROGUE_HYPERSDK_BOUNDARY.md`](VMROGUE_HYPERSDK_BOUNDARY.md): Veyron (KubeVirt ops) vs HyperSDK (migration/portability)
 - [`OIDC_SSO.md`](OIDC_SSO.md): enterprise SSO / OIDC configuration
 
 ## Getting Started
@@ -21,7 +21,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 
 ## Testing and validation
 
-- [`../scripts/verify-vmrogue-remote.sh`](../scripts/verify-vmrogue-remote.sh): post-deploy API smoke (fast; no VM lifecycle)
+- [`../scripts/verify-veyron-remote.sh`](../scripts/verify-veyron-remote.sh): post-deploy API smoke (fast; no VM lifecycle)
 - [`../scripts/test-vm-daily-ops-remote.sh`](../scripts/test-vm-daily-ops-remote.sh): HTTPS E2E for daily VM workflows (create, stop, pause, snapshot, SSH/RDP expose)
 
 ## Core Operations
@@ -54,7 +54,7 @@ This directory contains focused guides for VMRogue features and operations. Star
 
 ## Helm and monitoring
 
-- [`../charts/vmrogue-monitoring/README.md`](../charts/vmrogue-monitoring/README.md): optional Prometheus/Grafana/Alertmanager umbrella chart
+- [`../charts/veyron-monitoring/README.md`](../charts/veyron-monitoring/README.md): optional Prometheus/Grafana/Alertmanager umbrella chart
 - [`OPTIONAL_INTEGRATIONS.md`](OPTIONAL_INTEGRATIONS.md): Prometheus, OpenCost, Trivy, Loki, Jaeger, Alertmanager, Argo CD, **PacketWolf** env vars for API production parity
 
 When you add or change user-visible behavior, update this index if you introduce a new top-level guide under `docs/`.

@@ -1,4 +1,4 @@
-# VMRogue VM Configuration
+# Veyron VM Configuration
 # This file uses VMRogue's simplified YAML format.
 # To convert to KubeVirt manifest: vmrogue create --from-file basic-vm.yaml --output yaml --dry-run
 name: my-vm

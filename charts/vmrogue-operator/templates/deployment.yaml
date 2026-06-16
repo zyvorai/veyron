@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "vmrogue-operator.fullname" . }}
+  name: {{ include "veyron-operator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "vmrogue-operator.labels" . | nindent 4 }}
+    {{- include "veyron-operator.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "vmrogue-operator.selectorLabels" . | nindent 6 }}
+      {{- include "veyron-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "vmrogue-operator.selectorLabels" . | nindent 8 }}
+        {{- include "veyron-operator.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "vmrogue-operator.serviceAccountName" . }}
+      serviceAccountName: {{ include "veyron-operator.serviceAccountName" . }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: manager
-          image: "{{ .Values.image.repository }}:{{ include "vmrogue-operator.imageTag" . }}"
+          image: "{{ .Values.image.repository }}:{{ include "veyron-operator.imageTag" . }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - --metrics-bind-address=:8080

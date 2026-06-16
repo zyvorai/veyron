@@ -1,4 +1,4 @@
-# VMRogue Theme Implementation Guide
+# Veyron Theme Implementation Guide
 
 **See also:** [Documentation index](README.md), [INTERACTIVE_TUI.md](INTERACTIVE_TUI.md).
 
@@ -43,7 +43,7 @@ This will display:
 ### 2. Using the Theme in TUI Code
 
 ```rust
-use vmrogue::tui::Theme;
+use veyron::tui::Theme;
 
 let theme = Theme::default();
 
@@ -82,8 +82,8 @@ let usage_style = theme.resource_usage_style(95.0);  // Red (> 90%)
 For standard CLI output (not TUI), use the color helpers:
 
 ```rust
-use vmrogue::tui::colors::cli;
-use vmrogue::tui::colors::{vm_status_symbol, resource_bar};
+use veyron::tui::colors::cli;
+use veyron::tui::colors::{vm_status_symbol, resource_bar};
 
 // Format text with colors
 println!("{}", cli::header("VMRogue Dashboard"));
@@ -112,9 +112,9 @@ println!("CPU: [{}] 75%", bar);
 ### 4. Loading Configuration
 
 ```rust
-use vmrogue::tui::TuiConfig;
+use veyron::tui::TuiConfig;
 
-// Load from default location (~/.config/vmrogue/tui.toml)
+// Load from default location (~/.config/veyron/tui.toml)
 let config = TuiConfig::load().unwrap_or_default();
 
 // Access settings
@@ -136,7 +136,7 @@ config.save()?;
 
 ## Configuration File
 
-Users can customize the TUI by creating `~/.config/vmrogue/tui.toml`:
+Users can customize the TUI by creating `~/.config/veyron/tui.toml`:
 
 ```toml
 [theme]
@@ -235,7 +235,7 @@ Status indicators use three signals for accessibility:
 - Text: Explicit state name ("Running", "Failed")
 
 ### 6. Configuration System
-Theme is configurable via TOML file at `~/.config/vmrogue/tui.toml`.
+Theme is configurable via TOML file at `~/.config/veyron/tui.toml`.
 
 ### 7. OS-Specific Branding
 Template views use OS-specific brand colors (Ubuntu orange, Fedora blue, etc.).
@@ -328,7 +328,7 @@ rustyline = "17.0"
 
 ```rust
 use ratatui::widgets::{Block, Borders, List, ListItem};
-use vmrogue::tui::Theme;
+use veyron::tui::Theme;
 
 let theme = Theme::default();
 
@@ -365,7 +365,7 @@ let list = List::new(items).block(block);
 
 ```rust
 use ratatui::widgets::Gauge;
-use vmrogue::tui::Theme;
+use veyron::tui::Theme;
 
 let theme = Theme::default();
 

@@ -66,12 +66,7 @@ pub fn suggest_rdp_node_port(used: &HashSet<i32>) -> Option<i32> {
             return Some(p);
         }
     }
-    for p in 30_000..=32_767 {
-        if !used.contains(&p) {
-            return Some(p);
-        }
-    }
-    None
+    (30_000..=32_767).find(|&p| !used.contains(&p))
 }
 
 /// Reject NodePorts outside the cluster-valid range.
@@ -268,11 +263,13 @@ pub async fn upsert_rdp_expose_service(
         .await?;
     }
 
-    let mut port = ServicePort::default();
-    port.name = Some("rdp".to_string());
-    port.port = WINDOWS_RDP_PORT;
-    port.target_port = Some(IntOrString::Int(WINDOWS_RDP_PORT));
-    port.protocol = Some("TCP".to_string());
+    let mut port = ServicePort {
+        name: Some("rdp".to_string()),
+        port: WINDOWS_RDP_PORT,
+        target_port: Some(IntOrString::Int(WINDOWS_RDP_PORT)),
+        protocol: Some("TCP".to_string()),
+        ..Default::default()
+    };
     if service_type == "NodePort" || service_type == "LoadBalancer" {
         port.node_port = Some(node_port);
     }

@@ -7,7 +7,7 @@
 #
 # Or use: ./scripts/deploy-k8s.sh deploy (creates the secret automatically)
 #
-# Legacy: vmrogue-system / vmrogue-api still work on existing clusters until migrated.
+# Legacy: veyron-system / veyron-api still work on existing clusters until migrated.
 ---
 apiVersion: v1
 kind: Namespace
@@ -60,7 +60,7 @@ rules:
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # VMRogue CRDs (vmrogue.io — unchanged)
+  # Veyron CRDs (vmrogue.io — unchanged)
   - apiGroups: ["vmrogue.io"]
     resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions", "vmtemplates", "vmprofiles"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -225,7 +225,7 @@ spec:
               mountPath: /certs
       containers:
         - name: veyron
-          image: docker.io/library/vmrogue:latest
+          image: docker.io/library/veyron:latest
           imagePullPolicy: Never
           args: ["api-serve", "--port", "5151", "--host", "0.0.0.0", "--tls", "--tls-cert", "/certs/tls.crt", "--tls-key", "/certs/tls.key"]
           ports:
@@ -257,7 +257,7 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
-            - name: VMROGUE_API_KEY
+            - name: VEYRON_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: veyron-api-key
@@ -268,17 +268,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: VMROGUE_API_NODE_HOST
+            - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
             - name: VEYRON_API_NODE_PORT
               value: "30151"
-            - name: VMROGUE_API_NODE_PORT
+            - name: VEYRON_API_NODE_PORT
               value: "30151"
             - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
-            - name: VMROGUE_CLUSTER_DNS
+            - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
           envFrom:
             - secretRef:

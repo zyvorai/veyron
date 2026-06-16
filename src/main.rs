@@ -3,10 +3,10 @@
 // https://zyvor.dev · info@zyvor.dev
 
 use clap::Parser;
-use vmrogue::cli::Cli;
+use veyron::cli::Cli;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    vmrogue::run(cli).await
+    veyron::run(cli).await
 }

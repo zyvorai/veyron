@@ -305,7 +305,7 @@ Restoring snapshot to new VM: prod-db-recovered
 Snapshots support retention policies to automatically manage snapshot lifecycle:
 
 ```rust
-use vmrogue::snapshots::{RetentionPolicy, SnapshotConfig};
+use veyron::snapshots::{RetentionPolicy, SnapshotConfig};
 
 let mut config = SnapshotConfig::new("my-vm", "snapshot-name");
 config.retention = RetentionPolicy {
@@ -320,7 +320,7 @@ config.retention = RetentionPolicy {
 Add custom labels to snapshots for organization:
 
 ```rust
-use vmrogue::snapshots::SnapshotConfig;
+use veyron::snapshots::SnapshotConfig;
 
 let config = SnapshotConfig::new("my-vm", "snapshot-name")
     .with_label("env", "production")
@@ -333,7 +333,7 @@ let config = SnapshotConfig::new("my-vm", "snapshot-name")
 Use snapshots in your Rust applications:
 
 ```rust
-use vmrogue::snapshots::{SnapshotManager, SnapshotConfig};
+use veyron::snapshots::{SnapshotManager, SnapshotConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

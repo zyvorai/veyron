@@ -1,4 +1,4 @@
-# VMRogue Interactive TUI - Complete Feature Demo
+# Veyron Interactive TUI - Complete Feature Demo
 
 **See also:** [Documentation index](README.md) for related guides.
 
@@ -380,7 +380,7 @@ Overlays:
 
 ## 🔧 Configuration
 
-### Config File: `~/.config/vmrogue/tui.toml`
+### Config File: `~/.config/veyron/tui.toml`
 
 ```toml
 [theme]
@@ -483,7 +483,7 @@ context_menu = "m"
 - [x] Multi-select with checkboxes
 - [x] Batch operations (start/stop/delete multiple VMs in interactive TUI)
 - [x] Mouse support (scroll lists; left-click selects VM row)
-- [x] Export operations (CSV) — press `E` on VM list (writes `~/.local/share/vmrogue/vm-export-*.csv`)
+- [x] Export operations (CSV) — press `E` on VM list (writes `~/.local/share/veyron/vm-export-*.csv`)
 - [ ] Custom themes (user-defined colors)
 - [ ] Saved filters and searches
 - [ ] VM console integration

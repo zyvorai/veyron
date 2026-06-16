@@ -6,8 +6,8 @@
 //! so only one API replica runs `snapshot_schedule_tick` (avoids duplicate `VirtualMachineSnapshot` CRs).
 //!
 //! - **RBAC:** the service account needs `leases` in the lease namespace (see Helm `ClusterRole`).
-//! - **Dev / no RBAC:** set `VMROGUE_SCHEDULER_LEASE_DISABLED=1` to skip the lease (not safe with multiple replicas).
-//! - **Namespace:** `VMROGUE_SCHEDULER_LEASE_NAMESPACE` (defaults to the API’s default namespace).
+//! - **Dev / no RBAC:** set `VEYRON_SCHEDULER_LEASE_DISABLED=1` to skip the lease (not safe with multiple replicas).
+//! - **Namespace:** `VEYRON_SCHEDULER_LEASE_NAMESPACE` (defaults to the API’s default namespace).
 
 use anyhow::Result;
 use chrono::{DateTime, Utc};

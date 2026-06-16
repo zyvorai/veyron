@@ -423,8 +423,8 @@ mod tests {
     #[test]
     fn test_repository_clone() {
         // Set up a temporary local git repo to clone from
-        let tmp_src = std::env::temp_dir().join("vmrogue-test-src-repo");
-        let tmp_dest = std::env::temp_dir().join("vmrogue-test-clone-dest");
+        let tmp_src = std::env::temp_dir().join("veyron-test-src-repo");
+        let tmp_dest = std::env::temp_dir().join("veyron-test-clone-dest");
         let _ = std::fs::remove_dir_all(&tmp_src);
         let _ = std::fs::remove_dir_all(&tmp_dest);
 
@@ -450,7 +450,7 @@ mod tests {
         let _ = std::process::Command::new("git")
             .args(["-C"])
             .arg(&tmp_src)
-            .args(["config", "user.name", "vmrogue-test"])
+            .args(["config", "user.name", "veyron-test"])
             .output();
 
         // Create an initial commit so clone has something to fetch
@@ -479,8 +479,8 @@ mod tests {
     #[test]
     fn test_repository_fetch() {
         // Set up a temporary local git repo
-        let tmp_src = std::env::temp_dir().join("vmrogue-test-fetch-src");
-        let tmp_dest = std::env::temp_dir().join("vmrogue-test-fetch-dest");
+        let tmp_src = std::env::temp_dir().join("veyron-test-fetch-src");
+        let tmp_dest = std::env::temp_dir().join("veyron-test-fetch-dest");
         let _ = std::fs::remove_dir_all(&tmp_src);
         let _ = std::fs::remove_dir_all(&tmp_dest);
 
@@ -503,7 +503,7 @@ mod tests {
         let _ = std::process::Command::new("git")
             .args(["-C"])
             .arg(&tmp_src)
-            .args(["config", "user.name", "vmrogue-test"])
+            .args(["config", "user.name", "veyron-test"])
             .output();
 
         let _ = std::process::Command::new("git")

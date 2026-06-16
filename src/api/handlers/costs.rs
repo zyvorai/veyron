@@ -284,8 +284,8 @@ async fn list_budgets(State(state): State<SharedState>) -> Json<Vec<Budget>> {
     let s = state.read().await;
     let client = s.client().client();
 
-    // List ConfigMaps with label vmrogue.io/type=budget in vmrogue-system namespace
-    let cms: Api<ConfigMap> = Api::namespaced(client.clone(), "vmrogue-system");
+    // List ConfigMaps with label vmrogue.io/type=budget in veyron-system namespace
+    let cms: Api<ConfigMap> = Api::namespaced(client.clone(), "veyron-system");
     let lp = ListParams::default().labels("vmrogue.io/type=budget");
     let cm_list = match cms.list(&lp).await {
         Ok(list) => list,
@@ -388,14 +388,14 @@ async fn create_budget(
 
     let alert_threshold = req.alert_threshold_percent.unwrap_or(80.0);
 
-    // Ensure vmrogue-system namespace exists
+    // Ensure veyron-system namespace exists
     {
         use k8s_openapi::api::core::v1::Namespace;
         let ns_api: kube::Api<Namespace> = kube::Api::all(client.clone());
-        if ns_api.get("vmrogue-system").await.is_err() {
+        if ns_api.get("veyron-system").await.is_err() {
             let ns = Namespace {
                 metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
-                    name: Some("vmrogue-system".to_string()),
+                    name: Some("veyron-system".to_string()),
                     ..Default::default()
                 },
                 ..Default::default()
@@ -428,7 +428,7 @@ async fn create_budget(
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
             name: Some(cm_name.clone()),
-            namespace: Some("vmrogue-system".to_string()),
+            namespace: Some("veyron-system".to_string()),
             labels: Some(labels),
             ..Default::default()
         },
@@ -436,7 +436,7 @@ async fn create_budget(
         ..Default::default()
     };
 
-    let cms: Api<ConfigMap> = Api::namespaced(client, "vmrogue-system");
+    let cms: Api<ConfigMap> = Api::namespaced(client, "veyron-system");
     match cms.create(&PostParams::default(), &cm).await {
         Ok(_) => (
             axum::http::StatusCode::CREATED,

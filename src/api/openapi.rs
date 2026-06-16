@@ -149,12 +149,12 @@ impl OpenApiSpec {
         Self {
             openapi: "3.0.3".to_string(),
             info: ApiInfo {
-                title: "VMRogue API".to_string(),
+                title: "Veyron API".to_string(),
                 description: "REST API for managing KubeVirt virtual machines".to_string(),
                 version: "1.0.0".to_string(),
                 contact: Some(ContactInfo {
                     name: "VMRogue".to_string(),
-                    url: Some("https://github.com/ssahani/VMRogue".to_string()),
+                    url: Some("https://github.com/ssahani/Veyron".to_string()),
                     email: None,
                 }),
                 license: Some(LicenseInfo {
@@ -993,7 +993,7 @@ mod tests {
     fn test_openapi_spec_new() {
         let spec = OpenApiSpec::new();
         assert_eq!(spec.openapi, "3.0.3");
-        assert_eq!(spec.info.title, "VMRogue API");
+        assert_eq!(spec.info.title, "Veyron API");
         assert!(!spec.servers.is_empty());
     }
 

@@ -19,7 +19,7 @@ use crate::api::http_server::web::SharedState;
 pub const TENANT_CM_LABEL: &str = "vmrogue.io/type=tenant";
 pub const TENANT_NS_LABEL: &str = "vmrogue.io/tenant";
 const TENANT_DATA_KEY: &str = "tenant.json";
-const TENANT_NS: &str = "vmrogue-system";
+const TENANT_NS: &str = "veyron-system";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TenantRecord {

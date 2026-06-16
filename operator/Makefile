@@ -1,6 +1,6 @@
-# VMRogue Operator Makefile
+# Veyron Operator Makefile
 
-IMG ?= ghcr.io/ssahani/vmrogue-operator:latest
+IMG ?= ghcr.io/ssahani/veyron-operator:latest
 
 .PHONY: all
 all: build

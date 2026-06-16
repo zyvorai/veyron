@@ -5,5 +5,5 @@ resources:
   - ../../../deploy/k8s.yaml
 
 commonLabels:
-  app.kubernetes.io/name: vmrogue
+  app.kubernetes.io/name: veyron
   app.kubernetes.io/part-of: vmrogue

@@ -30,7 +30,7 @@ spec:
       hostname: sample-ubuntu
       ssh_pwauth: true
       users:
-        - name: vmrogue
+        - name: veyron
           sudo: ALL=(ALL) NOPASSWD:ALL
           shell: /bin/bash
   enableRng: true

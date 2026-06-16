@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VMRogue Build, Test & Deploy Script
+# Veyron Build, Test & Deploy Script
 # Usage: ./scripts/build-deploy.sh [command]
 #
 # Commands:
@@ -15,11 +15,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-REPO="ghcr.io/ssahani/VMRogue"
+REPO="ghcr.io/ssahani/Veyron"
 VERSION="${VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
 IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"
-NAMESPACE="vmrogue-system"
+NAMESPACE="veyron-system"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -95,11 +95,11 @@ cmd_test() {
 cmd_build() {
     log "Building release binary..."
     cargo build --release --locked
-    strip target/release/vmrogue 2>/dev/null || true
+    strip target/release/veyron 2>/dev/null || true
 
     local size
-    size=$(du -h target/release/vmrogue | cut -f1)
-    ok "Binary: target/release/vmrogue ($size)"
+    size=$(du -h target/release/veyron | cut -f1)
+    ok "Binary: target/release/veyron ($size)"
 }
 
 # ── Docker/Podman ────────────────────────────────────
@@ -143,12 +143,12 @@ cmd_deploy() {
     ${KUBECTL} apply -f deploy/k8s.yaml
 
     # Update image
-    ${KUBECTL} -n "${NAMESPACE}" set image deployment/vmrogue-api \
+    ${KUBECTL} -n "${NAMESPACE}" set image deployment/veyron-api \
         vmrogue="${IMAGE}" 2>/dev/null || true
 
     # Wait for rollout
     log "Waiting for rollout..."
-    ${KUBECTL} -n "${NAMESPACE}" rollout status deployment/vmrogue-api --timeout=120s
+    ${KUBECTL} -n "${NAMESPACE}" rollout status deployment/veyron-api --timeout=120s
 
     ok "Deployed ${IMAGE} to ${NAMESPACE}"
     ${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=vmrogue
@@ -175,7 +175,7 @@ cmd_all() {
 
 # ── Help ─────────────────────────────────────────────
 cmd_help() {
-    echo "VMRogue Build & Deploy"
+    echo "Veyron Build & Deploy"
     echo ""
     echo "Usage: $0 <command>"
     echo ""

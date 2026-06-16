@@ -245,7 +245,7 @@ pub fn call_agent_socket(socket_path: &str, method: &str, params: Value) -> Resu
 }
 
 pub fn guestkit_binary_path() -> PathBuf {
-    std::env::var("VMROGUE_GUESTKIT_BINARY")
+    std::env::var("VEYRON_GUESTKIT_BINARY")
         .map(PathBuf::from)
         .unwrap_or_else(|_| Path::new(GUESTKIT_BIN_HOST).to_path_buf())
 }

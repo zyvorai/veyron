@@ -1980,11 +1980,10 @@ pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
                             crate::nlp_search::StatusFilter::Any => {}
                         }
                     }
-                    crate::nlp_search::Filter::Name(n) => {
-                        if !name.to_lowercase().contains(&n.to_lowercase()) {
+                    crate::nlp_search::Filter::Name(n)
+                        if !name.to_lowercase().contains(&n.to_lowercase()) => {
                             return false;
                         }
-                    }
                     crate::nlp_search::Filter::Namespace(ns) => {
                         let vm_ns = vm.metadata.namespace.as_deref().unwrap_or("");
                         if !vm_ns.to_lowercase().contains(&ns.to_lowercase()) {

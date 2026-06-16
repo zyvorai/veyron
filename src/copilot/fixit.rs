@@ -31,7 +31,8 @@ pub fn explain_error_message(message: &str, context: Option<&str>) -> CopilotRes
     let lower = message.to_lowercase();
     let ctx = context.unwrap_or("general");
 
-    let (title, explanation, fixes): (&str, &str, Vec<(&str, &str, Option<&str>)>) = if lower
+    type Fixes = Vec<(&'static str, &'static str, Option<&'static str>)>;
+    let (title, explanation, fixes): (&str, &str, Fixes) = if lower
         .contains("persistentvolumeclaim")
         || lower.contains("unbound immediate persistentvolumeclaims")
         || lower.contains("waiting for a volume")

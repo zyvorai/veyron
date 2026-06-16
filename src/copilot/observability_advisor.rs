@@ -26,7 +26,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
         "observability",
         "kube-system",
         "cilium-system",
-        "vmrogue-system",
+        "veyron-system",
         scope,
     ];
 
@@ -69,7 +69,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
         }
     }
 
-    let prom_env = std::env::var("VMROGUE_PROMETHEUS_URL")
+    let prom_env = std::env::var("VEYRON_PROMETHEUS_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some();
@@ -90,7 +90,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
             "not detected"
         },
         if prom_env {
-            "+ VMROGUE_PROMETHEUS_URL"
+            "+ VEYRON_PROMETHEUS_URL"
         } else {
             "services only"
         }
@@ -140,7 +140,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
 
     if !metrics && !prom_env {
         r.recommendations.push(
-            "Install Prometheus and set VMROGUE_PROMETHEUS_URL for storage usage and performance percentiles.".into(),
+            "Install Prometheus and set VEYRON_PROMETHEUS_URL for storage usage and performance percentiles.".into(),
         );
     }
     if !logs && !loki_env {

@@ -22,7 +22,7 @@ We take the security of vmrogue seriously. If you have discovered a security vul
 Instead, please report them via one of the following methods:
 
 1. **GitHub Security Advisories** (Preferred)
-   - Go to the [Security tab](https://github.com/ssahani/VMRogue/security/advisories)
+   - Go to the [Security tab](https://github.com/ssahani/Veyron/security/advisories)
    - Click "Report a vulnerability"
    - Fill in the details
 
@@ -85,7 +85,7 @@ VMRogue implements the following security measures:
 
 #### Authentication & Authorization
 - **JWT Bearer token auth** with HMAC-SHA256 signature verification and OIDC issuer checking
-- **Multi-key RBAC** via `VMROGUE_API_KEYS` environment variable with three roles: `admin` (full access), `write` (create/modify operations), `readonly` (read-only access)
+- **Multi-key RBAC** via `VEYRON_API_KEYS` environment variable with three roles: `admin` (full access), `write` (create/modify operations), `readonly` (read-only access)
 - API key authentication via `X-API-Key` header, `Authorization: Bearer`, or `?token=` query param
 - Constant-time API key comparison prevents timing attacks
 - **Auth bypass removed**: A previous referer-based dashboard bypass has been removed. The dashboard now sends the API key via the `X-API-Key` header like any other client, ensuring uniform authentication for all API requests.
@@ -121,7 +121,7 @@ VMRogue implements the following security measures:
 - VNC WebSocket proxy uses direct K8s API WebSocket with client certificate authentication (mTLS)
 - **VMRoguePolicy CRD enforcement**: VM creation evaluates VMRoguePolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.
 - **Structured error types**: The API returns proper HTTP status codes (e.g., 401 for auth failures, 409 for conflicts) instead of returning 200 with silent failures where feasible. VM lifecycle routes use Kubernetes directly; analytics routes may return heuristic projections labeled in JSON where applicable.
-- **Input validation on batch operations**: Batch VM operations validate Kubernetes names (RFC 1123) before processing. Budget creation ensures the `vmrogue-system` namespace exists before writing resources.
+- **Input validation on batch operations**: Batch VM operations validate Kubernetes names (RFC 1123) before processing. Budget creation ensures the `veyron-system` namespace exists before writing resources.
 - **CRDPolicyRule structured value field**: Policy conditions use a structured `value` field for thresholds instead of parsing values from message strings, which was fragile and potentially exploitable via crafted input.
 
 #### Dashboard Security

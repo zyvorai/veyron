@@ -128,10 +128,8 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
         Err(e) => r.evidence.push(format!("RDP expose lookup: {e}")),
     }
 
-    if let Ok(ip) = client.get_vm_ip(namespace, name).await {
-        if let Some(ip) = ip {
-            r.evidence.push(format!("Guest IP (VMI): {ip}"));
-        }
+    if let Ok(Some(ip)) = client.get_vm_ip(namespace, name).await {
+        r.evidence.push(format!("Guest IP (VMI): {ip}"));
     }
 
     let allow_inet = vm

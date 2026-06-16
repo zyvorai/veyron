@@ -162,7 +162,7 @@ SCRIPTS — Kubernetes cluster (once per cluster; needs admin kubeconfig)
   Cilium egress / network bootstrap for virt-launcher and platform pods.
 
   ./apply-cluster-network.sh
-  VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 ./apply-cluster-network.sh   (skip)
+  VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 ./apply-cluster-network.sh   (skip)
 
 === test-cluster.sh ===
   Verify kubectl, KubeVirt, CDI, and API reachability.

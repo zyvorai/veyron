@@ -182,7 +182,7 @@ async fn get_storage_usage(
     let pvcs = s.client().list_pvcs_for_scope(&scope).await;
     let kc = s.client().client();
 
-    let prom_url = std::env::var("VMROGUE_PROMETHEUS_URL").ok();
+    let prom_url = std::env::var("VEYRON_PROMETHEUS_URL").ok();
     let pvc_used_bytes = if let Some(ref base) = prom_url {
         match crate::api::prometheus::instant_query_vector(base, "kubelet_volume_stats_used_bytes")
             .await

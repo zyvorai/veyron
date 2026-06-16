@@ -9,18 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **PacketWolf integration** — `VMROGUE_PACKETWOLF_URL` / optional `VMROGUE_PACKETWOLF_EXTERNAL_URL` and `VMROGUE_PACKETWOLF_API_KEY`; auto-wired by `scripts/lib/bootstrap-integrations.sh` when `packetwolf-api` exists in `cilium-system` or `packetwolf`; `GET /api/v1/packetwolf/status`; Integrations page probe; Cilium dashboard banner (`src/api/handlers/packetwolf.rs`).
+- **PacketWolf integration** — `VEYRON_PACKETWOLF_URL` / optional `VEYRON_PACKETWOLF_EXTERNAL_URL` and `VEYRON_PACKETWOLF_API_KEY`; auto-wired by `scripts/lib/bootstrap-integrations.sh` when `packetwolf-api` exists in `cilium-system` or `packetwolf`; `GET /api/v1/packetwolf/status`; Integrations page probe; Cilium dashboard banner (`src/api/handlers/packetwolf.rs`).
 - **API auth hardening** — route-level RBAC via `src/api/auth_context.rs`; short-lived single-use WebSocket console tickets (`POST /api/v1/ws/ticket`, `src/api/ws_ticket.rs`) for VNC/serial upgrades.
-- **`scripts/test-vm-daily-ops-remote.sh`** — curl-based HTTPS E2E for daily VM API workflows (create, lifecycle, SSH/RDP expose, snapshots); optional `VMROGUE_E2E_RESTORE=1`.
+- **`scripts/test-vm-daily-ops-remote.sh`** — curl-based HTTPS E2E for daily VM API workflows (create, lifecycle, SSH/RDP expose, snapshots); optional `VEYRON_E2E_RESTORE=1`.
 - **SOC (Security Operations)** — `src/soc/` with normalized `SecurityEvent` stream, ConfigMap-backed store, built-in detections (RDP/SSH expose, drift, privileged VM, scheduling burst, namespace without NetworkPolicy), SIEM push (Elastic ECS, Splunk HEC, Sentinel DCE, QRadar LEEF), Elastic/Splunk threat hunts, attack-surface scan, SOAR webhooks; API `/api/v1/soc/*` and dashboard **Security → SOC** (`docs/SOC.md`).
-- **Ask Zeus OpenRouter** — `src/copilot/llm.rs` reads `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` from env; `scripts/configure-zeus-openrouter.sh` wires remote `vmrogue-integrations` from `~/.zshrc`.
+- **Ask Zeus OpenRouter** — `src/copilot/llm.rs` reads `OPENROUTER_API_KEY` / `OPENROUTER_MODEL` from env; `scripts/configure-zeus-openrouter.sh` wires remote `veyron-integrations` from `~/.zshrc`.
 - **Windows RDP NodePort expose** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/rdp-expose` with per-VM NodePort (`30100`–`30199`, valid range `30000`–`32767`), Service selector `kubevirt.io/vm`, and Windows spec/userdata bootstrap (`src/kube/windows_rdp.rs`, `src/kube/vm_rdp.rs`).
 - **Cilium virt-launcher clusterwide egress** — `deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml` applied by deploy scripts when CCNP CRD exists (guest internet on default-deny clusters).
 - **Per-VM internet egress API** — `GET/PUT/DELETE /api/v1/vms/{ns}/{name}/network/internet` (`src/kube/vm_internet.rs`).
 
 ### Changed
 
-- **Remote deploy speed** — `deploy-all-remote.sh` uses layer cache by default (removed `--no-cache`); parallel API + operator image builds; lighter rsync excludes; diagnostics opt-in via `VMROGUE_DEPLOY_DIAGNOSTICS=1`; `VMROGUE_DEPLOY_NO_CACHE=1` for clean rebuilds; Dockerfile BuildKit cargo cache mounts with `/out` binary staging.
+- **Remote deploy speed** — `deploy-all-remote.sh` uses layer cache by default (removed `--no-cache`); parallel API + operator image builds; lighter rsync excludes; diagnostics opt-in via `VEYRON_DEPLOY_DIAGNOSTICS=1`; `VEYRON_DEPLOY_NO_CACHE=1` for clean rebuilds; Dockerfile BuildKit cargo cache mounts with `/out` binary staging.
 - **Pause/unpause API** — uses KubeVirt `virtualmachineinstances/pause` and `unpause` subresources instead of in-pod `virtctl` (`src/kube/kubevirt_subresources.rs`).
 - **RDP NodePort validation** — suggested ports and conflict checks scan all cluster Service NodePorts, not only VMRogue RDP services.
 
@@ -34,8 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Helm chart `charts/vmrogue-monitoring`** — optional install of Prometheus, Grafana, and Alertmanager (kube-prometheus-stack dependency) plus VMRogue ServiceMonitors, PrometheusRules, and Grafana dashboard provisioning; `scripts/install-vmrogue-monitoring.sh` and `make helm-monitoring-validate`.
-- **vmrogue-operator Service** — ClusterIP `metrics` / `health` ports so Prometheus `ServiceMonitor` scrapes can reach the operator manager.
+- **Helm chart `charts/veyron-monitoring`** — optional install of Prometheus, Grafana, and Alertmanager (kube-prometheus-stack dependency) plus VMRogue ServiceMonitors, PrometheusRules, and Grafana dashboard provisioning; `scripts/install-veyron-monitoring.sh` and `make helm-monitoring-validate`.
+- **veyron-operator Service** — ClusterIP `metrics` / `health` ports so Prometheus `ServiceMonitor` scrapes can reach the operator manager.
 
 #### All 49 API Handlers Now Return Real Data
 - **RBAC** - Lists ClusterRoles and ClusterRoleBindings from K8s API
@@ -95,14 +95,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Plus all 12 previously-wired views
 
 #### Infrastructure
-- **Helm charts** for VMRogue API and operator with full RBAC, TLS, NetworkPolicy
+- **Helm charts** for Veyron API and operator with full RBAC, TLS, NetworkPolicy
 - **Kustomize overlays** for dev and prod environments
 - **Prometheus ServiceMonitor** and **PrometheusRule** with 6 alerts
 - **Grafana dashboard** with 10 panels (VM count, CPU, memory, network, storage, migrations)
 - **Operator Prometheus metrics** (7 custom metrics)
 
 #### Security & Auth
-- **Multi-key RBAC** via VMROGUE_API_KEYS (admin/write/readonly roles)
+- **Multi-key RBAC** via VEYRON_API_KEYS (admin/write/readonly roles)
 - **JWT Bearer token** validation with OIDC issuer checking
 - **Persistent audit trail** saved to disk
 - **Local secrets encryption** with key expansion and integrity tag
@@ -274,7 +274,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Application Configuration
-- Layered config file support: `/etc/vmrogue/config.toml` (system) + `~/.config/vmrogue/config.toml` (user)
+- Layered config file support: `/etc/veyron/config.toml` (system) + `~/.config/veyron/config.toml` (user)
 - `config-show` command - display active configuration with source indicators
 - `config-init` command - generate default config file
 - Configurable: namespace, kubeconfig, API port/host/TLS/auth, logging level, output format, TUI preferences
@@ -385,6 +385,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Library API for programmatic usage
 - CI/CD with GitHub Actions
 
-[Unreleased]: https://github.com/ssahani/VMRogue/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/ssahani/VMRogue/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/ssahani/VMRogue/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ssahani/Veyron/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ssahani/Veyron/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/ssahani/Veyron/releases/tag/v0.1.0

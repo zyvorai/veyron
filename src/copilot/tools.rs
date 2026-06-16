@@ -247,12 +247,9 @@ pub async fn invoke_tool(
     fallback_query: &str,
 ) -> Option<CopilotResponse> {
     let intent = tool_name_to_intent(tool_name)?;
-    let query = if intent == CopilotIntent::ErrorExplainer {
-        args.message
-            .as_deref()
-            .unwrap_or(fallback_query)
-            .to_string()
-    } else if intent == CopilotIntent::YamlBuilder {
+    let query = if intent == CopilotIntent::ErrorExplainer
+        || intent == CopilotIntent::YamlBuilder
+    {
         args.message
             .as_deref()
             .unwrap_or(fallback_query)

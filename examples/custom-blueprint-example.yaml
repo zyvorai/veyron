@@ -1,4 +1,4 @@
-# VMRogue Blueprint Configuration
+# Veyron Blueprint Configuration
 # This file defines a custom blueprint for deploying a multi-VM stack.
 # Usage: vmrogue blueprint-import custom-blueprint-example.yaml
 name: ml-stack

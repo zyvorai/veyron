@@ -36,7 +36,7 @@ With `--fetch`, the `.tar.gz` and checksum are also copied to **`dist/`** in you
 
 ```bash
 export KUBECONFIG=/path/to/kubeconfig
-./install-cluster.sh              # VMROGUE_SKIP_CDI=1 etc. — see CLUSTER_SETUP.txt
+./install-cluster.sh              # VEYRON_SKIP_CDI=1 etc. — see CLUSTER_SETUP.txt
 # Deploy VMRogue in-cluster (Helm/k8s from source repo)
 ./apply-cluster-network.sh        # if Cilium default-deny egress
 ./test-cluster.sh
@@ -111,13 +111,13 @@ First run typically takes **10–15 minutes** (Rust compile inside the container
 | `DEPLOY_HOST` / `DEPLOY_USER` | — / `sus` | When host/user omitted |
 | `VMROGUE_PACKAGE_DIR` | `~/vmrogue-dist` | Remote output directory |
 | `VMROGUE_PACKAGE_VERSION` | from `Cargo.toml` | Archive name version |
-| `VMROGUE_REMOTE_SKIP_SSH_CHECK=1` | off | Skip SSH preflight |
+| `VEYRON_REMOTE_SKIP_SSH_CHECK=1` | off | Skip SSH preflight |
 
 ### Manual download
 
 ```bash
-scp sus@HOST:~/vmrogue-dist/vmrogue-0.2.0-linux-amd64.tar.gz .
-scp sus@HOST:~/vmrogue-dist/vmrogue-0.2.0-linux-amd64.tar.gz.sha256 .
+scp sus@HOST:~/vmrogue-dist/veyron-0.2.0-linux-amd64.tar.gz .
+scp sus@HOST:~/vmrogue-dist/veyron-0.2.0-linux-amd64.tar.gz.sha256 .
 sha256sum -c vmrogue-0.2.0-linux-amd64.tar.gz.sha256
 ```
 
@@ -153,7 +153,7 @@ cd vmrogue-0.2.0-linux-amd64
 sha256sum -c ../vmrogue-0.2.0-linux-amd64.tar.gz.sha256
 ./install-client-deps.sh          # optional
 cp vmrogue.env.example vmrogue.env
-# Edit vmrogue.env: KUBECONFIG, VMROGUE_API_KEY
+# Edit vmrogue.env: KUBECONFIG, VEYRON_API_KEY
 
 set -a && source vmrogue.env && set +a
 ./vmrogue api-serve --host 0.0.0.0 --port 5151
@@ -174,21 +174,21 @@ export KUBECONFIG=/path/to/kubeconfig
 
 ```bash
 ./vmrogue api-serve --host 0.0.0.0 --port 5151 \
-  --tls --tls-cert /etc/vmrogue/tls.crt --tls-key /etc/vmrogue/tls.key
+  --tls --tls-cert /etc/veyron/tls.crt --tls-key /etc/veyron/tls.key
 ```
 
 ### systemd (optional)
 
 ```ini
 [Unit]
-Description=VMRogue API
+Description=Veyron API
 After=network.target
 
 [Service]
 Type=simple
-EnvironmentFile=/etc/vmrogue/env
+EnvironmentFile=/etc/veyron/env
 WorkingDirectory=/opt/vmrogue
-ExecStart=/opt/vmrogue/vmrogue api-serve --host 0.0.0.0 --port 5151
+ExecStart=/opt/veyron/vmrogue api-serve --host 0.0.0.0 --port 5151
 Restart=on-failure
 
 [Install]
@@ -201,14 +201,14 @@ The binary is **not** a hypervisor. The client still needs:
 
 - Kubernetes with **KubeVirt** (and CDI if they use DataVolumes / imports)
 - A **kubeconfig** whose user/service account can manage VMs (see `deploy/k8s.yaml` `ClusterRole` for the full API feature set)
-- Network: client host → Kubernetes API; users → VMRogue API port (e.g. `5151`)
+- Network: client host → Kubernetes API; users → Veyron API port (e.g. `5151`)
 
 ## Compare: binary package vs `deploy-remote.sh`
 
 | Approach | Best for |
 |----------|----------|
 | **`package-binary-remote.sh`** | Hand off a tarball; client runs API on bastion/VM; no in-cluster install |
-| **`deploy-remote.sh`** | You operate the cluster; API in `vmrogue-system` on NodePort (e.g. `30151`) |
+| **`deploy-remote.sh`** | You operate the cluster; API in `veyron-system` on NodePort (e.g. `30151`) |
 
 You can use **both**: deploy in-cluster for production, and package a binary for admins on a jump host.
 
@@ -228,8 +228,8 @@ You can use **both**: deploy in-cluster for production, and package a binary for
 On your laptop (against a running API, in-cluster or client-hosted):
 
 ```bash
-export VMROGUE_API_KEY=CHANGE_ME
-./scripts/verify-vmrogue-remote.sh <api-host> <port>
+export VEYRON_API_KEY=CHANGE_ME
+./scripts/verify-veyron-remote.sh <api-host> <port>
 ```
 
 For in-cluster NodePort on k3s, port is often **30151** (HTTPS).

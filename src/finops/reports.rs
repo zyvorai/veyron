@@ -283,7 +283,7 @@ impl ReportManager {
 
     pub fn recent_reports(&self, limit: usize) -> Vec<&CostReport> {
         let mut reports: Vec<_> = self.reports.values().collect();
-        reports.sort_by(|a, b| b.generated_at.cmp(&a.generated_at));
+        reports.sort_by_key(|b| std::cmp::Reverse(b.generated_at));
         reports.truncate(limit);
         reports
     }
