@@ -2458,7 +2458,7 @@
     var disk = tpl.disk || tpl.default_disk_size || '20 Gi';
     var boot = isWin ? 'UEFI + Secure Boot' : 'UEFI';
     var tags = [];
-    if (tpl.cloud_init) tags.push({ label: 'cloud-init' });
+    if (!isWin) tags.push({ label: 'cloud-init' });
     if (isWin) tags.push({ label: 'RDP', cls: 'win' }, { label: 'VirtIO', cls: 'win' });
     else tags.push({ label: 'SSH' }, { label: 'VirtIO' });
     tags.push({ label: 'Guest Tools' });
