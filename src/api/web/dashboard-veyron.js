@@ -1222,7 +1222,8 @@
       if (page === 'cilium' && typeof fetchCilium === 'function') fetchCilium();
       if (page === 'nodes') renderNodesVmr();
       if (page === 'security') { renderSecurityPostureVmr(); if (typeof fetchSecurityVmr === 'function') fetchSecurityVmr(); }
-      if (page === 'snapshots') renderSnapshotsVmr();
+      if (page === 'snapshots') { renderSnapshotsVmr(); if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(); }
+      if (page === 'workloads') { renderWorkloadsVmr(); if (typeof fetchWorkloadsVmr === 'function') fetchWorkloadsVmr(); }
     };
   };
 
@@ -1776,9 +1777,84 @@
             '</div>' +
           '</div>' +
         '</div>' +
-        ['Performance', 'Network', 'Storage', 'Hardware', 'Security', 'Events', 'YAML'].map(function (t, i) {
-          return '<div class="vmr-capsule-pane" data-tab="' + (i + 1) + '"><div class="vmr-panel"><p style="color:var(--muted);font-size:.84rem">' + t + ' data loads from the cluster API. Open <strong>Fleet Command</strong> to browse VMs, then return here.</p></div></div>';
-        }).join('') +
+        (function() {
+          var vmEvents = (typeof lastEvents !== 'undefined' && Array.isArray(lastEvents))
+            ? lastEvents.filter(function(e) { return (e.involved_object || '').toLowerCase().includes(vm.name.toLowerCase()) || (e.namespace || '') === ns; }).slice(0, 20)
+            : [];
+          var evRows = vmEvents.length
+            ? vmEvents.map(function(e) {
+                var lvl = (e.type || e.reason || '').toLowerCase();
+                var color = lvl.includes('warn') ? 'var(--orange)' : lvl.includes('err') || lvl.includes('fail') ? 'var(--red)' : 'var(--muted)';
+                return '<tr><td style="color:' + color + ';white-space:nowrap">' + esc(e.reason || e.type || '—') + '</td>' +
+                  '<td style="font-size:.82rem">' + esc(e.message || '—') + '</td>' +
+                  '<td style="color:var(--muted);font-size:.8rem;white-space:nowrap">' + esc(e.timestamp || '—') + '</td></tr>';
+              }).join('')
+            : '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px">No events for this VM.</td></tr>';
+          return [
+            '<div class="vmr-capsule-pane" data-tab="1"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Performance</div>' +
+              (isRunning
+                ? '<div class="vmr-health-row"><span>CPU Allocation</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Memory Allocation</span><span>' + esc(vm.memory || '—') + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Status</span><span style="color:var(--green)">Running</span></div>' +
+                  '<div style="margin-top:12px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show real-time CPU and memory metrics for VM ' + vm.name) + ')">Live Metrics</button></div>'
+                : '<p style="font-size:.84rem;color:var(--muted)">VM is not running — start it to see live metrics.</p>' +
+                  '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start VM</button>') +
+            '</div></div>',
+            '<div class="vmr-capsule-pane" data-tab="2"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Network</div>' +
+              '<div class="vmr-health-row"><span>IP Address</span><span>' + esc(vm.ip || (isRunning ? 'Acquiring…' : '—')) + '</span></div>' +
+              '<div class="vmr-health-row"><span>Node</span><span>' + esc(vm.node || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>Interface</span><span>masquerade (virtio)</span></div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')">Expose SSH</button>' +
+                (typeof isWindowsVm === 'function' && isWindowsVm(vm) ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')">Expose RDP</button>' : '') +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-intel\')">Network Intel</button>' +
+              '</div>' +
+            '</div></div>',
+            '<div class="vmr-capsule-pane" data-tab="3"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Storage</div>' +
+              '<div class="vmr-health-row"><span>Root Disk</span><span>virtio (PVC)</span></div>' +
+              '<div class="vmr-health-row"><span>Bus</span><span>virtio</span></div>' +
+              '<div class="vmr-health-row"><span>Snapshots</span><span>' +
+                ((typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots)
+                  ? window.lastSnapshots.filter(function(s) { return s.vm_name === vm.name && (s.namespace || 'default') === ns; }).length + ' snapshot(s)'
+                  : 'Loading…') +
+              '</span></div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Create Snapshot</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">View Snapshots</button>' +
+              '</div>' +
+            '</div></div>',
+            '<div class="vmr-capsule-pane" data-tab="4"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Hardware</div>' +
+              '<div class="vmr-health-row"><span>vCPUs</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>Firmware</span><span>UEFI</span></div>' +
+              '<div class="vmr-health-row"><span>TPM 2.0</span><span style="color:var(--orange)">Disabled</span></div>' +
+              '<div class="vmr-health-row"><span>Secure Boot</span><span style="color:var(--orange)">Disabled</span></div>' +
+              '<div class="vmr-health-row"><span>RNG Device</span><span>virtio-rng</span></div>' +
+              '<div class="vmr-health-row"><span>USB Tablet</span><span>Enabled</span></div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit CPU / Memory</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Enable TPM 2.0 and Secure Boot for VM ' + vm.name) + ')">Enable TPM + Secure Boot</button>' +
+              '</div>' +
+            '</div></div>',
+            '<div class="vmr-capsule-pane" data-tab="5" data-lazy="security"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Security</div>' +
+              '<p style="font-size:.84rem;color:var(--muted);margin-bottom:12px">Loading VM security posture…</p>' +
+            '</div></div>',
+            '<div class="vmr-capsule-pane" data-tab="6"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Events</div>' +
+              '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
+              '<th>Reason</th><th>Message</th><th>Time</th></tr></thead><tbody>' + evRows + '</tbody></table></div>' +
+            '</div></div>',
+            '<div class="vmr-capsule-pane" data-tab="7" data-lazy="yaml"><div class="vmr-panel">' +
+              '<div class="vmr-panel-title">YAML</div>' +
+              '<p style="font-size:.84rem;color:var(--muted)">Loading VM spec…</p>' +
+            '</div></div>',
+          ].join('');
+        })() +
       '</div>';
     var heroEl = document.getElementById('vmr-capsule-hero-slot');
     if (heroEl) heroEl.innerHTML = '';
@@ -1791,6 +1867,52 @@
     document.querySelectorAll('.vmr-capsule-pane').forEach(function (p) {
       p.classList.toggle('active', Number(p.dataset.tab) === idx);
     });
+    var activePane = document.querySelector('.vmr-capsule-pane[data-tab="' + idx + '"]');
+    if (activePane && activePane.dataset.lazy) {
+      var lazy = activePane.dataset.lazy;
+      activePane.removeAttribute('data-lazy');
+      var target = window._vmCapsuleTarget;
+      var vms = typeof vmData !== 'undefined' ? vmData : [];
+      var vm = target ? vms.find(function(v) { return v.name === target.name && (v.namespace || 'default') === target.ns; }) : vms[0];
+      if (!vm) return;
+      var ns = vm.namespace || 'default';
+      if (lazy === 'yaml') {
+        apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(vm.name)).then(function(raw) {
+          var d = (typeof unwrapData === 'function' ? unwrapData(raw) : raw) || {};
+          var panel = activePane.querySelector('.vmr-panel');
+          if (panel) panel.innerHTML = '<div class="vmr-panel-title">YAML</div>' +
+            '<pre style="font-size:.78rem;overflow-x:auto;background:var(--glass-bg,rgba(0,0,0,.3));padding:12px;border-radius:6px;color:var(--text)">' +
+            esc(JSON.stringify(d, null, 2)) + '</pre>';
+        }).catch(function(e) {
+          var panel = activePane.querySelector('.vmr-panel');
+          if (panel) panel.innerHTML = '<div class="vmr-panel-title">YAML</div><p style="color:var(--red)">Failed to load: ' + esc(e.message) + '</p>';
+        });
+      } else if (lazy === 'security') {
+        var ns2 = ns;
+        var vmName = vm.name;
+        apiJson('/api/v1/vms/' + encodeURIComponent(ns2) + '/' + encodeURIComponent(vmName) + '/security').then(function(raw) {
+          var d = (typeof unwrapData === 'function' ? unwrapData(raw) : raw) || {};
+          var sc = d.score != null ? d.score : 0;
+          var checks = Array.isArray(d.checks) ? d.checks : [];
+          var tone = sc >= 80 ? 'var(--green)' : sc >= 50 ? 'var(--orange)' : 'var(--red)';
+          var rows = checks.map(function(c) {
+            return '<tr><td>' + (c.pass ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>') + '</td>' +
+              '<td>' + esc(c.name || '—') + '</td><td style="font-size:.82rem;color:var(--muted)">' + esc(c.detail || '') + '</td></tr>';
+          }).join('');
+          var panel = activePane.querySelector('.vmr-panel');
+          if (panel) panel.innerHTML = '<div class="vmr-panel-title">Security</div>' +
+            '<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">' +
+              '<div style="font-size:2rem;font-weight:700;color:' + tone + '">' + sc + '</div>' +
+              '<div style="font-size:.84rem;color:var(--muted)">Security score</div>' +
+            '</div>' +
+            (rows ? '<table class="table"><thead><tr><th>Pass</th><th>Check</th><th>Detail</th></tr></thead><tbody>' + rows + '</tbody></table>'
+              : '<p style="color:var(--muted);font-size:.84rem">No security check data available.</p>');
+        }).catch(function() {
+          var panel = activePane.querySelector('.vmr-panel');
+          if (panel) panel.innerHTML = '<div class="vmr-panel-title">Security</div><p style="color:var(--muted);font-size:.84rem">Security check not available for this VM.</p>';
+        });
+      }
+    }
   };
 
   window.patchFilterVMs = function patchFilterVMs() {
@@ -2289,29 +2411,40 @@
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalPick===\'function\'&&openSnapModalPick()">+ Create Snapshot</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Create backup policy for all VMs\')">+ Backup Policy</button>');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
-    var prot = vms.filter(function (v) { return v.status === 'Running'; }).length;
+    var snaps = typeof window.lastSnapshots !== 'undefined' ? window.lastSnapshots : null;
+    var snapsByVm = {};
+    if (snaps) {
+      snaps.forEach(function(s) { var k = (s.namespace || 'default') + '/' + (s.vm_name || ''); if (!snapsByVm[k]) snapsByVm[k] = []; snapsByVm[k].push(s); });
+    }
+    var totalSnaps = snaps ? snaps.length : null;
+    var readySnaps = snaps ? snaps.filter(function(s) { return s.ready; }).length : null;
+    var vmsWithSnap = snaps ? Object.keys(snapsByVm).length : null;
+    var prot = snaps ? vmsWithSnap : vms.filter(function (v) { return v.status === 'Running'; }).length;
     var unprot = vms.length - prot;
     renderVmrMetricsStrip('vmr-snapshots-metrics', [
-      { label: 'Protected VMs',  value: prot,    tone: 'ok' },
-      { label: 'Unprotected',    value: unprot,  tone: unprot > 0 ? 'warn' : '' },
-      { label: 'Backup Policies', value: '—' },
-      { label: 'Failed Backups', value: '0' },
-      { label: 'Restore Points', value: '—' },
-      { label: 'Recovery SLA',   value: '< 4 h', tone: 'ok' }
+      { label: 'Total Snapshots',  value: totalSnaps != null ? totalSnaps : '—' },
+      { label: 'Ready',            value: readySnaps != null ? readySnaps : '—', tone: readySnaps != null && readySnaps === totalSnaps && totalSnaps > 0 ? 'ok' : readySnaps != null && readySnaps < totalSnaps ? 'warn' : '' },
+      { label: 'VMs Protected',    value: prot,    tone: prot > 0 ? 'ok' : 'warn' },
+      { label: 'Unprotected VMs',  value: unprot,  tone: unprot > 0 ? 'warn' : '' },
+      { label: 'Failed Snapshots', value: snaps ? snaps.filter(function(s) { return !s.ready && s.status && s.status.toLowerCase().includes('fail'); }).length : '—' },
+      { label: 'Recovery SLA',     value: '< 4 h', tone: 'ok' }
     ]);
     var protEl = document.getElementById('vmr-snapshots-protection');
     if (!protEl) return;
     var tableRows = vms.length ? vms.map(function (vm) {
-      var isRunning = vm.status === 'Running';
       var ns = vm.namespace || 'default';
-      var statusBadge = isRunning ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
-      var policy = isRunning ? 'Daily' : '<span style="color:var(--orange)">⚠ None</span>';
-      var restorePoints = isRunning ? '3' : '0';
+      var vmSnaps = snapsByVm[ns + '/' + vm.name] || [];
+      var hasSnap = vmSnaps.length > 0;
+      var lastSnap = hasSnap ? (vmSnaps[0].age || '—') : '—';
+      var restorePoints = hasSnap ? vmSnaps.filter(function(s) { return s.ready; }).length : 0;
+      var statusBadge = hasSnap ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
       var snapFn = 'typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):openAskZeus(' + jsArgs('Snapshot VM ' + vm.name) + ')';
       return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td><td>' + statusBadge + '</td>' +
-        '<td>—</td><td>—</td><td>' + policy + '</td><td>' + restorePoints + '</td>' +
+        '<td>' + esc(lastSnap) + '</td><td>—</td><td>' + (hasSnap ? 'Ad-hoc' : '<span style="color:var(--orange)">⚠ None</span>') + '</td>' +
+        '<td>' + restorePoints + '</td>' +
         '<td><button type="button" class="glass-btn-primary glass-btn-sm" style="margin-right:4px" onclick="' + snapFn + '">Snapshot</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show backup status for VM ' + vm.name) + ')">Ask Veyron</button></td></tr>';
+        (vmSnaps.length ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')" style="margin-right:4px">View (' + vmSnaps.length + ')</button>' : '') +
+        '</td></tr>';
     }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No VMs found.</td></tr>';
     protEl.innerHTML =
       '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
@@ -2354,6 +2487,18 @@
       { label: 'Potential Savings',  value: '—' },
       { label: 'Optimization Score', value: vms.length > 0 ? Math.min(100, Math.round((running / vms.length) * 70 + 30)) + '%' : '—' }
     ]);
+  };
+
+  window.fetchSnapshotsVmr = async function fetchSnapshotsVmr() {
+    try {
+      var ns = typeof nsParam === 'function' ? nsParam() : '';
+      var raw = await apiJson('/api/v1/snapshots' + ns);
+      if (raw == null) return;
+      window.lastSnapshots = typeof asArray === 'function' ? asArray(raw) : (Array.isArray(raw) ? raw : []);
+      if (typeof currentPage !== 'undefined' && currentPage === 'snapshots' && typeof renderSnapshotsVmr === 'function') {
+        renderSnapshotsVmr();
+      }
+    } catch (e) { /* snapshots optional */ }
   };
 
   window.fetchSecurityVmr = async function fetchSecurityVmr() {
