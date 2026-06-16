@@ -1269,8 +1269,11 @@
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
     var n = ov.nodes || {};
-    var ready = n.ready_nodes != null ? n.ready_nodes : 0;
-    var total = n.total_nodes != null ? n.total_nodes : 0;
+    // Prefer live lastNodes data for ready/total counts (updated by patchFetchNodes)
+    var liveNodes = typeof lastNodes !== 'undefined' ? lastNodes : null;
+    var ready = liveNodes ? liveNodes.filter(function(nd) { return nd.status === 'Ready'; }).length
+      : (n.ready_nodes != null ? n.ready_nodes : 0);
+    var total = liveNodes ? liveNodes.length : (n.total_nodes != null ? n.total_nodes : 0);
     var unscheduled = vms.filter(function (v) { return !v.node; }).length;
     renderVmrPageHero('vmr-nodes-hero', 'Veyron Cluster Nodes',
       ready + '/' + total + ' ready · ' + vms.length + ' VMs placed across cluster',
