@@ -2206,10 +2206,20 @@
 
   function applyVeyronSettings(saved) {
     if (!saved || typeof saved !== 'object') return;
-    if (saved['set-default-ns'] && typeof currentNamespace !== 'undefined') {
-      currentNamespace = saved['set-default-ns'];
-      var nsEl = document.getElementById('namespace-filter');
-      if (nsEl && nsEl.value !== currentNamespace) nsEl.value = currentNamespace;
+    if (saved['set-default-ns']) {
+      var _ns = saved['set-default-ns'];
+      // Use base setNamespace() to propagate the change (updates #ns-selector, triggers refresh).
+      // Only switch if it differs from the current namespace to avoid a redundant refresh.
+      // Fall back to direct assignment + localStorage so the value survives across page loads.
+      var _curNs = typeof currentNamespace !== 'undefined' ? currentNamespace : null;
+      if (typeof setNamespace === 'function' && _curNs !== _ns) {
+        setNamespace(_ns);
+      } else if (_curNs !== _ns) {
+        if (typeof currentNamespace !== 'undefined') currentNamespace = _ns;
+        try { localStorage.setItem('veyron_ns', _ns); } catch (e) {}
+        var nsEl = document.getElementById('ns-selector');
+        if (nsEl && nsEl.value !== _ns) nsEl.value = _ns;
+      }
     }
     if (saved['set-vnc-quality']) {
       var q = String(saved['set-vnc-quality']);
