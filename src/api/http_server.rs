@@ -1343,7 +1343,7 @@ pub mod web {
     async fn vmi_ip_node_index(
         client: &KubeClient,
         scope_ns: &str,
-    ) -> HashMap<(String, String), (Option<String>, Option<String>)> {
+    ) -> HashMap<(String, String), (Option<String>, Option<String>, bool)> {
         let vmis = if scope_ns == "all" {
             client.list_all_vmis().await.unwrap_or_default()
         } else {
@@ -1366,7 +1366,13 @@ pub mod web {
                 })
             });
             let node = vmi.status.as_ref().and_then(|s| s.node_name.clone());
-            m.insert((ns, name), (ip, node));
+            let agent_connected = vmi.status.as_ref().is_some_and(|s| {
+                s.conditions.iter().any(|c| {
+                    c.type_.as_deref() == Some("AgentConnected")
+                        && c.status.as_deref() == Some("True")
+                })
+            });
+            m.insert((ns, name), (ip, node, agent_connected));
         }
         m
     }
@@ -1436,11 +1442,12 @@ pub mod web {
             .map(|vm| {
                 let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
                 let name = vm.metadata.name.as_deref().unwrap_or("");
-                let (ip, node) = vmi_index
+                let (ip, node, agent_connected) = vmi_index
                     .get(&(ns.to_string(), name.to_string()))
                     .cloned()
-                    .unwrap_or((None, None));
+                    .unwrap_or((None, None, false));
                 let mut info = VmInfo::from_vm_with_vmi_data(vm, ip, node);
+                info.guest_agent_connected = Some(agent_connected);
                 if let Some((drift, message)) =
                     drift_index.get(&(ns.to_string(), name.to_string()))
                 {
