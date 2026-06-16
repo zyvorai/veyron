@@ -420,13 +420,15 @@
       if (isRunning) {
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>Capsule</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigate(\'snapshots\')') + '>Snapshot</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>More</button>';
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigate(\'snapshots\')') + '>Snapshot</button>';
       } else {
+        var isPaused = vm.status === 'Paused';
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>' +
+          (isPaused ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>' : '') +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCreateModal()') + '>Edit HW</button>' +
           '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>Delete</button>';
       }
     }
@@ -459,7 +461,11 @@
         '<td style="color:var(--orange)">Missing</td>' +
         '<td style="color:' + (isRunning ? 'var(--green)' : 'var(--muted)') + '">' + (isRunning ? 'Detected' : '—') + '</td>' +
         '<td>' + esc(vm.age || '—') + '</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Open</button></td></tr>';
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' +
+        (isRunning
+          ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'stop') + ')">Stop</button>'
+          : '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>') +
+        '</td></tr>';
     }).join('');
     return '<div style="overflow-x:auto"><table class="table" style="min-width:900px"><thead><tr>' +
       '<th>Name</th><th>State</th><th>Namespace</th><th>Node</th><th>IP</th><th>OS</th>' +
@@ -586,8 +592,14 @@
     if (window._vmrPatchedFetchAppStore) return;
     window._vmrPatchedFetchAppStore = true;
     var orig = window.fetchAppStore;
-    window.fetchAppStore = async function () {
-      await orig.apply(this, arguments);
+    window.fetchAppStore = async function (opts) {
+      try {
+        await orig.apply(this, arguments);
+      } catch (e) {
+        if (e && e.name === 'AbortError') return;
+        if (opts && opts.signal && opts.signal.aborted) return;
+        throw e;
+      }
       renderFoundryVmr();
       var grid = document.getElementById('app-store-grid');
       if (!grid || !window.appStoreCache) return;
@@ -1196,15 +1208,21 @@
       if (page === 'console-hub') renderConsoleHubVmr();
       if (page === 'stack-health') fetchStackHealth();
       if (page === 'events' && typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
-      if (page === 'network-intel') renderNetworkIntelVmr();
+      if (page === 'network-intel') fetchNetworkIntelData();
       if (page === 'vm-capsule') renderVmCapsuleVmr();
       if (page === 'settings') renderSettingsVmr();
-      if (page === 'cilium') renderNetworkIntelVmr();
-      if (page === 'workloads') renderWorkloadsVmr();
+      if (page === 'costs') {
+        renderCostsVmr();
+        if (typeof fetchCosts === 'function') fetchCosts();
+      }
+      if (page === 'app-store') {
+        renderFoundryVmr();
+        if (typeof fetchAppStore === 'function') fetchAppStore();
+      }
+      if (page === 'cilium' && typeof fetchCilium === 'function') fetchCilium();
       if (page === 'nodes') renderNodesVmr();
-      if (page === 'security') renderSecurityPostureVmr();
+      if (page === 'security') { renderSecurityPostureVmr(); if (typeof fetchSecurityVmr === 'function') fetchSecurityVmr(); }
       if (page === 'snapshots') renderSnapshotsVmr();
-      if (page === 'costs') renderCostsVmr();
     };
   };
 
@@ -1275,6 +1293,44 @@
     renderWorkloadsTable();
   };
 
+  window.fetchWorkloadsVmr = async function fetchWorkloadsVmr(opts) {
+    renderWorkloadsVmr();
+    var bodyEl = document.getElementById('workloads-body');
+    if (bodyEl) {
+      bodyEl.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:24px">Loading workloads…</td></tr>';
+    }
+    try {
+      if (typeof vmData === 'undefined' || !vmData.length) {
+        var vmRaw = await apiJson('/api/v1/vms' + (typeof nsParam === 'function' ? nsParam() : ''), opts);
+        if (vmRaw != null && typeof asArray === 'function') {
+          vmData = asArray(vmRaw);
+        }
+      }
+      var podRaw = await apiJson('/api/v1/pods' + (typeof nsParam === 'function' ? nsParam() : ''), opts);
+      if (podRaw == null) return;
+      var pods = typeof asArray === 'function' ? asArray(podRaw) : [];
+      window.podsCache = pods.map(function (p) {
+        return {
+          name: p.name,
+          namespace: p.namespace,
+          status: p.phase || p.status || '—',
+          node: p.node_name || p.node || '—',
+          restarts: p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0),
+          age: p.age || '—',
+          owner: p.owner_kind || p.owner || '—'
+        };
+      });
+      renderWorkloadsVmr();
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      if (opts && opts.signal && opts.signal.aborted) return;
+      if (bodyEl) {
+        bodyEl.innerHTML = '<tr><td colspan="9" style="color:var(--red);text-align:center;padding:24px">' +
+          esc(e.message || 'Failed to load workloads') + '</td></tr>';
+      }
+    }
+  };
+
   window.renderWorkloadsVmr = function renderWorkloadsVmr() {
     var bodyEl = document.getElementById('workloads-body');
     if (!bodyEl) return;
@@ -1282,7 +1338,7 @@
     var pods = typeof podsCache !== 'undefined' ? podsCache : [];
     renderVmrPageHero('vmr-workloads-hero', 'Veyron Workloads',
       'VMs, VMIs, virt-launcher, CDI, KubeVirt control-plane, and Veyron pods.',
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads&&fetchWorkloads()">Refresh</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloadsVmr()">Refresh</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'nodes\')">Cluster Nodes</button>');
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
     var wlPods = pods.filter(function (p) {
@@ -1587,8 +1643,7 @@
       try {
         var fc = await apiJson('/api/v1/costs/forecast');
         var f = typeof unwrapData === 'function' ? unwrapData(fc) : fc;
-        if (f && f.forecast_cost != null) window.lastCostForecast = '$' + Number(f.forecast_cost).toFixed(2);
-        else if (f && f.total_forecast != null) window.lastCostForecast = '$' + Number(f.total_forecast).toFixed(2);
+        if (f && f.projected_monthly != null) window.lastCostForecast = '$' + Number(f.projected_monthly).toFixed(2);
       } catch (e2) { /* optional */ }
       if (typeof currentPage !== 'undefined' && currentPage === 'dashboard' && typeof renderMissionControlVmr === 'function') {
         renderMissionControlVmr();
@@ -1630,21 +1685,26 @@
     var isRunning = vm.status === 'Running';
     var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
     var score = Math.max(0, 100 - (warnings * 10) - (isRunning ? 0 : 5));
+    var isPaused = vm.status === 'Paused';
     var heroActions = isRunning
       ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, vm.name) + ')">Console</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')">SSH</button>' +
         (typeof isWindowsVm === 'function' && isWindowsVm(vm)
           ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')">RDP</button>'
           : '') +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'stop') + ')">Stop</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')">Pause</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'restart') + ')">Restart</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Snapshot</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Migrate VM ' + vm.name + ' to another node') + ')">Migrate</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Backup VM ' + vm.name) + ')">Backup</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof migrateVM===\'function\'&&migrateVM(' + jsArgs(ns, vm.name) + ')">Migrate</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')">Clone</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('VM ' + vm.name) + ')">Ask Veyron</button>'
-      : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>' +
+      : (isPaused
+          ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')">Unpause</button>'
+          : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>') +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')">Clone</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor&&openCopilotDoctor(' + jsArgs(ns, vm.name) + ')">Diagnose</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Attach ISO to VM ' + vm.name) + ')">Attach ISO</button>' +
         '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="vmDelete&&vmDelete(' + jsArgs(ns, vm.name) + ')">Delete</button>';
     el.innerHTML =
       '<div class="vmr-capsule-hero">' +
@@ -1733,60 +1793,163 @@
     });
   };
 
+  window.patchFilterVMs = function patchFilterVMs() {
+    if (window._vmrPatchedFilterVMs) return;
+    window._vmrPatchedFilterVMs = true;
+    var orig = window.filterVMs;
+    if (!orig) return;
+    window.filterVMs = function () {
+      var listEl = document.getElementById('vm-full-list');
+      if (!listEl || typeof vmData === 'undefined') return orig.apply(this, arguments);
+      var q = (document.getElementById('vm-search').value || '').toLowerCase();
+      var statusFilter = document.getElementById('vm-filter-status').value;
+      var driftFilter = (document.getElementById('vm-filter-drift') || {}).value || '';
+      var filtered = vmData.filter(function (v) {
+        if (q && !v.name.toLowerCase().includes(q) && !(v.namespace || '').toLowerCase().includes(q)) return false;
+        if (statusFilter === '__issues__') {
+          if (v.status !== 'Failed' && v.status !== 'Error') return false;
+        } else if (statusFilter && v.status !== statusFilter) return false;
+        if (driftFilter === 'drift' && v.drift_detected !== true) return false;
+        if (driftFilter === 'clear' && !(v.veyron_managed === true && v.drift_detected === false)) return false;
+        if (driftFilter === 'unmanaged' && v.veyron_managed === true) return false;
+        return true;
+      });
+      if (typeof window.renderVmFullList === 'function') {
+        window.renderVmFullList(filtered);
+        return;
+      }
+      return orig.apply(this, arguments);
+    };
+  };
+
+  window.packetwolfStatusOk = function packetwolfStatusOk(d) {
+    if (!d) return false;
+    return !!(d.configured && d.reachable && (d.health_status === 'healthy' || d.api_authorized));
+  };
+
   window.renderNetworkIntelVmr = function renderNetworkIntelVmr() {
     var el = document.getElementById('vmr-network-intel-body');
     if (!el) return;
-    var vms = typeof vmData !== 'undefined' ? vmData : [];
     renderVmrPageHero('vmr-network-intel-hero', 'Veyron Network Intelligence',
       'VM traffic, flows, policies, and live network behavior.',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Refresh</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Veyron</button>');
     renderVmrMetricsStrip('vmr-network-intel-metrics', [
-      { label: 'Live Flows', value: '—' },
-      { label: 'Allowed', value: '—', tone: 'ok' },
-      { label: 'Denied', value: '—', tone: 'bad' },
-      { label: 'Unknown', value: '—' },
-      { label: 'Policy Gaps', value: '—', tone: 'warn' },
-      { label: 'External Dests', value: '—' }
+      { label: 'Live Flows', value: '…' },
+      { label: 'Allowed', value: '…', tone: 'ok' },
+      { label: 'Denied', value: '…', tone: 'bad' },
+      { label: 'Unknown', value: '…' },
+      { label: 'Policy Gaps', value: '…', tone: 'warn' },
+      { label: 'External Dests', value: '…' }
     ]);
     var banner = '<div class="vmr-network-banner" id="vmr-network-packetwolf-banner">' +
-      '<span style="color:var(--muted);font-size:.84rem">PacketWolf not configured. Set <code>VEYRON_PACKETWOLF_URL</code> to enable live flow intelligence.</span>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'settings\')">Configure</button></div>';
-    var vmRows = vms.slice(0, 6).map(function (vm) {
-      var ns = vm.namespace || 'default';
-      return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td>' +
-        '<td style="color:var(--cyan)">—</td><td>—</td><td>—</td><td>—</td>' +
-        '<td><span style="color:var(--green)">Allowed</span></td><td>—</td><td>—</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Explain network flows for ' + vm.name) + ')">Explain</button></td></tr>';
-    }).join('');
+      '<span style="color:var(--muted);font-size:.84rem">Loading PacketWolf status…</span></div>';
     el.innerHTML = banner +
       '<div class="vmr-panel" style="margin-top:16px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
           '<div class="vmr-panel-title">Flow Table</div>' +
           '<div style="display:flex;gap:8px">' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'cilium\')">Cilium Policies</button>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Generate NetworkPolicy for all VMs\')">Generate Network Policy</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Lock VM egress traffic\')">Lock VM Traffic</button>' +
           '</div>' +
         '</div>' +
         '<div style="overflow-x:auto"><table class="table" style="min-width:800px"><thead><tr>' +
-          '<th>Source VM</th><th>Namespace</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Bytes</th>' +
-          '<th>Verdict</th><th>Process</th><th>Policy</th><th></th>' +
-        '</tr></thead><tbody>' + (vmRows || '<tr><td colspan="10" style="color:var(--muted);text-align:center">No flow data. Configure PacketWolf for live intelligence.</td></tr>') + '</tbody></table></div>' +
+          '<th>Source</th><th>Namespace</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th><th>Policy</th><th></th>' +
+        '</tr></thead><tbody id="vmr-network-flow-rows">' +
+          '<tr><td colspan="8" style="color:var(--muted);text-align:center">Loading flows…</td></tr>' +
+        '</tbody></table></div>' +
       '</div>';
-    fetchNetworkIntelBanner();
+  };
+
+  window.fetchNetworkIntelData = async function fetchNetworkIntelData(opts) {
+    if (typeof renderNetworkIntelVmr === 'function') renderNetworkIntelVmr();
+    var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'all';
+    var nsQ = ns && ns !== 'all' ? '?namespace=' + encodeURIComponent(ns) : '?namespace=all';
+    var banner = document.getElementById('vmr-network-packetwolf-banner');
+    var flowRows = document.getElementById('vmr-network-flow-rows');
+    try {
+      var statusRaw = await apiJson('/api/v1/packetwolf/status', opts);
+      var pw = typeof unwrapData === 'function' ? unwrapData(statusRaw) : statusRaw;
+      if (banner) {
+        if (packetwolfStatusOk(pw)) {
+          var extBtn = pw.external_url
+            ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="window.open(' + jsArgs(pw.external_url) + ',\'_blank\',\'noopener,noreferrer\')">Open PacketWolf</button>'
+            : '';
+          banner.innerHTML = '<span style="color:var(--green);font-size:.84rem">◉ PacketWolf connected · ' +
+            esc(pw.health_status || 'healthy') + (pw.health_mode ? ' · ' + esc(pw.health_mode) : '') + '</span>' +
+            extBtn +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Refresh flows</button>';
+          banner.style.borderColor = 'rgba(50,224,176,.3)';
+        } else if (pw && pw.configured) {
+          banner.innerHTML = '<span style="color:var(--orange);font-size:.84rem">PacketWolf configured but unreachable — ' +
+            esc(pw.message || 'health probe failed') + '</span>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Integrations</button>';
+        } else {
+          banner.innerHTML = '<span style="color:var(--muted);font-size:.84rem">PacketWolf not configured. Set <code>VEYRON_PACKETWOLF_URL</code> or run integrations bootstrap.</span>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'settings\')">Configure</button>';
+        }
+      }
+      if (!packetwolfStatusOk(pw)) {
+        if (flowRows) {
+          flowRows.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center">Connect PacketWolf for live Hubble flows.</td></tr>';
+        }
+        return;
+      }
+      var overviewRaw = await apiJson('/api/v1/packetwolf/network/overview' + nsQ, opts);
+      var overview = typeof unwrapData === 'function' ? unwrapData(overviewRaw) : overviewRaw;
+      var meta = (overview && overview.meta && overview.meta.stats) || overview || {};
+      var live = overview && overview.live_connections != null ? overview.live_connections : (meta.live_connections || '—');
+      var blocked = overview && overview.blocked_flows != null ? overview.blocked_flows : (meta.blocked_flows || 0);
+      var suspicious = overview && overview.suspicious_flows != null ? overview.suspicious_flows : (meta.suspicious_flows || 0);
+      var gaps = overview && overview.policy_gaps != null ? overview.policy_gaps : (meta.policy_gaps || 0);
+      var external = overview && overview.external_calls != null ? overview.external_calls : (meta.external_calls || 0);
+      var allowed = Math.max(0, Number(live) - Number(blocked) - Number(suspicious));
+      renderVmrMetricsStrip('vmr-network-intel-metrics', [
+        { label: 'Live Flows', value: live },
+        { label: 'Allowed', value: allowed, tone: 'ok' },
+        { label: 'Denied', value: blocked, tone: blocked ? 'bad' : '' },
+        { label: 'Suspicious', value: suspicious, tone: suspicious ? 'warn' : '' },
+        { label: 'Policy Gaps', value: gaps, tone: gaps ? 'warn' : '' },
+        { label: 'External Dests', value: external }
+      ]);
+      var flowQ = '?limit=50' + (ns && ns !== 'all' ? '&namespace=' + encodeURIComponent(ns) : '');
+      var flowsRaw = await apiJson('/api/v1/packetwolf/flows' + flowQ, opts);
+      var flowsBody = typeof unwrapData === 'function' ? unwrapData(flowsRaw) : flowsRaw;
+      var flows = (flowsBody && flowsBody.flows) || (Array.isArray(flowsBody) ? flowsBody : []);
+      if (!flowRows) return;
+      if (!flows.length) {
+        flowRows.innerHTML = '<tr><td colspan="8" style="color:var(--muted);text-align:center">No flows in this scope yet.</td></tr>';
+        return;
+      }
+      flowRows.innerHTML = flows.slice(0, 50).map(function (f) {
+        var src = f.source || {};
+        var dst = f.destination || {};
+        var srcLabel = src.pod || src.ip || src.workload || '—';
+        var dstLabel = dst.pod || dst.ip || dst.workload || '—';
+        var verdict = String(f.verdict || '—');
+        var tone = /denied|dropped|blocked/i.test(verdict) ? 'var(--red)' : 'var(--green)';
+        return '<tr><td>' + esc(srcLabel) + '</td><td>' + esc(src.namespace || '—') + '</td>' +
+          '<td>' + esc(dstLabel) + '</td><td>' + esc(f.protocol || '—') + '</td><td>' + esc(f.port != null ? String(f.port) : '—') + '</td>' +
+          '<td><span style="color:' + tone + '">' + esc(verdict) + '</span></td><td>' + esc(f.policy || '—') + '</td>' +
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Explain flow ' + srcLabel + ' → ' + dstLabel) + ')">Explain</button></td></tr>';
+      }).join('');
+    } catch (e) {
+      if (banner) {
+        banner.innerHTML = '<span style="color:var(--red);font-size:.84rem">Network intelligence load failed: ' +
+          esc(e.message || String(e)) + '</span>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Retry</button>';
+      }
+      if (flowRows) {
+        flowRows.innerHTML = '<tr><td colspan="8" style="color:var(--red);text-align:center">' +
+          esc(e.message || 'Failed to load flows') + '</td></tr>';
+      }
+    }
   };
 
   window.fetchNetworkIntelBanner = async function fetchNetworkIntelBanner() {
     try {
-      var j = await apiJson('/api/v1/packetwolf/status');
-      var d = typeof unwrapData === 'function' ? unwrapData(j) : j;
-      var banner = document.getElementById('vmr-network-packetwolf-banner');
-      if (!banner) return;
-      if (d && d.healthy) {
-        banner.innerHTML = '<span style="color:var(--green);font-size:.84rem">◉ PacketWolf connected · Brain healthy</span>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Show live flows from PacketWolf\')">Watch Live Flows</button>';
-        banner.style.borderColor = 'rgba(50,224,176,.3)';
-      }
-    } catch (e) { /* PacketWolf optional */ }
+      await fetchNetworkIntelData();
+    } catch (e) { /* optional */ }
   };
 
   window.renderSettingsVmr = function renderSettingsVmr() {
@@ -2181,25 +2344,116 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchCosts===\'function\'&&fetchCosts()">Refresh</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Veyron</button>');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var billed = (typeof window.lastCostVmCount === 'number') ? window.lastCostVmCount : vms.length;
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
     renderVmrMetricsStrip('vmr-costs-metrics', [
       { label: 'Est. Monthly',       value: cost },
       { label: 'Forecast',           value: forecast },
-      { label: 'VMs Billed',         value: vms.length },
+      { label: 'VMs Billed',         value: billed },
       { label: 'Running VMs',        value: running, tone: running > 0 ? 'ok' : '' },
       { label: 'Potential Savings',  value: '—' },
       { label: 'Optimization Score', value: vms.length > 0 ? Math.min(100, Math.round((running / vms.length) * 70 + 30)) + '%' : '—' }
     ]);
   };
 
+  window.fetchSecurityVmr = async function fetchSecurityVmr() {
+    try {
+      var ns = typeof nsParam === 'function' ? nsParam() : '';
+      var [postureRaw, findingsRaw] = await Promise.all([
+        apiJson('/api/v1/security/posture' + ns),
+        apiJson('/api/v1/security/findings' + ns),
+      ]);
+      var p = (typeof unwrapData === 'function' ? unwrapData(postureRaw) : postureRaw) || {};
+      var findings = typeof asArray === 'function' ? asArray(typeof unwrapData === 'function' ? unwrapData(findingsRaw) : findingsRaw) : [];
+      var sc = p.overall_score != null ? p.overall_score : 0;
+      var scoreTone = sc >= 80 ? 'ok' : sc >= 50 ? 'warn' : 'bad';
+      renderVmrMetricsStrip('vmr-security-metrics', [
+        { label: 'Fleet Score',   value: sc + '%',                                               tone: scoreTone },
+        { label: 'Critical',      value: p.critical_findings || 0,                               tone: (p.critical_findings || 0) > 0 ? 'bad' : '' },
+        { label: 'High',          value: p.high_findings || 0,                                   tone: (p.high_findings || 0) > 0 ? 'warn' : '' },
+        { label: 'Medium',        value: p.medium_findings || 0 },
+        { label: 'Risk Level',    value: p.risk_level || '—' },
+        { label: 'Total Findings', value: p.total_findings || 0 },
+      ]);
+      var el = document.getElementById('vmr-security-findings');
+      if (!el) return;
+      if (!findings.length) {
+        el.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">VM Security Findings</div>' +
+          '<div style="padding:24px;text-align:center;color:var(--green)">No security findings — fleet looks healthy.</div></div>';
+        return;
+      }
+      var sevColor = function(s) {
+        var sl = (s || '').toLowerCase();
+        return sl === 'critical' ? 'var(--red)' : sl === 'high' ? 'var(--orange)' : sl === 'medium' ? 'var(--yellow, #f59e0b)' : 'var(--muted)';
+      };
+      var rows = findings.map(function(f) {
+        return '<tr>' +
+          '<td><span style="color:' + sevColor(f.severity) + ';font-weight:600">' + esc(f.severity || '—') + '</span></td>' +
+          '<td>' + esc(f.category || '—') + '</td>' +
+          '<td><strong>' + esc(f.title || '—') + '</strong></td>' +
+          '<td><code style="font-size:.82rem">' + esc(f.resource || '—') + '</code></td>' +
+          '<td style="font-size:.82rem;color:var(--muted)">' + esc(f.recommendation || '—') + '</td>' +
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix: ' + (f.title || '')) + ')">Fix</button></td></tr>';
+      }).join('');
+      el.innerHTML = '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<div class="vmr-panel-title">Security Findings (' + findings.length + ')</div></div>' +
+        '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
+        '<th>Severity</th><th>Category</th><th>Finding</th><th>Resource</th><th>Recommendation</th><th></th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+    } catch (e) { /* leave synthetic render intact on error */ }
+  };
+
+  window.patchFetchNodes = function patchFetchNodes() {
+    if (window._veyronPatchedFetchNodes) return;
+    window._veyronPatchedFetchNodes = true;
+    var orig = window.fetchNodes;
+    if (!orig) return;
+    window.fetchNodes = async function() {
+      await orig.apply(this, arguments);
+      if (typeof currentPage !== 'undefined' && currentPage === 'nodes' && typeof renderNodesVmr === 'function') {
+        renderNodesVmr();
+      }
+    };
+  };
+
+  window.patchFetchSnapshots = function patchFetchSnapshots() {
+    if (window._veyronPatchedFetchSnapshots) return;
+    window._veyronPatchedFetchSnapshots = true;
+    var orig = window.fetchSnapshots;
+    if (!orig) return;
+    window.fetchSnapshots = async function() {
+      await orig.apply(this, arguments);
+      if (typeof currentPage !== 'undefined' && currentPage === 'snapshots' && typeof renderSnapshotsVmr === 'function') {
+        renderSnapshotsVmr();
+      }
+    };
+  };
+
+  window.patchFetchEvents = function patchFetchEvents() {
+    if (window._veyronPatchedFetchEvents) return;
+    window._veyronPatchedFetchEvents = true;
+    var orig = window.fetchEvents;
+    if (!orig) return;
+    window.fetchEvents = async function() {
+      await orig.apply(this, arguments);
+      if (typeof currentPage !== 'undefined' && currentPage === 'events' && typeof renderEventIntelligenceVmr === 'function') {
+        renderEventIntelligenceVmr();
+      }
+    };
+  };
+
   window.initVeyronModule = function initVeyronModule() {
     initVeyronShell();
     patchRenderVmFullList();
+    patchFilterVMs();
     patchFetchAppStore();
     patchNavigateVmr();
     patchRefreshVeyron();
     patchOpenCreateModal();
     patchFetchExperienceHome();
+    patchFetchNodes();
+    patchFetchSnapshots();
+    patchFetchEvents();
     patchRenderPinnedVms();
     patchFetchTemplatesForForge();
     patchSelectVm();
