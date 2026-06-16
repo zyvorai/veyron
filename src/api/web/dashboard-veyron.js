@@ -381,7 +381,7 @@
     if (!ev) return '';
     var reason = ev.reason || ev.type || 'Event';
     var msg = ev.message || '';
-    var sev = (ev.type === 'Warning' || reason.indexOf('Failed') >= 0 || reason.indexOf('Error') >= 0) ? 'failed' :
+    var sev = (reason.indexOf('Failed') >= 0 || reason.indexOf('Error') >= 0) ? 'failed' :
       (ev.type === 'Warning' ? 'warning' : '');
     var impact = reason.indexOf('Failed') >= 0 || reason.indexOf('Pull') >= 0 ? 'VM or workload may not start.' : 'Monitor cluster signal.';
     var fixes = '';
