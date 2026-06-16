@@ -3941,23 +3941,15 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-workloads" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Veyron Workloads</h1><p>Kubernetes workloads connected to virtual machine operations.</p></div>
-    <div class="page-header-right">
-      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">Refresh</button>
-    </div>
-  </div>
-  <!-- KubeVirt-specific workload sections -->
-  <div class="vmr-metrics-strip" style="margin-bottom:8px">
-    <div class="vmr-metric"><div class="vmr-metric-label">VirtualMachines</div><div class="vmr-metric-value" id="wl-vm-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">VMIs</div><div class="vmr-metric-value" id="wl-vmi-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">Pods</div><div class="vmr-metric-value" id="wl-pod-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">Deployments</div><div class="vmr-metric-value" id="wl-deploy-count">—</div></div>
-    <div class="vmr-metric"><div class="vmr-metric-label">DaemonSets</div><div class="vmr-metric-value" id="wl-ds-count">—</div></div>
-  </div>
-  
-    <div id="workloads-summary" class="grid-4 page-glass-stats"></div>
-<div class="card glass-card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
-  <table class="table" id="workloads-table"><thead><tr><th>Name</th><th>Type</th><th>Replicas</th><th>Ready</th><th>Status</th><th>Namespace</th></tr></thead><tbody id="workloads-body"></tbody></table>
+  <div id="vmr-workloads-hero"></div>
+  <div id="vmr-workloads-metrics"></div>
+  <div id="workloads-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">Cluster Workloads</span></div>
+    <table class="table" id="workloads-table" style="min-width:700px">
+      <thead><tr><th>Name</th><th>Kind</th><th>Namespace</th><th>Status</th><th>Node</th><th>Restarts</th><th>Age</th><th>Owner</th><th></th></tr></thead>
+      <tbody id="workloads-body"></tbody>
+    </table>
   </div>
 </div>
 </div>

@@ -1142,7 +1142,147 @@
       if (page === 'vm-capsule') renderVmCapsuleVmr();
       if (page === 'settings') renderSettingsVmr();
       if (page === 'cilium') renderNetworkIntelVmr();
+      if (page === 'workloads') renderWorkloadsVmr();
     };
+  };
+
+  window._vmrWorkloadsTab = window._vmrWorkloadsTab || 'all';
+
+  window.setVmrWorkloadsTab = function setVmrWorkloadsTab(tab) {
+    window._vmrWorkloadsTab = tab;
+    document.querySelectorAll('.vmr-wl-tab').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tab === tab);
+    });
+    renderWorkloadsTable();
+  };
+
+  window.renderWorkloadsVmr = function renderWorkloadsVmr() {
+    var bodyEl = document.getElementById('workloads-body');
+    if (!bodyEl) return;
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var pods = typeof podsCache !== 'undefined' ? podsCache : [];
+    renderVmrPageHero('vmr-workloads-hero', 'Veyron Workloads',
+      'VMs, VMIs, virt-launcher, CDI, KubeVirt control-plane, and Veyron pods.',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads&&fetchWorkloads()">Refresh</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'nodes\')">Cluster Nodes</button>');
+    var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
+    var wlPods = pods.filter(function (p) {
+      return /virt-launcher|cdi-|virt-controller|virt-api|virt-handler|virt-operator|vmrogue/.test((p.name || ''));
+    });
+    renderVmrMetricsStrip('vmr-workloads-metrics', [
+      { label: 'VirtualMachines', value: vms.length },
+      { label: 'Running VMIs', value: running, tone: 'ok' },
+      { label: 'virt-launcher pods', value: wlPods.filter(function (p) { return /virt-launcher/.test(p.name || ''); }).length },
+      { label: 'CDI pods', value: wlPods.filter(function (p) { return /cdi-/.test(p.name || ''); }).length },
+      { label: 'KubeVirt ctrl', value: wlPods.filter(function (p) { return /virt-controller|virt-api|virt-handler|virt-operator/.test(p.name || ''); }).length },
+      { label: 'Veyron pods', value: wlPods.filter(function (p) { return /vmrogue/.test(p.name || ''); }).length }
+    ]);
+    /* tab bar */
+    var tableContainer = document.getElementById('workloads-table');
+    if (tableContainer) {
+      var tabs = [
+        { id: 'all', label: 'All' },
+        { id: 'vms', label: 'VMs' },
+        { id: 'vmis', label: 'VMIs' },
+        { id: 'virt-launcher', label: 'virt-launcher' },
+        { id: 'cdi', label: 'CDI' },
+        { id: 'kubevirt-ctrl', label: 'KubeVirt ctrl' },
+        { id: 'veyron', label: 'Veyron' }
+      ];
+      var tabBar = document.getElementById('vmr-wl-tabbar');
+      if (!tabBar) {
+        tabBar = document.createElement('div');
+        tabBar.id = 'vmr-wl-tabbar';
+        tabBar.className = 'vmr-capsule-tabs';
+        tabBar.style.marginBottom = '12px';
+        tableContainer.parentElement && tableContainer.parentElement.insertBefore(tabBar, tableContainer);
+      }
+      tabBar.innerHTML = tabs.map(function (t) {
+        return '<button type="button" class="vmr-capsule-tab-btn vmr-wl-tab' + (window._vmrWorkloadsTab === t.id ? ' active' : '') +
+          '" data-tab="' + esc(t.id) + '" onclick="setVmrWorkloadsTab(\'' + t.id + '\')">' + esc(t.label) + '</button>';
+      }).join('');
+    }
+    window._vmrWorkloadsVms = vms;
+    window._vmrWorkloadsPods = pods;
+    renderWorkloadsTable();
+  };
+
+  window.renderWorkloadsTable = function renderWorkloadsTable() {
+    var bodyEl = document.getElementById('workloads-body');
+    if (!bodyEl) return;
+    var tab = window._vmrWorkloadsTab || 'all';
+    var vms = window._vmrWorkloadsVms || [];
+    var pods = window._vmrWorkloadsPods || [];
+    var rows = [];
+
+    function vmRow(vm) {
+      var ns = vm.namespace || 'default';
+      var isRunning = vm.status === 'Running';
+      return '<tr>' +
+        '<td>' + esc(vm.name) + '</td>' +
+        '<td><span class="glass-badge" style="background:rgba(63,124,255,.1);color:var(--blue)">VirtualMachine</span></td>' +
+        '<td>' + esc(ns) + '</td>' +
+        '<td><span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></td>' +
+        '<td>' + esc(vm.node || '—') + '</td>' +
+        '<td>—</td>' +
+        '<td>' + esc(vm.age || '—') + '</td>' +
+        '<td style="color:var(--muted);font-size:.78rem">VirtualMachine</td>' +
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Inspect</button></td></tr>';
+    }
+
+    function podRow(pod) {
+      var isOk = (pod.status || '').toLowerCase() === 'running';
+      var kind = /virt-launcher/.test(pod.name || '') ? 'virt-launcher'
+        : /cdi-/.test(pod.name || '') ? 'CDI Pod'
+        : /virt-controller|virt-api|virt-handler|virt-operator/.test(pod.name || '') ? 'KubeVirt ctrl'
+        : /vmrogue/.test(pod.name || '') ? 'Veyron'
+        : 'Pod';
+      return '<tr>' +
+        '<td>' + esc(pod.name || '—') + '</td>' +
+        '<td><span class="glass-badge" style="background:rgba(39,215,255,.08);color:var(--cyan)">' + esc(kind) + '</span></td>' +
+        '<td>' + esc(pod.namespace || '—') + '</td>' +
+        '<td><span class="vm-badge ' + (isOk ? 'running' : 'stopped') + '">' + esc(pod.status || '—') + '</span></td>' +
+        '<td>' + esc(pod.node || '—') + '</td>' +
+        '<td>' + esc(pod.restarts != null ? String(pod.restarts) : '—') + '</td>' +
+        '<td>' + esc(pod.age || '—') + '</td>' +
+        '<td style="color:var(--muted);font-size:.78rem">' + esc(pod.owner || '—') + '</td>' +
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Inspect pod ' + (pod.name || '')) + ')">Logs</button></td></tr>';
+    }
+
+    if (tab === 'vms' || tab === 'all') vms.forEach(function (v) { rows.push(vmRow(v)); });
+    if (tab === 'vmis' || tab === 'all') {
+      vms.filter(function (v) { return v.status === 'Running'; }).forEach(function (v) {
+        var ns = v.namespace || 'default';
+        rows.push('<tr>' +
+          '<td>' + esc(v.name) + '</td>' +
+          '<td><span class="glass-badge" style="background:rgba(50,224,176,.08);color:var(--green)">VMI</span></td>' +
+          '<td>' + esc(ns) + '</td>' +
+          '<td><span class="vm-badge running">Running</span></td>' +
+          '<td>' + esc(v.node || '—') + '</td><td>—</td><td>—</td>' +
+          '<td style="color:var(--muted);font-size:.78rem">VirtualMachine</td>' +
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>Inspect</button></td></tr>');
+      });
+    }
+    (pods || []).forEach(function (pod) {
+      var n = pod.name || '';
+      var isLauncher = /virt-launcher/.test(n);
+      var isCdi = /cdi-/.test(n);
+      var isKvCtrl = /virt-controller|virt-api|virt-handler|virt-operator/.test(n);
+      var isVeyron = /vmrogue/.test(n);
+      if (tab === 'all' || tab === 'virt-launcher' && isLauncher ||
+          tab === 'cdi' && isCdi || tab === 'kubevirt-ctrl' && isKvCtrl ||
+          tab === 'veyron' && isVeyron) {
+        if (isLauncher || isCdi || isKvCtrl || isVeyron) rows.push(podRow(pod));
+      }
+    });
+
+    if (!rows.length) {
+      bodyEl.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:24px">No workloads in this category.</td></tr>';
+    } else {
+      bodyEl.innerHTML = rows.join('');
+    }
+    var thead = bodyEl.closest('table') && bodyEl.closest('table').querySelector('thead tr');
+    if (thead) thead.innerHTML = '<th>Name</th><th>Kind</th><th>Namespace</th><th>Status</th><th>Node</th><th>Restarts</th><th>Age</th><th>Owner</th><th></th>';
   };
 
   window._vmrEventFilter = window._vmrEventFilter || 'all';
