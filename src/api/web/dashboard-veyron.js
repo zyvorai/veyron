@@ -2491,7 +2491,7 @@
     renderVmrPageHero('vmr-security-hero', 'Veyron Security Posture',
       'Fleet hardening, compliance, and risk visibility',
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix all security findings\')">Fix All Issues</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurity===\'function\'&&fetchSecurity()">Refresh</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurityVmr===\'function\'&&fetchSecurityVmr()">Refresh</button>');
     renderVmrMetricsStrip('vmr-security-metrics', [
       { label: 'Fleet Score',   value: score + '%', tone: scoreTone },
       { label: 'Critical',      value: failed,      tone: failed > 0 ? 'bad' : '' },
