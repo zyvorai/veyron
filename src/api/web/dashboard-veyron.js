@@ -1457,7 +1457,7 @@
         '<td>' + esc(pod.restarts != null ? String(pod.restarts) : '—') + '</td>' +
         '<td>' + esc(pod.age || '—') + '</td>' +
         '<td style="color:var(--muted);font-size:.78rem">' + esc(pod.owner || '—') + '</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Inspect pod ' + (pod.name || '')) + ')">Logs</button></td></tr>';
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openPodLogsVmr(' + jsArgs(pod.namespace || '', pod.name || '') + ')">Logs</button></td></tr>';
     }
 
     if (tab === 'vms' || tab === 'all') vms.forEach(function (v) { rows.push(vmRow(v)); });
@@ -1494,6 +1494,61 @@
     }
     var thead = bodyEl.closest('table') && bodyEl.closest('table').querySelector('thead tr');
     if (thead) thead.innerHTML = '<th>Name</th><th>Kind</th><th>Namespace</th><th>Status</th><th>Node</th><th>Restarts</th><th>Age</th><th>Owner</th><th></th>';
+  };
+
+  window.openPodLogsVmr = function openPodLogsVmr(ns, podName) {
+    var modalId = 'vmr-pod-logs-modal';
+    var modal = document.getElementById(modalId);
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = modalId;
+      modal.style.cssText = 'position:fixed;inset:0;z-index:320;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center';
+      modal.addEventListener('click', function (e) { if (e.target === modal) modal.style.display = 'none'; });
+      modal.innerHTML =
+        '<div style="background:var(--surface,#13131f);border:1px solid var(--line);border-radius:10px;padding:20px 24px;width:min(940px,96vw);max-height:82vh;display:flex;flex-direction:column;gap:12px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<span class="vmr-panel-title" id="vmr-pod-logs-title" style="font-size:.95rem"></span>' +
+            '<div style="display:flex;gap:8px">' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" id="vmr-pod-logs-refresh">Refresh</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById(\'vmr-pod-logs-modal\').style.display=\'none\'">Close</button>' +
+            '</div>' +
+          '</div>' +
+          '<pre id="vmr-pod-logs-body" style="overflow:auto;flex:1;font-size:.74rem;line-height:1.6;color:var(--text,#e2e8f0);margin:0;min-height:200px;max-height:60vh;white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.35);padding:12px;border-radius:6px;border:1px solid var(--line)">Loading logs…</pre>' +
+        '</div>';
+      document.body.appendChild(modal);
+    }
+    var titleEl = document.getElementById('vmr-pod-logs-title');
+    var bodyEl = document.getElementById('vmr-pod-logs-body');
+    var refreshBtn = document.getElementById('vmr-pod-logs-refresh');
+    modal.style.display = 'flex';
+    if (titleEl) titleEl.textContent = 'Pod Logs — ' + (podName || '');
+    if (bodyEl) bodyEl.textContent = 'Loading logs…';
+
+    async function loadLogs() {
+      if (bodyEl) bodyEl.textContent = 'Loading…';
+      try {
+        var url = '/api/v1/pods/' + encodeURIComponent(podName) + '/logs' +
+          (ns && ns !== 'all' ? '?namespace=' + encodeURIComponent(ns) : '');
+        var raw = await apiJson(url);
+        var entries = typeof asArray === 'function' ? asArray(raw) : (Array.isArray(raw) ? raw : []);
+        if (!entries.length) {
+          if (bodyEl) bodyEl.textContent = '(No log entries returned — pod may not be running or logs are empty)';
+          return;
+        }
+        if (bodyEl) {
+          bodyEl.textContent = entries.map(function (e) {
+            var ts = e.timestamp ? e.timestamp.replace('T', ' ').replace(/\.\d+Z$/, 'Z') : '';
+            return (ts ? ts + '  ' : '') + (e.message || '');
+          }).join('\n');
+          bodyEl.scrollTop = bodyEl.scrollHeight;
+        }
+      } catch (err) {
+        if (bodyEl) bodyEl.textContent = 'Error loading logs: ' + ((err && err.message) || String(err));
+      }
+    }
+
+    if (refreshBtn) refreshBtn.onclick = loadLogs;
+    loadLogs();
   };
 
   window._vmrEventFilter = window._vmrEventFilter || 'all';
