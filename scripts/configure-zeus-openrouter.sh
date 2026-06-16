@@ -7,7 +7,7 @@
 #
 # Remote cluster (default veyron-integrations secret + rollout restart):
 #   ./scripts/configure-zeus-openrouter.sh HOST USER
-#   ./scripts/configure-zeus-openrouter.sh 212.8.252.194 sus
+#   ./scripts/configure-zeus-openrouter.sh <host> <user>
 
 set -euo pipefail
 

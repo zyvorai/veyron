@@ -8,8 +8,8 @@
 #   ./scripts/test-customer-e2e-remote.sh HOST USER --product machina # rebuild one tarball
 #
 # Examples:
-#   ./scripts/test-customer-e2e-remote.sh 212.8.252.194 sus
-#   ZYVOR_E2E_SKIP=Veyron,v9s ./scripts/test-customer-e2e-remote.sh 212.8.252.194 sus --quick
+#   ./scripts/test-customer-e2e-remote.sh <host> <user>
+#   ZYVOR_E2E_SKIP=Veyron,v9s ./scripts/test-customer-e2e-remote.sh <host> <user> --quick
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

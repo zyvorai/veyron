@@ -9,15 +9,23 @@
 # Usage:
 #   ./scripts/test-remote.sh [host] [user]
 #   VMROGUE_NODE_PORT=30151 VEYRON_API_KEY=... ./scripts/test-remote.sh
+#   DEPLOY_HOST / DEPLOY_USER required if host/user omitted
 #   VEYRON_REMOTE_DIR=/home/you/veyron  (operator samples for tier 3–4)
 #
-# Defaults: host 185.165.240.5, user sus, port 30151, key Admin@321
+# Example:
+#   ./scripts/test-remote.sh 192.0.2.1 sus
+#   VEYRON_API_KEY=... ./scripts/test-remote.sh 192.0.2.1 sus
 # ============================================================================
 
 set -euo pipefail
 
-HOST="${1:-185.165.240.5}"
-USER="${2:-sus}"
+HOST="${1:-${DEPLOY_HOST:-}}"
+USER="${2:-${DEPLOY_USER:-}}"
+if [[ -z "${HOST}" || -z "${USER}" ]]; then
+    echo "Usage: $0 <host> <user>" >&2
+    echo "  or:  DEPLOY_HOST=<host> DEPLOY_USER=<user> $0" >&2
+    exit 1
+fi
 REMOTE="${USER}@${HOST}"
 
 NS="${VEYRON_NAMESPACE:-veyron-system}"

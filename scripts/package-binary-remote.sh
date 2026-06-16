@@ -22,8 +22,8 @@
 #   VEYRON_REMOTE_SKIP_SSH_CHECK=1  Skip SSH preflight
 #
 # Examples:
-#   ./scripts/package-binary-remote.sh 212.8.252.194 sus --fetch
-#   ./scripts/package-binary-remote.sh 212.8.252.194 sus --reuse-image --fetch
+#   ./scripts/package-binary-remote.sh <host> <user> --fetch
+#   ./scripts/package-binary-remote.sh <host> <user> --reuse-image --fetch
 #
 # See: docs/PACKAGE_BINARY_REMOTE.md
 # ============================================================================

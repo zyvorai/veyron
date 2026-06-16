@@ -8,8 +8,8 @@
 #   ./scripts/deploy-remote.sh [host] [user] [--quick] [--no-preflight]
 #
 # Arguments:
-#   host            SSH target (default: $DEPLOY_HOST, then 185.165.240.5)
-#   user            SSH user   (default: $DEPLOY_USER, then sus)
+#   host            SSH target (required, or set $DEPLOY_HOST)
+#   user            SSH user   (required, or set $DEPLOY_USER)
 #   --quick         Skip image build and import (manifests only)
 #   --no-preflight  Skip SSH connectivity check before starting
 #
@@ -50,8 +50,7 @@ deploy-remote.sh — full remote K8s deploy (wraps deploy-all-remote.sh)
 Usage:
   ./scripts/deploy-remote.sh [host] [user] [--quick] [--no-preflight]
 
-  host, user    Optional; default from DEPLOY_HOST / DEPLOY_USER, else
-                185.165.240.5 / sus (same as deploy-all-remote.sh).
+  host, user    Required (or set DEPLOY_HOST / DEPLOY_USER).
   --quick       Skip image build/import; re-apply manifests only.
   --no-preflight
                 Skip SSH connectivity check (large builds still run remotely).
@@ -86,8 +85,20 @@ for arg in "${FORWARD[@]}"; do
     esac
 done
 
-HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-185.165.240.5}}"
-USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
+HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-}}"
+USER="${POSITIONAL[1]:-${DEPLOY_USER:-}}"
+if [[ -z "${HOST}" ]]; then
+    usage >&2
+    echo >&2
+    echo "Error: host required (argument or DEPLOY_HOST)" >&2
+    exit 1
+fi
+if [[ -z "${USER}" ]]; then
+    usage >&2
+    echo >&2
+    echo "Error: user required (argument or DEPLOY_USER)" >&2
+    exit 1
+fi
 REMOTE="${USER}@${HOST}"
 
 if [[ "${DEPLOY_REMOTE_SKIP_CHECK:-0}" == "1" ]] || [[ "${SKIP_PREFLIGHT}" == true ]]; then
