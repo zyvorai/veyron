@@ -1033,6 +1033,10 @@
     if (next) next.style.display = step < 6 ? '' : 'none';
     if (submit) submit.style.display = step === 6 ? '' : 'none';
     if (submitStart) submitStart.style.display = step === 6 ? '' : 'none';
+    var exportYaml = document.getElementById('forge-wiz-export-yaml');
+    var saveBlueprint = document.getElementById('forge-wiz-save-blueprint');
+    if (exportYaml) exportYaml.style.display = step === 6 ? '' : 'none';
+    if (saveBlueprint) saveBlueprint.style.display = step === 6 ? '' : 'none';
     if (step === 6) renderForgeWizardReview();
   }
   window.forgeWizardNext = function forgeWizardNext() {
@@ -1069,26 +1073,68 @@
   window.renderForgeWizardReview = function renderForgeWizardReview() {
     var el = document.getElementById('forge-wiz-review');
     if (!el) return;
-    var name = (document.getElementById('forge-wiz-name') || {}).value || '—';
-    var ns = (document.getElementById('forge-wiz-namespace') || {}).value || 'default';
-    var tpl = (document.getElementById('forge-wiz-template') || {}).value || '—';
-    var cpus = (document.getElementById('forge-wiz-cpus') || {}).value || '2';
-    var mem = (document.getElementById('forge-wiz-memory') || {}).value || '4Gi';
-    var disk = (document.getElementById('forge-wiz-disk') || {}).value || '20Gi';
-    var prof = typeof selectedProfile !== 'undefined' && selectedProfile ? selectedProfile : '—';
-    var inet = (document.getElementById('forge-wiz-internet') || {}).checked;
-    var expose = (document.getElementById('forge-wiz-expose') || {}).checked;
+    var name     = (document.getElementById('forge-wiz-name')      || {}).value || '—';
+    var ns       = (document.getElementById('forge-wiz-namespace') || {}).value || 'default';
+    var tpl      = (document.getElementById('forge-wiz-template')  || {}).value || '—';
+    var cpus     = (document.getElementById('forge-wiz-cpus')      || {}).value || '2';
+    var mem      = (document.getElementById('forge-wiz-memory')    || {}).value || '4Gi';
+    var disk     = (document.getElementById('forge-wiz-disk')      || {}).value || '20Gi';
+    var prof     = typeof selectedProfile !== 'undefined' && selectedProfile ? selectedProfile : '—';
+    var inet     = (document.getElementById('forge-wiz-internet')  || {}).checked;
+    var expose   = (document.getElementById('forge-wiz-expose')    || {}).checked;
+    var expPort  = (document.getElementById('forge-wiz-expose-port') || {}).value || '22';
+    var tpm      = (document.getElementById('forge-wiz-tpm')       || {}).checked;
+    var sb       = (document.getElementById('forge-wiz-secureboot')|| {}).checked;
+    var gt       = (document.getElementById('forge-wiz-guest-tools')|| {}).checked;
+    var autostart = (document.getElementById('forge-wiz-autostart') || {}).checked;
+    var costPerCore = 4.5;
+    var costPerGiMem = 0.6;
+    var diskGi = parseFloat(String(disk).replace(/[^0-9.]/g, '')) || 20;
+    var memGi = parseFloat(String(mem).replace(/[^0-9.]/g, '')) || 4;
+    var est = ((Number(cpus) * costPerCore) + (memGi * costPerGiMem) + (diskGi * 0.05)).toFixed(2);
+    var secScore = [tpm, sb, gt].filter(Boolean).length;
+    var secLabel = secScore === 3 ? 'Hardened (TPM + Secure Boot + Guest Tools)' : secScore === 2 ? 'Moderate' : secScore === 1 ? 'Basic' : 'Minimal';
+    var secColor = secScore >= 2 ? 'var(--green)' : 'var(--orange)';
     var yaml = 'apiVersion: kubevirt.io/v1\nkind: VirtualMachine\nmetadata:\n  name: ' + name + '\n  namespace: ' + ns +
-      '\nspec:\n  template:\n    spec:\n      domain:\n        cpu:\n          cores: ' + cpus + '\n        resources:\n          requests:\n            memory: ' + mem;
-    el.innerHTML = '<div class="vmr-forge-review-grid">' +
-      '<div><strong>Name:</strong> ' + esc(name) + '</div>' +
-      '<div><strong>Namespace:</strong> ' + esc(ns) + '</div>' +
-      '<div><strong>Template:</strong> ' + esc(tpl) + '</div>' +
-      '<div><strong>Profile:</strong> ' + esc(prof) + '</div>' +
-      '<div><strong>CPU/Mem/Disk:</strong> ' + esc(cpus) + ' / ' + esc(mem) + ' / ' + esc(disk) + '</div>' +
-      '<div><strong>Internet:</strong> ' + (inet ? 'Allowed' : 'Denied') + '</div>' +
-      (expose ? '<div><strong>Expose:</strong> port ' + esc((document.getElementById('forge-wiz-expose-port') || {}).value || '22') + '</div>' : '') +
-      '</div><pre class="vmr-forge-yaml">' + esc(yaml) + '</pre>';
+      '\nspec:\n  running: ' + autostart +
+      '\n  template:\n    spec:\n      domain:\n        cpu:\n          cores: ' + cpus +
+      '\n        memory:\n          guest: ' + mem +
+      '\n        devices:\n          disks:\n            - name: rootdisk\n              disk:\n                bus: virtio' +
+      (tpm ? '\n          tpm: {}' : '') +
+      (sb ? '\n          firmware:\n            bootloader:\n              efi:\n                secureBoot: true' : '') +
+      '\n      volumes:\n        - name: rootdisk\n          dataVolume:\n            name: ' + name + '-rootdisk' +
+      '\n  dataVolumeTemplates:\n    - metadata:\n        name: ' + name + '-rootdisk\n      spec:\n        pvc:\n          accessModes: [ReadWriteOnce]\n          resources:\n            requests:\n              storage: ' + disk;
+    function kv(label, val, color) {
+      return '<div style="padding:5px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between">' +
+        '<span style="color:var(--muted);font-size:.8rem">' + esc(label) + '</span>' +
+        '<span style="font-size:.82rem;font-weight:600' + (color ? ';color:' + color : '') + '">' + val + '</span></div>';
+    }
+    el.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">' +
+        '<div class="vmr-panel"><div class="vmr-panel-title" style="font-size:.72rem">Identity</div>' +
+          kv('Name', esc(name)) + kv('Namespace', esc(ns)) + kv('Template', esc(tpl)) + kv('Profile', esc(prof)) +
+        '</div>' +
+        '<div class="vmr-panel"><div class="vmr-panel-title" style="font-size:.72rem">Hardware</div>' +
+          kv('CPU', esc(cpus) + ' vCPU') + kv('Memory', esc(mem)) + kv('Root Disk', esc(disk)) +
+          kv('Boot', 'UEFI') + kv('Autostart', autostart ? 'Yes' : 'No') +
+        '</div>' +
+        '<div class="vmr-panel"><div class="vmr-panel-title" style="font-size:.72rem">Network & Cost</div>' +
+          kv('Internet', inet ? 'Allowed' : 'Denied') +
+          (expose ? kv('Expose', 'port ' + esc(expPort)) : '') +
+          kv('Est. monthly', '$' + est + ' / mo') +
+        '</div>' +
+      '</div>' +
+      '<div class="vmr-panel" style="margin-bottom:14px"><div class="vmr-panel-title" style="font-size:.72rem">Security Posture</div>' +
+        kv('Score', secLabel, secColor) +
+        kv('TPM 2.0', tpm ? 'Enabled' : 'Disabled', tpm ? 'var(--green)' : 'var(--orange)') +
+        kv('Secure Boot', sb ? 'Enabled' : 'Disabled', sb ? 'var(--green)' : 'var(--orange)') +
+        kv('Guest Tools', gt ? 'Will install' : 'Skip', gt ? 'var(--green)' : 'var(--muted)') +
+      '</div>' +
+      '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<div class="vmr-panel-title" style="font-size:.72rem">YAML Preview</div>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(yaml) + ')">Copy YAML</button>' +
+      '</div>' +
+      '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:200px;overflow:auto;margin:0">' + esc(yaml) + '</pre></div>';
   };
   window.submitForgeWizard = function submitForgeWizard(startAfter) {
     syncForgeWizardToLegacy();
