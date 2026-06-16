@@ -7,14 +7,16 @@
     { page: 'vms', label: 'Fleet Command', icon: '▣' },
     { page: 'app-store', label: 'Template Foundry', icon: '⬡' },
     { page: 'console-hub', label: 'ConsoleHub', icon: '▶' },
+    { page: 'vm-capsule', label: 'VM Capsule', icon: '⬡' },
     { page: 'snapshots', label: 'Snapshots & Backups', icon: '⧉' },
-    { page: 'cilium', label: 'Network Intelligence', icon: '⟷' },
+    { page: 'network-intel', label: 'Network Intelligence', icon: '⟷' },
     { page: 'security', label: 'Security Posture', icon: '⛨' },
     { page: 'stack-health', label: 'Stack Health', icon: '♥' },
     { page: 'events', label: 'Event Intelligence', icon: '⚡' },
     { page: 'costs', label: 'Cost Explorer', icon: '$' },
     { page: 'workloads', label: 'Workloads', icon: '◧' },
-    { page: 'nodes', label: 'Cluster Nodes', icon: '⬢' }
+    { page: 'nodes', label: 'Cluster Nodes', icon: '⬢' },
+    { page: 'settings', label: 'Settings', icon: '⚙' }
   ];
 
   var VMR_PAGE_TITLES = {
@@ -22,7 +24,9 @@
     vms: 'Veyron Fleet Command',
     'app-store': 'Veyron Template Foundry',
     'console-hub': 'Veyron ConsoleHub',
+    'vm-capsule': 'Veyron VM Capsule',
     snapshots: 'Veyron Snapshots & Backups',
+    'network-intel': 'Veyron Network Intelligence',
     security: 'Veyron Security Posture',
     'stack-health': 'Veyron Stack Health',
     events: 'Veyron Event Intelligence',
@@ -30,6 +34,7 @@
     costs: 'Veyron Cost Explorer',
     workloads: 'Veyron Workloads',
     nodes: 'Veyron Cluster Nodes',
+    settings: 'Veyron Settings',
     monitoring: 'Veyron Stack Health'
   };
 
@@ -101,10 +106,8 @@
           esc(item.label) + '</button>';
       }).join('') +
         '<div class="veyron-advanced-link">' +
-        '<button type="button" class="veyron-nav-item" onclick="openMacPreferences()">' +
-        '<span class="veyron-nav-icon">⚙</span>Settings</button>' +
         '<button type="button" class="veyron-nav-item" onclick="toggleClassicNav()">' +
-        '<span class="veyron-nav-icon">⋯</span>Advanced pages</button></div>';
+        '<span class="veyron-nav-icon">⋯</span>Advanced</button></div>';
       syncVeyronSidebar(typeof currentPage !== 'undefined' ? currentPage : 'dashboard');
     }
 
@@ -195,7 +198,7 @@
         { label: 'Template Foundry', fn: "navigate('app-store')" },
         { label: 'View Snapshots', fn: "navigate('snapshots')" },
         { label: 'Run Health Scan', fn: "navigate('stack-health')" },
-        { label: 'Network Intelligence', fn: "navigate('cilium')" },
+        { label: 'Network Intelligence', fn: "navigate('network-intel')" },
         { label: 'Cost Explorer', fn: "navigate('costs')" },
         { label: 'Ask Veyron', fn: 'openAskZeus()' }
       ].map(function (a) {
@@ -428,7 +431,7 @@
     if (showActions !== false) {
       if (isRunning) {
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Details</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>Capsule</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigate(\'snapshots\')') + '>Snapshot</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>More</button>';
@@ -453,14 +456,27 @@
   window.renderVmrFleetTable = function renderVmrFleetTable(vms) {
     var rows = vms.map(function (vm) {
       var ns = vm.namespace || 'default';
+      var isRunning = vm.status === 'Running';
+      var osIcon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
       return '<tr class="clickable-row" onclick="selectVm(' + jsArgs(ns, vm.name) + ')">' +
-        '<td>' + esc(vm.name) + '</td><td>' + esc(vm.status) + '</td><td>' + esc(ns) + '</td>' +
-        '<td>' + esc(vm.node || '—') + '</td><td>' + esc(vm.ip || '—') + '</td>' +
-        '<td>' + esc(vm.cpu || '—') + '</td><td>' + esc(vm.memory || '—') + '</td>' +
+        '<td>' + esc(vm.name) + '</td>' +
+        '<td><span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></td>' +
+        '<td>' + esc(ns) + '</td>' +
+        '<td>' + esc(vm.node || '—') + '</td>' +
+        '<td>' + esc(vm.ip || '—') + '</td>' +
+        '<td>' + osIcon + '</td>' +
+        '<td>' + esc(vm.cpu || '—') + '</td>' +
+        '<td>' + esc(vm.memory || '—') + '</td>' +
+        '<td>—</td>' +
+        '<td style="color:var(--orange)">Missing</td>' +
+        '<td style="color:' + (isRunning ? 'var(--green)' : 'var(--muted)') + '">' + (isRunning ? 'Detected' : '—') + '</td>' +
+        '<td>' + esc(vm.age || '—') + '</td>' +
         '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Open</button></td></tr>';
     }).join('');
-    return '<table class="table"><thead><tr><th>Name</th><th>State</th><th>Namespace</th><th>Node</th><th>IP</th><th>CPU</th><th>Mem</th><th></th></tr></thead><tbody>' +
-      rows + '</tbody></table>';
+    return '<div style="overflow-x:auto"><table class="table" style="min-width:900px"><thead><tr>' +
+      '<th>Name</th><th>State</th><th>Namespace</th><th>Node</th><th>IP</th><th>OS</th>' +
+      '<th>CPU</th><th>Memory</th><th>Disks</th><th>Backup</th><th>Guest Agent</th><th>Age</th><th></th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
   };
 
   window.renderVmrFleetTopology = function renderVmrFleetTopology(vms) {
@@ -490,11 +506,15 @@
     renderVmrPageHero('vmr-fleet-hero', 'Veyron Fleet Command',
       vms.length + ' virtual machines · ' + running + ' running · ' + stopped + ' stopped',
       '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
+    var issues = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
+    var cost = typeof lastCostSummary !== 'undefined' ? lastCostSummary : '—';
     renderVmrMetricsStrip('vmr-fleet-metrics', [
-      { label: 'Total', value: vms.length },
+      { label: 'Total VMs', value: vms.length },
       { label: 'Running', value: running, tone: 'ok' },
       { label: 'Stopped', value: stopped },
-      { label: 'Issues', value: vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length, tone: 'bad' }
+      { label: 'Issues', value: issues, tone: issues ? 'bad' : '' },
+      { label: 'Drift', value: '—' },
+      { label: 'Est. Cost', value: cost }
     ]);
   };
 
@@ -526,12 +546,14 @@
     var rail = document.getElementById('vmr-foundry-rail');
     if (!rail) return;
     var cats = [
-      { id: 'all', label: 'All templates' },
+      { id: 'all', label: 'All Templates' },
       { id: 'linux', label: 'Linux' },
       { id: 'windows', label: 'Windows' },
       { id: 'enterprise', label: 'Enterprise' },
       { id: 'cloud', label: 'Cloud Native' },
-      { id: 'custom', label: 'Custom Image' }
+      { id: 'bsd', label: 'BSD' },
+      { id: 'talos', label: 'Talos OS' },
+      { id: 'custom', label: 'Custom Images' }
     ];
     rail.innerHTML = cats.map(function (c) {
       return '<button type="button" class="' + (window.vmrFoundryCategory === c.id ? 'active' : '') +
@@ -565,7 +587,9 @@
         if (cat === 'linux') return fam !== 'windows';
         if (cat === 'windows') return fam === 'windows';
         if (cat === 'enterprise') return /rhel|oracle|almalinux|rocky|windows/.test((t.id || '').toLowerCase());
-        if (cat === 'cloud') return /talos|flatcar|arch/.test((t.id || '').toLowerCase());
+        if (cat === 'cloud') return /flatcar|arch|k3s|rancher/.test((t.id || '').toLowerCase());
+        if (cat === 'bsd') return /bsd|freebsd|openbsd/.test((t.id || '').toLowerCase());
+        if (cat === 'talos') return /talos/.test((t.id || '').toLowerCase());
         return true;
       });
       var icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
@@ -621,28 +645,95 @@
       return;
     }
     var checks = [
-      { ok: p.kubevirt_api_ok, label: 'KubeVirt API', detail: p.kubevirt_api_message || 'VirtualMachine API list' },
-      { ok: p.kubevirt_control_plane_ok, label: 'KubeVirt Controller', detail: p.kubevirt_detail || '' },
-      { ok: p.cdi_operator_ok, label: 'CDI Operator', detail: p.cdi_detail || '' },
-      { ok: p.forge_vm_ready, label: 'Forge VM', detail: p.forge_vm_ready ? 'Dashboard forge workflow ready' : 'Resolve KubeVirt first' }
+      {
+        ok: p.kubevirt_api_ok, label: 'KubeVirt API',
+        tagline: 'API is healthy · VirtualMachine CRD reachable',
+        detail: p.kubevirt_api_message || 'VirtualMachine API list',
+        problem: 'KubeVirt API not reachable',
+        impact: 'Cannot create, list, or manage VMs.',
+        rootCause: 'KubeVirt operator not running or CRDs not installed.',
+        fix: 'Install KubeVirt: kubectl apply -f https://github.com/kubevirt/kubevirt/releases/latest/download/kubevirt-operator.yaml',
+        cmd: 'kubectl get kubevirt -n kubevirt'
+      },
+      {
+        ok: p.kubevirt_control_plane_ok, label: 'KubeVirt Controller',
+        tagline: 'Controller manager and API server running',
+        detail: p.kubevirt_detail || 'virt-controller, virt-api, virt-handler pods',
+        problem: 'KubeVirt control plane pods not ready',
+        impact: 'VM scheduling, migration, and lifecycle operations unavailable.',
+        rootCause: 'virt-controller or virt-handler pods are not Running.',
+        fix: 'Check pod status in kubevirt namespace',
+        cmd: 'kubectl get pods -n kubevirt'
+      },
+      {
+        ok: p.cdi_operator_ok, label: 'CDI Operator',
+        tagline: 'UploadProxy ready · DataVolume CRD installed',
+        detail: p.cdi_detail || 'Containerized Data Importer',
+        problem: 'CDI Operator not detected',
+        impact: 'Cannot import QCOW2/VMDK images via DataVolume. Template import will fail.',
+        rootCause: 'CDI not installed or cdi.kubevirt.io CRD missing.',
+        fix: 'Install CDI: kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/latest/download/cdi-operator.yaml',
+        cmd: 'kubectl get cdi -n cdi'
+      },
+      {
+        ok: p.forge_vm_ready, label: 'Forge VM',
+        tagline: 'Templates synced · Forge workflow ready',
+        detail: p.forge_vm_ready ? 'Dashboard forge workflow ready' : 'Resolve KubeVirt first',
+        problem: 'Forge VM workflow unavailable',
+        impact: 'Cannot create VMs from the dashboard wizard.',
+        rootCause: 'KubeVirt API check failed — resolve it first.',
+        fix: 'Resolve KubeVirt API check, then recheck stack health.',
+        cmd: 'kubectl get virtualmachines -A'
+      }
     ];
     var passed = checks.filter(function (c) { return c.ok; }).length;
+    var allOk = passed === checks.length;
     renderVmrPageHero('vmr-stack-hero', 'Veyron Stack Health',
-      passed + '/4 passed — KubeVirt, CDI, VM API, and Forge workflow.',
+      passed + ' / ' + checks.length + ' — ' + (allOk ? 'All Systems Operational' : (checks.length - passed) + ' issue(s) detected'),
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openPlatformInstallModal()">Install Stack</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth()">Recheck</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Veyron</button>');
-    el.innerHTML = '<div class="vmr-stack-hero"><div class="vmr-stack-ring">' + passed + '/4</div>' +
-      '<div class="vmr-stack-timeline">' +
-      ['CRDs', 'RBAC', 'API', 'Controller', 'CDI', 'Template', 'Forge VM'].map(function (s, i) {
-        return '<span class="' + (i < passed + 2 ? 'ok' : '') + '">' + s + (i < 6 ? ' →' : '') + '</span>';
-      }).join(' ') + '</div></div>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Veyron</button>');
+    var ringCls = allOk ? '' : passed >= 2 ? ' warn' : ' bad';
+    el.innerHTML =
+      '<div class="vmr-stack-hero">' +
+        '<div class="vmr-stack-ring' + ringCls + '" style="color:' + (allOk ? 'var(--green)' : passed >= 2 ? 'var(--orange)' : 'var(--red)') + ';border-color:' + (allOk ? 'var(--green)' : passed >= 2 ? 'var(--orange)' : 'var(--red)') + '">' +
+          '<div style="font-size:1.4rem;font-weight:800">' + passed + '/' + checks.length + '</div>' +
+          '<div style="font-size:.68rem;color:var(--muted)">' + (allOk ? 'All clear' : 'Issues') + '</div>' +
+        '</div>' +
+        '<div class="vmr-stack-timeline">' +
+          ['CRDs', 'RBAC', 'API', 'Controller', 'CDI', 'Template', 'Forge VM'].map(function (s, i) {
+            var ok = i < passed + 2;
+            return '<span style="color:' + (ok ? 'var(--green)' : 'var(--muted)') + '">' + s + (i < 6 ? ' <span style="opacity:.4">→</span>' : '') + '</span>';
+          }).join(' ') +
+        '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:16px">' +
       checks.map(function (c) {
-        return '<div class="vmr-panel" style="margin-bottom:12px;border-left:3px solid ' + (c.ok ? 'var(--green)' : 'var(--red)') + '">' +
-          '<div style="display:flex;justify-content:space-between"><strong>' + esc(c.label) + '</strong>' +
-          '<span style="color:' + (c.ok ? 'var(--green)' : 'var(--red)') + '">' + (c.ok ? 'PASSED' : 'FAILED') + '</span></div>' +
-          '<div style="font-size:.82rem;color:var(--muted);margin-top:6px">' + esc(c.detail) + '</div></div>';
-      }).join('');
+        if (c.ok) {
+          return '<div class="vmr-panel" style="border-left:3px solid var(--green)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
+              '<strong style="color:var(--text-bright,#f7f9fb)">' + esc(c.label) + '</strong>' +
+              '<span style="color:var(--green);font-size:.78rem;font-weight:700">PASSED</span>' +
+            '</div>' +
+            '<div style="font-size:.8rem;color:var(--muted);margin-top:6px">' + esc(c.tagline) + '</div>' +
+            '</div>';
+        }
+        return '<div class="vmr-panel" style="border-left:3px solid var(--red)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+            '<strong style="color:var(--text-bright,#f7f9fb)">' + esc(c.label) + '</strong>' +
+            '<span style="color:var(--red);font-size:.78rem;font-weight:700">FAILED</span>' +
+          '</div>' +
+          '<div style="font-size:.8rem;margin-bottom:6px"><span style="color:var(--orange);font-weight:600">Problem: </span><span style="color:var(--muted)">' + esc(c.problem) + '</span></div>' +
+          '<div style="font-size:.8rem;margin-bottom:6px"><span style="color:var(--orange);font-weight:600">Impact: </span><span style="color:var(--muted)">' + esc(c.impact) + '</span></div>' +
+          '<div style="font-size:.8rem;margin-bottom:10px"><span style="color:var(--muted);font-weight:600">Root cause: </span><span style="color:var(--muted)">' + esc(c.rootCause) + '</span></div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+            '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix: ' + c.problem) + ')">Fix with Veyron</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(c.cmd) + ')">Copy command</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show logs for ' + c.label) + ')">Open logs</button>' +
+          '</div>' +
+          '</div>';
+      }).join('') +
+      '</div>';
   };
 
   window.consoleHubRfb = null;
@@ -1046,25 +1137,138 @@
       if (page === 'console-hub') renderConsoleHubVmr();
       if (page === 'stack-health') fetchStackHealth();
       if (page === 'events' && typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
+      if (page === 'network-intel') renderNetworkIntelVmr();
+      if (page === 'vm-capsule') renderVmCapsuleVmr();
+      if (page === 'settings') renderSettingsVmr();
+      if (page === 'cilium') renderNetworkIntelVmr();
     };
   };
+
+  window._vmrEventFilter = window._vmrEventFilter || 'all';
+  window._vmrEventMode = window._vmrEventMode || 'cards';
 
   window.renderEventIntelligenceVmr = function renderEventIntelligenceVmr() {
     var events = typeof lastEvents !== 'undefined' ? lastEvents : [];
     var warnings = events.filter(function (e) { return e.type === 'Warning'; }).length;
+    var failed = events.filter(function (e) { return /Failed|Error|BackOff/i.test(e.reason || ''); }).length;
     renderVmrPageHero('vmr-events-hero', 'Veyron Event Intelligence',
-      events.length + ' signals · ' + warnings + ' warnings · namespace ' + (typeof currentNamespace !== 'undefined' ? currentNamespace : 'all'),
+      events.length + ' signals · ' + warnings + ' warnings · ' + failed + ' failures',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrEventMode(window._vmrEventMode===\'cards\'?\'timeline\':\'cards\')" id="vmr-event-mode-btn">' +
+      (window._vmrEventMode === 'timeline' ? 'Card View' : 'Timeline') + '</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchEvents(true)">Refresh</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Veyron</button>');
+    var filterBar = document.getElementById('vmr-events-filter-bar');
+    if (filterBar) {
+      var filters = ['all', 'Info', 'Warning', 'Failed', 'VMs', 'Images', 'KubeVirt', 'Storage', 'Network', 'Security'];
+      filterBar.innerHTML = filters.map(function (f) {
+        return '<button type="button" class="vmr-filter-chip' + (window._vmrEventFilter === f ? ' active' : '') +
+          '" onclick="setVmrEventFilter(\'' + f + '\')">' + esc(f === 'all' ? 'All' : f) + '</button>';
+      }).join('');
+    }
     var el = document.getElementById('vmr-events-list');
     if (!el) return;
     if (!events.length) {
-       el.innerHTML = '<p style="color:var(--muted);font-size:.84rem">No cluster events in scope.</p>';
+      el.innerHTML = '<p style="color:var(--muted);font-size:.84rem">No cluster events in scope.</p>';
       return;
     }
-    el.innerHTML = events.slice(0, 40).map(function (ev) {
-      return renderVmrIncidentCard(ev);
-    }).join('');
+    var filter = window._vmrEventFilter || 'all';
+    var filtered = events.filter(function (ev) {
+      if (filter === 'all') return true;
+      var r = (ev.reason || '').toLowerCase();
+      var m = (ev.message || '').toLowerCase();
+      var obj = (ev.involved_object || '').toLowerCase();
+      if (filter === 'Info') return ev.type === 'Normal';
+      if (filter === 'Warning') return ev.type === 'Warning';
+      if (filter === 'Failed') return /failed|error|backoff/i.test(r);
+      if (filter === 'Images') return /pull|image/i.test(r + m);
+      if (filter === 'KubeVirt') return /kubevirt|virt|vminstance/i.test(obj + m);
+      if (filter === 'Storage') return /pvc|volume|storage|disk/i.test(obj + m);
+      if (filter === 'Network') return /network|svc|service|ingress|cilium/i.test(obj + m);
+      if (filter === 'Security') return /security|rbac|forbidden|unauthorized/i.test(r + m);
+      if (filter === 'VMs') return /virtualmachine/i.test(obj);
+      return true;
+    }).slice(0, 40);
+    if (window._vmrEventMode === 'timeline') {
+      el.innerHTML = '<div style="font-family:var(--font-mono,monospace);font-size:.82rem">' +
+        filtered.map(function (ev) {
+          var t = ev.timestamp ? ev.timestamp.slice(11, 19) : '—';
+          var r = ev.reason || ev.type || 'Event';
+          var cls = /Failed|Error|BackOff/i.test(r) ? 'var(--red)' :
+            ev.type === 'Warning' ? 'var(--orange)' :
+            ev.type === 'Normal' ? 'var(--green)' : 'var(--cyan)';
+          var label = /Failed|Error|BackOff/i.test(r) ? 'Failed' :
+            ev.type === 'Warning' ? 'Warning' : 'Success';
+          return '<div style="display:flex;gap:14px;padding:6px 0;border-bottom:1px solid var(--line)">' +
+            '<span style="color:var(--muted);width:60px;flex-shrink:0">' + esc(t) + '</span>' +
+            '<span style="color:' + cls + ';width:60px;flex-shrink:0;font-weight:600">' + label + '</span>' +
+            '<span style="color:var(--text-muted,#a6b0bc)">' + esc((ev.message || r).slice(0, 100)) + '</span></div>';
+        }).join('') + '</div>';
+    } else {
+      el.innerHTML = filtered.map(function (ev) {
+        return renderVmrIncidentCardFull(ev);
+      }).join('');
+    }
+  };
+
+  window.setVmrEventFilter = function setVmrEventFilter(f) {
+    window._vmrEventFilter = f;
+    renderEventIntelligenceVmr();
+  };
+
+  window.setVmrEventMode = function setVmrEventMode(m) {
+    window._vmrEventMode = m;
+    renderEventIntelligenceVmr();
+  };
+
+  window.renderVmrIncidentCardFull = function renderVmrIncidentCardFull(ev) {
+    if (!ev) return '';
+    var reason = ev.reason || ev.type_ || 'Event';
+    var msg = ev.message || '';
+    var obj = ev.involved_object || ev.namespace || '';
+    var ts = ev.timestamp || '';
+    var sev = /failed|error|backoff/i.test(reason) ? 'failed' : ev.type === 'Warning' ? 'warning' : '';
+    var sevLabel = sev === 'failed' ? 'Failed' : sev === 'warning' ? 'Warning' : 'Info';
+    var sevColor = sev === 'failed' ? 'var(--red)' : sev === 'warning' ? 'var(--orange)' : 'var(--cyan)';
+
+    var impact = sev === 'failed'
+      ? (/pull|image/i.test(reason + msg) ? 'VM cannot start — image unavailable.' : 'Workload may be degraded or offline.')
+      : sev === 'warning' ? 'Monitor — may escalate to failure.' : 'Informational, no immediate impact.';
+
+    var rootCause = '';
+    if (/insufficient_scope|authorization|unauthorized/i.test(msg)) rootCause = 'Registry credentials missing or token scope insufficient.';
+    else if (/pull|image/i.test(reason)) rootCause = 'Image name incorrect or registry unreachable.';
+    else if (/oom|memory/i.test(reason + msg)) rootCause = 'Container or VM exceeded memory limit.';
+    else if (/backoff/i.test(reason)) rootCause = 'Container restarting repeatedly after crash.';
+
+    var fixes = [];
+    if (/pull|image/i.test(reason + msg)) {
+      fixes = ['Verify the image name and tag are correct.', 'Add an imagePullSecret if the registry is private.', 'Replace with a validated Veyron template image.', 'Re-run the Forge VM workflow.'];
+    } else if (/oom|memory/i.test(reason + msg)) {
+      fixes = ['Increase memory limit for the VM or pod.', 'Check for memory leaks in the guest workload.', 'Enable swap or balloon driver.'];
+    } else if (/backoff/i.test(reason)) {
+      fixes = ['Check pod logs for crash details.', 'Verify the container image entrypoint.', 'Review resource limits — pod may be OOM-killed.'];
+    }
+
+    return '<div class="vmr-incident-card ' + sev + '" style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
+        '<div><strong style="font-size:.9rem;color:var(--text-bright,#f7f9fb)">' + esc(reason) + '</strong>' +
+        (obj ? '<div style="font-size:.76rem;color:var(--muted);margin-top:2px">' + esc(obj) + (ev.namespace ? ' · ' + esc(ev.namespace) : '') + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-shrink:0">' +
+          '<span style="font-size:.7rem;font-weight:700;color:' + sevColor + ';text-transform:uppercase">' + sevLabel + '</span>' +
+          (ts ? '<span style="font-size:.72rem;color:var(--muted)">' + esc(ts.slice(11, 19) || ts.slice(0, 16)) + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      (msg ? '<div style="font-size:.82rem;color:var(--muted);margin-bottom:8px;line-height:1.4">' + esc(msg.slice(0, 180)) + '</div>' : '') +
+      '<div style="font-size:.78rem;margin-bottom:6px"><span style="color:' + sevColor + ';font-weight:600">Impact: </span><span style="color:var(--muted)">' + esc(impact) + '</span></div>' +
+      (rootCause ? '<div style="font-size:.78rem;margin-bottom:8px"><span style="color:var(--muted,#a6b0bc);font-weight:600">Root cause: </span><span style="color:var(--muted)">' + esc(rootCause) + '</span></div>' : '') +
+      (fixes.length ? '<ol style="margin:0 0 10px 18px;font-size:.78rem;color:var(--muted)">' + fixes.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>' : '') +
+      '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix: ' + reason + ' — ' + msg.slice(0, 80)) + ')">Fix with Veyron</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs('kubectl get events -n ' + (ev.namespace || 'default') + ' --sort-by=.lastTimestamp') + ')">Copy kubectl</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open Events</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs(msg.slice(0, 120)) + ')">Ask AI</button>' +
+      '</div></div>';
   };
 
   window.fetchVeyronAlerts = async function fetchVeyronAlerts() {
@@ -1143,6 +1347,234 @@
       fetchVeyronAlerts();
       if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
     };
+  };
+
+  window.navigateToVmCapsule = function navigateToVmCapsule(ns, name) {
+    window._vmCapsuleTarget = { ns: ns, name: name };
+    if (typeof navigate === 'function') navigate('vm-capsule');
+  };
+
+  window.renderVmCapsuleVmr = function renderVmCapsuleVmr() {
+    var el = document.getElementById('vmr-capsule-body');
+    if (!el) return;
+    var target = window._vmCapsuleTarget;
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var vm = target ? vms.find(function (v) { return v.name === target.name && (v.namespace || 'default') === target.ns; }) : null;
+    if (!vm && vms.length) vm = vms[0];
+    if (!vm) {
+      el.innerHTML = '<div class="vmr-panel"><p style="color:var(--muted)">Select a VM from Fleet Command to open its capsule.</p>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="navigate(\'vms\')">Open Fleet Command</button></div>';
+      return;
+    }
+    var ns = vm.namespace || 'default';
+    var isRunning = vm.status === 'Running';
+    var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
+    var score = Math.max(0, 100 - (warnings * 10) - (isRunning ? 0 : 5));
+    var heroActions = isRunning
+      ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, vm.name) + ')">Console</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, vm.name, 'ssh') + ')">SSH / RDP</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'restart') + ')">Restart</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('VM ' + vm.name) + ')">Ask Veyron</button>'
+      : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor(' + jsArgs(ns, vm.name) + ')">Diagnose</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>' +
+        '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="vmDelete(' + jsArgs(ns, vm.name) + ')">Delete</button>';
+    el.innerHTML =
+      '<div class="vmr-capsule-hero">' +
+        '<div class="vmr-capsule-hero-info">' +
+          '<div class="vmr-capsule-name">' + esc(vm.name) + '</div>' +
+          '<span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span>' +
+          '<div class="vmr-capsule-meta">' + esc(ns) + ' · ' + esc(vm.node || 'no node') + ' · ' + esc(vm.ip || 'no IP') + '</div>' +
+        '</div>' +
+        '<div class="vmr-capsule-hero-actions">' + heroActions + '</div>' +
+      '</div>' +
+      '<div class="vmr-capsule-tabs" id="vmr-capsule-tabs">' +
+        ['Overview', 'Performance', 'Network', 'Storage', 'Hardware', 'Security', 'Events', 'YAML'].map(function (t, i) {
+          return '<button type="button" class="vmr-capsule-tab-btn' + (i === 0 ? ' active' : '') + '" data-tab="' + i + '" onclick="setVmrCapsuleTab(' + i + ')">' + t + '</button>';
+        }).join('') +
+      '</div>' +
+      '<div id="vmr-capsule-tab-content">' +
+        '<div class="vmr-capsule-pane active" data-tab="0">' +
+          '<div class="vmr-command-grid">' +
+            '<div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Identity</div>' +
+              '<div class="vmr-health-row"><span>Name</span><span>' + esc(vm.name) + '</span></div>' +
+              '<div class="vmr-health-row"><span>Namespace</span><span>' + esc(ns) + '</span></div>' +
+              '<div class="vmr-health-row"><span>Phase</span><span>' + esc(vm.status) + '</span></div>' +
+              '<div class="vmr-health-row"><span>Node</span><span>' + esc(vm.node || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>IP</span><span>' + esc(vm.ip || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>Age</span><span>' + esc(vm.age || '—') + '</span></div>' +
+            '</div>' +
+            '<div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Performance</div>' +
+              (isRunning
+                ? '<div class="vmr-health-row"><span>CPU</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Guest agent</span><span style="color:var(--green)">Detected</span></div>'
+                : '<p style="font-size:.84rem;color:var(--muted);margin-bottom:12px">No live metrics. Start the VM and install Guest Tools.</p>' +
+                  '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start VM</button>') +
+            '</div>' +
+          '</div>' +
+          '<div class="vmr-command-grid">' +
+            '<div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Hardware</div>' +
+              '<div class="vmr-health-row"><span>CPU</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
+              '<div class="vmr-health-row"><span>Boot mode</span><span>UEFI</span></div>' +
+              '<div class="vmr-health-row"><span>TPM</span><span style="color:var(--orange)">Disabled</span></div>' +
+              '<div class="vmr-health-row"><span>Secure Boot</span><span style="color:var(--orange)">Disabled</span></div>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit CPU/Memory</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Enable TPM for VM ' + vm.name + '\')">Enable TPM</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Enable Secure Boot for VM ' + vm.name + '\')">Enable Secure Boot</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="vmr-panel">' +
+              '<div class="vmr-panel-title">Security Posture</div>' +
+              '<div style="font-size:1.4rem;font-weight:800;color:var(--cyan);margin:8px 0">' + score + ' <span style="font-size:.88rem;font-weight:400;color:var(--muted)">/ 100</span></div>' +
+              '<div class="vmr-health-row"><span>Security</span><span class="warn">' + score + '%</span></div>' +
+              '<div class="vmr-health-row"><span>Backup</span><span class="warn">20%</span></div>' +
+              '<div class="vmr-health-row"><span>Compliance</span><span class="ok">70%</span></div>' +
+              '<div class="vmr-health-row"><span>Hardening</span><span class="warn">50%</span></div>' +
+              '<ul style="list-style:none;padding:8px 0 0;font-size:.78rem;color:var(--muted)">' +
+                (warnings ? '<li style="color:var(--orange)">⚠ ' + warnings + ' active warnings</li>' : '') +
+                '<li style="color:var(--orange)">⚠ TPM disabled</li>' +
+                '<li style="color:var(--orange)">⚠ Secure Boot disabled</li>' +
+                '<li style="color:var(--orange)">⚠ No backup policy</li>' +
+              '</ul>' +
+              '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix security issues for VM ' + vm.name + '\')">Fix Automatically</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Explain security risks for VM ' + vm.name + '\')">Explain Risk</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        ['Performance', 'Network', 'Storage', 'Hardware', 'Security', 'Events', 'YAML'].map(function (t, i) {
+          return '<div class="vmr-capsule-pane" data-tab="' + (i + 1) + '"><div class="vmr-panel"><p style="color:var(--muted);font-size:.84rem">' + t + ' data loads from the cluster API. Open <strong>Fleet Command</strong> to browse VMs, then return here.</p></div></div>';
+        }).join('') +
+      '</div>';
+    var heroEl = document.getElementById('vmr-capsule-hero-slot');
+    if (heroEl) heroEl.innerHTML = '';
+  };
+
+  window.setVmrCapsuleTab = function setVmrCapsuleTab(idx) {
+    document.querySelectorAll('.vmr-capsule-tab-btn').forEach(function (b) {
+      b.classList.toggle('active', Number(b.dataset.tab) === idx);
+    });
+    document.querySelectorAll('.vmr-capsule-pane').forEach(function (p) {
+      p.classList.toggle('active', Number(p.dataset.tab) === idx);
+    });
+  };
+
+  window.renderNetworkIntelVmr = function renderNetworkIntelVmr() {
+    var el = document.getElementById('vmr-network-intel-body');
+    if (!el) return;
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    renderVmrPageHero('vmr-network-intel-hero', 'Veyron Network Intelligence',
+      'VM traffic, flows, policies, and live network behavior.',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Veyron</button>');
+    renderVmrMetricsStrip('vmr-network-intel-metrics', [
+      { label: 'Live Flows', value: '—' },
+      { label: 'Allowed', value: '—', tone: 'ok' },
+      { label: 'Denied', value: '—', tone: 'bad' },
+      { label: 'Unknown', value: '—' },
+      { label: 'Policy Gaps', value: '—', tone: 'warn' },
+      { label: 'External Dests', value: '—' }
+    ]);
+    var banner = '<div class="vmr-network-banner" id="vmr-network-packetwolf-banner">' +
+      '<span style="color:var(--muted);font-size:.84rem">PacketWolf not configured. Set <code>VMROGUE_PACKETWOLF_URL</code> to enable live flow intelligence.</span>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'settings\')">Configure</button></div>';
+    var vmRows = vms.slice(0, 6).map(function (vm) {
+      var ns = vm.namespace || 'default';
+      return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td>' +
+        '<td style="color:var(--cyan)">—</td><td>—</td><td>—</td><td>—</td>' +
+        '<td><span style="color:var(--green)">Allowed</span></td><td>—</td><td>—</td>' +
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Explain network flows for ' + vm.name) + ')">Explain</button></td></tr>';
+    }).join('');
+    el.innerHTML = banner +
+      '<div class="vmr-panel" style="margin-top:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+          '<div class="vmr-panel-title">Flow Table</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Generate NetworkPolicy for all VMs\')">Generate Network Policy</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Lock VM egress traffic\')">Lock VM Traffic</button>' +
+          '</div>' +
+        '</div>' +
+        '<div style="overflow-x:auto"><table class="table" style="min-width:800px"><thead><tr>' +
+          '<th>Source VM</th><th>Namespace</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Bytes</th>' +
+          '<th>Verdict</th><th>Process</th><th>Policy</th><th></th>' +
+        '</tr></thead><tbody>' + (vmRows || '<tr><td colspan="10" style="color:var(--muted);text-align:center">No flow data. Configure PacketWolf for live intelligence.</td></tr>') + '</tbody></table></div>' +
+      '</div>';
+    fetchNetworkIntelBanner();
+  };
+
+  window.fetchNetworkIntelBanner = async function fetchNetworkIntelBanner() {
+    try {
+      var j = await apiJson('/api/v1/packetwolf/status');
+      var d = typeof unwrapData === 'function' ? unwrapData(j) : j;
+      var banner = document.getElementById('vmr-network-packetwolf-banner');
+      if (!banner) return;
+      if (d && d.healthy) {
+        banner.innerHTML = '<span style="color:var(--green);font-size:.84rem">◉ PacketWolf connected · Brain healthy</span>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Show live flows from PacketWolf\')">Watch Live Flows</button>';
+        banner.style.borderColor = 'rgba(50,224,176,.3)';
+      }
+    } catch (e) { /* PacketWolf optional */ }
+  };
+
+  window.renderSettingsVmr = function renderSettingsVmr() {
+    var el = document.getElementById('vmr-settings-body');
+    if (!el) return;
+    renderVmrPageHero('vmr-settings-hero', 'Veyron Settings',
+      'Configure identity, access, integrations, appearance, and platform defaults.',
+      '');
+    var sections = [
+      { id: 'general', title: 'General', fields: [
+        { label: 'Default namespace', type: 'text', placeholder: 'default', id: 'set-default-ns' },
+        { label: 'Default storage class', type: 'text', placeholder: 'standard', id: 'set-storage-class' }
+      ]},
+      { id: 'console', title: 'Console Settings', fields: [
+        { label: 'Enable VNC', type: 'checkbox', id: 'set-vnc', checked: true },
+        { label: 'Enable RDP', type: 'checkbox', id: 'set-rdp', checked: true },
+        { label: 'Enable SSH', type: 'checkbox', id: 'set-ssh', checked: true }
+      ]},
+      { id: 'copilot', title: 'Veyron Copilot', fields: [
+        { label: 'Enable Copilot', type: 'checkbox', id: 'set-copilot', checked: true },
+        { label: 'Enable cost estimation', type: 'checkbox', id: 'set-cost', checked: true }
+      ]},
+      { id: 'integrations', title: 'Integrations', fields: [
+        { label: 'PacketWolf URL', type: 'text', placeholder: 'VMROGUE_PACKETWOLF_URL', id: 'set-packetwolf' },
+        { label: 'Prometheus URL', type: 'text', placeholder: 'VMROGUE_PROMETHEUS_URL', id: 'set-prometheus' }
+      ]},
+      { id: 'theme', title: 'Appearance', fields: [
+        { label: 'Theme', type: 'select', options: ['Default (dark)', 'Zinc', 'Steel'], id: 'set-theme' }
+      ]}
+    ];
+    el.innerHTML = sections.map(function (s) {
+      return '<div class="vmr-panel" style="margin-bottom:16px"><div class="vmr-panel-title">' + esc(s.title) + '</div>' +
+        s.fields.map(function (f) {
+          if (f.type === 'checkbox') {
+            return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.84rem">' +
+              '<input type="checkbox" id="' + esc(f.id) + '"' + (f.checked ? ' checked' : '') + '> ' + esc(f.label) + '</label>';
+          }
+          if (f.type === 'select') {
+            return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
+              '<label class="form-label" style="font-size:.78rem">' + esc(f.label) + '</label>' +
+              '<select class="form-select" id="' + esc(f.id) + '">' +
+              (f.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
+              '</select></div>';
+          }
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
+            '<label class="form-label" style="font-size:.78rem">' + esc(f.label) + '</label>' +
+            '<input type="text" class="form-input" id="' + esc(f.id) + '" placeholder="' + esc(f.placeholder || '') + '"></div>';
+        }).join('') +
+        '</div>';
+    }).join('') +
+    '<div style="display:flex;gap:8px">' +
+    '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
+    '</div>';
   };
 
   window.initVeyronModule = function initVeyronModule() {

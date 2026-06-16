@@ -1236,3 +1236,133 @@ body.veyron-shell .cloudos-main {
   .vmr-mission-bottom-row { grid-template-columns: 1fr; }
   .vmr-console-hub-layout { grid-template-columns: 1fr; }
 }
+
+/* ── VM Capsule page ── */
+.vmr-capsule-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 24px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line-strong);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.vmr-capsule-name {
+  font-family: var(--font-display, inherit);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-bright, #f7f9fb);
+  letter-spacing: -0.03em;
+  margin-bottom: 6px;
+}
+
+.vmr-capsule-meta {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+.vmr-capsule-hero-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.vmr-capsule-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.vmr-capsule-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.vmr-capsule-tab-btn {
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.vmr-capsule-tab-btn:hover {
+  color: var(--text-bright, #f7f9fb);
+}
+
+.vmr-capsule-tab-btn.active {
+  color: var(--cyan);
+  border-bottom-color: var(--blue);
+}
+
+.vmr-capsule-pane {
+  display: none;
+}
+
+.vmr-capsule-pane.active {
+  display: block;
+}
+
+/* ── Network Intelligence page ── */
+.vmr-network-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(39, 215, 255, 0.2);
+  background: rgba(39, 215, 255, 0.06);
+  margin-bottom: 16px;
+}
+
+/* ── Settings page ── */
+#page-settings .vmr-panel {
+  max-width: 680px;
+}
+
+/* ── Forge wizard security step grid ── */
+.veyron-forge-body .form-row-security {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+@media (max-width: 680px) {
+  .veyron-forge-body .form-row-security {
+    grid-template-columns: 1fr;
+  }
+  .vmr-capsule-hero {
+    flex-direction: column;
+  }
+}
+
+/* ── Responsive: Foundry filter chips wrapping ── */
+.vmr-foundry-filters {
+  flex-wrap: wrap;
+}
+
+/* ── Template Foundry category rail items extra ── */
+.vmr-foundry-rail button {
+  white-space: nowrap;
+}
