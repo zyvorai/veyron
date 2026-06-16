@@ -1577,6 +1577,65 @@
     '</div>';
   };
 
+  window.patchSelectVm = function patchSelectVm() {
+    if (window._vmrPatchedSelectVm) return;
+    window._vmrPatchedSelectVm = true;
+
+    var origSelect = window.selectVm;
+    var origClear = window.clearVmSelection;
+
+    function injectInspectorBar(ns, name) {
+      var focusPane = document.getElementById('vm-focus-pane');
+      if (!focusPane) return;
+      var existing = document.getElementById('vmr-inspector-bar');
+      if (existing) existing.remove();
+      var isRunning = false;
+      if (typeof vmData !== 'undefined') {
+        var vm = (vmData || []).find(function (v) { return v.namespace === ns && v.name === name; });
+        if (vm) isRunning = vm.status === 'Running';
+      }
+      var bar = document.createElement('div');
+      bar.id = 'vmr-inspector-bar';
+      bar.className = 'vmr-inspector-bar';
+      bar.innerHTML =
+        '<div class="vmr-inspector-bar-name">' + esc(name) + '</div>' +
+        '<div class="vmr-inspector-bar-meta">' + esc(ns) + ' · ' +
+          (isRunning
+            ? '<span style="color:var(--green)">Running</span>'
+            : '<span style="color:var(--muted)">Stopped</span>') +
+        '</div>' +
+        '<div class="vmr-inspector-bar-actions">' +
+          (isRunning
+            ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, name) + ')">Open Console</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsule(' + jsArgs(ns, name) + ')">Full Capsule</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Explain VM ' + name) + ')">Ask Veyron</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>'
+            : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'start') + ')">Start VM</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsule(' + jsArgs(ns, name) + ')">Full Capsule</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show YAML for VM ' + name) + ')">Show YAML</button>') +
+        '</div>';
+      var header = document.getElementById('mac-inspector-header');
+      var ref = header && header.nextSibling ? header.nextSibling : document.getElementById('vm-focus-empty');
+      focusPane.insertBefore(bar, ref || focusPane.firstChild);
+      var titleEl = document.getElementById('vm-inspector-title');
+      if (titleEl) titleEl.textContent = 'VM INSPECTOR';
+    }
+
+    window.selectVm = function (ns, name, opts) {
+      origSelect && origSelect.apply(this, arguments);
+      if (name) requestAnimationFrame(function () { injectInspectorBar(ns, name); });
+    };
+
+    window.clearVmSelection = function () {
+      origClear && origClear.apply(this, arguments);
+      var bar = document.getElementById('vmr-inspector-bar');
+      if (bar) bar.remove();
+      var titleEl = document.getElementById('vm-inspector-title');
+      if (titleEl) titleEl.textContent = 'Inspector';
+    };
+  };
+
   window.initVeyronModule = function initVeyronModule() {
     initVeyronShell();
     patchRenderVmFullList();
@@ -1587,6 +1646,7 @@
     patchFetchExperienceHome();
     patchRenderPinnedVms();
     patchFetchTemplatesForForge();
+    patchSelectVm();
     renderMissionControlVmr();
     fetchVeyronMissionCosts();
     fetchVeyronAlerts();

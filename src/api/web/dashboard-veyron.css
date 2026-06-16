@@ -1366,3 +1366,88 @@ body.veyron-shell .cloudos-main {
 .vmr-foundry-rail button {
   white-space: nowrap;
 }
+
+/* ── Veyron VM Inspector drawer ── */
+.veyron-shell .mac-inspector-pane {
+  width: 480px;
+  min-width: 260px;
+  background: rgba(10,15,26,.97);
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+.veyron-shell .mac-inspector-header {
+  background: rgba(18,24,36,.9);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+.veyron-shell #vm-inspector-title {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.veyron-shell .mac-inspector-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: .9rem;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.veyron-shell .mac-inspector-close:hover {
+  background: rgba(255,85,112,.12);
+  color: var(--red);
+  border-color: rgba(255,85,112,.3);
+}
+.vmr-inspector-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(18,24,36,.6);
+  flex-shrink: 0;
+}
+.vmr-inspector-bar-name {
+  font-size: .96rem;
+  font-weight: 700;
+  color: var(--text-bright, #f7f9fb);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vmr-inspector-bar-meta {
+  font-size: .76rem;
+  color: var(--muted);
+}
+.vmr-inspector-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.veyron-shell .vm-focus-empty {
+  padding: 40px 24px;
+  text-align: center;
+}
+.veyron-shell .vm-focus-empty h3 {
+  font-size: .95rem;
+  color: var(--text-bright, #f7f9fb);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.veyron-shell .vm-focus-empty p {
+  font-size: .82rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+@media (max-width: 900px) {
+  .veyron-shell .mac-inspector-pane { width: 320px; }
+}
