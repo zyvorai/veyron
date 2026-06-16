@@ -242,10 +242,16 @@
       '<div class="vmr-health-checklist">' +
       row('Compute', cpuPct < 90, cpuPct < 90 ? 'Healthy' : 'Pressure') +
       row('Memory', memPct < 90, memPct < 90 ? 'Healthy' : 'Pressure') +
-      row('Storage', true, 'Healthy') +
-      row('Network', true, 'Healthy') +
-      row('Security', warnings < 5, warnings ? warnings + ' warnings' : 'Healthy') +
-      row('Recovery', true, 'Ready') +
+      (function() {
+        var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null;
+        var cdiOk = sh ? sh.cdi_operator_ok !== false : true;
+        var kvOk  = sh ? (sh.kubevirt_api_ok !== false) : true;
+        var hasSnaps = typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots && window.lastSnapshots.length > 0;
+        return row('Storage',  cdiOk, cdiOk ? 'CDI Ready' : 'CDI Unavailable') +
+               row('Network',  kvOk,  kvOk  ? 'Healthy'   : 'KubeVirt Down') +
+               row('Security', warnings < 5, warnings ? warnings + ' warnings' : 'Healthy') +
+               row('Recovery', hasSnaps, hasSnaps ? window.lastSnapshots.filter(function(s){return s.ready;}).length + ' snapshots ready' : 'No snapshots');
+      })() +
       '</div></div>';
   };
 
@@ -256,11 +262,16 @@
     var home = typeof lastExperienceHome !== 'undefined' ? lastExperienceHome : null;
     if (!items.length && home && home.copilot_briefing) items = home.copilot_briefing;
     if (!items.length) {
-      items = [
-        { title: 'Fleet is healthy overall', detail: 'No critical recommendations from Copilot.', severity: 'info' },
-        { title: 'Review security warnings', detail: 'Open Security Posture for hardening signals.', severity: 'warning', action: 'navigate:security' },
-        { title: 'Verify backup coverage', detail: 'Ensure snapshots or Velero policies protect VMs.', severity: 'info', action: 'navigate:snapshots' }
-      ];
+      var _vms = typeof vmData !== 'undefined' ? vmData : [];
+      var _stopped = _vms.filter(function(v){ return v.status !== 'Running'; }).length;
+      var _snaps = typeof window.lastSnapshots !== 'undefined' ? window.lastSnapshots : null;
+      var _unprotected = _snaps ? _vms.filter(function(v){ return !_snaps.some(function(s){ return s.vm_name === v.name; }); }).length : null;
+      var _warns = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
+      items = [];
+      if (_stopped > 0) items.push({ title: _stopped + ' VM' + (_stopped > 1 ? 's' : '') + ' not running', detail: 'Start stopped VMs or verify they are intentionally off.', severity: 'warning' });
+      if (_unprotected != null && _unprotected > 0) items.push({ title: _unprotected + ' VM' + (_unprotected > 1 ? 's' : '') + ' without snapshots', detail: 'Create snapshot policies to protect these VMs.', severity: 'warning' });
+      if (_warns > 0) items.push({ title: _warns + ' active warning' + (_warns > 1 ? 's' : ''), detail: 'Review the Event Intelligence page for details.', severity: 'warning' });
+      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'No critical issues detected. Copilot has no recommendations.', severity: 'info' });
     }
     var html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">Fleet is healthy overall.</p><ol class="vmr-copilot-list">';
     items.slice(0, 4).forEach(function (item, i) {
@@ -288,7 +299,7 @@
           name: ev.reason || ev.type || 'Event',
           severity: /Failed|Error|BackOff/i.test(ev.reason || '') ? 'critical' : 'warning',
           status: 'firing',
-          source: ev.involved_object || ev.message || '',
+          source: (ev.involved_object ? String(ev.involved_object) : '') || ev.message || '',
           message: ev.message || '',
           namespace: ev.namespace || ''
         };
@@ -408,12 +419,22 @@
     var icon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
     var meta = esc(ns) + ' · ' + esc(vm.node || 'no node') + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '');
     var stats = 'CPU: ' + esc(vm.cpu || '—') + ' · Memory: ' + esc(vm.memory || '—');
+    var _vmSnaps = (typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots)
+      ? window.lastSnapshots.filter(function(s){ return s.vm_name === vm.name && (s.namespace || 'default') === ns; })
+      : null;
+    var backupLabel = _vmSnaps === null ? 'Backup: —' : (_vmSnaps.length > 0 ? 'Backup: ' + _vmSnaps.length + ' snap' + (_vmSnaps.length > 1 ? 's' : '') : 'Backup: None');
+    var guestLabel = vm.guest_agent_connected ? 'Guest: Active' : (isRunning ? 'Guest: Running' : 'Guest: —');
     var extras = '<div class="vmr-fleet-card-stats">' +
       '<span>Network: ' + (isRunning ? 'Live' : '—') + '</span>' +
-      '<span>Backup: Missing</span>' +
-      '<span>Guest: ' + (isRunning ? 'Detected' : 'unknown') + '</span></div>';
+      '<span>' + backupLabel + '</span>' +
+      '<span>' + guestLabel + '</span></div>';
     if (!isRunning && isIssue) {
-      extras = '<div class="vmr-fleet-card-stats issue-text">Last issue: ImagePullBackOff</div>';
+      var _lastIssue = '';
+      if (typeof lastEvents !== 'undefined' && Array.isArray(lastEvents)) {
+        var _ev = lastEvents.find(function(e){ return (e.namespace || '') === ns && (e.involved_object || '').toLowerCase().includes(vm.name.toLowerCase()) && /Failed|Error|BackOff/i.test(e.reason || ''); });
+        if (_ev) _lastIssue = _ev.reason || '';
+      }
+      extras = '<div class="vmr-fleet-card-stats issue-text">Last issue: ' + esc(_lastIssue || vm.status || 'Unknown') + '</div>';
     }
     var actions = '';
     if (showActions !== false) {
@@ -458,8 +479,15 @@
         '<td>' + esc(vm.cpu || '—') + '</td>' +
         '<td>' + esc(vm.memory || '—') + '</td>' +
         '<td>—</td>' +
-        '<td style="color:var(--orange)">Missing</td>' +
-        '<td style="color:' + (isRunning ? 'var(--green)' : 'var(--muted)') + '">' + (isRunning ? 'Detected' : '—') + '</td>' +
+        (function(){
+          var _s = (typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots)
+            ? window.lastSnapshots.filter(function(s){ return s.vm_name === vm.name && (s.namespace||'default') === ns; }).length
+            : null;
+          return _s === null ? '<td style="color:var(--muted)">—</td>' :
+            _s > 0 ? '<td style="color:var(--green)">' + _s + ' snap</td>' :
+            '<td style="color:var(--orange)">None</td>';
+        })() +
+        '<td style="color:' + (isRunning ? 'var(--green)' : 'var(--muted)') + '">' + (vm.guest_agent_connected ? 'Active' : isRunning ? 'Running' : '—') + '</td>' +
         '<td>' + esc(vm.age || '—') + '</td>' +
         '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' +
         (isRunning
@@ -726,10 +754,14 @@
           '<div style="font-size:.68rem;color:var(--muted)">' + (allOk ? 'All clear' : 'Issues') + '</div>' +
         '</div>' +
         '<div class="vmr-stack-timeline">' +
-          ['CRDs', 'RBAC', 'API', 'Controller', 'CDI', 'Template', 'Forge VM'].map(function (s, i) {
-            var ok = i < passed + 2;
-            return '<span style="color:' + (ok ? 'var(--green)' : 'var(--muted)') + '">' + s + (i < 6 ? ' <span style="opacity:.4">→</span>' : '') + '</span>';
-          }).join(' ') +
+          (function() {
+            var stages = ['CRDs', 'RBAC', 'API', 'Controller', 'CDI', 'Template', 'Forge VM'];
+            var stageMap = [true, true, checks[0] && checks[0].ok, checks[1] && checks[1].ok, checks[2] && checks[2].ok, true, checks[3] && checks[3].ok];
+            return stages.map(function(s, i) {
+              var ok = stageMap[i] !== false;
+              return '<span style="color:' + (ok ? 'var(--green)' : 'var(--muted)') + '">' + s + (i < stages.length - 1 ? ' <span style="opacity:.4">→</span>' : '') + '</span>';
+            }).join(' ');
+          })() +
         '</div>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:16px">' +
@@ -1205,6 +1237,8 @@
         var meta = typeof PAGE_META !== 'undefined' ? PAGE_META[page] : null;
         if (meta) updateMacPageToolbar(page, meta);
       }
+      if (page === 'dashboard') renderMissionControlVmr();
+      if (page === 'vms' && typeof renderFleetCommandVmr === 'function') renderFleetCommandVmr();
       if (page === 'console-hub') renderConsoleHubVmr();
       if (page === 'stack-health') fetchStackHealth();
       if (page === 'events' && typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
@@ -1247,7 +1281,7 @@
       { label: 'Unscheduled VMs', value: unscheduled, tone: unscheduled ? 'warn' : '' },
       { label: 'CPU Alloc %', value: n.total_cpu_allocatable > 0 ? Math.round(((ov.cluster || {}).total_vcpus_allocated / n.total_cpu_allocatable) * 100) + '%' : '—' },
       { label: 'Memory Alloc %', value: n.total_memory_allocatable_gb > 0 ? Math.round(((ov.cluster || {}).total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) + '%' : '—' },
-      { label: 'KubeVirt', value: 'Running', tone: 'ok' }
+      (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false) : null; return { label: 'KubeVirt', value: kvOk === null ? '—' : kvOk ? 'Running' : 'Degraded', tone: kvOk === false ? 'bad' : kvOk ? 'ok' : '' }; })()
     ]);
     /* build per-node VM placement table */
     var byNode = {};
@@ -1266,7 +1300,7 @@
         '<td><strong>' + esc(nodeName) + '</strong></td>' +
         '<td><span class="vm-badge ' + (isUnscheduled ? 'stopped' : 'running') + '">' + (isUnscheduled ? 'N/A' : 'Ready') + '</span></td>' +
         '<td>' + nodeVms.length + ' VMs · ' + running + ' running</td>' +
-        '<td><span style="color:var(--green);font-size:.82rem">◉ virt-handler Ready</span></td>' +
+        (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false && sh.kubevirt_control_plane_ok !== false) : true; return '<td><span style="color:' + (kvOk ? 'var(--green)' : 'var(--orange)') + ';font-size:.82rem">' + (kvOk ? '◉ virt-handler Ready' : '⚠ virt-handler Unknown') + '</span></td>'; })() +
         '<td>' +
           (isUnscheduled ? '' :
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('Drain node ' + nodeName + ' safely') + ')">Drain</button>' +
@@ -1760,16 +1794,26 @@
             '<div class="vmr-panel">' +
               '<div class="vmr-panel-title">Security Posture</div>' +
               '<div style="font-size:1.4rem;font-weight:800;color:var(--cyan);margin:8px 0">' + score + ' <span style="font-size:.88rem;font-weight:400;color:var(--muted)">/ 100</span></div>' +
-              '<div class="vmr-health-row"><span>Security</span><span class="warn">' + score + '%</span></div>' +
-              '<div class="vmr-health-row"><span>Backup</span><span class="warn">20%</span></div>' +
-              '<div class="vmr-health-row"><span>Compliance</span><span class="ok">70%</span></div>' +
-              '<div class="vmr-health-row"><span>Hardening</span><span class="warn">50%</span></div>' +
-              '<ul style="list-style:none;padding:8px 0 0;font-size:.78rem;color:var(--muted)">' +
-                (warnings ? '<li style="color:var(--orange)">⚠ ' + warnings + ' active warnings</li>' : '') +
-                '<li style="color:var(--orange)">⚠ TPM disabled</li>' +
-                '<li style="color:var(--orange)">⚠ Secure Boot disabled</li>' +
-                '<li style="color:var(--orange)">⚠ No backup policy</li>' +
-              '</ul>' +
+              (function() {
+                var _vmSnaps = (typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots) ? window.lastSnapshots.filter(function(s){ return s.vm_name === vm.name && (s.namespace||'default') === ns; }) : null;
+                var backupPct = _vmSnaps === null ? null : Math.min(100, (_vmSnaps.length > 0 ? 60 + Math.min(40, _vmSnaps.length * 10) : 0));
+                var backupLabel = backupPct === null ? '—' : backupPct + '%';
+                var backupCls = backupPct === null ? '' : backupPct >= 60 ? 'ok' : 'warn';
+                var hardeningScore = 100;
+                var hardeningWarnings = [];
+                if (warnings) hardeningWarnings.push(warnings + ' active warning' + (warnings > 1 ? 's' : ''));
+                if (_vmSnaps !== null && _vmSnaps.length === 0) hardeningWarnings.push('No snapshots');
+                var hardeningPct = Math.max(0, 100 - hardeningWarnings.length * 20 - (warnings > 0 ? warnings * 5 : 0));
+                var secTone = score >= 75 ? 'ok' : score >= 50 ? 'warn' : 'bad';
+                return '<div class="vmr-health-row"><span>Security</span><span class="' + secTone + '">' + score + '%</span></div>' +
+                  '<div class="vmr-health-row"><span>Backup</span><span class="' + backupCls + '">' + backupLabel + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Snapshots</span><span' + (_vmSnaps && _vmSnaps.length ? ' class="ok">' + _vmSnaps.length : ' class="warn">0') + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Hardening</span><span class="' + (hardeningPct >= 80 ? 'ok' : 'warn') + '">' + hardeningPct + '%</span></div>' +
+                  '<ul style="list-style:none;padding:8px 0 0;font-size:.78rem;color:var(--muted)">' +
+                    (warnings ? '<li style="color:var(--orange)">⚠ ' + warnings + ' active warnings</li>' : '') +
+                    (_vmSnaps !== null && _vmSnaps.length === 0 ? '<li style="color:var(--orange)">⚠ No snapshots</li>' : '') +
+                  '</ul>';
+              })() +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">' +
                 '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix security issues for VM ' + vm.name + '\')">Fix Automatically</button>' +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Explain security risks for VM ' + vm.name + '\')">Explain Risk</button>' +
@@ -2484,8 +2528,18 @@
       { label: 'Forecast',           value: forecast },
       { label: 'VMs Billed',         value: billed },
       { label: 'Running VMs',        value: running, tone: running > 0 ? 'ok' : '' },
-      { label: 'Potential Savings',  value: '—' },
-      { label: 'Optimization Score', value: vms.length > 0 ? Math.min(100, Math.round((running / vms.length) * 70 + 30)) + '%' : '—' }
+      (function() {
+        var stopped = vms.filter(function(v){ return v.status !== 'Running' && v.status !== 'Paused'; }).length;
+        if (stopped > 0 && typeof lastCostSummary !== 'undefined' && lastCostSummary && lastCostSummary.startsWith('$')) {
+          var total = parseFloat(lastCostSummary.slice(1));
+          if (!isNaN(total) && vms.length > 0) {
+            var savingsEst = '$' + (total * (stopped / vms.length) * 0.7).toFixed(2);
+            return { label: 'Potential Savings', value: savingsEst + '/mo', tone: 'ok' };
+          }
+        }
+        return { label: 'Potential Savings', value: stopped > 0 ? stopped + ' idle VM' + (stopped > 1 ? 's' : '') : '—' };
+      })(),
+      { label: 'Optimization Score', value: vms.length > 0 ? Math.min(100, Math.round((running / vms.length) * 60 + (running > 0 ? 30 : 10))) + '%' : '—' }
     ]);
   };
 
