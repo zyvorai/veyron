@@ -322,7 +322,7 @@
         '<div class="vmr-alert-title">' + esc(reason) + '</div>' +
         '<div class="vmr-alert-meta">' + esc(obj) + (a.namespace ? ' · ' + esc(a.namespace) : '') + '</div>' +
         '<div class="vmr-alert-foot"><span class="vmr-alert-sev">' + esc(sevCls) + '</span>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs(String(a.message || reason).slice(0, 100)) + ')">Fix</button></div></div>';
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs(String(a.message || reason).slice(0, 100)) + ')') + '>Fix</button></div></div>';
     }).join('');
   };
 
@@ -397,7 +397,7 @@
       '<div style="font-size:.78rem;color:var(--orange)">Impact: ' + esc(impact) + '</div>' + fixes +
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open events</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs(msg.slice(0, 120)) + ')">Ask Veyron</button></div></div>';
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs(msg.slice(0, 120)) + ')') + '>Ask Veyron</button></div></div>';
   };
 
   window.setVmrFleetView = function setVmrFleetView(mode) {
@@ -1681,10 +1681,10 @@
       (rootCause ? '<div style="font-size:.78rem;margin-bottom:8px"><span style="color:var(--muted,#a6b0bc);font-weight:600">Root cause: </span><span style="color:var(--muted)">' + esc(rootCause) + '</span></div>' : '') +
       (fixes.length ? '<ol style="margin:0 0 10px 18px;font-size:.78rem;color:var(--muted)">' + fixes.map(function (f) { return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>' : '') +
       '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix: ' + reason + ' — ' + msg.slice(0, 80)) + ')">Fix with Veyron</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs('kubectl get events -n ' + (ev.namespace || 'default') + ' --sort-by=.lastTimestamp') + ')">Copy kubectl</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Fix: ' + reason + ' — ' + msg.slice(0, 80)) + ')') + '>Fix with Veyron</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs('kubectl get events -n ' + (ev.namespace || 'default') + ' --sort-by=.lastTimestamp') + ')') + '>Copy kubectl</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open Events</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs(msg.slice(0, 120)) + ')">Ask AI</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs(msg.slice(0, 120)) + ')') + '>Ask AI</button>' +
       '</div></div>';
   };
 
