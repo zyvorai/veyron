@@ -3668,12 +3668,10 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- NODES PAGE -->
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Veyron Cluster Nodes</h1><p>Node readiness, VM placement, and capacity.</p></div><div class="page-header-right">
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Show KubeVirt status on all nodes')">KubeVirt Status</button>
-    <span class="page-header-meta" id="node-count"></span>
-  </div></div>
-    <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
+  <div id="vmr-nodes-hero"></div>
+  <div id="vmr-nodes-metrics"></div>
+  <div id="vmr-nodes-placement"></div>
+  <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
