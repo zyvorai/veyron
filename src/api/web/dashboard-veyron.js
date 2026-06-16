@@ -365,18 +365,6 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:10px" onclick="navigate(\'workloads\')">View workloads</button></div>';
   };
 
-  window.renderVmrEventPreview = function renderVmrEventPreview() {
-    var el = document.getElementById('vmr-event-preview');
-    if (!el) return;
-    var events = typeof lastEvents !== 'undefined' ? lastEvents.slice(0, 5) : [];
-    if (!events.length) {
-      el.innerHTML = '<p style="color:var(--muted);font-size:.84rem">No recent cluster events.</p>';
-      return;
-    }
-    el.innerHTML = events.map(function (ev) {
-      return renderVmrIncidentCard(ev);
-    }).join('') + '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="navigate(\'events\')">View all events</button>';
-  };
 
   window.renderVmrIncidentCard = function renderVmrIncidentCard(ev) {
     if (!ev) return '';
