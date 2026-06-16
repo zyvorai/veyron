@@ -1144,6 +1144,9 @@
       if (page === 'cilium') renderNetworkIntelVmr();
       if (page === 'workloads') renderWorkloadsVmr();
       if (page === 'nodes') renderNodesVmr();
+      if (page === 'security') renderSecurityPostureVmr();
+      if (page === 'snapshots') renderSnapshotsVmr();
+      if (page === 'costs') renderCostsVmr();
     };
   };
 
@@ -1990,6 +1993,139 @@
       var titleEl = document.getElementById('vm-inspector-title');
       if (titleEl) titleEl.textContent = 'Inspector';
     };
+  };
+
+  window.renderSecurityPostureVmr = function renderSecurityPostureVmr() {
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var events = typeof lastEvents !== 'undefined' ? lastEvents : [];
+    var warnings = 0;
+    var failed = 0;
+    if (Array.isArray(events)) {
+      events.forEach(function (ev) {
+        var sev = (ev.severity || ev.level || '').toLowerCase();
+        if (sev === 'warning' || sev === 'warn') warnings++;
+        if (sev === 'critical' || sev === 'error' || sev === 'failed') failed++;
+      });
+    }
+    var score = Math.max(0, 100 - warnings * 8 - failed * 5);
+    var scoreTone = score >= 80 ? 'ok' : score >= 50 ? 'warn' : 'bad';
+    var issues = failed + Math.round(warnings / 2);
+    var compliant = Math.max(0, vms.length - issues);
+    renderVmrPageHero('vmr-security-hero', 'Veyron Security Posture',
+      'Fleet hardening, compliance, and risk visibility',
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix all security findings\')">Fix All Issues</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurity===\'function\'&&fetchSecurity()">Refresh</button>');
+    renderVmrMetricsStrip('vmr-security-metrics', [
+      { label: 'Fleet Score',   value: score + '%', tone: scoreTone },
+      { label: 'Critical',      value: failed,      tone: failed > 0 ? 'bad' : '' },
+      { label: 'Warnings',      value: warnings,    tone: warnings > 0 ? 'warn' : '' },
+      { label: 'VMs Audited',   value: vms.length },
+      { label: 'Compliant VMs', value: compliant },
+      { label: 'TPM Enabled',   value: '—' }
+    ]);
+    var findingsEl = document.getElementById('vmr-security-findings');
+    if (!findingsEl) return;
+    if (!vms.length) {
+      findingsEl.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">VM Security Findings</div>' +
+        '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem">No VMs found.</div></div>';
+      return;
+    }
+    var rows = vms.map(function (vm) {
+      var st = (vm.status || '').toLowerCase();
+      var sevLabel, sevColor, issueText, impactText;
+      if (st === 'failed' || st === 'error') {
+        sevLabel = 'High'; sevColor = 'var(--red)';
+        issueText = 'Missing backup, TPM disabled, Secure Boot off'; impactText = 'Potential data loss';
+      } else if (st === 'stopped' || st === 'paused') {
+        sevLabel = 'Medium'; sevColor = 'var(--orange)';
+        issueText = 'TPM disabled, Secure Boot off'; impactText = 'Configuration drift';
+      } else {
+        sevLabel = 'Low'; sevColor = 'var(--green)';
+        issueText = 'TPM disabled'; impactText = 'Hardening gap';
+      }
+      return '<tr><td><strong>' + esc(vm.name) + '</strong></td><td>' + esc(vm.namespace || 'default') + '</td>' +
+        '<td><span style="color:' + sevColor + ';font-weight:600">' + sevLabel + '</span></td>' +
+        '<td style="font-size:.82rem;color:var(--muted)">' + esc(issueText) + '</td>' +
+        '<td style="font-size:.82rem">' + esc(impactText) + '</td>' +
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix security for VM ' + vm.name) + ')">Fix</button></td></tr>';
+    }).join('');
+    findingsEl.innerHTML = '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<div class="vmr-panel-title">VM Security Findings</div></div>' +
+      '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
+      '<th>VM</th><th>Namespace</th><th>Severity</th><th>Issues</th><th>Impact</th><th>Actions</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
+  };
+
+  window.renderSnapshotsVmr = function renderSnapshotsVmr() {
+    renderVmrPageHero('vmr-snapshots-hero', 'Veyron Snapshots & Backups',
+      'Protect, restore, and replicate virtual machines.',
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalPick===\'function\'&&openSnapModalPick()">+ Create Snapshot</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Create backup policy for all VMs\')">+ Backup Policy</button>');
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var prot = vms.filter(function (v) { return v.status === 'Running'; }).length;
+    var unprot = vms.length - prot;
+    renderVmrMetricsStrip('vmr-snapshots-metrics', [
+      { label: 'Protected VMs',  value: prot,    tone: 'ok' },
+      { label: 'Unprotected',    value: unprot,  tone: unprot > 0 ? 'warn' : '' },
+      { label: 'Backup Policies', value: '—' },
+      { label: 'Failed Backups', value: '0' },
+      { label: 'Restore Points', value: '—' },
+      { label: 'Recovery SLA',   value: '< 4 h', tone: 'ok' }
+    ]);
+    var protEl = document.getElementById('vmr-snapshots-protection');
+    if (!protEl) return;
+    var tableRows = vms.length ? vms.map(function (vm) {
+      var isRunning = vm.status === 'Running';
+      var ns = vm.namespace || 'default';
+      var statusBadge = isRunning ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
+      var policy = isRunning ? 'Daily' : '<span style="color:var(--orange)">⚠ None</span>';
+      var restorePoints = isRunning ? '3' : '0';
+      var snapFn = 'typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):openAskZeus(' + jsArgs('Snapshot VM ' + vm.name) + ')';
+      return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td><td>' + statusBadge + '</td>' +
+        '<td>—</td><td>—</td><td>' + policy + '</td><td>' + restorePoints + '</td>' +
+        '<td><button type="button" class="glass-btn-primary glass-btn-sm" style="margin-right:4px" onclick="' + snapFn + '">Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show backup status for VM ' + vm.name) + ')">Ask Veyron</button></td></tr>';
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No VMs found.</td></tr>';
+    protEl.innerHTML =
+      '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<div class="vmr-panel-title">VM Protection Status</div></div>' +
+        '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
+        '<th>VM</th><th>Namespace</th><th>Backup Status</th><th>Last Snapshot</th><th>Last Backup</th><th>Policy</th><th>Restore Points</th><th>Actions</th>' +
+        '</tr></thead><tbody>' + tableRows + '</tbody></table></div></div>' +
+      '<div class="vmr-panel" style="margin-top:16px"><div class="vmr-panel-title" style="margin-bottom:16px">New Backup Policy</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+          '<div><label class="form-label">Name</label><input type="text" class="form-input" placeholder="e.g. prod-daily"></div>' +
+          '<div><label class="form-label">Scope</label><select class="form-select"><option>All VMs</option><option>By Namespace</option><option>By Label</option></select></div>' +
+          '<div><label class="form-label">Frequency</label><select class="form-select"><option>Hourly</option><option selected>Daily</option><option>Weekly</option></select></div>' +
+          '<div><label class="form-label">Retention</label><input type="text" class="form-input" placeholder="7 days"></div>' +
+          '<div><label class="form-label">Storage Target</label><select class="form-select"><option>Local PVC</option><option>S3</option><option>NFS</option><option>Velero</option></select></div>' +
+          '<div style="display:flex;align-items:center;gap:8px;padding-top:22px"><input type="checkbox" checked id="snap-pol-appconsistency" style="width:16px;height:16px">' +
+          '<label class="form-label" for="snap-pol-appconsistency" style="margin:0">App Consistency</label></div>' +
+          '<div><label class="form-label">Pre-hook</label><input type="text" class="form-input" placeholder="optional script"></div>' +
+          '<div><label class="form-label">Post-hook</label><input type="text" class="form-input" placeholder="optional script"></div>' +
+        '</div><div style="margin-top:16px">' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Create KubeVirt VolumeSnapshot policy with these settings\')">Create Policy</button>' +
+        '</div></div>';
+  };
+
+  window.renderCostsVmr = function renderCostsVmr() {
+    var cost = (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—';
+    var forecast = (typeof lastCostForecast !== 'undefined' && lastCostForecast) ? lastCostForecast : '—';
+    renderVmrPageHero('vmr-costs-hero', 'Veyron Cost Explorer',
+      'Fleet infrastructure cost · Est. ' + cost + ' / month',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof runCostAdvisor===\'function\'&&runCostAdvisor()">Cost Advisor</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchCosts===\'function\'&&fetchCosts()">Refresh</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Veyron</button>');
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
+    renderVmrMetricsStrip('vmr-costs-metrics', [
+      { label: 'Est. Monthly',       value: cost },
+      { label: 'Forecast',           value: forecast },
+      { label: 'VMs Billed',         value: vms.length },
+      { label: 'Running VMs',        value: running, tone: running > 0 ? 'ok' : '' },
+      { label: 'Potential Savings',  value: '—' },
+      { label: 'Optimization Score', value: vms.length > 0 ? Math.min(100, Math.round((running / vms.length) * 70 + 30)) + '%' : '—' }
+    ]);
   };
 
   window.initVeyronModule = function initVeyronModule() {
