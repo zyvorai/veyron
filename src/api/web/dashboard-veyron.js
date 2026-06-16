@@ -2389,7 +2389,7 @@
       section('Template Registry', [
         { label: 'Template source', type: 'select', options: ['Built-in (embedded)', 'Cluster CRDs (VMTemplate)', 'Custom registry URL'], id: 'set-tpl-source' },
         { label: 'Custom registry URL', type: 'text', placeholder: 'https://templates.example.com/catalog.json', id: 'set-tpl-registry-url' },
-        { type: 'action', label: 'Sync template catalog now', btn: 'Sync now', onclick: 'typeof fetchAppStore==="function"&&fetchAppStore();toast("Templates synced","success")' }
+        { type: 'action', label: 'Sync template catalog now', btn: 'Sync now', onclick: "typeof fetchAppStore==='function'&&fetchAppStore().then(function(){toast('Templates synced','success')}).catch(function(){toast('Sync failed','error')})" }
       ]),
       /* 8 — Backup Settings */
       section('Backup Settings', [
@@ -2403,14 +2403,14 @@
         { label: 'PacketWolf URL', type: 'text', placeholder: 'VEYRON_PACKETWOLF_URL', id: 'set-packetwolf' },
         { label: 'API key (if required)', type: 'text', password: true, placeholder: '••••••••', id: 'set-packetwolf-key' },
         { label: 'Trust cluster networks', type: 'checkbox', id: 'set-pw-trust', checked: true },
-        { type: 'action', label: 'Test PacketWolf connection', btn: 'Test connection', onclick: 'fetchNetworkIntelBanner&&fetchNetworkIntelBanner().then(function(){toast("PacketWolf test complete","success")})' }
+        { type: 'action', label: 'Test PacketWolf connection', btn: 'Test connection', onclick: "fetchNetworkIntelBanner&&fetchNetworkIntelBanner().then(function(){toast('PacketWolf test complete','success')}).catch(function(){toast('PacketWolf unreachable','error')})" }
       ]),
       /* 10 — Prometheus Integration */
       section('Prometheus Integration', [
         { label: 'Prometheus URL', type: 'text', placeholder: 'VEYRON_PROMETHEUS_URL', id: 'set-prometheus' },
         { label: 'Query timeout (s)', type: 'text', placeholder: '10', id: 'set-prom-timeout' },
         { label: 'Default time range', type: 'select', options: ['Last 1 hour', 'Last 6 hours', 'Last 24 hours', 'Last 7 days'], id: 'set-prom-range' },
-        { type: 'action', label: 'Test Prometheus connection', btn: 'Test connection', onclick: 'toast("Prometheus: not configured","info")' }
+        { type: 'action', label: 'Test Prometheus connection', btn: 'Test connection', onclick: "toast('Prometheus: not configured','info')" }
       ]),
       /* 11 — Appearance */
       section('Appearance', [
@@ -2424,7 +2424,7 @@
         { label: 'Show audit log in dashboard', type: 'checkbox', id: 'set-audit-show', checked: false },
         { label: 'Log API key usage', type: 'checkbox', id: 'set-audit-api', checked: true },
         { label: 'Log VM lifecycle events', type: 'checkbox', id: 'set-audit-vm', checked: true },
-        { type: 'action', label: 'Export audit log (JSON)', btn: 'Export', onclick: 'toast("Audit export: check /api/v1/alerts","info")' }
+        { type: 'action', label: 'Export audit log (JSON)', btn: 'Export', onclick: "toast('Audit export: check /api/v1/alerts','info')" }
       ])
     ];
 
