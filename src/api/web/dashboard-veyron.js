@@ -442,13 +442,13 @@
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>Capsule</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>';
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.pauseVM&&window.pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.openSnapModalFor?window.openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate("snapshots")') + '>Snapshot</button>';
       } else {
         var isPaused = vm.status === 'Paused';
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>' +
-          (isPaused ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>' : '') +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
+          (isPaused ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.unpauseVM&&window.unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>' : '') +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('window.cloneVM&&window.cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
           '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>Delete</button>';
       }
