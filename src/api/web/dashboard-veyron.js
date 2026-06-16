@@ -1226,6 +1226,7 @@
     window._vmrPatchedNavigate = true;
     var orig = window.navigate;
     window.navigate = function (page, opts) {
+      if (page === 'monitoring') { navigate('stack-health'); return; }
       if (typeof currentPage !== 'undefined' && currentPage === 'console-hub' && page !== 'console-hub') {
         disconnectConsoleHubVnc();
       }
