@@ -1641,3 +1641,32 @@ body.veyron-shell .cloudos-main {
 @media (max-width: 680px) {
   .vmr-foundry-drawer { width: 100%; }
 }
+
+/* ── Mission Control: Fleet Health checklist column ── */
+.vmr-health-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Mission Control: panel grid-row span modifiers ── */
+.vmr-fleet-health-panel  { grid-row: span 2; }
+.vmr-copilot-panel-main  { grid-row: span 1; }
+.vmr-alerts-stack-panel  { grid-row: span 2; }
+
+/* ── ConsoleHub: bottom status line ── */
+.vmr-console-status {
+  font-size: .84rem;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  margin-top: auto;
+}
+
+/* ── Workloads tab button size override ── */
+.vmr-wl-tab {
+  font-size: .78rem;
+  padding: 5px 12px;
+}
