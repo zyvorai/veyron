@@ -901,11 +901,20 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   box-shadow:0 10px 30px rgba(0,0,0,.4);
 }
 .toast-warning .toast-icon{background:rgba(251,191,36,.12);color:var(--warning)}
+.toast-dismiss{margin-left:auto;flex-shrink:0;background:none;border:none;color:inherit;opacity:.45;cursor:pointer;font-size:.82rem;padding:2px 6px;line-height:1;border-radius:4px;pointer-events:auto;align-self:flex-start}
+.toast-dismiss:hover{opacity:1;background:rgba(255,255,255,.1)}
 #spotlight-modal.open{align-items:flex-start;padding-top:min(10vh,88px)}
 #spotlight-modal .spotlight-panel{margin:0 auto}
 
 /* Page visibility */
 .page{display:none}.page.active{display:block}
+@keyframes page-enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:page-enter .18s cubic-bezier(.16,1,.3,1)}
+/* Global keyboard focus rings */
+:focus-visible{outline:2px solid rgba(59,130,246,.65);outline-offset:2px}
+.form-input:focus-visible,.form-select:focus-visible,.zeus-ai-input:focus-visible,.spotlight-input:focus-visible,.serial-input:focus-visible,.launchpad-search:focus-visible,.copilot-input:focus-visible,.veyron-copilot-input:focus-visible{outline:none}
+.mac-dock-item:focus-visible{outline:2px solid rgba(56,189,248,.6);outline-offset:3px}
+.cloudos-finder-item:focus-visible{outline:2px solid rgba(59,130,246,.5);outline-offset:-2px}
 
 /* ═══════════════════════════════════════════════════
    FOOTER SCANLINE
@@ -1095,9 +1104,30 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   padding:8px 14px;border-radius:10px;
   font-family:var(--font-sans);font-size:.74rem;font-weight:600;
   color:#fda4af;border:1px solid rgba(244,63,94,.28);
-  background:rgba(244,63,94,.08);cursor:pointer;
+  background:rgba(244,63,94,.08);cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s;
 }
+.glass-btn-destructive:hover{background:rgba(244,63,94,.16);border-color:rgba(244,63,94,.48);box-shadow:0 0 12px rgba(244,63,94,.14)}
 .glass-btn-sm{padding:6px 12px;font-size:.72rem;border-radius:8px}
+/* Focus rings for keyboard nav */
+.vm-row:focus-visible,.vm-card:focus-visible{outline:2px solid rgba(59,130,246,.65);outline-offset:-2px}
+/* Skeleton loading */
+.skel{background:linear-gradient(90deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.04) 100%);background-size:200% 100%;animation:metal-shimmer 1.6s ease-in-out infinite;border-radius:6px}
+.skel-row{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid rgba(51,65,85,.35)}
+.skel-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.skel-line{height:11px;border-radius:4px}
+.skel-s{width:60px}.skel-m{width:120px}.skel-l{width:180px}.skel-xl{width:240px}
+/* Coming soon */
+.coming-soon-state{text-align:center;padding:80px 24px;color:var(--text-muted)}
+.coming-soon-state .cs-icon{font-size:3rem;opacity:.18;margin-bottom:18px}
+.coming-soon-state h2{color:var(--text-bright);font-size:1.3rem;margin:0 0 10px;font-weight:600}
+.coming-soon-state p{max-width:46ch;margin:0 auto 20px;line-height:1.6;font-size:.9rem}
+.coming-soon-tag{display:inline-flex;padding:4px 12px;border-radius:999px;font-size:.7rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(59,130,246,.1);color:rgba(99,179,248,.9);border:1px solid rgba(59,130,246,.22)}
+/* VM list sort header */
+.vm-list-header{display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);background:rgba(15,23,42,.4)}
+.vm-sort-col{flex:1;padding:8px 6px;background:none;border:none;text-align:left;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;gap:4px;border-bottom:2px solid transparent}
+.vm-sort-col:hover{color:var(--text)}
+.vm-sort-col.active{color:var(--spark);border-bottom-color:rgba(56,189,248,.4)}
+.sort-arrow{font-size:.75em;opacity:.7}
 .glass-stat-pill{
   padding:14px 18px;border-radius:var(--glass-radius);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -2282,7 +2312,8 @@ html[data-theme="zinc"] .operator-details{
 }
 .vm-rdp-hint{font-size:.72rem;color:var(--spark);margin-left:4px}
 .vm-card-meta{font-size:.78rem;color:var(--text-muted);margin:10px 0 12px}
-.vm-card-actions{display:flex;gap:6px;flex-wrap:wrap}
+.vm-card-actions{display:flex;gap:6px;flex-wrap:wrap;opacity:0;transform:translateY(4px);transition:opacity .15s ease,transform .15s ease}
+.vm-card:hover .vm-card-actions,.vm-card.selected .vm-card-actions,.vm-card:focus-within .vm-card-actions{opacity:1;transform:translateY(0)}
 .spotlight-panel{
   width:min(640px,92vw);margin:12vh auto 0;
   background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -2385,6 +2416,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 .finder-section.collapsed .finder-section-body{display:none}
 .finder-section-body{display:flex;flex-direction:column;gap:2px}
 .finder-footer{margin-top:auto;padding-top:10px;border-top:1px solid var(--border)}
+.finder-count-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;font-size:.6rem;font-weight:700;background:rgba(59,130,246,.18);color:rgba(99,179,248,.9);padding:0 4px;margin-right:4px}
+.finder-count-badge:empty{display:none}
+@keyframes refresh-pulse{0%{color:var(--success)}100%{color:var(--text-muted)}}
+.refresh-pulse{animation:refresh-pulse 2.5s ease-out forwards}
 .finder-location-cluster{font-size:.72rem;color:var(--text-dim);padding:2px 12px 8px;line-height:1.4}
 .cloudos-finder-item.active{border-left:3px solid var(--spark);padding-left:9px}
 .cloudos-finder-item{
@@ -2526,8 +2561,7 @@ body.mac-desktop-root .cloudos-finder{top:40px}
 body[data-desktop-tier="normal"] .mac-desktop-tabs{display:none!important}
 body[data-desktop-tier="normal"] .topbar-location-wrap{display:none!important}
 body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:72px}
-body[data-desktop-tier="normal"] .btn-nav-browse.tier-advanced-only{display:none}
-body[data-desktop-tier="power"] .btn-nav-browse.tier-advanced-only{display:none}
+/* Browse button now available to all tiers */
 body[data-desktop-tier="power"] .mac-desktop-tabs{max-height:32px;overflow:hidden}
 body[data-desktop-tier="advanced"] .menubar-tier-advanced-only{display:flex}
 body:not([data-desktop-tier="advanced"]) .menubar-tier-advanced-only{display:none!important}
@@ -2685,7 +2719,9 @@ body.vm-focus-active .mac-inspector-header{display:flex}
   padding:.2rem .5rem;border-radius:.375rem;font-size:.65rem;font-weight:500;white-space:nowrap;
   color:rgba(248,250,252,.95);background:rgba(15,23,42,.92);border:1px solid rgba(255,255,255,.1);
   pointer-events:none;opacity:0;transition:opacity .15s ease,transform .15s ease;z-index:5;
+  display:flex;align-items:center;gap:5px;
 }
+.mac-dock-tooltip kbd{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:1px 4px;font-size:.58rem;font-family:var(--font-mono);opacity:.85}
 .mac-dock-dot{
   position:absolute;bottom:.12rem;left:50%;transform:translateX(-50%);
   width:.2rem;height:.2rem;border-radius:999px;background:rgba(248,250,252,.9);
@@ -3081,7 +3117,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     <span class="mac-menubar-clock" id="mac-menubar-clock" aria-hidden="true"></span>
     <button type="button" class="mac-nc-toggle" id="mac-nc-toggle" onclick="toggleNotificationCenter()" title="Notification Center" aria-label="Notification Center">🔔<span class="mac-nc-badge" id="mac-nc-badge" style="display:none">0</span></button>
     <button type="button" class="mac-cc-toggle" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">▥</button>
-    <button type="button" class="btn-nav-browse tier-advanced-only" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
+    <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <option value="slate">Slate Alloy</option>
@@ -3095,7 +3131,9 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     <select class="refresh-select menubar-tier-collapsible" id="refresh-interval" onchange="setRefreshInterval(this.value)" title="Auto-refresh interval">
       <option value="5000">5s</option><option value="10000">10s</option><option value="30000">30s</option><option value="0">Off</option>
     </select>
+    <svg class="refresh-ring menubar-tier-collapsible" id="refresh-ring" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" style="vertical-align:middle;margin-right:2px"><circle class="refresh-ring-bg" cx="8" cy="8" r="6" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="2"/><circle class="refresh-ring-progress" id="refresh-ring-progress" cx="8" cy="8" r="6" fill="none" stroke="rgba(56,189,248,.7)" stroke-width="2" stroke-linecap="round" stroke-dasharray="37.7" stroke-dashoffset="37.7" transform="rotate(-90 8 8)"/></svg>
     <span class="refresh-text menubar-tier-collapsible" id="last-refresh"></span>
+    <button type="button" class="glass-btn-secondary glass-btn-sm menubar-tier-collapsible" onclick="refresh()" title="Refresh now (⌘R)" aria-label="Refresh" style="padding:3px 8px;font-size:.8rem">⟳</button>
     <span id="auth-session-label" class="auth-session" style="display:none"></span>
     <button type="button" class="glass-btn-secondary glass-btn-sm" id="auth-signout-btn" style="display:none;font-size:.72rem" onclick="signOut()">Sign out</button>
     <div class="nav-status menubar-tier-advanced-only"><span class="nav-dot ok" id="health-dot"></span><span id="health-text">Initializing...</span></div>
@@ -3292,7 +3330,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     <button type="button" class="finder-collapse-btn" onclick="toggleFinder()" title="Hide sidebar" aria-label="Hide sidebar">‹</button>
   </div>
   <div class="finder-section" id="finder-sec-favorites" data-finder-section="favorites">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span class="finder-chevron">▾</span></button>
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span style="display:flex;align-items:center;gap:2px"><span class="finder-count-badge" id="finder-badge-vms"></span><span class="finder-chevron">▾</span></span></button>
     <div class="finder-section-body" id="finder-favorites">
       <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Home</button>
       <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Virtual Machines</button>
@@ -3328,6 +3366,33 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     <div class="finder-section-body" id="finder-network">
       <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon">⟷</span>Ingress</button>
       <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon">⚙</span>Integrations</button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-compute" data-finder-section="compute">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('compute')">Compute <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-compute">
+      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon">◇</span>Nodes</button>
+      <button type="button" class="cloudos-finder-item" data-page="pods" onclick="finderNavigate('pods')"><span class="fi-icon">◫</span>Pods</button>
+      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon">⬢</span>Workloads</button>
+      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon">⧉</span>Snapshots</button>
+      <button type="button" class="cloudos-finder-item" data-page="storage" onclick="finderNavigate('storage')"><span class="fi-icon">▣</span>Storage</button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-observe" data-finder-section="observe">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('observe')">Observe <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-observe">
+      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon">⚡</span>Events</button>
+      <button type="button" class="cloudos-finder-item" data-page="alerts" onclick="finderNavigate('alerts')"><span class="fi-icon">⚠</span>Alerts</button>
+      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon">≡</span>Logs</button>
+      <button type="button" class="cloudos-finder-item" data-page="metrics" onclick="finderNavigate('metrics')"><span class="fi-icon">⬡</span>Metrics</button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-security-grp" data-finder-section="security-grp">
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('security-grp')">Security <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-body" id="finder-security-grp">
+      <button type="button" class="cloudos-finder-item" data-page="security" onclick="finderNavigate('security')"><span class="fi-icon">⛨</span>Security</button>
+      <button type="button" class="cloudos-finder-item" data-page="rbac" onclick="finderNavigate('rbac')"><span class="fi-icon">⚿</span>RBAC</button>
+      <button type="button" class="cloudos-finder-item" data-page="compliance" onclick="finderNavigate('compliance')"><span class="fi-icon">✓</span>Compliance</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-recent-vms" data-finder-section="recent-vms" style="display:none">
@@ -3537,6 +3602,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
       <button type="button" data-view="table" onclick="setVmrFleetView('table')">Table</button>
       <button type="button" data-view="topology" onclick="setVmrFleetView('topology')">Topology</button>
     </div>
+    <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
@@ -3547,6 +3613,12 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
           <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)">
           <span id="bulk-count">0 selected</span>
         </div>
+      </div>
+      <div class="vm-list-header" id="vm-list-header" style="display:none">
+        <button class="vm-sort-col active" data-sort="status" onclick="setVmSort('status')">Status <span class="sort-arrow" id="sort-arrow-status">↑</span></button>
+        <button class="vm-sort-col" data-sort="name" onclick="setVmSort('name')">Name <span class="sort-arrow" id="sort-arrow-name"></span></button>
+        <button class="vm-sort-col" data-sort="cpu" onclick="setVmSort('cpu')">CPU <span class="sort-arrow" id="sort-arrow-cpu"></span></button>
+        <button class="vm-sort-col" data-sort="memory" onclick="setVmSort('memory')">Memory <span class="sort-arrow" id="sort-arrow-memory"></span></button>
       </div>
       <div class="vm-list-scroll" id="vm-full-list"></div>
     </div>
@@ -5338,7 +5410,7 @@ function applyTheme(theme, writeStorage) {
       drawChart('cpu-chart', cpuHistory, '#38bdf8', 'rgba(56,189,248,.4)');
       drawChart('mem-chart', memHistory, '#3b82f6', 'rgba(59,130,246,.4)');
     }
-  } catch (e) {}
+  } catch (e) { console.warn('Chart redraw after theme change:', e); }
 }
 
 function setTheme(theme) {
@@ -5707,7 +5779,13 @@ function loadPageData(page, opts) {
     fetchAppStore(opts);
     if (typeof renderFoundryVmr === 'function') renderFoundryVmr();
   }
-  if (page === 'stack-health' && typeof fetchStackHealth === 'function') fetchStackHealth();
+  if (page === 'stack-health') {
+    if (typeof fetchStackHealth === 'function') fetchStackHealth();
+    else renderComingSoon('vmr-stack-hero', 'Stack Health', 'KubeVirt, CDI, and operator health diagnostics — rolling out soon.', '⬡');
+  }
+  if (page === 'settings') {
+    renderComingSoon('vmr-settings-hero', 'Cluster Settings', 'Veyron configuration, defaults, and workspace policies — coming in a future release.', '⚙');
+  }
   if (page === 'network-intel' && typeof fetchNetworkIntelData === 'function') fetchNetworkIntelData(opts);
   if (page === 'console-hub') {
     fetchVMs(opts);
@@ -5716,14 +5794,29 @@ function loadPageData(page, opts) {
 }
 
 // Toast notifications (Notification Center style)
-function toast(msg, type = 'info') {
+const _toastActive = new Set();
+const TOAST_DURATIONS = { error: 8000, warning: 6000, info: 4000, success: 3000 };
+function toast(msg, type, duration) {
+  type = type || 'info';
+  const key = type + ':' + msg;
+  if (_toastActive.has(key)) return;
+  _toastActive.add(key);
+  const toasts = document.getElementById('toasts');
+  if (toasts && toasts.children.length >= 5) toasts.removeChild(toasts.firstChild);
   const icons = { success: '✓', error: '✕', warning: '!', info: 'i' };
   const el = document.createElement('div');
   el.className = 'toast toast-' + type;
-  el.innerHTML = '<span class="toast-icon" aria-hidden="true">' + (icons[type] || icons.info) + '</span><span class="toast-msg"></span>';
+  el.innerHTML = '<span class="toast-icon" aria-hidden="true">' + (icons[type] || icons.info) + '</span><span class="toast-msg"></span><button type="button" class="toast-dismiss" aria-label="Dismiss">✕</button>';
   el.querySelector('.toast-msg').textContent = msg;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  if (toasts) toasts.appendChild(el);
+  const ms = duration !== undefined ? duration : (TOAST_DURATIONS[type] || 4000);
+  let remaining = ms;
+  let startMs = Date.now();
+  let timer = setTimeout(remove, ms);
+  function remove() { el.remove(); _toastActive.delete(key); }
+  el.querySelector('.toast-dismiss').addEventListener('click', function() { clearTimeout(timer); remove(); });
+  el.addEventListener('mouseenter', function() { clearTimeout(timer); remaining = Math.max(0, remaining - (Date.now() - startMs)); });
+  el.addEventListener('mouseleave', function() { startMs = Date.now(); timer = setTimeout(remove, remaining); });
 }
 
 // Chart drawing — ember/spark style
@@ -5984,6 +6077,8 @@ function toggleKeyVisibility() {
 // Submit API key on Enter
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('apikey-modal').classList.contains('open')) {
+    e.preventDefault();
+    e.stopPropagation();
     submitApiKey();
   }
 });
@@ -6286,8 +6381,8 @@ function renderCloudOsDock() {
   });
   html += '<div class="mac-dock-divider" aria-hidden="true"></div>';
   html += '<button type="button" class="mac-dock-spotlight" title="Launchpad" aria-label="Launchpad" onclick="openLaunchpad()"><span class="mac-dock-icon">⬡</span></button>';
-  html += '<button type="button" class="mac-dock-spotlight mac-dock-ask" title="Copilot (⌘J)" aria-label="Copilot" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Copilot</span></button>';
-  html += '<button type="button" class="mac-dock-spotlight" title="Spotlight (⌘K)" aria-label="Open Spotlight" onclick="openSpotlight()"><span class="mac-dock-icon">⌘</span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Spotlight</span></button>';
+  html += '<button type="button" class="mac-dock-item mac-dock-spotlight mac-dock-ask" title="Copilot (⌘J)" aria-label="Copilot" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-tooltip">Copilot <kbd>⌘J</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Copilot</span></button>';
+  html += '<button type="button" class="mac-dock-item mac-dock-spotlight" title="Spotlight (⌘K)" aria-label="Open Spotlight" onclick="openSpotlight()"><span class="mac-dock-icon">⌘</span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Spotlight</span></button>';
   inner.innerHTML = html;
 }
 
@@ -7207,7 +7302,7 @@ async function maybeSuggestAllWorkspace() {
     if (all.length < 1) return;
     sessionStorage.setItem('veyron_ws_hint_shown', '1');
     toast('Found ' + all.length + ' VM(s) in other workspaces — use All workspaces', 'info', 8000);
-  } catch (e) {}
+  } catch (e) { console.warn('Workspace suggestion check failed:', e); }
 }
 
 function toggleFinder() {
@@ -7251,6 +7346,36 @@ function finderNavigate(page) {
   navigate(page);
   const el = document.getElementById('cloudos-finder');
   if (el && isFinderMobile()) el.classList.remove('open');
+}
+
+function updateFinderBadges() {
+  const vmBadge = document.getElementById('finder-badge-vms');
+  if (vmBadge) vmBadge.textContent = (vmData && vmData.length > 0) ? vmData.length : '';
+}
+
+function vmSkeletonHtml(n) {
+  n = n || 5;
+  return Array.from({ length: n }, function() {
+    return '<div class="skel-row">' +
+      '<div class="skel skel-dot"></div>' +
+      '<div style="flex:1;display:flex;flex-direction:column;gap:7px">' +
+      '<div class="skel skel-line skel-xl"></div>' +
+      '<div class="skel skel-line skel-m"></div>' +
+      '</div>' +
+      '<div class="skel skel-line skel-l" style="margin-left:auto"></div>' +
+      '</div>';
+  }).join('');
+}
+
+function renderComingSoon(containerId, title, description, icon) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '<div class="coming-soon-state">' +
+    '<div class="cs-icon">' + icon + '</div>' +
+    '<h2>' + esc(title) + '</h2>' +
+    '<p>' + esc(description) + '</p>' +
+    '<span class="coming-soon-tag">Coming soon</span>' +
+    '</div>';
 }
 
 /** Primary AI entry — dock “Ask Copilot”, ⌘J, and menus call this. */
@@ -7453,7 +7578,7 @@ function showVmContextMenu(x, y, ns, name) {
     if (win) html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openRdpSheet(' + jsArgs(ns, name) + ')">Remote Desktop (RDP)</button>';
     html += '<div class="mac-context-sep"></div>';
   } else {
-    html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();vmAction(' + jsArgs(ns, name, 'start') + ')">Start VM</button><div class="mac-context-sep"></div>';
+    html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();vmAction(' + jsArgs(ns, name, 'start') + ',event)">Start VM</button><div class="mac-context-sep"></div>';
   }
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, name) + ');},200)">Show in VMs</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Copilot</button>';
@@ -7493,9 +7618,9 @@ function vmCard(vm, showActions) {
   const winHint = isRunning && isWindowsVm(vm) ? '<span class="vm-rdp-hint" title="Use RDP expose for Windows">RDP</span>' : '';
   const primary = isRunning
     ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Connect</button>' + winHint
-    : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>';
+    : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ',event)') + '>Start</button>';
   const stopBtn = isRunning && showActions
-    ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
+    ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ',event)') + '>Stop</button>'
     : '';
   const pendingHint = vm.status === 'Pending'
     ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotScheduling(' + jsArgs(ns, vm.name) + ')') + '>Scheduling</button>'
@@ -7503,7 +7628,7 @@ function vmCard(vm, showActions) {
   const actions = showActions ? primary + stopBtn + pendingHint +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openCopilotNetwork(' + jsArgs(ns, vm.name) + ')') + '>Network</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>↻</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ',event)') + '>↻</button>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
@@ -7516,42 +7641,52 @@ function vmCard(vm, showActions) {
 
 function vmListEmptyHtml(filteredEmpty) {
   const noFleet = !vmData || vmData.length === 0;
-  if (!filteredEmpty && noFleet) filteredEmpty = true;
-  const msg = noFleet
-    ? (currentNamespace === 'all'
-      ? 'No virtual machines in the cluster'
-      : 'No VMs in workspace “' + esc(currentNamespace) + '” — try All workspaces')
-    : 'No VMs match filter';
-  let html = '<div class="empty-state"><div class="icon">&#9881;</div><p>' + msg + '</p>';
-  if (noFleet && currentNamespace !== 'all') {
-    html += '<p class="sub"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setNamespace(\'all\')">Show all workspaces</button></p>';
+  if (noFleet) {
+    let html = '<div class=”empty-state” style=”padding:56px 24px;text-align:center”>' +
+      '<div style=”font-size:3rem;opacity:.18;margin-bottom:16px”>&#9781;</div>' +
+      '<p style=”font-size:1rem;font-weight:600;color:var(--text-bright);margin:0 0 8px”>No virtual machines yet</p>' +
+      '<p class=”sub” style=”margin:0 0 20px”>Forge your first VM from a template to get started.</p>' +
+      '<button type=”button” class=”glass-btn-primary glass-btn-sm” onclick=”openCreateModal()”>+ Forge VM</button>';
+    if (currentNamespace !== 'all') {
+      html += ' <button type=”button” class=”glass-btn-secondary glass-btn-sm” onclick=”setNamespace(\'all\')” style=”margin-left:8px”>All workspaces</button>';
+    }
+    return html + '</div>';
   }
-  return html + '</div>';
+  return '<div class=”empty-state” style=”padding:40px 24px;text-align:center”>' +
+    '<div style=”font-size:2.2rem;opacity:.2;margin-bottom:12px”>&#128269;</div>' +
+    '<p style=”margin:0 0 6px;font-weight:600;color:var(--text-bright)”>No VMs match your filter</p>' +
+    '<p class=”sub” style=”margin:0 0 16px”>Try clearing the search or changing the status filter.</p>' +
+    '<button type=”button” class=”glass-btn-secondary glass-btn-sm” onclick=”document.getElementById(\'vm-search\').value=\'\';document.getElementById(\'vm-filter-status\').value=\'\';filterVMs()”>Clear filters</button>' +
+    '</div>';
 }
 
 function renderVmFullList(vms) {
   const el = document.getElementById('vm-full-list');
   if (!el) return;
   if (vms.length === 0) {
-    el.innerHTML = vmListEmptyHtml(true);
+    el.innerHTML = vmListEmptyHtml(false);
     return;
   }
+  const sorted = typeof sortVMs === 'function' ? sortVMs(vms) : vms;
   if (vmViewMode === 'grid') {
-    el.innerHTML = '<div class="vm-card-grid">' + vms.map(v => vmCard(v, true)).join('') + '</div>';
+    el.innerHTML = '<div class="vm-card-grid">' + sorted.map(v => vmCard(v, true)).join('') + '</div>';
   } else {
-    el.innerHTML = vms.map(v => vmRow(v, true)).join('');
+    el.innerHTML = sorted.map(v => vmRow(v, true)).join('');
   }
   syncVmSelectionUi();
 }
 
 // VM Action
-async function vmAction(ns, name, action) {
+async function vmAction(ns, name, action, ev) {
+  const btn = ev && ev.currentTarget ? ev.currentTarget : null;
+  if (btn) { btn.disabled = true; btn._origText = btn.textContent; btn.textContent = '…'; }
   const url = '/api/v1/vms/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name)+'/'+encodeURIComponent(action);
   try {
     await apiJson(url, {method:'POST'});
     toast(name+' '+action+' initiated', 'success');
     setTimeout(refresh, 1500);
   } catch(e) { await translateApiError(e.message, 'vm_' + action); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = btn._origText || btn.textContent; } }
 }
 
 async function vmDelete(ns, name) {
@@ -7650,9 +7785,10 @@ function vmRow(vm, showActions) {
   const isRunning = vm.status === 'Running';
   const actions = showActions ? '<div class="btn-group">' +
     (isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Connect</button>' : '') +
-    (!isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>&#9654;</button>' : '') +
-    (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>&#9632;</button>' : '') +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>&#8635;</button>' +
+    (!isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ',event)') + '>&#9654;</button>' : '') +
+    (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ',event)') + '>&#9632;</button>' : '') +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ',event)') + '>&#8635;</button>' +
+    '<span style="display:inline-block;width:1px;height:18px;background:rgba(255,255,255,.1);margin:0 3px;align-self:center;flex-shrink:0"></span>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>&#10005;</button>' +
     '</div>' : '';
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(ns, vm.name) + ',this.checked)') + (selectedVMs.has(vmSelectionKey(ns, vm.name))?' checked':'') + '>' : '';
@@ -7767,7 +7903,7 @@ function pinnedVmCard(vm) {
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVmDetailDeep(' + jsArgs(ns, name) + ')') + '>Details</button>' +
     (isRunning
       ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>Console</button>'
-      : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start</button>');
+      : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>');
   return '<div class="vm-card">' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + osFamilyIcon(family) + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status || 'Unknown') + '</span></div>' +
     '<div class="vm-card-name">' + esc(name) + '</div>' +
@@ -8591,8 +8727,8 @@ function runSpotlightAction(action) {
 }
 
 function onSpotlightKeydown(e) {
-  if (!document.getElementById('spotlight-modal').classList.contains('open')) return;
-  if (e.key === 'Escape') { closeSpotlight(); return; }
+  if (!document.getElementById('spotlight-modal').classList.contains('open')) return false;
+  if (e.key === 'Escape') { e.stopPropagation(); closeSpotlight(); return true; }
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     spotlightActiveIndex = Math.min(spotlightActiveIndex + 1, spotlightResults.length - 1);
@@ -8887,6 +9023,10 @@ function runCopilotQuick(query) {
 
 // Fetch VMs — shared vmData; only touch widgets that exist on the active page.
 async function fetchVMs(opts) {
+  if (vmData.length === 0 && currentPage === 'vms') {
+    const skEl = document.getElementById('vm-full-list');
+    if (skEl && skEl.innerHTML.trim() === '') skEl.innerHTML = vmSkeletonHtml(6);
+  }
   try {
     const j = await apiJson('/api/v1/vms' + nsParam(), opts);
     if (j == null) return;
@@ -8962,6 +9102,7 @@ async function fetchVMs(opts) {
       maybeSuggestAllWorkspace();
     }
     updateMacStatusIsland();
+    updateFinderBadges();
   } catch (e) {
     console.error('fetchVMs', e);
     const msg = (e && e.message && e.message.indexOf('renderDc') >= 0)
@@ -9565,6 +9706,14 @@ document.addEventListener('keydown', e => {
     toggleFinder();
     return;
   }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'r') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      refresh();
+      return;
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault();
     openSpotlight();
@@ -9603,7 +9752,7 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
-  onSpotlightKeydown(e);
+  if (onSpotlightKeydown(e)) return;
   if (e.key === 'Escape') {
     const connectOpen = document.getElementById('connect-modal')?.classList.contains('open');
     if (connectOpen) { closeConnectModal(); return; }
@@ -9611,6 +9760,7 @@ document.addEventListener('keydown', e => {
     closeCreateModal(); closeSnapModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt(); closeConnectModal(); closeSshPopover();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal(); closeDockEditor(); closeRdpSheet(false); closeMacPreferences();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
+    if (typeof closeForgeWizard === 'function') closeForgeWizard();
     closeDockEditor(); closeMacMenus(); closeMissionControlOverlay(); closeLaunchpad();
     const cc = document.getElementById('mac-control-center');
     if (cc) cc.classList.remove('open');
@@ -9637,6 +9787,9 @@ document.getElementById('copilot-input').addEventListener('keydown', e => {
 });
 document.getElementById('fixit-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFixItModal();
+});
+document.getElementById('forge-wizard-modal').addEventListener('click', function(e) {
+  if (e.target === e.currentTarget && typeof closeForgeWizard === 'function') closeForgeWizard();
 });
 ['glass-confirm-modal', 'glass-prompt-modal', 'clone-modal', 'resize-modal'].forEach(function(id) {
   const el = document.getElementById(id);
@@ -9694,6 +9847,20 @@ if (dockEditorModalEl) {
     if (e.target === e.currentTarget) closeDockEditor();
   });
 }
+// VM list keyboard navigation
+document.getElementById('vm-full-list').addEventListener('keydown', function(e) {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const rows = Array.from(this.querySelectorAll('[data-vm-name]'));
+  if (!rows.length) return;
+  e.preventDefault();
+  const focused = document.activeElement;
+  const currentIdx = rows.indexOf(focused.closest ? focused.closest('[data-vm-name]') : null);
+  const nextIdx = e.key === 'ArrowDown'
+    ? Math.min(currentIdx + 1, rows.length - 1)
+    : Math.max(currentIdx - 1, 0);
+  const next = rows[nextIdx];
+  if (next) { next.setAttribute('tabindex', '0'); next.focus(); }
+});
 
 
 // ── Veyron VM Workspace ──
@@ -9833,7 +10000,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
       quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>';
     }
   } else {
-    quick += '<button type="button" class="mac-vm-chip mac-vm-chip-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start</button>';
+    quick += '<button type="button" class="mac-vm-chip mac-vm-chip-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>';
   }
   quick += '<button type="button" class="mac-vm-chip mac-vm-chip-ask" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Veyron</button>';
   quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button></div>';
@@ -9841,16 +10008,16 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   if (vm.status === 'Running') {
     rail += '<button type="button" class="glass-btn-primary connect-btn" ' + onStopHandler('openConnectModal(' + jsArgs(ns, name) + ')') + (canWrite ? '' : ' disabled') + '>Connect</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>';
-    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ')') + '>Restart</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ',event)') + '>Restart</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
   } else {
-    rail += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start</button>';
+    rail += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
   }
   rail += '<details class="vm-detail-more"><summary>More</summary><div class="vm-detail-more-body">';
   if (vm.status === 'Running') {
-    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ')') + '>Stop</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ',event)') + '>Stop</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
   }
@@ -10534,6 +10701,39 @@ function detailRow(label, value) {
   return '<div class="detail-row"><span class="lbl">' + label + '</span><span class="val">' + esc(String(value)) + '</span></div>';
 }
 
+// VM sort helpers
+const VM_STATUS_RANK = { Running: 0, Starting: 1, Provisioning: 1, Paused: 2, Stopped: 3, Failed: 4, Error: 4 };
+function vmStatusRank(s) { return VM_STATUS_RANK[s] !== undefined ? VM_STATUS_RANK[s] : 5; }
+let vmSortKey = 'status';
+let vmSortDir = 'asc';
+function sortVMs(list) {
+  return list.slice().sort(function(a, b) {
+    if (vmSortKey === 'status') {
+      const rd = vmStatusRank(a.status) - vmStatusRank(b.status);
+      if (rd !== 0) return vmSortDir === 'asc' ? rd : -rd;
+    }
+    const va = String(a[vmSortKey] || ''), vb = String(b[vmSortKey] || '');
+    return vmSortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  });
+}
+function setVmSort(key) {
+  if (vmSortKey === key) vmSortDir = vmSortDir === 'asc' ? 'desc' : 'asc';
+  else { vmSortKey = key; vmSortDir = 'asc'; }
+  updateSortArrows();
+  filterVMs();
+}
+function updateSortArrows() {
+  ['status','name','cpu','memory'].forEach(function(k) {
+    const el = document.getElementById('sort-arrow-' + k);
+    if (!el) return;
+    if (k !== vmSortKey) { el.textContent = ''; return; }
+    el.textContent = vmSortDir === 'asc' ? '↑' : '↓';
+  });
+  document.querySelectorAll('.vm-sort-col').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.sort === vmSortKey);
+  });
+}
+
 // ── Search & Filter ──
 function filterVMs() {
   const q = (document.getElementById('vm-search').value || '').toLowerCase();
@@ -10549,11 +10749,21 @@ function filterVMs() {
     if (driftFilter === 'unmanaged' && v.veyron_managed === true) return false;
     return true;
   });
-  document.getElementById('vm-full-list').innerHTML = filtered.length === 0 ?
-    vmListEmptyHtml(filtered.length === 0) :
+  const countEl = document.getElementById('vm-filter-count');
+  if (countEl) {
+    countEl.textContent = (filtered.length === vmData.length)
+      ? (vmData.length + ' VMs')
+      : (filtered.length + ' of ' + vmData.length + ' VMs');
+  }
+  const isTableView = window.vmrFleetViewMode === 'table' || vmViewMode === 'list';
+  const listHeader = document.getElementById('vm-list-header');
+  if (listHeader) listHeader.style.display = isTableView ? 'flex' : 'none';
+  const sorted = sortVMs(filtered);
+  document.getElementById('vm-full-list').innerHTML = sorted.length === 0 ?
+    vmListEmptyHtml(true) :
     (vmViewMode === 'grid'
-      ? '<div class="vm-card-grid">' + filtered.map(v => vmCard(v, true)).join('') + '</div>'
-      : filtered.map(v => vmRow(v, true)).join(''));
+      ? '<div class="vm-card-grid">' + sorted.map(v => vmCard(v, true)).join('') + '</div>'
+      : sorted.map(v => vmRow(v, true)).join(''));
 }
 
 // ── Nodes ──
@@ -12158,6 +12368,26 @@ let refreshTimer = null;
 let refreshInterval = parseInt(localStorage.getItem('veyron_refresh') || '30000', 10);
 let refreshPaused = false;
 let refreshAbortController = null;
+let _refreshLastMs = Date.now();
+let _ringRaf = null;
+const REFRESH_RING_CIRC = 37.7;
+
+function tickRefreshRing() {
+  const ring = document.getElementById('refresh-ring-progress');
+  if (!ring || refreshInterval <= 0) return;
+  const elapsed = Date.now() - _refreshLastMs;
+  const frac = Math.min(elapsed / refreshInterval, 1);
+  ring.style.strokeDashoffset = REFRESH_RING_CIRC * (1 - frac);
+  _ringRaf = requestAnimationFrame(tickRefreshRing);
+}
+
+function resetRefreshRing() {
+  _refreshLastMs = Date.now();
+  if (_ringRaf) cancelAnimationFrame(_ringRaf);
+  const ring = document.getElementById('refresh-ring-progress');
+  if (ring) ring.style.strokeDashoffset = REFRESH_RING_CIRC;
+  if (refreshInterval > 0) tickRefreshRing();
+}
 
 document.addEventListener('visibilitychange', () => {
   refreshPaused = document.hidden;
@@ -12169,11 +12399,15 @@ function setRefreshInterval(val) {
   localStorage.setItem('veyron_refresh', val);
   if (refreshTimer) clearInterval(refreshTimer);
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
+  resetRefreshRing();
+  const ringEl = document.getElementById('refresh-ring');
+  if (ringEl) ringEl.style.display = refreshInterval > 0 ? '' : 'none';
 }
 
 // Main refresh loop
 function refresh() {
   if (refreshPaused) return;
+  resetRefreshRing();
   if (refreshAbortController) refreshAbortController.abort();
   refreshAbortController = new AbortController();
   const signal = refreshAbortController.signal;
@@ -12189,7 +12423,13 @@ function refresh() {
   if (!['dashboard', 'vms', 'events', 'snapshots', 'nodes', 'pods', 'storage'].includes(currentPage)) {
     loadPageData(currentPage, { signal });
   }
-  document.getElementById('last-refresh').textContent=new Date().toLocaleTimeString();
+  const lr = document.getElementById('last-refresh');
+  if (lr) {
+    lr.textContent = new Date().toLocaleTimeString();
+    lr.classList.remove('refresh-pulse');
+    void lr.offsetWidth;
+    lr.classList.add('refresh-pulse');
+  }
   refreshIslandAlerts();
 }
 
@@ -12216,6 +12456,7 @@ window.addEventListener('load', async () => {
   fetchExperienceDesktop();
 
   refresh();
+  resetRefreshRing();
   fetchTemplates();
   fetchNamespaces();
   fetchClusterContext();
