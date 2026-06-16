@@ -29,9 +29,12 @@ pub struct SnapshotResponse {
     pub vm_name: String,
     pub namespace: String,
     pub status: String,
+    #[serde(rename = "ready")]
     pub ready_to_use: bool,
     pub size_bytes: Option<u64>,
     pub created_at: String,
+    #[serde(default)]
+    pub age: String,
 }
 
 /// Create snapshot request
@@ -113,15 +116,19 @@ async fn list_snapshots(
 
     let results: Vec<SnapshotResponse> = snapshots
         .into_iter()
-        .map(|snap| SnapshotResponse {
-            id: snap.name.clone(),
-            name: snap.name,
-            vm_name: snap.vm_name,
-            namespace: snap.namespace,
-            status: snap.status.to_string(),
-            ready_to_use: snap.ready_to_use,
-            size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
-            created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
+        .map(|snap| {
+            let created_at = snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default();
+            SnapshotResponse {
+                id: snap.name.clone(),
+                name: snap.name,
+                vm_name: snap.vm_name,
+                namespace: snap.namespace,
+                status: snap.status.to_string(),
+                ready_to_use: snap.ready_to_use,
+                size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
+                age: fmt_age_from_rfc3339(&created_at),
+                created_at,
+            }
         })
         .collect();
     Ok(Json(results))
@@ -153,16 +160,20 @@ async fn create_snapshot(
         .with_description(req.description.unwrap_or_default());
 
     match manager.create_snapshot(&config).await {
-        Ok(snap) => Ok(Json(SnapshotResponse {
-            id: snap.name.clone(),
-            name: snap.name,
-            vm_name: snap.vm_name,
-            namespace: snap.namespace,
-            status: snap.status.to_string(),
-            ready_to_use: snap.ready_to_use,
-            size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
-            created_at: snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default(),
-        })),
+        Ok(snap) => {
+            let created_at = snap.created_at.map(|t| t.to_rfc3339()).unwrap_or_default();
+            Ok(Json(SnapshotResponse {
+                id: snap.name.clone(),
+                name: snap.name,
+                vm_name: snap.vm_name,
+                namespace: snap.namespace,
+                status: snap.status.to_string(),
+                ready_to_use: snap.ready_to_use,
+                size_bytes: snap.size.as_deref().map(crate::utils::parse_memory_bytes),
+                age: fmt_age_from_rfc3339(&created_at),
+                created_at,
+            }))
+        }
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
@@ -258,4 +269,25 @@ async fn export_snapshots(
         "snapshots": snapshots,
         "export_format": "kubevirt_virtualmachinesnapshot_list",
     })))
+}
+
+#[cfg(feature = "web")]
+fn fmt_age_from_rfc3339(ts: &str) -> String {
+    if ts.is_empty() {
+        return "—".to_string();
+    }
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(ts) {
+        let now = chrono::Utc::now();
+        let secs = (now - dt.with_timezone(&chrono::Utc)).num_seconds().max(0) as u64;
+        if secs < 120 {
+            return "just now".to_string();
+        } else if secs < 3600 {
+            return format!("{}m ago", secs / 60);
+        } else if secs < 86400 {
+            return format!("{}h ago", secs / 3600);
+        } else {
+            return format!("{}d ago", secs / 86400);
+        }
+    }
+    "—".to_string()
 }
