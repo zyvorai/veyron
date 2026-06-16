@@ -1353,7 +1353,7 @@
           status: p.phase || p.status || '—',
           node: p.node_name || p.node || '—',
           restarts: p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0),
-          age: p.age || '—',
+          age: p.age || (p.created_at && typeof fmtTime === 'function' ? fmtTime(p.created_at) : '—'),
           owner: p.owner_kind || p.owner || '—'
         };
       });
