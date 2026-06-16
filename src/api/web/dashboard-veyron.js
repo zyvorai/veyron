@@ -443,7 +443,7 @@
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>Capsule</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigate(\'snapshots\')') + '>Snapshot</button>';
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>';
       } else {
         var isPaused = vm.status === 'Paused';
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>' +
@@ -554,12 +554,13 @@
       '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
     var issues = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
     var cost = typeof lastCostSummary !== 'undefined' ? lastCostSummary : '—';
+    var drifted = vms.filter(function (v) { return v.drift_detected === true; }).length;
     renderVmrMetricsStrip('vmr-fleet-metrics', [
       { label: 'Total VMs', value: vms.length },
       { label: 'Running', value: running, tone: 'ok' },
       { label: 'Stopped', value: stopped },
       { label: 'Issues', value: issues, tone: issues ? 'bad' : '' },
-      { label: 'Drift', value: '—' },
+      { label: 'Drift', value: drifted, tone: drifted ? 'warn' : '' },
       { label: 'Est. Cost', value: cost }
     ]);
   };
