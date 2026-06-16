@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// Event is the shared envelope for all VMRogue events.
+// Event is the shared envelope for all Veyron events.
 // Both the Go operator and Rust API use this same JSON structure.
 type Event struct {
 	// Unique event identifier.
@@ -35,23 +35,23 @@ type Event struct {
 
 // Event type constants (NATS subjects).
 const (
-	SubjectVMCreated  = "vmrogue.vm.created"
-	SubjectVMUpdated  = "vmrogue.vm.updated"
-	SubjectVMDeleted  = "vmrogue.vm.deleted"
-	SubjectVMStarted  = "vmrogue.vm.started"
-	SubjectVMStopped  = "vmrogue.vm.stopped"
+	SubjectVMCreated  = "veyron.vm.created"
+	SubjectVMUpdated  = "veyron.vm.updated"
+	SubjectVMDeleted  = "veyron.vm.deleted"
+	SubjectVMStarted  = "veyron.vm.started"
+	SubjectVMStopped  = "veyron.vm.stopped"
 
-	SubjectBlueprintDeploying = "vmrogue.blueprint.deploying"
-	SubjectBlueprintReady     = "vmrogue.blueprint.ready"
-	SubjectBlueprintFailed    = "vmrogue.blueprint.failed"
+	SubjectBlueprintDeploying = "veyron.blueprint.deploying"
+	SubjectBlueprintReady     = "veyron.blueprint.ready"
+	SubjectBlueprintFailed    = "veyron.blueprint.failed"
 
-	SubjectPolicyViolation = "vmrogue.policy.violation"
+	SubjectPolicyViolation = "veyron.policy.violation"
 
-	SubjectInsightCreated = "vmrogue.insight.created"
+	SubjectInsightCreated = "veyron.insight.created"
 
-	SubjectActionProposed = "vmrogue.action.proposed"
-	SubjectActionExecuted = "vmrogue.action.executed"
-	SubjectActionFailed   = "vmrogue.action.failed"
+	SubjectActionProposed = "veyron.action.proposed"
+	SubjectActionExecuted = "veyron.action.executed"
+	SubjectActionFailed   = "veyron.action.failed"
 )
 
 // VMEventData is the payload for VM lifecycle events.

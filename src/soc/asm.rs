@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::kube::KubeClient;
 use crate::kube::vm_rdp;
-use crate::kube::windows_rdp::vmrogue_rdp_service_name;
+use crate::kube::windows_rdp::veyron_rdp_service_name;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AttackSurfaceAsset {
@@ -40,7 +40,7 @@ pub async fn scan_attack_surface(client: &KubeClient, scope: &str) -> AttackSurf
                 vm_namespace: ns.to_string(),
                 vm_name: name.to_string(),
                 exposure_type: "rdp_nodeport".to_string(),
-                detail: format!("RDP service {}", vmrogue_rdp_service_name(name)),
+                detail: format!("RDP service {}", veyron_rdp_service_name(name)),
                 risk_score: 85,
                 internet_facing: true,
             });

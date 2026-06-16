@@ -28,8 +28,8 @@ The chart sets both `VEYRON_API_KEY` and `VEYRON_API_KEY` from the same Secret f
 helm install veyron-operator ./charts/veyron-operator -n veyron-system
 ```
 
-CRDs remain under **`vmrogue.io`**; only Kubernetes object names use the Veyron brand.
+CRDs remain under **`veyron.io`**; only Kubernetes object names use the Veyron brand.
 
 ## Legacy
 
-`charts/vmrogue` and `charts/veyron-operator` are deprecated aliases of the same templates.
+`charts/veyron` and `charts/veyron-operator` are deprecated aliases of the same templates.

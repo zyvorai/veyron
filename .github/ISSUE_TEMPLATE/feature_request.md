@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-about: Suggest a new feature for vmrogue
+about: Suggest a new feature for veyron
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
@@ -25,7 +25,7 @@ Describe how you envision this feature working.
 
 **Example usage:**
 ```bash
-vmrogue new-command --flag value
+veyron new-command --flag value
 ```
 
 ## Alternatives Considered
@@ -43,5 +43,5 @@ Add any other context, screenshots, or examples about the feature request here.
 ## Checklist
 
 - [ ] I have searched existing issues to make sure this isn't a duplicate
-- [ ] This feature aligns with vmrogue's goals (KubeVirt VM management)
+- [ ] This feature aligns with veyron's goals (KubeVirt VM management)
 - [ ] I am willing to help implement this feature

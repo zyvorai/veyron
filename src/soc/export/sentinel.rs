@@ -24,7 +24,7 @@ pub fn config() -> Option<SentinelConfig> {
         .ok()
         .filter(|s| !s.trim().is_empty())?;
     let stream = std::env::var("VEYRON_SENTINEL_STREAM")
-        .unwrap_or_else(|_| "Custom-VMRogueSecurity".into());
+        .unwrap_or_else(|_| "Custom-VeyronSecurity".into());
     let tenant_id = std::env::var("VEYRON_SENTINEL_TENANT_ID").ok()?;
     let client_id = std::env::var("VEYRON_SENTINEL_CLIENT_ID").ok()?;
     let client_secret = std::env::var("VEYRON_SENTINEL_CLIENT_SECRET").ok()?;

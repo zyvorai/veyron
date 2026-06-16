@@ -4,24 +4,22 @@
 # when the CiliumNetworkPolicy CRD is present.
 #
 # Per-VM internet egress is managed separately by Veyron (CiliumNetworkPolicy or
-# Kubernetes NetworkPolicy on kubevirt.io/vm=<vm>) via the API and dashboard; see CLAUDE.md.
+# Kubernetes NetworkPolicy on kubevirt.io/vm=<vm>) via the API and dashboard.
 #
-# Namespace must match NAMESPACE in deploy scripts (default: veyron-system).
-# Two policies so both Helm/chart labels and scripts/deploy-k8s-remote.sh labels match
-# (Cilium endpointSelector keys are ANDed; OR requires separate CNPs).
+# Namespace is substituted at apply time (__VEYRON_APP_NAMESPACE__ or veyron-system).
 ---
 apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: allow-veyron-system-egress-chart
-  namespace: veyron-system
+  namespace: __VEYRON_APP_NAMESPACE__
 spec:
   endpointSelector:
     matchExpressions:
       - key: app.kubernetes.io/name
         operator: In
         values:
-          - vmrogue
+          - veyron
           - nats
   egress:
     - toEntities:
@@ -31,7 +29,7 @@ apiVersion: cilium.io/v2
 kind: CiliumNetworkPolicy
 metadata:
   name: allow-veyron-system-egress-api-legacy
-  namespace: veyron-system
+  namespace: __VEYRON_APP_NAMESPACE__
 spec:
   endpointSelector:
     matchLabels:

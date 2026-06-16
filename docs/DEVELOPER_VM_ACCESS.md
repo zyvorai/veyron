@@ -2,9 +2,9 @@
 
 **See also:** [Documentation index](README.md), [NETWORK_MANAGEMENT.md](NETWORK_MANAGEMENT.md).
 
-This guide explains how **application developers** and **platform engineers** typically reach guest shells on VMs managed by VMRogue, and how that relates to **VMRogue’s dashboard** and **API**.
+This guide explains how **application developers** and **platform engineers** typically reach guest shells on VMs managed by Veyron, and how that relates to **Veyron’s dashboard** and **API**.
 
-## What VMRogue shows today
+## What Veyron shows today
 
 ### Web dashboard
 
@@ -51,7 +51,7 @@ virtctl ssh --user ubuntu sample-ubuntu -n default
 
 ### 2. Plain `ssh user@guest-ip` (when IP is routable)
 
-When the guest IP (shown in VMRogue) is reachable from the developer’s machine—**same L2**, **corporate VPN**, **split tunnel** to the pod/overlay network, or another approved path—standard SSH is fine:
+When the guest IP (shown in Veyron) is reachable from the developer’s machine—**same L2**, **corporate VPN**, **split tunnel** to the pod/overlay network, or another approved path—standard SSH is fine:
 
 ```bash
 ssh ubuntu@10.0.0.251
@@ -65,25 +65,25 @@ Some teams place a small **bastion** VM or pod in a DMZ or well-known network se
 
 ---
 
-## Why VMRogue does not auto-create NodePort (or LB) for SSH
+## Why Veyron does not auto-create NodePort (or LB) for SSH
 
 - A **NodePort `Service`** targets **Pod** endpoints in Kubernetes. Reaching **SSH inside the guest** depends on your **KubeVirt + CNI** design (default pod network, Multus, bridge, etc.). It is not universally “one Service per VM.”
 - Exposing SSH on **node IPs + wide port ranges** is a **major security** and **policy** decision (many clusters forbid it or scope it with OPA/Gatekeeper).
-- **LoadBalancer / external IPs** are platform-specific. **[Cilium](https://docs.cilium.io/)** can provide LB IPAM, BGP, and related datapath features; **MetalLB** is another common pattern on bare metal. VMRogue stays agnostic: your platform team chooses how **routable** IPs are assigned; VMRogue documents **commands**, not your firewall topology.
+- **LoadBalancer / external IPs** are platform-specific. **[Cilium](https://docs.cilium.io/)** can provide LB IPAM, BGP, and related datapath features; **MetalLB** is another common pattern on bare metal. Veyron stays agnostic: your platform team chooses how **routable** IPs are assigned; Veyron documents **commands**, not your firewall topology.
 
-If you standardize on a specific pattern (e.g. “all devs use VPN + guest IP” or “all devs use `virtctl ssh`”), document that in your internal runbook and optionally extend VMRogue or your GitOps layer with **opt-in** automation (Services, LB annotations) that matches **your** network model.
+If you standardize on a specific pattern (e.g. “all devs use VPN + guest IP” or “all devs use `virtctl ssh`”), document that in your internal runbook and optionally extend Veyron or your GitOps layer with **opt-in** automation (Services, LB annotations) that matches **your** network model.
 
 ---
 
 ## CLI (outside the dashboard)
 
-VMRogue’s CLI includes SSH helpers that resolve guest IP when possible, with fallback to `virtctl`:
+Veyron’s CLI includes SSH helpers that resolve guest IP when possible, with fallback to `virtctl`:
 
 ```bash
-vmrogue ssh <vm-name> --user root
+veyron ssh <vm-name> --user root
 ```
 
-See `vmrogue ssh --help` for flags and namespace handling.
+See `veyron ssh --help` for flags and namespace handling.
 
 ---
 
@@ -96,4 +96,4 @@ See `vmrogue ssh --help` for flags and namespace handling.
 | Dashboard VNC         | Break-glass / Windows / no SSH       | Browser console via KubeVirt VNC subresource |
 | Bastion               | Strict egress / centralized access   | Operational overhead, strong control       |
 
-For questions about **Cilium**, **BGP**, or **LoadBalancer** classes, refer to your cluster’s networking documentation; VMRogue surfaces **observed guest IPs** and **copy-paste SSH / virtctl** commands so developers can use whichever path your platform supports.
+For questions about **Cilium**, **BGP**, or **LoadBalancer** classes, refer to your cluster’s networking documentation; Veyron surfaces **observed guest IPs** and **copy-paste SSH / virtctl** commands so developers can use whichever path your platform supports.

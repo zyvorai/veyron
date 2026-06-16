@@ -44,7 +44,7 @@ impl ProfileStorage {
     fn get_profiles_dir() -> Result<PathBuf> {
         let config_dir = dirs::config_dir().context("Could not determine config directory")?;
 
-        Ok(config_dir.join("vmrogue").join("profiles"))
+        Ok(config_dir.join("veyron").join("profiles"))
     }
 
     /// Get the file path for a profile.

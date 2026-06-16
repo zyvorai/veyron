@@ -34,14 +34,14 @@ pub struct CostEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostsListResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub costs: Vec<CostEntry>,
 }
 
 /// Cost summary
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostSummary {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub total_cost: f64,
     pub currency: String,
     pub period: String,
@@ -55,7 +55,7 @@ pub struct CostSummary {
 /// Cost forecast
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostForecast {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub current_monthly: f64,
     pub projected_monthly: f64,
     pub trend: String,
@@ -207,7 +207,7 @@ fn cost_entries_from_vms(vms: &[crate::kube::types::VirtualMachine]) -> Vec<Cost
 async fn list_costs(State(state): State<SharedState>) -> Json<CostsListResponse> {
     let (costs, ctx) = compute_cost_entries(&state, "all").await;
     Json(CostsListResponse {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         costs,
     })
 }
@@ -247,7 +247,7 @@ async fn get_cost_summary(
     let is_opencost = ctx.data_source.contains("opencost");
     let disclaimer = ctx.limitations.clone();
     Json(CostSummary {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         total_cost: round2(total),
         currency: "USD".to_string(),
         period: "monthly".to_string(),
@@ -268,7 +268,7 @@ async fn get_cost_forecast(State(state): State<SharedState>) -> Json<CostForecas
     let current: f64 = costs.iter().map(|c| c.total_cost).sum();
 
     Json(CostForecast {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         current_monthly: round2(current),
         projected_monthly: round2(current * 1.05),
         trend: if current > 0.0 { "growing" } else { "stable" }.to_string(),
@@ -284,9 +284,9 @@ async fn list_budgets(State(state): State<SharedState>) -> Json<Vec<Budget>> {
     let s = state.read().await;
     let client = s.client().client();
 
-    // List ConfigMaps with label vmrogue.io/type=budget in veyron-system namespace
+    // List ConfigMaps with label veyron.io/type=budget in veyron-system namespace
     let cms: Api<ConfigMap> = Api::namespaced(client.clone(), "veyron-system");
-    let lp = ListParams::default().labels("vmrogue.io/type=budget");
+    let lp = ListParams::default().labels("veyron.io/type=budget");
     let cm_list = match cms.list(&lp).await {
         Ok(list) => list,
         Err(_) => return Json(vec![]),
@@ -416,14 +416,14 @@ async fn create_budget(
 
     // Build labels
     let mut labels = BTreeMap::new();
-    labels.insert("vmrogue.io/type".to_string(), "budget".to_string());
-    labels.insert("vmrogue.io/budget-name".to_string(), req.name.clone());
+    labels.insert("veyron.io/type".to_string(), "budget".to_string());
+    labels.insert("veyron.io/budget-name".to_string(), req.name.clone());
     labels.insert(
-        "vmrogue.io/budget-namespace".to_string(),
+        "veyron.io/budget-namespace".to_string(),
         req.namespace.clone(),
     );
 
-    let cm_name = format!("vmrogue-budget-{}", req.name);
+    let cm_name = format!("veyron-budget-{}", req.name);
 
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {

@@ -1,13 +1,13 @@
-{{- if and .Values.kps.enabled .Values.vmrogue.grafanaDashboard.enabled }}
+{{- if and .Values.kps.enabled .Values.veyron.grafanaDashboard.enabled }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-vmrogue-grafana-dashboard
+  name: {{ .Release.Name }}-veyron-grafana-dashboard
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "veyron-monitoring.labels" . | nindent 4 }}
     grafana_dashboard: "1"
 data:
-  vmrogue-overview.json: |-
-{{ .Files.Get "files/vmrogue-overview.json" | nindent 4 }}
+  veyron-overview.json: |-
+{{ .Files.Get "files/veyron-overview.json" | nindent 4 }}
 {{- end }}

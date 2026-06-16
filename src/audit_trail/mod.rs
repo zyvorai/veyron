@@ -179,7 +179,7 @@ impl AuditTrail {
     /// Path to the audit trail storage file.
     fn storage_path() -> std::path::PathBuf {
         crate::utils::data_dir()
-            .unwrap_or_else(|_| std::path::PathBuf::from(".vmrogue"))
+            .unwrap_or_else(|_| std::path::PathBuf::from(".veyron"))
             .join("audit_trail.json")
     }
 

@@ -9,13 +9,13 @@
 #
 # Examples:
 #   ./scripts/test-customer-e2e-remote.sh HOST sus
-#   ZYVOR_E2E_SKIP=VMRogue,v9s ./scripts/test-customer-e2e-remote.sh HOST sus --quick
+#   ZYVOR_E2E_SKIP=Veyron,v9s ./scripts/test-customer-e2e-remote.sh HOST sus --quick
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TT="$(cd "${ROOT}/.." && pwd)"
-VMROGUE="${TT}/VMRogue"
+VMROGUE="${TT}/Veyron"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -54,7 +54,7 @@ scp "${SSH_OPTS[@]}" "${TEST_SCRIPT}" "${REMOTE}:~/test-packages-remote-only.sh"
 package_script_for() {
   local key="${1,,}"
   case "${key}" in
-    vmrogue) echo "${VMROGUE}/scripts/package-binary-remote.sh" ;;
+    veyron) echo "${VMROGUE}/scripts/package-binary-remote.sh" ;;
     machina) echo "${TT}/machina/scripts/package-binary-remote.sh" ;;
     v9s) echo "${TT}/v9s/scripts/package-binary-remote.sh" ;;
     guestkit) echo "${TT}/guestkit/scripts/package-binary-remote.sh" ;;

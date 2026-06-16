@@ -18,7 +18,7 @@ fn parse_ratio(used: &str, limit: &str) -> Option<f64> {
 /// Fleet ResourceQuota pressure across scoped namespaces.
 pub async fn quota_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Quota Advisor",
+        "Veyron Quota Advisor",
         "quota_advisor",
         "ResourceQuota pressure in workspace",
     );

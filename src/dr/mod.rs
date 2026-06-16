@@ -338,7 +338,7 @@ impl DRManager {
     ///
     /// For each protected resource in the given DR config:
     /// 1. Snapshots the VM on the source cluster
-    /// 2. Exports the VM spec as a VMRogueVM CRD YAML
+    /// 2. Exports the VM spec as a VeyronVM CRD YAML
     /// 3. Writes the manifest to the given output directory
     ///
     /// This creates a portable backup that can be applied to the target cluster.
@@ -371,19 +371,19 @@ impl DRManager {
 
             if let Ok(vm) = vms.get(&resource.name).await {
                 let manifest = serde_json::json!({
-                    "apiVersion": "vmrogue.io/v1alpha1",
-                    "kind": "VMRogueVM",
+                    "apiVersion": "veyron.io/v1alpha1",
+                    "kind": "VeyronVM",
                     "metadata": {
                         "name": resource.name,
                         "namespace": resource.namespace,
                         "labels": {
-                            "vmrogue.io/dr-config": config.id,
-                            "vmrogue.io/source-site": config.primary_site,
-                            "vmrogue.io/dr-strategy": config.strategy.to_string(),
+                            "veyron.io/dr-config": config.id,
+                            "veyron.io/source-site": config.primary_site,
+                            "veyron.io/dr-strategy": config.strategy.to_string(),
                         },
                         "annotations": {
-                            "vmrogue.io/exported-at": Utc::now().to_rfc3339(),
-                            "vmrogue.io/source-cluster": config.primary_site,
+                            "veyron.io/exported-at": Utc::now().to_rfc3339(),
+                            "veyron.io/source-cluster": config.primary_site,
                         }
                     },
                     "spec": {

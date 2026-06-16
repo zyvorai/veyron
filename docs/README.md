@@ -1,6 +1,6 @@
 # Documentation Index
 
-This directory contains focused guides for VMRogue features and operations. Start here when looking for a specific topic.
+This directory contains focused guides for Veyron features and operations. Start here when looking for a specific topic.
 
 **Repository layout:** default development branch is **`main`** (Rust CLI + web API). The historical Go-era tree is preserved on branch **`main-go`** for reference only.
 

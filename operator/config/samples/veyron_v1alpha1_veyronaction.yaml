@@ -1,5 +1,5 @@
-apiVersion: vmrogue.io/v1alpha1
-kind: VMRogueAction
+apiVersion: veyron.io/v1alpha1
+kind: VeyronAction
 metadata:
   name: scale-prod-db
   namespace: default

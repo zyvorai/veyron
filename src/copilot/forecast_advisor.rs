@@ -6,7 +6,7 @@ use crate::kube::KubeClient;
 /// Capacity / growth forecast narrative (heuristic + optional Prometheus).
 pub async fn forecast_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Forecast Advisor",
+        "Veyron Forecast Advisor",
         "forecast_advisor",
         "Capacity forecast in workspace",
     );

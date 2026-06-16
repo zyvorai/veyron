@@ -23,8 +23,8 @@ Quick start:
   veyron <command> --help           Detailed help for any command
 
 Configuration:
-  vmrogue config-init                Create default config file
-  vmrogue completions bash           Generate shell completions
+  veyron config-init                Create default config file
+  veyron completions bash           Generate shell completions
 
 Environment variables:
   KUBECONFIG                         Path to kubeconfig file
@@ -84,7 +84,7 @@ pub enum CatalogAction {
 
 #[derive(Subcommand, Debug)]
 pub enum AiCommands {
-    /// VM health report (VMRogue Doctor)
+    /// VM health report (Veyron Doctor)
     Doctor {
         /// VM name
         name: String,
@@ -212,7 +212,7 @@ pub enum AiCommands {
         #[arg(short, long, default_value = "text")]
         output: String,
     },
-    /// VMRogueVM operator drift
+    /// VeyronVM operator drift
     Drift {
         #[arg(short, long, default_value = "text")]
         output: String,
@@ -288,7 +288,7 @@ pub enum Commands {
         #[arg(long)]
         cloud_init: Option<String>,
 
-        /// Do not apply VMRogue internet egress policy (CiliumNetworkPolicy / NetworkPolicy)
+        /// Do not apply Veyron internet egress policy (CiliumNetworkPolicy / NetworkPolicy)
         #[arg(long)]
         no_internet: bool,
 
@@ -2226,7 +2226,7 @@ pub enum Commands {
         output: String,
     },
 
-    /// Initialize a new vmrogue project
+    /// Initialize a new veyron project
     Init {
         /// Project name
         name: String,
@@ -2482,7 +2482,7 @@ pub enum Commands {
     },
 
     // ========== GITOPS ==========
-    /// Export all VMs as VMRogueVM CRD manifests to a directory
+    /// Export all VMs as VeyronVM CRD manifests to a directory
     #[command(name = "gitops-export")]
     GitopsExport {
         /// Output directory for YAML manifests
@@ -2490,19 +2490,19 @@ pub enum Commands {
         directory: String,
     },
 
-    // ========== OPERATOR CRD MANAGEMENT (vmrogue.io/v1alpha1) ==========
-    /// List VMRogueVM custom resources
+    // ========== OPERATOR CRD MANAGEMENT (veyron.io/v1alpha1) ==========
+    /// List VeyronVM custom resources
     #[command(name = "vrvm-list")]
     VrvmList,
 
-    /// Get a VMRogueVM custom resource
+    /// Get a VeyronVM custom resource
     #[command(name = "vrvm-get")]
     VrvmGet {
         /// VM name
         name: String,
     },
 
-    /// Create a VMRogueVM custom resource with full hardware configuration
+    /// Create a VeyronVM custom resource with full hardware configuration
     #[command(name = "vrvm-create")]
     VrvmCreate {
         /// VM name
@@ -2578,7 +2578,7 @@ pub enum Commands {
         #[arg(short, long, num_args = 1)]
         label: Vec<String>,
 
-        /// Load full VMRogueVMSpec from YAML file
+        /// Load full VeyronVMSpec from YAML file
         #[arg(short, long)]
         from_file: Option<String>,
 
@@ -2591,7 +2591,7 @@ pub enum Commands {
         start: bool,
     },
 
-    /// Apply a VMRogueVM from a YAML manifest file
+    /// Apply a VeyronVM from a YAML manifest file
     #[command(name = "vrvm-apply")]
     VrvmApply {
         /// Path to YAML manifest file
@@ -2603,7 +2603,7 @@ pub enum Commands {
         dry_run: bool,
     },
 
-    /// Delete a VMRogueVM custom resource
+    /// Delete a VeyronVM custom resource
     #[command(name = "vrvm-delete")]
     VrvmDelete {
         /// VM name
@@ -2614,51 +2614,51 @@ pub enum Commands {
         yes: bool,
     },
 
-    /// List VMRogueBlueprint custom resources
+    /// List VeyronBlueprint custom resources
     #[command(name = "vrbp-list")]
     VrbpList,
 
-    /// Get a VMRogueBlueprint custom resource
+    /// Get a VeyronBlueprint custom resource
     #[command(name = "vrbp-get")]
     VrbpGet {
         /// Blueprint name
         name: String,
     },
 
-    /// Delete a VMRogueBlueprint custom resource
+    /// Delete a VeyronBlueprint custom resource
     #[command(name = "vrbp-delete")]
     VrbpDelete {
         /// Blueprint name
         name: String,
     },
 
-    /// List VMRoguePolicy custom resources
+    /// List VeyronPolicy custom resources
     #[command(name = "vrpol-list")]
     VrpolList,
 
-    /// Get a VMRoguePolicy custom resource
+    /// Get a VeyronPolicy custom resource
     #[command(name = "vrpol-get")]
     VrpolGet {
         /// Policy name
         name: String,
     },
 
-    /// Delete a VMRoguePolicy custom resource
+    /// Delete a VeyronPolicy custom resource
     #[command(name = "vrpol-delete")]
     VrpolDelete {
         /// Policy name
         name: String,
     },
 
-    /// List VMRogueInsight custom resources
+    /// List VeyronInsight custom resources
     #[command(name = "vrin-list")]
     VrinList,
 
-    /// List VMRogueAction custom resources
+    /// List VeyronAction custom resources
     #[command(name = "vract-list")]
     VractList,
 
-    /// Approve a VMRogueAction
+    /// Approve a VeyronAction
     #[command(name = "vract-approve")]
     VractApprove {
         /// Action name
@@ -2803,7 +2803,7 @@ mod tests {
 
     #[test]
     fn test_create_command() {
-        let cli = parse(&["vmrogue", "create", "my-vm", "--template", "ubuntu"]).unwrap();
+        let cli = parse(&["veyron", "create", "my-vm", "--template", "ubuntu"]).unwrap();
         match *cli.command {
             Commands::Create { name, template, .. } => {
                 assert_eq!(name, "my-vm");
@@ -2816,7 +2816,7 @@ mod tests {
     #[test]
     fn test_create_with_resources() {
         let cli = parse(&[
-            "vmrogue",
+            "veyron",
             "create",
             "test-vm",
             "--template",
@@ -2849,7 +2849,7 @@ mod tests {
     #[test]
     fn test_create_dry_run() {
         let cli = parse(&[
-            "vmrogue",
+            "veyron",
             "create",
             "my-vm",
             "--template",
@@ -2865,7 +2865,7 @@ mod tests {
 
     #[test]
     fn test_list_command() {
-        let cli = parse(&["vmrogue", "list"]).unwrap();
+        let cli = parse(&["veyron", "list"]).unwrap();
         match *cli.command {
             Commands::List {
                 all_namespaces,
@@ -2880,7 +2880,7 @@ mod tests {
 
     #[test]
     fn test_list_all_namespaces() {
-        let cli = parse(&["vmrogue", "list", "-A"]).unwrap();
+        let cli = parse(&["veyron", "list", "-A"]).unwrap();
         match *cli.command {
             Commands::List { all_namespaces, .. } => assert!(all_namespaces),
             _ => panic!("Expected List command"),
@@ -2889,7 +2889,7 @@ mod tests {
 
     #[test]
     fn test_get_command() {
-        let cli = parse(&["vmrogue", "get", "my-vm"]).unwrap();
+        let cli = parse(&["veyron", "get", "my-vm"]).unwrap();
         match *cli.command {
             Commands::Get { name, .. } => assert_eq!(name, "my-vm"),
             _ => panic!("Expected Get command"),
@@ -2898,7 +2898,7 @@ mod tests {
 
     #[test]
     fn test_delete_command() {
-        let cli = parse(&["vmrogue", "delete", "my-vm", "--yes"]).unwrap();
+        let cli = parse(&["veyron", "delete", "my-vm", "--yes"]).unwrap();
         match *cli.command {
             Commands::Delete { name, yes } => {
                 assert_eq!(name, "my-vm");
@@ -2910,28 +2910,28 @@ mod tests {
 
     #[test]
     fn test_start_stop_restart() {
-        let cli = parse(&["vmrogue", "start", "vm1"]).unwrap();
+        let cli = parse(&["veyron", "start", "vm1"]).unwrap();
         assert!(matches!(*cli.command, Commands::Start { name } if name == "vm1"));
 
-        let cli = parse(&["vmrogue", "stop", "vm1"]).unwrap();
+        let cli = parse(&["veyron", "stop", "vm1"]).unwrap();
         assert!(matches!(*cli.command, Commands::Stop { name } if name == "vm1"));
 
-        let cli = parse(&["vmrogue", "restart", "vm1"]).unwrap();
+        let cli = parse(&["veyron", "restart", "vm1"]).unwrap();
         assert!(matches!(*cli.command, Commands::Restart { name } if name == "vm1"));
     }
 
     #[test]
     fn test_pause_unpause() {
-        let cli = parse(&["vmrogue", "pause", "vm1"]).unwrap();
+        let cli = parse(&["veyron", "pause", "vm1"]).unwrap();
         assert!(matches!(*cli.command, Commands::Pause { name } if name == "vm1"));
 
-        let cli = parse(&["vmrogue", "unpause", "vm1"]).unwrap();
+        let cli = parse(&["veyron", "unpause", "vm1"]).unwrap();
         assert!(matches!(*cli.command, Commands::Unpause { name } if name == "vm1"));
     }
 
     #[test]
     fn test_resize_command() {
-        let cli = parse(&["vmrogue", "resize", "vm1", "--cpus", "4", "--memory", "8Gi"]).unwrap();
+        let cli = parse(&["veyron", "resize", "vm1", "--cpus", "4", "--memory", "8Gi"]).unwrap();
         match *cli.command {
             Commands::Resize { name, cpus, memory } => {
                 assert_eq!(name, "vm1");
@@ -2942,7 +2942,7 @@ mod tests {
         }
 
         // Test with only cpus
-        let cli = parse(&["vmrogue", "resize", "vm1", "--cpus", "2"]).unwrap();
+        let cli = parse(&["veyron", "resize", "vm1", "--cpus", "2"]).unwrap();
         match *cli.command {
             Commands::Resize { name, cpus, memory } => {
                 assert_eq!(name, "vm1");
@@ -2955,26 +2955,26 @@ mod tests {
 
     #[test]
     fn test_namespace_default() {
-        let cli = parse(&["vmrogue", "list"]).unwrap();
+        let cli = parse(&["veyron", "list"]).unwrap();
         assert_eq!(cli.namespace, "default");
     }
 
     #[test]
     fn test_namespace_override() {
-        let cli = parse(&["vmrogue", "--namespace", "prod", "list"]).unwrap();
+        let cli = parse(&["veyron", "--namespace", "prod", "list"]).unwrap();
         assert_eq!(cli.namespace, "prod");
     }
 
     #[test]
     fn test_verbose_flag() {
-        let cli = parse(&["vmrogue", "-v", "list"]).unwrap();
+        let cli = parse(&["veyron", "-v", "list"]).unwrap();
         assert!(cli.verbose);
     }
 
     #[test]
     fn test_generate_command() {
         let cli = parse(&[
-            "vmrogue",
+            "veyron",
             "generate",
             "test-vm",
             "--template",
@@ -3000,7 +3000,7 @@ mod tests {
 
     #[test]
     fn test_templates_command() {
-        let cli = parse(&["vmrogue", "templates"]).unwrap();
+        let cli = parse(&["veyron", "templates"]).unwrap();
         assert!(matches!(
             *cli.command,
             Commands::Templates {
@@ -3012,7 +3012,7 @@ mod tests {
 
     #[test]
     fn test_validate_command() {
-        let cli = parse(&["vmrogue", "validate", "config.yaml"]).unwrap();
+        let cli = parse(&["veyron", "validate", "config.yaml"]).unwrap();
         match *cli.command {
             Commands::Validate { file } => assert_eq!(file, "config.yaml"),
             _ => panic!("Expected Validate command"),
@@ -3021,7 +3021,7 @@ mod tests {
 
     #[test]
     fn test_profiles_command() {
-        let cli = parse(&["vmrogue", "profiles", "--details"]).unwrap();
+        let cli = parse(&["veyron", "profiles", "--details"]).unwrap();
         match *cli.command {
             Commands::Profiles { details } => assert!(details),
             _ => panic!("Expected Profiles command"),
@@ -3030,7 +3030,7 @@ mod tests {
 
     #[test]
     fn test_health_command() {
-        let cli = parse(&["vmrogue", "health", "my-vm", "--detailed"]).unwrap();
+        let cli = parse(&["veyron", "health", "my-vm", "--detailed"]).unwrap();
         match *cli.command {
             Commands::Health { target, detailed } => {
                 assert_eq!(target, "my-vm");
@@ -3042,7 +3042,7 @@ mod tests {
 
     #[test]
     fn test_cost_analyze() {
-        let cli = parse(&["vmrogue", "cost-analyze", "db-vm", "--period", "weekly"]).unwrap();
+        let cli = parse(&["veyron", "cost-analyze", "db-vm", "--period", "weekly"]).unwrap();
         match *cli.command {
             Commands::CostAnalyze { vm, period, .. } => {
                 assert_eq!(vm, Some("db-vm".to_string()));
@@ -3055,7 +3055,7 @@ mod tests {
     #[test]
     fn test_security_scan() {
         let cli = parse(&[
-            "vmrogue",
+            "veyron",
             "security-scan",
             "web-vm",
             "--scan-type",
@@ -3080,7 +3080,7 @@ mod tests {
 
     #[test]
     fn test_tui_command() {
-        let cli = parse(&["vmrogue", "tui", "--basic"]).unwrap();
+        let cli = parse(&["veyron", "tui", "--basic"]).unwrap();
         match *cli.command {
             Commands::Tui { basic, .. } => assert!(basic),
             _ => panic!("Expected Tui command"),
@@ -3089,17 +3089,17 @@ mod tests {
 
     #[test]
     fn test_unknown_command_fails() {
-        assert!(parse(&["vmrogue", "nonexistent"]).is_err());
+        assert!(parse(&["veyron", "nonexistent"]).is_err());
     }
 
     #[test]
     fn test_missing_required_arg_fails() {
-        assert!(parse(&["vmrogue", "create"]).is_err()); // name is required
+        assert!(parse(&["veyron", "create"]).is_err()); // name is required
     }
 
     #[test]
     fn test_clone_command() {
-        let cli = parse(&["vmrogue", "clone", "source-vm", "clone-vm"]).unwrap();
+        let cli = parse(&["veyron", "clone", "source-vm", "clone-vm"]).unwrap();
         match *cli.command {
             Commands::Clone { source, target, .. } => {
                 assert_eq!(source, "source-vm");
@@ -3111,7 +3111,7 @@ mod tests {
 
     #[test]
     fn test_snapshot_create() {
-        let cli = parse(&["vmrogue", "snapshot-create", "my-vm", "--name", "snap1"]).unwrap();
+        let cli = parse(&["veyron", "snapshot-create", "my-vm", "--name", "snap1"]).unwrap();
         match *cli.command {
             Commands::SnapshotCreate { vm, name, .. } => {
                 assert_eq!(vm, "my-vm");
@@ -3124,7 +3124,7 @@ mod tests {
     #[test]
     fn test_backup_create() {
         let cli = parse(&[
-            "vmrogue",
+            "veyron",
             "backup-create",
             "db-vm",
             "--backup-type",
@@ -3145,7 +3145,7 @@ mod tests {
     #[test]
     fn test_migrate_command() {
         let cli = parse(&[
-            "vmrogue",
+            "veyron",
             "migrate",
             "vm1",
             "--target-node",
@@ -3170,7 +3170,7 @@ mod tests {
 
     #[test]
     fn test_events_command() {
-        let cli = parse(&["vmrogue", "events", "--limit", "25"]).unwrap();
+        let cli = parse(&["veyron", "events", "--limit", "25"]).unwrap();
         match *cli.command {
             Commands::EventsList { limit, .. } => assert_eq!(limit, 25),
             _ => panic!("Expected EventsList"),
@@ -3179,13 +3179,13 @@ mod tests {
 
     #[test]
     fn test_nodes_command() {
-        let cli = parse(&["vmrogue", "nodes"]).unwrap();
+        let cli = parse(&["veyron", "nodes"]).unwrap();
         assert!(matches!(*cli.command, Commands::NodesList { .. }));
     }
 
     #[test]
     fn test_pods_command() {
-        let cli = parse(&["vmrogue", "pods", "--output", "json"]).unwrap();
+        let cli = parse(&["veyron", "pods", "--output", "json"]).unwrap();
         match *cli.command {
             Commands::PodsList { output } => assert_eq!(output, "json"),
             _ => panic!("Expected PodsList"),
@@ -3194,7 +3194,7 @@ mod tests {
 
     #[test]
     fn test_import_command() {
-        let cli = parse(&["vmrogue", "import", "vm.yaml", "--start", "--dry-run"]).unwrap();
+        let cli = parse(&["veyron", "import", "vm.yaml", "--start", "--dry-run"]).unwrap();
         match *cli.command {
             Commands::Import {
                 ref file,
@@ -3211,7 +3211,7 @@ mod tests {
 
     #[test]
     fn test_search_command() {
-        let cli = parse(&["vmrogue", "search", "running", "vms", "in", "production"]).unwrap();
+        let cli = parse(&["veyron", "search", "running", "vms", "in", "production"]).unwrap();
         match *cli.command {
             Commands::Search { ref query } => {
                 assert_eq!(query, &["running", "vms", "in", "production"]);
@@ -3222,7 +3222,7 @@ mod tests {
 
     #[test]
     fn test_troubleshoot_command() {
-        let cli = parse(&["vmrogue", "troubleshoot", "my-vm"]).unwrap();
+        let cli = parse(&["veyron", "troubleshoot", "my-vm"]).unwrap();
         match *cli.command {
             Commands::Troubleshoot { ref name } => assert_eq!(name, "my-vm"),
             _ => panic!("Expected Troubleshoot"),
@@ -3231,7 +3231,7 @@ mod tests {
 
     #[test]
     fn test_capacity_command() {
-        let cli = parse(&["vmrogue", "capacity", "--detailed"]).unwrap();
+        let cli = parse(&["veyron", "capacity", "--detailed"]).unwrap();
         match *cli.command {
             Commands::Capacity { detailed, .. } => assert!(detailed),
             _ => panic!("Expected Capacity"),
@@ -3240,7 +3240,7 @@ mod tests {
 
     #[test]
     fn test_placement_command() {
-        let cli = parse(&["vmrogue", "placement", "my-vm", "--strategy", "binpack"]).unwrap();
+        let cli = parse(&["veyron", "placement", "my-vm", "--strategy", "binpack"]).unwrap();
         match *cli.command {
             Commands::Placement {
                 ref name,
@@ -3255,19 +3255,19 @@ mod tests {
 
     #[test]
     fn test_clusters_list_command() {
-        let cli = parse(&["vmrogue", "clusters-list"]).unwrap();
+        let cli = parse(&["veyron", "clusters-list"]).unwrap();
         assert!(matches!(*cli.command, Commands::ClustersList { .. }));
     }
 
     #[test]
     fn test_clusters_discover_command() {
-        let cli = parse(&["vmrogue", "clusters-discover"]).unwrap();
+        let cli = parse(&["veyron", "clusters-discover"]).unwrap();
         assert!(matches!(*cli.command, Commands::ClustersDiscover));
     }
 
     #[test]
     fn test_gitops_diff_command() {
-        let cli = parse(&["vmrogue", "gitops-diff", "--directory", "manifests"]).unwrap();
+        let cli = parse(&["veyron", "gitops-diff", "--directory", "manifests"]).unwrap();
         match *cli.command {
             Commands::GitopsDiff { ref directory } => assert_eq!(directory, "manifests"),
             _ => panic!("Expected GitopsDiff"),
@@ -3276,13 +3276,13 @@ mod tests {
 
     #[test]
     fn test_gitops_status_command() {
-        let cli = parse(&["vmrogue", "gitops-status"]).unwrap();
+        let cli = parse(&["veyron", "gitops-status"]).unwrap();
         assert!(matches!(*cli.command, Commands::GitopsStatus));
     }
 
     #[test]
     fn test_list_json_command() {
-        let cli = parse(&["vmrogue", "list-json"]).unwrap();
+        let cli = parse(&["veyron", "list-json"]).unwrap();
         assert!(matches!(*cli.command, Commands::ListJson));
     }
 }

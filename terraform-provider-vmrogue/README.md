@@ -1,37 +1,37 @@
 # Terraform Provider Veyron (v0.1)
 
-Terraform provider for the [VMRogue](https://github.com/zyvor/VMRogue) REST API — KubeVirt VM lifecycle, snapshots, and tenant namespace quotas.
+Terraform provider for the [Veyron](https://github.com/zyvor/Veyron) REST API — KubeVirt VM lifecycle, snapshots, and tenant namespace quotas.
 
 ## Resources (v0.1)
 
 | Resource | API |
 |----------|-----|
-| `vmrogue_virtual_machine` | `POST/PUT/DELETE /api/v1/vms` |
-| `vmrogue_snapshot` | `POST /api/v1/snapshots/:ns/:vm/create` |
-| `vmrogue_namespace_quota` | `POST /api/v1/tenants` (bootstrap namespace + ResourceQuota) |
+| `veyron_virtual_machine` | `POST/PUT/DELETE /api/v1/vms` |
+| `veyron_snapshot` | `POST /api/v1/snapshots/:ns/:vm/create` |
+| `veyron_namespace_quota` | `POST /api/v1/tenants` (bootstrap namespace + ResourceQuota) |
 
 ## Data sources
 
 | Data source | API |
 |-------------|-----|
-| `vmrogue_templates` | `GET /api/v1/templates` |
-| `vmrogue_storage_classes` | `GET /api/v1/storage/classes` |
-| `vmrogue_nodes` | `GET /api/v1/nodes` |
+| `veyron_templates` | `GET /api/v1/templates` |
+| `veyron_storage_classes` | `GET /api/v1/storage/classes` |
+| `veyron_nodes` | `GET /api/v1/nodes` |
 
 ## Configure
 
 ```hcl
 terraform {
   required_providers {
-    vmrogue = {
-      source = "zyvor/vmrogue"
+    veyron = {
+      source = "zyvor/veyron"
     }
   }
 }
 
-provider "vmrogue" {
-  endpoint = "https://vmrogue.example.com"
-  api_key  = var.vmrogue_api_key
+provider "veyron" {
+  endpoint = "https://veyron.example.com"
+  api_key  = var.veyron_api_key
   # or bearer_token for OIDC service accounts
 }
 ```
@@ -39,7 +39,7 @@ provider "vmrogue" {
 ## Example
 
 ```hcl
-resource "vmrogue_namespace_quota" "team_a" {
+resource "veyron_namespace_quota" "team_a" {
   id           = "team-a"
   display_name = "Team A"
   owner_email  = "team-a@example.com"
@@ -48,18 +48,18 @@ resource "vmrogue_namespace_quota" "team_a" {
   max_vms      = 100
 }
 
-resource "vmrogue_virtual_machine" "web" {
+resource "veyron_virtual_machine" "web" {
   name       = "web-01"
-  namespace  = vmrogue_namespace_quota.team_a.namespace
+  namespace  = veyron_namespace_quota.team_a.namespace
   template   = "ubuntu-22.04"
   cpus       = 2
   memory     = "4Gi"
   start      = true
 }
 
-resource "vmrogue_snapshot" "web_baseline" {
-  namespace     = vmrogue_virtual_machine.web.namespace
-  vm_name       = vmrogue_virtual_machine.web.name
+resource "veyron_snapshot" "web_baseline" {
+  namespace     = veyron_virtual_machine.web.namespace
+  vm_name       = veyron_virtual_machine.web.name
   snapshot_name = "baseline"
 }
 ```
@@ -67,8 +67,8 @@ resource "vmrogue_snapshot" "web_baseline" {
 ## Build
 
 ```bash
-cd terraform-provider-vmrogue
-go build -o terraform-provider-vmrogue
+cd terraform-provider-veyron
+go build -o terraform-provider-veyron
 ```
 
 OpenAPI contract: `GET /api/openapi.json` on the Veyron API server.

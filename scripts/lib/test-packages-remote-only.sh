@@ -8,7 +8,7 @@
 # Env:
 #   ZYVOR_E2E_INSTALL=install-everything|install   (default: install-everything when present)
 #   ZYVOR_E2E_TIMEOUT_SECS=900                    default per-product install timeout
-#   ZYVOR_E2E_SKIP=vmrogue,machina                comma-separated product names to skip
+#   ZYVOR_E2E_SKIP=veyron,machina                comma-separated product names to skip
 set -uo pipefail
 
 TEST_ROOT="${HOME}/package-tests"
@@ -56,7 +56,7 @@ should_skip() {
 install_timeout_for() {
   local name="$1"
   case "${name,,}" in
-    machina|vmrogue|v9s|ragnarok|aether|ironwolf|packetwolf) echo 900 ;;
+    machina|veyron|v9s|ragnarok|aether|ironwolf|packetwolf) echo 900 ;;
     *) echo "${ZYVOR_E2E_TIMEOUT_SECS:-600}" ;;
   esac
 }
@@ -228,7 +228,7 @@ test_tarball() {
 }
 
 declare -a JOBS=(
-  "VMRogue|$(pick_latest "${HOME}/vmrogue-dist")"
+  "Veyron|$(pick_latest "${HOME}/veyron-dist")"
   "machina|$(pick_latest "${HOME}/machina-dist")"
   "v9s|$(pick_latest "${HOME}/v9s-dist")"
   "guestkit|$(pick_latest "${HOME}/guestkit-dist")"

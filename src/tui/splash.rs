@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-// Splash Screen - VMRogue startup animation
+// Splash Screen - Veyron startup animation
 use crate::tui::colors::tui as colors;
 
 use ratatui::{

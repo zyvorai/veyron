@@ -156,7 +156,7 @@ pub fn tool_definitions() -> Vec<ToolDefinition> {
         ),
         tool(
             "drift_advisor",
-            "VMRogueVM operator drift vs desired state",
+            "VeyronVM operator drift vs desired state",
             json!({"type": "object", "properties": {}}),
         ),
         tool(

@@ -54,7 +54,7 @@ pub struct PinnedVmSummary {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ExperienceHomeResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub experience: ExperienceContext,
     pub greeting: String,
     pub workspace: String,
@@ -215,7 +215,7 @@ pub struct VmFleetHealthItem {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FleetHealthResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub items: Vec<VmFleetHealthItem>,
 }
 
@@ -233,7 +233,7 @@ pub struct TemplateStoreItem {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TemplateStoreResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub templates: Vec<TemplateStoreItem>,
 }
 
@@ -250,7 +250,7 @@ pub struct LocationItem {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct LocationsResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub current_location: String,
     pub locations: Vec<LocationItem>,
 }
@@ -291,7 +291,7 @@ pub struct KeyboardShortcutItem {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ExperienceDesktopResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub product: String,
     pub tiers: Vec<DesktopTierItem>,
     pub dock_defaults: DockDefaultsByTier,
@@ -467,7 +467,7 @@ async fn experience_desktop(
         None
     };
     Json(ExperienceDesktopResponse {
-        vmrogue_context: experience_context(),
+        veyron_context: experience_context(),
         product: "Veyron".to_string(),
         tiers: desktop_tiers(),
         dock_defaults: dock_defaults(),
@@ -531,7 +531,7 @@ async fn fleet_health(
         }
     }
     Json(FleetHealthResponse {
-        vmrogue_context: experience_context(),
+        veyron_context: experience_context(),
         items,
     })
 }
@@ -579,7 +579,7 @@ async fn template_store() -> Json<TemplateStoreResponse> {
     }
     templates.sort_by(|a, b| a.id.cmp(&b.id));
     Json(TemplateStoreResponse {
-        vmrogue_context: experience_context(),
+        veyron_context: experience_context(),
         templates,
     })
 }
@@ -623,7 +623,7 @@ async fn experience_locations(State(state): State<SharedState>) -> Json<Location
     };
 
     Json(LocationsResponse {
-        vmrogue_context: experience_context(),
+        veyron_context: experience_context(),
         current_location,
         locations,
     })
@@ -874,7 +874,7 @@ async fn experience_home(
     let copilot_briefing = crate::copilot::fleet_briefing(&client, &scope).await;
 
     Json(ExperienceHomeResponse {
-        vmrogue_context: experience_context(),
+        veyron_context: experience_context(),
         experience: ExperienceContext {
             product: "Veyron".to_string(),
             tagline: "Kubernetes-native VM command center.".to_string(),
@@ -1089,7 +1089,7 @@ async fn experience_search(
             kind: "action".to_string(),
             id: "unhealthy-vms".to_string(),
             title: "Show unhealthy VMs".to_string(),
-            subtitle: "VMRogue Doctor fleet scan".to_string(),
+            subtitle: "Veyron Doctor fleet scan".to_string(),
             action: "copilot:unhealthy".to_string(),
         });
         results.push(SearchResultItem {
@@ -1145,7 +1145,7 @@ async fn experience_search(
             kind: "action".to_string(),
             id: "drift-advisor".to_string(),
             title: "Operator drift scan".to_string(),
-            subtitle: "VMRogueVM spec vs cluster state".to_string(),
+            subtitle: "VeyronVM spec vs cluster state".to_string(),
             action: "copilot:drift".to_string(),
         });
     }

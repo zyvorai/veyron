@@ -34,7 +34,7 @@ pub struct ImageCatalogEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImageCatalogResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub images: Vec<ImageCatalogEntry>,
 }
 
@@ -114,7 +114,7 @@ async fn list_image_catalog(
                 .metadata
                 .labels
                 .as_ref()
-                .and_then(|l| l.get("vmrogue.io/image-phase"))
+                .and_then(|l| l.get("veyron.io/image-phase"))
                 .cloned()
                 .unwrap_or_else(|| {
                     if cdi_phase == "Succeeded" {
@@ -163,7 +163,7 @@ async fn list_image_catalog(
     if let Ok(pvcs) = pvc_api
         .list(
             &ListParams::default()
-                .labels("vmrogue.io/type=golden-image")
+                .labels("veyron.io/type=golden-image")
                 .limit(100),
         )
         .await
@@ -204,7 +204,7 @@ async fn list_image_catalog(
     }
 
     Json(ImageCatalogResponse {
-        vmrogue_context: image_context(),
+        veyron_context: image_context(),
         images,
     })
 }
@@ -248,8 +248,8 @@ async fn import_data_volume(
             "name": req.name,
             "namespace": req.namespace,
             "labels": {
-                "vmrogue.io/type": "imported-image",
-                "vmrogue.io/image-phase": "building"
+                "veyron.io/type": "imported-image",
+                "veyron.io/image-phase": "building"
             }
         },
         "spec": {
@@ -283,7 +283,7 @@ async fn import_data_volume(
                 "status": "created",
                 "name": created.metadata.name,
                 "namespace": created.metadata.namespace,
-                "vmrogue_context": image_context(),
+                "veyron_context": image_context(),
             })),
         )),
         Err(e) => Err((

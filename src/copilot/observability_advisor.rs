@@ -9,7 +9,7 @@ use crate::kube::KubeClient;
 /// Observability stack discovery: metrics, logs, traces.
 pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Observability Advisor",
+        "Veyron Observability Advisor",
         "observability_advisor",
         "Observability stack in cluster",
     );

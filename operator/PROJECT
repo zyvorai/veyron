@@ -1,52 +1,52 @@
-domain: vmrogue.io
+domain: veyron.io
 layout:
 - go.kubebuilder.io/v4
-projectName: vmrogue-operator
-repo: github.com/ssahani/vmrogue/operator
+projectName: veyron-operator
+repo: github.com/ssahani/veyron/operator
 version: "3"
 resources:
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: vmrogue.io
-  group: vmrogue
-  kind: VMRogueVM
-  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  domain: veyron.io
+  group: veyron
+  kind: VeyronVM
+  path: github.com/ssahani/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: vmrogue.io
-  group: vmrogue
-  kind: VMRogueBlueprint
-  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  domain: veyron.io
+  group: veyron
+  kind: VeyronBlueprint
+  path: github.com/ssahani/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: vmrogue.io
-  group: vmrogue
-  kind: VMRoguePolicy
-  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  domain: veyron.io
+  group: veyron
+  kind: VeyronPolicy
+  path: github.com/ssahani/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: vmrogue.io
-  group: vmrogue
-  kind: VMRogueInsight
-  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  domain: veyron.io
+  group: veyron
+  kind: VeyronInsight
+  path: github.com/ssahani/veyron/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: vmrogue.io
-  group: vmrogue
-  kind: VMRogueAction
-  path: github.com/ssahani/vmrogue/operator/api/v1alpha1
+  domain: veyron.io
+  group: veyron
+  kind: VeyronAction
+  path: github.com/ssahani/veyron/operator/api/v1alpha1
   version: v1alpha1

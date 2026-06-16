@@ -64,15 +64,15 @@ The deployed pod serves HTTPS on `hostPort: 5151` with a self-signed cert genera
 
 ### API service account and RBAC (KubeVirt, CDI, Cilium, storage, chaos)
 
-The in-cluster API runs as ServiceAccount **`vmrogue`** with **`ClusterRole` `vmrogue`**. Keep these in sync when you add new kube API usage:
+The in-cluster API runs as ServiceAccount **`veyron`** with **`ClusterRole` `veyron`**. Keep these in sync when you add new kube API usage:
 
 - **`deploy/k8s.yaml`** — canonical manifest for `./scripts/deploy-k8s.sh` and `./scripts/deploy-all-remote.sh`
 - **`charts/veyron/templates/clusterrole.yaml`** — Helm chart (same rule set when `rbac.create` is true)
 - **`scripts/deploy-k8s-remote.sh`** — embeds an equivalent `ClusterRole` for the “rsync + build on host” API-only path
 
-The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron-operator/templates/rbac.yaml`**): KubeVirt + VMRogue CRDs, VM subresources (VNC, start/stop/restart/migrate), snapshots/restores, **read-only** CDI / upload / instancetype / CSI `VolumeSnapshot` / Multus NADs, secrets, events, namespaces, pods, leases.
+The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron-operator/templates/rbac.yaml`**): KubeVirt + Veyron CRDs, VM subresources (VNC, start/stop/restart/migrate), snapshots/restores, **read-only** CDI / upload / instancetype / CSI `VolumeSnapshot` / Multus NADs, secrets, events, namespaces, pods, leases.
 
-**API `ClusterRole` (broad “platform admin” for the dashboard)** includes among others: KubeVirt (including **`subresources.kubevirt.io`** start/stop/restart/migrate, pause, and **`virtualmachineinstances/guest-exec`** + **`guest-exec-status`** for in-guest RDP), **CDI** (`cdi.kubevirt.io/*`, `upload.cdi.kubevirt.io/*` full verbs), **CSI / snapshots** (`snapshot.storage.k8s.io`, `volumeattachments`, `CSIStorageCapacity`), **instancetype.kubevirt.io/***, **Multus** (`k8s.cni.cncf.io/network-attachment-definitions`), **Gateway API** (`gateway.networking.k8s.io/*`), **Chaos Mesh / Litmus** (`chaos-mesh.org`, `litmuschaos.io` — get/list/watch only), **Cilium** (`cilium.io/*` full verbs), **Kubernetes** NetworkPolicies and Ingresses (full verbs), **`pods/exec`**, **`pods/attach`**, **`pods/portforward`**, metrics, migration policies, HPAs, namespace create (budget bootstrap), leases, VMRogue CRDs, and RBAC read-only for visualization.
+**API `ClusterRole` (broad “platform admin” for the dashboard)** includes among others: KubeVirt (including **`subresources.kubevirt.io`** start/stop/restart/migrate, pause, and **`virtualmachineinstances/guest-exec`** + **`guest-exec-status`** for in-guest RDP), **CDI** (`cdi.kubevirt.io/*`, `upload.cdi.kubevirt.io/*` full verbs), **CSI / snapshots** (`snapshot.storage.k8s.io`, `volumeattachments`, `CSIStorageCapacity`), **instancetype.kubevirt.io/***, **Multus** (`k8s.cni.cncf.io/network-attachment-definitions`), **Gateway API** (`gateway.networking.k8s.io/*`), **Chaos Mesh / Litmus** (`chaos-mesh.org`, `litmuschaos.io` — get/list/watch only), **Cilium** (`cilium.io/*` full verbs), **Kubernetes** NetworkPolicies and Ingresses (full verbs), **`pods/exec`**, **`pods/attach`**, **`pods/portforward`**, metrics, migration policies, HPAs, namespace create (budget bootstrap), leases, Veyron CRDs, and RBAC read-only for visualization.
 
 **Security:** this is intentionally powerful so one API key can drive GitOps-style CDI, Cilium, and CSI workflows. For locked-down clusters, trim rules (especially `cilium.io/*`, `gateway.networking.k8s.io/*`, and CDI `*`) and use a separate restricted `ClusterRole` + `ClusterRoleBinding` for read-only dashboards.
 
@@ -82,15 +82,15 @@ The **operator** uses **`operator/config/rbac/role.yaml`** (and **`charts/veyron
 
 **Windows RDP NodePort:** **`GET/PUT/DELETE /api/v1/vms/:ns/:name/rdp-expose`** creates a `Service` with selector **`kubevirt.io/vm`** (virt-launcher), port **3389**, and a **required** `node_port` per VM (suggested range **30100–30199** (Kubernetes **30000–32767**)). **`POST /api/v1/vms/:ns/:name/guest-agent/enable-rdp`** and **`…/disable-rdp`** toggle Remote Desktop inside a running Windows guest via QEMU **guest-exec** (`src/kube/kubevirt_subresources.rs`, `src/kube/windows_rdp.rs`); requires **AgentConnected** and ClusterRole verbs on **`virtualmachineinstances/guest-exec`** and **`guest-exec-status`**. SSH-style expose at **`/expose`** uses **`kubevirt.io/domain`** and port **22**. On create, Windows templates get masquerade port **3389** and optional userdata to enable Remote Desktop. Connect with **Microsoft RDP** or **`sdl-freerdp`** on macOS — see `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
-**Template catalog CRDs:** cluster-scoped **`VMTemplate`** and **`VMProfile`** (`operator/config/crd/bases/`). Operator resolves `template` + `profile` on **VMRogueVM** / **VMRogueBlueprint**; CLI **`vmrogue deploy`** still expands Rust templates offline. Export/sync: **`vmrogue catalog export`**, **`vmrogue catalog sync`**, **`./scripts/generate-catalog-crds.sh`**. API: **`GET /api/v1/crds/templates`**, **`GET /api/v1/crds/profiles`**. Windows GitOps secrets: **`cloudInit.userDataSecretRef`**, **`windows.sysprepSecretRef`**, **`windows.domainJoinSecretRef`** — see `examples/windows-domain-join/`. Drift: operator sets **`status.driftDetected`** on **VMRogueVM**; API **`GET /api/v1/vms/:ns/:name/drift`** (VMRogueVM CR name).
+**Template catalog CRDs:** cluster-scoped **`VMTemplate`** and **`VMProfile`** (`operator/config/crd/bases/`). Operator resolves `template` + `profile` on **VeyronVM** / **VeyronBlueprint**; CLI **`veyron deploy`** still expands Rust templates offline. Export/sync: **`veyron catalog export`**, **`veyron catalog sync`**, **`./scripts/generate-catalog-crds.sh`**. API: **`GET /api/v1/crds/templates`**, **`GET /api/v1/crds/profiles`**. Windows GitOps secrets: **`cloudInit.userDataSecretRef`**, **`windows.sysprepSecretRef`**, **`windows.domainJoinSecretRef`** — see `examples/windows-domain-join/`. Drift: operator sets **`status.driftDetected`** on **VeyronVM**; API **`GET /api/v1/vms/:ns/:name/drift`** (VeyronVM CR name).
 
 ## Architecture
 
-VMRogue is a dual-mode binary: a **CLI tool** and an **HTTP API + dashboard** for managing KubeVirt VMs on Kubernetes.
+Veyron is a dual-mode binary: a **CLI tool** and an **HTTP API + dashboard** for managing KubeVirt VMs on Kubernetes.
 
 ### Kubernetes operator (`operator/`)
 
-A separate **Go** service (controller-runtime) runs **inside the cluster**. It watches **`vmrogue.io/v1alpha1` custom resources** and reconciles real API objects—mainly converting a **`VMRogueVM`** spec into a **KubeVirt `VirtualMachine`** (`operator/internal/converter`), then creating/updating that VM, handling **finalizers**, **status**, and optional **config-drive Secrets**. The same manager registers reconcilers for **VMRogueBlueprint**, **VMRoguePolicy**, **VMRogueInsight**, **VMRogueAction**, **VMTemplate**, and **VMProfile** (`operator/main.go`). **Template resolution** (`operator/internal/catalog/resolver.go`) expands `template` + `profile` from cluster **VMTemplate** / **VMProfile** CRDs (or embedded fallback) before reconcile; blueprint **`override`** wins last. An optional **`NATS_URL`** connects **`operator/internal/eventbus`** for outbound events. **Rust** `src/operator_crds/` holds serde models of those CRDs for CLI/API use; it does not embed the Go controller. Bootstrap catalog: `./scripts/generate-catalog-crds.sh` then `vmrogue catalog sync`. See `docs/TEMPLATE_CATALOG.md`, `DEVELOPMENT.md` § Operator Architecture, and `charts/veyron-operator`.
+A separate **Go** service (controller-runtime) runs **inside the cluster**. It watches **`veyron.io/v1alpha1` custom resources** and reconciles real API objects—mainly converting a **`VeyronVM`** spec into a **KubeVirt `VirtualMachine`** (`operator/internal/converter`), then creating/updating that VM, handling **finalizers**, **status**, and optional **config-drive Secrets**. The same manager registers reconcilers for **VeyronBlueprint**, **VeyronPolicy**, **VeyronInsight**, **VeyronAction**, **VMTemplate**, and **VMProfile** (`operator/main.go`). **Template resolution** (`operator/internal/catalog/resolver.go`) expands `template` + `profile` from cluster **VMTemplate** / **VMProfile** CRDs (or embedded fallback) before reconcile; blueprint **`override`** wins last. An optional **`NATS_URL`** connects **`operator/internal/eventbus`** for outbound events. **Rust** `src/operator_crds/` holds serde models of those CRDs for CLI/API use; it does not embed the Go controller. Bootstrap catalog: `./scripts/generate-catalog-crds.sh` then `veyron catalog sync`. See `docs/TEMPLATE_CATALOG.md`, `DEVELOPMENT.md` § Operator Architecture, and `charts/veyron-operator`.
 
 ### Entry points
 
@@ -102,7 +102,7 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 - `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
 - `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
-- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar. VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `vmrogue_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
+- `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar. VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
 ```rust
@@ -133,7 +133,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/config/` | `VMConfig` schema, `VMConfigBuilder` fluent API, `AppConfig` (~/.config/veyron/config.toml) |
 | `src/templates/mod.rs` | 44 OS templates (Ubuntu, CentOS, Windows, RHEL, etc.) with pre-set CPU/memory/firmware |
 | `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` | Windows golden image + Cloudbase-Init + Sysprep runbook (operator steps; not fully encoded in templates) |
-| `docs/WINDOWS_PACKER_GITOPS_PIPELINE.md` | Packer/QEMU → QCOW2 → CDI; Kustomize + `vmrogue generate --kubevirt` + config-drive patch |
+| `docs/WINDOWS_PACKER_GITOPS_PIPELINE.md` | Packer/QEMU → QCOW2 → CDI; Kustomize + `veyron generate --kubevirt` + config-drive patch |
 | `examples/windows-kubevirt-gitops/` | Reference manifests + `patch_kubevirt_configdrive.py` for Windows `cloudInitConfigDrive` |
 | `docs/client-presentations/06-windows-kubevirt-production.html` | Short printable deck linking to the Windows production doc |
 | `src/monitoring/` | `MetricsCollector` (collect VM CPU/memory/disk/network), `PerformanceAnalyzer`, `MonitoringReporter` |
@@ -141,7 +141,7 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 | `src/backup/` | Full/incremental/delta backup types, backup orchestration |
 | `src/tui/` | Full ratatui-based TUI; `AppState` (VMs, namespaces, selection), `interactive_app.rs`, theming |
 | `src/handlers/` | CLI command implementations (vm, backup, cost, gitops, crds, infra…) |
-| `src/operator_crds/` | VMRogue CRD types under `vmrogue.io/v1alpha1` |
+| `src/operator_crds/` | Veyron CRD types under `veyron.io/v1alpha1` |
 | `src/soc/` | Security operations: `SecurityEvent`, ConfigMap event/detection store, collectors, detection rules, SIEM export (`export/elastic`, `splunk`, `sentinel`, `qradar`), hunts, ASM, SOAR webhooks — API `handlers/soc.rs`, dashboard **Security → SOC**. See `docs/SOC.md`. |
 
 **Windows templates in code** (`windows*` in `src/templates/mod.rs`): Hyper-V feature set, `windows_clock()`, UEFI, virtio driver CDROM, blank SATA disk, virtio NIC, RNG, USB tablet, IO threads, TPM on 2022/11. **No** embedded Cloudbase-Init config or `cloudInitConfigDrive` userData (guest image / your YAML). See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` (includes **automation**: Packer/CDI/GitOps; `cloud_init` in `converter.rs` emits **NoCloud** only—patch YAML or extend schema for Windows config-drive).
@@ -157,7 +157,7 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 ## Key conventions
 
 - **Handler stubs**: when a K8s API cannot provide a value (e.g. filesystem-level disk usage), return a derived estimate or `"N/A"` with a comment — never silently return `0` or `None` where real data is expected.
-- **ConfigMaps as persistence**: alert rules, notification read-state, webhook configs, gitops sync state, and budgets are all stored as labeled ConfigMaps (`vmrogue.io/type=<kind>`).
+- **ConfigMaps as persistence**: alert rules, notification read-state, webhook configs, gitops sync state, and budgets are all stored as labeled ConfigMaps (`veyron.io/type=<kind>`).
 - **Namespace scoping**: handlers accept `?namespace=all` to query cluster-wide, or a specific namespace. Default in the dashboard JS is `'all'` (see `nsParam()` in `dashboard.html`).
 - **Async in handlers**: closures inside `.map()` on iterators cannot be async. Pre-fetch async data (e.g. VM counts per namespace) before the `.map()` call.
 

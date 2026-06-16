@@ -8,7 +8,7 @@ use crate::kube::KubeClient;
 /// Velero backup/restore health and DR readiness (distinct from snapshot Backup Advisor).
 pub async fn velero_dr_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Velero DR Advisor",
+        "Veyron Velero DR Advisor",
         "velero_dr_advisor",
         "Disaster recovery posture",
     );

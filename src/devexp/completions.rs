@@ -58,23 +58,23 @@ impl CompletionShell {
     pub fn install_instructions(&self) -> String {
         match self {
             CompletionShell::Bash => "# Add to ~/.bashrc:\n\
-                 source <(vmrogue completions bash)\n\
+                 source <(veyron completions bash)\n\
                  # Or save to file:\n\
-                 vmrogue completions bash > /etc/bash_completion.d/vmrogue"
+                 veyron completions bash > /etc/bash_completion.d/veyron"
                 .to_string(),
             CompletionShell::Zsh => "# Add to ~/.zshrc:\n\
-                 source <(vmrogue completions zsh)\n\
+                 source <(veyron completions zsh)\n\
                  # Or save to file:\n\
-                 vmrogue completions zsh > ~/.zsh/completions/_vmrogue"
+                 veyron completions zsh > ~/.zsh/completions/_veyron"
                 .to_string(),
             CompletionShell::Fish => "# Save to fish completions directory:\n\
-                 vmrogue completions fish > ~/.config/fish/completions/vmrogue.fish"
+                 veyron completions fish > ~/.config/fish/completions/veyron.fish"
                 .to_string(),
             CompletionShell::PowerShell => "# Add to PowerShell profile:\n\
-                 vmrogue completions powershell | Out-String | Invoke-Expression"
+                 veyron completions powershell | Out-String | Invoke-Expression"
                 .to_string(),
             CompletionShell::Elvish => "# Add to ~/.elvish/rc.elv:\n\
-                 eval (vmrogue completions elvish | slurp)"
+                 eval (veyron completions elvish | slurp)"
                 .to_string(),
         }
     }
@@ -84,7 +84,7 @@ impl CompletionGenerator {
     pub fn new(shell: CompletionShell) -> Self {
         Self {
             shell,
-            binary_name: "vmrogue".to_string(),
+            binary_name: "veyron".to_string(),
         }
     }
 
@@ -158,7 +158,7 @@ mod tests {
     fn test_completion_generator_new() {
         let cgen = CompletionGenerator::new(CompletionShell::Bash);
         assert_eq!(cgen.shell, CompletionShell::Bash);
-        assert_eq!(cgen.binary_name, "vmrogue");
+        assert_eq!(cgen.binary_name, "veyron");
     }
 
     #[test]
@@ -185,7 +185,7 @@ mod tests {
             let cgen = CompletionGenerator::new(CompletionShell::Bash);
             let output = cgen.generate();
             assert!(!output.is_empty(), "Bash completions should not be empty");
-            assert!(output.contains("vmrogue"));
+            assert!(output.contains("veyron"));
         });
     }
 
@@ -195,7 +195,7 @@ mod tests {
             let cgen = CompletionGenerator::new(CompletionShell::Zsh);
             let output = cgen.generate();
             assert!(!output.is_empty(), "Zsh completions should not be empty");
-            assert!(output.contains("vmrogue"));
+            assert!(output.contains("veyron"));
         });
     }
 
@@ -205,7 +205,7 @@ mod tests {
             let cgen = CompletionGenerator::new(CompletionShell::Fish);
             let output = cgen.generate();
             assert!(!output.is_empty(), "Fish completions should not be empty");
-            assert!(output.contains("vmrogue"));
+            assert!(output.contains("veyron"));
         });
     }
 
@@ -218,7 +218,7 @@ mod tests {
                 !output.is_empty(),
                 "PowerShell completions should not be empty"
             );
-            assert!(output.contains("vmrogue"));
+            assert!(output.contains("veyron"));
         });
     }
 
@@ -228,7 +228,7 @@ mod tests {
             let cgen = CompletionGenerator::new(CompletionShell::Elvish);
             let output = cgen.generate();
             assert!(!output.is_empty(), "Elvish completions should not be empty");
-            assert!(output.contains("vmrogue"));
+            assert!(output.contains("veyron"));
         });
     }
 

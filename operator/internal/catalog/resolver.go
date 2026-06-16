@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-// Package catalog resolves VMTemplate and VMProfile into VMRogueVMSpec.
+// Package catalog resolves VMTemplate and VMProfile into VeyronVMSpec.
 package catalog
 
 import (
@@ -16,15 +16,15 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 )
 
-// BlueprintOverrides carries per-VM fields from a VMRogueBlueprint entry.
+// BlueprintOverrides carries per-VM fields from a VeyronBlueprint entry.
 type BlueprintOverrides struct {
 	CPU      *uint32
 	Memory   *string
 	DiskSize *string
-	Override *vmroguev1alpha1.VMRogueVMSpec
+	Override *veyronv1alpha1.VeyronVMSpec
 }
 
 // Resolver loads templates and profiles from cluster CRDs with embedded fallback.
@@ -36,9 +36,9 @@ type Resolver struct {
 func (r *Resolver) ResolveSpec(
 	ctx context.Context,
 	templateName, profileName string,
-	base vmroguev1alpha1.VMRogueVMSpec,
+	base veyronv1alpha1.VeyronVMSpec,
 	bp BlueprintOverrides,
-) (vmroguev1alpha1.VMRogueVMSpec, error) {
+) (veyronv1alpha1.VeyronVMSpec, error) {
 	out := base
 
 	if templateName != "" {
@@ -114,9 +114,9 @@ func (r *Resolver) ResolveSpec(
 }
 
 // GetTemplate returns a VMTemplate spec by name (cluster CRD or embedded).
-func (r *Resolver) GetTemplate(ctx context.Context, name string) (*vmroguev1alpha1.VMTemplateSpec, error) {
+func (r *Resolver) GetTemplate(ctx context.Context, name string) (*veyronv1alpha1.VMTemplateSpec, error) {
 	if r.Client != nil {
-		var tpl vmroguev1alpha1.VMTemplate
+		var tpl veyronv1alpha1.VMTemplate
 		err := r.Client.Get(ctx, types.NamespacedName{Name: name}, &tpl)
 		if err == nil {
 			spec := tpl.Spec
@@ -133,9 +133,9 @@ func (r *Resolver) GetTemplate(ctx context.Context, name string) (*vmroguev1alph
 }
 
 // GetProfile returns a VMProfile spec by name (cluster CRD or embedded).
-func (r *Resolver) GetProfile(ctx context.Context, name string) (*vmroguev1alpha1.VMProfileSpec, error) {
+func (r *Resolver) GetProfile(ctx context.Context, name string) (*veyronv1alpha1.VMProfileSpec, error) {
 	if r.Client != nil {
-		var prof vmroguev1alpha1.VMProfile
+		var prof veyronv1alpha1.VMProfile
 		err := r.Client.Get(ctx, types.NamespacedName{Name: name}, &prof)
 		if err == nil {
 			spec := prof.Spec
@@ -152,7 +152,7 @@ func (r *Resolver) GetProfile(ctx context.Context, name string) (*vmroguev1alpha
 }
 
 // SpecHash returns a stable hash of the resolved VM spec for drift detection.
-func SpecHash(spec vmroguev1alpha1.VMRogueVMSpec) (string, error) {
+func SpecHash(spec veyronv1alpha1.VeyronVMSpec) (string, error) {
 	b, err := json.Marshal(spec)
 	if err != nil {
 		return "", err
@@ -162,7 +162,7 @@ func SpecHash(spec vmroguev1alpha1.VMRogueVMSpec) (string, error) {
 }
 
 // mergeVMSpec merges overlay onto base; overlay wins for set fields.
-func mergeVMSpec(base, overlay vmroguev1alpha1.VMRogueVMSpec) vmroguev1alpha1.VMRogueVMSpec {
+func mergeVMSpec(base, overlay veyronv1alpha1.VeyronVMSpec) veyronv1alpha1.VeyronVMSpec {
 	out := base
 
 	if overlay.Template != "" {

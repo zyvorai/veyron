@@ -2,9 +2,9 @@
 
 **See also:** [Documentation index](README.md), [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md) for the Packer/CDI pipeline.
 
-This guide consolidates **golden image** preparation (Audit Mode, Sysprep), **VirtIO** and **Cloudbase-Init** setup for KubeVirt’s config drive, **YAML** deployment patterns, and day‑two operations (licensing, drivers, tuning). It complements VMRogue’s built‑in Windows templates in `src/templates/mod.rs`—validate every field against your **KubeVirt** and **Kubernetes** versions before production use.
+This guide consolidates **golden image** preparation (Audit Mode, Sysprep), **VirtIO** and **Cloudbase-Init** setup for KubeVirt’s config drive, **YAML** deployment patterns, and day‑two operations (licensing, drivers, tuning). It complements Veyron’s built‑in Windows templates in `src/templates/mod.rs`—validate every field against your **KubeVirt** and **Kubernetes** versions before production use.
 
-### What is already in VMRogue’s Rust templates
+### What is already in Veyron’s Rust templates
 
 The `windows`, `windows-2022`, `windows-2019`, `windows-11`, and `windows-10` entries in **`src/templates/mod.rs`** (via `VMConfigBuilder` and **`src/kube/converter.rs`**) encode:
 
@@ -24,7 +24,7 @@ The `windows`, `windows-2022`, `windows-2019`, `windows-11`, and `windows-10` en
 | TPM (selected SKUs) | Yes | `.enable_tpm()` on 2022 and 11 |
 | Blank install disk (SATA) | Yes | `.add_blank_disk_sata(...)` — **not** the same as a generalized golden PVC; that remains your image pipeline |
 
-**Not in VMRogue source** (by design — guest or pipeline work): Audit Mode / **Sysprep**, **Cloudbase‑Init** `cloudbase-init.conf`, **`cloudInitConfigDrive`** `userData` snippets, **KMS/slmgr** automation, registry driver‑block lists, **`host-passthrough`** / **`dedicatedCpuPlacement`** defaults for Windows (you can still set CPU model / sockets in `VMConfig` / YAML when you generate manifests). Use this document and your GitOps for those layers.
+**Not in Veyron source** (by design — guest or pipeline work): Audit Mode / **Sysprep**, **Cloudbase‑Init** `cloudbase-init.conf`, **`cloudInitConfigDrive`** `userData` snippets, **KMS/slmgr** automation, registry driver‑block lists, **`host-passthrough`** / **`dedicatedCpuPlacement`** defaults for Windows (you can still set CPU model / sockets in `VMConfig` / YAML when you generate manifests). Use this document and your GitOps for those layers.
 
 ### Built-in template names: Server 2022 / 2019, Windows 11 / 10
 
@@ -38,19 +38,19 @@ All of the following use the same **`windows_features()`** and **`windows_clock(
 | `windows-10` | Windows 10 | 4, 1, 1 | 8Gi | 60Gi | off | no |
 | `windows-11` | Windows 11 | 4, 2, 1 → **8** logical CPUs | **4Gi** | **16Gi** | **on** (`uefi_secure_boot_firmware`, persistent) | yes |
 
-**Windows 11 template note:** Defaults are intentionally **small** (4Gi RAM, 16Gi disk) for CI/lab-style VMs. For real desktops, override at create time (e.g. `vmrogue create … --memory 8Gi` and a larger disk/PVC) or fork the template — Microsoft’s own minimums are higher than 4Gi/16Gi for comfortable installs.
+**Windows 11 template note:** Defaults are intentionally **small** (4Gi RAM, 16Gi disk) for CI/lab-style VMs. For real desktops, override at create time (e.g. `veyron create … --memory 8Gi` and a larger disk/PVC) or fork the template — Microsoft’s own minimums are higher than 4Gi/16Gi for comfortable installs.
 
 **Windows 10 vs 2019 vs 2022:** Same shape as each other except **2022** adds **`enable_tpm()`** in the builder chain; **2019** and **10** omit TPM in the default template (you can still enable TPM in YAML if your platform supports it for those SKUs).
 
 ### VNC vs RDP and optional virtio video
 
-For **day-to-day interactive** work on a Windows desktop, prefer **Microsoft RDP** (or another remoting stack you control). The VMRogue dashboard **VNC** path (noVNC → API WebSocket → Kubernetes apiserver → QEMU) is ideal for **install / break-glass / BIOS** but inherits latency from every hop.
+For **day-to-day interactive** work on a Windows desktop, prefer **Microsoft RDP** (or another remoting stack you control). The Veyron dashboard **VNC** path (noVNC → API WebSocket → Kubernetes apiserver → QEMU) is ideal for **install / break-glass / BIOS** but inherits latency from every hop.
 
-The dashboard VNC modal **Link quality** control adjusts noVNC **Tight** encoding (`qualityLevel` / `compressionLevel`); the choice is stored in the browser as `vmrogue_vnc_preset`.
+The dashboard VNC modal **Link quality** control adjusts noVNC **Tight** encoding (`qualityLevel` / `compressionLevel`); the choice is stored in the browser as `veyron_vnc_preset`.
 
 On clusters where KubeVirt’s **`VideoConfig` alpha feature gate** is enabled, you can set **`kubevirt_video_type: virtio`** on `VMConfig` (or `.kubevirt_video_type("virtio")` in the builder) so manifests include **`spec.template.spec.domain.devices.video`** with a **virtio** model—typically faster than legacy VGA when the guest has virtio-gpu drivers installed.
 
-### RDP NodePort API (VMRogue)
+### RDP NodePort API (Veyron)
 
 | Endpoint | Description |
 |----------|-------------|
@@ -76,7 +76,7 @@ sdl-freerdp /v:<node-ip>:<nodePort> /u:Administrator /p:'<password>' /cert:ignor
 
 ## Automating Windows (golden image → cluster → day two)
 
-Automation splits into **three** layers. VMRogue helps most at **layers 2–3** today; **layer 1** is almost always external CI or a dedicated image factory.
+Automation splits into **three** layers. Veyron helps most at **layers 2–3** today; **layer 1** is almost always external CI or a dedicated image factory.
 
 ### Layer 1 — Build the generalized disk (outside the cluster or in a builder VM)
 
@@ -94,26 +94,26 @@ Automate with: versioned **ISO URLs**, checksums, **Chocolatey/winget** scripts 
 
 - **GitOps (recommended):** Store `VirtualMachine` + `DataVolume`/`PVC` YAML in Git; **Argo CD** / **Flux** applies changes. First-boot **`cloudInitConfigDrive`** `userData` can be rendered from **Helm** values or **Kustomize** `secretGenerator` (never commit passwords).
 - **Secrets:** Use **External Secrets Operator**, **Sealed Secrets**, or CI-injected **short-lived** files that render into `userData` at deploy time only.
-- **VMRogue CLI:** Use **`vmrogue generate`** from a template to bootstrap a manifest, then **patch** in your golden PVC name and a `cloudInitConfigDrive` volume (see example earlier in this doc). **`vmrogue create -f`** applies the final YAML. The **HTTP API** and **batch** routes can drive fleet creates once manifests are templated.
+- **Veyron CLI:** Use **`veyron generate`** from a template to bootstrap a manifest, then **patch** in your golden PVC name and a `cloudInitConfigDrive` volume (see example earlier in this doc). **`veyron create -f`** applies the final YAML. The **HTTP API** and **batch** routes can drive fleet creates once manifests are templated.
 
 ### Layer 3 — Runtime configuration and validation
 
 - **Node selectors / CPU pinning:** Add to generated YAML when you need `dedicatedCpuPlacement` or `host-model` for migration.
 - **Smoke tests:** CI job that waits for **VMI Ready**, then runs **`virtctl ssh`** or an **RDP** probe from a jump namespace.
-- **VMRogue dashboard / API:** Use for visibility (IP, VNC), not for building the golden image itself.
+- **Veyron dashboard / API:** Use for visibility (IP, VNC), not for building the golden image itself.
 
 ### Veyron limitation today (important for automation design)
 
 When you set **`cloud_init`** on a `VMConfig`, **`src/kube/converter.rs`** emits **`cloudInitNoCloud`** — ideal for **Linux** cloud-init.
 
-**Windows + Cloudbase-Init** uses **`cloudInitConfigDrive`**. VMRogue supports this via **`CloudInitDelivery::ConfigDrive`** / builder **`.cloud_init_config_drive()`**, and built-in **`windows-*` templates** now ship placeholder config-drive userData (enable RDP). Production passwords and Sysprep still belong in **GitOps secrets** or the Packer pipeline:
+**Windows + Cloudbase-Init** uses **`cloudInitConfigDrive`**. Veyron supports this via **`CloudInitDelivery::ConfigDrive`** / builder **`.cloud_init_config_drive()`**, and built-in **`windows-*` templates** now ship placeholder config-drive userData (enable RDP). Production passwords and Sysprep still belong in **GitOps secrets** or the Packer pipeline:
 
-1. **`vmrogue create --template windows-11`** — emits config-drive userData from the template; override secrets in CI/Kustomize before apply, or  
+1. **`veyron create --template windows-11`** — emits config-drive userData from the template; override secrets in CI/Kustomize before apply, or  
 2. **Post-process** generated YAML (see [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md)) for golden-image-specific userData.
 
 Golden image build (Audit Mode, Sysprep, CDI import) remains an **external pipeline** — see **`examples/windows-kubevirt-gitops/`**.
 
-**Full walkthrough (Packer, QCOW2 shrink, CDI, Kustomize, `vmrogue generate` + patch):** [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md) and the **`examples/windows-kubevirt-gitops/`** directory in this repository.
+**Full walkthrough (Packer, QCOW2 shrink, CDI, Kustomize, `veyron generate` + patch):** [WINDOWS_PACKER_GITOPS_PIPELINE.md](./WINDOWS_PACKER_GITOPS_PIPELINE.md) and the **`examples/windows-kubevirt-gitops/`** directory in this repository.
 
 ### Minimal automation sketch (GitOps + CDI)
 
@@ -121,7 +121,7 @@ Golden image build (Audit Mode, Sysprep, CDI import) remains an **external pipel
 2. `DataVolume` references that URL; import completes.  
 3. Kustomize sets `spec.template.spec.volumes[].persistentVolumeClaim.claimName` to the imported PVC.  
 4. Same overlay adds `cloudInitConfigDrive` with `userData` from a **Secret** mount or `envsubst` in CI.  
-5. Argo CD syncs; VMRogue can still **list / console / snapshot** those VMs without owning the pipeline.
+5. Argo CD syncs; Veyron can still **list / console / snapshot** those VMs without owning the pipeline.
 
 ---
 
@@ -360,7 +360,7 @@ domain:
 ```
 
 - **VirtIO RNG**: Low cost; helps avoid entropy-related stalls.
-- **Clock / timers**: VMRogue’s Windows templates set Hyper-V-related timer defaults in code—mirror or extend in your manifest if guests show time drift.
+- **Clock / timers**: Veyron’s Windows templates set Hyper-V-related timer defaults in code—mirror or extend in your manifest if guests show time drift.
 
 ### Common issues
 

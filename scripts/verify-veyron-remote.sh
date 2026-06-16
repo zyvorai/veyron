@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# verify-veyron-remote.sh — Post-deploy API smoke test (VMRogue on NodePort)
+# verify-veyron-remote.sh — Post-deploy API smoke test (Veyron on NodePort)
 # ============================================================================
 # Run from your laptop after deploy-all-remote.sh / deploy-remote.sh.
 # Uses curl only (no jq). Exits 1 if any check fails.
@@ -129,7 +129,7 @@ check_json_grep() {
 }
 
 echo ""
-echo "VMRogue remote verify → ${BASE}"
+echo "Veyron remote verify → ${BASE}"
 echo ""
 
 echo "  (unauthenticated)"
@@ -169,7 +169,7 @@ check_json_ok "GET /api/v1/storage/pvcs?ns=all" "${BASE}/api/v1/storage/pvcs?nam
 check_json_grep "GET /api/v1/custom-resources" \
     "${BASE}/api/v1/custom-resources" '"kind"\s*:'
 check_json_grep "GET /api/v1/gitops/status" \
-    "${BASE}/api/v1/gitops/status?namespace=all" '"vmrogue_context"'
+    "${BASE}/api/v1/gitops/status?namespace=all" '"veyron_context"'
 check_json_ok "GET /api/v1/pods?ns=all" "${BASE}/api/v1/pods?namespace=all" yes
 check_json_ok "GET /api/v1/events/recent" "${BASE}/api/v1/events/recent?namespace=all" yes
 check_json_grep "GET /api/v1/monitoring/status" \
@@ -183,7 +183,7 @@ check_json_grep "GET /api/v1/costs/summary" \
 check_json_ok "GET /api/v1/vms?ns=veyron-system" "${BASE}/api/v1/vms?namespace=veyron-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
 check_json_grep "GET /api/v1/vms (drift fields)" \
-    "${BASE}/api/v1/vms?namespace=all" '"vmrogue_managed"'
+    "${BASE}/api/v1/vms?namespace=all" '"veyron_managed"'
 drift_code=$(curl -skS --connect-timeout 15 --max-time 45 -o /dev/null -w '%{http_code}' \
     -H "X-API-Key: ${KEY}" \
     "${BASE}/api/v1/vms/default/nonexistent-vm/drift" || echo "000")
@@ -342,5 +342,5 @@ if [[ "${FAIL}" -eq 0 ]]; then
     echo "All checks passed."
     exit 0
 fi
-echo "${FAIL} check(s) failed — see VMRogue pod logs on the cluster." >&2
+echo "${FAIL} check(s) failed — see Veyron pod logs on the cluster." >&2
 exit 1

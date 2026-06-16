@@ -36,7 +36,7 @@ pub struct IntegrationStatusItem {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IntegrationsStatusResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub integrations: Vec<IntegrationStatusItem>,
     pub configured_count: u32,
 }
@@ -520,7 +520,7 @@ async fn get_integrations_status(
     }
 
     Json(IntegrationsStatusResponse {
-        vmrogue_context: integrations_context(),
+        veyron_context: integrations_context(),
         integrations,
         configured_count,
     })

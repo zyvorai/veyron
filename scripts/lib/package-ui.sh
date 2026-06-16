@@ -1,5 +1,5 @@
 # shellcheck shell=bash
-# Shared UI helpers for VMRogue-family client packaging scripts.
+# Shared UI helpers for Veyron-family client packaging scripts.
 # Source from scripts/lib/*.sh or .package-lib/package-ui.sh inside tarballs.
 
 [[ -n "${_PKG_UI_LOADED:-}" ]] && return 0

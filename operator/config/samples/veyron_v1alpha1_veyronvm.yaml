@@ -1,5 +1,5 @@
-apiVersion: vmrogue.io/v1alpha1
-kind: VMRogueVM
+apiVersion: veyron.io/v1alpha1
+kind: VeyronVM
 metadata:
   name: sample-ubuntu
   namespace: default

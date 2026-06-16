@@ -153,7 +153,7 @@ impl OpenApiSpec {
                 description: "REST API for managing KubeVirt virtual machines".to_string(),
                 version: "1.0.0".to_string(),
                 contact: Some(ContactInfo {
-                    name: "VMRogue".to_string(),
+                    name: "Veyron".to_string(),
                     url: Some("https://github.com/ssahani/Veyron".to_string()),
                     email: None,
                 }),
@@ -226,7 +226,7 @@ impl Default for OpenApiSpec {
     }
 }
 
-/// Generate the default VMRogue OpenAPI spec
+/// Generate the default Veyron OpenAPI spec
 pub fn generate_default_spec() -> OpenApiSpec {
     let mut spec = OpenApiSpec::new();
 

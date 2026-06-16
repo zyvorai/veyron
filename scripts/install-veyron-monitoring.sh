@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install optional VMRogue monitoring bundle (Prometheus Operator + Prometheus +
+# Install optional Veyron monitoring bundle (Prometheus Operator + Prometheus +
 # Grafana + Alertmanager + node-exporter + kube-state-metrics) via Helm.
 #
 # Usage:
@@ -7,7 +7,7 @@
 #
 # Examples:
 #   ./scripts/install-veyron-monitoring.sh monitoring
-#   GRAFANA_ADMIN_PASSWORD='your-secret' ./scripts/install-veyron-monitoring.sh monitoring vmrogue-mon
+#   GRAFANA_ADMIN_PASSWORD='your-secret' ./scripts/install-veyron-monitoring.sh monitoring veyron-mon
 #
 # Requires: helm 3.9+, kubectl, cluster with default StorageClass (for Prometheus PVCs).
 set -euo pipefail

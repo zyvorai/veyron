@@ -2,14 +2,14 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-// Demo program to showcase VMRogue CLI theme colors
+// Demo program to showcase Veyron CLI theme colors
 // Run with: cargo run --example demo_theme
 
 use veyron::tui::colors::cli;
 use veyron::tui::colors::{resource_bar, vm_status_symbol};
 
 fn main() {
-    println!("\n{}", cli::header("🎨 VMRogue CLI Theme Demonstration"));
+    println!("\n{}", cli::header("🎨 Veyron CLI Theme Demonstration"));
     println!("{}\n", cli::muted(&"=".repeat(60)));
 
     // Section 1: Headers and Text
@@ -18,7 +18,7 @@ fn main() {
     println!("   Label:     {}", cli::label("This is a label"));
     println!("   Value:     {}", cli::value("This is a value"));
     println!("   Muted:     {}", cli::muted("This is muted text"));
-    println!("   Command:   {}", cli::command("vmrogue list"));
+    println!("   Command:   {}", cli::command("veyron list"));
     println!("   Path:      {}", cli::path("/path/to/file.yaml"));
     println!();
 

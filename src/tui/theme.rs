@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-// VMRogue TUI Theme System
+// Veyron TUI Theme System
 // Coral-Terracotta Orange color scheme (Pantone 7416 C inspired)
 // Matches GuestKit's visual identity
 

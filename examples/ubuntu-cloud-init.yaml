@@ -1,6 +1,6 @@
 # Veyron VM Configuration
-# This file uses VMRogue's simplified YAML format.
-# To convert to KubeVirt manifest: vmrogue create --from-file ubuntu-cloud-init.yaml --output yaml --dry-run
+# This file uses Veyron's simplified YAML format.
+# To convert to KubeVirt manifest: veyron create --from-file ubuntu-cloud-init.yaml --output yaml --dry-run
 name: ubuntu-server
 namespace: default
 cpu:

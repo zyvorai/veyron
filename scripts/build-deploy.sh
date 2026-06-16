@@ -27,7 +27,7 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-log()  { echo -e "${CYAN}[vmrogue]${NC} $*"; }
+log()  { echo -e "${CYAN}[veyron]${NC} $*"; }
 ok()   { echo -e "${GREEN}[✓]${NC} $*"; }
 warn() { echo -e "${YELLOW}[!]${NC} $*"; }
 err()  { echo -e "${RED}[✗]${NC} $*" >&2; }
@@ -144,14 +144,14 @@ cmd_deploy() {
 
     # Update image
     ${KUBECTL} -n "${NAMESPACE}" set image deployment/veyron-api \
-        vmrogue="${IMAGE}" 2>/dev/null || true
+        veyron="${IMAGE}" 2>/dev/null || true
 
     # Wait for rollout
     log "Waiting for rollout..."
     ${KUBECTL} -n "${NAMESPACE}" rollout status deployment/veyron-api --timeout=120s
 
     ok "Deployed ${IMAGE} to ${NAMESPACE}"
-    ${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=vmrogue
+    ${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=veyron
 }
 
 # ── Clean ────────────────────────────────────────────

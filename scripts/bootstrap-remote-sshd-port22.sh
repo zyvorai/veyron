@@ -19,7 +19,7 @@ fi
 
 echo "==> sshd drop-in: Port 22, listen on all interfaces"
 mkdir -p /etc/ssh/sshd_config.d
-cat >/etc/ssh/sshd_config.d/99-vmrogue.conf <<'EOF'
+cat >/etc/ssh/sshd_config.d/99-veyron.conf <<'EOF'
 Port 22
 ListenAddress 0.0.0.0
 ListenAddress ::

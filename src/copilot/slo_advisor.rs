@@ -5,7 +5,7 @@ use crate::kube::KubeClient;
 
 /// VM availability SLO narrative derived from printable status.
 pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
-    let mut r = CopilotResponse::new("VMRogue SLO Advisor", "slo_advisor", "VM availability SLO");
+    let mut r = CopilotResponse::new("Veyron SLO Advisor", "slo_advisor", "VM availability SLO");
 
     let vms = client.list_vms_for_scope(scope).await;
     if vms.is_empty() {
@@ -96,7 +96,7 @@ pub async fn slo_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
 
     if availability < target {
         r.recommendations.push(
-            "Run VMRogue Doctor on failed VMs and Scheduling Fleet on pending workloads.".into(),
+            "Run Veyron Doctor on failed VMs and Scheduling Fleet on pending workloads.".into(),
         );
     }
 

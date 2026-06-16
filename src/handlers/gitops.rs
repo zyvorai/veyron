@@ -5,7 +5,7 @@
 use crate::tui::colors::cli as color;
 use anyhow::Result;
 
-/// Export all VMs as VMRogueVM CRD manifests to a directory.
+/// Export all VMs as VeyronVM CRD manifests to a directory.
 pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<()> {
     use crate::kube::KubeClient;
     use crate::operator_crds::{CRDDiskSource, CRDDiskSpec};
@@ -78,7 +78,7 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
             .metadata
             .labels
             .as_ref()
-            .and_then(|l| l.get("vmrogue.io/template").cloned())
+            .and_then(|l| l.get("veyron.io/template").cloned())
             .or_else(|| {
                 vm.metadata
                     .labels
@@ -160,8 +160,8 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
 
         // Build the CRD manifest as JSON value
         let crd = serde_json::json!({
-            "apiVersion": "vmrogue.io/v1alpha1",
-            "kind": "VMRogueVM",
+            "apiVersion": "veyron.io/v1alpha1",
+            "kind": "VeyronVM",
             "metadata": {
                 "name": vm_name,
                 "namespace": vm_namespace,
@@ -186,7 +186,7 @@ pub async fn handle_gitops_export(directory: String, namespace: &str) -> Result<
     println!(
         "{}",
         color::success(&format!(
-            "Exported {} VM(s) as VMRogueVM CRD manifests:",
+            "Exported {} VM(s) as VeyronVM CRD manifests:",
             exported_files.len()
         ))
     );
@@ -215,7 +215,7 @@ pub async fn handle_gitops_diff(directory: String, namespace: &str) -> Result<()
     if !dir_path.exists() {
         println!(
             "  {}",
-            color::warning("Directory does not exist. Run 'vmrogue gitops-export' first.")
+            color::warning("Directory does not exist. Run 'veyron gitops-export' first.")
         );
         return Ok(());
     }

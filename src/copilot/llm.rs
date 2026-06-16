@@ -203,7 +203,7 @@ pub async fn maybe_enhance_response(mut resp: CopilotResponse) -> CopilotRespons
     }
 
     let prompt = format!(
-        "You are VMRogue Copilot for KubeVirt. Rewrite ONLY the summary and recommendations \
+        "You are Veyron Copilot for KubeVirt. Rewrite ONLY the summary and recommendations \
          in plain language for an operator. Do not invent cluster facts. Keep the same meaning.\n\n\
          Module: {}\nTitle: {}\nSummary: {}\nRecommendations:\n{}\n\n\
          Reply as JSON: {{\"summary\":\"...\",\"recommendations\":[\"...\"]}}",
@@ -249,7 +249,7 @@ pub async fn classify_intent(
         .join("\n");
 
     let prompt = format!(
-        "Classify this VMRogue Copilot question. Reply JSON only: \
+        "Classify this Veyron Copilot question. Reply JSON only: \
          {{\"intent\":\"vm_doctor|scheduling_explainer|backup_advisor|cost_advisor|network_lens|\
          guest_inspector|storage_doctor|security_sentinel|performance_advisor|quota_advisor|\
          catalog_advisor|velero_dr_advisor|list_unhealthy_vms|explain_error|general_help\",\
@@ -327,7 +327,7 @@ pub async fn agent_tool_calls(
 
     let mut messages: Vec<serde_json::Value> = vec![serde_json::json!({
         "role": "system",
-        "content": "You are VMRogue Copilot for KubeVirt. Use tools to fetch cluster facts. \
+        "content": "You are Veyron Copilot for KubeVirt. Use tools to fetch cluster facts. \
                     Never invent evidence. Prefer specific tools over guessing."
     })];
     for m in history.iter().rev().take(8).rev() {

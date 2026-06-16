@@ -19,31 +19,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	"github.com/ssahani/Veyron/operator/internal/catalog"
 	"github.com/ssahani/Veyron/operator/internal/eventbus"
 )
 
 const (
-	blueprintFinalizer = "vmrogue.io/blueprint-finalizer"
+	blueprintFinalizer = "veyron.io/blueprint-finalizer"
 )
 
-// VMRogueBlueprintReconciler reconciles a VMRogueBlueprint object.
-type VMRogueBlueprintReconciler struct {
+// VeyronBlueprintReconciler reconciles a VeyronBlueprint object.
+type VeyronBlueprintReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	EventBus *eventbus.EventBus
 }
 
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmrogueblueprints,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmrogueblueprints/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmrogueblueprints/finalizers,verbs=update
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronblueprints,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronblueprints/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronblueprints/finalizers,verbs=update
 
-func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *VeyronBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var bp vmroguev1alpha1.VMRogueBlueprint
+	var bp veyronv1alpha1.VeyronBlueprint
 	if err := r.Get(ctx, req.NamespacedName, &bp); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -69,7 +69,7 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	order, err := resolveDeploymentOrder(bp.Spec.VMs)
 	if err != nil {
 		logger.Error(err, "failed to resolve deployment order")
-		r.updateBlueprintStatus(ctx, &bp, vmroguev1alpha1.BlueprintPhaseFailed, err.Error())
+		r.updateBlueprintStatus(ctx, &bp, veyronv1alpha1.BlueprintPhaseFailed, err.Error())
 		r.Recorder.Eventf(&bp, "Warning", "InvalidDependencies", "Dependency resolution failed: %v", err)
 		return ctrl.Result{}, nil
 	}
@@ -78,7 +78,7 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	bp.Status.TotalVMs = len(bp.Spec.VMs)
 
 	// Build VM spec lookup
-	vmSpecs := make(map[string]vmroguev1alpha1.BlueprintVMSpec)
+	vmSpecs := make(map[string]veyronv1alpha1.BlueprintVMSpec)
 	for _, vm := range bp.Spec.VMs {
 		vmSpecs[vm.Name] = vm
 	}
@@ -87,14 +87,14 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	readyCount := 0
 	allCreated := true
 	anyFailed := false
-	vmStatuses := make([]vmroguev1alpha1.VMDeploymentStatus, 0, len(order))
+	vmStatuses := make([]veyronv1alpha1.VMDeploymentStatus, 0, len(order))
 
 	for _, vmName := range order {
 		vmSpec := vmSpecs[vmName]
 		crName := fmt.Sprintf("%s-%s", bp.Name, vmName)
 
-		// Check if VMRogueVM CR exists
-		var existingVM vmroguev1alpha1.VMRogueVM
+		// Check if VeyronVM CR exists
+		var existingVM veyronv1alpha1.VeyronVM
 		err := r.Get(ctx, types.NamespacedName{
 			Name:      crName,
 			Namespace: bp.Namespace,
@@ -105,11 +105,11 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			depsMet := true
 			for _, dep := range vmSpec.DependsOn {
 				depCRName := fmt.Sprintf("%s-%s", bp.Name, dep)
-				var depVM vmroguev1alpha1.VMRogueVM
+				var depVM veyronv1alpha1.VeyronVM
 				if err := r.Get(ctx, types.NamespacedName{
 					Name:      depCRName,
 					Namespace: bp.Namespace,
-				}, &depVM); err != nil || depVM.Status.Phase != vmroguev1alpha1.VMPhaseRunning {
+				}, &depVM); err != nil || depVM.Status.Phase != veyronv1alpha1.VMPhaseRunning {
 					depsMet = false
 					break
 				}
@@ -117,43 +117,43 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 			if !depsMet {
 				allCreated = false
-				vmStatuses = append(vmStatuses, vmroguev1alpha1.VMDeploymentStatus{
+				vmStatuses = append(vmStatuses, veyronv1alpha1.VMDeploymentStatus{
 					Name:    vmName,
-					Phase:   vmroguev1alpha1.VMPhasePending,
+					Phase:   veyronv1alpha1.VMPhasePending,
 					Message: "Waiting for dependencies",
 				})
 				continue
 			}
 
-			// Create the VMRogueVM CR
+			// Create the VeyronVM CR
 			newVM, err := r.buildVMFromBlueprint(ctx, &bp, &vmSpec, crName)
 			if err != nil {
-				logger.Error(err, "failed to build VMRogueVM spec", "vm", crName)
+				logger.Error(err, "failed to build VeyronVM spec", "vm", crName)
 				anyFailed = true
-				vmStatuses = append(vmStatuses, vmroguev1alpha1.VMDeploymentStatus{
+				vmStatuses = append(vmStatuses, veyronv1alpha1.VMDeploymentStatus{
 					Name:    vmName,
-					Phase:   vmroguev1alpha1.VMPhaseFailed,
+					Phase:   veyronv1alpha1.VMPhaseFailed,
 					VMRef:   crName,
 					Message: fmt.Sprintf("Build failed: %v", err),
 				})
 				continue
 			}
 			if err := r.Create(ctx, newVM); err != nil {
-				logger.Error(err, "failed to create VMRogueVM for blueprint", "vm", crName)
+				logger.Error(err, "failed to create VeyronVM for blueprint", "vm", crName)
 				anyFailed = true
-				vmStatuses = append(vmStatuses, vmroguev1alpha1.VMDeploymentStatus{
+				vmStatuses = append(vmStatuses, veyronv1alpha1.VMDeploymentStatus{
 					Name:    vmName,
-					Phase:   vmroguev1alpha1.VMPhaseFailed,
+					Phase:   veyronv1alpha1.VMPhaseFailed,
 					VMRef:   crName,
 					Message: fmt.Sprintf("Create failed: %v", err),
 				})
 				continue
 			}
 
-			r.Recorder.Eventf(&bp, "Normal", "VMCreated", "Created VMRogueVM %s", crName)
-			vmStatuses = append(vmStatuses, vmroguev1alpha1.VMDeploymentStatus{
+			r.Recorder.Eventf(&bp, "Normal", "VMCreated", "Created VeyronVM %s", crName)
+			vmStatuses = append(vmStatuses, veyronv1alpha1.VMDeploymentStatus{
 				Name:  vmName,
-				Phase: vmroguev1alpha1.VMPhaseCreating,
+				Phase: veyronv1alpha1.VMPhaseCreating,
 				VMRef: crName,
 			})
 			allCreated = false
@@ -162,15 +162,15 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 			return ctrl.Result{}, err
 		} else {
 			// VM exists, track its status
-			status := vmroguev1alpha1.VMDeploymentStatus{
+			status := veyronv1alpha1.VMDeploymentStatus{
 				Name:  vmName,
 				Phase: existingVM.Status.Phase,
 				VMRef: crName,
 			}
-			if existingVM.Status.Phase == vmroguev1alpha1.VMPhaseRunning {
+			if existingVM.Status.Phase == veyronv1alpha1.VMPhaseRunning {
 				readyCount++
 			}
-			if existingVM.Status.Phase == vmroguev1alpha1.VMPhaseFailed {
+			if existingVM.Status.Phase == veyronv1alpha1.VMPhaseFailed {
 				anyFailed = true
 				status.Message = "VM failed"
 			}
@@ -183,17 +183,17 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	bp.Status.ReadyVMs = readyCount
 	bp.Status.ObservedGeneration = bp.Generation
 
-	var bpPhase vmroguev1alpha1.BlueprintPhase
+	var bpPhase veyronv1alpha1.BlueprintPhase
 	switch {
 	case anyFailed:
-		bpPhase = vmroguev1alpha1.BlueprintPhaseFailed
+		bpPhase = veyronv1alpha1.BlueprintPhaseFailed
 	case readyCount == len(order):
-		bpPhase = vmroguev1alpha1.BlueprintPhaseReady
+		bpPhase = veyronv1alpha1.BlueprintPhaseReady
 		r.publishBlueprintEvent(eventbus.SubjectBlueprintReady, &bp)
 	case !allCreated || readyCount < len(order):
-		bpPhase = vmroguev1alpha1.BlueprintPhaseDeploying
+		bpPhase = veyronv1alpha1.BlueprintPhaseDeploying
 	default:
-		bpPhase = vmroguev1alpha1.BlueprintPhasePending
+		bpPhase = veyronv1alpha1.BlueprintPhasePending
 	}
 
 	bp.Status.Phase = bpPhase
@@ -201,7 +201,7 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	now := metav1.Now()
 	setCondition(&bp.Status.Conditions, metav1.Condition{
 		Type:               "Ready",
-		Status:             conditionBool(bpPhase == vmroguev1alpha1.BlueprintPhaseReady),
+		Status:             conditionBool(bpPhase == veyronv1alpha1.BlueprintPhaseReady),
 		Reason:             string(bpPhase),
 		Message:            fmt.Sprintf("%d/%d VMs ready", readyCount, len(order)),
 		LastTransitionTime: now,
@@ -212,19 +212,19 @@ func (r *VMRogueBlueprintReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	// Requeue if not fully ready
-	if bpPhase != vmroguev1alpha1.BlueprintPhaseReady && bpPhase != vmroguev1alpha1.BlueprintPhaseFailed {
+	if bpPhase != veyronv1alpha1.BlueprintPhaseReady && bpPhase != veyronv1alpha1.BlueprintPhaseFailed {
 		return ctrl.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
 	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 }
 
-func (r *VMRogueBlueprintReconciler) handleDeletion(ctx context.Context, bp *vmroguev1alpha1.VMRogueBlueprint) (ctrl.Result, error) {
+func (r *VeyronBlueprintReconciler) handleDeletion(ctx context.Context, bp *veyronv1alpha1.VeyronBlueprint) (ctrl.Result, error) {
 	if controllerutil.ContainsFinalizer(bp, blueprintFinalizer) {
-		// Delete all owned VMRogueVM CRs
+		// Delete all owned VeyronVM CRs
 		for _, vmSpec := range bp.Spec.VMs {
 			crName := fmt.Sprintf("%s-%s", bp.Name, vmSpec.Name)
-			var vm vmroguev1alpha1.VMRogueVM
+			var vm veyronv1alpha1.VeyronVM
 			if err := r.Get(ctx, types.NamespacedName{
 				Name:      crName,
 				Namespace: bp.Namespace,
@@ -241,11 +241,11 @@ func (r *VMRogueBlueprintReconciler) handleDeletion(ctx context.Context, bp *vmr
 	return ctrl.Result{}, nil
 }
 
-func (r *VMRogueBlueprintReconciler) buildVMFromBlueprint(ctx context.Context, bp *vmroguev1alpha1.VMRogueBlueprint, vmSpec *vmroguev1alpha1.BlueprintVMSpec, crName string) (*vmroguev1alpha1.VMRogueVM, error) {
+func (r *VeyronBlueprintReconciler) buildVMFromBlueprint(ctx context.Context, bp *veyronv1alpha1.VeyronBlueprint, vmSpec *veyronv1alpha1.BlueprintVMSpec, crName string) (*veyronv1alpha1.VeyronVM, error) {
 	resolver := catalog.Resolver{Client: r.Client}
 	profile := derefStringOr(vmSpec.Profile, "")
 
-	base := vmroguev1alpha1.VMRogueVMSpec{
+	base := veyronv1alpha1.VeyronVMSpec{
 		Running: boolPtr(true),
 	}
 	resolved, err := resolver.ResolveSpec(ctx, vmSpec.Template, profile, base, catalog.BlueprintOverrides{
@@ -258,18 +258,18 @@ func (r *VMRogueBlueprintReconciler) buildVMFromBlueprint(ctx context.Context, b
 		return nil, err
 	}
 
-	vm := &vmroguev1alpha1.VMRogueVM{
+	vm := &veyronv1alpha1.VeyronVM{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      crName,
 			Namespace: bp.Namespace,
 			Labels: map[string]string{
-				"vmrogue.io/blueprint": bp.Name,
-				"vmrogue.io/vm-name":   vmSpec.Name,
+				"veyron.io/blueprint": bp.Name,
+				"veyron.io/vm-name":   vmSpec.Name,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
-					APIVersion:         vmroguev1alpha1.GroupVersion.String(),
-					Kind:               "VMRogueBlueprint",
+					APIVersion:         veyronv1alpha1.GroupVersion.String(),
+					Kind:               "VeyronBlueprint",
 					Name:               bp.Name,
 					UID:                bp.UID,
 					Controller:         boolPtr(true),
@@ -287,7 +287,7 @@ func (r *VMRogueBlueprintReconciler) buildVMFromBlueprint(ctx context.Context, b
 	return vm, nil
 }
 
-func (r *VMRogueBlueprintReconciler) updateBlueprintStatus(ctx context.Context, bp *vmroguev1alpha1.VMRogueBlueprint, phase vmroguev1alpha1.BlueprintPhase, message string) {
+func (r *VeyronBlueprintReconciler) updateBlueprintStatus(ctx context.Context, bp *veyronv1alpha1.VeyronBlueprint, phase veyronv1alpha1.BlueprintPhase, message string) {
 	bp.Status.Phase = phase
 	now := metav1.Now()
 	setCondition(&bp.Status.Conditions, metav1.Condition{
@@ -300,7 +300,7 @@ func (r *VMRogueBlueprintReconciler) updateBlueprintStatus(ctx context.Context, 
 	_ = r.Status().Update(ctx, bp)
 }
 
-func (r *VMRogueBlueprintReconciler) publishBlueprintEvent(subject string, bp *vmroguev1alpha1.VMRogueBlueprint) {
+func (r *VeyronBlueprintReconciler) publishBlueprintEvent(subject string, bp *veyronv1alpha1.VeyronBlueprint) {
 	if r.EventBus == nil {
 		return
 	}
@@ -317,16 +317,16 @@ func (r *VMRogueBlueprintReconciler) publishBlueprintEvent(subject string, bp *v
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *VMRogueBlueprintReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *VeyronBlueprintReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&vmroguev1alpha1.VMRogueBlueprint{}).
-		Owns(&vmroguev1alpha1.VMRogueVM{}).
+		For(&veyronv1alpha1.VeyronBlueprint{}).
+		Owns(&veyronv1alpha1.VeyronVM{}).
 		Complete(r)
 }
 
 // resolveDeploymentOrder performs a topological sort (Kahn's algorithm) on blueprint VMs.
 // Ported from the Rust implementation in src/blueprints/validator.rs.
-func resolveDeploymentOrder(vms []vmroguev1alpha1.BlueprintVMSpec) ([]string, error) {
+func resolveDeploymentOrder(vms []veyronv1alpha1.BlueprintVMSpec) ([]string, error) {
 	// Build adjacency list and in-degree count
 	inDegree := make(map[string]int)
 	dependents := make(map[string][]string)

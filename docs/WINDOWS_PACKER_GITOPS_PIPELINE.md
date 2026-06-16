@@ -1,8 +1,8 @@
-# Windows golden image (Packer) → QCOW2 → CDI → GitOps / VMRogue
+# Windows golden image (Packer) → QCOW2 → CDI → GitOps / Veyron
 
 **See also:** [Documentation index](README.md).
 
-This document is the **operational companion** to [WINDOWS_KUBEVIRT_PRODUCTION.md](./WINDOWS_KUBEVIRT_PRODUCTION.md). It describes a **production-style** pipeline: **HashiCorp Packer** + **QEMU/KVM**, Windows **Audit Mode** / **Sysprep**, artifact **QCOW2**, **CDI** import, and **Kubernetes** manifests — including **Kustomize** and a **VMRogue** `generate` + patch workflow.
+This document is the **operational companion** to [WINDOWS_KUBEVIRT_PRODUCTION.md](./WINDOWS_KUBEVIRT_PRODUCTION.md). It describes a **production-style** pipeline: **HashiCorp Packer** + **QEMU/KVM**, Windows **Audit Mode** / **Sysprep**, artifact **QCOW2**, **CDI** import, and **Kubernetes** manifests — including **Kustomize** and a **Veyron** `generate` + patch workflow.
 
 **Repo examples:** `examples/windows-kubevirt-gitops/` (DataVolume + VM YAML + `patch_kubevirt_configdrive.py`).
 
@@ -49,7 +49,7 @@ windows-image/
 │   ├── setup.ps1
 │   └── cleanup.ps1
 └── iso/
-    └── Win11.iso          # license-required; not redistributed by VMRogue
+    └── Win11.iso          # license-required; not redistributed by Veyron
 ```
 
 Mount the **VirtIO** ISO in Packer (secondary CDROM or attach path) so `setup.ps1` can run `virtio-win-gt-x64.exe` (or equivalent) — **without VirtIO storage/network drivers the KubeVirt VM will not boot cleanly.**
@@ -187,14 +187,14 @@ See **`examples/windows-kubevirt-gitops/kustomize/`**:
 
 ---
 
-## 8. VMRogue: `generate` + config-drive patch
+## 8. Veyron: `generate` + config-drive patch
 
-VMRogue’s **`cloud_init`** field maps to **`cloudInitNoCloud`** in `src/kube/converter.rs` (Linux-oriented). **Windows** first boot with Cloudbase-Init on KubeVirt typically uses **`cloudInitConfigDrive`**.
+Veyron’s **`cloud_init`** field maps to **`cloudInitNoCloud`** in `src/kube/converter.rs` (Linux-oriented). **Windows** first boot with Cloudbase-Init on KubeVirt typically uses **`cloudInitConfigDrive`**.
 
 Windows **`windows-*`** templates do **not** set `cloud_init`, so:
 
 ```bash
-vmrogue generate win11-vm --template windows-11 --kubevirt --memory 8Gi -o vm.yaml
+veyron generate win11-vm --template windows-11 --kubevirt --memory 8Gi -o vm.yaml
 ```
 
 produces a VM **without** a `cloudinitdisk` volume. Use the example script to **add** `cloudInitConfigDrive`:
@@ -243,7 +243,7 @@ CI (GitHub Actions / Tekton)
   → (optional) cosign / checksum attestation
   → kubectl / Argo CD applies DataVolume + VM
   → virtctl start
-  → VMRogue dashboard / API for lifecycle + VNC
+  → Veyron dashboard / API for lifecycle + VNC
 ```
 
 For **developer access** after boot, see [DEVELOPER_VM_ACCESS.md](./DEVELOPER_VM_ACCESS.md).

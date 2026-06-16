@@ -21,8 +21,8 @@ Status legend:
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |
 | Storage | `page-storage` | `/api/v1/storage/pvcs`, `/api/v1/storage/classes` | `http_server.rs` | Working | Separate richer storage routes also exist |
 | Events | `page-events` | `/api/v1/events` | `http_server.rs`, `handlers/events.rs` | Working | Event feed is live |
-| CRDs | `page-crds` | `/api/v1/crds/vmroguevms` | `handlers/crds.rs` | Working | Operator CRD listing and create flow |
-| Template catalog | `page-catalog` | `/api/v1/catalog/status`, `/api/v1/catalog/sync`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/catalog.rs`, `handlers/crds.rs` | Working | Sync, publish, deploy VMRogueVM |
+| CRDs | `page-crds` | `/api/v1/crds/veyronvms` | `handlers/crds.rs` | Working | Operator CRD listing and create flow |
+| Template catalog | `page-catalog` | `/api/v1/catalog/status`, `/api/v1/catalog/sync`, `/api/v1/crds/templates`, `/api/v1/crds/profiles` | `handlers/catalog.rs`, `handlers/crds.rs` | Working | Sync, publish, deploy VeyronVM |
 | Integrations | `page-integrations` | `/api/v1/integrations/status` | `handlers/integrations.rs` | Working | Env probes + in-app deep links to classic pages |
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Includes operator-emitted **Drift** insights |
@@ -127,10 +127,10 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | Capability | Status | Notes |
 |---|---|---|
 | VM list + lifecycle | Working | Start/stop/migrate, VNC, serial, snapshots |
-| CRD YAML editors | Working | VMRogueVM, templates, policies, insights |
+| CRD YAML editors | Working | VeyronVM, templates, policies, insights |
 | GitOps, DR, compliance, heatmap | Working | See navbar pages |
 | VM operator drift | Working | List badges/filter + detail `GET /api/v1/vms/:ns/:name/drift` |
-| Template catalog page | Working | `page-catalog`: status, sync, CRD tables, publish, deploy VMRogueVM |
+| Template catalog page | Working | `page-catalog`: status, sync, CRD tables, publish, deploy VeyronVM |
 | Integrations page | Working | `page-integrations` + in-app links (`monitoring`, `costs`, …) |
 | CloudOS Datacenter Home | Working | `/experience/home` — hero, Today panel, pinned VMs, health chips (no duplicate fleet bar) |
 | CloudOS Spotlight | Working | `⌘K` — grouped results, recents, forge/migrate/backup actions |
@@ -142,10 +142,10 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | VM guest health scores | Working | `/experience/fleet/health` pills on cards-first VM grid |
 | CloudOS session / RBAC UI | Working | `/experience/session` hides mutating controls for readonly |
 | CloudOS Locations | Working | Location in top bar; `/experience/locations` |
-| VMRogue Copilot (v1) | Working | Doctor, YAML, scheduling, **Backup Advisor**, **Network Lens** |
-| VMRogue Doctor | Working | `GET /experience/copilot/doctor/:ns/:name` |
-| VMRogue YAML Builder | Working | `POST /experience/copilot/yaml/preview` with cluster validation |
-| VMRogue Scheduling Explainer | Working | `GET /experience/copilot/scheduling/:ns/:name` |
+| Veyron Copilot (v1) | Working | Doctor, YAML, scheduling, **Backup Advisor**, **Network Lens** |
+| Veyron Doctor | Working | `GET /experience/copilot/doctor/:ns/:name` |
+| Veyron YAML Builder | Working | `POST /experience/copilot/yaml/preview` with cluster validation |
+| Veyron Scheduling Explainer | Working | `GET /experience/copilot/scheduling/:ns/:name` |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
 | OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VMROGUE_OIDC_*` set |

@@ -8,9 +8,9 @@ pub mod error;
 pub mod schedule;
 
 pub use batch::BatchConfig;
-pub use error::VMRogueError;
+pub use error::VeyronError;
 
-/// Get the VMRogue data directory (`~/.local/share/vmrogue` or platform equivalent).
+/// Get the Veyron data directory (`~/.local/share/veyron` or platform equivalent).
 ///
 /// Returns an error instead of silently falling back to `/tmp`, which would
 /// be world-readable and a security risk on shared systems.
@@ -20,7 +20,7 @@ pub fn data_dir() -> anyhow::Result<std::path::PathBuf> {
             "Could not determine data directory. Set XDG_DATA_HOME or HOME environment variable."
         )
     })?;
-    Ok(base.join("vmrogue"))
+    Ok(base.join("veyron"))
 }
 
 /// Atomically write a serializable value to `path` with restrictive permissions.

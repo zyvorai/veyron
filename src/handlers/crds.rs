@@ -12,11 +12,11 @@ use crate::operator_crds::*;
 
 pub async fn handle_vrvm_list(namespace: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueVM> = Api::namespaced(client, namespace);
+    let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
-        println!("No VMRogueVM resources found in namespace '{}'", namespace);
+        println!("No VeyronVM resources found in namespace '{}'", namespace);
         return Ok(());
     }
 
@@ -57,7 +57,7 @@ pub async fn handle_vrvm_list(namespace: &str) -> Result<()> {
 
 pub async fn handle_vrvm_get(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueVM> = Api::namespaced(client, namespace);
+    let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     let vm = api.get(name).await?;
 
     println!("Name:       {}", vm.metadata.name.as_deref().unwrap_or(""));
@@ -114,23 +114,23 @@ pub async fn handle_vrvm_create(namespace: &str, name: &str, args: VrvmCreateArg
     // If --from-file is specified, load spec from YAML
     let spec = if let Some(ref path) = args.from_file {
         let content = std::fs::read_to_string(path)?;
-        serde_yml::from_str::<VMRogueVMSpec>(&content)?
+        serde_yml::from_str::<VeyronVMSpec>(&content)?
     } else {
         build_spec_from_args(name, &args)?
     };
 
     if args.dry_run {
-        let vm = VMRogueVM::new(name, spec);
+        let vm = VeyronVM::new(name, spec);
         println!("{}", serde_yml::to_string(&vm)?);
         return Ok(());
     }
 
     let client = Client::try_default().await?;
-    let api: Api<VMRogueVM> = Api::namespaced(client, namespace);
-    let vm = VMRogueVM::new(name, spec);
+    let api: Api<VeyronVM> = Api::namespaced(client, namespace);
+    let vm = VeyronVM::new(name, spec);
     let created = api.create(&PostParams::default(), &vm).await?;
     println!(
-        "VMRogueVM '{}' created in namespace '{}'",
+        "VeyronVM '{}' created in namespace '{}'",
         created.metadata.name.unwrap_or_default(),
         namespace
     );
@@ -176,7 +176,7 @@ pub async fn handle_vrvm_create(namespace: &str, name: &str, args: VrvmCreateArg
     Ok(())
 }
 
-fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSpec> {
+fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VeyronVMSpec> {
     // Parse disks
     let mut disks: Vec<CRDDiskSpec> = args
         .disks
@@ -313,7 +313,7 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VMRogueVMSp
         }
     }
 
-    Ok(VMRogueVMSpec {
+    Ok(VeyronVMSpec {
         template: args.template.clone(),
         profile: None,
         cpu: CRDCPUSpec {
@@ -445,7 +445,7 @@ fn parse_network_spec(spec: &str, index: usize) -> Result<CRDInterfaceSpec> {
 
 pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Result<()> {
     let content = std::fs::read_to_string(file)?;
-    let vm: VMRogueVM = serde_yml::from_str(&content)?;
+    let vm: VeyronVM = serde_yml::from_str(&content)?;
 
     let name = vm
         .metadata
@@ -464,7 +464,7 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
     }
 
     let client = Client::try_default().await?;
-    let api: Api<VMRogueVM> = Api::namespaced(client, &ns);
+    let api: Api<VeyronVM> = Api::namespaced(client, &ns);
 
     // Try to get existing — if exists, replace; otherwise create
     match api.get(&name).await {
@@ -472,11 +472,11 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
             let mut updated = vm;
             updated.metadata.resource_version = existing.metadata.resource_version;
             api.replace(&name, &PostParams::default(), &updated).await?;
-            println!("VMRogueVM '{}' updated in namespace '{}'", name, ns);
+            println!("VeyronVM '{}' updated in namespace '{}'", name, ns);
         }
         Err(_) => {
             api.create(&PostParams::default(), &vm).await?;
-            println!("VMRogueVM '{}' created in namespace '{}'", name, ns);
+            println!("VeyronVM '{}' created in namespace '{}'", name, ns);
         }
     }
 
@@ -485,20 +485,20 @@ pub async fn handle_vrvm_apply(namespace: &str, file: &str, dry_run: bool) -> Re
 
 pub async fn handle_vrvm_delete(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueVM> = Api::namespaced(client, namespace);
+    let api: Api<VeyronVM> = Api::namespaced(client, namespace);
     api.delete(name, &DeleteParams::default()).await?;
-    println!("VMRogueVM '{}' deleted", name);
+    println!("VeyronVM '{}' deleted", name);
     Ok(())
 }
 
 pub async fn handle_vrbp_list(namespace: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueBlueprint> = Api::namespaced(client, namespace);
+    let api: Api<VeyronBlueprint> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
         println!(
-            "No VMRogueBlueprint resources found in namespace '{}'",
+            "No VeyronBlueprint resources found in namespace '{}'",
             namespace
         );
         return Ok(());
@@ -529,7 +529,7 @@ pub async fn handle_vrbp_list(namespace: &str) -> Result<()> {
 
 pub async fn handle_vrbp_get(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueBlueprint> = Api::namespaced(client, namespace);
+    let api: Api<VeyronBlueprint> = Api::namespaced(client, namespace);
     let bp = api.get(name).await?;
 
     println!("Name:        {}", bp.metadata.name.as_deref().unwrap_or(""));
@@ -563,20 +563,20 @@ pub async fn handle_vrbp_get(namespace: &str, name: &str) -> Result<()> {
 
 pub async fn handle_vrbp_delete(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueBlueprint> = Api::namespaced(client, namespace);
+    let api: Api<VeyronBlueprint> = Api::namespaced(client, namespace);
     api.delete(name, &DeleteParams::default()).await?;
-    println!("VMRogueBlueprint '{}' deleted", name);
+    println!("VeyronBlueprint '{}' deleted", name);
     Ok(())
 }
 
 pub async fn handle_vrpol_list(namespace: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRoguePolicy> = Api::namespaced(client, namespace);
+    let api: Api<VeyronPolicy> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
         println!(
-            "No VMRoguePolicy resources found in namespace '{}'",
+            "No VeyronPolicy resources found in namespace '{}'",
             namespace
         );
         return Ok(());
@@ -605,7 +605,7 @@ pub async fn handle_vrpol_list(namespace: &str) -> Result<()> {
 
 pub async fn handle_vrpol_get(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRoguePolicy> = Api::namespaced(client, namespace);
+    let api: Api<VeyronPolicy> = Api::namespaced(client, namespace);
     let p = api.get(name).await?;
 
     println!("Name:        {}", p.metadata.name.as_deref().unwrap_or(""));
@@ -633,20 +633,20 @@ pub async fn handle_vrpol_get(namespace: &str, name: &str) -> Result<()> {
 
 pub async fn handle_vrpol_delete(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRoguePolicy> = Api::namespaced(client, namespace);
+    let api: Api<VeyronPolicy> = Api::namespaced(client, namespace);
     api.delete(name, &DeleteParams::default()).await?;
-    println!("VMRoguePolicy '{}' deleted", name);
+    println!("VeyronPolicy '{}' deleted", name);
     Ok(())
 }
 
 pub async fn handle_vrin_list(namespace: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueInsight> = Api::namespaced(client, namespace);
+    let api: Api<VeyronInsight> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
         println!(
-            "No VMRogueInsight resources found in namespace '{}'",
+            "No VeyronInsight resources found in namespace '{}'",
             namespace
         );
         return Ok(());
@@ -675,12 +675,12 @@ pub async fn handle_vrin_list(namespace: &str) -> Result<()> {
 
 pub async fn handle_vract_list(namespace: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueAction> = Api::namespaced(client, namespace);
+    let api: Api<VeyronAction> = Api::namespaced(client, namespace);
     let list = api.list(&ListParams::default()).await?;
 
     if list.items.is_empty() {
         println!(
-            "No VMRogueAction resources found in namespace '{}'",
+            "No VeyronAction resources found in namespace '{}'",
             namespace
         );
         return Ok(());
@@ -709,11 +709,11 @@ pub async fn handle_vract_list(namespace: &str) -> Result<()> {
 
 pub async fn handle_vract_approve(namespace: &str, name: &str) -> Result<()> {
     let client = Client::try_default().await?;
-    let api: Api<VMRogueAction> = Api::namespaced(client, namespace);
+    let api: Api<VeyronAction> = Api::namespaced(client, namespace);
 
     let mut action = api.get(name).await?;
     action.spec.approved = true;
     api.replace(name, &PostParams::default(), &action).await?;
-    println!("VMRogueAction '{}' approved — operator will execute", name);
+    println!("VeyronAction '{}' approved — operator will execute", name);
     Ok(())
 }

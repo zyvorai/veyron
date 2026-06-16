@@ -75,7 +75,7 @@ pub mod soc;
 pub mod servicemesh;
 pub mod snapshots;
 
-// Operator CRD types (vmrogue.io/v1alpha1)
+// Operator CRD types (veyron.io/v1alpha1)
 pub mod operator_crds;
 
 // Features ported from v9s
@@ -105,7 +105,7 @@ pub use config::{VMConfig, VMConfigBuilder};
 pub use kube::converter::vm_config_to_kubevirt;
 pub use output::{OutputFormat, format_output, to_json, to_yaml};
 pub use utils::{
-    VMRogueError, format_bytes, generate_id, parse_cpu_nanocores, parse_memory_bytes,
+    VeyronError, format_bytes, generate_id, parse_cpu_nanocores, parse_memory_bytes,
     parse_memory_gib, percent_to_u8,
 };
 
@@ -1249,7 +1249,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 println!("{}", user_path.display());
             } else {
                 use tui::colors::cli as color;
-                println!("{}", color::header("VMRogue Configuration"));
+                println!("{}", color::header("Veyron Configuration"));
                 println!();
                 println!(
                     "  System config: {}  {}",
@@ -1306,7 +1306,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
 
         Commands::CommandList => {
             use tui::colors::cli as color;
-            println!("{}", color::header("VMRogue Commands"));
+            println!("{}", color::header("Veyron Commands"));
             println!();
             let groups = [
                 (
@@ -1562,7 +1562,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
 
             println!(
                 "{}",
-                color::muted("Use 'vmrogue <command> --help' for details on a specific command")
+                color::muted("Use 'veyron <command> --help' for details on a specific command")
             );
         }
 
@@ -1678,7 +1678,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
                 None => {
                     let q = query.join(" ");
                     if q.trim().is_empty() {
-                        println!("Usage: vmrogue ai \"<question>\"  or  vmrogue ai doctor <name>");
+                        println!("Usage: veyron ai \"<question>\"  or  veyron ai doctor <name>");
                     } else {
                         handlers::copilot::handle_ai_ask(&q, &cli.namespace, None).await?;
                     }
@@ -1813,7 +1813,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
             if !yes {
                 use dialoguer::Confirm;
                 let confirmed = Confirm::new()
-                    .with_prompt(format!("Delete VMRogueVM '{}'?", name))
+                    .with_prompt(format!("Delete VeyronVM '{}'?", name))
                     .default(false)
                     .interact()?;
                 if !confirmed {

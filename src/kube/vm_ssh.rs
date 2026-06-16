@@ -61,8 +61,8 @@ impl KubeClient {
                 name: Some(secret_name.to_string()),
                 namespace: Some(namespace.to_string()),
                 labels: Some(BTreeMap::from([(
-                    "vmrogue.io/managed-by".to_string(),
-                    "vmrogue".to_string(),
+                    "veyron.io/managed-by".to_string(),
+                    "veyron".to_string(),
                 )])),
                 ..Default::default()
             },

@@ -1191,9 +1191,9 @@ pub mod web {
         client: &KubeClient,
         config: &crate::config::VMConfig,
     ) -> anyhow::Result<Vec<PolicyViolation>> {
-        use crate::operator_crds::VMRoguePolicy;
+        use crate::operator_crds::VeyronPolicy;
 
-        let api: kube::Api<VMRoguePolicy> =
+        let api: kube::Api<VeyronPolicy> =
             kube::Api::namespaced(client.client(), &config.namespace);
 
         let policies = match api.list(&kube::api::ListParams::default()).await {
@@ -1376,13 +1376,13 @@ pub mod web {
         scope_ns: &str,
     ) -> std::collections::HashMap<(String, String), (bool, Option<String>)> {
         use crate::api::handlers::namespace_scope;
-        use crate::operator_crds::VMRogueVM;
+        use crate::operator_crds::VeyronVM;
         use std::collections::HashMap;
 
         let mut index = HashMap::new();
         let client = kube_client.client();
         let Ok(list) =
-            namespace_scope::list_namespaced_resource::<VMRogueVM>(&client, scope_ns).await
+            namespace_scope::list_namespaced_resource::<VeyronVM>(&client, scope_ns).await
         else {
             return index;
         };
@@ -1444,11 +1444,11 @@ pub mod web {
                 if let Some((drift, message)) =
                     drift_index.get(&(ns.to_string(), name.to_string()))
                 {
-                    info.vmrogue_managed = Some(true);
+                    info.veyron_managed = Some(true);
                     info.drift_detected = Some(*drift);
                     info.drift_message = message.clone();
                 } else {
-                    info.vmrogue_managed = Some(false);
+                    info.veyron_managed = Some(false);
                 }
                 info
             })
@@ -1507,14 +1507,14 @@ pub mod web {
             return resp;
         }
 
-        use crate::operator_crds::VMRogueVM;
+        use crate::operator_crds::VeyronVM;
         use kube::Api;
 
         let client = {
             let s = state.read().await;
             s.kube_client.client().clone()
         };
-        let api: Api<VMRogueVM> = Api::namespaced(client, &ns);
+        let api: Api<VeyronVM> = Api::namespaced(client, &ns);
 
         match api.get(&name).await {
             Ok(vm) => {
@@ -1536,7 +1536,7 @@ pub mod web {
                     err_json(
                         404,
                         "NOT_FOUND",
-                        &format!("VMRogueVM '{name}' not found in namespace '{ns}'"),
+                        &format!("VeyronVM '{name}' not found in namespace '{ns}'"),
                     )
                 } else {
                     err_json(500, "INTERNAL_ERROR", &msg)
@@ -1552,7 +1552,7 @@ pub mod web {
         }
     }
 
-    /// Build API JSON for the VMRogue-managed expose `Service` (or disabled stub when absent).
+    /// Build API JSON for the Veyron-managed expose `Service` (or disabled stub when absent).
     fn vm_expose_status_json(svc: Option<&Service>, vm_name: &str) -> serde_json::Value {
         let Some(svc) = svc else {
             return serde_json::json!({
@@ -1643,7 +1643,7 @@ pub mod web {
                 }
                 Err(e) => {
                     let msg = sanitize_error(&e);
-                    if msg.contains("not managed by VMRogue") {
+                    if msg.contains("not managed by Veyron") {
                         err_json(409, "CONFLICT", &msg)
                     } else {
                         err_json(500, "INTERNAL_ERROR", &msg)
@@ -1706,7 +1706,7 @@ pub mod web {
             }
             Err(e) => {
                 let msg = sanitize_error(&e);
-                if msg.contains("not managed by VMRogue") {
+                if msg.contains("not managed by Veyron") {
                     err_json(409, "CONFLICT", &msg)
                 } else {
                     err_json(500, "INTERNAL_ERROR", &msg)
@@ -3580,7 +3580,7 @@ pub mod web {
             s.kube_client.clone()
         };
 
-        // Evaluate VMRoguePolicy CRDs before creation
+        // Evaluate VeyronPolicy CRDs before creation
         if let Ok(violations) = check_policies(&client, &config).await {
             if !violations.is_empty() {
                 let deny_violations: Vec<_> = violations

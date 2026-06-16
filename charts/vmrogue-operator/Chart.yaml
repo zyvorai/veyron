@@ -1,6 +1,6 @@
 apiVersion: v2
 name: veyron-operator
-description: VMRogue Kubernetes Operator for KubeVirt VM lifecycle management
+description: Veyron Kubernetes Operator for KubeVirt VM lifecycle management
 type: application
 version: 0.2.0
 appVersion: "0.2.0"

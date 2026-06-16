@@ -49,8 +49,8 @@ impl SnapshotManager {
 
         // Build labels
         let mut labels = BTreeMap::new();
-        labels.insert("vmrogue.io/vm".to_string(), config.vm_name.clone());
-        labels.insert("vmrogue.io/created-by".to_string(), "vmrogue".to_string());
+        labels.insert("veyron.io/vm".to_string(), config.vm_name.clone());
+        labels.insert("veyron.io/created-by".to_string(), "veyron".to_string());
 
         for (k, v) in &config.labels {
             labels.insert(k.clone(), v.clone());
@@ -59,7 +59,7 @@ impl SnapshotManager {
         // Build annotations for description
         let mut annotations = BTreeMap::new();
         if let Some(desc) = &config.description {
-            annotations.insert("vmrogue.io/description".to_string(), desc.clone());
+            annotations.insert("veyron.io/description".to_string(), desc.clone());
         }
 
         // Create the snapshot CRD
@@ -117,7 +117,7 @@ impl SnapshotManager {
         let snapshots: Api<VirtualMachineSnapshot> =
             Api::namespaced(self.client.clone(), &self.namespace);
 
-        let label_selector = format!("vmrogue.io/vm={}", vm_name);
+        let label_selector = format!("veyron.io/vm={}", vm_name);
         let lp = ListParams::default().labels(&label_selector);
 
         let snapshot_list = snapshots
@@ -298,7 +298,7 @@ impl SnapshotManager {
             .metadata
             .labels
             .as_ref()
-            .and_then(|l| l.get("vmrogue.io/vm"))
+            .and_then(|l| l.get("veyron.io/vm"))
             .cloned()
             .unwrap_or_else(|| snapshot.spec.source.name.clone());
 
@@ -307,7 +307,7 @@ impl SnapshotManager {
             .metadata
             .annotations
             .as_ref()
-            .and_then(|a| a.get("vmrogue.io/description"))
+            .and_then(|a| a.get("veyron.io/description"))
             .cloned();
 
         // Parse status

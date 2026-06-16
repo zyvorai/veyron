@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	"github.com/ssahani/Veyron/operator/internal/catalog"
 	"github.com/ssahani/Veyron/operator/internal/converter"
 	"github.com/ssahani/Veyron/operator/internal/eventbus"
@@ -34,20 +34,20 @@ import (
 )
 
 const (
-	vmFinalizer = "vmrogue.io/vm-finalizer"
+	vmFinalizer = "veyron.io/vm-finalizer"
 )
 
-// VMRogueVMReconciler reconciles a VMRogueVM object.
-type VMRogueVMReconciler struct {
+// VeyronVMReconciler reconciles a VeyronVM object.
+type VeyronVMReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	EventBus *eventbus.EventBus
 }
 
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmroguevms,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmroguevms/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmroguevms/finalizers,verbs=update
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronvms,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronvms/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronvms/finalizers,verbs=update
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachines,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=kubevirt.io,resources=virtualmachineinstances,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
@@ -55,20 +55,20 @@ type VMRogueVMReconciler struct {
 // +kubebuilder:rbac:groups=cilium.io,resources=ciliumnetworkpolicies,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 
-func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	reconcileStart := time.Now()
 	defer func() {
-		vmmetrics.ReconcileDuration.WithLabelValues("vmroguevm").Observe(time.Since(reconcileStart).Seconds())
+		vmmetrics.ReconcileDuration.WithLabelValues("veyronvm").Observe(time.Since(reconcileStart).Seconds())
 	}()
 
-	// Fetch the VMRogueVM
-	var vm vmroguev1alpha1.VMRogueVM
+	// Fetch the VeyronVM
+	var vm veyronv1alpha1.VeyronVM
 	if err := r.Get(ctx, req.NamespacedName, &vm); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
-		vmmetrics.ReconcileTotal.WithLabelValues("vmroguevm", "error").Inc()
+		vmmetrics.ReconcileTotal.WithLabelValues("veyronvm", "error").Inc()
 		return ctrl.Result{}, err
 	}
 
@@ -90,7 +90,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	resolvedSpec, err := resolver.ResolveSpec(ctx, vm.Spec.Template, vm.Spec.Profile, vm.Spec, catalog.BlueprintOverrides{})
 	if err != nil {
 		logger.Error(err, "failed to resolve template/profile")
-		r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("catalog resolve: %v", err))
+		r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("catalog resolve: %v", err))
 		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
@@ -100,7 +100,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		userData, uErr := catalog.ResolveCloudInitUserData(ctx, r.Client, vm.Namespace, &workVM.Spec)
 		if uErr != nil {
 			logger.Error(uErr, "failed to resolve cloud-init userData")
-			r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("cloud-init: %v", uErr))
+			r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("cloud-init: %v", uErr))
 			return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 		}
 		if userData != "" {
@@ -113,7 +113,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if d == "configdrive" || d == "config_drive" {
 			if err := r.ensureConfigDriveSecret(ctx, workVM); err != nil {
 				logger.Error(err, "failed to reconcile config-drive Secret")
-				r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("config-drive secret: %v", err))
+				r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("config-drive secret: %v", err))
 				return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 			}
 		}
@@ -124,11 +124,11 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		logger.Error(err, "failed to hash resolved spec")
 	}
 
-	// Convert VMRogueVM spec to KubeVirt VirtualMachine
-	desired, err := converter.VMRogueVMToKubeVirt(workVM)
+	// Convert VeyronVM spec to KubeVirt VirtualMachine
+	desired, err := converter.VeyronVMToKubeVirt(workVM)
 	if err != nil {
-		logger.Error(err, "failed to convert VMRogueVM to KubeVirt VM")
-		r.updateStatus(ctx, &vm, vmroguev1alpha1.VMPhaseFailed, fmt.Sprintf("conversion error: %v", err))
+		logger.Error(err, "failed to convert VeyronVM to KubeVirt VM")
+		r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("conversion error: %v", err))
 		return ctrl.Result{}, err
 	}
 
@@ -200,7 +200,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		r.Recorder.Eventf(&vm, "Warning", "InternetPolicyFailed", "Internet egress policy: %v", err)
 	}
 
-	// Re-fetch the VMRogueVM to get the latest ResourceVersion before status update
+	// Re-fetch the VeyronVM to get the latest ResourceVersion before status update
 	if err := r.Get(ctx, req.NamespacedName, &vm); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -208,7 +208,7 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Read VMI status for runtime info
 	phase, nodeName, ipAddress := r.readVMIStatus(ctx, vm.Namespace, vm.Name)
 
-	// Update VMRogueVM status (single status update with latest ResourceVersion)
+	// Update VeyronVM status (single status update with latest ResourceVersion)
 	now := metav1.Now()
 	vm.Status.KubevirtVMName = vm.Name
 	vm.Status.Phase = phase
@@ -227,38 +227,38 @@ func (r *VMRogueVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		Message:            fmt.Sprintf("VM is in %s phase", phase),
 		LastTransitionTime: now,
 	}
-	if phase == vmroguev1alpha1.VMPhaseRunning {
+	if phase == veyronv1alpha1.VMPhaseRunning {
 		condition.Status = metav1.ConditionTrue
 		condition.Message = "VM is running"
 	}
 	setCondition(&vm.Status.Conditions, condition)
 
 	if err := r.Status().Update(ctx, &vm); err != nil {
-		logger.Error(err, "failed to update VMRogueVM status")
+		logger.Error(err, "failed to update VeyronVM status")
 		return ctrl.Result{}, err
 	}
 
 	// Requeue to poll VMI status until stable
-	if phase != vmroguev1alpha1.VMPhaseRunning && phase != vmroguev1alpha1.VMPhaseStopped {
+	if phase != veyronv1alpha1.VMPhaseRunning && phase != veyronv1alpha1.VMPhaseStopped {
 		return ctrl.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
 	return ctrl.Result{RequeueAfter: 60 * time.Second}, nil
 }
 
-func (r *VMRogueVMReconciler) applyKubeVirtAnnotations(kvVM *unstructured.Unstructured, specHash string) bool {
+func (r *VeyronVMReconciler) applyKubeVirtAnnotations(kvVM *unstructured.Unstructured, specHash string) bool {
 	ann := kvVM.GetAnnotations()
 	if ann == nil {
 		ann = map[string]string{}
 	}
 	changed := false
-	if specHash != "" && ann["vmrogue.io/resolved-spec-hash"] != specHash {
-		ann["vmrogue.io/resolved-spec-hash"] = specHash
+	if specHash != "" && ann["veyron.io/resolved-spec-hash"] != specHash {
+		ann["veyron.io/resolved-spec-hash"] = specHash
 		changed = true
 	}
 	if domainHash, err := catalog.KubeVirtDomainHash(kvVM); err == nil && domainHash != "" {
-		if ann["vmrogue.io/kubevirt-domain-hash"] != domainHash {
-			ann["vmrogue.io/kubevirt-domain-hash"] = domainHash
+		if ann["veyron.io/kubevirt-domain-hash"] != domainHash {
+			ann["veyron.io/kubevirt-domain-hash"] = domainHash
 			changed = true
 		}
 	}
@@ -268,7 +268,7 @@ func (r *VMRogueVMReconciler) applyKubeVirtAnnotations(kvVM *unstructured.Unstru
 	return changed
 }
 
-func (r *VMRogueVMReconciler) reconcileInternetEgress(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) error {
+func (r *VeyronVMReconciler) reconcileInternetEgress(ctx context.Context, vm *veyronv1alpha1.VeyronVM) error {
 	if network.AllowInternetEnabled(&vm.Spec) {
 		_, err := network.EnsureVmInternetEgress(ctx, r.Client, vm.Namespace, vm.Name)
 		return err
@@ -276,7 +276,7 @@ func (r *VMRogueVMReconciler) reconcileInternetEgress(ctx context.Context, vm *v
 	return network.RemoveVmInternetEgress(ctx, r.Client, vm.Namespace, vm.Name)
 }
 
-func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) error {
+func (r *VeyronVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *veyronv1alpha1.VeyronVM) error {
 	name := converter.ConfigDriveSecretName(vm.Name)
 	sec := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -300,16 +300,16 @@ func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *v
 		if sec.Labels == nil {
 			sec.Labels = map[string]string{}
 		}
-		// Distinct from API-created Secrets (`vmrogue.io/managed-by=vmrogue`) so the HTTP API’s
+		// Distinct from API-created Secrets (`veyron.io/managed-by=veyron`) so the HTTP API’s
 		// VM delete path never removes operator-owned objects by mistake.
-		sec.Labels["vmrogue.io/managed-by"] = "veyron-operator"
-		sec.Labels["vmrogue.io/configdrive-userdata"] = "true"
+		sec.Labels["veyron.io/managed-by"] = "veyron-operator"
+		sec.Labels["veyron.io/configdrive-userdata"] = "true"
 		return controllerutil.SetControllerReference(vm, sec, r.Scheme)
 	})
 	return err
 }
 
-func (r *VMRogueVMReconciler) handleDeletion(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM) (ctrl.Result, error) {
+func (r *VeyronVMReconciler) handleDeletion(ctx context.Context, vm *veyronv1alpha1.VeyronVM) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	if controllerutil.ContainsFinalizer(vm, vmFinalizer) {
@@ -366,7 +366,7 @@ func (r *VMRogueVMReconciler) handleDeletion(ctx context.Context, vm *vmroguev1a
 	return ctrl.Result{}, nil
 }
 
-func (r *VMRogueVMReconciler) readVMIStatus(ctx context.Context, namespace, name string) (vmroguev1alpha1.VMRogueVMPhase, string, string) {
+func (r *VeyronVMReconciler) readVMIStatus(ctx context.Context, namespace, name string) (veyronv1alpha1.VeyronVMPhase, string, string) {
 	vmi := &unstructured.Unstructured{}
 	vmi.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "kubevirt.io",
@@ -380,10 +380,10 @@ func (r *VMRogueVMReconciler) readVMIStatus(ctx context.Context, namespace, name
 	}, vmi)
 
 	if errors.IsNotFound(err) {
-		return vmroguev1alpha1.VMPhaseStopped, "", ""
+		return veyronv1alpha1.VMPhaseStopped, "", ""
 	}
 	if err != nil {
-		return vmroguev1alpha1.VMPhaseUnknown, "", ""
+		return veyronv1alpha1.VMPhaseUnknown, "", ""
 	}
 
 	phase, _, _ := unstructured.NestedString(vmi.Object, "status", "phase")
@@ -400,36 +400,36 @@ func (r *VMRogueVMReconciler) readVMIStatus(ctx context.Context, namespace, name
 		}
 	}
 
-	var vmPhase vmroguev1alpha1.VMRogueVMPhase
+	var vmPhase veyronv1alpha1.VeyronVMPhase
 	switch phase {
 	case "Running":
-		vmPhase = vmroguev1alpha1.VMPhaseRunning
+		vmPhase = veyronv1alpha1.VMPhaseRunning
 	case "Succeeded":
-		vmPhase = vmroguev1alpha1.VMPhaseStopped
+		vmPhase = veyronv1alpha1.VMPhaseStopped
 	case "Failed":
-		vmPhase = vmroguev1alpha1.VMPhaseFailed
+		vmPhase = veyronv1alpha1.VMPhaseFailed
 	case "Pending", "Scheduling", "Scheduled":
-		vmPhase = vmroguev1alpha1.VMPhaseCreating
+		vmPhase = veyronv1alpha1.VMPhaseCreating
 	default:
-		vmPhase = vmroguev1alpha1.VMPhasePending
+		vmPhase = veyronv1alpha1.VMPhasePending
 	}
 
 	return vmPhase, nodeName, ipAddress
 }
 
-func (r *VMRogueVMReconciler) ensureDriftInsight(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM, message string) error {
+func (r *VeyronVMReconciler) ensureDriftInsight(ctx context.Context, vm *veyronv1alpha1.VeyronVM, message string) error {
 	name := fmt.Sprintf("drift-%s", vm.Name)
-	insight := &vmroguev1alpha1.VMRogueInsight{
+	insight := &veyronv1alpha1.VeyronInsight{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: vm.Namespace,
 			Labels: map[string]string{
-				"vmrogue.io/vm":    vm.Name,
-				"vmrogue.io/type":  "drift",
-				"vmrogue.io/managed-by": "veyron-operator",
+				"veyron.io/vm":    vm.Name,
+				"veyron.io/type":  "drift",
+				"veyron.io/managed-by": "veyron-operator",
 			},
 		},
-		Spec: vmroguev1alpha1.VMRogueInsightSpec{
+		Spec: veyronv1alpha1.VeyronInsightSpec{
 			InsightType: "Drift",
 			Severity:    "High",
 			VMRef:       vm.Name,
@@ -442,7 +442,7 @@ func (r *VMRogueVMReconciler) ensureDriftInsight(ctx context.Context, vm *vmrogu
 			},
 		},
 	}
-	existing := &vmroguev1alpha1.VMRogueInsight{}
+	existing := &veyronv1alpha1.VeyronInsight{}
 	err := r.Get(ctx, types.NamespacedName{Name: name, Namespace: vm.Namespace}, existing)
 	if errors.IsNotFound(err) {
 		return r.Create(ctx, insight)
@@ -455,7 +455,7 @@ func (r *VMRogueVMReconciler) ensureDriftInsight(ctx context.Context, vm *vmrogu
 	return r.Update(ctx, existing)
 }
 
-func (r *VMRogueVMReconciler) updateStatus(ctx context.Context, vm *vmroguev1alpha1.VMRogueVM, phase vmroguev1alpha1.VMRogueVMPhase, message string) {
+func (r *VeyronVMReconciler) updateStatus(ctx context.Context, vm *veyronv1alpha1.VeyronVM, phase veyronv1alpha1.VeyronVMPhase, message string) {
 	vm.Status.Phase = phase
 	now := metav1.Now()
 	vm.Status.LastReconciled = &now
@@ -471,7 +471,7 @@ func (r *VMRogueVMReconciler) updateStatus(ctx context.Context, vm *vmroguev1alp
 	_ = r.Status().Update(ctx, vm)
 }
 
-func (r *VMRogueVMReconciler) publishEvent(subject string, vm *vmroguev1alpha1.VMRogueVM, phase string) {
+func (r *VeyronVMReconciler) publishEvent(subject string, vm *veyronv1alpha1.VeyronVM, phase string) {
 	if r.EventBus == nil {
 		return
 	}
@@ -488,7 +488,7 @@ func (r *VMRogueVMReconciler) publishEvent(subject string, vm *vmroguev1alpha1.V
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *VMRogueVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *VeyronVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	// Register the KubeVirt GVKs with the scheme so we can watch them
 	kvVMGVK := schema.GroupVersionKind{Group: "kubevirt.io", Version: "v1", Kind: "VirtualMachine"}
 	kvVMIGVK := schema.GroupVersionKind{Group: "kubevirt.io", Version: "v1", Kind: "VirtualMachineInstance"}
@@ -500,9 +500,9 @@ func (r *VMRogueVMReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	kvVMI.SetGroupVersionKind(kvVMIGVK)
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&vmroguev1alpha1.VMRogueVM{}).
+		For(&veyronv1alpha1.VeyronVM{}).
 		Owns(kvVM).
-		Watches(kvVMI, &EnqueueVmiForVMRogueVM{}).
+		Watches(kvVMI, &EnqueueVmiForVeyronVM{}).
 		Complete(r)
 }
 

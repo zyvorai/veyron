@@ -31,7 +31,7 @@ pub async fn handle_catalog_list(templates: bool, profiles: bool) -> Result<()> 
             Ok(list) if list.is_empty() => {
                 println!(
                     "{}",
-                    color::info("No VMTemplate CRDs in cluster (run: vmrogue catalog sync)")
+                    color::info("No VMTemplate CRDs in cluster (run: veyron catalog sync)")
                 );
             }
             Ok(list) => {
@@ -59,7 +59,7 @@ pub async fn handle_catalog_list(templates: bool, profiles: bool) -> Result<()> 
             }
             Err(e) => {
                 return Err(e.context(
-                    "list VMTemplate CRDs (install operator CRDs and run vmrogue catalog sync)",
+                    "list VMTemplate CRDs (install operator CRDs and run veyron catalog sync)",
                 ));
             }
         }
@@ -73,7 +73,7 @@ pub async fn handle_catalog_list(templates: bool, profiles: bool) -> Result<()> 
             Ok(list) if list.is_empty() => {
                 println!(
                     "{}",
-                    color::info("No VMProfile CRDs in cluster (run: vmrogue catalog sync)")
+                    color::info("No VMProfile CRDs in cluster (run: veyron catalog sync)")
                 );
             }
             Ok(list) => {
@@ -121,7 +121,7 @@ pub async fn handle_catalog_sync(_namespace: String) -> Result<()> {
     let profiles_dir = dir.join("profiles");
     if !templates_dir.is_dir() || !profiles_dir.is_dir() {
         anyhow::bail!(
-            "catalog not exported — run: vmrogue catalog export (or ./scripts/generate-catalog-crds.sh)"
+            "catalog not exported — run: veyron catalog export (or ./scripts/generate-catalog-crds.sh)"
         );
     }
 

@@ -36,7 +36,7 @@ pub mod vm_ssh;
 pub mod windows_rdp;
 
 use crate::config::{CloudInitDelivery, VMConfig, VmExposeConfig};
-use crate::utils::VMRogueError;
+use crate::utils::VeyronError;
 use anyhow::{Context, Result};
 use k8s_openapi::api::core::v1::PersistentVolumeClaim;
 use k8s_openapi::api::core::v1::{Secret, Service, ServicePort, ServiceSpec};
@@ -270,7 +270,7 @@ impl KubeClient {
 
         // Check if VM already exists
         match vms.get(&config.name).await {
-            Ok(_) => return Err(VMRogueError::VmExists(config.name.clone()).into()),
+            Ok(_) => return Err(VeyronError::VmExists(config.name.clone()).into()),
             Err(kube::Error::Api(ae)) if ae.code == 404 => {} // VM doesn't exist, proceed
             Err(e) => return Err(e.into()), // Propagate other errors (network, auth, etc.)
         }
@@ -289,7 +289,7 @@ impl KubeClient {
         // Convert VMConfig to KubeVirt VirtualMachine
         let mut vm = vm_config_to_kubevirt(config)?;
         if let Ok(mut v) = serde_json::to_value(&vm) {
-            let template_hint = config.labels.get("vmrogue.io/template").map(|s| s.as_str());
+            let template_hint = config.labels.get("veyron.io/template").map(|s| s.as_str());
             if windows_rdp::should_apply_windows_rdp(&v, template_hint) {
                 windows_rdp::merge_windows_rdp_defaults(&mut v);
                 if let Ok(parsed) = serde_json::from_value(v) {
@@ -347,7 +347,7 @@ impl KubeClient {
         match vms.get(name).await {
             Ok(_) => {}
             Err(kube::Error::Api(ae)) if ae.code == 404 => {
-                return Err(VMRogueError::VmNotFound(name.to_string()).into());
+                return Err(VeyronError::VmNotFound(name.to_string()).into());
             }
             Err(e) => return Err(e.into()),
         }
@@ -359,7 +359,7 @@ impl KubeClient {
             .await;
         self.delete_service_ignore(namespace, &vm_expose_service_name(name))
             .await;
-        self.delete_service_ignore(namespace, &windows_rdp::vmrogue_rdp_service_name(name))
+        self.delete_service_ignore(namespace, &windows_rdp::veyron_rdp_service_name(name))
             .await;
 
         if let Err(e) =
@@ -405,9 +405,9 @@ impl KubeClient {
                 name: Some(name.to_string()),
                 namespace: Some(namespace.to_string()),
                 labels: Some(BTreeMap::from([
-                    ("vmrogue.io/managed-by".to_string(), "vmrogue".to_string()),
+                    ("veyron.io/managed-by".to_string(), "veyron".to_string()),
                     (
-                        "vmrogue.io/configdrive-userdata".to_string(),
+                        "veyron.io/configdrive-userdata".to_string(),
                         "true".to_string(),
                     ),
                 ])),
@@ -480,8 +480,8 @@ impl KubeClient {
                 name: Some(svc_name.clone()),
                 namespace: Some(namespace.to_string()),
                 labels: Some(BTreeMap::from([
-                    ("vmrogue.io/managed-by".to_string(), "vmrogue".to_string()),
-                    ("vmrogue.io/expose-for-vm".to_string(), vm_name.to_string()),
+                    ("veyron.io/managed-by".to_string(), "veyron".to_string()),
+                    ("veyron.io/expose-for-vm".to_string(), vm_name.to_string()),
                 ])),
                 ..Default::default()
             },
@@ -506,7 +506,7 @@ impl KubeClient {
         }
     }
 
-    /// Returns the VMRogue-managed expose `Service` for this VM, if it exists.
+    /// Returns the Veyron-managed expose `Service` for this VM, if it exists.
     pub async fn get_vm_expose_service(
         &self,
         namespace: &str,
@@ -520,9 +520,9 @@ impl KubeClient {
                     .metadata
                     .labels
                     .as_ref()
-                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .and_then(|l| l.get("veyron.io/managed-by"))
                     .map(|v| v.as_str())
-                    == Some("vmrogue");
+                    == Some("veyron");
                 if !managed {
                     return Ok(None);
                 }
@@ -533,7 +533,7 @@ impl KubeClient {
         }
     }
 
-    /// Deletes the VMRogue-managed expose `Service` for this VM (idempotent).
+    /// Deletes the Veyron-managed expose `Service` for this VM (idempotent).
     pub async fn delete_vm_expose_service(&self, namespace: &str, vm_name: &str) -> Result<()> {
         let svc_name = vm_expose_service_name(vm_name);
         let svc_api: Api<Service> = Api::namespaced(self.client.clone(), namespace);
@@ -543,12 +543,12 @@ impl KubeClient {
                     .metadata
                     .labels
                     .as_ref()
-                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .and_then(|l| l.get("veyron.io/managed-by"))
                     .map(|v| v.as_str())
-                    == Some("vmrogue");
+                    == Some("veyron");
                 if !managed {
                     return Err(anyhow::anyhow!(
-                        "Service {} exists but is not managed by VMRogue",
+                        "Service {} exists but is not managed by Veyron",
                         svc_name
                     ));
                 }
@@ -571,12 +571,12 @@ impl KubeClient {
                     .metadata
                     .labels
                     .as_ref()
-                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .and_then(|l| l.get("veyron.io/managed-by"))
                     .map(|v| v.as_str())
-                    == Some("vmrogue");
+                    == Some("veyron");
                 if !managed {
                     log::debug!(
-                        "skip delete Secret {}: not labeled vmrogue.io/managed-by=vmrogue",
+                        "skip delete Secret {}: not labeled veyron.io/managed-by=veyron",
                         name
                     );
                     return;
@@ -603,12 +603,12 @@ impl KubeClient {
                     .metadata
                     .labels
                     .as_ref()
-                    .and_then(|l| l.get("vmrogue.io/managed-by"))
+                    .and_then(|l| l.get("veyron.io/managed-by"))
                     .map(|v| v.as_str())
-                    == Some("vmrogue");
+                    == Some("veyron");
                 if !managed {
                     log::debug!(
-                        "skip delete Service {}: not labeled vmrogue.io/managed-by=vmrogue",
+                        "skip delete Service {}: not labeled veyron.io/managed-by=veyron",
                         name
                     );
                     return;
@@ -639,7 +639,7 @@ impl KubeClient {
         match vms.patch(name, &pp, &Patch::Merge(&patch)).await {
             Ok(patched) => Ok(patched),
             Err(kube::Error::Api(ae)) if ae.code == 404 => {
-                Err(VMRogueError::VmNotFound(name.to_string()).into())
+                Err(VeyronError::VmNotFound(name.to_string()).into())
             }
             Err(e) => Err(e.into()),
         }
@@ -657,7 +657,7 @@ impl KubeClient {
         match vms.patch(name, &pp, &Patch::Merge(&patch)).await {
             Ok(patched) => Ok(patched),
             Err(kube::Error::Api(ae)) if ae.code == 404 => {
-                Err(VMRogueError::VmNotFound(name.to_string()).into())
+                Err(VeyronError::VmNotFound(name.to_string()).into())
             }
             Err(e) => Err(e.into()),
         }
@@ -1732,12 +1732,12 @@ fn pod_name_str(p: &k8s_openapi::api::core::v1::Pod) -> &str {
 /// Kubernetes name for the Secret referenced by `cloudInitConfigDrive.userDataSecretRef`.
 /// Keep consistent with `operator/internal/controller` helpers.
 pub fn cloudinit_configdrive_secret_name(vm_name: &str) -> String {
-    truncate_k8s_dns_subdomain(format!("{vm_name}-vmrogue-cfgdrv"), 253)
+    truncate_k8s_dns_subdomain(format!("{vm_name}-veyron-cfgdrv"), 253)
 }
 
-/// Kubernetes Service name for VMRogue-created exposed Services.
+/// Kubernetes Service name for Veyron-created exposed Services.
 pub fn vm_expose_service_name(vm_name: &str) -> String {
-    truncate_k8s_dns_subdomain(format!("{vm_name}-vmrogue-xp"), 63)
+    truncate_k8s_dns_subdomain(format!("{vm_name}-veyron-xp"), 63)
 }
 
 fn truncate_k8s_dns_subdomain(mut s: String, max: usize) -> String {

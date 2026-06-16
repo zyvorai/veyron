@@ -1,6 +1,6 @@
 # Veyron Blueprint Configuration
 # This file defines a custom blueprint for deploying a multi-VM stack.
-# Usage: vmrogue blueprint-import custom-blueprint-example.yaml
+# Usage: veyron blueprint-import custom-blueprint-example.yaml
 name: ml-stack
 description: Machine Learning Stack with Jupyter, MLflow, and GPU Nodes
 vms:

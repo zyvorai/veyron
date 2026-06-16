@@ -138,7 +138,7 @@ impl TroubleshootSession {
                         rollback_plan: "Revert resource allocation to previous values".to_string(),
                         automated: true,
                         commands: vec![
-                            "vmrogue resources scale --cpu +2 --memory +2Gi".to_string(),
+                            "veyron resources scale --cpu +2 --memory +2Gi".to_string(),
                         ],
                     });
                 }
@@ -157,7 +157,7 @@ impl TroubleshootSession {
                         prerequisites: Vec::new(),
                         rollback_plan: "Restore previous network policy".to_string(),
                         automated: false,
-                        commands: vec!["vmrogue network-policies".to_string()],
+                        commands: vec!["veyron network-policies".to_string()],
                     });
                 }
                 SymptomCategory::Storage => {
@@ -175,7 +175,7 @@ impl TroubleshootSession {
                         prerequisites: vec!["Storage class supports expansion".to_string()],
                         rollback_plan: "Snapshot before expansion".to_string(),
                         automated: true,
-                        commands: vec!["vmrogue disk-expand --vm <name> --size +10Gi".to_string()],
+                        commands: vec!["veyron disk-expand --vm <name> --size +10Gi".to_string()],
                     });
                 }
                 _ => {

@@ -30,8 +30,13 @@ _apply() {
   local f="$1"
   [[ -f "${f}" ]] || return 0
   echo "  Applying $(basename "${f}")…"
-  if grep -q '__V9S_APP_NAMESPACE__' "${f}" 2>/dev/null; then
-    sed "s|__V9S_APP_NAMESPACE__|${APP_NAMESPACE}|g" "${f}" | kubectl apply -f -
+  if grep -q '__V9S_APP_NAMESPACE__\|__VEYRON_APP_NAMESPACE__' "${f}" 2>/dev/null; then
+    sed \
+      -e "s|__V9S_APP_NAMESPACE__|${APP_NAMESPACE}|g" \
+      -e "s|__VEYRON_APP_NAMESPACE__|${APP_NAMESPACE}|g" \
+      -e "s|namespace: vmrogue-system|namespace: ${APP_NAMESPACE}|g" \
+      -e "s|namespace: veyron-system|namespace: ${APP_NAMESPACE}|g" \
+      "${f}" | kubectl apply -f -
   else
     kubectl apply -f "${f}"
   fi

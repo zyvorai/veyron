@@ -265,7 +265,7 @@ impl WebhookPayload {
             event: event.to_string(),
             timestamp: Utc::now(),
             data: HashMap::new(),
-            source: "vmrogue".to_string(),
+            source: "veyron".to_string(),
         }
     }
 
@@ -572,7 +572,7 @@ mod tests {
 
         assert_eq!(payload.event, "vm.created");
         assert_eq!(payload.data_count(), 2);
-        assert_eq!(payload.source, "vmrogue");
+        assert_eq!(payload.source, "veyron");
     }
 
     #[test]

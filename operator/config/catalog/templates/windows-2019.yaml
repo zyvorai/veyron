@@ -1,11 +1,11 @@
-apiVersion: vmrogue.io/v1alpha1
+apiVersion: veyron.io/v1alpha1
 kind: VMTemplate
 metadata:
   labels:
-    vmrogue.io/managed-by: vmrogue-catalog-export
+    veyron.io/managed-by: veyron-catalog-export
   name: windows-2019
 spec:
-  description: 'VMRogue built-in template: windows-2019'
+  description: 'Veyron built-in template: windows-2019'
   tags:
   - windows
   family: windows
@@ -47,7 +47,7 @@ spec:
         # Veyron Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
         Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
         Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
-        Write-Host 'Cloudbase-Init config-drive applied by VMRogue template.'
+        Write-Host 'Cloudbase-Init config-drive applied by Veyron template.'
       delivery: configdrive
     features:
       acpi: true

@@ -35,7 +35,7 @@ pub struct ForecastQuery {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ForecastPredictionsResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub predictions: Vec<ForecastPrediction>,
 }
 
@@ -216,7 +216,7 @@ async fn list_predictions(
     }
 
     Json(ForecastPredictionsResponse {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         predictions,
     })
 }

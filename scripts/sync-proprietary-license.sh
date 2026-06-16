@@ -30,7 +30,7 @@ REPOS=(
     packetwolf
     ragnarok
     v9s
-    VMRogue
+    Veyron
     vmspawn
 )
 

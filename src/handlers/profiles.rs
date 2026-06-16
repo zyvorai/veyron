@@ -54,12 +54,12 @@ pub fn handle_profiles(details: bool) -> Result<()> {
     );
     println!(
         "{}",
-        color::muted("Use 'vmrogue profile <name>' for details")
+        color::muted("Use 'veyron profile <name>' for details")
     );
     println!(
         "{}",
         color::muted(
-            "Create custom: vmrogue profile-create <name> --cpus <n> --memory <size> --disk-size <size>"
+            "Create custom: veyron profile-create <name> --cpus <n> --memory <size> --disk-size <size>"
         )
     );
     Ok(())
@@ -151,7 +151,7 @@ pub fn handle_profile_create(
     println!(
         "{}",
         color::muted(&format!(
-            "  Use with: vmrogue create <vm-name> --template <os> --profile {}",
+            "  Use with: veyron create <vm-name> --template <os> --profile {}",
             name
         ))
     );
@@ -322,11 +322,11 @@ pub fn handle_blueprints(tag: Option<String>, details: bool) -> Result<()> {
     );
     println!(
         "{}",
-        color::muted("Use 'vmrogue blueprint <name>' for details")
+        color::muted("Use 'veyron blueprint <name>' for details")
     );
     println!(
         "{}",
-        color::muted("Create custom: vmrogue blueprint-create <name> --from-file <file>")
+        color::muted("Create custom: veyron blueprint-create <name> --from-file <file>")
     );
     Ok(())
 }
@@ -545,7 +545,7 @@ pub fn handle_blueprint_create(
     );
     println!(
         "{}",
-        color::muted(&format!("  Deploy with: vmrogue deploy {}", name))
+        color::muted(&format!("  Deploy with: veyron deploy {}", name))
     );
     Ok(())
 }
@@ -903,7 +903,7 @@ pub fn handle_recommend(workload: String, alternatives: bool) -> Result<()> {
                 println!(
                     "    {}",
                     color::command(&format!(
-                        "vmrogue create my-vm --template {} --profile {}",
+                        "veyron create my-vm --template {} --profile {}",
                         profile
                             .recommended_os
                             .first()
@@ -927,7 +927,7 @@ pub fn handle_recommend(workload: String, alternatives: bool) -> Result<()> {
         println!();
         println!(
             "{}",
-            color::muted("Use 'vmrogue profiles' to see all profiles")
+            color::muted("Use 'veyron profiles' to see all profiles")
         );
     }
     Ok(())

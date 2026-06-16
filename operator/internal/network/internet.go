@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,11 +17,11 @@ import (
 )
 
 const (
-	policyPrefix   = "vmrogue-net-"
-	labelManaged   = "vmrogue.io/managed-by"
-	labelVMName    = "vmrogue.io/vm-name"
-	labelEgress    = "vmrogue.io/vm-egress"
-	managedByValue = "vmrogue"
+	policyPrefix   = "veyron-net-"
+	labelManaged   = "veyron.io/managed-by"
+	labelVMName    = "veyron.io/vm-name"
+	labelEgress    = "veyron.io/vm-egress"
+	managedByValue = "veyron"
 )
 
 var (
@@ -62,7 +62,7 @@ func InternetPolicyName(vmName string) string {
 }
 
 // AllowInternetEnabled returns whether the spec requests internet egress (default true).
-func AllowInternetEnabled(spec *vmroguev1alpha1.VMRogueVMSpec) bool {
+func AllowInternetEnabled(spec *veyronv1alpha1.VeyronVMSpec) bool {
 	if spec == nil || spec.AllowInternet == nil {
 		return true
 	}
@@ -144,7 +144,7 @@ func createOrUpdate(ctx context.Context, c client.Client, desired *unstructured.
 	return c.Update(ctx, desired)
 }
 
-// RemoveVmInternetEgress deletes VMRogue-managed internet policies for the VM.
+// RemoveVmInternetEgress deletes Veyron-managed internet policies for the VM.
 func RemoveVmInternetEgress(ctx context.Context, c client.Client, namespace, vmName string) error {
 	polName := InternetPolicyName(vmName)
 	cnp := &unstructured.Unstructured{}

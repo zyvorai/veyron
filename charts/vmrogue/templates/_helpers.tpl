@@ -1,14 +1,14 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "vmrogue.name" -}}
+{{- define "veyron.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Create a default fully qualified app name.
 */}}
-{{- define "vmrogue.fullname" -}}
+{{- define "veyron.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -24,9 +24,9 @@ Create a default fully qualified app name.
 {{/*
 Common labels
 */}}
-{{- define "vmrogue.labels" -}}
-helm.sh/chart: {{ include "vmrogue.name" . }}-{{ .Chart.Version }}
-{{ include "vmrogue.selectorLabels" . }}
+{{- define "veyron.labels" -}}
+helm.sh/chart: {{ include "veyron.name" . }}-{{ .Chart.Version }}
+{{ include "veyron.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
@@ -34,25 +34,25 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "vmrogue.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "vmrogue.name" . }}
+{{- define "veyron.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "veyron.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Service account name
 */}}
-{{- define "vmrogue.serviceAccountName" -}}
+{{- define "veyron.serviceAccountName" -}}
 {{- if .Values.serviceAccount.name }}
 {{- .Values.serviceAccount.name }}
 {{- else }}
-{{- include "vmrogue.fullname" . }}
+{{- include "veyron.fullname" . }}
 {{- end }}
 {{- end }}
 
 {{/*
 Image tag
 */}}
-{{- define "vmrogue.imageTag" -}}
+{{- define "veyron.imageTag" -}}
 {{- default .Chart.AppVersion .Values.image.tag }}
 {{- end }}

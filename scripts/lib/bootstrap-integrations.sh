@@ -98,7 +98,7 @@ bootstrap_nodeport_external_url() {
     fi
 }
 
-bootstrap_vmrogue_integrations() {
+bootstrap_veyron_integrations() {
     local k8s="${1:?kubectl command}"
     local ns="${2:-veyron-system}"
 
@@ -250,5 +250,5 @@ EOF
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    bootstrap_vmrogue_integrations "${1:?kubectl}" "${2:-veyron-system}"
+    bootstrap_veyron_integrations "${1:?kubectl}" "${2:-veyron-system}"
 fi

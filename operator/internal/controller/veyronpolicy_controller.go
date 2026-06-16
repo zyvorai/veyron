@@ -21,26 +21,26 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	"github.com/ssahani/Veyron/operator/internal/eventbus"
 )
 
-// VMRoguePolicyReconciler reconciles a VMRoguePolicy object.
-type VMRoguePolicyReconciler struct {
+// VeyronPolicyReconciler reconciles a VeyronPolicy object.
+type VeyronPolicyReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	EventBus *eventbus.EventBus
 }
 
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmroguepolicies,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmroguepolicies/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmroguevms,verbs=get;list;watch
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronpolicies,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronpolicies/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronvms,verbs=get;list;watch
 
-func (r *VMRoguePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *VeyronPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var policy vmroguev1alpha1.VMRoguePolicy
+	var policy veyronv1alpha1.VeyronPolicy
 	if err := r.Get(ctx, req.NamespacedName, &policy); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -60,8 +60,8 @@ func (r *VMRoguePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: 5 * time.Minute}, nil
 	}
 
-	// List all VMRogueVMs in the namespace
-	var vmList vmroguev1alpha1.VMRogueVMList
+	// List all VeyronVMs in the namespace
+	var vmList veyronv1alpha1.VeyronVMList
 	listOpts := []client.ListOption{
 		client.InNamespace(req.Namespace),
 	}
@@ -70,7 +70,7 @@ func (r *VMRoguePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Filter by selector
-	var matchingVMs []vmroguev1alpha1.VMRogueVM
+	var matchingVMs []veyronv1alpha1.VeyronVM
 	if policy.Spec.Selector != nil {
 		selector, err := metav1.LabelSelectorAsSelector(policy.Spec.Selector)
 		if err != nil {
@@ -87,7 +87,7 @@ func (r *VMRoguePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Evaluate rules against each matching VM
-	var violations []vmroguev1alpha1.PolicyViolation
+	var violations []veyronv1alpha1.PolicyViolation
 	compliantCount := 0
 
 	for _, vm := range matchingVMs {
@@ -134,13 +134,13 @@ func (r *VMRoguePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 // evaluateRules checks a VM against all policy rules.
 // Uses simple field-based evaluation. CEL evaluation can be added when cel-go is integrated.
-func (r *VMRoguePolicyReconciler) evaluateRules(policy *vmroguev1alpha1.VMRoguePolicy, vm *vmroguev1alpha1.VMRogueVM) []vmroguev1alpha1.PolicyViolation {
-	var violations []vmroguev1alpha1.PolicyViolation
+func (r *VeyronPolicyReconciler) evaluateRules(policy *veyronv1alpha1.VeyronPolicy, vm *veyronv1alpha1.VeyronVM) []veyronv1alpha1.PolicyViolation {
+	var violations []veyronv1alpha1.PolicyViolation
 
 	for _, rule := range policy.Spec.Rules {
 		compliant := evaluateCondition(rule.Condition, vm)
 		if !compliant {
-			violations = append(violations, vmroguev1alpha1.PolicyViolation{
+			violations = append(violations, veyronv1alpha1.PolicyViolation{
 				VMName:    vm.Name,
 				Namespace: vm.Namespace,
 				RuleName:  rule.Name,
@@ -155,7 +155,7 @@ func (r *VMRoguePolicyReconciler) evaluateRules(policy *vmroguev1alpha1.VMRogueP
 
 // evaluateCondition evaluates a policy rule condition against a VM.
 // First checks built-in conditions for fast path, then falls back to CEL evaluation.
-func evaluateCondition(condition string, vm *vmroguev1alpha1.VMRogueVM) bool {
+func evaluateCondition(condition string, vm *veyronv1alpha1.VeyronVM) bool {
 	// Fast path: built-in conditions
 	switch condition {
 	case "spec.enableTpm == true":
@@ -192,7 +192,7 @@ func evaluateCondition(condition string, vm *vmroguev1alpha1.VMRogueVM) bool {
 // The VM fields are exposed as CEL variables: cpu_cores, memory_size,
 // enable_tpm, enable_rng, has_cloud_init, has_eviction_strategy,
 // num_disks, num_interfaces, template, name, namespace.
-func evaluateCEL(expression string, vm *vmroguev1alpha1.VMRogueVM) (bool, error) {
+func evaluateCEL(expression string, vm *veyronv1alpha1.VeyronVM) (bool, error) {
 	env, err := cel.NewEnv(
 		cel.Variable("cpu_cores", cel.UintType),
 		cel.Variable("cpu_sockets", cel.UintType),
@@ -266,7 +266,7 @@ func evaluateCEL(expression string, vm *vmroguev1alpha1.VMRogueVM) (bool, error)
 	return out.Value().(bool), nil
 }
 
-func (r *VMRoguePolicyReconciler) publishViolationEvent(policy *vmroguev1alpha1.VMRoguePolicy, v *vmroguev1alpha1.PolicyViolation) {
+func (r *VeyronPolicyReconciler) publishViolationEvent(policy *veyronv1alpha1.VeyronPolicy, v *veyronv1alpha1.PolicyViolation) {
 	if r.EventBus == nil {
 		return
 	}
@@ -282,8 +282,8 @@ func (r *VMRoguePolicyReconciler) publishViolationEvent(policy *vmroguev1alpha1.
 	}
 }
 
-func (r *VMRoguePolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *VeyronPolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&vmroguev1alpha1.VMRoguePolicy{}).
+		For(&veyronv1alpha1.VeyronPolicy{}).
 		Complete(r)
 }

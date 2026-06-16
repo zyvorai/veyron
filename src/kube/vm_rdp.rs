@@ -15,16 +15,16 @@ use kube::api::{Api, DeleteParams, ListParams, PostParams};
 use serde::Serialize;
 use std::collections::{BTreeMap, HashSet};
 
-use super::windows_rdp::{WINDOWS_RDP_PORT, vmrogue_rdp_service_name};
+use super::windows_rdp::{WINDOWS_RDP_PORT, veyron_rdp_service_name};
 
 /// Within Kubernetes NodePort range 30000–32767.
 pub const RDP_NODEPORT_RANGE_START: i32 = 30_100;
 pub const RDP_NODEPORT_RANGE_END: i32 = 30_199;
 
-const LABEL_RDP_EXPOSE: &str = "vmrogue.io/rdp-expose";
-const LABEL_VM_NAME: &str = "vmrogue.io/vm-name";
-const ANN_VM_NAME: &str = "vmrogue.io/vm-name";
-const ANN_VM_NS: &str = "vmrogue.io/vm-namespace";
+const LABEL_RDP_EXPOSE: &str = "veyron.io/rdp-expose";
+const LABEL_VM_NAME: &str = "veyron.io/vm-name";
+const ANN_VM_NAME: &str = "veyron.io/vm-name";
+const ANN_VM_NS: &str = "veyron.io/vm-namespace";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RdpNodePortInUse {
@@ -179,7 +179,7 @@ pub async fn get_rdp_expose_service(
     namespace: &str,
     vm_name: &str,
 ) -> Result<Option<Service>> {
-    let svc_name = vmrogue_rdp_service_name(vm_name);
+    let svc_name = veyron_rdp_service_name(vm_name);
     let svc_api: Api<Service> = Api::namespaced(client, namespace);
     match svc_api.get(&svc_name).await {
         Ok(s) if rdp_svc_owns_vm(&s, vm_name) => Ok(Some(s)),
@@ -236,7 +236,7 @@ pub async fn upsert_rdp_expose_service(
     service_type: &str,
     node_port: i32,
 ) -> Result<()> {
-    let svc_name = vmrogue_rdp_service_name(vm_name);
+    let svc_name = veyron_rdp_service_name(vm_name);
     let svc_api: Api<Service> = Api::namespaced(client.clone(), namespace);
 
     let existing = match svc_api.get(&svc_name).await {
@@ -275,7 +275,7 @@ pub async fn upsert_rdp_expose_service(
     }
 
     let mut labels = BTreeMap::new();
-    labels.insert("vmrogue.io/managed-by".to_string(), "vmrogue".to_string());
+    labels.insert("veyron.io/managed-by".to_string(), "veyron".to_string());
     labels.insert(LABEL_RDP_EXPOSE.to_string(), "true".to_string());
     labels.insert(LABEL_VM_NAME.to_string(), vm_name.to_string());
 
@@ -323,7 +323,7 @@ pub async fn delete_rdp_expose_service(
     namespace: &str,
     vm_name: &str,
 ) -> Result<()> {
-    let svc_name = vmrogue_rdp_service_name(vm_name);
+    let svc_name = veyron_rdp_service_name(vm_name);
     let svc_api: Api<Service> = Api::namespaced(client, namespace);
     match svc_api.get(&svc_name).await {
         Ok(s) if rdp_svc_owns_vm(&s, vm_name) => {
@@ -345,7 +345,7 @@ pub async fn assemble_rdp_access(
     spec_has_rdp_port: bool,
     node_ips: Vec<String>,
 ) -> Result<RdpAccessStatus> {
-    let service_name = vmrogue_rdp_service_name(vm_name);
+    let service_name = veyron_rdp_service_name(vm_name);
     let used_entries = list_rdp_nodeport_entries(client.clone())
         .await
         .unwrap_or_default();

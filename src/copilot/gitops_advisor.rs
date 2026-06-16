@@ -6,10 +6,10 @@ use kube::api::{Api, ListParams};
 use super::{CopilotAction, CopilotResponse};
 use crate::kube::KubeClient;
 
-/// GitOps posture: VMRogue GitOps ConfigMaps, drift, Argo CD / Flux presence.
+/// GitOps posture: Veyron GitOps ConfigMaps, drift, Argo CD / Flux presence.
 pub async fn gitops_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue GitOps Advisor",
+        "Veyron GitOps Advisor",
         "gitops_advisor",
         "GitOps posture in workspace",
     );
@@ -37,7 +37,7 @@ pub async fn gitops_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
 
     for ns in &namespaces {
         let api: Api<ConfigMap> = Api::namespaced(k8s.clone(), ns);
-        let lp = ListParams::default().labels("vmrogue.io/type=gitops");
+        let lp = ListParams::default().labels("veyron.io/type=gitops");
         if let Ok(cms) = api.list(&lp).await {
             for cm in &cms.items {
                 repos += 1;
@@ -96,7 +96,7 @@ pub async fn gitops_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
     }
 
     r.summary = if repos == 0 {
-        "No VMRogue GitOps ConfigMaps — export VMs or configure a repo in GitOps settings.".into()
+        "No Veyron GitOps ConfigMaps — export VMs or configure a repo in GitOps settings.".into()
     } else if drift_ns.is_empty() {
         format!("{repos} GitOps config(s); live VM counts match stored snapshots.")
     } else {

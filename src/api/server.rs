@@ -225,7 +225,7 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         Endpoint::new(
             "GET",
             "/api/v1/vms/:ns/:name/expose",
-            "Get VMRogue-managed Service expose status",
+            "Get Veyron-managed Service expose status",
         ),
         Endpoint::new(
             "PUT",
@@ -236,7 +236,7 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         Endpoint::new(
             "DELETE",
             "/api/v1/vms/:ns/:name/expose",
-            "Delete VMRogue-managed Service expose",
+            "Delete Veyron-managed Service expose",
         )
         .with_auth(),
         Endpoint::new(
@@ -253,7 +253,7 @@ pub fn default_endpoints() -> Vec<Endpoint> {
         Endpoint::new(
             "DELETE",
             "/api/v1/vms/:ns/:name/rdp-expose",
-            "Delete VMRogue-managed RDP exposure Service",
+            "Delete Veyron-managed RDP exposure Service",
         )
         .with_auth(),
         Endpoint::new(

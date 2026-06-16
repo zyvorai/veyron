@@ -29,7 +29,7 @@ pub fn render(f: &mut Frame, _config: &TuiConfig) {
     // Header
     let header_text = Line::from(vec![
         Span::styled(
-            "VMRogue",
+            "Veyron",
             Style::default()
                 .fg(colors::ORANGE)
                 .add_modifier(Modifier::BOLD),

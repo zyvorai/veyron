@@ -12,7 +12,7 @@ EOF
 
 REPOS=(
   Aether cockpit forge guestkit hyper2kvm- hypercluster hypersdk- hypersdk-web
-  IronWolf machina mkosi-kernel nightforge packetwolf pixie ragnarok tetragon v9s VMRogue vmspawn
+  IronWolf machina mkosi-kernel nightforge packetwolf pixie ragnarok tetragon v9s Veyron vmspawn
 )
 
 for repo in "${REPOS[@]}"; do

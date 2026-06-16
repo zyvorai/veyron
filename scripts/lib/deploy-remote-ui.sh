@@ -28,7 +28,7 @@ deploy_preflight_banner() {
     local remote="$1"
     local timeout="${2:-20}"
     local port="${3:-22}"
-    pkg_banner "🚀 VMRogue · deploy-remote" "SSH preflight · ${remote}"
+    pkg_banner "🚀 Veyron · deploy-remote" "SSH preflight · ${remote}"
     pkg_box_begin "Target"
     pkg_box_line "Host: ${remote}" "${PKG_C_BOLD}${PKG_C_CYAN}"
     pkg_box_line "Port: ${port} · Timeout: ${timeout}s · BatchMode" "${PKG_C_DIM}"
@@ -80,7 +80,7 @@ deploy_main_banner() {
         mode="⚡ Quick redeploy — manifests only (--quick)"
     fi
 
-    pkg_banner "🔥 VMRogue · remote Kubernetes deploy" "${remote}"
+    pkg_banner "🔥 Veyron · remote Kubernetes deploy" "${remote}"
     pkg_box_begin "Pipeline"
     pkg_box_line "${mode}" "${PKG_C_BOLD}${PKG_C_MAGENTA}"
     pkg_box_line "Started $(deploy_timestamp)" "${PKG_C_DIM}"

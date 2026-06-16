@@ -18,7 +18,7 @@ use super::feature_context::VmrogueFeatureContext;
 /// GitOps status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GitOpsStatus {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub repo_url: String,
     pub branch: String,
     pub last_commit: String,
@@ -148,7 +148,7 @@ async fn get_gitops_status(
     let client = s.client().client();
 
     let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(client.clone(), &namespace);
-    let params = kube::api::ListParams::default().labels("vmrogue.io/type=gitops");
+    let params = kube::api::ListParams::default().labels("veyron.io/type=gitops");
 
     let (repo_url, branch, last_commit, last_synced, stored_vm_count) =
         if let Ok(cms) = api.list(&params).await {
@@ -223,11 +223,11 @@ async fn get_gitops_status(
             }
         )
     } else {
-        "Derived from VMRogue GitOps ConfigMaps and live VM counts.".to_string()
+        "Derived from Veyron GitOps ConfigMaps and live VM counts.".to_string()
     };
 
     Json(GitOpsStatus {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         repo_url,
         branch,
         last_commit,
@@ -327,7 +327,7 @@ async fn trigger_sync(
 
         let api: kube::api::Api<ConfigMap> =
             kube::api::Api::namespaced(s.client().client(), &namespace);
-        let params = kube::api::ListParams::default().labels("vmrogue.io/type=gitops");
+        let params = kube::api::ListParams::default().labels("veyron.io/type=gitops");
         if let Ok(cms) = api.list(&params).await {
             if let Some(cm) = cms.items.first() {
                 if let Some(name) = cm.metadata.name.as_deref() {
@@ -360,7 +360,7 @@ async fn trigger_sync(
             "force": req.force,
             "argo_sync_triggered": argo_triggered,
             "flux_reconcile_triggered": flux_triggered,
-            "vmrogue_context": serde_json::to_value(VmrogueFeatureContext::gitops_controllers()).unwrap_or(serde_json::Value::Null),
+            "veyron_context": serde_json::to_value(VmrogueFeatureContext::gitops_controllers()).unwrap_or(serde_json::Value::Null),
         })),
     )
 }

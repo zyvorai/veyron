@@ -147,16 +147,16 @@ mod tests {
     #[test]
     fn parse_release_name_from_helm_secret() {
         assert_eq!(
-            parse_release_name("sh.helm.release.v1.vmrogue.v3"),
-            Some("vmrogue".to_string())
+            parse_release_name("sh.helm.release.v1.veyron.v3"),
+            Some("veyron".to_string())
         );
     }
 
     #[test]
     fn parse_chart_label_splits_chart_and_version() {
         assert_eq!(
-            parse_chart_label("vmrogue-0.2.0"),
-            ("vmrogue".to_string(), "0.2.0".to_string())
+            parse_chart_label("veyron-0.2.0"),
+            ("veyron".to_string(), "0.2.0".to_string())
         );
         assert_eq!(
             parse_chart_label("custom-chart"),

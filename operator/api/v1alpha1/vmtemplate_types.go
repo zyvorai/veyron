@@ -33,7 +33,7 @@ type VMTemplateSpec struct {
 	MinKubeVirtVersion string `json:"minKubeVirtVersion,omitempty"`
 
 	// Default VM spec fields applied when template name is referenced.
-	Default VMRogueVMSpec `json:"default"`
+	Default VeyronVMSpec `json:"default"`
 }
 
 // VMTemplateStatus defines the observed state of VMTemplate.

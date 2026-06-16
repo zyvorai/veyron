@@ -1,14 +1,14 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: vmroguepolicies.vmrogue.io
+  name: veyronpolicies.veyron.io
 spec:
-  group: vmrogue.io
+  group: veyron.io
   names:
-    kind: VMRoguePolicy
-    listKind: VMRoguePolicyList
-    plural: vmroguepolicies
-    singular: vmroguepolicy
+    kind: VeyronPolicy
+    listKind: VeyronPolicyList
+    plural: veyronpolicies
+    singular: veyronpolicy
     shortNames:
       - vrpol
   scope: Namespaced

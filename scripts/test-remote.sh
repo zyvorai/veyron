@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# test-remote.sh — End-to-end checks for VMRogue on a remote k3s/K8s node
+# test-remote.sh — End-to-end checks for Veyron on a remote k3s/K8s node
 # ============================================================================
 # Assumes API is deployed in Kubernetes (e.g. ./scripts/deploy-k8s-remote.sh).
 # No systemd — verifies Deployment readiness, optional operator + CRDs, and
@@ -9,7 +9,7 @@
 # Usage:
 #   ./scripts/test-remote.sh [host] [user]
 #   VMROGUE_NODE_PORT=30151 VEYRON_API_KEY=... ./scripts/test-remote.sh
-#   VEYRON_REMOTE_DIR=/home/you/vmrogue  (operator samples for tier 3–4)
+#   VEYRON_REMOTE_DIR=/home/you/veyron  (operator samples for tier 3–4)
 #
 # Defaults: host HOST, user sus, port 30151, key CHANGE_ME
 # ============================================================================
@@ -23,7 +23,7 @@ REMOTE="${USER}@${HOST}"
 NS="${VEYRON_NAMESPACE:-veyron-system}"
 NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
 API_KEY="${VEYRON_API_KEY:-CHANGE_ME}"
-REMOTE_DIR="${VEYRON_REMOTE_DIR:-/home//veyron}"
+REMOTE_DIR="${VEYRON_REMOTE_DIR:-/home/${USER}/veyron}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL_SAMPLES="${REPO_ROOT}/operator/config/samples"
 SAMPLES="${REMOTE_DIR}/operator/config/samples"
@@ -116,34 +116,34 @@ else
   skip "veyron-operator not installed in ${NS} (API-only cluster)"
 fi
 
-CRD_COUNT=$(run_k get crd -o name 2>/dev/null | grep -c 'vmrogue\.io' || true)
+CRD_COUNT=$(run_k get crd -o name 2>/dev/null | grep -c 'veyron\.io' || true)
 CRD_COUNT="${CRD_COUNT// /}"
 CRD_COUNT="${CRD_COUNT//$'\r'/}"
 CRD_COUNT="${CRD_COUNT:-0}"
 if [[ "${CRD_COUNT}" -ge 7 ]]; then
-  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRDs incl. catalog)"
+  pass "Veyron CRDs present (${CRD_COUNT} veyron.io CRDs incl. catalog)"
 elif [[ "${CRD_COUNT}" -ge 5 ]]; then
-  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRDs; catalog CRDs optional)"
+  pass "Veyron CRDs present (${CRD_COUNT} veyron.io CRDs; catalog CRDs optional)"
 elif [[ "${CRD_COUNT}" -ge 1 ]]; then
-  pass "VMRogue CRDs present (${CRD_COUNT} vmrogue.io CRD(s))"
+  pass "Veyron CRDs present (${CRD_COUNT} veyron.io CRD(s))"
 else
-  skip "No vmrogue.io CRDs (install operator CRDs for VMRogueVM / blueprints)"
+  skip "No veyron.io CRDs (install operator CRDs for VeyronVM / blueprints)"
 fi
 
 if run_k get vmtemplate windows-2022 >/dev/null 2>&1; then
   pass "VMTemplate windows-2022 in cluster catalog"
 elif [[ "${CRD_COUNT}" -ge 7 ]]; then
-  skip "VMTemplate windows-2022 not synced (run catalog export + deploy or vmrogue catalog sync)"
+  skip "VMTemplate windows-2022 not synced (run catalog export + deploy or veyron catalog sync)"
 fi
 
 if [[ "${CRD_COUNT}" -ge 1 ]]; then
   if run_k get vrvm sample-ubuntu -n default >/dev/null 2>&1; then
-    pass "sample-ubuntu VMRogueVM exists in default"
+    pass "sample-ubuntu VeyronVM exists in default"
   else
-    skip "sample-ubuntu VMRogueVM not in default (optional sample)"
+    skip "sample-ubuntu VeyronVM not in default (optional sample)"
   fi
 else
-  skip "skip sample-ubuntu check (no VMRogue CRD)"
+  skip "skip sample-ubuntu check (no Veyron CRD)"
 fi
 
 if curl_api "/api/v1/health" | grep -q '"status"[[:space:]]*:[[:space:]]*"healthy"'; then
@@ -152,10 +152,10 @@ else
   fail "API health" "no healthy JSON from ${BASE_URL}/api/v1/health"
 fi
 
-if curl_api "/api/v1/crds/vmroguevms" -H "X-API-Key: ${API_KEY}" | grep -q '"total"'; then
-  pass "CRD API GET /api/v1/crds/vmroguevms (authenticated)"
+if curl_api "/api/v1/crds/veyronvms" -H "X-API-Key: ${API_KEY}" | grep -q '"total"'; then
+  pass "CRD API GET /api/v1/crds/veyronvms (authenticated)"
 else
-  fail "CRD API" "no JSON list from /api/v1/crds/vmroguevms"
+  fail "CRD API" "no JSON list from /api/v1/crds/veyronvms"
 fi
 
 # ═══════════════════════════════════════════════
@@ -165,7 +165,7 @@ tier 2 "VM LIFECYCLE (operator + CRDs)"
 if ! run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
   skip "entire tier — veyron-operator not in ${NS}"
 elif [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
-  skip "entire tier — no vmrogue.io CRDs"
+  skip "entire tier — no veyron.io CRDs"
 else
   OP_READY=$(run_k -n "${NS}" get deploy veyron-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
   if [[ "$OP_READY" != "1/1" ]]; then
@@ -176,8 +176,8 @@ else
 
     CREATE_OUT=$(
       _ssh "${REMOTE_K[@]}" apply -f - <<'EOF' 2>&1
-apiVersion: vmrogue.io/v1alpha1
-kind: VMRogueVM
+apiVersion: veyron.io/v1alpha1
+kind: VeyronVM
 metadata:
   name: test-e2e
   namespace: default
@@ -211,7 +211,7 @@ spec:
 EOF
     )
     if echo "$CREATE_OUT" | grep -qE 'created|configured'; then
-      pass "kubectl apply VMRogueVM test-e2e"
+      pass "kubectl apply VeyronVM test-e2e"
     else
       fail "kubectl apply test-e2e" "$CREATE_OUT"
     fi
@@ -227,9 +227,9 @@ EOF
 
     PHASE=$(run_k get vrvm test-e2e -n default -o 'jsonpath={.status.phase}' 2>/dev/null | tr -d '\r' || true)
     if [[ -n "$PHASE" ]]; then
-      pass "VMRogueVM status phase: ${PHASE}"
+      pass "VeyronVM status phase: ${PHASE}"
     else
-      skip "VMRogueVM phase not set yet"
+      skip "VeyronVM phase not set yet"
     fi
 
     GET_JSON=$(run_k get vrvm test-e2e -n default -o 'jsonpath={.spec.cpu.cores}' 2>/dev/null | tr -d '\r' || true)
@@ -259,7 +259,7 @@ tier 3 "BLUEPRINT (operator + samples on remote)"
 # ═══════════════════════════════════════════════
 
 if [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
-  skip "entire tier — no vmrogue.io CRDs"
+  skip "entire tier — no veyron.io CRDs"
 elif ! run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
   skip "entire tier — veyron-operator Deployment not in ${NS}"
 else
@@ -267,7 +267,7 @@ else
   if [[ "$OP_READY" != "1/1" ]]; then
     skip "entire tier — veyron-operator not ready"
   else
-    BP_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueblueprint.yaml" 2>&1)
+    BP_OUT=$(apply_sample "veyron_v1alpha1_veyronblueprint.yaml" 2>&1)
     if echo "$BP_OUT" | grep -qE 'created|configured|unchanged'; then
       pass "LAMP blueprint applied"
     else
@@ -276,10 +276,10 @@ else
 
     sleep 6
     # Remote login shell may be zsh — brace globs break jsonpath=; use YAML + grep.
-    if run_k get vmrogueblueprint lamp-stack -n default -o yaml 2>/dev/null | grep -qE '^[[:space:]]+name:[[:space:]]+db'; then
-      pass "kubectl get VMRogueBlueprint lamp-stack (spec.vms)"
+    if run_k get veyronblueprint lamp-stack -n default -o yaml 2>/dev/null | grep -qE '^[[:space:]]+name:[[:space:]]+db'; then
+      pass "kubectl get VeyronBlueprint lamp-stack (spec.vms)"
     else
-      fail "blueprint get" "$(run_k get vmrogueblueprint lamp-stack -n default 2>&1)"
+      fail "blueprint get" "$(run_k get veyronblueprint lamp-stack -n default 2>&1)"
     fi
 
     # Windows blueprint with template resolution (operator catalog)
@@ -287,7 +287,7 @@ else
       WIN_OUT=$(apply_sample "windows-ad-blueprint.yaml" 2>&1 || true)
       if echo "$WIN_OUT" | grep -qE 'created|configured|unchanged'; then
         pass "Windows AD blueprint applied (template catalog)"
-        run_k delete vmrogueblueprint windows-ad-lab -n default --ignore-not-found >/dev/null 2>&1 || true
+        run_k delete veyronblueprint windows-ad-lab -n default --ignore-not-found >/dev/null 2>&1 || true
       else
         skip "windows-ad blueprint apply (sample or CRD issue)"
       fi
@@ -295,9 +295,9 @@ else
       skip "windows-ad blueprint — VMTemplate CRD/catalog not installed"
     fi
 
-    run_k delete vmrogueblueprint lamp-stack -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete veyronblueprint lamp-stack -n default --ignore-not-found >/dev/null 2>&1 || true
     sleep 3
-    run_k delete vrvm -n default -l 'vmrogue.io/blueprint=lamp-stack' --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete vrvm -n default -l 'veyron.io/blueprint=lamp-stack' --ignore-not-found >/dev/null 2>&1 || true
     pass "Blueprint cleaned up"
   fi
 fi
@@ -307,7 +307,7 @@ tier 4 "POLICIES + ACTIONS (operator + samples)"
 # ═══════════════════════════════════════════════
 
 if [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
-  skip "entire tier — no vmrogue.io CRDs"
+  skip "entire tier — no veyron.io CRDs"
 elif ! run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
   skip "entire tier — veyron-operator Deployment not in ${NS}"
 else
@@ -315,29 +315,29 @@ else
   if [[ "$OP_READY" != "1/1" ]]; then
     skip "entire tier — veyron-operator not ready"
   else
-    POL_OUT=$(apply_sample "vmrogue_v1alpha1_vmroguepolicy.yaml" 2>&1)
+    POL_OUT=$(apply_sample "veyron_v1alpha1_veyronpolicy.yaml" 2>&1)
     echo "$POL_OUT" | grep -qE 'created|configured|unchanged' && pass "Security policy applied" || fail "policy apply" "$POL_OUT"
 
     sleep 2
-    if run_k get vmroguepolicy prod-security-baseline -n default -o yaml 2>/dev/null | grep -q 'require-tpm'; then
-      pass "kubectl get VMRoguePolicy prod-security-baseline (rules)"
+    if run_k get veyronpolicy prod-security-baseline -n default -o yaml 2>/dev/null | grep -q 'require-tpm'; then
+      pass "kubectl get VeyronPolicy prod-security-baseline (rules)"
     else
       fail "policy get" "missing prod-security-baseline or rules"
     fi
 
-    INS_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueinsight.yaml" 2>&1)
+    INS_OUT=$(apply_sample "veyron_v1alpha1_veyroninsight.yaml" 2>&1)
     echo "$INS_OUT" | grep -qE 'created|configured|unchanged' && pass "Insight applied" || fail "insight apply" "$INS_OUT"
 
-    ACT_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueaction.yaml" 2>&1)
+    ACT_OUT=$(apply_sample "veyron_v1alpha1_veyronaction.yaml" 2>&1)
     echo "$ACT_OUT" | grep -qE 'created|configured|unchanged' && pass "Action applied" || fail "action apply" "$ACT_OUT"
 
     sleep 2
-    run_k get vmrogueaction scale-prod-db -n default >/dev/null 2>&1 && pass "kubectl get VMRogueAction scale-prod-db" || fail "action get" "missing"
-    run_k get vmrogueinsight high-cpu-prod-db -n default >/dev/null 2>&1 && pass "kubectl get VMRogueInsight high-cpu-prod-db" || fail "insight get" "missing"
+    run_k get veyronaction scale-prod-db -n default >/dev/null 2>&1 && pass "kubectl get VeyronAction scale-prod-db" || fail "action get" "missing"
+    run_k get veyroninsight high-cpu-prod-db -n default >/dev/null 2>&1 && pass "kubectl get VeyronInsight high-cpu-prod-db" || fail "insight get" "missing"
 
-    run_k delete vmroguepolicy prod-security-baseline -n default --ignore-not-found >/dev/null 2>&1 || true
-    run_k delete vmrogueinsight high-cpu-prod-db -n default --ignore-not-found >/dev/null 2>&1 || true
-    run_k delete vmrogueaction scale-prod-db -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete veyronpolicy prod-security-baseline -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete veyroninsight high-cpu-prod-db -n default --ignore-not-found >/dev/null 2>&1 || true
+    run_k delete veyronaction scale-prod-db -n default --ignore-not-found >/dev/null 2>&1 || true
     pass "Policies + actions cleaned up"
   fi
 fi
@@ -349,7 +349,7 @@ tier 5 "API ENDPOINTS (HTTPS + X-API-Key)"
 AUTH=( -H "X-API-Key: ${API_KEY}" )
 
 for endpoint in \
-  "/api/v1/crds/vmroguevms" \
+  "/api/v1/crds/veyronvms" \
   "/api/v1/crds/blueprints" \
   "/api/v1/crds/templates" \
   "/api/v1/crds/profiles" \

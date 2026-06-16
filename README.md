@@ -20,10 +20,10 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **REST API** - 49 endpoints with OpenAPI spec, JWT Bearer auth, multi-key RBAC, rate limiting, and webhooks
 - **VNC Console** - Browser-based VM console via direct K8s API WebSocket (no virtctl timeout) with Ctrl+Alt+Del, fullscreen, reconnect
 - **Real Kubernetes Metrics** - CPU/memory utilization from Kubernetes Metrics Server (no fake data)
-- **Policy Enforcement** - VMRoguePolicy CRDs evaluated on VM creation; Deny violations block the request
+- **Policy Enforcement** - VeyronPolicy CRDs evaluated on VM creation; Deny violations block the request
 - **Batch VM Operations** - Start, stop, restart, or delete multiple VMs in a single API call
 - **WebSocket Metrics Streaming** - Live cluster metrics pushed every 5 seconds over WebSocket
-- **GitOps Export** - `vmrogue gitops-export` exports VMs as VMRogueVM CRD YAML manifests
+- **GitOps Export** - `veyron gitops-export` exports VMs as VeyronVM CRD YAML manifests
 - **Cost Budget Alerts** - Define per-namespace cost budgets via ConfigMaps with POST/GET API
 - **Multi-Cluster Management** - Kubeconfig context discovery with per-cluster sync
 - **DR Cross-Cluster Replication** - Export disaster recovery manifests for cross-cluster VM replication
@@ -39,25 +39,25 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **CLI & Library** - Use as a command-line tool or Rust library
 - **Full VM lifecycle** - Create, start, stop, restart, clone, export, delete
 - **Interactive TUI** - Full terminal UI with ratatui for dashboard, VM management, and monitoring
-- **Structured API Errors** - VMRogueError with typed variants (NotImplemented, Unauthorized, Forbidden, ResourceConflict, ServiceUnavailable, KubeError) and proper HTTP status codes
+- **Structured API Errors** - VeyronError with typed variants (NotImplemented, Unauthorized, Forbidden, ResourceConflict, ServiceUnavailable, KubeError) and proper HTTP status codes
 - **Real Pod Logs** - Logs API fetches real output from virt-launcher pods
 - **Storage & Disk Management** - List real StorageClasses, PVCs, and KubeVirt-labeled disks; expand disks via PVC patch
 - **Migration Management** - List, create, and cancel VirtualMachineInstanceMigration CRDs
-- **Helm Charts** - Production-ready Helm charts for Veyron API and VMRogue Operator
+- **Helm Charts** - Production-ready Helm charts for Veyron API and Veyron Operator
 - **Kustomize Overlays** - Dev and prod environment overlays
 - **Prometheus Integration** - ServiceMonitor, 6 alert rules, and Grafana dashboard
-- **VMRogue Operator** - 8 action types, CEL policy expressions, Prometheus metrics
+- **Veyron Operator** - 8 action types, CEL policy expressions, Prometheus metrics
 - **Persistent Audit Trail** - Disk-backed audit log for all operations
 - **Local Secrets Encryption** - Key expansion and integrity tag for at-rest secret protection
 
 ## Architecture
 
-VMRogue is two cooperating deliverables:
+Veyron is two cooperating deliverables:
 
-1. **Rust `vmrogue`** — CLI, library, and (by default) HTTPS **API + embedded dashboard**. Uses `kube-rs` against the cluster API; can create KubeVirt VMs directly from `VMConfig` / YAML.
-2. **Go VMRogue Operator (`operator/`)** — **In-cluster** controller-runtime **operator** for **GitOps-style CRs** (`VMRogueVM`, blueprints, policies, insights, actions under `vmrogue.io/v1alpha1`). The main loop turns each **`VMRogueVM`** into a **KubeVirt `VirtualMachine`**, keeps it updated, and writes CR **status** (see `operator/internal/controller/vmroguevm_controller.go`). Deploy it with **`charts/veyron-operator`** or the scripts that build both API and operator images (`./scripts/deploy-remote.sh` / `deploy-all-remote.sh`).
+1. **Rust `veyron`** — CLI, library, and (by default) HTTPS **API + embedded dashboard**. Uses `kube-rs` against the cluster API; can create KubeVirt VMs directly from `VMConfig` / YAML.
+2. **Go Veyron Operator (`operator/`)** — **In-cluster** controller-runtime **operator** for **GitOps-style CRs** (`VeyronVM`, blueprints, policies, insights, actions under `veyron.io/v1alpha1`). The main loop turns each **`VeyronVM`** into a **KubeVirt `VirtualMachine`**, keeps it updated, and writes CR **status** (see `operator/internal/controller/veyronvm_controller.go`). Deploy it with **`charts/veyron-operator`** or the scripts that build both API and operator images (`./scripts/deploy-remote.sh` / `deploy-all-remote.sh`).
 
-For day-to-day imperative use you only need the Rust binary; for **declarative CR-driven** VMs, install the operator and apply `VMRogueVM` manifests (e.g. from `vmrogue gitops-export`).
+For day-to-day imperative use you only need the Rust binary; for **declarative CR-driven** VMs, install the operator and apply `VeyronVM` manifests (e.g. from `veyron gitops-export`).
 
 ## Installation
 
@@ -69,13 +69,13 @@ Or build from source:
 
 ```bash
 git clone https://github.com/ssahani/Veyron.git
-cd VMRogue
+cd Veyron
 cargo build --release
 ```
 
 ## Web Dashboard
 
-VMRogue includes a built-in web dashboard with a dark industrial theme.
+Veyron includes a built-in web dashboard with a dark industrial theme.
 
 ### Start the API server
 
@@ -87,7 +87,7 @@ export VEYRON_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
 export VEYRON_API_KEY="your-secret-key"
 
 # Start the server
-vmrogue api-serve --port 5151 --host 0.0.0.0
+veyron api-serve --port 5151 --host 0.0.0.0
 ```
 
 Optional **snapshot schedule** tuning (built-in cron snapshots use a Kubernetes Lease so only one replica runs the worker when the API is scaled horizontally):
@@ -179,11 +179,11 @@ Runtime import handling auto-detects `k3s`, `rke2`, `microk8s`, `kind`, `minikub
 
 ```bash
 # Install Veyron API server
-helm install vmrogue ./charts/vmrogue \
+helm install veyron ./charts/veyron \
   --set apiKeys="admin:supersecret" \
   --namespace veyron-system --create-namespace
 
-# Install VMRogue Operator
+# Install Veyron Operator
 helm install veyron-operator ./charts/veyron-operator \
   --namespace veyron-system
 
@@ -192,7 +192,7 @@ helm install veyron-operator ./charts/veyron-operator \
 # Uses chart charts/veyron-monitoring; set GRAFANA_ADMIN_PASSWORD for a non-default Grafana admin password.
 ```
 
-The VMRogue and operator Helm charts include RBAC, TLS, and NetworkPolicy. For clusters **without** an existing Prometheus stack, `charts/veyron-monitoring` installs kube-prometheus-stack plus VMRogue ServiceMonitors, PrometheusRules, and a Grafana dashboard. The standalone manifests under `deploy/monitoring/` remain useful when you already run kube-prometheus-stack and only need VMRogue scrape rules and the dashboard ConfigMap.
+The Veyron and operator Helm charts include RBAC, TLS, and NetworkPolicy. For clusters **without** an existing Prometheus stack, `charts/veyron-monitoring` installs kube-prometheus-stack plus Veyron ServiceMonitors, PrometheusRules, and a Grafana dashboard. The standalone manifests under `deploy/monitoring/` remain useful when you already run kube-prometheus-stack and only need Veyron scrape rules and the dashboard ConfigMap.
 
 ### Deploy with Kustomize
 
@@ -209,7 +209,7 @@ kubectl apply -k deploy/kustomize/overlays/prod
 Use `Dockerfile.deploy` for rapid image builds with virtctl included:
 
 ```bash
-docker build -f Dockerfile.deploy -t vmrogue:latest .
+docker build -f Dockerfile.deploy -t veyron:latest .
 ```
 
 ### Key API Endpoints
@@ -244,102 +244,102 @@ All API handlers are implemented against Kubernetes (and ConfigMaps where persis
 
 ```bash
 # Get recommendations for your workload
-vmrogue recommend database
+veyron recommend database
 
 # Create an optimized database VM
-vmrogue create prod-db --template ubuntu-22.04 --profile database
+veyron create prod-db --template ubuntu-22.04 --profile database
 
 # Or create a development VM
-vmrogue create dev-vm --template ubuntu --profile dev
+veyron create dev-vm --template ubuntu --profile dev
 ```
 
 ### Deploy Complete Application Stacks
 
 ```bash
 # List available blueprints
-vmrogue blueprints
+veyron blueprints
 
 # Deploy a complete LAMP stack
-vmrogue deploy lamp --prefix myapp --start
+veyron deploy lamp --prefix myapp --start
 
 # Deploy a Kubernetes cluster (1 control plane + 2 workers)
-vmrogue deploy k8s-cluster --prefix prod
+veyron deploy k8s-cluster --prefix prod
 ```
 
 ### Create VMs from Templates (44 templates available)
 
 ```bash
 # Create an Ubuntu VM
-vmrogue create my-ubuntu --template ubuntu-22.04 --cpus 4 --memory 8Gi
+veyron create my-ubuntu --template ubuntu-22.04 --cpus 4 --memory 8Gi
 
 # Create an AlmaLinux VM
-vmrogue create my-alma --template almalinux-9
+veyron create my-alma --template almalinux-9
 
 # Create with custom resources
-vmrogue create my-vm --template fedora-40 --cpus 8 --memory 16Gi --disk-size 100Gi
+veyron create my-vm --template fedora-40 --cpus 8 --memory 16Gi --disk-size 100Gi
 ```
 
 ### Check VM Health
 
 ```bash
 # Run health check on VM
-vmrogue health my-vm
+veyron health my-vm
 
 # Get detailed diagnostics
-vmrogue health my-vm --detailed
+veyron health my-vm --detailed
 ```
 
 ### List and use profiles
 
 ```bash
 # List all resource profiles
-vmrogue profiles
-vmrogue profiles --details
+veyron profiles
+veyron profiles --details
 
 # View specific profile
-vmrogue profile database
+veyron profile database
 
 # Get workload recommendations
-vmrogue recommend database
-vmrogue recommend web
+veyron recommend database
+veyron recommend web
 ```
 
 ### Work with blueprints
 
 ```bash
 # List all blueprints
-vmrogue blueprints
-vmrogue blueprints --tag web
+veyron blueprints
+veyron blueprints --tag web
 
 # View blueprint details
-vmrogue blueprint lamp
+veyron blueprint lamp
 
 # Deploy blueprint (dry run)
-vmrogue deploy lamp --dry-run
+veyron deploy lamp --dry-run
 
 # Deploy with custom prefix
-vmrogue deploy lamp --prefix myapp --start
+veyron deploy lamp --prefix myapp --start
 ```
 
 ### List and use templates
 
 ```bash
 # List all templates
-vmrogue templates
+veyron templates
 
 # View template details
-vmrogue template ubuntu-22.04
-vmrogue template almalinux-9 --output json
+veyron template ubuntu-22.04
+veyron template almalinux-9 --output json
 ```
 
 ### Generate a VM manifest
 
 ```bash
 # Generate VMConfig format
-vmrogue generate my-vm --template ubuntu --output vm.yaml
+veyron generate my-vm --template ubuntu --output vm.yaml
 
 # Generate KubeVirt VirtualMachine CRD (ready to kubectl apply)
-vmrogue generate web-server \
+veyron generate web-server \
   --template ubuntu \
   --cpus 8 \
   --memory 16Gi \
@@ -354,108 +354,108 @@ kubectl apply -f webserver.yaml
 ### Create from configuration file
 
 ```bash
-vmrogue create my-custom-vm --from-file examples/basic-vm.yaml
+veyron create my-custom-vm --from-file examples/basic-vm.yaml
 ```
 
 ### Validate a configuration
 
 ```bash
-vmrogue validate examples/ubuntu-cloud-init.yaml
+veyron validate examples/ubuntu-cloud-init.yaml
 ```
 
 ### Manage VMs on Kubernetes
 
 ```bash
 # Create VM on cluster with profile
-vmrogue create production-db --template ubuntu-22.04 --profile database
+veyron create production-db --template ubuntu-22.04 --profile database
 
 # List VMs
-vmrogue list
-vmrogue list --all-namespaces
-vmrogue list-json                   # JSON Lines output for scripting
+veyron list
+veyron list --all-namespaces
+veyron list-json                   # JSON Lines output for scripting
 
 # Get VM details and status
-vmrogue get production-db
-vmrogue status production-db
-vmrogue status production-db --watch  # Watch mode
+veyron get production-db
+veyron status production-db
+veyron status production-db --watch  # Watch mode
 
 # Health check
-vmrogue health production-db
-vmrogue health production-db --detailed
+veyron health production-db
+veyron health production-db --detailed
 
 # Start/Stop/Restart/Pause VMs
-vmrogue start production-db
-vmrogue stop production-db
-vmrogue restart production-db
-vmrogue pause production-db
-vmrogue unpause production-db
+veyron start production-db
+veyron stop production-db
+veyron restart production-db
+veyron pause production-db
+veyron unpause production-db
 
 # Resize VM resources
-vmrogue resize production-db --cpus 8 --memory 32Gi
+veyron resize production-db --cpus 8 --memory 32Gi
 
 # Clone VM
-vmrogue clone production-db staging-db --start
+veyron clone production-db staging-db --start
 
 # Export VM config
-vmrogue export production-db --output prod-db.yaml
+veyron export production-db --output prod-db.yaml
 
 # Import VM from KubeVirt YAML manifest
-vmrogue import prod-db.yaml
+veyron import prod-db.yaml
 
 # Delete VM
-vmrogue delete production-db
-vmrogue delete production-db --yes  # Skip confirmation
+veyron delete production-db
+veyron delete production-db --yes  # Skip confirmation
 ```
 
 ### Cluster Operations
 
 ```bash
 # List cluster nodes with status, roles, resources
-vmrogue nodes
+veyron nodes
 
 # List pods with status, node, IP, restarts
-vmrogue pods
+veyron pods
 
 # List Kubernetes events
-vmrogue events
+veyron events
 
 # Cluster capacity analysis
-vmrogue capacity
+veyron capacity
 
 # Optimal node placement recommendation
-vmrogue placement my-vm --strategy spread
+veyron placement my-vm --strategy spread
 
 # Search VMs with natural language
-vmrogue search "running vms in production"
+veyron search "running vms in production"
 
 # AI-assisted VM diagnostics
-vmrogue troubleshoot my-vm
+veyron troubleshoot my-vm
 ```
 
 ### Multi-Cluster & GitOps
 
 ```bash
 # List configured clusters
-vmrogue clusters-list
+veyron clusters-list
 
 # Discover clusters from kubeconfig
-vmrogue clusters-discover
+veyron clusters-discover
 
 # Compare local manifests to live cluster state
-vmrogue gitops-diff --namespace production
+veyron gitops-diff --namespace production
 
 # Check GitOps sync status
-vmrogue gitops-status
+veyron gitops-status
 ```
 
 ### GitOps Export
 
 ```bash
-# Export all VMs in a namespace as VMRogueVM CRD YAML manifests
-vmrogue gitops-export --namespace production --output gitops/
+# Export all VMs in a namespace as VeyronVM CRD YAML manifests
+veyron gitops-export --namespace production --output gitops/
 
 # Export a single VM
-vmrogue gitops-export my-vm --output gitops/my-vm.yaml
+veyron gitops-export my-vm --output gitops/my-vm.yaml
 ```
 
 ### Batch VM Operations
@@ -486,7 +486,7 @@ curl http://localhost:5151/api/v1/costs/budgets \
 
 ## VM Resource Profiles
 
-VMRogue includes **8 pre-configured profiles** optimized for different workloads:
+Veyron includes **8 pre-configured profiles** optimized for different workloads:
 
 | Profile | CPU | Memory | Disk | Best For |
 |---------|-----|--------|------|----------|
@@ -500,8 +500,8 @@ VMRogue includes **8 pre-configured profiles** optimized for different workloads
 | **high-perf** | 8 | 16Gi | 100Gi | ML, data processing, high traffic |
 
 ```bash
-vmrogue profiles              # List all profiles
-vmrogue profile database      # View specific profile
+veyron profiles              # List all profiles
+veyron profile database      # View specific profile
 ```
 
 ## Multi-VM Blueprints
@@ -524,12 +524,12 @@ Deploy complete application stacks with **12 ready-to-use blueprints** (5 Linux 
 | **windows-dev** | 1 | Windows 11 dev workstation |
 
 ```bash
-vmrogue blueprints            # List all blueprints
-vmrogue blueprints --tag windows
-vmrogue blueprint lamp        # View blueprint details
-vmrogue deploy lamp --start   # Deploy and start
-vmrogue catalog export        # Export VMTemplate/VMProfile CRD YAML
-vmrogue catalog sync          # Apply catalog to cluster
+veyron blueprints            # List all blueprints
+veyron blueprints --tag windows
+veyron blueprint lamp        # View blueprint details
+veyron deploy lamp --start   # Deploy and start
+veyron catalog export        # Export VMTemplate/VMProfile CRD YAML
+veyron catalog sync          # Apply catalog to cluster
 ```
 
 See [docs/TEMPLATE_CATALOG.md](docs/TEMPLATE_CATALOG.md) for operator template resolution and Windows secret refs.
@@ -558,8 +558,8 @@ See [docs/TEMPLATE_CATALOG.md](docs/TEMPLATE_CATALOG.md) for operator template r
 - **Windows**: 2k19, 2k22, 10, 11, latest
 
 ```bash
-vmrogue templates             # List all templates
-vmrogue template ubuntu-22.04 # View template details
+veyron templates             # List all templates
+veyron template ubuntu-22.04 # View template details
 ```
 
 See [docs/OS_TEMPLATES.md](docs/OS_TEMPLATES.md) for complete catalog.
@@ -592,8 +592,8 @@ interfaces:
 cloud_init:
   user_data: |
     #cloud-config
-    user: vmrogue
-    password: vmrogue
+    user: veyron
+    password: veyron
     chpasswd: { expire: False }
 labels:
   app: my-app
@@ -601,14 +601,14 @@ labels:
 
 ## Application Configuration
 
-VMRogue supports a layered configuration file for setting defaults:
+Veyron supports a layered configuration file for setting defaults:
 
 ```bash
 # Create default config file
-vmrogue config-init
+veyron config-init
 
 # View current configuration
-vmrogue config-show
+veyron config-show
 ```
 
 **Config file locations** (higher priority wins):
@@ -644,7 +644,7 @@ interactive = false
 
 ## Library Usage
 
-Use vmrogue as a library in your Rust projects:
+Use veyron as a library in your Rust projects:
 
 ```rust
 use veyron::config::VMConfigBuilder;
@@ -681,24 +681,24 @@ fn main() -> anyhow::Result<()> {
 
 **Multi-Cluster & DR** - Multi-cluster management via kubeconfig context discovery with per-cluster sync. DR cross-cluster VM replication with `export_dr_manifests`. CLI commands for cluster listing and discovery.
 
-**Policy & Automation** - VMRoguePolicy CRD enforcement on VM creation (blocks Deny violations). VMRogue Operator with CEL policy expressions, 8 action types (CreateSnapshot, DeleteVM, Migrate, SendNotification, and 4 more), and Prometheus metrics. Automation rules with real K8s API calls.
+**Policy & Automation** - VeyronPolicy CRD enforcement on VM creation (blocks Deny violations). Veyron Operator with CEL policy expressions, 8 action types (CreateSnapshot, DeleteVM, Migrate, SendNotification, and 4 more), and Prometheus metrics. Automation rules with real K8s API calls.
 
 **Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization and local encryption. Network topology from real VMI interfaces (IP, MAC, interface name). JWT Bearer token auth with HMAC-SHA256 signature verification. Multi-key RBAC (admin/write/readonly) via `VEYRON_API_KEYS`. Persistent audit trail.
 
 **API & Dashboard** - REST API with 49 endpoints, OpenAPI spec, JWT auth, multi-key RBAC, rate limiting, webhooks. Web dashboard with 15 pages: Dashboard, VMs, Snapshots, Nodes, Pods, Events, Cost, VNC Console, Security, Monitoring, Workloads, and more. VNC console uses direct K8s API WebSocket (no virtctl timeout). Batch VM operations, WebSocket metrics streaming, cost budget management.
 
-**Infrastructure** - Helm charts for vmrogue and veyron-operator. Kustomize overlays for dev/prod. Prometheus ServiceMonitor with 6 alert rules. Grafana dashboard with 10 panels. Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. Docker image with Dockerfile.deploy for quick builds. CI integration tests with Kind + KubeVirt.
+**Infrastructure** - Helm charts for veyron and veyron-operator. Kustomize overlays for dev/prod. Prometheus ServiceMonitor with 6 alert rules. Grafana dashboard with 10 panels. Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. Docker image with Dockerfile.deploy for quick builds. CI integration tests with Kind + KubeVirt.
 
 ### Product boundary
 
-VMRogue operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [HyperSDK](https://zyvor.dev/hypersdk). See [docs/VMROGUE_HYPERSDK_BOUNDARY.md](docs/VMROGUE_HYPERSDK_BOUNDARY.md).
+Veyron operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [HyperSDK](https://zyvor.dev/hypersdk). See [docs/VMROGUE_HYPERSDK_BOUNDARY.md](docs/VMROGUE_HYPERSDK_BOUNDARY.md).
 
 ### Future Enhancements
 
-- [x] Profile auto-selection based on template — `vmrogue create --template` via `ProfileManager::suggest_profile_for_template`
+- [x] Profile auto-selection based on template — `veyron create --template` via `ProfileManager::suggest_profile_for_template`
 - [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VEYRON_PROMETHEUS_URL` is set; see [docs/OPTIONAL_INTEGRATIONS.md](docs/OPTIONAL_INTEGRATIONS.md))*
 - [x] Pluggable template registry — `~/.config/veyron/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`
-- [x] Terraform provider — see [`terraform-provider-vmrogue/`](terraform-provider-vmrogue/)
+- [x] Terraform provider — see [`terraform-provider-veyron/`](terraform-provider-veyron/)
 - [x] SR-IOV networking — VM config, converter, and CLI support
 - [x] OVN networking — `NetworkType::Ovn` + `add_ovn_network()` builder
 - [x] DataVolume CRD management (CDI) — `GET /api/v1/images/catalog`, `POST /api/v1/images/import`
@@ -721,7 +721,7 @@ make tui        # Launch interactive TUI
 ### Run with debug logging
 
 ```bash
-vmrogue --verbose create my-vm --template ubuntu
+veyron --verbose create my-vm --template ubuntu
 ```
 
 ### Build documentation
@@ -733,37 +733,37 @@ cargo doc --open
 ### Browse all 169 commands
 
 ```bash
-vmrogue commands
+veyron commands
 ```
 
 ## Usage Examples
 
 ### Create Development Environment
 ```bash
-vmrogue recommend development
-vmrogue create dev-vm --template ubuntu --profile dev
-vmrogue start dev-vm
+veyron recommend development
+veyron create dev-vm --template ubuntu --profile dev
+veyron start dev-vm
 ```
 
 ### Create Production Database
 ```bash
-vmrogue recommend database
-vmrogue create prod-db --template almalinux-9 --profile database
-vmrogue health prod-db
-vmrogue start prod-db
+veyron recommend database
+veyron create prod-db --template almalinux-9 --profile database
+veyron health prod-db
+veyron start prod-db
 ```
 
 ### Deploy Complete LAMP Stack
 ```bash
-vmrogue blueprint lamp
-vmrogue deploy lamp --prefix myapp --start
-vmrogue list
+veyron blueprint lamp
+veyron deploy lamp --prefix myapp --start
+veyron list
 ```
 
 ### Deploy Kubernetes Cluster
 ```bash
-vmrogue blueprint k8s-cluster
-vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
+veyron blueprint k8s-cluster
+veyron deploy k8s-cluster --prefix prod --namespace kube-system
 ```
 
 ## Documentation
@@ -779,8 +779,8 @@ vmrogue deploy k8s-cluster --prefix prod --namespace kube-system
 - **[docs/DISK_MANAGEMENT.md](docs/DISK_MANAGEMENT.md)** - Disk operations guide
 - **[docs/NETWORK_MANAGEMENT.md](docs/NETWORK_MANAGEMENT.md)** - Network management guide
 - **[docs/DEVELOPER_VM_ACCESS.md](docs/DEVELOPER_VM_ACCESS.md)** - Developer SSH / `virtctl` access to KubeVirt VMs
-- **[docs/WINDOWS_KUBEVIRT_PRODUCTION.md](docs/WINDOWS_KUBEVIRT_PRODUCTION.md)** - Windows golden images, Cloudbase-Init, Sysprep, production VM YAML, and **automation** (Packer/GitOps/CDI vs VMRogue `cloud_init` NoCloud) ([printable summary](docs/client-presentations/06-windows-kubevirt-production.html))
-- **[docs/WINDOWS_PACKER_GITOPS_PIPELINE.md](docs/WINDOWS_PACKER_GITOPS_PIPELINE.md)** - Packer + QEMU → QCOW2 → CDI → Kustomize / **`vmrogue generate --kubevirt`** + **`cloudInitConfigDrive`** patch
+- **[docs/WINDOWS_KUBEVIRT_PRODUCTION.md](docs/WINDOWS_KUBEVIRT_PRODUCTION.md)** - Windows golden images, Cloudbase-Init, Sysprep, production VM YAML, and **automation** (Packer/GitOps/CDI vs Veyron `cloud_init` NoCloud) ([printable summary](docs/client-presentations/06-windows-kubevirt-production.html))
+- **[docs/WINDOWS_PACKER_GITOPS_PIPELINE.md](docs/WINDOWS_PACKER_GITOPS_PIPELINE.md)** - Packer + QEMU → QCOW2 → CDI → Kustomize / **`veyron generate --kubevirt`** + **`cloudInitConfigDrive`** patch
 - **`examples/windows-kubevirt-gitops/`** - Sample DataVolume + VM manifests and `scripts/patch_kubevirt_configdrive.py`
 - **[docs/INTERACTIVE_TUI.md](docs/INTERACTIVE_TUI.md)** - Interactive TUI guide
 - **[docs/ADVANCED_FEATURES.md](docs/ADVANCED_FEATURES.md)** - Advanced features guide
@@ -795,14 +795,14 @@ See the `examples/` directory for more configuration examples:
 
 ## Security
 
-VMRogue follows secure-by-default principles:
+Veyron follows secure-by-default principles:
 
 - **No `unsafe` code** - The entire codebase is safe Rust
 - **JWT Bearer token auth** - HMAC-SHA256 signature verification for API authentication
 - **Multi-key RBAC** - Admin, write, and readonly roles via `VEYRON_API_KEYS` environment variable
 - **Persistent audit trail** - All operations logged to disk for forensic review
 - **Local secrets encryption** - At-rest encryption with key expansion and integrity tag
-- **Structured error types** - VMRogueError variants ensure internal details are never leaked
+- **Structured error types** - VeyronError variants ensure internal details are never leaked
 - **Secret zeroization** - Secrets are cleared from memory on drop, rotate, and revoke via the `zeroize` crate
 - **SSRF prevention** - Webhook URLs validated against private/internal IPs with DNS rebinding protection
 - **Crash-safe persistence** - Atomic writes with fsync and unique temp file names; no `/tmp` fallback

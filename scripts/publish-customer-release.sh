@@ -17,7 +17,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' "${REPO_DIR}/Cargo.toml" | head -1)"
 TAG="${1:-v${VERSION}}"
-ARCHIVE="vmrogue-${VERSION}-linux-amd64.tar.gz"
+ARCHIVE="veyron-${VERSION}-linux-amd64.tar.gz"
 CHECKSUM="${ARCHIVE}.sha256"
 DIST="${REPO_DIR}/dist"
 
@@ -42,7 +42,7 @@ echo "==> Verifying checksum"
 if ! gh release view "${TAG}" >/dev/null 2>&1; then
   echo "==> Creating release ${TAG}"
   gh release create "${TAG}" \
-    --title "VMRogue ${VERSION}" \
+    --title "Veyron ${VERSION}" \
     --notes "Customer bundle and platform release ${TAG}."
 fi
 

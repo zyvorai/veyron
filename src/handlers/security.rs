@@ -96,7 +96,7 @@ pub fn handle_security_assess(vm: String, output: String, namespace: &str) -> Re
     // Load vulnerabilities from config directory if available
     let vuln_dir = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from(".config"))
-        .join("vmrogue")
+        .join("veyron")
         .join("vulnerabilities");
 
     let mut loaded_from_file = false;
@@ -460,7 +460,7 @@ pub fn handle_audit_list(
     // Load audit events from config directory
     let audit_dir = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from(".config"))
-        .join("vmrogue")
+        .join("veyron")
         .join("audit");
 
     let mut log = AuditLog::new(vm.clone());

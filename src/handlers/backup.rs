@@ -69,7 +69,7 @@ pub async fn handle_backup_create(
             config.backup_type.as_str(),
             config.compression
         ))
-        .with_label("vmrogue.io/backup-type", config.backup_type.as_str());
+        .with_label("veyron.io/backup-type", config.backup_type.as_str());
 
     manager
         .create_snapshot(&snapshot_config)
@@ -81,7 +81,7 @@ pub async fn handle_backup_create(
     println!(
         "{}",
         color::info(&format!(
-            "ℹ Use 'vmrogue backup-get {}' to view details",
+            "ℹ Use 'veyron backup-get {}' to view details",
             backup_name
         ))
     );
@@ -133,7 +133,7 @@ pub async fn handle_backup_list(vm: Option<String>, output: String, namespace: &
         println!();
         println!(
             "{}",
-            color::info("ℹ Create a backup with 'vmrogue snapshot-create <vm>'")
+            color::info("ℹ Create a backup with 'veyron snapshot-create <vm>'")
         );
         return Ok(());
     }
@@ -335,7 +335,7 @@ pub fn handle_backup_schedules(output: String, namespace: &str) -> Result<()> {
     // Load schedules from config directory
     let schedules_dir = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from(".config"))
-        .join("vmrogue")
+        .join("veyron")
         .join("schedules");
 
     let schedules: Vec<BackupSchedule> = if schedules_dir.exists() {
@@ -377,7 +377,7 @@ pub fn handle_backup_schedules(output: String, namespace: &str) -> Result<()> {
         );
         println!(
             "  {}",
-            color::muted("Or use 'vmrogue backup-schedule-create' to create one")
+            color::muted("Or use 'veyron backup-schedule-create' to create one")
         );
         return Ok(());
     }
@@ -649,7 +649,7 @@ pub async fn handle_migrate(
         println!();
         println!(
             "{}",
-            color::info("ℹ Use 'vmrogue migrate' without --plan to execute")
+            color::info("ℹ Use 'veyron migrate' without --plan to execute")
         );
     } else {
         // Create actual VirtualMachineInstanceMigration CRD
@@ -705,7 +705,7 @@ pub async fn handle_migrate(
         println!();
         println!(
             "{}",
-            color::info("ℹ Use 'vmrogue migration-status' to monitor progress")
+            color::info("ℹ Use 'veyron migration-status' to monitor progress")
         );
     }
     Ok(())
@@ -1194,7 +1194,7 @@ pub async fn handle_evacuate_node(
                         .metadata
                         .annotations
                         .as_ref()
-                        .and_then(|a| a.get("vmrogue.io/priority"))
+                        .and_then(|a| a.get("veyron.io/priority"))
                         .and_then(|p| p.parse::<u8>().ok())
                         .unwrap_or(50);
                     Some((name, priority))
@@ -1225,7 +1225,7 @@ pub async fn handle_evacuate_node(
         println!();
         println!(
             "{}",
-            color::info("ℹ Use 'vmrogue evacuate-node' without --plan to execute")
+            color::info("ℹ Use 'veyron evacuate-node' without --plan to execute")
         );
     } else {
         // Cordon the node (mark as unschedulable)
@@ -1318,7 +1318,7 @@ pub async fn handle_evacuate_node(
         println!();
         println!(
             "{}",
-            color::info("ℹ Use 'vmrogue evacuation-status' to monitor progress")
+            color::info("ℹ Use 'veyron evacuation-status' to monitor progress")
         );
     }
     Ok(())

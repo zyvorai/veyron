@@ -8,15 +8,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// VMRogueActionSpec defines an autopilot action proposal or execution.
+// VeyronActionSpec defines an autopilot action proposal or execution.
 // Actions can be proposed by the system (insights, automation rules) and
 // require approval before execution unless auto-approve is enabled.
-type VMRogueActionSpec struct {
+type VeyronActionSpec struct {
 	// Type of action to perform.
 	// +kubebuilder:validation:Enum=StartVM;StopVM;RestartVM;ScaleResources;CreateSnapshot;DeleteSnapshot;CreateBackup;DeleteVM;Migrate;SendNotification;RunScript;Webhook
 	ActionType string `json:"actionType"`
 
-	// Reference to the target VMRogueVM.
+	// Reference to the target VeyronVM.
 	// +optional
 	VMRef string `json:"vmRef,omitempty"`
 
@@ -24,7 +24,7 @@ type VMRogueActionSpec struct {
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
 
-	// Reference to the VMRogueInsight that triggered this action.
+	// Reference to the VeyronInsight that triggered this action.
 	// +optional
 	InsightRef string `json:"insightRef,omitempty"`
 
@@ -60,8 +60,8 @@ const (
 	ActionPhaseRejected  ActionPhase = "Rejected"
 )
 
-// VMRogueActionStatus defines the observed state of VMRogueAction.
-type VMRogueActionStatus struct {
+// VeyronActionStatus defines the observed state of VeyronAction.
+type VeyronActionStatus struct {
 	// Current execution phase.
 	// +optional
 	Phase ActionPhase `json:"phase,omitempty"`
@@ -92,24 +92,24 @@ type VMRogueActionStatus struct {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:shortName=vract
 
-// VMRogueAction is the Schema for the vmrogueactions API.
-type VMRogueAction struct {
+// VeyronAction is the Schema for the veyronactions API.
+type VeyronAction struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VMRogueActionSpec   `json:"spec,omitempty"`
-	Status VMRogueActionStatus `json:"status,omitempty"`
+	Spec   VeyronActionSpec   `json:"spec,omitempty"`
+	Status VeyronActionStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// VMRogueActionList contains a list of VMRogueAction.
-type VMRogueActionList struct {
+// VeyronActionList contains a list of VeyronAction.
+type VeyronActionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VMRogueAction `json:"items"`
+	Items           []VeyronAction `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&VMRogueAction{}, &VMRogueActionList{})
+	SchemeBuilder.Register(&VeyronAction{}, &VeyronActionList{})
 }

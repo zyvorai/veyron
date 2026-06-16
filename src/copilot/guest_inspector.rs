@@ -12,7 +12,7 @@ use serde_json::to_value;
 /// QEMU guest-agent posture and in-guest signals for a running VM.
 pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Guest Inspector",
+        "Veyron Guest Inspector",
         "guest_inspector",
         format!("Guest view: {namespace}/{name}"),
     );
@@ -124,7 +124,7 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
             page: Some(format!("{namespace}:{name}")),
         },
         CopilotAction {
-            label: "VMRogue Doctor".into(),
+            label: "Veyron Doctor".into(),
             action: "copilot_doctor".into(),
             page: Some(format!("{namespace}:{name}")),
         },

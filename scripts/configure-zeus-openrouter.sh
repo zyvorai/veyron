@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wire Ask Zeus (VMRogue Copilot LLM) to OpenRouter using keys from ~/.zshrc.
+# Wire Ask Zeus (Veyron Copilot LLM) to OpenRouter using keys from ~/.zshrc.
 #
 # Local API:
 #   eval "$(./scripts/configure-zeus-openrouter.sh --print-env)"
@@ -45,10 +45,10 @@ apply_remote() {
 
   echo "Updating secret ${SECRET} in ${NS} on ${user}@${host}…" >&2
   remote_kubectl "$host" "$user" delete secret "$SECRET" --ignore-not-found
-  scp -q -o BatchMode=yes "$tmp" "${user}@${host}:/tmp/vmrogue-zeus-openrouter.env"
+  scp -q -o BatchMode=yes "$tmp" "${user}@${host}:/tmp/veyron-zeus-openrouter.env"
   remote_kubectl "$host" "$user" create secret generic "$SECRET" \
-    --from-env-file=/tmp/vmrogue-zeus-openrouter.env
-  ssh -o BatchMode=yes "${user}@${host}" "rm -f /tmp/vmrogue-zeus-openrouter.env"
+    --from-env-file=/tmp/veyron-zeus-openrouter.env
+  ssh -o BatchMode=yes "${user}@${host}" "rm -f /tmp/veyron-zeus-openrouter.env"
   rm -f "$tmp"
   remote_kubectl "$host" "$user" rollout restart deployment/veyron-api
   remote_kubectl "$host" "$user" rollout status deployment/veyron-api --timeout=180s

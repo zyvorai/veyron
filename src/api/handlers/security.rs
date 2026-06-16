@@ -21,7 +21,7 @@ use super::namespace_scope::{self, DashboardNamespaceQuery};
 /// Security posture
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityPosture {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub overall_score: u8,
     pub risk_level: String,
     pub total_findings: u32,
@@ -46,7 +46,7 @@ pub struct SecurityFinding {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SecurityFindingsResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub findings: Vec<SecurityFinding>,
 }
 
@@ -138,7 +138,7 @@ async fn get_security_posture(
         .unwrap_or(false);
 
     Json(SecurityPosture {
-        vmrogue_context: if trivy_enabled {
+        veyron_context: if trivy_enabled {
             VmrogueFeatureContext::security_trivy()
         } else {
             VmrogueFeatureContext::security_config()
@@ -296,7 +296,7 @@ async fn list_security_findings(
     }
 
     Json(SecurityFindingsResponse {
-        vmrogue_context: if used_trivy {
+        veyron_context: if used_trivy {
             VmrogueFeatureContext::security_trivy()
         } else {
             VmrogueFeatureContext::security_config()

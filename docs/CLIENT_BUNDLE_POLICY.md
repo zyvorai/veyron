@@ -6,11 +6,11 @@ Customer tarballs from `scripts/package-binary-remote.sh` must **never** require
 
 | Type | Products | What ships | Customer runs |
 |------|----------|------------|---------------|
-| **A — Native binary** | VMRogue, v9s, machina, guestkit, hypersdk, packetwolf, ragnarok, Aether, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
-| **B — Container extract** | VMRogue, v9s | Binary + UI from OCI image build (still type A at install time) | Same as A |
+| **A — Native binary** | Veyron, v9s, machina, guestkit, hypersdk, packetwolf, ragnarok, Aether, IronWolf | Single executable(s), optional `web/dist` or `frontend/dist`, env example | `./install.sh` → `./binary` or systemd via `install-full.sh` (machina) |
+| **B — Container extract** | Veyron, v9s | Binary + UI from OCI image build (still type A at install time) | Same as A |
 | **C — Python venv bundle** | **hyper2kvm**, **forge** | `venv/` with `pip install` already done, wrapper scripts in `bin/`, static UI | `./install.sh`; run `./bin/*` (uses bundled `venv/`) |
 | **D — Go multi-binary** | hypersdk | `bin/hypervisord`, `hyperctl`, … + `dashboard/` | `./bin/hypervisord` |
-| **E — K8s cluster add-on** | VMRogue, v9s only | `cluster/` YAML + `install-cluster.sh` (not app source) | Cluster admin scripts; app still type A/B |
+| **E — K8s cluster add-on** | Veyron, v9s only | `cluster/` YAML + `install-cluster.sh` (not app source) | Cluster admin scripts; app still type A/B |
 
 ## What must NOT be in customer tarballs
 
@@ -35,7 +35,7 @@ forge bundles **minimal** `services/api-gateway/` (entry module) + full **venv**
 
 | Product | Type | Sources in tarball? | Notes |
 |---------|------|---------------------|--------|
-| VMRogue | B→A | No | `vmrogue` + optional `virtctl`; cluster scripts only |
+| Veyron | B→A | No | `veyron` + optional `virtctl`; cluster scripts only |
 | v9s | B→A | No | `v9s-web` + `ui/dist` |
 | machina | A | No | `machina-daemon`, TUI, `web/dist`; `install-full.sh` = bundle-aware host install |
 | guestkit | A | No | `guestkit` binary only |

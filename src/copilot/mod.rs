@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! VMRogue Copilot — rule-based VM lifecycle assistant (v1).
+//! Veyron Copilot — rule-based VM lifecycle assistant (v1).
 //!
 //! Composes cluster facts, KubeVirt state, and existing translators into product-shaped
 //! responses. Optional external LLM backends can be wired later; v1 is deterministic.
@@ -174,7 +174,7 @@ pub struct CopilotResponse {
 impl CopilotResponse {
     pub(crate) fn new(module: &str, intent: &str, title: impl Into<String>) -> Self {
         Self {
-            product: "VMRogue Copilot".to_string(),
+            product: "Veyron Copilot".to_string(),
             module: module.to_string(),
             intent: intent.to_string(),
             title: title.into(),
@@ -216,7 +216,7 @@ pub async fn copilot_ask(
 
 pub fn general_help() -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Copilot",
+        "Veyron Copilot",
         "help",
         "AI-native VM operator for KubeVirt",
     );
@@ -224,33 +224,33 @@ pub fn general_help() -> CopilotResponse {
         "Ask about VM health, scheduling, YAML, backups, security, or paste a Kubernetes error."
             .into();
     r.evidence = vec![
-        "VMRogue Doctor — inspect a VM and get a health score".into(),
-        "VMRogue Scheduling Explainer — why a VM is Pending".into(),
-        "VMRogue YAML Builder — generate and validate VirtualMachine YAML".into(),
-        "VMRogue Backup Advisor — snapshot and Velero coverage gaps".into(),
-        "VMRogue Cost Advisor — fleet spend (OpenCost or reference rates)".into(),
-        "VMRogue Network Lens — interfaces, expose, and policies".into(),
-        "VMRogue Guest Inspector — guest agent, OS info, in-guest signals".into(),
-        "VMRogue Guest Filesystem — in-guest disk usage via guest-exec".into(),
-        "VMRogue Storage Doctor — PVC pressure and snapshot sprawl".into(),
-        "VMRogue Security Sentinel — RDP exposure, drift, policies".into(),
-        "VMRogue Performance Advisor — CPU/memory hotspots".into(),
-        "VMRogue GitOps Advisor — repos, drift, Argo/Flux".into(),
-        "VMRogue Forecast Advisor — 30-day capacity heuristic".into(),
-        "VMRogue Integrations Advisor — optional backend wiring".into(),
-        "VMRogue Scheduling Fleet — pending VMs and events".into(),
-        "VMRogue Compliance Advisor — VM hardening and policy gaps".into(),
-        "VMRogue Observability Advisor — metrics/logs/traces stack".into(),
-        "VMRogue Cilium Advisor — agents and network policies".into(),
-        "VMRogue Node Advisor — capacity and node pressure".into(),
-        "VMRogue Drift Advisor — VMRogueVM template drift".into(),
-        "VMRogue Alert Advisor — warning events narrative".into(),
-        "VMRogue SLO Advisor — fleet availability SLO".into(),
-        "VMRogue Migration Advisor — live migration status".into(),
-        "VMRogue Quota Advisor — ResourceQuota pressure".into(),
-        "VMRogue Catalog Advisor — template catalog sync".into(),
-        "VMRogue Velero DR Advisor — backup/restore readiness".into(),
-        "VMRogue Error Explainer — translate ugly K8s errors".into(),
+        "Veyron Doctor — inspect a VM and get a health score".into(),
+        "Veyron Scheduling Explainer — why a VM is Pending".into(),
+        "Veyron YAML Builder — generate and validate VirtualMachine YAML".into(),
+        "Veyron Backup Advisor — snapshot and Velero coverage gaps".into(),
+        "Veyron Cost Advisor — fleet spend (OpenCost or reference rates)".into(),
+        "Veyron Network Lens — interfaces, expose, and policies".into(),
+        "Veyron Guest Inspector — guest agent, OS info, in-guest signals".into(),
+        "Veyron Guest Filesystem — in-guest disk usage via guest-exec".into(),
+        "Veyron Storage Doctor — PVC pressure and snapshot sprawl".into(),
+        "Veyron Security Sentinel — RDP exposure, drift, policies".into(),
+        "Veyron Performance Advisor — CPU/memory hotspots".into(),
+        "Veyron GitOps Advisor — repos, drift, Argo/Flux".into(),
+        "Veyron Forecast Advisor — 30-day capacity heuristic".into(),
+        "Veyron Integrations Advisor — optional backend wiring".into(),
+        "Veyron Scheduling Fleet — pending VMs and events".into(),
+        "Veyron Compliance Advisor — VM hardening and policy gaps".into(),
+        "Veyron Observability Advisor — metrics/logs/traces stack".into(),
+        "Veyron Cilium Advisor — agents and network policies".into(),
+        "Veyron Node Advisor — capacity and node pressure".into(),
+        "Veyron Drift Advisor — VeyronVM template drift".into(),
+        "Veyron Alert Advisor — warning events narrative".into(),
+        "Veyron SLO Advisor — fleet availability SLO".into(),
+        "Veyron Migration Advisor — live migration status".into(),
+        "Veyron Quota Advisor — ResourceQuota pressure".into(),
+        "Veyron Catalog Advisor — template catalog sync".into(),
+        "Veyron Velero DR Advisor — backup/restore readiness".into(),
+        "Veyron Error Explainer — translate ugly K8s errors".into(),
     ];
     r.recommendations = vec![
         "Why is my VM not starting?".into(),
@@ -292,7 +292,7 @@ pub async fn finalize_copilot(resp: CopilotResponse) -> CopilotResponse {
 pub fn recommend_template(description: &str) -> CopilotResponse {
     let lower = description.to_lowercase();
     let mut r = CopilotResponse::new(
-        "VMRogue Blueprint Studio",
+        "Veyron Blueprint Studio",
         "recommend",
         "Recommended VM profile",
     );

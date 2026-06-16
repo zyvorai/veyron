@@ -206,7 +206,7 @@ pub async fn deliver_observability_notification(
 #[cfg(feature = "web")]
 pub async fn deliver_test_notification() -> Vec<(String, bool, String)> {
     let mut results = Vec::new();
-    let msg = "VMRogue notification channel test";
+    let msg = "Veyron notification channel test";
 
     if let Some(url) = integrations::env_var("VMROGUE_SLACK_WEBHOOK_URL") {
         let ok = integrations::deliver_slack(&url, msg)
@@ -218,7 +218,7 @@ pub async fn deliver_test_notification() -> Vec<(String, bool, String)> {
         let to = integrations::env_var("VMROGUE_EMAIL_TEST_TO")
             .map(|s| vec![s])
             .unwrap_or_else(|| vec!["test@local".into()]);
-        let ok = integrations::deliver_email(&relay, "VMRogue test", msg, &to)
+        let ok = integrations::deliver_email(&relay, "Veyron test", msg, &to)
             .await
             .unwrap_or(false);
         results.push(("email".into(), ok, relay));

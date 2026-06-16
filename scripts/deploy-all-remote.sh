@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# deploy-all-remote.sh — Full VMRogue + Operator K8s deployment to remote host
+# deploy-all-remote.sh — Full Veyron + Operator K8s deployment to remote host
 # ============================================================================
 # Works with any combination of:
 #   Build:   podman / docker / nerdctl
@@ -8,14 +8,14 @@
 #
 # Flow:
 #   1. Rsync source to remote ~/.deployment/veyron
-#   2. Build VMRogue + Operator container images
+#   2. Build Veyron + Operator container images
 #   3. Import images into K8s container runtime
 #   4. Ensure CDI (if DataVolume CRD missing) + install CRDs + NATS + RBAC + optional Cilium egress
 #   5. Deploy Veyron API + Operator pods (API key: CHANGE_ME)
 #   6. Clean up source
 #   7. Verify
 #
-# CDI: uses scripts/ensure-cdi-remote.sh (VEYRON_SKIP_CDI=1, VMROGUE_CDI_VERSION=…)
+# CDI: uses scripts/ensure-cdi-remote.sh (VEYRON_SKIP_CDI=1, VEYRON_CDI_VERSION=…)
 # Cilium: when CRD ciliumnetworkpolicies.cilium.io exists, applies deploy/k8s/bootstrap/cilium-veyron-egress.yaml
 #         so API/operator/NATS can reach kube-apiserver (default-egress + DNS-only CNPs).
 #
@@ -141,7 +141,7 @@ fi
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
 if [[ "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "1" && "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "true" ]] \
     && [ -x "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]; then
-    deploy_substep "Preparing GuestKit build context (guestkit/ → VMRogue)"
+    deploy_substep "Preparing GuestKit build context (guestkit/ → Veyron)"
     bash "${REPO_DIR}/scripts/prepare-guestkit-docker.sh"
 fi
 deploy_ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
@@ -240,11 +240,11 @@ else
             ;;
         microk8s)
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/vmrogue.tar
+                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/veyron.tar
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/veyron-operator.tar
-                microk8s ctr image import /tmp/vmrogue.tar
+                microk8s ctr image import /tmp/veyron.tar
                 microk8s ctr image import /tmp/veyron-operator.tar
-                rm -f /tmp/vmrogue.tar /tmp/veyron-operator.tar
+                rm -f /tmp/veyron.tar /tmp/veyron-operator.tar
             " 2>&1
             ;;
         kind)
@@ -255,11 +255,11 @@ else
             ;;
         minikube)
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/vmrogue.tar
+                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/veyron.tar
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/veyron-operator.tar
-                minikube image load /tmp/vmrogue.tar
+                minikube image load /tmp/veyron.tar
                 minikube image load /tmp/veyron-operator.tar
-                rm -f /tmp/vmrogue.tar /tmp/veyron-operator.tar
+                rm -f /tmp/veyron.tar /tmp/veyron-operator.tar
             " 2>&1
             ;;
         containerd)
@@ -272,13 +272,13 @@ else
         cri)
             # CRI-O or other CRI runtime — import via tar
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/vmrogue.tar
+                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/veyron.tar
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/veyron-operator.tar
-                ${SUDO} crictl pull /tmp/vmrogue.tar 2>/dev/null || \
-                    ${SUDO} ctr -n k8s.io images import /tmp/vmrogue.tar
+                ${SUDO} crictl pull /tmp/veyron.tar 2>/dev/null || \
+                    ${SUDO} ctr -n k8s.io images import /tmp/veyron.tar
                 ${SUDO} crictl pull /tmp/veyron-operator.tar 2>/dev/null || \
                     ${SUDO} ctr -n k8s.io images import /tmp/veyron-operator.tar
-                rm -f /tmp/vmrogue.tar /tmp/veyron-operator.tar
+                rm -f /tmp/veyron.tar /tmp/veyron-operator.tar
             " 2>&1
             ;;
         docker-desktop)
@@ -302,11 +302,19 @@ deploy_phase_start "📋 [4/7] CDI (if missing), CRDs, NATS, RBAC, and Cilium eg
 }
 deploy_ssh "${REMOTE}" "
     ${K8S_CMD} create namespace ${NAMESPACE} --dry-run=client -o yaml | ${K8S_CMD} apply -f -
-    if [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ]; then
-        echo 'Applying Cilium egress policy for ${NAMESPACE} (vmrogue / nats workloads)...'
-        ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml
+    if [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null; then
+        for cilium_yaml in ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml; do
+            if [ -f \"\${cilium_yaml}\" ]; then
+                echo 'Applying Cilium egress policy for ${NAMESPACE} (veyron / nats workloads)...'
+                sed -e 's|__VEYRON_APP_NAMESPACE__|${NAMESPACE}|g' \
+                    -e 's|namespace: vmrogue-system|namespace: ${NAMESPACE}|g' \
+                    -e 's|namespace: veyron-system|namespace: ${NAMESPACE}|g' \
+                    \"\${cilium_yaml}\" | ${K8S_CMD} apply -f -
+                break
+            fi
+        done
     else
-        echo 'Skipping Cilium vmrogue egress bootstrap (VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1, no Cilium CRD, or yaml missing)'
+        echo 'Skipping Cilium veyron egress bootstrap (VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1, no Cilium CRD, or yaml missing)'
     fi
     if [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]; then
         echo 'Applying Cilium clusterwide egress for KubeVirt virt-launcher (VM guest internet)...'
@@ -340,7 +348,7 @@ deploy_phase_start "🚀 [5/7] Deploying Veyron API + Operator"
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
 deploy_ssh "${REMOTE}" "
-    ${K8S_CMD} -n ${NAMESPACE} delete deployment veyron-api veyron-operator veyron-api veyron-operator \
+    ${K8S_CMD} -n ${NAMESPACE} delete deployment veyron-api veyron-operator vmrogue-api vmrogue-operator \
         --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
     ${K8S_CMD} -n ${NAMESPACE} delete secret veyron-api-key --ignore-not-found --wait=false 2>/dev/null || true
 " 2>&1

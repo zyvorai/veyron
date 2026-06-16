@@ -1,6 +1,6 @@
 # Veyron VM Configuration
-# This file uses VMRogue's simplified YAML format.
-# To convert to KubeVirt manifest: vmrogue create --from-file centos-template.yaml --output yaml --dry-run
+# This file uses Veyron's simplified YAML format.
+# To convert to KubeVirt manifest: veyron create --from-file centos-template.yaml --output yaml --dry-run
 name: centos-vm
 namespace: default
 cpu:
@@ -29,7 +29,7 @@ interfaces:
 cloud_init:
   user_data: |
     #cloud-config
-    user: vmrogue
+    user: veyron
     # WARNING: Change this password immediately after first login
     password: CHANGE_ME_BEFORE_USE
     chpasswd: { expire: True }

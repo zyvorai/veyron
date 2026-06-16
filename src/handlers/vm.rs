@@ -489,7 +489,7 @@ fn load_or_create_config(
                         .join(", "),
                 );
             }
-            msg.push_str("\n  Run 'vmrogue templates' to see all available templates.");
+            msg.push_str("\n  Run 'veyron templates' to see all available templates.");
             anyhow!(msg)
         })?;
         config.name = name.to_string();
@@ -568,7 +568,7 @@ pub async fn handle_create(
                     println!(
                         "  Status: {} (use '{}' to start)",
                         color::vm_status("Stopped"),
-                        color::command(&format!("vmrogue start {}", name))
+                        color::command(&format!("veyron start {}", name))
                     );
                 }
                 Err(e) => {
@@ -1212,7 +1212,7 @@ pub async fn handle_templates(by_family: bool, source: Option<&str>) -> Result<(
         if list.is_empty() {
             println!(
                 "{}",
-                color::info("No VMTemplate CRDs in cluster (run: vmrogue catalog sync)")
+                color::info("No VMTemplate CRDs in cluster (run: veyron catalog sync)")
             );
             return Ok(());
         }
@@ -1497,7 +1497,7 @@ pub async fn handle_export(
     if !kubevirt {
         eprintln!(
             "Note: Cross-hypervisor export belongs in HyperSDK (https://zyvor.dev/hypersdk). \
-             Exporting VMRogue VMConfig YAML for GitOps only."
+             Exporting Veyron VMConfig YAML for GitOps only."
         );
     }
     use crate::kube;
@@ -1783,7 +1783,7 @@ pub async fn handle_batch(
 
 /// Diagnose environment: kubeconfig, cluster connectivity, KubeVirt CRDs, namespace.
 pub async fn handle_doctor(namespace: &str) -> Result<()> {
-    println!("{}", color::header("VMRogue Doctor"));
+    println!("{}", color::header("Veyron Doctor"));
     println!();
 
     let mut issues = 0u32;
@@ -1905,7 +1905,7 @@ pub async fn handle_doctor(namespace: &str) -> Result<()> {
                 );
                 println!(
                     "    {}",
-                    color::muted("Run 'vmrogue config-init' to create one.")
+                    color::muted("Run 'veyron config-init' to create one.")
                 );
             }
         }
@@ -2527,7 +2527,7 @@ pub async fn handle_clusters_list(output: String) -> Result<()> {
         println!(
             "  {}",
             color::muted(
-                "No clusters configured. Run 'vmrogue clusters-discover' to scan kubeconfig."
+                "No clusters configured. Run 'veyron clusters-discover' to scan kubeconfig."
             )
         );
         return Ok(());

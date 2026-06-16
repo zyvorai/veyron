@@ -33,7 +33,7 @@ impl TemplateRegistry {
                 return Some(PathBuf::from(p));
             }
         }
-        dirs::config_dir().map(|d| d.join("vmrogue").join("templates.toml"))
+        dirs::config_dir().map(|d| d.join("veyron").join("templates.toml"))
     }
 
     pub fn load() -> Result<Option<Self>> {

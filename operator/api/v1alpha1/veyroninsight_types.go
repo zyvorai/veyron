@@ -8,9 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// VMRogueInsightSpec defines observability data for a VM or cluster resource.
+// VeyronInsightSpec defines observability data for a VM or cluster resource.
 // Designed as the output target for future eBPF agents and metrics analysis.
-type VMRogueInsightSpec struct {
+type VeyronInsightSpec struct {
 	// Type of insight.
 	// +kubebuilder:validation:Enum=Performance;Security;Cost;Anomaly;Capacity;Network;Drift
 	InsightType string `json:"insightType"`
@@ -19,7 +19,7 @@ type VMRogueInsightSpec struct {
 	// +kubebuilder:validation:Enum=Critical;High;Medium;Low;Info
 	Severity string `json:"severity"`
 
-	// Reference to the VMRogueVM this insight relates to.
+	// Reference to the VeyronVM this insight relates to.
 	// +optional
 	VMRef string `json:"vmRef,omitempty"`
 
@@ -74,13 +74,13 @@ const (
 	InsightStateDismissed    InsightState = "Dismissed"
 )
 
-// VMRogueInsightStatus defines the observed state of VMRogueInsight.
-type VMRogueInsightStatus struct {
+// VeyronInsightStatus defines the observed state of VeyronInsight.
+type VeyronInsightStatus struct {
 	// Current lifecycle state of this insight.
 	// +optional
 	State InsightState `json:"state,omitempty"`
 
-	// Reference to a VMRogueAction that was proposed in response to this insight.
+	// Reference to a VeyronAction that was proposed in response to this insight.
 	// +optional
 	ActionRef string `json:"actionRef,omitempty"`
 
@@ -98,24 +98,24 @@ type VMRogueInsightStatus struct {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:shortName=vrin
 
-// VMRogueInsight is the Schema for the vmrogueinsights API.
-type VMRogueInsight struct {
+// VeyronInsight is the Schema for the veyroninsights API.
+type VeyronInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VMRogueInsightSpec   `json:"spec,omitempty"`
-	Status VMRogueInsightStatus `json:"status,omitempty"`
+	Spec   VeyronInsightSpec   `json:"spec,omitempty"`
+	Status VeyronInsightStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// VMRogueInsightList contains a list of VMRogueInsight.
-type VMRogueInsightList struct {
+// VeyronInsightList contains a list of VeyronInsight.
+type VeyronInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VMRogueInsight `json:"items"`
+	Items           []VeyronInsight `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&VMRogueInsight{}, &VMRogueInsightList{})
+	SchemeBuilder.Register(&VeyronInsight{}, &VeyronInsightList{})
 }

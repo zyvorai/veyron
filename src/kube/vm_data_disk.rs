@@ -354,7 +354,7 @@ impl KubeClient {
             }
         });
 
-        let pp = PatchParams::apply("vmrogue");
+        let pp = PatchParams::apply("veyron");
         vms.patch(vm_name, &pp, &Patch::Merge(patch)).await?;
         Ok(())
     }

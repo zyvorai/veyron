@@ -24,7 +24,7 @@ METAEOF
   echo "patched ${repo} (manual meta may be needed — check file)"
 }
 
-# Handled in repo already: VMRogue, machina
+# Handled in repo already: Veyron, machina
 for r in v9s guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge; do
   f="${TT}/${r}/scripts/package-binary-remote.sh"
   [[ -f "${f}" ]] || continue

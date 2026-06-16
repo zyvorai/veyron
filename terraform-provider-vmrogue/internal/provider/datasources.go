@@ -25,7 +25,7 @@ func NewTemplatesDataSource() datasource.DataSource {
 }
 
 func (d *templatesDataSource) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = "vmrogue_templates"
+	resp.TypeName = "veyron_templates"
 }
 
 func (d *templatesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -67,7 +67,7 @@ type storageClassesDataSource struct{ client *apiClient }
 func NewStorageClassesDataSource() datasource.DataSource { return &storageClassesDataSource{} }
 
 func (d *storageClassesDataSource) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = "vmrogue_storage_classes"
+	resp.TypeName = "veyron_storage_classes"
 }
 
 func (d *storageClassesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
@@ -108,7 +108,7 @@ type nodesDataSource struct{ client *apiClient }
 func NewNodesDataSource() datasource.DataSource { return &nodesDataSource{} }
 
 func (d *nodesDataSource) Metadata(_ context.Context, _ datasource.MetadataRequest, resp *datasource.MetadataResponse) {
-	resp.TypeName = "vmrogue_nodes"
+	resp.TypeName = "veyron_nodes"
 }
 
 func (d *nodesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {

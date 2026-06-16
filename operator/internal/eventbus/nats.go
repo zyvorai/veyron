@@ -12,7 +12,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// EventBus wraps a NATS connection for publishing and subscribing to VMRogue events.
+// EventBus wraps a NATS connection for publishing and subscribing to Veyron events.
 type EventBus struct {
 	conn *nats.Conn
 	js   nats.JetStreamContext
@@ -42,7 +42,7 @@ func NewEventBus(url string) (*EventBus, error) {
 	if err != nil {
 		_, err = js.AddStream(&nats.StreamConfig{
 			Name:     "VMROGUE",
-			Subjects: []string{"vmrogue.>"},
+			Subjects: []string{"veyron.>"},
 			Storage:  nats.FileStorage,
 			MaxAge:   7 * 24 * time.Hour, // 7-day retention
 		})

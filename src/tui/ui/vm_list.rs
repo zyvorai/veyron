@@ -85,7 +85,7 @@ fn render_header(f: &mut Frame, state: &AppState, area: Rect) {
 
     let header_text = Line::from(vec![
         Span::styled(
-            "VMRogue".to_string(),
+            "Veyron".to_string(),
             Style::default()
                 .fg(colors::ORANGE)
                 .add_modifier(Modifier::BOLD),

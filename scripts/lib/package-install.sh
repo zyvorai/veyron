@@ -11,9 +11,9 @@ pkg_parse_install_args "$@"
 
 _PKG_SESSION_START=${SECONDS}
 pkg_counters_reset
-pkg_install_welcome "VMRogue"
+pkg_install_welcome "Veyron"
 pkg_bundle_sanity_check || true
-pkg_banner "VMRogue" "Kubernetes VM management · client bundle"
+pkg_banner "Veyron" "Kubernetes VM management · client bundle"
 pkg_step_init 5
 
 pkg_step "System dependencies"
@@ -25,27 +25,27 @@ else
 fi
 
 pkg_step "Configuration, admin login & Kubernetes access"
-pkg_k8s_env_configure vmrogue.env.example vmrogue.env "VMRogue"
+pkg_k8s_env_configure veyron.env.example veyron.env "Veyron"
 pkg_step_done
 
 pkg_step "Verify binaries"
-if [[ -x ./vmrogue ]] && ./vmrogue --help >/dev/null 2>&1; then
-  pkg_ok "vmrogue ($(./vmrogue --version 2>/dev/null | head -1 || echo ready))"
+if [[ -x ./veyron ]] && ./veyron --help >/dev/null 2>&1; then
+  pkg_ok "veyron ($(./veyron --version 2>/dev/null | head -1 || echo ready))"
 else
-  pkg_fail "./vmrogue missing or not executable"
+  pkg_fail "./veyron missing or not executable"
   exit 1
 fi
 [[ -x ./virtctl ]] && pkg_ok "virtctl included (optional)"
 pkg_step_done
 
 pkg_step "Cluster smoke test (optional)"
-if [[ -f vmrogue.env ]]; then
-  pkg_load_env_file vmrogue.env 2>/dev/null || true
+if [[ -f veyron.env ]]; then
+  pkg_load_env_file veyron.env 2>/dev/null || true
 fi
 if [[ -n "${KUBECONFIG:-}" ]] && [[ -f "${KUBECONFIG}" ]] && [[ -x ./test-cluster.sh ]]; then
   ./test-cluster.sh && pkg_ok "test-cluster.sh" || pkg_warn "test-cluster.sh — see CLUSTER_SETUP.txt"
 else
-  pkg_skip "test-cluster.sh (needs KUBECONFIG in vmrogue.env)"
+  pkg_skip "test-cluster.sh (needs KUBECONFIG in veyron.env)"
 fi
 pkg_step_done
 
@@ -53,9 +53,9 @@ pkg_step "Package smoke test"
 [[ -x ./test-package.sh ]] && ./test-package.sh || pkg_warn "test-package.sh reported issues"
 pkg_step_done
 
-pkg_install_finish "VMRogue" http 5151 "/dashboard" \
-  "Cluster (once): ./install-cluster.sh → deploy VMRogue in cluster" \
-  "Start API: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151" \
+pkg_install_finish "Veyron" http 5151 "/dashboard" \
+  "Cluster (once): ./install-cluster.sh → deploy Veyron in cluster" \
+  "Start API: set -a && source veyron.env && set +a && ./veyron api-serve --host 0.0.0.0 --port 5151" \
   "Help: cat HELP.txt · ./install.sh --help" \
   "Override kubeconfig: ./install.sh --kubeconfig /path/to/config" \
   "Docs: CLUSTER_SETUP.txt · PREREQUISITES.txt"

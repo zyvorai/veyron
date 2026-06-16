@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 /// PAM authentication configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PamConfig {
-    /// PAM service name (e.g., "vmrogue", "login")
+    /// PAM service name (e.g., "veyron", "login")
     pub service_name: String,
     /// Whether PAM auth is enabled
     pub enabled: bool,
@@ -45,7 +45,7 @@ impl PamConfig {
 
 impl Default for PamConfig {
     fn default() -> Self {
-        Self::new("vmrogue")
+        Self::new("veyron")
     }
 }
 
@@ -109,7 +109,7 @@ mod tests {
     #[test]
     fn test_pam_config_default() {
         let config = PamConfig::default();
-        assert_eq!(config.service_name, "vmrogue");
+        assert_eq!(config.service_name, "veyron");
         assert!(!config.enabled);
     }
 

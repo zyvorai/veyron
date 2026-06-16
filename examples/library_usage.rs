@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Example of using vmrogue as a library
+//! Example of using veyron as a library
 
 use veyron::config::VMConfigBuilder;
 use veyron::output::to_yaml;

@@ -105,7 +105,7 @@ async fn create_alert(
         kube::api::Api::namespaced(s.client().client(), &s.namespace);
 
     let cm_name = format!(
-        "vmrogue-alert-{}",
+        "veyron-alert-{}",
         req.name.to_lowercase().replace(' ', "-")
     );
     let mut data = std::collections::BTreeMap::new();
@@ -125,7 +125,7 @@ async fn create_alert(
             name: Some(cm_name),
             namespace: Some(s.namespace.clone()),
             labels: Some(
-                [("vmrogue.io/type".to_string(), "alert-rule".to_string())]
+                [("veyron.io/type".to_string(), "alert-rule".to_string())]
                     .into_iter()
                     .collect(),
             ),
@@ -165,7 +165,7 @@ async fn resolve_alert(
     let now = chrono::Utc::now().to_rfc3339();
 
     // Persist resolved state in a ConfigMap keyed by alert id
-    let cm_name = format!("vmrogue-resolved-{}", id);
+    let cm_name = format!("veyron-resolved-{}", id);
     let mut data = std::collections::BTreeMap::new();
     data.insert("alert_id".to_string(), id.clone());
     data.insert("resolved_at".to_string(), now.clone());
@@ -176,7 +176,7 @@ async fn resolve_alert(
             name: Some(cm_name),
             namespace: Some(s.namespace.clone()),
             labels: Some(
-                [("vmrogue.io/type".to_string(), "alert-resolved".to_string())]
+                [("veyron.io/type".to_string(), "alert-resolved".to_string())]
                     .into_iter()
                     .collect(),
             ),

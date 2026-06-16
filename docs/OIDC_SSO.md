@@ -1,4 +1,4 @@
-# Enterprise SSO (OIDC) for VMRogue
+# Enterprise SSO (OIDC) for Veyron
 
 Configure OpenID Connect for human login while keeping API keys for automation. The classic dashboard at `/dashboard` uses API keys in browser localStorage today; OIDC bearer validation is available on the API for clients that obtain tokens from your IdP.
 
@@ -6,7 +6,7 @@ Configure OpenID Connect for human login while keeping API keys for automation. 
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VMROGUE_OIDC_ISSUER` | For JWKS | Expected `iss` claim (e.g. `https://keycloak.example.com/realms/vmrogue`) |
+| `VMROGUE_OIDC_ISSUER` | For JWKS | Expected `iss` claim (e.g. `https://keycloak.example.com/realms/veyron`) |
 | `VMROGUE_OIDC_JWKS_URL` | For JWKS | JWKS document URL |
 | `VMROGUE_OIDC_ROLE_CLAIM` | No | JWT claim for role mapping (default: `groups`) |
 | `VMROGUE_OIDC_USERINFO_URL` | Fallback | Userinfo endpoint when JWKS is not set |
@@ -14,8 +14,8 @@ Configure OpenID Connect for human login while keeping API keys for automation. 
 
 Role mapping (first matching group wins):
 
-- `vmrogue-admin` or claim value `admin` → **admin**
-- `vmrogue-write` or `write` → **write**
+- `veyron-admin` or claim value `admin` → **admin**
+- `veyron-write` or `write` → **write**
 - otherwise → **readonly**
 
 ## Public OIDC discovery
@@ -33,11 +33,11 @@ Route-level RBAC after authentication is enforced in `src/api/auth_context.rs` (
 
 ## Keycloak quick start
 
-1. Create realm `vmrogue`, client `vmrogue-dashboard`, access type **public**, PKCE enabled.
+1. Create realm `veyron`, client `veyron-dashboard`, access type **public**, PKCE enabled.
 2. Valid redirect URI: `https://<api-host>/dashboard/*`
-3. Add group mappers → `vmrogue-admin`, `vmrogue-write`.
+3. Add group mappers → `veyron-admin`, `veyron-write`.
 4. Set env vars on the API Deployment (see table above).
 
 ## SAML / Okta / Azure AD
 
-Use the vendor’s **OIDC** application (or Keycloak as broker). VMRogue does not embed a SAML SP; MFA is enforced at the IdP.
+Use the vendor’s **OIDC** application (or Keycloak as broker). Veyron does not embed a SAML SP; MFA is enforced at the IdP.

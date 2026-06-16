@@ -7,14 +7,14 @@ package catalog
 import (
 	"testing"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 )
 
 func TestResolveWindows2022WithProdProfile(t *testing.T) {
 	r := &Resolver{}
 	ctx := t.Context()
 
-	base := vmroguev1alpha1.VMRogueVMSpec{Running: boolPtr(true)}
+	base := veyronv1alpha1.VeyronVMSpec{Running: boolPtr(true)}
 	out, err := r.ResolveSpec(ctx, "windows-2022", "prod", base, BlueprintOverrides{})
 	if err != nil {
 		t.Fatal(err)
@@ -40,7 +40,7 @@ func TestBlueprintOverrideCPU(t *testing.T) {
 	r := &Resolver{}
 	ctx := t.Context()
 	cpu := uint32(8)
-	out, err := r.ResolveSpec(ctx, "ubuntu-22.04", "", vmroguev1alpha1.VMRogueVMSpec{}, BlueprintOverrides{CPU: &cpu})
+	out, err := r.ResolveSpec(ctx, "ubuntu-22.04", "", veyronv1alpha1.VeyronVMSpec{}, BlueprintOverrides{CPU: &cpu})
 	if err != nil {
 		t.Fatal(err)
 	}

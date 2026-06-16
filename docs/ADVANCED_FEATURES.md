@@ -2,19 +2,19 @@
 
 **See also:** [Documentation index](README.md), [INNOVATIVE_FEATURES.md](INNOVATIVE_FEATURES.md).
 
-This guide covers advanced VM workflows in `vmrogue`, with practical CLI/API examples.
+This guide covers advanced VM workflows in `veyron`, with practical CLI/API examples.
 
 ## Prerequisites
 
 - A reachable Kubernetes cluster with KubeVirt installed
-- `vmrogue` configured with kubeconfig access
-- API server running for REST examples (`vmrogue api-serve --port 5151`)
+- `veyron` configured with kubeconfig access
+- API server running for REST examples (`veyron api-serve --port 5151`)
 
 ---
 
 ## Security Operations (SOC)
 
-VMRogue includes a first-class SOC surface on the API and dashboard:
+Veyron includes a first-class SOC surface on the API and dashboard:
 
 - **Events** — `GET /api/v1/soc/events?refresh=true` collects Kubernetes events, VM findings, and API audit mutations into ECS-friendly JSON (ConfigMap buffer in the API namespace).
 - **Detections** — `GET /api/v1/soc/detections` evaluates rules (RDP/SSH NodePort expose, drift, privileged domain, scheduling burst, namespaces without NetworkPolicy). Acknowledge with `POST /api/v1/soc/detections/:id/ack`.
@@ -34,13 +34,13 @@ Get comprehensive status information about a VM including resources, volumes, ne
 
 ```bash
 # Show detailed VM status
-vmrogue status my-vm
+veyron status my-vm
 
 # Watch mode - continuously update status
-vmrogue status my-vm --watch
+veyron status my-vm --watch
 
 # Custom update interval (in seconds)
-vmrogue status my-vm --watch --interval 5
+veyron status my-vm --watch --interval 5
 ```
 
 ### Example Output
@@ -85,20 +85,20 @@ Clone an existing VM to create a new one with the same configuration.
 
 ```bash
 # Basic clone
-vmrogue clone source-vm target-vm
+veyron clone source-vm target-vm
 
 # Clone and start immediately
-vmrogue clone source-vm target-vm --start
+veyron clone source-vm target-vm --start
 ```
 
 ### Example
 
 ```bash
 # Clone production database for testing
-vmrogue clone prod-db test-db
+veyron clone prod-db test-db
 
 # Clone and start for development
-vmrogue clone web-server-1 web-server-2 --start
+veyron clone web-server-1 web-server-2 --start
 ```
 
 ### What Gets Cloned
@@ -122,16 +122,16 @@ View resource allocation across all VMs with sorting and filtering.
 
 ```bash
 # Show resources in current namespace
-vmrogue resources
+veyron resources
 
 # Show resources across all namespaces
-vmrogue resources --all-namespaces
+veyron resources --all-namespaces
 
 # Sort by CPU usage
-vmrogue resources --sort-by cpu
+veyron resources --sort-by cpu
 
 # Sort by memory
-vmrogue resources --sort-by memory
+veyron resources --sort-by memory
 ```
 
 ### Example Output
@@ -177,13 +177,13 @@ Export existing VM configurations for backup or migration.
 
 ```bash
 # Export to stdout
-vmrogue export my-vm
+veyron export my-vm
 
 # Export to file
-vmrogue export my-vm --output backup.yaml
+veyron export my-vm --output backup.yaml
 
 # Export as KubeVirt manifest
-vmrogue export my-vm --kubevirt --output vm.kubevirt.yaml
+veyron export my-vm --kubevirt --output vm.kubevirt.yaml
 ```
 
 ### Use Cases
@@ -203,10 +203,10 @@ Interactive, guided VM creation with prompts and defaults.
 
 ```bash
 # Start wizard without pre-filling name
-vmrogue wizard
+veyron wizard
 
 # Start wizard with name pre-filled
-vmrogue wizard my-new-vm
+veyron wizard my-new-vm
 ```
 
 ### Interactive Flow
@@ -261,16 +261,16 @@ Create multiple VMs at once from a batch configuration file.
 
 ```bash
 # Dry run to preview
-vmrogue batch cluster.yaml --dry-run
+veyron batch cluster.yaml --dry-run
 
 # Create all VMs
-vmrogue batch cluster.yaml
+veyron batch cluster.yaml
 
 # Override namespace for all VMs
-vmrogue batch cluster.yaml --namespace production
+veyron batch cluster.yaml --namespace production
 
 # Continue on errors instead of stopping
-vmrogue batch cluster.yaml --continue-on-error
+veyron batch cluster.yaml --continue-on-error
 ```
 
 ### Batch Configuration Format
@@ -378,7 +378,7 @@ Found 3 VMs to create
 Use `resources` command to understand cluster utilization before creating new VMs:
 
 ```bash
-vmrogue resources --all-namespaces --sort-by cpu
+veyron resources --all-namespaces --sort-by cpu
 ```
 
 ### 2. VM Templating
@@ -386,7 +386,7 @@ vmrogue resources --all-namespaces --sort-by cpu
 Export an existing VM as a template:
 
 ```bash
-vmrogue export prod-db --output templates/database-template.yaml
+veyron export prod-db --output templates/database-template.yaml
 # Edit template
 # Use with batch command
 ```
@@ -395,9 +395,9 @@ vmrogue export prod-db --output templates/database-template.yaml
 
 ```bash
 # Clone production to staging for testing
-vmrogue clone prod-web staging-web
-vmrogue get staging-web  # Verify
-vmrogue start staging-web  # Test
+veyron clone prod-web staging-web
+veyron get staging-web  # Verify
+veyron start staging-web  # Test
 ```
 
 ### 4. Monitoring with Watch
@@ -405,7 +405,7 @@ vmrogue start staging-web  # Test
 Monitor VM startup in real-time:
 
 ```bash
-vmrogue status my-vm --watch --interval 2
+veyron status my-vm --watch --interval 2
 ```
 
 ### 5. Infrastructure as Code
@@ -415,7 +415,7 @@ Combine batch configurations with git:
 ```bash
 git clone https://github.com/myorg/vm-configs.git
 cd vm-configs/production
-vmrogue batch web-cluster.yaml
+veyron batch web-cluster.yaml
 ```
 
 ---
@@ -451,14 +451,14 @@ vmrogue batch web-cluster.yaml
 
 ```bash
 # Create load-balanced web cluster
-vmrogue batch examples/batch-web-cluster.yaml
+veyron batch examples/batch-web-cluster.yaml
 
 # Monitor resource usage
-vmrogue resources --namespace production
+veyron resources --namespace production
 
 # Check status of all servers
 for vm in web-server-{1..3}; do
-  vmrogue status $vm
+  veyron status $vm
 done
 ```
 
@@ -466,42 +466,42 @@ done
 
 ```bash
 # Interactive creation for quick dev VM
-vmrogue wizard
+veyron wizard
 
 # Clone for teammate
-vmrogue clone my-dev-vm teammate-dev-vm --start
+veyron clone my-dev-vm teammate-dev-vm --start
 
 # Export configuration for sharing
-vmrogue export my-dev-vm --output team-dev-config.yaml
+veyron export my-dev-vm --output team-dev-config.yaml
 ```
 
 ### Scenario 3: Disaster Recovery
 
 ```bash
 # Export all VMs for backup
-for vm in $(vmrogue list --output json | jq -r '.[].metadata.name'); do
-  vmrogue export $vm --output backups/$vm.yaml
+for vm in $(veyron list --output json | jq -r '.[].metadata.name'); do
+  veyron export $vm --output backups/$vm.yaml
 done
 
 # Restore from backups
-vmrogue batch backups/*.yaml
+veyron batch backups/*.yaml
 ```
 
 ---
 
 ## GitOps Export
 
-Export all VMs as VMRogueVM CRD manifests for use with ArgoCD or Flux:
+Export all VMs as VeyronVM CRD manifests for use with ArgoCD or Flux:
 
 ```bash
 # Export to current directory
-vmrogue gitops-export
+veyron gitops-export
 
 # Export to specific directory
-vmrogue gitops-export --directory ./manifests
+veyron gitops-export --directory ./manifests
 ```
 
-Each VM is exported as a `{namespace}-{name}.yaml` file containing a `VMRogueVM` custom resource definition. These can be committed to a Git repository and managed by any GitOps controller.
+Each VM is exported as a `{namespace}-{name}.yaml` file containing a `VeyronVM` custom resource definition. These can be committed to a Git repository and managed by any GitOps controller.
 
 ---
 
@@ -529,7 +529,7 @@ Supported actions: `start`, `stop`, `restart`, `delete`.
 
 ## Policy Enforcement
 
-VM creation is validated against VMRoguePolicy CRDs deployed in the cluster. Policies with `Deny` enforcement block creation; `Warn` enforcement logs warnings but allows creation.
+VM creation is validated against VeyronPolicy CRDs deployed in the cluster. Policies with `Deny` enforcement block creation; `Warn` enforcement logs warnings but allows creation.
 
 Policy rules support structured conditions:
 - `max_cpu_cores` with `value: 8` — reject VMs with >8 CPU cores
@@ -571,7 +571,7 @@ Recently completed:
 - Cost budgets and anomaly detection
 
 Future enhancements planned:
-- [x] SSH key injection — `vmrogue ssh-key-inject` (KubeVirt `accessCredentials` + Secret)
+- [x] SSH key injection — `veyron ssh-key-inject` (KubeVirt `accessCredentials` + Secret)
 - [ ] VM auto-scaling groups (HPA listing exists; no KubeVirt VM autoscaler product)
 - [x] Prometheus integration for historical metrics — set `VEYRON_PROMETHEUS_URL` (see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md))
 - [x] Cross-cluster DR apply — `GET /api/v1/dr/export` + `POST /api/v1/dr/apply` on recovery cluster; same-cluster in-place via `POST /api/v1/dr/failover`

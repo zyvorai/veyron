@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="vmrogue-dashboard-rev" content="20260616g">
+<meta name="veyron-dashboard-rev" content="20260616g">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
@@ -16,7 +16,7 @@
     return;
   }
   try {
-    const savedTheme = localStorage.getItem('vmrogue_theme');
+    const savedTheme = localStorage.getItem('veyron_theme');
     if (savedTheme === 'zinc' || savedTheme === 'steel') {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
@@ -1257,7 +1257,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .vm-metrics-sparkline{margin-top:12px;height:48px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid var(--border);overflow:hidden}
 .vm-metrics-sparkline canvas{width:100%;height:100%}
 .glass-details-ai{border-color:rgba(139,92,246,.25)}
-/* ═══ VMRogue VM-First UX ═══ */
+/* ═══ Veyron VM-First UX ═══ */
 /* Ask Copilot: single entry on dock — legacy bottom AI bar removed */
 .zeus-ai-bar,.zeus-ai-results{display:none!important}
 body.vm-focus-active .vm-list-pane{display:none}
@@ -1265,8 +1265,8 @@ body.vm-focus-active .vm-workspace{grid-template-columns:1fr}
 body.vm-focus-active .vm-focus-back{display:inline-flex!important}
 @media(min-width:1025px){body.vm-focus-active .vm-list-pane{display:flex}body.vm-focus-active .vm-focus-back{display:none!important}}
 .mac-app-menu{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 6px;font-weight:700;letter-spacing:-.02em}
-.vmrogue-logo-svg{flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(249,115,22,.28))}
-.vmrogue-menu-wordmark{
+.veyron-logo-svg{flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(249,115,22,.28))}
+.veyron-menu-wordmark{
   font-family:var(--font-display);font-size:.82rem;font-weight:800;letter-spacing:-.03em;
   background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 42%,#94a3b8 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
@@ -1735,20 +1735,20 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   font-size:1rem;color:var(--text-bright);margin-bottom:10px;font-weight:700;
 }
 
-.vmrogue-cap-banner{
+.veyron-cap-banner{
   font-size:.82rem;line-height:1.6;color:var(--text-muted);
   padding:14px 16px;margin-bottom:14px;border-radius:var(--radius);
   border:1px solid var(--border);background:var(--bg-tertiary);
 }
-.vmrogue-cap-banner .vmrogue-cap-label{
+.veyron-cap-banner .veyron-cap-label{
   display:block;font-weight:600;color:var(--text-bright);margin-bottom:6px;
   font-size:.95em;letter-spacing:.02em;
 }
-.vmrogue-cap-banner .vmrogue-cap-ds{
+.veyron-cap-banner .veyron-cap-ds{
   font-family:var(--font-mono);font-size:.9em;color:var(--spark);margin-right:6px;
 }
-.vmrogue-cap-banner .vmrogue-cap-scope{display:block;margin:4px 0 2px;color:var(--text)}
-.vmrogue-cap-banner .vmrogue-cap-lim{display:block;margin-top:6px;color:var(--text-dim)}
+.veyron-cap-banner .veyron-cap-scope{display:block;margin:4px 0 2px;color:var(--text)}
+.veyron-cap-banner .veyron-cap-lim{display:block;margin-top:6px;color:var(--text-dim)}
 
 /* Bulk operations */
 .bulk-bar{
@@ -2146,12 +2146,12 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .monitor-stack-row.page-glass-stats{margin-bottom:0}
 .cost-ns-bar{margin-bottom:8px}
 .cost-ns-bar .glass-progress{margin:0}
-.vmrogue-cap-banner.glass-banner{
+.veyron-cap-banner.glass-banner{
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-border);border-radius:var(--glass-radius);padding:14px 16px;
 }
-html[data-theme="steel"] .vmrogue-cap-banner.glass-banner,
-html[data-theme="zinc"] .vmrogue-cap-banner.glass-banner{
+html[data-theme="steel"] .veyron-cap-banner.glass-banner,
+html[data-theme="zinc"] .veyron-cap-banner.glass-banner{
   background:var(--glass-bg);border-color:var(--glass-border);
 }
 html[data-theme="steel"] .glass-stat-pill,
@@ -2999,13 +2999,13 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     <div class="mac-menubar-menus">
       <div class="mac-menu-wrap">
         <button type="button" class="mac-menu-trigger mac-app-menu" id="mac-menu-zeusos-btn" onclick="toggleMacMenu('zeusos')" aria-haspopup="true" aria-expanded="false" aria-label="Veyron menu">
-          <svg class="vmrogue-logo-svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false">
+          <svg class="veyron-logo-svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false">
             <defs><linearGradient id="vrg-mark" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#fdba74"/><stop offset=".45" stop-color="#f97316"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>
             <rect width="32" height="32" rx="7" fill="#121820"/>
             <path d="M7 23h18" stroke="url(#vrg-mark)" stroke-width="2.2" stroke-linecap="round"/>
             <path d="M9 22L16 9l7 13h-3.2L16 14.5 12.2 22H9z" fill="url(#vrg-mark)"/>
           </svg>
-          <span class="vmrogue-menu-wordmark">Veyron</span>
+          <span class="veyron-menu-wordmark">Veyron</span>
         </button>
         <div class="mac-menu-panel" id="mac-menu-zeusos" role="menu">
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openAboutModal();closeMacMenus()">About Veyron</button>
@@ -3710,7 +3710,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     <div class="card-header"><span class="card-title">Veyron Storage Doctor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('storage-doctor-card')">Dismiss</button></div>
     <div id="storage-doctor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">How to read this</span><span class="vmrogue-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="vmrogue-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VEYRON_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. Per-VM in-guest usage: open a VM detail panel or <code>GET /api/v1/vms/:ns/:name/guest-filesystem</code> (requires guest runtime — GuestKit on Linux, QGA on Windows).</span></div>
+  <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">How to read this</span><span class="veyron-cap-scope">Lists PVCs and StorageClasses from the Kubernetes API.</span><span class="veyron-cap-lim"><code>GET /api/v1/storage/usage</code> enriches rows when <code>VEYRON_PROMETHEUS_URL</code> points at Prometheus <code>/api/v1/query</code> (kubelet <code>kubelet_volume_stats_used_bytes</code>) and adds per-class CSI capacity hints from <code>CSIStorageCapacity</code>. Per-VM in-guest usage: open a VM detail panel or <code>GET /api/v1/vms/:ns/:name/guest-filesystem</code> (requires guest runtime — GuestKit on Linux, QGA on Windows).</span></div>
   <div id="storage-summary" class="grid-4 page-glass-stats"></div>
   <p id="storage-prometheus-hint" style="display:none;margin:0 0 10px;font-size:.82em;color:var(--text-dim);font-family:var(--font-mono)"></p>
   <div class="grid-2">
@@ -3742,9 +3742,9 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- CRD PAGES -->
 <div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>VMRogue VMs</h1><p>Operator-managed virtual machines (vmrogue.io CRDs)</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VMRogueVM</button></div></div>
+  <div class="page-header"><div><h1>Veyron VMs</h1><p>Operator-managed virtual machines (veyron.io CRDs)</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VeyronVM</button></div></div>
     <div id="crds-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VMRogueVM Resources</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
   </div>
 </div>
@@ -3752,11 +3752,11 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-blueprint-studio" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VMRogueBlueprint CRDs saved from Copilot or created here</p></div>
+  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Copilot or created here</p></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
     <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
-  <div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">Operator CRDs</span><span class="vmrogue-cap-scope">Changes apply to <code>VMRogueBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="vmrogue-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
+  <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
@@ -3777,7 +3777,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Policies</h1><p>VMRoguePolicy compliance enforcement</p></div></div>
+  <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div></div>
     <div id="policies-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
@@ -3787,7 +3787,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Insights</h1><p>VMRogueInsight observability data</p></div></div>
+<div class="page-header"><div><h1>Insights</h1><p>VeyronInsight observability data</p></div></div>
     
     <div id="insights-summary" class="grid-4 page-glass-stats"></div>
 <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -3802,7 +3802,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Actions</h1><p>VMRogueAction autopilot proposals</p></div></div>
+  <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div></div>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
@@ -4178,13 +4178,13 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
   <div id="catalog-summary" class="grid-4 page-glass-stats" style="margin-bottom:12px"></div>
   <div id="catalog-status-banner"></div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Deploy VMRogueVM (template + profile)</span></div>
+    <div class="card-header"><span class="card-title">Deploy VeyronVM (template + profile)</span></div>
     <div style="padding:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
       <div class="form-group" style="margin:0"><label class="form-label">Target workspace</label><input class="form-input" id="catalog-deploy-ns" value="default" style="width:120px"></div>
       <div class="form-group" style="margin:0"><label class="form-label">Name (optional)</label><input class="form-input" id="catalog-deploy-name" placeholder="auto" style="width:140px"></div>
       <div class="form-group" style="margin:0"><label class="form-label">Template</label><select class="form-select" id="catalog-deploy-template" style="min-width:160px"></select></div>
       <div class="form-group" style="margin:0"><label class="form-label">Profile</label><select class="form-select" id="catalog-deploy-profile" style="min-width:140px"></select></div>
-      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="catalogDeployVmrogueVm()">Deploy VMRogueVM</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="catalogDeployVmrogueVm()">Deploy VeyronVM</button>
     </div>
   </div>
   <div class="card glass-card">
@@ -4409,7 +4409,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
-  <div id="cilium-packetwolf-banner" class="vmrogue-cap-banner glass-banner" style="display:none;margin-bottom:16px" role="status"></div>
+  <div id="cilium-packetwolf-banner" class="veyron-cap-banner glass-banner" style="display:none;margin-bottom:16px" role="status"></div>
     <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cilium-advisor-card')">Dismiss</button></div>
     <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4539,7 +4539,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-custom-dashboards" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Custom Dashboards</h1><p>ConfigMap-backed panel layouts (vmrogue.io/type=dashboard)</p></div></div>
+  <div class="page-header"><div><h1>Custom Dashboards</h1><p>ConfigMap-backed panel layouts (veyron.io/type=dashboard)</p></div></div>
     <div id="custom-dashboards-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Saved dashboards</span></div>
   <table class="table"><thead><tr><th>Name</th><th>Description</th><th>Panels</th><th>Author</th><th>Updated</th></tr></thead><tbody id="custom-dashboards-body"></tbody></table></div>
@@ -4679,7 +4679,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
         <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
         <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
       </div>
-      <div class="mac-sheet-title">Create VMRogueVM</div>
+      <div class="mac-sheet-title">Create VeyronVM</div>
     </div>
     <div class="modal-body">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -4713,7 +4713,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     </div>
     <div class="modal-footer">
       <button type="button" class="glass-btn-secondary" onclick="closeCrdCreateModal()">Cancel</button>
-      <button type="button" class="glass-btn-primary" onclick="submitCrdCreate()">Create VMRogueVM</button>
+      <button type="button" class="glass-btn-primary" onclick="submitCrdCreate()">Create VeyronVM</button>
     </div>
   </div>
 </div>
@@ -4764,7 +4764,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
       </div>
       <div class="form-group">
         <label class="form-label">Cloud-Init (optional)</label>
-        <textarea class="form-input" id="vm-cloudinit" rows="4" placeholder="#cloud-config&#10;user: vmrogue&#10;password: changeme&#10;chpasswd: { expire: false }" style="resize:vertical"></textarea>
+        <textarea class="form-input" id="vm-cloudinit" rows="4" placeholder="#cloud-config&#10;user: veyron&#10;password: changeme&#10;chpasswd: { expire: false }" style="resize:vertical"></textarea>
       </div>
       <div class="form-group">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85em;color:var(--text-muted)">
@@ -4880,7 +4880,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
       <button type="button" class="glass-btn-secondary" onclick="closeForgeWizard()">Cancel</button>
       <button type="button" class="glass-btn-secondary" id="forge-wiz-next" onclick="forgeWizardNext()">Next</button>
       <button type="button" class="glass-btn-secondary" id="forge-wiz-export-yaml" style="display:none" onclick="renderForgeWizardReview&&renderForgeWizardReview();openAskZeus('Export YAML for the VM I just configured in the wizard')">Export YAML</button>
-      <button type="button" class="glass-btn-secondary" id="forge-wiz-save-blueprint" style="display:none" onclick="openAskZeus('Save this VM configuration as a VMRogue Blueprint')">Save as Blueprint</button>
+      <button type="button" class="glass-btn-secondary" id="forge-wiz-save-blueprint" style="display:none" onclick="openAskZeus('Save this VM configuration as a Veyron Blueprint')">Save as Blueprint</button>
       <button type="button" class="glass-btn-primary" id="forge-wiz-submit" style="display:none" onclick="submitForgeWizard()">Forge VM</button>
       <button type="button" class="glass-btn-primary" id="forge-wiz-submit-start" style="display:none" onclick="submitForgeWizard(true)">Forge + Start</button>
     </div>
@@ -5196,7 +5196,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 window.__VMROGUE_DASH_REV = '20260616g';
 (function () {
   try {
-    const k = 'vmrogue_dashboard_rev';
+    const k = 'veyron_dashboard_rev';
     const prev = sessionStorage.getItem(k);
     sessionStorage.setItem(k, window.__VMROGUE_DASH_REV);
     if (prev && prev !== window.__VMROGUE_DASH_REV) {
@@ -5233,7 +5233,7 @@ let lastIntegrationsStatus = null;
 let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
-const THEME_KEY = 'vmrogue_theme';
+const THEME_KEY = 'veyron_theme';
 let lastOverview = null;
 let lastEvents = [];
 
@@ -5260,7 +5260,7 @@ const PAGE_META = {
   forecasting: {kicker:'FinOps', title:'Short-horizon cost and capacity forecasting', tags:['Trend view','Confidence','Breaches']},
   operators: {kicker:'Platform', title:'Operators, CRDs, and platform control', tags:['Cluster services','Custom resources','Automation hooks']},
   crds: {kicker:'Platform', title:'Operator-managed Veyron resources', tags:['Custom resources','Templates','Spec state']},
-  'blueprint-studio': {kicker:'Platform', title:'Edit VMRogueBlueprint multi-VM designs', tags:['Copilot save','JSON spec','Operator reconcile']},
+  'blueprint-studio': {kicker:'Platform', title:'Edit VeyronBlueprint multi-VM designs', tags:['Copilot save','JSON spec','Operator reconcile']},
   helm: {kicker:'Platform', title:'Helm release inventory and version posture', tags:['Releases','Chart versions','Namespaces']},
   'custom-resources': {kicker:'Platform', title:'Installed CRDs and live resource inventory', tags:['Kinds','Scope','Instance counts']},
   gitops: {kicker:'Platform', title:'Sync status and drift across GitOps sources', tags:['Drift','Branch','Sync state']},
@@ -5291,7 +5291,7 @@ const PAGE_META = {
   'custom-dashboards': {kicker:'Platform', title:'Saved custom dashboard layouts', tags:['ConfigMap','Panels','Grafana-style']},
   'network-policies': {kicker:'Network', title:'Kubernetes NetworkPolicy rules', tags:['Ingress','Egress','Selectors']},
   images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']},
-  catalog: {kicker:'Platform', title:'VMTemplate and VMProfile catalog sync', tags:['CRDs','Embedded library','Deploy VMRogueVM']},
+  catalog: {kicker:'Platform', title:'VMTemplate and VMProfile catalog sync', tags:['CRDs','Embedded library','Deploy VeyronVM']},
   integrations: {kicker:'Platform', title:'Optional backend wiring and probes', tags:['Prometheus','OpenCost','Argo CD']},
   'app-store': {kicker:'VEYRON ///', title:'Template Foundry', tags:['Golden images','One-click forge','Catalog sync']}
 };
@@ -5305,7 +5305,7 @@ const PAGE_TOOLBAR_ACTIONS = {
     { label: 'Integrations', onclick: "navigate('integrations')", className: 'glass-btn-secondary glass-btn-sm' }
   ],
   snapshots: [{ label: '+ Snapshot', onclick: 'openSnapModalPick()', className: 'glass-btn-primary glass-btn-sm' }],
-  crds: [{ label: '+ VMRogueVM', onclick: 'openCrdCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
+  crds: [{ label: '+ VeyronVM', onclick: 'openCrdCreateModal()', className: 'glass-btn-primary glass-btn-sm' }],
   catalog: [{ label: 'Sync catalog', onclick: 'catalogSync()', className: 'glass-btn-secondary glass-btn-sm' }],
   'app-store': [{ label: 'Forge VM', onclick: "navigate('vms');setTimeout(openCreateModal,200)", className: 'glass-btn-primary glass-btn-sm' }],
   integrations: [{ label: 'Refresh', onclick: 'fetchIntegrations()', className: 'glass-btn-secondary glass-btn-sm' }],
@@ -5770,12 +5770,12 @@ function drawChart(id, data, color, glowColor) {
 // API Key / OIDC Auth
 let apiKeyResolve = null;
 let oidcConfig = null;
-const OIDC_TOKEN_KEY = 'vmrogue_oidc_token';
-const OIDC_PKCE_KEY = 'vmrogue_oidc_pkce';
-const OIDC_STATE_KEY = 'vmrogue_oidc_state';
+const OIDC_TOKEN_KEY = 'veyron_oidc_token';
+const OIDC_PKCE_KEY = 'veyron_oidc_pkce';
+const OIDC_STATE_KEY = 'veyron_oidc_state';
 
 function getApiKey() {
-  return localStorage.getItem('vmrogue_api_key') || sessionStorage.getItem('vmrogue_api_key') || '';
+  return localStorage.getItem('veyron_api_key') || sessionStorage.getItem('veyron_api_key') || '';
 }
 
 function getOidcToken() {
@@ -5807,8 +5807,8 @@ function updateAuthSessionUI() {
 
 function signOut() {
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
-  localStorage.removeItem('vmrogue_api_key');
-  sessionStorage.removeItem('vmrogue_api_key');
+  localStorage.removeItem('veyron_api_key');
+  sessionStorage.removeItem('veyron_api_key');
   updateAuthSessionUI();
   requireApiKey();
 }
@@ -5908,8 +5908,8 @@ async function handleOidcCallback() {
     sessionStorage.setItem(OIDC_TOKEN_KEY, token);
     sessionStorage.removeItem(OIDC_PKCE_KEY);
     sessionStorage.removeItem(OIDC_STATE_KEY);
-    localStorage.removeItem('vmrogue_api_key');
-    sessionStorage.removeItem('vmrogue_api_key');
+    localStorage.removeItem('veyron_api_key');
+    sessionStorage.removeItem('veyron_api_key');
     window.history.replaceState({}, '', window.location.pathname);
     document.getElementById('apikey-modal').classList.remove('open');
     updateAuthSessionUI();
@@ -5946,10 +5946,10 @@ function submitApiKey() {
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
   const remember = document.getElementById('apikey-remember').checked;
   if (remember) {
-    localStorage.setItem('vmrogue_api_key', key);
+    localStorage.setItem('veyron_api_key', key);
   } else {
-    sessionStorage.setItem('vmrogue_api_key', key);
-    localStorage.removeItem('vmrogue_api_key');
+    sessionStorage.setItem('veyron_api_key', key);
+    localStorage.removeItem('veyron_api_key');
   }
   document.getElementById('apikey-modal').classList.remove('open');
   updateAuthSessionUI();
@@ -6005,8 +6005,8 @@ async function apiFetch(url, opts) {
   const resp = await fetch(url, opts);
   if (resp.status === 401) {
     sessionStorage.removeItem(OIDC_TOKEN_KEY);
-    localStorage.removeItem('vmrogue_api_key');
-    sessionStorage.removeItem('vmrogue_api_key');
+    localStorage.removeItem('veyron_api_key');
+    sessionStorage.removeItem('veyron_api_key');
     updateAuthSessionUI();
     await requireApiKey();
     cred = getAuthCredential();
@@ -6108,12 +6108,12 @@ let lastMigrationScan = null;
 let fleetHealthMap = {};
 let cloudOsSession = { role: 'admin', can_write: true, can_admin: true };
 
-const VM_VIEW_KEY = 'vmrogue_vm_view';
-const FINDER_SECTIONS_KEY = 'vmrogue_finder_sections';
-const FINDER_PINS_KEY = 'vmrogue_finder_pins';
-const FINDER_COLLAPSED_KEY = 'vmrogue_finder_collapsed';
-const SPOTLIGHT_RECENTS_KEY = 'vmrogue_spotlight_recents';
-const RECENT_VMS_KEY = 'vmrogue_recent_vms';
+const VM_VIEW_KEY = 'veyron_vm_view';
+const FINDER_SECTIONS_KEY = 'veyron_finder_sections';
+const FINDER_PINS_KEY = 'veyron_finder_pins';
+const FINDER_COLLAPSED_KEY = 'veyron_finder_collapsed';
+const SPOTLIGHT_RECENTS_KEY = 'veyron_spotlight_recents';
+const RECENT_VMS_KEY = 'veyron_recent_vms';
 /** macOS shell shortcuts surfaced in Spotlight (client-side; API adds cluster matches). */
 const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Browse all pages', subtitle: 'Full page catalog (⌘⇧B)', action: 'mac:browse_all', keys: ['browse', 'all pages', 'catalog', 'advanced'] },
@@ -6129,11 +6129,11 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Copilot', subtitle: 'Fleet AI assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
   { kind: 'action', title: 'Veyron Preferences', subtitle: 'Theme, wallpaper, desktop tier', action: 'mac:preferences', keys: ['preferences', 'settings', 'system'] }
 ];
-const DESKTOP_TIER_KEY = 'vmrogue_desktop_tier';
-const DOCK_PINS_KEY = 'vmrogue_dock_pins';
-const DOCK_CHANGED_EVENT = 'vmrogue-dock-changed';
-const WALLPAPER_KEY = 'vmrogue_wallpaper';
-const DESKTOP_TABS_KEY = 'vmrogue_desktop_tabs';
+const DESKTOP_TIER_KEY = 'veyron_desktop_tier';
+const DOCK_PINS_KEY = 'veyron_dock_pins';
+const DOCK_CHANGED_EVENT = 'veyron-dock-changed';
+const WALLPAPER_KEY = 'veyron_wallpaper';
+const DESKTOP_TABS_KEY = 'veyron_desktop_tabs';
 
 let lastExperienceDesktop = null;
 let islandAlertCount = 0;
@@ -7179,11 +7179,11 @@ function syncIslandFromVmData() {
 async function maybeSuggestAllWorkspace() {
   if (currentNamespace === 'all' || (vmData && vmData.length > 0)) return;
   try {
-    if (sessionStorage.getItem('vmrogue_ws_hint_shown') === '1') return;
+    if (sessionStorage.getItem('veyron_ws_hint_shown') === '1') return;
     const j = await apiJson('/api/v1/vms?namespace=all');
     const all = asArray(j);
     if (all.length < 1) return;
-    sessionStorage.setItem('vmrogue_ws_hint_shown', '1');
+    sessionStorage.setItem('veyron_ws_hint_shown', '1');
     toast('Found ' + all.length + ' VM(s) in other workspaces — use All workspaces', 'info', 8000);
   } catch (e) {}
 }
@@ -7322,7 +7322,7 @@ async function fetchAppStore() {
   try {
     const data = await apiJson('/api/v1/experience/templates');
     appStoreCache = data.templates || [];
-    setCapBanner('app-store-cap-banner', data.vmrogue_context);
+    setCapBanner('app-store-cap-banner', data.veyron_context);
     const sumEl = document.getElementById('app-store-summary');
     if (sumEl) {
       const windows = appStoreCache.filter(t => (t.os_family || '').toLowerCase() === 'windows').length;
@@ -7578,7 +7578,7 @@ function vmSshBlock(vm, showActions) {
 }
 
 function vmDriftBadge(vm) {
-  if (vm.vmrogue_managed !== true) {
+  if (vm.veyron_managed !== true) {
     return '<span class="drift-badge na">N/A</span>';
   }
   if (vm.drift_detected === true) {
@@ -7929,12 +7929,12 @@ function setCopilotContext(ns, name) {
 
 function copilotMessages() {
   try {
-    return JSON.parse(sessionStorage.getItem('vmrogue_copilot_thread') || '[]');
+    return JSON.parse(sessionStorage.getItem('veyron_copilot_thread') || '[]');
   } catch (e) { return []; }
 }
 
 function saveCopilotMessages(msgs) {
-  sessionStorage.setItem('vmrogue_copilot_thread', JSON.stringify(msgs.slice(-24)));
+  sessionStorage.setItem('veyron_copilot_thread', JSON.stringify(msgs.slice(-24)));
 }
 
 function renderCopilotThread() {
@@ -7952,7 +7952,7 @@ function renderCopilotThread() {
 }
 
 function copilotNewChat() {
-  sessionStorage.removeItem('vmrogue_copilot_thread');
+  sessionStorage.removeItem('veyron_copilot_thread');
   setCopilotContext(null, null);
   renderCopilotThread();
   document.getElementById('copilot-result').innerHTML = '';
@@ -8269,11 +8269,11 @@ async function copilotExportGitOps() {
     title: 'Export GitOps Bundle',
     submitLabel: 'Export',
     fields: [
-      { id: 'app_name', label: 'App folder name', value: 'vmrogue-app', required: true },
+      { id: 'app_name', label: 'App folder name', value: 'veyron-app', required: true },
       { id: 'namespace', label: 'Target namespace', value: currentNamespace === 'all' ? 'default' : currentNamespace, required: true }
     ],
     onSubmit: async function(v) {
-      const appName = (v.app_name || '').trim() || 'vmrogue-app';
+      const appName = (v.app_name || '').trim() || 'veyron-app';
       const ns = (v.namespace || '').trim() || 'default';
       try {
         const data = await apiJson('/api/v1/experience/copilot/gitops/export', {
@@ -8813,7 +8813,7 @@ function runNodeAdvisor() {
   runFleetCopilotAdvisor('node-advisor-card', 'node-advisor-body', '/api/v1/experience/copilot/nodes', 'Node capacity and pressure', 'Analyzing nodes…');
 }
 function runDriftAdvisor() {
-  runFleetCopilotAdvisor('drift-advisor-card', 'drift-advisor-body', '/api/v1/experience/copilot/drift', 'Which VMs have operator drift?', 'Scanning VMRogueVM drift…');
+  runFleetCopilotAdvisor('drift-advisor-card', 'drift-advisor-body', '/api/v1/experience/copilot/drift', 'Which VMs have operator drift?', 'Scanning VeyronVM drift…');
 }
 function runAlertAdvisor() {
   runFleetCopilotAdvisor('alert-advisor-card', 'alert-advisor-body', '/api/v1/experience/copilot/alerts', 'Active warning events in namespace', 'Collecting warnings…');
@@ -9016,7 +9016,7 @@ async function fetchSchedules() {
   try {
     const j = await apiJson('/api/v1/snapshot-schedules' + nsParam());
     const rows = asArray(j);
-    setCapBanner('snap-cap-banner', { data_source: 'snapshot_schedule_configmaps', scope: 'Cron schedules (UTC) run in the API pod with Lease leader election.', limitations: 'Requires API replica holding vmrogue-snapshot-scheduler Lease. max_snapshots prunes after each run.' });
+    setCapBanner('snap-cap-banner', { data_source: 'snapshot_schedule_configmaps', scope: 'Cron schedules (UTC) run in the API pod with Lease leader election.', limitations: 'Requires API replica holding veyron-snapshot-scheduler Lease. max_snapshots prunes after each run.' });
     if (rows.length === 0) {
       el.innerHTML = '<div class="empty-state"><p>No schedules — add one to automate snapshots.</p></div>';
       return;
@@ -9097,10 +9097,10 @@ function vmrogueFeatureBanner(ctx) {
   const sc = ctx.scope != null ? String(ctx.scope) : '';
   const lim = ctx.limitations != null ? String(ctx.limitations) : '';
   if (!ds && !sc && !lim) return '';
-  return '<div class="vmrogue-cap-banner glass-banner" role="note"><span class="vmrogue-cap-label">How to read this</span>' +
-    (ds ? ' <code class="vmrogue-cap-ds">' + esc(ds) + '</code>' : '') +
-    (sc ? '<span class="vmrogue-cap-scope">' + esc(sc) + '</span>' : '') +
-    (lim ? '<span class="vmrogue-cap-lim">' + esc(lim) + '</span>' : '') +
+  return '<div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">How to read this</span>' +
+    (ds ? ' <code class="veyron-cap-ds">' + esc(ds) + '</code>' : '') +
+    (sc ? '<span class="veyron-cap-scope">' + esc(sc) + '</span>' : '') +
+    (lim ? '<span class="veyron-cap-lim">' + esc(lim) + '</span>' : '') +
     '</div>';
 }
 function setCapBanner(id, ctx) {
@@ -9649,7 +9649,7 @@ if (dockEditorModalEl) {
 }
 
 
-// ── VMRogue VM Workspace ──
+// ── Veyron VM Workspace ──
 let selectedVmKey = null;
 let selectedVmNs = null;
 let selectedVmName = null;
@@ -10498,8 +10498,8 @@ function filterVMs() {
       if (v.status !== 'Failed' && v.status !== 'Error') return false;
     } else if (statusFilter && v.status !== statusFilter) return false;
     if (driftFilter === 'drift' && v.drift_detected !== true) return false;
-    if (driftFilter === 'clear' && !(v.vmrogue_managed === true && v.drift_detected === false)) return false;
-    if (driftFilter === 'unmanaged' && v.vmrogue_managed === true) return false;
+    if (driftFilter === 'clear' && !(v.veyron_managed === true && v.drift_detected === false)) return false;
+    if (driftFilter === 'unmanaged' && v.veyron_managed === true) return false;
     return true;
   });
   document.getElementById('vm-full-list').innerHTML = filtered.length === 0 ?
@@ -11051,7 +11051,7 @@ function handleMacConsoleKeydown(e) {
   return false;
 }
 
-const VMROGUE_VNC_PRESET_KEY = 'vmrogue_vnc_preset';
+const VMROGUE_VNC_PRESET_KEY = 'veyron_vnc_preset';
 /** noVNC Tight encoding tuning: higher quality = more pixels; higher compression = less bandwidth (more CPU). */
 const VNC_ENCODE_PRESETS = {
   lan: { qualityLevel: 9, compressionLevel: 2, clipViewport: true },
@@ -11393,7 +11393,7 @@ function crdItemsFromJson(j) {
 }
 
 // ── Namespace Selector ──
-let currentNamespace = localStorage.getItem('vmrogue_ns') || 'all';
+let currentNamespace = localStorage.getItem('veyron_ns') || 'all';
 
 async function fetchNamespaces() {
   try {
@@ -11411,8 +11411,8 @@ async function fetchNamespaces() {
 
 function setNamespace(ns) {
   currentNamespace = ns;
-  localStorage.setItem('vmrogue_ns', ns);
-  if (ns === 'all') try { sessionStorage.removeItem('vmrogue_ws_hint_shown'); } catch (e) {}
+  localStorage.setItem('veyron_ns', ns);
+  if (ns === 'all') try { sessionStorage.removeItem('veyron_ws_hint_shown'); } catch (e) {}
   fetchExperienceDesktop();
   refresh();
   loadPageData(currentPage);
@@ -11682,12 +11682,12 @@ async function fetchCRDs() {
   const tb = document.getElementById('crds-body');
   const sumEl = document.getElementById('crds-summary');
   try {
-    const j = await apiJson('/api/v1/crds/vmroguevms');
+    const j = await apiJson('/api/v1/crds/veyronvms');
     const { items, message } = crdItemsFromJson(j);
     if (sumEl) {
       const running = items.filter(v => (v.phase || '').toLowerCase() === 'running').length;
       sumEl.innerHTML = renderGlassStatPills([
-        { label: 'VMRogueVMs', value: items.length },
+        { label: 'VeyronVMs', value: items.length },
         { label: 'Running', value: running, cls: ' ok' },
         { label: 'Pending', value: items.filter(v => (v.phase || '').toLowerCase() === 'pending').length, cls: ' warn' },
         { label: 'Catalog', value: '→', onclick: "navigate('catalog')", title: 'Template catalog' }
@@ -11903,7 +11903,7 @@ async function fetchActions() {
         { label: 'Actions', value: items.length },
         { label: 'Pending', value: pending, cls: pending ? ' warn' : '' },
         { label: 'Approved', value: items.filter(a => a.approved).length, cls: ' ok' },
-        { label: 'VMs', value: '→', onclick: "navigate('crds')", title: 'VMRogue VMs' }
+        { label: 'VMs', value: '→', onclick: "navigate('crds')", title: 'Veyron VMs' }
       ]);
     }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
@@ -11923,7 +11923,7 @@ async function fetchCosts() {
       apiJson('/api/v1/costs'),
       apiJson('/api/v1/costs/summary'),
     ]);
-    setCapBanner('cost-cap-banner', summary.vmrogue_context);
+    setCapBanner('cost-cap-banner', summary.veyron_context);
     const costs = costsRaw && costsRaw.costs != null ? costsRaw.costs : asArray(costsRaw);
 
     const total = summary.total_cost || 0;
@@ -11949,7 +11949,7 @@ async function fetchCosts() {
     // Forecast
     try {
       const fc = await apiJson('/api/v1/costs/forecast');
-      const fcCap = fc.vmrogue_context && fc.vmrogue_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.vmrogue_context.limitations) + '</p>' : '';
+      const fcCap = fc.veyron_context && fc.veyron_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.veyron_context.limitations) + '</p>' : '';
       const trendCls = fc.trend === 'growing' ? 'error' : 'running';
       fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px"><span class="glass-badge ' + trendCls + '">' + esc(fc.trend || 'stable') + '</span></div>' + fcCap + '</div>';
     } catch {
@@ -12044,8 +12044,8 @@ async function submitCrdCreate() {
   };
 
   try {
-    await apiJson('/api/v1/crds/vmroguevms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) });
-    toast('VMRogueVM created: ' + name, 'success');
+    await apiJson('/api/v1/crds/veyronvms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(spec) });
+    toast('VeyronVM created: ' + name, 'success');
     closeCrdCreateModal();
     fetchCRDs();
   } catch (e) { toast('Error: ' + e.message, 'error'); }
@@ -12075,7 +12075,7 @@ function toggleNodeDetail(nodeName, opts) {
 
 // ── Refresh Interval ──
 let refreshTimer = null;
-let refreshInterval = parseInt(localStorage.getItem('vmrogue_refresh') || '30000', 10);
+let refreshInterval = parseInt(localStorage.getItem('veyron_refresh') || '30000', 10);
 let refreshPaused = false;
 let refreshAbortController = null;
 
@@ -12086,7 +12086,7 @@ document.addEventListener('visibilitychange', () => {
 
 function setRefreshInterval(val) {
   refreshInterval = parseInt(val, 10);
-  localStorage.setItem('vmrogue_refresh', val);
+  localStorage.setItem('veyron_refresh', val);
   if (refreshTimer) clearInterval(refreshTimer);
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
 }
@@ -12478,7 +12478,7 @@ async function fetchCustomResources() {
         { label: 'CRD kinds', value: items.length },
         { label: 'Instances', value: instances },
         { label: 'Cluster', value: items.filter(cr => cr.scope === 'Cluster').length },
-        { label: 'VM CRDs', value: '→', onclick: "navigate('crds')", title: 'VMRogue VMs' }
+        { label: 'VM CRDs', value: '→', onclick: "navigate('crds')", title: 'Veyron VMs' }
       ]);
     }
     if (!tb) return;
@@ -12787,7 +12787,7 @@ async function fetchForecasting() {
   const tb = document.getElementById('forecasting-body');
   try {
     const predRes = await apiJson('/api/v1/forecasting/predictions' + nsParam());
-    setCapBanner('forecasting-cap-banner', predRes.vmrogue_context);
+    setCapBanner('forecasting-cap-banner', predRes.veyron_context);
     const items = predRes && predRes.predictions != null ? predRes.predictions : asArray(predRes);
     if (!tb) return;
     tb.innerHTML = items.map(f => `<tr><td>${esc(f.metric)}</td><td>${f.current_value}</td><td>${f.predicted_value}</td><td>${esc(f.prediction_window)}</td><td>${esc(f.trend)}</td><td>${Math.round((f.confidence || 0) * 100)}%</td><td>${esc(f.estimated_breach || '-')}</td></tr>`).join('')
@@ -12803,7 +12803,7 @@ async function fetchGitOps() {
   try {
     const status = await apiJson('/api/v1/gitops/status' + nsParam());
     if (!summary) return;
-    setCapBanner('gitops-cap-banner', status.vmrogue_context);
+    setCapBanner('gitops-cap-banner', status.veyron_context);
     const note = status.note ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(status.note) + '</p>' : '';
     const syncOk = (status.sync_status || '').toLowerCase().indexOf('sync') >= 0 && (status.sync_status || '').toLowerCase().indexOf('out') < 0;
     summary.innerHTML =
@@ -12894,10 +12894,10 @@ async function fetchPacketWolfCiliumBanner() {
     const mode = pw.health_mode ? ' · ' + pw.health_mode : '';
     banner.style.display = 'block';
     banner.innerHTML =
-      '<span class="vmrogue-cap-label">PacketWolf Network Brain</span>' +
-      '<span class="vmrogue-cap-scope">' + (ok ? 'Connected' : 'Configured but unreachable') +
+      '<span class="veyron-cap-label">PacketWolf Network Brain</span>' +
+      '<span class="veyron-cap-scope">' + (ok ? 'Connected' : 'Configured but unreachable') +
       (pw.health_status ? ' — ' + esc(pw.health_status) + mode : '') + '</span>' +
-      '<span class="vmrogue-cap-lim">Endpoint: <code>' + esc(pw.base_url || '') + '</code>. Live Hubble flows and threat intelligence via PacketWolf UI.</span>';
+      '<span class="veyron-cap-lim">Endpoint: <code>' + esc(pw.base_url || '') + '</code>. Live Hubble flows and threat intelligence via PacketWolf UI.</span>';
     if (openBtn) openBtn.style.display = pw.external_url ? '' : 'none';
   } catch (_) {
     banner.style.display = 'none';
@@ -13295,7 +13295,7 @@ async function fetchPerformance() {
   const summaryEl = document.getElementById('performance-summary');
   try {
     const profRes = await apiJson('/api/v1/performance/profiles' + nsParam());
-    setCapBanner('performance-cap-banner', profRes.vmrogue_context);
+    setCapBanner('performance-cap-banner', profRes.veyron_context);
     const items = profRes && profRes.profiles != null ? profRes.profiles : asArray(profRes);
     let graphs = [];
     try {
@@ -13390,7 +13390,7 @@ async function fetchTraces() {
   const tb = document.getElementById('traces-body');
   try {
     const data = await apiJson('/api/v1/traces' + nsParam());
-    setCapBanner('traces-cap-banner', data.vmrogue_context);
+    setCapBanner('traces-cap-banner', data.veyron_context);
     if (stats) stats.innerHTML =
       '<button type="button" class="glass-stat-pill clickable-stat" onclick="filterTraces()" title="All traces"><div class="gsl">Total traces</div><div class="gsv">' + (data.total_traces || 0) + '</div></button>' +
       '<button type="button" class="glass-stat-pill ok clickable-stat" onclick="navigate(\'events\')" title="View events"><div class="gsl">Success rate</div><div class="gsv">' + (data.success_rate != null ? data.success_rate.toFixed(1) + '%' : 'N/A') + '</div></button>' +
@@ -13428,7 +13428,7 @@ async function fetchLogs() {
     const q = document.getElementById('logs-search')?.value || '';
     const params = nsParam() + (level ? '&level=' + level : '') + (q ? '&q=' + encodeURIComponent(q) : '');
     const data = await apiJson('/api/v1/logs' + params);
-    setCapBanner('logs-cap-banner', data.vmrogue_context);
+    setCapBanner('logs-cap-banner', data.veyron_context);
     if (stats) stats.innerHTML =
       '<button type="button" class="glass-stat-pill bad clickable-stat" onclick="setLogsLevelFilter(\'error\')" title="Show error logs"><div class="gsl">Errors</div><div class="gsv">' + (data.error_count || 0) + '</div></button>' +
       '<button type="button" class="glass-stat-pill warn clickable-stat" onclick="setLogsLevelFilter(\'warn\')" title="Show warning logs"><div class="gsl">Warnings</div><div class="gsv">' + (data.warn_count || 0) + '</div></button>' +
@@ -13620,7 +13620,7 @@ async function fetchHeatmap() {
   const summaryEl = document.getElementById('heatmap-summary');
   try {
     const data = await apiJson('/api/v1/heatmap/resources');
-    setCapBanner('heatmap-cap-banner', data.vmrogue_context);
+    setCapBanner('heatmap-cap-banner', data.veyron_context);
     const nodes = data.nodes || [];
     if (summaryEl) {
       if (!nodes.length) {
@@ -13703,7 +13703,7 @@ async function fetchImages() {
   const summary = document.getElementById('images-summary');
   try {
     const data = await apiJson('/api/v1/images/catalog' + nsParam());
-    setCapBanner('images-cap-banner', data.vmrogue_context);
+    setCapBanner('images-cap-banner', data.veyron_context);
     const images = data.images || [];
     if (summary) {
       const ready = images.filter(img => imageStatusClass(img.status) === 'running').length;
@@ -13825,8 +13825,8 @@ async function loadDoctorPanel(ns, name) {
 async function loadVmDriftPanel(ns, name, vm) {
   const el = document.getElementById('drift-panel-' + name);
   if (!el) return;
-  if (vm.vmrogue_managed !== true) {
-    el.innerHTML = detailRow('Status', 'Not operator-managed (no VMRogueVM CR for this KubeVirt VM)');
+  if (vm.veyron_managed !== true) {
+    el.innerHTML = detailRow('Status', 'Not operator-managed (no VeyronVM CR for this KubeVirt VM)');
     return;
   }
   try {
@@ -13841,7 +13841,7 @@ async function loadVmDriftPanel(ns, name, vm) {
   } catch (e) {
     const msg = e.message || String(e);
     if (msg.includes('404') || msg.toLowerCase().includes('not found')) {
-      el.innerHTML = detailRow('Status', 'VMRogueVM not found — not operator-managed');
+      el.innerHTML = detailRow('Status', 'VeyronVM not found — not operator-managed');
     } else {
       el.innerHTML = detailRow('Error', msg);
     }
@@ -13989,16 +13989,16 @@ async function catalogDeployVmrogueVm() {
     memory: { size: '4Gi' },
   };
   try {
-    const j = await apiJson('/api/v1/crds/vmroguevms', {
+    const j = await apiJson('/api/v1/crds/veyronvms', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
     const created = unwrapData(j) || j;
-    toast('VMRogueVM created: ' + (created.name || name || template), 'success');
+    toast('VeyronVM created: ' + (created.name || name || template), 'success');
     fetchCatalog();
     fetchCRDs();
-  } catch (e) { toast('Deploy VMRogueVM: ' + (e.message || String(e)), 'error'); }
+  } catch (e) { toast('Deploy VeyronVM: ' + (e.message || String(e)), 'error'); }
 }
 
 function integrationProbeClass(probe) {
@@ -14013,7 +14013,7 @@ async function fetchIntegrations(opts) {
   try {
     const data = await apiJson('/api/v1/integrations/status', opts);
     if (data == null) return;
-    setCapBanner('integrations-cap-banner', data.vmrogue_context);
+    setCapBanner('integrations-cap-banner', data.veyron_context);
     const items = data.integrations || [];
     const unconfigured = items.filter(i => !i.configured).length;
     lastIntegrationsStatus = { unconfigured, total: items.length };
@@ -14046,9 +14046,9 @@ async function fetchVelero() {
   if (!bb && !rb) return;
   try {
     const data = await apiJson('/api/v1/velero/status');
-    setCapBanner('velero-cap-banner', data.vmrogue_context);
+    setCapBanner('velero-cap-banner', data.veyron_context);
     if (!data.velero_available) {
-      const note = (data.vmrogue_context && data.vmrogue_context.limitations) || 'Install Velero or apply Velero CRDs.';
+      const note = (data.veyron_context && data.veyron_context.limitations) || 'Install Velero or apply Velero CRDs.';
       if (sum) sum.textContent = note;
       if (bb) bb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + esc(note) + '</td></tr>';
       if (rb) rb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">—</td></tr>';
@@ -14154,7 +14154,7 @@ async function fetchIncidents() {
     const sev = document.getElementById('incident-severity-filter')?.value || '';
     const kind = document.getElementById('incident-kind-filter')?.value || '';
     const data = await apiJson('/api/v1/incidents/timeline' + nsParam());
-    setCapBanner('incidents-cap-banner', data.vmrogue_context);
+    setCapBanner('incidents-cap-banner', data.veyron_context);
     if (stats) stats.innerHTML = renderGlassStatPills([
       { label: 'Critical', value: data.critical || 0, cls: (data.critical || 0) ? ' bad' : '', onclick: "navigate('events')", title: 'View events' },
       { label: 'Warning', value: data.warning || 0, cls: (data.warning || 0) ? ' warn' : '', onclick: "navigate('alerts')", title: 'View alerts' },

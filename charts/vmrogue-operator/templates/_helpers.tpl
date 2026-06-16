@@ -1,8 +1,8 @@
-{{- define "vmrogue-operator.name" -}}
+{{- define "veyron-operator.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "vmrogue-operator.fullname" -}}
+{{- define "veyron-operator.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -15,26 +15,26 @@
 {{- end }}
 {{- end }}
 
-{{- define "vmrogue-operator.labels" -}}
-helm.sh/chart: {{ include "vmrogue-operator.name" . }}-{{ .Chart.Version }}
-{{ include "vmrogue-operator.selectorLabels" . }}
+{{- define "veyron-operator.labels" -}}
+helm.sh/chart: {{ include "veyron-operator.name" . }}-{{ .Chart.Version }}
+{{ include "veyron-operator.selectorLabels" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{- define "vmrogue-operator.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "vmrogue-operator.name" . }}
+{{- define "veyron-operator.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "veyron-operator.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{- define "vmrogue-operator.serviceAccountName" -}}
+{{- define "veyron-operator.serviceAccountName" -}}
 {{- if .Values.serviceAccount.name }}
 {{- .Values.serviceAccount.name }}
 {{- else }}
-{{- include "vmrogue-operator.fullname" . }}
+{{- include "veyron-operator.fullname" . }}
 {{- end }}
 {{- end }}
 
-{{- define "vmrogue-operator.imageTag" -}}
+{{- define "veyron-operator.imageTag" -}}
 {{- default .Chart.AppVersion .Values.image.tag }}
 {{- end }}

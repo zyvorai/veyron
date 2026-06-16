@@ -14,11 +14,11 @@ use kube::{
 use serde::Serialize;
 use serde_json::json;
 
-const PREFIX: &str = "vmrogue-net-";
-const MANAGED_BY: &str = "vmrogue";
-const LABEL_MANAGED: &str = "vmrogue.io/managed-by";
-const LABEL_VM_NAME: &str = "vmrogue.io/vm-name";
-const LABEL_EGRESS: &str = "vmrogue.io/vm-egress";
+const PREFIX: &str = "veyron-net-";
+const MANAGED_BY: &str = "veyron";
+const LABEL_MANAGED: &str = "veyron.io/managed-by";
+const LABEL_VM_NAME: &str = "veyron.io/vm-name";
+const LABEL_EGRESS: &str = "veyron.io/vm-egress";
 
 /// Build a stable, DNS-safe policy name (CNP + NP share this name in the same namespace).
 pub fn internet_policy_name(vm_name: &str) -> String {
@@ -134,7 +134,7 @@ pub struct VmInternetStatus {
     pub policy_name: Option<String>,
 }
 
-/// Returns whether a VMRogue-managed internet policy exists and which backend.
+/// Returns whether a Veyron-managed internet policy exists and which backend.
 pub async fn vm_internet_status(
     client: &Client,
     namespace: &str,
@@ -218,7 +218,7 @@ pub async fn ensure_vm_internet_egress(
     })
 }
 
-/// Deletes VMRogue-managed CiliumNetworkPolicy and/or NetworkPolicy with the expected name.
+/// Deletes Veyron-managed CiliumNetworkPolicy and/or NetworkPolicy with the expected name.
 pub async fn remove_vm_internet_egress(
     client: &Client,
     namespace: &str,
@@ -241,8 +241,8 @@ mod tests {
 
     #[test]
     fn policy_name_sanitizes_and_fits() {
-        assert_eq!(internet_policy_name("web-01"), "vmrogue-net-web-01");
-        assert!(internet_policy_name("vm").starts_with("vmrogue-net-"));
+        assert_eq!(internet_policy_name("web-01"), "veyron-net-web-01");
+        assert!(internet_policy_name("vm").starts_with("veyron-net-"));
         let long = "a".repeat(80);
         let n = internet_policy_name(&long);
         assert!(n.len() <= 63);

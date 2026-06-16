@@ -11,7 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/zyvor/terraform-provider-vmrogue/internal/provider"
+	"github.com/zyvor/terraform-provider-veyron/internal/provider"
 )
 
 var version = "0.1.0"
@@ -22,7 +22,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/zyvor/vmrogue",
+		Address: "registry.terraform.io/zyvor/veyron",
 		Debug:   debug,
 	}
 

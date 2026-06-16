@@ -70,7 +70,7 @@ pub mod webhooks;
 pub mod windows;
 pub mod workloads;
 
-/// VMRogue CRD management handlers (vmrogue.io/v1alpha1).
+/// Veyron CRD management handlers (veyron.io/v1alpha1).
 pub mod crds;
 
 /// Build the combined API router from all handler sub-routers.

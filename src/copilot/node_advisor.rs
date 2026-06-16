@@ -6,7 +6,7 @@ use crate::kube::KubeClient;
 /// Node capacity and schedulability pressure.
 pub async fn node_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Node Advisor",
+        "Veyron Node Advisor",
         "node_advisor",
         "Node capacity in cluster",
     );

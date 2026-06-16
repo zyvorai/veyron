@@ -235,8 +235,8 @@ func (in *VMProfileStatus) DeepCopy() *VMProfileStatus {
 	return out
 }
 
-// DeepCopyVMRogueVMSpecExtended copies Windows and cloud-init secret refs (post-codegen fields).
-func DeepCopyVMRogueVMSpecExtended(in *VMRogueVMSpec) VMRogueVMSpec {
+// DeepCopyVeyronVMSpecExtended copies Windows and cloud-init secret refs (post-codegen fields).
+func DeepCopyVeyronVMSpecExtended(in *VeyronVMSpec) VeyronVMSpec {
 	out := *in
 	if in.CloudInit != nil {
 		ci := *in.CloudInit

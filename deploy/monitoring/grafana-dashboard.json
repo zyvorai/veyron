@@ -19,7 +19,7 @@
       "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
       "title": "Total VMs",
       "type": "stat",
-      "targets": [{ "expr": "count(kube_customresource_vmrogue_io_vmroguevms)", "legendFormat": "VMs" }]
+      "targets": [{ "expr": "count(kube_customresource_veyron_io_veyronvms)", "legendFormat": "VMs" }]
     },
     {
       "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
@@ -134,7 +134,7 @@
     }
   ],
   "schemaVersion": 39,
-  "tags": ["vmrogue", "kubevirt", "virtual-machines"],
+  "tags": ["veyron", "kubevirt", "virtual-machines"],
   "templating": {
     "list": [
       {
@@ -149,7 +149,7 @@
     ]
   },
   "time": { "from": "now-1h", "to": "now" },
-  "title": "VMRogue - KubeVirt VM Dashboard",
-  "uid": "vmrogue-kubevirt",
+  "title": "Veyron - KubeVirt VM Dashboard",
+  "uid": "veyron-kubevirt",
   "version": 1
 }

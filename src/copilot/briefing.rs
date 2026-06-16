@@ -52,7 +52,7 @@ pub async fn fleet_briefing(client: &KubeClient, scope: &str) -> Vec<CopilotBrie
             id: "failed-vms".into(),
             severity: "error".into(),
             title: format!("{failed} VM(s) failed or unknown"),
-            detail: "Run VMRogue Doctor on affected workloads.".into(),
+            detail: "Run Veyron Doctor on affected workloads.".into(),
             action: "copilot:unhealthy".into(),
             query: None,
         });

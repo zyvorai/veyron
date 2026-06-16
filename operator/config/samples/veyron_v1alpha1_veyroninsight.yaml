@@ -1,5 +1,5 @@
-apiVersion: vmrogue.io/v1alpha1
-kind: VMRogueInsight
+apiVersion: veyron.io/v1alpha1
+kind: VeyronInsight
 metadata:
   name: high-cpu-prod-db
   namespace: default

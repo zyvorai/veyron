@@ -29,7 +29,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
 
     // Gradient brand header
     let first_vm_name = state.vms.first().map(|v| v.name.as_str()).unwrap_or("N/A");
-    let mut header_spans = gradient::brand().text("VMRogue");
+    let mut header_spans = gradient::brand().text("Veyron");
     header_spans.push(Span::styled(
         " | ",
         Style::default().fg(Color::Rgb(128, 128, 128)),

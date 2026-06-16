@@ -66,7 +66,7 @@ func (c *apiClient) do(ctx context.Context, method, path string, body any, out a
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("vmrogue API %s %s: HTTP %d: %s", method, path, resp.StatusCode, strings.TrimSpace(string(raw)))
+		return fmt.Errorf("veyron API %s %s: HTTP %d: %s", method, path, resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 	if out == nil || len(raw) == 0 {
 		return nil

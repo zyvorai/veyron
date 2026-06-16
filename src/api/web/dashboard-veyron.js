@@ -771,7 +771,7 @@
   };
 
   window.onConsoleHubVncPresetChange = function onConsoleHubVncPresetChange(value) {
-    try { localStorage.setItem('vmrogue_vnc_preset', value); } catch (e) { /* ignore */ }
+    try { localStorage.setItem('veyron_vnc_preset', value); } catch (e) { /* ignore */ }
     if (window.consoleHubVm && window.consoleHubRfb) {
       connectConsoleHubInline(window.consoleHubVm.ns, window.consoleHubVm.name);
     }
@@ -802,7 +802,7 @@
 
     var presetSel = document.getElementById('vmr-console-vnc-preset');
     if (presetSel) {
-      var pv = localStorage.getItem('vmrogue_vnc_preset') || 'balanced';
+      var pv = localStorage.getItem('veyron_vnc_preset') || 'balanced';
       presetSel.value = (pv === 'lan' || pv === 'low' || pv === 'balanced') ? pv : 'balanced';
     }
 
@@ -833,7 +833,7 @@
       balanced: { qualityLevel: 6, compressionLevel: 5, clipViewport: true },
       low: { qualityLevel: 3, compressionLevel: 8, clipViewport: true }
     };
-    var pid = localStorage.getItem('vmrogue_vnc_preset') || 'balanced';
+    var pid = localStorage.getItem('veyron_vnc_preset') || 'balanced';
     var enc = presets[pid] || presets.balanced;
 
     try {
@@ -1286,7 +1286,7 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'nodes\')">Cluster Nodes</button>');
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
     var wlPods = pods.filter(function (p) {
-      return /virt-launcher|cdi-|virt-controller|virt-api|virt-handler|virt-operator|vmrogue/.test((p.name || ''));
+      return /virt-launcher|cdi-|virt-controller|virt-api|virt-handler|virt-operator|veyron/.test((p.name || ''));
     });
     renderVmrMetricsStrip('vmr-workloads-metrics', [
       { label: 'VirtualMachines', value: vms.length },

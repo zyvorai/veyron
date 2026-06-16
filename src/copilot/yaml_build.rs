@@ -67,7 +67,7 @@ pub async fn yaml_preview(
     req: YamlBuildRequest,
 ) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue YAML Builder",
+        "Veyron YAML Builder",
         "yaml_preview",
         "Generated VirtualMachine preview",
     );

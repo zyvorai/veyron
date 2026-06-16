@@ -29,7 +29,7 @@ fn default_time_range() -> String {
 pub async fn list_saved_hunts(client: &kube::Client, namespace: &str) -> Vec<SavedHunt> {
     let api: Api<ConfigMap> = Api::namespaced(client.clone(), namespace);
     let lp = ListParams::default().labels(&format!(
-        "vmrogue.io/type={}",
+        "veyron.io/type={}",
         super::store::SOC_HUNTS_LABEL_VALUE
     ));
     let Ok(list) = api.list(&lp).await else {
