@@ -443,7 +443,7 @@
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, vm.name) + ')') + '>Capsule</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>';
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>';
       } else {
         var isPaused = vm.status === 'Paused';
         actions = '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>' +
@@ -1796,7 +1796,7 @@
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'stop') + ')">Stop</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')">Pause</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'restart') + ')">Restart</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Snapshot</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof migrateVM===\'function\'&&migrateVM(' + jsArgs(ns, vm.name) + ')">Migrate</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')">Clone</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('VM ' + vm.name) + ')">Ask Veyron</button>'
@@ -1931,7 +1931,7 @@
                   : 'Loading…') +
               '</span></div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
-                '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Create Snapshot</button>' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Create Snapshot</button>' +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">View Snapshots</button>' +
               '</div>' +
             '</div></div>',
@@ -2618,7 +2618,7 @@
       var lastSnap = hasSnap ? (vmSnaps[0].age || '—') : '—';
       var restorePoints = hasSnap ? vmSnaps.filter(function(s) { return s.ready; }).length : 0;
       var statusBadge = hasSnap ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
-      var snapFn = 'typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):openAskZeus(' + jsArgs('Snapshot VM ' + vm.name) + ')';
+      var snapFn = 'typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')';
       return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td><td>' + statusBadge + '</td>' +
         '<td>' + esc(lastSnap) + '</td><td>—</td><td>' + (hasSnap ? 'Ad-hoc' : '<span style="color:var(--orange)">⚠ None</span>') + '</td>' +
         '<td>' + restorePoints + '</td>' +
