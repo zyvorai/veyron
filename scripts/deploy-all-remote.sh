@@ -316,9 +316,9 @@ deploy_ssh "${REMOTE}" "
         for cilium_yaml in ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml; do
             if [ -f \"\${cilium_yaml}\" ]; then
                 echo 'Applying Cilium egress policy for ${NAMESPACE} (veyron / nats workloads)...'
-                sed -e 's|__VEYRON_APP_NAMESPACE__|${NAMESPACE}|g' \
-                    -e 's|namespace: vmrogue-system|namespace: ${NAMESPACE}|g' \
-                    -e 's|namespace: veyron-system|namespace: ${NAMESPACE}|g' \
+                sed -e \"s|__VEYRON_APP_NAMESPACE__|${NAMESPACE}|g\" \
+                    -e \"s|namespace: vmrogue-system|namespace: ${NAMESPACE}|g\" \
+                    -e \"s|namespace: veyron-system|namespace: ${NAMESPACE}|g\" \
                     \"\${cilium_yaml}\" | ${K8S_CMD} apply -f -
                 break
             fi
@@ -330,19 +330,23 @@ deploy_ssh "${REMOTE}" "
         echo 'Applying Cilium clusterwide egress for KubeVirt virt-launcher (VM guest internet)...'
         ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml
     fi
-    for f in ${DEPLOY_DIR}/operator/config/crd/bases/*.yaml; do
-        ${K8S_CMD} apply -f \"\$f\"
-    done
+    if [ -d ${DEPLOY_DIR}/operator/config/crd/bases ]; then
+        find ${DEPLOY_DIR}/operator/config/crd/bases -maxdepth 1 -name '*.yaml' -print | sort | while IFS= read -r f; do
+            ${K8S_CMD} apply -f \"\$f\"
+        done
+    else
+        echo \"WARN: missing ${DEPLOY_DIR}/operator/config/crd/bases — skipping CRD apply\"
+    fi
     if [ -d ${DEPLOY_DIR}/operator/config/catalog/templates ]; then
         echo 'Applying VMTemplate catalog manifests...'
-        for f in ${DEPLOY_DIR}/operator/config/catalog/templates/*.yaml; do
-            [ -f \"\$f\" ] && ${K8S_CMD} apply -f \"\$f\" || true
+        find ${DEPLOY_DIR}/operator/config/catalog/templates -maxdepth 1 -name '*.yaml' -print | sort | while IFS= read -r f; do
+            ${K8S_CMD} apply -f \"\$f\"
         done
     fi
     if [ -d ${DEPLOY_DIR}/operator/config/catalog/profiles ]; then
         echo 'Applying VMProfile catalog manifests...'
-        for f in ${DEPLOY_DIR}/operator/config/catalog/profiles/*.yaml; do
-            [ -f \"\$f\" ] && ${K8S_CMD} apply -f \"\$f\" || true
+        find ${DEPLOY_DIR}/operator/config/catalog/profiles -maxdepth 1 -name '*.yaml' -print | sort | while IFS= read -r f; do
+            ${K8S_CMD} apply -f \"\$f\"
         done
     fi
     ${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/rbac/service_account.yaml
@@ -358,9 +362,14 @@ deploy_phase_start "🚀 [5/7] Deploying Veyron API + Operator"
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
 deploy_ssh "${REMOTE}" "
-    ${K8S_CMD} -n ${NAMESPACE} delete deployment veyron-api veyron-operator vmrogue-api vmrogue-operator \
-        --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
-    ${K8S_CMD} -n ${NAMESPACE} delete secret veyron-api-key --ignore-not-found --wait=false 2>/dev/null || true
+    for ns in ${NAMESPACE} vmrogue-system; do
+        ${K8S_CMD} -n \"\${ns}\" delete deployment veyron-api veyron-operator vmrogue-api vmrogue-operator \
+            --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
+        ${K8S_CMD} -n \"\${ns}\" delete svc veyron-api vmrogue-api \
+            --ignore-not-found --wait=true --timeout=60s 2>/dev/null || true
+        ${K8S_CMD} -n \"\${ns}\" delete secret veyron-api-key vmrogue-api-key \
+            --ignore-not-found --wait=false 2>/dev/null || true
+    done
 " 2>&1
 
 # Create API key secret

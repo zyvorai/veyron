@@ -31,10 +31,10 @@ With Helm, set `integrations.*` in [charts/veyron/values.yaml](../charts/veyron/
 | `VEYRON_LOKI_URL` | Logs page (cluster-wide LogQL) | `http://loki.loki:3100` |
 | `VEYRON_JAEGER_QUERY_URL` | Traces | `http://jaeger-query:16686/api/traces` |
 | `VEYRON_TEMPO_QUERY_URL` | Traces (alternative) | `http://tempo:3200` |
-| `VEYRON_GRAFANA_EXTERNAL_URL` | Integrations **Open console** (browser) | `http://212.8.252.194:30080` |
-| `VEYRON_PROMETHEUS_EXTERNAL_URL` | Prometheus UI (browser) | `http://212.8.252.194:30090` |
-| `VEYRON_ALERTMANAGER_EXTERNAL_URL` | Alertmanager UI (browser) | `http://212.8.252.194:30093` |
-| `VEYRON_JAEGER_EXTERNAL_URL` | Jaeger UI (browser) | `http://212.8.252.194:16686` |
+| `VEYRON_GRAFANA_EXTERNAL_URL` | Integrations **Open console** (browser) | `http://YOUR_NODE_IP:30080` |
+| `VEYRON_PROMETHEUS_EXTERNAL_URL` | Prometheus UI (browser) | `http://YOUR_NODE_IP:30090` |
+| `VEYRON_ALERTMANAGER_EXTERNAL_URL` | Alertmanager UI (browser) | `http://YOUR_NODE_IP:30093` |
+| `VEYRON_JAEGER_EXTERNAL_URL` | Jaeger UI (browser) | `http://YOUR_NODE_IP:16686` |
 | `VEYRON_ALERTMANAGER_URL` | Incidents timeline | `http://alertmanager:9093` |
 | `VEYRON_ARGOCD_URL` | GitOps sync (POST) | `https://argocd-server.argocd` |
 | `VEYRON_ARGOCD_TOKEN` | Argo CD API token | (secret) |
@@ -59,7 +59,7 @@ With Helm, set `integrations.*` in [charts/veyron/values.yaml](../charts/veyron/
 | `VEYRON_QRADAR_PORT` | QRadar UDP port | `514` |
 | `VEYRON_SOAR_WEBHOOK_URL` | SOAR on new SOC detections | HTTPS webhook |
 | `VEYRON_PACKETWOLF_URL` | PacketWolf Network Brain health (`GET /api/v1/packetwolf/status`), Cilium page banner | `http://packetwolf-api.cilium-system.svc:9191` |
-| `VEYRON_PACKETWOLF_EXTERNAL_URL` | Integrations **Open PacketWolf UI** (browser) | `http://212.8.252.194:30808` |
+| `VEYRON_PACKETWOLF_EXTERNAL_URL` | Integrations **Open PacketWolf UI** (browser) | `http://YOUR_NODE_IP:30808` |
 | `VEYRON_PACKETWOLF_API_KEY` | PacketWolf API auth (optional when in-cluster trust is enabled) | (secret) |
 
 Responses include `veyron_context` describing the active data source when integrations are used or skipped.

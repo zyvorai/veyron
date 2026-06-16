@@ -5,7 +5,13 @@
 //! PacketWolf Network Brain integration — status probe and optional API proxy base.
 
 #[cfg(feature = "web")]
-use axum::{Json, Router, extract::State, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Query, State},
+    http::StatusCode,
+    response::IntoResponse,
+    routing::get,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
@@ -65,10 +71,70 @@ pub async fn probe_packetwolf_health(base: &str) -> Option<serde_json::Value> {
     }
 }
 
+#[derive(Debug, Deserialize)]
+struct PacketWolfNsQuery {
+    namespace: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct PacketWolfFlowsQuery {
+    namespace: Option<String>,
+    #[serde(default)]
+    limit: Option<u32>,
+}
+
+#[cfg(feature = "web")]
+async fn proxy_packetwolf_json(
+    path: &str,
+    query_pairs: &[(&str, String)],
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    let base = packetwolf_base_url().ok_or((
+        StatusCode::SERVICE_UNAVAILABLE,
+        "PacketWolf not configured — set VEYRON_PACKETWOLF_URL".to_string(),
+    ))?;
+    let url = format!("{}{}", base.trim_end_matches('/'), path);
+    let Ok(client) = crate::api::integrations::http_client().await else {
+        return Err((
+            StatusCode::BAD_GATEWAY,
+            "HTTP client unavailable".to_string(),
+        ));
+    };
+    let mut req = client.get(&url);
+    if !query_pairs.is_empty() {
+        req = req.query(query_pairs);
+    }
+    if let Some(key) = packetwolf_api_key().filter(|k| !k.trim().is_empty()) {
+        req = req.header("X-API-Key", key);
+    }
+    let resp = req.send().await.map_err(|e| {
+        (
+            StatusCode::BAD_GATEWAY,
+            format!("PacketWolf request failed: {e}"),
+        )
+    })?;
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err((
+            StatusCode::BAD_GATEWAY,
+            format!("PacketWolf returned {status}: {}", body.trim().chars().take(200).collect::<String>()),
+        ));
+    }
+    let json: serde_json::Value = resp.json().await.map_err(|e| {
+        (
+            StatusCode::BAD_GATEWAY,
+            format!("Invalid PacketWolf JSON: {e}"),
+        )
+    })?;
+    Ok(Json(json))
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/packetwolf/status", get(get_packetwolf_status))
+        .route("/packetwolf/network/overview", get(get_packetwolf_network_overview))
+        .route("/packetwolf/flows", get(get_packetwolf_flows))
         .with_state(state)
 }
 
@@ -120,4 +186,29 @@ async fn get_packetwolf_status(State(_state): State<SharedState>) -> Json<Packet
         health_mode,
         external_url: external,
     })
+}
+
+#[cfg(feature = "web")]
+async fn get_packetwolf_network_overview(
+    State(_state): State<SharedState>,
+    Query(q): Query<PacketWolfNsQuery>,
+) -> impl IntoResponse {
+    let ns = q
+        .namespace
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "all".to_string());
+    proxy_packetwolf_json("/api/v1/network/overview", &[("namespace", ns)]).await
+}
+
+#[cfg(feature = "web")]
+async fn get_packetwolf_flows(
+    State(_state): State<SharedState>,
+    Query(q): Query<PacketWolfFlowsQuery>,
+) -> impl IntoResponse {
+    let limit = q.limit.unwrap_or(100).min(500).max(1);
+    let mut pairs = vec![("limit", limit.to_string())];
+    if let Some(ns) = q.namespace.filter(|s| !s.trim().is_empty() && s != "all") {
+        pairs.push(("namespace", ns));
+    }
+    proxy_packetwolf_json("/api/v1/flows", &pairs).await
 }

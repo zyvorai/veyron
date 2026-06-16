@@ -201,9 +201,9 @@ deploy_ssh "${USER}@${HOST}" "
       for cilium_yaml in ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml; do
         if [[ -f \"\${cilium_yaml}\" ]]; then
           echo 'Applying Cilium egress bootstrap for ${NS} (veyron / nats workloads)...'
-          sed -e 's|__VEYRON_APP_NAMESPACE__|${NS}|g' \
-              -e 's|namespace: vmrogue-system|namespace: ${NS}|g' \
-              -e 's|namespace: veyron-system|namespace: ${NS}|g' \
+          sed -e \"s|__VEYRON_APP_NAMESPACE__|${NS}|g\" \
+              -e \"s|namespace: vmrogue-system|namespace: ${NS}|g\" \
+              -e \"s|namespace: veyron-system|namespace: ${NS}|g\" \
               \"\${cilium_yaml}\" | ${K} apply -f -
           break
         fi
@@ -426,7 +426,7 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
-            - name: VEYRON_API_KEY
+            - name: VMROGUE_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: veyron-api-key
@@ -437,9 +437,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: VMROGUE_API_NODE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
             - name: VEYRON_API_NODE_PORT
               value: "30151"
+            - name: VMROGUE_API_NODE_PORT
+              value: "30151"
             - name: VEYRON_CLUSTER_DNS
+              value: "10.43.0.10"
+            - name: VMROGUE_CLUSTER_DNS
               value: "10.43.0.10"
           ports:
             - containerPort: 5151
