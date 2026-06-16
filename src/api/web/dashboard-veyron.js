@@ -1528,54 +1528,136 @@
     var el = document.getElementById('vmr-settings-body');
     if (!el) return;
     renderVmrPageHero('vmr-settings-hero', 'Veyron Settings',
-      'Configure identity, access, integrations, appearance, and platform defaults.',
-      '');
-    var sections = [
-      { id: 'general', title: 'General', fields: [
-        { label: 'Default namespace', type: 'text', placeholder: 'default', id: 'set-default-ns' },
-        { label: 'Default storage class', type: 'text', placeholder: 'standard', id: 'set-storage-class' }
-      ]},
-      { id: 'console', title: 'Console Settings', fields: [
-        { label: 'Enable VNC', type: 'checkbox', id: 'set-vnc', checked: true },
-        { label: 'Enable RDP', type: 'checkbox', id: 'set-rdp', checked: true },
-        { label: 'Enable SSH', type: 'checkbox', id: 'set-ssh', checked: true }
-      ]},
-      { id: 'copilot', title: 'Veyron Copilot', fields: [
-        { label: 'Enable Copilot', type: 'checkbox', id: 'set-copilot', checked: true },
-        { label: 'Enable cost estimation', type: 'checkbox', id: 'set-cost', checked: true }
-      ]},
-      { id: 'integrations', title: 'Integrations', fields: [
-        { label: 'PacketWolf URL', type: 'text', placeholder: 'VMROGUE_PACKETWOLF_URL', id: 'set-packetwolf' },
-        { label: 'Prometheus URL', type: 'text', placeholder: 'VMROGUE_PROMETHEUS_URL', id: 'set-prometheus' }
-      ]},
-      { id: 'theme', title: 'Appearance', fields: [
-        { label: 'Theme', type: 'select', options: ['Default (dark)', 'Zinc', 'Steel'], id: 'set-theme' }
-      ]}
-    ];
-    el.innerHTML = sections.map(function (s) {
-      return '<div class="vmr-panel" style="margin-bottom:16px"><div class="vmr-panel-title">' + esc(s.title) + '</div>' +
-        s.fields.map(function (f) {
-          if (f.type === 'checkbox') {
-            return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.84rem">' +
-              '<input type="checkbox" id="' + esc(f.id) + '"' + (f.checked ? ' checked' : '') + '> ' + esc(f.label) + '</label>';
-          }
-          if (f.type === 'select') {
-            return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
-              '<label class="form-label" style="font-size:.78rem">' + esc(f.label) + '</label>' +
-              '<select class="form-select" id="' + esc(f.id) + '">' +
-              (f.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
-              '</select></div>';
-          }
-          return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
-            '<label class="form-label" style="font-size:.78rem">' + esc(f.label) + '</label>' +
-            '<input type="text" class="form-input" id="' + esc(f.id) + '" placeholder="' + esc(f.placeholder || '') + '"></div>';
-        }).join('') +
+      'Platform identity, access control, integrations, and appearance.',
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced</button>');
+
+    function field(f) {
+      var row = '<div style="padding:8px 0;border-bottom:1px solid var(--line)">';
+      if (f.type === 'checkbox') {
+        return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.84rem;cursor:pointer">' +
+          '<input type="checkbox" id="' + esc(f.id) + '"' + (f.checked ? ' checked' : '') + '> ' + esc(f.label) + '</label>';
+      }
+      if (f.type === 'select') {
+        return row + '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
+          '<select class="form-select" id="' + esc(f.id) + '">' +
+          (f.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
+          '</select></div>';
+      }
+      if (f.type === 'badge') {
+        return row + '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
+          '<div style="font-size:.84rem;font-family:monospace;color:' + (f.ok ? 'var(--green)' : 'var(--orange)') + '">' + esc(f.value || '—') + '</div></div>';
+      }
+      if (f.type === 'action') {
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
+          '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="' + (f.onclick || '') + '">' + esc(f.btn || 'Run') + '</button></div>';
+      }
+      return row + '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
+        '<input type="' + (f.password ? 'password' : 'text') + '" class="form-input" id="' + esc(f.id) + '" placeholder="' + esc(f.placeholder || '') + '"></div>';
+    }
+
+    function section(title, fields, extra) {
+      return '<div class="vmr-panel">' +
+        '<div class="vmr-panel-title">' + esc(title) + '</div>' +
+        fields.map(field).join('') +
+        (extra || '') +
         '</div>';
-    }).join('') +
-    '<div style="display:flex;gap:8px">' +
-    '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
-    '</div>';
+    }
+
+    var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'default';
+    var sections = [
+      /* 1 — General */
+      section('General', [
+        { label: 'Default namespace', type: 'text', placeholder: ns, id: 'set-default-ns' },
+        { label: 'Default storage class', type: 'text', placeholder: 'standard', id: 'set-storage-class' },
+        { label: 'Auto-refresh interval (s)', type: 'text', placeholder: '30', id: 'set-refresh-interval' },
+        { label: 'API request timeout (s)', type: 'text', placeholder: '30', id: 'set-api-timeout' }
+      ]),
+      /* 2 — Cluster Context */
+      section('Cluster Context', [
+        { label: 'KUBECONFIG path', type: 'text', placeholder: '~/.kube/config', id: 'set-kubeconfig' },
+        { label: 'KubeVirt namespace', type: 'text', placeholder: 'kubevirt', id: 'set-kubevirt-ns' },
+        { label: 'CDI namespace', type: 'text', placeholder: 'cdi', id: 'set-cdi-ns' },
+        { label: 'Cluster label (display name)', type: 'text', placeholder: 'production', id: 'set-cluster-label' }
+      ]),
+      /* 3 — Namespaces */
+      section('Namespaces', [
+        { label: 'Namespace auto-discovery', type: 'checkbox', id: 'set-ns-autodiscover', checked: true },
+        { label: 'Allow cross-namespace queries', type: 'checkbox', id: 'set-ns-cross', checked: true },
+        { label: 'Allowed namespaces (comma-separated)', type: 'text', placeholder: 'default, kube-system', id: 'set-ns-allow' }
+      ]),
+      /* 4 — API Keys */
+      section('API Keys', [
+        { label: 'API key (masked)', type: 'text', password: true, placeholder: '••••••••', id: 'set-api-key' },
+        { label: 'Multi-key RBAC (admin:k1,write:k2,readonly:k3)', type: 'text', placeholder: 'VMROGUE_API_KEYS', id: 'set-api-keys-rbac' },
+        { type: 'action', label: 'Rotate API key', btn: 'Rotate key', onclick: 'openAskZeus(\'Rotate the VMRogue API key\')' }
+      ]),
+      /* 5 — RBAC */
+      section('RBAC', [
+        { label: 'Read-only mode (disable writes)', type: 'checkbox', id: 'set-readonly' },
+        { label: 'Allow VM delete', type: 'checkbox', id: 'set-allow-delete', checked: true },
+        { label: 'Allow VM migrate', type: 'checkbox', id: 'set-allow-migrate', checked: true },
+        { label: 'Minimum dashboard tier', type: 'select', options: ['Normal', 'Power', 'Advanced'], id: 'set-min-tier' }
+      ]),
+      /* 6 — Console Settings */
+      section('Console Settings', [
+        { label: 'Enable VNC console', type: 'checkbox', id: 'set-vnc', checked: true },
+        { label: 'Enable RDP expose', type: 'checkbox', id: 'set-rdp', checked: true },
+        { label: 'Enable SSH expose', type: 'checkbox', id: 'set-ssh', checked: true },
+        { label: 'Default link quality', type: 'select', options: ['LAN (best quality)', 'Balanced', 'Low bandwidth'], id: 'set-vnc-quality' },
+        { label: 'Auto-reconnect VNC', type: 'checkbox', id: 'set-vnc-reconnect', checked: true }
+      ]),
+      /* 7 — Template Registry */
+      section('Template Registry', [
+        { label: 'Template source', type: 'select', options: ['Built-in (embedded)', 'Cluster CRDs (VMTemplate)', 'Custom registry URL'], id: 'set-tpl-source' },
+        { label: 'Custom registry URL', type: 'text', placeholder: 'https://templates.example.com/catalog.json', id: 'set-tpl-registry-url' },
+        { type: 'action', label: 'Sync template catalog now', btn: 'Sync now', onclick: 'typeof fetchAppStore==="function"&&fetchAppStore();toast("Templates synced","success")' }
+      ]),
+      /* 8 — Backup Settings */
+      section('Backup Settings', [
+        { label: 'Default snapshot retention (days)', type: 'text', placeholder: '7', id: 'set-snap-retention' },
+        { label: 'Default snapshot name prefix', type: 'text', placeholder: 'auto-', id: 'set-snap-prefix' },
+        { label: 'Velero integration URL', type: 'text', placeholder: 'http://velero.velero:8085', id: 'set-velero-url' },
+        { label: 'Enable scheduled snapshots', type: 'checkbox', id: 'set-snap-schedule', checked: true }
+      ]),
+      /* 9 — PacketWolf Integration */
+      section('PacketWolf Integration', [
+        { label: 'PacketWolf URL', type: 'text', placeholder: 'VMROGUE_PACKETWOLF_URL', id: 'set-packetwolf' },
+        { label: 'API key (if required)', type: 'text', password: true, placeholder: '••••••••', id: 'set-packetwolf-key' },
+        { label: 'Trust cluster networks', type: 'checkbox', id: 'set-pw-trust', checked: true },
+        { type: 'action', label: 'Test PacketWolf connection', btn: 'Test connection', onclick: 'fetchNetworkIntelBanner&&fetchNetworkIntelBanner().then(function(){toast("PacketWolf test complete","success")})' }
+      ]),
+      /* 10 — Prometheus Integration */
+      section('Prometheus Integration', [
+        { label: 'Prometheus URL', type: 'text', placeholder: 'VMROGUE_PROMETHEUS_URL', id: 'set-prometheus' },
+        { label: 'Query timeout (s)', type: 'text', placeholder: '10', id: 'set-prom-timeout' },
+        { label: 'Default time range', type: 'select', options: ['Last 1 hour', 'Last 6 hours', 'Last 24 hours', 'Last 7 days'], id: 'set-prom-range' },
+        { type: 'action', label: 'Test Prometheus connection', btn: 'Test connection', onclick: 'toast("Prometheus: not configured","info")' }
+      ]),
+      /* 11 — Appearance */
+      section('Appearance', [
+        { label: 'Theme', type: 'select', options: ['Veyron Dark (default)', 'Carbon Black', 'Midnight Blue', 'Steel Grey'], id: 'set-theme' },
+        { label: 'Sidebar accent color', type: 'select', options: ['Electric Blue (#3f7cff)', 'Cyan (#27d7ff)', 'Violet (#9b7cff)', 'Green (#32e0b0)'], id: 'set-accent' },
+        { label: 'Font size', type: 'select', options: ['Small (13px)', 'Default (14px)', 'Large (16px)'], id: 'set-font-size' },
+        { label: 'Sidebar density', type: 'select', options: ['Comfortable', 'Compact', 'Ultra-compact'], id: 'set-sidebar-density' }
+      ]),
+      /* 12 — Audit */
+      section('Audit', [
+        { label: 'Show audit log in dashboard', type: 'checkbox', id: 'set-audit-show', checked: false },
+        { label: 'Log API key usage', type: 'checkbox', id: 'set-audit-api', checked: true },
+        { label: 'Log VM lifecycle events', type: 'checkbox', id: 'set-audit-vm', checked: true },
+        { type: 'action', label: 'Export audit log (JSON)', btn: 'Export', onclick: 'toast("Audit export: check /api/v1/alerts","info")' }
+      ])
+    ];
+
+    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">' +
+      sections.join('') +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
+      '</div>';
   };
 
   window.openFoundryPreview = function openFoundryPreview(templateId) {
