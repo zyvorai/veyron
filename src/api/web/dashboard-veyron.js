@@ -1240,7 +1240,17 @@
         if (meta) updateMacPageToolbar(page, meta);
       }
       if (page === 'dashboard') renderMissionControlVmr();
-      if (page === 'vms' && typeof renderFleetCommandVmr === 'function') renderFleetCommandVmr();
+      if (page === 'vms' && typeof renderFleetCommandVmr === 'function') {
+        renderFleetCommandVmr();
+        if (window._vmrGoToNodeVms) {
+          var _nodeFilter = window._vmrGoToNodeVms;
+          window._vmrGoToNodeVms = null;
+          setTimeout(function() {
+            var s = document.getElementById('vm-search');
+            if (s) { s.value = _nodeFilter; if (typeof filterVMs === 'function') filterVMs(); }
+          }, 100);
+        }
+      }
       if (page === 'console-hub') renderConsoleHubVmr();
       if (page === 'stack-health') fetchStackHealth();
       if (page === 'events' && typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
@@ -1316,7 +1326,7 @@
           (isUnscheduled ? '' :
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('Drain node ' + nodeName + ' safely') + ')">Drain</button>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('kubectl cordon ' + nodeName) + ')">Cordon</button>') +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){if(typeof filterByNode===\'function\')filterByNode(' + jsArgs(nodeName) + ')},200)">View VMs</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrGoToNodeVms=' + jsArgs(nodeName) + ';navigate("vms")') + '>View VMs</button>' +
         '</td></tr>';
     }).join('');
     placementEl.innerHTML = '<div class="vmr-panel" style="margin-bottom:16px">' +
