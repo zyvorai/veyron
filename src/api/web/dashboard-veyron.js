@@ -1325,8 +1325,8 @@
         (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false && sh.kubevirt_control_plane_ok !== false) : true; return '<td><span style="color:' + (kvOk ? 'var(--green)' : 'var(--orange)') + ';font-size:.82rem">' + (kvOk ? '◉ virt-handler Ready' : '⚠ virt-handler Unknown') + '</span></td>'; })() +
         '<td>' +
           (isUnscheduled ? '' :
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('Drain node ' + nodeName + ' safely') + ')">Drain</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('kubectl cordon ' + nodeName) + ')">Cordon</button>') +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" ' + onHandler('openAskZeus(' + jsArgs('Drain node ' + nodeName + ' safely') + ')') + '>Drain</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" ' + onHandler('openAskZeus(' + jsArgs('kubectl cordon ' + nodeName) + ')') + '>Cordon</button>') +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrGoToNodeVms=' + jsArgs(nodeName) + ';navigate("vms")') + '>View VMs</button>' +
         '</td></tr>';
     }).join('');
