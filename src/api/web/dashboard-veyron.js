@@ -478,7 +478,7 @@
         '<td>' + osIcon + '</td>' +
         '<td>' + esc(vm.cpu || '—') + '</td>' +
         '<td>' + esc(vm.memory || '—') + '</td>' +
-        '<td>—</td>' +
+        '<td style="font-size:.8rem;color:var(--muted)">' + esc(vm.disk || '—') + '</td>' +
         (function(){
           var _s = (typeof window.lastSnapshots !== 'undefined' && window.lastSnapshots)
             ? window.lastSnapshots.filter(function(s){ return s.vm_name === vm.name && (s.namespace||'default') === ns; }).length
