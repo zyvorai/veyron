@@ -2071,7 +2071,7 @@
       var statusFilter = document.getElementById('vm-filter-status').value;
       var driftFilter = (document.getElementById('vm-filter-drift') || {}).value || '';
       var filtered = vmData.filter(function (v) {
-        if (q && !v.name.toLowerCase().includes(q) && !(v.namespace || '').toLowerCase().includes(q)) return false;
+        if (q && !v.name.toLowerCase().includes(q) && !(v.namespace || '').toLowerCase().includes(q) && !(v.node || '').toLowerCase().includes(q)) return false;
         if (statusFilter === '__issues__') {
           if (v.status !== 'Failed' && v.status !== 'Error') return false;
         } else if (statusFilter && v.status !== statusFilter) return false;
