@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -24,7 +24,7 @@ func VMRogueVMToKubeVirt(vm *vmroguev1alpha1.VMRogueVM) (*unstructured.Unstructu
 	labels := map[string]interface{}{
 		"kubevirt.io/vm":          vm.Name,
 		"app.kubernetes.io/name":  vm.Name,
-		"vmrogue.io/managed-by":   "vmrogue-operator",
+		"vmrogue.io/managed-by":   "veyron-operator",
 		"vmrogue.io/vmrogue-vm":   vm.Name,
 	}
 	for k, v := range spec.Labels {

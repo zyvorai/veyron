@@ -288,7 +288,7 @@ impl LogAnalyzer {
         }
 
         let mut result: Vec<LogPattern> = patterns.into_values().collect();
-        result.sort_by(|a, b| b.count.cmp(&a.count));
+        result.sort_by_key(|b| std::cmp::Reverse(b.count));
         result
     }
 

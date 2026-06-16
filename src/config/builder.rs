@@ -9,7 +9,7 @@ use std::collections::HashMap;
 ///
 /// # Example
 /// ```
-/// use vmrogue::VMConfigBuilder;
+/// use veyron::VMConfigBuilder;
 ///
 /// let config = VMConfigBuilder::new("my-vm")
 ///     .namespace("production")

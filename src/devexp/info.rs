@@ -91,7 +91,7 @@ impl ConfigInfo {
 
         Self {
             config_dir: format!("{}/.config/vmrogue", home),
-            templates_dir: format!("{}/.config/vmrogue/templates", home),
+            templates_dir: format!("{}/.config/veyron/templates", home),
             cache_dir: format!("{}/.cache/vmrogue", home),
             settings: HashMap::new(),
         }

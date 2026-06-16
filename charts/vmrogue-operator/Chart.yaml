@@ -1,5 +1,5 @@
 apiVersion: v2
-name: vmrogue-operator
+name: veyron-operator
 description: VMRogue Kubernetes Operator for KubeVirt VM lifecycle management
 type: application
 version: 0.2.0
@@ -8,9 +8,9 @@ keywords:
   - kubevirt
   - operator
   - virtual-machine
-home: https://github.com/ssahani/VMRogue
+home: https://github.com/ssahani/Veyron
 sources:
-  - https://github.com/ssahani/VMRogue
+  - https://github.com/ssahani/Veyron
 maintainers:
   - name: ZyvorAI Labs Private Limited
     url: https://github.com/ssahani

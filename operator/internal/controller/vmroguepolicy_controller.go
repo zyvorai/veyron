@@ -21,8 +21,8 @@ import (
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
-	"github.com/ssahani/vmrogue/operator/internal/eventbus"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	"github.com/ssahani/Veyron/operator/internal/eventbus"
 )
 
 // VMRoguePolicyReconciler reconciles a VMRoguePolicy object.

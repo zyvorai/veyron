@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"

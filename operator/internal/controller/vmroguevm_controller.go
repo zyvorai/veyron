@@ -25,12 +25,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
-	"github.com/ssahani/vmrogue/operator/internal/catalog"
-	"github.com/ssahani/vmrogue/operator/internal/converter"
-	"github.com/ssahani/vmrogue/operator/internal/eventbus"
-	"github.com/ssahani/vmrogue/operator/internal/network"
-	vmmetrics "github.com/ssahani/vmrogue/operator/internal/metrics"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	"github.com/ssahani/Veyron/operator/internal/catalog"
+	"github.com/ssahani/Veyron/operator/internal/converter"
+	"github.com/ssahani/Veyron/operator/internal/eventbus"
+	"github.com/ssahani/Veyron/operator/internal/network"
+	vmmetrics "github.com/ssahani/Veyron/operator/internal/metrics"
 )
 
 const (
@@ -302,7 +302,7 @@ func (r *VMRogueVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *v
 		}
 		// Distinct from API-created Secrets (`vmrogue.io/managed-by=vmrogue`) so the HTTP API’s
 		// VM delete path never removes operator-owned objects by mistake.
-		sec.Labels["vmrogue.io/managed-by"] = "vmrogue-operator"
+		sec.Labels["vmrogue.io/managed-by"] = "veyron-operator"
 		sec.Labels["vmrogue.io/configdrive-userdata"] = "true"
 		return controllerutil.SetControllerReference(vm, sec, r.Scheme)
 	})
@@ -426,7 +426,7 @@ func (r *VMRogueVMReconciler) ensureDriftInsight(ctx context.Context, vm *vmrogu
 			Labels: map[string]string{
 				"vmrogue.io/vm":    vm.Name,
 				"vmrogue.io/type":  "drift",
-				"vmrogue.io/managed-by": "vmrogue-operator",
+				"vmrogue.io/managed-by": "veyron-operator",
 			},
 		},
 		Spec: vmroguev1alpha1.VMRogueInsightSpec{

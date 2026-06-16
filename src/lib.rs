@@ -2,18 +2,18 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! # VMRogue
+//! # Veyron
 //!
 //! Craft VMs for KubeVirt with Rust power.
 //!
-//! VMRogue provides a CLI and library for managing KubeVirt virtual machines
+//! Veyron provides a CLI and library for managing KubeVirt virtual machines
 //! on Kubernetes clusters. It handles VM configuration, template management,
 //! snapshots, backups, monitoring, and more.
 //!
 //! ## Quick Start (Library Usage)
 //!
 //! ```
-//! use vmrogue::{VMConfigBuilder, vm_config_to_kubevirt, to_yaml};
+//! use veyron::{VMConfigBuilder, vm_config_to_kubevirt, to_yaml};
 //!
 //! // Build a VM configuration
 //! let config = VMConfigBuilder::new("web-server")
@@ -147,7 +147,7 @@ pub async fn run(mut cli: Cli) -> Result<()> {
     if let Some(ref kc) = cli.kubeconfig {
         crate::kube::set_kubeconfig_path(kc.clone());
     }
-    // VEYRON_NAMESPACE wins when CLI still has clap default and VMROGUE_NAMESPACE unset.
+    // VEYRON_NAMESPACE wins when CLI still has clap default and VEYRON_NAMESPACE unset.
     if cli.namespace == "default" {
         if let Ok(ns) = std::env::var("VEYRON_NAMESPACE") {
             let ns = ns.trim().to_string();

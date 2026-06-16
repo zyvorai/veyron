@@ -56,7 +56,7 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
 
     let agent_up = vmi_json
         .as_ref()
-        .is_some_and(|j| vmi_guest_agent_connected(j));
+        .is_some_and(vmi_guest_agent_connected);
     if agent_up {
         r.evidence
             .push("Guest runtime: connected (AgentConnected=True)".into());
@@ -138,7 +138,7 @@ pub fn enrich_doctor_with_guest(r: &mut CopilotResponse, vmi: &VirtualMachineIns
     let vmi_json = to_value(vmi).ok();
     let agent_up = vmi_json
         .as_ref()
-        .is_some_and(|j| vmi_guest_agent_connected(j));
+        .is_some_and(vmi_guest_agent_connected);
     if !agent_up {
         r.recommendations.push(
             "Guest runtime not connected — Linux VMs use GuestKit; Windows uses QEMU Guest Agent."

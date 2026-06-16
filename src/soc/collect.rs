@@ -25,7 +25,7 @@ pub async fn collect_from_cluster(client: &KubeClient, scope: &str) -> Vec<Secur
         let mut se = SecurityEvent::new("audit", severity, "kubernetes", &message)
             .with_namespace(&ns)
             .with_action(&reason)
-            .with_target(&format!("{resource_type}/{resource_name}"))
+            .with_target(format!("{resource_type}/{resource_name}"))
             .with_outcome(ev.type_.as_deref().unwrap_or("Unknown"));
         if resource_type == "VirtualMachine" || resource_type == "VirtualMachineInstance" {
             se = se.with_vm(&resource_name);
@@ -57,7 +57,7 @@ async fn collect_finding_events(client: &KubeClient, scope: &str) -> Vec<Securit
                     "finding",
                     "critical",
                     "vmrogue",
-                    &format!("Host network on {ns}/{name}"),
+                    format!("Host network on {ns}/{name}"),
                 )
                 .with_namespace(ns)
                 .with_vm(name)
@@ -83,7 +83,7 @@ pub fn api_audit_event(
         "audit",
         severity,
         "vmrogue",
-        &format!("{method} {path} — {outcome}"),
+        format!("{method} {path} — {outcome}"),
     )
     .with_actor(actor)
     .with_action(method)

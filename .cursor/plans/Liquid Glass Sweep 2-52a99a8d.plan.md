@@ -21,7 +21,7 @@ todos:
     status: pending
 isProject: false
 ---
-# VMRogue Liquid Glass Big Sweep — Phase 2
+# Veyron Liquid Glass Big Sweep — Phase 2
 
 ## Git status
 

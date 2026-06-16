@@ -198,7 +198,7 @@ impl VmrogueFeatureContext {
             data_source: "prometheus_vm_growth".to_string(),
             scope: "VM count trend from Prometheus kubevirt_vmi_* series over 7d when configured."
                 .to_string(),
-            limitations: "Requires VMROGUE_PROMETHEUS_URL. Falls back to cluster density heuristics when Prometheus is unavailable."
+            limitations: "Requires VEYRON_PROMETHEUS_URL. Falls back to cluster density heuristics when Prometheus is unavailable."
                 .to_string(),
         }
     }
@@ -208,7 +208,7 @@ impl VmrogueFeatureContext {
             data_source: "prometheus_histogram_percentiles".to_string(),
             scope: "CPU/memory p50/p95/p99 from Prometheus range queries over the last hour."
                 .to_string(),
-            limitations: "Requires VMROGUE_PROMETHEUS_URL and kubevirt_vmi_* metrics. Falls back to single-sample estimates when unavailable."
+            limitations: "Requires VEYRON_PROMETHEUS_URL and kubevirt_vmi_* metrics. Falls back to single-sample estimates when unavailable."
                 .to_string(),
         }
     }
@@ -218,7 +218,7 @@ impl VmrogueFeatureContext {
             data_source: "kubernetes_scheduled_events".to_string(),
             scope: "Pending/scheduled pod counts, preemption events, and latency from Scheduled Events."
                 .to_string(),
-            limitations: "Latency is averaged from Scheduled event timestamps, not scheduler histogram metrics. Set VMROGUE_PROMETHEUS_URL for scheduler_scheduling_duration_seconds when available."
+            limitations: "Latency is averaged from Scheduled event timestamps, not scheduler histogram metrics. Set VEYRON_PROMETHEUS_URL for scheduler_scheduling_duration_seconds when available."
                 .to_string(),
         }
     }
@@ -229,7 +229,7 @@ impl VmrogueFeatureContext {
             scope: "Scheduling latency from Prometheus scheduler metrics plus pod phase counts."
                 .to_string(),
             limitations:
-                "Requires VMROGUE_PROMETHEUS_URL and scheduler metrics exposition on the cluster."
+                "Requires VEYRON_PROMETHEUS_URL and scheduler metrics exposition on the cluster."
                     .to_string(),
         }
     }
@@ -259,7 +259,7 @@ impl VmrogueFeatureContext {
             data_source: "service_discovery_plus_events".to_string(),
             scope: "Prometheus/Grafana/Alertmanager detection via Service names; alert count from Warning Events."
                 .to_string(),
-            limitations: "Stack detection is heuristic (service name substring). VMROGUE_PROMETHEUS_URL env confirms Prometheus URL even when Service name differs."
+            limitations: "Stack detection is heuristic (service name substring). VEYRON_PROMETHEUS_URL env confirms Prometheus URL even when Service name differs."
                 .to_string(),
         }
     }

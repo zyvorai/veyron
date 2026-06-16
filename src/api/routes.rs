@@ -182,7 +182,7 @@ impl Default for Router {
     }
 }
 
-/// Build the default VMRogue API router
+/// Build the default Veyron API router
 pub fn build_default_router() -> Router {
     let mut router = Router::new();
     router.add_global_middleware("request-id");

@@ -1,6 +1,6 @@
-# VMRogue (Veyron)
+# Veyron (Veyron)
 
-[![CI](https://github.com/ssahani/VMRogue/workflows/CI/badge.svg)](https://github.com/ssahani/VMRogue/actions)
+[![CI](https://github.com/ssahani/Veyron/workflows/CI/badge.svg)](https://github.com/ssahani/Veyron/actions)
 [![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org/)
 
 > **Veyron** by Zyvor — Kubernetes-native VM command center. Rogue VM management for KubeVirt — forged in Rust.
@@ -9,7 +9,7 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 
 ## Features
 
-### Innovative Features (Unique to VMRogue)
+### Innovative Features (Unique to Veyron)
 - **VM Snapshots & Backup** - Production-grade snapshot management via real VirtualMachineSnapshot CRDs
 - **8 VM Resource Profiles** - Pre-configured profiles (dev, prod, database, web, etc.)
 - **Multi-VM Blueprints** - Deploy complete stacks (LAMP, Kubernetes, 3-tier, CI/CD)
@@ -43,7 +43,7 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **Real Pod Logs** - Logs API fetches real output from virt-launcher pods
 - **Storage & Disk Management** - List real StorageClasses, PVCs, and KubeVirt-labeled disks; expand disks via PVC patch
 - **Migration Management** - List, create, and cancel VirtualMachineInstanceMigration CRDs
-- **Helm Charts** - Production-ready Helm charts for VMRogue API and VMRogue Operator
+- **Helm Charts** - Production-ready Helm charts for Veyron API and VMRogue Operator
 - **Kustomize Overlays** - Dev and prod environment overlays
 - **Prometheus Integration** - ServiceMonitor, 6 alert rules, and Grafana dashboard
 - **VMRogue Operator** - 8 action types, CEL policy expressions, Prometheus metrics
@@ -55,7 +55,7 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 VMRogue is two cooperating deliverables:
 
 1. **Rust `vmrogue`** — CLI, library, and (by default) HTTPS **API + embedded dashboard**. Uses `kube-rs` against the cluster API; can create KubeVirt VMs directly from `VMConfig` / YAML.
-2. **Go VMRogue Operator (`operator/`)** — **In-cluster** controller-runtime **operator** for **GitOps-style CRs** (`VMRogueVM`, blueprints, policies, insights, actions under `vmrogue.io/v1alpha1`). The main loop turns each **`VMRogueVM`** into a **KubeVirt `VirtualMachine`**, keeps it updated, and writes CR **status** (see `operator/internal/controller/vmroguevm_controller.go`). Deploy it with **`charts/vmrogue-operator`** or the scripts that build both API and operator images (`./scripts/deploy-remote.sh` / `deploy-all-remote.sh`).
+2. **Go VMRogue Operator (`operator/`)** — **In-cluster** controller-runtime **operator** for **GitOps-style CRs** (`VMRogueVM`, blueprints, policies, insights, actions under `vmrogue.io/v1alpha1`). The main loop turns each **`VMRogueVM`** into a **KubeVirt `VirtualMachine`**, keeps it updated, and writes CR **status** (see `operator/internal/controller/vmroguevm_controller.go`). Deploy it with **`charts/veyron-operator`** or the scripts that build both API and operator images (`./scripts/deploy-remote.sh` / `deploy-all-remote.sh`).
 
 For day-to-day imperative use you only need the Rust binary; for **declarative CR-driven** VMs, install the operator and apply `VMRogueVM` manifests (e.g. from `vmrogue gitops-export`).
 
@@ -68,7 +68,7 @@ cargo install --path .
 Or build from source:
 
 ```bash
-git clone https://github.com/ssahani/VMRogue.git
+git clone https://github.com/ssahani/Veyron.git
 cd VMRogue
 cargo build --release
 ```
@@ -81,10 +81,10 @@ VMRogue includes a built-in web dashboard with a dark industrial theme.
 
 ```bash
 # Set API keys with RBAC roles (admin/write/readonly)
-export VMROGUE_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
+export VEYRON_API_KEYS="admin:supersecret,write:devkey,readonly:viewkey"
 
 # Or use a single API key (legacy)
-export VMROGUE_API_KEY="your-secret-key"
+export VEYRON_API_KEY="your-secret-key"
 
 # Start the server
 vmrogue api-serve --port 5151 --host 0.0.0.0
@@ -93,8 +93,8 @@ vmrogue api-serve --port 5151 --host 0.0.0.0
 Optional **snapshot schedule** tuning (built-in cron snapshots use a Kubernetes Lease so only one replica runs the worker when the API is scaled horizontally):
 
 ```bash
-export VMROGUE_SCHEDULER_LEASE_NAMESPACE=vmrogue-system   # Lease object namespace (defaults to VM default ns)
-export VMROGUE_SCHEDULER_LEASE_DISABLED=1                   # Skip lease — use only single-replica / dev
+export VEYRON_SCHEDULER_LEASE_NAMESPACE=veyron-system   # Lease object namespace (defaults to VM default ns)
+export VEYRON_SCHEDULER_LEASE_DISABLED=1                   # Skip lease — use only single-replica / dev
 ```
 
 Open `http://localhost:5151/dashboard` in your browser. The dashboard will prompt for the API key on first load (with a "Remember me" option). JWT Bearer tokens with HMAC-SHA256 signature verification are also supported.
@@ -147,9 +147,9 @@ The K8s deployment includes RBAC (ClusterRole for VMs, nodes, pods, VNC subresou
 ./scripts/deploy-all-remote.sh HOST USER --quick
 
 # Deploy tuning (default: incremental layer cache, parallel image builds)
-# VMROGUE_DEPLOY_NO_CACHE=1          # full rebuild (slow)
-# VMROGUE_DEPLOY_DIAGNOSTICS=1       # cluster-wide pod list before rsync
-# VMROGUE_SKIP_GUESTKIT_PREP=1       # skip local guestkit rsync
+# VEYRON_DEPLOY_NO_CACHE=1          # full rebuild (slow)
+# VEYRON_DEPLOY_DIAGNOSTICS=1       # cluster-wide pod list before rsync
+# VEYRON_SKIP_GUESTKIT_PREP=1       # skip local guestkit rsync
 
 # API-only deployment helper
 ./scripts/deploy-k8s-remote.sh HOST USER
@@ -171,28 +171,28 @@ See **[docs/PACKAGE_BINARY_REMOTE.md](docs/PACKAGE_BINARY_REMOTE.md)** for clien
 
 `deploy-all-remote.sh` now runs with detailed, timestamped logs and phase timings. During image builds it streams full remote output (including Cargo `Compiling ...` lines), so long Rust builds do not look stuck.
 
-By default, full preflight diagnostics are **skipped** (faster on large clusters). Set `VMROGUE_DEPLOY_DIAGNOSTICS=1` to print remote OS/kernel, CPU, memory, disk, cluster flavor, and a cluster-wide pod list before rsync.
+By default, full preflight diagnostics are **skipped** (faster on large clusters). Set `VEYRON_DEPLOY_DIAGNOSTICS=1` to print remote OS/kernel, CPU, memory, disk, cluster flavor, and a cluster-wide pod list before rsync.
 
 Runtime import handling auto-detects `k3s`, `rke2`, `microk8s`, `kind`, `minikube`, `containerd`, and `docker-desktop` paths.
 
 ### Deploy with Helm
 
 ```bash
-# Install VMRogue API server
+# Install Veyron API server
 helm install vmrogue ./charts/vmrogue \
   --set apiKeys="admin:supersecret" \
-  --namespace vmrogue-system --create-namespace
+  --namespace veyron-system --create-namespace
 
 # Install VMRogue Operator
-helm install vmrogue-operator ./charts/vmrogue-operator \
-  --namespace vmrogue-system
+helm install veyron-operator ./charts/veyron-operator \
+  --namespace veyron-system
 
 # Optional: bundled Prometheus + Grafana + Alertmanager (kube-prometheus-stack)
-./scripts/install-vmrogue-monitoring.sh monitoring
-# Uses chart charts/vmrogue-monitoring; set GRAFANA_ADMIN_PASSWORD for a non-default Grafana admin password.
+./scripts/install-veyron-monitoring.sh monitoring
+# Uses chart charts/veyron-monitoring; set GRAFANA_ADMIN_PASSWORD for a non-default Grafana admin password.
 ```
 
-The VMRogue and operator Helm charts include RBAC, TLS, and NetworkPolicy. For clusters **without** an existing Prometheus stack, `charts/vmrogue-monitoring` installs kube-prometheus-stack plus VMRogue ServiceMonitors, PrometheusRules, and a Grafana dashboard. The standalone manifests under `deploy/monitoring/` remain useful when you already run kube-prometheus-stack and only need VMRogue scrape rules and the dashboard ConfigMap.
+The VMRogue and operator Helm charts include RBAC, TLS, and NetworkPolicy. For clusters **without** an existing Prometheus stack, `charts/veyron-monitoring` installs kube-prometheus-stack plus VMRogue ServiceMonitors, PrometheusRules, and a Grafana dashboard. The standalone manifests under `deploy/monitoring/` remain useful when you already run kube-prometheus-stack and only need VMRogue scrape rules and the dashboard ConfigMap.
 
 ### Deploy with Kustomize
 
@@ -463,7 +463,7 @@ vmrogue gitops-export my-vm --output gitops/my-vm.yaml
 ```bash
 # Start multiple VMs at once via the API
 curl -X POST http://localhost:5151/api/v1/vms/batch \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "X-API-Key: $VEYRON_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"action": "start", "vms": ["vm-1", "vm-2", "vm-3"]}'
 
@@ -475,13 +475,13 @@ curl -X POST http://localhost:5151/api/v1/vms/batch \
 ```bash
 # Set a cost budget for a namespace
 curl -X POST http://localhost:5151/api/v1/costs/budgets \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "X-API-Key: $VEYRON_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"namespace": "production", "monthly_budget": 500.0}'
 
 # View cost budgets
 curl http://localhost:5151/api/v1/costs/budgets \
-  -H "X-API-Key: $VMROGUE_API_KEY"
+  -H "X-API-Key: $VEYRON_API_KEY"
 ```
 
 ## VM Resource Profiles
@@ -613,12 +613,12 @@ vmrogue config-show
 
 **Config file locations** (higher priority wins):
 1. CLI arguments (always win)
-2. `~/.config/vmrogue/config.toml` (user)
-3. `/etc/vmrogue/config.toml` (system-wide)
+2. `~/.config/veyron/config.toml` (user)
+3. `/etc/veyron/config.toml` (system-wide)
 4. Built-in defaults
 
 ```toml
-# ~/.config/vmrogue/config.toml
+# ~/.config/veyron/config.toml
 namespace = "production"
 kubeconfig = "/home/user/.kube/production"
 
@@ -647,8 +647,8 @@ interactive = false
 Use vmrogue as a library in your Rust projects:
 
 ```rust
-use vmrogue::config::VMConfigBuilder;
-use vmrogue::output::{to_yaml, OutputFormat};
+use veyron::config::VMConfigBuilder;
+use veyron::output::{to_yaml, OutputFormat};
 
 fn main() -> anyhow::Result<()> {
     let config = VMConfigBuilder::new("my-vm")
@@ -683,11 +683,11 @@ fn main() -> anyhow::Result<()> {
 
 **Policy & Automation** - VMRoguePolicy CRD enforcement on VM creation (blocks Deny violations). VMRogue Operator with CEL policy expressions, 8 action types (CreateSnapshot, DeleteVM, Migrate, SendNotification, and 4 more), and Prometheus metrics. Automation rules with real K8s API calls.
 
-**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization and local encryption. Network topology from real VMI interfaces (IP, MAC, interface name). JWT Bearer token auth with HMAC-SHA256 signature verification. Multi-key RBAC (admin/write/readonly) via `VMROGUE_API_KEYS`. Persistent audit trail.
+**Networking & Security** - IPAM, BGP, DNS, QoS, Cilium, network policies, RBAC, security scanning, compliance (PCI-DSS, HIPAA, SOC2, GDPR, NIST), secret management with zeroization and local encryption. Network topology from real VMI interfaces (IP, MAC, interface name). JWT Bearer token auth with HMAC-SHA256 signature verification. Multi-key RBAC (admin/write/readonly) via `VEYRON_API_KEYS`. Persistent audit trail.
 
 **API & Dashboard** - REST API with 49 endpoints, OpenAPI spec, JWT auth, multi-key RBAC, rate limiting, webhooks. Web dashboard with 15 pages: Dashboard, VMs, Snapshots, Nodes, Pods, Events, Cost, VNC Console, Security, Monitoring, Workloads, and more. VNC console uses direct K8s API WebSocket (no virtctl timeout). Batch VM operations, WebSocket metrics streaming, cost budget management.
 
-**Infrastructure** - Helm charts for vmrogue and vmrogue-operator. Kustomize overlays for dev/prod. Prometheus ServiceMonitor with 6 alert rules. Grafana dashboard with 10 panels. Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. Docker image with Dockerfile.deploy for quick builds. CI integration tests with Kind + KubeVirt.
+**Infrastructure** - Helm charts for vmrogue and veyron-operator. Kustomize overlays for dev/prod. Prometheus ServiceMonitor with 6 alert rules. Grafana dashboard with 10 panels. Kubeconfig caching, crash-safe atomic persistence, SSRF-safe webhook delivery. Kubernetes deployment with RBAC and NodePort. Docker image with Dockerfile.deploy for quick builds. CI integration tests with Kind + KubeVirt.
 
 ### Product boundary
 
@@ -696,8 +696,8 @@ VMRogue operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cr
 ### Future Enhancements
 
 - [x] Profile auto-selection based on template — `vmrogue create --template` via `ProfileManager::suggest_profile_for_template`
-- [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VMROGUE_PROMETHEUS_URL` is set; see [docs/OPTIONAL_INTEGRATIONS.md](docs/OPTIONAL_INTEGRATIONS.md))*
-- [x] Pluggable template registry — `~/.config/vmrogue/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`
+- [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VEYRON_PROMETHEUS_URL` is set; see [docs/OPTIONAL_INTEGRATIONS.md](docs/OPTIONAL_INTEGRATIONS.md))*
+- [x] Pluggable template registry — `~/.config/veyron/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`
 - [x] Terraform provider — see [`terraform-provider-vmrogue/`](terraform-provider-vmrogue/)
 - [x] SR-IOV networking — VM config, converter, and CLI support
 - [x] OVN networking — `NetworkType::Ovn` + `add_ovn_network()` builder
@@ -799,7 +799,7 @@ VMRogue follows secure-by-default principles:
 
 - **No `unsafe` code** - The entire codebase is safe Rust
 - **JWT Bearer token auth** - HMAC-SHA256 signature verification for API authentication
-- **Multi-key RBAC** - Admin, write, and readonly roles via `VMROGUE_API_KEYS` environment variable
+- **Multi-key RBAC** - Admin, write, and readonly roles via `VEYRON_API_KEYS` environment variable
 - **Persistent audit trail** - All operations logged to disk for forensic review
 - **Local secrets encryption** - At-rest encryption with key expansion and integrity tag
 - **Structured error types** - VMRogueError variants ensure internal details are never leaked

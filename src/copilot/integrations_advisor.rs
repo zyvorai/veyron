@@ -4,7 +4,7 @@ use super::{CopilotAction, CopilotResponse};
 
 const INTEGRATIONS: &[(&str, &str)] = &[
     (
-        "VMROGUE_PROMETHEUS_URL",
+        "VEYRON_PROMETHEUS_URL",
         "Metrics, PVC usage, performance p95",
     ),
     (

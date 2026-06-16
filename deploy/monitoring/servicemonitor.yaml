@@ -1,22 +1,22 @@
 ---
-# ServiceMonitor for VMRogue API server (use when Prometheus Operator already exists).
-# For a full stack, prefer: ./scripts/install-vmrogue-monitoring.sh (charts/vmrogue-monitoring).
+# ServiceMonitor for Veyron API server (use when Prometheus Operator already exists).
+# For a full stack, prefer: ./scripts/install-veyron-monitoring.sh (charts/veyron-monitoring).
 # Requires Prometheus Operator (prometheus-operator.dev)
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vmrogue-api
-  namespace: vmrogue-system
+  name: veyron-api
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     app.kubernetes.io/component: api
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: vmrogue
+      app.kubernetes.io/name: veyron
   namespaceSelector:
     matchNames:
-      - vmrogue-system
+      - veyron-system
   endpoints:
     - port: https
       path: /api/v1/health
@@ -29,18 +29,18 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vmrogue-operator
-  namespace: vmrogue-system
+  name: veyron-operator
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue-operator
+    app.kubernetes.io/name: veyron-operator
     app.kubernetes.io/component: operator
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: vmrogue-operator
+      app.kubernetes.io/name: veyron-operator
   namespaceSelector:
     matchNames:
-      - vmrogue-system
+      - veyron-system
   endpoints:
     - port: metrics
       path: /metrics

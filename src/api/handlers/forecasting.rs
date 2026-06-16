@@ -116,7 +116,7 @@ async fn list_predictions(
 
     let mut ctx = VmrogueFeatureContext::forecasting_predictions();
     let mut prom_growth_rate = growth_rate;
-    if let Some(base) = std::env::var("VMROGUE_PROMETHEUS_URL").ok() {
+    if let Ok(base) = std::env::var("VEYRON_PROMETHEUS_URL") {
         if let Some(rate) = prometheus_vm_count_growth_rate(&base).await {
             prom_growth_rate = rate;
             ctx = VmrogueFeatureContext::forecasting_prometheus();

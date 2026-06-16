@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "vmrogue-operator.fullname" . }}
+  name: {{ include "veyron-operator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "vmrogue-operator.labels" . | nindent 4 }}
+    {{- include "veyron-operator.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
   selector:
-    {{- include "vmrogue-operator.selectorLabels" . | nindent 4 }}
+    {{- include "veyron-operator.selectorLabels" . | nindent 4 }}
   ports:
     - name: metrics
       port: {{ .Values.service.metricsPort }}

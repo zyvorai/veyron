@@ -38,7 +38,7 @@ impl OutputFormat {
 /// Serialize any value to YAML string.
 ///
 /// ```
-/// use vmrogue::to_yaml;
+/// use veyron::to_yaml;
 /// let yaml = to_yaml(&vec!["hello", "world"]).unwrap();
 /// assert!(yaml.contains("hello"));
 /// ```
@@ -49,7 +49,7 @@ pub fn to_yaml<T: Serialize>(value: &T) -> Result<String> {
 /// Serialize any value to pretty-printed JSON string.
 ///
 /// ```
-/// use vmrogue::to_json;
+/// use veyron::to_json;
 /// let json = to_json(&vec!["hello", "world"]).unwrap();
 /// assert!(json.contains("hello"));
 /// ```

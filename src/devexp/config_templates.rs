@@ -194,7 +194,7 @@ impl ConfigTemplateManager {
 
     pub fn list_templates(&self) -> Vec<&ConfigTemplate> {
         let mut templates: Vec<&ConfigTemplate> = self.templates.values().collect();
-        templates.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        templates.sort_by_key(|b| std::cmp::Reverse(b.created_at));
         templates
     }
 
@@ -215,7 +215,7 @@ impl ConfigTemplateManager {
 
     pub fn most_used(&self, limit: usize) -> Vec<&ConfigTemplate> {
         let mut templates: Vec<&ConfigTemplate> = self.templates.values().collect();
-        templates.sort_by(|a, b| b.usage_count.cmp(&a.usage_count));
+        templates.sort_by_key(|b| std::cmp::Reverse(b.usage_count));
         templates.truncate(limit);
         templates
     }
@@ -226,7 +226,7 @@ impl ConfigTemplateManager {
             .values()
             .filter(|t| t.last_used.is_some())
             .collect();
-        templates.sort_by(|a, b| b.last_used.cmp(&a.last_used));
+        templates.sort_by_key(|b| std::cmp::Reverse(b.last_used));
         templates.truncate(limit);
         templates
     }

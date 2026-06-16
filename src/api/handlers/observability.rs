@@ -60,7 +60,7 @@ async fn get_observability_overview(
         "observability",
         "kube-system",
         "cilium-system",
-        "vmrogue-system",
+        "veyron-system",
         namespace.as_str(),
     ];
     for ns in &namespaces {

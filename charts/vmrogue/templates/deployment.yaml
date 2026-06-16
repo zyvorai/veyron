@@ -59,27 +59,27 @@ spec:
             - --rate-limit
             - "{{ .Values.rateLimit.perMinute }}"
           env:
-            - name: VMROGUE_API_KEY
+            - name: VEYRON_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "vmrogue.fullname" . }}-api-key
                   key: api-key
             {{- if .Values.auth.additionalKeys }}
-            - name: VMROGUE_API_KEYS
+            - name: VEYRON_API_KEYS
               value: {{ .Values.auth.additionalKeys | quote }}
             {{- end }}
             - name: RUST_LOG
               value: "info"
-            - name: VMROGUE_API_NODE_HOST
+            - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: VMROGUE_API_NODE_PORT
+            - name: VEYRON_API_NODE_PORT
               value: "30151"
-            - name: VMROGUE_CLUSTER_DNS
+            - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
             {{- with .Values.integrations.prometheusUrl }}
-            - name: VMROGUE_PROMETHEUS_URL
+            - name: VEYRON_PROMETHEUS_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.opencostUrl }}
@@ -119,15 +119,15 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.packetwolfUrl }}
-            - name: VMROGUE_PACKETWOLF_URL
+            - name: VEYRON_PACKETWOLF_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.packetwolfExternalUrl }}
-            - name: VMROGUE_PACKETWOLF_EXTERNAL_URL
+            - name: VEYRON_PACKETWOLF_EXTERNAL_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.packetwolfApiKey }}
-            - name: VMROGUE_PACKETWOLF_API_KEY
+            - name: VEYRON_PACKETWOLF_API_KEY
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.ai.url }}

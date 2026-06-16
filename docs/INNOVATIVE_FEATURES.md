@@ -1,4 +1,4 @@
-# VMRogue Innovative Features
+# Veyron Innovative Features
 
 **See also:** [Documentation index](README.md), [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md), [FEATURE_MATRIX.md](FEATURE_MATRIX.md).
 

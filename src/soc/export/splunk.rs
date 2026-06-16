@@ -14,14 +14,14 @@ pub struct SplunkConfig {
 }
 
 pub fn config() -> Option<SplunkConfig> {
-    let hec_url = std::env::var("VMROGUE_SPLUNK_HEC_URL")
+    let hec_url = std::env::var("VEYRON_SPLUNK_HEC_URL")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let token = std::env::var("VMROGUE_SPLUNK_HEC_TOKEN")
+    let token = std::env::var("VEYRON_SPLUNK_HEC_TOKEN")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let index = std::env::var("VMROGUE_SPLUNK_INDEX").ok().filter(|s| !s.is_empty());
-    let sourcetype = std::env::var("VMROGUE_SPLUNK_SOURCETYPE")
+    let index = std::env::var("VEYRON_SPLUNK_INDEX").ok().filter(|s| !s.is_empty());
+    let sourcetype = std::env::var("VEYRON_SPLUNK_SOURCETYPE")
         .unwrap_or_else(|_| "vmrogue:security".into());
     Some(SplunkConfig {
         hec_url: hec_url.trim_end_matches('/').to_string(),
@@ -81,14 +81,14 @@ pub async fn push_events(events: &[SecurityEvent]) -> anyhow::Result<u32> {
 
 #[cfg(feature = "web")]
 pub async fn run_hunt(query: &str, time_range: &str) -> anyhow::Result<serde_json::Value> {
-    let base = std::env::var("VMROGUE_SPLUNK_REST_URL")
+    let base = std::env::var("VEYRON_SPLUNK_REST_URL")
         .ok()
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("VMROGUE_SPLUNK_REST_URL not set"))?;
-    let token = std::env::var("VMROGUE_SPLUNK_HEC_TOKEN")
+        .ok_or_else(|| anyhow::anyhow!("VEYRON_SPLUNK_REST_URL not set"))?;
+    let token = std::env::var("VEYRON_SPLUNK_HEC_TOKEN")
         .ok()
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("VMROGUE_SPLUNK_HEC_TOKEN not set"))?;
+        .ok_or_else(|| anyhow::anyhow!("VEYRON_SPLUNK_HEC_TOKEN not set"))?;
     let earliest = parse_earliest(time_range);
     let spl = format!("search {query} earliest={earliest} | head 100");
     let url = format!(

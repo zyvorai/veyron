@@ -66,7 +66,7 @@ impl SearchHistory {
             *counts.entry(entry.query.clone()).or_insert(0) += 1;
         }
         let mut sorted: Vec<_> = counts.into_iter().collect();
-        sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted.sort_by_key(|b| std::cmp::Reverse(b.1));
         sorted.truncate(limit);
         sorted
     }

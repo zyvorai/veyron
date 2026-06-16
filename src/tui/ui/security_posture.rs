@@ -65,30 +65,14 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .count();
 
     // Network score: VMs with IP assigned (network connectivity)
-    let network_score = if total_vms > 0 {
-        (vms_with_ip * 100 / total_vms) as u16
-    } else {
-        0
-    };
+    let network_score = (vms_with_ip * 100).checked_div(total_vms).unwrap_or(0) as u16;
     // Identity score: VMs in ready state (properly configured)
-    let identity_score = if total_vms > 0 {
-        (vms_ready * 100 / total_vms) as u16
-    } else {
-        0
-    };
+    let identity_score = (vms_ready * 100).checked_div(total_vms).unwrap_or(0) as u16;
     // Workload score: VMs assigned to nodes
-    let workload_score = if total_vms > 0 {
-        (vms_on_node * 100 / total_vms) as u16
-    } else {
-        0
-    };
+    let workload_score = (vms_on_node * 100).checked_div(total_vms).unwrap_or(0) as u16;
     // Data score: VMs not in failed state
     let healthy_vms = stats.total - stats.failed;
-    let data_score = if total_vms > 0 {
-        (healthy_vms * 100 / total_vms) as u16
-    } else {
-        0
-    };
+    let data_score = (healthy_vms * 100).checked_div(total_vms).unwrap_or(0) as u16;
 
     fn score_color(pct: u16) -> Color {
         if pct >= 80 {

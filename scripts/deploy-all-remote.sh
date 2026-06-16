@@ -7,16 +7,16 @@
 #   Runtime: k3s (containerd) / k8s (docker/containerd) / kind / microk8s
 #
 # Flow:
-#   1. Rsync source to remote ~/.deployment/vmrogue
+#   1. Rsync source to remote ~/.deployment/veyron
 #   2. Build VMRogue + Operator container images
 #   3. Import images into K8s container runtime
 #   4. Ensure CDI (if DataVolume CRD missing) + install CRDs + NATS + RBAC + optional Cilium egress
-#   5. Deploy VMRogue API + Operator pods (API key: Admin@321)
+#   5. Deploy Veyron API + Operator pods (API key: Admin@321)
 #   6. Clean up source
 #   7. Verify
 #
-# CDI: uses scripts/ensure-cdi-remote.sh (VMROGUE_SKIP_CDI=1, VMROGUE_CDI_VERSION=…)
-# Cilium: when CRD ciliumnetworkpolicies.cilium.io exists, applies deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
+# CDI: uses scripts/ensure-cdi-remote.sh (VEYRON_SKIP_CDI=1, VMROGUE_CDI_VERSION=…)
+# Cilium: when CRD ciliumnetworkpolicies.cilium.io exists, applies deploy/k8s/bootstrap/cilium-veyron-egress.yaml
 #         so API/operator/NATS can reach kube-apiserver (default-egress + DNS-only CNPs).
 #
 # Usage:
@@ -24,12 +24,12 @@
 #   ./scripts/deploy-all-remote.sh [host] [user] --quick   # skip image builds
 #
 # Preferred wrapper (SSH preflight): ./scripts/deploy-remote.sh [host] [user] [--quick]
-# After deploy, smoke-test HTTPS API: ./scripts/verify-vmrogue-remote.sh <host> [node_port]
+# After deploy, smoke-test HTTPS API: ./scripts/verify-veyron-remote.sh <host> [node_port]
 #
 # Speed (default: fast incremental builds):
-#   VMROGUE_DEPLOY_NO_CACHE=1           Force clean image build (slow; was the old default)
-#   VMROGUE_DEPLOY_DIAGNOSTICS=1        Full cluster diagnostics before rsync (slow on large clusters)
-#   VMROGUE_SKIP_GUESTKIT_PREP=1        Skip local guestkit rsync when guestkit/ is already current
+#   VEYRON_DEPLOY_NO_CACHE=1           Force clean image build (slow; was the old default)
+#   VEYRON_DEPLOY_DIAGNOSTICS=1        Full cluster diagnostics before rsync (slow on large clusters)
+#   VEYRON_SKIP_GUESTKIT_PREP=1        Skip local guestkit rsync when guestkit/ is already current
 # ============================================================================
 
 set -euo pipefail
@@ -76,16 +76,16 @@ HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-185.165.240.5}}"
 USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
 REMOTE="${USER}@${HOST}"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-API_KEY="${VMROGUE_API_KEY:-Admin@321}"
-VMROGUE_IMAGE="docker.io/library/vmrogue:latest"
-OPERATOR_IMAGE="docker.io/library/vmrogue-operator:latest"
+API_KEY="${VEYRON_API_KEY:-Admin@321}"
+VEYRON_IMAGE="docker.io/library/veyron:latest"
+OPERATOR_IMAGE="docker.io/library/veyron-operator:latest"
 NAMESPACE="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
 
-[ -f "$REPO_DIR/Cargo.toml" ] || { pkg_fail "Not in vmrogue repo (missing Cargo.toml)"; exit 1; }
+[ -f "$REPO_DIR/Cargo.toml" ] || { pkg_fail "Not in veyron repo (missing Cargo.toml)"; exit 1; }
 
 # ── Resolve remote paths and tools ──
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" "echo \$HOME")
-DEPLOY_DIR="${REMOTE_HOME}/.deployment/vmrogue"
+DEPLOY_DIR="${REMOTE_HOME}/.deployment/veyron"
 
 SUDO=""
 [ "$USER" != "root" ] && SUDO="sudo"
@@ -128,18 +128,18 @@ if [ "$CTR_BUILD" = "none" ] && ! $QUICK; then
 fi
 
 # ── Step 0: Remote diagnostics (light by default) ──
-if [[ "${VMROGUE_DEPLOY_DIAGNOSTICS:-}" == "1" || "${VMROGUE_DEPLOY_DIAGNOSTICS:-}" == "true" ]]; then
+if [[ "${VEYRON_DEPLOY_DIAGNOSTICS:-}" == "1" || "${VEYRON_DEPLOY_DIAGNOSTICS:-}" == "true" ]]; then
     deploy_phase_start "🩺 [0/7] Remote system and cluster diagnostics"
     stream_remote "sysinfo" "set -o pipefail; uname -a; echo ''; cat /etc/os-release 2>/dev/null | sed -n '1,6p'; echo ''; echo \"CPU: \$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo unknown) cores\"; echo \"Memory:\"; free -h 2>/dev/null || vm_stat 2>/dev/null || true; echo ''; echo 'Disk:'; df -h / 2>/dev/null || true"
     stream_remote "k8s-info" "set -o pipefail; printf '%s\n' \"Cluster flavor: ${CLUSTER_FLAVOR}\" \"Runtime import path: ${K8S_RUNTIME}\" \"kubectl command: ${K8S_CMD}\"; if command -v kubectl >/dev/null 2>&1 || [ \"${CLUSTER_FLAVOR}\" = \"k3s\" ] || [ \"${CLUSTER_FLAVOR}\" = \"rke2\" ]; then printf '%s\n' ''; ${K8S_CMD} version --short 2>/dev/null || ${K8S_CMD} version 2>/dev/null || true; printf '%s\n' '' 'Nodes:'; ${K8S_CMD} get nodes -o wide 2>/dev/null || true; printf '%s\n' '' 'All namespaces:'; ${K8S_CMD} get ns 2>/dev/null || true; printf '%s\n' '' 'All pods cluster-wide:'; ${K8S_CMD} get pods -A -o wide 2>/dev/null || true; else printf '%s\n' 'kubectl not found on remote host'; fi"
     deploy_phase_end
 else
-    deploy_skip_phase "⏭️  [0/7] Skipping full diagnostics (set VMROGUE_DEPLOY_DIAGNOSTICS=1 for cluster-wide pod listing)"
+    deploy_skip_phase "⏭️  [0/7] Skipping full diagnostics (set VEYRON_DEPLOY_DIAGNOSTICS=1 for cluster-wide pod listing)"
 fi
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
-if [[ "${VMROGUE_SKIP_GUESTKIT_PREP:-}" != "1" && "${VMROGUE_SKIP_GUESTKIT_PREP:-}" != "true" ]] \
+if [[ "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "1" && "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "true" ]] \
     && [ -x "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]; then
     deploy_substep "Preparing GuestKit build context (guestkit/ → VMRogue)"
     bash "${REPO_DIR}/scripts/prepare-guestkit-docker.sh"
@@ -163,15 +163,15 @@ else
     deploy_phase_start "🐳 [2/7] Building container images on remote (parallel, layer cache enabled)"
 
     CACHE_FROM_ARGS=""
-    if [[ "${VMROGUE_DEPLOY_NO_CACHE:-}" != "1" && "${VMROGUE_DEPLOY_NO_CACHE:-}" != "true" ]]; then
+    if [[ "${VEYRON_DEPLOY_NO_CACHE:-}" != "1" && "${VEYRON_DEPLOY_NO_CACHE:-}" != "true" ]]; then
         # podman --cache-from requires a repository without tag/digest
-        VM_CACHE_REF="${VMROGUE_IMAGE%%:*}"
+        VM_CACHE_REF="${VEYRON_IMAGE%%:*}"
         OP_CACHE_REF="${OPERATOR_IMAGE%%:*}"
         if [ "${CTR_BUILD}" = "docker" ]; then
-            VM_CACHE_REF="${VMROGUE_IMAGE}"
+            VM_CACHE_REF="${VEYRON_IMAGE}"
             OP_CACHE_REF="${OPERATOR_IMAGE}"
         fi
-        if deploy_ssh "${REMOTE}" "${CTR_BUILD} image exists ${VMROGUE_IMAGE} >/dev/null 2>&1"; then
+        if deploy_ssh "${REMOTE}" "${CTR_BUILD} image exists ${VEYRON_IMAGE} >/dev/null 2>&1"; then
             CACHE_FROM_ARGS="--cache-from ${VM_CACHE_REF}"
         fi
         if deploy_ssh "${REMOTE}" "${CTR_BUILD} image exists ${OPERATOR_IMAGE} >/dev/null 2>&1"; then
@@ -179,16 +179,16 @@ else
         fi
     fi
     NO_CACHE_ARG=""
-    if [[ "${VMROGUE_DEPLOY_NO_CACHE:-}" == "1" || "${VMROGUE_DEPLOY_NO_CACHE:-}" == "true" ]]; then
+    if [[ "${VEYRON_DEPLOY_NO_CACHE:-}" == "1" || "${VEYRON_DEPLOY_NO_CACHE:-}" == "true" ]]; then
         NO_CACHE_ARG="--no-cache"
-        deploy_note "VMROGUE_DEPLOY_NO_CACHE=1 — full rebuild (slow)"
+        deploy_note "VEYRON_DEPLOY_NO_CACHE=1 — full rebuild (slow)"
     fi
 
     EXPORT_LINE=""
     PROGRESS_ARG=""
     if [ "${CTR_BUILD}" = "docker" ]; then
         EXPORT_LINE="export DOCKER_BUILDKIT=1"
-        if [[ "${VMROGUE_DEPLOY_VERBOSE:-}" == "1" ]]; then
+        if [[ "${VEYRON_DEPLOY_VERBOSE:-}" == "1" ]]; then
             PROGRESS_ARG="--progress=plain"
         fi
     elif [ "${CTR_BUILD}" = "podman" ]; then
@@ -198,7 +198,7 @@ else
     PARALLEL_BUILD=$(cat <<REMOTE_BUILD_EOF
 set -euo pipefail
 ${EXPORT_LINE}
-API_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${VMROGUE_IMAGE} .'
+API_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${VEYRON_IMAGE} .'
 OP_CMD='${CTR_BUILD} build ${NO_CACHE_ARG} ${CACHE_FROM_ARGS} ${PROGRESS_ARG} -t ${OPERATOR_IMAGE} .'
 ( cd '${DEPLOY_DIR}' && eval "\$API_CMD" ) &
 api_pid=\$!
@@ -209,7 +209,7 @@ wait \$op_pid
 REMOTE_BUILD_EOF
 )
 
-    deploy_substep "📦 VMRogue API + Operator image builds (parallel)"
+    deploy_substep "📦 Veyron API + Operator image builds (parallel)"
     stream_remote "image-build" "${PARALLEL_BUILD}"
     pkg_ok "Container image builds complete"
 
@@ -227,58 +227,58 @@ else
         k3s)
             K3S_BIN=$(deploy_ssh "${REMOTE}" "which k3s 2>/dev/null || echo /usr/local/bin/k3s")
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VMROGUE_IMAGE} | ${SUDO} ${K3S_BIN} ctr images import -
+                ${CTR_BUILD} save ${VEYRON_IMAGE} | ${SUDO} ${K3S_BIN} ctr images import -
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} | ${SUDO} ${K3S_BIN} ctr images import -
             " 2>&1
             ;;
         rke2)
             RKE2_BIN=$(deploy_ssh "${REMOTE}" "which rke2 2>/dev/null || echo /usr/local/bin/rke2")
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VMROGUE_IMAGE} | ${SUDO} ${RKE2_BIN} ctr images import -
+                ${CTR_BUILD} save ${VEYRON_IMAGE} | ${SUDO} ${RKE2_BIN} ctr images import -
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} | ${SUDO} ${RKE2_BIN} ctr images import -
             " 2>&1
             ;;
         microk8s)
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VMROGUE_IMAGE} > /tmp/vmrogue.tar
-                ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/vmrogue-operator.tar
+                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/vmrogue.tar
+                ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/veyron-operator.tar
                 microk8s ctr image import /tmp/vmrogue.tar
-                microk8s ctr image import /tmp/vmrogue-operator.tar
-                rm -f /tmp/vmrogue.tar /tmp/vmrogue-operator.tar
+                microk8s ctr image import /tmp/veyron-operator.tar
+                rm -f /tmp/vmrogue.tar /tmp/veyron-operator.tar
             " 2>&1
             ;;
         kind)
             deploy_ssh "${REMOTE}" "
-                kind load docker-image ${VMROGUE_IMAGE}
+                kind load docker-image ${VEYRON_IMAGE}
                 kind load docker-image ${OPERATOR_IMAGE}
             " 2>&1
             ;;
         minikube)
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VMROGUE_IMAGE} > /tmp/vmrogue.tar
-                ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/vmrogue-operator.tar
+                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/vmrogue.tar
+                ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/veyron-operator.tar
                 minikube image load /tmp/vmrogue.tar
-                minikube image load /tmp/vmrogue-operator.tar
-                rm -f /tmp/vmrogue.tar /tmp/vmrogue-operator.tar
+                minikube image load /tmp/veyron-operator.tar
+                rm -f /tmp/vmrogue.tar /tmp/veyron-operator.tar
             " 2>&1
             ;;
         containerd)
             # Standard kubeadm K8s with containerd
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VMROGUE_IMAGE} | ${SUDO} ctr -n k8s.io images import -
+                ${CTR_BUILD} save ${VEYRON_IMAGE} | ${SUDO} ctr -n k8s.io images import -
                 ${CTR_BUILD} save ${OPERATOR_IMAGE} | ${SUDO} ctr -n k8s.io images import -
             " 2>&1
             ;;
         cri)
             # CRI-O or other CRI runtime — import via tar
             deploy_ssh "${REMOTE}" "
-                ${CTR_BUILD} save ${VMROGUE_IMAGE} > /tmp/vmrogue.tar
-                ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/vmrogue-operator.tar
+                ${CTR_BUILD} save ${VEYRON_IMAGE} > /tmp/vmrogue.tar
+                ${CTR_BUILD} save ${OPERATOR_IMAGE} > /tmp/veyron-operator.tar
                 ${SUDO} crictl pull /tmp/vmrogue.tar 2>/dev/null || \
                     ${SUDO} ctr -n k8s.io images import /tmp/vmrogue.tar
-                ${SUDO} crictl pull /tmp/vmrogue-operator.tar 2>/dev/null || \
-                    ${SUDO} ctr -n k8s.io images import /tmp/vmrogue-operator.tar
-                rm -f /tmp/vmrogue.tar /tmp/vmrogue-operator.tar
+                ${SUDO} crictl pull /tmp/veyron-operator.tar 2>/dev/null || \
+                    ${SUDO} ctr -n k8s.io images import /tmp/veyron-operator.tar
+                rm -f /tmp/vmrogue.tar /tmp/veyron-operator.tar
             " 2>&1
             ;;
         docker-desktop)
@@ -297,18 +297,18 @@ fi
 echo ""
 deploy_phase_start "📋 [4/7] CDI (if missing), CRDs, NATS, RBAC, and Cilium egress (if Cilium)"
 "${REPO_DIR}/scripts/ensure-cdi-remote.sh" "${REMOTE}" || {
-  pkg_fail "CDI ensure failed (set VMROGUE_SKIP_CDI=1 to skip on air-gapped clusters)"
+  pkg_fail "CDI ensure failed (set VEYRON_SKIP_CDI=1 to skip on air-gapped clusters)"
   exit 1
 }
 deploy_ssh "${REMOTE}" "
     ${K8S_CMD} create namespace ${NAMESPACE} --dry-run=client -o yaml | ${K8S_CMD} apply -f -
-    if [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml ]; then
+    if [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ]; then
         echo 'Applying Cilium egress policy for ${NAMESPACE} (vmrogue / nats workloads)...'
-        ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
+        ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml
     else
-        echo 'Skipping Cilium vmrogue egress bootstrap (VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1, no Cilium CRD, or yaml missing)'
+        echo 'Skipping Cilium vmrogue egress bootstrap (VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1, no Cilium CRD, or yaml missing)'
     fi
-    if [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]; then
+    if [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [ -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]; then
         echo 'Applying Cilium clusterwide egress for KubeVirt virt-launcher (VM guest internet)...'
         ${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml
     fi
@@ -333,14 +333,14 @@ deploy_ssh "${REMOTE}" "
 " 2>&1
 deploy_phase_end
 
-# ── Step 5: Deploy VMRogue API + Operator ──
+# ── Step 5: Deploy Veyron API + Operator ──
 echo ""
-deploy_phase_start "🚀 [5/7] Deploying VMRogue API + Operator"
+deploy_phase_start "🚀 [5/7] Deploying Veyron API + Operator"
 
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
 deploy_ssh "${REMOTE}" "
-    ${K8S_CMD} -n ${NAMESPACE} delete deployment veyron-api veyron-operator vmrogue-api vmrogue-operator \
+    ${K8S_CMD} -n ${NAMESPACE} delete deployment veyron-api veyron-operator veyron-api veyron-operator \
         --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
     ${K8S_CMD} -n ${NAMESPACE} delete secret veyron-api-key --ignore-not-found --wait=false 2>/dev/null || true
 " 2>&1
@@ -351,7 +351,7 @@ deploy_ssh "${REMOTE}" "
         --from-literal=api-key='${API_KEY}'
 " 2>&1
 
-# Apply VMRogue API deployment
+# Apply Veyron API deployment
 deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
 
 # Optional: Prometheus / Alertmanager / Loki URLs when those namespaces exist

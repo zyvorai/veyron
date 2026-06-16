@@ -151,15 +151,15 @@ pub mod web {
 
     impl WebState {
         pub async fn new(namespace: String, rate_limit_per_minute: u64) -> anyhow::Result<Self> {
-            let api_key = env_var_first(&["VEYRON_API_KEY", "VMROGUE_API_KEY"]);
+            let api_key = env_var_first(&["VEYRON_API_KEY", "VEYRON_API_KEY"]);
             if api_key.is_none() {
                 log::warn!(
-                    "VEYRON_API_KEY (or VMROGUE_API_KEY) is not set - API will reject all requests. \
+                    "VEYRON_API_KEY (or VEYRON_API_KEY) is not set - API will reject all requests. \
                      Set VEYRON_API_KEY to enable access."
                 );
             }
 
-            // Load additional API keys with roles from VMROGUE_API_KEYS
+            // Load additional API keys with roles from VEYRON_API_KEYS
             // Format: "name1:key1:admin,name2:key2:readonly,name3:key3:write"
             let mut api_keys = Vec::new();
             if let Some(ref primary) = api_key {
@@ -169,7 +169,7 @@ pub mod web {
                     name: "primary".to_string(),
                 });
             }
-            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VMROGUE_API_KEYS"]) {
+            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VEYRON_API_KEYS"]) {
                 for entry in keys_str.split(',') {
                     let parts: Vec<&str> = entry.trim().split(':').collect();
                     if parts.len() >= 2 {
@@ -449,7 +449,7 @@ pub mod web {
 
     /// API key authentication middleware.
     ///
-    /// If the `VMROGUE_API_KEY` env var was set at startup, every request must present
+    /// If the `VEYRON_API_KEY` env var was set at startup, every request must present
     /// that key via `X-API-Key` header or `Authorization: Bearer <key>`.
     /// If the env var was unset, all requests are rejected (deny by default).
     async fn auth_middleware(
@@ -480,7 +480,7 @@ pub mod web {
                 let (status, json) = err_json(
                     503,
                     "AUTH_NOT_CONFIGURED",
-                    "API key not configured. Set VEYRON_API_KEY (or VMROGUE_API_KEY) environment variable.",
+                    "API key not configured. Set VEYRON_API_KEY (or VEYRON_API_KEY) environment variable.",
                 );
                 return (status, json).into_response();
             }
@@ -491,7 +491,7 @@ pub mod web {
         let ws_ticket = request.uri().query().and_then(|q| {
             q.split('&').find_map(|p| {
                 p.strip_prefix("ticket=")
-                    .map(|s| percent_decode(s))
+                    .map(percent_decode)
             })
         });
         if auth_context::is_ws_console_path(path) {
@@ -523,7 +523,7 @@ pub mod web {
             .or_else(|| {
                 request.uri().query().and_then(|q| {
                     q.split('&').find_map(|p| {
-                        p.strip_prefix("token=").map(|s| percent_decode(s))
+                        p.strip_prefix("token=").map(percent_decode)
                     })
                 })
             });
@@ -737,7 +737,7 @@ pub mod web {
     // ── Router ──────────────────────────────────────────────────
 
     pub fn build_router(state: SharedState) -> Router {
-        let request_timeout_secs = std::env::var("VMROGUE_HTTP_REQUEST_TIMEOUT_SECS")
+        let request_timeout_secs = std::env::var("VEYRON_HTTP_REQUEST_TIMEOUT_SECS")
             .ok()
             .and_then(|s| s.parse::<u64>().ok())
             .filter(|&n| n > 0)
@@ -1005,11 +1005,11 @@ pub mod web {
         }
 
         // Snapshot schedule worker: only one replica should run ticks (Kubernetes Lease).
-        let scheduler_lease_ns = std::env::var("VMROGUE_SCHEDULER_LEASE_NAMESPACE")
+        let scheduler_lease_ns = std::env::var("VEYRON_SCHEDULER_LEASE_NAMESPACE")
             .ok()
             .filter(|s| !s.is_empty())
             .unwrap_or_else(|| namespace.clone());
-        let disable_scheduler_lease = std::env::var("VMROGUE_SCHEDULER_LEASE_DISABLED")
+        let disable_scheduler_lease = std::env::var("VEYRON_SCHEDULER_LEASE_DISABLED")
             .ok()
             .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
             .unwrap_or(false);
@@ -1926,7 +1926,7 @@ pub mod web {
                     "node_port is required when enabling RDP exposure (use 30100–30199 per VM, within 30000–32767)",
                 );
             };
-            if node_port < 30000 || node_port > 32767 {
+            if !(30000..=32767).contains(&node_port) {
                 return err_json(
                     400,
                     "INVALID_REQUEST",
@@ -4519,7 +4519,7 @@ pub mod web {
         let health = serde_json::json!({
             "status": "healthy",
             "version": "v1",
-            "service": "vmrogue-api"
+            "service": "veyron-api"
         });
         ok_json(&ApiResponse::success(&health, &ctx.request_id))
     }

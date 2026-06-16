@@ -61,7 +61,7 @@ async fn list_operators(
             "kubevirt".to_string(),
             "olm".to_string(),
             "operators".to_string(),
-            "vmrogue-system".to_string(),
+            "veyron-system".to_string(),
         ];
         if let Ok(all) = s.client().list_namespaces().await {
             for n in all.into_iter().filter_map(|n| n.metadata.name) {
@@ -76,7 +76,7 @@ async fn list_operators(
             "kubevirt".to_string(),
             "olm".to_string(),
             "operators".to_string(),
-            "vmrogue-system".to_string(),
+            "veyron-system".to_string(),
             scope.clone(),
         ]
     };
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn extract_image_tag_reads_container_tag() {
         assert_eq!(
-            extract_image_tag("quay.io/example/vmrogue-operator:v0.2.0"),
+            extract_image_tag("quay.io/example/veyron-operator:v0.2.0"),
             Some("v0.2.0".to_string())
         );
         assert_eq!(
@@ -221,6 +221,6 @@ mod tests {
 
     #[test]
     fn operator_tokens_drops_generic_words() {
-        assert_eq!(operator_tokens("vmrogue-operator-manager"), vec!["vmrogue"]);
+        assert_eq!(operator_tokens("veyron-operator-manager"), vec!["veyron"]);
     }
 }

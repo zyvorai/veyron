@@ -165,7 +165,7 @@ async fn get_monitoring_status(
         found.unwrap_or_else(|| "15d".to_string())
     };
 
-    if std::env::var("VMROGUE_PROMETHEUS_URL")
+    if std::env::var("VEYRON_PROMETHEUS_URL")
         .map(|u| !u.trim().is_empty())
         .unwrap_or(false)
     {

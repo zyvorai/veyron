@@ -3,15 +3,15 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ .Release.Name }}-vmrogue-api
+  name: {{ .Release.Name }}-veyron-api
   namespace: {{ .Values.vmrogue.namespace }}
   labels:
-    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
+    {{- include "veyron-monitoring.labels" . | nindent 4 }}
     app.kubernetes.io/component: api
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: vmrogue
+      app.kubernetes.io/name: veyron
   namespaceSelector:
     matchNames:
       - {{ .Values.vmrogue.namespace | quote }}
@@ -26,15 +26,15 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ .Release.Name }}-vmrogue-operator
+  name: {{ .Release.Name }}-veyron-operator
   namespace: {{ .Values.vmrogue.namespace }}
   labels:
-    {{- include "vmrogue-monitoring.labels" . | nindent 4 }}
+    {{- include "veyron-monitoring.labels" . | nindent 4 }}
     app.kubernetes.io/component: operator
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: vmrogue-operator
+      app.kubernetes.io/name: veyron-operator
   namespaceSelector:
     matchNames:
       - {{ .Values.vmrogue.namespace | quote }}

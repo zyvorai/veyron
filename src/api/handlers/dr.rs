@@ -123,7 +123,7 @@ async fn dr_failover(
     }
 
     let mut sorted = snapshots;
-    sorted.sort_by_key(|s| std::cmp::Reverse(s.created_at.clone()));
+    sorted.sort_by_key(|s| std::cmp::Reverse(s.created_at));
     let latest = &sorted[0];
 
     if !latest.ready_to_use {
@@ -328,7 +328,7 @@ async fn dr_apply(
             .list_snapshots_for_vm(&req.vm_name)
             .await
             .unwrap_or_default();
-        snapshots.sort_by_key(|s| std::cmp::Reverse(s.created_at.clone()));
+        snapshots.sort_by_key(|s| std::cmp::Reverse(s.created_at));
         if let Some(latest) = snapshots.into_iter().find(|s| s.ready_to_use) {
             let restore_mgr = crate::snapshots::RestoreManager::new(&target_ns)
                 .await

@@ -1,4 +1,4 @@
-# VMRogue Feature Matrix
+# Veyron Feature Matrix
 
 **See also:** [Documentation index](README.md) for the full set of guides.
 
@@ -52,7 +52,7 @@ Status legend:
 | Forecasting | `page-forecasting` | `/api/v1/forecasting/predictions` | `handlers/forecasting.rs` | Partial | Forecasts are heuristic projections |
 | GitOps | `page-gitops` | `/api/v1/gitops/status`, `/api/v1/gitops/sync` | `handlers/gitops.rs` | Partial | Real config detection, sync action is advisory |
 | Scheduling | `page-scheduling` | `/api/v1/scheduling/status` | `handlers/scheduling.rs` | Partial | Latency/preemption fields still basic |
-| Cilium | `page-cilium` | `/api/v1/cilium/status`, `/api/v1/cilium/policies`, `/api/v1/packetwolf/status` | `handlers/cilium.rs`, `handlers/packetwolf.rs` | Partial | Policy/flow table is NetworkPolicy-derived; PacketWolf banner when `VMROGUE_PACKETWOLF_URL` set |
+| Cilium | `page-cilium` | `/api/v1/cilium/status`, `/api/v1/cilium/policies`, `/api/v1/packetwolf/status` | `handlers/cilium.rs`, `handlers/packetwolf.rs` | Partial | Policy/flow table is NetworkPolicy-derived; PacketWolf banner when `VEYRON_PACKETWOLF_URL` set |
 | Observability | `page-observability` | `/api/v1/observability/overview` | `handlers/observability.rs` | Partial | Stack detection and counts are heuristic |
 | Performance | `page-performance` | `/api/v1/performance/profiles` | `handlers/performance.rs` | Partial | Percentiles are single-sample proxies |
 | Webhooks | `page-webhooks` | `/api/v1/webhooks` | `handlers/webhooks.rs` | Working | Namespace-aware |
@@ -154,4 +154,4 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 
 1. Run `./scripts/generate-catalog-crds.sh` before deploy; `deploy-all-remote.sh` applies catalog YAML automatically.
 2. `./scripts/test-remote.sh` tier 3+ uses local samples when remote checkout is absent; Windows blueprint test when VMTemplate CRDs exist.
-3. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VMROGUE_PROMETHEUS_URL`, …).
+3. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VEYRON_PROMETHEUS_URL`, …).

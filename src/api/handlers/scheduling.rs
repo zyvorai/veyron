@@ -40,7 +40,7 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn prometheus_scheduling_latency_ms() -> Option<f64> {
-    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let base = std::env::var("VEYRON_PROMETHEUS_URL").ok()?;
     let query = "histogram_quantile(0.95, sum(rate(scheduler_scheduling_duration_seconds_bucket[5m])) by (le)) * 1000";
     let samples = crate::api::prometheus::instant_query_vector(&base, query)
         .await

@@ -18,7 +18,7 @@ VMRogue includes a first-class SOC surface on the API and dashboard:
 
 - **Events** — `GET /api/v1/soc/events?refresh=true` collects Kubernetes events, VM findings, and API audit mutations into ECS-friendly JSON (ConfigMap buffer in the API namespace).
 - **Detections** — `GET /api/v1/soc/detections` evaluates rules (RDP/SSH NodePort expose, drift, privileged domain, scheduling burst, namespaces without NetworkPolicy). Acknowledge with `POST /api/v1/soc/detections/:id/ack`.
-- **SIEM** — set `VMROGUE_ELASTIC_*`, `VMROGUE_SPLUNK_*`, `VMROGUE_SENTINEL_*`, or `VMROGUE_QRADAR_*` on the API Deployment; status at `GET /api/v1/soc/export/status`.
+- **SIEM** — set `VEYRON_ELASTIC_*`, `VEYRON_SPLUNK_*`, `VEYRON_SENTINEL_*`, or `VEYRON_QRADAR_*` on the API Deployment; status at `GET /api/v1/soc/export/status`.
 - **Hunts** — `POST /api/v1/soc/hunts/run` with Elastic KQL or Splunk SPL when hunt env flags are enabled.
 - **Attack surface** — `GET /api/v1/soc/attack-surface` lists internet-facing VM exposures.
 
@@ -511,7 +511,7 @@ The REST API supports batch VM operations:
 
 ```bash
 curl -X POST http://localhost:5151/api/v1/vms/batch \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "X-API-Key: $VEYRON_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "action": "stop",
@@ -547,12 +547,12 @@ Set monthly spending limits per namespace:
 ```bash
 # Create a budget
 curl -X POST http://localhost:5151/api/v1/costs/budgets \
-  -H "X-API-Key: $VMROGUE_API_KEY" \
+  -H "X-API-Key: $VEYRON_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"name": "dev-budget", "namespace": "dev", "monthly_limit": 500.0}'
 
 # List budgets with status
-curl http://localhost:5151/api/v1/costs/budgets -H "X-API-Key: $VMROGUE_API_KEY"
+curl http://localhost:5151/api/v1/costs/budgets -H "X-API-Key: $VEYRON_API_KEY"
 ```
 
 Budget status: `healthy` (under threshold), `warning` (over alert threshold), `exceeded` (over limit).
@@ -573,7 +573,7 @@ Recently completed:
 Future enhancements planned:
 - [x] SSH key injection — `vmrogue ssh-key-inject` (KubeVirt `accessCredentials` + Secret)
 - [ ] VM auto-scaling groups (HPA listing exists; no KubeVirt VM autoscaler product)
-- [x] Prometheus integration for historical metrics — set `VMROGUE_PROMETHEUS_URL` (see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md))
+- [x] Prometheus integration for historical metrics — set `VEYRON_PROMETHEUS_URL` (see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md))
 - [x] Cross-cluster DR apply — `GET /api/v1/dr/export` + `POST /api/v1/dr/apply` on recovery cluster; same-cluster in-place via `POST /api/v1/dr/failover`
 
 ---

@@ -1,9 +1,9 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "vmrogue-operator.fullname" . }}
+  name: {{ include "veyron-operator.fullname" . }}
   labels:
-    {{- include "vmrogue-operator.labels" . | nindent 4 }}
+    {{- include "veyron-operator.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["vmrogue.io"]
     resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions", "vmtemplates", "vmprofiles"]
@@ -76,14 +76,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "vmrogue-operator.fullname" . }}
+  name: {{ include "veyron-operator.fullname" . }}
   labels:
-    {{- include "vmrogue-operator.labels" . | nindent 4 }}
+    {{- include "veyron-operator.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "vmrogue-operator.fullname" . }}
+  name: {{ include "veyron-operator.fullname" . }}
 subjects:
   - kind: ServiceAccount
-    name: {{ include "vmrogue-operator.serviceAccountName" . }}
+    name: {{ include "veyron-operator.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}

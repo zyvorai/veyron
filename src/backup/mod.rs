@@ -91,7 +91,7 @@ pub enum BackupTarget {
 impl Default for BackupTarget {
     fn default() -> Self {
         BackupTarget::Local {
-            path: "/var/lib/vmrogue/backups".to_string(),
+            path: "/var/lib/veyron/backups".to_string(),
         }
     }
 }
@@ -204,7 +204,7 @@ impl RetentionPolicy {
 
         // Sort by date descending
         let mut sorted: Vec<_> = backups.to_vec();
-        sorted.sort_by(|a, b| b.1.cmp(&a.1));
+        sorted.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         // Keep by max_age_days
         if let Some(max_days) = self.max_age_days {
@@ -451,7 +451,7 @@ mod tests {
         let target = BackupTarget::default();
         match target {
             BackupTarget::Local { path } => {
-                assert_eq!(path, "/var/lib/vmrogue/backups");
+                assert_eq!(path, "/var/lib/veyron/backups");
             }
             _ => panic!("Expected Local target"),
         }

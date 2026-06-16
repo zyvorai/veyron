@@ -34,7 +34,7 @@ echo "==> k3s / vmrogue pods"
 K="/usr/local/bin/k3s kubectl"
 if [[ -x /usr/local/bin/k3s ]]; then
     ${K} get nodes 2>/dev/null || true
-    ${K} -n vmrogue-system get pods 2>/dev/null || true
+    ${K} -n veyron-system get pods 2>/dev/null || true
 fi
 
 echo "==> done"

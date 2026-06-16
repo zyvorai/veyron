@@ -5,7 +5,7 @@
 #   eval "$(./scripts/configure-zeus-openrouter.sh --print-env)"
 #   cargo run --features web -- api-serve ...
 #
-# Remote cluster (default vmrogue-integrations secret + rollout restart):
+# Remote cluster (default veyron-integrations secret + rollout restart):
 #   ./scripts/configure-zeus-openrouter.sh HOST USER
 #   ./scripts/configure-zeus-openrouter.sh 212.8.252.194 sus
 
@@ -15,8 +15,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=scripts/lib/read-openrouter-env.sh
 source "$ROOT/scripts/lib/read-openrouter-env.sh"
 
-NS="${VMROGUE_NAMESPACE:-vmrogue-system}"
-SECRET="${VMROGUE_INTEGRATIONS_SECRET:-vmrogue-integrations}"
+NS="${VEYRON_NAMESPACE:-veyron-system}"
+SECRET="${VMROGUE_INTEGRATIONS_SECRET:-veyron-integrations}"
 RC_FILE="${VMROGUE_ZSHRC:-${HOME}/.zshrc}"
 
 print_env() {
@@ -50,8 +50,8 @@ apply_remote() {
     --from-env-file=/tmp/vmrogue-zeus-openrouter.env
   ssh -o BatchMode=yes "${user}@${host}" "rm -f /tmp/vmrogue-zeus-openrouter.env"
   rm -f "$tmp"
-  remote_kubectl "$host" "$user" rollout restart deployment/vmrogue-api
-  remote_kubectl "$host" "$user" rollout status deployment/vmrogue-api --timeout=180s
+  remote_kubectl "$host" "$user" rollout restart deployment/veyron-api
+  remote_kubectl "$host" "$user" rollout status deployment/veyron-api --timeout=180s
   echo "Done. Verify: curl -sk -H 'X-API-Key: …' https://${host}:30151/api/v1/experience/copilot/status" >&2
 }
 
@@ -71,7 +71,7 @@ Usage:
 
 Environment:
   VMROGUE_ZSHRC           rc file to read (default ~/.zshrc)
-  VMROGUE_NAMESPACE       Kubernetes namespace (default vmrogue-system)
+  VEYRON_NAMESPACE       Kubernetes namespace (default veyron-system)
 EOF
     ;;
   "")

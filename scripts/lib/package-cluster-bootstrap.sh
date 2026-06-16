@@ -7,7 +7,7 @@ cd "$ROOT"
 # shellcheck source=/dev/null
 [[ -f "${ROOT}/cluster/env.sh" ]] && source "${ROOT}/cluster/env.sh"
 
-APP_NAMESPACE="${APP_NAMESPACE:-vmrogue-system}"
+APP_NAMESPACE="${APP_NAMESPACE:-veyron-system}"
 BOOT="${ROOT}/cluster/bootstrap"
 
 command -v kubectl >/dev/null 2>&1 || { echo "kubectl required"; exit 1; }
@@ -16,7 +16,7 @@ export KUBECONFIG="${KUBECONFIG:-${HOME}/.kube/config}"
 echo "== ${PRODUCT:-Client} cluster network bootstrap =="
 echo "  namespace: ${APP_NAMESPACE}"
 
-if [[ "${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}${V9S_SKIP_CLUSTER_ADDONS:-}${V9S_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}" =~ ^(1|true|yes|TRUE|Yes)$ ]]; then
+if [[ "${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}${V9S_SKIP_CLUSTER_ADDONS:-}${V9S_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}" =~ ^(1|true|yes|TRUE|Yes)$ ]]; then
   echo "  SKIP: egress bootstrap disabled by env"
   exit 0
 fi
@@ -39,7 +39,7 @@ _apply() {
 
 for y in \
   "${BOOT}/cilium-app-egress.yaml" \
-  "${BOOT}/cilium-vmrogue-egress.yaml" \
+  "${BOOT}/cilium-veyron-egress.yaml" \
   "${BOOT}/v9s-cilium-egress.yaml" \
   "${BOOT}/kubevirt-cilium-egress.yaml"; do
   _apply "${y}"

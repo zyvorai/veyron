@@ -84,7 +84,7 @@ pkg_env_bootstrap_auth_for_file() {
             pkg_env_ensure_var "${env_file}" "UI_DIST_DIR" "${root}/ui"
             ;;
         vmrogue)
-            pkg_env_ensure_var "${env_file}" "VMROGUE_API_KEY" "Admin@321"
+            pkg_env_ensure_var "${env_file}" "VEYRON_API_KEY" "Admin@321"
             ;;
         forge)
             pkg_env_ensure_var "${env_file}" "FORGE_API_KEY" "Admin@321"

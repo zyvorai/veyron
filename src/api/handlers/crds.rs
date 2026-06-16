@@ -965,7 +965,7 @@ async fn create_catalog_template(
             name: Some(name.to_string()),
             labels: Some(BTreeMap::from([(
                 "vmrogue.io/managed-by".to_string(),
-                "vmrogue-api".to_string(),
+                "veyron-api".to_string(),
             )])),
             ..Default::default()
         },
@@ -1066,7 +1066,7 @@ async fn create_catalog_profile(
             name: Some(name.to_string()),
             labels: Some(BTreeMap::from([(
                 "vmrogue.io/managed-by".to_string(),
-                "vmrogue-api".to_string(),
+                "veyron-api".to_string(),
             )])),
             ..Default::default()
         },

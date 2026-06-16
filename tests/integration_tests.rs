@@ -2,13 +2,13 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-use vmrogue::blueprints::BLUEPRINTS;
-use vmrogue::config::{DiskSource, NetworkType, VMConfig, VMConfigBuilder, validate_vm_config};
-use vmrogue::kube::vm_config_to_kubevirt;
-use vmrogue::output::{to_json, to_yaml};
-use vmrogue::profiles::PROFILES;
-use vmrogue::storage::{AccessMode, PvcSpec, format_bytes, parse_size_to_bytes};
-use vmrogue::templates::TEMPLATES;
+use veyron::blueprints::BLUEPRINTS;
+use veyron::config::{DiskSource, NetworkType, VMConfig, VMConfigBuilder, validate_vm_config};
+use veyron::kube::vm_config_to_kubevirt;
+use veyron::output::{to_json, to_yaml};
+use veyron::profiles::PROFILES;
+use veyron::storage::{AccessMode, PvcSpec, format_bytes, parse_size_to_bytes};
+use veyron::templates::TEMPLATES;
 
 #[test]
 fn test_template_to_kubevirt_conversion() {
@@ -63,7 +63,7 @@ users:
         .build();
 
     // Validate
-    vmrogue::config::validate_vm_config(&config).unwrap();
+    veyron::config::validate_vm_config(&config).unwrap();
 
     // Convert to KubeVirt
     let vm = vm_config_to_kubevirt(&config).unwrap();
@@ -124,7 +124,7 @@ fn test_yaml_serialization_roundtrip() {
     let yaml = to_yaml(&config).unwrap();
 
     // Deserialize back
-    let deserialized: vmrogue::config::VMConfig = serde_yml::from_str(&yaml).unwrap();
+    let deserialized: veyron::config::VMConfig = serde_yml::from_str(&yaml).unwrap();
 
     assert_eq!(config.name, deserialized.name);
     assert_eq!(config.namespace, deserialized.namespace);
@@ -147,7 +147,7 @@ fn test_json_serialization_roundtrip() {
     let json = to_json(&config).unwrap();
 
     // Deserialize back
-    let deserialized: vmrogue::config::VMConfig = serde_json::from_str(&json).unwrap();
+    let deserialized: veyron::config::VMConfig = serde_json::from_str(&json).unwrap();
 
     assert_eq!(config.name, deserialized.name);
     assert_eq!(config.namespace, deserialized.namespace);
@@ -162,19 +162,19 @@ fn test_all_disk_types_conversion() {
         .build();
 
     // Add all disk types
-    config.disks.push(vmrogue::config::DiskConfig {
+    config.disks.push(veyron::config::DiskConfig {
         name: "blank-disk".to_string(),
         size: "10Gi".to_string(),
         storage_class: Some("fast-ssd".to_string()),
         boot_order: 1,
         source: DiskSource::Blank,
-        device_type: vmrogue::config::DiskDeviceType::default(),
+        device_type: veyron::config::DiskDeviceType::default(),
         bus: None,
         cache: None,
         io: None,
     });
 
-    config.disks.push(vmrogue::config::DiskConfig {
+    config.disks.push(veyron::config::DiskConfig {
         name: "pvc-disk".to_string(),
         size: "20Gi".to_string(),
         storage_class: None,
@@ -182,13 +182,13 @@ fn test_all_disk_types_conversion() {
         source: DiskSource::PVC {
             name: "existing-pvc".to_string(),
         },
-        device_type: vmrogue::config::DiskDeviceType::default(),
+        device_type: veyron::config::DiskDeviceType::default(),
         bus: None,
         cache: None,
         io: None,
     });
 
-    config.disks.push(vmrogue::config::DiskConfig {
+    config.disks.push(veyron::config::DiskConfig {
         name: "container-disk".to_string(),
         size: "0".to_string(),
         storage_class: None,
@@ -196,13 +196,13 @@ fn test_all_disk_types_conversion() {
         source: DiskSource::ContainerDisk {
             image: "registry.io/os:latest".to_string(),
         },
-        device_type: vmrogue::config::DiskDeviceType::default(),
+        device_type: veyron::config::DiskDeviceType::default(),
         bus: None,
         cache: None,
         io: None,
     });
 
-    config.disks.push(vmrogue::config::DiskConfig {
+    config.disks.push(veyron::config::DiskConfig {
         name: "dv-disk".to_string(),
         size: "50Gi".to_string(),
         storage_class: None,
@@ -210,13 +210,13 @@ fn test_all_disk_types_conversion() {
         source: DiskSource::DataVolume {
             name: "my-datavolume".to_string(),
         },
-        device_type: vmrogue::config::DiskDeviceType::default(),
+        device_type: veyron::config::DiskDeviceType::default(),
         bus: None,
         cache: None,
         io: None,
     });
 
-    config.interfaces.push(vmrogue::config::InterfaceConfig {
+    config.interfaces.push(veyron::config::InterfaceConfig {
         name: "default".to_string(),
         network: "default".to_string(),
         model: "virtio".to_string(),
@@ -256,7 +256,7 @@ fn test_network_types_conversion() {
         .add_blank_disk("rootdisk", "20Gi", 1)
         .build();
 
-    config.interfaces.push(vmrogue::config::InterfaceConfig {
+    config.interfaces.push(veyron::config::InterfaceConfig {
         name: "pod-net".to_string(),
         network: "default".to_string(),
         model: "virtio".to_string(),
@@ -264,7 +264,7 @@ fn test_network_types_conversion() {
         mac_address: None,
     });
 
-    config.interfaces.push(vmrogue::config::InterfaceConfig {
+    config.interfaces.push(veyron::config::InterfaceConfig {
         name: "bridge-net".to_string(),
         network: "br0".to_string(),
         model: "e1000".to_string(),
@@ -272,7 +272,7 @@ fn test_network_types_conversion() {
         mac_address: None,
     });
 
-    config.interfaces.push(vmrogue::config::InterfaceConfig {
+    config.interfaces.push(veyron::config::InterfaceConfig {
         name: "multus-net".to_string(),
         network: "data-network".to_string(),
         model: "virtio".to_string(),
@@ -644,7 +644,7 @@ fn test_multi_disk_vm_with_all_types() {
         .add_pod_network("default")
         .build();
 
-    config.disks.push(vmrogue::config::DiskConfig {
+    config.disks.push(veyron::config::DiskConfig {
         name: "pvc-disk".to_string(),
         size: "100Gi".to_string(),
         storage_class: Some("ceph-rbd".to_string()),
@@ -652,13 +652,13 @@ fn test_multi_disk_vm_with_all_types() {
         source: DiskSource::PVC {
             name: "existing-pvc".to_string(),
         },
-        device_type: vmrogue::config::DiskDeviceType::default(),
+        device_type: veyron::config::DiskDeviceType::default(),
         bus: None,
         cache: None,
         io: None,
     });
 
-    config.disks.push(vmrogue::config::DiskConfig {
+    config.disks.push(veyron::config::DiskConfig {
         name: "dv-disk".to_string(),
         size: "200Gi".to_string(),
         storage_class: None,
@@ -666,7 +666,7 @@ fn test_multi_disk_vm_with_all_types() {
         source: DiskSource::DataVolume {
             name: "my-dv".to_string(),
         },
-        device_type: vmrogue::config::DiskDeviceType::default(),
+        device_type: veyron::config::DiskDeviceType::default(),
         bus: None,
         cache: None,
         io: None,
@@ -781,7 +781,7 @@ fn test_validation_invalid_memory_format() {
 
 #[test]
 fn test_snapshot_config_creation_and_serialization() {
-    use vmrogue::snapshots::{RetentionPolicy, SnapshotConfig};
+    use veyron::snapshots::{RetentionPolicy, SnapshotConfig};
 
     let config = SnapshotConfig::new("my-vm", "snap-20240101")
         .with_description("Daily snapshot")
@@ -813,7 +813,7 @@ fn test_snapshot_config_creation_and_serialization() {
 
 #[test]
 fn test_backup_config_types_and_retention() {
-    use vmrogue::backup::{BackupConfig, BackupType, CompressionType, RetentionPolicy};
+    use veyron::backup::{BackupConfig, BackupType, CompressionType, RetentionPolicy};
 
     // Full backup with defaults
     let config = BackupConfig::new("db-vm", "db-backup-001");
@@ -848,8 +848,8 @@ fn test_backup_config_types_and_retention() {
 
 #[test]
 fn test_network_policy_rule_creation() {
-    use vmrogue::networking::NetworkProtocol;
-    use vmrogue::networking::policies::{
+    use veyron::networking::NetworkProtocol;
+    use veyron::networking::policies::{
         NetworkPolicyRule, PolicyAction, PortRange, TrafficDirection,
     };
 
@@ -876,7 +876,7 @@ fn test_network_policy_rule_creation() {
 
 #[test]
 fn test_security_assessment_vulnerability_scoring() {
-    use vmrogue::security::{RiskLevel, SecurityAssessment, Severity, Vulnerability};
+    use veyron::security::{RiskLevel, SecurityAssessment, Severity, Vulnerability};
 
     let mut assessment = SecurityAssessment::new("production-db");
 
@@ -911,7 +911,7 @@ fn test_security_assessment_vulnerability_scoring() {
 
 #[test]
 fn test_cost_tracking_entries_and_allocation() {
-    use vmrogue::cost::{CostCalculator, CostSummary};
+    use veyron::cost::{CostCalculator, CostSummary};
 
     let calculator = CostCalculator::default();
 
@@ -948,7 +948,7 @@ fn test_cost_tracking_entries_and_allocation() {
 
 #[test]
 fn test_ha_priority_sorting_and_checks() {
-    use vmrogue::migration::ha::{EvictionStrategy, HAConfig, HAManager, HAPriority};
+    use veyron::migration::ha::{EvictionStrategy, HAConfig, HAManager, HAPriority};
 
     let mut manager = HAManager::new();
 
@@ -987,8 +987,8 @@ fn test_ha_priority_sorting_and_checks() {
 
 #[test]
 fn test_workflow_creation_and_execution() {
-    use vmrogue::automation::workflows::{Workflow, WorkflowExecutor, WorkflowStep};
-    use vmrogue::automation::{Action, ActionType};
+    use veyron::automation::workflows::{Workflow, WorkflowExecutor, WorkflowStep};
+    use veyron::automation::{Action, ActionType};
 
     let workflow = Workflow::new("deploy-workflow")
         .with_description("Deploy and verify")
@@ -1024,7 +1024,7 @@ fn test_workflow_creation_and_execution() {
 
 #[test]
 fn test_migration_strategy_node_scoring() {
-    use vmrogue::migration::strategy::{
+    use veyron::migration::strategy::{
         MigrationStrategy, NodeInfo, NodeSelector, SelectionCriterion,
     };
 
@@ -1068,7 +1068,7 @@ fn test_migration_strategy_node_scoring() {
 
 #[test]
 fn test_vm_metrics_collection_and_aggregation() {
-    use vmrogue::observability::metrics::{Metric, MetricAggregator, MetricCollector, MetricType};
+    use veyron::observability::metrics::{Metric, MetricAggregator, MetricCollector, MetricType};
 
     // Create and record metrics
     let mut collector = MetricCollector::new();
@@ -1113,7 +1113,7 @@ fn test_vm_metrics_collection_and_aggregation() {
 
 #[test]
 fn test_backup_schedule_types() {
-    use vmrogue::backup::schedule::{BackupSchedule, ScheduleType};
+    use veyron::backup::schedule::{BackupSchedule, ScheduleType};
 
     let hourly = BackupSchedule::new("hourly-backup", ScheduleType::hourly(30));
     assert!(hourly.enabled);
@@ -1128,7 +1128,7 @@ fn test_backup_schedule_types() {
 #[test]
 fn test_shared_scheduling_functions() {
     use chrono::{NaiveTime, Utc};
-    use vmrogue::utils::schedule::{last_day_of_month, next_daily, next_hourly};
+    use veyron::utils::schedule::{last_day_of_month, next_daily, next_hourly};
 
     // February in a leap year
     assert_eq!(last_day_of_month(2024, 2), 29);
@@ -1150,7 +1150,7 @@ fn test_shared_scheduling_functions() {
 
 #[test]
 fn test_vmrogue_error_display() {
-    use vmrogue::VMRogueError;
+    use veyron::VMRogueError;
 
     let not_found = VMRogueError::VmNotFound("my-vm".to_string());
     assert_eq!(not_found.to_string(), "VM 'my-vm' not found");
@@ -1222,7 +1222,7 @@ fn test_builder_validated() {
 
 #[test]
 fn test_health_check_report() {
-    use vmrogue::health::{HealthCheck, HealthStatus, VMHealthReport};
+    use veyron::health::{HealthCheck, HealthStatus, VMHealthReport};
 
     let mut report = VMHealthReport::new("test-vm".to_string());
     assert_eq!(report.vm_name, "test-vm");
@@ -1248,7 +1248,7 @@ fn test_health_check_report() {
 
 #[test]
 fn test_disk_info_parse_and_format() {
-    use vmrogue::disk::DiskInfo;
+    use veyron::disk::DiskInfo;
 
     // Parse various sizes
     assert_eq!(DiskInfo::parse_size("10Gi"), 10 * 1024 * 1024 * 1024);
@@ -1272,7 +1272,7 @@ fn test_disk_info_parse_and_format() {
 #[test]
 fn test_cron_expression_parsing() {
     use chrono::Utc;
-    use vmrogue::utils::cron::next_cron_time;
+    use veyron::utils::cron::next_cron_time;
 
     let now = Utc::now();
 
@@ -1291,7 +1291,7 @@ fn test_cron_expression_parsing() {
 
 #[test]
 fn test_format_bytes_utility() {
-    use vmrogue::format_bytes;
+    use veyron::format_bytes;
 
     assert_eq!(format_bytes(0), "0 B");
     assert_eq!(format_bytes(1024), "1.00 KiB");
@@ -1304,7 +1304,7 @@ fn test_format_bytes_utility() {
 
 #[test]
 fn test_generate_id_utility() {
-    use vmrogue::generate_id;
+    use veyron::generate_id;
 
     let id1 = generate_id("vm", "test");
     let id2 = generate_id("vm", "test");
@@ -1320,7 +1320,7 @@ fn test_generate_id_utility() {
 
 #[test]
 fn test_percent_to_u8_utility() {
-    use vmrogue::percent_to_u8;
+    use veyron::percent_to_u8;
 
     assert_eq!(percent_to_u8(0.0), 0);
     assert_eq!(percent_to_u8(50.0), 50);
@@ -1513,7 +1513,7 @@ fn test_profiles_api_returns_all_profiles() {
 
 #[test]
 fn test_vmrogue_error_types() {
-    use vmrogue::utils::VMRogueError;
+    use veyron::utils::VMRogueError;
 
     // Test that all error types have correct Display output
     let errors = vec![
@@ -1538,7 +1538,7 @@ fn test_vmrogue_error_types() {
 
 #[test]
 fn test_snapshot_config_creation() {
-    use vmrogue::snapshots::SnapshotConfig;
+    use veyron::snapshots::SnapshotConfig;
 
     let config = SnapshotConfig::new("test-vm", "snap-test");
     assert_eq!(config.vm_name, "test-vm");
@@ -1548,7 +1548,7 @@ fn test_snapshot_config_creation() {
 
 #[test]
 fn test_dr_config_creation() {
-    use vmrogue::dr::{DRConfig, DRStrategy, RPO, RTO};
+    use veyron::dr::{DRConfig, DRStrategy, RPO, RTO};
 
     let config = DRConfig::new("test-dr", "site-a", "site-b")
         .with_strategy(DRStrategy::ActivePassive)
@@ -1567,7 +1567,7 @@ fn test_dr_config_creation() {
 #[test]
 fn test_multi_cluster_manager() {
     use chrono::Utc;
-    use vmrogue::multi_cluster::{
+    use veyron::multi_cluster::{
         ClusterEnvironment, ClusterHealth, ClusterInfo, MultiClusterManager,
     };
 
@@ -1614,7 +1614,7 @@ fn test_cost_calculation() {
 
 #[test]
 fn test_k8s_quantity_parsing() {
-    use vmrogue::utils::{parse_cpu_nanocores, parse_memory_bytes, parse_memory_gib};
+    use veyron::utils::{parse_cpu_nanocores, parse_memory_bytes, parse_memory_gib};
 
     // Memory GiB parsing
     assert!((parse_memory_gib("4Gi") - 4.0).abs() < 0.001);
@@ -1637,7 +1637,7 @@ fn test_k8s_quantity_parsing() {
 
 #[test]
 fn test_policy_rule_value_field() {
-    use vmrogue::operator_crds::CRDPolicyRule;
+    use veyron::operator_crds::CRDPolicyRule;
 
     // Verify the value field exists and works
     let rule_json =
@@ -1656,7 +1656,7 @@ fn test_policy_rule_value_field() {
 
 #[test]
 fn test_ssh_access_credential_shape() {
-    use vmrogue::kube::vm_ssh::SshPropagation;
+    use veyron::kube::vm_ssh::SshPropagation;
     let propagation = SshPropagation::QemuGuestAgent.propagation_json("clouduser");
     assert!(propagation.get("qemuGuestAgent").is_some());
     let cred = serde_json::json!({

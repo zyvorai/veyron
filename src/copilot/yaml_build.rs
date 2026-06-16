@@ -43,9 +43,7 @@ pub fn parse_spec_from_query(query: &str) -> YamlBuildRequest {
         Some("windows-2022".into())
     } else if lower.contains("ubuntu 24") {
         Some("ubuntu-24.04".into())
-    } else if lower.contains("ubuntu") {
-        Some("ubuntu-22.04".into())
-    } else if lower.contains("postgres") {
+    } else if lower.contains("ubuntu") || lower.contains("postgres") {
         Some("ubuntu-22.04".into())
     } else {
         None

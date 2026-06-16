@@ -3,7 +3,7 @@ kind: ClusterRole
 metadata:
   name: veyron-operator
 rules:
-  # VMRogue CRDs - full control
+  # Veyron CRDs - full control
   - apiGroups: ["vmrogue.io"]
     resources:
       - vmroguevms

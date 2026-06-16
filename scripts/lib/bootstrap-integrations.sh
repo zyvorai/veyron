@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply vmrogue-integrations Secret when observability / GitOps services exist on the cluster.
+# Apply veyron-integrations Secret when observability / GitOps services exist on the cluster.
 # Sourced or invoked from deploy-all-remote.sh with K8S_CMD and NAMESPACE set.
 set -euo pipefail
 
@@ -41,7 +41,7 @@ bootstrap_argocd_credentials() {
         session_base="${argocd_url}"
     fi
 
-    if [[ "${VMROGUE_SKIP_ARGOCD_TOKEN_BOOTSTRAP:-}" != "1" && "${VMROGUE_SKIP_ARGOCD_TOKEN_BOOTSTRAP:-}" != "true" ]]; then
+    if [[ "${VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP:-}" != "1" && "${VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP:-}" != "true" ]]; then
         if ${k8s} get secret argocd-initial-admin-secret -n "${argocd_ns}" &>/dev/null; then
             local pw_b64 pw body
             pw_b64=$(${k8s} get secret argocd-initial-admin-secret -n "${argocd_ns}" -o jsonpath='{.data.password}' 2>/dev/null || true)
@@ -100,10 +100,10 @@ bootstrap_nodeport_external_url() {
 
 bootstrap_vmrogue_integrations() {
     local k8s="${1:?kubectl command}"
-    local ns="${2:-vmrogue-system}"
+    local ns="${2:-veyron-system}"
 
-    if [[ "${VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP:-}" == "1" || "${VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP:-}" == "true" ]]; then
-        echo "Skipping vmrogue-integrations bootstrap (VMROGUE_SKIP_INTEGRATIONS_BOOTSTRAP=1)"
+    if [[ "${VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP:-}" == "1" || "${VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP:-}" == "true" ]]; then
+        echo "Skipping veyron-integrations bootstrap (VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1)"
         return 0
     fi
 
@@ -206,11 +206,11 @@ bootstrap_vmrogue_integrations() {
     fi
 
     if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${packetwolf_url}" ]]; then
-        echo "No integration services detected — skip vmrogue-integrations Secret"
+        echo "No integration services detected — skip veyron-integrations Secret"
         return 0
     fi
 
-    echo "Applying vmrogue-integrations Secret in ${ns}…"
+    echo "Applying veyron-integrations Secret in ${ns}…"
     ${k8s} create namespace "${ns}" --dry-run=client -o yaml | ${k8s} apply -f - >/dev/null 2>&1 || true
 
     local tmp
@@ -222,12 +222,12 @@ metadata:
   name: veyron-integrations
   namespace: ${ns}
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     app.kubernetes.io/component: api
 type: Opaque
 stringData:
 EOF
-    [[ -n "${prom_url}" ]] && echo "  VMROGUE_PROMETHEUS_URL: \"${prom_url}\"" >>"${tmp}"
+    [[ -n "${prom_url}" ]] && echo "  VEYRON_PROMETHEUS_URL: \"${prom_url}\"" >>"${tmp}"
     [[ -n "${am_url}" ]] && echo "  VMROGUE_ALERTMANAGER_URL: \"${am_url}\"" >>"${tmp}"
     [[ -n "${loki_url}" ]] && echo "  VMROGUE_LOKI_URL: \"${loki_url}\"" >>"${tmp}"
     [[ -n "${opencost_url}" ]] && echo "  VMROGUE_OPENCOST_URL: \"${opencost_url}\"" >>"${tmp}"
@@ -235,11 +235,11 @@ EOF
     [[ -n "${jaeger_url}" ]] && echo "  VMROGUE_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
     [[ -n "${grafana_url}" ]] && echo "  VMROGUE_GRAFANA_URL: \"${grafana_url}\"" >>"${tmp}"
     [[ -n "${grafana_ext}" ]] && echo "  VMROGUE_GRAFANA_EXTERNAL_URL: \"${grafana_ext}\"" >>"${tmp}"
-    [[ -n "${prom_ext}" ]] && echo "  VMROGUE_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
+    [[ -n "${prom_ext}" ]] && echo "  VEYRON_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
     [[ -n "${am_ext}" ]] && echo "  VMROGUE_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
     [[ -n "${jaeger_ext}" ]] && echo "  VMROGUE_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
-    [[ -n "${packetwolf_url}" ]] && echo "  VMROGUE_PACKETWOLF_URL: \"${packetwolf_url}\"" >>"${tmp}"
-    [[ -n "${packetwolf_ext}" ]] && echo "  VMROGUE_PACKETWOLF_EXTERNAL_URL: \"${packetwolf_ext}\"" >>"${tmp}"
+    [[ -n "${packetwolf_url}" ]] && echo "  VEYRON_PACKETWOLF_URL: \"${packetwolf_url}\"" >>"${tmp}"
+    [[ -n "${packetwolf_ext}" ]] && echo "  VEYRON_PACKETWOLF_EXTERNAL_URL: \"${packetwolf_ext}\"" >>"${tmp}"
     [[ -n "${argocd_url}" ]] && echo "  VMROGUE_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
     [[ -n "${argocd_token}" ]] && echo "  VMROGUE_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
     [[ -n "${argocd_default_app}" ]] && echo "  VMROGUE_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"
@@ -250,5 +250,5 @@ EOF
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    bootstrap_vmrogue_integrations "${1:?kubectl}" "${2:-vmrogue-system}"
+    bootstrap_vmrogue_integrations "${1:?kubectl}" "${2:-veyron-system}"
 fi

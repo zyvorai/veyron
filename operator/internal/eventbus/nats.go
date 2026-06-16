@@ -21,7 +21,7 @@ type EventBus struct {
 // NewEventBus connects to NATS and initializes JetStream.
 func NewEventBus(url string) (*EventBus, error) {
 	opts := []nats.Option{
-		nats.Name("vmrogue-operator"),
+		nats.Name("veyron-operator"),
 		nats.ReconnectWait(2 * time.Second),
 		nats.MaxReconnects(60),
 	}
@@ -87,7 +87,7 @@ func (eb *EventBus) Subscribe(subject string, handler func(Event)) error {
 		}
 		handler(event)
 		msg.Ack()
-	}, nats.Durable("vmrogue-operator"))
+	}, nats.Durable("veyron-operator"))
 	if err != nil {
 		return fmt.Errorf("subscribing to %s: %w", subject, err)
 	}

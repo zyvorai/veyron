@@ -28,20 +28,20 @@ Configuration:
 
 Environment variables:
   KUBECONFIG                         Path to kubeconfig file
-  VEYRON_NAMESPACE                   Default namespace (VMROGUE_NAMESPACE alias)
-  VMROGUE_NAMESPACE                  Default namespace (legacy alias)
+  VEYRON_NAMESPACE                   Default namespace (VEYRON_NAMESPACE alias)
+  VEYRON_NAMESPACE                  Default namespace (legacy alias)
   NO_COLOR                           Disable colored output")]
 #[command(version)]
 pub struct Cli {
     /// Kubernetes namespace
-    #[arg(long, default_value = "default", env = "VMROGUE_NAMESPACE")]
+    #[arg(long, default_value = "default", env = "VEYRON_NAMESPACE")]
     pub namespace: String,
 
     /// Path to kubeconfig file
     #[arg(long, env = "KUBECONFIG")]
     pub kubeconfig: Option<String>,
 
-    /// Path to config file (default: ~/.config/vmrogue/config.toml)
+    /// Path to config file (default: ~/.config/veyron/config.toml)
     #[arg(long, env = "VMROGUE_CONFIG")]
     pub config: Option<String>,
 

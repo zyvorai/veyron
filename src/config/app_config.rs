@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 // Application-wide configuration file
-// Loaded from ~/.config/vmrogue/config.toml
+// Loaded from ~/.config/veyron/config.toml
 
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -49,10 +49,10 @@ impl Default for AppConfig {
 impl AppConfig {
     /// System-wide config path
     pub fn system_path() -> PathBuf {
-        PathBuf::from("/etc/vmrogue/config.toml")
+        PathBuf::from("/etc/veyron/config.toml")
     }
 
-    /// User config path (~/.config/vmrogue/config.toml)
+    /// User config path (~/.config/veyron/config.toml)
     pub fn user_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir()
             .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
@@ -66,8 +66,8 @@ impl AppConfig {
 
     /// Load configuration with layered resolution:
     /// 1. Start with compiled defaults
-    /// 2. Load /etc/vmrogue/config.toml (system-wide)
-    /// 3. Overlay ~/.config/vmrogue/config.toml (user)
+    /// 2. Load /etc/veyron/config.toml (system-wide)
+    /// 3. Overlay ~/.config/veyron/config.toml (user)
     pub fn load() -> Result<Self> {
         // Start from defaults
         let mut config = Self::default();
@@ -102,7 +102,7 @@ impl AppConfig {
             .with_context(|| format!("Failed to parse config file: {}", path.display()))
     }
 
-    /// Save configuration to user location (~/.config/vmrogue/config.toml)
+    /// Save configuration to user location (~/.config/veyron/config.toml)
     pub fn save(&self) -> Result<()> {
         let path = Self::user_path()?;
         self.save_to(&path)
@@ -496,7 +496,7 @@ mod tests {
 
     #[test]
     fn test_load_nonexistent_returns_default() {
-        let path = PathBuf::from("/tmp/nonexistent-vmrogue-test-config.toml");
+        let path = PathBuf::from("/tmp/nonexistent-veyron-test-config.toml");
         let config = AppConfig::load_from(path).unwrap();
         assert_eq!(config.namespace, "default");
         assert_eq!(config.api.port, 8080);
@@ -576,7 +576,7 @@ mod tests {
     fn test_system_path() {
         assert_eq!(
             AppConfig::system_path(),
-            PathBuf::from("/etc/vmrogue/config.toml")
+            PathBuf::from("/etc/veyron/config.toml")
         );
     }
 }

@@ -118,7 +118,7 @@ pub fn handle_config_load(name: String, output: Option<String>, format: String) 
     );
     println!();
 
-    // Load template from ~/.config/vmrogue/templates/ directory
+    // Load template from ~/.config/veyron/templates/ directory
     let templates_dir = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from(".config"))
         .join("vmrogue")
@@ -570,7 +570,7 @@ mod tests {
 
     #[test]
     fn test_build_template_candidates_extensions() {
-        let dir = std::path::Path::new("/home/user/.config/vmrogue/templates");
+        let dir = std::path::Path::new("/home/user/.config/veyron/templates");
         let candidates = build_template_candidates(dir, "web-server");
         assert_eq!(candidates[1], dir.join("web-server.yaml"));
         assert_eq!(candidates[2], dir.join("web-server.yml"));

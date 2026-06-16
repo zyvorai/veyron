@@ -5,7 +5,7 @@
 # Rsync source, build binary, build container image, deploy to K8s.
 # No systemd — pure Kubernetes deployment.
 # The API is served with HTTPS (self-signed cert via initContainer openssl).
-# To use your own cert: create a TLS Secret in vmrogue-system and patch the
+# To use your own cert: create a TLS Secret in veyron-system and patch the
 # Deployment to mount it at /certs (tls.crt, tls.key) instead of the generated pair.
 #
 # Usage:
@@ -13,12 +13,12 @@
 #   ./scripts/deploy-k8s-remote.sh --help
 #
 # Optional environment (local):
-#   VMROGUE_SKIP_CDI=1       — do not install CDI when the DataVolume CRD is missing
+#   VEYRON_SKIP_CDI=1       — do not install CDI when the DataVolume CRD is missing
 #   VMROGUE_CDI_VERSION=v1.65.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
-#   VMROGUE_CONTAINER_RUNTIME_IMPORT — full shell command that reads OCI/docker tar on stdin (default: k3s ctr import, or ctr -n k8s.io for plain kubectl)
-#   VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 — do not apply deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml when Cilium is installed
-#   VMROGUE_REQUIRE_KUBEVIRT=1 — fail deploy if KubeVirt VM CRD is missing (after rsync; remote kubectl check)
-#   VMROGUE_REMOTE_SKIP_SSH_CHECK=1 — skip SSH BatchMode preflight before rsync
+#   VEYRON_CONTAINER_RUNTIME_IMPORT — full shell command that reads OCI/docker tar on stdin (default: k3s ctr import, or ctr -n k8s.io for plain kubectl)
+#   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 — do not apply deploy/k8s/bootstrap/cilium-veyron-egress.yaml when Cilium is installed
+#   VEYRON_REQUIRE_KUBEVIRT=1 — fail deploy if KubeVirt VM CRD is missing (after rsync; remote kubectl check)
+#   VEYRON_REMOTE_SKIP_SSH_CHECK=1 — skip SSH BatchMode preflight before rsync
 #   DEPLOY_SSH_TIMEOUT=20 — SSH ConnectTimeout seconds (preflight only)
 #   DEPLOY_SSH_PORT=22 — SSH port for rsync and remote commands
 #   NO_COLOR=1 — disable ANSI highlights
@@ -36,18 +36,18 @@ source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 
 usage() {
     cat <<'USAGE_EOF'
-deploy-k8s-remote.sh — Deploy VMRogue API to a remote Kubernetes node (rsync → build → image → CDI → apply).
+deploy-k8s-remote.sh — Deploy Veyron API to a remote Kubernetes node (rsync → build → image → CDI → apply).
 
 Usage:
   ./scripts/deploy-k8s-remote.sh <host> [user]
   ./scripts/deploy-k8s-remote.sh --help
 
 Environment (local):
-  VMROGUE_API_KEY, VMROGUE_NODE_PORT, VMROGUE_SKIP_CDI, VMROGUE_CDI_VERSION
-  VMROGUE_CONTAINER_RUNTIME_IMPORT
-  VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip Cilium egress bootstrap when Cilium CRD exists
-  VMROGUE_REQUIRE_KUBEVIRT=1              Fail if KubeVirt VM CRD is missing
-  VMROGUE_REMOTE_SKIP_SSH_CHECK=1         Skip SSH preflight
+  VEYRON_API_KEY, VMROGUE_NODE_PORT, VEYRON_SKIP_CDI, VMROGUE_CDI_VERSION
+  VEYRON_CONTAINER_RUNTIME_IMPORT
+  VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip Cilium egress bootstrap when Cilium CRD exists
+  VEYRON_REQUIRE_KUBEVIRT=1              Fail if KubeVirt VM CRD is missing
+  VEYRON_REMOTE_SKIP_SSH_CHECK=1         Skip SSH preflight
   DEPLOY_SSH_TIMEOUT                        SSH connect timeout (default 20)
   DEPLOY_SSH_PORT                           SSH port (default 22)
   NO_COLOR=1                               Disable ANSI colors
@@ -61,12 +61,12 @@ fi
 
 HOST="${1:?Usage: $0 <host> [user]   (see --help)}"
 USER="${2:-root}"
-REMOTE_DIR="/home/${USER}/vmrogue"
-API_KEY="${VMROGUE_API_KEY:-Admin@321}"
+REMOTE_DIR="/home//veyron"
+API_KEY="${VEYRON_API_KEY:-Admin@321}"
 NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
 NS="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
 CDI_VERSION="${VMROGUE_CDI_VERSION:-v1.65.0}"
-SKIP_CDI="${VMROGUE_SKIP_CDI:-0}"
+SKIP_CDI="${VEYRON_SKIP_CDI:-0}"
 RUN_STARTED_AT="$(date +%s)"
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
@@ -98,11 +98,11 @@ error() { echo "  ${COLOR_RED}[✗]${COLOR_RESET} $*"; exit 1; }
 
 REMOTE="${USER}@${HOST}"
 
-if [[ "${VMROGUE_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
+if [[ "${VEYRON_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
     step "Preflight: SSH (${REMOTE}, port ${DEPLOY_SSH_PORT})"
     SSH_ERR=""
     if ! SSH_ERR=$(deploy_ssh_preflight "${REMOTE}"); then
-        error "SSH preflight failed on port ${DEPLOY_SSH_PORT}: ${SSH_ERR} (try: ssh -p ${DEPLOY_SSH_PORT} ${REMOTE} or VMROGUE_REMOTE_SKIP_SSH_CHECK=1 $0 $*)"
+        error "SSH preflight failed on port ${DEPLOY_SSH_PORT}: ${SSH_ERR} (try: ssh -p ${DEPLOY_SSH_PORT} ${REMOTE} or VEYRON_REMOTE_SKIP_SSH_CHECK=1 $0 $*)"
     fi
     info "SSH OK (port ${DEPLOY_SSH_PORT}, timeout ${DEPLOY_SSH_TIMEOUT}s)"
 fi
@@ -131,7 +131,7 @@ case "${REMOTE_K8S_FLAVOR}" in
     error "Neither k3s nor kubectl found on ${USER}@${HOST} (install a cluster CLI or use a registry-based image flow)"
     ;;
 esac
-IMPORT_CMD="${VMROGUE_CONTAINER_RUNTIME_IMPORT:-${IMPORT_DEFAULT}}"
+IMPORT_CMD="${VEYRON_CONTAINER_RUNTIME_IMPORT:-${IMPORT_DEFAULT}}"
 
 echo ""
 echo "  ${COLOR_BOLD}════════════════════════════════════════${COLOR_RESET}"
@@ -159,9 +159,9 @@ step "Step 2/7: Building release binary"
 deploy_ssh "${USER}@${HOST}" "
     source \$HOME/.cargo/env 2>/dev/null || true
     cd ${REMOTE_DIR}
-    cargo build --release 2>&1 | tail -3
-    strip target/release/vmrogue 2>/dev/null || true
-    ls -lh target/release/vmrogue
+    cargo build --release --bin veyron 2>&1 | tail -3
+    strip target/release/veyron 2>/dev/null || true
+    ls -lh target/release/veyron
 "
 info "Binary built"
 
@@ -169,26 +169,26 @@ info "Binary built"
 step "Step 3/7: Building container image"
 deploy_ssh "${USER}@${HOST}" "
     cd ${REMOTE_DIR}
-    cp target/release/vmrogue /tmp/vmrogue-binary
-    podman build --format docker -t localhost/vmrogue:latest -f Dockerfile.deploy /tmp 2>&1 | tail -3
-    podman save localhost/vmrogue:latest | ${IMPORT_CMD} 2>&1
-" || error "Image import failed (non-k3s: install containerd ctr, set VMROGUE_CONTAINER_RUNTIME_IMPORT, or push to a registry and adjust the Deployment image / pullPolicy)"
+    cp target/release/veyron /tmp/veyron-binary
+    podman build --format docker -t localhost/veyron:latest -f Dockerfile.deploy /tmp 2>&1 | tail -3
+    podman save localhost/veyron:latest | ${IMPORT_CMD} 2>&1
+" || error "Image import failed (non-k3s: install containerd ctr, set VEYRON_CONTAINER_RUNTIME_IMPORT, or push to a registry and adjust the Deployment image / pullPolicy)"
 info "Container image built and imported"
 
 # ── Step 4: CDI (DataVolume / import) when missing ──
 # KubeVirt disk pipelines and examples often need CDI; installing it here avoids a separate manual step on fresh clusters.
 step "Step 4/7: Ensuring CDI (containerized-data-importer)"
 if [[ "${SKIP_CDI}" == "1" ]]; then
-  info "Skipped CDI install (VMROGUE_SKIP_CDI=1)"
+  info "Skipped CDI install (VEYRON_SKIP_CDI=1)"
 else
   "${SCRIPT_DIR}/ensure-cdi-remote.sh" "${USER}@${HOST}" "${CDI_VERSION}" ||
-    error "CDI install or wait failed (set VMROGUE_SKIP_CDI=1 to skip, or fix cluster network / storage)"
+    error "CDI install or wait failed (set VEYRON_SKIP_CDI=1 to skip, or fix cluster network / storage)"
   info "CDI available for DataVolume workflows"
 fi
 
 # ── Step 5: Deploy to K8s ──
 # Bump pod template every run so apply triggers a rollout even when the image ref
-# stays localhost/vmrogue:latest with imagePullPolicy: Never (otherwise old pods
+# stays localhost/veyron:latest with imagePullPolicy: Never (otherwise old pods
 # keep running the previous image layers).
 DEPLOY_STAMP="$(date +%s)-${RANDOM}"
 
@@ -197,15 +197,15 @@ step "Step 5/7: Deploying to Kubernetes"
 deploy_ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
 
-    if [[ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml ]]; then
+    if [[ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ]]; then
       echo 'Applying Cilium egress bootstrap for ${NS} (API → apiserver / in-cluster)...'
-      ${K} apply -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml
+      ${K} apply -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml
     fi
-    if [[ \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]]; then
+    if [[ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]]; then
       echo 'Applying Cilium clusterwide egress for KubeVirt virt-launcher (VM guest internet)...'
       ${K} apply -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml
     fi
-    if [[ \"${VMROGUE_REQUIRE_KUBEVIRT:-}\" == \"1\" || \"${VMROGUE_REQUIRE_KUBEVIRT:-}\" == \"true\" ]]; then
+    if [[ \"${VEYRON_REQUIRE_KUBEVIRT:-}\" == \"1\" || \"${VEYRON_REQUIRE_KUBEVIRT:-}\" == \"true\" ]]; then
       ${K} get crd virtualmachines.kubevirt.io &>/dev/null || { echo 'KubeVirt CRD virtualmachines.kubevirt.io not found'; exit 1; }
     fi
 
@@ -409,7 +409,7 @@ spec:
               mountPath: /certs
       containers:
         - name: veyron
-          image: localhost/vmrogue:latest
+          image: localhost/veyron:latest
           imagePullPolicy: Never
           args: ['api-serve', '--port', '5151', '--host', '0.0.0.0', '--tls', '--tls-cert', '/certs/tls.crt', '--tls-key', '/certs/tls.key']
           env:
@@ -418,20 +418,20 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
-            - name: VMROGUE_API_KEY
+            - name: VEYRON_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
             - name: RUST_LOG
               value: info
-            - name: VMROGUE_API_NODE_HOST
+            - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: VMROGUE_API_NODE_PORT
+            - name: VEYRON_API_NODE_PORT
               value: "30151"
-            - name: VMROGUE_CLUSTER_DNS
+            - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
           ports:
             - containerPort: 5151

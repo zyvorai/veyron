@@ -102,7 +102,7 @@ Automate with: versioned **ISO URLs**, checksums, **Chocolatey/winget** scripts 
 - **Smoke tests:** CI job that waits for **VMI Ready**, then runs **`virtctl ssh`** or an **RDP** probe from a jump namespace.
 - **VMRogue dashboard / API:** Use for visibility (IP, VNC), not for building the golden image itself.
 
-### VMRogue limitation today (important for automation design)
+### Veyron limitation today (important for automation design)
 
 When you set **`cloud_init`** on a `VMConfig`, **`src/kube/converter.rs`** emits **`cloudInitNoCloud`** — ideal for **Linux** cloud-init.
 

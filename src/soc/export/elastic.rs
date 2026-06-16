@@ -14,15 +14,15 @@ pub struct ElasticConfig {
 }
 
 pub fn config() -> Option<ElasticConfig> {
-    let url = std::env::var("VMROGUE_ELASTIC_URL")
+    let url = std::env::var("VEYRON_ELASTIC_URL")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let api_key = std::env::var("VMROGUE_ELASTIC_API_KEY")
+    let api_key = std::env::var("VEYRON_ELASTIC_API_KEY")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let index = std::env::var("VMROGUE_ELASTIC_INDEX")
+    let index = std::env::var("VEYRON_ELASTIC_INDEX")
         .unwrap_or_else(|_| "logs-vmrogue.security-default".into());
-    let pipeline = std::env::var("VMROGUE_ELASTIC_PIPELINE")
+    let pipeline = std::env::var("VEYRON_ELASTIC_PIPELINE")
         .ok()
         .filter(|s| !s.trim().is_empty());
     Some(ElasticConfig {
@@ -34,7 +34,7 @@ pub fn config() -> Option<ElasticConfig> {
 }
 
 pub fn hunt_enabled() -> bool {
-    std::env::var("VMROGUE_ELASTIC_HUNT_ENABLED")
+    std::env::var("VEYRON_ELASTIC_HUNT_ENABLED")
         .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
         .unwrap_or(false)
 }
@@ -97,7 +97,7 @@ pub async fn push_events(events: &[SecurityEvent]) -> anyhow::Result<u32> {
 pub async fn run_hunt(query: &str, time_range: &str) -> anyhow::Result<serde_json::Value> {
     let cfg = config().ok_or_else(|| anyhow::anyhow!("Elastic not configured"))?;
     if !hunt_enabled() {
-        anyhow::bail!("Elastic hunts disabled — set VMROGUE_ELASTIC_HUNT_ENABLED=true");
+        anyhow::bail!("Elastic hunts disabled — set VEYRON_ELASTIC_HUNT_ENABLED=true");
     }
     let range = parse_time_range(time_range);
     let body = serde_json::json!({

@@ -219,7 +219,7 @@ impl SnapshotManager {
             self.list_all_snapshots().await?
         };
 
-        snapshots.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        snapshots.sort_by_key(|b| std::cmp::Reverse(b.created_at));
 
         Ok(snapshots)
     }
@@ -253,7 +253,7 @@ impl SnapshotManager {
         if snapshots.len() > max_snapshots as usize {
             // Sort by creation time, newest first
             let mut sorted = snapshots.clone();
-            sorted.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+            sorted.sort_by_key(|b| std::cmp::Reverse(b.created_at));
 
             // Delete oldest snapshots beyond the limit
             for snapshot in sorted.iter().skip(max_snapshots as usize) {

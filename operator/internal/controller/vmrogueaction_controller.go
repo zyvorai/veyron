@@ -20,9 +20,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	vmroguev1alpha1 "github.com/ssahani/vmrogue/operator/api/v1alpha1"
-	"github.com/ssahani/vmrogue/operator/internal/eventbus"
-	vmmetrics "github.com/ssahani/vmrogue/operator/internal/metrics"
+	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	"github.com/ssahani/Veyron/operator/internal/eventbus"
+	vmmetrics "github.com/ssahani/Veyron/operator/internal/metrics"
 )
 
 const restartPhaseAnnotation = "vmrogue.io/restart-phase"

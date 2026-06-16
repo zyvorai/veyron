@@ -9,9 +9,9 @@ keywords:
   - kubevirt
   - operator
   - virtual-machine
-home: https://github.com/ssahani/VMRogue
+home: https://github.com/ssahani/Veyron
 sources:
-  - https://github.com/ssahani/VMRogue
+  - https://github.com/ssahani/Veyron
 maintainers:
   - name: ZyvorAI Labs Private Limited
     url: https://github.com/ssahani

@@ -28,7 +28,7 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
         return r;
     }
 
-    let prom = std::env::var("VMROGUE_PROMETHEUS_URL")
+    let prom = std::env::var("VEYRON_PROMETHEUS_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some();
@@ -36,7 +36,7 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
     r.evidence.push(if prom {
         "Data source: live metrics + Prometheus kubevirt_vmi_* (when available)".into()
     } else {
-        "Data source: live kubelet-style estimates — set VMROGUE_PROMETHEUS_URL for p95 history"
+        "Data source: live kubelet-style estimates — set VEYRON_PROMETHEUS_URL for p95 history"
             .into()
     });
 
@@ -93,7 +93,7 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
     }
     if !prom {
         r.recommendations.push(
-            "Install kube-prometheus-stack and set VMROGUE_PROMETHEUS_URL for historical p95/p99."
+            "Install kube-prometheus-stack and set VEYRON_PROMETHEUS_URL for historical p95/p99."
                 .into(),
         );
     }
@@ -115,7 +115,7 @@ pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotRes
 
 #[cfg(feature = "web")]
 async fn prom_percentiles(ns: &str, vm: &str) -> Option<(f64, f64)> {
-    let base = std::env::var("VMROGUE_PROMETHEUS_URL").ok()?;
+    let base = std::env::var("VEYRON_PROMETHEUS_URL").ok()?;
     let end = chrono::Utc::now().timestamp();
     let start = end - 86400;
     let cpu_q =

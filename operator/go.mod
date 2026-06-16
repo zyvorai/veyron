@@ -1,4 +1,4 @@
-module github.com/ssahani/vmrogue/operator
+module github.com/ssahani/Veyron/operator
 
 go 1.23.0
 

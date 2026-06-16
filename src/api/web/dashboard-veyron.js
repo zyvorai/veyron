@@ -1294,7 +1294,7 @@
       { label: 'virt-launcher pods', value: wlPods.filter(function (p) { return /virt-launcher/.test(p.name || ''); }).length },
       { label: 'CDI pods', value: wlPods.filter(function (p) { return /cdi-/.test(p.name || ''); }).length },
       { label: 'KubeVirt ctrl', value: wlPods.filter(function (p) { return /virt-controller|virt-api|virt-handler|virt-operator/.test(p.name || ''); }).length },
-      { label: 'Veyron pods', value: wlPods.filter(function (p) { return /vmrogue/.test(p.name || ''); }).length }
+      { label: 'Veyron pods', value: wlPods.filter(function (p) { return /veyron/.test(p.name || ''); }).length }
     ]);
     /* tab bar */
     var tableContainer = document.getElementById('workloads-table');
@@ -1354,7 +1354,7 @@
       var kind = /virt-launcher/.test(pod.name || '') ? 'virt-launcher'
         : /cdi-/.test(pod.name || '') ? 'CDI Pod'
         : /virt-controller|virt-api|virt-handler|virt-operator/.test(pod.name || '') ? 'KubeVirt ctrl'
-        : /vmrogue/.test(pod.name || '') ? 'Veyron'
+        : /veyron/.test(pod.name || '') ? 'Veyron'
         : 'Pod';
       return '<tr>' +
         '<td>' + esc(pod.name || '—') + '</td>' +
@@ -1387,7 +1387,7 @@
       var isLauncher = /virt-launcher/.test(n);
       var isCdi = /cdi-/.test(n);
       var isKvCtrl = /virt-controller|virt-api|virt-handler|virt-operator/.test(n);
-      var isVeyron = /vmrogue/.test(n);
+      var isVeyron = /veyron/.test(n);
       if (tab === 'all' || tab === 'virt-launcher' && isLauncher ||
           tab === 'cdi' && isCdi || tab === 'kubevirt-ctrl' && isKvCtrl ||
           tab === 'veyron' && isVeyron) {
@@ -1749,7 +1749,7 @@
       { label: 'External Dests', value: '—' }
     ]);
     var banner = '<div class="vmr-network-banner" id="vmr-network-packetwolf-banner">' +
-      '<span style="color:var(--muted);font-size:.84rem">PacketWolf not configured. Set <code>VMROGUE_PACKETWOLF_URL</code> to enable live flow intelligence.</span>' +
+      '<span style="color:var(--muted);font-size:.84rem">PacketWolf not configured. Set <code>VEYRON_PACKETWOLF_URL</code> to enable live flow intelligence.</span>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'settings\')">Configure</button></div>';
     var vmRows = vms.slice(0, 6).map(function (vm) {
       var ns = vm.namespace || 'default';
@@ -1855,8 +1855,8 @@
       /* 4 — API Keys */
       section('API Keys', [
         { label: 'API key (masked)', type: 'text', password: true, placeholder: '••••••••', id: 'set-api-key' },
-        { label: 'Multi-key RBAC (admin:k1,write:k2,readonly:k3)', type: 'text', placeholder: 'VMROGUE_API_KEYS', id: 'set-api-keys-rbac' },
-        { type: 'action', label: 'Rotate API key', btn: 'Rotate key', onclick: 'openAskZeus(\'Rotate the VMRogue API key\')' }
+        { label: 'Multi-key RBAC (admin:k1,write:k2,readonly:k3)', type: 'text', placeholder: 'VEYRON_API_KEYS', id: 'set-api-keys-rbac' },
+        { type: 'action', label: 'Rotate API key', btn: 'Rotate key', onclick: 'openAskZeus(\'Rotate the Veyron API key\')' }
       ]),
       /* 5 — RBAC */
       section('RBAC', [
@@ -1888,14 +1888,14 @@
       ]),
       /* 9 — PacketWolf Integration */
       section('PacketWolf Integration', [
-        { label: 'PacketWolf URL', type: 'text', placeholder: 'VMROGUE_PACKETWOLF_URL', id: 'set-packetwolf' },
+        { label: 'PacketWolf URL', type: 'text', placeholder: 'VEYRON_PACKETWOLF_URL', id: 'set-packetwolf' },
         { label: 'API key (if required)', type: 'text', password: true, placeholder: '••••••••', id: 'set-packetwolf-key' },
         { label: 'Trust cluster networks', type: 'checkbox', id: 'set-pw-trust', checked: true },
         { type: 'action', label: 'Test PacketWolf connection', btn: 'Test connection', onclick: 'fetchNetworkIntelBanner&&fetchNetworkIntelBanner().then(function(){toast("PacketWolf test complete","success")})' }
       ]),
       /* 10 — Prometheus Integration */
       section('Prometheus Integration', [
-        { label: 'Prometheus URL', type: 'text', placeholder: 'VMROGUE_PROMETHEUS_URL', id: 'set-prometheus' },
+        { label: 'Prometheus URL', type: 'text', placeholder: 'VEYRON_PROMETHEUS_URL', id: 'set-prometheus' },
         { label: 'Query timeout (s)', type: 'text', placeholder: '10', id: 'set-prom-timeout' },
         { label: 'Default time range', type: 'select', options: ['Last 1 hour', 'Last 6 hours', 'Last 24 hours', 'Last 7 days'], id: 'set-prom-range' },
         { type: 'action', label: 'Test Prometheus connection', btn: 'Test connection', onclick: 'toast("Prometheus: not configured","info")' }

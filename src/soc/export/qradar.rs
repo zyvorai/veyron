@@ -14,16 +14,16 @@ pub struct QRadarConfig {
 }
 
 pub fn config() -> Option<QRadarConfig> {
-    let host = std::env::var("VMROGUE_QRADAR_SYSLOG_HOST")
+    let host = std::env::var("VEYRON_QRADAR_SYSLOG_HOST")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let port = std::env::var("VMROGUE_QRADAR_SYSLOG_PORT")
+    let port = std::env::var("VEYRON_QRADAR_SYSLOG_PORT")
         .ok()
         .and_then(|p| p.parse().ok())
         .unwrap_or(514);
-    let leef_vendor = std::env::var("VMROGUE_QRADAR_LEEF_VENDOR")
+    let leef_vendor = std::env::var("VEYRON_QRADAR_LEEF_VENDOR")
         .unwrap_or_else(|_| "Zyvor".into());
-    let leef_product = std::env::var("VMROGUE_QRADAR_LEEF_PRODUCT")
+    let leef_product = std::env::var("VEYRON_QRADAR_LEEF_PRODUCT")
         .unwrap_or_else(|_| "VMRogue".into());
     Some(QRadarConfig {
         syslog_host: host,

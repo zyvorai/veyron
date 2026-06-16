@@ -1,4 +1,4 @@
-# VMRogue vs HyperSDK product boundary
+# Veyron vs HyperSDK product boundary
 
 **See also:** [Documentation index](README.md) · [HyperSDK](https://zyvor.dev/hypersdk)
 
@@ -26,7 +26,7 @@ VMRogue is the **KubeVirt operations platform**: run, govern, observe, and autom
 - CDI / DataVolume / golden-image GitOps ([WINDOWS_PACKER_GITOPS_PIPELINE.md](WINDOWS_PACKER_GITOPS_PIPELINE.md))
 - Snapshot schedules, Velero discovery, DR failover APIs
 
-## Deprecated in VMRogue (migration → HyperSDK)
+## Deprecated in Veyron (migration → HyperSDK)
 
 The following remain for backward compatibility but emit deprecation warnings and will be removed in a future release:
 

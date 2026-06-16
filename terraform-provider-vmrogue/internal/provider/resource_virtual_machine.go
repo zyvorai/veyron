@@ -36,7 +36,7 @@ func (r *virtualMachineResource) Metadata(_ context.Context, _ resource.Metadata
 
 func (r *virtualMachineResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "KubeVirt VirtualMachine managed via VMRogue API.",
+		Description: "KubeVirt VirtualMachine managed via Veyron API.",
 		Attributes: map[string]schema.Attribute{
 			"name":      schema.StringAttribute{Required: true},
 			"namespace": schema.StringAttribute{Required: true},

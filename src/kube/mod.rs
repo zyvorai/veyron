@@ -1251,11 +1251,11 @@ impl KubeClient {
         let vm_json = serde_json::to_value(&vm)?;
         let agent_up = vmi_json
             .as_ref()
-            .is_some_and(|j| windows_rdp::vmi_guest_agent_connected(j));
+            .is_some_and(windows_rdp::vmi_guest_agent_connected);
 
         let mut prom_mounts = Vec::new();
         let mut prom_sources = Vec::new();
-        if let Ok(prom_url) = std::env::var("VMROGUE_PROMETHEUS_URL") {
+        if let Ok(prom_url) = std::env::var("VEYRON_PROMETHEUS_URL") {
             if !prom_url.trim().is_empty() {
                 let (m, s) = guest_prometheus::prometheus_storage_mounts_for_vm(
                     &self.client,
@@ -1336,7 +1336,7 @@ impl KubeClient {
         }
 
         anyhow::bail!(
-            "Guest runtime is not connected and no Prometheus storage metrics were found (set VMROGUE_PROMETHEUS_URL)"
+            "Guest runtime is not connected and no Prometheus storage metrics were found (set VEYRON_PROMETHEUS_URL)"
         );
     }
 

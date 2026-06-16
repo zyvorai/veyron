@@ -1,10 +1,10 @@
-# VMRogue Interactive TUI Guide
+# Veyron Interactive TUI Guide
 
 **See also:** [Documentation index](README.md) for related guides (theme, quick reference, deployment).
 
 ## Overview
 
-VMRogue provides a fully interactive Terminal User Interface (TUI) with dialogs, forms, context menus, and real-time notifications for managing KubeVirt VMs.
+Veyron provides a fully interactive Terminal User Interface (TUI) with dialogs, forms, context menus, and real-time notifications for managing KubeVirt VMs.
 
 ## Launching the TUI
 
@@ -251,7 +251,7 @@ vmrogue tui --interactive --theme light
 
 ### Configuration
 
-Edit `~/.config/vmrogue/tui.toml`:
+Edit `~/.config/veyron/tui.toml`:
 
 ```toml
 [theme]

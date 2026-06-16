@@ -107,7 +107,7 @@ impl ProjectInit {
     pub fn generate_default_config(&self) -> String {
         match self.project_type {
             ProjectType::Basic => format!(
-                r#"# VMRogue VM Configuration
+                r#"# Veyron VM Configuration
 # Project: {name}
 # Type: Basic
 
@@ -135,7 +135,7 @@ networks:
                 ns = self.namespace,
             ),
             ProjectType::Development => format!(
-                r#"# VMRogue VM Configuration
+                r#"# Veyron VM Configuration
 # Project: {name}
 # Type: Development
 
@@ -170,7 +170,7 @@ labels:
                 ns = self.namespace,
             ),
             ProjectType::Production => format!(
-                r#"# VMRogue VM Configuration
+                r#"# Veyron VM Configuration
 # Project: {name}
 # Type: Production
 
@@ -210,7 +210,7 @@ labels:
                 ns = self.namespace,
             ),
             ProjectType::Microservices => format!(
-                r#"# VMRogue VM Configuration
+                r#"# Veyron VM Configuration
 # Project: {name}
 # Type: Microservices
 
@@ -245,7 +245,7 @@ labels:
                 ns = self.namespace,
             ),
             ProjectType::DataPipeline => format!(
-                r#"# VMRogue VM Configuration
+                r#"# Veyron VM Configuration
 # Project: {name}
 # Type: Data Pipeline
 
@@ -286,7 +286,7 @@ labels:
 
     /// Generate gitignore content for vmrogue project
     pub fn generate_gitignore(&self) -> String {
-        r#"# VMRogue project gitignore
+        r#"# Veyron project gitignore
 *.secret
 *.key
 *.pem

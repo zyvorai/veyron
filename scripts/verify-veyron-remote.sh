@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
 # ============================================================================
-# verify-vmrogue-remote.sh — Post-deploy API smoke test (VMRogue on NodePort)
+# verify-veyron-remote.sh — Post-deploy API smoke test (VMRogue on NodePort)
 # ============================================================================
 # Run from your laptop after deploy-all-remote.sh / deploy-remote.sh.
 # Uses curl only (no jq). Exits 1 if any check fails.
 #
 # Usage:
-#   ./scripts/verify-vmrogue-remote.sh <host> [https_node_port]
-#   VMROGUE_API_KEY='...' ./scripts/verify-vmrogue-remote.sh 192.0.2.1 30151
+#   ./scripts/verify-veyron-remote.sh <host> [https_node_port]
+#   VEYRON_API_KEY='...' ./scripts/verify-veyron-remote.sh 192.0.2.1 30151
 #
 # Environment:
 #   DEPLOY_HOST         Default host if arg omitted
 #   VMROGUE_NODE_PORT   Default port (default: 30151)
-#   VMROGUE_API_KEY     API key (default: Admin@321)
+#   VEYRON_API_KEY     API key (default: Admin@321)
 # ============================================================================
 
 set -euo pipefail
 
 HOST="${1:-${DEPLOY_HOST:-}}"
 PORT="${2:-${VMROGUE_NODE_PORT:-30151}}"
-KEY="${VMROGUE_API_KEY:-Admin@321}"
+KEY="${VEYRON_API_KEY:-Admin@321}"
 
 if [[ -z "${HOST}" ]]; then
     echo "Usage: $0 <host> [https_node_port]" >&2
@@ -180,7 +180,7 @@ check_json_grep "GET /api/v1/security/findings" \
     "${BASE}/api/v1/security/findings?namespace=all" '"findings"\s*:\s*\['
 check_json_grep "GET /api/v1/costs/summary" \
     "${BASE}/api/v1/costs/summary?namespace=all" 'total_cost'
-check_json_ok "GET /api/v1/vms?ns=vmrogue-system" "${BASE}/api/v1/vms?namespace=vmrogue-system" yes
+check_json_ok "GET /api/v1/vms?ns=veyron-system" "${BASE}/api/v1/vms?namespace=veyron-system" yes
 check_json_ok "GET /api/v1/vms?ns=all" "${BASE}/api/v1/vms?namespace=all" yes
 check_json_grep "GET /api/v1/vms (drift fields)" \
     "${BASE}/api/v1/vms?namespace=all" '"vmrogue_managed"'

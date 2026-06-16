@@ -9,7 +9,7 @@
 #   ./scripts/ensure-cdi-remote.sh <user@host> [cdi-version]
 #
 # Environment:
-#   VMROGUE_SKIP_CDI=1       — exit 0 without doing anything
+#   VEYRON_SKIP_CDI=1       — exit 0 without doing anything
 #   VMROGUE_CDI_VERSION=v1.65.0 — release tag (must match your KubeVirt line)
 # ============================================================================
 
@@ -22,8 +22,8 @@ source "${SCRIPT_DIR}/lib/deploy-ssh.sh"
 REMOTE="${1:?Usage: $0 <user@host> [cdi-version]}"
 CDI_VERSION="${2:-${VMROGUE_CDI_VERSION:-v1.65.0}}"
 
-if [[ "${VMROGUE_SKIP_CDI:-0}" == "1" ]]; then
-  echo "  [skip] CDI (VMROGUE_SKIP_CDI=1)"
+if [[ "${VEYRON_SKIP_CDI:-0}" == "1" ]]; then
+  echo "  [skip] CDI (VEYRON_SKIP_CDI=1)"
   exit 0
 fi
 

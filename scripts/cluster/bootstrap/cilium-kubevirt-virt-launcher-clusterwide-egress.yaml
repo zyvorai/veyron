@@ -4,7 +4,7 @@
 #
 # Requires CRD: ciliumclusterwidenetworkpolicies.cilium.io
 # Applied by deploy-all-remote.sh / deploy-k8s-remote.sh when Cilium is present.
-# Per-VM egress: VMRogue API PUT /api/v1/vms/:ns/:name/network/internet
+# Per-VM egress: Veyron API PUT /api/v1/vms/:ns/:name/network/internet
 ---
 apiVersion: cilium.io/v2
 kind: CiliumClusterwideNetworkPolicy

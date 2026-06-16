@@ -19,7 +19,7 @@
 #   VMROGUE_PACKAGE_VERSION       Override version in archive name
 #   DEPLOY_SSH_TIMEOUT            SSH connect timeout (default: 20)
 #   DEPLOY_SSH_PORT               SSH port (default: 22)
-#   VMROGUE_REMOTE_SKIP_SSH_CHECK=1  Skip SSH preflight
+#   VEYRON_REMOTE_SKIP_SSH_CHECK=1  Skip SSH preflight
 #
 # Examples:
 #   ./scripts/package-binary-remote.sh 212.8.252.194 sus --fetch
@@ -64,14 +64,14 @@ if [[ -z "${HOST}" ]]; then
     exit 1
 fi
 
-[ -f "${REPO_DIR}/Cargo.toml" ] || { echo "Not in vmrogue repo (missing Cargo.toml)" >&2; exit 1; }
+[ -f "${REPO_DIR}/Cargo.toml" ] || { echo "Not in veyron repo (missing Cargo.toml)" >&2; exit 1; }
 
 VERSION="${VMROGUE_PACKAGE_VERSION:-$(sed -n 's/^version = "\(.*\)"/\1/p' "${REPO_DIR}/Cargo.toml" | head -1)}"
 VERSION="${VERSION:-0.0.0}"
 ARCH="linux-amd64"
 REMOTE="${USER}@${HOST}"
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" 'echo "$HOME"')
-BUILD_DIR="${REMOTE_HOME}/.deployment/vmrogue-package"
+BUILD_DIR="${REMOTE_HOME}/.deployment/veyron-package"
 OUT_DIR="${VMROGUE_PACKAGE_DIR:-${REMOTE_HOME}/vmrogue-dist}"
 IMAGE_TAG="vmrogue-package:${VERSION}"
 ARTIFACT="vmrogue-${VERSION}-${ARCH}"
@@ -94,7 +94,7 @@ source "${SCRIPT_DIR}/lib/package-remote-ui.sh"
 
 pkg_remote_banner "VMRogue" "${VERSION}" "${REMOTE}" "${ARCH}"
 
-if [[ "${VMROGUE_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
+if [[ "${VEYRON_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
     pkg_remote_phase "Preflight"
     SSH_ERR=""
     if ! SSH_ERR=$(deploy_ssh_preflight "${REMOTE}"); then
@@ -174,7 +174,7 @@ CTR='${CTR_BUILD}'
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}"
 \${CTR} rm -f vmrogue-package-extract 2>/dev/null || true
 \${CTR} create --name vmrogue-package-extract "\${IMAGE_TAG}" >/dev/null
-\${CTR} cp vmrogue-package-extract:/usr/local/bin/vmrogue "\${OUT_DIR}/\${ARTIFACT}/vmrogue"
+\${CTR} cp vmrogue-package-extract:/usr/local/bin/veyron "\${OUT_DIR}/\${ARTIFACT}/vmrogue"
 chmod +x "\${OUT_DIR}/\${ARTIFACT}/vmrogue"
 if [[ "\${INCLUDE_VIRTCTL}" == "true" ]]; then
   \${CTR} cp vmrogue-package-extract:/usr/local/bin/virtctl "\${OUT_DIR}/\${ARTIFACT}/virtctl" 2>/dev/null || true
@@ -184,12 +184,12 @@ fi
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/vmrogue.env.example" <<'ENV_EOF'
 # Copy to vmrogue.env and adjust before starting the API.
-VMROGUE_API_KEY=Admin@321
-# VMROGUE_API_KEYS=admin:secret1,write:secret2,readonly:secret3
+VEYRON_API_KEY=Admin@321
+# VEYRON_API_KEYS=admin:secret1,write:secret2,readonly:secret3
 KUBECONFIG=/path/to/kubeconfig.yaml
-# VMROGUE_NAMESPACE=default
+# VEYRON_NAMESPACE=default
 RUST_LOG=info
-VMROGUE_SCHEDULER_LEASE_DISABLED=1
+VEYRON_SCHEDULER_LEASE_DISABLED=1
 ENV_EOF
 
 LIB="\${BUILD_DIR}/scripts/lib"
@@ -234,27 +234,27 @@ cp "\${LIB}/package-cluster-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-cluster.sh"
 chmod +x "\${OUT_DIR}/\${ARTIFACT}/install-cluster.sh" "\${OUT_DIR}/\${ARTIFACT}/apply-cluster-network.sh" "\${OUT_DIR}/\${ARTIFACT}/test-cluster.sh"
 cat > "\${OUT_DIR}/\${ARTIFACT}/cluster/env.sh" <<'ENVSH'
 PRODUCT=VMRogue
-APP_NAMESPACE=vmrogue-system
+APP_NAMESPACE=veyron-system
 APP_PORT=5151
 ENV_PREFIX=VMROGUE
 ENVSH
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/QUICKSTART.txt" <<'QEOF'
-VMRogue — install guide
+Veyron — install guide
 ========================
 
 CLUSTER FIRST (once per cluster — needs kubectl + admin kubeconfig)
   export KUBECONFIG=/path/to/kubeconfig
   ./install-cluster.sh              # Cilium + KubeVirt + CDI (see CLUSTER_SETUP.txt for flags)
   # Deploy VMRogue in-cluster (Helm/k8s from source repo)
-  ./apply-cluster-network.sh        # Cilium egress (skip: VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1)
+  ./apply-cluster-network.sh        # Cilium egress (skip: VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1)
   ./test-cluster.sh
 
 CLIENT ON THIS MACHINE
   1. tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
   2. ./install-everything.sh    (or ./install.sh then ./test-package.sh)
      Kubeconfig: auto-detected, or ./install.sh --kubeconfig /path/to/config
-  3. nano vmrogue.env   (VMROGUE_API_KEY; KUBECONFIG set by install if found)
+  3. nano vmrogue.env   (VEYRON_API_KEY; KUBECONFIG set by install if found)
   4. set -a && source vmrogue.env && set +a
   5. ./vmrogue api-serve --host 0.0.0.0 --port 5151
   6. ./test-package.sh
@@ -285,7 +285,7 @@ WHAT IS IN THIS ARCHIVE
 
 WHAT MUST EXIST (read PREREQUISITES.txt)
   - Kubernetes + KubeVirt (Deployed) + kubeconfig with VM RBAC
-  - CDI recommended (DataVolumes); skip with VMROGUE_SKIP_CDI=1
+  - CDI recommended (DataVolumes); skip with VEYRON_SKIP_CDI=1
   - Cilium: only if your CNI is Cilium — then run apply-cluster-network.sh
   - VMRogue deployed IN the cluster (Helm/k8s — separate from this tarball)
 
@@ -293,8 +293,8 @@ ORDER: install-cluster.sh → deploy VMRogue in cluster → apply-cluster-networ
       → install.sh → vmrogue.env → test-cluster.sh → api-serve
 
 CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
-  VMROGUE_SKIP_CILIUM=1  VMROGUE_SKIP_CDI=1  VMROGUE_SKIP_KUBEVIRT=1
-  VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1
+  VEYRON_SKIP_CILIUM=1  VEYRON_SKIP_CDI=1  VEYRON_SKIP_KUBEVIRT=1
+  VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1
   VMROGUE_KUBEVIRT_VERSION / VMROGUE_CDI_VERSION / VMROGUE_CILIUM_CHART_VERSION
 
 CLIENT

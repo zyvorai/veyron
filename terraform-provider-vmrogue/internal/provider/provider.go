@@ -50,7 +50,7 @@ func (p *vmrogueProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Required:    true,
-				Description: "VMRogue API base URL, e.g. https://cluster:5151",
+				Description: "Veyron API base URL, e.g. https://cluster:5151",
 			},
 			"api_key": schema.StringAttribute{
 				Optional:    true,
@@ -90,7 +90,7 @@ func (p *vmrogueProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	apiKey := config.APIKey.ValueString()
 	if apiKey == "" {
-		apiKey = os.Getenv("VMROGUE_API_KEY")
+		apiKey = os.Getenv("VEYRON_API_KEY")
 	}
 	bearer := config.BearerToken.ValueString()
 	if bearer == "" {

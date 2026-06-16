@@ -1,4 +1,4 @@
-# Terraform Provider VMRogue (v0.1)
+# Terraform Provider Veyron (v0.1)
 
 Terraform provider for the [VMRogue](https://github.com/zyvor/VMRogue) REST API — KubeVirt VM lifecycle, snapshots, and tenant namespace quotas.
 
@@ -71,4 +71,4 @@ cd terraform-provider-vmrogue
 go build -o terraform-provider-vmrogue
 ```
 
-OpenAPI contract: `GET /api/openapi.json` on the VMRogue API server.
+OpenAPI contract: `GET /api/openapi.json` on the Veyron API server.

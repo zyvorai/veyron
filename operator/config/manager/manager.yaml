@@ -22,7 +22,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: manager
-          image: docker.io/library/vmrogue-operator:latest
+          image: docker.io/library/veyron-operator:latest
           imagePullPolicy: Never
           args:
             - --leader-elect

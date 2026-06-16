@@ -146,7 +146,7 @@ deploy_complete() {
     local api_key="$6"
     local script_dir="$7"
     local k8s_cmd="$8"
-    local namespace="${9:-vmrogue-system}"
+    local namespace="${9:-veyron-system}"
 
     local total=$((SECONDS - DEPLOY_RUN_STARTED))
 
@@ -171,7 +171,7 @@ deploy_complete() {
     pkg_box_end
 
     pkg_next_steps \
-        "Smoke test: ${script_dir}/verify-vmrogue-remote.sh ${host} ${node_port}" \
+        "Smoke test: ${script_dir}/verify-veyron-remote.sh ${host} ${node_port}" \
         "Re-deploy:  ${script_dir}/deploy-remote.sh ${host} ${user}" \
         "API logs:   ssh ${remote} \"${k8s_cmd} -n ${namespace} logs -l app.kubernetes.io/component=api -f\"" \
         "Op logs:    ssh ${remote} \"${k8s_cmd} -n ${namespace} logs -l app.kubernetes.io/component=operator -f\""

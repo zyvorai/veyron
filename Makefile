@@ -38,10 +38,10 @@ test-vm-e2e-remote: ## Run daily VM ops E2E against remote API (HOST=... PORT=30
 	@test -n "$(HOST)" || (echo "Usage: make test-vm-e2e-remote HOST=<ip> [PORT=30151]" >&2; exit 1)
 	./scripts/test-vm-daily-ops-remote.sh "$(HOST)" "$(if $(PORT),$(PORT),30151)"
 
-helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
-	helm dependency build charts/vmrogue-monitoring
-	helm template vmrogue-monitoring-ci charts/vmrogue-monitoring -n monitoring >/dev/null
-	@echo "helm template vmrogue-monitoring: OK"
+helm-monitoring-validate: ## Validate veyron-monitoring Helm chart (template)
+	helm dependency build charts/veyron-monitoring
+	helm template veyron-monitoring-ci charts/veyron-monitoring -n monitoring >/dev/null
+	@echo "helm template veyron-monitoring: OK"
 
 helm-veyron-validate: ## Validate veyron + veyron-operator Helm charts (template)
 	helm template veyron-ci charts/veyron -n veyron-system >/dev/null
@@ -58,19 +58,19 @@ pipeline: ## Full pipeline: test -> build -> docker -> push -> deploy
 	./scripts/build-deploy.sh all
 
 config-show: build ## Show current configuration
-	./target/debug/vmrogue config-show
+	./target/debug/veyron config-show
 
 config-init: build ## Create default config file
-	./target/debug/vmrogue config-init
+	./target/debug/veyron config-init
 
 tui: build ## Launch TUI
-	./target/debug/vmrogue tui --interactive
+	./target/debug/veyron tui --interactive
 
 templates: build ## List available templates
-	./target/debug/vmrogue templates
+	./target/debug/veyron templates
 
 profiles: build ## List resource profiles
-	./target/debug/vmrogue profiles --details
+	./target/debug/veyron profiles --details
 
 catalog-generate: build ## Export VMTemplate/VMProfile YAML from Rust templates
 	./scripts/generate-catalog-crds.sh
@@ -101,7 +101,7 @@ operator-vet: ## Run go vet on operator
 	cd operator && go vet ./...
 
 operator-docker: ## Build operator Docker image
-	docker build -t ghcr.io/ssahani/vmrogue-operator:latest -f operator/Dockerfile operator/
+	docker build -t ghcr.io/ssahani/veyron-operator:latest -f operator/Dockerfile operator/
 
 operator-install: ## Install CRDs into cluster
 	kubectl apply -f operator/config/crd/bases/

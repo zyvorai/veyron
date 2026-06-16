@@ -309,7 +309,7 @@ pub async fn handle_api_serve(
     let mut server = ApiServer::new(config.clone());
     server.start();
 
-    println!("{}", color::header("VMRogue API Server"));
+    println!("{}", color::header("Veyron API Server"));
     println!();
     println!("  Address:     {}", color::value(&config.address()));
     println!("  Base URL:    {}", color::value(&config.base_url()));

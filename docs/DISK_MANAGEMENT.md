@@ -2,7 +2,7 @@
 
 **See also:** [Documentation index](README.md), [SNAPSHOTS.md](SNAPSHOTS.md) for snapshot-based recovery.
 
-VMRogue provides comprehensive disk management capabilities for KubeVirt VMs, including PVC expansion, health monitoring, and automated filesystem resizing.
+Veyron provides comprehensive disk management capabilities for KubeVirt VMs, including PVC expansion, health monitoring, and automated filesystem resizing.
 
 ## Prerequisites
 
@@ -270,7 +270,7 @@ let plan = expansion.create_plan("my-vm", &config)?;
 
 2. **PVC Expansion:**
    ```bash
-   # VMRogue handles this automatically
+   # Veyron handles this automatically
    vmrogue disk-expand my-vm root 100Gi
 
    # Or manually with kubectl

@@ -1,4 +1,4 @@
-# VMRogue Batch Configuration
+# Veyron Batch Configuration
 # This file uses VMRogue's batch YAML format for creating multiple VMs.
 # Usage: vmrogue batch batch-web-cluster.yaml
 # Batch configuration for creating a web server cluster

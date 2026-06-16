@@ -8,8 +8,8 @@
 #
 # Usage:
 #   ./scripts/test-remote.sh [host] [user]
-#   VMROGUE_NODE_PORT=30151 VMROGUE_API_KEY=... ./scripts/test-remote.sh
-#   VMROGUE_REMOTE_DIR=/home/you/vmrogue  (operator samples for tier 3–4)
+#   VMROGUE_NODE_PORT=30151 VEYRON_API_KEY=... ./scripts/test-remote.sh
+#   VEYRON_REMOTE_DIR=/home/you/vmrogue  (operator samples for tier 3–4)
 #
 # Defaults: host 185.165.240.5, user sus, port 30151, key Admin@321
 # ============================================================================
@@ -20,10 +20,10 @@ HOST="${1:-185.165.240.5}"
 USER="${2:-sus}"
 REMOTE="${USER}@${HOST}"
 
-NS="${VMROGUE_NAMESPACE:-vmrogue-system}"
+NS="${VEYRON_NAMESPACE:-veyron-system}"
 NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
-API_KEY="${VMROGUE_API_KEY:-Admin@321}"
-REMOTE_DIR="${VMROGUE_REMOTE_DIR:-/home/${USER}/vmrogue}"
+API_KEY="${VEYRON_API_KEY:-Admin@321}"
+REMOTE_DIR="${VEYRON_REMOTE_DIR:-/home//veyron}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LOCAL_SAMPLES="${REPO_ROOT}/operator/config/samples"
 SAMPLES="${REMOTE_DIR}/operator/config/samples"
@@ -98,22 +98,22 @@ echo -e "${B}  API from here → ${BASE_URL}${N}\n"
 tier 1 "SMOKE (Kubernetes + API)"
 # ═══════════════════════════════════════════════
 
-API_READY=$(run_k -n "${NS}" get deploy vmrogue-api -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' 2>/dev/null | tr -d '\r' || true)
+API_READY=$(run_k -n "${NS}" get deploy veyron-api -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' 2>/dev/null | tr -d '\r' || true)
 if [[ "$API_READY" == "1/1" ]]; then
-  pass "vmrogue-api Deployment ready (1/1) in ${NS}"
+  pass "veyron-api Deployment ready (1/1) in ${NS}"
 else
-  fail "vmrogue-api Deployment" "ready/spec replicas: '${API_READY:-missing}' (deploy with ./scripts/deploy-k8s-remote.sh)"
+  fail "veyron-api Deployment" "ready/spec replicas: '${API_READY:-missing}' (deploy with ./scripts/deploy-k8s-remote.sh)"
 fi
 
-if run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
-  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+if run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
+  OP_READY=$(run_k -n "${NS}" get deploy veyron-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
   if [[ "$OP_READY" == "1/1" ]]; then
-    pass "vmrogue-operator Deployment ready (1/1) in ${NS}"
+    pass "veyron-operator Deployment ready (1/1) in ${NS}"
   else
-    skip "vmrogue-operator not fully ready (${OP_READY:-?})"
+    skip "veyron-operator not fully ready (${OP_READY:-?})"
   fi
 else
-  skip "vmrogue-operator not installed in ${NS} (API-only cluster)"
+  skip "veyron-operator not installed in ${NS} (API-only cluster)"
 fi
 
 CRD_COUNT=$(run_k get crd -o name 2>/dev/null | grep -c 'vmrogue\.io' || true)
@@ -162,14 +162,14 @@ fi
 tier 2 "VM LIFECYCLE (operator + CRDs)"
 # ═══════════════════════════════════════════════
 
-if ! run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
-  skip "entire tier — vmrogue-operator not in ${NS}"
+if ! run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
+  skip "entire tier — veyron-operator not in ${NS}"
 elif [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
   skip "entire tier — no vmrogue.io CRDs"
 else
-  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  OP_READY=$(run_k -n "${NS}" get deploy veyron-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
   if [[ "$OP_READY" != "1/1" ]]; then
-    skip "entire tier — vmrogue-operator not ready (${OP_READY})"
+    skip "entire tier — veyron-operator not ready (${OP_READY})"
   else
     run_k delete vrvm test-e2e -n default --ignore-not-found >/dev/null 2>&1 || true
     sleep 2
@@ -260,12 +260,12 @@ tier 3 "BLUEPRINT (operator + samples on remote)"
 
 if [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
   skip "entire tier — no vmrogue.io CRDs"
-elif ! run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
-  skip "entire tier — vmrogue-operator Deployment not in ${NS}"
+elif ! run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
+  skip "entire tier — veyron-operator Deployment not in ${NS}"
 else
-  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  OP_READY=$(run_k -n "${NS}" get deploy veyron-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
   if [[ "$OP_READY" != "1/1" ]]; then
-    skip "entire tier — vmrogue-operator not ready"
+    skip "entire tier — veyron-operator not ready"
   else
     BP_OUT=$(apply_sample "vmrogue_v1alpha1_vmrogueblueprint.yaml" 2>&1)
     if echo "$BP_OUT" | grep -qE 'created|configured|unchanged'; then
@@ -308,12 +308,12 @@ tier 4 "POLICIES + ACTIONS (operator + samples)"
 
 if [[ "${CRD_COUNT:-0}" -lt 1 ]]; then
   skip "entire tier — no vmrogue.io CRDs"
-elif ! run_k -n "${NS}" get deploy vmrogue-operator >/dev/null 2>&1; then
-  skip "entire tier — vmrogue-operator Deployment not in ${NS}"
+elif ! run_k -n "${NS}" get deploy veyron-operator >/dev/null 2>&1; then
+  skip "entire tier — veyron-operator Deployment not in ${NS}"
 else
-  OP_READY=$(run_k -n "${NS}" get deploy vmrogue-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
+  OP_READY=$(run_k -n "${NS}" get deploy veyron-operator -o 'jsonpath={.status.readyReplicas}/{.spec.replicas}' | tr -d '\r')
   if [[ "$OP_READY" != "1/1" ]]; then
-    skip "entire tier — vmrogue-operator not ready"
+    skip "entire tier — veyron-operator not ready"
   else
     POL_OUT=$(apply_sample "vmrogue_v1alpha1_vmroguepolicy.yaml" 2>&1)
     echo "$POL_OUT" | grep -qE 'created|configured|unchanged' && pass "Security policy applied" || fail "policy apply" "$POL_OUT"

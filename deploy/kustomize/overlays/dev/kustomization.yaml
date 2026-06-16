@@ -7,7 +7,7 @@ resources:
 patches:
   - target:
       kind: Deployment
-      name: vmrogue-api
+      name: veyron-api
     patch: |
       - op: replace
         path: /spec/template/spec/containers/0/resources/requests/cpu

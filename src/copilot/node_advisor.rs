@@ -56,7 +56,7 @@ pub async fn node_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     r.evidence
         .push(format!("Nodes: {} ({} ready)", nodes.len(), ready));
     r.evidence.push(format!("Running VMs in scope: {running}"));
-    if nodes.len() > 0 {
+    if !nodes.is_empty() {
         r.evidence.push(format!(
             "VM density: {:.1} running VMs / node",
             running as f64 / nodes.len() as f64

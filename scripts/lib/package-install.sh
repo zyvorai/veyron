@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VMRogue — automatic client install (run inside extracted tarball directory).
+# Veyron — automatic client install (run inside extracted tarball directory).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"

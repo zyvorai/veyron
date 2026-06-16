@@ -25,7 +25,7 @@ CloudOS is the experience layer for **Veyron** by Zyvor: a macOS/iOS-inspired co
 └──────────────────────────┬──────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────┐
-│  VMRogue API + operator + KubeVirt                      │
+│  Veyron API + operator + KubeVirt                      │
 └─────────────────────────────────────────────────────────┘
 ```
 

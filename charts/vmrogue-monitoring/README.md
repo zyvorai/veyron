@@ -1,4 +1,4 @@
-# vmrogue-monitoring
+# veyron-monitoring
 
 **See also:** [Documentation index](../../docs/README.md) in the repo root for the full doc map.
 
@@ -7,7 +7,7 @@ Optional **Prometheus + Grafana + Alertmanager** stack for VMRogue clusters, pac
 ## What you get
 
 - Prometheus Operator, Prometheus, Alertmanager, Grafana (upstream chart defaults tuned for broad `ServiceMonitor` / `PrometheusRule` discovery).
-- **VMRogue ServiceMonitors** targeting the API (`/api/v1/health` over HTTPS) and operator (`/metrics`) in `vmrogue-system` (configurable).
+- **VMRogue ServiceMonitors** targeting the API (`/api/v1/health` over HTTPS) and operator (`/metrics`) in `veyron-system` (configurable).
 - **VMRogue PrometheusRules** (KubeVirt VM and cluster hints; requires `kubevirt_*` metrics in Prometheus).
 - **Grafana dashboard** ConfigMap (`VMRogue overview`) loaded by the Grafana sidecar.
 
@@ -21,22 +21,22 @@ Optional **Prometheus + Grafana + Alertmanager** stack for VMRogue clusters, pac
 From the repository root:
 
 ```bash
-./scripts/install-vmrogue-monitoring.sh monitoring
+./scripts/install-veyron-monitoring.sh monitoring
 ```
 
 Or manually:
 
 ```bash
-cd charts/vmrogue-monitoring
+cd charts/veyron-monitoring
 helm dependency build .
-helm install vmrogue-monitoring . -n monitoring --create-namespace \
+helm install veyron-monitoring . -n monitoring --create-namespace \
   --set kps.grafana.adminPassword='replace-me'
 ```
 
 Override the VMRogue install namespace if your API runs elsewhere:
 
 ```bash
-helm upgrade --install vmrogue-monitoring ./charts/vmrogue-monitoring -n monitoring \
+helm upgrade --install veyron-monitoring ./charts/veyron-monitoring -n monitoring \
   --set vmrogue.namespace=my-vmrogue-ns \
   --set kps.grafana.adminPassword='replace-me'
 ```
@@ -47,10 +47,10 @@ Panels and alerts assume KubeVirt exposes Prometheus series (for example `kubevi
 
 ## CI / packaging
 
-Helm dependency tarballs under `charts/` are gitignored; CI and fresh clones should run `helm dependency build charts/vmrogue-monitoring` (the lockfile `Chart.lock` pins the dependency version).
+Helm dependency tarballs under `charts/` are gitignored; CI and fresh clones should run `helm dependency build charts/veyron-monitoring` (the lockfile `Chart.lock` pins the dependency version).
 
 ## Disable only the upstream stack
 
 ```bash
-helm upgrade vmrogue-monitoring ./charts/vmrogue-monitoring -n monitoring --set kps.enabled=false
+helm upgrade veyron-monitoring ./charts/veyron-monitoring -n monitoring --set kps.enabled=false
 ```

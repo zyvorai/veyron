@@ -3,21 +3,21 @@
 # Grafana + Alertmanager + node-exporter + kube-state-metrics) via Helm.
 #
 # Usage:
-#   ./scripts/install-vmrogue-monitoring.sh [namespace] [release_name]
+#   ./scripts/install-veyron-monitoring.sh [namespace] [release_name]
 #
 # Examples:
-#   ./scripts/install-vmrogue-monitoring.sh monitoring
-#   GRAFANA_ADMIN_PASSWORD='your-secret' ./scripts/install-vmrogue-monitoring.sh monitoring vmrogue-mon
+#   ./scripts/install-veyron-monitoring.sh monitoring
+#   GRAFANA_ADMIN_PASSWORD='your-secret' ./scripts/install-veyron-monitoring.sh monitoring vmrogue-mon
 #
 # Requires: helm 3.9+, kubectl, cluster with default StorageClass (for Prometheus PVCs).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-CHART="${ROOT}/charts/vmrogue-monitoring"
+CHART="${ROOT}/charts/veyron-monitoring"
 
 NS="${1:-monitoring}"
-REL="${2:-vmrogue-monitoring}"
+REL="${2:-veyron-monitoring}"
 GRAFANA_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-changeme}"
 
 if ! command -v helm >/dev/null 2>&1; then

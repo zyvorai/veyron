@@ -130,7 +130,7 @@ impl Default for MiddlewareChain {
     }
 }
 
-/// Build default middleware chain for VMRogue API
+/// Build default middleware chain for Veyron API
 pub fn build_default_chain() -> MiddlewareChain {
     let mut chain = MiddlewareChain::new();
 

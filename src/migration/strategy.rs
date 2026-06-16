@@ -223,7 +223,7 @@ impl MigrationStrategy {
             .filter(|(_, score)| *score > 0)
             .collect();
 
-        scored_nodes.sort_by(|a, b| b.1.cmp(&a.1));
+        scored_nodes.sort_by_key(|b| std::cmp::Reverse(b.1));
 
         scored_nodes.first().map(|(name, _)| name.clone())
     }
@@ -237,7 +237,7 @@ impl MigrationStrategy {
             .filter(|(_, score)| *score > 0)
             .collect();
 
-        scored.sort_by(|a, b| b.1.cmp(&a.1));
+        scored.sort_by_key(|b| std::cmp::Reverse(b.1));
         scored
     }
 }

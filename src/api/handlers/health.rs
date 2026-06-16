@@ -65,7 +65,7 @@ async fn health_check(State(state): State<SharedState>) -> Json<HealthResponse> 
     Json(HealthResponse {
         status: k8s_status.to_string(),
         version: env!("CARGO_PKG_VERSION").to_string(),
-        service: "vmrogue-api".to_string(),
+        service: "veyron-api".to_string(),
         uptime_seconds: uptime,
     })
 }

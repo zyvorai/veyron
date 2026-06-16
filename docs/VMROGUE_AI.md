@@ -1,4 +1,4 @@
-# VMRogue AI — Product Direction
+# Veyron AI — Product Direction
 
 > **VMRogue should be the AI-native VM lifecycle brain for KubeVirt** — deploy, inspect, heal, migrate, secure, resize, snapshot, backup, and explain VMs from one simple interface.
 
@@ -7,7 +7,7 @@ This document captures the long-term AI vision and what ships in **v1** today (r
 ## North star
 
 ```text
-VMrougue should feel like a smart VM operator for Kubernetes/KubeVirt,
+Veyron should feel like a smart VM operator for Kubernetes/KubeVirt,
 not just a CLI or dashboard.
 ```
 
@@ -157,7 +157,7 @@ When an API key is set (`VMROGUE_AI_API_KEY`, `OPENROUTER_API_KEY`, or `ANTHROPI
 | `VMROGUE_AI_MODEL` | Model id (`openrouter/free` default for OpenRouter keys) |
 | `VMROGUE_AI_APP_TITLE` | Optional OpenRouter `X-Title` (e.g. **ZeusOS**) |
 
-**OpenRouter from `~/.zshrc`:** `./scripts/configure-zeus-openrouter.sh --print-env` or `./scripts/configure-zeus-openrouter.sh HOST USER` to patch `vmrogue-integrations` and restart the API.
+**OpenRouter from `~/.zshrc`:** `./scripts/configure-zeus-openrouter.sh --print-env` or `./scripts/configure-zeus-openrouter.sh HOST USER` to patch `veyron-integrations` and restart the API.
 
 | Env | Purpose |
 |-----|---------|
@@ -190,7 +190,7 @@ When `VMROGUE_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_tr
 
 ## Future (not scheduled)
 
-- ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VMROGUE_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`
+- ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VEYRON_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`
 - ~~**Cost Copilot** — OpenCost integration for per-VM spend narratives~~ **Done** — `GET /experience/copilot/cost`, `vmrogue ai cost`
 - ~~**Blueprint Studio UI** — edit saved `VMRogueBlueprint` CRDs from the dashboard~~ **Done** — Platform → Blueprint Studio, `PUT /api/v1/crds/blueprints/:ns/:name`
 

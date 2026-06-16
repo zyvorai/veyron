@@ -1,5 +1,5 @@
 apiVersion: v2
-name: vmrogue-monitoring
+name: veyron-monitoring
 description: Optional Prometheus, Grafana, and Alertmanager stack curated for VMRogue
 type: application
 version: 0.1.0
@@ -10,9 +10,9 @@ keywords:
   - kubevirt
   - prometheus
   - grafana
-home: https://github.com/ssahani/VMRogue
+home: https://github.com/ssahani/Veyron
 sources:
-  - https://github.com/ssahani/VMRogue
+  - https://github.com/ssahani/Veyron
 maintainers:
   - name: ZyvorAI Labs Private Limited
     url: https://github.com/ssahani

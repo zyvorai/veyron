@@ -94,7 +94,7 @@ fn atomic_write_inner(tmp_path: &std::path::Path, content: &str) -> anyhow::Resu
 /// Generate a unique ID using microsecond timestamp + random suffix.
 ///
 /// ```
-/// use vmrogue::generate_id;
+/// use veyron::generate_id;
 /// let id = generate_id("vm", "web-server");
 /// assert!(id.starts_with("vm-"));
 /// ```
@@ -122,7 +122,7 @@ pub fn generate_id(prefix: &str, name: &str) -> String {
 /// Formats bytes using human-readable binary suffixes (KiB, MiB, GiB, TiB).
 ///
 /// ```
-/// use vmrogue::format_bytes;
+/// use veyron::format_bytes;
 /// assert_eq!(format_bytes(0), "0 B");
 /// assert_eq!(format_bytes(1024), "1.00 KiB");
 /// assert_eq!(format_bytes(1024 * 1024 * 1024), "1.00 GiB");
@@ -220,7 +220,7 @@ pub fn parse_cpu_nanocores(s: &str) -> u64 {
 /// Values below 0 are clamped to 0, values above 100 are clamped to 100.
 ///
 /// ```
-/// use vmrogue::percent_to_u8;
+/// use veyron::percent_to_u8;
 /// assert_eq!(percent_to_u8(50.0), 50);
 /// assert_eq!(percent_to_u8(150.0), 100);
 /// assert_eq!(percent_to_u8(-10.0), 0);

@@ -144,7 +144,7 @@ pub fn handle_profile_create(
     println!(
         "{}",
         color::muted(&format!(
-            "  Location: ~/.config/vmrogue/profiles/{}.yaml",
+            "  Location: ~/.config/veyron/profiles/{}.yaml",
             name
         ))
     );
@@ -539,7 +539,7 @@ pub fn handle_blueprint_create(
     println!(
         "{}",
         color::muted(&format!(
-            "  Location: ~/.config/vmrogue/blueprints/{}.yaml",
+            "  Location: ~/.config/veyron/blueprints/{}.yaml",
             name
         ))
     );
