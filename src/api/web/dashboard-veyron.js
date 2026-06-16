@@ -2478,6 +2478,7 @@
       return '<span class="vmr-fdrawer-tag' + (t.cls ? ' ' + t.cls : '') + '">' + esc(t.label) + '</span>';
     }).join('');
     var yamlPreview = 'apiVersion: kubevirt.io/v1\nkind: VirtualMachine\nmetadata:\n  name: my-' + (tpl.id || 'vm') + '\nspec:\n  template:\n    spec:\n      domain:\n        cpu:\n          cores: 2\n        memory:\n          guest: ' + esc(mem) + '\n        devices:\n          disks:\n            - name: rootdisk\n              disk:\n                bus: virtio';
+    window._vmrFoundryYamlCache = yamlPreview;
     if (titleEl) titleEl.textContent = 'TEMPLATE PREVIEW';
     body.innerHTML =
       '<div class="vmr-fdrawer-hero">' +
@@ -2512,7 +2513,7 @@
       '<div class="vmr-fdrawer-actions">' +
         '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')">Forge VM</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Customize</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(yamlPreview) + ')">Export YAML</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrFoundryYamlCache||&apos;&apos;)">Export YAML</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')">Ask Veyron</button>' +
       '</div>';
     drawer.style.display = 'flex';
