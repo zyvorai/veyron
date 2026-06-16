@@ -1166,6 +1166,7 @@
         '<span style="color:var(--muted);font-size:.8rem">' + esc(label) + '</span>' +
         '<span style="font-size:.82rem;font-weight:600' + (color ? ';color:' + color : '') + '">' + val + '</span></div>';
     }
+    window._vmrForgeYamlCache = yaml;
     el.innerHTML =
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">' +
         '<div class="vmr-panel"><div class="vmr-panel-title" style="font-size:.72rem">Identity</div>' +
@@ -1189,7 +1190,7 @@
       '</div>' +
       '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
         '<div class="vmr-panel-title" style="font-size:.72rem">YAML Preview</div>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(yaml) + ')">Copy YAML</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrForgeYamlCache||&apos;&apos;)">Copy YAML</button>' +
       '</div>' +
       '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:200px;overflow:auto;margin:0">' + esc(yaml) + '</pre></div>';
   };
