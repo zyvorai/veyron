@@ -268,10 +268,10 @@
       var _unprotected = _snaps ? _vms.filter(function(v){ return !_snaps.some(function(s){ return s.vm_name === v.name; }); }).length : null;
       var _warns = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
       items = [];
-      if (_stopped > 0) items.push({ title: _stopped + ' VM' + (_stopped > 1 ? 's' : '') + ' not running', detail: 'Start stopped VMs or verify they are intentionally off.', severity: 'warning' });
-      if (_unprotected != null && _unprotected > 0) items.push({ title: _unprotected + ' VM' + (_unprotected > 1 ? 's' : '') + ' without snapshots', detail: 'Create snapshot policies to protect these VMs.', severity: 'warning' });
-      if (_warns > 0) items.push({ title: _warns + ' active warning' + (_warns > 1 ? 's' : ''), detail: 'Review the Event Intelligence page for details.', severity: 'warning' });
-      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'No critical issues detected. Copilot has no recommendations.', severity: 'info' });
+      if (_stopped > 0) items.push({ title: _stopped + ' VM' + (_stopped > 1 ? 's' : '') + ' not running', detail: 'Start stopped VMs or verify they are intentionally off.', severity: 'warning', action: 'copilot:unhealthy' });
+      if (_unprotected != null && _unprotected > 0) items.push({ title: _unprotected + ' VM' + (_unprotected > 1 ? 's' : '') + ' without snapshots', detail: 'Create snapshot policies to protect these VMs.', severity: 'warning', action: 'copilot:backup' });
+      if (_warns > 0) items.push({ title: _warns + ' active warning' + (_warns > 1 ? 's' : ''), detail: 'Review the Event Intelligence page for details.', severity: 'warning', action: 'copilot:unhealthy', query: 'Show cluster warnings and events' });
+      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'No critical issues detected. Copilot has no recommendations.', severity: 'info', action: 'open_copilot' });
     }
     var html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">Fleet is healthy overall.</p><ol class="vmr-copilot-list">';
     items.slice(0, 4).forEach(function (item, i) {
