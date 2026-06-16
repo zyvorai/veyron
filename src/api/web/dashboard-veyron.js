@@ -2785,6 +2785,19 @@
     };
   };
 
+  window.patchFetchCosts = function patchFetchCosts() {
+    if (window._veyronPatchedFetchCosts) return;
+    window._veyronPatchedFetchCosts = true;
+    var orig = window.fetchCosts;
+    if (!orig) return;
+    window.fetchCosts = async function() {
+      await orig.apply(this, arguments);
+      if (typeof currentPage !== 'undefined' && currentPage === 'costs' && typeof renderCostsVmr === 'function') {
+        renderCostsVmr();
+      }
+    };
+  };
+
   window.initVeyronModule = function initVeyronModule() {
     applyVeyronSettings(loadVeyronSettings());
     initVeyronShell();
@@ -2798,6 +2811,7 @@
     patchFetchNodes();
     patchFetchSnapshots();
     patchFetchEvents();
+    patchFetchCosts();
     patchRenderPinnedVms();
     patchFetchTemplatesForForge();
     patchSelectVm();
