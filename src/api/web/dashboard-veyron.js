@@ -313,16 +313,19 @@
       el.innerHTML = '<p style="font-size:.82rem;color:var(--muted)">No active alerts in scope.</p>';
       return;
     }
+    window._vmrAlertMsgCache = [];
     el.innerHTML = firing.map(function (a) {
       var reason = a.name || a.alertname || 'Alert';
       var sev = (a.severity || 'warning').toLowerCase();
       var sevCls = sev === 'critical' ? 'critical' : 'warning';
       var obj = a.source || a.message || '';
+      var _aIdx = window._vmrAlertMsgCache.length;
+      window._vmrAlertMsgCache.push(String(a.message || reason).slice(0, 100));
       return '<div class="vmr-alert-stack-item ' + sevCls + '">' +
         '<div class="vmr-alert-title">' + esc(reason) + '</div>' +
         '<div class="vmr-alert-meta">' + esc(obj) + (a.namespace ? ' · ' + esc(a.namespace) : '') + '</div>' +
         '<div class="vmr-alert-foot"><span class="vmr-alert-sev">' + esc(sevCls) + '</span>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs(String(a.message || reason).slice(0, 100)) + ')') + '>Fix</button></div></div>';
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrAlertMsgCache&&openAskZeus(window._vmrAlertMsgCache[' + _aIdx + '])') + '>Fix</button></div></div>';
     }).join('');
   };
 
@@ -390,6 +393,8 @@
         '<li>Verify image name and registry access</li><li>Add imagePullSecret if private</li>' +
         '<li>Replace with a Veyron template image</li></ul>';
     }
+    var _mIdx = (window._vmrMcMsgCache = window._vmrMcMsgCache || []).length;
+    window._vmrMcMsgCache.push(msg.slice(0, 120));
     return '<div class="vmr-incident-card ' + sev + '">' +
       '<div style="font-weight:700;color:var(--text-bright);margin-bottom:4px">' + esc(reason) + '</div>' +
       '<div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">' + esc(ev.involved_object || ev.namespace || '') + ' · ' + esc(ev.timestamp || '') + '</div>' +
@@ -397,7 +402,7 @@
       '<div style="font-size:.78rem;color:var(--orange)">Impact: ' + esc(impact) + '</div>' + fixes +
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open events</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs(msg.slice(0, 120)) + ')') + '>Ask Veyron</button></div></div>';
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrMcMsgCache&&openAskZeus(window._vmrMcMsgCache[' + _mIdx + '])') + '>Ask Veyron</button></div></div>';
   };
 
   window.setVmrFleetView = function setVmrFleetView(mode) {
