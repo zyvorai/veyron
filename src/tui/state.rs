@@ -97,6 +97,9 @@ pub struct VmInfo {
     pub drift_detected: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub drift_message: Option<String>,
+    /// True when VMI reports AgentConnected=True condition.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub guest_agent_connected: Option<bool>,
 }
 
 impl VmInfo {
@@ -222,6 +225,7 @@ impl VmInfo {
             veyron_managed: None,
             drift_detected: None,
             drift_message: None,
+            guest_agent_connected: None,
         }
     }
 
