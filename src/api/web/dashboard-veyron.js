@@ -486,15 +486,39 @@
       if (!byNode[n]) byNode[n] = [];
       byNode[n].push(vm);
     });
-    var html = '<div class="vmr-panel"><div class="vmr-panel-title">Cluster topology</div>';
+    var html = '<div class="vmr-topology-root">';
+    /* Cluster root */
+    html += '<div class="vmr-topology-cluster">' +
+      '<div class="vmr-topology-cluster-label">◈ Cluster</div>' +
+      '<div class="vmr-topology-nodes">';
     Object.keys(byNode).sort().forEach(function (node) {
-      html += '<div style="margin-bottom:12px"><strong style="color:var(--cyan)">' + esc(node) + '</strong><ul style="list-style:none;padding:8px 0 0 16px">';
-      byNode[node].forEach(function (vm) {
-        html += '<li style="font-size:.84rem;padding:4px 0;color:var(--muted)">├── ' + esc(vm.name) + ' · ' + esc(vm.status) + '</li>';
-      });
-      html += '</ul></div>';
+      var nodeVms = byNode[node];
+      var runningCount = nodeVms.filter(function (v) { return v.status === 'Running'; }).length;
+      var isUnscheduled = node === 'Unscheduled';
+      html += '<div class="vmr-topology-node">' +
+        '<div class="vmr-topology-node-header">' +
+          '<span class="vmr-topology-node-icon">' + (isUnscheduled ? '⚠' : '⬢') + '</span>' +
+          '<div>' +
+            '<div class="vmr-topology-node-name">' + esc(node) + '</div>' +
+            '<div class="vmr-topology-node-sub">' + nodeVms.length + ' VMs · ' + runningCount + ' running</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="vmr-topology-vm-chips">' +
+        nodeVms.map(function (vm) {
+          var ns = vm.namespace || 'default';
+          var isRunning = vm.status === 'Running';
+          var osIcon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
+          return '<div class="vmr-topology-vm-chip ' + (isRunning ? 'running' : 'stopped') + '" ' +
+            onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' title="' + esc(ns + '/' + vm.name) + '">' +
+            '<span style="font-size:.9rem">' + osIcon + '</span>' +
+            '<span>' + esc(vm.name) + '</span>' +
+            '<span class="vmr-topology-vm-status ' + (isRunning ? 'running' : 'stopped') + '"></span>' +
+          '</div>';
+        }).join('') +
+        '</div></div>';
     });
-    return html + '</div>';
+    html += '</div></div></div>';
+    return html;
   };
 
   window.renderFleetCommandVmr = function renderFleetCommandVmr() {
@@ -1620,14 +1644,20 @@
     var score = Math.max(0, 100 - (warnings * 10) - (isRunning ? 0 : 5));
     var heroActions = isRunning
       ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, vm.name) + ')">Console</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, vm.name, 'ssh') + ')">SSH / RDP</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')">SSH</button>' +
+        (typeof isWindowsVm === 'function' && isWindowsVm(vm)
+          ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')">RDP</button>'
+          : '') +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'restart') + ')">Restart</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof openSnapModalForVm===\'function\'?openSnapModalForVm(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Migrate VM ' + vm.name + ' to another node') + ')">Migrate</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Backup VM ' + vm.name) + ')">Backup</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('VM ' + vm.name) + ')">Ask Veyron</button>'
       : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor(' + jsArgs(ns, vm.name) + ')">Diagnose</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor&&openCopilotDoctor(' + jsArgs(ns, vm.name) + ')">Diagnose</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>' +
-        '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="vmDelete(' + jsArgs(ns, vm.name) + ')">Delete</button>';
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Attach ISO to VM ' + vm.name) + ')">Attach ISO</button>' +
+        '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="vmDelete&&vmDelete(' + jsArgs(ns, vm.name) + ')">Delete</button>';
     el.innerHTML =
       '<div class="vmr-capsule-hero">' +
         '<div class="vmr-capsule-hero-info">' +

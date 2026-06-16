@@ -1367,6 +1367,97 @@ body.veyron-shell .cloudos-main {
   white-space: nowrap;
 }
 
+/* ── Fleet Topology view ── */
+.vmr-topology-root {
+  padding: 8px 0;
+}
+.vmr-topology-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.vmr-topology-cluster-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.vmr-topology-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.vmr-topology-node {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  min-width: 220px;
+  flex: 1 1 220px;
+  max-width: 360px;
+}
+.vmr-topology-node-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.vmr-topology-node-icon {
+  font-size: 1.3rem;
+  color: var(--cyan);
+}
+.vmr-topology-node-name {
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--text-bright, #f7f9fb);
+}
+.vmr-topology-node-sub {
+  font-size: .74rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.vmr-topology-vm-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vmr-topology-vm-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: .82rem;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background .14s, border-color .14s;
+}
+.vmr-topology-vm-chip.running {
+  background: rgba(50,224,176,.06);
+  border-color: rgba(50,224,176,.14);
+}
+.vmr-topology-vm-chip.stopped {
+  background: rgba(150,170,210,.04);
+  border-color: rgba(150,170,210,.1);
+}
+.vmr-topology-vm-chip:hover {
+  background: rgba(63,124,255,.12);
+  border-color: rgba(63,124,255,.22);
+}
+.vmr-topology-vm-status {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.vmr-topology-vm-status.running { background: var(--green); }
+.vmr-topology-vm-status.stopped { background: var(--muted); }
+
 /* ── Veyron VM Inspector drawer ── */
 .veyron-shell .mac-inspector-pane {
   width: 480px;
