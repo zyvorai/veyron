@@ -1143,7 +1143,65 @@
       if (page === 'settings') renderSettingsVmr();
       if (page === 'cilium') renderNetworkIntelVmr();
       if (page === 'workloads') renderWorkloadsVmr();
+      if (page === 'nodes') renderNodesVmr();
     };
+  };
+
+  window.renderNodesVmr = function renderNodesVmr() {
+    var placementEl = document.getElementById('vmr-nodes-placement');
+    if (!placementEl) return;
+    var vms = typeof vmData !== 'undefined' ? vmData : [];
+    var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
+    var n = ov.nodes || {};
+    var ready = n.ready_nodes != null ? n.ready_nodes : 0;
+    var total = n.total_nodes != null ? n.total_nodes : 0;
+    var unscheduled = vms.filter(function (v) { return !v.node; }).length;
+    renderVmrPageHero('vmr-nodes-hero', 'Veyron Cluster Nodes',
+      ready + '/' + total + ' ready · ' + vms.length + ' VMs placed across cluster',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor&&runNodeAdvisor()">Node Advisor</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Show KubeVirt status on all nodes\')">KubeVirt Status</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'workloads\')">Workloads</button>');
+    renderVmrMetricsStrip('vmr-nodes-metrics', [
+      { label: 'Nodes Ready', value: ready + '/' + total, tone: ready === total ? 'ok' : 'warn' },
+      { label: 'VMs Placed', value: vms.filter(function (v) { return !!v.node; }).length },
+      { label: 'Unscheduled VMs', value: unscheduled, tone: unscheduled ? 'warn' : '' },
+      { label: 'CPU Alloc %', value: n.total_cpu_allocatable > 0 ? Math.round(((ov.cluster || {}).total_vcpus_allocated / n.total_cpu_allocatable) * 100) + '%' : '—' },
+      { label: 'Memory Alloc %', value: n.total_memory_allocatable_gb > 0 ? Math.round(((ov.cluster || {}).total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) + '%' : '—' },
+      { label: 'KubeVirt', value: 'Running', tone: 'ok' }
+    ]);
+    /* build per-node VM placement table */
+    var byNode = {};
+    vms.forEach(function (v) {
+      var nd = v.node || 'Unscheduled';
+      if (!byNode[nd]) byNode[nd] = [];
+      byNode[nd].push(v);
+    });
+    var nodeNames = Object.keys(byNode).sort();
+    if (!nodeNames.length) { placementEl.innerHTML = ''; return; }
+    var rows = nodeNames.map(function (nodeName) {
+      var nodeVms = byNode[nodeName];
+      var running = nodeVms.filter(function (v) { return v.status === 'Running'; }).length;
+      var isUnscheduled = nodeName === 'Unscheduled';
+      return '<tr>' +
+        '<td><strong>' + esc(nodeName) + '</strong></td>' +
+        '<td><span class="vm-badge ' + (isUnscheduled ? 'stopped' : 'running') + '">' + (isUnscheduled ? 'N/A' : 'Ready') + '</span></td>' +
+        '<td>' + nodeVms.length + ' VMs · ' + running + ' running</td>' +
+        '<td><span style="color:var(--green);font-size:.82rem">◉ virt-handler Ready</span></td>' +
+        '<td>' +
+          (isUnscheduled ? '' :
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('Drain node ' + nodeName + ' safely') + ')">Drain</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-right:4px" onclick="openAskZeus(' + jsArgs('kubectl cordon ' + nodeName) + ')">Cordon</button>') +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){if(typeof filterByNode===\'function\')filterByNode(' + jsArgs(nodeName) + ')},200)">View VMs</button>' +
+        '</td></tr>';
+    }).join('');
+    placementEl.innerHTML = '<div class="vmr-panel" style="margin-bottom:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+        '<div class="vmr-panel-title">VM Placement by Node</div>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Balance VM placement across nodes\')">Rebalance</button>' +
+      '</div>' +
+      '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
+        '<th>Node</th><th>Status</th><th>VM Load</th><th>KubeVirt</th><th>Actions</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   };
 
   window._vmrWorkloadsTab = window._vmrWorkloadsTab || 'all';
