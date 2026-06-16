@@ -2118,12 +2118,95 @@
     } catch (e) { /* optional */ }
   };
 
+  var VEYRON_SETTINGS_KEY = 'veyron_settings_v1';
+
+  function loadVeyronSettings() {
+    try { return JSON.parse(localStorage.getItem(VEYRON_SETTINGS_KEY) || '{}'); } catch (e) { return {}; }
+  }
+
+  function applyVeyronSettings(saved) {
+    if (!saved || typeof saved !== 'object') return;
+    if (saved['set-default-ns'] && typeof currentNamespace !== 'undefined') {
+      currentNamespace = saved['set-default-ns'];
+      var nsEl = document.getElementById('namespace-filter');
+      if (nsEl && nsEl.value !== currentNamespace) nsEl.value = currentNamespace;
+    }
+    if (saved['set-vnc-quality']) {
+      var q = String(saved['set-vnc-quality']);
+      var preset = q.startsWith('LAN') ? 'lan' : q.startsWith('Low') ? 'low' : 'balanced';
+      localStorage.setItem('veyron_vnc_preset', preset);
+    }
+    if (saved['set-font-size']) {
+      var szMatch = String(saved['set-font-size']).match(/(\d+)/);
+      if (szMatch) document.documentElement.style.setProperty('font-size', szMatch[1] + 'px');
+    }
+  }
+
+  window.saveSettingsVmr = function saveSettingsVmr() {
+    var textFields = [
+      'set-default-ns','set-storage-class','set-refresh-interval','set-api-timeout',
+      'set-kubeconfig','set-kubevirt-ns','set-cdi-ns','set-cluster-label',
+      'set-ns-allow','set-snap-retention','set-snap-prefix','set-velero-url',
+      'set-prometheus','set-prom-timeout','set-tpl-registry-url',
+    ];
+    var checkboxFields = [
+      'set-ns-autodiscover','set-ns-cross','set-readonly','set-allow-delete',
+      'set-allow-migrate','set-vnc','set-rdp','set-ssh','set-vnc-reconnect',
+      'set-snap-schedule','set-pw-trust','set-audit-show','set-audit-api','set-audit-vm',
+    ];
+    var selectFields = [
+      'set-min-tier','set-vnc-quality','set-tpl-source','set-prom-range',
+      'set-theme','set-accent','set-font-size','set-sidebar-density',
+    ];
+    var saved = loadVeyronSettings();
+    textFields.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.value.trim()) saved[id] = el.value.trim();
+      else delete saved[id];
+    });
+    checkboxFields.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) saved[id] = el.checked;
+    });
+    selectFields.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && el.value) saved[id] = el.value;
+    });
+    try {
+      localStorage.setItem(VEYRON_SETTINGS_KEY, JSON.stringify(saved));
+      applyVeyronSettings(saved);
+      if (typeof toast === 'function') toast('Settings saved', 'success');
+    } catch (e) {
+      if (typeof toast === 'function') toast('Save failed: ' + (e.message || String(e)), 'error');
+    }
+  };
+
+  function populateSettingsFormVmr() {
+    var saved = loadVeyronSettings();
+    Object.keys(saved).forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') {
+        el.checked = !!saved[id];
+      } else if (el.tagName === 'SELECT') {
+        var val = saved[id];
+        var matched = false;
+        Array.prototype.forEach.call(el.options, function(o) {
+          if (o.value === val || o.text === val) { el.value = o.value; matched = true; }
+        });
+        if (!matched && el.options.length > 0) { /* leave default */ }
+      } else {
+        el.value = saved[id] || '';
+      }
+    });
+  }
+
   window.renderSettingsVmr = function renderSettingsVmr() {
     var el = document.getElementById('vmr-settings-body');
     if (!el) return;
     renderVmrPageHero('vmr-settings-hero', 'Veyron Settings',
       'Platform identity, access control, integrations, and appearance.',
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced</button>');
 
     function field(f) {
@@ -2249,9 +2332,10 @@
       sections.join('') +
       '</div>' +
       '<div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">' +
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
       '</div>';
+    populateSettingsFormVmr();
   };
 
   window.openFoundryPreview = function openFoundryPreview(templateId) {
@@ -2642,6 +2726,7 @@
   };
 
   window.initVeyronModule = function initVeyronModule() {
+    applyVeyronSettings(loadVeyronSettings());
     initVeyronShell();
     patchRenderVmFullList();
     patchFilterVMs();
