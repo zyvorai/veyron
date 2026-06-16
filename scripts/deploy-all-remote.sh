@@ -72,8 +72,18 @@ for arg in "$@"; do
     esac
 done
 
-HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-HOST}}"
-USER="${POSITIONAL[1]:-${DEPLOY_USER:-sus}}"
+HOST="${POSITIONAL[0]:-${DEPLOY_HOST:-}}"
+USER="${POSITIONAL[1]:-${DEPLOY_USER:-}}"
+if [[ -z "${HOST}" ]]; then
+    echo "Usage: $0 <host> [user] [--quick]" >&2
+    echo "  or:  DEPLOY_HOST=<host> [DEPLOY_USER=<user>] $0 [--quick]" >&2
+    exit 1
+fi
+if [[ -z "${USER}" ]]; then
+    echo "Usage: $0 <host> <user> [--quick]" >&2
+    echo "  or:  DEPLOY_HOST=<host> DEPLOY_USER=<user> $0 [--quick]" >&2
+    exit 1
+fi
 REMOTE="${USER}@${HOST}"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 API_KEY="${VEYRON_API_KEY:-CHANGE_ME}"

@@ -9,7 +9,7 @@
 #   - dist/veyron-<ver>-linux-amd64.tar.gz (+ .sha256) from package-binary-remote.sh --fetch
 #
 # Example:
-#   ./scripts/package-binary-remote.sh HOST sus --fetch
+#   ./scripts/package-binary-remote.sh <host> <user> --fetch
 #   ./scripts/publish-customer-release.sh v0.2.0
 set -euo pipefail
 

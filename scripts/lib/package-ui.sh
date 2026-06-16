@@ -625,7 +625,7 @@ pkg_primary_ipv4() {
     fi
 }
 
-# Human label, e.g. HOST (eno2)
+# Human label, e.g. 192.0.2.1 (eno2)
 pkg_primary_host_label() {
     local ip iface
     ip=$(pkg_primary_ipv4)
