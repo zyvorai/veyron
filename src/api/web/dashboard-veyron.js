@@ -2031,6 +2031,17 @@
   window.patchFilterVMs = function patchFilterVMs() {
     if (window._vmrPatchedFilterVMs) return;
     window._vmrPatchedFilterVMs = true;
+    // Inject the hidden drift-filter <select> that the base stat-pill onclick targets.
+    // Without it, clicking the "Drift" stat pill throws (null.value = 'drift') before filterVMs() runs.
+    if (!document.getElementById('vm-filter-drift')) {
+      var driftSel = document.createElement('select');
+      driftSel.id = 'vm-filter-drift';
+      driftSel.style.display = 'none';
+      ['', 'drift', 'clear', 'unmanaged'].forEach(function(v) {
+        var o = document.createElement('option'); o.value = v; driftSel.appendChild(o);
+      });
+      document.body.appendChild(driftSel);
+    }
     var orig = window.filterVMs;
     if (!orig) return;
     window.filterVMs = function () {
