@@ -1689,7 +1689,7 @@
       var firing = lastVeyronAlerts.filter(function (a) {
         return (a.status || '').toLowerCase() === 'firing';
       }).length;
-      if (typeof window.islandAlertCount !== 'undefined') window.islandAlertCount = firing;
+      islandAlertCount = firing;
       if (typeof currentPage !== 'undefined' && currentPage === 'dashboard' && typeof renderMissionControlVmr === 'function') {
         renderMissionControlVmr();
       }
