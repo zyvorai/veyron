@@ -1937,13 +1937,12 @@
               '<div class="vmr-health-row"><span>vCPUs</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
               '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
               '<div class="vmr-health-row"><span>Firmware</span><span>UEFI</span></div>' +
-              '<div class="vmr-health-row"><span>TPM 2.0</span><span style="color:var(--orange)">Disabled</span></div>' +
-              '<div class="vmr-health-row"><span>Secure Boot</span><span style="color:var(--orange)">Disabled</span></div>' +
+              '<div class="vmr-health-row"><span>TPM / Secure Boot</span><span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrCapsuleTab(5)" style="font-size:.78rem;padding:2px 8px">View in Security tab</button></span></div>' +
               '<div class="vmr-health-row"><span>RNG Device</span><span>virtio-rng</span></div>' +
               '<div class="vmr-health-row"><span>USB Tablet</span><span>Enabled</span></div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit CPU / Memory</button>' +
-                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Enable TPM 2.0 and Secure Boot for VM ' + vm.name) + ')">Enable TPM + Secure Boot</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrCapsuleTab(5)">Security Details</button>' +
               '</div>' +
             '</div></div>',
             '<div class="vmr-capsule-pane" data-tab="5" data-lazy="security"><div class="vmr-panel">' +
@@ -2676,7 +2675,9 @@
         apiJson('/api/v1/security/findings' + ns),
       ]);
       var p = (typeof unwrapData === 'function' ? unwrapData(postureRaw) : postureRaw) || {};
-      var findings = typeof asArray === 'function' ? asArray(typeof unwrapData === 'function' ? unwrapData(findingsRaw) : findingsRaw) : [];
+      var _findingsObj = (typeof unwrapData === 'function' ? unwrapData(findingsRaw) : findingsRaw) || {};
+      var findings = Array.isArray(_findingsObj.findings) ? _findingsObj.findings
+        : (typeof asArray === 'function' ? asArray(_findingsObj) : []);
       var sc = p.overall_score != null ? p.overall_score : 0;
       var scoreTone = sc >= 80 ? 'ok' : sc >= 50 ? 'warn' : 'bad';
       renderVmrMetricsStrip('vmr-security-metrics', [

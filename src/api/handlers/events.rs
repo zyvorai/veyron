@@ -20,6 +20,7 @@ use super::namespace_scope;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventResponse {
     pub id: String,
+    #[serde(rename = "type")]
     pub event_type: String,
     pub reason: String,
     pub message: String,
