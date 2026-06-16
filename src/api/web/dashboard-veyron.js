@@ -379,7 +379,7 @@
 
   window.renderVmrIncidentCard = function renderVmrIncidentCard(ev) {
     if (!ev) return '';
-    var reason = ev.reason || ev.type_ || 'Event';
+    var reason = ev.reason || ev.type || 'Event';
     var msg = ev.message || '';
     var sev = (ev.type === 'Warning' || reason.indexOf('Failed') >= 0 || reason.indexOf('Error') >= 0) ? 'failed' :
       (ev.type === 'Warning' ? 'warning' : '');
@@ -1633,7 +1633,7 @@
 
   window.renderVmrIncidentCardFull = function renderVmrIncidentCardFull(ev) {
     if (!ev) return '';
-    var reason = ev.reason || ev.type_ || 'Event';
+    var reason = ev.reason || ev.type || 'Event';
     var msg = ev.message || '';
     var obj = ev.involved_object || ev.namespace || '';
     var ts = ev.timestamp || '';
