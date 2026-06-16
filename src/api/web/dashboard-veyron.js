@@ -631,9 +631,9 @@
       }
       renderFoundryVmr();
       var grid = document.getElementById('app-store-grid');
-      if (!grid || !window.appStoreCache) return;
+      if (!grid || !appStoreCache) return;
       var cat = window.vmrFoundryCategory || 'all';
-      var filtered = window.appStoreCache.filter(function (t) {
+      var filtered = appStoreCache.filter(function (t) {
         if (cat === 'all') return true;
         if (cat === 'custom') return false;
         var fam = (t.os_family || '').toLowerCase();
@@ -665,11 +665,11 @@
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openImageImportModal && openImageImportModal()">Import Image</button></div>';
       var sumEl = document.getElementById('app-store-summary');
       if (sumEl) {
-        var windows = window.appStoreCache.filter(function (t) { return (t.os_family || '').toLowerCase() === 'windows'; }).length;
+        var winCount = appStoreCache.filter(function (t) { return (t.os_family || '').toLowerCase() === 'windows'; }).length;
         sumEl.innerHTML = '<div class="vmr-metrics-strip">' +
-          '<div class="vmr-metric"><div class="vmr-metric-label">Templates</div><div class="vmr-metric-value">' + window.appStoreCache.length + '</div></div>' +
-          '<div class="vmr-metric"><div class="vmr-metric-label">Linux</div><div class="vmr-metric-value">' + (window.appStoreCache.length - windows) + '</div></div>' +
-          '<div class="vmr-metric"><div class="vmr-metric-label">Windows</div><div class="vmr-metric-value">' + windows + '</div></div></div>';
+          '<div class="vmr-metric"><div class="vmr-metric-label">Templates</div><div class="vmr-metric-value">' + appStoreCache.length + '</div></div>' +
+          '<div class="vmr-metric"><div class="vmr-metric-label">Linux</div><div class="vmr-metric-value">' + (appStoreCache.length - winCount) + '</div></div>' +
+          '<div class="vmr-metric"><div class="vmr-metric-label">Windows</div><div class="vmr-metric-value">' + winCount + '</div></div></div>';
       }
     };
   };
