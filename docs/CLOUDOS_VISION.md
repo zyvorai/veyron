@@ -2,7 +2,7 @@
 
 > **KubeVirt is the virtualization engine. Kubernetes is the orchestration fabric. Zyvor CloudOS is the operating system above both.**
 
-CloudOS is the experience layer for VMRogue: a macOS/iOS-inspired control plane that hides Kubernetes vocabulary while preserving full platform power behind the scenes.
+CloudOS is the experience layer for **Veyron** by Zyvor: a macOS/iOS-inspired control plane that hides Kubernetes vocabulary while preserving full platform power behind the scenes. **ZeusOS** remains the desktop shell engine (secondary attribution in advanced flows).
 
 ## Principles
 

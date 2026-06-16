@@ -64,7 +64,7 @@ USER="${2:-root}"
 REMOTE_DIR="/home/${USER}/vmrogue"
 API_KEY="${VMROGUE_API_KEY:-CHANGE_ME}"
 NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
-NS="vmrogue-system"
+NS="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
 CDI_VERSION="${VMROGUE_CDI_VERSION:-v1.65.0}"
 SKIP_CDI="${VMROGUE_SKIP_CDI:-0}"
 RUN_STARTED_AT="$(date +%s)"
@@ -233,13 +233,13 @@ deploy_ssh "${USER}@${HOST}" "
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: vmrogue
+  name: veyron
   namespace: ${NS}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: vmrogue
+  name: veyron
 rules:
   - apiGroups: ['kubevirt.io']
     resources: ['virtualmachines', 'virtualmachineinstances']
@@ -344,20 +344,20 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: vmrogue
+  name: veyron
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: vmrogue
+  name: veyron
 subjects:
   - kind: ServiceAccount
-    name: vmrogue
+    name: veyron
     namespace: ${NS}
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: vmrogue-api-key
+  name: veyron-api-key
   namespace: ${NS}
 type: Opaque
 stringData:
@@ -366,7 +366,7 @@ stringData:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vmrogue-api
+  name: veyron-api
   namespace: ${NS}
 spec:
   replicas: 1
@@ -379,15 +379,15 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app: vmrogue-api
+      app: veyron-api
   template:
     metadata:
       labels:
-        app: vmrogue-api
+        app: veyron-api
       annotations:
         vmrogue.io/deployed-at: "${DEPLOY_STAMP}"
     spec:
-      serviceAccountName: vmrogue
+      serviceAccountName: veyron
       initContainers:
         - name: gen-cert
           image: alpine/openssl:3.3.2
@@ -397,8 +397,8 @@ spec:
               openssl req -x509 -nodes -days 3650 \
                 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
                 -keyout /certs/tls.key -out /certs/tls.crt \
-                -subj "/CN=vmrogue/O=vmrogue" \
-                -addext "subjectAltName=DNS:vmrogue-api,DNS:vmrogue-api.${NS}.svc,DNS:localhost,IP:127.0.0.1"
+                -subj "/CN=veyron/O=veyron" \
+                -addext "subjectAltName=DNS:veyron-api,DNS:veyron-api.${NS}.svc,DNS:localhost,IP:127.0.0.1"
               chown 10001:10001 /certs/tls.key /certs/tls.crt
               chmod 600 /certs/tls.key && chmod 644 /certs/tls.crt
           securityContext:
@@ -408,15 +408,20 @@ spec:
             - name: tls-certs
               mountPath: /certs
       containers:
-        - name: vmrogue
+        - name: veyron
           image: localhost/vmrogue:latest
           imagePullPolicy: Never
           args: ['api-serve', '--port', '5151', '--host', '0.0.0.0', '--tls', '--tls-cert', '/certs/tls.crt', '--tls-key', '/certs/tls.key']
           env:
+            - name: VEYRON_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: api-key
             - name: VMROGUE_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: vmrogue-api-key
+                  name: veyron-api-key
                   key: api-key
             - name: RUST_LOG
               value: info
@@ -473,12 +478,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vmrogue-api
+  name: veyron-api
   namespace: ${NS}
 spec:
   type: NodePort
   selector:
-    app: vmrogue-api
+    app: veyron-api
   ports:
     - name: https
       port: 443
@@ -493,21 +498,21 @@ info "K8s resources applied"
 step "Step 6/7: Verifying deployment"
 # Chain with && so a failed rollout is not masked by a later kubectl (ssh exits 0 on last cmd).
 deploy_ssh "${USER}@${HOST}" "
-    ${K} -n ${NS} rollout status deployment/vmrogue-api --timeout=180s &&
+    ${K} -n ${NS} rollout status deployment/veyron-api --timeout=180s &&
     echo '' &&
-    ${K} -n ${NS} get pods -l app=vmrogue-api -o wide &&
+    ${K} -n ${NS} get pods -l app=veyron-api -o wide &&
     echo '' &&
-    ${K} -n ${NS} get svc vmrogue-api &&
+    ${K} -n ${NS} get svc veyron-api &&
     echo '' &&
     echo 'Cluster / integrations (read-only):' &&
     ( ${K} get nodes -o wide 2>/dev/null | head -5 ) &&
     ( ${K} get crd virtualmachines.kubevirt.io &>/dev/null && echo '  KubeVirt: CRD present' || echo '  KubeVirt: CRD not found (install KubeVirt for VM APIs)' ) &&
     ( ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && echo '  Cilium:   CNP CRD present' || echo '  Cilium:   not detected (egress bootstrap skipped if no CRD)' )
-" || error "Deployment rollout failed (on host: ${K} -n ${NS} describe pod -l app=vmrogue-api)"
+" || error "Deployment rollout failed (on host: ${K} -n ${NS} describe pod -l app=veyron-api)"
 info "Deployment verified"
 
 # Live Service NodePort for the https port (see port name in manifest).
-DISPLAY_NODE_PORT=$(deploy_ssh "${USER}@${HOST}" "${K} -n ${NS} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || true)
+DISPLAY_NODE_PORT=$(deploy_ssh "${USER}@${HOST}" "${K} -n ${NS} get svc veyron-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || true)
 DISPLAY_NODE_PORT="${DISPLAY_NODE_PORT:-${NODE_PORT}}"
 
 TOTAL_SEC=$(( $(date +%s) - RUN_STARTED_AT ))
@@ -525,6 +530,6 @@ echo "  ${COLOR_DIM}TLS:${COLOR_RESET} self-signed init-container cert (browser 
 echo "  ${COLOR_DIM}API key:${COLOR_RESET} ${API_KEY}"
 echo ""
 echo "  ${COLOR_DIM}kubectl (on remote):${COLOR_RESET}"
-echo "    ${K} -n ${NS} logs deployment/vmrogue-api -f"
+echo "    ${K} -n ${NS} logs deployment/veyron-api -f"
 echo "    ${K} -n ${NS} get pods"
 echo ""

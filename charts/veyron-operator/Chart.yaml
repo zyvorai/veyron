@@ -1,0 +1,17 @@
+apiVersion: v2
+name: veyron-operator
+description: Veyron Kubernetes Operator for KubeVirt VM lifecycle (vmrogue.io CRDs)
+type: application
+version: 0.2.0
+appVersion: "0.2.0"
+keywords:
+  - veyron
+  - kubevirt
+  - operator
+  - virtual-machine
+home: https://github.com/ssahani/VMRogue
+sources:
+  - https://github.com/ssahani/VMRogue
+maintainers:
+  - name: ZyvorAI Labs Private Limited
+    url: https://github.com/ssahani

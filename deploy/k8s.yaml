@@ -1,30 +1,32 @@
-# VMRogue Kubernetes Deployment
+# Veyron Kubernetes Deployment
 #
 # Prerequisites:
-#   kubectl create secret generic vmrogue-api-key \
-#     --namespace=vmrogue-system \
+#   kubectl create secret generic veyron-api-key \
+#     --namespace=veyron-system \
 #     --from-literal=api-key=$(openssl rand -hex 32)
 #
 # Or use: ./scripts/deploy-k8s.sh deploy (creates the secret automatically)
+#
+# Legacy: vmrogue-system / vmrogue-api still work on existing clusters until migrated.
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: vmrogue-system
+  name: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
-    app.kubernetes.io/part-of: vmrogue
+    app.kubernetes.io/name: veyron
+    app.kubernetes.io/part-of: veyron
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: vmrogue
-  namespace: vmrogue-system
+  name: veyron
+  namespace: veyron-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: vmrogue
+  name: veyron
 rules:
   # KubeVirt VMs and VMIs
   - apiGroups: ["kubevirt.io"]
@@ -58,7 +60,7 @@ rules:
   - apiGroups: ["snapshot.kubevirt.io"]
     resources: ["virtualmachinesnapshots", "virtualmachinesnapshotcontents", "virtualmachinerestores"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  # VMRogue CRDs
+  # VMRogue CRDs (vmrogue.io — unchanged)
   - apiGroups: ["vmrogue.io"]
     resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions", "vmtemplates", "vmprofiles"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -166,27 +168,26 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: vmrogue
+  name: veyron
 subjects:
   - kind: ServiceAccount
-    name: vmrogue
-    namespace: vmrogue-system
+    name: veyron
+    namespace: veyron-system
 roleRef:
   kind: ClusterRole
-  name: vmrogue
+  name: veyron
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vmrogue-api
-  namespace: vmrogue-system
+  name: veyron-api
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     app.kubernetes.io/component: api
 spec:
   replicas: 1
-  # Avoid two pods during rollout: hostPort binds would collide on a single node.
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -194,15 +195,15 @@ spec:
       maxUnavailable: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: vmrogue
+      app.kubernetes.io/name: veyron
       app.kubernetes.io/component: api
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: vmrogue
+        app.kubernetes.io/name: veyron
         app.kubernetes.io/component: api
     spec:
-      serviceAccountName: vmrogue
+      serviceAccountName: veyron
       initContainers:
         - name: gen-cert
           image: alpine/openssl:3.3.2
@@ -212,8 +213,8 @@ spec:
               openssl req -x509 -nodes -days 3650 \
                 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 \
                 -keyout /certs/tls.key -out /certs/tls.crt \
-                -subj "/CN=vmrogue/O=vmrogue" \
-                -addext "subjectAltName=DNS:vmrogue-api,DNS:vmrogue-api.vmrogue-system.svc,DNS:localhost,IP:127.0.0.1"
+                -subj "/CN=veyron/O=veyron" \
+                -addext "subjectAltName=DNS:veyron-api,DNS:veyron-api.veyron-system.svc,DNS:localhost,IP:127.0.0.1"
               chown 10001:10001 /certs/tls.key /certs/tls.crt
               chmod 600 /certs/tls.key && chmod 644 /certs/tls.crt
           securityContext:
@@ -223,7 +224,7 @@ spec:
             - name: tls-certs
               mountPath: /certs
       containers:
-        - name: vmrogue
+        - name: veyron
           image: docker.io/library/vmrogue:latest
           imagePullPolicy: Never
           args: ["api-serve", "--port", "5151", "--host", "0.0.0.0", "--tls", "--tls-cert", "/certs/tls.crt", "--tls-key", "/certs/tls.key"]
@@ -251,26 +252,38 @@ spec:
             initialDelaySeconds: 3
             periodSeconds: 5
           env:
+            - name: VEYRON_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: veyron-api-key
+                  key: api-key
             - name: VMROGUE_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: vmrogue-api-key
+                  name: veyron-api-key
                   key: api-key
             - name: RUST_LOG
               value: "info"
+            - name: VEYRON_API_NODE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
             - name: VMROGUE_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: VEYRON_API_NODE_PORT
+              value: "30151"
             - name: VMROGUE_API_NODE_PORT
               value: "30151"
+            - name: VEYRON_CLUSTER_DNS
+              value: "10.43.0.10"
             - name: VMROGUE_CLUSTER_DNS
               value: "10.43.0.10"
           envFrom:
             - secretRef:
-                name: vmrogue-integrations
+                name: veyron-integrations
                 optional: true
-          # Create secret from deploy/k8s/optional-integrations.env.example.yaml when Prometheus/OpenCost/etc. exist.
           securityContext:
             runAsNonRoot: true
             runAsUser: 10001
@@ -298,15 +311,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vmrogue-api
-  namespace: vmrogue-system
+  name: veyron-api
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     app.kubernetes.io/component: api
 spec:
   type: NodePort
   selector:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     app.kubernetes.io/component: api
   ports:
     - port: 443

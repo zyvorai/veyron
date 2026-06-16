@@ -1,0 +1,41 @@
+replicaCount: 1
+
+fullnameOverride: "veyron-operator"
+
+image:
+  repository: ghcr.io/ssahani/vmrogue-operator
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+
+service:
+  metricsPort: 9280
+  healthPort: 9281
+
+serviceAccount:
+  create: true
+  name: "veyron-operator"
+
+crds:
+  install: true
+
+nats:
+  enabled: false
+  url: "nats://nats.veyron-system.svc:4222"
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+leaderElection:
+  enabled: true
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

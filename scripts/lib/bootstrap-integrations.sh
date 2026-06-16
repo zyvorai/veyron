@@ -219,7 +219,7 @@ bootstrap_vmrogue_integrations() {
 apiVersion: v1
 kind: Secret
 metadata:
-  name: vmrogue-integrations
+  name: veyron-integrations
   namespace: ${ns}
   labels:
     app.kubernetes.io/name: vmrogue
@@ -246,7 +246,7 @@ EOF
 
     ${k8s} apply -f "${tmp}"
     rm -f "${tmp}"
-    echo "vmrogue-integrations applied (restart vmrogue-api to pick up env if already running)"
+    echo "veyron-integrations applied (restart veyron-api to pick up env if already running)"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

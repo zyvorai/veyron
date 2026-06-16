@@ -43,6 +43,11 @@ helm-monitoring-validate: ## Validate vmrogue-monitoring Helm chart (template)
 	helm template vmrogue-monitoring-ci charts/vmrogue-monitoring -n monitoring >/dev/null
 	@echo "helm template vmrogue-monitoring: OK"
 
+helm-veyron-validate: ## Validate veyron + veyron-operator Helm charts (template)
+	helm template veyron-ci charts/veyron -n veyron-system >/dev/null
+	helm template veyron-operator-ci charts/veyron-operator -n veyron-system >/dev/null
+	@echo "helm template veyron + veyron-operator: OK"
+
 docker: ## Build Docker image
 	./scripts/build-deploy.sh docker
 

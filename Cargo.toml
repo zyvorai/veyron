@@ -17,6 +17,10 @@ rust-version = "1.85"
 name = "vmrogue"
 path = "src/main.rs"
 
+[[bin]]
+name = "veyron"
+path = "src/main.rs"
+
 [lib]
 name = "vmrogue"
 path = "src/lib.rs"
