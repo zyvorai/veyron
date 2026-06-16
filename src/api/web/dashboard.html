@@ -3647,7 +3647,17 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- SNAPSHOTS PAGE -->
 <div class="page section-shell" id="page-snapshots" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Snapshots</h1><p>Point-in-time captures</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button></div></div>
+  <div class="page-header"><div><h1>Veyron Snapshots &amp; Backups</h1><p>Protect, restore, and replicate virtual machines.</p></div><div class="page-header-right">
+    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create backup policy for all VMs')">+ Backup Policy</button>
+  </div></div>
+  <!-- VM Protection summary -->
+  <div class="vmr-metrics-strip" style="margin-bottom:8px">
+    <div class="vmr-metric"><div class="vmr-metric-label">Protected VMs</div><div class="vmr-metric-value ok" id="snap-protected-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">Unprotected</div><div class="vmr-metric-value warn" id="snap-unprotected-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">Backup Policies</div><div class="vmr-metric-value" id="snap-policy-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">Failed Backups</div><div class="vmr-metric-value" id="snap-failed-count">—</div></div>
+  </div>
     <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
@@ -3658,7 +3668,11 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <!-- NODES PAGE -->
 <div class="page section-shell" id="page-nodes" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Nodes</h1><p>Kubernetes cluster nodes</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button><span class="page-header-meta" id="node-count"></span></div></div>
+  <div class="page-header"><div><h1>Veyron Cluster Nodes</h1><p>Node readiness, VM placement, and capacity.</p></div><div class="page-header-right">
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Show KubeVirt status on all nodes')">KubeVirt Status</button>
+    <span class="page-header-meta" id="node-count"></span>
+  </div></div>
     <div id="nodes-summary" class="grid-4 page-glass-stats"></div>
   <div id="node-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Node Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('node-advisor-card')">Dismiss</button></div>
@@ -3710,7 +3724,14 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <div class="space-y animate-fade-in">
   <div id="vmr-events-hero"></div>
   <div id="events-summary" class="grid-4 page-glass-stats"></div>
-  <div class="vmr-panel"><div class="vmr-panel-title">Incident feed</div><div id="vmr-events-list"></div></div>
+  <!-- Filter bar -->
+  <div class="vmr-foundry-filters" id="vmr-events-filter-bar" style="margin-bottom:4px"></div>
+  <div class="vmr-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="vmr-panel-title">Event Intelligence Feed</div>
+    </div>
+    <div id="vmr-events-list"></div>
+  </div>
   <details class="operator-details"><summary>Classic signal table</summary>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span></div><div id="events-full-list"></div></div>
   </details>
@@ -3790,7 +3811,7 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-costs" data-section="finops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cost Analysis</h1><p>Per-VM cost breakdown and namespace budgets (estimated monthly USD)</p></div>
+  <div class="page-header"><div><h1>Veyron Cost Explorer</h1><p>Usage, cost, forecast, and optimization for VM infrastructure.</p></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCostAdvisor()">Cost Advisor</button></div>
     <div id="cost-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Cost Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cost-advisor-card')">Dismiss</button></div>
@@ -3807,20 +3828,72 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     </div>
   </div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span></div>
-  <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th></tr></thead><tbody id="costs-body"></tbody></table>
+  <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th><th>Trend</th><th>Recommendation</th></tr></thead><tbody id="costs-body"></tbody></table>
+  </div>
+
+  <!-- Optimization recommendations -->
+  <div class="vmr-panel" style="margin-top:16px">
+    <div class="vmr-panel-title">Optimization Recommendations</div>
+    <div id="cost-optimization-body" style="margin-top:8px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+          <div><strong style="font-size:.84rem">Downsize idle VMs</strong><div style="font-size:.78rem;color:var(--muted)">VMs with sustained low CPU may be over-provisioned</div></div>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find idle VMs to downsize')">Analyze</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+          <div><strong style="font-size:.84rem">Delete orphaned PVCs</strong><div style="font-size:.78rem;color:var(--muted)">Unbound PersistentVolumeClaims accumulate storage costs</div></div>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find orphaned PVCs')">Find PVCs</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+          <div><strong style="font-size:.84rem">Schedule-based shutdown</strong><div style="font-size:.78rem;color:var(--muted)">Stop dev/test VMs outside business hours</div></div>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create shutdown schedule for dev VMs')">Configure</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+          <div><strong style="font-size:.84rem">Move to cheaper storage class</strong><div style="font-size:.78rem;color:var(--muted)">Cold workloads can use HDD or object storage tiers</div></div>
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Suggest cheaper storage classes for VMs')">Suggest</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 </div>
 
 <div class="page section-shell" id="page-security" data-section="security">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Security</h1><p>Security posture and vulnerability findings</p></div></div>
-    
+<div class="page-header"><div><h1>Veyron Security Posture</h1><p>Hardening, compliance, and risk visibility for virtual machines.</p></div>
+  <div class="page-header-right">
+    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus('Auto-fix all security findings')">Fix All Issues</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSecurity()">Refresh</button>
+  </div>
+</div>
+
   <div class="card glass-card" id="security-sentinel-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Security Sentinel</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('security-sentinel-card')">Dismiss</button></div>
     <div id="security-sentinel-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="security-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
+
+  <!-- Compliance strip -->
+  <div class="vmr-panel" style="margin-bottom:16px">
+    <div class="vmr-panel-title">Compliance Frameworks</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
+      <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--cyan)">CIS</span>
+      <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--cyan)">NIST</span>
+      <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--muted)">SOC 2</span>
+      <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--muted)">PCI-DSS</span>
+      <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--muted)">HIPAA</span>
+      <span style="padding:6px 14px;border-radius:8px;border:1px solid var(--line);font-size:.78rem;font-weight:600;color:var(--muted)">GDPR</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Enable TPM on all VMs')">Enable TPM</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Enable Secure Boot on all VMs')">Enable Secure Boot</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('snapshots')">Add Backup Policy</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('network-policies')">Apply Network Policy</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Add resource limits to all VMs')">Add Resource Limits</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Restrict console access')">Restrict Console Access</button>
+    </div>
+  </div>
+
   <div id="security-finding-cards" class="security-finding-cards"></div>
   <details class="glass-details" style="margin-top:16px"><summary>Table view</summary>
   <div class="card glass-card" style="margin-top:12px"><table class="table" id="security-table"><thead><tr><th>Severity</th><th>Category</th><th>Title</th><th>Resource</th><th>Recommendation</th></tr></thead><tbody id="security-body"></tbody></table></div>
@@ -3868,7 +3941,19 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 
 <div class="page section-shell" id="page-workloads" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Workloads</h1><p>Deployments, StatefulSets, and DaemonSets</p></div></div>
+  <div class="page-header"><div><h1>Veyron Workloads</h1><p>Kubernetes workloads connected to virtual machine operations.</p></div>
+    <div class="page-header-right">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">Refresh</button>
+    </div>
+  </div>
+  <!-- KubeVirt-specific workload sections -->
+  <div class="vmr-metrics-strip" style="margin-bottom:8px">
+    <div class="vmr-metric"><div class="vmr-metric-label">VirtualMachines</div><div class="vmr-metric-value" id="wl-vm-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">VMIs</div><div class="vmr-metric-value" id="wl-vmi-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">Pods</div><div class="vmr-metric-value" id="wl-pod-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">Deployments</div><div class="vmr-metric-value" id="wl-deploy-count">—</div></div>
+    <div class="vmr-metric"><div class="vmr-metric-label">DaemonSets</div><div class="vmr-metric-value" id="wl-ds-count">—</div></div>
+  </div>
   
     <div id="workloads-summary" class="grid-4 page-glass-stats"></div>
 <div class="card glass-card"><div class="card-header"><span class="card-title">Cluster Workloads</span></div>
@@ -4126,8 +4211,17 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
       <div class="vmr-foundry-filters" id="vmr-foundry-filters">
         <button type="button" class="vmr-filter-chip active">All</button>
         <button type="button" class="vmr-filter-chip">UEFI</button>
+        <button type="button" class="vmr-filter-chip">Secure Boot</button>
         <button type="button" class="vmr-filter-chip">TPM</button>
         <button type="button" class="vmr-filter-chip">cloud-init</button>
+        <button type="button" class="vmr-filter-chip">VirtIO</button>
+        <button type="button" class="vmr-filter-chip">RDP</button>
+        <button type="button" class="vmr-filter-chip">SSH</button>
+        <button type="button" class="vmr-filter-chip">Guest Tools</button>
+        <button type="button" class="vmr-filter-chip">Database</button>
+        <button type="button" class="vmr-filter-chip">Web</button>
+        <button type="button" class="vmr-filter-chip">AD</button>
+        <button type="button" class="vmr-filter-chip">K8s node</button>
       </div>
       <div class="vmr-card-grid" id="app-store-grid"></div>
     </div>
@@ -4181,6 +4275,28 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <div class="space-y animate-fade-in">
   <div id="vmr-stack-hero"></div>
   <div id="vmr-stack-body"></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-vm-capsule" data-section="compute">
+<div class="space-y animate-fade-in">
+  <div id="vmr-capsule-hero-slot"></div>
+  <div id="vmr-capsule-body"><div class="vmr-panel"><p style="color:var(--muted)">Select a VM from Fleet Command to open its capsule.</p><button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="navigate('vms')">Open Fleet Command</button></div></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-network-intel" data-section="network">
+<div class="space-y animate-fade-in">
+  <div id="vmr-network-intel-hero"></div>
+  <div id="vmr-network-intel-metrics"></div>
+  <div id="vmr-network-intel-body"></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-settings" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div id="vmr-settings-hero"></div>
+  <div id="vmr-settings-body"></div>
 </div>
 </div>
 
@@ -4730,9 +4846,23 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
         <label style="display:flex;gap:8px;margin-top:12px;font-size:.88rem"><input type="checkbox" id="forge-wiz-internet" checked> Allow internet egress</label>
       </div>
       <div class="forge-step-pane" data-step="5">
-        <h3>Security</h3>
-        <label style="display:flex;gap:8px;margin-top:12px;font-size:.88rem"><input type="checkbox" id="forge-wiz-autostart"> Start VM after forge</label>
-        <div class="form-group" style="margin-top:12px"><label class="form-label">Cloud-init (optional)</label><textarea class="form-input" id="forge-wiz-cloudinit" rows="4" placeholder="#cloud-config"></textarea></div>
+        <h3>Configure security</h3>
+        <p class="vmr-tagline">Hardening, backup policy, and guest runtime options.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+          <div>
+            <label style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.88rem"><input type="checkbox" id="forge-wiz-tpm"> Enable TPM 2.0</label>
+            <label style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.88rem"><input type="checkbox" id="forge-wiz-secureboot"> Enable Secure Boot</label>
+            <label style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.88rem"><input type="checkbox" id="forge-wiz-guest-tools" checked> Install Guest Tools (GuestKit)</label>
+            <label style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:.88rem"><input type="checkbox" id="forge-wiz-resource-limits"> Enable resource limits</label>
+          </div>
+          <div>
+            <div class="form-group"><label class="form-label">Backup policy</label><select class="form-select" id="forge-wiz-backup-policy"><option value="none">None</option><option value="daily">Daily snapshots</option><option value="weekly">Weekly backup</option></select></div>
+            <div class="form-group" style="margin-top:12px"><label class="form-label">Network policy</label><select class="form-select" id="forge-wiz-network-policy"><option value="none">None</option><option value="deny-all">Deny all egress</option><option value="allow-cluster">Allow cluster only</option></select></div>
+            <div class="form-group" style="margin-top:12px"><label class="form-label">Cloud-init secret (optional)</label><input type="text" class="form-input" id="forge-wiz-cloudinit-secret" placeholder="Secret name in namespace"></div>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:16px"><label class="form-label">Cloud-init config (optional)</label><textarea class="form-input" id="forge-wiz-cloudinit" rows="3" placeholder="#cloud-config&#10;packages:&#10;  - curl"></textarea></div>
+        <label style="display:flex;gap:10px;align-items:center;margin-top:12px;font-size:.88rem"><input type="checkbox" id="forge-wiz-autostart"> Start VM immediately after forge</label>
       </div>
       <div class="forge-step-pane" data-step="6">
         <h3>Review &amp; Forge</h3>
