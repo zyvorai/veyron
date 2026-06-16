@@ -1761,6 +1761,12 @@
     if (typeof navigate === 'function') navigate('vm-capsule');
   };
 
+  window.navigateToVmCapsuleTab = function navigateToVmCapsuleTab(ns, name, tabIdx) {
+    window._vmCapsuleTarget = { ns: ns, name: name };
+    window._vmrPendingCapsuleTab = tabIdx;
+    if (typeof navigate === 'function') navigate('vm-capsule');
+  };
+
   window.renderVmCapsuleVmr = function renderVmCapsuleVmr() {
     var el = document.getElementById('vmr-capsule-body');
     if (!el) return;
@@ -1840,12 +1846,11 @@
               '<div class="vmr-health-row"><span>CPU</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
               '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
               '<div class="vmr-health-row"><span>Boot mode</span><span>UEFI</span></div>' +
-              '<div class="vmr-health-row"><span>TPM</span><span style="color:var(--orange)">Disabled</span></div>' +
-              '<div class="vmr-health-row"><span>Secure Boot</span><span style="color:var(--orange)">Disabled</span></div>' +
+              '<div class="vmr-health-row"><span>TPM / Secure Boot</span>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" style="padding:2px 8px;font-size:.75rem" onclick="setVmrCapsuleTab(5)">View in Security tab</button></div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">' +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit CPU/Memory</button>' +
-                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Enable TPM for VM ' + vm.name + '\')">Enable TPM</button>' +
-                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Enable Secure Boot for VM ' + vm.name + '\')">Enable Secure Boot</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrCapsuleTab(5)">Security details</button>' +
               '</div>' +
             '</div>' +
             '<div class="vmr-panel">' +
@@ -1959,6 +1964,11 @@
       '</div>';
     var heroEl = document.getElementById('vmr-capsule-hero-slot');
     if (heroEl) heroEl.innerHTML = '';
+    if (window._vmrPendingCapsuleTab != null) {
+      var _pendingTab = window._vmrPendingCapsuleTab;
+      window._vmrPendingCapsuleTab = null;
+      setTimeout(function() { if (typeof setVmrCapsuleTab === 'function') setVmrCapsuleTab(_pendingTab); }, 0);
+    }
   };
 
   window.setVmrCapsuleTab = function setVmrCapsuleTab(idx) {
@@ -2506,7 +2516,7 @@
             : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'start') + ')">Start VM</button>' +
               '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsule(' + jsArgs(ns, name) + ')">Full Capsule</button>' +
               '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show YAML for VM ' + name) + ')">Show YAML</button>') +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsuleTab(' + jsArgs(ns, name) + ',7)">Show YAML</button>') +
         '</div>';
       var header = document.getElementById('mac-inspector-header');
       var ref = header && header.nextSibling ? header.nextSibling : document.getElementById('vm-focus-empty');
@@ -2531,63 +2541,25 @@
 
   window.renderSecurityPostureVmr = function renderSecurityPostureVmr() {
     var vms = typeof vmData !== 'undefined' ? vmData : [];
-    var events = typeof lastEvents !== 'undefined' ? lastEvents : [];
-    var warnings = 0;
-    var failed = 0;
-    if (Array.isArray(events)) {
-      events.forEach(function (ev) {
-        var sev = (ev.severity || ev.level || '').toLowerCase();
-        if (sev === 'warning' || sev === 'warn') warnings++;
-        if (sev === 'critical' || sev === 'error' || sev === 'failed') failed++;
-      });
-    }
-    var score = Math.max(0, 100 - warnings * 8 - failed * 5);
-    var scoreTone = score >= 80 ? 'ok' : score >= 50 ? 'warn' : 'bad';
-    var issues = failed + Math.round(warnings / 2);
-    var compliant = Math.max(0, vms.length - issues);
     renderVmrPageHero('vmr-security-hero', 'Veyron Security Posture',
-      'Fleet hardening, compliance, and risk visibility',
+      'Fleet hardening, compliance, and risk visibility · ' + vms.length + ' VMs audited',
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix all security findings\')">Fix All Issues</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurityVmr===\'function\'&&fetchSecurityVmr()">Refresh</button>');
     renderVmrMetricsStrip('vmr-security-metrics', [
-      { label: 'Fleet Score',   value: score + '%', tone: scoreTone },
-      { label: 'Critical',      value: failed,      tone: failed > 0 ? 'bad' : '' },
-      { label: 'Warnings',      value: warnings,    tone: warnings > 0 ? 'warn' : '' },
-      { label: 'VMs Audited',   value: vms.length },
-      { label: 'Compliant VMs', value: compliant },
-      { label: 'TPM Enabled',   value: '—' }
+      { label: 'Fleet Score',    value: '…' },
+      { label: 'Critical',       value: '…' },
+      { label: 'High',           value: '…' },
+      { label: 'Medium',         value: '…' },
+      { label: 'Risk Level',     value: '…' },
+      { label: 'Total Findings', value: '…' }
     ]);
     var findingsEl = document.getElementById('vmr-security-findings');
-    if (!findingsEl) return;
-    if (!vms.length) {
-      findingsEl.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">VM Security Findings</div>' +
-        '<div style="padding:24px;text-align:center;color:var(--muted);font-size:.9rem">No VMs found.</div></div>';
-      return;
+    if (findingsEl) {
+      findingsEl.innerHTML = '<div class="vmr-panel">' +
+        '<div class="vmr-panel-title">VM Security Findings</div>' +
+        '<div style="padding:32px;text-align:center;color:var(--muted);font-size:.88rem">Scanning KubeVirt specs…</div>' +
+        '</div>';
     }
-    var rows = vms.map(function (vm) {
-      var st = (vm.status || '').toLowerCase();
-      var sevLabel, sevColor, issueText, impactText;
-      if (st === 'failed' || st === 'error') {
-        sevLabel = 'High'; sevColor = 'var(--red)';
-        issueText = 'Missing backup, TPM disabled, Secure Boot off'; impactText = 'Potential data loss';
-      } else if (st === 'stopped' || st === 'paused') {
-        sevLabel = 'Medium'; sevColor = 'var(--orange)';
-        issueText = 'TPM disabled, Secure Boot off'; impactText = 'Configuration drift';
-      } else {
-        sevLabel = 'Low'; sevColor = 'var(--green)';
-        issueText = 'TPM disabled'; impactText = 'Hardening gap';
-      }
-      return '<tr><td><strong>' + esc(vm.name) + '</strong></td><td>' + esc(vm.namespace || 'default') + '</td>' +
-        '<td><span style="color:' + sevColor + ';font-weight:600">' + sevLabel + '</span></td>' +
-        '<td style="font-size:.82rem;color:var(--muted)">' + esc(issueText) + '</td>' +
-        '<td style="font-size:.82rem">' + esc(impactText) + '</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix security for VM ' + vm.name) + ')">Fix</button></td></tr>';
-    }).join('');
-    findingsEl.innerHTML = '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<div class="vmr-panel-title">VM Security Findings</div></div>' +
-      '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
-      '<th>VM</th><th>Namespace</th><th>Severity</th><th>Issues</th><th>Impact</th><th>Actions</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   };
 
   window.renderSnapshotsVmr = function renderSnapshotsVmr() {
