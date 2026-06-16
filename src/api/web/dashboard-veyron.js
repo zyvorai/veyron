@@ -2555,14 +2555,14 @@
         '</div>' +
         '<div class="vmr-inspector-bar-actions">' +
           (isRunning
-            ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, name) + ')">Open Console</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsule(' + jsArgs(ns, name) + ')">Full Capsule</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Explain VM ' + name) + ')">Ask Veyron</button>' +
+            ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, name) + ')') + '>Open Console</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain VM ' + name) + ')') + '>Ask Veyron</button>' +
               '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>'
-            : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'start') + ')">Start VM</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsule(' + jsArgs(ns, name) + ')">Full Capsule</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmCapsuleTab(' + jsArgs(ns, name) + ',7)">Show YAML</button>') +
+            : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start VM</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsuleTab(' + jsArgs(ns, name) + ',7)') + '>Show YAML</button>') +
         '</div>';
       var header = document.getElementById('mac-inspector-header');
       var ref = header && header.nextSibling ? header.nextSibling : document.getElementById('vm-focus-empty');
@@ -2641,7 +2641,7 @@
       var lastSnap = hasSnap ? (vmSnaps[0].age || '—') : '—';
       var restorePoints = hasSnap ? vmSnaps.filter(function(s) { return s.ready; }).length : 0;
       var statusBadge = hasSnap ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
-      var snapFn = 'typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')';
+      var snapFn = 'typeof openSnapModalFor===\'function\'?openSnapModalFor(\'' + ns + '\',\'' + vm.name + '\'):navigate(\'snapshots\')';
       return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td><td>' + statusBadge + '</td>' +
         '<td>' + esc(lastSnap) + '</td><td>—</td><td>' + (hasSnap ? 'Ad-hoc' : '<span style="color:var(--orange)">⚠ None</span>') + '</td>' +
         '<td>' + restorePoints + '</td>' +
@@ -2753,7 +2753,7 @@
           '<td><strong>' + esc(f.title || '—') + '</strong></td>' +
           '<td><code style="font-size:.82rem">' + esc(f.resource || '—') + '</code></td>' +
           '<td style="font-size:.82rem;color:var(--muted)">' + esc(f.recommendation || '—') + '</td>' +
-          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix: ' + (f.title || '')) + ')">Fix</button></td></tr>';
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Fix: ' + (f.title || '')) + ')') + '>Fix</button></td></tr>';
       }).join('');
       el.innerHTML = '<div class="vmr-panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
         '<div class="vmr-panel-title">Security Findings (' + findings.length + ')</div></div>' +
