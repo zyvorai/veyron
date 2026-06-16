@@ -785,9 +785,9 @@
           '<div style="font-size:.8rem;margin-bottom:6px"><span style="color:var(--orange);font-weight:600">Impact: </span><span style="color:var(--muted)">' + esc(c.impact) + '</span></div>' +
           '<div style="font-size:.8rem;margin-bottom:10px"><span style="color:var(--muted);font-weight:600">Root cause: </span><span style="color:var(--muted)">' + esc(c.rootCause) + '</span></div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
-            '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Fix: ' + c.problem) + ')">Fix with Veyron</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(c.cmd) + ')">Copy command</button>' +
-            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show logs for ' + c.label) + ')">Open logs</button>' +
+            '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Fix: ' + c.problem) + ')') + '>Fix with Veyron</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(c.cmd) + ')') + '>Copy command</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Show logs for ' + c.label) + ')') + '>Open logs</button>' +
           '</div>' +
           '</div>';
       }).join('') +
