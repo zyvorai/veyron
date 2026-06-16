@@ -674,9 +674,9 @@
     };
   };
 
-  window.fetchStackHealth = async function fetchStackHealth() {
+  window.fetchStackHealth = async function fetchStackHealth(force) {
     try {
-      if (window.lastStackHealth && typeof lastOverview !== 'undefined' && lastOverview && lastOverview.platform) {
+      if (!force && window.lastStackHealth && typeof lastOverview !== 'undefined' && lastOverview && lastOverview.platform) {
         window.lastStackHealth = lastOverview.platform;
         renderStackHealthVmr();
         return;
@@ -745,7 +745,7 @@
     renderVmrPageHero('vmr-stack-hero', 'Veyron Stack Health',
       passed + ' / ' + checks.length + ' — ' + (allOk ? 'All Systems Operational' : (checks.length - passed) + ' issue(s) detected'),
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openPlatformInstallModal()">Install Stack</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth()">Recheck</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth(true)">Recheck</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Veyron</button>');
     var ringCls = allOk ? '' : passed >= 2 ? ' warn' : ' bad';
     el.innerHTML =
