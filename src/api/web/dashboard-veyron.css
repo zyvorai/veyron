@@ -1651,10 +1651,10 @@ body.veyron-shell .cloudos-main {
   min-width: 0;
 }
 
-/* ── Mission Control: panel grid-row span modifiers ── */
-.vmr-fleet-health-panel  { grid-row: span 2; }
-.vmr-copilot-panel-main  { grid-row: span 1; }
-.vmr-alerts-stack-panel  { grid-row: span 2; }
+/* ── Mission Control: panel height modifiers ── */
+.vmr-fleet-health-panel  { min-height: 200px; }
+.vmr-copilot-panel-main  { min-height: 200px; }
+.vmr-alerts-stack-panel  { min-height: 200px; }
 
 /* ── ConsoleHub: bottom status line ── */
 .vmr-console-status {
