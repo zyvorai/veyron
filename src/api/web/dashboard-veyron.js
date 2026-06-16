@@ -602,6 +602,7 @@
           '<div style="font-size:.82rem;color:var(--muted)">' + esc(t.subtitle) + '</div>' +
           '<div style="font-size:.78rem;color:var(--muted)">' + esc(t.cpu || '2') + ' vCPU · ' + esc(t.memory || '4Gi') + ' · ' + esc(t.default_disk_size || '20Gi') + '</div>' +
           '<div class="vmr-template-card-actions">' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openFoundryPreview(' + jsArgs(t.id) + ')') + '>Preview</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Customize</button>' +
           '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button></div></div>';
       }).join('');
@@ -1575,6 +1576,81 @@
     '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="toast(\'Settings saved\',\'success\')">Save Settings</button>' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
     '</div>';
+  };
+
+  window.openFoundryPreview = function openFoundryPreview(templateId) {
+    var drawer = document.getElementById('vmr-foundry-drawer');
+    var body = document.getElementById('vmr-fdrawer-body');
+    var titleEl = document.getElementById('vmr-fdrawer-title');
+    if (!drawer || !body) return;
+    var tpl = null;
+    if (typeof appStoreCache !== 'undefined') {
+      tpl = appStoreCache.find(function (t) { return t.id === templateId || t.title === templateId; });
+    }
+    if (!tpl) {
+      tpl = { id: templateId, title: templateId, subtitle: '', os_family: 'linux' };
+    }
+    var osIcons = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', centos: '🎩', rhel: '🎩', linux: '🐧', bsd: '🐡', talos: '⚙', custom: '◫' };
+    var isWin = (tpl.os_family || '').toLowerCase() === 'windows';
+    var icon = osIcons[(tpl.os_family || '').toLowerCase()] || '◫';
+    var cpu = tpl.cpu || tpl.default_cpu || '2 vCPU';
+    var mem = tpl.memory || tpl.default_memory || '4 GiB';
+    var disk = tpl.disk || tpl.default_disk_size || '20 Gi';
+    var boot = isWin ? 'UEFI + Secure Boot' : 'UEFI';
+    var tags = [];
+    if (tpl.cloud_init) tags.push({ label: 'cloud-init' });
+    if (isWin) tags.push({ label: 'RDP', cls: 'win' }, { label: 'VirtIO', cls: 'win' });
+    else tags.push({ label: 'SSH' }, { label: 'VirtIO' });
+    tags.push({ label: 'Guest Tools' });
+    if (tpl.os_family === 'talos') tags.push({ label: 'K8s node' });
+    var tagHtml = tags.map(function (t) {
+      return '<span class="vmr-fdrawer-tag' + (t.cls ? ' ' + t.cls : '') + '">' + esc(t.label) + '</span>';
+    }).join('');
+    var yamlPreview = 'apiVersion: kubevirt.io/v1\nkind: VirtualMachine\nmetadata:\n  name: my-' + (tpl.id || 'vm') + '\nspec:\n  template:\n    spec:\n      domain:\n        cpu:\n          cores: 2\n        memory:\n          guest: ' + esc(mem) + '\n        devices:\n          disks:\n            - name: rootdisk\n              disk:\n                bus: virtio';
+    if (titleEl) titleEl.textContent = 'TEMPLATE PREVIEW';
+    body.innerHTML =
+      '<div class="vmr-fdrawer-hero">' +
+        '<div class="vmr-fdrawer-icon">' + icon + '</div>' +
+        '<div>' +
+          '<div class="vmr-fdrawer-name">' + esc(tpl.title || tpl.id) + '</div>' +
+          '<div class="vmr-fdrawer-sub">' + esc(tpl.subtitle || (tpl.os_family || 'KubeVirt template')) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="vmr-fdrawer-tags">' + tagHtml + '</div>' +
+      '<div class="vmr-panel" style="margin-bottom:12px">' +
+        '<div class="vmr-panel-title">Default Hardware</div>' +
+        '<div class="vmr-health-row"><span>CPU</span><span>' + esc(String(cpu)) + '</span></div>' +
+        '<div class="vmr-health-row"><span>Memory</span><span>' + esc(String(mem)) + '</span></div>' +
+        '<div class="vmr-health-row"><span>Root disk</span><span>' + esc(String(disk)) + '</span></div>' +
+        '<div class="vmr-health-row"><span>Boot mode</span><span>' + esc(boot) + '</span></div>' +
+        '<div class="vmr-health-row"><span>NIC</span><span>VirtIO (masquerade)</span></div>' +
+        '<div class="vmr-health-row"><span>RNG</span><span style="color:var(--green)">Enabled</span></div>' +
+      '</div>' +
+      '<div class="vmr-panel" style="margin-bottom:12px">' +
+        '<div class="vmr-panel-title">Security Readiness</div>' +
+        '<div class="vmr-health-row"><span>UEFI</span><span style="color:var(--green)">✓</span></div>' +
+        '<div class="vmr-health-row"><span>Secure Boot</span><span style="color:' + (isWin ? 'var(--green)' : 'var(--orange)') + '">' + (isWin ? '✓' : 'Optional') + '</span></div>' +
+        '<div class="vmr-health-row"><span>TPM 2.0</span><span style="color:' + (isWin ? 'var(--green)' : 'var(--orange)') + '">' + (isWin ? '✓' : 'Optional') + '</span></div>' +
+        '<div class="vmr-health-row"><span>Guest Tools</span><span style="color:var(--cyan)">Via cloud-init</span></div>' +
+        '<div class="vmr-health-row"><span>cloud-init</span><span style="color:' + (isWin ? 'var(--orange)' : 'var(--green)') + '">' + (isWin ? 'config-drive' : 'NoCloud') + '</span></div>' +
+      '</div>' +
+      '<div class="vmr-panel" style="margin-bottom:12px">' +
+        '<div class="vmr-panel-title" style="margin-bottom:8px">YAML Preview</div>' +
+        '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:160px;overflow:auto">' + esc(yamlPreview) + '</pre>' +
+      '</div>' +
+      '<div class="vmr-fdrawer-actions">' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')">Forge VM</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Customize</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(yamlPreview) + ')">Export YAML</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')">Ask Veyron</button>' +
+      '</div>';
+    drawer.style.display = 'flex';
+    drawer.removeAttribute('aria-hidden');
+  };
+
+  window.closeFoundryPreview = function closeFoundryPreview() {
+    var drawer = document.getElementById('vmr-foundry-drawer');
+    if (drawer) { drawer.style.display = 'none'; drawer.setAttribute('aria-hidden', 'true'); }
   };
 
   window.patchSelectVm = function patchSelectVm() {
