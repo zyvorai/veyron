@@ -469,7 +469,7 @@
       var ns = vm.namespace || 'default';
       var isRunning = vm.status === 'Running';
       var osIcon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
-      return '<tr class="clickable-row" onclick="selectVm(' + jsArgs(ns, vm.name) + ')">' +
+      return '<tr class="clickable-row" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
         '<td>' + esc(vm.name) + '</td>' +
         '<td><span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></td>' +
         '<td>' + esc(ns) + '</td>' +
@@ -491,8 +491,8 @@
         '<td>' + esc(vm.age || '—') + '</td>' +
         '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Open</button>' +
         (isRunning
-          ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'stop') + ')">Stop</button>'
-          : '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-left:4px" onclick="event.stopPropagation();vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>') +
+          ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>'
+          : '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-left:4px" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>') +
         '</td></tr>';
     }).join('');
     return '<div style="overflow-x:auto"><table class="table" style="min-width:900px"><thead><tr>' +
@@ -966,15 +966,15 @@
       if (running) {
         actions.innerHTML =
           '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="connectConsoleHubForProto()">Connect inline</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, name, proto) + ')">Open window</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, name, proto) + ')') + '>Open window</button>' +
           (typeof isWindowsVm === 'function' && vm && isWindowsVm(vm)
-            ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openRdpSheet(' + jsArgs(ns, name) + ')">RDP</button>'
-            : '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="showSshPopover(' + jsArgs(ns, name) + ')">SSH</button>');
+            ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openRdpSheet(' + jsArgs(ns, name) + ')') + '>RDP</button>'
+            : '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>');
       } else {
         actions.innerHTML =
-          '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'start') + ')">Start VM</button>' +
+          '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start VM</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">View Events</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>';
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
       }
     }
     if (empty) empty.style.display = running ? 'none' : '';
@@ -1013,7 +1013,7 @@
           ? 'SSH connection details open in a popover — use your terminal client.'
           : 'Serial console opens in a dedicated window for interactive shell access.';
       alt.innerHTML = '<div class="vmr-console-alt-inner"><h3>' + esc(proto.toUpperCase()) + ' console</h3><p>' + esc(hint) + '</p>' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, name, proto) + ')">Open ' + esc(proto.toUpperCase()) + '</button></div>';
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, name, proto) + ')') + '>Open ' + esc(proto.toUpperCase()) + '</button></div>';
     }
   };
 
@@ -1114,7 +1114,7 @@
       return;
     }
     el.innerHTML = cache.map(function (p) {
-      return '<div class="profile-card' + (sel === p.name ? ' selected' : '') + '" onclick="selectProfile(' + jsArgs(p.name) + ');syncForgeWizardHardware();renderForgeWizardProfiles()">' +
+      return '<div class="profile-card' + (sel === p.name ? ' selected' : '') + '" ' + onHandler('selectProfile(' + jsArgs(p.name) + ');syncForgeWizardHardware();renderForgeWizardProfiles()') + '>' +
         '<div class="pc-name">' + esc(p.name) + '</div>' +
         '<div class="pc-spec">' + p.cpu_cores + 'C / ' + esc(p.memory) + '</div></div>';
     }).join('');
@@ -1478,7 +1478,7 @@
         '<td>' + esc(pod.restarts != null ? String(pod.restarts) : '—') + '</td>' +
         '<td>' + esc(pod.age || '—') + '</td>' +
         '<td style="color:var(--muted);font-size:.78rem">' + esc(pod.owner || '—') + '</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openPodLogsVmr(' + jsArgs(pod.namespace || '', pod.name || '') + ')">Logs</button></td></tr>';
+        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openPodLogsVmr(' + jsArgs(pod.namespace || '', pod.name || '') + ')') + '>Logs</button></td></tr>';
     }
 
     if (tab === 'vms' || tab === 'all') vms.forEach(function (v) { rows.push(vmRow(v)); });
@@ -1805,25 +1805,25 @@
     var score = Math.max(0, 100 - (warnings * 10) - (isRunning ? 0 : 5));
     var isPaused = vm.status === 'Paused';
     var heroActions = isRunning
-      ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openConnectModal(' + jsArgs(ns, vm.name) + ')">Console</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')">SSH</button>' +
+      ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')') + '>SSH</button>' +
         (typeof isWindowsVm === 'function' && isWindowsVm(vm)
-          ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')">RDP</button>'
+          ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')') + '>RDP</button>'
           : '') +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'stop') + ')">Stop</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')">Pause</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'restart') + ')">Restart</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Snapshot</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof migrateVM===\'function\'&&migrateVM(' + jsArgs(ns, vm.name) + ')">Migrate</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')">Clone</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('VM ' + vm.name) + ')">Ask Veyron</button>'
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'stop') + ')') + '>Stop</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof pauseVM===\'function\'&&pauseVM(' + jsArgs(ns, vm.name) + ')') + '>Pause</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ')') + '>Restart</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof migrateVM===\'function\'&&migrateVM(' + jsArgs(ns, vm.name) + ')') + '>Migrate</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>Ask Veyron</button>'
       : (isPaused
-          ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')">Unpause</button>'
-          : '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start</button>') +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')">Clone</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCopilotDoctor&&openCopilotDoctor(' + jsArgs(ns, vm.name) + ')">Diagnose</button>' +
+          ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>'
+          : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>') +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openCopilotDoctor&&openCopilotDoctor(' + jsArgs(ns, vm.name) + ')') + '>Diagnose</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>' +
-        '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="vmDelete&&vmDelete(' + jsArgs(ns, vm.name) + ')">Delete</button>';
+        '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('vmDelete&&vmDelete(' + jsArgs(ns, vm.name) + ')') + '>Delete</button>';
     el.innerHTML =
       '<div class="vmr-capsule-hero">' +
         '<div class="vmr-capsule-hero-info">' +
@@ -1857,7 +1857,7 @@
                   '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
                   '<div class="vmr-health-row"><span>Guest agent</span><span style="color:' + (vm.guest_agent_connected ? 'var(--green)' : 'var(--orange)') + '">' + (vm.guest_agent_connected ? 'Active' : 'Not detected') + '</span></div>'
                 : '<p style="font-size:.84rem;color:var(--muted);margin-bottom:12px">No live metrics. Start the VM and install Guest Tools.</p>' +
-                  '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start VM</button>') +
+                  '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start VM</button>') +
             '</div>' +
           '</div>' +
           '<div class="vmr-command-grid">' +
@@ -1923,9 +1923,9 @@
                 ? '<div class="vmr-health-row"><span>CPU Allocation</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
                   '<div class="vmr-health-row"><span>Memory Allocation</span><span>' + esc(vm.memory || '—') + '</span></div>' +
                   '<div class="vmr-health-row"><span>Status</span><span style="color:var(--green)">Running</span></div>' +
-                  '<div style="margin-top:12px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Show real-time CPU and memory metrics for VM ' + vm.name) + ')">Live Metrics</button></div>'
+                  '<div style="margin-top:12px"><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Show real-time CPU and memory metrics for VM ' + vm.name) + ')') + '>Live Metrics</button></div>'
                 : '<p style="font-size:.84rem;color:var(--muted)">VM is not running — start it to see live metrics.</p>' +
-                  '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start VM</button>') +
+                  '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start VM</button>') +
             '</div></div>',
             '<div class="vmr-capsule-pane" data-tab="2"><div class="vmr-panel">' +
               '<div class="vmr-panel-title">Network</div>' +
@@ -1933,8 +1933,8 @@
               '<div class="vmr-health-row"><span>Node</span><span>' + esc(vm.node || '—') + '</span></div>' +
               '<div class="vmr-health-row"><span>Interface</span><span>masquerade (virtio)</span></div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
-                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')">Expose SSH</button>' +
-                (typeof isWindowsVm === 'function' && isWindowsVm(vm) ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')">Expose RDP</button>' : '') +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('showSshPopover&&showSshPopover(' + jsArgs(ns, vm.name) + ')') + '>Expose SSH</button>' +
+                (typeof isWindowsVm === 'function' && isWindowsVm(vm) ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openRdpSheet&&openRdpSheet(' + jsArgs(ns, vm.name) + ')') + '>Expose RDP</button>' : '') +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-intel\')">Network Intel</button>' +
               '</div>' +
             '</div></div>',
@@ -1948,7 +1948,7 @@
                   : 'Loading…') +
               '</span></div>' +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">' +
-                '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')">Create Snapshot</button>' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Create Snapshot</button>' +
                 '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">View Snapshots</button>' +
               '</div>' +
             '</div></div>',
@@ -2512,10 +2512,10 @@
         '<pre style="font-size:.72rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.5;max-height:160px;overflow:auto">' + esc(yamlPreview) + '</pre>' +
       '</div>' +
       '<div class="vmr-fdrawer-actions">' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')">Forge VM</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')') + '>Forge VM</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Customize</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrFoundryYamlCache||&apos;&apos;)">Export YAML</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')">Ask Veyron</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')') + '>Ask Veyron</button>' +
       '</div>';
     drawer.style.display = 'flex';
     drawer.removeAttribute('aria-hidden');
