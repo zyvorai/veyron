@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>VM Lifecycle Management — VMRogue + v9s</title>
+<title>VM Lifecycle Management — Veyron + v9s</title>
 <style>
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -55,7 +55,7 @@
 <div class="cover">
   <h1>VM <span>Lifecycle</span></h1>
   <h2>Create, Deploy, Manage, Protect</h2>
-  <p class="tagline">Complete guide to managing KubeVirt VMs from creation to day-2 operations using VMRogue CLI and Zeus OS web UI.</p>
+  <p class="tagline">Complete guide to managing KubeVirt VMs from creation to day-2 operations using Veyron CLI and Zeus OS web UI.</p>
   <div class="badge">CLI + Web &mdash; Two Interfaces, One Platform</div>
 </div>
 
@@ -67,17 +67,17 @@
   <h3>CLI: One-Command Creation</h3>
   <pre>
 # From template + profile
-$ vmrogue create --name db-01 --template rhel-9 --profile database
+$ veyron create --name db-01 --template rhel-9 --profile database
 
 # With custom resources
-$ vmrogue create --name web-01 --template ubuntu-24.04 \
+$ veyron create --name web-01 --template ubuntu-24.04 \
     --cpus 4 --memory 8Gi --disk 50Gi --cloud-init user-data.yaml
 
 # From YAML config file
-$ vmrogue create -f vm-config.yaml
+$ veyron create -f vm-config.yaml
 
 # Generate manifest without deploying
-$ vmrogue generate --name test --template fedora-41 --profile dev > vm.yaml</pre>
+$ veyron generate --name test --template fedora-41 --profile dev > vm.yaml</pre>
 
   <h3>Web: Dashboard VM View</h3>
   <img src="screenshots/03-dashboard.png" class="screenshot" alt="Dashboard" />
@@ -91,10 +91,10 @@ $ vmrogue generate --name test --template fedora-41 --profile dev > vm.yaml</pre
 
   <h3>CLI Commands</h3>
   <pre>
-$ vmrogue start web-01          # Start a VM
-$ vmrogue stop web-01           # Graceful shutdown (ACPI)
-$ vmrogue restart web-01        # Stop + start
-$ vmrogue list                  # Check status
+$ veyron start web-01          # Start a VM
+$ veyron stop web-01           # Graceful shutdown (ACPI)
+$ veyron restart web-01        # Stop + start
+$ veyron list                  # Check status
 
 NAME     NAMESPACE  STATUS   RUNNING  CPU       MEMORY  IP           NODE
 web-01   default    Running  Yes      4 cores   8Gi     10.42.0.15   node-1
@@ -126,15 +126,15 @@ db-01    default    Stopped  No       4 cores   16Gi    -            -</pre>
 
   <h3>CLI Health Check</h3>
   <pre>
-$ vmrogue health-check
+$ veyron health-check
   System Health Score: 87/100
   [OK]   CPU utilization: 45%
   [OK]   Memory utilization: 62%
   [WARN] Disk usage above 75% on db-01
   Recommendation: Expand disk on db-01 or archive old data
 
-$ vmrogue resources          # Resource usage summary
-$ vmrogue trends-analyze     # Usage trend analysis</pre>
+$ veyron resources          # Resource usage summary
+$ veyron trends-analyze     # Usage trend analysis</pre>
 </div>
 
 <!-- CONSOLE -->
@@ -181,10 +181,10 @@ $ vmrogue trends-analyze     # Usage trend analysis</pre>
 
   <table>
     <tr><th>Operation</th><th>CLI</th><th>Web UI</th></tr>
-    <tr><td>View disks</td><td>vmrogue status vm-name</td><td>Storage tab</td></tr>
+    <tr><td>View disks</td><td>veyron status vm-name</td><td>Storage tab</td></tr>
     <tr><td>Mount ISO</td><td>YAML edit</td><td>Mount ISO button + modal</td></tr>
     <tr><td>Add network</td><td>YAML edit</td><td>Add Network button + modal (pod/multus, bridge/masquerade/SR-IOV)</td></tr>
-    <tr><td>View interfaces</td><td>vmrogue get vm-name</td><td>Network tab (IP, MAC, state)</td></tr>
+    <tr><td>View interfaces</td><td>veyron get vm-name</td><td>Network tab (IP, MAC, state)</td></tr>
     <tr><td>Guest OS info</td><td>N/A</td><td>Network tab (OS name, version, kernel)</td></tr>
   </table>
 </div>
@@ -208,20 +208,20 @@ $ vmrogue trends-analyze     # Usage trend analysis</pre>
   <h3>CLI Snapshot &amp; Clone</h3>
   <pre>
 # Snapshots
-$ vmrogue snapshot create web-01 --name pre-upgrade
-$ vmrogue snapshot list web-01
-$ vmrogue snapshot restore web-01 --name pre-upgrade
+$ veyron snapshot create web-01 --name pre-upgrade
+$ veyron snapshot list web-01
+$ veyron snapshot restore web-01 --name pre-upgrade
 
 # Clone
-$ vmrogue clone web-01 --name web-01-clone
+$ veyron clone web-01 --name web-01-clone
 
 # Export config
-$ vmrogue export web-01 --format yaml > web-01-backup.yaml
+$ veyron export web-01 --format yaml > web-01-backup.yaml
 
 # Config templates
-$ vmrogue config-save --name "prod-web" --from web-01
-$ vmrogue config-list
-$ vmrogue config-load --name "prod-web" --as web-02</pre>
+$ veyron config-save --name "prod-web" --from web-01
+$ veyron config-list
+$ veyron config-load --name "prod-web" --as web-02</pre>
 </div>
 
 <!-- HOST + CLOSING -->
@@ -256,8 +256,8 @@ $ vmrogue config-load --name "prod-web" --as web-02</pre>
 
   <div class="cta-box">
     <h3>Complete VM lifecycle &mdash; CLI + Web</h3>
-    <p>VMRogue for power users. Zeus OS for web management.<br>Same VMs, same cluster, two perfect interfaces.</p>
+    <p>Veyron for power users. Zeus OS for web management.<br>Same VMs, same cluster, two perfect interfaces.</p>
   </div>
-  <div class="footer"><p>VMRogue + Zeus OS &mdash; VM Lifecycle Management &mdash; Proprietary Software &mdash; Founders: ZyvorAI Labs Private Limited &amp; Sibu</p></div>
+  <div class="footer"><p>Veyron + Zeus OS &mdash; VM Lifecycle Management &mdash; Proprietary Software &mdash; Founders: ZyvorAI Labs Private Limited &amp; Sibu</p></div>
 </div>
 </body></html>

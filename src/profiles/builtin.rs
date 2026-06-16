@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 // Built-in Profile Definitions
-// These are the default profiles shipped with VMRogue
+// These are the default profiles shipped with Veyron
 
 use super::Profile;
 use std::collections::HashMap;

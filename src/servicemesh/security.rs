@@ -183,7 +183,7 @@ impl Certificate {
             name: name_str,
             namespace: namespace.into(),
             subject: subject.into(),
-            issuer: "VMRogue CA".to_string(),
+            issuer: "Veyron CA".to_string(),
             valid_from: Utc::now(),
             valid_until: Utc::now() + chrono::TimeDelta::days(365),
             san_dns: Vec::new(),
@@ -432,7 +432,7 @@ mod tests {
 
         assert_eq!(cert.name, "my-cert");
         assert_eq!(cert.subject, "CN=myservice");
-        assert_eq!(cert.issuer, "VMRogue CA");
+        assert_eq!(cert.issuer, "Veyron CA");
         assert_eq!(cert.key_size, 2048);
         assert!(cert.is_valid());
     }

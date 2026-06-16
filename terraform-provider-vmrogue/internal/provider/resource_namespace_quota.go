@@ -31,12 +31,12 @@ func NewNamespaceQuotaResource() resource.Resource {
 }
 
 func (r *namespaceQuotaResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "vmrogue_namespace_quota"
+	resp.TypeName = "veyron_namespace_quota"
 }
 
 func (r *namespaceQuotaResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Tenant workspace with namespace bootstrap and ResourceQuota via VMRogue /tenants API.",
+		Description: "Tenant workspace with namespace bootstrap and ResourceQuota via Veyron /tenants API.",
 		Attributes: map[string]schema.Attribute{
 			"id":            schema.StringAttribute{Required: true},
 			"display_name":  schema.StringAttribute{Required: true},

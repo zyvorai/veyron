@@ -63,13 +63,13 @@ pub struct FlameGraphQuery {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PerformanceProfilesResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub profiles: Vec<PerformanceProfile>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlameGraphListResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub flamegraphs: Vec<FlameGraph>,
 }
 
@@ -164,7 +164,7 @@ async fn list_performance_profiles(
     }
 
     Json(PerformanceProfilesResponse {
-        vmrogue_context: if used_prometheus {
+        veyron_context: if used_prometheus {
             VmrogueFeatureContext::performance_prometheus()
         } else {
             VmrogueFeatureContext::performance_profiles()
@@ -341,7 +341,7 @@ async fn get_flamegraph(
     }
 
     Json(FlameGraphListResponse {
-        vmrogue_context: VmrogueFeatureContext::performance_flamegraph(),
+        veyron_context: VmrogueFeatureContext::performance_flamegraph(),
         flamegraphs: graphs,
     })
 }

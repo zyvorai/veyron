@@ -1,6 +1,6 @@
 # Veyron AI — Product Direction
 
-> **VMRogue should be the AI-native VM lifecycle brain for KubeVirt** — deploy, inspect, heal, migrate, secure, resize, snapshot, backup, and explain VMs from one simple interface.
+> **Veyron should be the AI-native VM lifecycle brain for KubeVirt** — deploy, inspect, heal, migrate, secure, resize, snapshot, backup, and explain VMs from one simple interface.
 
 This document captures the long-term AI vision and what ships in **v1** today (rule-based copilot that composes real cluster data).
 
@@ -11,34 +11,34 @@ Veyron should feel like a smart VM operator for Kubernetes/KubeVirt,
 not just a CLI or dashboard.
 ```
 
-Users ask in plain language; VMRogue responds with **root cause**, **evidence from the cluster**, **recommended fixes**, and **one-click actions** — not raw stack traces.
+Users ask in plain language; Veyron responds with **root cause**, **evidence from the cluster**, **recommended fixes**, and **one-click actions** — not raw stack traces.
 
 ## Product modules (roadmap names)
 
 | Module | Purpose |
 |--------|---------|
-| **VMRogue Copilot** | Natural-language entry point |
-| **VMRogue Doctor** | Per-VM health score + issues |
-| **VMRogue Error Explainer** | Translate K8s/KubeVirt errors |
-| **VMRogue YAML Builder** | Generate + validate VirtualMachine YAML |
-| **VMRogue Scheduling Explainer** | Human-readable Pending / Unschedulable |
-| **VMRogue Blueprint Studio** | Reusable AI-generated profiles |
-| **VMRogue Network Lens** | VM-to-VM connectivity debugging |
-| **VMRogue Storage Doctor** | PVC / snapshot bloat |
-| **VMRogue Backup Advisor** | Velero + policy gaps |
-| **VMRogue Security Sentinel** | Exposed RDP, policies, drift |
-| **VMRogue GitOps Generator** | Repo folders + runbooks |
+| **Veyron Copilot** | Natural-language entry point |
+| **Veyron Doctor** | Per-VM health score + issues |
+| **Veyron Error Explainer** | Translate K8s/KubeVirt errors |
+| **Veyron YAML Builder** | Generate + validate VirtualMachine YAML |
+| **Veyron Scheduling Explainer** | Human-readable Pending / Unschedulable |
+| **Veyron Blueprint Studio** | Reusable AI-generated profiles |
+| **Veyron Network Lens** | VM-to-VM connectivity debugging |
+| **Veyron Storage Doctor** | PVC / snapshot bloat |
+| **Veyron Backup Advisor** | Velero + policy gaps |
+| **Veyron Security Sentinel** | Exposed RDP, policies, drift |
+| **Veyron GitOps Generator** | Repo folders + runbooks |
 
 ## v1 shipped (deterministic copilot)
 
-v1 does **not** require an external LLM. It routes intents to handlers that query KubeVirt/Kubernetes and reuse VMRogue templates.
+v1 does **not** require an external LLM. It routes intents to handlers that query KubeVirt/Kubernetes and reuse Veyron templates.
 
 ### API (`/api/v1/experience/copilot/*`)
 
 | Route | Module |
 |-------|--------|
 | `POST /experience/copilot/ask` | Copilot — natural language router |
-| `GET /experience/copilot/doctor/:ns/:name` | VMRogue Doctor |
+| `GET /experience/copilot/doctor/:ns/:name` | Veyron Doctor |
 | `GET /experience/copilot/scheduling/:ns/:name` | Scheduling Explainer |
 | `POST /experience/copilot/yaml/preview` | YAML Builder + validation |
 | `POST /experience/copilot/recommend` | Blueprint-style recommendation |
@@ -55,18 +55,18 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 ### CLI
 
 ```bash
-vmrogue ai guest vm-db-01
-vmrogue ai filesystem vm-db-01
-vmrogue ai storage
-vmrogue ai cost
-vmrogue ai cost --name vm-app-01
-vmrogue ai security --name vm-app-01
-vmrogue ai "Why is my VM not starting?"
-vmrogue ai doctor vm-db-01
-vmrogue ai scheduling vm-app-01
-vmrogue ai explain "0/5 nodes are available: 2 Insufficient memory"
-vmrogue ai yaml --template windows-2022 --cpus 8 --memory 32Gi --disk 500Gi
-vmrogue ai recommend "I need a VM for PostgreSQL"
+veyron ai guest vm-db-01
+veyron ai filesystem vm-db-01
+veyron ai storage
+veyron ai cost
+veyron ai cost --name vm-app-01
+veyron ai security --name vm-app-01
+veyron ai "Why is my VM not starting?"
+veyron ai doctor vm-db-01
+veyron ai scheduling vm-app-01
+veyron ai explain "0/5 nodes are available: 2 Insufficient memory"
+veyron ai yaml --template windows-2022 --cpus 8 --memory 32Gi --disk 500Gi
+veyron ai recommend "I need a VM for PostgreSQL"
 ```
 
 ### CloudOS UI
@@ -78,7 +78,7 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 ```json
 {
-  "module": "VMRogue Doctor",
+  "module": "Veyron Doctor",
   "title": "Health report: default/vm-db-01",
   "summary": "vm-db-01 is Running. Fleet health: Healthy (92/100).",
   "evidence": ["Scheduled node: worker-2", "Event FailedScheduling: ..."],
@@ -116,7 +116,7 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 ## Next phases
 
-1. ~~**Blueprint Studio** — persist `VMRogueBlueprint` from Copilot YAML~~ **Done** — `POST /experience/copilot/blueprint/save`
+1. ~~**Blueprint Studio** — persist `VeyronBlueprint` from Copilot YAML~~ **Done** — `POST /experience/copilot/blueprint/save`
 2. ~~**GitOps Generator** — export kustomize trees from Copilot previews~~ **Done** — `POST /experience/copilot/gitops/export`
 3. ~~**Guest filesystem metrics** — guest-exec or Prometheus guest exporters~~ **Done** — `GET /api/v1/vms/:ns/:name/guest-filesystem`, Copilot `GET /experience/copilot/guest/:ns/:name/filesystem`, VM detail panel
 
@@ -124,11 +124,11 @@ vmrogue ai recommend "I need a VM for PostgreSQL"
 
 | Module | API | CLI |
 |--------|-----|-----|
-| Performance Advisor | `GET /experience/copilot/performance` | `vmrogue ai performance` |
-| GitOps Advisor | `GET /experience/copilot/gitops` | `vmrogue ai gitops` |
-| Forecast Advisor | `GET /experience/copilot/forecast` | `vmrogue ai forecast` |
-| Integrations Advisor | `GET /experience/copilot/integrations` | `vmrogue ai integrations` |
-| Scheduling Fleet | `GET /experience/copilot/scheduling` | `vmrogue ai pending` |
+| Performance Advisor | `GET /experience/copilot/performance` | `veyron ai performance` |
+| GitOps Advisor | `GET /experience/copilot/gitops` | `veyron ai gitops` |
+| Forecast Advisor | `GET /experience/copilot/forecast` | `veyron ai forecast` |
+| Integrations Advisor | `GET /experience/copilot/integrations` | `veyron ai integrations` |
+| Scheduling Fleet | `GET /experience/copilot/scheduling` | `veyron ai pending` |
 
 Natural-language routing via `POST /experience/copilot/ask` recognizes the same intents. Dashboard chips live on Monitoring, GitOps, Forecasting, Integrations, and Scheduling pages.
 
@@ -136,14 +136,14 @@ Natural-language routing via `POST /experience/copilot/ask` recognizes the same 
 
 | Module | API | CLI |
 |--------|-----|-----|
-| Compliance Advisor | `GET /experience/copilot/compliance` | `vmrogue ai compliance` |
-| Observability Advisor | `GET /experience/copilot/observability` | `vmrogue ai observability` |
-| Cilium Advisor | `GET /experience/copilot/cilium` | `vmrogue ai cilium` |
-| Node Advisor | `GET /experience/copilot/nodes` | `vmrogue ai nodes` |
-| Drift Advisor | `GET /experience/copilot/drift` | `vmrogue ai drift` |
-| Alert Advisor | `GET /experience/copilot/alerts` | `vmrogue ai alerts` |
-| SLO Advisor | `GET /experience/copilot/slo` | `vmrogue ai slo` |
-| Migration Advisor | `GET /experience/copilot/migrations` | `vmrogue ai migrations` |
+| Compliance Advisor | `GET /experience/copilot/compliance` | `veyron ai compliance` |
+| Observability Advisor | `GET /experience/copilot/observability` | `veyron ai observability` |
+| Cilium Advisor | `GET /experience/copilot/cilium` | `veyron ai cilium` |
+| Node Advisor | `GET /experience/copilot/nodes` | `veyron ai nodes` |
+| Drift Advisor | `GET /experience/copilot/drift` | `veyron ai drift` |
+| Alert Advisor | `GET /experience/copilot/alerts` | `veyron ai alerts` |
+| SLO Advisor | `GET /experience/copilot/slo` | `veyron ai slo` |
+| Migration Advisor | `GET /experience/copilot/migrations` | `veyron ai migrations` |
 
 ## LLM upgrade (agent layer)
 
@@ -182,17 +182,17 @@ When `VMROGUE_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_tr
 
 | Module | API | CLI |
 |--------|-----|-----|
-| Quota Advisor | `GET /experience/copilot/quotas` | `vmrogue ai quotas` |
-| Catalog Advisor | `GET /experience/copilot/catalog` | `vmrogue ai catalog` |
-| Velero DR Advisor | `GET /experience/copilot/velero-dr` | `vmrogue ai velero-dr` |
-| Trivy/CVE (Security Sentinel) | merged into `/experience/copilot/security` | `vmrogue ai security` |
-| Prometheus p95 (Performance) | merged into `/experience/copilot/performance` | `vmrogue ai performance` |
+| Quota Advisor | `GET /experience/copilot/quotas` | `veyron ai quotas` |
+| Catalog Advisor | `GET /experience/copilot/catalog` | `veyron ai catalog` |
+| Velero DR Advisor | `GET /experience/copilot/velero-dr` | `veyron ai velero-dr` |
+| Trivy/CVE (Security Sentinel) | merged into `/experience/copilot/security` | `veyron ai security` |
+| Prometheus p95 (Performance) | merged into `/experience/copilot/performance` | `veyron ai performance` |
 
 ## Future (not scheduled)
 
 - ~~**Prometheus guest exporters** — optional join with `node_exporter` / Windows perf counters when `VEYRON_PROMETHEUS_URL` is set~~ **Done** — PVC kubelet stats + guest exporter queries on `GET /api/v1/vms/:ns/:name/guest-filesystem`
-- ~~**Cost Copilot** — OpenCost integration for per-VM spend narratives~~ **Done** — `GET /experience/copilot/cost`, `vmrogue ai cost`
-- ~~**Blueprint Studio UI** — edit saved `VMRogueBlueprint` CRDs from the dashboard~~ **Done** — Platform → Blueprint Studio, `PUT /api/v1/crds/blueprints/:ns/:name`
+- ~~**Cost Copilot** — OpenCost integration for per-VM spend narratives~~ **Done** — `GET /experience/copilot/cost`, `veyron ai cost`
+- ~~**Blueprint Studio UI** — edit saved `VeyronBlueprint` CRDs from the dashboard~~ **Done** — Platform → Blueprint Studio, `PUT /api/v1/crds/blueprints/:ns/:name`
 
 ## Related docs
 

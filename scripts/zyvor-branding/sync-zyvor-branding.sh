@@ -20,7 +20,7 @@ declare -a TARGETS=(
   "/Users/ssahani/tt/hypersdk-web/static/img"
   "/Users/ssahani/tt/hypercluster"
   # embedded API dashboards
-  "/Users/ssahani/tt/VMRogue/src/api/web"
+  "/Users/ssahani/tt/Veyron/src/api/web"
   "/Users/ssahani/tt/nightforge/src/api/web"
   # hypersdk org (tt/tt/)
   "/Users/ssahani/tt/tt/hypersdk/web/dashboard-react/public"

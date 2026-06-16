@@ -11,7 +11,7 @@ use crate::snapshots::vm_snapshot_schedule;
 /// Fleet backup coverage: snapshots, schedules, and Velero presence.
 pub async fn backup_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Backup Advisor",
+        "Veyron Backup Advisor",
         "backup_advisor",
         "Backup coverage in workspace",
     );

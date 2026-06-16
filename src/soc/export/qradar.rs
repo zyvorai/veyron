@@ -24,7 +24,7 @@ pub fn config() -> Option<QRadarConfig> {
     let leef_vendor = std::env::var("VEYRON_QRADAR_LEEF_VENDOR")
         .unwrap_or_else(|_| "Zyvor".into());
     let leef_product = std::env::var("VEYRON_QRADAR_LEEF_PRODUCT")
-        .unwrap_or_else(|_| "VMRogue".into());
+        .unwrap_or_else(|_| "Veyron".into());
     Some(QRadarConfig {
         syslog_host: host,
         syslog_port: port,

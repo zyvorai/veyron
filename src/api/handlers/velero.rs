@@ -36,7 +36,7 @@ pub struct VeleroRestoreRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VeleroStatusResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub velero_available: bool,
     pub backups: Vec<VeleroBackupRecord>,
     pub restores: Vec<VeleroRestoreRecord>,
@@ -60,7 +60,7 @@ fn velero_context(available: bool) -> super::feature_context::VmrogueFeatureCont
         super::feature_context::VmrogueFeatureContext {
             data_source: "velero_backup_restore_crds".to_string(),
             scope: "Velero Backup and Restore objects cluster-wide.".to_string(),
-            limitations: "Policy creation and scheduled backups require Velero CLI or Helm; VMRogue lists CR status only.".to_string(),
+            limitations: "Policy creation and scheduled backups require Velero CLI or Helm; Veyron lists CR status only.".to_string(),
         }
     } else {
         super::feature_context::VmrogueFeatureContext {
@@ -201,7 +201,7 @@ async fn velero_status(
         .unwrap_or_default();
 
     Json(VeleroStatusResponse {
-        vmrogue_context: velero_context(velero_available),
+        veyron_context: velero_context(velero_available),
         velero_available,
         backups,
         restores,

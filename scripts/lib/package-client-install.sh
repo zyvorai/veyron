@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Client-side runtime dependencies for VMRogue binary bundle.
+# Client-side runtime dependencies for Veyron binary bundle.
 set -euo pipefail
 # shellcheck source=/dev/null
 [[ -f "$(dirname "$0")/package-ui.sh" ]] && source "$(dirname "$0")/package-ui.sh"
 [[ -f "$(dirname "$0")/.package-lib/package-ui.sh" ]] && source "$(dirname "$0")/.package-lib/package-ui.sh"
 
-pkg_banner "VMRogue client dependencies" "Optional kubectl for cluster checks"
+pkg_banner "Veyron client dependencies" "Optional kubectl for cluster checks"
 if command -v kubectl &>/dev/null; then
   pkg_ok "kubectl: $(kubectl version --client -o yaml 2>/dev/null | head -1 || kubectl version --client 2>/dev/null | head -1)"
 else
@@ -17,5 +17,5 @@ else
   fi
 fi
 pkg_info "Cluster needs Kubernetes + KubeVirt (see CLUSTER_SETUP.txt)"
-pkg_ok "vmrogue binary is static — no extra runtime libs"
+pkg_ok "veyron binary is static — no extra runtime libs"
 pkg_summary "Dependencies"

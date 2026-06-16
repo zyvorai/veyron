@@ -10,7 +10,7 @@ use crate::kube::KubeClient;
 /// Fleet KubeVirt compliance posture (VM spec + namespace policy signals).
 pub async fn compliance_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Compliance Advisor",
+        "Veyron Compliance Advisor",
         "compliance_advisor",
         "Compliance posture in workspace",
     );

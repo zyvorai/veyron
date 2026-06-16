@@ -1,21 +1,21 @@
-# 🎯 VMRogue OS Templates - Complete Catalog
+# 🎯 Veyron OS Templates - Complete Catalog
 
 **See also:** [Documentation index](README.md), [TEMPLATE_CATALOG.md](TEMPLATE_CATALOG.md) (cluster VMTemplate/VMProfile CRDs).
 
-VMRogue includes **44 OS templates** across **15 operating system families**.
+Veyron includes **44 OS templates** across **15 operating system families**.
 
 ## Dual source (CLI vs cluster)
 
 | Source | Use when |
 |--------|----------|
-| **Rust embedded** (`src/templates/mod.rs`) | Offline CLI: `vmrogue create`, `vmrogue deploy`, `vmrogue templates` |
-| **VMTemplate CRDs** (cluster) | Operator GitOps: `template:` on VMRogueVM / VMRogueBlueprint resolves via operator catalog |
+| **Rust embedded** (`src/templates/mod.rs`) | Offline CLI: `veyron create`, `veyron deploy`, `veyron templates` |
+| **VMTemplate CRDs** (cluster) | Operator GitOps: `template:` on VeyronVM / VeyronBlueprint resolves via operator catalog |
 
 Bootstrap cluster catalog:
 
 ```bash
 ./scripts/generate-catalog-crds.sh
-vmrogue catalog sync   # or deploy-all-remote applies operator/config/catalog/*.yaml
+veyron catalog sync   # or deploy-all-remote applies operator/config/catalog/*.yaml
 ```
 
 Operator and CLI should agree on template **names** (`windows-2022`, `ubuntu-22.04`, …). Blueprint **`override`** still wins for explicit GitOps patches.
@@ -48,7 +48,7 @@ fedora          # Fedora Cloud (containerdisks `fedora:latest`)
 fedora-43       # Template key “43”; root disk uses tested `quay.io/containerdisks/fedora:latest`
 fedora-42       # Template key “42”; same tested image as `fedora-43` (version-specific tags are not pinned)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 
 ### CentOS Stream (3 templates)
 ```bash
@@ -56,7 +56,7 @@ centos              # Latest (Stream 9)
 centos-stream-9     # Current stable (2 CPU, 4GB RAM)
 centos-stream-8     # Template key “stream-8”; root disk uses tested `quay.io/containerdisks/centos-stream:9`
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 
 ### Debian (3 templates)
 ```bash
@@ -64,7 +64,7 @@ debian          # Latest (12 Bookworm)
 debian-12       # Bookworm (2 CPU, 4GB RAM)
 debian-11       # Template key “11”; root disk uses tested `quay.io/containerdisks/debian:12`
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 
 ### Red Hat Enterprise Linux (3 templates)
 ```bash
@@ -73,7 +73,7 @@ rhel-9          # RHEL 9 (2 CPU, 4GB RAM, 30GB disk)
 rhel-8          # RHEL 8 (2 CPU, 4GB RAM, 30GB disk)
 ```
 **Note**: Requires valid RHEL subscription
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 
 ### AlmaLinux (3 templates) 🆕
 ```bash
@@ -81,7 +81,7 @@ almalinux       # Latest (9) - RHEL clone
 almalinux-9     # AlmaLinux 9 (2 CPU, 4GB RAM)
 almalinux-8     # AlmaLinux 8 (2 CPU, 4GB RAM)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 **Why**: Free RHEL alternative, binary compatible
 
 ### Rocky Linux (3 templates) 🆕
@@ -90,7 +90,7 @@ rocky           # Latest (9) - RHEL clone
 rocky-9         # Rocky Linux 9 (2 CPU, 4GB RAM)
 rocky-8         # Rocky Linux 8 (2 CPU, 4GB RAM)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 **Why**: Community-driven RHEL alternative
 
 ### OpenSUSE (3 templates) 🆕
@@ -99,7 +99,7 @@ opensuse                # Latest (Leap)
 opensuse-leap           # Leap - Stable (2 CPU, 4GB RAM)
 opensuse-tumbleweed     # Tumbleweed - Rolling (2 CPU, 4GB RAM)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 **Why**: Enterprise-grade with rolling release option
 
 ### Alpine Linux (2 templates) 🆕
@@ -117,14 +117,14 @@ oracle          # Latest (9)
 oracle-9        # Oracle Linux 9 (2 CPU, 4GB RAM)
 oracle-8        # Oracle Linux 8 (2 CPU, 4GB RAM)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 **Why**: Oracle's enterprise Linux, RHEL compatible
 
 ### Arch Linux (1 template) 🆕
 ```bash
 arch            # Rolling release (2 CPU, 2GB RAM)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 **Why**: Bleeding edge, highly customizable
 
 ### Windows (5 templates)
@@ -149,7 +149,7 @@ freebsd-13      # FreeBSD 13 (2 CPU, 2GB RAM)
 ```bash
 flatcar         # Stable - Container-optimized (2 CPU, 2GB RAM)
 ```
-**Credentials**: `vmrogue` / `vmrogue`
+**Credentials**: `veyron` / `veyron`
 **Why**: Container-optimized, auto-updating, minimal
 
 ### Talos Linux (1 template) 🆕
@@ -164,63 +164,63 @@ talos           # Latest - Kubernetes-native (2 CPU, 4GB RAM)
 
 ```bash
 # Ubuntu 24.04 (latest)
-vmrogue create my-ubuntu --template ubuntu-24.04 --cpus 4 --memory 8Gi
+veyron create my-ubuntu --template ubuntu-24.04 --cpus 4 --memory 8Gi
 
 # Fedora 41 (latest)
-vmrogue create my-fedora --template fedora-43 --cpus 2 --memory 4Gi
+veyron create my-fedora --template fedora-43 --cpus 2 --memory 4Gi
 
 # AlmaLinux (RHEL alternative)
-vmrogue create my-alma --template almalinux --cpus 4 --memory 16Gi
+veyron create my-alma --template almalinux --cpus 4 --memory 16Gi
 
 # Rocky Linux (another RHEL alternative)
-vmrogue create my-rocky --template rocky --cpus 4 --memory 16Gi
+veyron create my-rocky --template rocky --cpus 4 --memory 16Gi
 
 # Alpine (ultra lightweight!)
-vmrogue create tiny-vm --template alpine --cpus 1 --memory 512Mi
+veyron create tiny-vm --template alpine --cpus 1 --memory 512Mi
 
 # Arch Linux (bleeding edge)
-vmrogue create arch-vm --template arch --cpus 2 --memory 2Gi
+veyron create arch-vm --template arch --cpus 2 --memory 2Gi
 
 # OpenSUSE Tumbleweed (rolling)
-vmrogue create suse-vm --template opensuse-tumbleweed
+veyron create suse-vm --template opensuse-tumbleweed
 
 # FreeBSD (Unix)
-vmrogue create bsd-vm --template freebsd-14
+veyron create bsd-vm --template freebsd-14
 
 # Flatcar (container-optimized)
-vmrogue create flatcar-vm --template flatcar
+veyron create flatcar-vm --template flatcar
 
 # Talos (Kubernetes-native)
-vmrogue create k8s-node --template talos --cpus 4 --memory 8Gi
+veyron create k8s-node --template talos --cpus 4 --memory 8Gi
 
 # Windows Server 2022
-vmrogue create win-server --template windows-2022 --cpus 8 --memory 16Gi
+veyron create win-server --template windows-2022 --cpus 8 --memory 16Gi
 
 # Windows 11
-vmrogue create win11-vm --template windows-11 --cpus 4 --memory 8Gi
+veyron create win11-vm --template windows-11 --cpus 4 --memory 8Gi
 ```
 
 ### View Template Details:
 
 ```bash
 # Show template configuration
-vmrogue template almalinux
+veyron template almalinux
 
 # Show as JSON
-vmrogue template rocky --output json
+veyron template rocky --output json
 
 # Show as YAML
-vmrogue template alpine --output yaml
+veyron template alpine --output yaml
 ```
 
 ### List All Templates:
 
 ```bash
 # Simple list
-vmrogue templates
+veyron templates
 
 # Grouped by family (coming soon)
-# vmrogue templates --by-family
+# veyron templates --by-family
 ```
 
 ## 📋 Template Specifications
@@ -229,13 +229,13 @@ vmrogue templates
 |----------|-----|--------|------|-----------|----------|
 | ubuntu-24.04 | 2 | 4Gi | 20Gi | ubuntu/ubuntu | General purpose, latest |
 | alpine | 1 | 512Mi | 10Gi | alpine/alpine | Microservices, minimal |
-| almalinux | 2 | 4Gi | 20Gi | vmrogue/vmrogue | RHEL alternative, free |
-| rocky | 2 | 4Gi | 20Gi | vmrogue/vmrogue | RHEL alternative, enterprise |
-| fedora-43 | 2 | 4Gi | 20Gi | vmrogue/vmrogue | Latest features |
-| arch | 2 | 2Gi | 20Gi | vmrogue/vmrogue | Bleeding edge |
-| opensuse-leap | 2 | 4Gi | 20Gi | vmrogue/vmrogue | Enterprise stability |
+| almalinux | 2 | 4Gi | 20Gi | veyron/veyron | RHEL alternative, free |
+| rocky | 2 | 4Gi | 20Gi | veyron/veyron | RHEL alternative, enterprise |
+| fedora-43 | 2 | 4Gi | 20Gi | veyron/veyron | Latest features |
+| arch | 2 | 2Gi | 20Gi | veyron/veyron | Bleeding edge |
+| opensuse-leap | 2 | 4Gi | 20Gi | veyron/veyron | Enterprise stability |
 | freebsd-14 | 2 | 2Gi | 20Gi | - | BSD Unix, ZFS |
-| flatcar | 2 | 2Gi | 20Gi | vmrogue/vmrogue | Containers |
+| flatcar | 2 | 2Gi | 20Gi | veyron/veyron | Containers |
 | talos | 2 | 4Gi | 20Gi | - | Kubernetes nodes |
 | windows-2022 | 4 | 8Gi | 60Gi | - | Windows Server; TPM in template |
 | windows-2019 | 4 | 8Gi | 60Gi | - | Windows Server |
@@ -326,12 +326,12 @@ Some require blank disks (bring your own ISO):
 | OS Family | Username | Password |
 |-----------|----------|----------|
 | Ubuntu | ubuntu | ubuntu |
-| Fedora/CentOS/Debian | vmrogue | vmrogue |
-| AlmaLinux/Rocky | vmrogue | vmrogue |
+| Fedora/CentOS/Debian | veyron | veyron |
+| AlmaLinux/Rocky | veyron | veyron |
 | Alpine | alpine | alpine |
-| Arch/OpenSUSE | vmrogue | vmrogue |
-| Oracle/Flatcar | vmrogue | vmrogue |
-| RHEL | vmrogue | vmrogue |
+| Arch/OpenSUSE | veyron | veyron |
+| Oracle/Flatcar | veyron | veyron |
+| RHEL | veyron | veyron |
 | Windows | - | (Configure manually) |
 | FreeBSD | - | (Configure manually) |
 | Talos | - | (API-driven, no SSH) |
@@ -345,8 +345,8 @@ All templates are tested:
 cargo test --lib templates
 
 # Test specific template
-vmrogue template almalinux --output json | jq
-vmrogue template alpine --output yaml
+veyron template almalinux --output json | jq
+veyron template alpine --output yaml
 ```
 
 ## 📊 Statistics
@@ -364,14 +364,14 @@ LTS/Stable:         30
 
 ## 🎨 Themed Output
 
-All template commands support the VMRogue theme:
+All template commands support the Veyron theme:
 
 ```bash
 # Colored template list
-vmrogue templates
+veyron templates
 
 # Themed template details
-vmrogue template ubuntu
+veyron template ubuntu
 ```
 
 ## 🚀 Future Enhancements

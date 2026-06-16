@@ -4,21 +4,21 @@ metadata:
   name: veyron-operator
 rules:
   # Veyron CRDs - full control
-  - apiGroups: ["vmrogue.io"]
+  - apiGroups: ["veyron.io"]
     resources:
-      - vmroguevms
-      - vmroguevms/status
-      - vmroguevms/finalizers
-      - vmrogueblueprints
-      - vmrogueblueprints/status
-      - vmrogueblueprints/finalizers
-      - vmroguepolicies
-      - vmroguepolicies/status
-      - vmrogueinsights
-      - vmrogueinsights/status
-      - vmrogueactions
-      - vmrogueactions/status
-      - vmrogueactions/finalizers
+      - veyronvms
+      - veyronvms/status
+      - veyronvms/finalizers
+      - veyronblueprints
+      - veyronblueprints/status
+      - veyronblueprints/finalizers
+      - veyronpolicies
+      - veyronpolicies/status
+      - veyroninsights
+      - veyroninsights/status
+      - veyronactions
+      - veyronactions/status
+      - veyronactions/finalizers
       - vmtemplates
       - vmtemplates/status
       - vmprofiles

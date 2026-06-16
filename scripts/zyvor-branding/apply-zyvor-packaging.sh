@@ -2,7 +2,7 @@
 # Propagate Zyvor install UX + branding assets to all product repos.
 set -euo pipefail
 KIT="$(cd "$(dirname "$0")" && pwd)"
-TT="$(cd "${KIT}/../../.." && pwd)"  # …/VMRogue/scripts/zyvor-branding → repo root's parent (tt)
+TT="$(cd "${KIT}/../../.." && pwd)"  # …/Veyron/scripts/zyvor-branding → repo root's parent (tt)
 
 REPOS=(
   v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge
@@ -27,12 +27,12 @@ declare -A WEB_PUBLIC=(
   [nightforge]=":"
 )
 
-vmrogue_root="$(cd "${KIT}/../.." && pwd)"
+veyron_root="$(cd "${KIT}/../.." && pwd)"
 for repo in "${REPOS[@]}"; do
   root="${TT}/${repo}"
   [[ -d "${root}" ]] || continue
   mkdir -p "${root}/scripts/zyvor-branding"
-  if [[ "${root}" != "${vmrogue_root}" ]]; then
+  if [[ "${root}" != "${veyron_root}" ]]; then
     cp -f "${KIT}/ZYVOR_INSTALL.txt" "${KIT}/ZyvorBrand.tsx" "${KIT}/zyvor-logo.png" \
       "${root}/scripts/zyvor-branding/"
   fi
@@ -96,7 +96,7 @@ done
 SCRIPTS_SRC="${KIT}/.."
 for script in rebuild-all-customer-tarballs-remote.sh test-customer-e2e-remote.sh test-packages-remote-only.sh; do
   [[ -f "${SCRIPTS_SRC}/${script}" ]] || continue
-  for repo in VMRogue v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge; do
+  for repo in Veyron v9s machina guestkit hypersdk- hyper2kvm- packetwolf ragnarok Aether IronWolf forge; do
     root="${TT}/${repo}"
     [[ -d "${root}/scripts" ]] || continue
     cp -f "${SCRIPTS_SRC}/${script}" "${root}/scripts/${script}"

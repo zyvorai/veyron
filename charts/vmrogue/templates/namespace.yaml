@@ -3,4 +3,4 @@ kind: Namespace
 metadata:
   name: {{ .Release.Namespace }}
   labels:
-    {{- include "vmrogue.labels" . | nindent 4 }}
+    {{- include "veyron.labels" . | nindent 4 }}

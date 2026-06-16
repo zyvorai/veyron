@@ -63,7 +63,7 @@ impl TuiConfig {
     pub fn default_path() -> anyhow::Result<PathBuf> {
         let config_dir = dirs::config_dir()
             .ok_or_else(|| anyhow::anyhow!("Could not determine config directory"))?;
-        Ok(config_dir.join("vmrogue").join("tui.toml"))
+        Ok(config_dir.join("veyron").join("tui.toml"))
     }
 }
 

@@ -172,7 +172,7 @@ fn snapshot_to_backup(snapshot: crate::snapshots::crds::VirtualMachineSnapshot) 
         .metadata
         .labels
         .as_ref()
-        .and_then(|labels| labels.get("vmrogue.io/vm"))
+        .and_then(|labels| labels.get("veyron.io/vm"))
         .cloned()
         .unwrap_or_else(|| snapshot.spec.source.name.clone());
 

@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Snapshot schedules persisted as labeled ConfigMaps (`vmrogue.io/type=snapshot-schedule`).
+//! Snapshot schedules persisted as labeled ConfigMaps (`veyron.io/type=snapshot-schedule`).
 //! Evaluated periodically by the web API while the process runs (UTC cron).
 
 use anyhow::{Context, Result};
@@ -90,7 +90,7 @@ async fn persist_schedule_cm(
 /// List snapshot schedules across the cluster.
 pub async fn list_schedule_configmaps(client: Client) -> Result<Vec<ConfigMap>> {
     let cms: Api<ConfigMap> = Api::all(client.clone());
-    let lp = ListParams::default().labels("vmrogue.io/type=snapshot-schedule");
+    let lp = ListParams::default().labels("veyron.io/type=snapshot-schedule");
     Ok(cms.list(&lp).await?.items)
 }
 
@@ -113,7 +113,7 @@ pub async fn upsert_schedule_cm(
     Schedule::from_str(cron_expr.trim()).context("invalid cron expression")?;
 
     let id: u64 = rand::random();
-    let cm_name = format!("vmrogue-sschedule-{id:x}");
+    let cm_name = format!("veyron-sschedule-{id:x}");
 
     let rec = SnapshotScheduleRecord {
         vm_name: vm_name.to_string(),
@@ -128,10 +128,10 @@ pub async fn upsert_schedule_cm(
 
     let mut labels = BTreeMap::new();
     labels.insert(
-        "vmrogue.io/type".to_string(),
+        "veyron.io/type".to_string(),
         SCHEDULE_CM_LABEL_TYPE.to_string(),
     );
-    labels.insert("vmrogue.io/vm".to_string(), vm_name.to_string());
+    labels.insert("veyron.io/vm".to_string(), vm_name.to_string());
 
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
@@ -217,7 +217,7 @@ pub async fn snapshot_schedule_tick(client: Client) -> Result<()> {
             now.format("%Y%m%d%H%M")
         );
         let cfg = crate::snapshots::SnapshotConfig::new(&rec.vm_name, &snap_name)
-            .with_description("VMRogue scheduled snapshot");
+            .with_description("Veyron scheduled snapshot");
 
         let snapshot_ok = match mgr.create_snapshot(&cfg).await {
             Ok(_) => true,

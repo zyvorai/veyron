@@ -6,7 +6,7 @@ use crate::kube::KubeClient;
 
 pub async fn vm_doctor(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Doctor",
+        "Veyron Doctor",
         "vm_doctor",
         format!("Health report: {namespace}/{name}"),
     );

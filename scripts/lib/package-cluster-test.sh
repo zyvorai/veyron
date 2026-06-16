@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Verify Kubernetes cluster prerequisites for VMRogue / v9s client bundles.
+# Verify Kubernetes cluster prerequisites for Veyron / v9s client bundles.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"

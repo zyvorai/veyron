@@ -69,7 +69,7 @@ async fn list_notifications(
     let read_ids: std::collections::HashSet<String> = {
         let api: kube::api::Api<ConfigMap> =
             kube::api::Api::namespaced(s.client().client(), &read_cm_ns);
-        api.get("vmrogue-notifications-read")
+        api.get("veyron-notifications-read")
             .await
             .ok()
             .and_then(|cm| cm.data)
@@ -135,7 +135,7 @@ async fn mark_notifications_read(
     let s = state.read().await;
     let api: kube::api::Api<ConfigMap> =
         kube::api::Api::namespaced(s.client().client(), &s.namespace);
-    let cm_name = "vmrogue-notifications-read";
+    let cm_name = "veyron-notifications-read";
 
     // Merge new IDs with any already stored
     let existing_ids: std::collections::HashSet<String> = api
@@ -160,7 +160,7 @@ async fn mark_notifications_read(
             namespace: Some(s.namespace.clone()),
             labels: Some(
                 [(
-                    "vmrogue.io/type".to_string(),
+                    "veyron.io/type".to_string(),
                     "notification-state".to_string(),
                 )]
                 .into_iter()
@@ -177,7 +177,7 @@ async fn mark_notifications_read(
     let _ = api
         .patch(
             cm_name,
-            &kube::api::PatchParams::apply("vmrogue"),
+            &kube::api::PatchParams::apply("veyron"),
             &kube::api::Patch::Apply(patch),
         )
         .await;

@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	"github.com/ssahani/Veyron/operator/internal/controller"
 	"github.com/ssahani/Veyron/operator/internal/eventbus"
 )
@@ -28,7 +28,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(vmroguev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(veyronv1alpha1.AddToScheme(scheme))
 }
 
 func main() {
@@ -55,7 +55,7 @@ func main() {
 		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "veyron-operator.vmrogue.io",
+		LeaderElectionID:       "veyron-operator.veyron.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -75,52 +75,52 @@ func main() {
 	}
 
 	// Set up controllers
-	if err = (&controller.VMRogueVMReconciler{
+	if err = (&controller.VeyronVMReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("vmroguevm-controller"),
+		Recorder: mgr.GetEventRecorderFor("veyronvm-controller"),
 		EventBus: bus,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VMRogueVM")
+		setupLog.Error(err, "unable to create controller", "controller", "VeyronVM")
 		os.Exit(1)
 	}
 
-	if err = (&controller.VMRogueBlueprintReconciler{
+	if err = (&controller.VeyronBlueprintReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("vmrogueblueprint-controller"),
+		Recorder: mgr.GetEventRecorderFor("veyronblueprint-controller"),
 		EventBus: bus,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VMRogueBlueprint")
+		setupLog.Error(err, "unable to create controller", "controller", "VeyronBlueprint")
 		os.Exit(1)
 	}
 
-	if err = (&controller.VMRoguePolicyReconciler{
+	if err = (&controller.VeyronPolicyReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("vmroguepolicy-controller"),
+		Recorder: mgr.GetEventRecorderFor("veyronpolicy-controller"),
 		EventBus: bus,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VMRoguePolicy")
+		setupLog.Error(err, "unable to create controller", "controller", "VeyronPolicy")
 		os.Exit(1)
 	}
 
-	if err = (&controller.VMRogueInsightReconciler{
+	if err = (&controller.VeyronInsightReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		EventBus: bus,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VMRogueInsight")
+		setupLog.Error(err, "unable to create controller", "controller", "VeyronInsight")
 		os.Exit(1)
 	}
 
-	if err = (&controller.VMRogueActionReconciler{
+	if err = (&controller.VeyronActionReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("vmrogueaction-controller"),
+		Recorder: mgr.GetEventRecorderFor("veyronaction-controller"),
 		EventBus: bus,
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "VMRogueAction")
+		setupLog.Error(err, "unable to create controller", "controller", "VeyronAction")
 		os.Exit(1)
 	}
 

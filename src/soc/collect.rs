@@ -56,7 +56,7 @@ async fn collect_finding_events(client: &KubeClient, scope: &str) -> Vec<Securit
                 SecurityEvent::new(
                     "finding",
                     "critical",
-                    "vmrogue",
+                    "veyron",
                     format!("Host network on {ns}/{name}"),
                 )
                 .with_namespace(ns)
@@ -82,7 +82,7 @@ pub fn api_audit_event(
     let mut ev = SecurityEvent::new(
         "audit",
         severity,
-        "vmrogue",
+        "veyron",
         format!("{method} {path} — {outcome}"),
     )
     .with_actor(actor)

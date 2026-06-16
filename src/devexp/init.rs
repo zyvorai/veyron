@@ -164,7 +164,7 @@ networks:
 
 labels:
   environment: development
-  managed-by: vmrogue
+  managed-by: veyron
 "#,
                 name = self.project_name,
                 ns = self.namespace,
@@ -203,7 +203,7 @@ networks:
 
 labels:
   environment: production
-  managed-by: vmrogue
+  managed-by: veyron
   ha-enabled: "true"
 "#,
                 name = self.project_name,
@@ -238,7 +238,7 @@ networks:
 
 labels:
   environment: production
-  managed-by: vmrogue
+  managed-by: veyron
   service-mesh: enabled
 "#,
                 name = self.project_name,
@@ -275,7 +275,7 @@ networks:
 
 labels:
   environment: production
-  managed-by: vmrogue
+  managed-by: veyron
   workload-type: data-pipeline
 "#,
                 name = self.project_name,
@@ -284,7 +284,7 @@ labels:
         }
     }
 
-    /// Generate gitignore content for vmrogue project
+    /// Generate gitignore content for veyron project
     pub fn generate_gitignore(&self) -> String {
         r#"# Veyron project gitignore
 *.secret
@@ -310,7 +310,7 @@ Thumbs.db
 
     /// Get the list of files that would be created
     pub fn file_list(&self) -> Vec<String> {
-        let mut files = vec![format!("{}/vmrogue.yaml", self.directory)];
+        let mut files = vec![format!("{}/veyron.yaml", self.directory)];
 
         if self.git_init {
             files.push(format!("{}/.gitignore", self.directory));
@@ -322,7 +322,7 @@ Thumbs.db
         }
 
         if self.include_ci {
-            files.push(format!("{}/.github/workflows/vmrogue.yaml", self.directory));
+            files.push(format!("{}/.github/workflows/veyron.yaml", self.directory));
         }
 
         files
@@ -478,7 +478,7 @@ mod tests {
     fn test_file_list_basic() {
         let init = ProjectInit::new("test", ProjectType::Basic);
         let files = init.file_list();
-        assert!(files.iter().any(|f| f.contains("vmrogue.yaml")));
+        assert!(files.iter().any(|f| f.contains("veyron.yaml")));
         assert!(files.iter().any(|f| f.contains(".gitignore")));
     }
 

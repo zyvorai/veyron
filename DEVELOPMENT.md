@@ -106,19 +106,19 @@ The Go operator is a standard **controller-runtime** application (`operator/main
 - Optional event bus integration: `operator/internal/eventbus` (enable with **`NATS_URL`** env or `-nats-url` flag)
 - Metrics: `operator/internal/metrics/metrics.go`
 
-**Registered controllers** (each watches its own `vmrogue.io` kind):
+**Registered controllers** (each watches its own `veyron.io` kind):
 
 | Reconciler | File (typical) | Role |
 |------------|----------------|------|
-| `VMRogueVM` | `vmroguevm_controller.go` | **Primary:** `VMRogueVM` → KubeVirt `VirtualMachine`; finalizers; config-drive Secret when requested; status from VMI |
-| `VMRogueBlueprint` | `vmrogueblueprint_controller.go` | Multi-VM / blueprint CRs |
-| `VMRoguePolicy` | `vmroguepolicy_controller.go` | Policy CRs |
-| `VMRogueInsight` | `vmrogueinsight_controller.go` | Insight CRs |
-| `VMRogueAction` | `vmrogueaction_controller.go` | Action CRs |
+| `VeyronVM` | `veyronvm_controller.go` | **Primary:** `VeyronVM` → KubeVirt `VirtualMachine`; finalizers; config-drive Secret when requested; status from VMI |
+| `VeyronBlueprint` | `veyronblueprint_controller.go` | Multi-VM / blueprint CRs |
+| `VeyronPolicy` | `veyronpolicy_controller.go` | Policy CRs |
+| `VeyronInsight` | `veyroninsight_controller.go` | Insight CRs |
+| `VeyronAction` | `veyronaction_controller.go` | Action CRs |
 
-The main VM reconciler flow in `vmroguevm_controller.go`:
+The main VM reconciler flow in `veyronvm_controller.go`:
 
-- fetch `VMRogueVM`
+- fetch `VeyronVM`
 - add finalizer
 - convert spec to a KubeVirt `VirtualMachine`
 - create or update the target KubeVirt object

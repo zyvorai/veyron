@@ -173,7 +173,7 @@ cmd_load() {
     case "${DISTRO}" in
         k3s)
             local image_tar
-            image_tar=$(mktemp /tmp/vmrogue-image-XXXXXX.tar)
+            image_tar=$(mktemp /tmp/veyron-image-XXXXXX.tar)
             trap "rm -f '${image_tar}'" EXIT
             ${RUNTIME} save "${IMAGE}" -o "${image_tar}"
             if command -v k3s &>/dev/null; then
@@ -187,7 +187,7 @@ cmd_load() {
         kind)
             if [ "${RUNTIME}" = "podman" ]; then
                 local image_tar
-                image_tar=$(mktemp /tmp/vmrogue-image-XXXXXX.tar)
+                image_tar=$(mktemp /tmp/veyron-image-XXXXXX.tar)
                 trap "rm -f '${image_tar}'" EXIT
                 ${RUNTIME} save "${IMAGE}" -o "${image_tar}"
                 kind load image-archive "${image_tar}"
@@ -199,7 +199,7 @@ cmd_load() {
         minikube)
             if [ "${RUNTIME}" = "podman" ]; then
                 local image_tar
-                image_tar=$(mktemp /tmp/vmrogue-image-XXXXXX.tar)
+                image_tar=$(mktemp /tmp/veyron-image-XXXXXX.tar)
                 trap "rm -f '${image_tar}'" EXIT
                 ${RUNTIME} save "${IMAGE}" -o "${image_tar}"
                 minikube image load "${image_tar}"
@@ -210,7 +210,7 @@ cmd_load() {
             ;;
         microk8s)
             local image_tar
-            image_tar=$(mktemp /tmp/vmrogue-image-XXXXXX.tar)
+            image_tar=$(mktemp /tmp/veyron-image-XXXXXX.tar)
             trap "rm -f '${image_tar}'" EXIT
             ${RUNTIME} save "${IMAGE}" -o "${image_tar}"
             microk8s ctr image import "${image_tar}"
@@ -306,7 +306,7 @@ cmd_logs() {
 
 # ── Delete everything ──
 cmd_delete() {
-    echo "Removing VMRogue from ${NAMESPACE}..."
+    echo "Removing Veyron from ${NAMESPACE}..."
     ${KUBECTL} delete -f "${MANIFEST}" --ignore-not-found
     ${KUBECTL} -n "${NAMESPACE}" delete secret veyron-api-key --ignore-not-found
     echo "Removed"
@@ -335,7 +335,7 @@ cmd_all() {
 
 # ── Help ──
 cmd_help() {
-    echo "VMRogue Kubernetes Deploy"
+    echo "Veyron Kubernetes Deploy"
     echo ""
     echo "Usage: $0 <command>"
     echo ""
@@ -363,7 +363,7 @@ cmd_help() {
 
 # ── Main ──
 echo ""
-echo "  VMRogue K8s Deploy"
+echo "  Veyron K8s Deploy"
 echo "  Image:   ${IMAGE}"
 echo "  Runtime: ${RUNTIME} | Cluster: ${DISTRO}"
 echo ""

@@ -4,25 +4,25 @@ use kube::api::{Api, ListParams};
 
 use super::{CopilotAction, CopilotResponse};
 use crate::kube::KubeClient;
-use crate::operator_crds::VMRogueVM;
+use crate::operator_crds::VeyronVM;
 
-/// Fleet operator drift from VMRogueVM CRs.
+/// Fleet operator drift from VeyronVM CRs.
 pub async fn drift_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Drift Advisor",
+        "Veyron Drift Advisor",
         "drift_advisor",
         "Template drift in workspace",
     );
 
     let k8s = client.client();
-    let api: Api<VMRogueVM> = if scope == "all" {
+    let api: Api<VeyronVM> = if scope == "all" {
         Api::all(k8s)
     } else {
         Api::namespaced(k8s, scope)
     };
 
     let Ok(list) = api.list(&ListParams::default()).await else {
-        r.summary = "Could not list VMRogueVM CRs — operator may not be installed in scope.".into();
+        r.summary = "Could not list VeyronVM CRs — operator may not be installed in scope.".into();
         return r;
     };
 
@@ -42,7 +42,7 @@ pub async fn drift_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
         }
     }
 
-    r.evidence.push(format!("VMRogueVM CRs in scope: {total}"));
+    r.evidence.push(format!("VeyronVM CRs in scope: {total}"));
     r.evidence
         .push(format!("Drift detected: {}", drifted.len()));
 
@@ -55,12 +55,12 @@ pub async fn drift_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
     }
 
     r.summary = if total == 0 {
-        "No VMRogueVM CRs — deploy via catalog or vmrogue deploy for drift tracking.".into()
+        "No VeyronVM CRs — deploy via catalog or veyron deploy for drift tracking.".into()
     } else if drifted.is_empty() {
-        format!("All {total} VMRogueVM(s) match their template/profile baseline.")
+        format!("All {total} VeyronVM(s) match their template/profile baseline.")
     } else {
         format!(
-            "{} of {total} VMRogueVM(s) report drift — reconcile or update blueprints.",
+            "{} of {total} VeyronVM(s) report drift — reconcile or update blueprints.",
             drifted.len()
         )
     };

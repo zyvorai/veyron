@@ -32,13 +32,13 @@ pub struct StoragePool {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoragePoolsResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub pools: Vec<StoragePool>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorageUsageResponse {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     /// When set, PVC `used` / `usage_percent` may include kubelet volume stats from this query API.
     pub prometheus_query_url: Option<String>,
     pub usage: Vec<StorageUsage>,
@@ -119,7 +119,7 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<StoragePoo
         .collect();
 
     Json(StoragePoolsResponse {
-        vmrogue_context: VmrogueFeatureContext::storage_pools(),
+        veyron_context: VmrogueFeatureContext::storage_pools(),
         pools: results,
     })
 }
@@ -272,7 +272,7 @@ async fn get_storage_usage(
         .collect();
 
     Json(StorageUsageResponse {
-        vmrogue_context: VmrogueFeatureContext::storage_usage(),
+        veyron_context: VmrogueFeatureContext::storage_usage(),
         prometheus_query_url: prom_url,
         usage: results,
     })

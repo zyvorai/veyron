@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 )
 
 // DomainJoinCredentials holds AD join parameters from a Secret JSON payload.
@@ -26,7 +26,7 @@ type DomainJoinCredentials struct {
 }
 
 // ResolveCloudInitUserData returns inline userData or loads it from Secret refs.
-func ResolveCloudInitUserData(ctx context.Context, c client.Client, ns string, spec *vmroguev1alpha1.VMRogueVMSpec) (string, error) {
+func ResolveCloudInitUserData(ctx context.Context, c client.Client, ns string, spec *veyronv1alpha1.VeyronVMSpec) (string, error) {
 	if spec == nil || spec.CloudInit == nil {
 		return "", nil
 	}
@@ -68,7 +68,7 @@ func ResolveCloudInitUserData(ctx context.Context, c client.Client, ns string, s
 	return userData, nil
 }
 
-func readSecretKey(ctx context.Context, c client.Client, defaultNS string, ref *vmroguev1alpha1.SecretKeyRef) (string, error) {
+func readSecretKey(ctx context.Context, c client.Client, defaultNS string, ref *veyronv1alpha1.SecretKeyRef) (string, error) {
 	if ref == nil || ref.Name == "" || ref.Key == "" {
 		return "", fmt.Errorf("invalid secret ref")
 	}
@@ -90,7 +90,7 @@ func readSecretKey(ctx context.Context, c client.Client, defaultNS string, ref *
 	return string(val), nil
 }
 
-func renderDomainJoinUserData(ctx context.Context, c client.Client, ns string, ref *vmroguev1alpha1.SecretKeyRef) (string, error) {
+func renderDomainJoinUserData(ctx context.Context, c client.Client, ns string, ref *veyronv1alpha1.SecretKeyRef) (string, error) {
 	raw, err := readSecretKey(ctx, c, ns, ref)
 	if err != nil {
 		return "", err

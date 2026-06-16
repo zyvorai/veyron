@@ -6,12 +6,12 @@ use kube::api::{Api, ListParams};
 use super::{CopilotAction, CopilotResponse};
 use crate::kube::KubeClient;
 use crate::kube::vm_rdp;
-use crate::kube::windows_rdp::vmrogue_rdp_service_name;
+use crate::kube::windows_rdp::veyron_rdp_service_name;
 
 /// Per-VM network posture: interfaces, expose, RDP, and namespace policies.
 pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Network Lens",
+        "Veyron Network Lens",
         "network_lens",
         format!("Network view: {namespace}/{name}"),
     );
@@ -118,7 +118,7 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
             let np = vm_rdp::rdp_node_port_from_service(&svc);
             r.evidence.push(format!(
                 "RDP expose Service `{}`{}",
-                vmrogue_rdp_service_name(name),
+                veyron_rdp_service_name(name),
                 np.map(|p| format!(" — NodePort {p}")).unwrap_or_default()
             ));
             r.recommendations
@@ -136,13 +136,13 @@ pub async fn network_lens(client: &KubeClient, namespace: &str, name: &str) -> C
         .metadata
         .labels
         .as_ref()
-        .and_then(|l| l.get("vmrogue.io/allow-internet"))
+        .and_then(|l| l.get("veyron.io/allow-internet"))
         .map(|v| v == "true")
         .unwrap_or(true);
     r.evidence.push(format!(
         "Internet egress policy: {}",
         if allow_inet {
-            "allowed (VMRogue default)"
+            "allowed (Veyron default)"
         } else {
             "restricted"
         }
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn network_lens_response_shape() {
-        let r = CopilotResponse::new("VMRogue Network Lens", "network_lens", "test");
-        assert_eq!(r.module, "VMRogue Network Lens");
+        let r = CopilotResponse::new("Veyron Network Lens", "network_lens", "test");
+        assert_eq!(r.module, "Veyron Network Lens");
     }
 }

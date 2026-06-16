@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Competitive Comparison — VMRogue + Zeus OS vs Alternatives</title>
+<title>Competitive Comparison — Veyron + Zeus OS vs Alternatives</title>
 <style>
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,7 +45,7 @@
 
 <div class="cover">
   <h1>Competitive <span>Analysis</span></h1>
-  <h2>VMRogue + Zeus OS vs KubeVirt Management Alternatives</h2>
+  <h2>Veyron + Zeus OS vs KubeVirt Management Alternatives</h2>
   <p class="tagline">How our integrated CLI + Web platform compares to Cockpit, OpenShift Console, kubectl, virtctl, and other KubeVirt management tools.</p>
   <div class="badge">Feature-by-Feature Comparison</div>
 </div>
@@ -56,7 +56,7 @@
   <p class="sub">Red Hat's web console for libvirt/KubeVirt VM management.</p>
 
   <table>
-    <tr><th>Feature</th><th>Cockpit Machines</th><th>VMRogue + v9s</th></tr>
+    <tr><th>Feature</th><th>Cockpit Machines</th><th>Veyron + v9s</th></tr>
     <tr><td>KubeVirt native</td><td class="cross">No (libvirt focused)</td><td class="check">Yes (K8s API native)</td></tr>
     <tr><td>VNC Console</td><td class="check">Yes</td><td class="check">Yes + Sendkey toolbar</td></tr>
     <tr><td>Serial Console</td><td class="partial">Limited</td><td class="check">Full xterm.js</td></tr>
@@ -80,7 +80,7 @@
   <p class="sub">Red Hat OpenShift Virtualization console.</p>
 
   <table>
-    <tr><th>Feature</th><th>OCP Console</th><th>VMRogue + v9s</th></tr>
+    <tr><th>Feature</th><th>OCP Console</th><th>Veyron + v9s</th></tr>
     <tr><td>Prerequisite</td><td class="cross">Full OpenShift cluster ($$$)</td><td class="check">Any K8s + KubeVirt</td></tr>
     <tr><td>License cost</td><td class="cross">$50K-200K/year</td><td class="check">Proprietary (competitive)</td></tr>
     <tr><td>VNC Console</td><td class="check">Yes</td><td class="check">Yes + Sendkey</td></tr>
@@ -90,7 +90,7 @@
     <tr><td>Standalone deployment</td><td class="cross">No (OCP only)</td><td class="check">Single binary + static files</td></tr>
     <tr><td>Edge/K3s support</td><td class="cross">No</td><td class="check">Yes (K3s, K8s, any distro)</td></tr>
     <tr><td>Blueprints/Templates</td><td class="partial">Templates only</td><td class="check">44 templates + multi-VM blueprints</td></tr>
-    <tr><td>Binary size</td><td class="cross">Full OCP platform</td><td class="check">49MB (v9s) + 11MB (vmrogue)</td></tr>
+    <tr><td>Binary size</td><td class="cross">Full OCP platform</td><td class="check">49MB (v9s) + 11MB (veyron)</td></tr>
   </table>
 </div>
 
@@ -100,7 +100,7 @@
   <p class="sub">Generic Kubernetes and KubeVirt command-line tools.</p>
 
   <table>
-    <tr><th>Feature</th><th>kubectl + virtctl</th><th>VMRogue CLI</th></tr>
+    <tr><th>Feature</th><th>kubectl + virtctl</th><th>Veyron CLI</th></tr>
     <tr><td>VM-specific commands</td><td class="partial">Generic K8s + basic VM</td><td class="check">60+ VM-specific commands</td></tr>
     <tr><td>OS templates</td><td class="cross">None (raw YAML)</td><td class="check">44 built-in templates</td></tr>
     <tr><td>Resource profiles</td><td class="cross">None</td><td class="check">8 profiles (dev, prod, db, web, etc.)</td></tr>
@@ -118,7 +118,7 @@
   <div class="stat-row">
     <div class="stat">
       <div class="number" style="color:#22c55e;">60+</div>
-      <div class="label">VMRogue Commands</div>
+      <div class="label">Veyron Commands</div>
     </div>
     <div class="stat">
       <div class="number" style="color:#22c55e;">44</div>
@@ -138,7 +138,7 @@
 
   <div class="card-grid">
     <div class="card">
-      <h4>CLI Power (VMRogue)</h4>
+      <h4>CLI Power (Veyron)</h4>
       <p>60+ commands, 44 templates, 8 profiles, multi-VM blueprints, TUI dashboard, health checks, RBAC, webhooks, API server. No YAML needed.</p>
     </div>
     <div class="card">
@@ -147,7 +147,7 @@
     </div>
     <div class="card">
       <h4>Lightweight</h4>
-      <p>60MB total (VMRogue 11MB + Zeus OS 49MB). Runs on K3s at the edge. No OpenShift, no Prometheus, no external dependencies.</p>
+      <p>60MB total (Veyron 11MB + Zeus OS 49MB). Runs on K3s at the edge. No OpenShift, no Prometheus, no external dependencies.</p>
     </div>
     <div class="card">
       <h4>Migration Ready</h4>
@@ -157,8 +157,8 @@
 
   <div class="cta-box">
     <h3>The complete KubeVirt management platform</h3>
-    <p>No OpenShift license. No broken Cockpit dialogs. No raw YAML.<br>Just VMRogue + v9s. CLI + Web. Done.</p>
+    <p>No OpenShift license. No broken Cockpit dialogs. No raw YAML.<br>Just Veyron + v9s. CLI + Web. Done.</p>
   </div>
-  <div class="footer"><p>VMRogue + Zeus OS Competitive Analysis &mdash; Proprietary Software &mdash; Founders: ZyvorAI Labs Private Limited &amp; Sibu</p></div>
+  <div class="footer"><p>Veyron + Zeus OS Competitive Analysis &mdash; Proprietary Software &mdash; Founders: ZyvorAI Labs Private Limited &amp; Sibu</p></div>
 </div>
 </body></html>

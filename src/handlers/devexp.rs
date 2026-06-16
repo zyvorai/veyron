@@ -121,7 +121,7 @@ pub fn handle_config_load(name: String, output: Option<String>, format: String) 
     // Load template from ~/.config/veyron/templates/ directory
     let templates_dir = dirs::config_dir()
         .unwrap_or_else(|| std::path::PathBuf::from(".config"))
-        .join("vmrogue")
+        .join("veyron")
         .join("templates");
 
     // Reject path traversal attempts
@@ -185,7 +185,7 @@ pub fn handle_config_load(name: String, output: Option<String>, format: String) 
             println!();
             println!(
                 "{}",
-                color::info("ℹ Save a template first with 'vmrogue config-save'")
+                color::info("ℹ Save a template first with 'veyron config-save'")
             );
             println!(
                 "  {}",
@@ -260,7 +260,7 @@ pub fn handle_config_list(
         println!("  {}", color::muted("No saved configurations found"));
         println!(
             "  {}",
-            color::muted("Use 'vmrogue config-save' to save a configuration")
+            color::muted("Use 'veyron config-save' to save a configuration")
         );
     }
 
@@ -430,9 +430,9 @@ pub fn handle_info(
             println!("{}", yaml);
         }
         _ => {
-            println!("{}", color::header("VMRogue Environment Info"));
+            println!("{}", color::header("Veyron Environment Info"));
             println!();
-            println!("  Version:     {}", color::value(&info.vmrogue_version));
+            println!("  Version:     {}", color::value(&info.veyron_version));
             println!("  Rust:        {}", info.rust_version);
             println!("  OS:          {}/{}", info.os, info.arch);
             println!("  Collected:   {}", info.collected_at);

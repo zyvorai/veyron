@@ -13,7 +13,7 @@ We release patches for security vulnerabilities for the following versions:
 
 ## Reporting a Vulnerability
 
-We take the security of vmrogue seriously. If you have discovered a security vulnerability, please follow these steps:
+We take the security of veyron seriously. If you have discovered a security vulnerability, please follow these steps:
 
 ### 🔒 Private Disclosure
 
@@ -70,18 +70,18 @@ We believe in giving credit where credit is due. If you report a valid security 
 
 ### 🔐 Security Best Practices
 
-When using vmrogue:
+When using veyron:
 
 1. **Keep Updated**: Always use the latest version
 2. **Least Privilege**: Run with minimum required permissions
 3. **Review Configs**: Validate VM configurations before applying
-4. **Audit Logs**: Monitor vmrogue operations in production
+4. **Audit Logs**: Monitor veyron operations in production
 5. **Secure Credentials**: Never commit credentials or secrets to git
 6. **Network Security**: Use appropriate network policies in Kubernetes
 
 ### 🛡️ Security Hardening
 
-VMRogue implements the following security measures:
+Veyron implements the following security measures:
 
 #### Authentication & Authorization
 - **JWT Bearer token auth** with HMAC-SHA256 signature verification and OIDC issuer checking
@@ -119,7 +119,7 @@ VMRogue implements the following security measures:
 - Rate limiting (configurable per minute, dashboard endpoints exempt)
 - Kubernetes name validation (RFC 1123) on all VM/snapshot names
 - VNC WebSocket proxy uses direct K8s API WebSocket with client certificate authentication (mTLS)
-- **VMRoguePolicy CRD enforcement**: VM creation evaluates VMRoguePolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.
+- **VeyronPolicy CRD enforcement**: VM creation evaluates VeyronPolicy CRDs before proceeding. Policies with `Deny` enforcement block creation outright; policies with `Warn` enforcement log warnings but allow the operation to continue.
 - **Structured error types**: The API returns proper HTTP status codes (e.g., 401 for auth failures, 409 for conflicts) instead of returning 200 with silent failures where feasible. VM lifecycle routes use Kubernetes directly; analytics routes may return heuristic projections labeled in JSON where applicable.
 - **Input validation on batch operations**: Batch VM operations validate Kubernetes names (RFC 1123) before processing. Budget creation ensures the `veyron-system` namespace exists before writing resources.
 - **CRDPolicyRule structured value field**: Policy conditions use a structured `value` field for thresholds instead of parsing values from message strings, which was fragile and potentially exploitable via crafted input.
@@ -133,7 +133,7 @@ VMRogue implements the following security measures:
 - Core endpoints return cluster-backed data; auxiliary endpoints document estimate/disclaimer fields where values are not sourced from billing or external SaaS.
 
 #### Operator Security
-- **CEL policy expressions**: The VMRogue Operator supports CEL (Common Expression Language) policy expressions for custom compliance rules, evaluated safely in a sandboxed environment.
+- **CEL policy expressions**: The Veyron Operator supports CEL (Common Expression Language) policy expressions for custom compliance rules, evaluated safely in a sandboxed environment.
 - **Operator Prometheus metrics**: 7 custom metrics exposed for monitoring operator health and policy enforcement activity.
 
 #### Metrics Security
@@ -148,7 +148,7 @@ VMRogue implements the following security measures:
 > secrets encryption is now available. See the "Security Hardening" section above for details.
 
 #### Kubernetes Access
-- vmrogue requires access to Kubernetes API
+- veyron requires access to Kubernetes API
 - Use appropriate RBAC policies to limit access
 - Review and restrict service account permissions
 
@@ -183,4 +183,4 @@ We'd like to thank the following people for responsibly disclosing security issu
 
 ---
 
-Thank you for helping keep vmrogue and our users safe!
+Thank you for helping keep veyron and our users safe!

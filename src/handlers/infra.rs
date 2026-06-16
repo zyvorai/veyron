@@ -81,7 +81,7 @@ pub async fn handle_snapshot_create(
             println!("{}", color::info("Check snapshot status with:"));
             println!(
                 "  {}",
-                color::command(&format!("vmrogue snapshot-get {}", snapshot_name))
+                color::command(&format!("veyron snapshot-get {}", snapshot_name))
             );
         }
         Err(e) => {
@@ -665,7 +665,7 @@ pub async fn handle_disk_expand(
                     "     {}",
                     color::command("echo 1 | sudo tee /sys/class/block/vda/device/rescan")
                 );
-                println!("  2. Expand filesystem (see: vmrogue disk-script)");
+                println!("  2. Expand filesystem (see: veyron disk-script)");
             }
             Err(e) => {
                 println!("{} Failed to resize PVC: {}", color::error("✗"), e);
@@ -824,7 +824,7 @@ pub async fn handle_disk_health(vm: String, detailed: bool, namespace: &str) -> 
         println!();
         println!(
             "{}",
-            color::info("ℹ Use 'vmrogue disk-expand' to expand disks")
+            color::info("ℹ Use 'veyron disk-expand' to expand disks")
         );
     }
     Ok(())
@@ -1330,7 +1330,7 @@ pub fn handle_network_traffic(
         "{}",
         color::info("Network metrics require Prometheus or guest agent integration")
     );
-    println!("  Configure with: vmrogue config set monitoring.prometheus-url <url>");
+    println!("  Configure with: veyron config set monitoring.prometheus-url <url>");
     println!();
     println!("  {}", color::muted("No network traffic data available"));
     Ok(())

@@ -45,9 +45,9 @@
     <li>Deploy <code>VirtualMachine</code> with UEFI, virtio devices, and optional <code>cloudInitConfigDrive</code> userData.</li>
   </ol>
 
-  <h2>VMRogue vs guest work</h2>
+  <h2>Veyron vs guest work</h2>
   <table>
-    <thead><tr><th>Topic</th><th>In VMRogue <code>src/templates/mod.rs</code></th><th>In your image / YAML</th></tr></thead>
+    <thead><tr><th>Topic</th><th>In Veyron <code>src/templates/mod.rs</code></th><th>In your image / YAML</th></tr></thead>
     <tbody>
       <tr><td>Hyper-V timers / enlightenments</td><td>Yes (<code>windows_features</code>, <code>windows_clock</code>)</td><td>Tune if platform requires</td></tr>
       <tr><td>VirtIO driver CDROM</td><td>Yes (container disk)</td><td>—</td></tr>
@@ -60,7 +60,7 @@
   </table>
 
   <div class="note">
-    <strong>Developer access:</strong> VNC from the VMRogue dashboard; RDP or routed SSH per <a href="../DEVELOPER_VM_ACCESS.md">DEVELOPER_VM_ACCESS.md</a>.
+    <strong>Developer access:</strong> VNC from the Veyron dashboard; RDP or routed SSH per <a href="../DEVELOPER_VM_ACCESS.md">DEVELOPER_VM_ACCESS.md</a>.
   </div>
 </div>
 
@@ -71,7 +71,7 @@
     <li><code>src/kube/converter.rs</code> — <code>VMConfig</code> → KubeVirt <code>VirtualMachine</code></li>
     <li><code>docs/WINDOWS_KUBEVIRT_PRODUCTION.md</code> — full runbook</li>
   </ul>
-  <p>VMRogue does not run Sysprep or edit guest registries; it ships <strong>sensible VM specs</strong> so you can attach your own generalized disk.</p>
+  <p>Veyron does not run Sysprep or edit guest registries; it ships <strong>sensible VM specs</strong> so you can attach your own generalized disk.</p>
 </div>
 
 <p class="footer">Veyron — client reference. Source: github.com/ssahani/Veyron</p>

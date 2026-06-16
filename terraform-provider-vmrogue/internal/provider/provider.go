@@ -40,13 +40,13 @@ func New(version string) func() provider.Provider {
 }
 
 func (p *vmrogueProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "vmrogue"
+	resp.TypeName = "veyron"
 	resp.Version = p.version
 }
 
 func (p *vmrogueProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Interact with the VMRogue KubeVirt control plane API.",
+		Description: "Interact with the Veyron KubeVirt control plane API.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Required:    true,

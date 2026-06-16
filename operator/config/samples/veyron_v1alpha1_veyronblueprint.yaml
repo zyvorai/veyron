@@ -1,5 +1,5 @@
-apiVersion: vmrogue.io/v1alpha1
-kind: VMRogueBlueprint
+apiVersion: veyron.io/v1alpha1
+kind: VeyronBlueprint
 metadata:
   name: lamp-stack
   namespace: default

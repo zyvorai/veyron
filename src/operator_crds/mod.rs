@@ -2,10 +2,10 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-// VMRogue Operator CRD Definitions
+// Veyron Operator CRD Definitions
 //
-// Rust-side mirror of the Go operator CRDs (vmrogue.io/v1alpha1).
-// These types allow the Rust API to create/read/update/delete VMRogue CRDs
+// Rust-side mirror of the Go operator CRDs (veyron.io/v1alpha1).
+// These types allow the Rust API to create/read/update/delete Veyron CRDs
 // via kube-rs, enabling the Rust API server and CLI to interact with the
 // Go operator's custom resources.
 
@@ -15,22 +15,22 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // =============================================================================
-// VMRogueVM CRD
+// VeyronVM CRD
 // =============================================================================
 
-/// VMRogueVM is a higher-level VM abstraction that the Go operator
+/// VeyronVM is a higher-level VM abstraction that the Go operator
 /// translates into KubeVirt VirtualMachine resources.
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
-    kind = "VMRogueVM",
+    kind = "VeyronVM",
     namespaced
 )]
-#[kube(status = "VMRogueVMStatus")]
+#[kube(status = "VeyronVMStatus")]
 #[kube(shortname = "vrvm")]
-pub struct VMRogueVMSpec {
-    /// Template name from VMRogue template library.
+pub struct VeyronVMSpec {
+    /// Template name from Veyron template library.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub template: Option<String>,
 
@@ -311,7 +311,7 @@ pub struct CRDTimersSpec {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
-pub struct VMRogueVMStatus {
+pub struct VeyronVMStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -343,7 +343,7 @@ pub struct VMRogueVMStatus {
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
     kind = "VMTemplate",
     namespaced = false
@@ -363,7 +363,7 @@ pub struct VMTemplateSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "minKubeVirtVersion")]
     pub min_kubevirt_version: Option<String>,
-    pub default: VMRogueVMSpec,
+    pub default: VeyronVMSpec,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
@@ -379,7 +379,7 @@ pub struct VMTemplateStatus {
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
     kind = "VMProfile",
     namespaced = false
@@ -414,14 +414,14 @@ pub struct VMProfileStatus {
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
-    kind = "VMRogueBlueprint",
+    kind = "VeyronBlueprint",
     namespaced
 )]
-#[kube(status = "VMRogueBlueprintStatus")]
+#[kube(status = "VeyronBlueprintStatus")]
 #[kube(shortname = "vrbp")]
-pub struct VMRogueBlueprintSpec {
+pub struct VeyronBlueprintSpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub vms: Vec<CRDBlueprintVMSpec>,
@@ -450,7 +450,7 @@ pub struct CRDBlueprintVMSpec {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
-pub struct VMRogueBlueprintStatus {
+pub struct VeyronBlueprintStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -462,19 +462,19 @@ pub struct VMRogueBlueprintStatus {
 }
 
 // =============================================================================
-// VMRoguePolicy CRD
+// VeyronPolicy CRD
 // =============================================================================
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
-    kind = "VMRoguePolicy",
+    kind = "VeyronPolicy",
     namespaced
 )]
-#[kube(status = "VMRoguePolicyStatus")]
+#[kube(status = "VeyronPolicyStatus")]
 #[kube(shortname = "vrpol")]
-pub struct VMRoguePolicySpec {
+pub struct VeyronPolicySpec {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     pub enabled: bool,
@@ -483,7 +483,7 @@ pub struct VMRoguePolicySpec {
     pub severity: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub framework: Option<String>,
-    /// Label selector to match VMRogueVMs this policy applies to.
+    /// Label selector to match VeyronVMs this policy applies to.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub selector: Option<std::collections::BTreeMap<String, String>>,
     pub rules: Vec<CRDPolicyRule>,
@@ -502,7 +502,7 @@ pub struct CRDPolicyRule {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
-pub struct VMRoguePolicyStatus {
+pub struct VeyronPolicyStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "matchingVMs")]
     pub matching_vms: Option<i32>,
@@ -515,19 +515,19 @@ pub struct VMRoguePolicyStatus {
 }
 
 // =============================================================================
-// VMRogueInsight CRD
+// VeyronInsight CRD
 // =============================================================================
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
-    kind = "VMRogueInsight",
+    kind = "VeyronInsight",
     namespaced
 )]
-#[kube(status = "VMRogueInsightStatus")]
+#[kube(status = "VeyronInsightStatus")]
 #[kube(shortname = "vrin")]
-pub struct VMRogueInsightSpec {
+pub struct VeyronInsightSpec {
     #[serde(rename = "insightType")]
     pub insight_type: String,
     pub severity: String,
@@ -543,7 +543,7 @@ pub struct VMRogueInsightSpec {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
-pub struct VMRogueInsightStatus {
+pub struct VeyronInsightStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub state: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -552,19 +552,19 @@ pub struct VMRogueInsightStatus {
 }
 
 // =============================================================================
-// VMRogueAction CRD
+// VeyronAction CRD
 // =============================================================================
 
 #[derive(CustomResource, Deserialize, Serialize, Clone, Debug, JsonSchema)]
 #[kube(
-    group = "vmrogue.io",
+    group = "veyron.io",
     version = "v1alpha1",
-    kind = "VMRogueAction",
+    kind = "VeyronAction",
     namespaced
 )]
-#[kube(status = "VMRogueActionStatus")]
+#[kube(status = "VeyronActionStatus")]
 #[kube(shortname = "vract")]
-pub struct VMRogueActionSpec {
+pub struct VeyronActionSpec {
     #[serde(rename = "actionType")]
     pub action_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -584,7 +584,7 @@ pub struct VMRogueActionSpec {
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Default, JsonSchema)]
-pub struct VMRogueActionStatus {
+pub struct VeyronActionStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub phase: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -592,10 +592,10 @@ pub struct VMRogueActionStatus {
 }
 
 // =============================================================================
-// Conversion: VMConfig <-> VMRogueVMSpec
+// Conversion: VMConfig <-> VeyronVMSpec
 // =============================================================================
 
-impl From<&crate::config::VMConfig> for VMRogueVMSpec {
+impl From<&crate::config::VMConfig> for VeyronVMSpec {
     fn from(config: &crate::config::VMConfig) -> Self {
         let disks = config
             .disks
@@ -788,7 +788,7 @@ mod tests {
             .add_pod_network("eth0")
             .build();
 
-        let spec = VMRogueVMSpec::from(&config);
+        let spec = VeyronVMSpec::from(&config);
 
         assert_eq!(spec.cpu.cores, 4);
         assert_eq!(spec.memory.size, "8Gi");
@@ -799,57 +799,57 @@ mod tests {
     }
 
     #[test]
-    fn test_vmroguevm_crd_generates() {
+    fn test_veyronvm_crd_generates() {
         // Verify the CustomResource derive generates the correct CRD metadata
-        let crd = VMRogueVM::crd();
-        assert_eq!(crd.metadata.name.as_deref(), Some("vmroguevms.vmrogue.io"));
+        let crd = VeyronVM::crd();
+        assert_eq!(crd.metadata.name.as_deref(), Some("veyronvms.veyron.io"));
     }
 
     #[test]
-    fn test_vmrogueblueprint_crd_generates() {
-        let crd = VMRogueBlueprint::crd();
+    fn test_veyronblueprint_crd_generates() {
+        let crd = VeyronBlueprint::crd();
         assert_eq!(
             crd.metadata.name.as_deref(),
-            Some("vmrogueblueprints.vmrogue.io")
+            Some("veyronblueprints.veyron.io")
         );
     }
 
     #[test]
-    fn test_vmroguepolicy_crd_generates() {
-        let crd = VMRoguePolicy::crd();
+    fn test_veyronpolicy_crd_generates() {
+        let crd = VeyronPolicy::crd();
         assert_eq!(
             crd.metadata.name.as_deref(),
-            Some("vmroguepolicies.vmrogue.io")
+            Some("veyronpolicies.veyron.io")
         );
     }
 
     #[test]
-    fn test_vmrogueinsight_crd_generates() {
-        let crd = VMRogueInsight::crd();
+    fn test_veyroninsight_crd_generates() {
+        let crd = VeyronInsight::crd();
         assert_eq!(
             crd.metadata.name.as_deref(),
-            Some("vmrogueinsights.vmrogue.io")
+            Some("veyroninsights.veyron.io")
         );
     }
 
     #[test]
-    fn test_vmrogueaction_crd_generates() {
-        let crd = VMRogueAction::crd();
+    fn test_veyronaction_crd_generates() {
+        let crd = VeyronAction::crd();
         assert_eq!(
             crd.metadata.name.as_deref(),
-            Some("vmrogueactions.vmrogue.io")
+            Some("veyronactions.veyron.io")
         );
     }
 
     #[test]
     fn test_vmtemplate_crd_generates() {
         let crd = VMTemplate::crd();
-        assert_eq!(crd.metadata.name.as_deref(), Some("vmtemplates.vmrogue.io"));
+        assert_eq!(crd.metadata.name.as_deref(), Some("vmtemplates.veyron.io"));
     }
 
     #[test]
     fn test_vmprofile_crd_generates() {
         let crd = VMProfile::crd();
-        assert_eq!(crd.metadata.name.as_deref(), Some("vmprofiles.vmrogue.io"));
+        assert_eq!(crd.metadata.name.as_deref(), Some("vmprofiles.veyron.io"));
     }
 }

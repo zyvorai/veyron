@@ -5,14 +5,14 @@ metadata:
   labels:
     {{- include "veyron-operator.labels" . | nindent 4 }}
 rules:
-  - apiGroups: ["vmrogue.io"]
-    resources: ["vmroguevms", "vmrogueblueprints", "vmroguepolicies", "vmrogueinsights", "vmrogueactions", "vmtemplates", "vmprofiles"]
+  - apiGroups: ["veyron.io"]
+    resources: ["veyronvms", "veyronblueprints", "veyronpolicies", "veyroninsights", "veyronactions", "vmtemplates", "vmprofiles"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["vmrogue.io"]
-    resources: ["vmroguevms/status", "vmrogueblueprints/status", "vmroguepolicies/status", "vmrogueinsights/status", "vmrogueactions/status", "vmtemplates/status", "vmprofiles/status"]
+  - apiGroups: ["veyron.io"]
+    resources: ["veyronvms/status", "veyronblueprints/status", "veyronpolicies/status", "veyroninsights/status", "veyronactions/status", "vmtemplates/status", "vmprofiles/status"]
     verbs: ["get", "update", "patch"]
-  - apiGroups: ["vmrogue.io"]
-    resources: ["vmroguevms/finalizers", "vmrogueblueprints/finalizers"]
+  - apiGroups: ["veyron.io"]
+    resources: ["veyronvms/finalizers", "veyronblueprints/finalizers"]
     verbs: ["update"]
   - apiGroups: ["kubevirt.io"]
     resources: ["virtualmachines"]

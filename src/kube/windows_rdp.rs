@@ -118,7 +118,7 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         .and_then(|l| l.as_object())
     {
         if labels
-            .get("vmrogue.io/guest-os")
+            .get("veyron.io/guest-os")
             .and_then(|v| v.as_str())
             .is_some_and(|v| v.eq_ignore_ascii_case("windows"))
         {
@@ -126,7 +126,7 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         }
 
         if labels
-            .get("vmrogue.io/rdp")
+            .get("veyron.io/rdp")
             .and_then(|v| v.as_str())
             .is_some_and(|v| !v.is_empty() && !v.eq_ignore_ascii_case("false"))
         {
@@ -155,7 +155,7 @@ pub fn is_windows_vm(vm: &Value) -> bool {
         }
         for key in [
             "vm.kubevirt.io/template",
-            "vmrogue.io/template",
+            "veyron.io/template",
             "kubevirt.io/template",
         ] {
             if let Some(t) = labels.get(key).and_then(|v| v.as_str()) {
@@ -279,7 +279,7 @@ fn merge_rdp_metadata_labels(vm: &mut Value) {
         return;
     };
     labels
-        .entry("vmrogue.io/rdp".to_string())
+        .entry("veyron.io/rdp".to_string())
         .or_insert(json!("enabled"));
 }
 
@@ -542,7 +542,7 @@ pub async fn set_rdp_via_guest_agent(
 /// Back-compat alias for [`RdpGuestAgentResponse`].
 pub type EnableRdpGuestAgentResponse = RdpGuestAgentResponse;
 
-pub fn vmrogue_rdp_service_name(vm_name: &str) -> String {
+pub fn veyron_rdp_service_name(vm_name: &str) -> String {
     const PREFIX: &str = "rdp-";
     let max_body = 63usize.saturating_sub(PREFIX.len());
     let slug: String = vm_name

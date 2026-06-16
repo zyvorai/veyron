@@ -1,6 +1,6 @@
-# Contributing to vmrogue
+# Contributing to veyron
 
-Thank you for your interest in contributing to vmrogue! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to veyron! This document provides guidelines and instructions for contributing.
 
 ## 🎯 How to Contribute
 
@@ -25,8 +25,8 @@ We welcome feature suggestions! Please create an issue with:
 
 1. **Fork the repository**
    ```bash
-   git clone git@github.com:ssahani/VMRogue.git
-   cd VMRogue
+   git clone git@github.com:ssahani/Veyron.git
+   cd Veyron
    ```
 
 2. **Create a feature branch**
@@ -98,15 +98,15 @@ pub async fn create_vm(&self, config: &VMConfig) -> Result<VirtualMachine> {
 
 ### Error Handling in API Handlers
 
-API handlers should return `VMRogueError` which implements `IntoResponse`. This ensures all error paths produce proper HTTP status codes and consistent JSON error bodies. Do not return `(StatusCode, String)` tuples or `200 OK` with empty data for errors.
+API handlers should return `VeyronError` which implements `IntoResponse`. This ensures all error paths produce proper HTTP status codes and consistent JSON error bodies. Do not return `(StatusCode, String)` tuples or `200 OK` with empty data for errors.
 
 ```rust
-use crate::api::handlers::VMRogueError;
+use crate::api::handlers::VeyronError;
 
 pub async fn my_handler(
     State(state): State<AppState>,
-) -> Result<Json<MyResponse>, VMRogueError> {
-    let data = do_something().map_err(|e| VMRogueError::KubeError(e.to_string()))?;
+) -> Result<Json<MyResponse>, VeyronError> {
+    let data = do_something().map_err(|e| VeyronError::KubeError(e.to_string()))?;
     Ok(Json(data))
 }
 ```
@@ -284,8 +284,8 @@ Looking for where to start? Check out issues labeled:
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 # Clone repository
-git clone git@github.com:ssahani/VMRogue.git
-cd VMRogue
+git clone git@github.com:ssahani/Veyron.git
+cd Veyron
 
 # Build and test
 cargo build
@@ -295,12 +295,12 @@ cargo test
 cargo install --path .
 
 # Run with verbose logging
-RUST_LOG=debug vmrogue --verbose list
+RUST_LOG=debug veyron --verbose list
 ```
 
 ### Feature Flags
 
-VMRogue uses the `experimental` Cargo feature flag to gate scaffolding-only modules (operator CRDs, experimental handlers, etc.). These modules are excluded from default builds to reduce compile time and attack surface.
+Veyron uses the `experimental` Cargo feature flag to gate scaffolding-only modules (operator CRDs, experimental handlers, etc.). These modules are excluded from default builds to reduce compile time and attack surface.
 
 When working on experimental modules:
 
@@ -381,7 +381,7 @@ RUST_LOG=debug cargo run -- command
 
 ## 📜 License
 
-By contributing to vmrogue, you agree that your contributions will be licensed under the same MIT OR Apache-2.0 license that covers the project.
+By contributing to veyron, you agree that your contributions will be licensed under the same MIT OR Apache-2.0 license that covers the project.
 
 ## ❓ Questions?
 
@@ -392,4 +392,4 @@ Feel free to:
 
 ---
 
-Thank you for contributing to vmrogue! 🚀
+Thank you for contributing to veyron! 🚀

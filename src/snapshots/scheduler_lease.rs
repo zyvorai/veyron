@@ -16,7 +16,7 @@ use k8s_openapi::apimachinery::pkg::apis::meta::v1::{MicroTime, ObjectMeta};
 use kube::Client;
 use kube::api::{Api, PostParams};
 
-const LEASE_NAME: &str = "vmrogue-snapshot-scheduler";
+const LEASE_NAME: &str = "veyron-snapshot-scheduler";
 const DEFAULT_LEASE_SECS: i32 = 90;
 const MAX_LEASE_RETRIES: u8 = 8;
 

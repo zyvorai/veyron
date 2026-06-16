@@ -518,7 +518,7 @@ pub async fn handle_health_check(component: Option<String>, output: String) -> R
 
     // Check config directory
     let config_status = if dirs::config_dir()
-        .map(|d| d.join("vmrogue").exists())
+        .map(|d| d.join("veyron").exists())
         .unwrap_or(false)
     {
         HealthStatus::Healthy

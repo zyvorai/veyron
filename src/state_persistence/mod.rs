@@ -95,7 +95,7 @@ impl PersistedState {
     pub fn state_path() -> anyhow::Result<PathBuf> {
         let dir = dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from("."))
-            .join("vmrogue");
+            .join("veyron");
         Ok(dir.join("state.json"))
     }
 

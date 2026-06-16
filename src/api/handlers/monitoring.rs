@@ -21,7 +21,7 @@ use k8s_openapi::api::core::v1::Event;
 /// Monitoring status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MonitoringStatus {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub prometheus_available: bool,
     pub grafana_available: bool,
     pub alertmanager_available: bool,
@@ -179,7 +179,7 @@ async fn get_monitoring_status(
     }
 
     Json(MonitoringStatus {
-        vmrogue_context: super::feature_context::VmrogueFeatureContext::monitoring_status(),
+        veyron_context: super::feature_context::VmrogueFeatureContext::monitoring_status(),
         prometheus_available: prometheus,
         grafana_available: grafana,
         alertmanager_available: alertmanager,

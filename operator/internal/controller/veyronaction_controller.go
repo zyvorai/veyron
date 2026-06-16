@@ -20,29 +20,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	"github.com/ssahani/Veyron/operator/internal/eventbus"
 	vmmetrics "github.com/ssahani/Veyron/operator/internal/metrics"
 )
 
-const restartPhaseAnnotation = "vmrogue.io/restart-phase"
+const restartPhaseAnnotation = "veyron.io/restart-phase"
 
-// VMRogueActionReconciler reconciles a VMRogueAction object.
-type VMRogueActionReconciler struct {
+// VeyronActionReconciler reconciles a VeyronAction object.
+type VeyronActionReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 	EventBus *eventbus.EventBus
 }
 
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmrogueactions,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmrogueactions/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmrogueactions/finalizers,verbs=update
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronactions,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronactions/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=veyronactions/finalizers,verbs=update
 
-func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *VeyronActionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var action vmroguev1alpha1.VMRogueAction
+	var action veyronv1alpha1.VeyronAction
 	if err := r.Get(ctx, req.NamespacedName, &action); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -51,16 +51,16 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	// Skip if already completed or failed
-	if action.Status.Phase == vmroguev1alpha1.ActionPhaseCompleted ||
-		action.Status.Phase == vmroguev1alpha1.ActionPhaseFailed ||
-		action.Status.Phase == vmroguev1alpha1.ActionPhaseRejected {
+	if action.Status.Phase == veyronv1alpha1.ActionPhaseCompleted ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseFailed ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseRejected {
 		return ctrl.Result{}, nil
 	}
 
 	// Auto-approve via status (do not mutate spec.Approved)
-	if action.Spec.AutoApprove && action.Status.Phase == vmroguev1alpha1.ActionPhasePending {
+	if action.Spec.AutoApprove && action.Status.Phase == veyronv1alpha1.ActionPhasePending {
 		now := metav1.Now()
-		action.Status.Phase = vmroguev1alpha1.ActionPhaseApproved
+		action.Status.Phase = veyronv1alpha1.ActionPhaseApproved
 		setCondition(&action.Status.Conditions, metav1.Condition{
 			Type:               "Approved",
 			Status:             metav1.ConditionTrue,
@@ -75,13 +75,13 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	approved := action.Spec.Approved ||
-		action.Status.Phase == vmroguev1alpha1.ActionPhaseApproved ||
-		action.Status.Phase == vmroguev1alpha1.ActionPhaseExecuting
+		action.Status.Phase == veyronv1alpha1.ActionPhaseApproved ||
+		action.Status.Phase == veyronv1alpha1.ActionPhaseExecuting
 
 	// If not approved, set status to Pending
 	if !approved {
-		if action.Status.Phase != vmroguev1alpha1.ActionPhasePending {
-			action.Status.Phase = vmroguev1alpha1.ActionPhasePending
+		if action.Status.Phase != veyronv1alpha1.ActionPhasePending {
+			action.Status.Phase = veyronv1alpha1.ActionPhasePending
 			now := metav1.Now()
 			setCondition(&action.Status.Conditions, metav1.Condition{
 				Type:               "Approved",
@@ -102,9 +102,9 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// Execute the action
 	logger.Info("executing action", "type", action.Spec.ActionType, "vm", action.Spec.VMRef)
 
-	if action.Status.Phase != vmroguev1alpha1.ActionPhaseExecuting {
+	if action.Status.Phase != veyronv1alpha1.ActionPhaseExecuting {
 		now := metav1.Now()
-		action.Status.Phase = vmroguev1alpha1.ActionPhaseExecuting
+		action.Status.Phase = veyronv1alpha1.ActionPhaseExecuting
 		action.Status.StartedAt = &now
 		setCondition(&action.Status.Conditions, metav1.Condition{
 			Type:               "Approved",
@@ -125,13 +125,13 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	if err != nil {
 		logger.Error(err, "action execution failed")
-		action.Status.Phase = vmroguev1alpha1.ActionPhaseFailed
+		action.Status.Phase = veyronv1alpha1.ActionPhaseFailed
 		action.Status.Message = fmt.Sprintf("Execution failed: %v", err)
 		r.Recorder.Eventf(&action, "Warning", "ExecutionFailed", "Action %s failed: %v", action.Spec.ActionType, err)
 		r.publishActionEvent(eventbus.SubjectActionFailed, &action)
 		vmmetrics.ActionExecutions.WithLabelValues(action.Spec.ActionType, "failed").Inc()
 	} else {
-		action.Status.Phase = vmroguev1alpha1.ActionPhaseCompleted
+		action.Status.Phase = veyronv1alpha1.ActionPhaseCompleted
 		action.Status.Message = "Action completed successfully"
 		r.Recorder.Eventf(&action, "Normal", "Executed", "Action %s completed for VM %s", action.Spec.ActionType, action.Spec.VMRef)
 		r.publishActionEvent(eventbus.SubjectActionExecuted, &action)
@@ -153,7 +153,7 @@ func (r *VMRogueActionReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	return ctrl.Result{}, nil
 }
 
-func (r *VMRogueActionReconciler) reconcileRestartVM(ctx context.Context, action *vmroguev1alpha1.VMRogueAction) (ctrl.Result, error) {
+func (r *VeyronActionReconciler) reconcileRestartVM(ctx context.Context, action *veyronv1alpha1.VeyronAction) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	namespace := action.Spec.Namespace
 	if namespace == "" {
@@ -172,8 +172,8 @@ func (r *VMRogueActionReconciler) reconcileRestartVM(ctx context.Context, action
 	switch phase {
 	case "":
 		now := metav1.Now()
-		if action.Status.Phase != vmroguev1alpha1.ActionPhaseExecuting {
-			action.Status.Phase = vmroguev1alpha1.ActionPhaseExecuting
+		if action.Status.Phase != veyronv1alpha1.ActionPhaseExecuting {
+			action.Status.Phase = veyronv1alpha1.ActionPhaseExecuting
 			action.Status.StartedAt = &now
 			action.Status.Message = "Restart: stopping VM"
 			if err := r.Status().Update(ctx, action); err != nil {
@@ -212,13 +212,13 @@ func (r *VMRogueActionReconciler) reconcileRestartVM(ctx context.Context, action
 		}
 
 		completedAt := metav1.Now()
-		action.Status.Phase = vmroguev1alpha1.ActionPhaseCompleted
+		action.Status.Phase = veyronv1alpha1.ActionPhaseCompleted
 		action.Status.CompletedAt = &completedAt
 		action.Status.Message = "Restart completed successfully"
 		setCondition(&action.Status.Conditions, metav1.Condition{
 			Type:               "Executed",
 			Status:             metav1.ConditionTrue,
-			Reason:             string(vmroguev1alpha1.ActionPhaseCompleted),
+			Reason:             string(veyronv1alpha1.ActionPhaseCompleted),
 			Message:            action.Status.Message,
 			LastTransitionTime: completedAt,
 		})
@@ -236,15 +236,15 @@ func (r *VMRogueActionReconciler) reconcileRestartVM(ctx context.Context, action
 	}
 }
 
-func (r *VMRogueActionReconciler) failRestart(ctx context.Context, action *vmroguev1alpha1.VMRogueAction, err error) (ctrl.Result, error) {
+func (r *VeyronActionReconciler) failRestart(ctx context.Context, action *veyronv1alpha1.VeyronAction, err error) (ctrl.Result, error) {
 	completedAt := metav1.Now()
-	action.Status.Phase = vmroguev1alpha1.ActionPhaseFailed
+	action.Status.Phase = veyronv1alpha1.ActionPhaseFailed
 	action.Status.CompletedAt = &completedAt
 	action.Status.Message = fmt.Sprintf("Execution failed: %v", err)
 	setCondition(&action.Status.Conditions, metav1.Condition{
 		Type:               "Executed",
 		Status:             metav1.ConditionFalse,
-		Reason:             string(vmroguev1alpha1.ActionPhaseFailed),
+		Reason:             string(veyronv1alpha1.ActionPhaseFailed),
 		Message:            action.Status.Message,
 		LastTransitionTime: completedAt,
 	})
@@ -255,7 +255,7 @@ func (r *VMRogueActionReconciler) failRestart(ctx context.Context, action *vmrog
 	return ctrl.Result{}, err
 }
 
-func (r *VMRogueActionReconciler) executeAction(ctx context.Context, action *vmroguev1alpha1.VMRogueAction) error {
+func (r *VeyronActionReconciler) executeAction(ctx context.Context, action *veyronv1alpha1.VeyronAction) error {
 	if action.Spec.VMRef == "" && requiresVMRef(action.Spec.ActionType) {
 		return fmt.Errorf("action type %s requires a vmRef", action.Spec.ActionType)
 	}
@@ -290,8 +290,8 @@ func (r *VMRogueActionReconciler) executeAction(ctx context.Context, action *vmr
 	}
 }
 
-func (r *VMRogueActionReconciler) patchVMRunning(ctx context.Context, namespace, name string, running bool) error {
-	var vm vmroguev1alpha1.VMRogueVM
+func (r *VeyronActionReconciler) patchVMRunning(ctx context.Context, namespace, name string, running bool) error {
+	var vm veyronv1alpha1.VeyronVM
 	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
 		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
 	}
@@ -300,8 +300,8 @@ func (r *VMRogueActionReconciler) patchVMRunning(ctx context.Context, namespace,
 	return r.Update(ctx, &vm)
 }
 
-func (r *VMRogueActionReconciler) scaleVM(ctx context.Context, namespace, name string, params map[string]string) error {
-	var vm vmroguev1alpha1.VMRogueVM
+func (r *VeyronActionReconciler) scaleVM(ctx context.Context, namespace, name string, params map[string]string) error {
+	var vm veyronv1alpha1.VeyronVM
 	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
 		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
 	}
@@ -321,7 +321,7 @@ func (r *VMRogueActionReconciler) scaleVM(ctx context.Context, namespace, name s
 	return r.Update(ctx, &vm)
 }
 
-func (r *VMRogueActionReconciler) createSnapshot(ctx context.Context, namespace, vmName string, params map[string]string) error {
+func (r *VeyronActionReconciler) createSnapshot(ctx context.Context, namespace, vmName string, params map[string]string) error {
 	snapshotName := params["name"]
 	if snapshotName == "" {
 		snapshotName = fmt.Sprintf("snap-%s-%d", vmName, time.Now().Unix())
@@ -346,15 +346,15 @@ func (r *VMRogueActionReconciler) createSnapshot(ctx context.Context, namespace,
 	return r.Create(ctx, snapshot)
 }
 
-func (r *VMRogueActionReconciler) deleteVM(ctx context.Context, namespace, name string) error {
-	var vm vmroguev1alpha1.VMRogueVM
+func (r *VeyronActionReconciler) deleteVM(ctx context.Context, namespace, name string) error {
+	var vm veyronv1alpha1.VeyronVM
 	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, &vm); err != nil {
 		return fmt.Errorf("getting VM %s/%s: %w", namespace, name, err)
 	}
 	return r.Delete(ctx, &vm)
 }
 
-func (r *VMRogueActionReconciler) migrateVM(ctx context.Context, namespace, vmName string) error {
+func (r *VeyronActionReconciler) migrateVM(ctx context.Context, namespace, vmName string) error {
 	migration := &unstructured.Unstructured{}
 	migration.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   "kubevirt.io",
@@ -370,7 +370,7 @@ func (r *VMRogueActionReconciler) migrateVM(ctx context.Context, namespace, vmNa
 	return r.Create(ctx, migration)
 }
 
-func (r *VMRogueActionReconciler) publishActionEvent(subject string, action *vmroguev1alpha1.VMRogueAction) {
+func (r *VeyronActionReconciler) publishActionEvent(subject string, action *veyronv1alpha1.VeyronAction) {
 	if r.EventBus == nil {
 		return
 	}
@@ -396,8 +396,8 @@ func requiresVMRef(actionType string) bool {
 	}
 }
 
-func (r *VMRogueActionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *VeyronActionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&vmroguev1alpha1.VMRogueAction{}).
+		For(&veyronv1alpha1.VeyronAction{}).
 		Complete(r)
 }

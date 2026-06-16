@@ -32,10 +32,10 @@ type WindowsSpec struct {
 	DomainJoinSecretRef *SecretKeyRef `json:"domainJoinSecretRef,omitempty"`
 }
 
-// VMRogueVMSpec defines the desired state of a virtual machine.
+// VeyronVMSpec defines the desired state of a virtual machine.
 // Fields mirror the Rust VMConfig from src/config/types.rs.
-type VMRogueVMSpec struct {
-	// Template name from VMRogue template library (e.g. "ubuntu-22.04", "fedora-41").
+type VeyronVMSpec struct {
+	// Template name from Veyron template library (e.g. "ubuntu-22.04", "fedora-41").
 	// +optional
 	Template string `json:"template,omitempty"`
 
@@ -351,25 +351,25 @@ type TimersSpec struct {
 	HyperVPresent *bool `json:"hypervPresent,omitempty"`
 }
 
-// VMRogueVMPhase describes the lifecycle phase of a VMRogueVM.
+// VeyronVMPhase describes the lifecycle phase of a VeyronVM.
 // +kubebuilder:validation:Enum=Pending;Creating;Running;Stopped;Failed;Deleting;Unknown
-type VMRogueVMPhase string
+type VeyronVMPhase string
 
 const (
-	VMPhasePending  VMRogueVMPhase = "Pending"
-	VMPhaseCreating VMRogueVMPhase = "Creating"
-	VMPhaseRunning  VMRogueVMPhase = "Running"
-	VMPhaseStopped  VMRogueVMPhase = "Stopped"
-	VMPhaseFailed   VMRogueVMPhase = "Failed"
-	VMPhaseDeleting VMRogueVMPhase = "Deleting"
-	VMPhaseUnknown  VMRogueVMPhase = "Unknown"
+	VMPhasePending  VeyronVMPhase = "Pending"
+	VMPhaseCreating VeyronVMPhase = "Creating"
+	VMPhaseRunning  VeyronVMPhase = "Running"
+	VMPhaseStopped  VeyronVMPhase = "Stopped"
+	VMPhaseFailed   VeyronVMPhase = "Failed"
+	VMPhaseDeleting VeyronVMPhase = "Deleting"
+	VMPhaseUnknown  VeyronVMPhase = "Unknown"
 )
 
-// VMRogueVMStatus defines the observed state of VMRogueVM.
-type VMRogueVMStatus struct {
+// VeyronVMStatus defines the observed state of VeyronVM.
+type VeyronVMStatus struct {
 	// Current lifecycle phase.
 	// +optional
-	Phase VMRogueVMPhase `json:"phase,omitempty"`
+	Phase VeyronVMPhase `json:"phase,omitempty"`
 
 	// Name of the owned KubeVirt VirtualMachine.
 	// +optional
@@ -403,7 +403,7 @@ type VMRogueVMStatus struct {
 	// +optional
 	ResolvedSpecHash string `json:"resolvedSpecHash,omitempty"`
 
-	// True when KubeVirt VM spec differs from resolved VMRogueVM spec.
+	// True when KubeVirt VM spec differs from resolved VeyronVM spec.
 	// +optional
 	DriftDetected bool `json:"driftDetected,omitempty"`
 
@@ -421,24 +421,24 @@ type VMRogueVMStatus struct {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:shortName=vrvm
 
-// VMRogueVM is the Schema for the vmroguevms API.
-type VMRogueVM struct {
+// VeyronVM is the Schema for the veyronvms API.
+type VeyronVM struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VMRogueVMSpec   `json:"spec,omitempty"`
-	Status VMRogueVMStatus `json:"status,omitempty"`
+	Spec   VeyronVMSpec   `json:"spec,omitempty"`
+	Status VeyronVMStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// VMRogueVMList contains a list of VMRogueVM.
-type VMRogueVMList struct {
+// VeyronVMList contains a list of VeyronVM.
+type VeyronVMList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VMRogueVM `json:"items"`
+	Items           []VeyronVM `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&VMRogueVM{}, &VMRogueVMList{})
+	SchemeBuilder.Register(&VeyronVM{}, &VeyronVMList{})
 }

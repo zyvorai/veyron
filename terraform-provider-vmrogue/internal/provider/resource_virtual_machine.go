@@ -31,7 +31,7 @@ func NewVirtualMachineResource() resource.Resource {
 }
 
 func (r *virtualMachineResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "vmrogue_virtual_machine"
+	resp.TypeName = "veyron_virtual_machine"
 }
 
 func (r *virtualMachineResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {

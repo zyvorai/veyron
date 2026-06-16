@@ -1,16 +1,16 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: vmrogueactions.vmrogue.io
+  name: veyroninsights.veyron.io
 spec:
-  group: vmrogue.io
+  group: veyron.io
   names:
-    kind: VMRogueAction
-    listKind: VMRogueActionList
-    plural: vmrogueactions
-    singular: vmrogueaction
+    kind: VeyronInsight
+    listKind: VeyronInsightList
+    plural: veyroninsights
+    singular: veyroninsight
     shortNames:
-      - vract
+      - vrin
   scope: Namespaced
   versions:
     - name: v1alpha1
@@ -19,18 +19,18 @@ spec:
       subresources:
         status: {}
       additionalPrinterColumns:
-        - name: Action
+        - name: Type
           type: string
-          jsonPath: .spec.actionType
+          jsonPath: .spec.insightType
+        - name: Severity
+          type: string
+          jsonPath: .spec.severity
         - name: VM
           type: string
           jsonPath: .spec.vmRef
-        - name: Phase
+        - name: State
           type: string
-          jsonPath: .status.phase
-        - name: Approved
-          type: boolean
-          jsonPath: .spec.approved
+          jsonPath: .status.state
         - name: Age
           type: date
           jsonPath: .metadata.creationTimestamp
@@ -46,52 +46,51 @@ spec:
               type: object
             spec:
               type: object
-              required: ["actionType", "approved"]
+              required: ["insightType", "severity", "title", "description"]
               properties:
-                actionType:
+                insightType:
                   type: string
-                  enum:
-                    - StartVM
-                    - StopVM
-                    - RestartVM
-                    - ScaleResources
-                    - CreateSnapshot
-                    - DeleteSnapshot
-                    - CreateBackup
-                    - DeleteVM
-                    - Migrate
-                    - SendNotification
-                    - RunScript
-                    - Webhook
+                  enum: ["Performance", "Security", "Cost", "Anomaly", "Capacity", "Network", "Drift"]
+                severity:
+                  type: string
+                  enum: ["Critical", "High", "Medium", "Low", "Info"]
                 vmRef:
                   type: string
                 namespace:
                   type: string
-                insightRef:
+                title:
                   type: string
                 description:
                   type: string
-                approved:
-                  type: boolean
-                autoApprove:
-                  type: boolean
-                parameters:
+                source:
+                  type: string
+                data:
                   type: object
                   additionalProperties:
                     type: string
+                metrics:
+                  type: array
+                  items:
+                    type: object
+                    required: ["name", "value"]
+                    properties:
+                      name:
+                        type: string
+                      value:
+                        type: number
+                        format: double
+                      unit:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
             status:
               type: object
               properties:
-                phase:
+                state:
                   type: string
-                  enum: ["Pending", "Approved", "Executing", "Completed", "Failed", "Rejected"]
-                startedAt:
-                  type: string
-                  format: date-time
-                completedAt:
-                  type: string
-                  format: date-time
-                message:
+                  enum: ["New", "Acknowledged", "Resolved", "Dismissed"]
+                actionRef:
                   type: string
                 conditions:
                   type: array

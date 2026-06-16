@@ -12,7 +12,7 @@ pub async fn guest_filesystem_report(
     name: &str,
 ) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Guest Filesystem",
+        "Veyron Guest Filesystem",
         "guest_filesystem",
         format!("Guest disk usage: {namespace}/{name}"),
     );

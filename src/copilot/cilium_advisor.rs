@@ -10,7 +10,7 @@ use crate::kube::KubeClient;
 /// Cilium / network policy posture for the workspace.
 pub async fn cilium_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Cilium Advisor",
+        "Veyron Cilium Advisor",
         "cilium_advisor",
         "Network policy posture",
     );

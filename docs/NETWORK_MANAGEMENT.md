@@ -7,7 +7,7 @@ Veyron provides comprehensive network management capabilities for KubeVirt VMs, 
 ## Prerequisites
 
 - Kubernetes cluster with KubeVirt VMs running
-- `vmrogue` configured against the target cluster
+- `veyron` configured against the target cluster
 - Optional: Cilium + Hubble installed for advanced policy and flow observability
 - Optional: [PacketWolf](OPTIONAL_INTEGRATIONS.md#packetwolf-network-brain) for live Network Brain / Hubble intelligence (`VEYRON_PACKETWOLF_URL`)
 
@@ -20,13 +20,13 @@ List and inspect network interfaces attached to VMs.
 **Usage:**
 ```bash
 # List all interfaces for a VM
-vmrogue network-list my-vm
+veyron network-list my-vm
 
 # Show details for a specific interface
-vmrogue network-get my-vm eth0
+veyron network-get my-vm eth0
 
 # JSON/YAML output
-vmrogue network-list my-vm --output json
+veyron network-list my-vm --output json
 ```
 
 **Supported Interface Types:**
@@ -54,13 +54,13 @@ Monitor network bandwidth usage in real-time.
 **Usage:**
 ```bash
 # Show bandwidth for all interfaces
-vmrogue network-bandwidth my-vm
+veyron network-bandwidth my-vm
 
 # Monitor specific interface
-vmrogue network-bandwidth my-vm --interface eth0
+veyron network-bandwidth my-vm --interface eth0
 
 # Watch mode (continuous updates)
-vmrogue network-bandwidth my-vm --watch --interval 5
+veyron network-bandwidth my-vm --watch --interval 5
 ```
 
 **Metrics Tracked:**
@@ -104,16 +104,16 @@ Analyze network traffic flows and identify top talkers.
 **Usage:**
 ```bash
 # Analyze traffic for the last 15 minutes
-vmrogue network-traffic my-vm
+veyron network-traffic my-vm
 
 # Analyze specific interface
-vmrogue network-traffic my-vm --interface eth0
+veyron network-traffic my-vm --interface eth0
 
 # Custom time period and top N talkers
-vmrogue network-traffic my-vm --period 1h --top 20
+veyron network-traffic my-vm --period 1h --top 20
 
 # JSON/YAML output
-vmrogue network-traffic my-vm --output json
+veyron network-traffic my-vm --output json
 ```
 
 **Analysis Capabilities:**
@@ -155,16 +155,16 @@ Manage Kubernetes and Cilium network policies.
 **Usage:**
 ```bash
 # List all network policies
-vmrogue network-policies
+veyron network-policies
 
 # Show all namespaces
-vmrogue network-policies --all-namespaces
+veyron network-policies --all-namespaces
 
 # Show policy details
-vmrogue network-policy web-policy
+veyron network-policy web-policy
 
 # YAML/JSON output
-vmrogue network-policy web-policy --output yaml
+veyron network-policy web-policy --output yaml
 ```
 
 **Policy Features:**
@@ -200,7 +200,7 @@ curl -sk -H "X-API-Key: $VEYRON_API_KEY" \
   https://HOST:30151/api/v1/packetwolf/status
 ```
 
-The Cilium page **Network Flows** table remains derived from Kubernetes/Cilium NetworkPolicy rules in VMRogue. For live Hubble flows, threat intelligence, and Zeus Network Copilot, use the PacketWolf UI or its API directly. See [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md#packetwolf-network-brain).
+The Cilium page **Network Flows** table remains derived from Kubernetes/Cilium NetworkPolicy rules in Veyron. For live Hubble flows, threat intelligence, and Zeus Network Copilot, use the PacketWolf UI or its API directly. See [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md#packetwolf-network-brain).
 
 ### Cilium Features
 
@@ -335,7 +335,7 @@ spec:
 | **L7 Policies** | Application protocol | API security, method filtering |
 | **DNS Policies** | FQDN-based | External service access |
 
-### Creating Cilium Policies with VMRogue
+### Creating Cilium Policies with Veyron
 
 ```rust
 use veyron::network::cilium::*;
@@ -394,10 +394,10 @@ let yaml = manager.generate_yaml("api-policy");
 **Regular Monitoring:**
 ```bash
 # Set up monitoring cron job
-*/5 * * * * vmrogue network-bandwidth production-vm >> /var/log/bandwidth.log
+*/5 * * * * veyron network-bandwidth production-vm >> /var/log/bandwidth.log
 
 # Alert on high bandwidth
-vmrogue network-bandwidth my-vm | \
+veyron network-bandwidth my-vm | \
   awk '/RX RATE.*GB\/s/ {system("alert-high-bandwidth.sh")}'
 ```
 
@@ -411,7 +411,7 @@ vmrogue network-bandwidth my-vm | \
 **Security Monitoring:**
 ```bash
 # Daily traffic analysis
-vmrogue network-traffic my-vm --period 24h --top 50 --output json > traffic-report.json
+veyron network-traffic my-vm --period 24h --top 50 --output json > traffic-report.json
 
 # Identify unusual patterns
 jq '.top_talkers[] | select(.total_bytes > 10000000000)' traffic-report.json
@@ -486,7 +486,7 @@ hubble observe --namespace default
 **Interface Not Showing Up:**
 ```bash
 # Check VM status
-vmrogue status my-vm
+veyron status my-vm
 
 # Verify network attachment
 kubectl get network-attachment-definitions
@@ -501,7 +501,7 @@ kubectl describe vmi my-vm
 kubectl logs -n kube-system -l app=kube-ipam
 
 # Verify network configuration
-vmrogue network-get my-vm eth0
+veyron network-get my-vm eth0
 ```
 
 ### Bandwidth Issues
@@ -524,7 +524,7 @@ netstat -i
 tc qdisc show dev eth0
 
 # Verify network policy restrictions
-vmrogue network-policies
+veyron network-policies
 ```
 
 ### Traffic Analysis Issues
@@ -552,10 +552,10 @@ kubectl top pods
 **Traffic Blocked Unexpectedly:**
 ```bash
 # Check applied policies
-vmrogue network-policies --all-namespaces
+veyron network-policies --all-namespaces
 
 # View policy details
-vmrogue network-policy my-policy --output yaml
+veyron network-policy my-policy --output yaml
 
 # Test connectivity
 kubectl run test --rm -it --image=busybox -- wget -O- my-service

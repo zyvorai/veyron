@@ -17,7 +17,7 @@ ORDER OF OPERATIONS (do not skip)
 ---------------------------------
   Step A  ./install-cluster.sh          # cluster: Cilium + KubeVirt + CDI (+ metrics-server)
   Step B  Deploy VMRogue IN the cluster # Helm/k8s or your GitOps (not in this tarball)
-  Step C  ./apply-cluster-network.sh    # Cilium egress for vmrogue-system + virt-launcher
+  Step C  ./apply-cluster-network.sh    # Cilium egress for veyron-system + virt-launcher
   Step D  ./install.sh && edit vmrogue.env
   Step E  ./test-cluster.sh && ./test-package.sh
   Step F  Start client: ./vmrogue api-serve …
@@ -75,7 +75,7 @@ STEP C — apply-cluster-network.sh (Cilium egress)
     VMROGUE_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 ./apply-cluster-network.sh
 
   Applies manifests in cluster/bootstrap/:
-    - vmrogue-system API egress
+    - veyron-system API egress
     - virt-launcher clusterwide egress (guest NAT / internet)
 
 STEP D–F — Client install and test

@@ -24,12 +24,12 @@ Wait until the DataVolume reaches `Succeeded`, then start the VM:
 virtctl start win11-vm -n kubevirt-vms
 ```
 
-## Patch `vmrogue generate` output
+## Patch `veyron generate` output
 
-Windows templates omit `cloud_init`, so `vmrogue generate … --kubevirt` has **no** `cloudinitdisk` volume. Use:
+Windows templates omit `cloud_init`, so `veyron generate … --kubevirt` has **no** `cloudinitdisk` volume. Use:
 
 ```bash
-vmrogue generate win11-vm --template windows-11 --kubevirt --memory 8Gi -o vm.yaml
+veyron generate win11-vm --template windows-11 --kubevirt --memory 8Gi -o vm.yaml
 pip install pyyaml
 scripts/patch_kubevirt_configdrive.py vm.yaml win11-vm win11-golden-dv \
   --userdata-file ./first-boot.ps1

@@ -237,9 +237,9 @@ fn map_role_claim(value: &serde_json::Value) -> String {
 #[cfg(feature = "web")]
 fn normalize_role(s: &str) -> String {
     let lower = s.to_lowercase();
-    if lower.contains("admin") || lower == "vmrogue-admin" {
+    if lower.contains("admin") || lower == "veyron-admin" {
         "admin".to_string()
-    } else if lower.contains("write") || lower == "vmrogue-write" {
+    } else if lower.contains("write") || lower == "veyron-write" {
         "write".to_string()
     } else {
         "readonly".to_string()

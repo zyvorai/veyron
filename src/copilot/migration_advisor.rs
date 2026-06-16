@@ -9,7 +9,7 @@ use crate::kube::types::VirtualMachineInstanceMigration;
 /// Live and recent KubeVirt live migrations.
 pub async fn migration_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Migration Advisor",
+        "Veyron Migration Advisor",
         "migration_advisor",
         "Live migration status",
     );

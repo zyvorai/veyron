@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::kube::KubeClient;
 use crate::kube::vm_rdp;
-use crate::kube::windows_rdp::vmrogue_rdp_service_name;
-use crate::operator_crds::VMRogueVM;
+use crate::kube::windows_rdp::veyron_rdp_service_name;
+use crate::operator_crds::VeyronVM;
 
 use super::event::SecurityEvent;
 
@@ -126,7 +126,7 @@ pub async fn evaluate_detections(client: &KubeClient, scope: &str) -> Vec<SocDet
                     "RDP exposed via NodePort",
                     &format!(
                         "KubeVirt RDP NodePort Service `{}` exposes desktop remotely",
-                        vmrogue_rdp_service_name(name)
+                        veyron_rdp_service_name(name)
                     ),
                     &format!("{ns}/{name}"),
                     ns,
@@ -156,15 +156,15 @@ pub async fn evaluate_detections(client: &KubeClient, scope: &str) -> Vec<SocDet
             }
         }
 
-        let vrvm_api: Api<VMRogueVM> = Api::namespaced(k8s.clone(), ns);
+        let vrvm_api: Api<VeyronVM> = Api::namespaced(k8s.clone(), ns);
         if let Ok(vrvm) = vrvm_api.get(name).await {
             if vrvm.status.as_ref().is_some_and(|s| s.drift_detected) {
                 out.push(
                     SocDetection::open(
-                        "vmrogue-drift",
+                        "veyron-drift",
                         "medium",
                         "Operator drift detected",
-                        &format!("VMRogueVM {ns}/{name} reports driftDetected=true"),
+                        &format!("VeyronVM {ns}/{name} reports driftDetected=true"),
                         &format!("{ns}/{name}"),
                         ns,
                     )
@@ -215,7 +215,7 @@ pub fn merge_detections(fresh: Vec<SocDetection>, stored: &[SocDetection]) -> Ve
 
 #[cfg(feature = "web")]
 pub fn detection_to_event(d: &SocDetection) -> SecurityEvent {
-    super::event::SecurityEvent::new("detection", &d.severity, "vmrogue", &d.message)
+    super::event::SecurityEvent::new("detection", &d.severity, "veyron", &d.message)
         .with_namespace(&d.namespace)
         .with_action(&d.rule_id)
         .with_outcome(&d.status)

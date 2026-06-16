@@ -6,7 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: nats
     app.kubernetes.io/component: event-bus
-    app.kubernetes.io/part-of: vmrogue
+    app.kubernetes.io/part-of: veyron
 spec:
   replicas: 1
   selector:
@@ -67,7 +67,7 @@ metadata:
   labels:
     app.kubernetes.io/name: nats
     app.kubernetes.io/component: event-bus
-    app.kubernetes.io/part-of: vmrogue
+    app.kubernetes.io/part-of: veyron
 spec:
   type: ClusterIP
   ports:

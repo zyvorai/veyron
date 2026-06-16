@@ -6,7 +6,7 @@ use crate::kube::KubeClient;
 /// Active warning events as an alert narrative.
 pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Alert Advisor",
+        "Veyron Alert Advisor",
         "alert_advisor",
         "Active warnings in workspace",
     );
@@ -61,7 +61,7 @@ pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
 
     if warnings.len() > 5 {
         r.recommendations
-            .push("Group events by reason and open VMRogue Doctor on affected VMs.".into());
+            .push("Group events by reason and open Veyron Doctor on affected VMs.".into());
     }
     if !prom {
         r.recommendations.push(

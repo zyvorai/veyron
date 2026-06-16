@@ -1,6 +1,6 @@
-# Package VMRogue as a Linux binary (remote build)
+# Package Veyron as a Linux binary (remote build)
 
-Use this flow when you want to **ship a client deliverable** (tarball with `vmrogue` + optional `virtctl`) without giving them Kubernetes deploy scripts or container manifests.
+Use this flow when you want to **ship a client deliverable** (tarball with `veyron` + optional `virtctl`) without giving them Kubernetes deploy scripts or container manifests.
 
 **Policy:** customer tarballs are **binaries/artifacts only** — no git clone on the install host. See **`docs/CLIENT_BUNDLE_POLICY.md`** for all products (Rust/Go static vs Python `venv` bundles for hyper2kvm/forge).
 
@@ -11,8 +11,8 @@ The build runs on a **Linux amd64 machine** you control (build server, k3s node,
 After `./scripts/package-binary-remote.sh` completes, the **tar.gz** contains everything a customer needs:
 
 ```
-vmrogue-0.2.0-linux-amd64/
-  vmrogue                  # binary
+veyron-0.2.0-linux-amd64/
+  veyron                  # binary
   virtctl                  # optional
   install.sh               # client on this machine
   install-cluster.sh       # Cilium + KubeVirt + CDI (cluster admin)
@@ -22,11 +22,11 @@ vmrogue-0.2.0-linux-amd64/
   CLUSTER_SETUP.txt        # flags and order of operations
   PREREQUISITES.txt        # checklist
   cluster/                 # prereq installer + bootstrap YAML
-  vmrogue.env.example
+  veyron.env.example
   README.txt / QUICKSTART.txt
 ```
 
-Checksum file: `vmrogue-0.2.0-linux-amd64.tar.gz.sha256`
+Checksum file: `veyron-0.2.0-linux-amd64.tar.gz.sha256`
 
 With `--fetch`, the `.tar.gz` and checksum are also copied to **`dist/`** in your local repo.
 
@@ -37,7 +37,7 @@ With `--fetch`, the `.tar.gz` and checksum are also copied to **`dist/`** in you
 ```bash
 export KUBECONFIG=/path/to/kubeconfig
 ./install-cluster.sh              # VEYRON_SKIP_CDI=1 etc. — see CLUSTER_SETUP.txt
-# Deploy VMRogue in-cluster (Helm/k8s from source repo)
+# Deploy Veyron in-cluster (Helm/k8s from source repo)
 ./apply-cluster-network.sh        # if Cilium default-deny egress
 ./test-cluster.sh
 ```
@@ -45,9 +45,9 @@ export KUBECONFIG=/path/to/kubeconfig
 **Client on this machine:**
 
 ```bash
-tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
+tar xzf veyron-*-linux-amd64.tar.gz && cd veyron-*-linux-amd64
 ./install.sh
-nano vmrogue.env   # KUBECONFIG + API key
+nano veyron.env   # KUBECONFIG + API key
 ./test-package.sh
 ```
 
@@ -56,7 +56,7 @@ nano vmrogue.env   # KUBECONFIG + API key
 ```bash
 ./uninstall.sh --yes                  # stop + remove config
 ./uninstall.sh --yes --remove-dir     # also delete the extracted folder
-./uninstall.sh --yes --keep-config    # stop only, keep vmrogue.env
+./uninstall.sh --yes --keep-config    # stop only, keep veyron.env
 ```
 
 ## Prerequisites
@@ -77,11 +77,11 @@ Kubernetes on the build host is **not** required for packaging (only for running
 ### On your laptop
 
 - `rsync`, `ssh`, `scp`
-- VMRogue source checkout
+- Veyron source checkout
 
 ## Build and download
 
-From the VMRogue repo root:
+From the Veyron repo root:
 
 ```bash
 # Full build on remote + copy tarball to ./dist/
@@ -100,7 +100,7 @@ First run typically takes **10–15 minutes** (Rust compile inside the container
 | Flag | Effect |
 |------|--------|
 | `--fetch` | `scp` the tarball and `.sha256` into `./dist/` |
-| `--reuse-image` | Skip `podman build` if `vmrogue-package:<version>` already exists |
+| `--reuse-image` | Skip `podman build` if `veyron-package:<version>` already exists |
 | `--no-virtctl` | Smaller tarball without `virtctl` |
 | `--skip-deps` | Do not auto-install podman/docker on the build host |
 
@@ -109,21 +109,21 @@ First run typically takes **10–15 minutes** (Rust compile inside the container
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `DEPLOY_HOST` / `DEPLOY_USER` | — / `sus` | When host/user omitted |
-| `VMROGUE_PACKAGE_DIR` | `~/vmrogue-dist` | Remote output directory |
+| `VMROGUE_PACKAGE_DIR` | `~/veyron-dist` | Remote output directory |
 | `VMROGUE_PACKAGE_VERSION` | from `Cargo.toml` | Archive name version |
 | `VEYRON_REMOTE_SKIP_SSH_CHECK=1` | off | Skip SSH preflight |
 
 ### Manual download
 
 ```bash
-scp sus@212.8.252.194:~/vmrogue-dist/veyron-0.2.0-linux-amd64.tar.gz .
-scp sus@212.8.252.194:~/vmrogue-dist/veyron-0.2.0-linux-amd64.tar.gz.sha256 .
-sha256sum -c vmrogue-0.2.0-linux-amd64.tar.gz.sha256
+scp sus@212.8.252.194:~/veyron-dist/veyron-0.2.0-linux-amd64.tar.gz .
+scp sus@212.8.252.194:~/veyron-dist/veyron-0.2.0-linux-amd64.tar.gz.sha256 .
+sha256sum -c veyron-0.2.0-linux-amd64.tar.gz.sha256
 ```
 
 ## Give the package to a client
 
-1. Send **`vmrogue-<version>-linux-amd64.tar.gz`** and the **`.sha256`** file (or verify before sending).
+1. Send **`veyron-<version>-linux-amd64.tar.gz`** and the **`.sha256`** file (or verify before sending).
 2. Include a **kubeconfig** (or instructions to use their own) with rights to manage KubeVirt VMs.
 3. Point them to the **Client install** section below.
 
@@ -148,15 +148,15 @@ Every client bundle includes:
 On a **Linux x86_64** machine that can reach the Kubernetes API:
 
 ```bash
-tar xzf vmrogue-0.2.0-linux-amd64.tar.gz
-cd vmrogue-0.2.0-linux-amd64
-sha256sum -c ../vmrogue-0.2.0-linux-amd64.tar.gz.sha256
+tar xzf veyron-0.2.0-linux-amd64.tar.gz
+cd veyron-0.2.0-linux-amd64
+sha256sum -c ../veyron-0.2.0-linux-amd64.tar.gz.sha256
 ./install-client-deps.sh          # optional
-cp vmrogue.env.example vmrogue.env
-# Edit vmrogue.env: KUBECONFIG, VEYRON_API_KEY
+cp veyron.env.example veyron.env
+# Edit veyron.env: KUBECONFIG, VEYRON_API_KEY
 
-set -a && source vmrogue.env && set +a
-./vmrogue api-serve --host 0.0.0.0 --port 5151
+set -a && source veyron.env && set +a
+./veyron api-serve --host 0.0.0.0 --port 5151
 ./test-package.sh
 ```
 
@@ -166,14 +166,14 @@ Open **`http://<server-ip>:5151/dashboard`**, enter the API key.
 
 ```bash
 export KUBECONFIG=/path/to/kubeconfig
-./vmrogue list --namespace all
-./vmrogue doctor
+./veyron list --namespace all
+./veyron doctor
 ```
 
 ### HTTPS
 
 ```bash
-./vmrogue api-serve --host 0.0.0.0 --port 5151 \
+./veyron api-serve --host 0.0.0.0 --port 5151 \
   --tls --tls-cert /etc/veyron/tls.crt --tls-key /etc/veyron/tls.key
 ```
 
@@ -187,8 +187,8 @@ After=network.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/veyron/env
-WorkingDirectory=/opt/vmrogue
-ExecStart=/opt/veyron/vmrogue api-serve --host 0.0.0.0 --port 5151
+WorkingDirectory=/opt/veyron
+ExecStart=/opt/veyron/veyron api-serve --host 0.0.0.0 --port 5151
 Restart=on-failure
 
 [Install]

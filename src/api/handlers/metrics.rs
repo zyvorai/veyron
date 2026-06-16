@@ -57,7 +57,7 @@ pub struct MetricsTimelinePoint {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricsTimelineResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     pub namespace: String,
     pub vm_name: String,
     pub metric: String,
@@ -264,7 +264,7 @@ async fn get_metrics_timeline(
     }
 
     Json(MetricsTimelineResponse {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         namespace: scope,
         vm_name,
         metric,

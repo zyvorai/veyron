@@ -130,7 +130,7 @@ async fn list_policies(
         })
         .collect();
 
-    // KubeVirt VM vertical scale policies stored as ConfigMaps (vmrogue.io/type=vm-autoscaler).
+    // KubeVirt VM vertical scale policies stored as ConfigMaps (veyron.io/type=vm-autoscaler).
     use k8s_openapi::api::core::v1::ConfigMap;
     let ns_for_cm = query
         .namespace
@@ -142,7 +142,7 @@ async fn list_policies(
         kube::api::Api::namespaced(client, &ns_for_cm)
     };
     if let Ok(cms) = cm_api
-        .list(&kube::api::ListParams::default().labels("vmrogue.io/type=vm-autoscaler"))
+        .list(&kube::api::ListParams::default().labels("veyron.io/type=vm-autoscaler"))
         .await
     {
         for cm in cms.items {
@@ -234,7 +234,7 @@ async fn create_policy(
             name: Some(req.name.clone()),
             namespace: Some(namespace.clone()),
             labels: Some(
-                [("vmrogue.io/managed".to_string(), "true".to_string())]
+                [("veyron.io/managed".to_string(), "true".to_string())]
                     .into_iter()
                     .collect(),
             ),

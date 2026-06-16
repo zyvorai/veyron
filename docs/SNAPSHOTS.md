@@ -2,7 +2,7 @@
 
 **See also:** [Documentation index](README.md), [DISK_MANAGEMENT.md](DISK_MANAGEMENT.md) for storage workflows.
 
-VMRogue's VM Snapshots & Backup System provides production-grade snapshot management for disaster recovery and VM lifecycle management.
+Veyron's VM Snapshots & Backup System provides production-grade snapshot management for disaster recovery and VM lifecycle management.
 
 ---
 
@@ -23,13 +23,13 @@ VMRogue's VM Snapshots & Backup System provides production-grade snapshot manage
 
 ```bash
 # Create snapshot with auto-generated name
-vmrogue snapshot-create my-vm
+veyron snapshot-create my-vm
 
 # Create snapshot with custom name
-vmrogue snapshot-create my-vm --name pre-upgrade-backup
+veyron snapshot-create my-vm --name pre-upgrade-backup
 
 # Create snapshot with description
-vmrogue snapshot-create my-vm \
+veyron snapshot-create my-vm \
   --name before-update \
   --description "Before OS upgrade to Ubuntu 24.04"
 ```
@@ -38,57 +38,57 @@ vmrogue snapshot-create my-vm \
 
 ```bash
 # List all snapshots in namespace
-vmrogue snapshot-list
+veyron snapshot-list
 
 # List snapshots for specific VM
-vmrogue snapshot-list my-vm
+veyron snapshot-list my-vm
 
 # List in different formats
-vmrogue snapshot-list --output yaml
-vmrogue snapshot-list --output json
+veyron snapshot-list --output yaml
+veyron snapshot-list --output json
 ```
 
 ### 🔍 Get Snapshot Details
 
 ```bash
 # Get snapshot details (YAML format)
-vmrogue snapshot-get my-snapshot
+veyron snapshot-get my-snapshot
 
 # Get details in JSON format
-vmrogue snapshot-get my-snapshot --output json
+veyron snapshot-get my-snapshot --output json
 ```
 
 ### 🔄 Restore from Snapshot
 
 ```bash
 # Restore to new VM
-vmrogue snapshot-restore my-snapshot --target restored-vm
+veyron snapshot-restore my-snapshot --target restored-vm
 
 # Restore and start immediately
-vmrogue snapshot-restore my-snapshot --target restored-vm --start
+veyron snapshot-restore my-snapshot --target restored-vm --start
 
 # Restore in-place (overwrite existing VM)
-vmrogue snapshot-restore my-snapshot --in-place
+veyron snapshot-restore my-snapshot --in-place
 
 # Restore in-place with custom target
-vmrogue snapshot-restore my-snapshot --target my-vm --in-place
+veyron snapshot-restore my-snapshot --target my-vm --in-place
 ```
 
 ### 🗑️ Delete Snapshot
 
 ```bash
 # Delete snapshot (with confirmation)
-vmrogue snapshot-delete old-snapshot
+veyron snapshot-delete old-snapshot
 
 # Delete snapshot (skip confirmation)
-vmrogue snapshot-delete old-snapshot --yes
+veyron snapshot-delete old-snapshot --yes
 ```
 
 ---
 
 ## 📊 Command Reference
 
-### `vmrogue snapshot-create`
+### `veyron snapshot-create`
 
 Create a VM snapshot.
 
@@ -99,11 +99,11 @@ Create a VM snapshot.
 
 **Examples:**
 ```bash
-vmrogue snapshot-create prod-db --name daily-backup
-vmrogue snapshot-create web-server --description "Before deployment"
+veyron snapshot-create prod-db --name daily-backup
+veyron snapshot-create web-server --description "Before deployment"
 ```
 
-### `vmrogue snapshot-list`
+### `veyron snapshot-list`
 
 List snapshots.
 
@@ -114,13 +114,13 @@ List snapshots.
 
 **Examples:**
 ```bash
-vmrogue snapshot-list                    # All snapshots
-vmrogue snapshot-list prod-db            # Snapshots for prod-db
-vmrogue snapshot-list -A                 # All namespaces
-vmrogue snapshot-list --output json      # JSON format
+veyron snapshot-list                    # All snapshots
+veyron snapshot-list prod-db            # Snapshots for prod-db
+veyron snapshot-list -A                 # All namespaces
+veyron snapshot-list --output json      # JSON format
 ```
 
-### `vmrogue snapshot-get`
+### `veyron snapshot-get`
 
 Show detailed snapshot information.
 
@@ -130,11 +130,11 @@ Show detailed snapshot information.
 
 **Examples:**
 ```bash
-vmrogue snapshot-get my-snapshot
-vmrogue snapshot-get my-snapshot --output json
+veyron snapshot-get my-snapshot
+veyron snapshot-get my-snapshot --output json
 ```
 
-### `vmrogue snapshot-delete`
+### `veyron snapshot-delete`
 
 Delete a snapshot.
 
@@ -144,11 +144,11 @@ Delete a snapshot.
 
 **Examples:**
 ```bash
-vmrogue snapshot-delete old-snapshot
-vmrogue snapshot-delete old-snapshot --yes
+veyron snapshot-delete old-snapshot
+veyron snapshot-delete old-snapshot --yes
 ```
 
-### `vmrogue snapshot-restore`
+### `veyron snapshot-restore`
 
 Restore VM from snapshot.
 
@@ -160,9 +160,9 @@ Restore VM from snapshot.
 
 **Examples:**
 ```bash
-vmrogue snapshot-restore backup-20260205 --target restored-vm
-vmrogue snapshot-restore backup-20260205 --in-place
-vmrogue snapshot-restore backup-20260205 --target new-vm --start
+veyron snapshot-restore backup-20260205 --target restored-vm
+veyron snapshot-restore backup-20260205 --in-place
+veyron snapshot-restore backup-20260205 --target new-vm --start
 ```
 
 ---
@@ -173,22 +173,22 @@ vmrogue snapshot-restore backup-20260205 --target new-vm --start
 
 ```bash
 # Create daily snapshot
-vmrogue snapshot-create prod-db \
+veyron snapshot-create prod-db \
   --name "prod-db-daily-$(date +%Y%m%d)" \
   --description "Daily backup"
 
 # List recent snapshots
-vmrogue snapshot-list prod-db
+veyron snapshot-list prod-db
 
 # Verify snapshot is ready
-vmrogue snapshot-get prod-db-daily-20260205
+veyron snapshot-get prod-db-daily-20260205
 ```
 
 ### Example 2: Pre-Deployment Backup
 
 ```bash
 # Create snapshot before deployment
-vmrogue snapshot-create web-server \
+veyron snapshot-create web-server \
   --name pre-deploy-v2.0 \
   --description "Before v2.0 deployment"
 
@@ -196,7 +196,7 @@ vmrogue snapshot-create web-server \
 # ... deploy your application ...
 
 # If deployment fails, restore
-vmrogue snapshot-restore pre-deploy-v2.0 \
+veyron snapshot-restore pre-deploy-v2.0 \
   --target web-server \
   --in-place \
   --start
@@ -206,33 +206,33 @@ vmrogue snapshot-restore pre-deploy-v2.0 \
 
 ```bash
 # Create snapshot of production
-vmrogue snapshot-create prod-db --name prod-snapshot
+veyron snapshot-create prod-db --name prod-snapshot
 
 # Restore to new VM for testing
-vmrogue snapshot-restore prod-snapshot \
+veyron snapshot-restore prod-snapshot \
   --target test-db \
   --start
 
 # Verify test VM
-vmrogue status test-db
+veyron status test-db
 ```
 
 ### Example 4: Disaster Recovery
 
 ```bash
 # List available snapshots
-vmrogue snapshot-list prod-db
+veyron snapshot-list prod-db
 
 # Check snapshot details
-vmrogue snapshot-get prod-db-daily-20260204
+veyron snapshot-get prod-db-daily-20260204
 
 # Restore to recover
-vmrogue snapshot-restore prod-db-daily-20260204 \
+veyron snapshot-restore prod-db-daily-20260204 \
   --target prod-db-recovered \
   --start
 
 # Verify recovered VM
-vmrogue health prod-db-recovered
+veyron health prod-db-recovered
 ```
 
 ---
@@ -278,7 +278,7 @@ Creating snapshot for VM: prod-db
   Status:    InProgress
 
 ℹ Check snapshot status with:
-  vmrogue snapshot-get prod-db-snapshot-20260205-140530
+  veyron snapshot-get prod-db-snapshot-20260205-140530
 ```
 
 ### Snapshot Restore
@@ -364,41 +364,41 @@ async fn main() -> anyhow::Result<()> {
 
 ```bash
 # Create snapshot
-vmrogue snapshot-create my-vm --name pre-update
+veyron snapshot-create my-vm --name pre-update
 
 # Check VM health before restore
-vmrogue health my-vm
+veyron health my-vm
 
 # Restore if needed
-vmrogue snapshot-restore pre-update --in-place
+veyron snapshot-restore pre-update --in-place
 ```
 
 ### With Profiles
 
 ```bash
 # Create VM with profile
-vmrogue create my-vm --template ubuntu-22.04 --profile database
+veyron create my-vm --template ubuntu-22.04 --profile database
 
 # Create snapshot
-vmrogue snapshot-create my-vm --name initial-state
+veyron snapshot-create my-vm --name initial-state
 
 # Restore maintains the same resource configuration
-vmrogue snapshot-restore initial-state --target my-vm-copy
+veyron snapshot-restore initial-state --target my-vm-copy
 ```
 
 ### With Blueprints
 
 ```bash
 # Deploy blueprint
-vmrogue deploy lamp --prefix prod
+veyron deploy lamp --prefix prod
 
 # Snapshot all VMs in the stack
-vmrogue snapshot-create prod-mysql-db --name lamp-backup-db
-vmrogue snapshot-create prod-web-server --name lamp-backup-web
+veyron snapshot-create prod-mysql-db --name lamp-backup-db
+veyron snapshot-create prod-web-server --name lamp-backup-web
 
 # Restore entire stack if needed
-vmrogue snapshot-restore lamp-backup-db --in-place
-vmrogue snapshot-restore lamp-backup-web --in-place
+veyron snapshot-restore lamp-backup-db --in-place
+veyron snapshot-restore lamp-backup-web --in-place
 ```
 
 ---
@@ -527,7 +527,7 @@ Content-Type: application/json
 
 ## 🎉 Summary
 
-VMRogue's VM Snapshots & Backup System provides:
+Veyron's VM Snapshots & Backup System provides:
 
 ✅ **5 CLI commands** for comprehensive snapshot management
 ✅ **REST API** with real VirtualMachineSnapshot CRD integration
@@ -535,6 +535,6 @@ VMRogue's VM Snapshots & Backup System provides:
 ✅ **Beautiful CLI** with themed colored output
 ✅ **Flexible restore** options (new VM or in-place)
 ✅ **Automatic** snapshot naming and metadata
-✅ **Integration** with existing VMRogue features
+✅ **Integration** with existing Veyron features
 
 **Critical for production environments - No other KubeVirt CLI offers this level of snapshot management!**

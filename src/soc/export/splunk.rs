@@ -22,7 +22,7 @@ pub fn config() -> Option<SplunkConfig> {
         .filter(|s| !s.trim().is_empty())?;
     let index = std::env::var("VEYRON_SPLUNK_INDEX").ok().filter(|s| !s.is_empty());
     let sourcetype = std::env::var("VEYRON_SPLUNK_SOURCETYPE")
-        .unwrap_or_else(|_| "vmrogue:security".into());
+        .unwrap_or_else(|_| "veyron:security".into());
     Some(SplunkConfig {
         hec_url: hec_url.trim_end_matches('/').to_string(),
         token,

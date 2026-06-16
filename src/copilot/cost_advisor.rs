@@ -26,7 +26,7 @@ struct VmCostRow {
 /// Fleet cost posture: OpenCost allocation when configured, else reference rates.
 pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Cost Advisor",
+        "Veyron Cost Advisor",
         "cost_advisor",
         "Cost analysis in workspace",
     );
@@ -97,7 +97,7 @@ pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
         format!("Fleet monthly spend is about ${total:.2} from OpenCost (30d window).")
     } else {
         format!(
-            "Fleet monthly estimate is ${total:.2} using VMRogue reference rates (not cloud billing)."
+            "Fleet monthly estimate is ${total:.2} using Veyron reference rates (not cloud billing)."
         )
     };
 
@@ -119,7 +119,7 @@ pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
 /// Per-VM cost breakdown.
 pub async fn cost_advisor_vm(client: &KubeClient, namespace: &str, name: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Cost Advisor",
+        "Veyron Cost Advisor",
         "cost_advisor_vm",
         format!("Cost view: {namespace}/{name}"),
     );

@@ -11,7 +11,7 @@ PARENT="$(cd "${CANONICAL_ROOT}/.." && pwd)"
 
 PROJECTS=(
   Aether cockpit forge hyper2kvm- hypercluster hypersdk- hypersdk-web
-  IronWolf machina mkosi-kernel nightforge ragnarok v9s VMRogue vmspawn
+  IronWolf machina mkosi-kernel nightforge ragnarok v9s Veyron vmspawn
 )
 # Excluded (keep OSS licenses + their own legal docs):
 # guestkit (LGPL), tt/cloud-netconfig, tt/hyper2kvm, tt/hypersdk,

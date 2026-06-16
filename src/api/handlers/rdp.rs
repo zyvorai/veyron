@@ -394,7 +394,7 @@ async fn list_rdp_capable_vms(
             .metadata
             .labels
             .as_ref()
-            .and_then(|l| l.get("vmrogue.io/template"))
+            .and_then(|l| l.get("veyron.io/template"))
             .or_else(|| {
                 vm.metadata
                     .labels

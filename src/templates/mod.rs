@@ -682,7 +682,7 @@ fn windows_cloud_init_userdata() -> &'static str {
 # Veyron Windows template — enable RDP; inject passwords via GitOps/Secrets in production.
 Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
 Enable-NetFirewallRule -DisplayGroup 'Remote Desktop'
-Write-Host 'Cloudbase-Init config-drive applied by VMRogue template.'
+Write-Host 'Cloudbase-Init config-drive applied by Veyron template.'
 "#
 }
 
@@ -1084,7 +1084,7 @@ runcmd:
 }
 
 fn default_cloud_init() -> String {
-    linux_guestkit_cloud_init("vmrogue", &generate_random_password(), true)
+    linux_guestkit_cloud_init("veyron", &generate_random_password(), true)
 }
 
 fn default_ubuntu_cloud_init() -> String {
@@ -1189,6 +1189,6 @@ mod tests {
             .map(|c| c.user_data.as_str())
             .unwrap_or("");
         assert!(cloud_init.contains("guestkit-agent"));
-        assert!(cloud_init.contains("vmrogue-install-guestkit.sh"));
+        assert!(cloud_init.contains("veyron-install-guestkit.sh"));
     }
 }

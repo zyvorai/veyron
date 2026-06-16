@@ -5,7 +5,7 @@ fullnameOverride: "veyron-api"
 
 image:
   repository: ghcr.io/ssahani/veyron
-  tag: ""  # defaults to Chart.appVersion; same image ships veyron + vmrogue binaries
+  tag: ""  # defaults to Chart.appVersion; same image ships veyron + veyron binaries
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

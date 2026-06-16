@@ -48,7 +48,7 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
-/// List configured webhooks from ConfigMaps labeled `vmrogue.io/type=webhook`.
+/// List configured webhooks from ConfigMaps labeled `veyron.io/type=webhook`.
 #[cfg(feature = "web")]
 async fn list_webhooks(
     State(state): State<SharedState>,
@@ -60,7 +60,7 @@ async fn list_webhooks(
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let api: kube::api::Api<ConfigMap> =
         kube::api::Api::namespaced(s.client().client(), &namespace);
-    let params = kube::api::ListParams::default().labels("vmrogue.io/type=webhook");
+    let params = kube::api::ListParams::default().labels("veyron.io/type=webhook");
 
     let cms = match api.list(&params).await {
         Ok(list) => list,
@@ -140,7 +140,7 @@ async fn create_webhook(
             name: Some(cm_name),
             namespace: Some(namespace),
             labels: Some(
-                [("vmrogue.io/type".to_string(), "webhook".to_string())]
+                [("veyron.io/type".to_string(), "webhook".to_string())]
                     .into_iter()
                     .collect(),
             ),

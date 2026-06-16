@@ -21,7 +21,7 @@ pub fn config() -> Option<ElasticConfig> {
         .ok()
         .filter(|s| !s.trim().is_empty())?;
     let index = std::env::var("VEYRON_ELASTIC_INDEX")
-        .unwrap_or_else(|_| "logs-vmrogue.security-default".into());
+        .unwrap_or_else(|_| "logs-veyron.security-default".into());
     let pipeline = std::env::var("VEYRON_ELASTIC_PIPELINE")
         .ok()
         .filter(|s| !s.trim().is_empty());

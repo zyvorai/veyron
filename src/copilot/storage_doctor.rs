@@ -14,7 +14,7 @@ use crate::snapshots::SnapshotManager;
 /// Fleet storage posture: PVC pressure, snapshot sprawl, and unbound volumes.
 pub async fn storage_doctor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Storage Doctor",
+        "Veyron Storage Doctor",
         "storage_doctor",
         "Storage health in workspace",
     );

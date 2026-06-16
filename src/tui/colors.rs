@@ -264,7 +264,7 @@ pub mod gradient {
         ])
     }
 
-    /// Brand gradient: the VMRogue coral gradient for headers and titles
+    /// Brand gradient: the Veyron coral gradient for headers and titles
     pub fn brand() -> Gradient {
         Gradient::new(vec![
             (0.0, 180, 85, 60),   // Dark terracotta
@@ -308,7 +308,7 @@ pub mod gradient {
         #[test]
         fn test_gradient_text() {
             let g = brand();
-            let spans = g.text("VMRogue");
+            let spans = g.text("Veyron");
             assert_eq!(spans.len(), 7);
         }
 

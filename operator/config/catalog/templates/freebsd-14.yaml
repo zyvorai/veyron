@@ -1,11 +1,11 @@
-apiVersion: vmrogue.io/v1alpha1
+apiVersion: veyron.io/v1alpha1
 kind: VMTemplate
 metadata:
   labels:
-    vmrogue.io/managed-by: vmrogue-catalog-export
+    veyron.io/managed-by: veyron-catalog-export
   name: freebsd-14
 spec:
-  description: 'VMRogue built-in template: freebsd-14'
+  description: 'Veyron built-in template: freebsd-14'
   tags:
   - linux
   family: linux

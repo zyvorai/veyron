@@ -56,7 +56,7 @@ affinity: {}
 networkPolicy:
   enabled: true
 
-# RBAC for KubeVirt and VMRogue CRD access
+# RBAC for KubeVirt and Veyron CRD access
 rbac:
   create: true
 

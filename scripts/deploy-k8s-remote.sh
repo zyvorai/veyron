@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# deploy-k8s-remote.sh — Deploy VMRogue to remote K8s cluster
+# deploy-k8s-remote.sh — Deploy Veyron to remote K8s cluster
 # ============================================================================
 # Rsync source, build binary, build container image, deploy to K8s.
 # No systemd — pure Kubernetes deployment.
@@ -61,11 +61,11 @@ fi
 
 HOST="${1:?Usage: $0 <host> [user]   (see --help)}"
 USER="${2:-root}"
-REMOTE_DIR="/home//veyron"
+REMOTE_DIR="/home/${USER}/veyron"
 API_KEY="${VEYRON_API_KEY:-Admin@321}"
-NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
+NODE_PORT="${VEYRON_NODE_PORT:-${VMROGUE_NODE_PORT:-30151}}"
 NS="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
-CDI_VERSION="${VMROGUE_CDI_VERSION:-v1.65.0}"
+CDI_VERSION="${VEYRON_CDI_VERSION:-${VMROGUE_CDI_VERSION:-v1.65.0}}"
 SKIP_CDI="${VEYRON_SKIP_CDI:-0}"
 RUN_STARTED_AT="$(date +%s)"
 
@@ -135,7 +135,7 @@ IMPORT_CMD="${VEYRON_CONTAINER_RUNTIME_IMPORT:-${IMPORT_DEFAULT}}"
 
 echo ""
 echo "  ${COLOR_BOLD}════════════════════════════════════════${COLOR_RESET}"
-echo "  ${COLOR_BOLD}  VMRogue → Kubernetes (remote API)${COLOR_RESET}"
+echo "  ${COLOR_BOLD}  Veyron → Kubernetes (remote API)${COLOR_RESET}"
 echo "  ${COLOR_BOLD}════════════════════════════════════════${COLOR_RESET}"
 echo ""
 echo "  ${COLOR_DIM}Target:${COLOR_RESET}     ${REMOTE}"
@@ -197,9 +197,17 @@ step "Step 5/7: Deploying to Kubernetes"
 deploy_ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
 
-    if [[ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ]]; then
-      echo 'Applying Cilium egress bootstrap for ${NS} (API → apiserver / in-cluster)...'
-      ${K} apply -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml
+    if [[ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null; then
+      for cilium_yaml in ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml; do
+        if [[ -f \"\${cilium_yaml}\" ]]; then
+          echo 'Applying Cilium egress bootstrap for ${NS} (veyron / nats workloads)...'
+          sed -e 's|__VEYRON_APP_NAMESPACE__|${NS}|g' \
+              -e 's|namespace: vmrogue-system|namespace: ${NS}|g' \
+              -e 's|namespace: veyron-system|namespace: ${NS}|g' \
+              \"\${cilium_yaml}\" | ${K} apply -f -
+          break
+        fi
+      done
     fi
     if [[ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumclusterwidenetworkpolicies.cilium.io &>/dev/null && [[ -f ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-kubevirt-virt-launcher-clusterwide-egress.yaml ]]; then
       echo 'Applying Cilium clusterwide egress for KubeVirt virt-launcher (VM guest internet)...'
@@ -209,12 +217,12 @@ deploy_ssh "${USER}@${HOST}" "
       ${K} get crd virtualmachines.kubevirt.io &>/dev/null || { echo 'KubeVirt CRD virtualmachines.kubevirt.io not found'; exit 1; }
     fi
 
-    for crd_yaml in ${REMOTE_DIR}/operator/config/crd/bases/vmrogue.io_vmtemplates.yaml ${REMOTE_DIR}/operator/config/crd/bases/vmrogue.io_vmprofiles.yaml; do
+    for crd_yaml in ${REMOTE_DIR}/operator/config/crd/bases/veyron.io_vmtemplates.yaml ${REMOTE_DIR}/operator/config/crd/bases/veyron.io_vmprofiles.yaml; do
       if [[ -f \"\${crd_yaml}\" ]]; then
         ${K} apply -f \"\${crd_yaml}\"
       fi
     done
-    if ${K} get crd vmtemplates.vmrogue.io &>/dev/null; then
+    if ${K} get crd vmtemplates.veyron.io &>/dev/null; then
       if [[ -d ${REMOTE_DIR}/operator/config/catalog/templates ]]; then
         echo 'Applying VMTemplate catalog manifests...'
         for f in ${REMOTE_DIR}/operator/config/catalog/templates/*.yaml; do
@@ -268,11 +276,11 @@ rules:
   - apiGroups: ['snapshot.kubevirt.io']
     resources: ['virtualmachinesnapshots', 'virtualmachinesnapshotcontents', 'virtualmachinerestores']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
-  - apiGroups: ['vmrogue.io']
-    resources: ['vmroguevms', 'vmrogueblueprints', 'vmroguepolicies', 'vmrogueinsights', 'vmrogueactions', 'vmtemplates', 'vmprofiles']
+  - apiGroups: ['veyron.io']
+    resources: ['veyronvms', 'veyronblueprints', 'veyronpolicies', 'veyroninsights', 'veyronactions', 'vmtemplates', 'vmprofiles']
     verbs: ['get', 'list', 'watch', 'create', 'update', 'patch', 'delete']
-  - apiGroups: ['vmrogue.io']
-    resources: ['vmroguevms/status', 'vmrogueblueprints/status', 'vmroguepolicies/status', 'vmrogueinsights/status', 'vmrogueactions/status', 'vmtemplates/status', 'vmprofiles/status']
+  - apiGroups: ['veyron.io']
+    resources: ['veyronvms/status', 'veyronblueprints/status', 'veyronpolicies/status', 'veyroninsights/status', 'veyronactions/status', 'vmtemplates/status', 'vmprofiles/status']
     verbs: ['get', 'update', 'patch']
   - apiGroups: ['']
     resources: ['namespaces', 'nodes', 'pods', 'pods/log', 'events', 'persistentvolumeclaims', 'configmaps', 'resourcequotas']
@@ -385,7 +393,7 @@ spec:
       labels:
         app: veyron-api
       annotations:
-        vmrogue.io/deployed-at: "${DEPLOY_STAMP}"
+        veyron.io/deployed-at: "${DEPLOY_STAMP}"
     spec:
       serviceAccountName: veyron
       initContainers:

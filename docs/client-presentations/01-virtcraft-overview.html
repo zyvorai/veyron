@@ -67,7 +67,7 @@
 
 <!-- PAGE 2: WHY VMROGUE -->
 <div class="page page-dark">
-  <h2 class="section-title">Why <span>VMRogue</span>?</h2>
+  <h2 class="section-title">Why <span>Veyron</span>?</h2>
   <p class="subtitle">The kubectl alternative purpose-built for KubeVirt VMs.</p>
 
   <div class="card-grid">
@@ -121,34 +121,34 @@
   <h3>VM Lifecycle</h3>
   <table>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td>vmrogue create</td><td>Create a VM from template, profile, or YAML config</td></tr>
-    <tr><td>vmrogue list</td><td>List all VMs with status, CPU, memory, IP, node, age</td></tr>
-    <tr><td>vmrogue start / stop / restart</td><td>Control VM power state via KubeVirt RunStrategy</td></tr>
-    <tr><td>vmrogue status</td><td>Detailed VM status with resources, volumes, conditions</td></tr>
-    <tr><td>vmrogue clone</td><td>Clone an existing VM with new name</td></tr>
-    <tr><td>vmrogue export</td><td>Export VM configuration to YAML/JSON</td></tr>
-    <tr><td>vmrogue delete</td><td>Delete a VM with confirmation</td></tr>
-    <tr><td>vmrogue generate</td><td>Generate VM manifest without creating it</td></tr>
-    <tr><td>vmrogue validate</td><td>Validate a VM configuration file before deployment</td></tr>
-    <tr><td>vmrogue diff</td><td>Compare two VM configurations side by side</td></tr>
+    <tr><td>veyron create</td><td>Create a VM from template, profile, or YAML config</td></tr>
+    <tr><td>veyron list</td><td>List all VMs with status, CPU, memory, IP, node, age</td></tr>
+    <tr><td>veyron start / stop / restart</td><td>Control VM power state via KubeVirt RunStrategy</td></tr>
+    <tr><td>veyron status</td><td>Detailed VM status with resources, volumes, conditions</td></tr>
+    <tr><td>veyron clone</td><td>Clone an existing VM with new name</td></tr>
+    <tr><td>veyron export</td><td>Export VM configuration to YAML/JSON</td></tr>
+    <tr><td>veyron delete</td><td>Delete a VM with confirmation</td></tr>
+    <tr><td>veyron generate</td><td>Generate VM manifest without creating it</td></tr>
+    <tr><td>veyron validate</td><td>Validate a VM configuration file before deployment</td></tr>
+    <tr><td>veyron diff</td><td>Compare two VM configurations side by side</td></tr>
   </table>
 
   <h3>Quick Start</h3>
   <pre>
 # Create an Ubuntu 24.04 VM with 4 CPUs and 8GB RAM
-$ vmrogue create --name web-01 --template ubuntu-24.04 \
+$ veyron create --name web-01 --template ubuntu-24.04 \
     --cpus 4 --memory 8Gi --disk 50Gi
 
 # List all VMs
-$ vmrogue list
+$ veyron list
 NAME          NAMESPACE   STATUS    RUNNING   CPU       MEMORY
 web-01        default     Running   Yes       4 cores   8Gi
 
 # Take a snapshot
-$ vmrogue snapshot create web-01 --name before-upgrade
+$ veyron snapshot create web-01 --name before-upgrade
 
 # Use the interactive TUI
-$ vmrogue tui</pre>
+$ veyron tui</pre>
 </div>
 
 <!-- PAGE 4: TEMPLATES & PROFILES -->
@@ -237,14 +237,14 @@ $ vmrogue tui</pre>
 
   <h3>Snapshot Management</h3>
   <pre>
-$ vmrogue snapshot create web-01 --name before-upgrade
-$ vmrogue snapshot list web-01
-$ vmrogue snapshot restore web-01 --name before-upgrade
-$ vmrogue snapshot delete web-01 --name before-upgrade</pre>
+$ veyron snapshot create web-01 --name before-upgrade
+$ veyron snapshot list web-01
+$ veyron snapshot restore web-01 --name before-upgrade
+$ veyron snapshot delete web-01 --name before-upgrade</pre>
 
   <h3>Health Checks &amp; Recommendations</h3>
   <pre>
-$ vmrogue health-check
+$ veyron health-check
   System Health Score: 87/100
   [OK]  CPU utilization normal (45%)
   [OK]  Memory utilization normal (62%)
@@ -253,10 +253,10 @@ $ vmrogue health-check
 
   <h3>REST API Server</h3>
   <pre>
-$ vmrogue api-serve --port 8080
+$ veyron api-serve --port 8080
 $ curl http://localhost:8080/api/v1/vms
-$ vmrogue api-routes    # List all endpoints
-$ vmrogue api-spec      # Generate OpenAPI spec</pre>
+$ veyron api-routes    # List all endpoints
+$ veyron api-spec      # Generate OpenAPI spec</pre>
 </div>
 
 <!-- PAGE 6: TUI + RBAC -->
@@ -290,11 +290,11 @@ $ vmrogue api-spec      # Generate OpenAPI spec</pre>
   <h3>Multi-Tenant RBAC</h3>
   <table>
     <tr><th>Command</th><th>Description</th></tr>
-    <tr><td>vmrogue tenants-create</td><td>Create isolated tenant with namespace and quotas</td></tr>
-    <tr><td>vmrogue users-create</td><td>Create user with role assignment</td></tr>
-    <tr><td>vmrogue roles-create</td><td>Define custom RBAC roles</td></tr>
-    <tr><td>vmrogue quotas-create</td><td>Set resource quotas per tenant</td></tr>
-    <tr><td>vmrogue groups-create</td><td>Organize users into groups</td></tr>
+    <tr><td>veyron tenants-create</td><td>Create isolated tenant with namespace and quotas</td></tr>
+    <tr><td>veyron users-create</td><td>Create user with role assignment</td></tr>
+    <tr><td>veyron roles-create</td><td>Define custom RBAC roles</td></tr>
+    <tr><td>veyron quotas-create</td><td>Set resource quotas per tenant</td></tr>
+    <tr><td>veyron groups-create</td><td>Organize users into groups</td></tr>
   </table>
 
   <h3>Additional Features</h3>
@@ -343,12 +343,12 @@ $ vmrogue api-spec      # Generate OpenAPI spec</pre>
   </div>
 
   <div class="cta-box">
-    <h3>VMRogue &mdash; KubeVirt management, done right</h3>
+    <h3>Veyron &mdash; KubeVirt management, done right</h3>
     <p>44 OS templates. 8 profiles. Multi-VM blueprints. Interactive TUI.<br>One binary. Zero dependencies. Instant productivity.</p>
   </div>
 
   <div class="footer">
-    <p>VMRogue &mdash; KubeVirt VM Management CLI<br>
+    <p>Veyron &mdash; KubeVirt VM Management CLI<br>
     Built with Rust &mdash; Proprietary Software<br>
     Founders: ZyvorAI Labs Private Limited &amp; Sibu</p>
   </div>

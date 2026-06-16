@@ -11,9 +11,9 @@ else
   source "$(dirname "$0")/package-uninstall-lib.sh"
 fi
 
-PRODUCT="VMRogue"
-BINARIES=(vmrogue)
+PRODUCT="Veyron"
+BINARIES=(veyron)
 PORTS=(5151)
-LOCAL_CONFIGS=(vmrogue.env)
+LOCAL_CONFIGS=(veyron.env)
 
 package_uninstall_main "${PRODUCT}" "${ROOT}" "$@"

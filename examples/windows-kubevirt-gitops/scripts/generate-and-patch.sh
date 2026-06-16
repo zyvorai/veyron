@@ -8,6 +8,6 @@ GOLDEN_DV="${3:-win11-golden-dv}"
 TEMPLATE="${4:-windows-11}"
 
 mkdir -p "$(dirname "$OUT")"
-vmrogue generate "${VM_NAME}" --template "${TEMPLATE}" --kubevirt --memory 8Gi -o "${OUT}"
+veyron generate "${VM_NAME}" --template "${TEMPLATE}" --kubevirt --memory 8Gi -o "${OUT}"
 python3 "$(dirname "$0")/patch_kubevirt_configdrive.py" "${OUT}" "${VM_NAME}" "${GOLDEN_DV}"
 echo "Wrote ${OUT}"

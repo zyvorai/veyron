@@ -28,7 +28,7 @@ func NewSnapshotResource() resource.Resource {
 }
 
 func (r *snapshotResource) Metadata(_ context.Context, _ resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = "vmrogue_snapshot"
+	resp.TypeName = "veyron_snapshot"
 }
 
 func (r *snapshotResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {

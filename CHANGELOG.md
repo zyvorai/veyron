@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Remote deploy speed** — `deploy-all-remote.sh` uses layer cache by default (removed `--no-cache`); parallel API + operator image builds; lighter rsync excludes; diagnostics opt-in via `VEYRON_DEPLOY_DIAGNOSTICS=1`; `VEYRON_DEPLOY_NO_CACHE=1` for clean rebuilds; Dockerfile BuildKit cargo cache mounts with `/out` binary staging.
 - **Pause/unpause API** — uses KubeVirt `virtualmachineinstances/pause` and `unpause` subresources instead of in-pod `virtctl` (`src/kube/kubevirt_subresources.rs`).
-- **RDP NodePort validation** — suggested ports and conflict checks scan all cluster Service NodePorts, not only VMRogue RDP services.
+- **RDP NodePort validation** — suggested ports and conflict checks scan all cluster Service NodePorts, not only Veyron RDP services.
 
 ### Documentation
 
@@ -30,11 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `docs/SOC.md`; updated `docs/FEATURE_MATRIX.md`, `docs/OPTIONAL_INTEGRATIONS.md`, `docs/README.md`, `CLAUDE.md`, and `deploy/k8s/optional-integrations.env.example.yaml` for SOC/SIEM env vars.
 - Refreshed `docs/README.md` as the canonical index (branch note: `main` vs `main-go`, monitoring chart, CONTRIBUTING/SECURITY links).
 - Cross-linked guides (TUI, snapshots, disk, network, Windows, feature matrix) and normalized deploy examples to `HOST USER` placeholders in README, QUICK_REFERENCE, and `CLAUDE.md`.
-- CONTRIBUTING clone path uses `VMRogue` directory name.
+- CONTRIBUTING clone path uses `Veyron` directory name.
 
 ### Added
 
-- **Helm chart `charts/veyron-monitoring`** — optional install of Prometheus, Grafana, and Alertmanager (kube-prometheus-stack dependency) plus VMRogue ServiceMonitors, PrometheusRules, and Grafana dashboard provisioning; `scripts/install-veyron-monitoring.sh` and `make helm-monitoring-validate`.
+- **Helm chart `charts/veyron-monitoring`** — optional install of Prometheus, Grafana, and Alertmanager (kube-prometheus-stack dependency) plus Veyron ServiceMonitors, PrometheusRules, and Grafana dashboard provisioning; `scripts/install-veyron-monitoring.sh` and `make helm-monitoring-validate`.
 - **veyron-operator Service** — ClusterIP `metrics` / `health` ports so Prometheus `ServiceMonitor` scrapes can reach the operator manager.
 
 #### All 49 API Handlers Now Return Real Data
@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Observability** - Monitoring stack detection and event counts
 - **Notifications** - Warning events as notifications
 - **Autoscaler** - HPA-based autoscaler policies
-- **Webhooks** - CRUD via ConfigMaps (vmrogue.io/type=webhook)
+- **Webhooks** - CRUD via ConfigMaps (veyron.io/type=webhook)
 - **Alerts** - Warning events as alerts with create/resolve
 - **Cilium** - DaemonSet detection and NetworkPolicy fallback
 - **GitOps** - Config discovery and sync status
@@ -130,10 +130,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### New Capabilities
 - **WebSocket metrics streaming** - Live metrics via `/api/v1/ws/metrics`
-- **Policy enforcement** - VMRoguePolicy CRDs enforce constraints on VM creation
+- **Policy enforcement** - VeyronPolicy CRDs enforce constraints on VM creation
 - **Batch VM operations** - `POST /api/v1/vms/batch` for bulk VM lifecycle actions
 - **Cost dashboard enhancements** - Namespace breakdown, cost forecast
-- **GitOps export** - `vmrogue gitops-export` command to export VM manifests
+- **GitOps export** - `veyron gitops-export` command to export VM manifests
 - **Cost budget alerts** - ConfigMap-based budgets via `POST/GET /costs/budgets`
 - **Multi-cluster management** - Kubeconfig context discovery for managing multiple clusters
 - **DR cross-cluster replication** - `export_dr_manifests` for disaster recovery across clusters
@@ -188,7 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Infrastructure
 - **All 49 API handlers return real data** - Zero stub handlers remaining; all previously-501 endpoints now wired to real Kubernetes
-- **Structured API error types** - `VMRogueError` expanded with 6 new variants plus `IntoResponse` implementation for consistent error responses
+- **Structured API error types** - `VeyronError` expanded with 6 new variants plus `IntoResponse` implementation for consistent error responses
 - **CI integration tests** - Added Kind + KubeVirt integration test suite
 - **All experimental modules promoted** - The `experimental` Cargo feature flag has been removed; all modules included in default builds
 - **Consolidated K8s quantity parsers** - Unified quantity parsing utilities in `utils` module

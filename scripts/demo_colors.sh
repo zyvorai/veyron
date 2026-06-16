@@ -1,7 +1,7 @@
 #!/bin/bash
-# Demo script to show VMRogue themed CLI output
+# Demo script to show Veyron themed CLI output
 
-echo "🎨 VMRogue CLI Theme Demo"
+echo "🎨 Veyron CLI Theme Demo"
 echo ""
 echo "This demo shows the themed CLI output for various commands."
 echo "Note: Some commands require a Kubernetes cluster with VMs."
@@ -34,10 +34,10 @@ echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "To see more themed output, try:"
-echo "  • vmrogue list             (requires cluster)"
-echo "  • vmrogue get <vm-name>    (requires cluster)"
-echo "  • vmrogue resources        (requires cluster)"
-echo "  • vmrogue wizard           (interactive)"
+echo "  • veyron list             (requires cluster)"
+echo "  • veyron get <vm-name>    (requires cluster)"
+echo "  • veyron resources        (requires cluster)"
+echo "  • veyron wizard           (interactive)"
 echo ""
 echo "All success messages (✓) are shown in GREEN"
 echo "All error messages (✗) are shown in RED"

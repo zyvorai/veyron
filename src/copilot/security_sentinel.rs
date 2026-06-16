@@ -6,8 +6,8 @@ use kube::api::{Api, ListParams};
 use super::{CopilotAction, CopilotResponse};
 use crate::kube::KubeClient;
 use crate::kube::vm_rdp;
-use crate::kube::windows_rdp::vmrogue_rdp_service_name;
-use crate::operator_crds::VMRogueVM;
+use crate::kube::windows_rdp::veyron_rdp_service_name;
+use crate::operator_crds::VeyronVM;
 
 /// Per-VM security posture: exposure, policies, and operator drift.
 pub async fn security_sentinel(
@@ -16,7 +16,7 @@ pub async fn security_sentinel(
     name: &str,
 ) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Security Sentinel",
+        "Veyron Security Sentinel",
         "security_sentinel",
         format!("Security view: {namespace}/{name}"),
     );
@@ -41,7 +41,7 @@ pub async fn security_sentinel(
             findings += 1;
             r.evidence.push(format!(
                 "RDP exposed via NodePort Service `{}`{}",
-                vmrogue_rdp_service_name(name),
+                veyron_rdp_service_name(name),
                 np.map(|p| format!(" on port {p}")).unwrap_or_default()
             ));
             r.recommendations.push(
@@ -73,7 +73,7 @@ pub async fn security_sentinel(
         Err(e) => r.evidence.push(format!("SSH expose lookup: {e}")),
     }
 
-    let vrvm_api: Api<VMRogueVM> = Api::namespaced(k8s, namespace);
+    let vrvm_api: Api<VeyronVM> = Api::namespaced(k8s, namespace);
     match vrvm_api.get(name).await {
         Ok(vrvm) => {
             if vrvm.status.as_ref().is_some_and(|s| s.drift_detected) {
@@ -85,15 +85,15 @@ pub async fn security_sentinel(
                     .unwrap_or_else(|| "spec drift from template/profile".into());
                 r.evidence.push(format!("Operator drift detected: {msg}"));
                 r.recommendations
-                    .push("Reconcile VMRogueVM or update template/profile to clear drift.".into());
+                    .push("Reconcile VeyronVM or update template/profile to clear drift.".into());
             } else {
                 r.evidence
-                    .push("VMRogueVM operator: in sync (no drift)".into());
+                    .push("VeyronVM operator: in sync (no drift)".into());
             }
         }
         Err(_) => r
             .evidence
-            .push("Not operator-managed (no VMRogueVM CR)".into()),
+            .push("Not operator-managed (no VeyronVM CR)".into()),
     }
 
     let allow_inet = client
@@ -104,7 +104,7 @@ pub async fn security_sentinel(
             vm.metadata
                 .labels
                 .as_ref()
-                .and_then(|l| l.get("vmrogue.io/allow-internet"))
+                .and_then(|l| l.get("veyron.io/allow-internet"))
                 .map(|v| v == "true")
         })
         .unwrap_or(true);
@@ -221,7 +221,7 @@ async fn trivy_summary(_base_url: &str, _vm_name: &str) -> Option<(u32, u32)> {
 /// Fleet-wide security sweep for Copilot ask.
 pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Security Sentinel",
+        "Veyron Security Sentinel",
         "security_fleet",
         "Fleet security signals",
     );
@@ -242,7 +242,7 @@ pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> Copilo
         {
             exposed_rdp.push(format!("{ns}/{name}"));
         }
-        let vrvm_api: Api<VMRogueVM> = Api::namespaced(k8s.clone(), ns);
+        let vrvm_api: Api<VeyronVM> = Api::namespaced(k8s.clone(), ns);
         if let Ok(vrvm) = vrvm_api.get(name).await {
             if vrvm.status.as_ref().is_some_and(|s| s.drift_detected) {
                 drift.push(format!("{ns}/{name}"));
@@ -295,7 +295,7 @@ pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> Copilo
     }
     if !drift.is_empty() {
         r.recommendations
-            .push("Resolve VMRogueVM drift before production changes.".into());
+            .push("Resolve VeyronVM drift before production changes.".into());
     }
 
     r.actions.push(CopilotAction {

@@ -575,7 +575,7 @@ fn test_pvc_spec_for_vm_disk() {
         .with_storage_class("ceph-rbd")
         .with_access_mode(AccessMode::ReadWriteOnce)
         .with_label("app", "database")
-        .with_label("managed-by", "vmrogue");
+        .with_label("managed-by", "veyron");
 
     assert_eq!(pvc.name, "my-vm-rootdisk");
     assert_eq!(pvc.size, "100Gi");
@@ -1149,13 +1149,13 @@ fn test_shared_scheduling_functions() {
 // ========== ERROR TYPE TESTS ==========
 
 #[test]
-fn test_vmrogue_error_display() {
-    use veyron::VMRogueError;
+fn test_veyron_error_display() {
+    use veyron::VeyronError;
 
-    let not_found = VMRogueError::VmNotFound("my-vm".to_string());
+    let not_found = VeyronError::VmNotFound("my-vm".to_string());
     assert_eq!(not_found.to_string(), "VM 'my-vm' not found");
 
-    let exists = VMRogueError::VmExists("my-vm".to_string());
+    let exists = VeyronError::VmExists("my-vm".to_string());
     assert_eq!(exists.to_string(), "VM 'my-vm' already exists");
 }
 
@@ -1512,22 +1512,22 @@ fn test_profiles_api_returns_all_profiles() {
 }
 
 #[test]
-fn test_vmrogue_error_types() {
-    use veyron::utils::VMRogueError;
+fn test_veyron_error_types() {
+    use veyron::utils::VeyronError;
 
     // Test that all error types have correct Display output
     let errors = vec![
-        VMRogueError::VmNotFound("test-vm".to_string()),
-        VMRogueError::VmExists("test-vm".to_string()),
-        VMRogueError::ValidationError("bad field".to_string()),
-        VMRogueError::ConfigError("bad config".to_string()),
-        VMRogueError::Timeout("timed out".to_string()),
-        VMRogueError::NotImplemented("feature X".to_string()),
-        VMRogueError::Unauthorized("no token".to_string()),
-        VMRogueError::Forbidden("no access".to_string()),
-        VMRogueError::ResourceConflict("already exists".to_string()),
-        VMRogueError::ServiceUnavailable("down".to_string()),
-        VMRogueError::KubeError("k8s error".to_string()),
+        VeyronError::VmNotFound("test-vm".to_string()),
+        VeyronError::VmExists("test-vm".to_string()),
+        VeyronError::ValidationError("bad field".to_string()),
+        VeyronError::ConfigError("bad config".to_string()),
+        VeyronError::Timeout("timed out".to_string()),
+        VeyronError::NotImplemented("feature X".to_string()),
+        VeyronError::Unauthorized("no token".to_string()),
+        VeyronError::Forbidden("no access".to_string()),
+        VeyronError::ResourceConflict("already exists".to_string()),
+        VeyronError::ServiceUnavailable("down".to_string()),
+        VeyronError::KubeError("k8s error".to_string()),
     ];
 
     for err in &errors {

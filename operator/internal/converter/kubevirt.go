@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-// Package converter translates VMRogueVM specs into KubeVirt VirtualMachine resources.
+// Package converter translates VeyronVM specs into KubeVirt VirtualMachine resources.
 // This is the Go equivalent of the Rust function vm_config_to_kubevirt in src/kube/converter.rs.
 package converter
 
@@ -10,22 +10,22 @@ import (
 	"os"
 	"strings"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// VMRogueVMToKubeVirt converts a VMRogueVM CR into a KubeVirt VirtualMachine unstructured object.
+// VeyronVMToKubeVirt converts a VeyronVM CR into a KubeVirt VirtualMachine unstructured object.
 // Uses unstructured to avoid importing the full KubeVirt Go module.
-func VMRogueVMToKubeVirt(vm *vmroguev1alpha1.VMRogueVM) (*unstructured.Unstructured, error) {
+func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured, error) {
 	spec := &vm.Spec
 
 	// Build labels
 	labels := map[string]interface{}{
 		"kubevirt.io/vm":          vm.Name,
 		"app.kubernetes.io/name":  vm.Name,
-		"vmrogue.io/managed-by":   "veyron-operator",
-		"vmrogue.io/vmrogue-vm":   vm.Name,
+		"veyron.io/managed-by":   "veyron-operator",
+		"veyron.io/veyron-vm":   vm.Name,
 	}
 	for k, v := range spec.Labels {
 		labels[k] = v
@@ -167,8 +167,8 @@ func VMRogueVMToKubeVirt(vm *vmroguev1alpha1.VMRogueVM) (*unstructured.Unstructu
 	blockDeletion := true
 	kvVM.SetOwnerReferences([]metav1.OwnerReference{
 		{
-			APIVersion:         vmroguev1alpha1.GroupVersion.String(),
-			Kind:               "VMRogueVM",
+			APIVersion:         veyronv1alpha1.GroupVersion.String(),
+			Kind:               "VeyronVM",
 			Name:               vm.Name,
 			UID:                vm.UID,
 			Controller:         &controller,
@@ -179,7 +179,7 @@ func VMRogueVMToKubeVirt(vm *vmroguev1alpha1.VMRogueVM) (*unstructured.Unstructu
 	return kvVM, nil
 }
 
-func buildVolumes(vmName string, spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
+func buildVolumes(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 	var volumes []interface{}
 
 	for _, disk := range spec.Disks {
@@ -242,7 +242,7 @@ func buildVolumes(vmName string, spec *vmroguev1alpha1.VMRogueVMSpec) []interfac
 
 // ConfigDriveSecretName matches Rust kube::cloudinit_configdrive_secret_name.
 func ConfigDriveSecretName(vmName string) string {
-	s := vmName + "-vmrogue-cfgdrv"
+	s := vmName + "-veyron-cfgdrv"
 	runes := []rune(s)
 	const maxKubeName = 253
 	if len(runes) <= maxKubeName {
@@ -251,7 +251,7 @@ func ConfigDriveSecretName(vmName string) string {
 	return string(runes[:maxKubeName])
 }
 
-func buildDisks(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
+func buildDisks(spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 	var disks []interface{}
 
 	for _, d := range spec.Disks {
@@ -322,7 +322,7 @@ func buildDisks(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
 	return disks
 }
 
-func buildInterfaces(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
+func buildInterfaces(spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 	var interfaces []interface{}
 
 	for _, iface := range spec.Interfaces {
@@ -352,7 +352,7 @@ func buildInterfaces(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
 	return interfaces
 }
 
-func buildNetworks(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
+func buildNetworks(spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 	var networks []interface{}
 
 	for _, iface := range spec.Interfaces {
@@ -379,7 +379,7 @@ func buildNetworks(spec *vmroguev1alpha1.VMRogueVMSpec) []interface{} {
 	return networks
 }
 
-func buildDevices(disks, interfaces []interface{}, spec *vmroguev1alpha1.VMRogueVMSpec) map[string]interface{} {
+func buildDevices(disks, interfaces []interface{}, spec *veyronv1alpha1.VeyronVMSpec) map[string]interface{} {
 	devices := map[string]interface{}{
 		"disks":      disks,
 		"interfaces": interfaces,
@@ -429,7 +429,7 @@ func emitGuestAgentChannels() bool {
 	}
 }
 
-func buildFeatures(f *vmroguev1alpha1.FeaturesSpec) map[string]interface{} {
+func buildFeatures(f *veyronv1alpha1.FeaturesSpec) map[string]interface{} {
 	features := map[string]interface{}{}
 
 	if f.ACPI {
@@ -496,7 +496,7 @@ func buildFeatures(f *vmroguev1alpha1.FeaturesSpec) map[string]interface{} {
 	return features
 }
 
-func buildClock(c *vmroguev1alpha1.ClockSpec) map[string]interface{} {
+func buildClock(c *veyronv1alpha1.ClockSpec) map[string]interface{} {
 	clock := map[string]interface{}{}
 
 	if c.UTC {
@@ -537,7 +537,7 @@ func buildClock(c *vmroguev1alpha1.ClockSpec) map[string]interface{} {
 	return clock
 }
 
-func buildFirmware(f *vmroguev1alpha1.FirmwareSpec) map[string]interface{} {
+func buildFirmware(f *veyronv1alpha1.FirmwareSpec) map[string]interface{} {
 	firmware := map[string]interface{}{}
 
 	switch f.Bootloader {
@@ -568,7 +568,7 @@ func defaultUint32(v uint32, def uint32) uint32 {
 	return v
 }
 
-// GetKubeVirtVMName returns the name of the KubeVirt VM for a VMRogueVM.
+// GetKubeVirtVMName returns the name of the KubeVirt VM for a VeyronVM.
 func GetKubeVirtVMName(vmName string) string {
 	return vmName
 }

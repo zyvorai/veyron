@@ -1,12 +1,12 @@
 apiVersion: v2
 name: veyron-monitoring
-description: Optional Prometheus, Grafana, and Alertmanager stack curated for VMRogue
+description: Optional Prometheus, Grafana, and Alertmanager stack curated for Veyron
 type: application
 version: 0.1.0
 appVersion: "0.2.0"
 kubeVersion: ">=1.25.0-0"
 keywords:
-  - vmrogue
+  - veyron
   - kubevirt
   - prometheus
   - grafana

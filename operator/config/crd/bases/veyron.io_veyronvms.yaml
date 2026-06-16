@@ -1,16 +1,16 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: vmroguevms.vmrogue.io
+  name: veyronvms.veyron.io
   annotations:
     controller-gen.kubebuilder.io/version: v0.16.0
 spec:
-  group: vmrogue.io
+  group: veyron.io
   names:
-    kind: VMRogueVM
-    listKind: VMRogueVMList
-    plural: vmroguevms
-    singular: vmroguevm
+    kind: VeyronVM
+    listKind: VeyronVMList
+    plural: veyronvms
+    singular: veyronvm
     shortNames:
       - vrvm
   scope: Namespaced

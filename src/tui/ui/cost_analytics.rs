@@ -31,7 +31,7 @@ pub fn render(f: &mut Frame, area: Rect, state: &AppState) {
         .split(area);
 
     // Header
-    let mut header_spans = gradient::brand().text("VMRogue");
+    let mut header_spans = gradient::brand().text("Veyron");
     header_spans.push(Span::styled(
         " | ",
         Style::default().fg(Color::Rgb(128, 128, 128)),

@@ -56,7 +56,7 @@ func CompareKubeVirtSpec(_ string, kvVM *unstructured.Unstructured) (bool, strin
 	if ann == nil {
 		return false, ""
 	}
-	expected := ann["vmrogue.io/kubevirt-domain-hash"]
+	expected := ann["veyron.io/kubevirt-domain-hash"]
 	if expected == "" {
 		return false, ""
 	}

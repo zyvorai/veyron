@@ -44,7 +44,7 @@ impl BlueprintStorage {
     fn get_blueprints_dir() -> Result<PathBuf> {
         let config_dir = dirs::config_dir().context("Could not determine config directory")?;
 
-        Ok(config_dir.join("vmrogue").join("blueprints"))
+        Ok(config_dir.join("veyron").join("blueprints"))
     }
 
     /// Get the file path for a blueprint.

@@ -9,7 +9,7 @@ use std::collections::HashMap;
 /// Environment information
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EnvironmentInfo {
-    pub vmrogue_version: String,
+    pub veyron_version: String,
     pub rust_version: String,
     pub os: String,
     pub arch: String,
@@ -90,9 +90,9 @@ impl ConfigInfo {
             .unwrap_or_else(|| "~".to_string());
 
         Self {
-            config_dir: format!("{}/.config/vmrogue", home),
+            config_dir: format!("{}/.config/veyron", home),
             templates_dir: format!("{}/.config/veyron/templates", home),
-            cache_dir: format!("{}/.cache/vmrogue", home),
+            cache_dir: format!("{}/.cache/veyron", home),
             settings: HashMap::new(),
         }
     }
@@ -149,7 +149,7 @@ impl EnvironmentInfo {
         ];
 
         Self {
-            vmrogue_version: env!("CARGO_PKG_VERSION").to_string(),
+            veyron_version: env!("CARGO_PKG_VERSION").to_string(),
             rust_version: "1.70+".to_string(),
             os: std::env::consts::OS.to_string(),
             arch: std::env::consts::ARCH.to_string(),
@@ -274,7 +274,7 @@ pub fn run_diagnostics() -> Vec<DiagnosticCheck> {
 
     // Check config directory
     let config_dir = dirs::home_dir()
-        .map(|h| format!("{}/.config/vmrogue", h.to_string_lossy()))
+        .map(|h| format!("{}/.config/veyron", h.to_string_lossy()))
         .unwrap_or_default();
 
     if std::path::Path::new(&config_dir).exists() {
@@ -285,7 +285,7 @@ pub fn run_diagnostics() -> Vec<DiagnosticCheck> {
     } else {
         checks.push(
             DiagnosticCheck::warning("config-dir", "Config directory not found")
-                .with_details(format!("Run 'vmrogue init' to create {}", config_dir)),
+                .with_details(format!("Run 'veyron init' to create {}", config_dir)),
         );
     }
 
@@ -311,7 +311,7 @@ mod tests {
     #[test]
     fn test_environment_info_collect() {
         let info = EnvironmentInfo::collect("default");
-        assert!(!info.vmrogue_version.is_empty());
+        assert!(!info.veyron_version.is_empty());
         assert!(!info.os.is_empty());
         assert!(!info.arch.is_empty());
         assert!(info.feature_count() > 0);
@@ -356,7 +356,7 @@ mod tests {
     #[test]
     fn test_config_info_new() {
         let config = ConfigInfo::new();
-        assert!(config.config_dir.contains("vmrogue"));
+        assert!(config.config_dir.contains("veyron"));
         assert!(config.templates_dir.contains("templates"));
         assert!(config.cache_dir.contains("cache"));
     }

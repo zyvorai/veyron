@@ -11,8 +11,8 @@ pub const SOC_DETECTIONS_LABEL_VALUE: &str = "soc-detections";
 pub const SOC_HUNTS_LABEL_VALUE: &str = "soc-hunt";
 pub const SOC_PLAYBOOKS_LABEL_VALUE: &str = "soc-playbook";
 
-const EVENTS_CM_NAME: &str = "vmrogue-soc-events";
-const DETECTIONS_CM_NAME: &str = "vmrogue-soc-detections";
+const EVENTS_CM_NAME: &str = "veyron-soc-events";
+const DETECTIONS_CM_NAME: &str = "veyron-soc-detections";
 const EVENTS_KEY: &str = "events.json";
 const DETECTIONS_KEY: &str = "detections.json";
 
@@ -20,7 +20,7 @@ pub const MAX_STORED_EVENTS: usize = 500;
 
 fn type_label(value: &str) -> BTreeMap<String, String> {
     let mut m = BTreeMap::new();
-    m.insert("vmrogue.io/type".to_string(), value.to_string());
+    m.insert("veyron.io/type".to_string(), value.to_string());
     m
 }
 

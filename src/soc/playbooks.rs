@@ -24,7 +24,7 @@ pub struct TriggerPlaybookRequest {
 pub async fn list_playbooks(client: &kube::Client, namespace: &str) -> Vec<SocPlaybook> {
     let api: Api<ConfigMap> = Api::namespaced(client.clone(), namespace);
     let lp = ListParams::default().labels(&format!(
-        "vmrogue.io/type={}",
+        "veyron.io/type={}",
         super::store::SOC_PLAYBOOKS_LABEL_VALUE
     ));
     let Ok(list) = api.list(&lp).await else {
@@ -87,7 +87,7 @@ pub async fn trigger_playbook(
     let body = req.payload.clone().unwrap_or_else(|| {
         serde_json::json!({
             "event_type": req.event_type,
-            "source": "vmrogue",
+            "source": "veyron",
             "timestamp": chrono::Utc::now().to_rfc3339(),
         })
     });
@@ -109,7 +109,7 @@ pub async fn fire_detection_webhooks(event_type: &str, detection: &serde_json::V
             let body = serde_json::json!({
                 "event_type": event_type,
                 "detection": detection,
-                "source": "vmrogue-soc",
+                "source": "veyron-soc",
             });
             let _ = client.post(&url).json(&body).send().await;
         }

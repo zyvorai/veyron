@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 //! Metadata for API payloads that are derived, bounded, or backed by a narrow source.
-//! Attached as `vmrogue_context` so clients and the dashboard can explain what users are seeing.
+//! Attached as `veyron_context` so clients and the dashboard can explain what users are seeing.
 //!
 //! **Production parity (optional follow-ups, not required for correctness of current data):**
 //! - Traces: optional OpenTelemetry/Jaeger query backend when configured.
@@ -88,7 +88,7 @@ impl VmrogueFeatureContext {
     pub fn performance_profiles() -> Self {
         Self {
             data_source: "vm_metrics_snapshot_estimates".to_string(),
-            scope: "Live VM metrics from VMRogue collectors, with percentile and latency fields derived from the current sample."
+            scope: "Live VM metrics from Veyron collectors, with percentile and latency fields derived from the current sample."
                 .to_string(),
             limitations: "cpu_p95/p99 and memory_p95/p99 are scaled estimates from the instantaneous usage, not historical histograms. latency_avg_ms is a rough model from I/O counters when present, not block-storage latency percentiles."
                 .to_string(),
@@ -117,7 +117,7 @@ impl VmrogueFeatureContext {
 
     pub fn gitops_status() -> Self {
         Self {
-            data_source: "vmrogue_gitops_configmap_plus_vm_list".to_string(),
+            data_source: "veyron_gitops_configmap_plus_vm_list".to_string(),
             scope: "Reads labeled GitOps ConfigMaps in the namespace and compares stored vm_count to live VM list length."
                 .to_string(),
             limitations: "Does not call Argo CD, Flux, or other GitOps controller APIs. POST /gitops/sync only updates timestamps in the ConfigMap when present — it does not trigger reconciliation."
@@ -249,7 +249,7 @@ impl VmrogueFeatureContext {
             data_source: "vm_spec_plus_trivy".to_string(),
             scope: "VM config analysis merged with optional Trivy scanner results."
                 .to_string(),
-            limitations: "Trivy integration requires VMROGUE_TRIVY_URL pointing at a VMRogue-compatible scan API."
+            limitations: "Trivy integration requires VMROGUE_TRIVY_URL pointing at a Veyron-compatible scan API."
                 .to_string(),
         }
     }

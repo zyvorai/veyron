@@ -6,4 +6,4 @@ resources:
 
 commonLabels:
   app.kubernetes.io/name: veyron
-  app.kubernetes.io/part-of: vmrogue
+  app.kubernetes.io/part-of: veyron

@@ -349,14 +349,14 @@ pub fn handle_quotas_list(namespace: Option<String>, exceeded: bool, output: Str
 }
 
 pub async fn handle_quotas_create(name: String, namespace: String, preset: String) -> Result<()> {
-    use crate::multitenancy::quotas::ResourceQuota as VMRogueQuota;
+    use crate::multitenancy::quotas::ResourceQuota as VeyronQuota;
 
     println!("{}", color::header(&format!("Creating Quota: {}", name)));
     println!();
 
     let limits = parse_quota_preset(&preset);
 
-    let quota = VMRogueQuota::new(&name, &namespace).with_limits(limits.clone());
+    let quota = VeyronQuota::new(&name, &namespace).with_limits(limits.clone());
 
     println!("  Name:      {}", color::value(&quota.name));
     println!("  Namespace: {}", quota.namespace);

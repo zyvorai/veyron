@@ -89,7 +89,7 @@ pub fn detect_intent(query: &str) -> CopilotIntent {
     if lower.contains("drift advisor")
         || lower.contains("operator drift")
         || lower.contains("template drift")
-        || (lower.contains("drift") && lower.contains("vmrogue"))
+        || (lower.contains("drift") && lower.contains("veyron"))
         || (lower.contains("which") && lower.contains("drift") && !lower.contains("gitops"))
     {
         return CopilotIntent::DriftAdvisor;

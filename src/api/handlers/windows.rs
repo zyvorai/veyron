@@ -35,7 +35,7 @@ pub struct WindowsSetupPlan {
     pub namespace: String,
     pub cloud_init_delivery: String,
     pub steps: Vec<WindowsSetupStep>,
-    pub sample_vmroguevm_yaml: String,
+    pub sample_veyronvm_yaml: String,
     pub docs: Vec<String>,
 }
 
@@ -78,7 +78,7 @@ async fn get_setup_plan(Query(q): Query<WindowsSetupQuery>) -> Json<WindowsSetup
     ];
 
     let sample = format!(
-        "apiVersion: vmrogue.io/v1alpha1\nkind: VMRogueVM\nmetadata:\n  name: {vm_name}\n  namespace: {namespace}\nspec:\n  template: {}\n  cpu:\n    cores: 4\n  memory:\n    size: 8Gi\n  cloudInit:\n    delivery: configdrive\n",
+        "apiVersion: veyron.io/v1alpha1\nkind: VeyronVM\nmetadata:\n  name: {vm_name}\n  namespace: {namespace}\nspec:\n  template: {}\n  cpu:\n    cores: 4\n  memory:\n    size: 8Gi\n  cloudInit:\n    delivery: configdrive\n",
         q.template
     );
 
@@ -88,7 +88,7 @@ async fn get_setup_plan(Query(q): Query<WindowsSetupQuery>) -> Json<WindowsSetup
         namespace,
         cloud_init_delivery: "configdrive".to_string(),
         steps,
-        sample_vmroguevm_yaml: sample,
+        sample_veyronvm_yaml: sample,
         docs: vec![
             "docs/WINDOWS_KUBEVIRT_PRODUCTION.md".into(),
             "docs/WINDOWS_PACKER_GITOPS_PIPELINE.md".into(),

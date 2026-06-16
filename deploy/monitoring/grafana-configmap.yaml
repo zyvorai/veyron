@@ -10,7 +10,7 @@ metadata:
     app.kubernetes.io/name: veyron
     grafana_dashboard: "1"
 data:
-  vmrogue-dashboard.json: |
+  veyron-dashboard.json: |
     {
       "annotations": { "list": [] },
       "editable": true,
@@ -45,7 +45,7 @@ data:
           "targets": [{ "expr": "kubevirt_vmi_memory_resident_bytes", "legendFormat": "{{ name }}" }]
         }
       ],
-      "tags": ["vmrogue", "kubevirt"],
-      "title": "VMRogue Overview",
-      "uid": "vmrogue-overview"
+      "tags": ["veyron", "kubevirt"],
+      "title": "Veyron Overview",
+      "uid": "veyron-overview"
     }

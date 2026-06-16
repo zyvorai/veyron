@@ -57,12 +57,12 @@ impl RestoreManager {
 
         // Build labels
         let mut labels = BTreeMap::new();
-        labels.insert("vmrogue.io/snapshot".to_string(), snapshot_name.to_string());
+        labels.insert("veyron.io/snapshot".to_string(), snapshot_name.to_string());
         labels.insert(
-            "vmrogue.io/target-vm".to_string(),
+            "veyron.io/target-vm".to_string(),
             target_vm_name.to_string(),
         );
-        labels.insert("vmrogue.io/created-by".to_string(), "vmrogue".to_string());
+        labels.insert("veyron.io/created-by".to_string(), "veyron".to_string());
 
         // Create the restore CRD
         let restore = VirtualMachineRestore {
@@ -153,7 +153,7 @@ impl RestoreManager {
                 "Automatic pre-restore safety snapshot before restoring from '{}'",
                 snapshot_name
             ))
-            .with_label("vmrogue.io/safety-snapshot", "pre-restore");
+            .with_label("veyron.io/safety-snapshot", "pre-restore");
         match snapshot_manager.create_snapshot(&safety_config).await {
             Ok(_) => log::info!("Pre-restore safety snapshot created successfully"),
             Err(e) => log::warn!(

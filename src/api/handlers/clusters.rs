@@ -15,8 +15,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
-pub const ACTIVE_CONTEXT_CM: &str = "vmrogue-active-kube-context";
-pub const ACTIVE_CONTEXT_LABEL: &str = "vmrogue.io/type=active-kube-context";
+pub const ACTIVE_CONTEXT_CM: &str = "veyron-active-kube-context";
+pub const ACTIVE_CONTEXT_LABEL: &str = "veyron.io/type=active-kube-context";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClusterSummary {
@@ -33,7 +33,7 @@ pub struct ClusterSummary {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClustersResponse {
-    pub vmrogue_context: super::feature_context::VmrogueFeatureContext,
+    pub veyron_context: super::feature_context::VmrogueFeatureContext,
     /// Context used for live API calls (override or kubeconfig default).
     pub current_context: String,
     /// `current_context` field from the kubeconfig file on disk.
@@ -120,7 +120,7 @@ async fn persist_kube_context(
     use kube::api::PatchParams;
 
     let mut labels = std::collections::BTreeMap::new();
-    labels.insert("app.kubernetes.io/name".to_string(), "vmrogue".to_string());
+    labels.insert("app.kubernetes.io/name".to_string(), "veyron".to_string());
     labels.insert("app.kubernetes.io/component".to_string(), "api".to_string());
     labels.insert(ACTIVE_CONTEXT_LABEL.to_string(), "true".to_string());
 
@@ -141,7 +141,7 @@ async fn persist_kube_context(
 
     let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(client.client(), namespace);
     let patch = kube::api::Patch::Apply(cm);
-    api.patch(ACTIVE_CONTEXT_CM, &PatchParams::apply("vmrogue"), &patch)
+    api.patch(ACTIVE_CONTEXT_CM, &PatchParams::apply("veyron"), &patch)
         .await?;
     Ok(())
 }
@@ -199,7 +199,7 @@ async fn list_clusters(State(state): State<SharedState>) -> Json<ClustersRespons
         .collect();
 
     Json(ClustersResponse {
-        vmrogue_context: clusters_context(),
+        veyron_context: clusters_context(),
         current_context: current,
         kubeconfig_current_context: file_ctx,
         clusters,

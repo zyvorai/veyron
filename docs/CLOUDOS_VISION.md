@@ -29,7 +29,7 @@ CloudOS is the experience layer for **Veyron** by Zyvor: a macOS/iOS-inspired co
 └─────────────────────────────────────────────────────────┘
 ```
 
-The experience API is an **aggregation and vocabulary layer**. It does not replace KubeVirt reconciliation; it composes existing VMRogue handlers and cluster queries into product-shaped responses.
+The experience API is an **aggregation and vocabulary layer**. It does not replace KubeVirt reconciliation; it composes existing Veyron handlers and cluster queries into product-shaped responses.
 
 ## Experience API (v1)
 
@@ -43,7 +43,7 @@ The experience API is an **aggregation and vocabulary layer**. It does not repla
 | `GET /api/v1/experience/templates` | Template Store catalog |
 | `GET /api/v1/experience/locations` | Multi-cluster as CloudOS locations |
 | `GET /api/v1/experience/desktop` | macOS shell: desktop tiers, dock defaults, dock catalog, keyboard shortcuts, optional fleet summary |
-| `POST /experience/copilot/*` | Ask Zeus / VMRogue Copilot — see [VMROGUE_AI.md](./VMROGUE_AI.md) |
+| `POST /experience/copilot/*` | Ask Zeus / Veyron Copilot — see [VMROGUE_AI.md](./VMROGUE_AI.md) |
 
 Namespace scope follows the dashboard namespace selector (`?namespace=` or `all`).
 
@@ -77,9 +77,9 @@ Default wallpaper **Tahoe** uses a soft neutral gradient wash. Typography is **S
 
 On **Normal** and **Power**, each page shows a **36px window toolbar** (traffic lights + kicker + title + actions) and a single **`.mac-page-window`** pane; legacy `.page-header` blocks are hidden. Primary actions are cloned from `PAGE_TOOLBAR_ACTIONS` or `.page-header` buttons into the toolbar (overflow **…** menu when more than two actions). **Advanced** keeps full `.page-header` chrome for operators who need subtitles and Browse.
 
-Shell sizing: menubar **40px**, dock icons **2.5rem**, slimmer desktop tabs on Power. Cache-bust after deploy: `?dash=20260602v` (see `vmrogue-dashboard-rev` meta).
+Shell sizing: menubar **40px**, dock icons **2.5rem**, slimmer desktop tabs on Power. Cache-bust after deploy: `?dash=20260602v` (see `veyron-dashboard-rev` meta).
 
-Dock pins persist in `localStorage` (`vmrogue_dock_pins`); tier changes reset to API `dock_defaults` for that tier. **Customize Dock…** reorders pins from `dock_catalog`.
+Dock pins persist in `localStorage` (`veyron_dock_pins`); tier changes reset to API `dock_defaults` for that tier. **Customize Dock…** reorders pins from `dock_catalog`.
 
 **Desktop tabs** (Stage Manager lite): recent pages show below the menubar with a close control (×) and middle-click to dismiss; **Home** is always pinned.
 
@@ -93,7 +93,7 @@ Dock pins persist in `localStorage` (`vmrogue_dock_pins`); tier changes reset to
 
 **Launchpad** supports arrow keys + Enter when open; **`/`** focuses the search field. Dock icons **bounce** on navigation (respects reduced motion).
 
-**VM Inspector** (Fleet split view): glass workspace + sticky inspector header with VM name/namespace; recent VMs appear in Finder and Spotlight empty state (`vmrogue_recent_vms`).
+**VM Inspector** (Fleet split view): glass workspace + sticky inspector header with VM name/namespace; recent VMs appear in Finder and Spotlight empty state (`veyron_recent_vms`).
 
 **Mission Control** overlay: keys **1–4** jump to Infrastructure / Compute / Network / Storage zones; number keys select open desktop windows when listed.
 
@@ -101,7 +101,7 @@ Dock pins persist in `localStorage` (`vmrogue_dock_pins`); tier changes reset to
 
 **Control Center** includes a **Quick actions** tile grid (Spotlight, Mission Control, Launchpad, Finder, Alerts, Dock, Prefs).
 
-**About VMRogue** shortcuts list is populated from `GET /experience/desktop` → `keyboard_shortcuts`.
+**About Veyron** shortcuts list is populated from `GET /experience/desktop` → `keyboard_shortcuts`.
 
 List-view VMs support the same **right-click context menu** as grid cards.
 
@@ -117,7 +117,7 @@ Keyboard: `⌘K` Spotlight, `⌘J` Ask Zeus, `⌘\` Finder, `⌘⌥S` Finder (Ma
 
 **Remote console (VNC / Serial / RDP):** VNC and Serial use macOS Screen Sharing window chrome — traffic lights, **‹ Back**, `Esc` / `⌘W`, minimize pill above the dock. **Remote Desktop (RDP)** opens a macOS sheet with NodePort expose, guest-agent enable/disable, and copy-to-clipboard connect strings (Microsoft Remote Desktop / FreeRDP).
 
-Cache-bust the dashboard after deploy: `?dash=20260602v` (or current `vmrogue-dashboard-rev` meta tag).
+Cache-bust the dashboard after deploy: `?dash=20260602v` (or current `veyron-dashboard-rev` meta tag).
 
 ## UI surfaces
 
@@ -140,10 +140,10 @@ Cache-bust the dashboard after deploy: `?dash=20260602v` (or current `vmrogue-da
 
 ## Mapping: CloudOS ↔ Kubernetes
 
-| CloudOS term | VMRogue / K8s backing |
+| CloudOS term | Veyron / K8s backing |
 |--------------|----------------------|
 | Workspace | Kubernetes namespace |
-| Virtual Machine | KubeVirt `VirtualMachine` / VMRogueVM |
+| Virtual Machine | KubeVirt `VirtualMachine` / VeyronVM |
 | Template Store | VMTemplate / VMProfile CRDs + embedded catalog |
 | Disk | PVC / DataVolume |
 | Network | NAD, masquerade/slirp, Cilium policies |

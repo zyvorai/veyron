@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# package-binary-remote.sh — Build VMRogue on a remote Linux host and tarball it
+# package-binary-remote.sh — Build Veyron on a remote Linux host and tarball it
 # ============================================================================
 # Minimal rsync (no node_modules), podman/docker build via Dockerfile, extract
 # static linux/amd64 binary (+ virtctl), produce .tar.gz + .sha256 for clients.
@@ -15,7 +15,7 @@
 #
 # Environment:
 #   DEPLOY_HOST / DEPLOY_USER     Defaults when host/user omitted
-#   VMROGUE_PACKAGE_DIR           Remote output dir (default: ~/vmrogue-dist)
+#   VMROGUE_PACKAGE_DIR           Remote output dir (default: ~/veyron-dist)
 #   VMROGUE_PACKAGE_VERSION       Override version in archive name
 #   DEPLOY_SSH_TIMEOUT            SSH connect timeout (default: 20)
 #   DEPLOY_SSH_PORT               SSH port (default: 22)
@@ -72,9 +72,9 @@ ARCH="linux-amd64"
 REMOTE="${USER}@${HOST}"
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" 'echo "$HOME"')
 BUILD_DIR="${REMOTE_HOME}/.deployment/veyron-package"
-OUT_DIR="${VMROGUE_PACKAGE_DIR:-${REMOTE_HOME}/vmrogue-dist}"
-IMAGE_TAG="vmrogue-package:${VERSION}"
-ARTIFACT="vmrogue-${VERSION}-${ARCH}"
+OUT_DIR="${VMROGUE_PACKAGE_DIR:-${REMOTE_HOME}/veyron-dist}"
+IMAGE_TAG="veyron-package:${VERSION}"
+ARTIFACT="veyron-${VERSION}-${ARCH}"
 TARBALL="${ARTIFACT}.tar.gz"
 CHECKSUM="${TARBALL}.sha256"
 LOCAL_DIST="${REPO_DIR}/dist"
@@ -92,7 +92,7 @@ RSYNC_EXCLUDES=(
 # shellcheck source=lib/package-remote-ui.sh
 source "${SCRIPT_DIR}/lib/package-remote-ui.sh"
 
-pkg_remote_banner "VMRogue" "${VERSION}" "${REMOTE}" "${ARCH}"
+pkg_remote_banner "Veyron" "${VERSION}" "${REMOTE}" "${ARCH}"
 
 if [[ "${VEYRON_REMOTE_SKIP_SSH_CHECK:-}" != "1" ]]; then
     pkg_remote_phase "Preflight"
@@ -172,18 +172,18 @@ VERSION='${VERSION}'
 CTR='${CTR_BUILD}'
 
 mkdir -p "\${OUT_DIR}/\${ARTIFACT}"
-\${CTR} rm -f vmrogue-package-extract 2>/dev/null || true
-\${CTR} create --name vmrogue-package-extract "\${IMAGE_TAG}" >/dev/null
-\${CTR} cp vmrogue-package-extract:/usr/local/bin/veyron "\${OUT_DIR}/\${ARTIFACT}/vmrogue"
-chmod +x "\${OUT_DIR}/\${ARTIFACT}/vmrogue"
+\${CTR} rm -f veyron-package-extract 2>/dev/null || true
+\${CTR} create --name veyron-package-extract "\${IMAGE_TAG}" >/dev/null
+\${CTR} cp veyron-package-extract:/usr/local/bin/veyron "\${OUT_DIR}/\${ARTIFACT}/veyron"
+chmod +x "\${OUT_DIR}/\${ARTIFACT}/veyron"
 if [[ "\${INCLUDE_VIRTCTL}" == "true" ]]; then
-  \${CTR} cp vmrogue-package-extract:/usr/local/bin/virtctl "\${OUT_DIR}/\${ARTIFACT}/virtctl" 2>/dev/null || true
+  \${CTR} cp veyron-package-extract:/usr/local/bin/virtctl "\${OUT_DIR}/\${ARTIFACT}/virtctl" 2>/dev/null || true
   chmod +x "\${OUT_DIR}/\${ARTIFACT}/virtctl" 2>/dev/null || true
 fi
-\${CTR} rm -f vmrogue-package-extract >/dev/null
+\${CTR} rm -f veyron-package-extract >/dev/null
 
-cat > "\${OUT_DIR}/\${ARTIFACT}/vmrogue.env.example" <<'ENV_EOF'
-# Copy to vmrogue.env and adjust before starting the API.
+cat > "\${OUT_DIR}/\${ARTIFACT}/veyron.env.example" <<'ENV_EOF'
+# Copy to veyron.env and adjust before starting the API.
 VEYRON_API_KEY=Admin@321
 # VEYRON_API_KEYS=admin:secret1,write:secret2,readonly:secret3
 KUBECONFIG=/path/to/kubeconfig.yaml
@@ -209,16 +209,16 @@ chmod +x "\${OUT_DIR}/\${ARTIFACT}/install.sh" "\${OUT_DIR}/\${ARTIFACT}/install
   "\${OUT_DIR}/\${ARTIFACT}/test-package.sh" "\${OUT_DIR}/\${ARTIFACT}/install-everything.sh" \
   "\${OUT_DIR}/\${ARTIFACT}/uninstall.sh"
 chmod +x "\${LIB}/write-customer-help.sh"
-"\${LIB}/write-customer-help.sh" "\${OUT_DIR}/\${ARTIFACT}" "VMRogue" k8s
+"\${LIB}/write-customer-help.sh" "\${OUT_DIR}/\${ARTIFACT}" "Veyron" k8s
 cp "\${LIB}/START_HERE.txt" "\${OUT_DIR}/\${ARTIFACT}/"
 cat > "\${OUT_DIR}/\${ARTIFACT}/.package-lib/product.meta" <<'META'
-PRODUCT_NAME=VMRogue
+PRODUCT_NAME=Veyron
 ACCESS_SCHEME=http
 ACCESS_PORT=5151
 ACCESS_PATH=/dashboard
 AUTO_FULL_INSTALL=0
-FINISH_EXTRA_1='Cluster (once): ./install-cluster.sh then deploy VMRogue in the cluster'
-FINISH_EXTRA_2='Start: set -a && source vmrogue.env && set +a && ./vmrogue api-serve --host 0.0.0.0 --port 5151'
+FINISH_EXTRA_1='Cluster (once): ./install-cluster.sh then deploy Veyron in the cluster'
+FINISH_EXTRA_2='Start: set -a && source veyron.env && set +a && ./veyron api-serve --host 0.0.0.0 --port 5151'
 FINISH_EXTRA_3='Docs: CLUSTER_SETUP.txt'
 META
 
@@ -233,7 +233,7 @@ cp "\${LIB}/package-cluster-bootstrap.sh" "\${OUT_DIR}/\${ARTIFACT}/apply-cluste
 cp "\${LIB}/package-cluster-test.sh" "\${OUT_DIR}/\${ARTIFACT}/test-cluster.sh"
 chmod +x "\${OUT_DIR}/\${ARTIFACT}/install-cluster.sh" "\${OUT_DIR}/\${ARTIFACT}/apply-cluster-network.sh" "\${OUT_DIR}/\${ARTIFACT}/test-cluster.sh"
 cat > "\${OUT_DIR}/\${ARTIFACT}/cluster/env.sh" <<'ENVSH'
-PRODUCT=VMRogue
+PRODUCT=Veyron
 APP_NAMESPACE=veyron-system
 APP_PORT=5151
 ENV_PREFIX=VMROGUE
@@ -246,17 +246,17 @@ Veyron — install guide
 CLUSTER FIRST (once per cluster — needs kubectl + admin kubeconfig)
   export KUBECONFIG=/path/to/kubeconfig
   ./install-cluster.sh              # Cilium + KubeVirt + CDI (see CLUSTER_SETUP.txt for flags)
-  # Deploy VMRogue in-cluster (Helm/k8s from source repo)
+  # Deploy Veyron in-cluster (Helm/k8s from source repo)
   ./apply-cluster-network.sh        # Cilium egress (skip: VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1)
   ./test-cluster.sh
 
 CLIENT ON THIS MACHINE
-  1. tar xzf vmrogue-*-linux-amd64.tar.gz && cd vmrogue-*-linux-amd64
+  1. tar xzf veyron-*-linux-amd64.tar.gz && cd veyron-*-linux-amd64
   2. ./install-everything.sh    (or ./install.sh then ./test-package.sh)
      Kubeconfig: auto-detected, or ./install.sh --kubeconfig /path/to/config
-  3. nano vmrogue.env   (VEYRON_API_KEY; KUBECONFIG set by install if found)
-  4. set -a && source vmrogue.env && set +a
-  5. ./vmrogue api-serve --host 0.0.0.0 --port 5151
+  3. nano veyron.env   (VEYRON_API_KEY; KUBECONFIG set by install if found)
+  4. set -a && source veyron.env && set +a
+  5. ./veyron api-serve --host 0.0.0.0 --port 5151
   6. ./test-package.sh
 
 Checklist: PREREQUISITES.txt  |  Flags: CLUSTER_SETUP.txt
@@ -268,13 +268,13 @@ QEOF
 cp "\${BUILD_DIR}/scripts/zyvor-branding/ZYVOR_INSTALL.txt" "\${OUT_DIR}/\${ARTIFACT}/ZYVOR_INSTALL.txt" 2>/dev/null || true
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/README.txt" <<README_EOF
-VMRogue ${VERSION} — Linux amd64 client bundle
+Veyron ${VERSION} — Linux amd64 client bundle
 =============================================
 
 START: cat START_HERE.txt  |  full help: cat HELP.txt
 
 WHAT IS IN THIS ARCHIVE
-  vmrogue, virtctl (optional)
+  veyron, virtctl (optional)
   install.sh / uninstall.sh     Client on this machine
   install-cluster.sh            Cluster: Cilium + KubeVirt + CDI (kubectl admin)
   apply-cluster-network.sh      Cilium egress bootstrap
@@ -287,10 +287,10 @@ WHAT MUST EXIST (read PREREQUISITES.txt)
   - Kubernetes + KubeVirt (Deployed) + kubeconfig with VM RBAC
   - CDI recommended (DataVolumes); skip with VEYRON_SKIP_CDI=1
   - Cilium: only if your CNI is Cilium — then run apply-cluster-network.sh
-  - VMRogue deployed IN the cluster (Helm/k8s — separate from this tarball)
+  - Veyron deployed IN the cluster (Helm/k8s — separate from this tarball)
 
-ORDER: install-cluster.sh → deploy VMRogue in cluster → apply-cluster-network.sh
-      → install.sh → vmrogue.env → test-cluster.sh → api-serve
+ORDER: install-cluster.sh → deploy Veyron in cluster → apply-cluster-network.sh
+      → install.sh → veyron.env → test-cluster.sh → api-serve
 
 CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
   VEYRON_SKIP_CILIUM=1  VEYRON_SKIP_CDI=1  VEYRON_SKIP_KUBEVIRT=1
@@ -298,17 +298,17 @@ CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
   VMROGUE_KUBEVIRT_VERSION / VMROGUE_CDI_VERSION / VMROGUE_CILIUM_CHART_VERSION
 
 CLIENT
-  ./install.sh && nano vmrogue.env && ./vmrogue api-serve --host 0.0.0.0 --port 5151
+  ./install.sh && nano veyron.env && ./veyron api-serve --host 0.0.0.0 --port 5151
   http://<host>:5151/dashboard
 
 UNINSTALL: ./uninstall.sh --yes [--remove-dir]
 README_EOF
 
 chmod +x "\${LIB}/finalize-customer-bundle.sh"
-"\${LIB}/finalize-customer-bundle.sh" "\${OUT_DIR}/\${ARTIFACT}" "\${BUILD_DIR}" "VMRogue" "\${VERSION}"
+"\${LIB}/finalize-customer-bundle.sh" "\${OUT_DIR}/\${ARTIFACT}" "\${BUILD_DIR}" "Veyron" "\${VERSION}"
 for req in LICENSE LEGAL-INDEX.txt install.sh uninstall.sh HELP.txt START_HERE.txt README.txt QUICKSTART.txt CLUSTER_SETUP.txt PREREQUISITES.txt \
   install-cluster.sh apply-cluster-network.sh test-cluster.sh test-package.sh \
-  install-client-deps.sh vmrogue vmrogue.env.example; do
+  install-client-deps.sh veyron veyron.env.example; do
   test -e "\${OUT_DIR}/\${ARTIFACT}/\${req}" || { echo "bundle missing \${req}" >&2; exit 1; }
 done
 echo "Customer bundle OK (install.sh, README, QUICKSTART, test scripts, binary)"
@@ -317,9 +317,9 @@ cd "\${OUT_DIR}"
 rm -f "\${ARTIFACT}.tar.gz" "\${ARTIFACT}.tar.gz.sha256"
 tar czf "\${ARTIFACT}.tar.gz" "\${ARTIFACT}"
 sha256sum "\${ARTIFACT}.tar.gz" | tee "\${ARTIFACT}.tar.gz.sha256"
-ls -lh "\${ARTIFACT}.tar.gz" "\${ARTIFACT}/vmrogue"
-file "\${ARTIFACT}/vmrogue"
-"\${OUT_DIR}/\${ARTIFACT}/vmrogue" --help | head -3
+ls -lh "\${ARTIFACT}.tar.gz" "\${ARTIFACT}/veyron"
+file "\${ARTIFACT}/veyron"
+"\${OUT_DIR}/\${ARTIFACT}/veyron" --help | head -3
 REMOTE_PACK
 
 REMOTE_TARBALL="${OUT_DIR}/${TARBALL}"
@@ -340,4 +340,4 @@ if $FETCH; then
     fi
 fi
 
-pkg_remote_done "VMRogue" "${REMOTE}:${REMOTE_TARBALL}" "${REMOTE}:${REMOTE_CHECKSUM}"
+pkg_remote_done "Veyron" "${REMOTE}:${REMOTE_TARBALL}" "${REMOTE}:${REMOTE_CHECKSUM}"

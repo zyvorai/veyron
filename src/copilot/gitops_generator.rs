@@ -25,7 +25,7 @@ pub fn export_gitops(req: GitOpsExportRequest) -> GitOpsExportResponse {
         req.app_name
             .as_deref()
             .filter(|s| !s.trim().is_empty())
-            .unwrap_or("vmrogue-app"),
+            .unwrap_or("veyron-app"),
     );
     let namespace = sanitize_slug(
         req.namespace
@@ -44,7 +44,7 @@ resources:\n\
   - virtualmachine.yaml\n\
 commonLabels:\n\
   app.kubernetes.io/name: {app_name}\n\
-  app.kubernetes.io/managed-by: vmrogue-copilot\n"
+  app.kubernetes.io/managed-by: veyron-copilot\n"
     );
 
     let namespace_yaml = format!(
@@ -57,7 +57,7 @@ metadata:\n\
     );
 
     let runbook = format!(
-        "# {app_name} — VMRogue GitOps runbook\n\n\
+        "# {app_name} — Veyron GitOps runbook\n\n\
 ## Layout\n\n\
 - `base/namespace.yaml` — target namespace\n\
 - `base/virtualmachine.yaml` — KubeVirt VirtualMachine from Copilot YAML Builder\n\
@@ -72,7 +72,7 @@ kubectl apply -k overlays/prod/\n\
 ## Sync with Argo CD / Flux\n\n\
 1. Commit this tree to your Git repo under `apps/{app_name}/`.\n\
 2. Point Argo CD Application or Flux Kustomization at `overlays/prod`.\n\
-3. Use VMRogue dashboard **Integrations → GitOps** or `POST /api/v1/gitops/sync` when controllers are wired.\n\n\
+3. Use Veyron dashboard **Integrations → GitOps** or `POST /api/v1/gitops/sync` when controllers are wired.\n\n\
 ## Safety\n\n\
 - Take a KubeVirt snapshot before changing running VMs.\n\
 - Review `virtualmachine.yaml` for storage class, networks, and cloud-init secrets.\n"
@@ -116,7 +116,7 @@ fn sanitize_slug(s: &str) -> String {
     }
     let trimmed = out.trim_matches('-');
     if trimmed.is_empty() {
-        "vmrogue-app".to_string()
+        "veyron-app".to_string()
     } else {
         trimmed.to_string()
     }

@@ -5,7 +5,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum VMRogueError {
+pub enum VeyronError {
     #[error("VM '{0}' not found")]
     VmNotFound(String),
 
@@ -41,30 +41,30 @@ pub enum VMRogueError {
 }
 
 #[cfg(feature = "web")]
-impl axum::response::IntoResponse for VMRogueError {
+impl axum::response::IntoResponse for VeyronError {
     fn into_response(self) -> axum::response::Response {
         use axum::http::StatusCode;
         use axum::response::Json;
 
         let (status, error_code) = match &self {
-            VMRogueError::VmNotFound(_) => (StatusCode::NOT_FOUND, "VM_NOT_FOUND"),
-            VMRogueError::VmExists(_) => (StatusCode::CONFLICT, "VM_EXISTS"),
-            VMRogueError::ValidationError(_) => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR"),
-            VMRogueError::ConfigError(_) => (StatusCode::BAD_REQUEST, "CONFIG_ERROR"),
-            VMRogueError::Timeout(_) => (StatusCode::GATEWAY_TIMEOUT, "TIMEOUT"),
-            VMRogueError::NotImplemented(_) => (StatusCode::NOT_IMPLEMENTED, "NOT_IMPLEMENTED"),
-            VMRogueError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED"),
-            VMRogueError::Forbidden(_) => (StatusCode::FORBIDDEN, "FORBIDDEN"),
-            VMRogueError::ResourceConflict(_) => (StatusCode::CONFLICT, "RESOURCE_CONFLICT"),
-            VMRogueError::ServiceUnavailable(_) => {
+            VeyronError::VmNotFound(_) => (StatusCode::NOT_FOUND, "VM_NOT_FOUND"),
+            VeyronError::VmExists(_) => (StatusCode::CONFLICT, "VM_EXISTS"),
+            VeyronError::ValidationError(_) => (StatusCode::BAD_REQUEST, "VALIDATION_ERROR"),
+            VeyronError::ConfigError(_) => (StatusCode::BAD_REQUEST, "CONFIG_ERROR"),
+            VeyronError::Timeout(_) => (StatusCode::GATEWAY_TIMEOUT, "TIMEOUT"),
+            VeyronError::NotImplemented(_) => (StatusCode::NOT_IMPLEMENTED, "NOT_IMPLEMENTED"),
+            VeyronError::Unauthorized(_) => (StatusCode::UNAUTHORIZED, "UNAUTHORIZED"),
+            VeyronError::Forbidden(_) => (StatusCode::FORBIDDEN, "FORBIDDEN"),
+            VeyronError::ResourceConflict(_) => (StatusCode::CONFLICT, "RESOURCE_CONFLICT"),
+            VeyronError::ServiceUnavailable(_) => {
                 (StatusCode::SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE")
             }
-            VMRogueError::KubeError(_) => (StatusCode::BAD_GATEWAY, "KUBERNETES_ERROR"),
+            VeyronError::KubeError(_) => (StatusCode::BAD_GATEWAY, "KUBERNETES_ERROR"),
         };
 
         // Sanitize KubeError to avoid leaking internal K8s API details
         let message = match &self {
-            VMRogueError::KubeError(_) => "Kubernetes API error".to_string(),
+            VeyronError::KubeError(_) => "Kubernetes API error".to_string(),
             _ => self.to_string(),
         };
 

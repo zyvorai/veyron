@@ -3,7 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 // Built-in Blueprint Definitions
-// These are the default multi-VM blueprints shipped with VMRogue
+// These are the default multi-VM blueprints shipped with Veyron
 
 use super::{Blueprint, VMSpec};
 use std::collections::HashMap;

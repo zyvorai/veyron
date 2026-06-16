@@ -1,10 +1,10 @@
-{{- if and .Values.kps.enabled .Values.vmrogue.serviceMonitor.enabled }}
+{{- if and .Values.kps.enabled .Values.veyron.serviceMonitor.enabled }}
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ .Release.Name }}-veyron-api
-  namespace: {{ .Values.vmrogue.namespace }}
+  namespace: {{ .Values.veyron.namespace }}
   labels:
     {{- include "veyron-monitoring.labels" . | nindent 4 }}
     app.kubernetes.io/component: api
@@ -14,7 +14,7 @@ spec:
       app.kubernetes.io/name: veyron
   namespaceSelector:
     matchNames:
-      - {{ .Values.vmrogue.namespace | quote }}
+      - {{ .Values.veyron.namespace | quote }}
   endpoints:
     - port: https
       path: /api/v1/health
@@ -27,7 +27,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ .Release.Name }}-veyron-operator
-  namespace: {{ .Values.vmrogue.namespace }}
+  namespace: {{ .Values.veyron.namespace }}
   labels:
     {{- include "veyron-monitoring.labels" . | nindent 4 }}
     app.kubernetes.io/component: operator
@@ -37,7 +37,7 @@ spec:
       app.kubernetes.io/name: veyron-operator
   namespaceSelector:
     matchNames:
-      - {{ .Values.vmrogue.namespace | quote }}
+      - {{ .Values.veyron.namespace | quote }}
   endpoints:
     - port: metrics
       path: /metrics

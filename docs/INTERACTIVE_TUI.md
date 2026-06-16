@@ -11,19 +11,19 @@ Veyron provides a fully interactive Terminal User Interface (TUI) with dialogs, 
 ### Basic Mode
 ```bash
 # Launch basic TUI
-vmrogue tui
+veyron tui
 
 # With specific namespace
-vmrogue tui --namespace production
+veyron tui --namespace production
 ```
 
 ### Enhanced Interactive Mode
 ```bash
 # Launch with full interactive features
-vmrogue tui --interactive
+veyron tui --interactive
 
 # With custom theme
-vmrogue tui --interactive --theme dark
+veyron tui --interactive --theme dark
 ```
 
 ## Interactive Features
@@ -243,10 +243,10 @@ Long-running operations show progress:
 
 ```bash
 # Dark theme (default)
-vmrogue tui --interactive --theme dark
+veyron tui --interactive --theme dark
 
 # Light theme
-vmrogue tui --interactive --theme light
+veyron tui --interactive --theme light
 ```
 
 ### Configuration
@@ -334,7 +334,7 @@ create = "c"
 
 ```bash
 # Launch interactive TUI
-vmrogue tui --interactive
+veyron tui --interactive
 
 # Create database VM
 1. Press 2 (VM List)
@@ -365,7 +365,7 @@ vmrogue tui --interactive
 
 ```
 ┌─────────────────────────────────────────┐
-│         VMRogue TUI Shortcuts         │
+│         Veyron TUI Shortcuts         │
 ├─────────────────────────────────────────┤
 │ NAVIGATION                              │
 │  1-5        Switch views                │

@@ -1,4 +1,4 @@
-# ✨ VMRogue Interactive TUI - Feature Complete
+# ✨ Veyron Interactive TUI - Feature Complete
 
 **See also:** [Documentation index](README.md) for the full doc map.
 
@@ -107,13 +107,13 @@ docs/
 
 ```bash
 # Basic mode (view-only)
-vmrogue tui
+veyron tui
 
 # Enhanced interactive mode
-vmrogue tui --interactive
+veyron tui --interactive
 
 # With theme and namespace
-vmrogue tui --interactive --theme dark --namespace production
+veyron tui --interactive --theme dark --namespace production
 ```
 
 ### 2. Creating a VM with Form Dialog
@@ -426,7 +426,7 @@ progress_bar.render(f);
 
 ```bash
 # 1. Launch interactive TUI
-vmrogue tui --interactive
+veyron tui --interactive
 
 # 2. Create a VM
 Press: 2 (VM List)
@@ -501,7 +501,7 @@ Comprehensive documentation created:
 
 ## 🏆 Summary
 
-The VMRogue Interactive TUI is **feature-complete** and **production-ready**:
+The Veyron Interactive TUI is **feature-complete** and **production-ready**:
 
 - **5 reusable widgets** for rich interactions
 - **Complete keyboard navigation** (no mouse required)
@@ -513,7 +513,7 @@ The VMRogue Interactive TUI is **feature-complete** and **production-ready**:
 
 **Launch command:**
 ```bash
-vmrogue tui --interactive
+veyron tui --interactive
 ```
 
 Press `?` for help anytime!

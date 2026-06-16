@@ -26,7 +26,7 @@ pub fn vm_health_score(status: &str, drift_detected: bool) -> (u8, String) {
     (score, label.to_string())
 }
 
-/// Rule-based error explainer (VMRogue Error Explainer v1).
+/// Rule-based error explainer (Veyron Error Explainer v1).
 pub fn explain_error_message(message: &str, context: Option<&str>) -> CopilotResponse {
     let lower = message.to_lowercase();
     let ctx = context.unwrap_or("general");
@@ -101,7 +101,7 @@ pub fn explain_error_message(message: &str, context: Option<&str>) -> CopilotRes
         )
     };
 
-    let mut r = CopilotResponse::new("VMRogue Error Explainer", "explain", title);
+    let mut r = CopilotResponse::new("Veyron Error Explainer", "explain", title);
     r.summary = explanation.to_string();
     r.evidence.push(message.to_string());
     r.recommendations = fixes.iter().map(|(l, _, _)| (*l).to_string()).collect();

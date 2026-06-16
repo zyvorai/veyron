@@ -7,7 +7,7 @@ use crate::kube::KubeClient;
 /// VMTemplate / VMProfile catalog sync health.
 pub async fn catalog_advisor(client: &KubeClient) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Catalog Advisor",
+        "Veyron Catalog Advisor",
         "catalog_advisor",
         "Template catalog health",
     );
@@ -54,7 +54,7 @@ pub async fn catalog_advisor(client: &KubeClient) -> CopilotResponse {
 
     if !status.in_sync && status.crds_available {
         r.recommendations.push(
-            "Run catalog sync from the Template Catalog page or `vmrogue catalog sync`.".into(),
+            "Run catalog sync from the Template Catalog page or `veyron catalog sync`.".into(),
         );
     }
 

@@ -55,7 +55,7 @@
       ]
     }
   ],
-  "tags": ["vmrogue", "kubevirt"],
-  "title": "VMRogue overview",
-  "uid": "vmrogue-overview"
+  "tags": ["veyron", "kubevirt"],
+  "title": "Veyron overview",
+  "uid": "veyron-overview"
 }

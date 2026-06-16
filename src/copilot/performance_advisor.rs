@@ -6,7 +6,7 @@ use crate::kube::KubeClient;
 /// Fleet performance hotspots from live metrics (Prometheus when configured).
 pub async fn performance_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Performance Advisor",
+        "Veyron Performance Advisor",
         "performance_advisor",
         "Performance hotspots in workspace",
     );

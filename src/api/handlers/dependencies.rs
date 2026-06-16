@@ -60,9 +60,9 @@ async fn get_dependency_graph(State(state): State<SharedState>) -> Json<Dependen
                 namespace: namespace.clone(),
             });
 
-            // Check for vmrogue.io/depends-on annotation
+            // Check for veyron.io/depends-on annotation
             if let Some(annotations) = &vm.metadata.annotations {
-                if let Some(depends_on) = annotations.get("vmrogue.io/depends-on") {
+                if let Some(depends_on) = annotations.get("veyron.io/depends-on") {
                     // depends-on can be comma-separated list of VM names
                     for dep in depends_on.split(',') {
                         let dep = dep.trim();
@@ -84,7 +84,7 @@ async fn get_dependency_graph(State(state): State<SharedState>) -> Json<Dependen
 
             // Also check labels for dependency info
             if let Some(labels) = &vm.metadata.labels {
-                if let Some(depends_on) = labels.get("vmrogue.io/depends-on") {
+                if let Some(depends_on) = labels.get("veyron.io/depends-on") {
                     for dep in depends_on.split(',') {
                         let dep = dep.trim();
                         if !dep.is_empty() {

@@ -54,7 +54,7 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
-/// List dashboards stored as ConfigMaps labeled `vmrogue.io/type=dashboard`.
+/// List dashboards stored as ConfigMaps labeled `veyron.io/type=dashboard`.
 #[cfg(feature = "web")]
 async fn list_dashboards(
     State(state): State<SharedState>,
@@ -65,7 +65,7 @@ async fn list_dashboards(
     let s = state.read().await;
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
     let client = s.client().client();
-    let params = kube::api::ListParams::default().labels("vmrogue.io/type=dashboard");
+    let params = kube::api::ListParams::default().labels("veyron.io/type=dashboard");
 
     let cms = if namespace_scope::is_all_namespaces(&scope) {
         let api: kube::api::Api<ConfigMap> = kube::api::Api::all(client.clone());

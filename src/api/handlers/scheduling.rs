@@ -18,7 +18,7 @@ use super::feature_context::VmrogueFeatureContext;
 /// Scheduling status
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SchedulingStatus {
-    pub vmrogue_context: VmrogueFeatureContext,
+    pub veyron_context: VmrogueFeatureContext,
     pub pending_pods: u32,
     pub scheduled_pods: u32,
     pub unschedulable_nodes: Vec<String>,
@@ -135,7 +135,7 @@ async fn get_scheduling_status(
     }
 
     Json(SchedulingStatus {
-        vmrogue_context: ctx,
+        veyron_context: ctx,
         pending_pods,
         scheduled_pods,
         unschedulable_nodes,

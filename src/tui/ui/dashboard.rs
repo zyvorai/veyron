@@ -83,7 +83,7 @@ pub fn render(f: &mut Frame, state: &AppState, _config: &TuiConfig) {
 
 fn render_header(f: &mut Frame, state: &AppState, area: Rect) {
     // Build header with gradient brand name
-    let mut header_spans = gradient::brand().text("VMRogue");
+    let mut header_spans = gradient::brand().text("Veyron");
     header_spans.push(Span::styled(" - ", Style::default().fg(colors::TEXT_MUTED)));
     header_spans.push(Span::styled(
         "KubeVirt VM Manager",

@@ -1,4 +1,4 @@
-# Default install: monitoring namespace matches VMRogue UI stack discovery.
+# Default install: monitoring namespace matches Veyron UI stack discovery.
 # After install: kubectl -n monitoring port-forward svc/<release>-grafana 3000:3000
 #
 # Override Grafana admin password (do not use default in production):
@@ -57,7 +57,7 @@ kps:
     enabled: true
 
 # Veyron API / operator scrape (namespace must match API deployment).
-vmrogue:
+veyron:
   namespace: veyron-system
   serviceMonitor:
     enabled: true

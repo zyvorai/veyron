@@ -1,8 +1,8 @@
-apiVersion: vmrogue.io/v1alpha1
+apiVersion: veyron.io/v1alpha1
 kind: VMProfile
 metadata:
   labels:
-    vmrogue.io/managed-by: vmrogue-catalog-export
+    veyron.io/managed-by: veyron-catalog-export
   name: web
 spec:
   description: Web server - optimized for HTTP workloads

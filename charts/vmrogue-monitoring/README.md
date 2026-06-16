@@ -2,19 +2,19 @@
 
 **See also:** [Documentation index](../../docs/README.md) in the repo root for the full doc map.
 
-Optional **Prometheus + Grafana + Alertmanager** stack for VMRogue clusters, packaged as a thin Helm umbrella over [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack).
+Optional **Prometheus + Grafana + Alertmanager** stack for Veyron clusters, packaged as a thin Helm umbrella over [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack).
 
 ## What you get
 
 - Prometheus Operator, Prometheus, Alertmanager, Grafana (upstream chart defaults tuned for broad `ServiceMonitor` / `PrometheusRule` discovery).
-- **VMRogue ServiceMonitors** targeting the API (`/api/v1/health` over HTTPS) and operator (`/metrics`) in `veyron-system` (configurable).
-- **VMRogue PrometheusRules** (KubeVirt VM and cluster hints; requires `kubevirt_*` metrics in Prometheus).
-- **Grafana dashboard** ConfigMap (`VMRogue overview`) loaded by the Grafana sidecar.
+- **Veyron ServiceMonitors** targeting the API (`/api/v1/health` over HTTPS) and operator (`/metrics`) in `veyron-system` (configurable).
+- **Veyron PrometheusRules** (KubeVirt VM and cluster hints; requires `kubevirt_*` metrics in Prometheus).
+- **Grafana dashboard** ConfigMap (`Veyron overview`) loaded by the Grafana sidecar.
 
 ## Ports
 
 - **Grafana** ClusterIP HTTP is **3000** (not 80) so `kubectl port-forward … 3000:3000` avoids binding to remote port 80.
-- **VMRogue operator** metrics Service ports are **9280** / **9281** (pod containers still use 8080 / 8081); `ServiceMonitor` continues to use port **names** `metrics` and `health`.
+- **Veyron operator** metrics Service ports are **9280** / **9281** (pod containers still use 8080 / 8081); `ServiceMonitor` continues to use port **names** `metrics` and `health`.
 
 ## Install
 
@@ -33,11 +33,11 @@ helm install veyron-monitoring . -n monitoring --create-namespace \
   --set kps.grafana.adminPassword='replace-me'
 ```
 
-Override the VMRogue install namespace if your API runs elsewhere:
+Override the Veyron install namespace if your API runs elsewhere:
 
 ```bash
 helm upgrade --install veyron-monitoring ./charts/veyron-monitoring -n monitoring \
-  --set vmrogue.namespace=my-vmrogue-ns \
+  --set veyron.namespace=my-veyron-ns \
   --set kps.grafana.adminPassword='replace-me'
 ```
 

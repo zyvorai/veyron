@@ -4,7 +4,7 @@
 
 ## 🎨 Design Overview
 
-The VMRogue Interactive TUI is a modern, user-friendly terminal interface with:
+The Veyron Interactive TUI is a modern, user-friendly terminal interface with:
 - **Dialogs & Confirmations** - Modal dialogs for safe operations
 - **Input Forms** - Multi-field forms for resource creation
 - **Context Menus** - Right-click style action menus
@@ -17,13 +17,13 @@ The VMRogue Interactive TUI is a modern, user-friendly terminal interface with:
 
 ```bash
 # Basic TUI (view-only)
-vmrogue tui
+veyron tui
 
 # Full Interactive Mode (recommended)
-vmrogue tui --interactive
+veyron tui --interactive
 
 # With options
-vmrogue tui --interactive --theme dark --namespace production
+veyron tui --interactive --theme dark --namespace production
 ```
 
 ## 📋 Widget Showcase
@@ -219,7 +219,7 @@ VM List shows only:
 ```
 Steps:
 1. Launch TUI
-   $ vmrogue tui --interactive
+   $ veyron tui --interactive
 
 2. Navigate to VM List
    Press: 2
@@ -520,7 +520,7 @@ Watch a video walkthrough of all interactive features:
 **Ready to try?**
 
 ```bash
-vmrogue tui --interactive
+veyron tui --interactive
 ```
 
 Press `?` for help anytime!

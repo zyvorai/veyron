@@ -9,7 +9,7 @@ pub async fn scheduling_explainer(
     name: &str,
 ) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Scheduling Explainer",
+        "Veyron Scheduling Explainer",
         "scheduling",
         format!("Why is {namespace}/{name} scheduling?"),
     );
@@ -131,7 +131,7 @@ pub async fn scheduling_explainer(
 /// Fleet view: VMs stuck in Pending / scheduling failures.
 pub async fn scheduling_fleet_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Scheduling Fleet",
+        "Veyron Scheduling Fleet",
         "scheduling_fleet",
         "Scheduling pressure in workspace",
     );

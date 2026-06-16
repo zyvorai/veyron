@@ -445,7 +445,7 @@ mod tests {
         let _ = std::process::Command::new("git")
             .args(["-C"])
             .arg(&tmp_src)
-            .args(["config", "user.email", "test@vmrogue.dev"])
+            .args(["config", "user.email", "test@veyron.dev"])
             .output();
         let _ = std::process::Command::new("git")
             .args(["-C"])
@@ -498,7 +498,7 @@ mod tests {
         let _ = std::process::Command::new("git")
             .args(["-C"])
             .arg(&tmp_src)
-            .args(["config", "user.email", "test@vmrogue.dev"])
+            .args(["config", "user.email", "test@veyron.dev"])
             .output();
         let _ = std::process::Command::new("git")
             .args(["-C"])

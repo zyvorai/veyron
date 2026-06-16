@@ -2,12 +2,12 @@
 
 **See also:** [Documentation index](README.md), [INTERACTIVE_TUI.md](INTERACTIVE_TUI.md).
 
-This document provides implementation details for the VMRogue TUI and CLI theme system, inspired by GuestKit's design patterns.
+This document provides implementation details for the Veyron TUI and CLI theme system, inspired by GuestKit's design patterns.
 
 ## File Structure
 
 ```
-vmrogue/
+veyron/
 ├── src/
 │   └── tui/
 │       ├── mod.rs           # Module exports
@@ -86,7 +86,7 @@ use veyron::tui::colors::cli;
 use veyron::tui::colors::{vm_status_symbol, resource_bar};
 
 // Format text with colors
-println!("{}", cli::header("VMRogue Dashboard"));
+println!("{}", cli::header("Veyron Dashboard"));
 println!("VM: {}", cli::vm_name("web-server"));
 println!("Namespace: {}", cli::namespace("default"));
 println!("Status: {}", cli::vm_status("running"));

@@ -10,11 +10,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::operator_crds::{VMProfile, VMProfileSpec, VMRogueVMSpec, VMTemplate, VMTemplateSpec};
+use crate::operator_crds::{VMProfile, VMProfileSpec, VeyronVMSpec, VMTemplate, VMTemplateSpec};
 use crate::profiles::PROFILES;
 use crate::templates::TEMPLATES;
 
-const MANAGED_LABEL: &str = "vmrogue-catalog-export";
+const MANAGED_LABEL: &str = "veyron-catalog-export";
 
 pub fn embedded_template_count() -> usize {
     TEMPLATES.list().len()
@@ -45,7 +45,7 @@ fn build_template_crd(name: &str) -> Result<VMTemplate> {
     let config = TEMPLATES
         .get(name)
         .ok_or_else(|| anyhow::anyhow!("template missing: {name}"))?;
-    let default_spec = VMRogueVMSpec::from(&config);
+    let default_spec = VeyronVMSpec::from(&config);
     let family = template_family(name);
     let recommended = crate::profiles::ProfileManager::suggest_profile_for_template(name)
         .map(|p| vec![p])
@@ -54,13 +54,13 @@ fn build_template_crd(name: &str) -> Result<VMTemplate> {
         metadata: kube::api::ObjectMeta {
             name: Some(name.to_string()),
             labels: Some(BTreeMap::from([(
-                "vmrogue.io/managed-by".to_string(),
+                "veyron.io/managed-by".to_string(),
                 MANAGED_LABEL.to_string(),
             )])),
             ..Default::default()
         },
         spec: VMTemplateSpec {
-            description: Some(format!("VMRogue built-in template: {name}")),
+            description: Some(format!("Veyron built-in template: {name}")),
             tags: vec![family.clone()],
             family: Some(family),
             recommended_profiles: recommended,
@@ -76,7 +76,7 @@ fn build_profile_crd(profile: &crate::profiles::Profile) -> VMProfile {
         metadata: kube::api::ObjectMeta {
             name: Some(profile.name.clone()),
             labels: Some(BTreeMap::from([(
-                "vmrogue.io/managed-by".to_string(),
+                "veyron.io/managed-by".to_string(),
                 MANAGED_LABEL.to_string(),
             )])),
             ..Default::default()
@@ -206,7 +206,7 @@ pub async fn catalog_status(client: &kube::Client) -> CatalogStatus {
                 missing_templates: vec![],
                 missing_profiles: vec![],
                 message: Some(
-                    "vmrogue.io VMTemplate/VMProfile CRDs not installed — install operator CRDs first."
+                    "veyron.io VMTemplate/VMProfile CRDs not installed — install operator CRDs first."
                         .to_string(),
                 ),
             };

@@ -8,9 +8,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// VMRogueBlueprintSpec defines a multi-VM deployment with dependency ordering.
+// VeyronBlueprintSpec defines a multi-VM deployment with dependency ordering.
 // Mirrors the Rust Blueprint from src/blueprints/mod.rs.
-type VMRogueBlueprintSpec struct {
+type VeyronBlueprintSpec struct {
 	// Human-readable description of this blueprint.
 	// +optional
 	Description string `json:"description,omitempty"`
@@ -26,7 +26,7 @@ type VMRogueBlueprintSpec struct {
 // BlueprintVMSpec defines a single VM within a blueprint.
 // Mirrors the Rust VMSpec from src/blueprints/mod.rs.
 type BlueprintVMSpec struct {
-	// VM name within the blueprint (used as suffix for the VMRogueVM CR name).
+	// VM name within the blueprint (used as suffix for the VeyronVM CR name).
 	Name string `json:"name"`
 
 	// OS template name (e.g. "ubuntu-22.04").
@@ -52,13 +52,13 @@ type BlueprintVMSpec struct {
 	// +optional
 	DependsOn []string `json:"dependsOn,omitempty"`
 
-	// Labels to apply to the created VMRogueVM.
+	// Labels to apply to the created VeyronVM.
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
 
-	// Full VMRogueVM spec override for advanced configuration.
+	// Full VeyronVM spec override for advanced configuration.
 	// +optional
-	Override *VMRogueVMSpec `json:"override,omitempty"`
+	Override *VeyronVMSpec `json:"override,omitempty"`
 }
 
 // BlueprintPhase describes the deployment phase of a blueprint.
@@ -79,9 +79,9 @@ type VMDeploymentStatus struct {
 	Name string `json:"name"`
 
 	// Current phase of the VM.
-	Phase VMRogueVMPhase `json:"phase"`
+	Phase VeyronVMPhase `json:"phase"`
 
-	// Name of the created VMRogueVM CR.
+	// Name of the created VeyronVM CR.
 	// +optional
 	VMRef string `json:"vmRef,omitempty"`
 
@@ -90,8 +90,8 @@ type VMDeploymentStatus struct {
 	Message string `json:"message,omitempty"`
 }
 
-// VMRogueBlueprintStatus defines the observed state of VMRogueBlueprint.
-type VMRogueBlueprintStatus struct {
+// VeyronBlueprintStatus defines the observed state of VeyronBlueprint.
+type VeyronBlueprintStatus struct {
 	// Overall deployment phase.
 	// +optional
 	Phase BlueprintPhase `json:"phase,omitempty"`
@@ -129,24 +129,24 @@ type VMRogueBlueprintStatus struct {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:shortName=vrbp
 
-// VMRogueBlueprint is the Schema for the vmrogueblueprints API.
-type VMRogueBlueprint struct {
+// VeyronBlueprint is the Schema for the veyronblueprints API.
+type VeyronBlueprint struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VMRogueBlueprintSpec   `json:"spec,omitempty"`
-	Status VMRogueBlueprintStatus `json:"status,omitempty"`
+	Spec   VeyronBlueprintSpec   `json:"spec,omitempty"`
+	Status VeyronBlueprintStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// VMRogueBlueprintList contains a list of VMRogueBlueprint.
-type VMRogueBlueprintList struct {
+// VeyronBlueprintList contains a list of VeyronBlueprint.
+type VeyronBlueprintList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VMRogueBlueprint `json:"items"`
+	Items           []VeyronBlueprint `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&VMRogueBlueprint{}, &VMRogueBlueprintList{})
+	SchemeBuilder.Register(&VeyronBlueprint{}, &VeyronBlueprintList{})
 }

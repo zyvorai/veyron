@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// VMRoguePolicySpec defines declarative policy rules for VMRogueVMs.
-type VMRoguePolicySpec struct {
+// VeyronPolicySpec defines declarative policy rules for VeyronVMs.
+type VeyronPolicySpec struct {
 	// Human-readable description.
 	// +optional
 	Description string `json:"description,omitempty"`
@@ -30,7 +30,7 @@ type VMRoguePolicySpec struct {
 	// +kubebuilder:validation:Enum=SOC2;HIPAA;PCI-DSS;GDPR;ISO27001;NIST;CIS;FedRAMP;Custom
 	Framework string `json:"framework,omitempty"`
 
-	// Label selector to match VMRogueVMs this policy applies to.
+	// Label selector to match VeyronVMs this policy applies to.
 	// If empty, applies to all VMs in the namespace.
 	// +optional
 	Selector *metav1.LabelSelector `json:"selector,omitempty"`
@@ -39,13 +39,13 @@ type VMRoguePolicySpec struct {
 	Rules []PolicyRuleSpec `json:"rules"`
 }
 
-// PolicyRuleSpec defines a single policy rule evaluated against VMRogueVM specs.
+// PolicyRuleSpec defines a single policy rule evaluated against VeyronVM specs.
 type PolicyRuleSpec struct {
 	// Rule name.
 	Name string `json:"name"`
 
-	// CEL expression evaluated against the VMRogueVM spec.
-	// The expression has access to `spec` (VMRogueVMSpec) and `metadata` (ObjectMeta).
+	// CEL expression evaluated against the VeyronVM spec.
+	// The expression has access to `spec` (VeyronVMSpec) and `metadata` (ObjectMeta).
 	// Must evaluate to a boolean. True means compliant.
 	Condition string `json:"condition"`
 
@@ -71,9 +71,9 @@ type PolicyViolation struct {
 	Timestamp metav1.Time `json:"timestamp"`
 }
 
-// VMRoguePolicyStatus defines the observed state of VMRoguePolicy.
-type VMRoguePolicyStatus struct {
-	// Number of VMRogueVMs matching this policy's selector.
+// VeyronPolicyStatus defines the observed state of VeyronPolicy.
+type VeyronPolicyStatus struct {
+	// Number of VeyronVMs matching this policy's selector.
 	// +optional
 	MatchingVMs int `json:"matchingVMs,omitempty"`
 
@@ -107,24 +107,24 @@ type VMRoguePolicyStatus struct {
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:shortName=vrpol
 
-// VMRoguePolicy is the Schema for the vmroguepolicies API.
-type VMRoguePolicy struct {
+// VeyronPolicy is the Schema for the veyronpolicies API.
+type VeyronPolicy struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VMRoguePolicySpec   `json:"spec,omitempty"`
-	Status VMRoguePolicyStatus `json:"status,omitempty"`
+	Spec   VeyronPolicySpec   `json:"spec,omitempty"`
+	Status VeyronPolicyStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// VMRoguePolicyList contains a list of VMRoguePolicy.
-type VMRoguePolicyList struct {
+// VeyronPolicyList contains a list of VeyronPolicy.
+type VeyronPolicyList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VMRoguePolicy `json:"items"`
+	Items           []VeyronPolicy `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&VMRoguePolicy{}, &VMRoguePolicyList{})
+	SchemeBuilder.Register(&VeyronPolicy{}, &VeyronPolicyList{})
 }

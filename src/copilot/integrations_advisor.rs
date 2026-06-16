@@ -25,7 +25,7 @@ const INTEGRATIONS: &[(&str, &str)] = &[
 /// Which optional backends are configured vs missing.
 pub async fn integrations_advisor() -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Integrations Advisor",
+        "Veyron Integrations Advisor",
         "integrations_advisor",
         "Optional backend wiring",
     );

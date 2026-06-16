@@ -113,7 +113,7 @@ pub fn to_ecs_doc(ev: &SecurityEvent) -> serde_json::Value {
         "kubernetes": {
             "namespace": ev.namespace,
         },
-        "vmrogue": {
+        "veyron": {
             "source": ev.source,
             "action": ev.action,
             "labels": ev.labels,
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn ecs_doc_has_timestamp() {
-        let ev = SecurityEvent::new("audit", "high", "vmrogue", "test");
+        let ev = SecurityEvent::new("audit", "high", "veyron", "test");
         let doc = to_ecs_doc(&ev);
         assert!(doc.get("@timestamp").is_some());
     }

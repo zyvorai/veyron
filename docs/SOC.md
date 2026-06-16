@@ -1,6 +1,6 @@
 # Veyron Security Operations (SOC)
 
-VMRogue SOC provides a normalized security event stream, built-in threat detections, optional SIEM push (Elastic ECS, Splunk HEC, Microsoft Sentinel, QRadar LEEF), read-only threat hunts, attack-surface inventory, and SOAR webhooks.
+Veyron SOC provides a normalized security event stream, built-in threat detections, optional SIEM push (Elastic ECS, Splunk HEC, Microsoft Sentinel, QRadar LEEF), read-only threat hunts, attack-surface inventory, and SOAR webhooks.
 
 ## Dashboard
 
@@ -34,8 +34,8 @@ Namespace scoping uses the same `?namespace=` query as other dashboard pages.
 
 Events and detections are stored in labeled ConfigMaps in the API namespace:
 
-- `vmrogue.io/type=soc-events` — rolling buffer (~500 events)
-- `vmrogue.io/type=soc-detections` — merged detection state including acks
+- `veyron.io/type=soc-events` — rolling buffer (~500 events)
+- `veyron.io/type=soc-detections` — merged detection state including acks
 
 Collectors ingest Kubernetes Events, VM security findings, and API audit mutations (non-GET routes on VMs, snapshots, RDP/SSH expose, guest-agent, `/soc/*`).
 
@@ -46,7 +46,7 @@ Collectors ingest Kubernetes Events, VM security findings, and API audit mutatio
 | `rdp-public-expose` | RDP NodePort service on a VM |
 | `ssh-nodeport-expose` | SSH expose via NodePort/LoadBalancer |
 | `no-network-policy-ns` | Namespace with VMs but zero NetworkPolicies |
-| `vmrogue-drift` | VMRogueVM `status.driftDetected` |
+| `veyron-drift` | VeyronVM `status.driftDetected` |
 | `privileged-vm-spec` | Privileged virt-launcher domain spec |
 | `burst-failed-scheduling` | Burst of FailedScheduling events |
 
@@ -62,7 +62,7 @@ Set on the API Deployment or `veyron-integrations` Secret (see `deploy/k8s/optio
 |----------|----------|-------|
 | `VEYRON_ELASTIC_URL` | yes | e.g. `https://elastic:9200` |
 | `VEYRON_ELASTIC_API_KEY` | yes | API key or encoded key |
-| `VEYRON_ELASTIC_INDEX` | no | default `vmrogue-security` |
+| `VEYRON_ELASTIC_INDEX` | no | default `veyron-security` |
 | `VEYRON_ELASTIC_PIPELINE` | no | ingest pipeline name |
 | `VEYRON_ELASTIC_HUNT_ENABLED` | no | `true` for dashboard/API hunts |
 

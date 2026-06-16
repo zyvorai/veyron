@@ -2,7 +2,7 @@
 
 use super::yaml_build::YamlBuildRequest;
 use crate::kube::KubeClient;
-use crate::operator_crds::{CRDBlueprintVMSpec, VMRogueBlueprint, VMRogueBlueprintSpec};
+use crate::operator_crds::{CRDBlueprintVMSpec, VeyronBlueprint, VeyronBlueprintSpec};
 use kube::api::{Api, PostParams};
 use serde::{Deserialize, Serialize};
 
@@ -30,13 +30,13 @@ pub fn spec_from_yaml_build(
     req: &YamlBuildRequest,
     description: Option<String>,
     tags: Vec<String>,
-) -> VMRogueBlueprintSpec {
+) -> VeyronBlueprintSpec {
     let name = req.name.clone().unwrap_or_else(|| "copilot-vm".to_string());
     let template = req
         .template
         .clone()
         .unwrap_or_else(|| "ubuntu-22.04".to_string());
-    VMRogueBlueprintSpec {
+    VeyronBlueprintSpec {
         description,
         vms: vec![CRDBlueprintVMSpec {
             name,
@@ -63,16 +63,16 @@ pub async fn save_blueprint(
         .blueprint_name
         .filter(|n| !n.trim().is_empty())
         .unwrap_or_else(|| format!("bp-{}", random_suffix()));
-    let bp = VMRogueBlueprint::new(&name, spec);
-    let api: Api<VMRogueBlueprint> = Api::namespaced(client.client().clone(), namespace);
+    let bp = VeyronBlueprint::new(&name, spec);
+    let api: Api<VeyronBlueprint> = Api::namespaced(client.client().clone(), namespace);
     api.create(&PostParams::default(), &bp)
         .await
-        .map_err(|e| format!("Could not create VMRogueBlueprint: {e}"))?;
+        .map_err(|e| format!("Could not create VeyronBlueprint: {e}"))?;
     Ok(BlueprintSaveResponse {
         name: name.clone(),
         namespace: namespace.to_string(),
         vm_count,
-        message: format!("Saved VMRogueBlueprint {namespace}/{name} ({vm_count} VM slot(s))"),
+        message: format!("Saved VeyronBlueprint {namespace}/{name} ({vm_count} VM slot(s))"),
     })
 }
 

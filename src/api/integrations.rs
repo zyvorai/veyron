@@ -73,7 +73,7 @@ pub async fn deliver_pagerduty(routing_key: &str, summary: &str, severity: &str)
         "payload": {
             "summary": summary,
             "severity": severity,
-            "source": "vmrogue"
+            "source": "veyron"
         }
     });
     post_json("https://events.pagerduty.com/v2/enqueue", &body, None).await
@@ -91,7 +91,7 @@ pub async fn deliver_email(
         "subject": subject,
         "text": body,
         "to": recipients,
-        "from": env_var("VMROGUE_EMAIL_FROM").unwrap_or_else(|| "vmrogue@local".to_string())
+        "from": env_var("VMROGUE_EMAIL_FROM").unwrap_or_else(|| "veyron@local".to_string())
     });
     post_json(
         relay_url,
@@ -107,7 +107,7 @@ pub async fn deliver_sms(relay_url: &str, body: &str, phone_numbers: &[String]) 
     let payload = serde_json::json!({
         "text": body,
         "to": phone_numbers,
-        "from": env_var("VMROGUE_SMS_FROM").unwrap_or_else(|| "vmrogue".to_string())
+        "from": env_var("VMROGUE_SMS_FROM").unwrap_or_else(|| "veyron".to_string())
     });
     post_json(
         relay_url,

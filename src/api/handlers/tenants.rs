@@ -16,8 +16,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
-pub const TENANT_CM_LABEL: &str = "vmrogue.io/type=tenant";
-pub const TENANT_NS_LABEL: &str = "vmrogue.io/tenant";
+pub const TENANT_CM_LABEL: &str = "veyron.io/type=tenant";
+pub const TENANT_NS_LABEL: &str = "veyron.io/tenant";
 const TENANT_DATA_KEY: &str = "tenant.json";
 const TENANT_NS: &str = "veyron-system";
 
@@ -108,7 +108,7 @@ async fn bootstrap_tenant_namespace(
     if ns_api.get(&ns_name).await.is_err() {
         let mut labels = BTreeMap::new();
         labels.insert(TENANT_NS_LABEL.to_string(), tenant_id.to_string());
-        labels.insert("vmrogue.io/managed-by".to_string(), "vmrogue".to_string());
+        labels.insert("veyron.io/managed-by".to_string(), "veyron".to_string());
         let ns = Namespace {
             metadata: kube::api::ObjectMeta {
                 name: Some(ns_name.clone()),
@@ -252,7 +252,7 @@ async fn create_tenant(
     use std::collections::BTreeMap;
 
     let mut labels = BTreeMap::new();
-    labels.insert("vmrogue.io/type".to_string(), "tenant".to_string());
+    labels.insert("veyron.io/type".to_string(), "tenant".to_string());
     labels.insert(TENANT_NS_LABEL.to_string(), req.id.clone());
 
     let mut data = BTreeMap::new();

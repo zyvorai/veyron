@@ -35,7 +35,7 @@ pub async fn dispatch_intent(
     match intent {
         CopilotIntent::VmDoctor => match resolve_vm_target(req, scope, query) {
             Some((ns, name)) => vm_doctor(client, ns, &name).await,
-            None => vm_name_required("VMRogue Doctor", "vm_doctor", query),
+            None => vm_name_required("Veyron Doctor", "vm_doctor", query),
         },
         CopilotIntent::SchedulingExplainer => match resolve_vm_target(req, scope, query) {
             Some((ns, name)) => scheduling_explainer(client, ns, &name).await,
@@ -54,7 +54,7 @@ pub async fn dispatch_intent(
         CopilotIntent::NetworkLens => match resolve_vm_target(req, scope, query) {
             Some((ns, name)) => network_lens(client, ns, &name).await,
             None => vm_name_required(
-                "VMRogue Network Lens",
+                "Veyron Network Lens",
                 "network_lens",
                 "Include a VM name — e.g. “Show network for vm-app-01”.",
             ),
@@ -62,7 +62,7 @@ pub async fn dispatch_intent(
         CopilotIntent::GuestInspector => match resolve_vm_target(req, scope, query) {
             Some((ns, name)) => guest_inspector(client, ns, &name).await,
             None => vm_name_required(
-                "VMRogue Guest Inspector",
+                "Veyron Guest Inspector",
                 "guest_inspector",
                 "Include a VM name — e.g. “Show guest agent status for vm-db-01”.",
             ),
@@ -70,7 +70,7 @@ pub async fn dispatch_intent(
         CopilotIntent::GuestFilesystem => match resolve_vm_target(req, scope, query) {
             Some((ns, name)) => guest_filesystem_report(client, ns, &name).await,
             None => vm_name_required(
-                "VMRogue Guest Filesystem",
+                "Veyron Guest Filesystem",
                 "guest_filesystem",
                 "Include a VM name — e.g. “Show guest filesystem for vm-db-01”.",
             ),
@@ -115,7 +115,7 @@ fn vm_name_required(module: &str, intent: &str, summary: impl Into<String>) -> C
 
 async fn list_unhealthy_vms(client: &KubeClient, scope: &str) -> CopilotResponse {
     let mut r = CopilotResponse::new(
-        "VMRogue Doctor",
+        "Veyron Doctor",
         "unhealthy_fleet",
         "Unhealthy VMs in scope",
     );
@@ -148,7 +148,7 @@ async fn list_unhealthy_vms(client: &KubeClient, scope: &str) -> CopilotResponse
         r.summary = format!("Found {} VM(s) needing attention.", unhealthy.len());
         r.evidence = unhealthy;
         r.recommendations
-            .push("Open VMRogue Doctor on the worst offender first.".into());
+            .push("Open Veyron Doctor on the worst offender first.".into());
     }
     r.actions.push(CopilotAction {
         label: "Open Virtual Machines".into(),

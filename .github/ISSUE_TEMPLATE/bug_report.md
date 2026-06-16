@@ -12,7 +12,7 @@ A clear and concise description of what the bug is.
 
 ## Steps to Reproduce
 
-1. Run command: `vmrogue ...`
+1. Run command: `veyron ...`
 2. With configuration: ...
 3. See error: ...
 
@@ -28,7 +28,7 @@ What actually happened.
 
 - **OS**: (e.g., Ubuntu 22.04, macOS 14)
 - **Rust Version**: (run `rustc --version`)
-- **vmrogue Version**: (run `vmrogue --version`)
+- **veyron Version**: (run `veyron --version`)
 - **Kubernetes Version**: (run `kubectl version`)
 - **KubeVirt Version**: (if applicable)
 

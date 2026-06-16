@@ -404,7 +404,7 @@ pub fn handle_api_status(output: String) -> Result<()> {
             );
             println!();
             println!("  Default port: {}", color::value("8080"));
-            println!("  Start with:   {}", color::value("vmrogue api-serve"));
+            println!("  Start with:   {}", color::value("veyron api-serve"));
         }
     }
     Ok(())
@@ -522,7 +522,7 @@ pub fn handle_api_key_list(active_only: bool, output: String) -> Result<()> {
         println!("  {}", color::muted("No API keys found"));
         println!(
             "  {}",
-            color::muted("Use 'vmrogue api-key-create' to create one")
+            color::muted("Use 'veyron api-key-create' to create one")
         );
     }
 
@@ -618,7 +618,7 @@ pub fn handle_webhook_list(active_only: bool, output: String) -> Result<()> {
         println!("  {}", color::muted("No webhooks registered"));
         println!(
             "  {}",
-            color::muted("Use 'vmrogue webhook-create' to register one")
+            color::muted("Use 'veyron webhook-create' to register one")
         );
     } else if output == "json" {
         let json = serde_json::to_string_pretty(&filtered)?;
@@ -807,7 +807,7 @@ pub fn handle_event_list(
     for (i, (event_type, _desc)) in event_types.iter().enumerate() {
         let event = Event::new(*event_type, format!("vm-{:02}", i + 1))
             .add_data("namespace", &namespace)
-            .add_data("source", "vmrogue");
+            .add_data("source", "veyron");
         events.push(event);
     }
 
@@ -894,7 +894,7 @@ pub fn handle_event_recent(namespace: String, limit: usize, output: String) -> R
         event.timestamp = ts;
         event = event
             .add_data("namespace", &namespace)
-            .add_data("source", "vmrogue");
+            .add_data("source", "veyron");
         events.push(event);
     }
 
@@ -1177,7 +1177,7 @@ mod tests {
 
         let event = Event::new("vm.started", "web-server-01")
             .add_data("namespace", "production")
-            .add_data("source", "vmrogue");
+            .add_data("source", "veyron");
 
         assert_eq!(event.event_type, "vm.started");
         assert_eq!(event.source, "web-server-01");

@@ -286,7 +286,7 @@ impl VMConfigBuilder {
 
     /// User data delivered via config-drive ISO (`cloudInitConfigDrive`), e.g. Cloudbase-Init on Windows.
     ///
-    /// VMRogue creates a Secret with userdata and references it from the volume (see API create VM path).
+    /// Veyron creates a Secret with userdata and references it from the volume (see API create VM path).
     pub fn cloud_init_config_drive(mut self, user_data: impl Into<String>) -> Self {
         self.config.cloud_init = Some(CloudInitConfig {
             user_data: user_data.into(),
@@ -347,7 +347,7 @@ impl VMConfigBuilder {
         self
     }
 
-    /// Enable or disable VMRogue-managed internet egress policy for virt-launcher pods.
+    /// Enable or disable Veyron-managed internet egress policy for virt-launcher pods.
     pub fn allow_internet(mut self, enabled: bool) -> Self {
         self.config.allow_internet = enabled;
         self

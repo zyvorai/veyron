@@ -3,7 +3,7 @@
 # test-vm-daily-ops-remote.sh — HTTPS API E2E for daily VM operations
 # ============================================================================
 # Exercises create, start, stop, pause, unpause, SSH expose, RDP expose, and
-# snapshot create/list (optional restore) against a remote VMRogue NodePort API.
+# snapshot create/list (optional restore) against a remote Veyron NodePort API.
 # curl-only (no jq). Exits 1 if any check fails.
 #
 # Usage:
@@ -37,7 +37,7 @@ fi
 
 BASE="https://${HOST}:${PORT}"
 TS="$(date +%s)"
-VM_NAME="vmrogue-e2e-${TS}"
+VM_NAME="veyron-e2e-${TS}"
 SNAP_NAME="${VM_NAME}-snap-e2e"
 RDP_PORT="${VEYRON_E2E_RDP_PORT:-30150}"
 
@@ -153,7 +153,7 @@ cleanup_vm() {
 
 trap cleanup_vm EXIT
 
-echo -e "${B}VMRogue daily-ops E2E${N} → ${BASE} (ns=${NS}, vm=${VM_NAME})"
+echo -e "${B}Veyron daily-ops E2E${N} → ${BASE} (ns=${NS}, vm=${VM_NAME})"
 echo ""
 
 # ═══════════════════════════════════════════════

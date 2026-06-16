@@ -2,12 +2,12 @@
 
 **See also:** [Documentation index](README.md), [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md), [FEATURE_MATRIX.md](FEATURE_MATRIX.md).
 
-VMRogue includes higher-level workflows that reduce manual VM orchestration effort.
+Veyron includes higher-level workflows that reduce manual VM orchestration effort.
 
 ## Prerequisites
 
 - KubeVirt cluster access from your local environment
-- `vmrogue` binary installed and authenticated to the cluster
+- `veyron` binary installed and authenticated to the cluster
 
 ## 📊 Feature Overview
 
@@ -43,16 +43,16 @@ Pre-configured resource profiles that eliminate guesswork when creating VMs. Eac
 
 ```bash
 # List all profiles
-vmrogue profiles
+veyron profiles
 
 # Show detailed profile information
-vmrogue profiles --details
+veyron profiles --details
 
 # View specific profile
-vmrogue profile database
+veyron profile database
 
 # Create VM with profile
-vmrogue create mydb --template ubuntu --profile database
+veyron create mydb --template ubuntu --profile database
 ```
 
 ### Example Output
@@ -120,34 +120,34 @@ VMs: 3 (db + cache + workspace)
 
 ```bash
 # List all blueprints
-vmrogue blueprints
+veyron blueprints
 
 # Show detailed blueprint info
-vmrogue blueprints --details
+veyron blueprints --details
 
 # Filter by tag
-vmrogue blueprints --tag web
+veyron blueprints --tag web
 
 # View specific blueprint
-vmrogue blueprint lamp
+veyron blueprint lamp
 
 # Deploy blueprint (dry run)
-vmrogue deploy lamp --dry-run
+veyron deploy lamp --dry-run
 
 # Deploy blueprint with custom prefix
-vmrogue deploy lamp --prefix myapp
+veyron deploy lamp --prefix myapp
 
 # Deploy and start all VMs
-vmrogue deploy lamp --start
+veyron deploy lamp --start
 
 # Deploy to specific namespace
-vmrogue deploy k8s-cluster --prefix prod --namespace production
+veyron deploy k8s-cluster --prefix prod --namespace production
 ```
 
 ### Example: Deploy LAMP Stack
 
 ```bash
-$ vmrogue deploy lamp --dry-run
+$ veyron deploy lamp --dry-run
 
 ℹ Deploying blueprint: lamp
   Description: LAMP Stack (Linux + Apache + MySQL + PHP)
@@ -190,13 +190,13 @@ Automated diagnostics that analyze VM configurations and provide actionable reco
 
 ```bash
 # Check VM config file health
-vmrogue health examples/my-vm.yaml
+veyron health examples/my-vm.yaml
 
 # Check running VM health
-vmrogue health my-running-vm
+veyron health my-running-vm
 
 # Show detailed checks
-vmrogue health my-vm --detailed
+veyron health my-vm --detailed
 ```
 
 ### Example Output
@@ -235,21 +235,21 @@ Smart resource suggestions based on workload type. Get instant recommendations f
 
 ```bash
 # Get recommendations for workload
-vmrogue recommend database
+veyron recommend database
 
 # Show alternatives
-vmrogue recommend web --alternatives
+veyron recommend web --alternatives
 
 # Examples
-vmrogue recommend ci
-vmrogue recommend cache
-vmrogue recommend ml
+veyron recommend ci
+veyron recommend cache
+veyron recommend ml
 ```
 
 ### Example: Database Workload
 
 ```bash
-$ vmrogue recommend database
+$ veyron recommend database
 
 ═══ Resource Recommendations for: database ═══
 
@@ -265,7 +265,7 @@ $ vmrogue recommend database
   Recommended OS: ubuntu-22.04, debian-12, almalinux
 
   ℹ Quick create command:
-    vmrogue create mydb --template ubuntu-22.04 --profile database
+    veyron create mydb --template ubuntu-22.04 --profile database
 ```
 
 ### Supported Workload Types
@@ -286,46 +286,46 @@ $ vmrogue recommend database
 
 ```bash
 # Get recommendation
-vmrogue recommend development
+veyron recommend development
 
 # Create with recommended profile
-vmrogue create dev-vm --template ubuntu --profile dev
+veyron create dev-vm --template ubuntu --profile dev
 ```
 
 ### Example 2: Production Database
 
 ```bash
 # Check what's recommended for database
-vmrogue recommend database
+veyron recommend database
 
 # Create with database profile
-vmrogue create prod-db --template almalinux --profile database
+veyron create prod-db --template almalinux --profile database
 
 # Verify health
-vmrogue health prod-db
+veyron health prod-db
 ```
 
 ### Example 3: Deploy Complete Stack
 
 ```bash
 # See what's available
-vmrogue blueprints
+veyron blueprints
 
 # Deploy 3-tier application
-vmrogue deploy 3tier --prefix myapp --start
+veyron deploy 3tier --prefix myapp --start
 
 # Check deployed VMs
-vmrogue list
+veyron list
 ```
 
 ### Example 4: CI/CD Infrastructure
 
 ```bash
 # Review blueprint
-vmrogue blueprint cicd
+veyron blueprint cicd
 
 # Deploy with custom naming
-vmrogue deploy cicd --prefix ci-prod --namespace devops
+veyron deploy cicd --prefix ci-prod --namespace devops
 
 # VMs created:
 # - ci-prod-gitlab-server
@@ -341,41 +341,41 @@ vmrogue deploy cicd --prefix ci-prod --namespace devops
 
 ```bash
 # 1. Get recommendations for your workload
-vmrogue recommend web
+veyron recommend web
 
 # 2. Check available templates
-vmrogue templates
+veyron templates
 
 # 3. View profile details
-vmrogue profile web
+veyron profile web
 
 # 4. Create VM with profile
-vmrogue create web-server --template ubuntu-24.04 --profile web
+veyron create web-server --template ubuntu-24.04 --profile web
 
 # 5. Run health check
-vmrogue health web-server
+veyron health web-server
 
 # 6. Start the VM
-vmrogue start web-server
+veyron start web-server
 ```
 
 ### Advanced Workflow: Multi-VM Deployment
 
 ```bash
 # 1. Explore available blueprints
-vmrogue blueprints --details
+veyron blueprints --details
 
 # 2. Review specific blueprint
-vmrogue blueprint k8s-cluster
+veyron blueprint k8s-cluster
 
 # 3. Dry run deployment
-vmrogue deploy k8s-cluster --prefix prod --dry-run
+veyron deploy k8s-cluster --prefix prod --dry-run
 
 # 4. Actually deploy
-vmrogue deploy k8s-cluster --prefix prod --start
+veyron deploy k8s-cluster --prefix prod --start
 
 # 5. Monitor VMs
-vmrogue list
+veyron list
 ```
 
 ---
@@ -461,14 +461,14 @@ Coming soon:
 
 ## 🎉 Summary
 
-VMRogue's innovative features provide:
+Veyron's innovative features provide:
 
 ✅ **8 Resource Profiles** - Optimized for different workloads
 ✅ **5 Multi-VM Blueprints** - Deploy complete stacks
 ✅ **Automated Health Checks** - Real K8s connectivity and KubeVirt API probes
 ✅ **Smart Recommendations** - AI-like resource suggestions
 ✅ **Dependency Management** - Automatic VM ordering with real annotation-based graph
-✅ **Policy Enforcement** - VMRoguePolicy CRDs block non-compliant VM creation
+✅ **Policy Enforcement** - VeyronPolicy CRDs block non-compliant VM creation
 ✅ **GitOps Export** - Export VMs as CRD manifests for ArgoCD/Flux
 ✅ **Cost Budgets** - Namespace spending limits with anomaly detection
 ✅ **Real Metrics** - Live data from Kubernetes Metrics Server (no fake data)

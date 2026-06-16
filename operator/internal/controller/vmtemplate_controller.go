@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	vmroguev1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
+	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 )
 
 // VMTemplateReconciler validates cluster-scoped VMTemplate catalog entries.
@@ -20,13 +20,13 @@ type VMTemplateReconciler struct {
 	client.Client
 }
 
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmtemplates,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmtemplates/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=vmtemplates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=vmtemplates/status,verbs=get;update;patch
 
 func (r *VMTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var tpl vmroguev1alpha1.VMTemplate
+	var tpl veyronv1alpha1.VMTemplate
 	if err := r.Get(ctx, req.NamespacedName, &tpl); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -50,7 +50,7 @@ func (r *VMTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 func (r *VMTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&vmroguev1alpha1.VMTemplate{}).
+		For(&veyronv1alpha1.VMTemplate{}).
 		Complete(r)
 }
 
@@ -59,13 +59,13 @@ type VMProfileReconciler struct {
 	client.Client
 }
 
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmprofiles,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=vmrogue.io,resources=vmprofiles/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=veyron.io,resources=vmprofiles,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=veyron.io,resources=vmprofiles/status,verbs=get;update;patch
 
 func (r *VMProfileReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var prof vmroguev1alpha1.VMProfile
+	var prof veyronv1alpha1.VMProfile
 	if err := r.Get(ctx, req.NamespacedName, &prof); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -89,6 +89,6 @@ func (r *VMProfileReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 func (r *VMProfileReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&vmroguev1alpha1.VMProfile{}).
+		For(&veyronv1alpha1.VMProfile{}).
 		Complete(r)
 }
