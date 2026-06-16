@@ -1999,9 +1999,13 @@
         apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(vm.name)).then(function(raw) {
           var d = (typeof unwrapData === 'function' ? unwrapData(raw) : raw) || {};
           var panel = activePane.querySelector('.vmr-panel');
-          if (panel) panel.innerHTML = '<div class="vmr-panel-title">YAML</div>' +
-            '<pre style="font-size:.78rem;overflow-x:auto;background:var(--glass-bg,rgba(0,0,0,.3));padding:12px;border-radius:6px;color:var(--text)">' +
-            esc(JSON.stringify(d, null, 2)) + '</pre>';
+          window._vmrSpecJsonCache = JSON.stringify(d, null, 2);
+          if (panel) panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+            '<div class="vmr-panel-title">VM Spec (JSON)</div>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrSpecJsonCache||&apos;&apos;)">Copy JSON</button>' +
+            '</div>' +
+            '<pre style="font-size:.78rem;overflow-x:auto;background:var(--glass-bg,rgba(0,0,0,.3));padding:12px;border-radius:6px;color:var(--text);margin:0">' +
+            esc(window._vmrSpecJsonCache) + '</pre>';
         }).catch(function(e) {
           var panel = activePane.querySelector('.vmr-panel');
           if (panel) panel.innerHTML = '<div class="vmr-panel-title">YAML</div><p style="color:var(--red)">Failed to load: ' + esc(e.message) + '</p>';
