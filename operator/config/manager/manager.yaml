@@ -1,24 +1,24 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vmrogue-operator
-  namespace: vmrogue-system
+  name: veyron-operator
+  namespace: veyron-system
   labels:
-    app.kubernetes.io/name: vmrogue
+    app.kubernetes.io/name: veyron
     app.kubernetes.io/component: operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: vmrogue
+      app.kubernetes.io/name: veyron
       app.kubernetes.io/component: operator
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: vmrogue
+        app.kubernetes.io/name: veyron
         app.kubernetes.io/component: operator
     spec:
-      serviceAccountName: vmrogue-operator
+      serviceAccountName: veyron-operator
       terminationGracePeriodSeconds: 10
       containers:
         - name: manager
@@ -28,7 +28,7 @@ spec:
             - --leader-elect
           env:
             - name: NATS_URL
-              value: "nats://nats.vmrogue-system.svc:4222"
+              value: "nats://nats.veyron-system.svc:4222"
           ports:
             - containerPort: 8081
               name: health

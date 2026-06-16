@@ -147,6 +147,15 @@ pub async fn run(mut cli: Cli) -> Result<()> {
     if let Some(ref kc) = cli.kubeconfig {
         crate::kube::set_kubeconfig_path(kc.clone());
     }
+    // VEYRON_NAMESPACE wins when CLI still has clap default and VMROGUE_NAMESPACE unset.
+    if cli.namespace == "default" {
+        if let Ok(ns) = std::env::var("VEYRON_NAMESPACE") {
+            let ns = ns.trim().to_string();
+            if !ns.is_empty() {
+                cli.namespace = ns;
+            }
+        }
+    }
     // Only apply config namespace if CLI still has the clap default
     if cli.namespace == "default" && app_config.namespace != "default" {
         cli.namespace = app_config.namespace.clone();

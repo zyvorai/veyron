@@ -1,9 +1,9 @@
-# VMRogue
+# VMRogue (Veyron)
 
 [![CI](https://github.com/ssahani/VMRogue/workflows/CI/badge.svg)](https://github.com/ssahani/VMRogue/actions)
 [![Rust](https://img.shields.io/badge/rust-1.88%2B-orange.svg)](https://www.rust-lang.org/)
 
-> Rogue VM management for KubeVirt — forged in Rust.
+> **Veyron** by Zyvor — Kubernetes-native VM command center. Rogue VM management for KubeVirt — forged in Rust.
 
 A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to declaratively build, validate, visualize, and apply KubeVirt VMs.
 
@@ -16,7 +16,7 @@ A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to de
 - **Automated Health Checks** - Diagnostics with scoring and recommendations; health API with real K8s connectivity checks, KubeVirt availability, and process uptime
 - **Smart Recommendations** - AI-like resource suggestions based on workload
 - **Dependency Management** - Automatic VM deployment ordering
-- **Web Dashboard** - Real-time dashboard with 15 pages including VNC console, VM detail panels, security posture, monitoring, workloads, node/pod views, cost page with namespace breakdown and forecast
+- **Web Dashboard** — **Veyron** (Mission Control, Fleet Command, Template Foundry, ConsoleHub, VM Capsule, Stack Health, Event Intelligence, Security Posture) plus 40+ advanced pages via Finder
 - **REST API** - 49 endpoints with OpenAPI spec, JWT Bearer auth, multi-key RBAC, rate limiting, and webhooks
 - **VNC Console** - Browser-based VM console via direct K8s API WebSocket (no virtctl timeout) with Ctrl+Alt+Del, fullscreen, reconnect
 - **Real Kubernetes Metrics** - CPU/memory utilization from Kubernetes Metrics Server (no fake data)

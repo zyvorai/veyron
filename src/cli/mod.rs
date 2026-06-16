@@ -5,22 +5,22 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(name = "vmrogue")]
-#[command(about = "Craft VMs for KubeVirt with Rust power!")]
+#[command(name = "veyron", alias = "vmrogue")]
+#[command(about = "Veyron — Kubernetes-native VM command center (KubeVirt)")]
 #[command(long_about = "\
-Craft VMs for KubeVirt with Rust power!
+Veyron — Kubernetes-native VM command center.
 
-VMRogue is a CLI and TUI for managing KubeVirt virtual machines on Kubernetes.
+Forge, operate, secure, and observe KubeVirt virtual machines from one CLI.
 
 Quick start:
-  vmrogue doctor                     Check cluster connectivity and KubeVirt
-  vmrogue create my-vm -t ubuntu     Create a VM from a template
-  vmrogue ls                         List all VMs
-  vmrogue status my-vm               Show VM status and resources
-  vmrogue tui                        Launch interactive terminal UI
+  veyron doctor                     Check cluster connectivity and KubeVirt
+  veyron create my-vm -t ubuntu     Create a VM from a template
+  veyron ls                         List all VMs
+  veyron status my-vm               Show VM status and resources
+  veyron tui                        Launch interactive terminal UI
 
-  vmrogue commands                   List all commands grouped by category
-  vmrogue <command> --help           Detailed help for any command
+  veyron commands                   List all commands grouped by category
+  veyron <command> --help           Detailed help for any command
 
 Configuration:
   vmrogue config-init                Create default config file
@@ -28,7 +28,8 @@ Configuration:
 
 Environment variables:
   KUBECONFIG                         Path to kubeconfig file
-  VMROGUE_NAMESPACE                  Default namespace
+  VEYRON_NAMESPACE                   Default namespace (VMROGUE_NAMESPACE alias)
+  VMROGUE_NAMESPACE                  Default namespace (legacy alias)
   NO_COLOR                           Disable colored output")]
 #[command(version)]
 pub struct Cli {

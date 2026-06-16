@@ -20,7 +20,7 @@ REPO="${VMROGUE_REGISTRY:-ghcr.io/ssahani/vmrogue}"
 VERSION="${VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
 IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"
-NAMESPACE="vmrogue-system"
+NAMESPACE="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
 MANIFEST="deploy/k8s.yaml"
 API_KEY="Admin@321"
 
@@ -238,8 +238,8 @@ cmd_deploy() {
     ${KUBECTL} create namespace "${NAMESPACE}" --dry-run=client -o yaml | ${KUBECTL} apply -f -
 
     # Create or update API key secret
-    ${KUBECTL} -n "${NAMESPACE}" delete secret vmrogue-api-key --ignore-not-found 2>/dev/null
-    ${KUBECTL} -n "${NAMESPACE}" create secret generic vmrogue-api-key \
+    ${KUBECTL} -n "${NAMESPACE}" delete secret veyron-api-key --ignore-not-found 2>/dev/null
+    ${KUBECTL} -n "${NAMESPACE}" create secret generic veyron-api-key \
         --from-literal=api-key="${API_KEY}"
     echo "API key secret created"
 
@@ -256,18 +256,18 @@ cmd_deploy() {
     echo "Manifests applied"
 
     # Update image and pull policy
-    ${KUBECTL} -n "${NAMESPACE}" set image deployment/vmrogue-api \
-        vmrogue="${IMAGE}" 2>/dev/null || true
+    ${KUBECTL} -n "${NAMESPACE}" set image deployment/veyron-api \
+        veyron="${IMAGE}" 2>/dev/null || true
 
     if [ -n "${pull_policy}" ]; then
-        ${KUBECTL} -n "${NAMESPACE}" patch deployment vmrogue-api \
-            -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"vmrogue\",\"imagePullPolicy\":\"${pull_policy}\"}]}}}}" \
+        ${KUBECTL} -n "${NAMESPACE}" patch deployment veyron-api \
+            -p "{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"veyron\",\"imagePullPolicy\":\"${pull_policy}\"}]}}}}" \
             2>/dev/null || true
     fi
 
     # Wait for rollout
     echo "Waiting for rollout..."
-    ${KUBECTL} -n "${NAMESPACE}" rollout status deployment/vmrogue-api --timeout=120s
+    ${KUBECTL} -n "${NAMESPACE}" rollout status deployment/veyron-api --timeout=120s
 
     echo "Deployed successfully"
     echo ""
@@ -278,22 +278,22 @@ cmd_deploy() {
 cmd_status() {
     echo "Deployment Status (${DISTRO})"
     echo ""
-    ${KUBECTL} -n "${NAMESPACE}" get deployment vmrogue-api -o wide 2>/dev/null || echo "Deployment not found"
+    ${KUBECTL} -n "${NAMESPACE}" get deployment veyron-api -o wide 2>/dev/null || echo "Deployment not found"
     echo ""
-    ${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=vmrogue -o wide 2>/dev/null
+    ${KUBECTL} -n "${NAMESPACE}" get pods -l app.kubernetes.io/name=veyron -o wide 2>/dev/null
     echo ""
-    ${KUBECTL} -n "${NAMESPACE}" get svc vmrogue-api 2>/dev/null || true
+    ${KUBECTL} -n "${NAMESPACE}" get svc veyron-api 2>/dev/null || true
     echo ""
 
     # Show access info
     local node_ip pod_port
     node_ip=$(${KUBECTL} get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' 2>/dev/null)
-    pod_port=$(${KUBECTL} -n "${NAMESPACE}" get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}' 2>/dev/null || echo "")
+    pod_port=$(${KUBECTL} -n "${NAMESPACE}" get svc veyron-api -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}' 2>/dev/null || echo "")
 
     if [ -n "${pod_port}" ]; then
         echo "  Dashboard: https://${node_ip}:${pod_port}/dashboard"
     else
-        echo "  Port-forward: ${KUBECTL} -n ${NAMESPACE} port-forward svc/vmrogue-api 443:443"
+        echo "  Port-forward: ${KUBECTL} -n ${NAMESPACE} port-forward svc/veyron-api 443:443"
         echo "  Dashboard:    https://localhost:443/dashboard"
     fi
     echo "  API Key:    ${API_KEY}"
@@ -301,14 +301,14 @@ cmd_status() {
 
 # ── Tail logs ──
 cmd_logs() {
-    ${KUBECTL} -n "${NAMESPACE}" logs -l app.kubernetes.io/name=vmrogue -f --tail=50
+    ${KUBECTL} -n "${NAMESPACE}" logs -l app.kubernetes.io/name=veyron -f --tail=50
 }
 
 # ── Delete everything ──
 cmd_delete() {
     echo "Removing VMRogue from ${NAMESPACE}..."
     ${KUBECTL} delete -f "${MANIFEST}" --ignore-not-found
-    ${KUBECTL} -n "${NAMESPACE}" delete secret vmrogue-api-key --ignore-not-found
+    ${KUBECTL} -n "${NAMESPACE}" delete secret veyron-api-key --ignore-not-found
     echo "Removed"
 }
 

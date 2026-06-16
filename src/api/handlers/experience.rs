@@ -136,7 +136,7 @@ pub fn router(state: SharedState) -> Router {
 fn experience_context() -> super::feature_context::VmrogueFeatureContext {
     super::feature_context::VmrogueFeatureContext {
         data_source: "experience_compose".to_string(),
-        scope: "ZeusOS experience API — aggregates KubeVirt/K8s into product vocabulary."
+        scope: "Veyron experience API — powered by ZeusOS — aggregates KubeVirt/K8s into product vocabulary."
             .to_string(),
         limitations: "Guest metrics use QEMU agent + optional Prometheus.".to_string(),
     }
@@ -335,7 +335,7 @@ fn keyboard_shortcuts_catalog() -> Vec<KeyboardShortcutItem> {
         },
         KeyboardShortcutItem {
             keys: "⌘,".into(),
-            label: "ZeusOS Preferences".into(),
+            label: "Veyron Preferences".into(),
         },
         KeyboardShortcutItem {
             keys: "/".into(),
@@ -462,13 +462,13 @@ async fn experience_desktop(
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     let summary = if let Ok(vms) = client.list_vms(&scope).await {
         let n = vms.len();
-        Some(format!("ZeusOS · {n} virtual machine(s) in scope"))
+        Some(format!("Veyron · {n} virtual machine(s) in scope"))
     } else {
         None
     };
     Json(ExperienceDesktopResponse {
         vmrogue_context: experience_context(),
-        product: "ZeusOS".to_string(),
+        product: "Veyron".to_string(),
         tiers: desktop_tiers(),
         dock_defaults: dock_defaults(),
         dock_preview_pages: vec!["monitoring".into(), "nodes".into()],
@@ -489,7 +489,7 @@ async fn experience_session(
     let can_admin = role == crate::api::http_server::web::ApiRole::Admin;
     let can_write = can_admin || role == crate::api::http_server::web::ApiRole::Write;
     Json(ExperienceSessionResponse {
-        product: "ZeusOS".to_string(),
+        product: "Veyron".to_string(),
         role: role_label(&role).to_string(),
         can_write,
         can_admin,
@@ -876,8 +876,8 @@ async fn experience_home(
     Json(ExperienceHomeResponse {
         vmrogue_context: experience_context(),
         experience: ExperienceContext {
-            product: "ZeusOS".to_string(),
-            tagline: "A macOS-like control plane for Kubernetes-native virtualization.".to_string(),
+            product: "Veyron".to_string(),
+            tagline: "Kubernetes-native VM command center.".to_string(),
         },
         greeting,
         workspace: workspace_label,
@@ -999,9 +999,11 @@ async fn experience_search(
     }
 
     let pages = [
-        ("dashboard", "ZeusOS Dashboard", "Fleet overview"),
-        ("vms", "Virtual Machines", "KubeVirt fleet"),
-        ("app-store", "Template Store", "App Store for VM images"),
+        ("dashboard", "Veyron Mission Control", "Fleet overview"),
+        ("vms", "Veyron Fleet Command", "KubeVirt fleet"),
+        ("app-store", "Veyron Template Foundry", "Forge VM from templates"),
+        ("console-hub", "Veyron ConsoleHub", "VNC, serial, RDP"),
+        ("stack-health", "Veyron Stack Health", "KubeVirt + CDI readiness"),
         ("catalog", "Catalog (advanced)", "VMTemplate CRD sync"),
         ("backups", "Backups", "Snapshots & Velero"),
         ("monitoring", "Activity Monitor", "Health & metrics"),
@@ -1242,7 +1244,7 @@ async fn experience_search(
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "preferences".to_string(),
-            title: "ZeusOS Preferences".to_string(),
+            title: "Veyron Preferences".to_string(),
             subtitle: "Theme, wallpaper, desktop tier, workspace".to_string(),
             action: "mac:preferences".to_string(),
         });

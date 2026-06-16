@@ -34,12 +34,23 @@ pub mod web {
     use k8s_openapi::api::core::v1::Service;
     use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
     use serde::{Deserialize, Serialize};
+    use once_cell::sync::Lazy;
     use std::borrow::Cow;
     use std::collections::HashMap;
     use std::sync::Arc;
     use tokio::sync::RwLock;
     use tower_http::cors::{AllowOrigin, CorsLayer};
     use tower_http::timeout::TimeoutLayer;
+
+    /// First non-empty environment variable from `keys` (Veyron names take precedence).
+    fn env_var_first(keys: &[&str]) -> Option<String> {
+        keys.iter().find_map(|k| {
+            std::env::var(k)
+                .ok()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+        })
+    }
 
     /// Simple sliding-window rate limiter state.
     struct RateLimiterState {
@@ -140,13 +151,11 @@ pub mod web {
 
     impl WebState {
         pub async fn new(namespace: String, rate_limit_per_minute: u64) -> anyhow::Result<Self> {
-            let api_key = std::env::var("VMROGUE_API_KEY")
-                .ok()
-                .filter(|k| !k.is_empty());
+            let api_key = env_var_first(&["VEYRON_API_KEY", "VMROGUE_API_KEY"]);
             if api_key.is_none() {
                 log::warn!(
-                    "VMROGUE_API_KEY is not set - API will reject all requests. \
-                     Set VMROGUE_API_KEY to enable access."
+                    "VEYRON_API_KEY (or VMROGUE_API_KEY) is not set - API will reject all requests. \
+                     Set VEYRON_API_KEY to enable access."
                 );
             }
 
@@ -160,7 +169,7 @@ pub mod web {
                     name: "primary".to_string(),
                 });
             }
-            if let Ok(keys_str) = std::env::var("VMROGUE_API_KEYS") {
+            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VMROGUE_API_KEYS"]) {
                 for entry in keys_str.split(',') {
                     let parts: Vec<&str> = entry.trim().split(':').collect();
                     if parts.len() >= 2 {
@@ -471,7 +480,7 @@ pub mod web {
                 let (status, json) = err_json(
                     503,
                     "AUTH_NOT_CONFIGURED",
-                    "API key not configured. Set VMROGUE_API_KEY environment variable.",
+                    "API key not configured. Set VEYRON_API_KEY (or VMROGUE_API_KEY) environment variable.",
                 );
                 return (status, json).into_response();
             }
@@ -953,6 +962,13 @@ pub mod web {
                 .merge(
                     Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())),
                 )
+                // Veyron product alias — same handlers as /api/v1/* (VMROGUE_* env still supported).
+                .merge(
+                    Router::new().nest(
+                        "/api/v1/veyron",
+                        crate::api::handlers::all_routes(state.clone()),
+                    ),
+                )
                 .layer(TimeoutLayer::with_status_code(
                     StatusCode::REQUEST_TIMEOUT,
                     std::time::Duration::from_secs(request_timeout_secs),
@@ -1128,6 +1144,12 @@ pub mod web {
         axum::response::Redirect::permanent("/dashboard")
     }
 
+    static DASHBOARD_HTML: Lazy<String> = Lazy::new(|| {
+        include_str!("web/dashboard.html")
+            .replace("/*__VMR_CSS__*/", include_str!("web/dashboard-veyron.css"))
+            .replace("/*__VMR_JS__*/", include_str!("web/dashboard-veyron.js"))
+    });
+
     async fn dashboard_handler() -> impl IntoResponse {
         (
             [
@@ -1135,7 +1157,7 @@ pub mod web {
                 (header::PRAGMA, "no-cache"),
                 (header::EXPIRES, "0"),
             ],
-            Html(include_str!("web/dashboard.html")),
+            Html(DASHBOARD_HTML.as_str()),
         )
     }
 

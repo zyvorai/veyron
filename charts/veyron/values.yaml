@@ -1,0 +1,85 @@
+replicaCount: 1
+
+# Stable resource names (Deployment/Service veyron-api; SA/ClusterRole veyron).
+fullnameOverride: "veyron-api"
+
+image:
+  repository: ghcr.io/ssahani/vmrogue
+  tag: ""  # defaults to Chart.appVersion; same image ships veyron + vmrogue binaries
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+
+serviceAccount:
+  create: true
+  name: "veyron"
+  annotations: {}
+
+service:
+  type: NodePort
+  port: 5151
+  nodePort: 30151
+
+api:
+  host: "0.0.0.0"
+  port: 5151
+  namespace: "default"
+
+tls:
+  enabled: true
+  autoGenerate: true
+  existingSecret: ""
+
+auth:
+  apiKey: ""
+  additionalKeys: ""
+  secretName: "veyron-api-key"
+
+rateLimit:
+  perMinute: 60
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+networkPolicy:
+  enabled: true
+
+rbac:
+  create: true
+  # ClusterRole name (distinct from Deployment veyron-api).
+  clusterRoleName: "veyron"
+
+integrations:
+  prometheusUrl: ""
+  opencostUrl: ""
+  opencostToken: ""
+  trivyUrl: ""
+  lokiUrl: ""
+  jaegerQueryUrl: ""
+  tempoQueryUrl: ""
+  alertmanagerUrl: ""
+  argocdUrl: ""
+  argocdToken: ""
+  packetwolfUrl: ""
+  packetwolfExternalUrl: ""
+  packetwolfApiKey: ""
+  existingSecret: ""
+
+ai:
+  url: ""
+  apiKey: ""
+  model: "gpt-4o-mini"
+  mode: ""
+  maxToolRounds: 2
+  timeoutSecs: 30
+  rateLimitPerMin: 20

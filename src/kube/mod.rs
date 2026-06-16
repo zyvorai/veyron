@@ -55,20 +55,16 @@ pub use converter::vm_config_to_kubevirt;
 pub use status::{ResourceSummary, VMStatus};
 pub use types::*;
 
-/// Dashboard: KubeVirt + CDI readiness from the cluster API (virtctl is workstation-only).
+/// Dashboard: KubeVirt + CDI readiness from the cluster API.
 #[derive(Debug, Clone, Serialize)]
 pub struct PlatformReadiness {
-    /// `VirtualMachine` list API responds (CRDs + RBAC).
     pub kubevirt_api_ok: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kubevirt_api_message: Option<String>,
-    /// `virt-api` and `virt-controller` pods Running in `kubevirt` namespace.
     pub kubevirt_control_plane_ok: bool,
     pub kubevirt_detail: String,
-    /// `cdi-operator` pod Running in `cdi` namespace (DataVolume / import workflows).
     pub cdi_operator_ok: bool,
     pub cdi_detail: String,
-    /// Minimum for **Forge VM**: API + control plane (CDI optional for container disks).
     pub forge_vm_ready: bool,
     pub virtctl_note: &'static str,
 }
@@ -1653,9 +1649,10 @@ impl KubeClient {
         Ok(list.items)
     }
 
-    /// KubeVirt / CDI signals for the dashboard (no local `virtctl` required).
+    /// KubeVirt / CDI signals for Veyron Stack Health.
     pub async fn platform_readiness(&self) -> PlatformReadiness {
-        const VIRTCTL: &str = "virtctl runs on your workstation — not inside the cluster. Optional for the dashboard; use for CLI console/VNC.";
+        const VIRTCTL: &str =
+            "virtctl runs on your workstation — optional for the dashboard; use for CLI console/VNC.";
 
         let (kubevirt_api_ok, kubevirt_api_message) = match self.list_all_vms().await {
             Ok(_) => (true, None),

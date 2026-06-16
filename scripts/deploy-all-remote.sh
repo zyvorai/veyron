@@ -79,7 +79,7 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 API_KEY="${VMROGUE_API_KEY:-Admin@321}"
 VMROGUE_IMAGE="docker.io/library/vmrogue:latest"
 OPERATOR_IMAGE="docker.io/library/vmrogue-operator:latest"
-NAMESPACE="vmrogue-system"
+NAMESPACE="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
 
 [ -f "$REPO_DIR/Cargo.toml" ] || { pkg_fail "Not in vmrogue repo (missing Cargo.toml)"; exit 1; }
 
@@ -340,14 +340,14 @@ deploy_phase_start "🚀 [5/7] Deploying VMRogue API + Operator"
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
 deploy_ssh "${REMOTE}" "
-    ${K8S_CMD} -n ${NAMESPACE} delete deployment vmrogue-api vmrogue-operator \
+    ${K8S_CMD} -n ${NAMESPACE} delete deployment veyron-api veyron-operator vmrogue-api vmrogue-operator \
         --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
-    ${K8S_CMD} -n ${NAMESPACE} delete secret vmrogue-api-key --ignore-not-found --wait=false 2>/dev/null || true
+    ${K8S_CMD} -n ${NAMESPACE} delete secret veyron-api-key --ignore-not-found --wait=false 2>/dev/null || true
 " 2>&1
 
 # Create API key secret
 deploy_ssh "${REMOTE}" "
-    ${K8S_CMD} -n ${NAMESPACE} create secret generic vmrogue-api-key \
+    ${K8S_CMD} -n ${NAMESPACE} create secret generic veyron-api-key \
         --from-literal=api-key='${API_KEY}'
 " 2>&1
 
@@ -356,7 +356,7 @@ deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/deploy/k8s.yaml" 2>&1
 
 # Optional: Prometheus / Alertmanager / Loki URLs when those namespaces exist
 if [[ -f "${REPO_DIR}/scripts/lib/bootstrap-integrations.sh" ]]; then
-    deploy_substep "🔗 Wiring vmrogue-integrations Secret (if monitoring/loki present)…"
+    deploy_substep "🔗 Wiring veyron-integrations Secret (if monitoring/loki present)…"
     deploy_ssh "${REMOTE}" "bash ${DEPLOY_DIR}/scripts/lib/bootstrap-integrations.sh '${K8S_CMD}' '${NAMESPACE}'" 2>&1 || \
         pkg_warn "integrations bootstrap skipped or failed (non-fatal)"
 fi
@@ -368,12 +368,12 @@ deploy_ssh "${REMOTE}" "${K8S_CMD} apply -f ${DEPLOY_DIR}/operator/config/manage
 # kubelet using a cached layer unless pods are recreated after image import.
 deploy_substep "🔄 Recycling API + operator pods for new images…"
 deploy_ssh "${REMOTE}" "
-    ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/vmrogue-api deployment/vmrogue-operator 2>/dev/null || true
-    ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
-    ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-operator --timeout=120s
-    if ${K8S_CMD} -n ${NAMESPACE} get secret vmrogue-integrations &>/dev/null; then
-        ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/vmrogue-api 2>/dev/null || true
-        ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/vmrogue-api --timeout=120s
+    ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/veyron-api deployment/veyron-operator 2>/dev/null || true
+    ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/veyron-api --timeout=120s
+    ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/veyron-operator --timeout=120s
+    if ${K8S_CMD} -n ${NAMESPACE} get secret veyron-integrations &>/dev/null; then
+        ${K8S_CMD} -n ${NAMESPACE} rollout restart deployment/veyron-api 2>/dev/null || true
+        ${K8S_CMD} -n ${NAMESPACE} rollout status deployment/veyron-api --timeout=120s
     fi
 " 2>&1 || true
 deploy_phase_end
@@ -399,8 +399,8 @@ deploy_ssh "${REMOTE}" "
 deploy_phase_end
 
 # Do not use ports[0]: API order may list http-redirect (30150) before https (30151).
-NODE_PORT=$(deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
-HTTP_REDIRECT_PORT=$(deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc vmrogue-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
+NODE_PORT=$(deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc veyron-api -o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}' 2>/dev/null" || echo "30151")
+HTTP_REDIRECT_PORT=$(deploy_ssh "${REMOTE}" "${K8S_CMD} -n ${NAMESPACE} get svc veyron-api -o jsonpath='{.spec.ports[?(@.name==\"http-redirect\")].nodePort}' 2>/dev/null" || echo "")
 
 deploy_complete "${HOST}" "${USER}" "${REMOTE}" "${NODE_PORT}" "${HTTP_REDIRECT_PORT}" \
     "${API_KEY}" "${SCRIPT_DIR}" "${K8S_CMD}" "${NAMESPACE}"

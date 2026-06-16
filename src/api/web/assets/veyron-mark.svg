@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" aria-hidden="true">
+  <defs>
+    <linearGradient id="veyronMark" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#27d7ff"/>
+      <stop offset="0.45" stop-color="#3f7cff"/>
+      <stop offset="1" stop-color="#9b7cff"/>
+    </linearGradient>
+    <filter id="veyronGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="0.8" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="#0a1018"/>
+  <path d="M8 24 L16 8 L24 24 L20 24 L16 15 L12 24 Z" fill="url(#veyronMark)" filter="url(#veyronGlow)"/>
+</svg>
