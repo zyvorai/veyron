@@ -1303,7 +1303,13 @@
       var isUnscheduled = nodeName === 'Unscheduled';
       return '<tr>' +
         '<td><strong>' + esc(nodeName) + '</strong></td>' +
-        '<td><span class="vm-badge ' + (isUnscheduled ? 'stopped' : 'running') + '">' + (isUnscheduled ? 'N/A' : 'Ready') + '</span></td>' +
+        (function(){
+          if (isUnscheduled) return '<td><span class="vm-badge stopped">N/A</span></td>';
+          var liveNode = liveNodes && liveNodes.find(function(nd){ return nd.name === nodeName; });
+          var nodeStatus = liveNode ? liveNode.status : 'Unknown';
+          var isReady = nodeStatus === 'Ready';
+          return '<td><span class="vm-badge ' + (isReady ? 'running' : 'stopped') + '">' + esc(nodeStatus) + '</span></td>';
+        })() +
         '<td>' + nodeVms.length + ' VMs · ' + running + ' running</td>' +
         (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false && sh.kubevirt_control_plane_ok !== false) : true; return '<td><span style="color:' + (kvOk ? 'var(--green)' : 'var(--orange)') + ';font-size:.82rem">' + (kvOk ? '◉ virt-handler Ready' : '⚠ virt-handler Unknown') + '</span></td>'; })() +
         '<td>' +
@@ -1838,7 +1844,7 @@
               (isRunning
                 ? '<div class="vmr-health-row"><span>CPU</span><span>' + esc(vm.cpu || '—') + '</span></div>' +
                   '<div class="vmr-health-row"><span>Memory</span><span>' + esc(vm.memory || '—') + '</span></div>' +
-                  '<div class="vmr-health-row"><span>Guest agent</span><span style="color:var(--green)">Detected</span></div>'
+                  '<div class="vmr-health-row"><span>Guest agent</span><span style="color:' + (vm.guest_agent_connected ? 'var(--green)' : 'var(--orange)') + '">' + (vm.guest_agent_connected ? 'Active' : 'Not detected') + '</span></div>'
                 : '<p style="font-size:.84rem;color:var(--muted);margin-bottom:12px">No live metrics. Start the VM and install Guest Tools.</p>' +
                   '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, vm.name, 'start') + ')">Start VM</button>') +
             '</div>' +
