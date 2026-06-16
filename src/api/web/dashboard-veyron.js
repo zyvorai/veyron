@@ -342,7 +342,7 @@
       var label = msg.length > 72 ? msg.slice(0, 72) + '…' : msg || reason;
       return '<div class="vmr-activity-row ' + cls + '"><span class="vmr-activity-dot"></span>' +
         '<span class="vmr-activity-text">' + esc(label) + '</span>' +
-        '<span class="vmr-activity-badge">' + esc(cls === 'success' ? 'Success' : cls === 'failed' ? 'Failed' : cls === 'failed' ? 'Failed' : ev.type || 'Info') + '</span></div>';
+        '<span class="vmr-activity-badge">' + esc(cls === 'success' ? 'Success' : cls === 'failed' ? 'Failed' : ev.type || 'Info') + '</span></div>';
     }).join('');
   };
 
