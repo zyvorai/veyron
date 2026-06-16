@@ -4879,6 +4879,8 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
       <button type="button" class="glass-btn-secondary" onclick="forgeWizardPrev()">Back</button>
       <button type="button" class="glass-btn-secondary" onclick="closeForgeWizard()">Cancel</button>
       <button type="button" class="glass-btn-secondary" id="forge-wiz-next" onclick="forgeWizardNext()">Next</button>
+      <button type="button" class="glass-btn-secondary" id="forge-wiz-export-yaml" style="display:none" onclick="renderForgeWizardReview&&renderForgeWizardReview();openAskZeus('Export YAML for the VM I just configured in the wizard')">Export YAML</button>
+      <button type="button" class="glass-btn-secondary" id="forge-wiz-save-blueprint" style="display:none" onclick="openAskZeus('Save this VM configuration as a VMRogue Blueprint')">Save as Blueprint</button>
       <button type="button" class="glass-btn-primary" id="forge-wiz-submit" style="display:none" onclick="submitForgeWizard()">Forge VM</button>
       <button type="button" class="glass-btn-primary" id="forge-wiz-submit-start" style="display:none" onclick="submitForgeWizard(true)">Forge + Start</button>
     </div>
