@@ -5293,7 +5293,10 @@ const PAGE_META = {
   images: {kicker:'Storage', title:'CDI golden images and import', tags:['DataVolume','Catalog','Import']},
   catalog: {kicker:'Platform', title:'VMTemplate and VMProfile catalog sync', tags:['CRDs','Embedded library','Deploy VeyronVM']},
   integrations: {kicker:'Platform', title:'Optional backend wiring and probes', tags:['Prometheus','OpenCost','Argo CD']},
-  'app-store': {kicker:'VEYRON ///', title:'Template Foundry', tags:['Golden images','One-click forge','Catalog sync']}
+  'app-store': {kicker:'VEYRON ///', title:'Template Foundry', tags:['Golden images','One-click forge','Catalog sync']},
+  'network-intel': {kicker:'VEYRON ///', title:'Network Intelligence', tags:['PacketWolf','Live flows','Policy gaps']},
+  settings: {kicker:'VEYRON ///', title:'Settings', tags:['Integrations','API keys','Appearance']},
+  'vm-capsule': {kicker:'VEYRON ///', title:'VM Capsule', tags:['Inspector','Health','Remediation']}
 };
 
 /** Toolbar actions when page-header is hidden (Normal/Power). */
@@ -5655,7 +5658,11 @@ function loadPageData(page, opts) {
   if (page === 'policies') fetchPolicies();
   if (page === 'insights') fetchInsights();
   if (page === 'actions') fetchActions();
-  if (page === 'costs') fetchCosts();
+  if (page === 'costs') {
+    fetchVMs(opts);
+    fetchCosts(opts);
+    if (typeof renderCostsVmr === 'function') renderCostsVmr();
+  }
   if (page === 'security') fetchSecurityPage();
   if (page === 'monitoring') fetchMonitoring();
   if (page === 'workloads') fetchWorkloads();
@@ -5696,8 +5703,12 @@ function loadPageData(page, opts) {
   if (page === 'custom-dashboards') fetchCustomDashboards();
   if (page === 'network-policies') fetchNetworkPolicies();
   if (page === 'images') fetchImages();
-  if (page === 'app-store') fetchAppStore();
+  if (page === 'app-store') {
+    fetchAppStore(opts);
+    if (typeof renderFoundryVmr === 'function') renderFoundryVmr();
+  }
   if (page === 'stack-health' && typeof fetchStackHealth === 'function') fetchStackHealth();
+  if (page === 'network-intel' && typeof fetchNetworkIntelData === 'function') fetchNetworkIntelData(opts);
   if (page === 'console-hub') {
     fetchVMs(opts);
     if (typeof renderConsoleHubVmr === 'function') renderConsoleHubVmr();
@@ -5775,7 +5786,8 @@ const OIDC_PKCE_KEY = 'veyron_oidc_pkce';
 const OIDC_STATE_KEY = 'veyron_oidc_state';
 
 function getApiKey() {
-  return localStorage.getItem('veyron_api_key') || sessionStorage.getItem('veyron_api_key') || '';
+  return localStorage.getItem('veyron_api_key') || sessionStorage.getItem('veyron_api_key') ||
+    localStorage.getItem('vmrogue_api_key') || sessionStorage.getItem('vmrogue_api_key') || '';
 }
 
 function getOidcToken() {
@@ -5983,7 +5995,8 @@ function crdEmptyRow(colspan, payload) {
 
 async function wsConsoleUrl(path) {
   const ticketResp = await apiJson('/api/v1/ws/ticket', { method: 'POST' });
-  const ticket = ticketResp && ticketResp.ticket ? ticketResp.ticket : '';
+  const payload = unwrapData(ticketResp) || ticketResp || {};
+  const ticket = payload.ticket || '';
   if (!ticket) throw new Error('Could not obtain WebSocket ticket');
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
   return proto + '//' + location.host + path + '?ticket=' + encodeURIComponent(ticket);
@@ -6029,6 +6042,7 @@ async function apiJson(url, opts) {
     resp = await apiFetch(url, opts);
   } catch (e) {
     if (e && e.name === 'AbortError') return null;
+    if (opts && opts.signal && opts.signal.aborted) return null;
     throw e;
   }
   const text = await resp.text();
@@ -6068,6 +6082,12 @@ function unwrapData(j) {
       Object.prototype.hasOwnProperty.call(j, 'data'))
     return j.data;
   return j;
+}
+
+/** Prefer envelope data, then bare object (costs, experience, CRDs). */
+function apiObject(j) {
+  const u = unwrapData(j);
+  return u && typeof u === 'object' && !Array.isArray(u) ? u : (j && typeof j === 'object' ? j : {});
 }
 
 /** Normalize list payloads: envelope data, bare arrays, or CRD-style { items: [] }. */
@@ -6769,8 +6789,10 @@ async function openLaunchpad() {
   document.body.style.overflow = 'hidden';
   grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--text-dim)">Loading templates…</p>';
   try {
-    const data = await apiJson('/api/v1/experience/templates');
-    const templates = (data && data.templates) ? data.templates : [];
+    const raw = await apiJson('/api/v1/experience/templates');
+    if (raw == null) return;
+    const data = unwrapData(raw) || raw;
+    const templates = (data && data.templates) ? data.templates : asArray(data);
     launchpadApps = [
       { icon: '◫', label: 'Home', action: () => { closeLaunchpad(); navigate('dashboard'); } },
       { icon: '▣', label: 'VMs', action: () => { closeLaunchpad(); navigate('vms'); } },
@@ -7318,10 +7340,30 @@ function vmHealthPill(vm) {
 
 let appStoreCache = [];
 
-async function fetchAppStore() {
+async function fetchAppStore(opts) {
   try {
-    const data = await apiJson('/api/v1/experience/templates');
-    appStoreCache = data.templates || [];
+    let data = null;
+    try {
+      data = apiObject(await apiJson('/api/v1/experience/templates', opts));
+    } catch (e1) {
+      const fallback = asArray(await apiJson('/api/v1/templates', opts));
+      data = {
+        templates: fallback.map(function (t) {
+          return {
+            id: t.name,
+            title: t.name,
+            subtitle: (t.cpu || '') + ' · ' + (t.memory || '') + ' · ' + (t.disk || ''),
+            os_family: /windows/i.test(t.name || '') ? 'windows' : 'linux',
+            cpu: parseInt(String(t.cpu || t.default_cpus || '2'), 10) || 2,
+            memory: t.memory || t.default_memory || '4Gi',
+            disk: t.disk || t.default_disk_size || '20Gi',
+            default_disk_size: t.default_disk_size || t.disk || '20Gi'
+          };
+        })
+      };
+    }
+    if (data == null) return;
+    appStoreCache = data.templates || asArray(data);
     setCapBanner('app-store-cap-banner', data.veyron_context);
     const sumEl = document.getElementById('app-store-summary');
     if (sumEl) {
@@ -7334,6 +7376,7 @@ async function fetchAppStore() {
       ]);
     }
     const grid = document.getElementById('app-store-grid');
+    if (!grid) return;
     const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
     grid.innerHTML = appStoreCache.map(t => {
       const em = icon[t.os_family] || '◫';
@@ -7345,6 +7388,8 @@ async function fetchAppStore() {
       '</div>';
     }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
   } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    if (opts && opts.signal && opts.signal.aborted) return;
     toast('Template Store: ' + (e.message || String(e)), 'error');
   }
 }
@@ -9301,8 +9346,10 @@ let templateCache = [];
 async function fetchTemplates() {
   try {
     const j = await apiJson('/api/v1/templates');
+    if (j == null) return;
     templateCache = asArray(j);
     const sel = document.getElementById('vm-template');
+    if (!sel) return;
     sel.innerHTML = '<option value="">-- Select template --</option>';
     templateCache.forEach(t => {
       const opt = document.createElement('option');
@@ -10515,6 +10562,7 @@ async function fetchNodes(opts) {
     const j = await apiJson('/api/v1/nodes', opts);
     if (j == null) return;
     const nodes = asArray(j);
+    window.lastNodes = nodes;
     const summaryEl = document.getElementById('nodes-summary');
     const el = document.getElementById('node-list');
     if (nodes.length === 0) {
@@ -11913,60 +11961,92 @@ async function fetchActions() {
   }
 }
 
-async function fetchCosts() {
+async function fetchCosts(opts) {
   const sumEl = document.getElementById('cost-summary');
   const nsEl = document.getElementById('cost-by-namespace');
   const fcEl = document.getElementById('cost-forecast');
   const tb = document.getElementById('costs-body');
   try {
-    const [costsRaw, summary] = await Promise.all([
-      apiJson('/api/v1/costs'),
-      apiJson('/api/v1/costs/summary'),
+    const [costsRaw, summaryRaw] = await Promise.all([
+      apiJson('/api/v1/costs' + nsParam(), opts),
+      apiJson('/api/v1/costs/summary' + nsParam(), opts),
     ]);
+    if (costsRaw == null || summaryRaw == null) return;
+    const costsBody = apiObject(costsRaw);
+    const summary = apiObject(summaryRaw);
+    if (!summary || summary.total_cost == null) {
+      throw new Error('Cost summary unavailable');
+    }
     setCapBanner('cost-cap-banner', summary.veyron_context);
-    const costs = costsRaw && costsRaw.costs != null ? costsRaw.costs : asArray(costsRaw);
+    const costs = costsBody.costs != null ? costsBody.costs : asArray(costsRaw);
 
-    const total = summary.total_cost || 0;
+    const total = Number(summary.total_cost) || 0;
+    const byRt = summary.by_resource_type || {};
     const costNote = summary.disclaimer ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(summary.disclaimer) + '</p>' : '';
-    sumEl.innerHTML =
-      '<div class="glass-stat-pill"><div class="gsl">Monthly total</div><div class="gsv">$' + total.toFixed(2) + '</div></div>' +
-      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs tracked</div><div class="gsv">' + (costs.length || 0) + '</div></button>' +
-      '<div class="glass-stat-pill"><div class="gsl">CPU cost</div><div class="gsv">$' + (summary.by_resource_type?.cpu || 0).toFixed(2) + '</div></div>' +
-      '<div class="glass-stat-pill"><div class="gsl">Memory cost</div><div class="gsv">$' + (summary.by_resource_type?.memory || 0).toFixed(2) + '</div></div>' +
-      costNote;
-
-    // Namespace breakdown
-    const byNs = summary.by_namespace || {};
-    const nsEntries = Object.entries(byNs).sort((a,b) => b[1]-a[1]);
-    if (nsEntries.length) {
-      const maxVal = nsEntries[0][1] || 1;
-      nsEl.innerHTML = nsEntries.map(([ns, cost]) => {
-        const pct = Math.min(100, (cost / maxVal * 100));
-        return '<div class="cost-ns-bar">' + glassProgressBar(esc(ns) + ' · $' + cost.toFixed(2), pct) + '</div>';
-      }).join('');
-    } else { nsEl.innerHTML = '<p style="color:var(--text-dim)">No namespace data</p>'; }
-
-    // Forecast
-    try {
-      const fc = await apiJson('/api/v1/costs/forecast');
-      const fcCap = fc.veyron_context && fc.veyron_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.veyron_context.limitations) + '</p>' : '';
-      const trendCls = fc.trend === 'growing' ? 'error' : 'running';
-      fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (fc.projected_monthly||0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px"><span class="glass-badge ' + trendCls + '">' + esc(fc.trend || 'stable') + '</span></div>' + fcCap + '</div>';
-    } catch {
-      fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
+    if (sumEl) {
+      sumEl.innerHTML =
+        '<div class="glass-stat-pill"><div class="gsl">Monthly total</div><div class="gsv">$' + total.toFixed(2) + '</div></div>' +
+        '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs tracked</div><div class="gsv">' + (costs.length || 0) + '</div></button>' +
+        '<div class="glass-stat-pill"><div class="gsl">CPU cost</div><div class="gsv">$' + (Number(byRt.cpu) || 0).toFixed(2) + '</div></div>' +
+        '<div class="glass-stat-pill"><div class="gsl">Memory cost</div><div class="gsv">$' + (Number(byRt.memory) || 0).toFixed(2) + '</div></div>' +
+        costNote;
     }
 
-    if (!costs.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No cost data</td></tr>'; return; }
-    tb.innerHTML = costs.sort((a,b) => b.total_cost - a.total_cost).map(c =>
-      '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
-      '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + c.cpu_cost.toFixed(2) + '</td><td>$' + c.memory_cost.toFixed(2) + '</td><td>$' + c.storage_cost.toFixed(2) + '</td><td><strong>$' + c.total_cost.toFixed(2) + '</strong></td></tr>'
-    ).join('');
+    const byNs = summary.by_namespace || {};
+    const nsEntries = Object.entries(byNs).sort((a,b) => b[1]-a[1]);
+    if (nsEl) {
+      if (nsEntries.length) {
+        const maxVal = nsEntries[0][1] || 1;
+        nsEl.innerHTML = nsEntries.map(([ns, cost]) => {
+          const pct = Math.min(100, (Number(cost) / maxVal * 100));
+          return '<div class="cost-ns-bar">' + glassProgressBar(esc(ns) + ' · $' + Number(cost).toFixed(2), pct) + '</div>';
+        }).join('');
+      } else {
+        nsEl.innerHTML = '<p style="color:var(--text-dim)">No namespace data</p>';
+      }
+    }
+
+    if (fcEl) {
+      try {
+        const fc = apiObject(await apiJson('/api/v1/costs/forecast' + nsParam(), opts));
+        const fcCap = fc.veyron_context && fc.veyron_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.veyron_context.limitations) + '</p>' : '';
+        const trendCls = fc.trend === 'growing' ? 'error' : 'running';
+        fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (Number(fc.projected_monthly) || 0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px"><span class="glass-badge ' + trendCls + '">' + esc(fc.trend || 'stable') + '</span></div>' + fcCap + '</div>';
+        if (fc.projected_monthly != null) {
+          window.lastCostForecast = '$' + Number(fc.projected_monthly).toFixed(2);
+        }
+      } catch {
+        fcEl.innerHTML = '<p style="color:var(--text-dim)">Forecast unavailable</p>';
+      }
+    }
+
+    window.lastCostSummary = '$' + total.toFixed(2);
+    window.lastCostVmCount = costs.length;
+    if (typeof currentPage !== 'undefined' && currentPage === 'costs' && typeof renderCostsVmr === 'function') {
+      renderCostsVmr();
+    }
+
+    if (!tb) return;
+    if (!costs.length) {
+      tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No cost data</td></tr>';
+      return;
+    }
+    tb.innerHTML = costs.sort((a,b) => (Number(b.total_cost) || 0) - (Number(a.total_cost) || 0)).map(c => {
+      const cpu = Number(c.cpu_cost) || 0;
+      const mem = Number(c.memory_cost) || 0;
+      const stor = Number(c.storage_cost) || 0;
+      const tot = Number(c.total_cost) || 0;
+      return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
+        '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
+        '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
+    }).join('');
   } catch(e) {
+    if (e && e.name === 'AbortError') return;
     const msg = e.message || String(e);
     if (sumEl) sumEl.innerHTML = summaryErrorHtml(msg);
     if (nsEl) nsEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
     if (fcEl) fcEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
-    if (tb) tb.innerHTML = tbodyError(6, msg);
+    if (tb) tb.innerHTML = tbodyError(8, msg);
   }
 }
 
@@ -12310,11 +12390,16 @@ async function fetchMonitoring() {
 }
 
 // Workloads page
-async function fetchWorkloads() {
+async function fetchWorkloads(opts) {
   const tb = document.getElementById('workloads-body');
   const sumEl = document.getElementById('workloads-summary');
+  if (document.getElementById('vmr-workloads-hero') && typeof fetchWorkloadsVmr === 'function') {
+    return fetchWorkloadsVmr(opts);
+  }
   try {
-    const data = asArray(await apiJson('/api/v1/workloads' + nsParam()));
+    const raw = await apiJson('/api/v1/workloads' + nsParam(), opts);
+    if (raw == null) return;
+    const data = asArray(raw);
     if (sumEl) {
       const unhealthy = data.filter(w => w.ready_replicas < w.replicas).length;
       const replicas = data.reduce((n, w) => n + (w.replicas || 0), 0);
@@ -12333,6 +12418,8 @@ async function fetchWorkloads() {
       }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);line-height:1.55">No Deployments, StatefulSets, or DaemonSets in <code>' + esc(currentNamespace) + '</code>. Try the <strong>all</strong> namespace filter if system workloads live elsewhere (cluster-wide listing falls back per-namespace when RBAC blocks <code>list</code> on all namespaces at once).</td></tr>';
     }
   } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    if (opts && opts.signal && opts.signal.aborted) return;
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
     console.error('Workloads fetch error:', e);
   }
