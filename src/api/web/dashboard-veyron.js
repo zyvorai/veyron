@@ -2139,8 +2139,9 @@
       var pw = typeof unwrapData === 'function' ? unwrapData(statusRaw) : statusRaw;
       if (banner) {
         if (packetwolfStatusOk(pw)) {
+          window._vmrPwExtUrl = pw.external_url || null;
           var extBtn = pw.external_url
-            ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="window.open(' + jsArgs(pw.external_url) + ',\'_blank\',\'noopener,noreferrer\')">Open PacketWolf</button>'
+            ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="window._vmrPwExtUrl&&window.open(window._vmrPwExtUrl,\'_blank\',\'noopener\')">Open PacketWolf</button>'
             : '';
           banner.innerHTML = '<span style="color:var(--green);font-size:.84rem">◉ PacketWolf connected · ' +
             esc(pw.health_status || 'healthy') + (pw.health_mode ? ' · ' + esc(pw.health_mode) : '') + '</span>' +
@@ -2198,7 +2199,7 @@
         return '<tr><td>' + esc(srcLabel) + '</td><td>' + esc(src.namespace || '—') + '</td>' +
           '<td>' + esc(dstLabel) + '</td><td>' + esc(f.protocol || '—') + '</td><td>' + esc(f.port != null ? String(f.port) : '—') + '</td>' +
           '<td><span style="color:' + tone + '">' + esc(verdict) + '</span></td><td>' + esc(f.policy || '—') + '</td>' +
-          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(' + jsArgs('Explain flow ' + srcLabel + ' → ' + dstLabel) + ')">Explain</button></td></tr>';
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain flow ' + srcLabel + ' → ' + dstLabel) + ')') + '>Explain</button></td></tr>';
       }).join('');
     } catch (e) {
       if (banner) {
