@@ -170,7 +170,7 @@ body>*{position:relative;z-index:1}
 /* Keyframes */
 @keyframes fade-in{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes forge-pulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.6;filter:brightness(1.3)}}
-@keyframes ember-glow{0%,100%{box-shadow:0 0 8px rgba(59,130,246,.2)}50%{box-shadow:0 0 20px rgba(59,130,246,.35),0 0 40px rgba(59,130,246,.1)}}
+@keyframes ember-glow{0%,100%{box-shadow:0 0 8px var(--pw-accent-glow,rgba(59,130,246,.2))}50%{box-shadow:0 0 20px var(--pw-accent-glow,rgba(59,130,246,.35)),0 0 40px var(--pw-accent-glow,rgba(59,130,246,.1))}}
 @keyframes spark-trail{0%{opacity:0;transform:translateX(-10px)}20%{opacity:1}100%{opacity:0;transform:translateX(10px)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes lightning{0%,90%,100%{opacity:0}92%,98%{opacity:.6}95%{opacity:1}}
@@ -203,20 +203,20 @@ body>*{position:relative;z-index:1}
   50%{opacity:1;transform:scaleX(1)}
 }
 @keyframes brand-glow{
-  0%,100%{filter:drop-shadow(0 0 8px rgba(59,130,246,.35))}
-  50%{filter:drop-shadow(0 0 18px rgba(167,139,250,.5)) drop-shadow(0 0 28px rgba(56,189,248,.25))}
+  0%,100%{filter:drop-shadow(0 0 8px var(--pw-accent-glow,rgba(59,130,246,.35)))}
+  50%{filter:drop-shadow(0 0 18px var(--pw-accent-glow,rgba(167,139,250,.5))) drop-shadow(0 0 28px var(--pw-accent-glow,rgba(56,189,248,.25)))}
 }
 @keyframes page-orbit{
   0%{opacity:.35;transform:rotate(0deg) scale(1)}
   100%{opacity:.45;transform:rotate(360deg) scale(1.02)}
 }
 @keyframes stat-breathe{
-  0%,100%{box-shadow:0 4px 24px rgba(0,0,0,.2),0 0 0 0 rgba(59,130,246,0)}
-  50%{box-shadow:0 8px 32px rgba(0,0,0,.28),0 0 28px rgba(59,130,246,.12)}
+  0%,100%{box-shadow:0 4px 24px rgba(0,0,0,.2),0 0 0 0 transparent}
+  50%{box-shadow:0 8px 32px rgba(0,0,0,.28),0 0 28px var(--pw-accent-glow,rgba(59,130,246,.12))}
 }
 @keyframes chart-border-glow{
-  0%,100%{border-color:var(--border);box-shadow:0 0 0 rgba(59,130,246,0)}
-  50%{border-color:rgba(59,130,246,.42);box-shadow:0 0 32px rgba(59,130,246,.1),inset 0 0 20px rgba(56,189,248,.04)}
+  0%,100%{border-color:var(--border);box-shadow:0 0 0 transparent}
+  50%{border-color:var(--pw-accent-border,rgba(59,130,246,.42));box-shadow:0 0 32px var(--pw-accent-glow,rgba(59,130,246,.1)),inset 0 0 20px var(--pw-accent-glow,rgba(56,189,248,.04))}
 }
 
 .animate-fade-in{animation:fade-in .5s cubic-bezier(.16,1,.3,1)}
@@ -6309,7 +6309,7 @@ function drawChart(id, data, color, glowColor) {
   ctx.clearRect(0, 0, W, H);
 
   // Grid lines — subtle steel
-  ctx.strokeStyle = 'rgba(59,130,246,.08)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = (getComputedStyle(document.documentElement).getPropertyValue('--pw-accent-soft')||'').trim() || 'rgba(59,130,246,.08)'; ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = pad.t + cH*i/4;
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
@@ -11436,14 +11436,18 @@ async function loadVmMetricsPanel(ns, name) {
       const tj = await apiJson('/api/v1/metrics/timeline' + tq);
       const td = unwrapData(tj);
       const pts = (td && td.points) ? td.points.map(p => p.value) : [];
-      if (pts.length) drawMiniSparkline(cpuCanvasId, pts, '#38bdf8', 'rgba(56,189,248,.35)');
+      const _tc = getComputedStyle(document.documentElement);
+      const cpuCol = (_tc.getPropertyValue('--pw-color-info')||'').trim() || '#38bdf8';
+      if (pts.length) drawMiniSparkline(cpuCanvasId, pts, cpuCol, 'rgba(56,189,248,.35)');
     } catch (e) { /* optional prometheus */ }
     try {
       const tq = q + '&vm=' + encodeURIComponent(name) + '&metric=memory&hours=1';
       const tj = await apiJson('/api/v1/metrics/timeline' + tq);
       const td = unwrapData(tj);
       const pts = (td && td.points) ? td.points.map(p => p.value) : [];
-      if (pts.length) drawMiniSparkline(memCanvasId, pts, '#8b5cf6', 'rgba(139,92,246,.35)');
+      const _tm = getComputedStyle(document.documentElement);
+      const memCol = (_tm.getPropertyValue('--pw-color-ai')||'').trim() || '#8b5cf6';
+      if (pts.length) drawMiniSparkline(memCanvasId, pts, memCol, 'rgba(139,92,246,.35)');
     } catch (e) { /* optional */ }
   } catch (e) {
     /* metrics unavailable — static resource labels remain */

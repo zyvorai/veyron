@@ -989,6 +989,8 @@ html[data-theme] {
   --pw-accent-medium: color-mix(in srgb, var(--pw-color-data) 18%, transparent);
   --pw-accent-border: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
   --pw-accent-ring: color-mix(in srgb, var(--pw-color-data) 12%, transparent);
+  --glow-molten: 0 0 20px color-mix(in srgb, var(--pw-color-data) 16%, transparent), 0 0 48px color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+  --glow-spark: 0 0 16px color-mix(in srgb, var(--pw-color-info) 15%, transparent), 0 0 40px color-mix(in srgb, var(--pw-color-info) 6%, transparent);
   --panel: var(--pw-surface-glass);
   --panel-strong: var(--pw-surface-elevated);
   --line: var(--glass-border);
@@ -1413,6 +1415,342 @@ html[data-theme='light'] .toast-warning {
   background: rgba(255, 255, 255, 0.94);
   color: var(--pw-color-warning);
   border-color: color-mix(in srgb, var(--pw-color-warning) 22%, transparent);
+}
+
+/* ── Theme-aware overrides for elements with hardcoded blue RGBA ── */
+
+/* Resource bar hover — was rgba(59,130,246,.28) */
+html[data-theme] .resource-bar:hover {
+  border-color: var(--pw-accent-border);
+}
+
+/* Cyber grid on main canvas — was hardcoded blue grid lines */
+html[data-theme] .container::before {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--pw-color-data) 35%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--pw-color-data) 25%, transparent) 1px, transparent 1px);
+}
+
+/* Non-desktop body aurora — theme-tinted; desktop mode disables aurora via body.mac-desktop-root rule */
+html[data-theme] body:not(.mac-desktop-root)::before {
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 10%, color-mix(in srgb, var(--pw-color-data) 32%, transparent), transparent 52%),
+    radial-gradient(ellipse 45% 40% at 85% 15%, color-mix(in srgb, var(--pw-color-ai) 22%, transparent), transparent 48%),
+    radial-gradient(ellipse 50% 55% at 70% 85%, color-mix(in srgb, var(--pw-color-info) 18%, transparent), transparent 50%),
+    radial-gradient(ellipse 35% 30% at 10% 70%, color-mix(in srgb, var(--pw-color-data) 15%, transparent), transparent 45%),
+    radial-gradient(ellipse 100% 80% at 50% 120%, color-mix(in srgb, var(--pw-color-info) 8%, transparent), transparent 55%);
+}
+
+/* Scrollbar thumb — slate-tinted with theme accent */
+html[data-theme] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--pw-color-data) 22%, var(--pw-bg-deep, #090b0e));
+}
+html[data-theme] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--pw-color-data) 38%, var(--pw-bg-deep, #090b0e));
+}
+
+/* Nav-link and table row hover — was rgba(59,130,246,.06) */
+html[data-theme] .nav-link:hover,
+html[data-theme] .table-action-link:hover {
+  color: var(--pw-color-data);
+}
+
+/* Status island hover border — was rgba(56,189,248,.3) */
+html[data-theme]:not(.mac-desktop-root) .mac-status-island:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 30%, transparent);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   All-page comprehensive overrides — every element that had a
+   hardcoded rgba(59,130,246) / rgba(56,189,248) blue/cyan value
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Navigation bar interactive states */
+html[data-theme] .btn-nav-browse:hover,
+html[data-theme] .btn-nav-browse.active {
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+html[data-theme] .nav-group-btn.active {
+  color: var(--spark);
+}
+
+html[data-theme] .nav-link.active {
+  background: linear-gradient(180deg, var(--pw-accent-medium), var(--pw-accent-soft));
+  color: var(--text-bright);
+  border-color: var(--pw-accent-border);
+  box-shadow: 0 0 20px var(--pw-accent-glow), inset 0 -2px 0 var(--pw-color-data);
+}
+
+html[data-theme] .cloudos-browse-rail:hover,
+html[data-theme] .cloudos-browse-rail.active {
+  color: var(--spark);
+  border-color: var(--pw-accent-border);
+  background: var(--pw-accent-soft);
+}
+
+/* VM list / card interactions */
+html[data-theme] .vm-card:hover {
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .vm-view-toggle button:hover {
+  border-color: var(--pw-accent-border);
+  color: var(--text-bright);
+}
+
+html[data-theme] .vm-view-toggle button.active {
+  background: var(--pw-accent-medium);
+  color: var(--pw-color-data);
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .vm-row.selected,
+html[data-theme] .vm-card.selected {
+  border-left-color: var(--pw-color-data) !important;
+  background: var(--pw-accent-soft) !important;
+}
+
+html[data-theme] .vm-row:focus-visible,
+html[data-theme] .vm-card:focus-visible {
+  outline-color: color-mix(in srgb, var(--pw-color-data) 65%, transparent);
+}
+
+html[data-theme] .vm-sort-col.active {
+  border-bottom-color: var(--pw-accent-border);
+}
+
+/* Progress bar fill */
+html[data-theme] .glass-progress-fill {
+  background: linear-gradient(90deg, var(--pw-color-data), var(--pw-color-info));
+}
+
+/* Finder sidebar extras */
+html[data-theme] .finder-count-badge {
+  background: var(--pw-accent-soft);
+  color: var(--pw-color-data);
+}
+
+html[data-theme] .finder-collapse-btn:hover,
+html[data-theme] .finder-toggle[aria-expanded="false"] {
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+/* Connect protocol selector */
+html[data-theme] .connect-protocol-opt:hover:not(.disabled) {
+  border-color: color-mix(in srgb, var(--pw-color-data) 30%, transparent);
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .connect-protocol-opt.selected {
+  border-color: var(--pw-accent-border);
+  background: var(--pw-accent-soft);
+}
+
+/* Console and toolbar back buttons */
+html[data-theme] .mac-console-float-back:hover,
+html[data-theme] .mac-console-back:hover,
+html[data-theme] .vm-focus-back.mac-console-back:hover {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+html[data-theme] .mac-toolbar-more[open] summary {
+  background: var(--pw-accent-soft);
+  border-color: color-mix(in srgb, var(--pw-color-data) 30%, transparent);
+}
+
+/* VM chips in menubar */
+html[data-theme] .mac-vm-chip:hover {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+html[data-theme] .mac-vm-chip-primary {
+  background: var(--pw-accent-medium);
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+/* Notification / context */
+html[data-theme] .mac-nc-toggle:hover {
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .mac-nc-item:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .mac-context-item:hover {
+  background: var(--pw-accent-soft);
+  color: var(--spark);
+}
+
+/* Spotlight / Launchpad */
+html[data-theme] .spotlight-quick-pick:hover {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-accent-border);
+  color: var(--text);
+}
+
+html[data-theme] .spotlight-item:hover,
+html[data-theme] .spotlight-item.active {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .launchpad-app.launchpad-app-focus {
+  outline-color: var(--pw-accent-border);
+}
+
+html[data-theme] .btn-spotlight:hover {
+  border-color: var(--pw-accent-border);
+  color: var(--pw-color-data);
+}
+
+/* Dashboard / metrics cards */
+html[data-theme] .dc-briefing-item:hover {
+  border-color: var(--pw-accent-border);
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .dc-briefing-item.info {
+  border-color: color-mix(in srgb, var(--pw-color-info) 20%, transparent);
+}
+
+html[data-theme] .dc-health-ring.clickable:hover {
+  box-shadow: 0 0 24px var(--pw-accent-glow);
+}
+
+html[data-theme] .command-metric.clickable:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .flow-stat-chip:hover {
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .flow-stat-chip.active {
+  border-color: var(--pw-color-data);
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .dc-action-card:hover {
+  border-color: var(--pw-accent-border);
+}
+
+/* Copilot / Zeus extras */
+html[data-theme] .copilot-context-banner {
+  background: color-mix(in srgb, var(--pw-color-info) 6%, transparent);
+}
+
+html[data-theme] .copilot-tool-trace {
+  background: color-mix(in srgb, var(--pw-color-info) 4%, transparent);
+  border-color: color-mix(in srgb, var(--pw-color-info) 12%, transparent);
+}
+
+html[data-theme] .mac-dock-ask {
+  color: var(--pw-color-ai);
+  border-color: color-mix(in srgb, var(--pw-color-ai) 35%, transparent);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 18%, transparent), color-mix(in srgb, var(--pw-color-ai) 8%, transparent));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--pw-color-ai) 12%, transparent), 0 4px 14px color-mix(in srgb, var(--pw-color-ai) 12%, transparent);
+}
+
+html[data-theme] .mac-dock-ask:hover {
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 28%, transparent), color-mix(in srgb, var(--pw-color-ai) 12%, transparent));
+}
+
+/* Toast info icon */
+html[data-theme] .toast-info .toast-icon {
+  background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
+  color: var(--spark);
+}
+
+/* Focus rings — global */
+html[data-theme] :focus-visible {
+  outline-color: color-mix(in srgb, var(--pw-color-data) 65%, transparent);
+}
+
+html[data-theme] .mac-dock-item:focus-visible {
+  outline-color: color-mix(in srgb, var(--pw-color-data) 60%, transparent);
+}
+
+html[data-theme] .cloudos-finder-item:focus-visible {
+  outline-color: color-mix(in srgb, var(--pw-color-data) 50%, transparent);
+}
+
+/* Dock active item — stronger override for all themes */
+html[data-theme] body.mac-desktop-root .mac-dock-item-active {
+  background: linear-gradient(180deg, var(--pw-accent-medium), var(--pw-accent-soft)) !important;
+  box-shadow:
+    inset 0 0 0 1px var(--pw-accent-border),
+    0 8px 20px var(--pw-accent-glow) !important;
+}
+
+/* Desktop base glow — theme-tinted (higher specificity than dashboard.html plain body rule) */
+html[data-theme] body.mac-desktop-root::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, color-mix(in srgb, var(--pw-color-info) 6%, transparent), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, color-mix(in srgb, var(--pw-color-ai) 5%, transparent), transparent 50%);
+}
+
+/* Named wallpaper overrides — html[data-theme='X'] wins over dashboard.html plain body selector */
+html[data-theme='tahoe'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 58, 95, 0.35), transparent 55%),
+    linear-gradient(180deg, rgb(8, 12, 22) 0%, rgb(6, 10, 18) 100%);
+}
+
+html[data-theme='tahoe-light'] body.mac-desktop-root[data-wallpaper='tahoe-light']::before {
+  background:
+    radial-gradient(ellipse 90% 60% at 20% 0%, color-mix(in srgb, var(--zeus-tone-sky) 20%, transparent), transparent 55%),
+    linear-gradient(180deg, rgb(240, 244, 250) 0%, rgb(226, 232, 240) 100%);
+}
+
+html[data-theme='sonoma'] body.mac-desktop-root[data-wallpaper='sonoma']::before {
+  background:
+    radial-gradient(ellipse 100% 70% at 15% -10%, rgba(99, 102, 241, 0.28), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(139, 92, 246, 0.18), transparent 45%),
+    linear-gradient(180deg, rgb(10, 8, 20) 0%, rgb(6, 10, 18) 100%);
+}
+
+html[data-theme='graphite'] body.mac-desktop-root[data-wallpaper='graphite']::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 8%, rgba(255, 255, 255, 0.06), transparent 50%),
+    linear-gradient(180deg, rgb(12, 12, 12) 0%, rgb(6, 6, 8) 100%);
+}
+
+html[data-theme='wolf'] body.mac-desktop-root::before,
+html[data-theme='wolf'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 100% 65% at 40% -10%, rgba(245, 158, 11, 0.25), transparent 55%),
+    radial-gradient(ellipse 70% 55% at 85% 20%, rgba(239, 68, 68, 0.12), transparent 50%),
+    linear-gradient(180deg, rgb(9, 9, 11) 0%, rgb(6, 6, 8) 100%);
+}
+
+html[data-theme='forge'] body.mac-desktop-root::before,
+html[data-theme='forge'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 90% 65% at 30% -10%, rgba(239, 68, 68, 0.28), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 80% 15%, rgba(249, 115, 22, 0.15), transparent 50%),
+    linear-gradient(180deg, rgb(12, 6, 6) 0%, rgb(6, 4, 4) 100%);
+}
+
+html[data-theme='ember'] body.mac-desktop-root::before,
+html[data-theme='ember'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -15%, rgba(220, 38, 38, 0.32), transparent 55%),
+    linear-gradient(180deg, rgb(6, 0, 0) 0%, rgb(4, 0, 0) 100%);
+}
+
+html[data-theme='light'] body.mac-desktop-root::before,
+html[data-theme='tahoe-light'] body.mac-desktop-root::before {
+  background:
+    radial-gradient(ellipse 90% 60% at 25% 0%, color-mix(in srgb, var(--pw-color-data) 12%, transparent), transparent 55%),
+    linear-gradient(180deg, rgb(245, 247, 251) 0%, rgb(235, 240, 248) 100%);
 }
 
 /* Tahoe context bar — Advanced desktop tier */
