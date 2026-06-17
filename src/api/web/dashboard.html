@@ -3055,7 +3055,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.light{background:linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)}
 .cloudos-mobile-bar{
   display:none;position:fixed;left:50%;transform:translateX(-50%);
-  bottom:calc(var(--vmr-dock-safe,72px) + 6px);z-index:165;
+  bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 6px);z-index:165;
   padding:6px 10px;border-radius:999px;gap:4px;
   background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-border-strong);box-shadow:var(--glass-shadow);
@@ -3070,7 +3070,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 }
 @media(max-width:768px){
   .cloudos-mobile-bar{display:flex;align-items:center}
-  body.mac-desktop-root .cloudos-main{padding-bottom:calc(var(--vmr-dock-safe,72px) + 48px)}
+  body.mac-desktop-root .cloudos-main{padding-bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 48px)}
 }
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
@@ -3140,6 +3140,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="mac-menubar-center-inner">
       <input type="search" class="vmr-header-search" id="vmr-header-search" placeholder="Search VMs, templates…" aria-label="Search" onclick="openSpotlight()" readonly>
       <button type="button" class="mac-alert-pill empty" id="mac-alert-pill" onclick="navigate('events')" title="View alerts">No alerts</button>
+      <button type="button" class="mac-zen-pill" id="mac-zen-pill" onclick="toggleZenMode()" title="Zen mode — click to toggle" aria-pressed="false" hidden>Zen</button>
       <div class="mac-quick-nav" role="group" aria-label="Quick navigation">
         <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-home" onclick="navigate('dashboard')">Home</button>
         <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-monitor" onclick="navigate('stack-health')">Monitor</button>
@@ -6983,6 +6984,12 @@ function syncZenMode() {
   document.body.classList.toggle('zen-mode-on', on);
   const menu = document.getElementById('mac-menu-zen-toggle');
   if (menu) menu.textContent = on ? 'Zen mode on' : 'Zen mode off';
+  const pill = document.getElementById('mac-zen-pill');
+  if (pill) {
+    pill.hidden = !on;
+    pill.textContent = 'Zen';
+    pill.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
 }
 
 function toggleZenMode() {
@@ -7662,16 +7669,10 @@ let menubarClockTimer = null;
 
 function updateMenubarClock() {
   const el = document.getElementById('mac-menubar-clock');
-  const statusClock = document.getElementById('mac-status-clock');
   const d = new Date();
   if (el) {
     el.textContent = d.toLocaleString(undefined, {
       weekday: 'short', month: 'short', day: 'numeric',
-      hour: 'numeric', minute: '2-digit'
-    });
-  }
-  if (statusClock) {
-    statusClock.textContent = d.toLocaleString(undefined, {
       hour: 'numeric', minute: '2-digit'
     });
   }
@@ -15586,11 +15587,6 @@ async function fetchIncidents() {
   <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
   <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Ask Zeus</button>
 </nav>
-
-<div class="mac-status-bar" id="mac-status-bar" aria-hidden="true">
-  <span class="mac-zen-indicator" id="mac-zen-indicator">Zen mode on</span>
-  <span class="mac-status-clock" id="mac-status-clock"></span>
-</div>
 
 <footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
   <div class="mac-dock-inner mac-dock-inner-scroll" id="cloudos-dock-inner"></div>

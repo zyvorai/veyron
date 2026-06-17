@@ -29,7 +29,9 @@
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   --radius-liquid: 22px;
   --vmr-canvas-max: 1680px;
-  --vmr-dock-safe: max(160px, calc(4.5rem + env(safe-area-inset-bottom, 0px)));
+  --floating-dock-height: 72px;
+  --bottom-safe-area: calc(var(--floating-dock-height) + env(safe-area-inset-bottom, 0px) + 16px);
+  --vmr-dock-safe: var(--bottom-safe-area);
   --cloudos-menubar-h: 40px;
   --cloudos-tabs-h: 36px;
 }
@@ -53,7 +55,7 @@ body.mac-desktop-root .cloudos-main {
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: var(--vmr-dock-safe);
+  padding-bottom: var(--bottom-safe-area);
 }
 
 body.mac-desktop-root .container {
@@ -1715,7 +1717,7 @@ body.mac-desktop-root #page-console-hub.active .vmr-console-hub-layout {
 
 .veyron-forge-wizard {
   width: min(920px, 96vw);
-  max-height: 92dvh;
+  max-height: min(92dvh, calc(100dvh - var(--cloudos-menubar-h, 40px) - 24px));
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -1762,9 +1764,9 @@ body.mac-desktop-root #page-console-hub.active .vmr-console-hub-layout {
 
 .veyron-forge-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 20px 24px;
-  min-height: 280px;
 }
 
 .forge-step-pane { display: none; }
@@ -1776,7 +1778,18 @@ body.mac-desktop-root #page-console-hub.active .vmr-console-hub-layout {
   gap: 8px;
   justify-content: flex-end;
   padding: 14px 18px;
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  flex-shrink: 0;
+  background: var(--panel-strong);
   border-top: 1px solid var(--line);
+}
+
+body.forge-wizard-open .mac-dock {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
 }
 
 @media (max-width: 1280px) {
@@ -2814,55 +2827,34 @@ body.mission-control-home #dc-pinned-section {
   line-height: 1.45;
 }
 
-.mac-status-bar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
-  z-index: 85;
-  display: flex;
+.mac-zen-pill {
+  display: none;
   align-items: center;
-  justify-content: space-between;
-  padding: 6px 20px;
-  background: rgba(8, 12, 20, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1px solid var(--glass-border);
-  pointer-events: none;
-}
-
-.mac-zen-indicator {
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(39, 215, 255, 0.35);
+  background: rgba(39, 215, 255, 0.1);
   color: var(--cyan);
-  opacity: 0;
-  transition: opacity 0.2s;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
 }
 
-body.zen-mode-on .mac-zen-indicator {
-  opacity: 1;
+.mac-zen-pill:hover {
+  background: rgba(39, 215, 255, 0.16);
+  border-color: rgba(39, 215, 255, 0.5);
 }
 
-.mac-status-clock {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--text-bright);
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
+body.zen-mode-on .mac-zen-pill:not([hidden]) {
+  display: inline-flex;
 }
 
 body.zen-mode-on .mac-desktop-tabs {
   display: none !important;
-}
-
-body.mac-desktop-root {
-  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
-}
-
-body.mac-desktop-root .cloudos-main {
-  padding-bottom: calc(var(--vmr-dock-safe) + 28px);
 }
 
 body.mac-desktop-root .mac-dock-inner {
@@ -2885,8 +2877,7 @@ body.mac-desktop-root .mac-dock-item-active {
 @media (max-width: 960px) {
   .mac-menubar-title,
   .mac-quick-nav,
-  .mac-auth-hint,
-  .mac-status-bar {
+  .mac-auth-hint {
     display: none !important;
   }
 

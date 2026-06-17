@@ -1210,6 +1210,7 @@
     updateForgeWizardUi();
     var modal = document.getElementById('forge-wizard-modal');
     if (modal) modal.classList.add('open');
+    document.body.classList.add('forge-wizard-open');
     if (typeof fetchTemplates === 'function') fetchTemplates();
     if (typeof fetchProfiles === 'function') fetchProfiles();
     syncForgeWizardFromLegacy();
@@ -1223,6 +1224,7 @@
   window.closeForgeWizard = function closeForgeWizard() {
     var modal = document.getElementById('forge-wizard-modal');
     if (modal) modal.classList.remove('open');
+    document.body.classList.remove('forge-wizard-open');
   };
   function syncForgeWizardFromLegacy() {
     var map = [['vm-name', 'forge-wiz-name'], ['vm-namespace', 'forge-wiz-namespace'], ['vm-cpus', 'forge-wiz-cpus'],
