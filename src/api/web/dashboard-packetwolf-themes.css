@@ -2269,3 +2269,10 @@ html[data-theme] .vd-remote-console {
   border-color: color-mix(in srgb, var(--pw-color-data) 35%, transparent);
   background: linear-gradient(180deg, color-mix(in srgb, var(--pw-color-data) 12%, transparent), rgba(0,0,0,.2));
 }
+
+/* Mobile bottom nav bar active/hover */
+html[data-theme] .cloudos-mobile-bar button:hover,
+html[data-theme] .cloudos-mobile-bar button.active {
+  background: var(--pw-accent-soft);
+  color: var(--text-bright);
+}
