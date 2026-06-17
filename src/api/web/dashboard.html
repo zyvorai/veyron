@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618i">
+<meta name="veyron-dashboard-rev" content="20260618j">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618i';
+  var DASH_REV = '20260618j';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2708,8 +2708,9 @@ body.mac-desktop-root .cloudos-finder{
   background:rgba(12,18,32,.72);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
   border-right:1px solid var(--glass-border);
 }
-body.finder-collapsed .cloudos-finder{width:0;padding:0;overflow:hidden;border-right:none}
-body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
+body.finder-collapsed .cloudos-finder{width:0;padding:0;overflow:hidden;border-right:none;opacity:0;pointer-events:none;margin:0}
+body.finder-collapsed .cloudos-finder *{pointer-events:none}
+body.finder-narrow .cloudos-finder{width:64px;padding:8px 6px}
 .finder-toolbar{
   display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:2px 4px 8px;margin-bottom:2px;border-bottom:1px solid var(--border);
@@ -3586,6 +3587,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         </div>
       </div>
     </div>
+    <button type="button" class="mac-menubar-icon-btn mac-menubar-sidebar-btn" id="mac-menubar-sidebar-btn" onclick="setFinderSidebarMode('expanded')" title="Show navigation (⌘\\)" aria-label="Show navigation">◧</button>
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Hide sidebar" aria-expanded="true" title="Hide sidebar (⌘\)">☰</button>
     <span class="mac-menubar-title" id="mac-menubar-title">Veyron · Kubernetes VM Command Center</span>
   </div>
@@ -3833,11 +3835,18 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="cloudos-body-row">
 <div class="cloudos-finder-backdrop" id="cloudos-finder-backdrop" onclick="closeFinderMobile()" aria-hidden="true"></div>
-<aside class="cloudos-finder" id="cloudos-finder" aria-label="Veyron Finder">
+<aside class="cloudos-finder pw-desktop-sidebar" id="cloudos-finder" aria-label="Veyron navigation" data-sidebar-mode="expanded">
   <div class="finder-toolbar">
-    <span class="finder-toolbar-title">Finder</span>
-    <button type="button" class="finder-collapse-btn" onclick="toggleFinder()" title="Hide sidebar" aria-label="Hide sidebar">‹</button>
+    <button type="button" class="finder-sidebar-toggle" id="finder-sidebar-toggle" onclick="cycleFinderSidebar()" title="Collapse sidebar (⌘\\)" aria-label="Collapse sidebar">
+      <span class="finder-sidebar-toggle-icon" aria-hidden="true">◧</span>
+    </button>
+    <span class="finder-toolbar-title">Navigate</span>
   </div>
+  <div class="finder-search-wrap">
+    <span class="finder-search-icon" aria-hidden="true">⌕</span>
+    <input type="search" id="finder-nav-search" class="finder-nav-search" placeholder="Search navigation" aria-label="Filter navigation" oninput="filterFinderNav(this.value)">
+  </div>
+  <div class="finder-nav-scroll" id="finder-nav-scroll">
   <div class="finder-section" id="finder-sec-platform" data-finder-section="platform">
     <div class="finder-section-label">Platform</div>
     <div class="finder-section-body" id="finder-platform">
@@ -3923,7 +3932,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('pinned')">Pinned <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-pinned-links"></div>
   </div>
-  <button type="button" class="cloudos-finder-item" onclick="toggleClassicNav()" style="margin-top:4px"><span class="fi-icon">⋯</span>Advanced… Browse all</button>
+  <button type="button" class="cloudos-finder-item finder-browse-all" onclick="toggleClassicNav()"><span class="fi-icon">⋯</span><span class="fi-label">Advanced… Browse all</span></button>
+  </div>
   <div class="finder-footer">
     <div id="finder-current-window" class="finder-current-window" title="Active window">Home</div>
     <div class="cloudos-finder-title">Workspace</div>
@@ -5813,7 +5823,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618i';
+window.__VMROGUE_DASH_REV = '20260618j';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6927,7 +6937,8 @@ let cloudOsSession = { role: 'admin', can_write: true, can_admin: true };
 const VM_VIEW_KEY = 'veyron_vm_view';
 const FINDER_SECTIONS_KEY = 'veyron_finder_sections';
 const FINDER_PINS_KEY = 'veyron_finder_pins';
-const FINDER_COLLAPSED_KEY = 'veyron_finder_collapsed';
+const FINDER_SIDEBAR_MODE_KEY = 'veyron_finder_sidebar_mode';
+const FINDER_COLLAPSED_KEY = 'veyron_finder_collapsed'; /* legacy: migrated to sidebar mode */
 const SPOTLIGHT_RECENTS_KEY = 'veyron_spotlight_recents';
 const RECENT_VMS_KEY = 'veyron_recent_vms';
 /** macOS shell shortcuts surfaced in Spotlight (client-side; API adds cluster matches). */
@@ -6938,7 +6949,7 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Launchpad', subtitle: 'Template quick launch', action: 'mac:launchpad', keys: ['launchpad', 'templates', 'store'] },
   { kind: 'action', title: 'Control Center', subtitle: 'Theme, wallpaper, workspace', action: 'mac:control_center', keys: ['control', 'center', 'appearance', 'wallpaper'] },
   { kind: 'action', title: 'Notification Center', subtitle: 'Recent alerts', action: 'mac:notifications', keys: ['notification', 'alerts', 'bell'] },
-  { kind: 'action', title: 'Toggle Finder', subtitle: 'Show or hide sidebar (⌘\\)', action: 'mac:finder', keys: ['finder', 'sidebar'] },
+  { kind: 'action', title: 'Toggle Navigation', subtitle: 'Expand · icon rail · hide (⌘\\)', action: 'mac:finder', keys: ['finder', 'sidebar', 'navigation'] },
   { kind: 'action', title: 'Open ConsoleHub', subtitle: 'Inline VNC · RDP · SSH · Serial', action: 'navigate:console-hub', keys: ['console', 'consolehub', 'terminal', 'vnc', 'serial'] },
   { kind: 'action', title: 'Screen Sharing', subtitle: 'ConsoleHub inline VNC', action: 'navigate:console-hub', keys: ['screen', 'sharing', 'connect'] },
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
@@ -7247,11 +7258,9 @@ function setDesktopTier(tier, resetPins) {
   }
   if (!isFinderMobile()) {
     if (tier === 'normal') {
-      try {
-        if (localStorage.getItem(FINDER_COLLAPSED_KEY) === null) setFinderCollapsed(true, true);
-      } catch (e) { setFinderCollapsed(true, true); }
+      setFinderSidebarMode('hidden', true);
     } else if ((tier === 'power' || tier === 'advanced') && resetPins) {
-      setFinderCollapsed(false, true);
+      setFinderSidebarMode('expanded', true);
     }
   }
   const prefTier = document.getElementById('pref-tier-select');
@@ -7923,42 +7932,126 @@ function isFinderMobile() {
   return window.innerWidth <= 960;
 }
 
-function syncFinderToggleUi() {
-  const btn = document.querySelector('.finder-toggle');
-  const collapsed = document.body.classList.contains('finder-collapsed');
-  if (btn) {
-    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-    btn.setAttribute('aria-label', collapsed ? 'Show sidebar' : 'Hide sidebar');
-    btn.title = collapsed ? 'Show sidebar (⌘\\)' : 'Hide sidebar (⌘\\)';
-  }
-  const collapseBtn = document.querySelector('.finder-collapse-btn');
-  if (collapseBtn) {
-    collapseBtn.title = 'Hide sidebar';
-    collapseBtn.setAttribute('aria-label', 'Hide sidebar');
+function getFinderSidebarMode() {
+  if (document.body.classList.contains('finder-collapsed')) return 'hidden';
+  if (document.body.classList.contains('finder-narrow')) return 'narrow';
+  return 'expanded';
+}
+
+function syncFinderSidebarDom(mode) {
+  const finder = document.getElementById('cloudos-finder');
+  if (finder) finder.dataset.sidebarMode = mode;
+  document.body.dataset.sidebarHidden = mode === 'hidden' ? 'true' : 'false';
+  document.body.dataset.sidebarNarrow = mode === 'narrow' ? 'true' : 'false';
+}
+
+function setFinderSidebarMode(mode, persist) {
+  if (isFinderMobile()) return;
+  mode = mode === 'narrow' || mode === 'hidden' ? mode : 'expanded';
+  document.body.classList.toggle('finder-collapsed', mode === 'hidden');
+  document.body.classList.toggle('finder-narrow', mode === 'narrow');
+  syncFinderSidebarDom(mode);
+  syncFinderToggleUi();
+  if (persist !== false) {
+    try { localStorage.setItem(FINDER_SIDEBAR_MODE_KEY, mode); } catch (e) {}
   }
 }
 
-function setFinderCollapsed(collapsed, persist) {
-  if (isFinderMobile()) return;
-  document.body.classList.toggle('finder-collapsed', collapsed);
-  syncFinderToggleUi();
-  if (persist !== false) {
-    try { localStorage.setItem(FINDER_COLLAPSED_KEY, collapsed ? '1' : '0'); } catch (e) {}
-  }
+function migrateFinderSidebarMode() {
+  try {
+    if (localStorage.getItem(FINDER_SIDEBAR_MODE_KEY)) return;
+    const legacy = localStorage.getItem(FINDER_COLLAPSED_KEY);
+    if (legacy === '1') localStorage.setItem(FINDER_SIDEBAR_MODE_KEY, 'hidden');
+    else if (legacy === '0') localStorage.setItem(FINDER_SIDEBAR_MODE_KEY, 'expanded');
+  } catch (e) {}
 }
 
 function initFinderCollapsed() {
   if (isFinderMobile()) return;
-  let collapsed = false;
+  migrateFinderSidebarMode();
+  let mode = 'expanded';
   try {
-    const saved = localStorage.getItem(FINDER_COLLAPSED_KEY);
-    if (saved === '1') collapsed = true;
-    else if (saved === '0') collapsed = false;
-    else collapsed = loadDesktopTier() === 'normal';
+    const saved = localStorage.getItem(FINDER_SIDEBAR_MODE_KEY);
+    if (saved === 'narrow' || saved === 'hidden' || saved === 'expanded') mode = saved;
+    else if (loadDesktopTier() === 'normal') mode = 'hidden';
   } catch (e) {
-    collapsed = loadDesktopTier() === 'normal';
+    mode = loadDesktopTier() === 'normal' ? 'hidden' : 'expanded';
   }
-  setFinderCollapsed(collapsed, false);
+  if (loadDesktopTier() === 'normal') mode = 'hidden';
+  setFinderSidebarMode(mode, false);
+  initFinderItemTooltips();
+}
+
+function cycleFinderSidebar() {
+  if (isFinderMobile()) {
+    toggleFinder();
+    return;
+  }
+  const mode = getFinderSidebarMode();
+  if (mode === 'hidden') setFinderSidebarMode('expanded');
+  else if (mode === 'expanded') setFinderSidebarMode('narrow');
+  else setFinderSidebarMode('hidden');
+}
+
+function initFinderItemTooltips() {
+  document.querySelectorAll('.cloudos-finder-item').forEach(function(btn) {
+    var icon = btn.querySelector('.fi-icon');
+    var labelEl = btn.querySelector('.fi-label');
+    var label = labelEl ? labelEl.textContent.trim() : btn.textContent.replace(/\s+/g, ' ').trim();
+    if (icon && label.startsWith(icon.textContent)) label = label.slice(icon.textContent.length).trim();
+    btn.setAttribute('data-finder-label', label);
+    if (!btn.querySelector('.finder-item-tooltip')) {
+      var tip = document.createElement('span');
+      tip.className = 'finder-item-tooltip';
+      tip.setAttribute('role', 'tooltip');
+      tip.textContent = label;
+      btn.appendChild(tip);
+    } else {
+      btn.querySelector('.finder-item-tooltip').textContent = label;
+    }
+  });
+}
+
+function filterFinderNav(q) {
+  var needle = (q || '').trim().toLowerCase();
+  document.querySelectorAll('#finder-nav-scroll .cloudos-finder-item').forEach(function(btn) {
+    var label = (btn.getAttribute('data-finder-label') || btn.textContent || '').toLowerCase();
+    var page = btn.dataset.page || '';
+    var show = !needle || label.includes(needle) || page.includes(needle);
+    btn.classList.toggle('finder-filter-hidden', !show);
+  });
+  document.querySelectorAll('#finder-nav-scroll .finder-section').forEach(function(sec) {
+    if (needle) {
+      var any = sec.querySelector('.cloudos-finder-item:not(.finder-filter-hidden)');
+      sec.classList.toggle('finder-filter-empty', !any);
+    } else {
+      sec.classList.remove('finder-filter-empty');
+    }
+  });
+}
+
+function syncFinderToggleUi() {
+  const btn = document.querySelector('.finder-toggle');
+  const mode = getFinderSidebarMode();
+  const collapsed = mode === 'hidden';
+  if (btn) {
+    btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    btn.setAttribute('aria-label', collapsed ? 'Show sidebar' : mode === 'narrow' ? 'Expand sidebar' : 'Hide sidebar');
+    btn.title = collapsed ? 'Show sidebar (⌘\\)' : mode === 'narrow' ? 'Expand sidebar (⌘\\)' : 'Hide sidebar (⌘\\)';
+  }
+  const toggleBtn = document.getElementById('finder-sidebar-toggle');
+  if (toggleBtn) {
+    toggleBtn.title = mode === 'hidden' ? 'Show sidebar' : mode === 'narrow' ? 'Expand sidebar' : 'Collapse sidebar';
+    toggleBtn.setAttribute('aria-label', toggleBtn.title);
+  }
+  const menubarSidebar = document.getElementById('mac-menubar-sidebar-btn');
+  if (menubarSidebar) menubarSidebar.style.display = mode === 'hidden' ? '' : 'none';
+  const menubarToggle = document.querySelector('.finder-toggle');
+  if (menubarToggle) menubarToggle.style.display = mode === 'hidden' ? 'none' : '';
+}
+
+function setFinderCollapsed(collapsed, persist) {
+  setFinderSidebarMode(collapsed ? 'hidden' : 'expanded', persist);
 }
 
 function toggleFinderSection(name) {
@@ -7981,6 +8074,7 @@ function initFinderSections() {
   });
   renderFinderPins();
   renderFinderRecentVms();
+  initFinderItemTooltips();
 }
 
 function getRecentVms() {
@@ -8157,7 +8251,7 @@ function toggleFinder() {
     syncFinderMobileUi();
     return;
   }
-  setFinderCollapsed(!document.body.classList.contains('finder-collapsed'));
+  cycleFinderSidebar();
 }
 
 function closeFinderMobile() {
