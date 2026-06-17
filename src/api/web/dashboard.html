@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260616g">
+<meta name="veyron-dashboard-rev" content="20260617a">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260616g';
+  var DASH_REV = '20260617a';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -17,7 +17,7 @@
   }
   try {
     const savedTheme = localStorage.getItem('veyron_theme');
-    if (savedTheme === 'zinc' || savedTheme === 'steel') {
+    if (savedTheme && savedTheme !== 'slate') {
       document.documentElement.setAttribute('data-theme', savedTheme);
     }
   } catch (e) {}
@@ -85,6 +85,20 @@
   --glass-border-strong:rgba(255,255,255,.15);
 }
 /*__VMR_CSS__*/
+/* Token bridge — slate aliases to canonical CloudOS tokens */
+:root {
+  --accent: var(--blue);
+  --ember: var(--blue);
+  --molten: var(--cyan);
+  --spark: var(--cyan);
+  --success: var(--green);
+  --warning: var(--orange);
+  --error: var(--red);
+  --bg-deep: var(--bg-0);
+  --primary-blue: var(--blue);
+  --primary-purple: var(--violet);
+  --text-muted: var(--muted);
+}
 
 *{margin:0;padding:0;box-sizing:border-box}
 
@@ -2139,6 +2153,91 @@ html[data-theme="zinc"] .monitor-cap{
   border-color:rgba(166,173,184,.16);
 }
 
+/* ═══════════════════════════════════════════════════
+   THEME: Aurora — northern lights cyan + magenta
+   ═══════════════════════════════════════════════════ */
+html[data-theme="aurora"]{
+  --bg-0:#040610;--bg-1:#080b18;--bg-2:#0e1224;
+  --panel:rgba(12,18,40,.78);--panel-strong:rgba(18,26,52,.9);
+  --line:rgba(39,215,255,.18);--line-strong:rgba(232,121,249,.32);
+  --blue:#5b8cff;--cyan:#27d7ff;--green:#3ee8c0;--orange:#ffb84d;--red:#ff6b8a;--violet:#c084fc;
+  --chart-primary:#27d7ff;--chart-secondary:#e879f9;
+  --glass-bg:rgba(12,18,40,.76);--glass-border:rgba(39,215,255,.12);
+  --glow-healthy:0 0 28px rgba(39,215,255,.35);--glow-degraded:0 0 28px rgba(255,184,77,.35);--glow-critical:0 0 32px rgba(255,107,138,.4);
+  --bg:#0e1224;--bg-deep:#040610;--bg-card:var(--panel);--text:#e8f4ff;--text-bright:#f8fcff;--accent:var(--cyan);
+}
+html[data-theme="aurora"] body::before{
+  background:
+    radial-gradient(ellipse 55% 45% at 12% 18%, rgba(39,215,255,.42), transparent 55%),
+    radial-gradient(ellipse 48% 42% at 88% 22%, rgba(232,121,249,.32), transparent 52%),
+    radial-gradient(ellipse 60% 50% at 50% 92%, rgba(155,124,255,.22), transparent 55%);
+  animation:aurora-shift 20s ease-in-out infinite alternate,aurora-hue 24s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════
+   THEME: Ember — warm forge orange + sky blue
+   ═══════════════════════════════════════════════════ */
+html[data-theme="ember"]{
+  --bg-0:#0a0806;--bg-1:#120e0a;--bg-2:#1a1410;
+  --panel:rgba(28,20,14,.8);--panel-strong:rgba(38,28,20,.92);
+  --line:rgba(249,115,22,.2);--line-strong:rgba(56,189,248,.28);
+  --blue:#38bdf8;--cyan:#7dd3fc;--green:#4ade80;--orange:#f97316;--red:#f87171;--violet:#a78bfa;
+  --chart-primary:#f97316;--chart-secondary:#38bdf8;
+  --glass-bg:rgba(28,20,14,.78);--glass-border:rgba(249,115,22,.14);
+  --glow-healthy:0 0 26px rgba(74,222,128,.3);--glow-degraded:0 0 26px rgba(249,115,22,.35);--glow-critical:0 0 30px rgba(248,113,113,.38);
+  --bg:#1a1410;--bg-deep:#0a0806;--bg-card:var(--panel);--text:#f5ebe0;--text-bright:#fffaf5;--accent:var(--orange);
+}
+html[data-theme="ember"] body::before{
+  background:
+    radial-gradient(ellipse 50% 42% at 20% 15%, rgba(249,115,22,.38), transparent 52%),
+    radial-gradient(ellipse 45% 40% at 82% 20%, rgba(56,189,248,.28), transparent 50%),
+    radial-gradient(ellipse 55% 48% at 55% 90%, rgba(253,186,116,.18), transparent 55%);
+}
+
+/* ═══════════════════════════════════════════════════
+   THEME: Obsidian — deep space violet rim
+   ═══════════════════════════════════════════════════ */
+html[data-theme="obsidian"]{
+  --bg-0:#030508;--bg-1:#060810;--bg-2:#0a0e16;
+  --panel:rgba(8,12,22,.86);--panel-strong:rgba(14,20,34,.94);
+  --line:rgba(155,124,255,.22);--line-strong:rgba(200,180,255,.38);
+  --blue:#6b8fff;--cyan:#5ce1ff;--green:#34d399;--orange:#fbbf24;--red:#fb7185;--violet:#b794ff;
+  --chart-primary:#9b7cff;--chart-secondary:#5ce1ff;
+  --glass-bg:rgba(8,12,22,.84);--glass-border:rgba(155,124,255,.16);
+  --glow-healthy:0 0 24px rgba(52,211,153,.28);--glow-degraded:0 0 24px rgba(251,191,36,.32);--glow-critical:0 0 30px rgba(251,113,133,.4);
+  --bg:#0a0e16;--bg-deep:#030508;--bg-card:var(--panel);--text:#e2e8f4;--text-bright:#f8faff;--accent:var(--violet);
+}
+html[data-theme="obsidian"] body::before{
+  background:
+    radial-gradient(ellipse 45% 38% at 50% 0%, rgba(155,124,255,.28), transparent 55%),
+    radial-gradient(ellipse 60% 55% at 100% 60%, rgba(91,127,255,.14), transparent 52%),
+    radial-gradient(ellipse 100% 80% at 50% 120%, rgba(3,5,8,.6), transparent 60%);
+}
+
+/* ═══════════════════════════════════════════════════
+   THEME: Neon — cyber ops electric cyan + hot pink
+   ═══════════════════════════════════════════════════ */
+html[data-theme="neon"]{
+  --bg-0:#020408;--bg-1:#040a12;--bg-2:#081018;
+  --panel:rgba(4,16,28,.82);--panel-strong:rgba(8,24,40,.92);
+  --line:rgba(0,255,240,.2);--line-strong:rgba(255,45,149,.32);
+  --blue:#00b4ff;--cyan:#00fff0;--green:#00ff9f;--orange:#ffcc00;--red:#ff2d95;--violet:#bf5fff;
+  --chart-primary:#00fff0;--chart-secondary:#ff2d95;
+  --glass-bg:rgba(4,16,28,.8);--glass-border:rgba(0,255,240,.14);
+  --glow-healthy:0 0 30px rgba(0,255,159,.35);--glow-degraded:0 0 28px rgba(255,204,0,.35);--glow-critical:0 0 34px rgba(255,45,149,.45);
+  --bg:#081018;--bg-deep:#020408;--bg-card:var(--panel);--text:#d0fff8;--text-bright:#f0fffe;--accent:var(--cyan);
+}
+html[data-theme="neon"] body::before{
+  background:
+    radial-gradient(ellipse 50% 40% at 15% 25%, rgba(0,255,240,.3), transparent 52%),
+    radial-gradient(ellipse 45% 42% at 85% 30%, rgba(255,45,149,.25), transparent 50%),
+    radial-gradient(ellipse 100% 60% at 50% 100%, rgba(0,180,255,.12), transparent 55%);
+}
+html[data-theme="neon"] body::after{
+  opacity:.04;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,240,.03) 2px,rgba(0,255,240,.03) 4px);
+}
+
 /* ── Zyvor CloudOS experience layer ── */
 .dc-cc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .dc-cc-chip{
@@ -2575,6 +2674,7 @@ body[data-desktop-tier="power"] #fleet-command-grid{display:none!important}
 body[data-desktop-tier="normal"] #page-dashboard .dashboard-quick-stats{display:none!important}
 /* macOS content window — one glass pane per active page */
 .mac-page-toolbar-wrap{
+  position:relative;
   max-width:min(1400px,100%);margin:0 auto 8px;padding:0 12px;
 }
 body[data-desktop-tier="advanced"] .mac-page-toolbar-wrap{display:none}
@@ -3026,9 +3126,107 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
     radial-gradient(ellipse 50% 50% at 75% 20%, rgba(34,211,238,.2), transparent 48%),
     radial-gradient(ellipse 60% 55% at 50% 95%, rgba(6,182,212,.18), transparent 50%);
 }
+body.mac-desktop-root[data-wallpaper="nebula"]::before{
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 25%, rgba(168,85,247,.4), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 80% 30%, rgba(236,72,153,.3), transparent 52%),
+    radial-gradient(ellipse 55% 50% at 50% 85%, rgba(99,102,241,.25), transparent 55%);
+}
+body.mac-desktop-root[data-wallpaper="solar"]::before{
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(251,146,60,.45), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 30% 20%, rgba(253,224,71,.28), transparent 50%),
+    radial-gradient(ellipse 50% 45% at 75% 15%, rgba(249,115,22,.22), transparent 48%);
+  filter:saturate(1.1);
+}
+body.mac-desktop-root[data-wallpaper="matrix"]::before{
+  background:
+    radial-gradient(ellipse 100% 80% at 50% 120%, rgba(0,40,20,.5), transparent 60%),
+    radial-gradient(ellipse 40% 35% at 50% 30%, rgba(34,197,94,.18), transparent 50%);
+}
+body.mac-desktop-root[data-wallpaper="matrix"] .container::before{
+  background-image:
+    linear-gradient(rgba(34,197,94,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(34,197,94,.06) 1px,transparent 1px);
+  background-size:24px 24px;opacity:.35;
+}
+body.mac-desktop-root[data-wallpaper="ember-glow"]::before{
+  background:
+    radial-gradient(ellipse 55% 50% at 50% 60%, rgba(249,115,22,.42), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 25% 20%, rgba(253,186,116,.25), transparent 50%),
+    radial-gradient(ellipse 50% 45% at 80% 25%, rgba(56,189,248,.18), transparent 48%);
+}
+
+/* CloudOS visual polish */
+.glass-card,.mac-page-window{
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+}
+.glass-card:hover,.mac-page-window:hover{
+  box-shadow:var(--glass-shadow),0 12px 40px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.08);
+}
+.mac-page-window.page-enter{
+  animation:page-enter .32s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes page-enter{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.mac-dock-inner:hover .mac-dock-item{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.mac-dock-inner:hover .mac-dock-item:hover{transform:scale(1.18) translateY(-6px);z-index:2}
+.mac-dock-inner:hover .mac-dock-item:hover + .mac-dock-item,
+.mac-dock-inner:hover .mac-dock-item:has(+ .mac-dock-item:hover){transform:scale(1.08) translateY(-2px)}
+.mac-dock-badge{
+  position:absolute;top:2px;right:2px;min-width:14px;height:14px;padding:0 4px;
+  border-radius:999px;background:var(--red);color:#fff;font-size:.58rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.mac-dynamic-island.health-ok{box-shadow:var(--glow-healthy)}
+.mac-dynamic-island.health-warn{box-shadow:var(--glow-degraded);animation:island-pulse 2s ease-in-out infinite}
+.mac-dynamic-island.health-crit{box-shadow:var(--glow-critical);animation:island-pulse 1.2s ease-in-out infinite}
+@keyframes island-pulse{0%,100%{opacity:1}50%{opacity:.82}}
+.mac-page-toolbar-wrap::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;
+  background:var(--blue);opacity:.7;
+}
+body[data-section="compute"] .mac-page-toolbar-wrap::before{background:var(--cyan)}
+body[data-section="observe"] .mac-page-toolbar-wrap::before{background:var(--violet)}
+body[data-section="security"] .mac-page-toolbar-wrap::before{background:var(--orange)}
+body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--green)}
+.zeus-spotlight-backdrop,.launchpad-overlay,.mac-mission-control-overlay{
+  backdrop-filter:blur(40px) saturate(1.8)!important;
+  -webkit-backdrop-filter:blur(40px) saturate(1.8)!important;
+}
+.zeus-spotlight-backdrop::after,.launchpad-overlay::after{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.35) 100%);
+}
+.mac-sheet-modal .modal{animation:sheet-spring .38s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes sheet-spring{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.glass-stat-pill .gsv.stat-bump{animation:stat-bump .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes stat-bump{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+.vm-status-running .status-badge{box-shadow:0 0 12px rgba(50,224,176,.45);animation:status-pulse 2.5s ease-in-out infinite}
+@keyframes status-pulse{0%,100%{box-shadow:0 0 12px rgba(50,224,176,.45)}50%{box-shadow:0 0 20px rgba(50,224,176,.65)}}
+.vmr-health-ring-progress{transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)}
+.theme-swatch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.theme-swatch{
+  border:2px solid transparent;border-radius:12px;padding:0;cursor:pointer;overflow:hidden;
+  background:var(--glass-bg);transition:border-color .15s,transform .15s;
+}
+.theme-swatch:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+.theme-swatch.active{border-color:var(--cyan);box-shadow:0 0 16px rgba(39,215,255,.25)}
+.theme-swatch-preview{height:36px;border-radius:10px 10px 0 0}
+.theme-swatch-label{display:block;padding:6px 8px;font-size:.72rem;font-weight:600;color:var(--text-muted);text-align:center}
+.theme-swatch-preview.slate{background:linear-gradient(135deg,#14171c,#3f7cff)}
+.theme-swatch-preview.steel{background:linear-gradient(135deg,#0b1018,#5d90f7)}
+.theme-swatch-preview.zinc{background:linear-gradient(135deg,#17191d,#d4d8de)}
+.theme-swatch-preview.aurora{background:linear-gradient(135deg,#27d7ff,#e879f9)}
+.theme-swatch-preview.ember{background:linear-gradient(135deg,#f97316,#38bdf8)}
+.theme-swatch-preview.obsidian{background:linear-gradient(135deg,#030508,#9b7cff)}
+.theme-swatch-preview.neon{background:linear-gradient(135deg,#00fff0,#ff2d95)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
-<body class="mac-desktop-root veyron-shell finder-collapsed" data-desktop-tier="normal">
+<body class="mac-desktop-root" data-desktop-tier="power">
 
 <header class="navbar cloudos-topbar mac-menubar" role="banner">
   <div class="mac-menubar-left navbar-left">
@@ -3053,6 +3251,10 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="aurora" onclick="setDesktopWallpaper('aurora')">Wallpaper: Aurora</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="midnight" onclick="setDesktopWallpaper('midnight')">Wallpaper: Midnight</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ocean" onclick="setDesktopWallpaper('ocean')">Wallpaper: Ocean</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="nebula" onclick="setDesktopWallpaper('nebula')">Wallpaper: Nebula</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="solar" onclick="setDesktopWallpaper('solar')">Wallpaper: Solar</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="matrix" onclick="setDesktopWallpaper('matrix')">Wallpaper: Matrix</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ember-glow" onclick="setDesktopWallpaper('ember-glow')">Wallpaper: Ember Glow</button>
           <div class="mac-menu-sep"></div>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="normal" onclick="setDesktopTier('normal',true)">Desktop: Normal</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="power" onclick="setDesktopTier('power',true)">Desktop: Power user</button>
@@ -3123,6 +3325,10 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
       <option value="slate">Slate Alloy</option>
       <option value="steel">Steel</option>
       <option value="zinc">Zinc Metal</option>
+      <option value="aurora">Aurora</option>
+      <option value="ember">Ember</option>
+      <option value="obsidian">Obsidian</option>
+      <option value="neon">Neon</option>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
       <option value="all">all</option>
@@ -3144,8 +3350,23 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
 <div class="mac-control-center" id="mac-control-center" role="dialog" aria-label="Control Center">
   <div class="mac-cc-section">
     <div class="mac-cc-section-title">Appearance</div>
-    <div class="mac-cc-row"><span>Theme</span><select class="form-select" id="cc-theme-select" onchange="setTheme(this.value)"><option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option></select></div>
-    <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select></div>
+    <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
+      <span>Theme</span>
+      <div class="theme-swatch-grid" id="cc-theme-swatch-grid" role="radiogroup" aria-label="Theme">
+        <button type="button" class="theme-swatch" data-theme="slate" role="radio" onclick="setTheme('slate')"><span class="theme-swatch-preview slate"></span><span class="theme-swatch-label">Slate</span></button>
+        <button type="button" class="theme-swatch" data-theme="steel" role="radio" onclick="setTheme('steel')"><span class="theme-swatch-preview steel"></span><span class="theme-swatch-label">Steel</span></button>
+        <button type="button" class="theme-swatch" data-theme="zinc" role="radio" onclick="setTheme('zinc')"><span class="theme-swatch-preview zinc"></span><span class="theme-swatch-label">Zinc</span></button>
+        <button type="button" class="theme-swatch" data-theme="aurora" role="radio" onclick="setTheme('aurora')"><span class="theme-swatch-preview aurora"></span><span class="theme-swatch-label">Aurora</span></button>
+        <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
+        <button type="button" class="theme-swatch" data-theme="obsidian" role="radio" onclick="setTheme('obsidian')"><span class="theme-swatch-preview obsidian"></span><span class="theme-swatch-label">Obsidian</span></button>
+        <button type="button" class="theme-swatch" data-theme="neon" role="radio" onclick="setTheme('neon')"><span class="theme-swatch-preview neon"></span><span class="theme-swatch-label">Neon</span></button>
+      </div>
+      <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
+        <option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option>
+        <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option>
+      </select>
+    </div>
+    <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
     <div class="mac-cc-row"><span>Desktop</span><select class="form-select" id="cc-tier-select" onchange="setDesktopTier(this.value,true)"><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
   </div>
   <div class="mac-cc-section">
@@ -3332,18 +3553,25 @@ body.mac-desktop-root[data-wallpaper="ocean"]::before{
   <div class="finder-section" id="finder-sec-favorites" data-finder-section="favorites">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span style="display:flex;align-items:center;gap:2px"><span class="finder-count-badge" id="finder-badge-vms"></span><span class="finder-chevron">▾</span></span></button>
     <div class="finder-section-body" id="finder-favorites">
-      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Home</button>
-      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Virtual Machines</button>
-      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">⬡</span>Template Store</button>
+      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Mission Control</button>
+      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Fleet Command</button>
+      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">⬡</span>Template Foundry</button>
+      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon">▶</span>ConsoleHub</button>
+      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon">⬡</span>VM Capsule</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-operations" data-finder-section="operations">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('operations')">Operations <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-operations">
-      <button type="button" class="cloudos-finder-item" data-page="backups" onclick="finderNavigate('backups')"><span class="fi-icon">⧉</span>Backups</button>
-      <button type="button" class="cloudos-finder-item" data-page="monitoring" onclick="finderNavigate('monitoring')"><span class="fi-icon">⬢</span>Activity Monitor</button>
-      <button type="button" class="cloudos-finder-item" data-page="mission-control" onclick="finderNavigate('mission-control')"><span class="fi-icon">◫</span>Mission Control</button>
-      <button type="button" class="cloudos-finder-item" data-page="soc" onclick="finderNavigate('soc')"><span class="fi-icon">⛨</span>SOC</button>
+      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon">⧉</span>Snapshots &amp; Backups</button>
+      <button type="button" class="cloudos-finder-item" data-page="network-intel" onclick="finderNavigate('network-intel')"><span class="fi-icon">⟷</span>Network Intelligence</button>
+      <button type="button" class="cloudos-finder-item" data-page="security" onclick="finderNavigate('security')"><span class="fi-icon">⛨</span>Security Posture</button>
+      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon">♥</span>Stack Health</button>
+      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon">⚡</span>Event Intelligence</button>
+      <button type="button" class="cloudos-finder-item" data-page="costs" onclick="finderNavigate('costs')"><span class="fi-icon">$</span>Cost Explorer</button>
+      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon">◧</span>Workloads</button>
+      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon">⬢</span>Cluster Nodes</button>
+      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon">⚙</span>Settings</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
@@ -5265,7 +5493,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260616g';
+window.__VMROGUE_DASH_REV = '20260617a';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -5306,6 +5534,40 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
+const VALID_THEMES = ['slate', 'steel', 'zinc', 'aurora', 'ember', 'obsidian', 'neon'];
+const WALLPAPER_IDS = ['tahoe', 'aurora', 'midnight', 'ocean', 'nebula', 'solar', 'matrix', 'ember-glow'];
+
+function cssVar(name, fallback) {
+  return (getComputedStyle(document.documentElement).getPropertyValue(name) || fallback).trim();
+}
+
+function hexToRgba(hex, alpha) {
+  const h = (hex || '').replace('#', '');
+  if (h.length < 6) return 'rgba(39,215,255,' + alpha + ')';
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function redrawChartsFromTheme() {
+  const primary = cssVar('--chart-primary', '#27d7ff');
+  const secondary = cssVar('--chart-secondary', '#3f7cff');
+  try {
+    if (typeof drawChart === 'function' && document.getElementById('cpu-chart')) {
+      drawChart('cpu-chart', cpuHistory, primary, hexToRgba(primary, 0.4));
+      drawChart('mem-chart', memHistory, secondary, hexToRgba(secondary, 0.4));
+    }
+  } catch (e) { console.warn('Chart redraw after theme change:', e); }
+}
+
+function syncThemeSwatches(theme) {
+  document.querySelectorAll('.theme-swatch').forEach(function(el) {
+    const on = el.dataset.theme === theme;
+    el.classList.toggle('active', on);
+    el.setAttribute('aria-checked', on ? 'true' : 'false');
+  });
+}
 let lastOverview = null;
 let lastEvents = [];
 
@@ -5390,11 +5652,11 @@ const PAGE_TOOLBAR_ACTIONS = {
 };
 
 function applyTheme(theme, writeStorage) {
-  const t = (theme === 'steel' || theme === 'zinc') ? theme : 'slate';
-  if (t === 'steel' || t === 'zinc') {
-    document.documentElement.setAttribute('data-theme', t);
-  } else {
+  const t = VALID_THEMES.includes(theme) ? theme : 'slate';
+  if (t === 'slate') {
     document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', t);
   }
   if (writeStorage !== false) {
     try {
@@ -5405,12 +5667,10 @@ function applyTheme(theme, writeStorage) {
   if (sel) sel.value = t;
   const ccSel = document.getElementById('cc-theme-select');
   if (ccSel) ccSel.value = t;
-  try {
-    if (typeof drawChart === 'function' && document.getElementById('cpu-chart')) {
-      drawChart('cpu-chart', cpuHistory, '#38bdf8', 'rgba(56,189,248,.4)');
-      drawChart('mem-chart', memHistory, '#3b82f6', 'rgba(59,130,246,.4)');
-    }
-  } catch (e) { console.warn('Chart redraw after theme change:', e); }
+  const prefSel = document.getElementById('pref-theme-select');
+  if (prefSel) prefSel.value = t;
+  syncThemeSwatches(t);
+  redrawChartsFromTheme();
 }
 
 function setTheme(theme) {
@@ -5534,9 +5794,7 @@ function initTheme() {
   try {
     t = localStorage.getItem(THEME_KEY) || 'slate';
   } catch (e) {}
-  if (t !== 'steel' && t !== 'slate' && t !== 'zinc') {
-    t = 'slate';
-  }
+  if (!VALID_THEMES.includes(t)) t = 'slate';
   applyTheme(t, false);
 }
 
@@ -5560,6 +5818,12 @@ function navigate(page, opts) {
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) { toast('Page not found: ' + page, 'error'); return; }
   pageEl.classList.add('active');
+  const win = pageEl.querySelector('.mac-page-window');
+  if (win) {
+    win.classList.remove('page-enter');
+    void win.offsetWidth;
+    win.classList.add('page-enter');
+  }
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   document.querySelectorAll('.nav-group-btn').forEach(b => {
     const grp = b.closest('.nav-group');
@@ -6263,7 +6527,7 @@ function loadDesktopTier() {
     const t = localStorage.getItem(DESKTOP_TIER_KEY);
     if (t === 'power' || t === 'advanced' || t === 'normal') return t;
   } catch (e) {}
-  return 'normal';
+  return 'power';
 }
 
 function tierRank(tier) {
@@ -6277,20 +6541,27 @@ function isPageAllowedForTier(page, tier) {
 }
 
 const FALLBACK_DOCK_CATALOG = [
-  { page: 'dashboard', label: 'Home', icon: '◫', min_tier: 'normal' },
-  { page: 'vms', label: 'Virtual Machines', icon: '▣', min_tier: 'normal' },
-  { page: 'app-store', label: 'Template Store', icon: '⬡', min_tier: 'normal' },
-  { page: 'integrations', label: 'Integrations', icon: '⚙', min_tier: 'normal' },
+  { page: 'dashboard', label: 'Mission Control', icon: '◫', min_tier: 'normal' },
+  { page: 'vms', label: 'Fleet Command', icon: '▣', min_tier: 'normal' },
+  { page: 'app-store', label: 'Template Foundry', icon: '⬡', min_tier: 'normal' },
+  { page: 'console-hub', label: 'ConsoleHub', icon: '▶', min_tier: 'normal' },
+  { page: 'vm-capsule', label: 'VM Capsule', icon: '⬡', min_tier: 'normal' },
+  { page: 'settings', label: 'Settings', icon: '⚙', min_tier: 'normal' },
+  { page: 'snapshots', label: 'Snapshots', icon: '⧉', min_tier: 'power' },
+  { page: 'events', label: 'Events', icon: '⚡', min_tier: 'power' },
+  { page: 'stack-health', label: 'Stack Health', icon: '♥', min_tier: 'power' },
+  { page: 'network-intel', label: 'Network Intel', icon: '⟷', min_tier: 'advanced' },
+  { page: 'security', label: 'Security', icon: '⛨', min_tier: 'advanced' },
+  { page: 'costs', label: 'Costs', icon: '$', min_tier: 'advanced' },
+  { page: 'workloads', label: 'Workloads', icon: '◧', min_tier: 'advanced' },
+  { page: 'nodes', label: 'Nodes', icon: '⬢', min_tier: 'advanced' },
+  { page: 'integrations', label: 'Integrations', icon: '⚙', min_tier: 'power' },
   { page: 'monitoring', label: 'Activity Monitor', icon: '⬢', min_tier: 'power' },
   { page: 'backups', label: 'Backups', icon: '⧉', min_tier: 'power' },
-  { page: 'nodes', label: 'Nodes', icon: '◇', min_tier: 'power' },
-  { page: 'mission-control', label: 'Mission Control', icon: '◫', min_tier: 'advanced' },
   { page: 'storage', label: 'Storage', icon: '▣', min_tier: 'advanced' },
-  { page: 'security', label: 'Security', icon: '⛨', min_tier: 'advanced' },
   { page: 'ingress', label: 'Ingress', icon: '⟷', min_tier: 'advanced' },
   { page: 'topology', label: 'Topology', icon: '⬢', min_tier: 'advanced' },
   { page: 'catalog', label: 'Catalog', icon: '⬡', min_tier: 'advanced' },
-  { page: 'costs', label: 'Costs', icon: '$', min_tier: 'advanced' },
 ];
 
 function dockCatalogList() {
@@ -6310,9 +6581,9 @@ function defaultDockPathsForTier(tier) {
     if (d && d.length) return d.slice();
   }
   const fallbacks = {
-    normal: ['dashboard', 'vms', 'app-store', 'integrations'],
-    power: ['dashboard', 'vms', 'app-store', 'monitoring', 'backups', 'integrations'],
-    advanced: ['dashboard', 'vms', 'nodes', 'storage', 'mission-control', 'integrations'],
+    normal: ['dashboard', 'vms', 'app-store', 'console-hub', 'settings'],
+    power: ['dashboard', 'vms', 'app-store', 'console-hub', 'snapshots', 'events', 'stack-health', 'settings'],
+    advanced: ['dashboard', 'vms', 'app-store', 'network-intel', 'security', 'costs', 'settings'],
   };
   return (fallbacks[tier] || fallbacks.normal).slice();
 }
@@ -6377,6 +6648,8 @@ function renderCloudOsDock() {
       '<span class="mac-dock-icon" aria-hidden="true">' + esc(item.icon) + '</span>' +
       '<span class="mac-dock-tooltip">' + label + '</span>' +
       (active ? '<span class="mac-dock-dot" aria-hidden="true"></span>' : '') +
+      ((item.page === 'events' || item.page === 'stack-health') && islandAlertCount > 0
+        ? '<span class="mac-dock-badge">' + (islandAlertCount > 9 ? '9+' : islandAlertCount) + '</span>' : '') +
       '</button>';
   });
   html += '<div class="mac-dock-divider" aria-hidden="true"></div>';
@@ -6448,7 +6721,7 @@ function setDesktopTier(tier, resetPins) {
       try {
         if (localStorage.getItem(FINDER_COLLAPSED_KEY) === null) setFinderCollapsed(true, true);
       } catch (e) { setFinderCollapsed(true, true); }
-    } else if (tier === 'advanced' && resetPins) {
+    } else if ((tier === 'power' || tier === 'advanced') && resetPins) {
       setFinderCollapsed(false, true);
     }
   }
@@ -6514,6 +6787,14 @@ function updateMacStatusIsland() {
     }
   }
   if (alertsEl) alertsEl.textContent = islandAlertCount > 0 ? String(islandAlertCount) + ' open' : 'None';
+  const islandBtn = document.getElementById('mac-dynamic-island-btn');
+  if (islandBtn) {
+    islandBtn.classList.remove('health-ok', 'health-warn', 'health-crit');
+    if (islandAlertCount > 0 || tone === 'error') islandBtn.classList.add('health-crit');
+    else if (tone === 'warn') islandBtn.classList.add('health-warn');
+    else islandBtn.classList.add('health-ok');
+  }
+  renderCloudOsDock();
 }
 
 async function refreshIslandAlerts() {
@@ -6588,17 +6869,19 @@ function toggleDynamicIsland(ev) {
 function loadDesktopWallpaper() {
   let wp = 'tahoe';
   try { wp = localStorage.getItem(WALLPAPER_KEY) || 'tahoe'; } catch (e) {}
-  if (!['tahoe', 'aurora', 'midnight', 'ocean'].includes(wp)) wp = 'tahoe';
+  if (!WALLPAPER_IDS.includes(wp)) wp = 'tahoe';
   document.body.setAttribute('data-wallpaper', wp);
   document.querySelectorAll('.mac-menu-item[data-wallpaper-opt]').forEach(el => {
     el.classList.toggle('active-tier', el.dataset.wallpaperOpt === wp);
   });
   const ccWp = document.getElementById('cc-wallpaper-select');
   if (ccWp) ccWp.value = wp;
+  const prefWp = document.getElementById('pref-wallpaper-select');
+  if (prefWp) prefWp.value = wp;
 }
 
 function setDesktopWallpaper(id) {
-  if (!['tahoe', 'aurora', 'midnight', 'ocean'].includes(id)) return;
+  if (!WALLPAPER_IDS.includes(id)) return;
   try { localStorage.setItem(WALLPAPER_KEY, id); } catch (e) {}
   document.body.setAttribute('data-wallpaper', id);
   document.querySelectorAll('.mac-menu-item[data-wallpaper-opt]').forEach(el => {
@@ -6606,6 +6889,8 @@ function setDesktopWallpaper(id) {
   });
   const ccWp = document.getElementById('cc-wallpaper-select');
   if (ccWp) ccWp.value = id;
+  const prefWp = document.getElementById('pref-wallpaper-select');
+  if (prefWp) prefWp.value = id;
   closeMacMenus();
   toast('Wallpaper: ' + id, 'success');
 }
@@ -6703,6 +6988,7 @@ function syncControlCenterSelectors() {
   const theme = document.getElementById('theme-selector');
   const ccTheme = document.getElementById('cc-theme-select');
   if (theme && ccTheme) ccTheme.value = theme.value;
+  if (theme) syncThemeSwatches(theme.value);
   const ccTier = document.getElementById('cc-tier-select');
   if (ccTier) ccTier.value = desktopTier;
   const ns = document.getElementById('ns-selector');
@@ -8643,7 +8929,10 @@ function syncMacPreferencesForm() {
   const mainNs = document.getElementById('ns-selector');
   const mainRef = document.getElementById('refresh-interval');
   if (tier) tier.value = desktopTier;
-  if (theme && mainTheme) theme.value = mainTheme.value;
+  if (theme && mainTheme) {
+    theme.value = mainTheme.value;
+    syncThemeSwatches(mainTheme.value);
+  }
   if (wp) {
     let w = 'tahoe';
     try { w = localStorage.getItem(WALLPAPER_KEY) || 'tahoe'; } catch (e) {}
@@ -14613,8 +14902,23 @@ async function fetchIncidents() {
       </div>
       <div class="mac-pref-section">
         <div class="mac-pref-section-title">Appearance</div>
-        <div class="mac-cc-row"><span>Theme</span><select class="form-select" id="pref-theme-select" onchange="setTheme(this.value)"><option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option></select></div>
-        <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option></select></div>
+        <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
+          <span>Theme</span>
+          <div class="theme-swatch-grid" id="pref-theme-swatch-grid" role="radiogroup" aria-label="Theme">
+            <button type="button" class="theme-swatch" data-theme="slate" role="radio" onclick="setTheme('slate')"><span class="theme-swatch-preview slate"></span><span class="theme-swatch-label">Slate</span></button>
+            <button type="button" class="theme-swatch" data-theme="steel" role="radio" onclick="setTheme('steel')"><span class="theme-swatch-preview steel"></span><span class="theme-swatch-label">Steel</span></button>
+            <button type="button" class="theme-swatch" data-theme="zinc" role="radio" onclick="setTheme('zinc')"><span class="theme-swatch-preview zinc"></span><span class="theme-swatch-label">Zinc</span></button>
+            <button type="button" class="theme-swatch" data-theme="aurora" role="radio" onclick="setTheme('aurora')"><span class="theme-swatch-preview aurora"></span><span class="theme-swatch-label">Aurora</span></button>
+            <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
+            <button type="button" class="theme-swatch" data-theme="obsidian" role="radio" onclick="setTheme('obsidian')"><span class="theme-swatch-preview obsidian"></span><span class="theme-swatch-label">Obsidian</span></button>
+            <button type="button" class="theme-swatch" data-theme="neon" role="radio" onclick="setTheme('neon')"><span class="theme-swatch-preview neon"></span><span class="theme-swatch-label">Neon</span></button>
+          </div>
+          <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
+            <option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option>
+            <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option>
+          </select>
+        </div>
+        <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
       </div>
       <div class="mac-pref-section">
         <div class="mac-pref-section-title">Cluster</div>
