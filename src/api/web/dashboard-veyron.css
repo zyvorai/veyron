@@ -1,10 +1,10 @@
 /* Veyron Command Center — layout + surfaces */
 :root {
-  --bg-0: #05070b;
-  --bg-1: #090d14;
-  --bg-2: #101722;
-  --panel: rgba(18, 24, 36, 0.74);
-  --panel-strong: rgba(26, 34, 50, 0.88);
+  --bg-0: #0a0e17;
+  --bg-1: #0d121c;
+  --bg-2: #121820;
+  --panel: rgba(14, 20, 32, 0.82);
+  --panel-strong: rgba(22, 30, 46, 0.92);
   --line: rgba(150, 170, 210, 0.16);
   --line-strong: rgba(130, 170, 255, 0.36);
   --muted: #9aa7bc;
@@ -260,13 +260,21 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
 }
 
 .vmr-quick-actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#page-dashboard .vmr-quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .vmr-quick-btn {
-  padding: 12px 14px;
+  display: block;
+  width: 100%;
+  padding: 11px 14px;
   border-radius: 10px;
   border: 1px solid var(--line);
   background: linear-gradient(165deg, rgba(63, 124, 255, 0.08), rgba(63, 124, 255, 0.03));
@@ -975,9 +983,10 @@ body.veyron-shell .cloudos-main {
   flex-wrap: wrap;
 }
 
-.vmr-health-ring-lg {
-  width: 100px;
-  height: 100px;
+.vmr-health-ring-lg,
+.vmr-health-ring-xl {
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   border: 4px solid var(--green);
   display: flex;
@@ -986,6 +995,17 @@ body.veyron-shell .cloudos-main {
   justify-content: center;
   flex-shrink: 0;
   animation: ring-pop 1.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+  box-shadow: var(--glow-healthy);
+}
+
+.vmr-health-ring-xl.warn,
+.vmr-health-ring-lg.warn {
+  box-shadow: var(--glow-degraded);
+}
+
+.vmr-health-ring-xl.bad,
+.vmr-health-ring-lg.bad {
+  box-shadow: var(--glow-critical);
 }
 
 @keyframes ring-pop {
@@ -993,11 +1013,28 @@ body.veyron-shell .cloudos-main {
   to { transform: scale(1); opacity: 1; }
 }
 
+.vmr-health-ring-xl.warn,
 .vmr-health-ring-lg.warn { border-color: var(--orange); }
+.vmr-health-ring-xl.bad,
 .vmr-health-ring-lg.bad { border-color: var(--red); }
 
-.vmr-health-pct { font-size: 1.35rem; font-weight: 800; color: var(--green); }
+.vmr-health-ring-xl.warn .vmr-health-pct,
 .vmr-health-ring-lg.warn .vmr-health-pct { color: var(--orange); }
+.vmr-health-ring-xl.bad .vmr-health-pct,
+.vmr-health-ring-lg.bad .vmr-health-pct { color: var(--red); }
+
+.vmr-health-ring-xl .vmr-health-pct,
+.vmr-health-ring-lg .vmr-health-pct {
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--green);
+}
+
+.vmr-card-grid-pinned {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
 .vmr-health-lbl { font-size: 0.68rem; color: var(--muted); }
 
 .vmr-health-row {
@@ -1908,4 +1945,352 @@ html[data-theme="frost"] .vmr-quick-btn {
 
 html[data-theme="frost"] .vmr-foundry-drawer {
   background: rgba(255, 255, 255, 0.96);
+}
+/* Veyron mock alignment — menubar, finder, mission home, status bar, dock */
+
+body.mac-desktop-root {
+  background: linear-gradient(165deg, var(--bg-0) 0%, var(--bg-2) 48%, #0a1018 100%);
+}
+
+body.mac-desktop-root .vmr-panel {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+body.mac-desktop-root .cloudos-finder {
+  width: 228px;
+}
+
+body.mac-desktop-root .cloudos-finder-item.active {
+  border-left: 3px solid var(--cyan);
+  padding-left: 9px;
+  background: linear-gradient(90deg, rgba(39, 215, 255, 0.16), rgba(39, 215, 255, 0.04));
+  box-shadow: inset 0 0 24px rgba(39, 215, 255, 0.06);
+}
+
+.finder-section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 10px 12px 6px;
+}
+
+body.mac-desktop-root .finder-toolbar-title {
+  letter-spacing: 0.14em;
+}
+
+body.finder-tier-compact #finder-sec-favorites {
+  display: none;
+}
+
+body.finder-tier-compact #finder-sec-operations {
+  display: none;
+}
+
+body.finder-tier-compact #finder-sec-network,
+body.finder-tier-compact #finder-sec-compute,
+body.finder-tier-compact #finder-sec-observe,
+body.finder-tier-compact #finder-sec-security-grp {
+  display: none;
+}
+
+.mac-menubar-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(280px, 22vw);
+  margin-left: 6px;
+}
+
+body[data-desktop-tier="normal"] .mac-menubar-title {
+  display: none;
+}
+
+.mac-menubar-center-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  max-width: 920px;
+}
+
+.mac-alert-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 157, 46, 0.35);
+  background: rgba(255, 157, 46, 0.1);
+  color: var(--orange);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.mac-alert-pill:hover {
+  background: rgba(255, 157, 46, 0.16);
+  border-color: rgba(255, 157, 46, 0.5);
+}
+
+.mac-alert-pill.empty {
+  border-color: var(--glass-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.mac-quick-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+}
+
+.mac-quick-nav-btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mac-quick-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.mac-quick-nav-btn.active {
+  background: rgba(56, 189, 248, 0.16);
+  color: var(--spark);
+}
+
+body[data-desktop-tier="normal"] .mac-dynamic-island-wrap {
+  display: none;
+}
+
+body:not([data-desktop-tier="advanced"]) .mac-dynamic-island-wrap {
+  display: none;
+}
+
+.mac-auth-hint {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mission-control-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.mission-control-header-row h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+}
+
+.mission-control-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.mission-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(50, 224, 176, 0.12);
+  border: 1px solid rgba(50, 224, 176, 0.35);
+  color: var(--green);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mission-live-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: mission-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes mission-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+body.mission-control-home #vmr-mission-hero,
+body.mission-control-home #vmr-mission-metrics,
+body.mission-control-home #page-dashboard .vmr-panel:has(#vmr-recent-activity) {
+  display: none !important;
+}
+
+body.mission-control-home #dc-pinned-section {
+  display: block !important;
+}
+
+.vmr-forge-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 148px;
+  padding: 20px;
+  border-radius: 14px;
+  border: 2px dashed rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.04);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+
+.vmr-forge-placeholder:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.08);
+  transform: translateY(-1px);
+}
+
+.vmr-forge-placeholder-icon {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+  opacity: 0.85;
+}
+
+.vmr-forge-placeholder-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.vmr-copilot-healthy-line {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.mac-status-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  z-index: 85;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px;
+  background: rgba(8, 12, 20, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--glass-border);
+  pointer-events: none;
+}
+
+.mac-zen-indicator {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+body.zen-mode-on .mac-zen-indicator {
+  opacity: 1;
+}
+
+.mac-status-clock {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+body.zen-mode-on .mac-desktop-tabs {
+  display: none !important;
+}
+
+body.mac-desktop-root {
+  padding-bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+body.mac-desktop-root .cloudos-main {
+  padding-bottom: calc(var(--vmr-dock-safe) + 28px);
+}
+
+.mac-dock-inner {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: rgba(12, 18, 30, 0.78);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.mac-dock-item-active {
+  background: rgba(56, 189, 248, 0.14) !important;
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.22), 0 8px 20px rgba(56, 189, 248, 0.12);
+}
+
+@media (max-width: 960px) {
+  .mac-menubar-title,
+  .mac-quick-nav,
+  .mac-auth-hint,
+  .mac-status-bar {
+    display: none !important;
+  }
+
+  .mac-menubar-center-inner {
+    justify-content: stretch;
+  }
+}
+
+@media (max-width: 1100px) {
+  .mac-quick-nav-btn:nth-child(2) {
+    display: none;
+  }
 }
