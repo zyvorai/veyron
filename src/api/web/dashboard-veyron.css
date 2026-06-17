@@ -2613,3 +2613,381 @@ body.mac-desktop-root .cloudos-main {
     display: none;
   }
 }
+
+/* ── VMR page polish wave 2: all pages ── */
+
+.vmr-page-hero-compact {
+  display: none;
+}
+
+body.mac-desktop-root .mac-page-window {
+  gap: 14px;
+}
+
+body.mac-desktop-root .mac-page-window > * + * {
+  margin-top: 0;
+}
+
+body.mac-desktop-root .vmr-surface-card,
+body.mac-desktop-root .mac-page-window > .card,
+body.mac-desktop-root .mac-page-window .glass-card:not(.vmr-panel) {
+  border-radius: 16px;
+  background: var(--glass-bg, linear-gradient(165deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  box-shadow: var(--glass-shadow, 0 8px 28px rgba(0, 0, 0, 0.14)), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
+  transition: border-color 0.15s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+body.mac-desktop-root .vmr-surface-card:hover,
+body.mac-desktop-root .mac-page-window > .card:hover {
+  border-color: rgba(56, 189, 248, 0.18);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+body.mac-desktop-root .vmr-legacy-page-header {
+  padding: 4px 0 12px;
+  margin-bottom: 4px;
+}
+
+body.mac-desktop-root[data-desktop-tier="advanced"] .vmr-legacy-page-header h1 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+body.mac-desktop-root .vmr-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+body.mac-desktop-root .vmr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+body.mac-desktop-root .vmr-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--line);
+}
+
+body.mac-desktop-root .vmr-table tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+body.mac-desktop-root .vmr-table tbody tr:hover td {
+  background: rgba(56, 189, 248, 0.04);
+}
+
+body.mac-desktop-root .vmr-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.vmr-page-empty {
+  position: relative;
+  text-align: center;
+  padding: 36px 24px;
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.vmr-page-empty-glow {
+  position: absolute;
+  inset: -30px -10px auto;
+  height: 160px;
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(56, 189, 248, 0.1), transparent 70%);
+  pointer-events: none;
+}
+
+.vmr-page-empty-icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  font-size: 1.25rem;
+  color: var(--cyan);
+  background: linear-gradient(165deg, rgba(56, 189, 248, 0.16), rgba(99, 102, 241, 0.08));
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.vmr-page-empty h3 {
+  margin: 0 0 8px;
+  color: var(--text-bright);
+  font-size: 1rem;
+}
+
+.vmr-page-empty-lead {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.vmr-page-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.vmr-stack-check {
+  border-left-width: 3px;
+  border-left-style: solid;
+}
+
+.vmr-stack-check.passed { border-left-color: var(--green); }
+.vmr-stack-check.failed { border-left-color: var(--red); }
+
+.vmr-stack-check-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.vmr-stack-check-head strong {
+  color: var(--text-bright);
+  font-size: 0.92rem;
+}
+
+.vmr-stack-check-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.vmr-stack-check-badge.ok {
+  color: var(--green);
+  background: rgba(50, 224, 176, 0.1);
+  border: 1px solid rgba(50, 224, 176, 0.25);
+}
+
+.vmr-stack-check-badge.bad {
+  color: var(--red);
+  background: rgba(255, 85, 112, 0.1);
+  border: 1px solid rgba(255, 85, 112, 0.25);
+}
+
+.vmr-stack-check-detail,
+.vmr-stack-check-line {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.vmr-stack-check-line {
+  margin-bottom: 6px;
+}
+
+.vmr-stack-check-label {
+  color: var(--orange);
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.vmr-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+
+.vmr-settings-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.vmr-field-row {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vmr-field-row:last-child {
+  border-bottom: none;
+}
+
+.vmr-field-label {
+  font-size: 0.74rem;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.vmr-field-check {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.vmr-field-badge {
+  font-size: 0.84rem;
+  font-family: var(--font-mono);
+}
+
+.vmr-field-badge.ok { color: var(--green); }
+.vmr-field-badge.warn { color: var(--orange); }
+
+body.mac-desktop-root .vmr-form-control {
+  border-radius: 10px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.vmr-template-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.vmr-template-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vmr-template-card-icon {
+  font-size: 1.35rem;
+}
+
+.vmr-template-card-sub,
+.vmr-template-card-spec {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.vmr-template-card-spec {
+  font-size: 0.78rem;
+}
+
+.vmr-template-card-import {
+  border-style: dashed;
+  justify-content: center;
+  text-align: center;
+}
+
+.vmr-template-card-import .vmr-template-card-sub {
+  margin: 8px 0 12px;
+}
+
+#vmr-events-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.vmr-events-timeline {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.16);
+  padding: 8px 12px;
+}
+
+.vmr-events-timeline-row {
+  display: grid;
+  grid-template-columns: 64px 72px 1fr;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  align-items: baseline;
+}
+
+.vmr-events-timeline-row:last-child {
+  border-bottom: none;
+}
+
+.vmr-events-timeline-time {
+  color: var(--muted);
+}
+
+.vmr-events-timeline-sev {
+  font-weight: 600;
+}
+
+.vmr-events-timeline-msg {
+  color: var(--text-muted);
+}
+
+body.mac-desktop-root .vmr-metrics-strip {
+  margin-bottom: 14px;
+}
+
+body.mac-desktop-root .vmr-metric {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+body.mac-desktop-root .vmr-incident-card {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border-radius: 14px;
+}
+
+body.mac-desktop-root .vmr-capsule-hero {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.mac-desktop-root .vmr-capsule-tabs {
+  margin-top: 14px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--line);
+}
+
+body.mac-desktop-root .vmr-capsule-tab-btn {
+  border-radius: 9px;
+  transition: background 0.15s, color 0.15s;
+}
+
+body.mac-desktop-root .vmr-capsule-tab-btn.active {
+  background: rgba(56, 189, 248, 0.14);
+  color: var(--cyan);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.18);
+}
+
+body.mac-desktop-root .card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+body.mac-desktop-root .card-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+html[data-theme="frost"] body.mac-desktop-root .vmr-surface-card,
+html[data-theme="frost"] body.mac-desktop-root .mac-page-window > .card {
+  background: rgba(255, 255, 255, 0.88);
+}
