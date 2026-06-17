@@ -173,9 +173,55 @@
     }).join('');
   };
 
-  window.renderVmrPageHero = function renderVmrPageHero(elId, title, tagline, actionHtml) {
+  window.vmrShowPageHero = function vmrShowPageHero(page) {
+    if (page === 'dashboard') return false;
+    if (typeof uiTierForPage === 'function') return uiTierForPage(page) === 'advanced';
+    return typeof desktopTier !== 'undefined' && desktopTier === 'advanced';
+  };
+
+  window.renderVmrEmptyState = function renderVmrEmptyState(opts) {
+    opts = opts || {};
+    return '<div class="vmr-page-empty">' +
+      '<div class="vmr-page-empty-glow" aria-hidden="true"></div>' +
+      '<div class="vmr-page-empty-icon" aria-hidden="true">' + esc(opts.icon || '◫') + '</div>' +
+      '<h3>' + esc(opts.title || 'Nothing here yet') + '</h3>' +
+      (opts.lead ? '<p class="vmr-page-empty-lead">' + esc(opts.lead) + '</p>' : '') +
+      (opts.body || '') +
+      (opts.actions ? '<div class="vmr-page-empty-actions">' + opts.actions + '</div>' : '') +
+      '</div>';
+  };
+
+  window.applyVmrLegacyPagePolish = function applyVmrLegacyPagePolish(page) {
+    var pageEl = document.getElementById('page-' + page);
+    if (!pageEl) return;
+    pageEl.querySelectorAll('.glass-card, .card.glass-card, .card').forEach(function (c) {
+      if (!c.classList.contains('vmr-panel') && !c.classList.contains('vmr-surface-card')) {
+        c.classList.add('vmr-surface-card');
+      }
+    });
+    pageEl.querySelectorAll('table').forEach(function (t) {
+      t.classList.add('vmr-table');
+      var parent = t.parentElement;
+      if (parent && !parent.classList.contains('vmr-table-wrap') && parent.tagName === 'DIV') {
+        parent.classList.add('vmr-table-wrap');
+      }
+    });
+    pageEl.querySelectorAll('.page-header').forEach(function (h) {
+      h.classList.add('vmr-legacy-page-header');
+    });
+    pageEl.querySelectorAll('.form-select, .form-input').forEach(function (inp) {
+      inp.classList.add('vmr-form-control');
+    });
+  };
+
+  window.renderVmrPageHero = function renderVmrPageHero(elId, title, tagline, actionHtml, pageKey) {
     var el = document.getElementById(elId);
     if (!el) return;
+    if (pageKey && !vmrShowPageHero(pageKey)) {
+      el.className = 'vmr-page-hero-compact';
+      el.innerHTML = '';
+      return;
+    }
     el.className = 'vmr-page-hero';
     el.innerHTML = '<div><h1>' + esc(title) + '</h1>' +
       (tagline ? '<p class="vmr-tagline">' + esc(tagline) + '</p>' : '') + '</div>' +
@@ -612,7 +658,8 @@
     var stopped = vms.length - running;
     renderVmrPageHero('vmr-fleet-hero', 'Veyron Fleet Command',
       vms.length + ' virtual machines · ' + running + ' running · ' + stopped + ' stopped',
-      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
+      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>',
+      'vms');
     var issues = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
     var cost = typeof lastCostSummary !== 'undefined' ? lastCostSummary : '—';
     var drifted = vms.filter(function (v) { return v.drift_detected === true; }).length;
@@ -669,7 +716,8 @@
     }).join('');
     renderVmrPageHero('vmr-foundry-hero', 'Veyron Template Foundry',
       'Launch Linux, Windows, BSD, Talos, and custom KubeVirt VMs.',
-      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
+      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>',
+      'app-store');
   };
 
   window.setVmrFoundryCategory = function setVmrFoundryCategory(cat) {
@@ -710,19 +758,19 @@
       var cards = filtered.map(function (t) {
         var em = icon[t.os_family] || '◫';
         return '<div class="vmr-template-card">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-          '<div><span style="font-size:1.4rem">' + em + '</span> <strong>' + esc(t.title) + '</strong></div>' +
+          '<div class="vmr-template-card-head">' +
+          '<div class="vmr-template-card-title"><span class="vmr-template-card-icon">' + em + '</span> <strong>' + esc(t.title) + '</strong></div>' +
           '<span class="glass-badge ok">READY</span></div>' +
-          '<div style="font-size:.82rem;color:var(--muted)">' + esc(t.subtitle) + '</div>' +
-          '<div style="font-size:.78rem;color:var(--muted)">' + esc(t.cpu || '2') + ' vCPU · ' + esc(t.memory || '4Gi') + ' · ' + esc(t.disk || t.default_disk_size || '20Gi') + '</div>' +
+          '<div class="vmr-template-card-sub">' + esc(t.subtitle) + '</div>' +
+          '<div class="vmr-template-card-spec">' + esc(t.cpu || '2') + ' vCPU · ' + esc(t.memory || '4Gi') + ' · ' + esc(t.disk || t.default_disk_size || '20Gi') + '</div>' +
           '<div class="vmr-template-card-actions">' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openFoundryPreview(' + jsArgs(t.id) + ')') + '>Preview</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Customize</button>' +
           '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button></div></div>';
       }).join('');
       grid.className = 'vmr-card-grid';
-      grid.innerHTML = cards + '<div class="vmr-template-card" style="border-style:dashed">' +
-        '<strong>Import custom image</strong><p style="font-size:.82rem;color:var(--muted);margin:8px 0">QCOW2 / VMDK via CDI</p>' +
+      grid.innerHTML = cards + '<div class="vmr-template-card vmr-template-card-import">' +
+        '<strong>Import custom image</strong><p class="vmr-template-card-sub">QCOW2 / VMDK via CDI</p>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openImageImportModal && openImageImportModal()">Import Image</button></div>';
       var sumEl = document.getElementById('app-store-summary');
       if (sumEl) {
@@ -807,7 +855,8 @@
       passed + ' / ' + checks.length + ' — ' + (allOk ? 'All Systems Operational' : (checks.length - passed) + ' issue(s) detected'),
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openPlatformInstallModal()">Install Stack</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth(true)">Recheck</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Zeus</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Zeus</button>',
+      'stack-health');
     var ringCls = allOk ? '' : passed >= 2 ? ' warn' : ' bad';
     el.innerHTML =
       '<div class="vmr-stack-hero">' +
@@ -829,22 +878,22 @@
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:16px">' +
       checks.map(function (c) {
         if (c.ok) {
-          return '<div class="vmr-panel" style="border-left:3px solid var(--green)">' +
-            '<div style="display:flex;justify-content:space-between;align-items:flex-start">' +
-              '<strong style="color:var(--text-bright,#f7f9fb)">' + esc(c.label) + '</strong>' +
-              '<span style="color:var(--green);font-size:.78rem;font-weight:700">PASSED</span>' +
+          return '<div class="vmr-panel vmr-stack-check passed">' +
+            '<div class="vmr-stack-check-head">' +
+              '<strong>' + esc(c.label) + '</strong>' +
+              '<span class="vmr-stack-check-badge ok">Passed</span>' +
             '</div>' +
-            '<div style="font-size:.8rem;color:var(--muted);margin-top:6px">' + esc(c.tagline) + '</div>' +
+            '<div class="vmr-stack-check-detail">' + esc(c.tagline) + '</div>' +
             '</div>';
         }
-        return '<div class="vmr-panel" style="border-left:3px solid var(--red)">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
-            '<strong style="color:var(--text-bright,#f7f9fb)">' + esc(c.label) + '</strong>' +
-            '<span style="color:var(--red);font-size:.78rem;font-weight:700">FAILED</span>' +
+        return '<div class="vmr-panel vmr-stack-check failed">' +
+          '<div class="vmr-stack-check-head">' +
+            '<strong>' + esc(c.label) + '</strong>' +
+            '<span class="vmr-stack-check-badge bad">Failed</span>' +
           '</div>' +
-          '<div style="font-size:.8rem;margin-bottom:6px"><span style="color:var(--orange);font-weight:600">Problem: </span><span style="color:var(--muted)">' + esc(c.problem) + '</span></div>' +
-          '<div style="font-size:.8rem;margin-bottom:6px"><span style="color:var(--orange);font-weight:600">Impact: </span><span style="color:var(--muted)">' + esc(c.impact) + '</span></div>' +
-          '<div style="font-size:.8rem;margin-bottom:10px"><span style="color:var(--muted);font-weight:600">Root cause: </span><span style="color:var(--muted)">' + esc(c.rootCause) + '</span></div>' +
+          '<div class="vmr-stack-check-line"><span class="vmr-stack-check-label">Problem</span><span>' + esc(c.problem) + '</span></div>' +
+          '<div class="vmr-stack-check-line"><span class="vmr-stack-check-label">Impact</span><span>' + esc(c.impact) + '</span></div>' +
+          '<div class="vmr-stack-check-line"><span class="vmr-stack-check-label">Root cause</span><span>' + esc(c.rootCause) + '</span></div>' +
           '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
             '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Fix: ' + c.problem) + ')') + '>Fix with Veyron</button>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigator.clipboard&&navigator.clipboard.writeText(' + jsArgs(c.cmd) + ')') + '>Copy command</button>' +
@@ -1017,14 +1066,16 @@
   };
 
   window.renderConsoleHubVmr = function renderConsoleHubVmr() {
-    var uiTier = typeof uiTierForPage === 'function' ? uiTierForPage('console-hub') : 'power';
-    if (uiTier === 'advanced') {
+    if (vmrShowPageHero('console-hub')) {
       renderVmrPageHero('vmr-console-hero', 'Veyron ConsoleHub',
         'Secure browser console access for virtual machines.',
-        '');
+        '', 'console-hub');
     } else {
       var heroEl = document.getElementById('vmr-console-hero');
-      if (heroEl) heroEl.innerHTML = '';
+      if (heroEl) {
+        heroEl.className = 'vmr-page-hero-compact';
+        heroEl.innerHTML = '';
+      }
     }
     var sel = document.getElementById('vmr-console-vm-select');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
@@ -1396,6 +1447,9 @@
       if (page === 'security') { renderSecurityPostureVmr(); if (typeof fetchSecurityVmr === 'function') fetchSecurityVmr(); }
       if (page === 'snapshots') { renderSnapshotsVmr(); if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(); }
       if (page === 'workloads') { renderWorkloadsVmr(); if (typeof fetchWorkloadsVmr === 'function') fetchWorkloadsVmr(); }
+      if (typeof applyVmrLegacyPagePolish === 'function') {
+        requestAnimationFrame(function () { applyVmrLegacyPagePolish(page); });
+      }
     };
   };
 
@@ -1415,7 +1469,8 @@
       ready + '/' + total + ' ready · ' + vms.length + ' VMs placed across cluster',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor&&runNodeAdvisor()">Node Advisor</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Show KubeVirt status on all nodes\')">KubeVirt Status</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'workloads\')">Workloads</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'workloads\')">Workloads</button>',
+      'nodes');
     renderVmrMetricsStrip('vmr-nodes-metrics', [
       { label: 'Nodes Ready', value: ready + '/' + total, tone: ready === total ? 'ok' : 'warn' },
       { label: 'VMs Placed', value: vms.filter(function (v) { return !!vmNodeName(v); }).length },
@@ -1521,7 +1576,8 @@
     renderVmrPageHero('vmr-workloads-hero', 'Veyron Workloads',
       'VMs, VMIs, virt-launcher, CDI, KubeVirt control-plane, and Veyron pods.',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloadsVmr()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'nodes\')">Cluster Nodes</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'nodes\')">Cluster Nodes</button>',
+      'workloads');
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
     var wlPods = pods.filter(function (p) {
       return /virt-launcher|cdi-|virt-controller|virt-api|virt-handler|virt-operator|veyron/.test((p.name || ''));
@@ -1709,7 +1765,8 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrEventMode(window._vmrEventMode===\'cards\'?\'timeline\':\'cards\')" id="vmr-event-mode-btn">' +
       (window._vmrEventMode === 'timeline' ? 'Card View' : 'Timeline') + '</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchEvents(true)">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>',
+      'events');
     var filterBar = document.getElementById('vmr-events-filter-bar');
     if (filterBar) {
       var filters = ['all', 'Info', 'Warning', 'Failed', 'VMs', 'Images', 'KubeVirt', 'Storage', 'Network', 'Security'];
@@ -1721,7 +1778,12 @@
     var el = document.getElementById('vmr-events-list');
     if (!el) return;
     if (!events.length) {
-      el.innerHTML = '<p style="color:var(--muted);font-size:.84rem">No cluster events in scope.</p>';
+      el.innerHTML = renderVmrEmptyState({
+        icon: '⚡',
+        title: 'No cluster events',
+        lead: 'Events in the selected namespace scope will appear here with impact analysis and fix suggestions.',
+        actions: '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchEvents(true)">Refresh</button>'
+      });
       return;
     }
     var filter = window._vmrEventFilter || 'all';
@@ -1742,7 +1804,7 @@
       return true;
     }).slice(0, 40);
     if (window._vmrEventMode === 'timeline') {
-      el.innerHTML = '<div style="font-family:var(--font-mono,monospace);font-size:.82rem">' +
+      el.innerHTML = '<div class="vmr-events-timeline">' +
         filtered.map(function (ev) {
           var t = ev.timestamp ? ev.timestamp.slice(11, 19) : '—';
           var r = ev.reason || ev.type || 'Event';
@@ -1751,10 +1813,10 @@
             ev.type === 'Normal' ? 'var(--green)' : 'var(--cyan)';
           var label = /Failed|Error|BackOff/i.test(r) ? 'Failed' :
             ev.type === 'Warning' ? 'Warning' : 'Success';
-          return '<div style="display:flex;gap:14px;padding:6px 0;border-bottom:1px solid var(--line)">' +
-            '<span style="color:var(--muted);width:60px;flex-shrink:0">' + esc(t) + '</span>' +
-            '<span style="color:' + cls + ';width:60px;flex-shrink:0;font-weight:600">' + label + '</span>' +
-            '<span style="color:var(--text-muted,#a6b0bc)">' + esc((ev.message || r).slice(0, 100)) + '</span></div>';
+          return '<div class="vmr-events-timeline-row">' +
+            '<span class="vmr-events-timeline-time">' + esc(t) + '</span>' +
+            '<span class="vmr-events-timeline-sev" style="color:' + cls + '">' + label + '</span>' +
+            '<span class="vmr-events-timeline-msg">' + esc((ev.message || r).slice(0, 100)) + '</span></div>';
         }).join('') + '</div>';
     } else {
       window._vmrEventMsgCache = [];
@@ -1926,8 +1988,12 @@
     var vm = target ? vms.find(function (v) { return v.name === target.name && (v.namespace || 'default') === target.ns; }) : null;
     if (!vm && vms.length) vm = vms[0];
     if (!vm) {
-      el.innerHTML = '<div class="vmr-panel"><p style="color:var(--muted)">Select a VM from Fleet Command to open its capsule.</p>' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="navigate(\'vms\')">Open Fleet Command</button></div>';
+      el.innerHTML = renderVmrEmptyState({
+        icon: '◎',
+        title: 'Select a VM capsule',
+        lead: 'Open Fleet Command and pick a virtual machine to inspect identity, performance, network, and security posture.',
+        actions: '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\')">Open Fleet Command</button>'
+      });
       return;
     }
     var ns = vm.namespace || 'default';
@@ -2231,7 +2297,8 @@
     renderVmrPageHero('vmr-network-intel-hero', 'Veyron Network Intelligence',
       'VM traffic, flows, policies, and live network behavior.',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Zeus</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Zeus</button>',
+      'network-intel');
     renderVmrMetricsStrip('vmr-network-intel-metrics', [
       { label: 'Live Flows', value: '…' },
       { label: 'Allowed', value: '…', tone: 'ok' },
@@ -2450,31 +2517,31 @@
     renderVmrPageHero('vmr-settings-hero', 'Veyron Settings',
       'Platform identity, access control, integrations, and appearance.',
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced</button>',
+      'settings');
 
     function field(f) {
-      var row = '<div style="padding:8px 0;border-bottom:1px solid var(--line)">';
+      var row = '<div class="vmr-field-row">';
       if (f.type === 'checkbox') {
-        return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:.84rem;cursor:pointer">' +
+        return '<label class="vmr-field-check">' +
           '<input type="checkbox" id="' + esc(f.id) + '"' + (f.checked ? ' checked' : '') + '> ' + esc(f.label) + '</label>';
       }
       if (f.type === 'select') {
-        return row + '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
-          '<select class="form-select" id="' + esc(f.id) + '">' +
+        return row + '<label class="form-label vmr-field-label">' + esc(f.label) + '</label>' +
+          '<select class="form-select vmr-form-control" id="' + esc(f.id) + '">' +
           (f.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
           '</select></div>';
       }
       if (f.type === 'badge') {
-        return row + '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
-          '<div style="font-size:.84rem;font-family:monospace;color:' + (f.ok ? 'var(--green)' : 'var(--orange)') + '">' + esc(f.value || '—') + '</div></div>';
+        return row + '<label class="form-label vmr-field-label">' + esc(f.label) + '</label>' +
+          '<div class="vmr-field-badge' + (f.ok ? ' ok' : ' warn') + '">' + esc(f.value || '—') + '</div></div>';
       }
       if (f.type === 'action') {
-        return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">' +
-          '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
+        return row + '<label class="form-label vmr-field-label">' + esc(f.label) + '</label>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="' + (f.onclick || '') + '">' + esc(f.btn || 'Run') + '</button></div>';
       }
-      return row + '<label class="form-label" style="font-size:.74rem;color:var(--muted)">' + esc(f.label) + '</label>' +
-        '<input type="' + (f.password ? 'password' : 'text') + '" class="form-input" id="' + esc(f.id) + '" placeholder="' + esc(f.placeholder || '') + '"></div>';
+      return row + '<label class="form-label vmr-field-label">' + esc(f.label) + '</label>' +
+        '<input type="' + (f.password ? 'password' : 'text') + '" class="form-input vmr-form-control" id="' + esc(f.id) + '" placeholder="' + esc(f.placeholder || '') + '"></div>';
     }
 
     function section(title, fields, extra) {
@@ -2571,10 +2638,10 @@
       ])
     ];
 
-    el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">' +
+    el.innerHTML = '<div class="vmr-settings-grid">' +
       sections.join('') +
       '</div>' +
-      '<div style="display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">' +
+      '<div class="vmr-settings-footer">' +
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
       '</div>';
@@ -2721,7 +2788,8 @@
     renderVmrPageHero('vmr-security-hero', 'Veyron Security Posture',
       'Fleet hardening, compliance, and risk visibility · ' + vms.length + ' VMs audited',
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix all security findings\')">Fix All Issues</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurityVmr===\'function\'&&fetchSecurityVmr()">Refresh</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchSecurityVmr===\'function\'&&fetchSecurityVmr()">Refresh</button>',
+      'security');
     renderVmrMetricsStrip('vmr-security-metrics', [
       { label: 'Fleet Score',    value: '…' },
       { label: 'Critical',       value: '…' },
@@ -2734,7 +2802,7 @@
     if (findingsEl) {
       findingsEl.innerHTML = '<div class="vmr-panel">' +
         '<div class="vmr-panel-title">VM Security Findings</div>' +
-        '<div style="padding:32px;text-align:center;color:var(--muted);font-size:.88rem">Scanning KubeVirt specs…</div>' +
+        renderVmrEmptyState({ icon: '⛨', title: 'Scanning fleet', lead: 'Analyzing KubeVirt specs and guest posture across your VMs…' }) +
         '</div>';
     }
   };
@@ -2743,7 +2811,8 @@
     renderVmrPageHero('vmr-snapshots-hero', 'Veyron Snapshots & Backups',
       'Protect, restore, and replicate virtual machines.',
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="typeof openSnapModalPick===\'function\'&&openSnapModalPick()">+ Create Snapshot</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Create backup policy for all VMs\')">+ Backup Policy</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Create backup policy for all VMs\')">+ Backup Policy</button>',
+      'snapshots');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var snaps = typeof window.lastSnapshots !== 'undefined' ? window.lastSnapshots : null;
     var snapsByVm = {};
@@ -2809,7 +2878,8 @@
       'Fleet infrastructure cost · Est. ' + cost + ' / month',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof runCostAdvisor===\'function\'&&runCostAdvisor()">Cost Advisor</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchCosts===\'function\'&&fetchCosts()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Zeus</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Zeus</button>',
+      'costs');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var billed = (typeof window.lastCostVmCount === 'number') ? window.lastCostVmCount : vms.length;
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
@@ -2963,6 +3033,10 @@
     patchRenderPinnedVms();
     patchFetchTemplatesForForge();
     patchSelectVm();
+    document.querySelectorAll('.page.section-shell').forEach(function (p) {
+      var id = (p.id || '').replace(/^page-/, '');
+      if (id) applyVmrLegacyPagePolish(id);
+    });
     renderMissionControlVmr();
     fetchVeyronMissionCosts();
     fetchVeyronAlerts();
