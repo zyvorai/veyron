@@ -2335,3 +2335,34 @@ html[data-theme] .vmr-console-quick-pick:hover {
   border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
   background: color-mix(in srgb, var(--pw-color-data) 8%, transparent);
 }
+
+/* Forge wizard step active */
+html[data-theme] .veyron-forge-steps button.active {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-color-data);
+}
+
+/* Network Intelligence banner (uses info/cyan color family) */
+html[data-theme] .vmr-network-banner {
+  border-color: color-mix(in srgb, var(--pw-color-info) 20%, transparent);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--pw-color-info) 8%, transparent),
+    color-mix(in srgb, var(--pw-color-data) 4%, transparent));
+}
+
+/* Quick-nav active tab */
+html[data-theme] .mac-quick-nav-btn.active {
+  background: color-mix(in srgb, var(--pw-color-data) 16%, transparent);
+  color: var(--spark);
+}
+
+/* Forge placeholder drop zone */
+html[data-theme] .vmr-forge-placeholder {
+  border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
+  background: color-mix(in srgb, var(--pw-color-data) 4%, transparent);
+}
+
+html[data-theme] .vmr-forge-placeholder:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 45%, transparent);
+  background: color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
