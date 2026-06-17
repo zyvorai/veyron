@@ -3078,11 +3078,11 @@
       var lastSnap = hasSnap ? (vmSnaps[0].age || '—') : '—';
       var restorePoints = hasSnap ? vmSnaps.filter(function(s) { return s.ready; }).length : 0;
       var statusBadge = hasSnap ? '<span style="color:var(--green);font-weight:600">Protected</span>' : '<span style="color:var(--orange)">Unprotected</span>';
-      var snapFn = 'typeof openSnapModalFor===\'function\'?openSnapModalFor(\'' + ns + '\',\'' + vm.name + '\'):navigate(\'snapshots\')';
+      var snapBtn = onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')');
       return '<tr><td>' + esc(vm.name) + '</td><td>' + esc(ns) + '</td><td>' + statusBadge + '</td>' +
         '<td>' + esc(lastSnap) + '</td><td>—</td><td>' + (hasSnap ? 'Ad-hoc' : '<span style="color:var(--orange)">⚠ None</span>') + '</td>' +
         '<td>' + restorePoints + '</td>' +
-        '<td><button type="button" class="glass-btn-primary glass-btn-sm" style="margin-right:4px" onclick="' + snapFn + '">Snapshot</button>' +
+        '<td><button type="button" class="glass-btn-primary glass-btn-sm" style="margin-right:4px" ' + snapBtn + '>Snapshot</button>' +
         (vmSnaps.length ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')" style="margin-right:4px">View (' + vmSnaps.length + ')</button>' : '') +
         '</td></tr>';
     }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No VMs found.</td></tr>';
@@ -3140,24 +3140,29 @@
     ]);
   };
 
-  window.fetchSnapshotsVmr = async function fetchSnapshotsVmr() {
+  window.fetchSnapshotsVmr = async function fetchSnapshotsVmr(opts) {
     try {
       var ns = typeof nsParam === 'function' ? nsParam() : '';
-      var raw = await apiJson('/api/v1/snapshots' + ns);
+      var raw = await apiJson('/api/v1/snapshots' + ns, opts);
       if (raw == null) return;
       window.lastSnapshots = typeof asArray === 'function' ? asArray(raw) : (Array.isArray(raw) ? raw : []);
       if (typeof currentPage !== 'undefined' && currentPage === 'snapshots' && typeof renderSnapshotsVmr === 'function') {
         renderSnapshotsVmr();
       }
-    } catch (e) { /* snapshots optional */ }
+    } catch (e) {
+      var protEl = document.getElementById('vmr-snapshots-protection');
+      if (protEl && typeof currentPage !== 'undefined' && currentPage === 'snapshots') {
+        protEl.innerHTML = '<div class="vmr-panel" style="padding:20px;color:var(--error)">' + esc((e && e.message) || 'Failed to load snapshots') + '</div>';
+      }
+    }
   };
 
-  window.fetchSecurityVmr = async function fetchSecurityVmr() {
+  window.fetchSecurityVmr = async function fetchSecurityVmr(opts) {
     try {
       var ns = typeof nsParam === 'function' ? nsParam() : '';
       var [postureRaw, findingsRaw] = await Promise.all([
-        apiJson('/api/v1/security/posture' + ns),
-        apiJson('/api/v1/security/findings' + ns),
+        apiJson('/api/v1/security/posture' + ns, opts),
+        apiJson('/api/v1/security/findings' + ns, opts),
       ]);
       var p = (typeof unwrapData === 'function' ? unwrapData(postureRaw) : postureRaw) || {};
       var _findingsObj = (typeof unwrapData === 'function' ? unwrapData(findingsRaw) : findingsRaw) || {};
@@ -3198,7 +3203,16 @@
         '<div style="overflow-x:auto"><table class="table"><thead><tr>' +
         '<th>Severity</th><th>Category</th><th>Finding</th><th>Resource</th><th>Recommendation</th><th></th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table></div></div>';
-    } catch (e) { /* leave synthetic render intact on error */ }
+    } catch (e) {
+      var el = document.getElementById('vmr-security-findings');
+      if (el) {
+        el.innerHTML = '<div class="vmr-panel" style="padding:20px;color:var(--error)">' + esc((e && e.message) || 'Failed to load security findings') + '</div>';
+      }
+      var metrics = document.getElementById('vmr-security-metrics');
+      if (metrics) {
+        metrics.innerHTML = '<div class="glass-stat-pill bad" style="grid-column:1/-1"><div class="gsl">Security API error</div><div class="gsv">' + esc((e && e.message) || 'Request failed') + '</div></div>';
+      }
+    }
   };
 
   window.patchFetchNodes = function patchFetchNodes() {
@@ -3221,23 +3235,14 @@
     if (!orig) return;
     window.fetchSnapshots = async function() {
       await orig.apply(this, arguments);
-      if (typeof currentPage !== 'undefined' && currentPage === 'snapshots' && typeof renderSnapshotsVmr === 'function') {
-        renderSnapshotsVmr();
-      }
+      if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr.apply(this, arguments);
     };
   };
 
   window.patchFetchEvents = function patchFetchEvents() {
     if (window._veyronPatchedFetchEvents) return;
     window._veyronPatchedFetchEvents = true;
-    var orig = window.fetchEvents;
-    if (!orig) return;
-    window.fetchEvents = async function() {
-      await orig.apply(this, arguments);
-      if (typeof currentPage !== 'undefined' && currentPage === 'events' && typeof renderEventIntelligenceVmr === 'function') {
-        renderEventIntelligenceVmr();
-      }
-    };
+    /* fetchEvents already calls renderEventIntelligenceVmr when on events page */
   };
 
   window.patchFetchCosts = function patchFetchCosts() {

@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618u">
+<meta name="veyron-dashboard-rev" content="20260618v">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618u';
+  var DASH_REV = '20260618v';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -5415,7 +5415,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618u';
+window.__VMROGUE_DASH_REV = '20260618v';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6191,7 +6191,12 @@ function loadPageData(page, opts) {
     fetchEvents(false, opts);
   }
   if (page === 'vms') fetchVMs(opts);
-  if (page === 'snapshots') { fetchVMs(opts); fetchSnapshots(opts); fetchSchedules(); }
+  if (page === 'snapshots') {
+    fetchVMs(opts);
+    fetchSnapshots(opts);
+    fetchSchedules();
+    if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(opts);
+  }
   if (page === 'events') fetchEvents(true, opts);
   if (page === 'nodes') fetchNodes(opts);
   if (page === 'pods') fetchPods(opts);
@@ -6206,7 +6211,10 @@ function loadPageData(page, opts) {
     fetchCosts(opts);
     if (typeof renderCostsVmr === 'function') renderCostsVmr();
   }
-  if (page === 'security') fetchSecurityPage();
+  if (page === 'security') {
+    fetchSecurityPage(opts);
+    if (typeof fetchSecurityVmr === 'function') fetchSecurityVmr(opts);
+  }
   if (page === 'monitoring') fetchMonitoring();
   if (page === 'workloads') fetchWorkloads();
   if (page === 'alerts') fetchAlerts();
@@ -6264,6 +6272,10 @@ function loadPageData(page, opts) {
   if (page === 'console-hub') {
     fetchVMs(opts);
     if (typeof renderConsoleHubVmr === 'function') renderConsoleHubVmr();
+  }
+  if (page === 'vm-capsule' && typeof renderVmCapsuleVmr === 'function') {
+    fetchVMs(opts);
+    renderVmCapsuleVmr();
   }
 }
 
@@ -10024,6 +10036,7 @@ async function fetchSnapshots(opts) {
     const j = await apiJson('/api/v1/snapshots' + nsParam(), opts);
     if (j == null) return;
     const snaps = asArray(j);
+    window.lastSnapshots = snaps;
     const summaryEl = document.getElementById('snap-summary');
     const el = document.getElementById('snap-list');
     const readyCount = snaps.filter(s => s.ready).length;
@@ -13372,15 +13385,17 @@ window.addEventListener('load', async () => {
 });
 
 // Security page (global posture view)
-async function fetchSecurityPage() {
+async function fetchSecurityPage(opts) {
   const sum = document.getElementById('security-summary');
   const tb = document.getElementById('security-body');
   try {
-    const [posture, findingsRaw] = await Promise.all([
-      apiJson('/api/v1/security/posture' + nsParam()),
-      apiJson('/api/v1/security/findings' + nsParam()),
+    const [postureRaw, findingsRaw] = await Promise.all([
+      apiJson('/api/v1/security/posture' + nsParam(), opts),
+      apiJson('/api/v1/security/findings' + nsParam(), opts),
     ]);
-    const findings = asArray(findingsRaw);
+    const posture = unwrapData(postureRaw) || postureRaw || {};
+    const findingsObj = unwrapData(findingsRaw) || findingsRaw || {};
+    const findings = Array.isArray(findingsObj.findings) ? findingsObj.findings : asArray(findingsObj);
     const cardsEl = document.getElementById('security-finding-cards');
     if (cardsEl) {
       cardsEl.innerHTML = findings.map(function(f) {
