@@ -3301,3 +3301,61 @@ html[data-theme="light"],
 html[data-theme="frost"] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
   background: rgba(255, 255, 255, 0.88);
 }
+
+/* ── CloudOS menubar overlap fix (PacketWolf-style chrome) ── */
+
+body.mac-desktop-root {
+  --cloudos-menubar-h: 40px;
+  --cloudos-chrome-top: var(--cloudos-menubar-h);
+}
+
+body.mac-desktop-root .mac-desktop-tabs {
+  position: sticky;
+  top: var(--cloudos-menubar-h);
+  z-index: 115;
+  flex-shrink: 0;
+}
+
+body.mac-desktop-root[data-desktop-tier="advanced"]:not(.zen-mode-on) .mac-desktop-tabs:not(:empty) {
+  --cloudos-chrome-top: calc(var(--cloudos-menubar-h) + 34px);
+}
+
+body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
+  max-height: calc(100dvh - var(--cloudos-chrome-top) - 88px);
+}
+
+body.mac-desktop-root .cloudos-main {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+body.mac-desktop-root .mac-page-toolbar-wrap {
+  flex-shrink: 0;
+}
+
+body.mac-desktop-root .navbar-right .glass-btn-sm,
+body.mac-desktop-root .navbar-right .mac-nc-toggle,
+body.mac-desktop-root .navbar-right .mac-cc-toggle,
+body.mac-desktop-root .navbar-right .btn-spotlight,
+body.mac-desktop-root .navbar-right .btn-nav-browse {
+  flex-shrink: 0;
+}
+
+body.mac-desktop-root .mac-menubar-center-inner .mac-alert-pill {
+  max-width: min(200px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 960px) {
+  body.mac-desktop-root {
+    --cloudos-menubar-h: auto;
+  }
+
+  body.mac-desktop-root .mac-menubar.navbar {
+    height: auto;
+    min-height: 40px;
+    max-height: none;
+    overflow: visible;
+  }
+}
