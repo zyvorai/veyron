@@ -2428,3 +2428,42 @@ html[data-theme] .vmr-fleet-spark span {
 html[data-theme] .mac-menubar-sidebar-btn:hover {
   border-color: color-mix(in srgb, var(--pw-color-data) 25%, transparent);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Legacy layout (non-mac-desktop-root): veyron-topbar, veyron-sidebar
+   — these use near-black hardcoded backgrounds and need light-theme fixes
+   ══════════════════════════════════════════════════════════════════ */
+
+html[data-theme='light'] .veyron-topbar,
+html[data-theme='tahoe-light'] .veyron-topbar {
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+}
+
+html[data-theme='light'] .veyron-wordmark,
+html[data-theme='tahoe-light'] .veyron-wordmark {
+  color: var(--text-bright);
+}
+
+html[data-theme='light'] .veyron-sidebar,
+html[data-theme='tahoe-light'] .veyron-sidebar {
+  background: rgba(255, 255, 255, 0.92);
+  border-right-color: rgba(15, 23, 42, 0.08);
+}
+
+/* Form fields in the legacy layout — all themes */
+html[data-theme] .veyron-topbar-search,
+html[data-theme] .veyron-ns-select,
+html[data-theme] .veyron-copilot-input {
+  background: var(--pw-field-bg);
+  border-color: var(--glass-border);
+  color: var(--pw-text-primary);
+}
+
+html[data-theme='light'] .veyron-user-block,
+html[data-theme='tahoe-light'] .veyron-user-block {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.1);
+}
