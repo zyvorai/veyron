@@ -1242,18 +1242,18 @@ html[data-theme] .browse-filter-input:focus {
 }
 
 html[data-theme] .copilot-module-badge {
-  background: color-mix(in srgb, var(--pw-color-ai) 14%, transparent);
-  color: var(--pw-color-ai);
+  background: color-mix(in srgb, var(--pw-color-info) 12%, transparent);
+  color: var(--pw-color-info);
 }
 
 html[data-theme] .copilot-msg-user span {
-  background: color-mix(in srgb, var(--pw-color-ai) 16%, transparent);
+  background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
 }
 
 html[data-theme] .copilot-tool-chip {
-  background: color-mix(in srgb, var(--pw-color-ai) 12%, transparent);
-  color: var(--pw-color-ai);
-  border-color: color-mix(in srgb, var(--pw-color-ai) 22%, transparent);
+  background: color-mix(in srgb, var(--pw-color-info) 10%, transparent);
+  color: var(--pw-color-info);
+  border-color: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
 }
 
 /* Tahoe hero + stat tones */
@@ -1379,12 +1379,6 @@ html[data-theme] .vmr-metric.tahoe-stat-red .vmr-metric-value {
 html[data-theme] .vm-sort-col.active {
   color: var(--spark);
   border-bottom-color: var(--pw-accent-border);
-}
-
-html[data-theme] .coming-soon-tag {
-  background: var(--pw-accent-soft);
-  color: var(--pw-color-info);
-  border-color: var(--pw-accent-border);
 }
 
 /* macOS chrome accent hovers (theme-tinted) */
@@ -2033,12 +2027,6 @@ html[data-theme] .coming-soon-tag {
   border-color: var(--pw-accent-border);
 }
 
-/* Stat pill hover */
-html[data-theme] button.glass-stat-pill.clickable-stat:hover,
-html[data-theme] .glass-stat-pill.clickable-stat:hover {
-  border-color: color-mix(in srgb, var(--pw-color-data) 32%, transparent);
-}
-
 /* Table clickable row hover */
 html[data-theme] .table tbody tr.clickable-row:hover {
   background: color-mix(in srgb, var(--pw-color-data) 6%, transparent);
@@ -2064,22 +2052,6 @@ html[data-theme] .cloudos-finder-item.active {
 html[data-theme] .cloudos-finder-item:hover,
 html[data-theme] .cloudos-finder-item.active {
   background: color-mix(in srgb, var(--pw-color-data) 10%, transparent);
-}
-
-/* Copilot module badge */
-html[data-theme] .copilot-module-badge {
-  background: color-mix(in srgb, var(--pw-color-info) 12%, transparent);
-}
-
-/* Copilot user message bubble */
-html[data-theme] .copilot-msg-user span {
-  background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
-}
-
-/* Copilot tool chip */
-html[data-theme] .copilot-tool-chip {
-  background: color-mix(in srgb, var(--pw-color-info) 10%, transparent);
-  border-color: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
 }
 
 /* App store / mission card hover */
@@ -2153,11 +2125,6 @@ html[data-theme] .dc-health-ring {
 /* Finder active item — use medium (18%) to be visually distinct from hover (10%) */
 html[data-theme] .cloudos-finder-item.active {
   background: var(--pw-accent-medium) !important;
-}
-
-/* Copilot user bubble and tool chips use info/cyan regardless of primary theme — that's intentional */
-html[data-theme] .copilot-msg-user span {
-  background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
 }
 
 /* ══════════════════════════════════════════════════════════════════

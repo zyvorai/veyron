@@ -205,7 +205,7 @@ async fn get_packetwolf_flows(
     State(_state): State<SharedState>,
     Query(q): Query<PacketWolfFlowsQuery>,
 ) -> impl IntoResponse {
-    let limit = q.limit.unwrap_or(100).min(500).max(1);
+    let limit = q.limit.unwrap_or(100).clamp(1, 500);
     let mut pairs = vec![("limit", limit.to_string())];
     if let Some(ns) = q.namespace.filter(|s| !s.trim().is_empty() && s != "all") {
         pairs.push(("namespace", ns));
