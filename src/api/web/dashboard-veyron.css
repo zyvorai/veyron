@@ -162,13 +162,15 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   padding: 20px 24px;
   margin-bottom: 16px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--panel-strong) 0%, rgba(15, 23, 42, 0.42) 100%);
-  border: 1px solid var(--line);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 42%, transparent 100%),
+    linear-gradient(160deg, color-mix(in srgb, var(--pw-bg-deep, var(--bg-deep)) 78%, transparent) 0%, color-mix(in srgb, var(--pw-bg-deep, var(--bg-deep)) 92%, transparent) 100%);
+  border: 1px solid var(--glass-border, var(--line));
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 var(--glass-highlight, rgba(255, 255, 255, 0.04)), 0 28px 56px -28px rgba(0, 0, 0, 0.14);
 }
 
 .vmr-page-hero::before {
@@ -178,7 +180,7 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, var(--cyan), var(--blue), var(--violet));
+  background: linear-gradient(90deg, var(--pw-color-data, var(--cyan)), var(--pw-color-info, var(--blue)), var(--pw-color-ai, var(--violet)));
   opacity: 0.88;
 }
 
@@ -2668,8 +2670,8 @@ body.mac-desktop-root .mac-page-window .glass-card:not(.vmr-panel) {
 
 body.mac-desktop-root .vmr-surface-card:hover,
 body.mac-desktop-root .mac-page-window > .card:hover {
-  border-color: rgba(56, 189, 248, 0.18);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: var(--pw-accent-border, color-mix(in srgb, var(--pw-color-data, var(--blue)) 18%, transparent));
+  box-shadow: var(--glass-shadow-elevated, 0 12px 32px rgba(0, 0, 0, 0.18)), 0 0 24px var(--pw-accent-glow, transparent);
 }
 
 body.mac-desktop-root .vmr-legacy-page-header {
