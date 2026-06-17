@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618v">
+<meta name="veyron-dashboard-rev" content="20260618w">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618v';
+  var DASH_REV = '20260618w';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -4148,7 +4148,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Alert Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('alert-advisor-card')">Dismiss</button></div>
     <div id="alert-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Alerts</span></div>
+  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">Active Alerts</span>
+    <div style="display:flex;gap:8px;flex:1;min-width:240px;justify-content:flex-end">
+      <input type="search" class="form-input" id="alerts-copilot-input" placeholder="Ask Zeus about alerts…" style="max-width:320px;min-width:160px" onkeydown="if(event.key==='Enter'){event.preventDefault();pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')}">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')">Ask Zeus</button>
+    </div></div>
   <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
   </div>
 </div>
@@ -5415,7 +5419,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618v';
+window.__VMROGUE_DASH_REV = '20260618w';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -5427,25 +5431,7 @@ window.__VMROGUE_DASH_REV = '20260618v';
   } catch (e) { /* private mode */ }
 })();
 
-// Stale-cache shim (Safari may keep an old dashboard script body).
-if (typeof window.renderDcTodayStats !== 'function') {
-  window.renderDcTodayStats = function renderDcTodayStats() {
-    const el = document.getElementById('dc-today-stats');
-    if (!el) return;
-    const running = (vmData || []).filter(v => v.status === 'Running').length;
-    const failed = (vmData || []).filter(v => v.status === 'Failed' || v.status === 'Error').length;
-    const warnings = (lastEvents || []).filter(e => e.type === 'Warning').length;
-    const overview = lastOverview || {};
-    const nodes = overview.nodes || {};
-    const readyNodes = nodes.ready_nodes != null && nodes.total_nodes != null
-      ? nodes.ready_nodes + '/' + nodes.total_nodes : 'n/a';
-    el.innerHTML =
-      '<div class="dc-stat-tile"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + (vmData || []).length + '</div></div>' +
-      '<div class="dc-stat-tile"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></div>' +
-      '<div class="dc-stat-tile"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyNodes + '</div></div>' +
-      (failed ? '<div class="dc-stat-tile"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></div>' : '');
-  };
-}
+// Stale-cache shim removed — use renderDcTodayStats() below.
 
 // State
 let currentPage = 'dashboard';
@@ -7060,6 +7046,11 @@ function setDesktopTier(tier, resetPins) {
   closeMacMenus();
 }
 
+function bootExperienceWarn(label, e) {
+  if (typeof toast !== 'function') return;
+  toast(label + ': ' + ((e && e.message) || String(e)), 'warning');
+}
+
 async function fetchExperienceDesktop() {
   try {
     lastExperienceDesktop = await apiJson('/api/v1/experience/desktop' + nsParam());
@@ -7069,6 +7060,7 @@ async function fetchExperienceDesktop() {
     populateDockEditorAddSelect();
   } catch (e) {
     console.error('Experience desktop error:', e);
+    bootExperienceWarn('Desktop layout unavailable', e);
     renderCloudOsDock();
   }
 }
@@ -8211,6 +8203,7 @@ async function fetchExperienceSession() {
     applyCloudOsSession();
   } catch (e) {
     console.error('Experience session error:', e);
+    bootExperienceWarn('Session profile unavailable', e);
   }
 }
 
@@ -8236,6 +8229,7 @@ async function fetchFleetHealth() {
     });
   } catch (e) {
     console.error('Fleet health error:', e);
+    bootExperienceWarn('Fleet health scores unavailable', e);
   }
 }
 
@@ -8770,8 +8764,11 @@ function renderCopilotBriefing(items) {
   el.innerHTML = html;
 }
 
-function runCopilotBriefing(idx) {
-  const item = (window._copilotBriefingCache || [])[idx];
+function runCopilotBriefing(idx, source) {
+  const cache = source === 'vmr'
+    ? (window._vmrCopilotDisplayCache || [])
+    : (window._copilotBriefingCache || window._vmrCopilotDisplayCache || []);
+  const item = cache[idx];
   if (!item) return;
   if (item.query) {
     openCopilot(item.query);
@@ -10275,13 +10272,7 @@ function renderDashboardCommandCenter() {
       '<button type="button" class="glass-stat-pill tahoe-stat-amber' + (warnings ? ' warn' : '') + ' clickable-stat" onclick="navigate(\'events\')"><div class="gsl">Warnings</div><div class="gsv">' + warnings + '</div></button>' +
       '<button type="button" class="glass-stat-pill tahoe-stat-violet clickable-stat" onclick="navigate(\'nodes\')"><div class="gsl">Nodes ready</div><div class="gsv">' + readyEarly + '</div></button>';
   }
-  if (todayEl) {
-    todayEl.innerHTML =
-      '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigateToVmsFilter(\'Running\')"><div class="dc-stat-label">Running</div><div class="dc-stat-value">' + running + ' / ' + vmData.length + '</div></button>' +
-      '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigate(\'events\')"><div class="dc-stat-label">Warnings</div><div class="dc-stat-value">' + warnings + '</div></button>' +
-      '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigate(\'nodes\')"><div class="dc-stat-label">Nodes</div><div class="dc-stat-value">' + readyEarly + '</div></button>' +
-      (failed ? '<button type="button" class="dc-stat-tile clickable-stat" onclick="navigateToVmsIssues()"><div class="dc-stat-label">Degraded</div><div class="dc-stat-value">' + failed + '</div></button>' : '');
-  }
+  if (todayEl) renderDcTodayStats();
   if (!metricEl) return;
   const overview = lastOverview || {};
   const nodes = overview.nodes || {};
