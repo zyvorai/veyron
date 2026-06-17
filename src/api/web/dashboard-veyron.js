@@ -2,6 +2,14 @@
 (function () {
   'use strict';
 
+  if (typeof window !== 'undefined' && typeof window.vmStatusBadgeClass !== 'function') {
+    window.vmStatusBadgeClass = function vmStatusBadgeClass(status) {
+      return status === 'Running' ? 'running'
+        : status === 'Stopped' ? 'stopped'
+        : (status === 'Failed' || status === 'Error') ? 'error' : 'other';
+    };
+  }
+
   var VEYRON_NAV = [
     { page: 'dashboard', label: 'Mission Control', icon: '◫' },
     { page: 'vms', label: 'Fleet Command', icon: '▣' },
@@ -1407,11 +1415,16 @@
     window._vmrPatchedNavigate = true;
     var orig = window.navigate;
     window.navigate = function (page, opts) {
+      var prevPage = typeof currentPage !== 'undefined' ? currentPage : null;
       if (page === 'monitoring') { navigate('stack-health'); return; }
       if (typeof currentPage !== 'undefined' && currentPage === 'console-hub' && page !== 'console-hub') {
         disconnectConsoleHubVnc();
       }
       orig.apply(this, arguments);
+      if (page === 'vms' && prevPage !== 'vms') {
+        window._vmrUserClearedSelection = false;
+        window._vmrFleetAutoSelected = false;
+      }
       syncVeyronSidebar(page);
       syncVeyronTopbar();
       document.title = (VMR_PAGE_TITLES[page] || 'Veyron') + ' · Kubernetes VM Command Center';
@@ -1524,6 +1537,12 @@
   };
 
   window._vmrWorkloadsTab = window._vmrWorkloadsTab || 'all';
+  window._vmrWorkloadsSearch = window._vmrWorkloadsSearch || '';
+
+  window.setVmrWorkloadsSearch = function setVmrWorkloadsSearch(val) {
+    window._vmrWorkloadsSearch = (val || '').trim().toLowerCase();
+    renderWorkloadsTable();
+  };
 
   window.setVmrWorkloadsTab = function setVmrWorkloadsTab(tab) {
     window._vmrWorkloadsTab = tab;
@@ -1593,8 +1612,14 @@
       { label: 'KubeVirt ctrl', value: wlPods.filter(function (p) { return /virt-controller|virt-api|virt-handler|virt-operator/.test(p.name || ''); }).length },
       { label: 'Veyron pods', value: wlPods.filter(function (p) { return /veyron/.test(p.name || ''); }).length }
     ]);
-    /* tab bar */
+    /* tab bar + search */
     var tableContainer = document.getElementById('workloads-table');
+    var toolbar = document.getElementById('vmr-workloads-toolbar');
+    if (toolbar) {
+      toolbar.innerHTML =
+        '<input type="search" class="form-input vmr-workloads-search" id="vmr-workloads-search" placeholder="Filter by name, namespace, node…" value="' + esc(window._vmrWorkloadsSearch || '') + '" oninput="setVmrWorkloadsSearch(this.value)">' +
+        '<span class="vmr-workloads-hint">VMs, VMIs, virt-launcher, CDI, KubeVirt, and Veyron pods in scope</span>';
+    }
     if (tableContainer) {
       var tabs = [
         { id: 'all', label: 'All' },
@@ -1634,49 +1659,69 @@
     function vmRow(vm) {
       var ns = vm.namespace || 'default';
       var isRunning = vm.status === 'Running';
-      return '<tr>' +
-        '<td>' + esc(vm.name) + '</td>' +
-        '<td><span class="glass-badge" style="background:rgba(63,124,255,.1);color:var(--blue)">VirtualMachine</span></td>' +
-        '<td>' + esc(ns) + '</td>' +
-        '<td><span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></td>' +
+      var badge = typeof vmStatusBadgeClass === 'function' ? vmStatusBadgeClass(vm.status) : (isRunning ? 'running' : 'stopped');
+      return '<tr class="vmr-workloads-row" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+        '<td><span class="vmr-wl-name">' + esc(vm.name) + '</span></td>' +
+        '<td><span class="glass-badge other">VirtualMachine</span></td>' +
+        '<td><span class="ns-chip">' + esc(ns) + '</span></td>' +
+        '<td><span class="glass-badge ' + badge + '">' + esc(vm.status) + '</span></td>' +
         '<td>' + esc(vmNodeName(vm) || '—') + '</td>' +
         '<td>—</td>' +
         '<td>' + esc(vm.age || '—') + '</td>' +
         '<td style="color:var(--muted);font-size:.78rem">VirtualMachine</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Inspect</button></td></tr>';
+        '<td class="vmr-wl-actions" onclick="event.stopPropagation()"><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>Inspect</button></td></tr>';
     }
 
     function podRow(pod) {
-      var isOk = (pod.status || '').toLowerCase() === 'running';
+      var phase = (pod.status || '—');
+      var isOk = phase.toLowerCase() === 'running';
+      var badge = typeof podPhaseBadgeClass === 'function' ? podPhaseBadgeClass(phase) : (isOk ? 'running' : 'other');
       var kind = /virt-launcher/.test(pod.name || '') ? 'virt-launcher'
-        : /cdi-/.test(pod.name || '') ? 'CDI Pod'
-        : /virt-controller|virt-api|virt-handler|virt-operator/.test(pod.name || '') ? 'KubeVirt ctrl'
+        : /cdi-/.test(pod.name || '') ? 'CDI'
+        : /virt-controller|virt-api|virt-handler|virt-operator/.test(pod.name || '') ? 'KubeVirt'
         : /veyron/.test(pod.name || '') ? 'Veyron'
         : 'Pod';
-      return '<tr>' +
-        '<td>' + esc(pod.name || '—') + '</td>' +
-        '<td><span class="glass-badge" style="background:rgba(39,215,255,.08);color:var(--cyan)">' + esc(kind) + '</span></td>' +
-        '<td>' + esc(pod.namespace || '—') + '</td>' +
-        '<td><span class="vm-badge ' + (isOk ? 'running' : 'stopped') + '">' + esc(pod.status || '—') + '</span></td>' +
+      var kindCls = kind === 'virt-launcher' ? 'other' : kind === 'CDI' ? 'other' : 'other';
+      var logsBtn = isOk
+        ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openPodLogsVmr(' + jsArgs(pod.namespace || '', pod.name || '') + ')') + '>Logs</button>'
+        : '<span class="vmr-wl-muted" title="Logs available when pod is Running">—</span>';
+      return '<tr class="vmr-workloads-row">' +
+        '<td><span class="vmr-wl-name">' + esc(pod.name || '—') + '</span></td>' +
+        '<td><span class="glass-badge ' + kindCls + '">' + esc(kind) + '</span></td>' +
+        '<td><span class="ns-chip">' + esc(pod.namespace || '—') + '</span></td>' +
+        '<td><span class="glass-badge ' + badge + '">' + esc(phase) + '</span></td>' +
         '<td>' + esc(pod.node || '—') + '</td>' +
         '<td>' + esc(pod.restarts != null ? String(pod.restarts) : '—') + '</td>' +
         '<td>' + esc(pod.age || '—') + '</td>' +
         '<td style="color:var(--muted);font-size:.78rem">' + esc(pod.owner || '—') + '</td>' +
-        '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openPodLogsVmr(' + jsArgs(pod.namespace || '', pod.name || '') + ')') + '>Logs</button></td></tr>';
+        '<td class="vmr-wl-actions">' + logsBtn + '</td></tr>';
     }
 
-    if (tab === 'vms' || tab === 'all') vms.forEach(function (v) { rows.push(vmRow(v)); });
+    function matchesSearch(rowText) {
+      var q = window._vmrWorkloadsSearch || '';
+      if (!q) return true;
+      return (rowText || '').toLowerCase().indexOf(q) >= 0;
+    }
+
+    if (tab === 'vms' || tab === 'all') {
+      vms.forEach(function (v) {
+        var text = [v.name, v.namespace, vmNodeName(v), v.status].join(' ');
+        if (matchesSearch(text)) rows.push(vmRow(v));
+      });
+    }
     if (tab === 'vmis' || tab === 'all') {
       vms.filter(function (v) { return v.status === 'Running'; }).forEach(function (v) {
         var ns = v.namespace || 'default';
-        rows.push('<tr>' +
-          '<td>' + esc(v.name) + '</td>' +
-          '<td><span class="glass-badge" style="background:rgba(50,224,176,.08);color:var(--green)">VMI</span></td>' +
-          '<td>' + esc(ns) + '</td>' +
-          '<td><span class="vm-badge running">Running</span></td>' +
+        var text = [v.name, ns, vmNodeName(v), 'VMI'].join(' ');
+        if (!matchesSearch(text)) return;
+        rows.push('<tr class="vmr-workloads-row" ' + onHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>' +
+          '<td><span class="vmr-wl-name">' + esc(v.name) + '</span></td>' +
+          '<td><span class="glass-badge other">VMI</span></td>' +
+          '<td><span class="ns-chip">' + esc(ns) + '</span></td>' +
+          '<td><span class="glass-badge running">Running</span></td>' +
           '<td>' + esc(vmNodeName(v) || '—') + '</td><td>—</td><td>—</td>' +
           '<td style="color:var(--muted);font-size:.78rem">VirtualMachine</td>' +
-          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>Inspect</button></td></tr>');
+          '<td class="vmr-wl-actions" onclick="event.stopPropagation()"><button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>Inspect</button></td></tr>');
       });
     }
     (pods || []).forEach(function (pod) {
@@ -1688,12 +1733,22 @@
       if (tab === 'all' || tab === 'virt-launcher' && isLauncher ||
           tab === 'cdi' && isCdi || tab === 'kubevirt-ctrl' && isKvCtrl ||
           tab === 'veyron' && isVeyron) {
-        if (isLauncher || isCdi || isKvCtrl || isVeyron) rows.push(podRow(pod));
+        if (isLauncher || isCdi || isKvCtrl || isVeyron) {
+          var text = [pod.name, pod.namespace, pod.node, pod.status, pod.owner].join(' ');
+          if (matchesSearch(text)) rows.push(podRow(pod));
+        }
       }
     });
 
+    var countEl = document.getElementById('vmr-workloads-count');
+    if (countEl) countEl.textContent = rows.length ? (rows.length + ' shown') : '';
+
     if (!rows.length) {
-      bodyEl.innerHTML = '<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:24px">No workloads in this category.</td></tr>';
+      bodyEl.innerHTML = '<tr><td colspan="9"><div class="vmr-workloads-empty">' +
+        (window._vmrWorkloadsSearch
+          ? 'No workloads match “' + esc(window._vmrWorkloadsSearch) + '”.'
+          : 'No workloads in this category for the current namespace filter.') +
+        '</div></td></tr>';
     } else {
       bodyEl.innerHTML = rows.join('');
     }
@@ -1707,37 +1762,56 @@
     if (!modal) {
       modal = document.createElement('div');
       modal.id = modalId;
-      modal.style.cssText = 'position:fixed;inset:0;z-index:320;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center';
-      modal.addEventListener('click', function (e) { if (e.target === modal) modal.style.display = 'none'; });
+      modal.className = 'modal-overlay mac-signin-overlay vmr-pod-logs-overlay';
+      modal.addEventListener('click', function (e) { if (e.target === modal) closePodLogsVmr(); });
       modal.innerHTML =
-        '<div style="background:var(--surface,#13131f);border:1px solid var(--line);border-radius:10px;padding:20px 24px;width:min(940px,96vw);max-height:82vh;display:flex;flex-direction:column;gap:12px">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center">' +
-            '<span class="vmr-panel-title" id="vmr-pod-logs-title" style="font-size:.95rem"></span>' +
-            '<div style="display:flex;gap:8px">' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" id="vmr-pod-logs-refresh">Refresh</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById(\'vmr-pod-logs-modal\').style.display=\'none\'">Close</button>' +
+        '<div class="modal glass-modal mac-sheet-modal vmr-pod-logs-sheet" onclick="event.stopPropagation()">' +
+          '<div class="mac-sheet-titlebar">' +
+            '<div class="mac-window-traffic" aria-hidden="true">' +
+              '<span class="mac-traffic-btn mac-traffic-close" style="opacity:.35"></span>' +
+              '<span class="mac-traffic-btn mac-traffic-min" style="opacity:.2"></span>' +
+              '<span class="mac-traffic-btn mac-traffic-full" style="opacity:.2"></span>' +
             '</div>' +
+            '<div class="mac-sheet-title" id="vmr-pod-logs-title">Pod logs</div>' +
           '</div>' +
-          '<pre id="vmr-pod-logs-body" style="overflow:auto;flex:1;font-size:.74rem;line-height:1.6;color:var(--text,#e2e8f0);margin:0;min-height:200px;max-height:60vh;white-space:pre-wrap;word-break:break-all;background:rgba(0,0,0,.35);padding:12px;border-radius:6px;border:1px solid var(--line)">Loading logs…</pre>' +
+          '<div class="vmr-pod-logs-meta" id="vmr-pod-logs-meta"></div>' +
+          '<pre id="vmr-pod-logs-body" class="vmr-pod-logs-body">Loading logs…</pre>' +
+          '<div class="modal-footer vmr-pod-logs-footer">' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" id="vmr-pod-logs-copy">Copy</button>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" id="vmr-pod-logs-refresh">Refresh</button>' +
+            '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="closePodLogsVmr()">Close</button>' +
+          '</div>' +
         '</div>';
       document.body.appendChild(modal);
     }
     var titleEl = document.getElementById('vmr-pod-logs-title');
+    var metaEl = document.getElementById('vmr-pod-logs-meta');
     var bodyEl = document.getElementById('vmr-pod-logs-body');
     var refreshBtn = document.getElementById('vmr-pod-logs-refresh');
-    modal.style.display = 'flex';
-    if (titleEl) titleEl.textContent = 'Pod Logs — ' + (podName || '');
+    var copyBtn = document.getElementById('vmr-pod-logs-copy');
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    if (titleEl) titleEl.textContent = 'Pod logs';
+    var podNs = ns && ns !== 'all' ? ns : '';
+    if (!podNs && typeof podsCache !== 'undefined' && Array.isArray(podsCache)) {
+      var cached = podsCache.find(function (p) { return p.name === podName; });
+      if (cached && cached.namespace) podNs = cached.namespace;
+    }
+    if (metaEl) metaEl.textContent = podNs ? (podNs + '/' + (podName || '')) : (podName || '');
     if (bodyEl) bodyEl.textContent = 'Loading logs…';
 
     async function loadLogs() {
       if (bodyEl) bodyEl.textContent = 'Loading…';
+      if (!podNs) {
+        if (bodyEl) bodyEl.textContent = 'Namespace unknown — refresh workloads and try again.';
+        return;
+      }
       try {
-        var url = '/api/v1/pods/' + encodeURIComponent(podName) + '/logs' +
-          (ns && ns !== 'all' ? '?namespace=' + encodeURIComponent(ns) : '');
+        var url = '/api/v1/pods/' + encodeURIComponent(podName) + '/logs?namespace=' + encodeURIComponent(podNs);
         var raw = await apiJson(url);
         var entries = typeof asArray === 'function' ? asArray(raw) : (Array.isArray(raw) ? raw : []);
         if (!entries.length) {
-          if (bodyEl) bodyEl.textContent = '(No log entries returned — pod may not be running or logs are empty)';
+          if (bodyEl) bodyEl.textContent = '(No log lines returned — the pod may have just started, logs may be empty, or the container is not running yet.)';
           return;
         }
         if (bodyEl) {
@@ -1748,12 +1822,29 @@
           bodyEl.scrollTop = bodyEl.scrollHeight;
         }
       } catch (err) {
-        if (bodyEl) bodyEl.textContent = 'Error loading logs: ' + ((err && err.message) || String(err));
+        if (bodyEl) {
+          bodyEl.textContent = 'Could not load logs.\n\n' + ((err && err.message) || String(err)) +
+            '\n\nTip: confirm the pod is Running and your API role can read logs in namespace ' + (podNs || ns || 'default') + '.';
+        }
       }
     }
 
     if (refreshBtn) refreshBtn.onclick = loadLogs;
+    if (copyBtn) copyBtn.onclick = function () {
+      if (!bodyEl) return;
+      navigator.clipboard.writeText(bodyEl.textContent || '').then(function () {
+        if (typeof toast === 'function') toast('Logs copied', 'success');
+      }).catch(function () {
+        if (typeof toast === 'function') toast('Copy failed', 'error');
+      });
+    };
     loadLogs();
+  };
+
+  window.closePodLogsVmr = function closePodLogsVmr() {
+    var modal = document.getElementById('vmr-pod-logs-modal');
+    if (modal) modal.classList.remove('open');
+    document.body.style.overflow = '';
   };
 
   window._vmrEventFilter = window._vmrEventFilter || 'all';
@@ -2249,6 +2340,43 @@
     }
   };
 
+  window.renderVmFocusQuickPicks = function renderVmFocusQuickPicks(vms) {
+    var el = document.getElementById('vm-focus-quick-picks');
+    if (!el) return;
+    if (typeof selectedVmKey !== 'undefined' && selectedVmKey) {
+      el.innerHTML = '';
+      return;
+    }
+    if (!vms || !vms.length) {
+      el.innerHTML = '';
+      return;
+    }
+    var running = vms.filter(function (v) { return v.status === 'Running'; });
+    var picks = (running.length ? running : vms).slice(0, 4);
+    el.innerHTML = picks.map(function (v) {
+      var ns = v.namespace || 'default';
+      var badge = v.status === 'Running' ? 'running' : 'stopped';
+      return '<button type="button" class="vm-focus-quick-pick glass-btn-secondary glass-btn-sm" ' +
+        onHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>' +
+        '<span class="vm-badge ' + badge + '" style="margin-right:6px;font-size:.65rem">' + esc(v.status) + '</span>' +
+        esc(v.name) + '</button>';
+    }).join('');
+  };
+
+  window.maybeAutoSelectFleetVm = function maybeAutoSelectFleetVm(vms) {
+    if (typeof currentPage !== 'undefined' && currentPage !== 'vms') return;
+    if (!vms || !vms.length) return;
+    if (typeof selectedVmKey !== 'undefined' && selectedVmKey) return;
+    if (window._vmrUserClearedSelection) return;
+    if (window._vmrFleetAutoSelected) return;
+    var pick = vms.find(function (v) { return v.status === 'Running'; }) || vms[0];
+    if (!pick || !pick.name) return;
+    window._vmrFleetAutoSelected = true;
+    if (typeof selectVm === 'function') {
+      selectVm(pick.namespace || 'default', pick.name, { skipHash: true });
+    }
+  };
+
   window.patchFilterVMs = function patchFilterVMs() {
     if (window._vmrPatchedFilterVMs) return;
     window._vmrPatchedFilterVMs = true;
@@ -2283,10 +2411,22 @@
       });
       if (typeof window.renderVmFullList === 'function') {
         window.renderVmFullList(filtered);
+        renderVmFocusQuickPicks(filtered);
+        maybeAutoSelectFleetVm(filtered);
         return;
       }
       return orig.apply(this, arguments);
     };
+  };
+
+  window.renderCiliumVmr = function renderCiliumVmr() {
+    renderVmrPageHero('vmr-cilium-hero', 'Veyron Network Policies',
+      'Cilium agents, CNP/CCNP, Kubernetes NetworkPolicies, and policy-derived flow hints.',
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCilium()">Refresh</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-intel\')">Network Intelligence</button>' +
+      '<button type="button" id="cilium-packetwolf-open-hero" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button>',
+      'cilium');
+    if (typeof initCiliumTabs === 'function') initCiliumTabs();
   };
 
   window.packetwolfStatusOk = function packetwolfStatusOk(d) {
@@ -2469,7 +2609,7 @@
     ];
     var selectFields = [
       'set-min-tier','set-vnc-quality','set-tpl-source','set-prom-range',
-      'set-theme','set-accent','set-font-size','set-sidebar-density',
+      'set-font-size','set-sidebar-density',
     ];
     var saved = loadVeyronSettings();
     textFields.forEach(function(id) {
@@ -2514,13 +2654,60 @@
     });
   }
 
+  window._settingsActiveTab = window._settingsActiveTab || 'general';
+
+  window.switchSettingsTab = function switchSettingsTab(tabId) {
+    window._settingsActiveTab = tabId;
+    document.querySelectorAll('.vmr-settings-nav-item').forEach(function(btn) {
+      var on = btn.dataset.settingsTab === tabId;
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    document.querySelectorAll('.vmr-settings-panel').forEach(function(panel) {
+      panel.classList.toggle('active', panel.dataset.settingsPanel === tabId);
+    });
+    try { localStorage.setItem('veyron_settings_tab', tabId); } catch (e) {}
+  };
+
+  function settingsThemeSwatchGrid() {
+    var themes = [
+      { id: 'tahoe', label: 'Tahoe', cls: 'tahoe' },
+      { id: 'tahoe-light', label: 'Tahoe Light', cls: 'tahoe-light' },
+      { id: 'sonoma', label: 'Sonoma', cls: 'sonoma' },
+      { id: 'graphite', label: 'Graphite', cls: 'graphite' },
+      { id: 'wolf', label: 'Wolf', cls: 'wolf' },
+      { id: 'forge', label: 'Forge', cls: 'forge' },
+      { id: 'ember', label: 'Ember', cls: 'ember' },
+      { id: 'light', label: 'Light', cls: 'light' }
+    ];
+    return '<div class="theme-swatch-grid vmr-settings-theme-grid" role="radiogroup" aria-label="Theme">' +
+      themes.map(function(t) {
+        return '<button type="button" class="theme-swatch" data-theme="' + t.id + '" role="radio" onclick="setTheme(\'' + t.id + '\')">' +
+          '<span class="theme-swatch-preview ' + t.cls + '"></span><span class="theme-swatch-label">' + esc(t.label) + '</span></button>';
+      }).join('') + '</div>';
+  }
+
+  function settingsSummaryStrip() {
+    var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'all';
+    var theme = document.documentElement.getAttribute('data-theme') || 'tahoe';
+    var tier = document.body.getAttribute('data-desktop-tier') || 'power';
+    var saved = loadVeyronSettings();
+    var refresh = saved['set-refresh-interval'] || '30';
+    return '<div class="vmr-settings-summary">' +
+      '<button type="button" class="vmr-settings-chip" onclick="switchSettingsTab(\'general\')"><span class="chip-k">Namespace</span><span class="chip-v">' + esc(ns) + '</span></button>' +
+      '<button type="button" class="vmr-settings-chip" onclick="switchSettingsTab(\'appearance\')"><span class="chip-k">Theme</span><span class="chip-v">' + esc(theme) + '</span></button>' +
+      '<button type="button" class="vmr-settings-chip" onclick="switchSettingsTab(\'appearance\')"><span class="chip-k">Desktop</span><span class="chip-v">' + esc(tier) + '</span></button>' +
+      '<button type="button" class="vmr-settings-chip" onclick="switchSettingsTab(\'general\')"><span class="chip-k">Refresh</span><span class="chip-v">' + esc(String(refresh)) + 's</span></button>' +
+      '</div>';
+  }
+
   window.renderSettingsVmr = function renderSettingsVmr() {
     var el = document.getElementById('vmr-settings-body');
     if (!el) return;
-    renderVmrPageHero('vmr-settings-hero', 'Veyron Settings',
-      'Platform identity, access control, integrations, and appearance.',
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced</button>',
+    renderVmrPageHero('vmr-settings-hero', 'Settings',
+      'Workspace defaults, access control, integrations, and appearance.',
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Integrations</button>',
       'settings');
 
     function field(f) {
@@ -2535,9 +2722,8 @@
           (f.options || []).map(function (o) { return '<option>' + esc(o) + '</option>'; }).join('') +
           '</select></div>';
       }
-      if (f.type === 'badge') {
-        return row + '<label class="form-label vmr-field-label">' + esc(f.label) + '</label>' +
-          '<div class="vmr-field-badge' + (f.ok ? ' ok' : ' warn') + '">' + esc(f.value || '—') + '</div></div>';
+      if (f.type === 'hint') {
+        return '<p class="vmr-settings-hint">' + esc(f.text) + '</p>';
       }
       if (f.type === 'action') {
         return row + '<label class="form-label vmr-field-label">' + esc(f.label) + '</label>' +
@@ -2548,107 +2734,154 @@
     }
 
     function section(title, fields, extra) {
-      return '<div class="vmr-panel">' +
+      return '<div class="vmr-panel vmr-settings-section">' +
         '<div class="vmr-panel-title">' + esc(title) + '</div>' +
         fields.map(field).join('') +
         (extra || '') +
         '</div>';
     }
 
+    function panel(tabId, title, desc, blocks) {
+      return '<div class="vmr-settings-panel' + (window._settingsActiveTab === tabId ? ' active' : '') + '" data-settings-panel="' + tabId + '">' +
+        '<div class="vmr-settings-panel-head"><h3>' + esc(title) + '</h3><p>' + esc(desc) + '</p></div>' +
+        blocks +
+        '</div>';
+    }
+
     var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'default';
-    var sections = [
-      /* 1 — General */
-      section('General', [
-        { label: 'Default namespace', type: 'text', placeholder: ns, id: 'set-default-ns' },
-        { label: 'Default storage class', type: 'text', placeholder: 'standard', id: 'set-storage-class' },
-        { label: 'Auto-refresh interval (s)', type: 'text', placeholder: '30', id: 'set-refresh-interval' },
-        { label: 'API request timeout (s)', type: 'text', placeholder: '30', id: 'set-api-timeout' }
-      ]),
-      /* 2 — Cluster Context */
-      section('Cluster Context', [
-        { label: 'KUBECONFIG path', type: 'text', placeholder: '~/.kube/config', id: 'set-kubeconfig' },
-        { label: 'KubeVirt namespace', type: 'text', placeholder: 'kubevirt', id: 'set-kubevirt-ns' },
-        { label: 'CDI namespace', type: 'text', placeholder: 'cdi', id: 'set-cdi-ns' },
-        { label: 'Cluster label (display name)', type: 'text', placeholder: 'production', id: 'set-cluster-label' }
-      ]),
-      /* 3 — Namespaces */
-      section('Namespaces', [
-        { label: 'Namespace auto-discovery', type: 'checkbox', id: 'set-ns-autodiscover', checked: true },
-        { label: 'Allow cross-namespace queries', type: 'checkbox', id: 'set-ns-cross', checked: true },
-        { label: 'Allowed namespaces (comma-separated)', type: 'text', placeholder: 'default, kube-system', id: 'set-ns-allow' }
-      ]),
-      /* 4 — API Keys */
-      section('API Keys', [
-        { label: 'API key (masked)', type: 'text', password: true, placeholder: '••••••••', id: 'set-api-key' },
-        { label: 'Multi-key RBAC (admin:k1,write:k2,readonly:k3)', type: 'text', placeholder: 'VEYRON_API_KEYS', id: 'set-api-keys-rbac' },
-        { type: 'action', label: 'Rotate API key', btn: 'Rotate key', onclick: 'openAskZeus(\'Rotate the Veyron API key\')' }
-      ]),
-      /* 5 — RBAC */
-      section('RBAC', [
-        { label: 'Read-only mode (disable writes)', type: 'checkbox', id: 'set-readonly' },
-        { label: 'Allow VM delete', type: 'checkbox', id: 'set-allow-delete', checked: true },
-        { label: 'Allow VM migrate', type: 'checkbox', id: 'set-allow-migrate', checked: true },
-        { label: 'Minimum dashboard tier', type: 'select', options: ['Normal', 'Power', 'Advanced'], id: 'set-min-tier' }
-      ]),
-      /* 6 — Console Settings */
-      section('Console Settings', [
-        { label: 'Enable VNC console', type: 'checkbox', id: 'set-vnc', checked: true },
-        { label: 'Enable RDP expose', type: 'checkbox', id: 'set-rdp', checked: true },
-        { label: 'Enable SSH expose', type: 'checkbox', id: 'set-ssh', checked: true },
-        { label: 'Default link quality', type: 'select', options: ['LAN (best quality)', 'Balanced', 'Low bandwidth'], id: 'set-vnc-quality' },
-        { label: 'Auto-reconnect VNC', type: 'checkbox', id: 'set-vnc-reconnect', checked: true }
-      ]),
-      /* 7 — Template Registry */
-      section('Template Registry', [
-        { label: 'Template source', type: 'select', options: ['Built-in (embedded)', 'Cluster CRDs (VMTemplate)', 'Custom registry URL'], id: 'set-tpl-source' },
-        { label: 'Custom registry URL', type: 'text', placeholder: 'https://templates.example.com/catalog.json', id: 'set-tpl-registry-url' },
-        { type: 'action', label: 'Sync template catalog now', btn: 'Sync now', onclick: "typeof fetchAppStore==='function'&&fetchAppStore().then(function(){toast('Templates synced','success')}).catch(function(){toast('Sync failed','error')})" }
-      ]),
-      /* 8 — Backup Settings */
-      section('Backup Settings', [
-        { label: 'Default snapshot retention (days)', type: 'text', placeholder: '7', id: 'set-snap-retention' },
-        { label: 'Default snapshot name prefix', type: 'text', placeholder: 'auto-', id: 'set-snap-prefix' },
-        { label: 'Velero integration URL', type: 'text', placeholder: 'http://velero.velero:8085', id: 'set-velero-url' },
-        { label: 'Enable scheduled snapshots', type: 'checkbox', id: 'set-snap-schedule', checked: true }
-      ]),
-      /* 9 — PacketWolf Integration */
-      section('PacketWolf Integration', [
-        { label: 'PacketWolf URL', type: 'text', placeholder: 'VEYRON_PACKETWOLF_URL', id: 'set-packetwolf' },
-        { label: 'API key (if required)', type: 'text', password: true, placeholder: '••••••••', id: 'set-packetwolf-key' },
-        { label: 'Trust cluster networks', type: 'checkbox', id: 'set-pw-trust', checked: true },
-        { type: 'action', label: 'Test PacketWolf connection', btn: 'Test connection', onclick: "fetchNetworkIntelBanner&&fetchNetworkIntelBanner().then(function(){toast('PacketWolf test complete','success')}).catch(function(){toast('PacketWolf unreachable','error')})" }
-      ]),
-      /* 10 — Prometheus Integration */
-      section('Prometheus Integration', [
-        { label: 'Prometheus URL', type: 'text', placeholder: 'VEYRON_PROMETHEUS_URL', id: 'set-prometheus' },
-        { label: 'Query timeout (s)', type: 'text', placeholder: '10', id: 'set-prom-timeout' },
-        { label: 'Default time range', type: 'select', options: ['Last 1 hour', 'Last 6 hours', 'Last 24 hours', 'Last 7 days'], id: 'set-prom-range' },
-        { type: 'action', label: 'Test Prometheus connection', btn: 'Test connection', onclick: "toast('Prometheus: not configured','info')" }
-      ]),
-      /* 11 — Appearance */
-      section('Appearance', [
-        { label: 'Theme', type: 'select', options: ['Veyron Dark (default)', 'Carbon Black', 'Midnight Blue', 'Steel Grey'], id: 'set-theme' },
-        { label: 'Sidebar accent color', type: 'select', options: ['Electric Blue (#3f7cff)', 'Cyan (#27d7ff)', 'Violet (#9b7cff)', 'Green (#32e0b0)'], id: 'set-accent' },
-        { label: 'Font size', type: 'select', options: ['Small (13px)', 'Default (14px)', 'Large (16px)'], id: 'set-font-size' },
-        { label: 'Sidebar density', type: 'select', options: ['Comfortable', 'Compact', 'Ultra-compact'], id: 'set-sidebar-density' }
-      ]),
-      /* 12 — Audit */
-      section('Audit', [
-        { label: 'Show audit log in dashboard', type: 'checkbox', id: 'set-audit-show', checked: false },
-        { label: 'Log API key usage', type: 'checkbox', id: 'set-audit-api', checked: true },
-        { label: 'Log VM lifecycle events', type: 'checkbox', id: 'set-audit-vm', checked: true },
-        { type: 'action', label: 'Export audit log (JSON)', btn: 'Export', onclick: "toast('Audit export: check /api/v1/alerts','info')" }
-      ])
+    var tier = document.body.getAttribute('data-desktop-tier') || 'power';
+    var dt = typeof desktopTier !== 'undefined' ? desktopTier : tier;
+
+    var tabs = [
+      { id: 'general', label: 'General', icon: '◧', desc: 'Workspace' },
+      { id: 'cluster', label: 'Cluster', icon: '⬢', desc: 'Context' },
+      { id: 'access', label: 'Access', icon: '⛨', desc: 'Keys & RBAC' },
+      { id: 'console', label: 'Console', icon: '▶', desc: 'Remote access' },
+      { id: 'integrations', label: 'Integrations', icon: '⟷', desc: 'Backends' },
+      { id: 'appearance', label: 'Appearance', icon: '◈', desc: 'Theme & layout' },
+      { id: 'audit', label: 'Audit', icon: '⚡', desc: 'Logging' }
     ];
 
-    el.innerHTML = '<div class="vmr-settings-grid">' +
-      sections.join('') +
+    try {
+      var storedTab = localStorage.getItem('veyron_settings_tab');
+      if (storedTab && tabs.some(function(t) { return t.id === storedTab; })) window._settingsActiveTab = storedTab;
+    } catch (e) {}
+
+    var nav = tabs.map(function(t) {
+      return '<button type="button" class="vmr-settings-nav-item' + (window._settingsActiveTab === t.id ? ' active' : '') + '" data-settings-tab="' + t.id + '" aria-selected="' + (window._settingsActiveTab === t.id ? 'true' : 'false') + '" onclick="switchSettingsTab(\'' + t.id + '\')">' +
+        '<span class="vmr-settings-nav-icon" aria-hidden="true">' + t.icon + '</span>' +
+        '<span class="vmr-settings-nav-copy"><strong>' + esc(t.label) + '</strong><span>' + esc(t.desc) + '</span></span></button>';
+    }).join('');
+
+    var panels = [
+      panel('general', 'General', 'Defaults for new VMs, refresh cadence, and namespace scope.', [
+        section('Workspace', [
+          { label: 'Default namespace', type: 'text', placeholder: ns, id: 'set-default-ns' },
+          { label: 'Default storage class', type: 'text', placeholder: 'standard', id: 'set-storage-class' },
+          { label: 'Auto-refresh interval (s)', type: 'text', placeholder: '30', id: 'set-refresh-interval' },
+          { label: 'API request timeout (s)', type: 'text', placeholder: '30', id: 'set-api-timeout' }
+        ]),
+        section('Namespaces', [
+          { label: 'Namespace auto-discovery', type: 'checkbox', id: 'set-ns-autodiscover', checked: true },
+          { label: 'Allow cross-namespace queries', type: 'checkbox', id: 'set-ns-cross', checked: true },
+          { label: 'Allowed namespaces (comma-separated)', type: 'text', placeholder: 'default, kube-system', id: 'set-ns-allow' }
+        ])
+      ].join('')),
+      panel('cluster', 'Cluster', 'KubeVirt context and backup defaults (display-only; cluster env vars apply at deploy).', [
+        section('Cluster context', [
+          { label: 'KUBECONFIG path', type: 'text', placeholder: '~/.kube/config', id: 'set-kubeconfig' },
+          { label: 'KubeVirt namespace', type: 'text', placeholder: 'kubevirt', id: 'set-kubevirt-ns' },
+          { label: 'CDI namespace', type: 'text', placeholder: 'cdi', id: 'set-cdi-ns' },
+          { label: 'Cluster label (display name)', type: 'text', placeholder: 'production', id: 'set-cluster-label' }
+        ]),
+        section('Template registry', [
+          { label: 'Template source', type: 'select', options: ['Built-in (embedded)', 'Cluster CRDs (VMTemplate)', 'Custom registry URL'], id: 'set-tpl-source' },
+          { label: 'Custom registry URL', type: 'text', placeholder: 'https://templates.example.com/catalog.json', id: 'set-tpl-registry-url' },
+          { type: 'action', label: 'Sync template catalog now', btn: 'Sync now', onclick: "typeof fetchAppStore==='function'&&fetchAppStore().then(function(){toast('Templates synced','success')}).catch(function(){toast('Sync failed','error')})" }
+        ]),
+        section('Backup defaults', [
+          { label: 'Default snapshot retention (days)', type: 'text', placeholder: '7', id: 'set-snap-retention' },
+          { label: 'Default snapshot name prefix', type: 'text', placeholder: 'auto-', id: 'set-snap-prefix' },
+          { label: 'Velero integration URL', type: 'text', placeholder: 'http://velero.velero:8085', id: 'set-velero-url' },
+          { label: 'Enable scheduled snapshots', type: 'checkbox', id: 'set-snap-schedule', checked: true }
+        ])
+      ].join('')),
+      panel('access', 'Access', 'API keys and dashboard write permissions (local preferences).', [
+        section('API keys', [
+          { type: 'hint', text: 'Cluster API keys are configured on the Veyron API deployment. Values here are local notes only.' },
+          { label: 'API key (masked)', type: 'text', password: true, placeholder: '••••••••', id: 'set-api-key' },
+          { label: 'Multi-key RBAC (admin:k1,write:k2,readonly:k3)', type: 'text', placeholder: 'VEYRON_API_KEYS', id: 'set-api-keys-rbac' },
+          { type: 'action', label: 'Rotate API key', btn: 'Ask Zeus', onclick: 'openAskZeus(\'Rotate the Veyron API key\')' }
+        ]),
+        section('RBAC', [
+          { label: 'Read-only mode (disable writes)', type: 'checkbox', id: 'set-readonly' },
+          { label: 'Allow VM delete', type: 'checkbox', id: 'set-allow-delete', checked: true },
+          { label: 'Allow VM migrate', type: 'checkbox', id: 'set-allow-migrate', checked: true },
+          { label: 'Minimum dashboard tier', type: 'select', options: ['Normal', 'Power', 'Advanced'], id: 'set-min-tier' }
+        ])
+      ].join('')),
+      panel('console', 'Console', 'VNC, RDP, and SSH defaults for browser consoles.', [
+        section('Remote desktop', [
+          { label: 'Enable VNC console', type: 'checkbox', id: 'set-vnc', checked: true },
+          { label: 'Enable RDP expose', type: 'checkbox', id: 'set-rdp', checked: true },
+          { label: 'Enable SSH expose', type: 'checkbox', id: 'set-ssh', checked: true },
+          { label: 'Default link quality', type: 'select', options: ['LAN (best quality)', 'Balanced', 'Low bandwidth'], id: 'set-vnc-quality' },
+          { label: 'Auto-reconnect VNC', type: 'checkbox', id: 'set-vnc-reconnect', checked: true }
+        ])
+      ].join('')),
+      panel('integrations', 'Integrations', 'Optional backends — use Integrations page for live probe status.', [
+        section('PacketWolf', [
+          { label: 'PacketWolf URL', type: 'text', placeholder: 'VEYRON_PACKETWOLF_URL', id: 'set-packetwolf' },
+          { label: 'API key (if required)', type: 'text', password: true, placeholder: '••••••••', id: 'set-packetwolf-key' },
+          { label: 'Trust cluster networks', type: 'checkbox', id: 'set-pw-trust', checked: true },
+          { type: 'action', label: 'Test PacketWolf connection', btn: 'Test connection', onclick: "typeof fetchNetworkIntelBanner==='function'&&fetchNetworkIntelBanner().then(function(){toast('PacketWolf test complete','success')}).catch(function(){toast('PacketWolf unreachable','error')})" }
+        ]),
+        section('Prometheus', [
+          { label: 'Prometheus URL', type: 'text', placeholder: 'VEYRON_PROMETHEUS_URL', id: 'set-prometheus' },
+          { label: 'Query timeout (s)', type: 'text', placeholder: '10', id: 'set-prom-timeout' },
+          { label: 'Default time range', type: 'select', options: ['Last 1 hour', 'Last 6 hours', 'Last 24 hours', 'Last 7 days'], id: 'set-prom-range' },
+          { type: 'action', label: 'Open integrations dashboard', btn: 'View status', onclick: "navigate('integrations')" }
+        ])
+      ].join('')),
+      panel('appearance', 'Appearance', 'CloudOS theme, typography, and desktop tier.', [
+        section('Theme', [], settingsThemeSwatchGrid()),
+        section('Desktop tier', [], '<div class="vmr-settings-tier-row" role="group" aria-label="Desktop tier">' +
+          ['auto', 'normal', 'power', 'advanced'].map(function(t) {
+            return '<button type="button" class="vmr-settings-tier-btn' + (dt === t ? ' active' : '') + '" onclick="setDesktopTier(\'' + t + '\', true);renderSettingsVmr()">' + esc(t.charAt(0).toUpperCase() + t.slice(1)) + '</button>';
+          }).join('') + '</div>'),
+        section('Display', [
+          { label: 'Font size', type: 'select', options: ['Small (13px)', 'Default (14px)', 'Large (16px)'], id: 'set-font-size' },
+          { label: 'Sidebar density', type: 'select', options: ['Comfortable', 'Compact', 'Ultra-compact'], id: 'set-sidebar-density' }
+        ])
+      ].join('')),
+      panel('audit', 'Audit', 'Local audit preferences and export.', [
+        section('Audit log', [
+          { label: 'Show audit log in dashboard', type: 'checkbox', id: 'set-audit-show', checked: false },
+          { label: 'Log API key usage', type: 'checkbox', id: 'set-audit-api', checked: true },
+          { label: 'Log VM lifecycle events', type: 'checkbox', id: 'set-audit-vm', checked: true },
+          { type: 'action', label: 'Export audit log (JSON)', btn: 'Export', onclick: "toast('Audit export: check /api/v1/alerts','info')" },
+          { type: 'action', label: 'View full audit trail', btn: 'Open Audit', onclick: "navigate('audit')" }
+        ])
+      ].join(''))
+    ].join('');
+
+    el.innerHTML =
+      settingsSummaryStrip() +
+      '<div class="vmr-settings-shell">' +
+        '<nav class="vmr-settings-nav" aria-label="Settings sections">' + nav + '</nav>' +
+        '<div class="vmr-settings-main">' + panels + '</div>' +
       '</div>' +
-      '<div class="vmr-settings-footer">' +
-      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
+      '<div class="vmr-settings-footer vmr-settings-footer-sticky">' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="saveSettingsVmr()">Save Settings</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'integrations\')">Advanced Integrations</button>' +
+        '<span class="vmr-settings-footer-hint">Changes are stored in this browser until cluster env is updated.</span>' +
       '</div>';
+
     populateSettingsFormVmr();
+    if (typeof syncThemeSwatches === 'function') {
+      var curTheme = document.documentElement.getAttribute('data-theme') || 'tahoe';
+      syncThemeSwatches(curTheme);
+    }
   };
 
   window.openFoundryPreview = function openFoundryPreview(templateId) {
@@ -2778,6 +3011,7 @@
     };
 
     window.clearVmSelection = function () {
+      window._vmrUserClearedSelection = true;
       origClear && origClear.apply(this, arguments);
       var bar = document.getElementById('vmr-inspector-bar');
       if (bar) bar.remove();

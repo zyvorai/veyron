@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618p">
+<meta name="veyron-dashboard-rev" content="20260618s">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618p';
+  var DASH_REV = '20260618s';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2130,6 +2130,16 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
   padding:10px 14px;border-top:1px solid var(--glass-border);font-size:.72rem;color:var(--text-dim);
   display:flex;justify-content:space-between;gap:8px;
 }
+.spotlight-item-icon{
+  width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:.82rem;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);flex-shrink:0;
+}
+.spotlight-quick-picks{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 4px;border-bottom:1px solid var(--glass-border)}
+.spotlight-quick-pick{
+  font-size:.72rem;padding:5px 10px;border-radius:999px;border:1px solid var(--glass-border);
+  background:rgba(255,255,255,.04);color:var(--text-muted);cursor:pointer;transition:background .15s,border-color .15s;
+}
+.spotlight-quick-pick:hover{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.35);color:var(--text)}
 .spotlight-item{
   display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;
 }
@@ -3556,11 +3566,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
   <div class="spotlight-panel zeus-spotlight zeus-glass" onclick="event.stopPropagation()">
     <div class="spotlight-input-wrap">
-      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Ask Zeus, open Workloads, forge VM, VNC to a host…" autocomplete="off" spellcheck="false">
+      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Search VMs, pages, actions… or type to ask Zeus" autocomplete="off" spellcheck="false">
     </div>
     <div class="spotlight-results" id="spotlight-results"></div>
     <div class="spotlight-footer" id="spotlight-footer">
-      <span>↑↓ navigate · Enter open · Esc close</span>
+      <span>⌘J Ask Zeus · ↑↓ navigate · ↵ open · Esc close</span>
       <span id="spotlight-recents-hint"></span>
     </div>
   </div>
@@ -3727,6 +3737,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById('vm-filter-status').value='Running';filterVMs()">Running</button>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigateToVmsIssues()">Issues</button>
         </div>
+        <div id="vm-focus-quick-picks" class="vm-focus-quick-picks" style="margin-top:20px;display:flex;flex-wrap:wrap;gap:8px;justify-content:center"></div>
       </div>
       <div id="vm-focus-content" style="display:none"></div>
     </div>
@@ -4113,13 +4124,17 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div id="vmr-workloads-hero"></div>
   <div id="vmr-workloads-metrics"></div>
-  <div id="workloads-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Cluster Workloads</span></div>
-    <table class="table" id="workloads-table" style="min-width:700px">
-      <thead><tr><th>Name</th><th>Kind</th><th>Namespace</th><th>Status</th><th>Node</th><th>Restarts</th><th>Age</th><th>Owner</th><th></th></tr></thead>
-      <tbody id="workloads-body"></tbody>
-    </table>
+  <div id="workloads-summary" class="grid-4 page-glass-stats" style="display:none"></div>
+  <div class="card glass-card vmr-workloads-table-card">
+    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span></div>
+    <div id="vmr-workloads-toolbar" class="vmr-workloads-toolbar" style="padding:0 16px"></div>
+    <div id="vmr-wl-tabbar" class="vmr-capsule-tabs" style="margin:0 16px 12px"></div>
+    <div class="vmr-table-wrap vmr-workloads-table-wrap">
+      <table class="table vmr-table" id="workloads-table" style="min-width:700px">
+        <thead><tr><th>Name</th><th>Kind</th><th>Namespace</th><th>Status</th><th>Node</th><th>Restarts</th><th>Age</th><th>Owner</th><th></th></tr></thead>
+        <tbody id="workloads-body"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 </div>
@@ -4593,22 +4608,31 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
-  <div id="cilium-packetwolf-banner" class="veyron-cap-banner glass-banner" style="display:none;margin-bottom:16px" role="status"></div>
+  <div id="vmr-cilium-hero"></div>
+  <div class="page-header vmr-legacy-page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
+  <div id="cilium-packetwolf-banner" class="veyron-cap-banner glass-banner vmr-cilium-pw-banner" style="display:none;margin-bottom:16px" role="status"></div>
     <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cilium-advisor-card')">Dismiss</button></div>
     <div id="cilium-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="cilium-summary" class="grid-4 cilium-glass-stats" style="margin-bottom:16px"></div>
-  <div class="grid-2">
-    <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
-    <table class="table"><thead><tr><th>Kind</th><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table></div>
-    <div class="card glass-card">
-      <div class="card-header">
-        <span class="card-title">Network Flows</span>
-        <div id="flow-stats" class="flow-stats"></div>
-      </div>
-      <table class="table"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th></tr></thead><tbody id="flows-body"></tbody></table>
+  <div id="cilium-controls" class="vmr-cilium-controls">
+    <div id="cilium-view-tabs" class="vmr-capsule-tabs vmr-cilium-tabs"></div>
+    <input type="search" id="cilium-policy-search" class="form-input vmr-cilium-search" placeholder="Filter policies or flows…" oninput="filterCiliumView()">
+  </div>
+  <div id="cilium-policies-panel" class="card glass-card vmr-surface-card">
+    <div class="card-header"><span class="card-title">Policies</span><span id="cilium-policy-count" class="vmr-workloads-count"></span></div>
+    <div class="vmr-table-wrap vmr-cilium-table-wrap">
+      <table class="table vmr-table"><thead><tr><th>Kind</th><th>Name</th><th>Namespace</th><th>Selector</th><th>Ingress</th><th>Egress</th></tr></thead><tbody id="cilium-body"></tbody></table>
+    </div>
+  </div>
+  <div id="cilium-flows-panel" class="card glass-card vmr-surface-card" style="display:none">
+    <div class="card-header">
+      <span class="card-title">Network Flows</span>
+      <div id="flow-stats" class="flow-stats"></div>
+    </div>
+    <div class="vmr-table-wrap vmr-cilium-table-wrap">
+      <table class="table vmr-table"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th></tr></thead><tbody id="flows-body"></tbody></table>
     </div>
   </div>
 </div>
@@ -5391,7 +5415,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618p';
+window.__VMROGUE_DASH_REV = '20260618s';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6231,7 +6255,7 @@ function loadPageData(page, opts) {
     else renderComingSoon('vmr-stack-hero', 'Stack Health', 'KubeVirt, CDI, and operator health diagnostics — rolling out soon.', '⬡');
   }
   if (page === 'settings') {
-    renderComingSoon('vmr-settings-hero', 'Cluster Settings', 'Veyron configuration, defaults, and workspace policies — coming in a future release.', '⚙');
+    if (typeof renderSettingsVmr === 'function') renderSettingsVmr();
   }
   if (page === 'network-intel' && typeof fetchNetworkIntelData === 'function') fetchNetworkIntelData(opts);
   if (page === 'console-hub') {
@@ -6664,6 +6688,8 @@ function summaryErrorHtml(msg) {
 
 // Helpers
 function sc(status) { return status==='Running'?'running':status==='Stopped'?'stopped':(status==='Failed'||status==='Error')?'error':'other'; }
+function vmStatusBadgeClass(status) { return sc(status); }
+window.vmStatusBadgeClass = vmStatusBadgeClass;
 function fmtTime(ts) {
   try { const d=new Date(ts),n=new Date(),m=Math.floor((n-d)/60000); if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.floor(m/60)+'h ago';return Math.floor(m/1440)+'d ago'; } catch{return ts;}
 }
@@ -6699,7 +6725,9 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
   { kind: 'action', title: 'Forge a new VM', subtitle: 'Create from template', action: 'forge_vm', keys: ['forge', 'create', 'new vm'] },
   { kind: 'action', title: 'Ask Zeus', subtitle: 'Ask Zeus fleet assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
-  { kind: 'action', title: 'Veyron Preferences', subtitle: 'Theme, wallpaper, desktop tier', action: 'mac:preferences', keys: ['preferences', 'settings', 'system'] }
+  { kind: 'page', title: 'Settings', subtitle: 'Platform preferences & integrations', action: 'navigate:settings', keys: ['settings', 'preferences', 'config', 'api key'] },
+  { kind: 'page', title: 'Workloads', subtitle: 'Pods, VMIs, virt-launcher, CDI', action: 'navigate:workloads', keys: ['workloads', 'pods', 'virt-launcher', 'cdi'] },
+  { kind: 'action', title: 'Veyron Preferences', subtitle: 'Theme, wallpaper, desktop tier', action: 'mac:preferences', keys: ['preferences', 'system'] }
 ];
 const DESKTOP_TIER_KEY = 'veyron_desktop_tier';
 const DESKTOP_TIER_AUTO_KEY = 'veyron_desktop_tier_auto';
@@ -9284,6 +9312,32 @@ function mergeSpotlightShell(results, q) {
   return merged.slice(0, 25);
 }
 
+function spotlightKindIcon(kind, action) {
+  if (kind === 'vm') return '▣';
+  if (kind === 'page') return '◫';
+  if (kind === 'recent') return '↺';
+  if (action && action.indexOf('navigate:console') === 0) return '▶';
+  if (action && action.indexOf('open_console') === 0) return '▶';
+  if (action === 'mac:ask_zeus') return '✦';
+  if (action === 'mac:launchpad') return '⬡';
+  if (action === 'forge_vm') return '◈';
+  return '⌘';
+}
+
+function spotlightQuickPicksHtml() {
+  const picks = [
+    { label: 'Mission Control', action: 'navigate:dashboard' },
+    { label: 'Fleet Command', action: 'navigate:vms' },
+    { label: 'Workloads', action: 'navigate:workloads' },
+    { label: 'Settings', action: 'navigate:settings' },
+    { label: 'Ask Zeus', action: 'mac:ask_zeus' }
+  ];
+  return '<div class="spotlight-quick-picks">' + picks.map(function(p) {
+    return '<button type="button" class="spotlight-quick-pick" ' +
+      onHandler('runSpotlightAction(' + jsArgs(p.action) + ');closeSpotlight()') + '>' + esc(p.label) + '</button>';
+  }).join('') + '</div>';
+}
+
 function renderSpotlightEmptyState() {
   const shell = filterSpotlightShell('');
   let recents = [];
@@ -9314,7 +9368,7 @@ function renderSpotlightEmptyState() {
   });
   spotlightResults = shell.concat(runningConsoles).concat(vmRecents).concat(actionRecents);
   spotlightActiveIndex = 0;
-  renderSpotlightResults();
+  renderSpotlightResults(true);
 }
 
 function openSpotlight() {
@@ -9346,16 +9400,16 @@ async function runSpotlightSearch(q) {
   }
 }
 
-function renderSpotlightResults() {
+function renderSpotlightResults(showQuickPicks) {
   const el = document.getElementById('spotlight-results');
   if (!el) return;
   if (spotlightResults.length === 0) {
-    el.innerHTML = '<div style="padding:16px;color:var(--text-dim)">No results</div>';
+    el.innerHTML = spotlightQuickPicksHtml() + '<div style="padding:16px;color:var(--text-dim)">No results — try a VM name, page, or action</div>';
     return;
   }
   const kinds = ['vm', 'page', 'action', 'recent'];
   const labels = { vm: 'VMs', page: 'Pages', action: 'Actions', recent: 'Recents' };
-  let html = '';
+  let html = showQuickPicks ? spotlightQuickPicksHtml() : '';
   kinds.forEach(kind => {
     const items = spotlightResults.map((r, i) => ({ r, i })).filter(x => (x.r.kind || 'page') === kind);
     if (!items.length) return;
@@ -9366,18 +9420,22 @@ function renderSpotlightResults() {
       if ((x.r.kind || '') === 'page' && x.r.action && x.r.action.indexOf('navigate:') === 0) {
         title = navPageLabel(x.r.action.slice(9));
       }
+      const icon = spotlightKindIcon(x.r.kind || 'page', x.r.action);
       html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" ' + onHandler('activateSpotlightResult(' + x.i + ')') + '>' +
-        '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
-        '<div><div class="spotlight-title">' + esc(title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
+        '<span class="spotlight-item-icon" aria-hidden="true">' + icon + '</span>' +
+        '<div style="flex:1;min-width:0"><div class="spotlight-title">' + esc(title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
+        '<span class="spotlight-kind">' + esc(x.r.kind || 'page') + '</span>' +
       '</div>';
     });
   });
   const other = spotlightResults.map((r, i) => ({ r, i })).filter(x => !kinds.includes(x.r.kind || 'page'));
   other.forEach(x => {
     const active = x.i === spotlightActiveIndex ? ' active' : '';
+    const icon = spotlightKindIcon(x.r.kind || 'other', x.r.action);
     html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" ' + onHandler('activateSpotlightResult(' + x.i + ')') + '>' +
+      '<span class="spotlight-item-icon" aria-hidden="true">' + icon + '</span>' +
+      '<div style="flex:1;min-width:0"><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
       '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
-      '<div><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
     '</div>';
   });
   el.innerHTML = html || '<div style="padding:16px;color:var(--text-dim)">No results</div>';
@@ -10556,6 +10614,7 @@ document.addEventListener('keydown', e => {
     closeCreateModal(); closeSnapModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt(); closeConnectModal(); closeSshPopover();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal(); closeDockEditor(); closeRdpSheet(false); closeMacPreferences();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
+    if (typeof closePodLogsVmr === 'function') closePodLogsVmr();
     if (typeof closeForgeWizard === 'function') closeForgeWizard();
     closeDockEditor(); closeMacMenus(); closeMissionControlOverlay(); closeLaunchpad();
     const cc = document.getElementById('mac-control-center');
@@ -10786,42 +10845,40 @@ function renderVmHero(vm, ns, name, vmi, extras) {
     healthRing = '<div class="vm-hero-ring ' + cls + '" title="Fleet health">' + esc(String(healthScore)) + '</div>';
   }
   const canWrite = cloudOsSession.can_write !== false;
-  let quick = '<div class="mac-vm-quick-actions">';
-  if (vm.status === 'Running') {
-    quick += '<button type="button" class="mac-vm-chip mac-vm-chip-primary" ' + onStopHandler('openConnectModal(' + jsArgs(ns, name) + ')') + (canWrite ? '' : ' disabled') + '>Connect</button>';
-    quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('openConnectModal(' + jsArgs(ns, name) + ',' + jsArgs('vnc') + ')') + '>VNC</button>';
-    if (isWindowsVm(vm)) {
-      quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('openRdpSheet(' + jsArgs(ns, name) + ')') + '>RDP</button>';
-    } else {
-      quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>';
-    }
-  } else {
-    quick += '<button type="button" class="mac-vm-chip mac-vm-chip-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>';
-  }
-  quick += '<button type="button" class="mac-vm-chip mac-vm-chip-ask" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>';
-  quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button></div>';
+  const win = isWindowsVm(vm);
   let rail = '';
   if (vm.status === 'Running') {
     rail += '<button type="button" class="glass-btn-primary connect-btn" ' + onStopHandler('openConnectModal(' + jsArgs(ns, name) + ')') + (canWrite ? '' : ' disabled') + '>Connect</button>';
-    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>';
-    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ',event)') + '>Restart</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openConnectModal(' + jsArgs(ns, name) + ',' + jsArgs('vnc') + ')') + '>VNC</button>';
+    if (win) {
+      rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openRdpSheet(' + jsArgs(ns, name) + ')') + '>RDP</button>';
+    } else {
+      rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('showSshPopover(' + jsArgs(ns, name) + ')') + '>SSH</button>';
+    }
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
-    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'restart') + ',event)') + '>Restart</button>';
   } else {
     rail += '<button type="button" class="glass-btn-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Snapshot</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
   }
   rail += '<details class="vm-detail-more"><summary>More</summary><div class="vm-detail-more-body">';
   if (vm.status === 'Running') {
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'stop') + ',event)') + '>Stop</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
   }
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
-  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>';
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>';
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>';
   rail += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
   rail += '</div></details>';
+  const links = '<div class="vm-hero-links">' +
+    '<button type="button" class="vm-hero-link" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
+    '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>' +
+    '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button></div>';
   return '<div class="vm-hero zeus-glass">' +
     '<div class="vm-hero-top"><div>' +
       '<h2 class="vm-hero-title">' + esc(name) + '</h2>' +
@@ -10832,14 +10889,28 @@ function renderVmHero(vm, ns, name, vmi, extras) {
         '<div class="vm-hero-metric">IP<strong>' + esc(vm.ip || '—') + '</strong></div>' +
         '<div class="vm-hero-metric">Node<strong>' + esc(vm.node || '—') + '</strong></div>' +
       '</div>' +
-      '<div class="vm-hero-rings">' + secRing + healthRing + '<span style="font-size:.72rem;color:var(--text-dim);align-self:center">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
-    '</div></div>' + quick +
-    '<div class="vm-action-rail">' + rail + '</div></div>';
+      '<div class="vm-hero-rings">' + secRing + healthRing + '<span class="vm-hero-meta-chip">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
+    '</div></div>' +
+    '<div class="vm-action-rail">' + rail + '</div>' + links + '</div>';
+}
+
+function vmInspectorTabBtn(id, label, active) {
+  return '<button type="button" class="vm-inspector-tab' + (active ? ' active' : '') + '" data-tab="' + esc(id) + '" onclick="setVmInspectorTab(' + jsArgs(id) + ')">' + esc(label) + '</button>';
+}
+
+function setVmInspectorTab(tab) {
+  window._vmInspectorTab = tab || 'overview';
+  document.querySelectorAll('.vm-inspector-tab').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.tab === window._vmInspectorTab);
+  });
+  document.querySelectorAll('.vm-inspector-panel').forEach(function(el) {
+    el.classList.toggle('active', el.dataset.panel === window._vmInspectorTab);
+  });
 }
 
 function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
-  const runOpen = vm.status === 'Running';
-  let ifaceTable = '';
+  window._vmInspectorTab = window._vmInspectorTab || 'overview';
+  let ifaceTable = '<p class="vm-inspector-empty">No network interfaces reported yet.</p>';
   if (ifaces.length) {
     ifaceTable = '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
     ifaces.forEach(function(i) {
@@ -10847,26 +10918,37 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
     });
     ifaceTable += '</tbody></table>';
   }
-  return '<div class="zeus-inspector">' +
-    '<details class="zeus-inspector-section zeus-glass" open><summary>Overview</summary><div class="zeus-inspector-body"><div class="vd-kv-grid">' +
-      vdKv('Phase', vmi.phase || vm.status) + vdKv('Ready', vm.ready ? 'Yes' : 'No') + vdKv('Age', vm.age || '—') +
-      (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
-      vdKv('Guest runtime', '…') +
-    '</div></div></details>' +
-    '<details class="zeus-inspector-section zeus-glass"><summary>Performance</summary><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '"></div></div></details>' +
-    '<details class="zeus-inspector-section zeus-glass"' + (runOpen ? ' open' : '') + '><summary>Network</summary><div class="zeus-inspector-body">' + ifaceTable +
-      '<div class="vd-subsection-title" style="margin-top:12px">RDP</div><div id="rdp-panel-' + name + '">Loading…</div>' +
-      '<div class="vd-subsection-title">Service expose</div><div id="expose-panel-' + name + '">Loading…</div>' +
-      '<div class="vd-subsection-title">Internet egress</div><div id="internet-panel-' + name + '">Loading…</div>' +
-    '</div></details>' +
-    '<details class="zeus-inspector-section zeus-glass"><summary>Storage</summary><div class="zeus-inspector-body"><div id="guest-runtime-panel-' + name + '" style="margin-bottom:8px"></div><div id="guest-fs-panel-' + name + '">Loading…</div></div></details>' +
-    '<details class="zeus-inspector-section zeus-glass"><summary>Security</summary><div class="zeus-inspector-body"><div id="security-' + name + '">Loading…</div></div></details>' +
-    '<details class="zeus-inspector-section zeus-glass"><summary>Backups</summary><div class="zeus-inspector-body">' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">Open snapshots</button>' +
-      ' <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Backups &amp; Velero</button></div></details>' +
-    '<details class="zeus-inspector-section zeus-glass"><summary>AI Insights</summary><div class="zeus-inspector-body">' +
-      '<div id="doctor-panel-' + name + '">Loading…</div><div id="drift-panel-' + name + '" style="margin-top:12px">Loading…</div></div></details>' +
-    '</div>';
+  const networkBody = ifaceTable +
+    '<details class="vm-inspector-sub"><summary>RDP expose</summary><div class="vm-inspector-sub-body"><div id="rdp-panel-' + name + '">Loading…</div></div></details>' +
+    '<details class="vm-inspector-sub"><summary>Service expose</summary><div class="vm-inspector-sub-body"><div id="expose-panel-' + name + '">Loading…</div></div></details>' +
+    '<details class="vm-inspector-sub"><summary>Internet egress</summary><div class="vm-inspector-sub-body"><div id="internet-panel-' + name + '">Loading…</div></div></details>';
+  const tabs = vmInspectorTabBtn('overview', 'Overview', window._vmInspectorTab === 'overview') +
+    vmInspectorTabBtn('network', 'Network', window._vmInspectorTab === 'network') +
+    vmInspectorTabBtn('compute', 'Compute', window._vmInspectorTab === 'compute') +
+    vmInspectorTabBtn('security', 'Security', window._vmInspectorTab === 'security') +
+    vmInspectorTabBtn('backups', 'Backups', window._vmInspectorTab === 'backups') +
+    vmInspectorTabBtn('ai', 'AI', window._vmInspectorTab === 'ai');
+  return '<div class="zeus-inspector vm-inspector-tabs">' +
+    '<div class="vm-inspector-tabbar">' + tabs + '</div>' +
+    '<div class="vm-inspector-panels">' +
+      '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'overview' ? ' active' : '') + '" data-panel="overview"><div class="zeus-inspector-body"><div class="vd-kv-grid">' +
+        vdKv('Phase', vmi.phase || vm.status) + vdKv('Ready', vm.ready ? 'Yes' : 'No') + vdKv('Age', vm.age || '—') +
+        (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
+        vdKv('Guest runtime', '…') +
+      '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div></div></div>' +
+      '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'network' ? ' active' : '') + '" data-panel="network"><div class="zeus-inspector-body">' + networkBody + '</div></div>' +
+      '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'compute' ? ' active' : '') + '" data-panel="compute"><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '">Loading metrics…</div><div id="guest-fs-panel-' + name + '" style="margin-top:12px">Loading storage…</div></div></div>' +
+      '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'security' ? ' active' : '') + '" data-panel="security"><div class="zeus-inspector-body"><div id="security-' + name + '">Loading…</div></div></div>' +
+      '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'backups' ? ' active' : '') + '" data-panel="backups"><div class="zeus-inspector-body">' +
+        '<p class="vm-inspector-hint">Snapshots and Velero backups for this VM.</p>' +
+        '<div class="vm-inspector-backup-actions">' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">Open snapshots</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Backups &amp; Velero</button>' +
+          '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Take snapshot</button>' +
+        '</div></div></div>' +
+      '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'ai' ? ' active' : '') + '" data-panel="ai"><div class="zeus-inspector-body">' +
+        '<div id="doctor-panel-' + name + '">Loading…</div><div id="drift-panel-' + name + '" style="margin-top:12px">Loading…</div></div></div>' +
+    '</div></div>';
 }
 
 async function fetchVmWorkspaceDetail(ns, name) {
@@ -11570,10 +11652,13 @@ async function fetchNodes(opts) {
     const nodes = asArray(j);
     window.lastNodes = nodes;
     const summaryEl = document.getElementById('nodes-summary');
+    const vmrMetricsEl = document.getElementById('vmr-nodes-metrics');
+    const hideLegacySummary = vmrMetricsEl && vmrMetricsEl.children.length > 0;
+    if (summaryEl) summaryEl.style.display = hideLegacySummary ? 'none' : '';
     const el = document.getElementById('node-list');
     if (nodes.length === 0) {
       if (summaryEl) summaryEl.innerHTML = renderGlassStatPills([{ label: 'Nodes', value: 0 }]);
-      el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
+      if (el) el.innerHTML = '<div class="empty-state"><div class="icon">&#9881;</div><p>No nodes found</p></div>';
       return;
     }
     const ready = nodes.filter(n => n.status === 'Ready').length;
@@ -11585,9 +11670,10 @@ async function fetchNodes(opts) {
         { label: 'Heatmap', value: '→', onclick: "navigate('heatmap')", title: 'Resource heatmap' }
       ]);
     }
-    document.getElementById('node-count').textContent = nodes.length + ' nodes';
+    const nodeCountEl = document.getElementById('node-count');
+    if (nodeCountEl) nodeCountEl.textContent = nodes.length + ' nodes';
+    if (!el) return;
     el.innerHTML = nodes.map(n => {
-      const statusCls = n.status === 'Ready' ? 'ready' : 'not-ready';
       const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
       return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
         '<span class="cell-name">' + esc(n.name) + '</span>' +
@@ -12467,6 +12553,7 @@ function setNamespace(ns) {
   currentNamespace = ns;
   localStorage.setItem('veyron_ns', ns);
   if (ns === 'all') try { sessionStorage.removeItem('veyron_ws_hint_shown'); } catch (e) {}
+  updateTahoeContextBar(currentPage);
   fetchExperienceDesktop();
   refresh();
   loadPageData(currentPage);

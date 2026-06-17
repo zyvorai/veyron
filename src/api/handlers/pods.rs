@@ -100,7 +100,7 @@ async fn list_pods(
 }
 
 #[cfg(feature = "web")]
-async fn get_pod(
+pub async fn get_pod(
     State(state): State<SharedState>,
     Path(name): Path<String>,
     Query(q): Query<DashboardNamespaceQuery>,
@@ -135,33 +135,50 @@ async fn get_pod_logs(
 
     let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(s.client().client(), &pod_ns);
 
-    let params = LogParams {
-        tail_lines: Some(100),
-        timestamps: true,
-        ..Default::default()
+    let container_names: Vec<String> = match pods_api.get(&name).await {
+        Ok(pod) => pod
+            .spec
+            .as_ref()
+            .map(|spec| spec.containers.iter().map(|c| c.name.clone()).collect())
+            .unwrap_or_default(),
+        Err(_) => vec![],
     };
 
-    let log_text = match pods_api.logs(&name, &params).await {
-        Ok(text) => text,
-        Err(_) => return Json(vec![]),
+    let try_names: Vec<Option<String>> = if container_names.is_empty() {
+        vec![None]
+    } else {
+        container_names.into_iter().map(Some).collect()
     };
 
-    let results: Vec<PodLogEntry> = log_text
-        .lines()
-        .filter(|line| !line.is_empty())
-        .map(|line| {
-            // With timestamps=true, each line is: "RFC3339_TIMESTAMP message..."
-            let (timestamp, message) = match line.find(' ') {
-                Some(pos) => (line[..pos].to_string(), line[pos + 1..].to_string()),
-                None => (String::new(), line.to_string()),
-            };
-            PodLogEntry {
-                timestamp,
-                container: "default".to_string(),
-                message,
-            }
-        })
-        .collect();
+    for container in try_names {
+        let params = LogParams {
+            container: container.clone(),
+            tail_lines: Some(200),
+            timestamps: true,
+            ..Default::default()
+        };
+        let log_text = match pods_api.logs(&name, &params).await {
+            Ok(text) => text,
+            Err(_) => continue,
+        };
+        let label = container.unwrap_or_else(|| "default".to_string());
+        let results: Vec<PodLogEntry> = log_text
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(|line| {
+                let (timestamp, message) = match line.find(' ') {
+                    Some(pos) => (line[..pos].to_string(), line[pos + 1..].to_string()),
+                    None => (String::new(), line.to_string()),
+                };
+                PodLogEntry {
+                    timestamp,
+                    container: label.clone(),
+                    message,
+                }
+            })
+            .collect();
+        return Json(results);
+    }
 
-    Json(results)
+    Json(vec![])
 }
