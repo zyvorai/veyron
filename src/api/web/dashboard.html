@@ -11438,7 +11438,8 @@ async function loadVmMetricsPanel(ns, name) {
       const pts = (td && td.points) ? td.points.map(p => p.value) : [];
       const _tc = getComputedStyle(document.documentElement);
       const cpuCol = (_tc.getPropertyValue('--pw-color-info')||'').trim() || '#38bdf8';
-      if (pts.length) drawMiniSparkline(cpuCanvasId, pts, cpuCol, 'rgba(56,189,248,.35)');
+      const cpuGlow = (_tc.getPropertyValue('--pw-accent-glow')||'').trim() || 'rgba(56,189,248,.35)';
+      if (pts.length) drawMiniSparkline(cpuCanvasId, pts, cpuCol, cpuGlow);
     } catch (e) { /* optional prometheus */ }
     try {
       const tq = q + '&vm=' + encodeURIComponent(name) + '&metric=memory&hours=1';
