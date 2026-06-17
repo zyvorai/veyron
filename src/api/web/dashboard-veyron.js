@@ -431,7 +431,7 @@
     var ns = vm.namespace || 'default';
     var isRunning = vm.status === 'Running';
     var isIssue = vm.status === 'Failed' || vm.status === 'Error' || vm.status === 'Pending';
-    var cardCls = 'vmr-fleet-card' + (isRunning ? '' : isIssue ? ' issue' : ' stopped');
+    var cardCls = 'vmr-fleet-card' + (isRunning ? ' running' : isIssue ? ' issue' : ' stopped');
     var icon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
     var meta = esc(ns) + ' · ' + esc(vmNodeName(vm) || 'no node') + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '');
     var stats = 'CPU: ' + esc(vm.cpu || '—') + ' · Memory: ' + esc(vm.memory || '—');

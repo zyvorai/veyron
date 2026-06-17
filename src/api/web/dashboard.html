@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260617d">
+<meta name="veyron-dashboard-rev" content="20260617e">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260617d';
+  var DASH_REV = '20260617e';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1133,6 +1133,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   font-family:var(--font-sans);font-size:.74rem;font-weight:600;
   color:var(--text);border:1px solid var(--glass-border);
   background:rgba(15,23,42,.55);cursor:pointer;transition:background .2s,border-color .2s;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
 .glass-btn-secondary:hover{background:rgba(30,41,59,.75);border-color:rgba(148,163,184,.35)}
 .glass-btn-destructive{
@@ -1154,6 +1155,17 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .skel-s{width:60px}.skel-m{width:120px}.skel-l{width:180px}.skel-xl{width:240px}
 /* Coming soon */
 .coming-soon-state{text-align:center;padding:80px 24px;color:var(--text-muted)}
+.coming-soon-state.vmr-empty-state{
+  padding:64px 28px;border-radius:16px;border:1px dashed var(--glass-border);
+  background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+  max-width:520px;margin:24px auto;
+}
+.coming-soon-state .cs-icon-wrap{
+  width:72px;height:72px;margin:0 auto 18px;border-radius:20px;
+  display:flex;align-items:center;justify-content:center;font-size:2rem;
+  background:var(--glass-bg-elevated);border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
+}
 .coming-soon-state .cs-icon{font-size:3rem;opacity:.18;margin-bottom:18px}
 .coming-soon-state h2{color:var(--text-bright);font-size:1.3rem;margin:0 0 10px;font-weight:600}
 .coming-soon-state p{max-width:46ch;margin:0 auto 20px;line-height:1.6;font-size:.9rem}
@@ -2338,6 +2350,44 @@ html[data-theme="frost"] .form-select,
 html[data-theme="frost"] .browse-filter-input{
   background:#fff;border-color:rgba(15,23,42,.12);color:var(--text);
 }
+html[data-theme="frost"] .vmr-page-hero,
+html[data-theme="frost"] .vmr-metric,
+html[data-theme="frost"] .vmr-panel{
+  background:rgba(255,255,255,.82);border-color:rgba(15,23,42,.08);
+}
+html[data-theme="frost"] .cloudos-finder-item.active{
+  background:linear-gradient(90deg,rgba(37,99,235,.12),rgba(37,99,235,.04));
+}
+html[data-theme="frost"] .mac-dock-item-active{
+  background:linear-gradient(180deg,rgba(37,99,235,.14),rgba(37,99,235,.06));
+  box-shadow:inset 0 0 0 1px rgba(37,99,235,.18);
+}
+html[data-theme="frost"] .mission-window-card{
+  background:linear-gradient(165deg,rgba(255,255,255,.92),rgba(241,245,249,.88));
+}
+
+/* ── CloudOS polish wave ── */
+.table tbody tr{transition:background .12s ease}
+.table tbody tr:hover{background:rgba(63,124,255,.06)}
+.glass-badge{
+  letter-spacing:.04em;font-weight:700;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.mac-page-toolbar{
+  box-shadow:0 4px 24px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.05);
+}
+.spotlight-input,.launchpad-search,.browse-filter-input{
+  transition:border-color .15s,box-shadow .15s;
+}
+.spotlight-input:focus,.launchpad-search:focus,.browse-filter-input:focus{
+  border-color:rgba(56,189,248,.45);
+  box-shadow:0 0 0 3px rgba(56,189,248,.12);
+}
+html[data-theme="frost"] .spotlight-input:focus,
+html[data-theme="frost"] .launchpad-search:focus,
+html[data-theme="frost"] .browse-filter-input:focus{
+  box-shadow:0 0 0 3px rgba(37,99,235,.12);
+}
 
 /* ── Zyvor CloudOS experience layer ── */
 .dc-cc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
@@ -2608,9 +2658,10 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 .finder-section-toggle{
   display:flex;align-items:center;justify-content:space-between;width:100%;
   padding:6px 10px;border:none;background:transparent;color:var(--text-dim);
-  font-size:.74rem;font-weight:600;cursor:pointer;text-align:left;
+  font-size:.74rem;font-weight:600;cursor:pointer;text-align:left;border-radius:8px;
+  transition:background .15s,color .15s;
 }
-.finder-section-toggle:hover{color:var(--text-muted)}
+.finder-section-toggle:hover{color:var(--text-muted);background:rgba(255,255,255,.04)}
 .finder-chevron{font-size:.65rem;opacity:.7;transition:transform .15s}
 .finder-section.collapsed .finder-chevron{transform:rotate(-90deg)}
 .finder-section.collapsed .finder-section-body{display:none}
@@ -2621,7 +2672,11 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 @keyframes refresh-pulse{0%{color:var(--success)}100%{color:var(--text-muted)}}
 .refresh-pulse{animation:refresh-pulse 2.5s ease-out forwards}
 .finder-location-cluster{font-size:.72rem;color:var(--text-dim);padding:2px 12px 8px;line-height:1.4}
-.cloudos-finder-item.active{border-left:3px solid var(--spark);padding-left:9px}
+.cloudos-finder-item.active{
+  border-left:3px solid var(--spark);padding-left:9px;
+  background:linear-gradient(90deg,rgba(56,189,248,.14),rgba(56,189,248,.04));
+  color:var(--text-bright);font-weight:600;
+}
 .cloudos-finder-item{
   display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:10px;border:none;
   background:transparent;color:var(--text-muted);font-size:.84rem;text-align:left;cursor:pointer;
@@ -2810,6 +2865,15 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
   border:1px solid var(--glass-border);border-top:none;
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   box-shadow:var(--glass-shadow);
+  position:relative;overflow:hidden;
+}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 85% 55% at 50% 0%,rgba(63,124,255,.07),transparent 58%);
+}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > *{position:relative;z-index:1}
+body.mac-desktop-root .page.active .mac-page-window.page-enter{
+  animation:page-enter .24s cubic-bezier(.16,1,.3,1);
 }
 body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > :not(.vm-workspace):not(.mac-vm-workspace){
   padding-left:var(--space-page);padding-right:var(--space-page);
@@ -2902,6 +2966,12 @@ body.vm-focus-active .mac-inspector-header{display:flex}
   -webkit-backdrop-filter:blur(calc(var(--blur-liquid) + 2px)) saturate(1.45);
   border:1px solid var(--glass-border-strong);
   box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.06);
+  position:relative;
+}
+.mac-dock-inner::after{
+  content:'';position:absolute;left:8%;right:8%;bottom:-10px;height:10px;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.35),transparent 72%);
+  filter:blur(4px);
 }
 .mac-dock-inner-scroll{max-width:min(100vw - 2rem,56rem);overflow-x:auto;scrollbar-width:none}
 .mac-dock-inner-scroll::-webkit-scrollbar{display:none}
@@ -2915,7 +2985,10 @@ body.vm-focus-active .mac-inspector-header{display:flex}
 .mac-dock-item.mac-dock-bounce{animation:mac-dock-bounce .42s cubic-bezier(.34,1.56,.64,1)}
 @keyframes mac-dock-bounce{0%,100%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.12)}}
 .mac-dock-item:hover .mac-dock-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
-.mac-dock-item-active{background:rgba(56,189,248,.12)}
+.mac-dock-item-active{
+  background:linear-gradient(180deg,rgba(56,189,248,.18),rgba(56,189,248,.08));
+  box-shadow:inset 0 0 0 1px rgba(56,189,248,.22);
+}
 .mac-dock-item-preview{opacity:.55;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.03)}
 .mac-dock-item-preview:hover{opacity:.85;background:rgba(255,255,255,.07)}
 .mac-dock-icon{font-size:1.15rem;line-height:1}
@@ -3081,7 +3154,11 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:rgba(56,189,248,.28);ba
   display:inline-flex;align-items:stretch;flex-shrink:0;border-radius:8px 8px 0 0;
   border:1px solid transparent;border-bottom:none;background:rgba(255,255,255,.04);
 }
-.mac-desktop-tab-wrap.active{border-color:rgba(56,189,248,.25);background:rgba(56,189,248,.12)}
+.mac-desktop-tab-wrap.active{
+  border-color:rgba(56,189,248,.28);
+  background:linear-gradient(180deg,rgba(56,189,248,.16),rgba(56,189,248,.08));
+  box-shadow:0 -2px 12px rgba(56,189,248,.12);
+}
 .mac-desktop-tab-wrap:hover{background:rgba(56,189,248,.08)}
 .mac-desktop-tab-wrap .mac-desktop-tab{border:none;background:transparent;border-radius:0;padding-right:4px}
 .mac-desktop-tab-wrap.active .mac-desktop-tab{color:var(--spark)}
@@ -3136,10 +3213,18 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:rgba(56,189,248,.28);ba
 .mission-zone-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);margin-bottom:10px}
 .mission-window-card{
   padding:14px 16px;border-radius:14px;border:1px solid var(--glass-border);
-  background:var(--glass-bg);cursor:pointer;transition:transform .15s,border-color .15s;
+  background:linear-gradient(165deg,var(--glass-bg) 0%,rgba(15,23,42,.35) 100%);
+  cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .2s;
+  position:relative;overflow:hidden;
 }
-.mission-window-card:hover{transform:scale(1.02);border-color:rgba(56,189,248,.35)}
+.mission-window-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--blue));opacity:0;transition:opacity .15s;
+}
+.mission-window-card:hover{transform:scale(1.02) translateY(-1px);border-color:rgba(56,189,248,.35);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.mission-window-card:hover::before{opacity:.85}
 .mission-window-card.active{border-color:rgba(56,189,248,.5);box-shadow:0 0 20px rgba(56,189,248,.15)}
+.mission-window-card.active::before{opacity:1}
 .mission-window-card h4{margin:0 0 4px;font-size:.9rem;color:var(--text-bright)}
 .mission-window-card p{margin:0;font-size:.74rem;color:var(--text-dim)}
 
@@ -3158,11 +3243,14 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:rgba(56,189,248,.28);ba
   display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 8px;border:none;
   background:transparent;cursor:pointer;font-family:inherit;color:var(--text);
 }
-.launchpad-app:hover .launchpad-icon{transform:scale(1.08)}
+.launchpad-app:hover .launchpad-icon{transform:scale(1.08) translateY(-2px);box-shadow:var(--glass-shadow),0 12px 28px rgba(63,124,255,.18)}
 .launchpad-icon{
   width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;
-  font-size:1.75rem;background:var(--glass-bg-elevated);border:1px solid var(--glass-border-strong);
-  box-shadow:var(--glass-shadow);transition:transform .2s cubic-bezier(.34,1.56,.64,1);
+  font-size:1.75rem;
+  background:linear-gradient(165deg,var(--glass-bg-elevated),rgba(15,23,42,.45));
+  border:1px solid var(--glass-border-strong);
+  box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.08);
+  transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;
 }
 .launchpad-label{font-size:.72rem;text-align:center;color:var(--text-muted);max-width:90px;line-height:1.3}
 .launchpad-app.launchpad-app-focus{outline:2px solid rgba(56,189,248,.55);outline-offset:4px}
@@ -3600,7 +3688,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button class="nav-link" data-page="blueprint-studio" onclick="navigate('blueprint-studio')">Blueprint Studio</button>
       <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
       <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
-      <button class="nav-link" data-page="app-store" onclick="navigate('app-store')">Template Store</button>
+      <button class="nav-link" data-page="app-store" onclick="navigate('app-store')">Template Foundry</button>
       <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
       <button class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
       <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
@@ -3635,44 +3723,16 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
 <button type="button" class="cloudos-browse-rail" id="cloudos-browse-rail" onclick="toggleClassicNav()" title="Browse all pages (⌘⇧B)" aria-label="Browse all pages">Browse</button>
 
-<header class="veyron-topbar" id="veyron-topbar" role="banner" aria-hidden="true" hidden>
-  <div class="veyron-topbar-brand">
-    <svg class="veyron-mark" viewBox="0 0 32 32" width="36" height="36" aria-hidden="true">
-      <defs><linearGradient id="veyronMarkTop" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#27d7ff"/><stop offset=".45" stop-color="#3f7cff"/><stop offset="1" stop-color="#9b7cff"/></linearGradient></defs>
-      <rect width="32" height="32" rx="8" fill="#0a1018"/>
-      <path d="M8 24 L16 8 L24 24 L20 24 L16 15 L12 24 Z" fill="url(#veyronMarkTop)"/>
-    </svg>
-    <div>
-      <span class="veyron-wordmark">VEYRON</span>
-      <span class="veyron-tagline">Kubernetes-native VM command center.</span>
-    </div>
-  </div>
-  <input type="search" class="veyron-topbar-search" id="veyron-topbar-search" placeholder="Search VMs, templates, nodes, alerts, commands…" aria-label="Search" onclick="openSpotlight()" readonly>
-  <div class="veyron-topbar-actions">
-    <button type="button" class="veyron-alerts-pill empty" id="veyron-alerts-pill" onclick="navigate('events')">No alerts</button>
-    <span class="veyron-connected"><span class="nav-dot ok"></span> Connected</span>
-    <select class="veyron-ns-select" id="veyron-ns-select" title="Namespace" aria-label="Namespace"></select>
-    <div class="veyron-user-block">
-      <div class="veyron-user-avatar" id="veyron-user-avatar">A</div>
-      <div class="veyron-user-meta"><strong id="veyron-user-name">admin</strong><span>Administrator</span></div>
-    </div>
-  </div>
-</header>
+<div id="veyron-legacy-hooks" class="sr-only" aria-hidden="true">
+  <nav id="veyron-sidebar-nav"></nav>
+  <span id="veyron-context-ns">all</span>
+  <span id="veyron-context-scope">All Namespaces</span>
+  <button type="button" id="veyron-alerts-pill" class="veyron-alerts-pill empty" hidden>No alerts</button>
+  <select id="veyron-ns-select" hidden aria-hidden="true" tabindex="-1"></select>
+  <input type="text" id="veyron-copilot-input" class="veyron-copilot-input" hidden aria-hidden="true" tabindex="-1">
+</div>
 
 <div class="cloudos-body-row">
-<aside class="veyron-sidebar" id="veyron-sidebar" aria-label="Veyron navigation" aria-hidden="true" hidden>
-  <nav class="veyron-sidebar-nav" id="veyron-sidebar-nav" role="navigation"></nav>
-  <div class="veyron-cluster-context">
-    <strong>Cluster context</strong>
-    Namespace: <span id="veyron-context-ns">all</span><br>
-    Scope: <span id="veyron-context-scope">All Namespaces</span>
-  </div>
-  <div class="veyron-copilot-panel">
-    <h4>Veyron Copilot</h4>
-    <p>AI assistant online — ask about fleet health, VMs, and remediation.</p>
-    <input type="text" class="veyron-copilot-input" id="veyron-copilot-input" placeholder="Ask Veyron… ⌘J" aria-label="Ask Veyron" readonly>
-  </div>
-</aside>
 <aside class="cloudos-finder" id="cloudos-finder" aria-label="Veyron Finder">
   <div class="finder-toolbar">
     <span class="finder-toolbar-title">Finder</span>
@@ -5621,7 +5681,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260617d';
+window.__VMROGUE_DASH_REV = '20260617e';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -7879,8 +7939,8 @@ function vmSkeletonHtml(n) {
 function renderComingSoon(containerId, title, description, icon) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  el.innerHTML = '<div class="coming-soon-state">' +
-    '<div class="cs-icon">' + icon + '</div>' +
+  el.innerHTML = '<div class="coming-soon-state vmr-empty-state">' +
+    '<div class="cs-icon-wrap">' + (icon || '◫') + '</div>' +
     '<h2>' + esc(title) + '</h2>' +
     '<p>' + esc(description) + '</p>' +
     '<span class="coming-soon-tag">Coming soon</span>' +
