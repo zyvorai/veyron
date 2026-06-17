@@ -1935,3 +1935,201 @@ html[data-theme='light'] .tahoe-context-bar {
   background: color-mix(in srgb, var(--pw-surface-glass) 88%, transparent);
   border-color: var(--glass-border);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Second-wave overrides — cards, modal, dock, control center, etc.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* CSS variable overrides in root scope */
+html[data-theme] {
+  --glass-shadow-hero:
+    0 12px 48px rgba(0,0,0,.35),
+    0 0 0 1px color-mix(in srgb, var(--pw-color-data) 12%, transparent),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+/* Chart card top shimmer line */
+html[data-theme] .chart-card::before {
+  background: linear-gradient(
+    90deg,
+    transparent 15%,
+    color-mix(in srgb, var(--pw-color-info) 55%, transparent),
+    color-mix(in srgb, var(--pw-color-ai) 50%, transparent),
+    color-mix(in srgb, var(--pw-color-data) 55%, transparent),
+    transparent 85%
+  );
+}
+
+/* Chart current-value text shadow */
+html[data-theme] .chart-current {
+  text-shadow: 0 0 12px color-mix(in srgb, var(--pw-color-data) 25%, transparent);
+}
+
+/* Card header subtle tint */
+html[data-theme] .card-header {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--pw-color-data) 6%, transparent), transparent);
+}
+
+/* Card-title accent bar glow */
+html[data-theme] .card-title::before {
+  box-shadow: 0 0 8px color-mix(in srgb, var(--pw-color-data) 35%, transparent);
+}
+
+/* Primary action button — theme accent fill */
+html[data-theme] .btn-create {
+  border-color: var(--pw-accent-border);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--pw-color-data) 90%, #000),
+    color-mix(in srgb, var(--pw-color-data) 70%, #000),
+    color-mix(in srgb, var(--pw-color-data) 55%, #000));
+  box-shadow: 0 4px 24px color-mix(in srgb, var(--pw-color-data) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.1);
+}
+html[data-theme] .btn-create:hover {
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--pw-color-data) 45%, transparent);
+}
+
+/* Modal ambient glow */
+html[data-theme] .modal {
+  box-shadow: 0 25px 80px rgba(0,0,0,.6), 0 0 40px color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+/* Glass modal form focus ring */
+html[data-theme] .modal.glass-modal .form-input:focus,
+html[data-theme] .modal.glass-modal .form-select:focus {
+  border-color: var(--pw-color-data);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pw-color-data) 15%, transparent);
+}
+
+/* Coming-soon badge */
+html[data-theme] .coming-soon-tag {
+  background: var(--pw-accent-soft);
+  color: var(--pw-color-data);
+  border-color: var(--pw-accent-border);
+}
+
+/* Stat pill hover */
+html[data-theme] button.glass-stat-pill.clickable-stat:hover,
+html[data-theme] .glass-stat-pill.clickable-stat:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 32%, transparent);
+}
+
+/* Table clickable row hover */
+html[data-theme] .table tbody tr.clickable-row:hover {
+  background: color-mix(in srgb, var(--pw-color-data) 6%, transparent);
+}
+
+/* VM card icon box */
+html[data-theme] .vm-card-icon {
+  background: var(--pw-accent-soft);
+}
+
+/* VM workspace chip */
+html[data-theme] .vm-workspace-chip {
+  background: var(--pw-accent-soft);
+  border-color: color-mix(in srgb, var(--pw-color-data) 20%, transparent);
+}
+
+/* Finder active item gradient */
+html[data-theme] .cloudos-finder-item.active {
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--pw-color-data) 14%, transparent),
+    color-mix(in srgb, var(--pw-color-data) 4%, transparent));
+}
+html[data-theme] .cloudos-finder-item:hover,
+html[data-theme] .cloudos-finder-item.active {
+  background: color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+/* Copilot module badge */
+html[data-theme] .copilot-module-badge {
+  background: color-mix(in srgb, var(--pw-color-info) 12%, transparent);
+}
+
+/* Copilot user message bubble */
+html[data-theme] .copilot-msg-user span {
+  background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
+}
+
+/* Copilot tool chip */
+html[data-theme] .copilot-tool-chip {
+  background: color-mix(in srgb, var(--pw-color-info) 10%, transparent);
+  border-color: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
+}
+
+/* App store / mission card hover */
+html[data-theme] .app-store-card:hover {
+  border-color: var(--pw-accent-border);
+}
+
+/* Dock active item — general (no body.mac-desktop-root required) */
+html[data-theme] .mac-dock-item-active {
+  background: linear-gradient(180deg, var(--pw-accent-medium), var(--pw-accent-soft));
+  box-shadow: inset 0 0 0 1px var(--pw-accent-border);
+}
+
+/* Dock running dot glow */
+html[data-theme] .mac-dock-dot {
+  box-shadow: 0 0 4px color-mix(in srgb, var(--pw-color-data) 50%, transparent);
+}
+
+/* Launchpad search focus */
+html[data-theme] .launchpad-search:focus {
+  border-color: color-mix(in srgb, var(--pw-color-data) 45%, transparent);
+}
+
+/* Launchpad focused app highlight */
+html[data-theme] .launchpad-app.launchpad-app-focus {
+  background: linear-gradient(180deg, var(--pw-accent-medium), var(--pw-accent-soft));
+  box-shadow: inset 0 0 0 1px var(--pw-accent-border);
+}
+
+/* Menubar menu hover */
+html[data-theme] .mac-menu-item:hover {
+  background: var(--pw-accent-soft);
+}
+html[data-theme] .mac-menu-item.active-tier {
+  background: var(--pw-accent-medium);
+}
+
+/* Status island hover */
+html[data-theme] .mac-status-island:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 30%, transparent);
+}
+
+/* Toolbar overflow button hover */
+html[data-theme] .mac-toolbar-overflow-menu button:hover {
+  background: var(--pw-accent-soft);
+}
+
+/* Control center tile hover */
+html[data-theme] .mac-cc-tile:hover {
+  background: var(--pw-accent-soft);
+  color: var(--spark);
+  border-color: color-mix(in srgb, var(--pw-color-data) 25%, transparent);
+}
+
+/* Dynamic island hover */
+html[data-theme] .mac-dynamic-island:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 35%, transparent);
+}
+
+/* Control center toggle hover */
+html[data-theme] .mac-cc-toggle:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 35%, transparent);
+  color: var(--spark);
+}
+
+/* DC health ring background tint */
+html[data-theme] .dc-health-ring {
+  background: color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
+
+/* Finder active item — use medium (18%) to be visually distinct from hover (10%) */
+html[data-theme] .cloudos-finder-item.active {
+  background: var(--pw-accent-medium) !important;
+}
+
+/* Copilot user bubble and tool chips use info/cyan regardless of primary theme — that's intentional */
+html[data-theme] .copilot-msg-user span {
+  background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
+}
