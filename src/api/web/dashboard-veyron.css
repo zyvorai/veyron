@@ -2037,8 +2037,8 @@ html[data-theme="frost"] .vmr-network-flow-wrap {
   transition: background .14s, border-color .14s;
 }
 .vmr-topology-vm-chip.running {
-  background: rgba(50,224,176,.06);
-  border-color: rgba(50,224,176,.14);
+  background: color-mix(in srgb, var(--green) 6%, transparent);
+  border-color: color-mix(in srgb, var(--green) 14%, transparent);
 }
 .vmr-topology-vm-chip.stopped {
   background: rgba(150,170,210,.04);

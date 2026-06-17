@@ -2499,7 +2499,7 @@
             esc(pw.health_status || 'healthy') + (pw.health_mode ? ' · ' + esc(pw.health_mode) : '') + '</span>' +
             extBtn +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Refresh flows</button>';
-          banner.style.borderColor = 'rgba(50,224,176,.3)';
+          banner.style.borderColor = 'color-mix(in srgb, var(--green) 30%, transparent)';
         } else if (pw && pw.configured) {
           banner.innerHTML = '<span style="color:var(--orange);font-size:.84rem">PacketWolf configured but unreachable — ' +
             esc(pw.message || 'health probe failed') + '</span>' +
