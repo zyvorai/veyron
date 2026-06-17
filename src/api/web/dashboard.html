@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260617b">
+<meta name="veyron-dashboard-rev" content="20260617c">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260617b';
+  var DASH_REV = '20260617c';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2255,6 +2255,44 @@ html[data-theme="neon"] body::after{
   background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,255,240,.03) 2px,rgba(0,255,240,.03) 4px);
 }
 
+/* ═══════════════════════════════════════════════════
+   THEME: Frost — light glass workspace
+   ═══════════════════════════════════════════════════ */
+html[data-theme="frost"]{
+  color-scheme:light;
+  --bg-0:#e8edf4;--bg-1:#f3f6fa;--bg-2:#ffffff;
+  --panel:rgba(255,255,255,.82);--panel-strong:rgba(255,255,255,.94);
+  --line:rgba(15,23,42,.1);--line-strong:rgba(59,130,246,.28);
+  --blue:#2563eb;--cyan:#0891b2;--green:#059669;--orange:#d97706;--red:#dc2626;--violet:#7c3aed;
+  --chart-primary:#0891b2;--chart-secondary:#2563eb;
+  --glass-bg:rgba(255,255,255,.78);--glass-border:rgba(15,23,42,.08);
+  --text:#0f172a;--text-muted:#475569;--text-bright:#020617;
+  --bg:#f3f6fa;--bg-deep:#e8edf4;--bg-card:var(--panel);--accent:var(--blue);
+}
+html[data-theme="frost"] body{
+  background:var(--bg-deep);
+  color:var(--text);
+}
+html[data-theme="frost"] body::before{
+  background:
+    radial-gradient(ellipse 55% 45% at 20% 15%, rgba(59,130,246,.12), transparent 55%),
+    radial-gradient(ellipse 50% 42% at 85% 25%, rgba(8,145,178,.1), transparent 52%),
+    radial-gradient(ellipse 60% 50% at 50% 95%, rgba(148,163,184,.12), transparent 55%);
+  opacity:.9;
+}
+html[data-theme="frost"] .glass-card,
+html[data-theme="frost"] .mac-page-window{
+  box-shadow:0 8px 32px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.9);
+}
+html[data-theme="frost"] .mac-menubar.navbar{
+  background:rgba(255,255,255,.72);
+  border-bottom-color:rgba(15,23,42,.08);
+}
+html[data-theme="frost"] .mac-dock-inner{
+  background:rgba(255,255,255,.55);
+  border-color:rgba(15,23,42,.1);
+}
+
 /* ── Zyvor CloudOS experience layer ── */
 .dc-cc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .dc-cc-chip{
@@ -2692,9 +2730,7 @@ body[data-desktop-tier="normal"] .menubar-tier-collapsible,
 body[data-desktop-tier="power"] .menubar-tier-collapsible{display:none!important}
 body[data-desktop-tier="normal"] .nav-status,
 body[data-desktop-tier="power"] .nav-status{display:none!important}
-/* Dashboard: one home on Normal/Power — datacenter only; fleet command grid for Advanced */
-body[data-desktop-tier="normal"] #fleet-command-grid,
-body[data-desktop-tier="power"] #fleet-command-grid{display:none!important}
+/* Dashboard: hide legacy datacenter grid on Normal/Power */
 body[data-desktop-tier="normal"] #page-dashboard .dashboard-quick-stats{display:none!important}
 /* macOS content window — one glass pane per active page */
 .mac-page-toolbar-wrap{
@@ -3247,11 +3283,30 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.ember{background:linear-gradient(135deg,#f97316,#38bdf8)}
 .theme-swatch-preview.obsidian{background:linear-gradient(135deg,#030508,#9b7cff)}
 .theme-swatch-preview.neon{background:linear-gradient(135deg,#00fff0,#ff2d95)}
+.theme-swatch-preview.frost{background:linear-gradient(135deg,#e8edf4,#2563eb)}
+.cloudos-mobile-bar{
+  display:none;position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--vmr-dock-safe,72px) + 6px);z-index:165;
+  padding:6px 10px;border-radius:999px;gap:4px;
+  background:var(--glass-bg-elevated);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border-strong);box-shadow:var(--glass-shadow);
+}
+.cloudos-mobile-bar button{
+  border:none;background:transparent;color:var(--text-muted);
+  font-size:.68rem;font-weight:600;padding:6px 10px;border-radius:999px;
+  cursor:pointer;font-family:inherit;white-space:nowrap;
+}
+.cloudos-mobile-bar button:hover,.cloudos-mobile-bar button.active{
+  background:rgba(63,124,255,.12);color:var(--text-bright);
+}
+@media(max-width:768px){
+  .cloudos-mobile-bar{display:flex;align-items:center}
+  body.mac-desktop-root .cloudos-main{padding-bottom:calc(var(--vmr-dock-safe,72px) + 48px)}
+}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
 <body class="mac-desktop-root" data-desktop-tier="power">
-
 <header class="navbar cloudos-topbar mac-menubar" role="banner">
   <div class="mac-menubar-left navbar-left">
     <div class="mac-menubar-menus">
@@ -3291,12 +3346,12 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div class="mac-menu-wrap">
         <button type="button" class="mac-menu-trigger" id="mac-menu-go-btn" onclick="toggleMacMenu('go')" aria-haspopup="true" aria-expanded="false">Go</button>
         <div class="mac-menu-panel" id="mac-menu-go" role="menu">
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('dashboard');closeMacMenus()">Home</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('vms');closeMacMenus()">Virtual Machines</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('app-store');closeMacMenus()">Template Store</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('monitoring');closeMacMenus()">Activity Monitor</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('backups');closeMacMenus()">Backups</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()">Ask Veyron… <span class="mac-menu-shortcut">⌘J</span></button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('dashboard');closeMacMenus()">Mission Control</button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('vms');closeMacMenus()">Fleet Command</button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('app-store');closeMacMenus()">Template Foundry</button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('stack-health');closeMacMenus()">Stack Health</button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('snapshots');closeMacMenus()">Snapshots &amp; Backups</button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()">Copilot… <span class="mac-menu-shortcut">⌘J</span></button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleClassicNav();closeMacMenus()">Browse all pages… <span class="mac-menu-shortcut">⌘⇧B</span></button>
         </div>
       </div>
@@ -3353,6 +3408,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <option value="ember">Ember</option>
       <option value="obsidian">Obsidian</option>
       <option value="neon">Neon</option>
+      <option value="frost">Frost</option>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
       <option value="all">all</option>
@@ -3384,10 +3440,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
         <button type="button" class="theme-swatch" data-theme="obsidian" role="radio" onclick="setTheme('obsidian')"><span class="theme-swatch-preview obsidian"></span><span class="theme-swatch-label">Obsidian</span></button>
         <button type="button" class="theme-swatch" data-theme="neon" role="radio" onclick="setTheme('neon')"><span class="theme-swatch-preview neon"></span><span class="theme-swatch-label">Neon</span></button>
+        <button type="button" class="theme-swatch" data-theme="frost" role="radio" onclick="setTheme('frost')"><span class="theme-swatch-preview frost"></span><span class="theme-swatch-label">Frost</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
         <option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option>
-        <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option>
+        <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option><option value="frost">Frost</option>
       </select>
     </div>
     <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
@@ -3531,7 +3588,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="classic-nav-backdrop" id="classic-nav-backdrop" onclick="closeClassicNav()"></div>
 <button type="button" class="cloudos-browse-rail" id="cloudos-browse-rail" onclick="toggleClassicNav()" title="Browse all pages (⌘⇧B)" aria-label="Browse all pages">Browse</button>
 
-<header class="veyron-topbar" id="veyron-topbar" role="banner">
+<header class="veyron-topbar" id="veyron-topbar" role="banner" aria-hidden="true" hidden>
   <div class="veyron-topbar-brand">
     <svg class="veyron-mark" viewBox="0 0 32 32" width="36" height="36" aria-hidden="true">
       <defs><linearGradient id="veyronMarkTop" x1="6" y1="4" x2="26" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#27d7ff"/><stop offset=".45" stop-color="#3f7cff"/><stop offset="1" stop-color="#9b7cff"/></linearGradient></defs>
@@ -3556,7 +3613,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 </header>
 
 <div class="cloudos-body-row">
-<aside class="veyron-sidebar" id="veyron-sidebar" aria-label="Veyron navigation">
+<aside class="veyron-sidebar" id="veyron-sidebar" aria-label="Veyron navigation" aria-hidden="true" hidden>
   <nav class="veyron-sidebar-nav" id="veyron-sidebar-nav" role="navigation"></nav>
   <div class="veyron-cluster-context">
     <strong>Cluster context</strong>
@@ -5517,7 +5574,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260617b';
+window.__VMROGUE_DASH_REV = '20260617c';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -5558,7 +5615,37 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
-const VALID_THEMES = ['slate', 'steel', 'zinc', 'aurora', 'ember', 'obsidian', 'neon'];
+const VALID_THEMES = ['slate', 'steel', 'zinc', 'aurora', 'ember', 'obsidian', 'neon', 'frost'];
+const THEME_WALLPAPER_PAIRING = {
+  aurora: 'aurora', ember: 'ember-glow', obsidian: 'midnight', neon: 'matrix',
+  frost: 'tahoe', steel: 'midnight', zinc: 'ocean', slate: 'tahoe'
+};
+const NAV_PAGE_LABELS = {
+  dashboard: 'Mission Control',
+  vms: 'Fleet Command',
+  'app-store': 'Template Foundry',
+  'console-hub': 'ConsoleHub',
+  'vm-capsule': 'VM Capsule',
+  snapshots: 'Snapshots & Backups',
+  'network-intel': 'Network Intelligence',
+  security: 'Security Posture',
+  'stack-health': 'Stack Health',
+  monitoring: 'Stack Health',
+  events: 'Event Intelligence',
+  costs: 'Cost Explorer',
+  workloads: 'Workloads',
+  nodes: 'Cluster Nodes',
+  settings: 'Settings',
+  backups: 'Snapshots & Backups',
+  integrations: 'Integrations'
+};
+
+function navPageLabel(page) {
+  if (NAV_PAGE_LABELS[page]) return NAV_PAGE_LABELS[page];
+  const meta = PAGE_META[page];
+  if (meta && meta.title) return meta.title.split('—')[0].trim();
+  return page;
+}
 const WALLPAPER_IDS = ['tahoe', 'aurora', 'midnight', 'ocean', 'nebula', 'solar', 'matrix', 'ember-glow'];
 
 function cssVar(name, fallback) {
@@ -5703,6 +5790,14 @@ function setTheme(theme) {
   const cc = document.getElementById('cc-theme-select');
   if (pref) pref.value = theme;
   if (cc) cc.value = theme;
+  const pair = THEME_WALLPAPER_PAIRING[theme];
+  if (pair) {
+    try {
+      if (localStorage.getItem('veyron_wallpaper_manual') !== '1') {
+        setDesktopWallpaper(pair);
+      }
+    } catch (e) {}
+  }
 }
 
 function updatePageContext(page) {
@@ -6520,7 +6615,7 @@ const RECENT_VMS_KEY = 'veyron_recent_vms';
 /** macOS shell shortcuts surfaced in Spotlight (client-side; API adds cluster matches). */
 const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Browse all pages', subtitle: 'Full page catalog (⌘⇧B)', action: 'mac:browse_all', keys: ['browse', 'all pages', 'catalog', 'advanced'] },
-  { kind: 'action', title: 'Mission Control', subtitle: 'Fleet overview (F3)', action: 'mac:mission_control', keys: ['mission', 'f3', 'windows', 'overview'] },
+  { kind: 'action', title: 'Cluster Overview', subtitle: 'Relationship wall (F3)', action: 'mac:mission_control', keys: ['mission', 'f3', 'windows', 'overview'] },
   { kind: 'action', title: 'Customize Dock', subtitle: 'Reorder pinned apps', action: 'mac:dock_editor', keys: ['dock', 'customize', 'pin'] },
   { kind: 'action', title: 'Launchpad', subtitle: 'Template quick launch', action: 'mac:launchpad', keys: ['launchpad', 'templates', 'store'] },
   { kind: 'action', title: 'Control Center', subtitle: 'Theme, wallpaper, workspace', action: 'mac:control_center', keys: ['control', 'center', 'appearance', 'wallpaper'] },
@@ -6663,7 +6758,7 @@ function renderCloudOsDock() {
   items.forEach(item => {
     const active = !item.preview && item.page === currentPage;
     const cls = 'mac-dock-item' + (active ? ' mac-dock-item-active' : '') + (item.preview ? ' mac-dock-item-preview' : '');
-    const label = esc(item.label);
+    const label = esc(typeof navPageLabel === 'function' ? navPageLabel(item.page) : item.label);
     const previewAttr = item.preview ? ' data-preview="1"' : '';
     const previewTitle = item.preview ? ' — Power user' : '';
     html += '<button type="button" class="' + cls + '" data-page="' + esc(item.page) + '"' + previewAttr +
@@ -6907,7 +7002,10 @@ function loadDesktopWallpaper() {
 
 function setDesktopWallpaper(id) {
   if (!WALLPAPER_IDS.includes(id)) return;
-  try { localStorage.setItem(WALLPAPER_KEY, id); } catch (e) {}
+  try {
+    localStorage.setItem(WALLPAPER_KEY, id);
+    localStorage.setItem('veyron_wallpaper_manual', '1');
+  } catch (e) {}
   document.body.setAttribute('data-wallpaper', id);
   document.querySelectorAll('.mac-menu-item[data-wallpaper-opt]').forEach(el => {
     el.classList.toggle('active-tier', el.dataset.wallpaperOpt === id);
@@ -6935,8 +7033,7 @@ function saveDesktopTabs(tabs) {
 }
 
 function pageLabel(page) {
-  const meta = PAGE_META[page];
-  return meta ? (meta.title || page) : page;
+  return navPageLabel(page);
 }
 
 function upsertDesktopTab(page) {
@@ -14922,6 +15019,13 @@ async function fetchIncidents() {
   <div class="launchpad-grid" id="launchpad-grid"></div>
 </div>
 
+<nav id="cloudos-mobile-bar" class="cloudos-mobile-bar" aria-label="Quick navigation">
+  <button type="button" onclick="navigate('dashboard')">Home</button>
+  <button type="button" onclick="toggleClassicNav()">Browse</button>
+  <button type="button" onclick="openSpotlight()">Search</button>
+  <button type="button" onclick="openAskZeus()">Copilot</button>
+</nav>
+
 <footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
   <div class="mac-dock-inner mac-dock-inner-scroll" id="cloudos-dock-inner"></div>
 </footer>
@@ -14953,10 +15057,11 @@ async function fetchIncidents() {
             <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
             <button type="button" class="theme-swatch" data-theme="obsidian" role="radio" onclick="setTheme('obsidian')"><span class="theme-swatch-preview obsidian"></span><span class="theme-swatch-label">Obsidian</span></button>
             <button type="button" class="theme-swatch" data-theme="neon" role="radio" onclick="setTheme('neon')"><span class="theme-swatch-preview neon"></span><span class="theme-swatch-label">Neon</span></button>
+            <button type="button" class="theme-swatch" data-theme="frost" role="radio" onclick="setTheme('frost')"><span class="theme-swatch-preview frost"></span><span class="theme-swatch-label">Frost</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
             <option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option>
-            <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option>
+            <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option><option value="frost">Frost</option>
           </select>
         </div>
         <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
