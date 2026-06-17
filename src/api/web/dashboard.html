@@ -5684,10 +5684,16 @@ const PAGE_TOOLBAR_ACTIONS = {
 
 function applyTheme(theme, writeStorage) {
   const t = parseStoredTheme(theme);
-  document.documentElement.setAttribute('data-theme', t);
+  // Start crossfade transition
+  const html = document.documentElement;
+  html.classList.add('theme-switching');
+  html.setAttribute('data-theme', t);
   VALID_THEMES.forEach(function(id) {
-    document.documentElement.classList.toggle('theme-' + id, id === t);
+    html.classList.toggle('theme-' + id, id === t);
   });
+  // Remove transition class after animation completes
+  clearTimeout(applyTheme._tid);
+  applyTheme._tid = setTimeout(function() { html.classList.remove('theme-switching'); }, 350);
   if (writeStorage !== false) {
     try {
       localStorage.setItem(THEME_KEY, t);

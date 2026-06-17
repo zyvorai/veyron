@@ -984,6 +984,32 @@ html.theme-light {
   --glass-blur: blur(var(--pw-blur)) saturate(var(--pw-glass-saturate));
 }
 
+/* ─── Smooth theme crossfade ───────────────────────────────────────
+   .theme-switching is added by JS for 350ms during applyTheme().
+   We only transition visual properties, not layout/transform/opacity,
+   so animations and hover snap-effects are unaffected.
+   ─────────────────────────────────────────────────────────────────── */
+html.theme-switching,
+html.theme-switching body,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition:
+    background-color 280ms ease,
+    border-color 280ms ease,
+    color 280ms ease,
+    box-shadow 280ms ease,
+    outline-color 280ms ease,
+    fill 280ms ease,
+    stroke 280ms ease !important;
+}
+/* Don't transition layout or interactive animations */
+html.theme-switching .animate-fade-in,
+html.theme-switching [style*="animation"],
+html.theme-switching [class*="pulse"],
+html.theme-switching [class*="spin"],
+html.theme-switching canvas { transition: none !important; }
+
 html[data-theme] {
   --pw-accent-soft: color-mix(in srgb, var(--pw-color-data) 10%, transparent);
   --pw-accent-medium: color-mix(in srgb, var(--pw-color-data) 18%, transparent);
@@ -2187,13 +2213,50 @@ html[data-theme] body.mac-desktop-root[data-wallpaper='ember-glow']::before {
     radial-gradient(ellipse 50% 45% at 80% 25%, color-mix(in srgb, var(--pw-color-info) 18%, transparent), transparent 48%);
 }
 
-/* aurora wallpaper: keep artistic colors, just soften the cyan to theme info */
+/* aurora wallpaper — generic: tint bottom radial to theme info color */
 html[data-theme] body.mac-desktop-root[data-wallpaper='aurora']::before {
   background:
     radial-gradient(ellipse 60% 50% at 15% 20%, rgba(167,139,250,.38), transparent 55%),
     radial-gradient(ellipse 50% 45% at 90% 25%, rgba(236,72,153,.22), transparent 50%),
     radial-gradient(ellipse 55% 50% at 60% 90%, color-mix(in srgb, var(--pw-color-info) 22%, transparent), transparent 52%),
     radial-gradient(ellipse 100% 80% at 50% 120%, color-mix(in srgb, var(--pw-color-info) 10%, transparent), transparent 55%);
+}
+
+/* Wolf + aurora: warm amber-gold aurora to match Wolf (amber) accent */
+html[data-theme='wolf'] body.mac-desktop-root[data-wallpaper='aurora']::before {
+  background:
+    radial-gradient(ellipse 65% 55% at 20% 15%, rgba(245, 158, 11, .32), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 85% 20%, rgba(251, 191, 36, .18), transparent 52%),
+    radial-gradient(ellipse 55% 50% at 55% 85%, rgba(239, 68, 68, .14), transparent 50%),
+    radial-gradient(ellipse 100% 70% at 50% 110%, rgba(249, 115, 22, .08), transparent 55%);
+}
+
+/* Forge + aurora: red volcanic aurora to match Forge (red) accent */
+html[data-theme='forge'] body.mac-desktop-root[data-wallpaper='aurora']::before {
+  background:
+    radial-gradient(ellipse 65% 55% at 20% 15%, rgba(239, 68, 68, .35), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 85% 20%, rgba(249, 115, 22, .20), transparent 52%),
+    radial-gradient(ellipse 55% 50% at 55% 85%, rgba(220, 38, 38, .15), transparent 50%),
+    radial-gradient(ellipse 100% 70% at 50% 110%, rgba(239, 68, 68, .07), transparent 55%);
+}
+
+/* Ember + aurora: deep crimson aurora to match Ember (deep red) accent */
+html[data-theme='ember'] body.mac-desktop-root[data-wallpaper='aurora']::before {
+  background:
+    radial-gradient(ellipse 65% 55% at 20% 15%, rgba(220, 38, 38, .38), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 85% 20%, rgba(185, 28, 28, .22), transparent 52%),
+    radial-gradient(ellipse 55% 50% at 55% 85%, rgba(239, 68, 68, .14), transparent 50%),
+    radial-gradient(ellipse 100% 70% at 50% 110%, rgba(127, 29, 29, .10), transparent 55%);
+}
+
+/* Light + aurora: light blue mist for the light (day) theme */
+html[data-theme='light'] body.mac-desktop-root[data-wallpaper='aurora']::before,
+html[data-theme='tahoe-light'] body.mac-desktop-root[data-wallpaper='aurora']::before {
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(37, 99, 235, .12), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 90% 25%, rgba(99, 102, 241, .08), transparent 50%),
+    radial-gradient(ellipse 55% 50% at 55% 85%, rgba(14, 165, 233, .10), transparent 52%),
+    linear-gradient(180deg, rgba(240, 244, 250, .0) 0%, rgba(230, 238, 250, .0) 100%);
 }
 
 /* Refresh ring SVG stroke — inject via CSS property for the SVG circle */
