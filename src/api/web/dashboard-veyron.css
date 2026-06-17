@@ -1795,6 +1795,8 @@ body[data-tier-mode="manual"] .cloudos-finder-item.tier-locked {
   text-transform: uppercase;
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-network-flow-wrap {
   background: rgba(255, 255, 255, 0.72);
 }
@@ -2147,6 +2149,8 @@ html[data-theme="frost"] .vmr-network-flow-wrap {
   background: linear-gradient(165deg, rgba(155, 124, 255, 0.28), rgba(99, 102, 241, 0.12)) !important;
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-copilot-panel-main {
   background: linear-gradient(165deg, rgba(139, 92, 246, 0.06), rgba(255, 255, 255, 0.88));
   border-color: rgba(139, 92, 246, 0.18);
@@ -2255,21 +2259,35 @@ html[data-theme="frost"] .vmr-copilot-panel-main {
   box-shadow: inset 0 0 0 1px rgba(63, 124, 255, 0.12);
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-page-hero::before {
   background: linear-gradient(90deg, #0891b2, #2563eb, #7c3aed);
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-fleet-card,
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-template-card,
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-metric,
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-panel {
   background: rgba(255, 255, 255, 0.84);
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-quick-btn {
   background: linear-gradient(165deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.03));
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] .vmr-foundry-drawer {
   background: rgba(255, 255, 255, 0.96);
 }
@@ -2993,7 +3011,11 @@ body.mac-desktop-root .card-title {
   color: var(--muted);
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] body.mac-desktop-root .vmr-surface-card,
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] body.mac-desktop-root .mac-page-window > .card {
   background: rgba(255, 255, 255, 0.88);
 }
@@ -3272,6 +3294,8 @@ body.mac-desktop-root .finder-current-window {
   text-overflow: ellipsis;
 }
 
+html[data-theme="tahoe-light"],
+html[data-theme="light"],
 html[data-theme="frost"] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
   background: rgba(255, 255, 255, 0.88);
 }

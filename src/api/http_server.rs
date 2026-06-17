@@ -1146,7 +1146,14 @@ pub mod web {
 
     static DASHBOARD_HTML: Lazy<String> = Lazy::new(|| {
         include_str!("web/dashboard.html")
-            .replace("/*__VMR_CSS__*/", include_str!("web/dashboard-veyron.css"))
+            .replace(
+                "/*__VMR_CSS__*/",
+                concat!(
+                    include_str!("web/dashboard-veyron.css"),
+                    "\n",
+                    include_str!("web/dashboard-packetwolf-themes.css")
+                ),
+            )
             .replace("/*__VMR_JS__*/", include_str!("web/dashboard-veyron.js"))
     });
 
