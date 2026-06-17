@@ -1673,14 +1673,14 @@ html[data-theme] .copilot-tool-trace {
 }
 
 html[data-theme] .mac-dock-ask {
-  color: var(--pw-color-ai);
-  border-color: color-mix(in srgb, var(--pw-color-ai) 35%, transparent);
-  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 18%, transparent), color-mix(in srgb, var(--pw-color-ai) 8%, transparent));
+  color: var(--pw-color-ai) !important;
+  border-color: color-mix(in srgb, var(--pw-color-ai) 35%, transparent) !important;
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 18%, transparent), color-mix(in srgb, var(--pw-color-ai) 8%, transparent)) !important;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--pw-color-ai) 12%, transparent), 0 4px 14px color-mix(in srgb, var(--pw-color-ai) 12%, transparent);
 }
 
 html[data-theme] .mac-dock-ask:hover {
-  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 28%, transparent), color-mix(in srgb, var(--pw-color-ai) 12%, transparent));
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 28%, transparent), color-mix(in srgb, var(--pw-color-ai) 12%, transparent)) !important;
 }
 
 /* Toast info icon */
@@ -2365,4 +2365,66 @@ html[data-theme] .vmr-forge-placeholder {
 html[data-theme] .vmr-forge-placeholder:hover {
   border-color: color-mix(in srgb, var(--pw-color-data) 45%, transparent);
   background: color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
+
+/* Mission Control copilot panel — AI-branded violet */
+html[data-theme] .vmr-copilot-panel-main {
+  border-color: color-mix(in srgb, var(--pw-color-ai) 22%, transparent);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 8%, transparent), color-mix(in srgb, var(--pw-bg-deep) 72%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-ai) 12%, transparent);
+}
+
+html[data-theme] .vmr-copilot-panel-main .vmr-panel-title {
+  color: var(--pw-color-ai);
+}
+
+/* Light themes: override catch-all with a light-mode-appropriate copilot panel */
+html[data-theme='tahoe-light'] .vmr-copilot-panel-main,
+html[data-theme='light'] .vmr-copilot-panel-main {
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-ai) 6%, transparent), rgba(255,255,255,.88));
+  border-color: color-mix(in srgb, var(--pw-color-ai) 18%, transparent);
+}
+
+/* Page empty-state glow and icon (info/cyan family) */
+html[data-theme] .vmr-page-empty-glow {
+  background: radial-gradient(ellipse 70% 60% at 50% 50%, color-mix(in srgb, var(--pw-color-info) 10%, transparent), transparent 70%);
+}
+
+html[data-theme] .vmr-page-empty-icon {
+  background: linear-gradient(165deg, color-mix(in srgb, var(--pw-color-info) 16%, transparent), color-mix(in srgb, var(--pw-color-ai) 8%, transparent));
+  border-color: color-mix(in srgb, var(--pw-color-info) 20%, transparent);
+}
+
+/* VM Capsule tab active state */
+html[data-theme] body.mac-desktop-root .vmr-capsule-tab-btn.active {
+  background: color-mix(in srgb, var(--pw-color-info) 14%, transparent);
+  color: var(--pw-color-info);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pw-color-info) 18%, transparent);
+}
+
+/* Finder sidebar toggle hover border */
+html[data-theme] .finder-sidebar-toggle:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 25%, transparent);
+}
+
+/* Finder active item — border, text colour, glow (background uses !important above) */
+html[data-theme] .cloudos-finder-item.active {
+  border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
+  color: var(--pw-color-data);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+/* Beta / AI tag — always violet (AI branding) */
+html[data-theme] .vmr-beta-tag {
+  border-color: color-mix(in srgb, var(--pw-color-ai) 35%, transparent);
+}
+
+/* Fleet spark bars — decorative gradient follows data accent */
+html[data-theme] .vmr-fleet-spark span {
+  background: linear-gradient(180deg, var(--pw-color-info), color-mix(in srgb, var(--pw-color-data) 25%, transparent));
+}
+
+/* Menubar sidebar toggle hover border */
+html[data-theme] .mac-menubar-sidebar-btn:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 25%, transparent);
 }
