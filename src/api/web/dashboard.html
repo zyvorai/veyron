@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260617f">
+<meta name="veyron-dashboard-rev" content="20260618a">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260617f';
+  var DASH_REV = '20260618a';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -942,6 +942,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   backdrop-filter:blur(20px) saturate(1.35);-webkit-backdrop-filter:blur(20px) saturate(1.35);
 }
 @keyframes mac-toast-in{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes mac-toast-out{from{transform:translateX(0);opacity:1}to{transform:translateX(24px);opacity:0}}
+.toast.toast-exit{animation:mac-toast-out .22s cubic-bezier(.4,0,1,1) forwards}
 .toast-icon{flex-shrink:0;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
 .toast-success{
   background:rgba(6,40,24,.95);color:var(--success);
@@ -1211,6 +1213,12 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
   border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
   min-width:110px;flex:1;
+  transition:border-color .15s,transform .15s,box-shadow .2s;
+}
+button.glass-stat-pill.clickable-stat:hover,
+.glass-stat-pill.clickable-stat:hover{
+  border-color:rgba(56,189,248,.32);transform:translateY(-2px);
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
 }
 .glass-stat-pill .gsl{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)}
 .glass-stat-pill .gsv{font-size:1.35rem;font-weight:700;font-family:var(--font-display);color:var(--text-bright);margin-top:6px}
@@ -1531,7 +1539,19 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .mission-tile.zeus-glass{padding:20px;cursor:pointer;transition:transform .15s ease,border-color .15s}
 .mission-tile.zeus-glass:hover{transform:translateY(-2px);border-color:rgba(93,144,247,.35)}
 .mission-tile h3{margin:0 0 6px;font-size:1rem;color:var(--text-bright)}
-.mission-tile .mt-val{font-size:2rem;font-weight:800;font-family:var(--font-display);color:var(--primary-blue)}
+.mission-tile .mt-val{
+  font-size:2rem;font-weight:800;font-family:var(--font-display);
+  background:linear-gradient(135deg,var(--cyan),var(--blue));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.mission-control-zones .mission-zone-title{
+  display:flex;align-items:center;gap:8px;
+}
+.mission-control-zones .mission-zone-title::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);opacity:.7;
+}
+.mac-control-center.open{animation:cc-slide-in .24s cubic-bezier(.16,1,.3,1)}
+@keyframes cc-slide-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .security-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px}
 .security-finding-cards{display:flex;flex-direction:column;gap:10px}
 .security-finding-card.zeus-glass{padding:14px 16px;border-left:4px solid var(--border)}
@@ -2626,8 +2646,27 @@ html[data-theme="zinc"] .operator-details{
 .copilot-drawer-body{
   flex:1;min-height:0;overflow-y:auto;padding:16px 20px 24px;
   display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(180deg,rgba(255,255,255,.02) 0%,transparent 48px);
 }
-.copilot-drawer-body .form-input{background:rgba(15,23,42,.55);border-color:var(--glass-border)}
+.copilot-drawer-body .form-input{
+  background:rgba(15,23,42,.55);border-color:var(--glass-border);
+  resize:vertical;min-height:52px;
+}
+.copilot-chip-btn{
+  border-radius:999px!important;padding:5px 12px!important;
+  font-size:.72rem!important;
+}
+#copilot-modal .mac-sheet-titlebar{
+  border-bottom:1px solid var(--glass-border);
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  position:relative;
+}
+#copilot-modal .mac-sheet-titlebar::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:2px;
+  background:linear-gradient(90deg,var(--cyan),var(--blue),var(--violet));opacity:.75;
+}
+html[data-theme="frost"] .copilot-drawer-body .form-input{background:#fff}
+html[data-theme="frost"] #copilot-modal .mac-copilot-sheet{background:rgba(255,255,255,.96)}
 .dash-vm-row{
   display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--glass-border);
   cursor:pointer;transition:background .15s;
@@ -2749,10 +2788,16 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
 }
 .app-store-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;padding:12px}
 .app-store-card{
-  border-radius:14px;border:1px solid var(--border);background:var(--bg-elevated);padding:16px;
-  cursor:pointer;transition:border-color .15s,transform .15s;
+  border-radius:14px;border:1px solid var(--border);
+  background:linear-gradient(165deg,var(--glass-bg-elevated),rgba(15,23,42,.28));
+  padding:16px;cursor:pointer;
+  transition:border-color .15s,transform .15s,box-shadow .2s;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
 }
-.app-store-card:hover{border-color:rgba(56,189,248,.3);transform:translateY(-1px)}
+.app-store-card:hover{
+  border-color:rgba(56,189,248,.35);transform:translateY(-2px);
+  box-shadow:0 10px 28px rgba(63,124,255,.12);
+}
 .app-store-icon{font-size:1.6rem;margin-bottom:8px}
 .app-store-title{font-weight:600;font-size:.95rem}
 .app-store-sub{font-size:.78rem;color:var(--text-dim);margin:6px 0 10px;line-height:1.45}
@@ -2768,11 +2813,17 @@ body.finder-collapsed .cloudos-finder *{pointer-events:none;opacity:0}
   .refresh-text{display:none}
 }
 @media(max-width:960px){
-  .cloudos-finder{
-    position:fixed;left:0;top:44px;bottom:0;z-index:125;transform:translateX(-100%);
-    transition:transform .2s;box-shadow:8px 0 32px rgba(0,0,0,.35);
+  body.mac-desktop-root .cloudos-finder{
+    position:fixed;left:0;top:40px;bottom:0;z-index:125;width:min(88vw,320px);
+    transform:translateX(-100%);transition:transform .25s cubic-bezier(.16,1,.3,1);
+    box-shadow:8px 0 32px rgba(0,0,0,.35);border-radius:0 16px 16px 0;
   }
-  .cloudos-finder.open{transform:translateX(0)}
+  body.mac-desktop-root .cloudos-finder.open{transform:translateX(0)}
+  .cloudos-finder-backdrop{
+    display:none;position:fixed;inset:40px 0 0 0;z-index:124;
+    background:rgba(0,0,0,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  }
+  body.finder-mobile-open .cloudos-finder-backdrop{display:block}
   .cloudos-body-row{min-height:auto}
   body.classic-nav-open .browse-mega-menu{left:0}
 }
@@ -3764,6 +3815,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 </div>
 
 <div class="cloudos-body-row">
+<div class="cloudos-finder-backdrop" id="cloudos-finder-backdrop" onclick="closeFinderMobile()" aria-hidden="true"></div>
 <aside class="cloudos-finder" id="cloudos-finder" aria-label="Veyron Finder">
   <div class="finder-toolbar">
     <span class="finder-toolbar-title">Finder</span>
@@ -5712,7 +5764,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260617f';
+window.__VMROGUE_DASH_REV = '20260618a';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6389,7 +6441,10 @@ function toast(msg, type, duration) {
   let remaining = ms;
   let startMs = Date.now();
   let timer = setTimeout(remove, ms);
-  function remove() { el.remove(); _toastActive.delete(key); }
+  function remove() {
+    el.classList.add('toast-exit');
+    setTimeout(function() { el.remove(); _toastActive.delete(key); }, 220);
+  }
   el.querySelector('.toast-dismiss').addEventListener('click', function() { clearTimeout(timer); remove(); });
   el.addEventListener('mouseenter', function() { clearTimeout(timer); remaining = Math.max(0, remaining - (Date.now() - startMs)); });
   el.addEventListener('mouseleave', function() { startMs = Date.now(); timer = setTimeout(remove, remaining); });
@@ -7378,19 +7433,25 @@ async function loadMissionControlOverlay() {
     const policies = asArray(netpol);
     zones.innerHTML =
       '<div><div class="mission-zone-title">Infrastructure</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'nodes\')"><h3>Hosts</h3><div class="mt-val">' + nodeList.length + '</div><p>Kubernetes nodes</p></div></div>' +
+      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'nodes\')"><h3>' + esc(navPageLabel('nodes')) + '</h3><div class="mt-val">' + nodeList.length + '</div><p>Kubernetes nodes</p></div></div>' +
       '<div><div class="mission-zone-title">Compute</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'vms\')"><h3>VMs</h3><div class="mt-val">' + vmList.length + '</div><p>' + running + ' running</p></div></div>' +
+      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'vms\')"><h3>' + esc(navPageLabel('vms')) + '</h3><div class="mt-val">' + vmList.length + '</div><p>' + running + ' running</p></div></div>' +
       '<div><div class="mission-zone-title">Network</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'network-policies\')"><h3>Policies</h3><div class="mt-val">' + policies.length + '</div></div></div>' +
+      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'network-policies\')"><h3>' + esc(navPageLabel('network-policies')) + '</h3><div class="mt-val">' + policies.length + '</div><p>Network policies</p></div></div>' +
       '<div><div class="mission-zone-title">Storage</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'storage\')"><h3>Edges</h3><div class="mt-val">' + edges.length + '</div></div></div>';
+      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'storage\')"><h3>' + esc(navPageLabel('storage')) + '</h3><div class="mt-val">' + edges.length + '</div><p>Topology edges</p></div></div>';
     if (topo) topo.textContent = (map.nodes || []).length + ' nodes, ' + edges.length + ' edges · ' + currentNamespace;
     if (wins) {
       const tabs = loadDesktopTabs();
-      const cards = [{ page: 'dashboard', label: 'Home' }].concat(tabs).slice(0, 8);
+      const cards = [{ page: 'dashboard', label: navPageLabel('dashboard') }].concat(
+        tabs.map(function(t) { return { page: t.page, label: navPageLabel(t.page) }; })
+      ).slice(0, 8);
       wins.innerHTML = '<div class="mission-zone-title">Open windows</div><div class="mission-control-zones">' +
-        cards.map(c => '<div class="mission-window-card' + (c.page === currentPage ? ' active' : '') + '" onclick="closeMissionControlOverlay();navigate(' + jsArgs(c.page) + ')"><h4>' + esc(c.label) + '</h4><p>' + esc(c.page) + '</p></div>').join('') +
+        cards.map(function(c) {
+          return '<div class="mission-window-card' + (c.page === currentPage ? ' active' : '') +
+            '" onclick="closeMissionControlOverlay();navigate(' + jsArgs(c.page) + ')"><h4>' + esc(c.label) +
+            '</h4><p>' + esc(c.page) + '</p></div>';
+        }).join('') +
         '</div>';
     }
   } catch (e) {
@@ -7907,13 +7968,26 @@ async function maybeSuggestAllWorkspace() {
   } catch (e) { console.warn('Workspace suggestion check failed:', e); }
 }
 
+function syncFinderMobileUi() {
+  const el = document.getElementById('cloudos-finder');
+  const open = !!(el && el.classList.contains('open'));
+  document.body.classList.toggle('finder-mobile-open', open && isFinderMobile());
+}
+
 function toggleFinder() {
   if (isFinderMobile()) {
     const el = document.getElementById('cloudos-finder');
     if (el) el.classList.toggle('open');
+    syncFinderMobileUi();
     return;
   }
   setFinderCollapsed(!document.body.classList.contains('finder-collapsed'));
+}
+
+function closeFinderMobile() {
+  const el = document.getElementById('cloudos-finder');
+  if (el) el.classList.remove('open');
+  syncFinderMobileUi();
 }
 
 function syncBrowseMenuLabels() {
@@ -7967,8 +8041,7 @@ function finderNavigate(page) {
   if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
     if (typeof unlockDockPreviewPage === 'function' && unlockDockPreviewPage(page)) {
       navigate(page, { skipTierCheck: true });
-      const el = document.getElementById('cloudos-finder');
-      if (el && isFinderMobile()) el.classList.remove('open');
+      if (isFinderMobile()) closeFinderMobile();
       return;
     }
     showTierUpgradePrompt(page);
@@ -7977,7 +8050,7 @@ function finderNavigate(page) {
   closeClassicNav();
   navigate(page, { skipTierCheck: true });
   const el = document.getElementById('cloudos-finder');
-  if (el && isFinderMobile()) el.classList.remove('open');
+  if (el && isFinderMobile()) closeFinderMobile();
 }
 
 function syncFinderTierLocks() {
@@ -13149,13 +13222,11 @@ window.addEventListener('load', async () => {
   window.addEventListener('resize', () => {
     if (isFinderMobile()) {
       document.body.classList.remove('finder-collapsed');
-      const el = document.getElementById('cloudos-finder');
-      if (el && !el.classList.contains('open')) el.classList.remove('open');
     } else {
-      const el = document.getElementById('cloudos-finder');
-      if (el) el.classList.remove('open');
+      closeFinderMobile();
       initFinderCollapsed();
     }
+    syncFinderMobileUi();
     drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
     drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
   });
