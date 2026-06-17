@@ -3893,3 +3893,40 @@ body.mac-desktop-root .mac-menubar-center-inner .mac-alert-pill {
     overflow: visible;
   }
 }
+
+/* ── Cilium / network policy page ── */
+.vmr-cilium-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.vmr-cilium-tabs {
+  flex: 0 0 auto;
+}
+
+.vmr-cilium-search {
+  max-width: min(360px, 100%);
+  min-width: 200px;
+  flex: 1;
+}
+
+.vmr-cilium-tab-count {
+  opacity: 0.65;
+  font-size: 0.72rem;
+  margin-left: 4px;
+}
+
+.vmr-cilium-table-wrap {
+  max-height: min(52vh, 520px);
+  overflow: auto;
+}
+
+.vmr-cilium-pw-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.45;
+}
