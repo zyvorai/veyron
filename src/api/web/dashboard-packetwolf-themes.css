@@ -1766,6 +1766,21 @@ html[data-theme='ember'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
     linear-gradient(180deg, rgb(6, 0, 0) 0%, rgb(4, 0, 0) 100%);
 }
 
+html[data-theme='sonoma'] body.mac-desktop-root::before,
+html[data-theme='sonoma'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 30% -10%, rgba(139, 92, 246, 0.28), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 20%, rgba(99, 102, 241, 0.15), transparent 50%),
+    linear-gradient(180deg, rgb(7, 5, 15) 0%, rgb(5, 3, 10) 100%);
+}
+
+html[data-theme='graphite'] body.mac-desktop-root::before,
+html[data-theme='graphite'] body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% -5%, rgba(148, 163, 184, 0.14), transparent 55%),
+    linear-gradient(180deg, rgb(8, 10, 14) 0%, rgb(5, 7, 10) 100%);
+}
+
 html[data-theme='light'] body.mac-desktop-root::before,
 html[data-theme='tahoe-light'] body.mac-desktop-root::before {
   background:
