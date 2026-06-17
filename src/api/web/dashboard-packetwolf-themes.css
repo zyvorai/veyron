@@ -1317,6 +1317,37 @@ html[data-theme] .mission-window-card.pw-mission-tile--red {
   border-color: color-mix(in srgb, var(--zeus-tone-red) 28%, transparent);
 }
 
+html[data-theme] .mission-window-card.pw-mission-tile--current,
+html[data-theme] .mission-window-card.active.pw-mission-tile--current {
+  border-color: var(--pw-accent-border);
+  box-shadow: 0 0 20px var(--pw-accent-glow), inset 0 1px 0 var(--glass-highlight);
+}
+
+html[data-theme] .glass-stat-pill.tahoe-stat-sky .gsv,
+html[data-theme] .vmr-metric.tahoe-stat-sky .vmr-metric-value {
+  color: var(--zeus-tone-sky);
+}
+
+html[data-theme] .glass-stat-pill.tahoe-stat-violet .gsv,
+html[data-theme] .vmr-metric.tahoe-stat-violet .vmr-metric-value {
+  color: var(--zeus-tone-violet);
+}
+
+html[data-theme] .glass-stat-pill.tahoe-stat-emerald .gsv,
+html[data-theme] .vmr-metric.tahoe-stat-emerald .vmr-metric-value {
+  color: var(--zeus-tone-emerald);
+}
+
+html[data-theme] .glass-stat-pill.tahoe-stat-amber .gsv,
+html[data-theme] .vmr-metric.tahoe-stat-amber .vmr-metric-value {
+  color: var(--zeus-tone-amber);
+}
+
+html[data-theme] .glass-stat-pill.tahoe-stat-red .gsv,
+html[data-theme] .vmr-metric.tahoe-stat-red .vmr-metric-value {
+  color: var(--zeus-tone-red);
+}
+
 html[data-theme] .vm-sort-col.active {
   color: var(--spark);
   border-bottom-color: var(--pw-accent-border);

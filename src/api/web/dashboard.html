@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618n">
+<meta name="veyron-dashboard-rev" content="20260618o">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618n';
+  var DASH_REV = '20260618o';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1547,18 +1547,23 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .spotlight-panel.zeus-spotlight{width:min(640px,94vw);border-radius:16px}
 .mission-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px}
 .mission-tile.zeus-glass{padding:20px;cursor:pointer;transition:transform .15s ease,border-color .15s}
-.mission-tile.zeus-glass:hover{transform:translateY(-2px);border-color:rgba(93,144,247,.35)}
+.mission-tile.zeus-glass:hover{transform:translateY(-2px);border-color:var(--pw-accent-border, rgba(93,144,247,.35));box-shadow:0 8px 24px var(--pw-accent-glow, rgba(0,0,0,.12))}
 .mission-tile h3{margin:0 0 6px;font-size:1rem;color:var(--text-bright)}
 .mission-tile .mt-val{
   font-size:2rem;font-weight:800;font-family:var(--font-display);
-  background:linear-gradient(135deg,var(--cyan),var(--blue));
+  background:linear-gradient(135deg, var(--pw-color-info, var(--cyan)), var(--pw-color-data, var(--blue)));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
+.mission-tile.pw-mission-tile--sky .mt-val{color:var(--zeus-tone-sky);background:none;-webkit-text-fill-color:var(--zeus-tone-sky)}
+.mission-tile.pw-mission-tile--emerald .mt-val{color:var(--zeus-tone-emerald);background:none;-webkit-text-fill-color:var(--zeus-tone-emerald)}
+.mission-tile.pw-mission-tile--violet .mt-val{color:var(--zeus-tone-violet);background:none;-webkit-text-fill-color:var(--zeus-tone-violet)}
+.mission-tile.pw-mission-tile--amber .mt-val{color:var(--zeus-tone-amber);background:none;-webkit-text-fill-color:var(--zeus-tone-amber)}
+.mission-tile.pw-mission-tile--red .mt-val{color:var(--zeus-tone-red);background:none;-webkit-text-fill-color:var(--zeus-tone-red)}
 .mission-control-zones .mission-zone-title{
   display:flex;align-items:center;gap:8px;
 }
 .mission-control-zones .mission-zone-title::before{
-  content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);opacity:.7;
+  content:'';width:6px;height:6px;border-radius:50%;background:var(--pw-color-data, var(--cyan));opacity:.7;
 }
 .mac-control-center.open{animation:cc-slide-in .24s cubic-bezier(.16,1,.3,1)}
 @keyframes cc-slide-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
@@ -3347,7 +3352,7 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
 }
 .mission-window-card::before{
   content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,var(--cyan),var(--blue));opacity:0;transition:opacity .15s;
+  background:linear-gradient(90deg, var(--pw-color-info, var(--cyan)), var(--pw-color-data, var(--blue)));opacity:0;transition:opacity .15s;
 }
 .mission-window-card:hover{transform:scale(1.02) translateY(-1px);border-color:var(--pw-accent-border, rgba(56,189,248,.35));box-shadow:0 8px 24px var(--pw-accent-glow, rgba(0,0,0,.18))}
 .mission-window-card:hover::before{opacity:.85}
@@ -5869,7 +5874,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618n';
+window.__VMROGUE_DASH_REV = '20260618o';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -7680,24 +7685,30 @@ async function loadMissionControlOverlay() {
     const running = vmList.filter(v => v.status === 'Running').length;
     const edges = (map && map.edges) ? map.edges : [];
     const policies = asArray(netpol);
-    zones.innerHTML =
-      '<div><div class="mission-zone-title">Infrastructure</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'nodes\')"><h3>' + esc(navPageLabel('nodes')) + '</h3><div class="mt-val">' + nodeList.length + '</div><p>Kubernetes nodes</p></div></div>' +
-      '<div><div class="mission-zone-title">Compute</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'vms\')"><h3>' + esc(navPageLabel('vms')) + '</h3><div class="mt-val">' + vmList.length + '</div><p>' + running + ' running</p></div></div>' +
-      '<div><div class="mission-zone-title">Network</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'network-policies\')"><h3>' + esc(navPageLabel('network-policies')) + '</h3><div class="mt-val">' + policies.length + '</div><p>Network policies</p></div></div>' +
-      '<div><div class="mission-zone-title">Storage</div>' +
-      '<div class="mission-tile zeus-glass mission-window-card" onclick="closeMissionControlOverlay();navigate(\'storage\')"><h3>' + esc(navPageLabel('storage')) + '</h3><div class="mt-val">' + edges.length + '</div><p>Topology edges</p></div></div>';
+    const zoneTiles = [
+      { title: 'Infrastructure', page: 'nodes', tone: 'sky', val: nodeList.length, sub: 'Kubernetes nodes' },
+      { title: 'Compute', page: 'vms', tone: 'emerald', val: vmList.length, sub: running + ' running' },
+      { title: 'Network', page: 'network-policies', tone: 'violet', val: policies.length, sub: 'Network policies' },
+      { title: 'Storage', page: 'storage', tone: 'amber', val: edges.length, sub: 'Topology edges' },
+    ];
+    zones.innerHTML = zoneTiles.map(function(z) {
+      return '<div><div class="mission-zone-title">' + esc(z.title) + '</div>' +
+        '<div class="mission-tile zeus-glass mission-window-card pw-mission-tile--' + z.tone +
+        '" onclick="closeMissionControlOverlay();navigate(' + jsArgs(z.page) + ')"><h3>' + esc(navPageLabel(z.page)) +
+        '</h3><div class="mt-val">' + z.val + '</div><p>' + esc(z.sub) + '</p></div></div>';
+    }).join('');
     if (topo) topo.textContent = (map.nodes || []).length + ' nodes, ' + edges.length + ' edges · ' + currentNamespace;
     if (wins) {
       const tabs = loadDesktopTabs();
       const cards = [{ page: 'dashboard', label: navPageLabel('dashboard') }].concat(
         tabs.map(function(t) { return { page: t.page, label: navPageLabel(t.page) }; })
       ).slice(0, 8);
+      const winTones = ['sky', 'emerald', 'violet', 'amber', 'red'];
       wins.innerHTML = '<div class="mission-zone-title">Open windows</div><div class="mission-control-zones">' +
-        cards.map(function(c) {
-          return '<div class="mission-window-card' + (c.page === currentPage ? ' active' : '') +
+        cards.map(function(c, i) {
+          var tone = winTones[i % winTones.length];
+          var active = c.page === currentPage;
+          return '<div class="mission-window-card pw-mission-tile--' + tone + (active ? ' active pw-mission-tile--current' : '') +
             '" onclick="closeMissionControlOverlay();navigate(' + jsArgs(c.page) + ')"><h4>' + esc(c.label) +
             '</h4><p>' + esc(c.page) + '</p></div>';
         }).join('') +
@@ -10518,11 +10529,11 @@ function renderDashboardCommandCenter() {
     ? nodesEarly.ready_nodes + '/' + nodesEarly.total_nodes : 'n/a';
   if (quickStatsEl) {
     quickStatsEl.innerHTML =
-      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')"><div class="gsl">Total VMs</div><div class="gsv">' + vmData.length + '</div></button>' +
-      '<button type="button" class="glass-stat-pill ok clickable-stat" onclick="navigateToVmsFilter(\'Running\')"><div class="gsl">Running</div><div class="gsv">' + running + '</div></button>' +
-      '<button type="button" class="glass-stat-pill' + (failed ? ' bad' : '') + ' clickable-stat" onclick="navigateToVmsIssues()"><div class="gsl">Issues</div><div class="gsv">' + failed + '</div></button>' +
-      '<button type="button" class="glass-stat-pill' + (warnings ? ' warn' : '') + ' clickable-stat" onclick="navigate(\'events\')"><div class="gsl">Warnings</div><div class="gsv">' + warnings + '</div></button>' +
-      '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'nodes\')"><div class="gsl">Nodes ready</div><div class="gsv">' + readyEarly + '</div></button>';
+      '<button type="button" class="glass-stat-pill tahoe-stat-sky clickable-stat" onclick="navigate(\'vms\')"><div class="gsl">Total VMs</div><div class="gsv">' + vmData.length + '</div></button>' +
+      '<button type="button" class="glass-stat-pill tahoe-stat-emerald ok clickable-stat" onclick="navigateToVmsFilter(\'Running\')"><div class="gsl">Running</div><div class="gsv">' + running + '</div></button>' +
+      '<button type="button" class="glass-stat-pill tahoe-stat-red' + (failed ? ' bad' : '') + ' clickable-stat" onclick="navigateToVmsIssues()"><div class="gsl">Issues</div><div class="gsv">' + failed + '</div></button>' +
+      '<button type="button" class="glass-stat-pill tahoe-stat-amber' + (warnings ? ' warn' : '') + ' clickable-stat" onclick="navigate(\'events\')"><div class="gsl">Warnings</div><div class="gsv">' + warnings + '</div></button>' +
+      '<button type="button" class="glass-stat-pill tahoe-stat-violet clickable-stat" onclick="navigate(\'nodes\')"><div class="gsl">Nodes ready</div><div class="gsv">' + readyEarly + '</div></button>';
   }
   if (todayEl) {
     todayEl.innerHTML =

@@ -217,8 +217,9 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
 
 .vmr-metric:hover {
   transform: translateY(-1px);
-  border-color: var(--line-strong);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  border-color: var(--pw-accent-border, var(--line-strong));
+  background: var(--pw-accent-soft, transparent);
+  box-shadow: 0 6px 20px var(--pw-accent-glow, rgba(0, 0, 0, 0.12));
 }
 
 .vmr-metric-label {
@@ -2687,8 +2688,8 @@ body.mac-desktop-root[data-desktop-tier="advanced"] .vmr-legacy-page-header h1 {
 body.mac-desktop-root .vmr-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid var(--line);
-  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--glass-border, var(--line));
+  background: color-mix(in srgb, var(--pw-bg-deep, #000) 35%, transparent);
 }
 
 body.mac-desktop-root .vmr-table {
@@ -2704,19 +2705,19 @@ body.mac-desktop-root .vmr-table thead th {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.03);
-  border-bottom: 1px solid var(--line);
+  color: var(--pw-text-secondary, var(--muted));
+  background: color-mix(in srgb, var(--pw-surface-elevated, rgba(255, 255, 255, 0.03)) 92%, transparent);
+  border-bottom: 1px solid var(--glass-border, var(--line));
 }
 
 body.mac-desktop-root .vmr-table tbody td {
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.04));
   vertical-align: middle;
 }
 
 body.mac-desktop-root .vmr-table tbody tr:hover td {
-  background: rgba(56, 189, 248, 0.04);
+  background: var(--pw-accent-soft, rgba(56, 189, 248, 0.04));
 }
 
 body.mac-desktop-root .vmr-table tbody tr:last-child td {
