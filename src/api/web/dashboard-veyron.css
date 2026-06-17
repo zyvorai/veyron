@@ -2604,19 +2604,21 @@ body.mac-desktop-root .cloudos-main {
   padding-bottom: calc(var(--vmr-dock-safe) + 28px);
 }
 
-.mac-dock-inner {
-  padding: 8px 14px;
-  border-radius: 20px;
-  background: rgba(12, 18, 30, 0.78);
-  backdrop-filter: blur(28px) saturate(1.5);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+body.mac-desktop-root .mac-dock-inner {
+  padding: 0.3rem 0.55rem;
+  border-radius: 1.75rem;
+  background: rgba(12, 18, 32, 0.55);
+  backdrop-filter: blur(32px) saturate(1.4);
+  -webkit-backdrop-filter: blur(32px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.mac-dock-item-active {
-  background: rgba(56, 189, 248, 0.14) !important;
-  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.22), 0 8px 20px rgba(56, 189, 248, 0.12);
+body.mac-desktop-root .mac-dock-item-active {
+  background: color-mix(in srgb, var(--pw-color-data, var(--blue)) 14%, transparent) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pw-color-data, var(--blue)) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--pw-color-data, var(--blue)) 12%, transparent) !important;
 }
 
 @media (max-width: 960px) {

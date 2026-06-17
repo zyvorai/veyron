@@ -661,3 +661,168 @@ html[data-theme='frost'] .toast-warning {
 .theme-swatch-grid-classic {
   grid-template-columns: repeat(4, 1fr);
 }
+
+/* ── PacketWolf shell polish — menubar, dock, desktop canvas ── */
+
+body.mac-desktop-root::before {
+  animation: none !important;
+  filter: none;
+}
+
+body.mac-desktop-root::after {
+  opacity: 0.014;
+}
+
+body.mac-desktop-root .container::before {
+  display: none;
+}
+
+body.mac-desktop-root .mac-menubar.navbar {
+  background: color-mix(in srgb, rgb(18 24 38) 52%, transparent);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.13), transparent 60%);
+  backdrop-filter: blur(var(--blur-liquid)) saturate(1.5);
+  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.5);
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  box-shadow: none;
+}
+
+html[data-theme='tahoe'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='tahoe'] body.mac-desktop-root .mac-dock-inner {
+  background: color-mix(in srgb, rgb(12 18 32) 55%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
+
+html[data-theme='sonoma'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='sonoma'] body.mac-desktop-root .mac-dock-inner {
+  background: color-mix(in srgb, rgb(16 12 28) 58%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+html[data-theme='graphite'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='graphite'] body.mac-desktop-root .mac-dock-inner {
+  background: color-mix(in srgb, rgb(14 14 16) 62%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 6%, transparent);
+}
+
+html[data-theme='wolf'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='wolf'] body.mac-desktop-root .mac-dock-inner,
+html[data-theme='forge'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='forge'] body.mac-desktop-root .mac-dock-inner,
+html[data-theme='ember'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='ember'] body.mac-desktop-root .mac-dock-inner {
+  background: color-mix(in srgb, var(--pw-cockpit-panel-bg) 58%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+html[data-theme='tahoe-light'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='light'] body.mac-desktop-root .mac-menubar.navbar,
+html[data-theme='frost'] body.mac-desktop-root .mac-menubar.navbar {
+  background: color-mix(in srgb, rgba(255, 255, 255, 0.92) 92%, white);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.95), transparent 65%);
+  border-bottom-color: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+body.mac-desktop-root .mac-dock-inner {
+  padding: 0.3rem 0.55rem;
+  border-radius: 1.75rem;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 8px 28px -10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.mac-desktop-root .mac-dock-item {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.85rem;
+}
+
+body.mac-desktop-root .mac-dock-item-active {
+  background: color-mix(in srgb, var(--pw-color-data, var(--blue)) 14%, transparent) !important;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--pw-color-data, var(--blue)) 22%, transparent),
+    0 8px 20px color-mix(in srgb, var(--pw-color-data, var(--blue)) 12%, transparent) !important;
+}
+
+body.mac-desktop-root .mac-dock-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.mac-desktop-root .mac-menu-trigger:hover,
+body.mac-desktop-root .mac-menu-trigger.open {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body.mac-desktop-root .mac-menu-item:hover {
+  background: color-mix(in srgb, var(--pw-color-data, var(--blue)) 10%, transparent);
+}
+
+body.mac-desktop-root .mac-menu-item.active-tier {
+  background: color-mix(in srgb, var(--pw-color-data, var(--blue)) 14%, transparent);
+  color: var(--spark, var(--cyan));
+}
+
+body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
+  background: color-mix(in srgb, var(--pw-cockpit-panel-bg, rgb(28 31 40)) 82%, transparent);
+}
+
+body.mac-desktop-root .cloudos-finder-item.active {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--pw-color-data, var(--blue)) 14%, transparent),
+    color-mix(in srgb, var(--pw-color-data, var(--blue)) 4%, transparent)
+  );
+}
+
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before {
+  background: radial-gradient(
+    ellipse 85% 55% at 50% 0%,
+    color-mix(in srgb, var(--pw-color-data, var(--blue)) 7%, transparent),
+    transparent 58%
+  );
+}
+
+body.mac-desktop-root .vmr-surface-card:hover,
+body.mac-desktop-root .mac-page-window > .card:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data, var(--blue)) 18%, transparent);
+}
+
+body.mac-desktop-root .vmr-tab.active {
+  box-shadow: inset 0 -2px 0 var(--pw-color-data, var(--blue));
+}
+
+.theme-swatch.active {
+  border-color: var(--pw-color-data, var(--blue));
+  box-shadow: 0 0 16px var(--pw-accent-glow, color-mix(in srgb, var(--blue) 25%, transparent));
+}
+
+body.mac-desktop-root .mac-status-island:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data, var(--blue)) 22%, transparent);
+}
+
+body.mac-desktop-root .mac-dynamic-island {
+  backdrop-filter: blur(var(--blur-liquid)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-liquid)) saturate(1.4);
+  box-shadow: 0 4px 24px -8px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body.mac-desktop-root .mac-dynamic-island:hover {
+  transform: scale(1.02);
+}
+
+body.mac-desktop-root .mac-control-center,
+body.mac-desktop-root .mac-notification-center {
+  background: color-mix(in srgb, var(--pw-cockpit-panel-bg, rgb(18 24 38)) 88%, transparent);
+  border-color: var(--glass-border);
+}
+
+html[data-theme='tahoe-light'] body.mac-desktop-root .mac-control-center,
+html[data-theme='light'] body.mac-desktop-root .mac-control-center,
+html[data-theme='frost'] body.mac-desktop-root .mac-control-center {
+  background: color-mix(in srgb, rgba(255, 255, 255, 0.94) 94%, white);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.mac-desktop-root .mac-dynamic-island:hover {
+    transform: none;
+  }
+}
