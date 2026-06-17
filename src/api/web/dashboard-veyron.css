@@ -3139,6 +3139,20 @@ body.mac-desktop-root .vmr-table tbody tr:last-child td {
   align-items: start;
 }
 
+body.mac-desktop-root[data-page="settings"] #finder-sec-ai {
+  display: none;
+}
+
+body.mac-desktop-root[data-page="settings"] .vmr-settings-shell {
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+}
+
+@media (max-width: 900px) {
+  body.mac-desktop-root[data-page="settings"] .vmr-settings-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
 .vmr-settings-nav {
   position: sticky;
   top: calc(var(--cloudos-chrome-top, 48px) + 8px);

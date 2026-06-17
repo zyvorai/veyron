@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618t">
+<meta name="veyron-dashboard-rev" content="20260618u">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618t';
+  var DASH_REV = '20260618u';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -5415,7 +5415,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618t';
+window.__VMROGUE_DASH_REV = '20260618u';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -9397,7 +9397,7 @@ async function runSpotlightSearch(q) {
     spotlightActiveIndex = 0;
     const hint = document.getElementById('spotlight-recents-hint');
     if (hint) hint.textContent = spotlightResults.length + ' results';
-    renderSpotlightResults();
+    renderSpotlightResults(false);
   } catch (e) {
     document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--error)">' + esc(e.message) + '</div>';
   }
@@ -9588,13 +9588,13 @@ function onSpotlightKeydown(e) {
   if (e.key === 'ArrowDown') {
     e.preventDefault();
     spotlightActiveIndex = Math.min(spotlightActiveIndex + 1, spotlightResults.length - 1);
-    renderSpotlightResults();
+    renderSpotlightResults(false);
     return;
   }
   if (e.key === 'ArrowUp') {
     e.preventDefault();
     spotlightActiveIndex = Math.max(spotlightActiveIndex - 1, 0);
-    renderSpotlightResults();
+    renderSpotlightResults(false);
     return;
   }
   if (e.key === 'Enter' && spotlightResults.length > 0) {
