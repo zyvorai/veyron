@@ -154,10 +154,24 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   padding: 20px 24px;
   margin-bottom: 16px;
   border-radius: 16px;
-  background: var(--panel-strong);
+  background: linear-gradient(135deg, var(--panel-strong) 0%, rgba(15, 23, 42, 0.42) 100%);
   border: 1px solid var(--line);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.vmr-page-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--cyan), var(--blue), var(--violet));
+  opacity: 0.88;
 }
 
 .vmr-page-hero h1 {
@@ -188,6 +202,13 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   border-radius: 12px;
   background: var(--panel);
   border: 1px solid var(--line);
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.2s;
+}
+
+.vmr-metric:hover {
+  transform: translateY(-1px);
+  border-color: var(--line-strong);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
 }
 
 .vmr-metric-label {
@@ -226,6 +247,7 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   border-radius: 14px;
   background: var(--panel);
   border: 1px solid var(--line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .vmr-panel-title {
@@ -247,19 +269,21 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--line);
-  background: rgba(63, 124, 255, 0.06);
+  background: linear-gradient(165deg, rgba(63, 124, 255, 0.08), rgba(63, 124, 255, 0.03));
   color: var(--text);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s, box-shadow 0.15s;
 }
 
 .vmr-quick-btn:hover {
   border-color: var(--line-strong);
-  background: rgba(63, 124, 255, 0.12);
+  background: linear-gradient(165deg, rgba(63, 124, 255, 0.14), rgba(63, 124, 255, 0.06));
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(63, 124, 255, 0.1);
 }
 
 .vmr-fleet-toolbar {
@@ -494,6 +518,7 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   font-weight: 800;
   color: var(--green);
   margin-bottom: 12px;
+  box-shadow: var(--glow-healthy);
 }
 
 .vmr-stack-timeline {
@@ -1776,4 +1801,72 @@ html[data-theme="frost"] .vmr-network-flow-wrap {
 .vmr-wl-tab {
   font-size: .78rem;
   padding: 5px 12px;
+}
+
+.vmr-fleet-card-head .vm-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.vmr-fleet-card.running .vm-badge.running {
+  box-shadow: 0 0 12px rgba(50, 224, 176, 0.35);
+}
+
+/* ── VMR polish wave: shared surfaces ── */
+.vmr-fleet-card.running,
+.vmr-fleet-card:not(.stopped):not(.issue) {
+  border-left-color: var(--green);
+}
+
+.vmr-fleet-card.issue::after {
+  background: radial-gradient(ellipse 80% 60% at 100% 0%, rgba(255, 85, 112, 0.08), transparent 55%);
+}
+
+.vmr-fleet-card.stopped::after {
+  background: radial-gradient(ellipse 80% 60% at 100% 0%, rgba(154, 167, 188, 0.06), transparent 55%);
+}
+
+.vmr-filter-chip {
+  transition: border-color 0.15s, background 0.15s, transform 0.12s;
+}
+
+.vmr-filter-chip:hover {
+  transform: translateY(-1px);
+}
+
+.vmr-incident-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.vmr-incident-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+}
+
+.vmr-foundry-rail button.active {
+  border-color: rgba(63, 124, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(63, 124, 255, 0.12);
+}
+
+html[data-theme="frost"] .vmr-page-hero::before {
+  background: linear-gradient(90deg, #0891b2, #2563eb, #7c3aed);
+}
+
+html[data-theme="frost"] .vmr-fleet-card,
+html[data-theme="frost"] .vmr-template-card,
+html[data-theme="frost"] .vmr-metric,
+html[data-theme="frost"] .vmr-panel {
+  background: rgba(255, 255, 255, 0.84);
+}
+
+html[data-theme="frost"] .vmr-quick-btn {
+  background: linear-gradient(165deg, rgba(37, 99, 235, 0.08), rgba(37, 99, 235, 0.03));
+}
+
+html[data-theme="frost"] .vmr-foundry-drawer {
+  background: rgba(255, 255, 255, 0.96);
 }
