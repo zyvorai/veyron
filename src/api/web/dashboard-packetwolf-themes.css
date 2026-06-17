@@ -2538,3 +2538,23 @@ html[data-theme] .mac-menubar-sidebar-btn {
   border-color: var(--glass-border);
   background: color-mix(in srgb, var(--pw-text-primary) 4%, transparent);
 }
+
+/* Zen mode pill — was hardcoded bright cyan; follows info accent per theme */
+html[data-theme] .mac-zen-pill {
+  color: var(--pw-color-info);
+  border-color: color-mix(in srgb, var(--pw-color-info) 35%, transparent);
+  background: color-mix(in srgb, var(--pw-color-info) 10%, transparent);
+}
+
+html[data-theme] .mac-zen-pill:hover {
+  background: color-mix(in srgb, var(--pw-color-info) 16%, transparent);
+  border-color: color-mix(in srgb, var(--pw-color-info) 50%, transparent);
+}
+
+/* Windows OS tag in foundry drawer — violet intentionally kept as OS brand; light themes need readable version */
+html[data-theme='light'] .vmr-fdrawer-tag.win,
+html[data-theme='tahoe-light'] .vmr-fdrawer-tag.win {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.28);
+  color: #7c3aed;
+}
