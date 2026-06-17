@@ -379,7 +379,7 @@
       else if (items.length && items[0].severity === 'warning') intro = 'Action suggested — tap a row or Ask Zeus for details.';
       html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">' + esc(intro) + '</p><ol class="vmr-copilot-list">';
       items.slice(0, 4).forEach(function (item, i) {
-        html += '<li><button type="button" class="vmr-copilot-rec" onclick="runCopilotBriefing(' + i + ')">' +
+        html += '<li><button type="button" class="vmr-copilot-rec" onclick="runCopilotBriefing(' + i + ',\'vmr\')">' +
           esc(item.title) + '<span>' + esc(item.detail || '') + '</span></button></li>';
       });
       html += '</ol>';
@@ -389,7 +389,7 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>' +
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Suggest auto-fixes for fleet issues\')">Auto Fix</button></div>';
     el.innerHTML = html;
-    window._copilotBriefingCache = items;
+    window._vmrCopilotDisplayCache = items;
   };
 
   window.renderVeyronActiveAlerts = function renderVeyronActiveAlerts() {
@@ -1995,7 +1995,13 @@
         renderMissionControlVmr();
       }
       if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
-    } catch (e) { /* alerts optional */ }
+    } catch (e) {
+      var alertEl = document.getElementById('vmr-active-alerts');
+      if (alertEl) {
+        alertEl.innerHTML = '<div class="vmr-panel" style="padding:16px;color:var(--orange);font-size:.84rem">' +
+          esc((e && e.message) || 'Alerts unavailable') + '</div>';
+      }
+    }
   };
 
   window.patchRenderPinnedVms = function patchRenderPinnedVms() {
@@ -2047,7 +2053,12 @@
       if (typeof currentPage !== 'undefined' && currentPage === 'dashboard' && typeof renderMissionControlVmr === 'function') {
         renderMissionControlVmr();
       }
-    } catch (e) { /* costs optional */ }
+    } catch (e) {
+      window.lastCostSummary = '—';
+      if (typeof currentPage !== 'undefined' && currentPage === 'dashboard' && typeof renderMissionControlVmr === 'function') {
+        renderMissionControlVmr();
+      }
+    }
   };
 
   window.patchRefreshVeyron = function patchRefreshVeyron() {
