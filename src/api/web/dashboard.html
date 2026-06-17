@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618e">
+<meta name="veyron-dashboard-rev" content="20260618f">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618e';
+  var DASH_REV = '20260618f';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -3521,7 +3521,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
-<body class="mac-desktop-root" data-desktop-tier="power" data-tier-mode="auto">
+<body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto">
 <header class="navbar cloudos-topbar mac-menubar" role="banner">
   <div class="mac-menubar-left navbar-left">
     <div class="mac-menubar-menus">
@@ -3577,13 +3577,23 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openMissionControlOverlay();closeMacMenus()">Cluster Overview <span class="mac-menu-shortcut">F3</span></button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openLaunchpad();closeMacMenus()">Launchpad</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openSpotlight();closeMacMenus()">Spotlight <span class="mac-menu-shortcut">⌘K</span></button>
+          <button type="button" class="mac-menu-item" role="menuitem" id="mac-menu-zen-toggle" onclick="toggleZenMode();closeMacMenus()">Zen mode</button>
         </div>
       </div>
     </div>
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Hide sidebar" aria-expanded="true" title="Hide sidebar (⌘\)">☰</button>
+    <span class="mac-menubar-title" id="mac-menubar-title">Veyron · Kubernetes VM Command Center</span>
   </div>
   <div class="mac-menubar-center">
-    <input type="search" class="vmr-header-search" id="vmr-header-search" placeholder="Search VMs, templates, commands…" aria-label="Search" onclick="openSpotlight()" readonly>
+    <div class="mac-menubar-center-inner">
+      <input type="search" class="vmr-header-search" id="vmr-header-search" placeholder="Search VMs, templates…" aria-label="Search" onclick="openSpotlight()" readonly>
+      <button type="button" class="mac-alert-pill empty" id="mac-alert-pill" onclick="navigate('events')" title="View alerts">No alerts</button>
+      <div class="mac-quick-nav" role="group" aria-label="Quick navigation">
+        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-home" onclick="navigate('dashboard')">Home</button>
+        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-monitor" onclick="navigate('stack-health')">Monitor</button>
+        <button type="button" class="mac-quick-nav-btn" id="mac-quick-nav-ask" onclick="openAskZeus()">Ask Zeus</button>
+      </div>
+    </div>
     <div class="mac-dynamic-island-wrap">
       <button type="button" class="mac-dynamic-island" id="mac-dynamic-island-btn" onclick="toggleDynamicIsland(event)" aria-expanded="false" title="Fleet status">
         <span style="display:inline-flex;align-items:center;gap:8px;max-width:100%;overflow:hidden">
@@ -3606,7 +3616,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
   </div>
   <div class="navbar-right">
-    <div class="topbar-location" id="topbar-location-wrap">
+    <span class="mac-auth-hint" id="mac-auth-hint" title="API authentication"></span>
+    <div class="topbar-location menubar-tier-advanced-only" id="topbar-location-wrap">
       <span class="topbar-location-meta" id="cluster-context-meta">Location: loading…</span>
       <select class="form-select topbar-location-select" id="cluster-activate-select" style="display:none"></select>
       <button type="button" class="glass-btn-secondary glass-btn-sm topbar-location-btn" id="cluster-activate-btn" onclick="activateClusterContext()" style="display:none">Switch</button>
@@ -3822,7 +3833,21 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <span class="finder-toolbar-title">Finder</span>
     <button type="button" class="finder-collapse-btn" onclick="toggleFinder()" title="Hide sidebar" aria-label="Hide sidebar">‹</button>
   </div>
-  <div class="finder-section" id="finder-sec-favorites" data-finder-section="favorites">
+  <div class="finder-section" id="finder-sec-platform" data-finder-section="platform">
+    <div class="finder-section-label">Platform</div>
+    <div class="finder-section-body" id="finder-platform">
+      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon">♥</span>Stack Health</button>
+      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon">⧉</span>Snapshots &amp; Backups</button>
+      <button type="button" class="cloudos-finder-item" data-page="network-intel" data-min-tier="advanced" onclick="finderNavigate('network-intel')"><span class="fi-icon">⟷</span>Network Intelligence</button>
+      <button type="button" class="cloudos-finder-item" data-page="security" data-min-tier="advanced" onclick="finderNavigate('security')"><span class="fi-icon">⛨</span>Security Posture</button>
+      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon">⚡</span>Event Intelligence</button>
+      <button type="button" class="cloudos-finder-item" data-page="costs" data-min-tier="advanced" onclick="finderNavigate('costs')"><span class="fi-icon">$</span>Cost Explorer</button>
+      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon">◧</span>Workloads</button>
+      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon">⬢</span>Cluster Nodes</button>
+      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon">⚙</span>Settings</button>
+    </div>
+  </div>
+  <div class="finder-section collapsed" id="finder-sec-favorites" data-finder-section="favorites">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span style="display:flex;align-items:center;gap:2px"><span class="finder-count-badge" id="finder-badge-vms"></span><span class="finder-chevron">▾</span></span></button>
     <div class="finder-section-body" id="finder-favorites">
       <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Mission Control</button>
@@ -3832,36 +3857,26 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon">◎</span>VM Capsule</button>
     </div>
   </div>
-  <div class="finder-section" id="finder-sec-operations" data-finder-section="operations">
+  <div class="finder-section collapsed" id="finder-sec-operations" data-finder-section="operations">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('operations')">Operations <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-operations">
-      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon">⧉</span>Snapshots &amp; Backups</button>
-      <button type="button" class="cloudos-finder-item" data-page="network-intel" data-min-tier="advanced" onclick="finderNavigate('network-intel')"><span class="fi-icon">⟷</span>Network Intelligence</button>
-      <button type="button" class="cloudos-finder-item" data-page="security" data-min-tier="advanced" onclick="finderNavigate('security')"><span class="fi-icon">⛨</span>Security Posture</button>
-      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon">♥</span>Stack Health</button>
-      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon">⚡</span>Event Intelligence</button>
-      <button type="button" class="cloudos-finder-item" data-page="costs" data-min-tier="advanced" onclick="finderNavigate('costs')"><span class="fi-icon">$</span>Cost Explorer</button>
-      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon">◧</span>Workloads</button>
-      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon">⬢</span>Cluster Nodes</button>
-      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon">⚙</span>Settings</button>
+      <button type="button" class="cloudos-finder-item" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Mission Control</button>
+      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Fleet Command</button>
+      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">◈</span>Template Foundry</button>
+      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon">▶</span>ConsoleHub</button>
+      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon">◎</span>VM Capsule</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('ai')">Ask Zeus <span class="finder-chevron">▾</span></button>
+    <div class="finder-section-label">Ask Zeus</div>
     <div class="finder-section-body" id="finder-ai">
       <button type="button" class="cloudos-finder-item" onclick="openAskZeus()"><span class="fi-icon">✦</span>Ask Zeus</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon">♥</span>Unhealthy VMs</button>
       <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon">⧉</span>Backup Advisor</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon">▣</span>Storage Doctor</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderSecuritySentinel()"><span class="fi-icon">⛨</span>Security Sentinel</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which VMs are most expensive?')"><span class="fi-icon">$</span>Cost Advisor</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Compliance score for production VMs')"><span class="fi-icon">✓</span>Compliance</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which VMs have operator drift?')"><span class="fi-icon">≠</span>Drift</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which VMs are pending scheduling?')"><span class="fi-icon">⏳</span>Pending VMs</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which namespaces are near quota limits?')"><span class="fi-icon">◫</span>Quotas</button>
     </div>
   </div>
-  <div class="finder-section" id="finder-sec-network" data-finder-section="network">
+  <div class="finder-section collapsed" id="finder-sec-network" data-finder-section="network">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('network')">Network <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-network">
       <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon">⟷</span>Ingress</button>
@@ -4035,6 +4050,13 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <!-- DASHBOARD PAGE -->
 <div class="page active section-shell" id="page-dashboard" data-section="dashboard">
 <div class="space-y animate-fade-in">
+  <div class="mission-control-header-row">
+    <h1>Mission Control</h1>
+    <div class="mission-control-header-meta">
+      <span class="mission-live-badge">Live</span>
+      <span id="mission-last-refresh">Last refresh: —</span>
+    </div>
+  </div>
   <div id="vmr-mission-hero"></div>
   <div id="vmr-mission-metrics"></div>
   <div class="vmr-mission-grid">
@@ -4055,7 +4077,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div id="vmr-active-alerts" class="vmr-alerts-stack"></div>
     </div>
   </div>
-  <div class="dc-pinned-section" id="dc-pinned-section" style="display:none">
+  <div class="dc-pinned-section" id="dc-pinned-section">
     <div class="vmr-panel-title">Pinned VMs</div>
     <div class="vm-card-grid vmr-card-grid" id="dc-pinned-vms"></div>
   </div>
@@ -5765,7 +5787,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618e';
+window.__VMROGUE_DASH_REV = '20260618f';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6195,6 +6217,8 @@ function navigate(page, opts) {
   }
   currentPage = page;
   if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
+  else document.body.classList.toggle('mission-control-home', page === 'dashboard' && document.body.dataset.desktopTier !== 'advanced');
+  if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
   recordSpotlightRecent({ kind: 'page', title: navPageLabel(page), action: 'navigate:' + page });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById('page-' + page);
@@ -6897,6 +6921,7 @@ const SPOTLIGHT_SHELL = [
 ];
 const DESKTOP_TIER_KEY = 'veyron_desktop_tier';
 const DESKTOP_TIER_AUTO_KEY = 'veyron_desktop_tier_auto';
+const ZEN_MODE_KEY = 'veyron_zen_mode';
 const DOCK_PINS_KEY = 'veyron_dock_pins';
 const DOCK_CHANGED_EVENT = 'veyron-dock-changed';
 const WALLPAPER_KEY = 'veyron_wallpaper';
@@ -7113,10 +7138,45 @@ function unlockDockPreviewPage(page) {
 
 function applyDesktopTierUi(tier) {
   document.body.dataset.desktopTier = tier;
+  document.body.classList.toggle('finder-tier-compact', tier !== 'advanced');
   document.querySelectorAll('.mac-menu-item[data-tier-opt]').forEach(btn => {
     const opt = btn.dataset.tierOpt;
     btn.classList.toggle('active-tier', desktopTier === 'auto' ? opt === 'auto' : opt === tier);
   });
+  syncZenMode();
+  if (typeof currentPage !== 'undefined') {
+    document.body.classList.toggle('mission-control-home', currentPage === 'dashboard' && tier !== 'advanced');
+  }
+}
+
+function isZenModeOn() {
+  try {
+    if (localStorage.getItem(ZEN_MODE_KEY) === '1') return true;
+    if (localStorage.getItem(ZEN_MODE_KEY) === '0') return false;
+  } catch (e) {}
+  return desktopTier === 'auto' || isDesktopTierAuto();
+}
+
+function syncZenMode() {
+  const on = isZenModeOn();
+  document.body.classList.toggle('zen-mode-on', on);
+  const menu = document.getElementById('mac-menu-zen-toggle');
+  if (menu) menu.textContent = on ? 'Zen mode on' : 'Zen mode off';
+}
+
+function toggleZenMode() {
+  const on = !isZenModeOn();
+  try { localStorage.setItem(ZEN_MODE_KEY, on ? '1' : '0'); } catch (e) {}
+  syncZenMode();
+  toast(on ? 'Zen mode on' : 'Zen mode off', 'success', 2500);
+}
+
+function syncMissionRefreshLabel() {
+  const el = document.getElementById('mission-last-refresh');
+  const lr = document.getElementById('last-refresh');
+  if (!el) return;
+  const txt = lr && lr.textContent ? lr.textContent.trim() : '';
+  el.textContent = txt ? ('Last refresh: ' + txt) : 'Last refresh: —';
 }
 
 function setDesktopTier(tier, resetPins) {
@@ -7236,6 +7296,9 @@ function updateMacStatusIsland() {
     else islandBtn.classList.add('health-ok');
   }
   renderCloudOsDock();
+  syncZenMode();
+  if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
+  if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
 }
 
 async function refreshIslandAlerts() {
@@ -7768,12 +7831,19 @@ let menubarClockTimer = null;
 
 function updateMenubarClock() {
   const el = document.getElementById('mac-menubar-clock');
-  if (!el) return;
+  const statusClock = document.getElementById('mac-status-clock');
   const d = new Date();
-  el.textContent = d.toLocaleString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric',
-    hour: 'numeric', minute: '2-digit'
-  });
+  if (el) {
+    el.textContent = d.toLocaleString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
+  if (statusClock) {
+    statusClock.textContent = d.toLocaleString(undefined, {
+      hour: 'numeric', minute: '2-digit'
+    });
+  }
 }
 
 function initMenubarClock() {
@@ -7789,6 +7859,9 @@ function initDesktopShell() {
   loadDesktopWallpaper();
   initMenubarClock();
   refreshIslandAlerts();
+  syncZenMode();
+  if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
+  if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
   window.addEventListener(DOCK_CHANGED_EVENT, () => renderCloudOsDock());
   const inner = document.getElementById('cloudos-dock-inner');
   if (inner && !inner.dataset.bound) {
@@ -8713,10 +8786,14 @@ function renderPinnedVms(vms) {
   const sec = document.getElementById('dc-pinned-section');
   const el = document.getElementById('dc-pinned-vms');
   if (!sec || !el) return;
-  const list = (vms || []).slice(0, 4);
-  if (!list.length) { sec.style.display = 'none'; return; }
+  const list = (vms || []).slice(0, 3);
+  const forgeCard = '<button type="button" class="vmr-forge-placeholder" onclick="openCreateModal()">' +
+    '<span class="vmr-forge-placeholder-icon" aria-hidden="true">⬡</span>' +
+    '<span class="vmr-forge-placeholder-label">Forge New VM</span></button>';
   sec.style.display = '';
-  el.innerHTML = list.map(v => pinnedVmCard(typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' })).join('');
+  el.innerHTML = '<div class="vmr-card-grid vmr-card-grid-pinned">' +
+    list.map(v => pinnedVmCard(typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' })).join('') +
+    forgeCard + '</div>';
 }
 
 function renderPinnedVmsFromClient() {
@@ -13254,6 +13331,7 @@ function refresh() {
     void lr.offsetWidth;
     lr.classList.add('refresh-pulse');
   }
+  if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
   refreshIslandAlerts();
   setTimeout(function() {
     const isl = document.getElementById('mac-dynamic-island');
@@ -15425,6 +15503,11 @@ async function fetchIncidents() {
   <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
   <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Ask Zeus</button>
 </nav>
+
+<div class="mac-status-bar" id="mac-status-bar" aria-hidden="true">
+  <span class="mac-zen-indicator" id="mac-zen-indicator">Zen mode on</span>
+  <span class="mac-status-clock" id="mac-status-clock"></span>
+</div>
 
 <footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
   <div class="mac-dock-inner mac-dock-inner-scroll" id="cloudos-dock-inner"></div>

@@ -2,7 +2,7 @@
 
 CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired desktop for Kubernetes-native VM operations. The UI ships as a single self-contained SPA embedded in the Rust binary — no separate frontend build, no CDN at runtime.
 
-**Current dashboard revision:** `20260618d` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
+**Current dashboard revision:** `20260618f` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
 
 ---
 
@@ -46,8 +46,6 @@ The active layout uses `body.mac-desktop-root`. Legacy `veyron-topbar` / `veyron
 
 ### Desktop tiers
 
-### Desktop tiers
-
 Stored in `localStorage` as `veyron_desktop_tier` + `veyron_desktop_tier_auto`. Default: **Automatic** (all pages reachable; UI expands to Advanced chrome when you open platform pages).
 
 | Tier | Finder | Dock pages | Gated pages |
@@ -58,6 +56,22 @@ Stored in `localStorage` as `veyron_desktop_tier` + `veyron_desktop_tier_auto`. 
 | **Advanced** | Visible | Full cluster surface | None |
 
 `autoElevateTierForPage()` bumps manual tiers; Automatic mode skips gating entirely.
+
+### Mock-aligned chrome (Power / Automatic home)
+
+The default Mission Control home matches the `veyron.png` reference layout:
+
+| Surface | Behavior |
+|---|---|
+| **Menubar center** | Search, alert pill, **Home / Monitor / Ask Zeus** quick pills |
+| **Finder Platform rail** | Stack Health → Settings (nine links); Favorites collapsed on Power |
+| **Finder Ask Zeus** | Four shortcuts: Ask Zeus, Unhealthy VMs, Backup Advisor, Storage Doctor |
+| **Mission Control** | Compact title + Live badge; 4-card grid (Fleet Health, Ask Zeus, Quick Actions, Alerts) |
+| **Pinned VMs** | Always visible with dashed **Forge New VM** placeholder |
+| **Status bar** | **Zen mode on** (Automatic tier or View → Zen mode) + large clock above dock |
+| **Advanced home** | Restores hero, metrics strip, and Recent Activity on Mission Control |
+
+Zen mode: `veyron_zen_mode` in `localStorage`, or on by default when desktop tier is Automatic. Hides desktop tabs and shows the status-bar label.
 
 ### Themes & wallpapers
 
@@ -90,7 +104,7 @@ Navigation is client-side: JavaScript toggles `[data-page]` visibility. Labels a
 
 | Page ID | Label | Key content |
 |---|---|---|
-| `home` | Mission Control | Fleet health ring, Ask Zeus recommendations, quick actions, alerts, pinned VMs, activity |
+| `home` | Mission Control | Fleet health ring, Ask Zeus panel, quick actions, alerts, pinned VMs (+ Forge placeholder) |
 | `vms` | Fleet Command | VM cards/table/topology, inspector drawer, bulk lifecycle |
 | `create` | Forge VM | 6-step wizard: Template → Profile → Hardware → Network → Security → Review |
 | `app-store` | Template Foundry | 44+ OS templates, category rail, GPU/Windows/UEFI filters |

@@ -77,16 +77,32 @@
   };
 
   window.syncVeyronTopbar = function syncVeyronTopbar() {
-    if (!document.body.classList.contains('veyron-shell')) return;
-    var pill = document.getElementById('veyron-alerts-pill');
+    var n = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
+    if (!n && typeof lastEvents !== 'undefined' && lastEvents.length) {
+      n = lastEvents.filter(function (e) { return e.type === 'Warning'; }).length;
+    }
+    var pill = document.getElementById('mac-alert-pill');
     if (pill) {
-      var n = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-      if (!n && typeof lastEvents !== 'undefined' && lastEvents.length) {
-        n = lastEvents.filter(function (e) { return e.type === 'Warning'; }).length;
-      }
-      pill.textContent = n ? n + ' Alert' + (n === 1 ? '' : 's') : 'No alerts';
+      pill.textContent = n ? (n + ' alert' + (n === 1 ? '' : 's')) : 'No alerts';
       pill.classList.toggle('empty', !n);
     }
+    var legacyPill = document.getElementById('veyron-alerts-pill');
+    if (legacyPill) {
+      legacyPill.textContent = n ? n + ' Alert' + (n === 1 ? '' : 's') : 'No alerts';
+      legacyPill.classList.toggle('empty', !n);
+    }
+    var authHint = document.getElementById('mac-auth-hint');
+    if (authHint) {
+      var hasKey = false;
+      try { hasKey = !!(localStorage.getItem('veyron_api_key') || sessionStorage.getItem('veyron_api_key')); } catch (e) {}
+      authHint.textContent = hasKey ? 'Authorized with API key' : '';
+      authHint.style.display = hasKey ? '' : 'none';
+    }
+    var homeBtn = document.getElementById('mac-quick-nav-home');
+    var monBtn = document.getElementById('mac-quick-nav-monitor');
+    var page = typeof currentPage !== 'undefined' ? currentPage : 'dashboard';
+    if (homeBtn) homeBtn.classList.toggle('active', page === 'dashboard');
+    if (monBtn) monBtn.classList.toggle('active', page === 'stack-health' || page === 'monitoring');
     var ctxNs = document.getElementById('veyron-context-ns');
     if (ctxNs) {
       ctxNs.textContent = typeof currentNamespace !== 'undefined' ? currentNamespace : 'all';
@@ -180,20 +196,27 @@
     if (!warnings && typeof lastEvents !== 'undefined') {
       warnings = lastEvents.filter(function (e) { return e.type === 'Warning'; }).length;
     }
+    var uiTier = typeof uiTierForPage === 'function' ? uiTierForPage('dashboard') : 'power';
+    var showAdvancedHome = uiTier === 'advanced';
 
-    renderVmrPageHero('vmr-mission-hero', 'Veyron Mission Control',
-      'Kubernetes-native VM command center · ' + ns + ' workspace',
-      '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
-
-    renderVmrMetricsStrip('vmr-mission-metrics', [
-      { label: 'Total VMs', value: vms.length },
-      { label: 'Running', value: running, tone: 'ok' },
-      { label: 'Stopped', value: stopped },
-      { label: 'Failed', value: failed, tone: failed ? 'bad' : '' },
-      { label: 'Open Alerts', value: warnings, tone: warnings ? 'warn' : '' },
-      { label: 'Nodes Ready', value: (nodes.ready_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : '—') },
-      { label: 'Est. Monthly Cost', value: (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—' }
-    ]);
+    if (showAdvancedHome) {
+      renderVmrPageHero('vmr-mission-hero', 'Veyron Mission Control',
+        'Kubernetes-native VM command center · ' + ns + ' workspace',
+        '<button type="button" class="btn-create glass-btn-primary" onclick="openCreateModal()">+ Forge VM</button>');
+      renderVmrMetricsStrip('vmr-mission-metrics', [
+        { label: 'Total VMs', value: vms.length },
+        { label: 'Running', value: running, tone: 'ok' },
+        { label: 'Stopped', value: stopped },
+        { label: 'Failed', value: failed, tone: failed ? 'bad' : '' },
+        { label: 'Open Alerts', value: warnings, tone: warnings ? 'warn' : '' },
+        { label: 'Nodes Ready', value: (nodes.ready_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : '—') },
+        { label: 'Est. Monthly Cost', value: (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—' }
+      ]);
+    } else {
+      heroEl.innerHTML = '';
+      var metricsEl = document.getElementById('vmr-mission-metrics');
+      if (metricsEl) metricsEl.innerHTML = '';
+    }
 
     var qa = document.getElementById('vmr-quick-actions');
     if (qa) {
@@ -207,8 +230,6 @@
         { label: 'Template Foundry', fn: "navigate('app-store')", min: 'normal' },
         { label: 'View Snapshots', fn: "navigate('snapshots')", min: 'power' },
         { label: 'Run Health Scan', fn: "navigate('stack-health')", min: 'power' },
-        { label: 'Network Intelligence', fn: "navigate('network-intel')", min: 'advanced' },
-        { label: 'Cost Explorer', fn: "navigate('costs')", min: 'advanced' },
         { label: 'Ask Zeus', fn: 'openAskZeus()', min: 'normal' }
       ];
       qa.innerHTML = quickActions.filter(function (a) {
@@ -222,10 +243,15 @@
     renderVeyronFleetHealth();
     renderVeyronCopilotPanel();
     renderVeyronActiveAlerts();
-    renderVeyronRecentActivity();
+    if (showAdvancedHome) renderVeyronRecentActivity();
+    else {
+      var recentEl = document.getElementById('vmr-recent-activity');
+      if (recentEl) recentEl.innerHTML = '';
+    }
     renderVeyronMissionBottom();
     if (typeof renderPinnedVmsFromClient === 'function') renderPinnedVmsFromClient();
     if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
+    if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
   };
 
   window.renderVeyronFleetHealth = function renderVeyronFleetHealth() {
@@ -248,7 +274,7 @@
       return '<div class="vmr-health-row"><span>' + esc(label) + '</span><span class="' + (ok ? 'ok' : 'warn') + '">' + esc(detail) + '</span></div>';
     }
     el.innerHTML = '<div class="vmr-health-layout">' +
-      '<div class="vmr-health-ring-lg' + (score >= 85 ? '' : score >= 65 ? ' warn' : ' bad') + '">' +
+      '<div class="vmr-health-ring-xl' + (score >= 85 ? '' : score >= 65 ? ' warn' : ' bad') + '">' +
       '<div class="vmr-health-pct">' + esc(String(score)) + '%</div><div class="vmr-health-lbl">Healthy</div></div>' +
       '<div class="vmr-health-checklist">' +
       row('Compute', cpuPct < 90, cpuPct < 90 ? 'Healthy' : 'Pressure') +
@@ -282,17 +308,26 @@
       if (_stopped > 0) items.push({ title: _stopped + ' VM' + (_stopped > 1 ? 's' : '') + ' not running', detail: 'Start stopped VMs or verify they are intentionally off.', severity: 'warning', action: 'copilot:unhealthy' });
       if (_unprotected != null && _unprotected > 0) items.push({ title: _unprotected + ' VM' + (_unprotected > 1 ? 's' : '') + ' without snapshots', detail: 'Create snapshot policies to protect these VMs.', severity: 'warning', action: 'copilot:backup' });
       if (_warns > 0) items.push({ title: _warns + ' active warning' + (_warns > 1 ? 's' : ''), detail: 'Review the Event Intelligence page for details.', severity: 'warning', action: 'copilot:unhealthy', query: 'Show cluster warnings and events' });
-      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'No critical issues detected. Ask Zeus has no recommendations.', severity: 'info', action: 'open_copilot' });
+      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'Fleet is healthy overall.', severity: 'info', action: 'open_copilot' });
     }
-    var intro = 'Zeus recommendations for your fleet.';
-    if (items.length && items[0].title === 'Fleet looks healthy') intro = items[0].detail || intro;
-    else if (items.length && items[0].severity === 'warning') intro = 'Action suggested — tap a row or Ask Zeus for details.';
-    var html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">' + esc(intro) + '</p><ol class="vmr-copilot-list">';
-    items.slice(0, 4).forEach(function (item, i) {
-      html += '<li><button type="button" class="vmr-copilot-rec" onclick="runCopilotBriefing(' + i + ')">' +
-        esc(item.title) + '<span>' + esc(item.detail || '') + '</span></button></li>';
-    });
-    html += '</ol><div class="vmr-copilot-actions">' +
+    var healthyOnly = items.length === 1 && (
+      items[0].title === 'Fleet is healthy' || items[0].title === 'Fleet looks healthy'
+    );
+    var html = '';
+    if (healthyOnly) {
+      html = '<p class="vmr-copilot-healthy-line">' + esc(items[0].detail || 'Fleet is healthy overall.') + '</p>';
+    } else {
+      var intro = 'Zeus recommendations for your fleet.';
+      if (items.length && items[0].title === 'Fleet looks healthy') intro = items[0].detail || intro;
+      else if (items.length && items[0].severity === 'warning') intro = 'Action suggested — tap a row or Ask Zeus for details.';
+      html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">' + esc(intro) + '</p><ol class="vmr-copilot-list">';
+      items.slice(0, 4).forEach(function (item, i) {
+        html += '<li><button type="button" class="vmr-copilot-rec" onclick="runCopilotBriefing(' + i + ')">' +
+          esc(item.title) + '<span>' + esc(item.detail || '') + '</span></button></li>';
+      });
+      html += '</ol>';
+    }
+    html += '<div class="vmr-copilot-actions">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">View All Recommendations</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>' +
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Suggest auto-fixes for fleet issues\')">Auto Fix</button></div>';
@@ -1747,17 +1782,20 @@
     if (window._veyronPinnedPatch) return;
     window._veyronPinnedPatch = true;
     var orig = window.renderPinnedVms;
+    var forgeCard = '<button type="button" class="vmr-forge-placeholder" onclick="openCreateModal()">' +
+      '<span class="vmr-forge-placeholder-icon" aria-hidden="true">⬡</span>' +
+      '<span class="vmr-forge-placeholder-label">Forge New VM</span></button>';
     window.renderPinnedVms = function (vms) {
       var sec = document.getElementById('dc-pinned-section');
       var el = document.getElementById('dc-pinned-vms');
       if (!sec || !el) return orig ? orig(vms) : undefined;
-      var list = (vms || []).slice(0, 4);
-      if (!list.length) { sec.style.display = 'none'; return; }
+      var list = (vms || []).slice(0, 3);
       sec.style.display = '';
-      el.innerHTML = '<div class="vmr-card-grid">' + list.map(function (v) {
+      var cards = list.map(function (v) {
         var vm = typeof v === 'object' ? v : { name: v, status: 'Running', namespace: 'default' };
         return typeof vmrFleetCard === 'function' ? vmrFleetCard(vm, true) : (typeof pinnedVmCard === 'function' ? pinnedVmCard(vm) : '');
-      }).join('') + '</div>';
+      }).join('');
+      el.innerHTML = '<div class="vmr-card-grid vmr-card-grid-pinned">' + cards + forgeCard + '</div>';
     };
   };
 
