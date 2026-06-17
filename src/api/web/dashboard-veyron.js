@@ -5,9 +5,9 @@
   var VEYRON_NAV = [
     { page: 'dashboard', label: 'Mission Control', icon: '◫' },
     { page: 'vms', label: 'Fleet Command', icon: '▣' },
-    { page: 'app-store', label: 'Template Foundry', icon: '⬡' },
+    { page: 'app-store', label: 'Template Foundry', icon: '◈' },
     { page: 'console-hub', label: 'ConsoleHub', icon: '▶' },
-    { page: 'vm-capsule', label: 'VM Capsule', icon: '⬡' },
+    { page: 'vm-capsule', label: 'VM Capsule', icon: '◎' },
     { page: 'snapshots', label: 'Snapshots & Backups', icon: '⧉' },
     { page: 'network-intel', label: 'Network Intelligence', icon: '⟷' },
     { page: 'security', label: 'Security Posture', icon: '⛨' },
@@ -189,29 +189,35 @@
       { label: 'Total VMs', value: vms.length },
       { label: 'Running', value: running, tone: 'ok' },
       { label: 'Stopped', value: stopped },
-      { label: 'Warnings', value: warnings, tone: warnings ? 'warn' : '' },
+      { label: 'Failed', value: failed, tone: failed ? 'bad' : '' },
+      { label: 'Open Alerts', value: warnings, tone: warnings ? 'warn' : '' },
       { label: 'Nodes Ready', value: (nodes.ready_nodes != null ? nodes.ready_nodes + '/' + nodes.total_nodes : '—') },
-      { label: 'Est. Monthly Cost', value: (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—' },
-      { label: 'Active Alerts', value: warnings || 0, tone: warnings ? 'bad' : '' }
+      { label: 'Est. Monthly Cost', value: (typeof lastCostSummary !== 'undefined' && lastCostSummary) ? lastCostSummary : '—' }
     ]);
 
     var qa = document.getElementById('vmr-quick-actions');
     if (qa) {
-      qa.innerHTML = [
-        { label: 'Forge VM', fn: 'openCreateModal()' },
-        { label: 'Open Console', fn: "navigate('console-hub')" },
-        { label: 'Template Foundry', fn: "navigate('app-store')" },
-        { label: 'View Snapshots', fn: "navigate('snapshots')" },
-        { label: 'Run Health Scan', fn: "navigate('stack-health')" },
-        { label: 'Network Intelligence', fn: "navigate('network-intel')" },
-        { label: 'Cost Explorer', fn: "navigate('costs')" },
-        { label: 'Ask Veyron', fn: 'openAskZeus()' }
-      ].map(function (a) {
+      var tier = typeof desktopTier !== 'undefined' ? desktopTier : 'power';
+      var rank = typeof tierRank === 'function' ? tierRank : function(t) {
+        return ({ normal: 0, power: 1, advanced: 2 })[t] || 0;
+      };
+      var quickActions = [
+        { label: 'Forge VM', fn: 'openCreateModal()', min: 'normal' },
+        { label: 'Open Console', fn: "navigate('console-hub')", min: 'normal' },
+        { label: 'Template Foundry', fn: "navigate('app-store')", min: 'normal' },
+        { label: 'View Snapshots', fn: "navigate('snapshots')", min: 'power' },
+        { label: 'Run Health Scan', fn: "navigate('stack-health')", min: 'power' },
+        { label: 'Network Intelligence', fn: "navigate('network-intel')", min: 'advanced' },
+        { label: 'Cost Explorer', fn: "navigate('costs')", min: 'advanced' },
+        { label: 'Ask Copilot', fn: 'openAskZeus()', min: 'normal' }
+      ];
+      qa.innerHTML = quickActions.filter(function (a) {
+        return rank(tier) >= rank(a.min);
+      }).map(function (a) {
         return '<button type="button" class="vmr-quick-btn" onclick="' + a.fn + '">' + esc(a.label) + '</button>';
       }).join('');
     }
 
-    if (typeof renderCloudOsDatacenter === 'function') renderCloudOsDatacenter();
     if (typeof renderDashboardCommandCenter === 'function') renderDashboardCommandCenter();
     renderVeyronFleetHealth();
     renderVeyronCopilotPanel();

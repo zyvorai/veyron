@@ -30,6 +30,8 @@
   --radius-liquid: 22px;
   --vmr-canvas-max: 1680px;
   --vmr-dock-safe: max(160px, calc(4.5rem + env(safe-area-inset-bottom, 0px)));
+  --cloudos-menubar-h: 40px;
+  --cloudos-tabs-h: 36px;
 }
 
 body.mac-desktop-root {
@@ -1268,6 +1270,34 @@ body.veyron-shell .cloudos-main {
   .vmr-console-hub-layout { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 720px) {
+  .vmr-mission-grid { grid-template-columns: 1fr; }
+  .vmr-mission-bottom-row { grid-template-columns: 1fr; }
+  .vmr-fleet-toolbar { flex-direction: column; align-items: stretch; }
+  .vmr-fleet-toolbar .vmr-fleet-search { max-width: none; }
+}
+
+/* CloudOS chrome — hide duplicate VMR headers when mac page toolbar is active */
+body.mac-desktop-root:not([data-desktop-tier="advanced"]) .vmr-page-hero,
+body.mac-desktop-root:not([data-desktop-tier="advanced"]) .vmr-metrics-strip {
+  display: none !important;
+}
+
+body.mac-desktop-root[data-desktop-tier="advanced"] .vmr-page-hero {
+  display: none !important;
+}
+
+.cloudos-finder-item.tier-locked {
+  opacity: 0.52;
+}
+
+.cloudos-finder-item.tier-locked .fi-icon::after {
+  content: '·';
+  margin-left: 2px;
+  font-size: 0.62rem;
+  color: var(--orange);
+}
+
 /* ── VM Capsule page ── */
 .vmr-capsule-hero {
   display: flex;
@@ -1580,7 +1610,7 @@ body.veyron-shell .cloudos-main {
 }
 .vmr-foundry-drawer {
   position: fixed;
-  top: 56px;
+  top: calc(var(--cloudos-menubar-h, 40px) + var(--cloudos-tabs-h, 0px));
   right: 0;
   width: 420px;
   bottom: 0;
