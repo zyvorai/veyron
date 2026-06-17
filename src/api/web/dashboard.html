@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618a">
+<meta name="veyron-dashboard-rev" content="20260618e">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618a';
+  var DASH_REV = '20260618e';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1374,7 +1374,7 @@ button.glass-stat-pill.clickable-stat:hover,
 .vm-metrics-sparkline canvas{width:100%;height:100%}
 .glass-details-ai{border-color:rgba(139,92,246,.25)}
 /* ═══ Veyron VM-First UX ═══ */
-/* Ask Copilot: single entry on dock — legacy bottom AI bar removed */
+/* Ask Zeus: single entry on dock — legacy bottom AI bar removed */
 .zeus-ai-bar,.zeus-ai-results{display:none!important}
 body.vm-focus-active .vm-list-pane{display:none}
 body.vm-focus-active .vm-workspace{grid-template-columns:1fr}
@@ -3095,8 +3095,8 @@ body.vm-focus-active .mac-inspector-header{display:flex}
   transition:transform .2s ease,background .15s ease;
 }
 .mac-dock-spotlight:hover{transform:scale(1.05);background:rgba(255,255,255,.1)}
-.mac-dock-ask{color:rgba(251,191,36,.95);border-color:rgba(251,191,36,.2);background:rgba(251,191,36,.08)}
-.mac-dock-ask:hover{background:rgba(251,191,36,.14)}
+.mac-dock-ask{color:rgba(196,181,253,.98);border-color:rgba(155,124,255,.35);background:linear-gradient(165deg,rgba(155,124,255,.18),rgba(99,102,241,.08));box-shadow:0 0 0 1px rgba(155,124,255,.12),0 8px 24px rgba(99,102,241,.15)}
+.mac-dock-ask:hover{background:linear-gradient(165deg,rgba(155,124,255,.28),rgba(99,102,241,.12))}
 .dock-editor-list{max-height:240px;overflow-y:auto;margin:0;padding:0;list-style:none}
 .dock-editor-row{
   display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;
@@ -3521,7 +3521,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 </style>
 </head>
-<body class="mac-desktop-root" data-desktop-tier="power">
+<body class="mac-desktop-root" data-desktop-tier="power" data-tier-mode="auto">
 <header class="navbar cloudos-topbar mac-menubar" role="banner">
   <div class="mac-menubar-left navbar-left">
     <div class="mac-menubar-menus">
@@ -3550,6 +3550,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="matrix" onclick="setDesktopWallpaper('matrix')">Wallpaper: Matrix</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ember-glow" onclick="setDesktopWallpaper('ember-glow')">Wallpaper: Ember Glow</button>
           <div class="mac-menu-sep"></div>
+          <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="auto" onclick="setDesktopTier('auto',true)">Desktop: Automatic</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="normal" onclick="setDesktopTier('normal',true)">Desktop: Normal</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="power" onclick="setDesktopTier('power',true)">Desktop: Power user</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="advanced" onclick="setDesktopTier('advanced',true)">Desktop: Advanced</button>
@@ -3566,7 +3567,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('app-store');closeMacMenus()">Template Foundry</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('stack-health');closeMacMenus()">Stack Health</button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="finderNavigate('snapshots');closeMacMenus()">Snapshots &amp; Backups</button>
-          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()">Copilot… <span class="mac-menu-shortcut">⌘J</span></button>
+          <button type="button" class="mac-menu-item" role="menuitem" onclick="openAskZeus();closeMacMenus()">Ask Zeus… <span class="mac-menu-shortcut">⌘J</span></button>
           <button type="button" class="mac-menu-item" role="menuitem" onclick="toggleClassicNav();closeMacMenus()">Browse all pages… <span class="mac-menu-shortcut">⌘⇧B</span></button>
         </div>
       </div>
@@ -3598,7 +3599,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <div class="mac-island-actions">
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();navigate('dashboard')">Home</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();navigate('monitoring')">Monitor</button>
-            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus()">Ask Veyron</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus()">Ask Zeus</button>
           </div>
         </div>
       </button>
@@ -3663,7 +3664,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       </select>
     </div>
     <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
-    <div class="mac-cc-row"><span>Desktop</span><select class="form-select" id="cc-tier-select" onchange="setDesktopTier(this.value,true)"><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
+    <div class="mac-cc-row"><span>Desktop</span><select class="form-select" id="cc-tier-select" onchange="setDesktopTier(this.value,true)"><option value="auto">Automatic</option><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
   </div>
   <div class="mac-cc-section">
     <div class="mac-cc-section-title">Cluster</div>
@@ -3674,7 +3675,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="mac-cc-section-title">Quick actions</div>
     <div class="mac-cc-tiles">
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();toggleClassicNav()"><span class="mac-cc-tile-icon">⋯</span>Browse</button>
-      <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openAskZeus()"><span class="mac-cc-tile-icon">✦</span>Copilot</button>
+      <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openAskZeus()"><span class="mac-cc-tile-icon">✦</span>Ask Zeus</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openSpotlight()"><span class="mac-cc-tile-icon">⌘</span>Spotlight</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openMissionControlOverlay()"><span class="mac-cc-tile-icon">◫</span>Overview</button>
       <button type="button" class="mac-cc-tile" onclick="toggleControlCenter();openLaunchpad()"><span class="mac-cc-tile-icon">⬡</span>Launchpad</button>
@@ -3846,9 +3847,9 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
   </div>
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
-    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('ai')">Copilot <span class="finder-chevron">▾</span></button>
+    <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('ai')">Ask Zeus <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-ai">
-      <button type="button" class="cloudos-finder-item" onclick="openAskZeus()"><span class="fi-icon">✦</span>Copilot</button>
+      <button type="button" class="cloudos-finder-item" onclick="openAskZeus()"><span class="fi-icon">✦</span>Ask Zeus</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon">♥</span>Unhealthy VMs</button>
       <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon">⧉</span>Backup Advisor</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon">▣</span>Storage Doctor</button>
@@ -3919,11 +3920,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="console-drawer-panel copilot-drawer-panel copilot-panel mac-copilot-sheet" tabindex="-1" onclick="event.stopPropagation()">
     <div class="mac-sheet-titlebar">
       <div class="mac-window-traffic" aria-label="Window controls">
-        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeCopilot()" aria-label="Close Ask Copilot"></button>
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeCopilot()" aria-label="Close Ask Zeus"></button>
         <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
         <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
       </div>
-      <div class="mac-sheet-title" id="copilot-title">Copilot</div>
+      <div class="mac-sheet-title" id="copilot-title">Ask Zeus</div>
       <div class="console-drawer-toolbar" style="border:none;padding:0;background:transparent;flex-shrink:0">
         <span id="copilot-mode-badge" class="copilot-module-badge" style="display:none"></span>
         <button type="button" class="glass-btn-primary glass-btn-sm" onclick="runCopilotAsk()">Send</button>
@@ -3933,7 +3934,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="copilot-drawer-body">
     <div id="copilot-context-banner" class="copilot-context-banner"></div>
     <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
-    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Copilot… fleet health, VMs, storage, security" aria-label="Ask Copilot" style="width:100%;font-size:.9rem"></textarea>
+    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Zeus… fleet health, VMs, storage, security" aria-label="Ask Zeus" style="width:100%;font-size:.9rem"></textarea>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
@@ -3982,7 +3983,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="modal-overlay" id="spotlight-modal" role="dialog" aria-modal="true" aria-label="Spotlight search">
   <div class="spotlight-panel zeus-spotlight zeus-glass" onclick="event.stopPropagation()">
     <div class="spotlight-input-wrap">
-      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Open VNC for a VM, forge VM, show unhealthy workloads…" autocomplete="off" spellcheck="false">
+      <input type="text" class="spotlight-input" id="spotlight-input" placeholder="Ask Zeus, open Workloads, forge VM, VNC to a host…" autocomplete="off" spellcheck="false">
     </div>
     <div class="spotlight-results" id="spotlight-results"></div>
     <div class="spotlight-footer" id="spotlight-footer">
@@ -4042,7 +4043,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div id="vmr-fleet-health"></div>
     </div>
     <div class="vmr-panel vmr-copilot-panel-main">
-      <div class="vmr-panel-title">Veyron Copilot <span class="vmr-beta-tag">BETA</span></div>
+      <div class="vmr-panel-title">Ask Zeus <span class="vmr-beta-tag">BETA</span></div>
       <div id="vmr-copilot-recommendations"></div>
     </div>
     <div class="vmr-panel">
@@ -4323,11 +4324,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-blueprint-studio" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Copilot or created here</p></div>
+  <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Ask Zeus or created here</p></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
     <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
-  <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Copilot YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
+  <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zeus YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
@@ -5764,7 +5765,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618a';
+window.__VMROGUE_DASH_REV = '20260618e';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -5856,15 +5857,33 @@ function navPageLabel(page) {
 }
 
 function requiredTierLabel(tier) {
+  if (tier === 'auto') return 'Automatic';
   if (tier === 'power') return 'Power user';
   if (tier === 'advanced') return 'Advanced';
   return 'Normal';
 }
 
-function showTierUpgradePrompt(page) {
+function requiredTierForPage(page) {
   const cat = typeof dockCatalogEntry === 'function' ? dockCatalogEntry(page) : null;
-  const need = (cat && cat.min_tier) ? cat.min_tier : 'advanced';
-  if (tierRank(need) <= tierRank(desktopTier)) return false;
+  if (cat && cat.min_tier) return cat.min_tier;
+  if (document.getElementById('page-' + page)) return 'power';
+  return 'advanced';
+}
+
+/** Auto-elevate Normal → Power → Advanced when opening a gated page (manual tiers only). */
+function autoElevateTierForPage(page) {
+  if (desktopTier === 'auto' || isDesktopTierAuto()) return true;
+  const need = requiredTierForPage(page);
+  if (tierRank(desktopTier) >= tierRank(need)) return true;
+  setDesktopTier(need, false);
+  toast('Switched to ' + requiredTierLabel(need) + ' desktop', 'success');
+  return tierRank(desktopTier) >= tierRank(need);
+}
+
+function showTierUpgradePrompt(page) {
+  const need = requiredTierForPage(page);
+  const effective = desktopTier === 'auto' ? 'power' : desktopTier;
+  if (tierRank(need) <= tierRank(effective)) return false;
   const label = navPageLabel(page);
   toast(label + ' requires ' + requiredTierLabel(need) + ' desktop — Veyron menu → Desktop', 'warning', 9000);
   return true;
@@ -5938,7 +5957,7 @@ const PAGE_META = {
   forecasting: {kicker:'FinOps', title:'Short-horizon cost and capacity forecasting', tags:['Trend view','Confidence','Breaches']},
   operators: {kicker:'Platform', title:'Operators, CRDs, and platform control', tags:['Cluster services','Custom resources','Automation hooks']},
   crds: {kicker:'Platform', title:'Operator-managed Veyron resources', tags:['Custom resources','Templates','Spec state']},
-  'blueprint-studio': {kicker:'Platform', title:'Edit VeyronBlueprint multi-VM designs', tags:['Copilot save','JSON spec','Operator reconcile']},
+  'blueprint-studio': {kicker:'Platform', title:'Edit VeyronBlueprint multi-VM designs', tags:['Ask Zeus save','JSON spec','Operator reconcile']},
   helm: {kicker:'Platform', title:'Helm release inventory and version posture', tags:['Releases','Chart versions','Namespaces']},
   'custom-resources': {kicker:'Platform', title:'Installed CRDs and live resource inventory', tags:['Kinds','Scope','Instance counts']},
   gitops: {kicker:'Platform', title:'Sync status and drift across GitOps sources', tags:['Drift','Branch','Sync state']},
@@ -6166,8 +6185,8 @@ function navigate(page, opts) {
   closeClassicNav();
   if (!opts || !opts.skipTierCheck) {
     if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
-      if (typeof unlockDockPreviewPage === 'function' && unlockDockPreviewPage(page)) {
-        /* tier bumped — continue navigation */
+      if (typeof autoElevateTierForPage === 'function' && autoElevateTierForPage(page)) {
+        /* tier elevated — continue navigation */
       } else {
         showTierUpgradePrompt(page);
         return;
@@ -6175,6 +6194,7 @@ function navigate(page, opts) {
     }
   }
   currentPage = page;
+  if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
   recordSpotlightRecent({ kind: 'page', title: navPageLabel(page), action: 'navigate:' + page });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById('page-' + page);
@@ -6872,10 +6892,11 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Screen Sharing', subtitle: 'Open VMs to connect VNC', action: 'navigate:vms', keys: ['screen', 'sharing', 'vnc', 'connect'] },
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
   { kind: 'action', title: 'Forge a new VM', subtitle: 'Create from template', action: 'forge_vm', keys: ['forge', 'create', 'new vm'] },
-  { kind: 'action', title: 'Copilot', subtitle: 'Fleet AI assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
+  { kind: 'action', title: 'Ask Zeus', subtitle: 'Ask Zeus fleet assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
   { kind: 'action', title: 'Veyron Preferences', subtitle: 'Theme, wallpaper, desktop tier', action: 'mac:preferences', keys: ['preferences', 'settings', 'system'] }
 ];
 const DESKTOP_TIER_KEY = 'veyron_desktop_tier';
+const DESKTOP_TIER_AUTO_KEY = 'veyron_desktop_tier_auto';
 const DOCK_PINS_KEY = 'veyron_dock_pins';
 const DOCK_CHANGED_EVENT = 'veyron-dock-changed';
 const WALLPAPER_KEY = 'veyron_wallpaper';
@@ -6884,17 +6905,30 @@ const DESKTOP_TABS_KEY = 'veyron_desktop_tabs';
 let lastExperienceDesktop = null;
 let islandAlertCount = 0;
 let dynamicIslandOpen = false;
-let desktopTier = 'normal';
+let desktopTier = 'auto';
 let dockEditorPaths = [];
 
 const TIER_RANK = { normal: 0, power: 1, advanced: 2 };
 
+function isDesktopTierAuto() {
+  try { return localStorage.getItem(DESKTOP_TIER_AUTO_KEY) !== '0'; } catch (e) { return true; }
+}
+
 function loadDesktopTier() {
   try {
+    if (localStorage.getItem(DESKTOP_TIER_AUTO_KEY) !== '0') return 'auto';
     const t = localStorage.getItem(DESKTOP_TIER_KEY);
     if (t === 'power' || t === 'advanced' || t === 'normal') return t;
   } catch (e) {}
-  return 'power';
+  return 'auto';
+}
+
+function uiTierForPage(page) {
+  if (desktopTier === 'auto') {
+    const need = requiredTierForPage(page);
+    return tierRank(need) > tierRank('power') ? 'advanced' : 'power';
+  }
+  return desktopTier;
 }
 
 function tierRank(tier) {
@@ -6902,8 +6936,11 @@ function tierRank(tier) {
 }
 
 function isPageAllowedForTier(page, tier) {
+  if (tier === 'auto' || isDesktopTierAuto()) {
+    return !!document.getElementById('page-' + page) || !!dockCatalogEntry(page);
+  }
   const cat = dockCatalogEntry(page);
-  if (!cat) return false;
+  if (!cat) return !!document.getElementById('page-' + page);
   return tierRank(tier) >= tierRank(cat.min_tier);
 }
 
@@ -6932,10 +6969,13 @@ const FALLBACK_DOCK_CATALOG = [
 ];
 
 function dockCatalogList() {
-  if (lastExperienceDesktop && lastExperienceDesktop.dock_catalog && lastExperienceDesktop.dock_catalog.length) {
-    return lastExperienceDesktop.dock_catalog;
+  const byPage = new Map();
+  FALLBACK_DOCK_CATALOG.forEach(function(c) { byPage.set(c.page, c); });
+  const remote = lastExperienceDesktop && lastExperienceDesktop.dock_catalog;
+  if (remote && remote.length) {
+    remote.forEach(function(c) { byPage.set(c.page, c); });
   }
-  return FALLBACK_DOCK_CATALOG;
+  return Array.from(byPage.values());
 }
 
 function dockCatalogEntry(page) {
@@ -6950,7 +6990,7 @@ function defaultDockPathsForTier(tier) {
   const fallbacks = {
     normal: ['dashboard', 'vms', 'app-store', 'console-hub', 'settings'],
     power: ['dashboard', 'vms', 'app-store', 'console-hub', 'snapshots', 'events', 'stack-health', 'settings'],
-    advanced: ['dashboard', 'vms', 'app-store', 'network-intel', 'security', 'costs', 'settings'],
+    advanced: ['dashboard', 'vms', 'app-store', 'console-hub', 'workloads', 'nodes', 'network-intel', 'security', 'costs', 'settings'],
   };
   return (fallbacks[tier] || fallbacks.normal).slice();
 }
@@ -7021,13 +7061,17 @@ function renderCloudOsDock() {
   });
   html += '<div class="mac-dock-divider" aria-hidden="true"></div>';
   html += '<button type="button" class="mac-dock-spotlight" title="Launchpad" aria-label="Launchpad" onclick="openLaunchpad()"><span class="mac-dock-icon">⬡</span></button>';
-  html += '<button type="button" class="mac-dock-item mac-dock-spotlight mac-dock-ask" title="Copilot (⌘J)" aria-label="Copilot" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-tooltip">Copilot <kbd>⌘J</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Copilot</span></button>';
+  html += '<button type="button" class="mac-dock-item mac-dock-spotlight mac-dock-ask" title="Ask Zeus (⌘J)" aria-label="Ask Zeus" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-tooltip">Ask Zeus <kbd>⌘J</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Ask Zeus</span></button>';
   html += '<button type="button" class="mac-dock-item mac-dock-spotlight" title="Spotlight (⌘K)" aria-label="Open Spotlight" onclick="openSpotlight()"><span class="mac-dock-icon">⌘</span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Spotlight</span></button>';
   inner.innerHTML = html;
 }
 
 function dockItemClick(page, isPreview) {
   if (isPreview) {
+    if (desktopTier === 'auto' || isDesktopTierAuto()) {
+      navigate(page);
+      return;
+    }
     if (unlockDockPreviewPage(page)) navigate(page);
     return;
   }
@@ -7070,14 +7114,43 @@ function unlockDockPreviewPage(page) {
 function applyDesktopTierUi(tier) {
   document.body.dataset.desktopTier = tier;
   document.querySelectorAll('.mac-menu-item[data-tier-opt]').forEach(btn => {
-    btn.classList.toggle('active-tier', btn.dataset.tierOpt === tier);
+    const opt = btn.dataset.tierOpt;
+    btn.classList.toggle('active-tier', desktopTier === 'auto' ? opt === 'auto' : opt === tier);
   });
 }
 
 function setDesktopTier(tier, resetPins) {
+  if (tier === 'auto') {
+    desktopTier = 'auto';
+    try {
+      localStorage.setItem(DESKTOP_TIER_AUTO_KEY, '1');
+      localStorage.removeItem(DESKTOP_TIER_KEY);
+    } catch (e) {}
+    document.body.dataset.tierMode = 'auto';
+    applyDesktopTierUi('power');
+    if (resetPins) {
+      try { localStorage.removeItem(DOCK_PINS_KEY); } catch (e) {}
+      saveDockPinPaths(defaultDockPathsForTier('power'));
+    }
+    if (!isFinderMobile()) setFinderCollapsed(false, true);
+    const prefTier = document.getElementById('pref-tier-select');
+    if (prefTier) prefTier.value = 'auto';
+    const ccTier = document.getElementById('cc-tier-select');
+    if (ccTier) ccTier.value = 'auto';
+    renderCloudOsDock();
+    updateMacPageToolbar(currentPage);
+    syncFinderTierLocks();
+    closeMacMenus();
+    toast('Automatic desktop — pages unlock as you explore', 'success', 5000);
+    return;
+  }
   if (tier !== 'normal' && tier !== 'power' && tier !== 'advanced') return;
   desktopTier = tier;
-  try { localStorage.setItem(DESKTOP_TIER_KEY, tier); } catch (e) {}
+  try {
+    localStorage.setItem(DESKTOP_TIER_AUTO_KEY, '0');
+    localStorage.setItem(DESKTOP_TIER_KEY, tier);
+  } catch (e) {}
+  document.body.dataset.tierMode = 'manual';
   applyDesktopTierUi(tier);
   if (resetPins) {
     try { localStorage.removeItem(DOCK_PINS_KEY); } catch (e) {}
@@ -7093,7 +7166,7 @@ function setDesktopTier(tier, resetPins) {
     }
   }
   const prefTier = document.getElementById('pref-tier-select');
-  if (prefTier) prefTier.value = tier;
+  if (prefTier) prefTier.value = desktopTier === 'auto' ? 'auto' : tier;
   renderCloudOsDock();
   updateMacPageToolbar(currentPage);
   syncFinderTierLocks();
@@ -7360,7 +7433,7 @@ function syncControlCenterSelectors() {
   if (theme && ccTheme) ccTheme.value = theme.value;
   if (theme) syncThemeSwatches(theme.value);
   const ccTier = document.getElementById('cc-tier-select');
-  if (ccTier) ccTier.value = desktopTier;
+  if (ccTier) ccTier.value = desktopTier === 'auto' ? 'auto' : desktopTier;
   const ns = document.getElementById('ns-selector');
   const ccNs = document.getElementById('cc-ns-select');
   if (ns && ccNs) {
@@ -7554,7 +7627,7 @@ async function openLaunchpad() {
       { icon: '◫', label: 'Home', action: () => { closeLaunchpad(); navigate('dashboard'); } },
       { icon: '▣', label: navPageLabel('vms'), action: () => { closeLaunchpad(); navigate('vms'); } },
       { icon: '⬡', label: navPageLabel('app-store'), action: () => { closeLaunchpad(); navigate('app-store'); } },
-      { icon: '✦', label: 'Copilot', action: () => { closeLaunchpad(); openAskZeus(); } },
+      { icon: '✦', label: 'Ask Zeus', action: () => { closeLaunchpad(); openAskZeus(); } },
     ];
     templates.slice(0, 24).forEach(t => {
       launchpadApps.push({
@@ -7711,7 +7784,8 @@ function initMenubarClock() {
 
 function initDesktopShell() {
   desktopTier = loadDesktopTier();
-  applyDesktopTierUi(desktopTier);
+  document.body.dataset.tierMode = desktopTier === 'auto' ? 'auto' : 'manual';
+  applyDesktopTierUi(desktopTier === 'auto' ? 'power' : desktopTier);
   loadDesktopWallpaper();
   initMenubarClock();
   refreshIslandAlerts();
@@ -8039,7 +8113,7 @@ function closeClassicNav() {
 
 function finderNavigate(page) {
   if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
-    if (typeof unlockDockPreviewPage === 'function' && unlockDockPreviewPage(page)) {
+    if (typeof autoElevateTierForPage === 'function' && autoElevateTierForPage(page)) {
       navigate(page, { skipTierCheck: true });
       if (isFinderMobile()) closeFinderMobile();
       return;
@@ -8054,15 +8128,15 @@ function finderNavigate(page) {
 }
 
 function syncFinderTierLocks() {
+  const auto = desktopTier === 'auto' || isDesktopTierAuto();
   document.querySelectorAll('.cloudos-finder-item[data-page]').forEach(function(btn) {
     const page = btn.dataset.page;
-    const allowed = typeof isPageAllowedForTier !== 'function' || isPageAllowedForTier(page, desktopTier);
+    const allowed = auto || (typeof isPageAllowedForTier !== 'function' || isPageAllowedForTier(page, desktopTier));
     btn.classList.toggle('tier-locked', !allowed);
     if (allowed) {
       btn.title = '';
     } else {
-      const cat = typeof dockCatalogEntry === 'function' ? dockCatalogEntry(page) : null;
-      const need = (cat && cat.min_tier) ? cat.min_tier : 'advanced';
+      const need = typeof requiredTierForPage === 'function' ? requiredTierForPage(page) : 'advanced';
       btn.title = requiredTierLabel(need) + ' desktop required';
     }
   });
@@ -8098,7 +8172,7 @@ function renderComingSoon(containerId, title, description, icon) {
     '</div>';
 }
 
-/** Primary AI entry — dock “Ask Copilot”, ⌘J, and menus call this. */
+/** Primary AI entry — dock “Ask Zeus”, ⌘J, and menus call this. */
 function openAskZeus(prefill) {
   try {
     if (selectedVmNs && selectedVmName && !(prefill || '').trim()) {
@@ -8181,7 +8255,7 @@ function vmHealthPill(vm) {
   const ns = vm.namespace || 'default';
   const name = vm.name;
   const cls = h.health_score >= 85 ? 'good' : h.health_score >= 65 ? 'fair' : 'bad';
-  return '<button type="button" class="vm-health-pill ' + cls + '" title="Open Copilot Doctor" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>' + h.health_score + '% ' + esc(h.health_label) + '</button>';
+  return '<button type="button" class="vm-health-pill ' + cls + '" title="Open Zeus Doctor" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>' + h.health_score + '% ' + esc(h.health_label) + '</button>';
 }
 
 let appStoreCache = [];
@@ -8302,7 +8376,7 @@ function showVmContextMenu(x, y, ns, name) {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();vmAction(' + jsArgs(ns, name, 'start') + ',event)">Start VM</button><div class="mac-context-sep"></div>';
   }
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, name) + ');},200)">Show in VMs</button>';
-  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Copilot</button>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Zeus</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openSnapModalFor(' + jsArgs(ns, name) + ')">Snapshot</button>';
   menu.innerHTML = html;
@@ -8673,7 +8747,7 @@ function runExperienceAction(action) {
   if (action.indexOf('navigate:') === 0) {
     const target = action.slice(9);
     if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(target, desktopTier)) {
-      if (unlockDockPreviewPage(target)) navigate(target, { skipTierCheck: true });
+      if (typeof autoElevateTierForPage === 'function' && autoElevateTierForPage(target)) navigate(target, { skipTierCheck: true });
       else showTierUpgradePrompt(target);
       return;
     }
@@ -8690,7 +8764,7 @@ function renderCopilotBriefing(items) {
   window._copilotBriefingCache = list;
   if (!list.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = 'flex';
-  let html = '<div class="dc-briefing-label">Copilot briefing</div>';
+  let html = '<div class="dc-briefing-label">Zeus briefing</div>';
   list.forEach(function(item, i) {
     const sev = item.severity || 'info';
     html += '<button type="button" class="dc-briefing-item ' + esc(sev) + '" ' +
@@ -8859,7 +8933,7 @@ function renderCopilotThread() {
     if (m.role === 'user') {
       return '<div class="copilot-msg-user"><span>' + esc(m.content) + '</span></div>';
     }
-    return '<div class="copilot-msg-assistant"><span class="copilot-module-badge">' + esc(m.module || 'Copilot') + '</span><div>' + esc(m.content) + '</div></div>';
+    return '<div class="copilot-msg-assistant"><span class="copilot-module-badge">' + esc(m.module || 'Ask Zeus') + '</span><div>' + esc(m.content) + '</div></div>';
   }).join('');
   el.scrollTop = el.scrollHeight;
 }
@@ -8893,13 +8967,13 @@ function updateCopilotModeBadge(mode, llmConfigured, model) {
     const modelLabel = (model || '').trim();
     if (modelLabel && modelLabel.indexOf('openrouter') !== -1) {
       badge.textContent = 'OpenRouter · ' + modelLabel;
-      badge.title = 'Copilot LLM: ' + modelLabel + ' (' + mode + ')';
+      badge.title = 'Ask Zeus LLM: ' + modelLabel + ' (' + mode + ')';
     } else if (modelLabel) {
       badge.textContent = 'AI · ' + modelLabel + ' (' + mode + ')';
-      badge.title = 'Copilot LLM: ' + modelLabel;
+      badge.title = 'Ask Zeus LLM: ' + modelLabel;
     } else {
       badge.textContent = 'AI · ' + mode;
-      badge.title = 'Copilot LLM mode: ' + mode;
+      badge.title = 'Ask Zeus LLM mode: ' + mode;
     }
   } else {
     badge.textContent = 'Rule-based';
@@ -8925,7 +8999,7 @@ function renderCopilotToolTraceHtml(toolTrace, mode) {
   if (!trace.length && (!mode || mode === 'off' || mode === 'paraphrase')) return '';
   let html = '<div class="copilot-tool-trace">';
   html += '<div class="copilot-tool-trace-label">';
-  html += trace.length ? ('Agent invoked ' + trace.length + ' tool' + (trace.length === 1 ? '' : 's')) : 'Copilot mode';
+  html += trace.length ? ('Agent invoked ' + trace.length + ' tool' + (trace.length === 1 ? '' : 's')) : 'Ask Zeus mode';
   if (mode && mode !== 'off') html += ' · ' + esc(mode);
   html += '</div>';
   if (trace.length) {
@@ -9076,10 +9150,10 @@ function renderCopilotResultInto(el, data, meta) {
     const ringCls = data.health_score >= 85 ? 'good' : data.health_score >= 65 ? 'fair' : 'bad';
     html += '<div class="copilot-result-header">';
     html += '<span class="copilot-health-ring ' + ringCls + '" title="Health score">' + data.health_score + '</span>';
-    html += '<div><span class="copilot-module-badge">' + esc(data.module || 'Copilot') + '</span>';
+    html += '<div><span class="copilot-module-badge">' + esc(data.module || 'Ask Zeus') + '</span>';
     html += '<div style="font-weight:600;margin-top:4px">' + esc(data.title || '') + '</div></div></div>';
   } else {
-    html += '<span class="copilot-module-badge">' + esc(data.module || 'Copilot') + '</span>';
+    html += '<span class="copilot-module-badge">' + esc(data.module || 'Ask Zeus') + '</span>';
     html += '<div style="font-weight:600;margin:8px 0">' + esc(data.title || '') + '</div>';
   }
   if (data.summary) html += '<p style="font-size:.88rem;line-height:1.5;color:var(--text-muted)">' + esc(data.summary) + '</p>';
@@ -9175,7 +9249,7 @@ async function copilotSaveBlueprint() {
 async function copilotExportGitOps() {
   const yaml = window._copilotLastYaml;
   if (!yaml) {
-    toast('No YAML preview — ask Copilot to build a VM manifest first', 'error');
+    toast('No YAML preview — Ask Zeus to build a VM manifest first', 'error');
     return;
   }
   openGlassPrompt({
@@ -9416,7 +9490,7 @@ function runSpotlightAction(action) {
   if (action.indexOf('navigate:') === 0) {
     const target = action.slice(9);
     if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(target, desktopTier)) {
-      if (unlockDockPreviewPage(target)) navigate(target, { skipTierCheck: true });
+      if (typeof autoElevateTierForPage === 'function' && autoElevateTierForPage(target)) navigate(target, { skipTierCheck: true });
       else showTierUpgradePrompt(target);
       return;
     }
@@ -10750,7 +10824,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   } else {
     quick += '<button type="button" class="mac-vm-chip mac-vm-chip-primary" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>';
   }
-  quick += '<button type="button" class="mac-vm-chip mac-vm-chip-ask" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Veyron</button>';
+  quick += '<button type="button" class="mac-vm-chip mac-vm-chip-ask" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>';
   quick += '<button type="button" class="mac-vm-chip" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button></div>';
   let rail = '';
   if (vm.status === 'Running') {
@@ -10979,8 +11053,8 @@ function closeSshPopover() {
 function updateZeusAiPlaceholder() {
   const inp = document.getElementById('copilot-input');
   if (!inp) return;
-  if (selectedVmName) inp.placeholder = 'Ask Copilot about ' + selectedVmName + '…';
-  else inp.placeholder = 'Ask Copilot… fleet health, VMs, storage, security';
+  if (selectedVmName) inp.placeholder = 'Ask Zeus about ' + selectedVmName + '…';
+  else inp.placeholder = 'Ask Zeus… fleet health, VMs, storage, security';
 }
 
 function runZeusAiBar() {
@@ -13438,7 +13512,7 @@ async function fetchAlerts() {
     tb.innerHTML = alerts.map(a => {
       const sevCls = glassTableBadge(a.severity);
       const stCls = glassTableBadge(a.status);
-      return `<tr class="clickable-row" onclick="pageCopilotChip('alerts-copilot-input', ${JSON.stringify('Explain alert ' + (a.name || ''))}, 'Active warning events in namespace')" title="Ask Copilot"><td>${esc(a.name)}</td><td><span class="glass-badge ${sevCls}">${esc(a.severity)}</span></td><td><span class="glass-badge ${stCls}">${esc(a.status)}</span></td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`;
+      return `<tr class="clickable-row" onclick="pageCopilotChip('alerts-copilot-input', ${JSON.stringify('Explain alert ' + (a.name || ''))}, 'Active warning events in namespace')" title="Ask Zeus"><td>${esc(a.name)}</td><td><span class="glass-badge ${sevCls}">${esc(a.severity)}</span></td><td><span class="glass-badge ${stCls}">${esc(a.status)}</span></td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`;
     }).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No active alerts</td></tr>';
   } catch (e) {
@@ -14396,7 +14470,7 @@ async function fetchPerformance() {
           '<div class="glass-stat-pill"><div class="gsl">Profiles</div><div class="gsv">' + items.length + '</div></div>' +
           '<div class="glass-stat-pill' + (avgCpu >= 85 ? ' warn' : '') + '"><div class="gsl">Avg CPU P95</div><div class="gsv">' + avgCpu.toFixed(1) + '%</div></div>' +
           '<div class="glass-stat-pill' + (avgMem >= 85 ? ' warn' : '') + '"><div class="gsl">Avg mem P95</div><div class="gsv">' + avgMem.toFixed(1) + '%</div></div>' +
-          '<div class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Copilot"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></div>';
+          '<div class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Zeus"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></div>';
       }
     }
     if (tb) tb.innerHTML = items.map(p =>
@@ -14680,7 +14754,7 @@ async function fetchCompliance() {
         '<div class="glass-stat-pill"><div class="gsl">Reports</div><div class="gsv">' + reports.length + '</div></div>';
     }
     if (stBody) stBody.innerHTML = statuses.map(s =>
-      '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Copilot about ' + esc(s.framework) + '">' +
+      '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
       '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
       '<td><span class="glass-badge ' + (s.compliant ? 'running' : 'error') + '">' + (s.compliant ? 'yes' : 'no') + '</span></td>' +
       '<td>' + fmtTime(s.last_checked) + '</td></tr>'
@@ -14714,7 +14788,7 @@ async function fetchHeatmap() {
           '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'nodes\')" title="View nodes"><div class="gsl">Nodes</div><div class="gsv">' + nodes.length + '</div></button>' +
           '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs on nodes</div><div class="gsv">' + vms + '</div></button>' +
           '<div class="glass-stat-pill' + (avgHeat >= 0.75 ? ' warn' : '') + '"><div class="gsl">Avg heat</div><div class="gsv">' + avgHeat.toFixed(2) + '</div></div>' +
-          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="heatmapCopilotChip(\'Which nodes are running hot?\')" title="Ask Copilot"><div class="gsl">Hot nodes</div><div class="gsv">' + hot + '</div></button>';
+          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="heatmapCopilotChip(\'Which nodes are running hot?\')" title="Ask Zeus"><div class="gsl">Hot nodes</div><div class="gsv">' + hot + '</div></button>';
       }
     }
     if (!tb) return;
@@ -15349,7 +15423,7 @@ async function fetchIncidents() {
   <button type="button" data-mobile-nav="dashboard" onclick="navigate('dashboard')">Home</button>
   <button type="button" data-mobile-nav="browse" onclick="toggleClassicNav()">Browse</button>
   <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
-  <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Copilot</button>
+  <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Ask Zeus</button>
 </nav>
 
 <footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
@@ -15369,7 +15443,7 @@ async function fetchIncidents() {
     <div class="modal-body">
       <div class="mac-pref-section">
         <div class="mac-pref-section-title">Desktop</div>
-        <div class="mac-cc-row"><span>Density</span><select class="form-select" id="pref-tier-select" onchange="setDesktopTier(this.value,false)"><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
+        <div class="mac-cc-row"><span>Density</span><select class="form-select" id="pref-tier-select" onchange="setDesktopTier(this.value,false)"><option value="auto">Automatic</option><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
       </div>
       <div class="mac-pref-section">
         <div class="mac-pref-section-title">Appearance</div>

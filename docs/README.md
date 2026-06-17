@@ -7,7 +7,22 @@ Veyron — Kubernetes-native KubeVirt VM command center
 | Goal | Document |
 |------|----------|
 | Main README | [README.md](../README.md) |
+| **CloudOS dashboard shell** | [CLOUDOS_VISION.md](CLOUDOS_VISION.md) |
+| **Ask Zeus AI assistant** | [VEYRON_AI.md](VEYRON_AI.md) |
 | **User journeys & acceptance criteria** | [User Stories](USER_STORIES.md) |
+
+## Dashboard & Testing
+
+| Task | Command / doc |
+|------|----------------|
+| Architecture, tiers, themes | [CLOUDOS_VISION.md](CLOUDOS_VISION.md) |
+| AI modules & LLM config | [VEYRON_AI.md](VEYRON_AI.md) |
+| Post-deploy smoke test | `./scripts/verify-veyron-remote.sh HOST [30151]` |
+| Cluster E2E | `./scripts/test-remote.sh HOST USER` |
+| VM daily ops E2E | `VEYRON_API_KEY='…' ./scripts/test-vm-daily-ops-remote.sh HOST` |
+| OpenRouter for Ask Zeus | `./scripts/configure-zeus-openrouter.sh HOST USER` |
+
+Cache-bust the dashboard after UI deploy: `https://HOST:30151/dashboard?dash=<rev>` (see `veyron-dashboard-rev` meta tag in `dashboard.html`).
 
 ## User Stories
 

@@ -1,8 +1,10 @@
-# Veyron AI — Copilot & Lifecycle Intelligence
+# Veyron AI — Ask Zeus & Lifecycle Intelligence
 
 > **Veyron should be the AI-native VM lifecycle brain for KubeVirt** — deploy, inspect, heal, migrate, secure, resize, snapshot, backup, and explain VMs from one simple interface.
 
-This document captures the long-term AI vision and what ships in **v1** today (rule-based copilot that composes real cluster data).
+This document captures the long-term AI vision and what ships in **v1** today (rule-based assistant that composes real cluster data).
+
+**UI branding:** the dashboard calls the assistant **Ask Zeus** (`openAskZeus()`, ⌘J). API routes and internal code still use the `/experience/copilot/*` path prefix.
 
 ## North star
 
@@ -17,7 +19,7 @@ Users ask in plain language; Veyron responds with **root cause**, **evidence fro
 
 | Module | Purpose |
 |--------|---------|
-| **Veyron Copilot** | Natural-language entry point |
+| **Ask Zeus** | Natural-language entry point (UI); API: `POST /experience/copilot/ask` |
 | **Veyron Doctor** | Per-VM health score + issues |
 | **Veyron Error Explainer** | Translate K8s/KubeVirt errors |
 | **Veyron YAML Builder** | Generate + validate VirtualMachine YAML |
@@ -29,7 +31,7 @@ Users ask in plain language; Veyron responds with **root cause**, **evidence fro
 | **Veyron Security Sentinel** | Exposed RDP, policies, drift |
 | **Veyron GitOps Generator** | Repo folders + runbooks |
 
-## v1 shipped (deterministic copilot)
+## v1 shipped (deterministic Ask Zeus)
 
 v1 does **not** require an external LLM. It routes intents to handlers that query KubeVirt/Kubernetes and reuse Veyron templates.
 
@@ -37,7 +39,7 @@ v1 does **not** require an external LLM. It routes intents to handlers that quer
 
 | Route | Module |
 |-------|--------|
-| `POST /experience/copilot/ask` | Copilot — natural language router |
+| `POST /experience/copilot/ask` | Ask Zeus — natural language router |
 | `GET /experience/copilot/doctor/:ns/:name` | Veyron Doctor |
 | `GET /experience/copilot/scheduling/:ns/:name` | Scheduling Explainer |
 | `POST /experience/copilot/yaml/preview` | YAML Builder + validation |
@@ -71,10 +73,14 @@ veyron ai recommend "I need a VM for PostgreSQL"
 
 ### CloudOS UI
 
-- Top bar **Copilot** button → modal → `POST /experience/copilot/ask`
+- **Ask Zeus** — dock ✦ button, ⌘J, Finder section, Control Center tile → modal → `POST /experience/copilot/ask`
+- VM context menu **Ask Zeus** scopes queries to the selected VM
+- Mission Control **Zeus briefing** chips from `GET /experience/home` → `copilot_briefing`
 - Existing **Fix-it** modal still uses `/experience/errors/translate` (same rules as Error Explainer)
 
-### Example Copilot response shape
+See [CLOUDOS_VISION.md](./CLOUDOS_VISION.md) for shell layout, tiers, and themes.
+
+### Example Ask Zeus response shape
 
 ```json
 {
@@ -174,9 +180,9 @@ Evidence, validation, and YAML remain deterministic — LLM only routes or parap
 
 The agent tool registry exposes **27 tools** (all fleet/per-VM advisors plus `yaml_preview` and `explain_error`).
 
-When `VEYRON_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_trace` array showing which deterministic tools ran (displayed as chips in the Copilot modal).
+When `VEYRON_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_trace` array showing which deterministic tools ran (displayed as chips in the Ask Zeus modal).
 
-**Proactive briefing:** `GET /experience/home` includes `copilot_briefing` — up to 3 fleet insights (failed/pending/degraded VMs, node pressure) with one-click Copilot actions on the Datacenter home hero.
+**Proactive briefing:** `GET /experience/home` includes `copilot_briefing` — up to 3 fleet insights (failed/pending/degraded VMs, node pressure) with one-click Ask Zeus actions on the Mission Control hero.
 
 ## Copilot Expansion Pack 3
 

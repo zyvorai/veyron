@@ -65,7 +65,7 @@ pub async fn catalog_advisor(client: &KubeClient) -> CopilotResponse {
             page: Some("catalog".into()),
         },
         CopilotAction {
-            label: "Open Template Store".into(),
+            label: "Open Template Foundry".into(),
             action: "navigate".into(),
             page: Some("app-store".into()),
         },

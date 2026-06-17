@@ -328,7 +328,7 @@ pub fn recommend_template(description: &str) -> CopilotResponse {
     r.recommendations
         .push("Use YAML Builder to preview manifests with cluster validation.".into());
     r.actions.push(CopilotAction {
-        label: "Forge from Template Store".into(),
+        label: "Forge from Template Foundry".into(),
         action: "navigate".into(),
         page: Some("app-store".into()),
     });

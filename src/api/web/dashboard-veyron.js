@@ -209,7 +209,7 @@
         { label: 'Run Health Scan', fn: "navigate('stack-health')", min: 'power' },
         { label: 'Network Intelligence', fn: "navigate('network-intel')", min: 'advanced' },
         { label: 'Cost Explorer', fn: "navigate('costs')", min: 'advanced' },
-        { label: 'Ask Copilot', fn: 'openAskZeus()', min: 'normal' }
+        { label: 'Ask Zeus', fn: 'openAskZeus()', min: 'normal' }
       ];
       qa.innerHTML = quickActions.filter(function (a) {
         return rank(tier) >= rank(a.min);
@@ -282,16 +282,19 @@
       if (_stopped > 0) items.push({ title: _stopped + ' VM' + (_stopped > 1 ? 's' : '') + ' not running', detail: 'Start stopped VMs or verify they are intentionally off.', severity: 'warning', action: 'copilot:unhealthy' });
       if (_unprotected != null && _unprotected > 0) items.push({ title: _unprotected + ' VM' + (_unprotected > 1 ? 's' : '') + ' without snapshots', detail: 'Create snapshot policies to protect these VMs.', severity: 'warning', action: 'copilot:backup' });
       if (_warns > 0) items.push({ title: _warns + ' active warning' + (_warns > 1 ? 's' : ''), detail: 'Review the Event Intelligence page for details.', severity: 'warning', action: 'copilot:unhealthy', query: 'Show cluster warnings and events' });
-      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'No critical issues detected. Copilot has no recommendations.', severity: 'info', action: 'open_copilot' });
+      if (!items.length) items.push({ title: 'Fleet is healthy', detail: 'No critical issues detected. Ask Zeus has no recommendations.', severity: 'info', action: 'open_copilot' });
     }
-    var html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">Fleet is healthy overall.</p><ol class="vmr-copilot-list">';
+    var intro = 'Zeus recommendations for your fleet.';
+    if (items.length && items[0].title === 'Fleet looks healthy') intro = items[0].detail || intro;
+    else if (items.length && items[0].severity === 'warning') intro = 'Action suggested — tap a row or Ask Zeus for details.';
+    var html = '<p style="font-size:.84rem;color:var(--muted);margin:0 0 10px">' + esc(intro) + '</p><ol class="vmr-copilot-list">';
     items.slice(0, 4).forEach(function (item, i) {
       html += '<li><button type="button" class="vmr-copilot-rec" onclick="runCopilotBriefing(' + i + ')">' +
         esc(item.title) + '<span>' + esc(item.detail || '') + '</span></button></li>';
     });
     html += '</ol><div class="vmr-copilot-actions">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">View All Recommendations</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Veyron</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>' +
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Suggest auto-fixes for fleet issues\')">Auto Fix</button></div>';
     el.innerHTML = html;
     window._copilotBriefingCache = items;
@@ -319,6 +322,13 @@
     var firing = alerts.filter(function (a) {
       var st = (a.status || '').toLowerCase();
       return !st || st === 'firing' || st === 'active';
+    });
+    var seen = {};
+    firing = firing.filter(function (a) {
+      var key = (a.name || a.alertname || '') + '|' + String(a.message || a.source || '').slice(0, 48);
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
     }).slice(0, 6);
     if (!firing.length) {
       el.innerHTML = '<p style="font-size:.82rem;color:var(--muted)">No active alerts in scope.</p>';
@@ -413,7 +423,7 @@
       '<div style="font-size:.78rem;color:var(--orange)">Impact: ' + esc(impact) + '</div>' + fixes +
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'events\')">Open events</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrMcMsgCache&&openAskZeus(window._vmrMcMsgCache[' + _mIdx + '])') + '>Ask Veyron</button></div></div>';
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('window._vmrMcMsgCache&&openAskZeus(window._vmrMcMsgCache[' + _mIdx + '])') + '>Ask Zeus</button></div></div>';
   };
 
   window.setVmrFleetView = function setVmrFleetView(mode) {
@@ -762,7 +772,7 @@
       passed + ' / ' + checks.length + ' — ' + (allOk ? 'All Systems Operational' : (checks.length - passed) + ' issue(s) detected'),
       '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openPlatformInstallModal()">Install Stack</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStackHealth(true)">Recheck</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Veyron</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Diagnose KubeVirt stack issues\')">Ask Zeus</button>');
     var ringCls = allOk ? '' : passed >= 2 ? ' warn' : ' bad';
     el.innerHTML =
       '<div class="vmr-stack-hero">' +
@@ -1600,7 +1610,7 @@
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setVmrEventMode(window._vmrEventMode===\'cards\'?\'timeline\':\'cards\')" id="vmr-event-mode-btn">' +
       (window._vmrEventMode === 'timeline' ? 'Card View' : 'Timeline') + '</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchEvents(true)">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Veyron</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>');
     var filterBar = document.getElementById('vmr-events-filter-bar');
     if (filterBar) {
       var filters = ['all', 'Info', 'Warning', 'Failed', 'VMs', 'Images', 'KubeVirt', 'Storage', 'Network', 'Security'];
@@ -1835,7 +1845,7 @@
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof openSnapModalFor===\'function\'?openSnapModalFor(' + jsArgs(ns, vm.name) + '):navigate(\'snapshots\')') + '>Snapshot</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof migrateVM===\'function\'&&migrateVM(' + jsArgs(ns, vm.name) + ')') + '>Migrate</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('typeof cloneVM===\'function\'&&cloneVM(' + jsArgs(ns, vm.name) + ')') + '>Clone</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>Ask Veyron</button>'
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('VM ' + vm.name) + ')') + '>Ask Zeus</button>'
       : (isPaused
           ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('typeof unpauseVM===\'function\'&&unpauseVM(' + jsArgs(ns, vm.name) + ')') + '>Unpause</button>'
           : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, vm.name, 'start') + ')') + '>Start</button>') +
@@ -2119,7 +2129,7 @@
     renderVmrPageHero('vmr-network-intel-hero', 'Veyron Network Intelligence',
       'VM traffic, flows, policies, and live network behavior.',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Veyron</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Analyze network flows\')">Ask Zeus</button>');
     renderVmrMetricsStrip('vmr-network-intel-metrics', [
       { label: 'Live Flows', value: '…' },
       { label: 'Allowed', value: '…', tone: 'ok' },
@@ -2534,7 +2544,7 @@
         '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('forgeFromTemplate(' + jsArgs(tpl.id || tpl.title) + ')') + '>Forge VM</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Customize</button>' +
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(window._vmrFoundryYamlCache||&apos;&apos;)">Export YAML</button>' +
-        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')') + '>Ask Veyron</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Tell me about the ' + (tpl.title || tpl.id) + ' template') + ')') + '>Ask Zeus</button>' +
       '</div>';
     drawer.style.display = 'flex';
     drawer.removeAttribute('aria-hidden');
@@ -2576,7 +2586,7 @@
           (isRunning
             ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, name) + ')') + '>Open Console</button>' +
               '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
-              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain VM ' + name) + ')') + '>Ask Veyron</button>' +
+              '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain VM ' + name) + ')') + '>Ask Zeus</button>' +
               '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>'
             : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('vmAction(' + jsArgs(ns, name, 'start') + ')') + '>Start VM</button>' +
               '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
@@ -2697,7 +2707,7 @@
       'Fleet infrastructure cost · Est. ' + cost + ' / month',
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof runCostAdvisor===\'function\'&&runCostAdvisor()">Cost Advisor</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="typeof fetchCosts===\'function\'&&fetchCosts()">Refresh</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Veyron</button>');
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Optimize my VM infrastructure costs\')">Ask Zeus</button>');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var billed = (typeof window.lastCostVmCount === 'number') ? window.lastCostVmCount : vms.length;
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
