@@ -2506,3 +2506,20 @@ html[data-theme='tahoe-light'] .vmr-foundry-drawer-header {
   background: rgba(241, 245, 249, 0.92);
   border-bottom-color: rgba(15, 23, 42, 0.06);
 }
+
+/* Near-white text elements that become invisible on light backgrounds */
+html[data-theme] .vmr-console-chrome-title {
+  color: var(--pw-text-secondary);
+}
+
+html[data-theme] body.mac-desktop-root .finder-sidebar-toggle {
+  color: var(--text-muted);
+  border-color: var(--glass-border);
+  background: color-mix(in srgb, var(--pw-text-primary) 4%, transparent);
+}
+
+html[data-theme] .mac-menubar-sidebar-btn {
+  color: var(--text-muted);
+  border-color: var(--glass-border);
+  background: color-mix(in srgb, var(--pw-text-primary) 4%, transparent);
+}
