@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618l">
+<meta name="veyron-dashboard-rev" content="20260618m">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618l';
+  var DASH_REV = '20260618m';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2865,8 +2865,8 @@ body.mac-desktop-root[data-wallpaper="tahoe"]::before{
 }
 body.mac-desktop-root{padding-bottom:calc(4.5rem + env(safe-area-inset-bottom,0px))}
 body.mac-desktop-root .container{padding:16px 14px}
-body.mac-desktop-root .cloudos-body-row{min-height:calc(100vh - 40px)}
-body.mac-desktop-root .cloudos-finder{top:40px}
+body.mac-desktop-root .cloudos-body-row{min-height:calc(100dvh - var(--cloudos-menubar-h, 40px))}
+body.mac-desktop-root .cloudos-finder{top:var(--cloudos-menubar-h, 40px)}
 @media(max-width:960px){
   body.mac-desktop-root .cloudos-finder{top:40px}
 }
@@ -2906,23 +2906,54 @@ body.mac-desktop-root .cloudos-finder{top:40px}
 .mac-status-island:hover{border-color:rgba(56,189,248,.3)}
 .mac-status-island .nav-dot{margin:0}
 body[data-desktop-tier="normal"] .mac-desktop-tabs{display:none!important}
+body[data-desktop-tier="power"] .mac-desktop-tabs{display:none!important}
 body[data-desktop-tier="normal"] .topbar-location-wrap{display:none!important}
 body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:72px}
-/* Browse button now available to all tiers */
-body[data-desktop-tier="power"] .mac-desktop-tabs{
-  max-height:none;
-  overflow-x:auto;
-  overflow-y:hidden;
-  flex-wrap:nowrap;
-  scrollbar-width:none;
-}
-body[data-desktop-tier="power"] .mac-desktop-tabs::-webkit-scrollbar{display:none}
 body[data-desktop-tier="advanced"] .menubar-tier-advanced-only{display:flex}
 body:not([data-desktop-tier="advanced"]) .menubar-tier-advanced-only{display:none!important}
 body[data-desktop-tier="normal"] .menubar-tier-collapsible,
 body[data-desktop-tier="power"] .menubar-tier-collapsible{display:none!important}
 body[data-desktop-tier="normal"] .nav-status,
 body[data-desktop-tier="power"] .nav-status{display:none!important}
+/* Power: PacketWolf-style — sidebar + dock only; slim menubar */
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-title,
+body.mac-desktop-root[data-desktop-tier="power"] .finder-toggle,
+body.mac-desktop-root[data-desktop-tier="power"] .vmr-header-search,
+body.mac-desktop-root[data-desktop-tier="power"] .mac-quick-nav,
+body.mac-desktop-root[data-desktop-tier="power"] .btn-nav-browse,
+body.mac-desktop-root[data-desktop-tier="power"] .mac-page-toolbar-wrap{display:none!important}
+body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed) #mac-menubar-sidebar-btn{display:none!important}
+body.mac-desktop-root.finder-collapsed[data-desktop-tier="power"] #mac-menubar-sidebar-btn{display:inline-flex!important}
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center{flex:1;justify-content:center;min-width:0;padding:0 6px}
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-center-inner{max-width:min(320px,42vw)}
+body.mac-desktop-root[data-desktop-tier="power"] .mac-menubar-left{max-width:min(240px,28vw)}
+body.mac-desktop-root[data-desktop-tier="power"] .navbar-right{gap:5px;max-width:min(520px,52vw)}
+body.mac-desktop-root[data-desktop-tier="power"] .mac-auth-hint{display:none!important}
+body.mac-desktop-root[data-desktop-tier="power"] .ns-select{max-width:108px;padding:4px 8px;font-size:.72rem}
+body.mac-desktop-root[data-desktop-tier="power"] #auth-signout-btn{font-size:.68rem;padding:3px 7px}
+/* Advanced: island replaces quick nav + center search */
+body.mac-desktop-root[data-desktop-tier="advanced"] .mac-quick-nav,
+body.mac-desktop-root[data-desktop-tier="advanced"] .vmr-header-search{display:none!important}
+body.mac-desktop-root[data-desktop-tier="advanced"] .mac-menubar-title{display:none!important}
+/* Menubar must stay one row — prevent chrome bleeding into content */
+body.mac-desktop-root .mac-menubar.navbar{
+  flex-wrap:nowrap;overflow:hidden;align-items:center;
+  --cloudos-menubar-h:40px;min-height:var(--cloudos-menubar-h);height:var(--cloudos-menubar-h);
+}
+body.mac-desktop-root .mac-menubar-left{flex:0 1 auto;min-width:0;overflow:hidden}
+body.mac-desktop-root .mac-menubar-center{flex:1 1 auto;min-width:0;overflow:hidden}
+body.mac-desktop-root .navbar-right{flex:0 1 auto;min-width:0;overflow:hidden;flex-shrink:1}
+body.mac-desktop-root .mac-menubar-menus{flex-shrink:0}
+body.mac-desktop-root .mac-menu-trigger{padding:4px 8px;font-size:.78rem}
+body.mac-desktop-root .veyron-menu-wordmark{max-width:5.5rem;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:1280px){
+  body.mac-desktop-root .mac-menubar-title{display:none!important}
+  body.mac-desktop-root .mac-menubar-clock{display:none!important}
+  body.mac-desktop-root .btn-nav-browse{display:none!important}
+}
+@media(max-width:1100px){
+  body.mac-desktop-root .mac-auth-hint{display:none!important}
+}
 /* Dashboard: hide legacy datacenter grid on Normal/Power */
 body[data-desktop-tier="normal"] #page-dashboard .dashboard-quick-stats{display:none!important}
 /* macOS content window — one glass pane per active page */
