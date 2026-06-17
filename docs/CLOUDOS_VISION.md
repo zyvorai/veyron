@@ -75,20 +75,22 @@ Zen mode: `veyron_zen_mode` in `localStorage`, or on by default when desktop tie
 
 ### Themes & wallpapers
 
-Eight themes in Settings → Theme and Control Center:
+Eight themes aligned with PacketWolf macOS Liquid Glass presets (Settings → Theme, Control Center, menubar):
 
-| Theme key | Mood |
-|---|---|
-| `slate` | Default dark blue-grey |
-| `steel` | Cool neutral |
-| `zinc` | Flat grey |
-| `aurora` | Violet/cyan accent |
-| `ember` | Warm orange |
-| `obsidian` | Deep black |
-| `neon` | High-contrast cyber |
-| `frost` | Light mode |
+| Category | Theme key | Mood |
+|---|---|---|
+| macOS | `tahoe` | Default dark Liquid Glass (replaces legacy `slate`) |
+| macOS | `tahoe-light` | Light vibrancy (replaces legacy `frost`) |
+| macOS | `sonoma` | Indigo aurora (replaces legacy `aurora`) |
+| macOS | `graphite` | Neutral pro gray (replaces `steel` / `zinc` / `obsidian`) |
+| Classic | `wolf` | Amber fire (replaces legacy `neon`) |
+| Classic | `forge` | Hot steel red |
+| Classic | `ember` | Deep crimson |
+| Classic | `light` | Daylight ops console |
 
-Keys: `veyron_theme`, `veyron_wallpaper`. Themes auto-pair with wallpaper presets. Frost extends glass tokens across inputs, panels, and toasts.
+Five wallpapers in the picker: `tahoe`, `tahoe-light`, `sonoma`, `graphite`, `aurora`. Classic themes default to `aurora`.
+
+Keys: `veyron_theme`, `veyron_wallpaper`. Themes auto-pair with wallpaper when the user has not set `veyron_wallpaper_manual`. Legacy theme IDs in `localStorage` migrate on load (e.g. `frost` → `tahoe-light`, `slate` → `tahoe`).
 
 ### Typography & density
 

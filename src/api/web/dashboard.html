@@ -4,22 +4,32 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618j">
+<meta name="veyron-dashboard-rev" content="20260618k">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618j';
+  var DASH_REV = '20260618k';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
     return;
   }
+  function parseStoredThemeEarly(raw) {
+    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light'];
+    if (raw && valid.indexOf(raw) >= 0) return raw;
+    if (raw === 'frost') return 'tahoe-light';
+    if (raw === 'aurora') return 'sonoma';
+    if (raw === 'slate' || raw === '' || !raw) return 'tahoe';
+    if (raw === 'steel' || raw === 'zinc' || raw === 'obsidian') return 'graphite';
+    if (raw === 'ember') return 'ember';
+    if (raw === 'neon') return 'wolf';
+    return 'tahoe';
+  }
   try {
-    const savedTheme = localStorage.getItem('veyron_theme');
-    if (savedTheme && savedTheme !== 'slate') {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
+    var savedTheme = parseStoredThemeEarly(localStorage.getItem('veyron_theme'));
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.documentElement.classList.add('theme-' + savedTheme);
   } catch (e) {}
 })();
 </script>
@@ -3497,14 +3507,14 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch.active{border-color:var(--cyan);box-shadow:0 0 16px rgba(39,215,255,.25)}
 .theme-swatch-preview{height:36px;border-radius:10px 10px 0 0}
 .theme-swatch-label{display:block;padding:6px 8px;font-size:.72rem;font-weight:600;color:var(--text-muted);text-align:center}
-.theme-swatch-preview.slate{background:linear-gradient(135deg,#14171c,#3f7cff)}
-.theme-swatch-preview.steel{background:linear-gradient(135deg,#0b1018,#5d90f7)}
-.theme-swatch-preview.zinc{background:linear-gradient(135deg,#17191d,#d4d8de)}
-.theme-swatch-preview.aurora{background:linear-gradient(135deg,#27d7ff,#e879f9)}
-.theme-swatch-preview.ember{background:linear-gradient(135deg,#f97316,#38bdf8)}
-.theme-swatch-preview.obsidian{background:linear-gradient(135deg,#030508,#9b7cff)}
-.theme-swatch-preview.neon{background:linear-gradient(135deg,#00fff0,#ff2d95)}
-.theme-swatch-preview.frost{background:linear-gradient(135deg,#e8edf4,#2563eb)}
+.theme-swatch-preview.tahoe{background:linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)}
+.theme-swatch-preview.tahoe-light{background:linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)}
+.theme-swatch-preview.sonoma{background:linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)}
+.theme-swatch-preview.graphite{background:linear-gradient(135deg,rgb(6,6,8) 0%,rgb(148,163,184) 50%,rgb(203,213,225) 100%)}
+.theme-swatch-preview.wolf{background:linear-gradient(135deg,rgb(9,9,11) 0%,rgb(245,158,11) 55%,rgb(251,191,36) 100%)}
+.theme-swatch-preview.forge{background:linear-gradient(135deg,rgb(12,6,6) 0%,rgb(239,68,68) 55%,rgb(248,113,113) 100%)}
+.theme-swatch-preview.ember{background:linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)}
+.theme-swatch-preview.light{background:linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)}
 .cloudos-mobile-bar{
   display:none;position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(var(--vmr-dock-safe,72px) + 6px);z-index:165;
@@ -3548,13 +3558,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <button type="button" class="mac-menu-item" role="menuitem" onclick="openLaunchpad();closeMacMenus()">Launchpad (Templates)</button>
           <div class="mac-menu-sep"></div>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="tahoe" onclick="setDesktopWallpaper('tahoe')">Wallpaper: Tahoe</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="tahoe-light" onclick="setDesktopWallpaper('tahoe-light')">Wallpaper: Tahoe Light</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="sonoma" onclick="setDesktopWallpaper('sonoma')">Wallpaper: Sonoma</button>
+          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="graphite" onclick="setDesktopWallpaper('graphite')">Wallpaper: Graphite</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="aurora" onclick="setDesktopWallpaper('aurora')">Wallpaper: Aurora</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="midnight" onclick="setDesktopWallpaper('midnight')">Wallpaper: Midnight</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ocean" onclick="setDesktopWallpaper('ocean')">Wallpaper: Ocean</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="nebula" onclick="setDesktopWallpaper('nebula')">Wallpaper: Nebula</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="solar" onclick="setDesktopWallpaper('solar')">Wallpaper: Solar</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="matrix" onclick="setDesktopWallpaper('matrix')">Wallpaper: Matrix</button>
-          <button type="button" class="mac-menu-item" role="menuitem" data-wallpaper-opt="ember-glow" onclick="setDesktopWallpaper('ember-glow')">Wallpaper: Ember Glow</button>
           <div class="mac-menu-sep"></div>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="auto" onclick="setDesktopTier('auto',true)">Desktop: Automatic</button>
           <button type="button" class="mac-menu-item" role="menuitem" data-tier-opt="normal" onclick="setDesktopTier('normal',true)">Desktop: Normal</button>
@@ -3635,14 +3642,18 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
-      <option value="slate">Slate Alloy</option>
-      <option value="steel">Steel</option>
-      <option value="zinc">Zinc Metal</option>
-      <option value="aurora">Aurora</option>
-      <option value="ember">Ember</option>
-      <option value="obsidian">Obsidian</option>
-      <option value="neon">Neon</option>
-      <option value="frost">Frost</option>
+      <optgroup label="macOS">
+        <option value="tahoe">Tahoe</option>
+        <option value="tahoe-light">Tahoe Light</option>
+        <option value="sonoma">Sonoma</option>
+        <option value="graphite">Graphite</option>
+      </optgroup>
+      <optgroup label="Classic">
+        <option value="wolf">Wolf</option>
+        <option value="forge">Forge</option>
+        <option value="ember">Ember</option>
+        <option value="light">Light</option>
+      </optgroup>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
       <option value="all">all</option>
@@ -3666,22 +3677,26 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="mac-cc-section-title">Appearance</div>
     <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
       <span>Theme</span>
-      <div class="theme-swatch-grid" id="cc-theme-swatch-grid" role="radiogroup" aria-label="Theme">
-        <button type="button" class="theme-swatch" data-theme="slate" role="radio" onclick="setTheme('slate')"><span class="theme-swatch-preview slate"></span><span class="theme-swatch-label">Slate</span></button>
-        <button type="button" class="theme-swatch" data-theme="steel" role="radio" onclick="setTheme('steel')"><span class="theme-swatch-preview steel"></span><span class="theme-swatch-label">Steel</span></button>
-        <button type="button" class="theme-swatch" data-theme="zinc" role="radio" onclick="setTheme('zinc')"><span class="theme-swatch-preview zinc"></span><span class="theme-swatch-label">Zinc</span></button>
-        <button type="button" class="theme-swatch" data-theme="aurora" role="radio" onclick="setTheme('aurora')"><span class="theme-swatch-preview aurora"></span><span class="theme-swatch-label">Aurora</span></button>
+      <div class="theme-swatch-group-label">macOS</div>
+      <div class="theme-swatch-grid theme-swatch-grid-macos" id="cc-theme-swatch-grid-macos" role="radiogroup" aria-label="macOS themes">
+        <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
+        <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Tahoe Light</span></button>
+        <button type="button" class="theme-swatch" data-theme="sonoma" role="radio" onclick="setTheme('sonoma')"><span class="theme-swatch-preview sonoma"></span><span class="theme-swatch-label">Sonoma</span></button>
+        <button type="button" class="theme-swatch" data-theme="graphite" role="radio" onclick="setTheme('graphite')"><span class="theme-swatch-preview graphite"></span><span class="theme-swatch-label">Graphite</span></button>
+      </div>
+      <div class="theme-swatch-group-label">Classic</div>
+      <div class="theme-swatch-grid theme-swatch-grid-classic" id="cc-theme-swatch-grid-classic" role="radiogroup" aria-label="Classic themes">
+        <button type="button" class="theme-swatch" data-theme="wolf" role="radio" onclick="setTheme('wolf')"><span class="theme-swatch-preview wolf"></span><span class="theme-swatch-label">Wolf</span></button>
+        <button type="button" class="theme-swatch" data-theme="forge" role="radio" onclick="setTheme('forge')"><span class="theme-swatch-preview forge"></span><span class="theme-swatch-label">Forge</span></button>
         <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
-        <button type="button" class="theme-swatch" data-theme="obsidian" role="radio" onclick="setTheme('obsidian')"><span class="theme-swatch-preview obsidian"></span><span class="theme-swatch-label">Obsidian</span></button>
-        <button type="button" class="theme-swatch" data-theme="neon" role="radio" onclick="setTheme('neon')"><span class="theme-swatch-preview neon"></span><span class="theme-swatch-label">Neon</span></button>
-        <button type="button" class="theme-swatch" data-theme="frost" role="radio" onclick="setTheme('frost')"><span class="theme-swatch-preview frost"></span><span class="theme-swatch-label">Frost</span></button>
+        <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-        <option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option>
-        <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option><option value="frost">Frost</option>
+        <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
+        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option>
       </select>
     </div>
-    <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
+    <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
     <div class="mac-cc-row"><span>Desktop</span><select class="form-select" id="cc-tier-select" onchange="setDesktopTier(this.value,true)"><option value="auto">Automatic</option><option value="normal">Normal</option><option value="power">Power user</option><option value="advanced">Advanced</option></select></div>
   </div>
   <div class="mac-cc-section">
@@ -5864,11 +5879,32 @@ let lastVmForSnap = null;
 const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
-const VALID_THEMES = ['slate', 'steel', 'zinc', 'aurora', 'ember', 'obsidian', 'neon', 'frost'];
-const THEME_WALLPAPER_PAIRING = {
-  aurora: 'aurora', ember: 'ember-glow', obsidian: 'midnight', neon: 'matrix',
-  frost: 'tahoe', steel: 'midnight', zinc: 'ocean', slate: 'tahoe'
+const THEME_PRESETS = [
+  { id: 'tahoe', label: 'Tahoe', category: 'macos', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)' },
+  { id: 'tahoe-light', label: 'Tahoe Light', category: 'macos', defaultWallpaper: 'tahoe-light', previewGradient: 'linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)' },
+  { id: 'sonoma', label: 'Sonoma', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)' },
+  { id: 'graphite', label: 'Graphite', category: 'macos', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(6,6,8) 0%,rgb(148,163,184) 50%,rgb(203,213,225) 100%)' },
+  { id: 'wolf', label: 'Wolf', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(9,9,11) 0%,rgb(245,158,11) 55%,rgb(251,191,36) 100%)' },
+  { id: 'forge', label: 'Forge', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(12,6,6) 0%,rgb(239,68,68) 55%,rgb(248,113,113) 100%)' },
+  { id: 'ember', label: 'Ember', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)' },
+  { id: 'light', label: 'Light', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)' }
+];
+const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
+const LEGACY_THEME_ALIASES = {
+  slate: 'tahoe', frost: 'tahoe-light', aurora: 'sonoma',
+  steel: 'graphite', zinc: 'graphite', obsidian: 'graphite',
+  neon: 'wolf', ember: 'ember'
 };
+const THEME_WALLPAPER_PAIRING = {
+  tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
+  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora'
+};
+
+function parseStoredTheme(raw) {
+  if (raw && VALID_THEMES.includes(raw)) return raw;
+  if (raw && LEGACY_THEME_ALIASES[raw]) return LEGACY_THEME_ALIASES[raw];
+  return 'tahoe';
+}
 const NAV_PAGE_LABELS = {
   dashboard: 'Mission Control',
   vms: 'Fleet Command',
@@ -5956,7 +5992,8 @@ function pulsePageLoading(page) {
   clearTimeout(win._pageLoadTimer);
   win._pageLoadTimer = setTimeout(function() { win.classList.remove('page-loading'); }, 1200);
 }
-const WALLPAPER_IDS = ['tahoe', 'aurora', 'midnight', 'ocean', 'nebula', 'solar', 'matrix', 'ember-glow'];
+const WALLPAPER_IDS = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'aurora', 'midnight', 'ocean', 'nebula', 'solar', 'matrix', 'ember-glow'];
+const WALLPAPER_PICKER_IDS = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'aurora'];
 
 function cssVar(name, fallback) {
   return (getComputedStyle(document.documentElement).getPropertyValue(name) || fallback).trim();
@@ -6073,12 +6110,11 @@ const PAGE_TOOLBAR_ACTIONS = {
 };
 
 function applyTheme(theme, writeStorage) {
-  const t = VALID_THEMES.includes(theme) ? theme : 'slate';
-  if (t === 'slate') {
-    document.documentElement.removeAttribute('data-theme');
-  } else {
-    document.documentElement.setAttribute('data-theme', t);
-  }
+  const t = parseStoredTheme(theme);
+  document.documentElement.setAttribute('data-theme', t);
+  VALID_THEMES.forEach(function(id) {
+    document.documentElement.classList.toggle('theme-' + id, id === t);
+  });
   if (writeStorage !== false) {
     try {
       localStorage.setItem(THEME_KEY, t);
@@ -6219,12 +6255,10 @@ function closeMacToolbarOverflow() {
 document.addEventListener('click', function() { closeMacToolbarOverflow(); });
 
 function initTheme() {
-  let t = 'slate';
-  try {
-    t = localStorage.getItem(THEME_KEY) || 'slate';
-  } catch (e) {}
-  if (!VALID_THEMES.includes(t)) t = 'slate';
-  applyTheme(t, false);
+  let stored = null;
+  try { stored = localStorage.getItem(THEME_KEY); } catch (e) {}
+  const t = parseStoredTheme(stored);
+  applyTheme(t, true);
 }
 
 // Navigation
@@ -15676,22 +15710,26 @@ async function fetchIncidents() {
         <div class="mac-pref-section-title">Appearance</div>
         <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
           <span>Theme</span>
-          <div class="theme-swatch-grid" id="pref-theme-swatch-grid" role="radiogroup" aria-label="Theme">
-            <button type="button" class="theme-swatch" data-theme="slate" role="radio" onclick="setTheme('slate')"><span class="theme-swatch-preview slate"></span><span class="theme-swatch-label">Slate</span></button>
-            <button type="button" class="theme-swatch" data-theme="steel" role="radio" onclick="setTheme('steel')"><span class="theme-swatch-preview steel"></span><span class="theme-swatch-label">Steel</span></button>
-            <button type="button" class="theme-swatch" data-theme="zinc" role="radio" onclick="setTheme('zinc')"><span class="theme-swatch-preview zinc"></span><span class="theme-swatch-label">Zinc</span></button>
-            <button type="button" class="theme-swatch" data-theme="aurora" role="radio" onclick="setTheme('aurora')"><span class="theme-swatch-preview aurora"></span><span class="theme-swatch-label">Aurora</span></button>
+          <div class="theme-swatch-group-label">macOS</div>
+          <div class="theme-swatch-grid theme-swatch-grid-macos" id="pref-theme-swatch-grid-macos" role="radiogroup" aria-label="macOS themes">
+            <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
+            <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Tahoe Light</span></button>
+            <button type="button" class="theme-swatch" data-theme="sonoma" role="radio" onclick="setTheme('sonoma')"><span class="theme-swatch-preview sonoma"></span><span class="theme-swatch-label">Sonoma</span></button>
+            <button type="button" class="theme-swatch" data-theme="graphite" role="radio" onclick="setTheme('graphite')"><span class="theme-swatch-preview graphite"></span><span class="theme-swatch-label">Graphite</span></button>
+          </div>
+          <div class="theme-swatch-group-label">Classic</div>
+          <div class="theme-swatch-grid theme-swatch-grid-classic" id="pref-theme-swatch-grid-classic" role="radiogroup" aria-label="Classic themes">
+            <button type="button" class="theme-swatch" data-theme="wolf" role="radio" onclick="setTheme('wolf')"><span class="theme-swatch-preview wolf"></span><span class="theme-swatch-label">Wolf</span></button>
+            <button type="button" class="theme-swatch" data-theme="forge" role="radio" onclick="setTheme('forge')"><span class="theme-swatch-preview forge"></span><span class="theme-swatch-label">Forge</span></button>
             <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
-            <button type="button" class="theme-swatch" data-theme="obsidian" role="radio" onclick="setTheme('obsidian')"><span class="theme-swatch-preview obsidian"></span><span class="theme-swatch-label">Obsidian</span></button>
-            <button type="button" class="theme-swatch" data-theme="neon" role="radio" onclick="setTheme('neon')"><span class="theme-swatch-preview neon"></span><span class="theme-swatch-label">Neon</span></button>
-            <button type="button" class="theme-swatch" data-theme="frost" role="radio" onclick="setTheme('frost')"><span class="theme-swatch-preview frost"></span><span class="theme-swatch-label">Frost</span></button>
+            <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
-            <option value="slate">Slate</option><option value="steel">Steel</option><option value="zinc">Zinc</option>
-            <option value="aurora">Aurora</option><option value="ember">Ember</option><option value="obsidian">Obsidian</option><option value="neon">Neon</option><option value="frost">Frost</option>
+            <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
+            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option>
           </select>
         </div>
-        <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="aurora">Aurora</option><option value="midnight">Midnight</option><option value="ocean">Ocean</option><option value="nebula">Nebula</option><option value="solar">Solar</option><option value="matrix">Matrix</option><option value="ember-glow">Ember Glow</option></select></div>
+        <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
       </div>
       <div class="mac-pref-section">
         <div class="mac-pref-section-title">Cluster</div>

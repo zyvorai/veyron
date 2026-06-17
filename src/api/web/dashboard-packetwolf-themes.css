@@ -1,0 +1,663 @@
+/* PacketWolf macOS + Classic theme accents — ported for Veyron CloudOS */
+
+:root {
+  --zeus-tone-sky: #7dd3fc;
+  --zeus-tone-violet: #c4b5fd;
+  --zeus-tone-emerald: #6ee7b7;
+  --zeus-tone-amber: #fcd34d;
+  --zeus-tone-red: #fca5a5;
+  --pw-cockpit-panel-bg: rgb(18 24 38);
+}
+
+html[data-theme='tahoe'],
+html.theme-tahoe {
+  --zeus-tone-sky: #5ac8fa;
+  --zeus-tone-violet: #bf5af2;
+  --zeus-tone-emerald: #34d399;
+  --zeus-tone-amber: #fcd34d;
+  --zeus-tone-red: #fca5a5;
+  --pw-color-data: #007aff;
+  --pw-color-network: #007aff;
+  --pw-color-info: #5ac8fa;
+  --pw-color-ai: #bf5af2;
+  --pw-color-success: #34d399;
+  --pw-color-warning: #fcd34d;
+  --pw-color-critical: #fca5a5;
+  --pw-table-accent: #007aff;
+  --pw-accent-glow: color-mix(in srgb, #007aff 12%, transparent);
+  --pw-cockpit-panel-bg: rgb(12 18 32);
+  --pw-chart-1: #007aff;
+  --pw-chart-2: #34d399;
+  --pw-chart-3: #fcd34d;
+  --pw-chart-4: #fca5a5;
+  --pw-chart-5: #bf5af2;
+  --pw-chart-6: #5ac8fa;
+  --pw-chart-7: #f97316;
+  --pw-chart-8: #ec4899;
+  --pw-chart-9: #84cc16;
+  --pw-chart-10: #6366f1;
+  --pw-chart-11: #14b8a6;
+  --pw-chart-12: #fb7185;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+  --bg-0: rgb(8, 12, 22);
+  --bg-1: rgb(12, 18, 32);
+  --bg-2: rgb(18, 24, 38);
+  --panel: color-mix(in srgb, rgb(12 18 32) 78%, transparent);
+  --panel-strong: color-mix(in srgb, rgb(18 24 38) 90%, transparent);
+  --line: color-mix(in srgb, var(--blue) 18%, transparent);
+  --line-strong: color-mix(in srgb, var(--violet) 28%, transparent);
+  --glass-bg: color-mix(in srgb, rgb(12 18 32) 76%, transparent);
+  --glass-border: color-mix(in srgb, var(--blue) 12%, transparent);
+  --text: #e8f0ff;
+  --text-bright: #f8fbff;
+  --text-muted: #94a3b8;
+  --muted: var(--text-muted);
+  --bg: var(--bg-2);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+}
+
+html[data-theme='tahoe-light'],
+html.theme-tahoe-light {
+  --zeus-tone-sky: #64d2ff;
+  --zeus-tone-violet: #af52de;
+  --zeus-tone-emerald: #30d158;
+  --zeus-tone-amber: #ffd60a;
+  --zeus-tone-red: #ff6961;
+  --pw-color-data: #0a84ff;
+  --pw-color-network: #0a84ff;
+  --pw-color-info: #64d2ff;
+  --pw-color-ai: #af52de;
+  --pw-color-success: #30d158;
+  --pw-color-warning: #ffd60a;
+  --pw-color-critical: #ff6961;
+  --pw-table-accent: #0a84ff;
+  --pw-accent-glow: color-mix(in srgb, #0a84ff 14%, transparent);
+  --pw-cockpit-panel-bg: rgb(240 244 250);
+  --pw-chart-1: #0a84ff;
+  --pw-chart-2: #30d158;
+  --pw-chart-3: #ffd60a;
+  --pw-chart-4: #ff6961;
+  --pw-chart-5: #af52de;
+  --pw-chart-6: #64d2ff;
+  --pw-chart-7: #ea580c;
+  --pw-chart-8: #db2777;
+  --pw-chart-9: #65a30d;
+  --pw-chart-10: #4f46e5;
+  --pw-chart-11: #0d9488;
+  --pw-chart-12: #e11d48;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+}
+
+html[data-theme='sonoma'],
+html.theme-sonoma {
+  --zeus-tone-sky: #a78bfa;
+  --zeus-tone-violet: #8b5cf6;
+  --zeus-tone-emerald: #6ee7b7;
+  --zeus-tone-amber: #fbbf24;
+  --zeus-tone-red: #f472b6;
+  --pw-color-data: #8b5cf6;
+  --pw-color-network: #8b5cf6;
+  --pw-color-info: #a78bfa;
+  --pw-color-ai: #c084fc;
+  --pw-color-success: #6ee7b7;
+  --pw-color-warning: #fbbf24;
+  --pw-color-critical: #f472b6;
+  --pw-table-accent: #8b5cf6;
+  --pw-accent-glow: color-mix(in srgb, #8b5cf6 14%, transparent);
+  --pw-cockpit-panel-bg: rgb(16 12 28);
+  --pw-chart-1: #8b5cf6;
+  --pw-chart-2: #6ee7b7;
+  --pw-chart-3: #fbbf24;
+  --pw-chart-4: #f472b6;
+  --pw-chart-5: #c084fc;
+  --pw-chart-6: #6366f1;
+  --pw-chart-7: #f97316;
+  --pw-chart-8: #ec4899;
+  --pw-chart-9: #a855f7;
+  --pw-chart-10: #818cf8;
+  --pw-chart-11: #14b8a6;
+  --pw-chart-12: #fb7185;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+  --bg-0: rgb(10, 8, 20);
+  --bg-1: rgb(16, 12, 28);
+  --bg-2: rgb(22, 18, 36);
+  --panel: color-mix(in srgb, rgb(16 12 28) 78%, transparent);
+  --panel-strong: color-mix(in srgb, rgb(22 18 36) 90%, transparent);
+  --line: color-mix(in srgb, var(--blue) 20%, transparent);
+  --line-strong: color-mix(in srgb, var(--violet) 32%, transparent);
+  --glass-bg: color-mix(in srgb, rgb(16 12 28) 76%, transparent);
+  --glass-border: color-mix(in srgb, var(--blue) 14%, transparent);
+  --text: #ede9fe;
+  --text-bright: #faf5ff;
+  --text-muted: #a78bfa;
+  --muted: var(--text-muted);
+  --bg: var(--bg-2);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+}
+
+html[data-theme='graphite'],
+html.theme-graphite {
+  --zeus-tone-sky: #cbd5e1;
+  --zeus-tone-violet: #a1a1aa;
+  --zeus-tone-emerald: #86efac;
+  --zeus-tone-amber: #d4d4d8;
+  --zeus-tone-red: #f87171;
+  --pw-color-data: #94a3b8;
+  --pw-color-network: #94a3b8;
+  --pw-color-info: #cbd5e1;
+  --pw-color-ai: #a1a1aa;
+  --pw-color-success: #86efac;
+  --pw-color-warning: #d4d4d8;
+  --pw-color-critical: #f87171;
+  --pw-table-accent: #a1a1aa;
+  --pw-accent-glow: color-mix(in srgb, #94a3b8 10%, transparent);
+  --pw-cockpit-panel-bg: rgb(16 16 18);
+  --pw-chart-1: #94a3b8;
+  --pw-chart-2: #86efac;
+  --pw-chart-3: #d4d4d8;
+  --pw-chart-4: #f87171;
+  --pw-chart-5: #a1a1aa;
+  --pw-chart-6: #64748b;
+  --pw-chart-7: #71717a;
+  --pw-chart-8: #52525b;
+  --pw-chart-9: #78716c;
+  --pw-chart-10: #6b7280;
+  --pw-chart-11: #9ca3af;
+  --pw-chart-12: #e4e4e7;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+  --bg-0: rgb(6, 6, 8);
+  --bg-1: rgb(12, 12, 14);
+  --bg-2: rgb(18, 18, 20);
+  --panel: color-mix(in srgb, rgb(16 16 18) 82%, transparent);
+  --panel-strong: color-mix(in srgb, rgb(22 22 24) 92%, transparent);
+  --line: color-mix(in srgb, var(--blue) 14%, transparent);
+  --line-strong: color-mix(in srgb, #cbd5e1 24%, transparent);
+  --glass-bg: color-mix(in srgb, rgb(16 16 18) 80%, transparent);
+  --glass-border: color-mix(in srgb, #94a3b8 12%, transparent);
+  --text: #e4e4e7;
+  --text-bright: #fafafa;
+  --text-muted: #a1a1aa;
+  --muted: var(--text-muted);
+  --bg: var(--bg-2);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+}
+
+html[data-theme='wolf'],
+html.theme-wolf {
+  --zeus-tone-sky: #fbbf24;
+  --zeus-tone-violet: #fcd34d;
+  --zeus-tone-emerald: #84cc16;
+  --zeus-tone-amber: #f59e0b;
+  --zeus-tone-red: #ef4444;
+  --pw-color-data: #f59e0b;
+  --pw-color-network: #f59e0b;
+  --pw-color-info: #fbbf24;
+  --pw-color-ai: #fcd34d;
+  --pw-color-success: #84cc16;
+  --pw-color-warning: #fbbf24;
+  --pw-color-critical: #ef4444;
+  --pw-table-accent: #f59e0b;
+  --pw-accent-glow: color-mix(in srgb, #f59e0b 14%, transparent);
+  --pw-cockpit-panel-bg: rgb(14 12 10);
+  --pw-chart-1: #f59e0b;
+  --pw-chart-2: #84cc16;
+  --pw-chart-3: #fbbf24;
+  --pw-chart-4: #ef4444;
+  --pw-chart-5: #fcd34d;
+  --pw-chart-6: #fb923c;
+  --pw-chart-7: #ea580c;
+  --pw-chart-8: #dc2626;
+  --pw-chart-9: #a3e635;
+  --pw-chart-10: #f97316;
+  --pw-chart-11: #ca8a04;
+  --pw-chart-12: #b91c1c;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+  --bg-0: rgb(9, 9, 11);
+  --bg-1: rgb(14, 12, 10);
+  --bg-2: rgb(20, 16, 12);
+  --panel: color-mix(in srgb, rgb(14 12 10) 80%, transparent);
+  --panel-strong: color-mix(in srgb, rgb(20 16 12) 92%, transparent);
+  --line: color-mix(in srgb, var(--blue) 20%, transparent);
+  --line-strong: color-mix(in srgb, #fbbf24 30%, transparent);
+  --glass-bg: color-mix(in srgb, rgb(14 12 10) 78%, transparent);
+  --glass-border: color-mix(in srgb, var(--blue) 14%, transparent);
+  --text: #fef3c7;
+  --text-bright: #fffbeb;
+  --text-muted: #d6d3d1;
+  --muted: var(--text-muted);
+  --bg: var(--bg-2);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+}
+
+html[data-theme='forge'],
+html.theme-forge {
+  --zeus-tone-sky: #f87171;
+  --zeus-tone-violet: #fb7185;
+  --zeus-tone-emerald: #4ade80;
+  --zeus-tone-amber: #f97316;
+  --zeus-tone-red: #ef4444;
+  --pw-color-data: #ef4444;
+  --pw-color-network: #ef4444;
+  --pw-color-info: #f87171;
+  --pw-color-ai: #fb7185;
+  --pw-color-success: #4ade80;
+  --pw-color-warning: #f97316;
+  --pw-color-critical: #ef4444;
+  --pw-table-accent: #ef4444;
+  --pw-accent-glow: color-mix(in srgb, #ef4444 14%, transparent);
+  --pw-cockpit-panel-bg: rgb(18 10 10);
+  --pw-chart-1: #ef4444;
+  --pw-chart-2: #4ade80;
+  --pw-chart-3: #f97316;
+  --pw-chart-4: #dc2626;
+  --pw-chart-5: #fb7185;
+  --pw-chart-6: #f87171;
+  --pw-chart-7: #ea580c;
+  --pw-chart-8: #b91c1c;
+  --pw-chart-9: #22c55e;
+  --pw-chart-10: #f59e0b;
+  --pw-chart-11: #991b1b;
+  --pw-chart-12: #7f1d1d;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+  --bg-0: rgb(12, 6, 6);
+  --bg-1: rgb(18, 10, 10);
+  --bg-2: rgb(24, 14, 14);
+  --panel: color-mix(in srgb, rgb(18 10 10) 80%, transparent);
+  --panel-strong: color-mix(in srgb, rgb(24 14 14) 92%, transparent);
+  --line: color-mix(in srgb, var(--blue) 20%, transparent);
+  --line-strong: color-mix(in srgb, #fb7185 30%, transparent);
+  --glass-bg: color-mix(in srgb, rgb(18 10 10) 78%, transparent);
+  --glass-border: color-mix(in srgb, var(--blue) 14%, transparent);
+  --text: #fecaca;
+  --text-bright: #fff1f2;
+  --text-muted: #fca5a5;
+  --muted: var(--text-muted);
+  --bg: var(--bg-2);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+}
+
+html[data-theme='ember'],
+html.theme-ember {
+  --zeus-tone-sky: #991b1b;
+  --zeus-tone-violet: #7f1d1d;
+  --zeus-tone-emerald: #4ade80;
+  --zeus-tone-amber: #fb923c;
+  --zeus-tone-red: #dc2626;
+  --pw-color-data: #dc2626;
+  --pw-color-network: #dc2626;
+  --pw-color-info: #991b1b;
+  --pw-color-ai: #7f1d1d;
+  --pw-color-success: #4ade80;
+  --pw-color-warning: #fb923c;
+  --pw-color-critical: #dc2626;
+  --pw-table-accent: #dc2626;
+  --pw-accent-glow: color-mix(in srgb, #dc2626 16%, transparent);
+  --pw-cockpit-panel-bg: rgb(12 6 6);
+  --pw-chart-1: #dc2626;
+  --pw-chart-2: #4ade80;
+  --pw-chart-3: #fb923c;
+  --pw-chart-4: #991b1b;
+  --pw-chart-5: #7f1d1d;
+  --pw-chart-6: #ef4444;
+  --pw-chart-7: #b91c1c;
+  --pw-chart-8: #450a0a;
+  --pw-chart-9: #22c55e;
+  --pw-chart-10: #f97316;
+  --pw-chart-11: #881337;
+  --pw-chart-12: #fca5a5;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+  --bg-0: rgb(6, 0, 0);
+  --bg-1: rgb(12, 6, 6);
+  --bg-2: rgb(18, 8, 8);
+  --panel: color-mix(in srgb, rgb(12 6 6) 82%, transparent);
+  --panel-strong: color-mix(in srgb, rgb(18 8 8) 92%, transparent);
+  --line: color-mix(in srgb, var(--blue) 22%, transparent);
+  --line-strong: color-mix(in srgb, #dc2626 34%, transparent);
+  --glass-bg: color-mix(in srgb, rgb(12 6 6) 80%, transparent);
+  --glass-border: color-mix(in srgb, var(--blue) 16%, transparent);
+  --text: #fecaca;
+  --text-bright: #fef2f2;
+  --text-muted: #f87171;
+  --muted: var(--text-muted);
+  --bg: var(--bg-2);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+}
+
+html[data-theme='light'],
+html.theme-light {
+  --zeus-tone-sky: #3b82f6;
+  --zeus-tone-violet: #9333ea;
+  --zeus-tone-emerald: #22c55e;
+  --zeus-tone-amber: #f59e0b;
+  --zeus-tone-red: #ef4444;
+  --pw-color-data: #2563eb;
+  --pw-color-network: #2563eb;
+  --pw-color-info: #3b82f6;
+  --pw-color-ai: #9333ea;
+  --pw-color-success: #22c55e;
+  --pw-color-warning: #f59e0b;
+  --pw-color-critical: #ef4444;
+  --pw-table-accent: #2563eb;
+  --pw-accent-glow: color-mix(in srgb, #2563eb 12%, transparent);
+  --pw-cockpit-panel-bg: rgb(250 250 249);
+  --pw-chart-1: #2563eb;
+  --pw-chart-2: #22c55e;
+  --pw-chart-3: #f59e0b;
+  --pw-chart-4: #ef4444;
+  --pw-chart-5: #9333ea;
+  --pw-chart-6: #3b82f6;
+  --pw-chart-7: #d97706;
+  --pw-chart-8: #db2777;
+  --pw-chart-9: #16a34a;
+  --pw-chart-10: #6366f1;
+  --pw-chart-11: #0d9488;
+  --pw-chart-12: #e11d48;
+  --cyan: var(--pw-color-info);
+  --blue: var(--pw-color-data);
+  --violet: var(--pw-color-ai);
+  --green: var(--pw-color-success);
+  --orange: var(--pw-color-warning);
+  --red: var(--pw-color-critical);
+  --chart-primary: var(--pw-chart-1);
+  --chart-secondary: var(--pw-chart-2);
+  --spark: var(--pw-color-info);
+  --accent: var(--pw-color-data);
+}
+
+/* Menubar + dock tints per theme */
+html[data-theme='tahoe'] .mac-menubar-inner,
+html[data-theme='tahoe'] .mac-dock-inner {
+  background: color-mix(in srgb, rgb(12 18 32) 55%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
+
+html[data-theme='sonoma'] .mac-menubar-inner,
+html[data-theme='sonoma'] .mac-dock-inner {
+  background: color-mix(in srgb, rgb(16 12 28) 58%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+html[data-theme='graphite'] .mac-menubar-inner,
+html[data-theme='graphite'] .mac-dock-inner {
+  background: color-mix(in srgb, rgb(14 14 16) 62%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 6%, transparent);
+}
+
+html[data-theme='wolf'] .mac-menubar-inner,
+html[data-theme='wolf'] .mac-dock-inner,
+html[data-theme='forge'] .mac-menubar-inner,
+html[data-theme='forge'] .mac-dock-inner,
+html[data-theme='ember'] .mac-menubar-inner,
+html[data-theme='ember'] .mac-dock-inner {
+  background: color-mix(in srgb, var(--pw-cockpit-panel-bg) 58%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+/* Wallpapers — PacketWolf macOS set */
+body.mac-desktop-root[data-wallpaper='tahoe']::before {
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(30, 58, 95, 0.35), transparent 55%),
+    linear-gradient(180deg, rgb(8, 12, 22) 0%, rgb(6, 10, 18) 100%);
+}
+
+body.mac-desktop-root[data-wallpaper='sonoma']::before {
+  background:
+    radial-gradient(ellipse 100% 70% at 15% -10%, rgba(99, 102, 241, 0.28), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(245, 158, 11, 0.12), transparent 45%),
+    linear-gradient(180deg, rgb(10, 8, 20) 0%, rgb(6, 10, 18) 100%);
+}
+
+body.mac-desktop-root[data-wallpaper='graphite']::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 30% 8%, rgba(255, 255, 255, 0.06), transparent 50%),
+    linear-gradient(180deg, rgb(12, 12, 12) 0%, rgb(6, 6, 8) 100%);
+}
+
+body.mac-desktop-root[data-wallpaper='tahoe-light']::before {
+  background:
+    radial-gradient(ellipse 90% 60% at 20% 0%, color-mix(in srgb, var(--zeus-tone-sky) 20%, transparent), transparent 55%),
+    linear-gradient(180deg, rgb(240, 244, 250) 0%, rgb(226, 232, 240) 100%);
+}
+
+body.mac-desktop-root[data-wallpaper='aurora']::before {
+  background:
+    radial-gradient(ellipse 100% 70% at 20% -10%, rgba(124, 58, 237, 0.28), transparent 50%),
+    radial-gradient(ellipse 80% 60% at 90% 10%, rgba(14, 165, 233, 0.18), transparent 45%),
+    linear-gradient(180deg, rgb(10, 8, 24) 0%, rgb(6, 10, 18) 100%);
+}
+
+/* Light themes — consolidated shell (tahoe-light, light, legacy frost) */
+html[data-theme='tahoe-light'],
+html[data-theme='light'],
+html[data-theme='frost'] {
+  color-scheme: light;
+  --bg-0: #e8edf4;
+  --bg-1: #f3f6fa;
+  --bg-2: #ffffff;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-strong: rgba(255, 255, 255, 0.94);
+  --line: rgba(15, 23, 42, 0.1);
+  --line-strong: color-mix(in srgb, var(--blue) 28%, transparent);
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(15, 23, 42, 0.08);
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-bright: #020617;
+  --muted: var(--text-muted);
+  --bg: var(--bg-1);
+  --bg-deep: var(--bg-0);
+  --bg-card: var(--panel);
+  --accent: var(--blue);
+}
+
+html[data-theme='tahoe-light'] body,
+html[data-theme='light'] body,
+html[data-theme='frost'] body {
+  background: var(--bg-deep);
+  color: var(--text);
+}
+
+html[data-theme='tahoe-light'] .glass-card,
+html[data-theme='tahoe-light'] .mac-page-window,
+html[data-theme='light'] .glass-card,
+html[data-theme='light'] .mac-page-window,
+html[data-theme='frost'] .glass-card,
+html[data-theme='frost'] .mac-page-window {
+  box-shadow: 0 8px 32px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+html[data-theme='tahoe-light'] .mac-menubar-inner,
+html[data-theme='light'] .mac-menubar-inner,
+html[data-theme='frost'] .mac-menubar.navbar,
+html[data-theme='frost'] .mac-menubar-inner {
+  background: color-mix(in srgb, rgba(255, 255, 255, 0.92) 92%, white);
+  border-bottom-color: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+html[data-theme='tahoe-light'] .mac-dock-inner,
+html[data-theme='light'] .mac-dock-inner,
+html[data-theme='frost'] .mac-dock-inner {
+  background: color-mix(in srgb, rgba(255, 255, 255, 0.75) 75%, white);
+  border-color: color-mix(in srgb, var(--text) 12%, transparent);
+  box-shadow: 0 8px 28px -10px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+html[data-theme='tahoe-light'] .cloudos-mobile-bar,
+html[data-theme='light'] .cloudos-mobile-bar,
+html[data-theme='frost'] .cloudos-mobile-bar {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+}
+
+html[data-theme='tahoe-light'] .table th,
+html[data-theme='light'] .table th,
+html[data-theme='frost'] .table th {
+  background: rgba(241, 245, 249, 0.95);
+  color: var(--text-muted);
+}
+
+html[data-theme='tahoe-light'] .table td,
+html[data-theme='light'] .table td,
+html[data-theme='frost'] .table td {
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme='tahoe-light'] .form-select,
+html[data-theme='tahoe-light'] .browse-filter-input,
+html[data-theme='light'] .form-select,
+html[data-theme='light'] .browse-filter-input,
+html[data-theme='frost'] .form-select,
+html[data-theme='frost'] .browse-filter-input {
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.12);
+  color: var(--text);
+}
+
+html[data-theme='tahoe-light'] .vmr-page-hero,
+html[data-theme='tahoe-light'] .vmr-metric,
+html[data-theme='tahoe-light'] .vmr-panel,
+html[data-theme='light'] .vmr-page-hero,
+html[data-theme='light'] .vmr-metric,
+html[data-theme='light'] .vmr-panel,
+html[data-theme='frost'] .vmr-page-hero,
+html[data-theme='frost'] .vmr-metric,
+html[data-theme='frost'] .vmr-panel {
+  background: rgba(255, 255, 255, 0.82);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='tahoe-light'] .cloudos-finder-item.active,
+html[data-theme='light'] .cloudos-finder-item.active,
+html[data-theme='frost'] .cloudos-finder-item.active {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--blue) 12%, transparent), color-mix(in srgb, var(--blue) 4%, transparent));
+}
+
+html[data-theme='tahoe-light'] .mac-dock-item-active,
+html[data-theme='light'] .mac-dock-item-active,
+html[data-theme='frost'] .mac-dock-item-active {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--blue) 14%, transparent), color-mix(in srgb, var(--blue) 6%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--blue) 18%, transparent);
+}
+
+html[data-theme='tahoe-light'] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar,
+html[data-theme='light'] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar,
+html[data-theme='frost'] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
+  background: color-mix(in srgb, rgba(255, 255, 255, 0.88) 88%, white);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='tahoe-light'] .toast-success,
+html[data-theme='light'] .toast-success,
+html[data-theme='frost'] .toast-success {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 25%, transparent);
+}
+
+html[data-theme='tahoe-light'] .toast-error,
+html[data-theme='light'] .toast-error,
+html[data-theme='frost'] .toast-error {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 22%, transparent);
+}
+
+html[data-theme='tahoe-light'] .toast-info,
+html[data-theme='light'] .toast-info,
+html[data-theme='frost'] .toast-info {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 20%, transparent);
+}
+
+html[data-theme='tahoe-light'] .toast-warning,
+html[data-theme='light'] .toast-warning,
+html[data-theme='frost'] .toast-warning {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--orange);
+  border-color: color-mix(in srgb, var(--orange) 22%, transparent);
+}
+
+.theme-swatch-group-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.theme-swatch-grid-macos,
+.theme-swatch-grid-classic {
+  grid-template-columns: repeat(4, 1fr);
+}
