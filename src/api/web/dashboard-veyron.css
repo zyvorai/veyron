@@ -311,7 +311,14 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   background: var(--panel-strong);
   border: 1px solid var(--line);
   border-left: 3px solid var(--green);
-  transition: border-color 0.15s, transform 0.15s;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.2s;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+.vmr-fleet-card:not(.stopped):not(.issue):hover {
+  box-shadow: 0 8px 28px rgba(50, 224, 176, 0.12), 0 4px 16px rgba(0, 0, 0, 0.14);
 }
 
 .vmr-fleet-card.stopped { border-left-color: var(--muted); }
