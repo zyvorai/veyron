@@ -923,6 +923,10 @@ pub mod web {
                 // Cluster resources
                 .route("/api/v1/nodes", get(list_nodes_handler))
                 .route("/api/v1/pods", get(list_pods_handler))
+                .route(
+                    "/api/v1/pods/{name}/logs",
+                    get(get_pod_logs_handler),
+                )
                 .route("/api/v1/profiles", get(list_profiles_handler))
                 .route("/api/v1/namespaces", get(list_namespaces_handler))
                 .route("/api/v1/activity", get(activity_feed_handler))
@@ -4287,6 +4291,70 @@ pub mod web {
             }
             Err(e) => err_json(500, "INTERNAL_ERROR", &sanitize_error(&e)),
         }
+    }
+
+    async fn get_pod_logs_handler(
+        State(state): State<SharedState>,
+        Path(name): Path<String>,
+        Query(query): Query<VmQuery>,
+    ) -> impl IntoResponse {
+        use k8s_openapi::api::core::v1::Pod;
+        use kube::api::LogParams;
+
+        let (client, default_ns) = {
+            let s = state.read().await;
+            (s.kube_client.clone(), s.namespace.clone())
+        };
+        let scope = query.namespace.as_deref().unwrap_or(&default_ns);
+
+        let pod_ns = if scope == "all" {
+            let pods = client.list_all_pods().await.unwrap_or_default();
+            pods.into_iter()
+                .find(|p| p.metadata.name.as_deref() == Some(name.as_str()))
+                .and_then(|p| p.metadata.namespace)
+                .unwrap_or(default_ns)
+        } else {
+            scope.to_string()
+        };
+
+        let pods_api: kube::api::Api<Pod> =
+            kube::api::Api::namespaced(client.client(), &pod_ns);
+
+        let params = LogParams {
+            tail_lines: Some(200),
+            timestamps: true,
+            ..Default::default()
+        };
+
+        let log_text = match pods_api.logs(&name, &params).await {
+            Ok(text) => text,
+            Err(e) => {
+                return err_json(
+                    404,
+                    "POD_LOGS_UNAVAILABLE",
+                    &format!("Could not read logs for {}/{}: {}", pod_ns, name, e),
+                );
+            }
+        };
+
+        let entries: Vec<crate::api::handlers::pods::PodLogEntry> = log_text
+            .lines()
+            .filter(|line| !line.is_empty())
+            .map(|line| {
+                let (timestamp, message) = match line.find(' ') {
+                    Some(pos) => (line[..pos].to_string(), line[pos + 1..].to_string()),
+                    None => (String::new(), line.to_string()),
+                };
+                crate::api::handlers::pods::PodLogEntry {
+                    timestamp,
+                    container: "default".to_string(),
+                    message,
+                }
+            })
+            .collect();
+
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/pods/:name/logs");
+        ok_json(&ApiResponse::success(&entries, &ctx.request_id))
     }
 
     async fn list_profiles_handler() -> impl IntoResponse {
