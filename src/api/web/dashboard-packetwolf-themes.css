@@ -2467,3 +2467,35 @@ html[data-theme='tahoe-light'] .veyron-user-block {
   background: rgba(15, 23, 42, 0.04);
   border-color: rgba(15, 23, 42, 0.1);
 }
+
+/* Primary tab bar (legacy non-desktop layout) — adapt to all themes */
+html[data-theme] .vmr-primary-tabs {
+  background: color-mix(in srgb, var(--pw-bg-deep) 92%, transparent);
+  border-bottom-color: var(--glass-border);
+}
+
+/* VM inspector drawer and bar — light themes */
+html[data-theme='light'] .veyron-shell .mac-inspector-pane,
+html[data-theme='tahoe-light'] .veyron-shell .mac-inspector-pane {
+  background: rgba(248, 250, 252, 0.96);
+  border-left-color: rgba(15, 23, 42, 0.08);
+}
+
+html[data-theme='light'] .veyron-shell .mac-inspector-header,
+html[data-theme='tahoe-light'] .veyron-shell .mac-inspector-header {
+  background: rgba(241, 245, 249, 0.92);
+  border-bottom-color: rgba(15, 23, 42, 0.06);
+}
+
+html[data-theme='light'] .vmr-inspector-bar,
+html[data-theme='tahoe-light'] .vmr-inspector-bar {
+  background: rgba(255, 255, 255, 0.88);
+  border-bottom-color: rgba(15, 23, 42, 0.06);
+}
+
+/* Foundry drawer header — light themes */
+html[data-theme='light'] .vmr-foundry-drawer-header,
+html[data-theme='tahoe-light'] .vmr-foundry-drawer-header {
+  background: rgba(241, 245, 249, 0.92);
+  border-bottom-color: rgba(15, 23, 42, 0.06);
+}
