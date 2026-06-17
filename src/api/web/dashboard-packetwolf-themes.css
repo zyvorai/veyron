@@ -2061,6 +2061,12 @@ html[data-theme] .vm-workspace-chip {
 /* App store / mission card hover */
 html[data-theme] .app-store-card:hover {
   border-color: var(--pw-accent-border);
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--pw-color-data) 12%, transparent);
+}
+
+/* Launchpad icon hover glow */
+html[data-theme] .launchpad-app:hover .launchpad-icon {
+  box-shadow: var(--glass-shadow), 0 12px 28px color-mix(in srgb, var(--pw-color-data) 18%, transparent);
 }
 
 /* Dock active item — general (no body.mac-desktop-root required) */
