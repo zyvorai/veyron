@@ -1339,13 +1339,14 @@ body.mac-desktop-root[data-desktop-tier="advanced"] .vmr-page-hero {
 
 .cloudos-finder-item.tier-locked {
   opacity: 0.52;
+  cursor: not-allowed;
 }
 
 .cloudos-finder-item.tier-locked .fi-icon::after {
-  content: '·';
-  margin-left: 2px;
+  content: '🔒';
+  margin-left: 4px;
   font-size: 0.62rem;
-  color: var(--orange);
+  opacity: 0.85;
 }
 
 /* ── VM Capsule page ── */

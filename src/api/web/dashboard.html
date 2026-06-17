@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260617e">
+<meta name="veyron-dashboard-rev" content="20260617f">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260617e';
+  var DASH_REV = '20260617f';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -334,7 +334,26 @@ body.classic-nav-open .browse-mega-menu{display:grid}
   body.classic-nav-open .classic-nav-backdrop{top:0;inset:0;z-index:178}
   body.classic-nav-open .browse-sheet-handle{display:block}
   body.classic-nav-open .cloudos-mobile-bar{opacity:.35;pointer-events:none}
+  .browse-sheet-close{display:inline-flex;margin-left:auto}
 }
+.browse-sheet-close{
+  display:none;padding:6px 12px;border-radius:8px;border:1px solid var(--glass-border);
+  background:rgba(255,255,255,.06);color:var(--text);font-size:.72rem;font-weight:600;
+  cursor:pointer;font-family:inherit;
+}
+.browse-mega-header{align-items:center}
+@media(min-width:769px){.browse-sheet-close{display:none!important}}
+@keyframes page-load-bar{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window.page-loading::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;z-index:4;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  animation:page-load-bar .9s ease-in-out infinite;
+}
+.mac-dynamic-island.refreshing{opacity:.88;animation:island-pulse 1s ease-in-out infinite}
+html[data-theme="frost"] .toast-success{background:rgba(255,255,255,.94);color:var(--green);border-color:rgba(5,150,105,.25)}
+html[data-theme="frost"] .toast-error{background:rgba(255,255,255,.94);color:var(--red);border-color:rgba(220,38,38,.22)}
+html[data-theme="frost"] .toast-info{background:rgba(255,255,255,.94);color:var(--blue);border-color:rgba(37,99,235,.2)}
+html[data-theme="frost"] .toast-warning{background:rgba(255,255,255,.94);color:var(--orange);border-color:rgba(217,119,6,.22)}
 .classic-nav-backdrop{
   display:none;position:fixed;inset:96px 0 0 0;z-index:125;background:rgba(0,0,0,.4);
 }
@@ -812,9 +831,20 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
    EMPTY & LOADING
    ═══════════════════════════════════════════════════ */
 .empty-state{text-align:center;padding:54px 24px;color:var(--text-dim)}
+.empty-state.vmr-empty-panel{
+  padding:56px 28px;border-radius:16px;border:1px dashed var(--glass-border);
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  max-width:480px;margin:20px auto;
+}
 .empty-state .icon{font-size:2.8rem;margin-bottom:16px;opacity:.24;filter:grayscale(.35)}
+.empty-state .icon-wrap{
+  width:68px;height:68px;margin:0 auto 16px;border-radius:18px;
+  display:flex;align-items:center;justify-content:center;font-size:2rem;
+  background:var(--glass-bg-elevated);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);
+}
 .empty-state p{font-size:.95rem;letter-spacing:.01em;line-height:1.55}
 .empty-state .sub{font-size:.82rem;margin-top:8px;color:var(--text-dim);max-width:48ch;margin-left:auto;margin-right:auto}
+.empty-state-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
 
 /* Monitoring page — capability strip + stack cards */
 .monitor-capabilities{
@@ -3613,6 +3643,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <span class="browse-sheet-handle" aria-hidden="true"></span>
   <span class="browse-mega-title">All pages</span>
   <input type="text" class="browse-filter-input" id="browse-filter-input" placeholder="Filter pages…" oninput="filterBrowseMenu()" autocomplete="off" spellcheck="false">
+  <button type="button" class="browse-sheet-close glass-btn-secondary glass-btn-sm" onclick="closeClassicNav()">Done</button>
 </div>
 <div class="browse-mega-menu" id="browse-mega-menu" role="navigation" aria-label="Browse all pages">
   <div class="nav-group">
@@ -5681,7 +5712,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260617e';
+window.__VMROGUE_DASH_REV = '20260617f';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -5770,6 +5801,31 @@ function navPageLabel(page) {
   const meta = PAGE_META[page];
   if (meta && meta.title) return meta.title.split('—')[0].trim();
   return page;
+}
+
+function requiredTierLabel(tier) {
+  if (tier === 'power') return 'Power user';
+  if (tier === 'advanced') return 'Advanced';
+  return 'Normal';
+}
+
+function showTierUpgradePrompt(page) {
+  const cat = typeof dockCatalogEntry === 'function' ? dockCatalogEntry(page) : null;
+  const need = (cat && cat.min_tier) ? cat.min_tier : 'advanced';
+  if (tierRank(need) <= tierRank(desktopTier)) return false;
+  const label = navPageLabel(page);
+  toast(label + ' requires ' + requiredTierLabel(need) + ' desktop — Veyron menu → Desktop', 'warning', 9000);
+  return true;
+}
+
+function pulsePageLoading(page) {
+  const pageEl = document.getElementById('page-' + page);
+  if (!pageEl) return;
+  const win = pageEl.querySelector('.mac-page-window');
+  if (!win) return;
+  win.classList.add('page-loading');
+  clearTimeout(win._pageLoadTimer);
+  win._pageLoadTimer = setTimeout(function() { win.classList.remove('page-loading'); }, 1200);
 }
 const WALLPAPER_IDS = ['tahoe', 'aurora', 'midnight', 'ocean', 'nebula', 'solar', 'matrix', 'ember-glow'];
 
@@ -6056,8 +6112,18 @@ function openIntegrationLink(link) {
 
 function navigate(page, opts) {
   closeClassicNav();
+  if (!opts || !opts.skipTierCheck) {
+    if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
+      if (typeof unlockDockPreviewPage === 'function' && unlockDockPreviewPage(page)) {
+        /* tier bumped — continue navigation */
+      } else {
+        showTierUpgradePrompt(page);
+        return;
+      }
+    }
+  }
   currentPage = page;
-  recordSpotlightRecent({ kind: 'page', title: page, action: 'navigate:' + page });
+  recordSpotlightRecent({ kind: 'page', title: navPageLabel(page), action: 'navigate:' + page });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById('page-' + page);
   if (!pageEl) { toast('Page not found: ' + page, 'error'); return; }
@@ -6067,6 +6133,7 @@ function navigate(page, opts) {
     win.classList.remove('page-enter');
     void win.offsetWidth;
     win.classList.add('page-enter');
+    pulsePageLoading(page);
   }
   document.querySelectorAll('.nav-link').forEach(l => l.classList.toggle('active', l.dataset.page === page));
   document.querySelectorAll('.nav-group-btn').forEach(b => {
@@ -7898,12 +7965,17 @@ function closeClassicNav() {
 
 function finderNavigate(page) {
   if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(page, desktopTier)) {
-    if (typeof unlockDockPreviewPage === 'function' && unlockDockPreviewPage(page)) return;
-    toast('Switch to Advanced desktop (Veyron menu) to open this page', 'warning');
+    if (typeof unlockDockPreviewPage === 'function' && unlockDockPreviewPage(page)) {
+      navigate(page, { skipTierCheck: true });
+      const el = document.getElementById('cloudos-finder');
+      if (el && isFinderMobile()) el.classList.remove('open');
+      return;
+    }
+    showTierUpgradePrompt(page);
     return;
   }
   closeClassicNav();
-  navigate(page);
+  navigate(page, { skipTierCheck: true });
   const el = document.getElementById('cloudos-finder');
   if (el && isFinderMobile()) el.classList.remove('open');
 }
@@ -7913,7 +7985,13 @@ function syncFinderTierLocks() {
     const page = btn.dataset.page;
     const allowed = typeof isPageAllowedForTier !== 'function' || isPageAllowedForTier(page, desktopTier);
     btn.classList.toggle('tier-locked', !allowed);
-    btn.title = allowed ? '' : 'Advanced desktop tier required';
+    if (allowed) {
+      btn.title = '';
+    } else {
+      const cat = typeof dockCatalogEntry === 'function' ? dockCatalogEntry(page) : null;
+      const need = (cat && cat.min_tier) ? cat.min_tier : 'advanced';
+      btn.title = requiredTierLabel(need) + ' desktop required';
+    }
   });
 }
 
@@ -8212,22 +8290,24 @@ function vmCard(vm, showActions) {
 function vmListEmptyHtml(filteredEmpty) {
   const noFleet = !vmData || vmData.length === 0;
   if (noFleet) {
-    let html = '<div class=”empty-state” style=”padding:56px 24px;text-align:center”>' +
-      '<div style=”font-size:3rem;opacity:.18;margin-bottom:16px”>&#9781;</div>' +
-      '<p style=”font-size:1rem;font-weight:600;color:var(--text-bright);margin:0 0 8px”>No virtual machines yet</p>' +
-      '<p class=”sub” style=”margin:0 0 20px”>Forge your first VM from a template to get started.</p>' +
-      '<button type=”button” class=”glass-btn-primary glass-btn-sm” onclick=”openCreateModal()”>+ Forge VM</button>';
+    let html = '<div class="empty-state vmr-empty-panel">' +
+      '<div class="icon-wrap">&#9781;</div>' +
+      '<p style="font-size:1rem;font-weight:600;color:var(--text-bright);margin:0 0 8px">No virtual machines yet</p>' +
+      '<p class="sub" style="margin:0">Forge your first VM from a template to get started.</p>' +
+      '<div class="empty-state-actions">' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>';
     if (currentNamespace !== 'all') {
-      html += ' <button type=”button” class=”glass-btn-secondary glass-btn-sm” onclick=”setNamespace(\'all\')” style=”margin-left:8px”>All workspaces</button>';
+      html += '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="setNamespace(\'all\')">All workspaces</button>';
     }
-    return html + '</div>';
+    return html + '</div></div>';
   }
-  return '<div class=”empty-state” style=”padding:40px 24px;text-align:center”>' +
-    '<div style=”font-size:2.2rem;opacity:.2;margin-bottom:12px”>&#128269;</div>' +
-    '<p style=”margin:0 0 6px;font-weight:600;color:var(--text-bright)”>No VMs match your filter</p>' +
-    '<p class=”sub” style=”margin:0 0 16px”>Try clearing the search or changing the status filter.</p>' +
-    '<button type=”button” class=”glass-btn-secondary glass-btn-sm” onclick=”document.getElementById(\'vm-search\').value=\'\';document.getElementById(\'vm-filter-status\').value=\'\';filterVMs()”>Clear filters</button>' +
-    '</div>';
+  return '<div class="empty-state vmr-empty-panel">' +
+    '<div class="icon-wrap">&#128269;</div>' +
+    '<p style="margin:0 0 6px;font-weight:600;color:var(--text-bright)">No VMs match your filter</p>' +
+    '<p class="sub" style="margin:0">Try clearing the search or changing the status filter.</p>' +
+    '<div class="empty-state-actions">' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById(\'vm-search\').value=\'\';document.getElementById(\'vm-filter-status\').value=\'\';filterVMs()">Clear filters</button>' +
+    '</div></div>';
 }
 
 function renderVmFullList(vms) {
@@ -8517,7 +8597,16 @@ function runExperienceAction(action) {
   if (!action) return;
   if (handleCopilotAction(action)) return;
   if (action === 'create_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
-  if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
+  if (action.indexOf('navigate:') === 0) {
+    const target = action.slice(9);
+    if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(target, desktopTier)) {
+      if (unlockDockPreviewPage(target)) navigate(target, { skipTierCheck: true });
+      else showTierUpgradePrompt(target);
+      return;
+    }
+    navigate(target);
+    return;
+  }
   toast('Action: ' + action, 'info');
 }
 
@@ -9165,9 +9254,13 @@ function renderSpotlightResults() {
     html += '<div class="spotlight-section-label">' + (labels[kind] || kind) + '</div>';
     items.forEach(x => {
       const active = x.i === spotlightActiveIndex ? ' active' : '';
+      let title = x.r.title;
+      if ((x.r.kind || '') === 'page' && x.r.action && x.r.action.indexOf('navigate:') === 0) {
+        title = navPageLabel(x.r.action.slice(9));
+      }
       html += '<div class="spotlight-item' + active + '" data-idx="' + x.i + '" ' + onHandler('activateSpotlightResult(' + x.i + ')') + '>' +
         '<span class="spotlight-kind">' + esc(x.r.kind) + '</span>' +
-        '<div><div class="spotlight-title">' + esc(x.r.title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
+        '<div><div class="spotlight-title">' + esc(title) + '</div><div class="spotlight-sub">' + esc(x.r.subtitle) + '</div></div>' +
       '</div>';
     });
   });
@@ -9247,7 +9340,16 @@ function runSpotlightAction(action) {
   if (runMacShellAction(action)) return;
   if (handleCopilotAction(action)) return;
   if (action === 'create_vm' || action === 'forge_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
-  if (action.indexOf('navigate:') === 0) { navigate(action.slice(9)); return; }
+  if (action.indexOf('navigate:') === 0) {
+    const target = action.slice(9);
+    if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(target, desktopTier)) {
+      if (unlockDockPreviewPage(target)) navigate(target, { skipTierCheck: true });
+      else showTierUpgradePrompt(target);
+      return;
+    }
+    navigate(target);
+    return;
+  }
   if (action.indexOf('open_vm:') === 0) {
     const parts = action.split(':');
     if (parts.length >= 3) {
@@ -12981,6 +13083,8 @@ function setRefreshInterval(val) {
 function refresh() {
   if (refreshPaused) return;
   resetRefreshRing();
+  const island = document.getElementById('mac-dynamic-island');
+  if (island) island.classList.add('refreshing');
   if (refreshAbortController) refreshAbortController.abort();
   refreshAbortController = new AbortController();
   const signal = refreshAbortController.signal;
@@ -13004,6 +13108,10 @@ function refresh() {
     lr.classList.add('refresh-pulse');
   }
   refreshIslandAlerts();
+  setTimeout(function() {
+    const isl = document.getElementById('mac-dynamic-island');
+    if (isl) isl.classList.remove('refreshing');
+  }, 900);
 }
 
 window.addEventListener('load', async () => {
