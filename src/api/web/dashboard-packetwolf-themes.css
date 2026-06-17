@@ -2493,6 +2493,13 @@ html[data-theme='tahoe-light'] .vmr-inspector-bar {
   border-bottom-color: rgba(15, 23, 42, 0.06);
 }
 
+/* Foundry drawer (full panel) — light themes */
+html[data-theme='light'] .vmr-foundry-drawer,
+html[data-theme='tahoe-light'] .vmr-foundry-drawer {
+  background: rgba(248, 250, 252, 0.97);
+  border-left-color: rgba(15, 23, 42, 0.08);
+}
+
 /* Foundry drawer header — light themes */
 html[data-theme='light'] .vmr-foundry-drawer-header,
 html[data-theme='tahoe-light'] .vmr-foundry-drawer-header {
