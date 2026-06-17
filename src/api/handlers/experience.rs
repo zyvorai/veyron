@@ -372,6 +372,12 @@ fn wallpaper_options() -> Vec<WallpaperOption> {
 fn desktop_tiers() -> Vec<DesktopTierItem> {
     vec![
         DesktopTierItem {
+            id: "auto".to_string(),
+            label: "Automatic".to_string(),
+            hint: "Recommended — all pages unlock as you explore; chrome expands for platform views."
+                .to_string(),
+        },
+        DesktopTierItem {
             id: "normal".to_string(),
             label: "Normal".to_string(),
             hint: "Dock-first desktop — Finder hidden by default.".to_string(),
@@ -395,9 +401,14 @@ fn dock_catalog() -> Vec<DockCatalogItem> {
     vec![
         dock_cat("dashboard", "Home", "◫", "normal"),
         dock_cat("vms", "Virtual Machines", "▣", "normal"),
-        dock_cat("app-store", "Template Store", "⬡", "normal"),
+        dock_cat("app-store", "Template Foundry", "◈", "normal"),
+        dock_cat("console-hub", "ConsoleHub", "▶", "normal"),
         dock_cat("integrations", "Integrations", "⚙", "normal"),
+        dock_cat("settings", "Settings", "⚙", "normal"),
+        dock_cat("stack-health", "Stack Health", "♥", "power"),
         dock_cat("monitoring", "Activity Monitor", "⬢", "power"),
+        dock_cat("snapshots", "Snapshots", "⧉", "power"),
+        dock_cat("events", "Events", "⚡", "power"),
         dock_cat("backups", "Backups", "⧉", "power"),
         dock_cat("nodes", "Nodes", "◇", "power"),
         dock_cat("mission-control", "Mission Control", "◫", "advanced"),
@@ -407,8 +418,6 @@ fn dock_catalog() -> Vec<DockCatalogItem> {
         dock_cat("topology", "Topology", "⬢", "advanced"),
         dock_cat("catalog", "Catalog", "⬡", "advanced"),
         dock_cat("costs", "Costs", "$", "advanced"),
-        dock_cat("snapshots", "Snapshots", "⧉", "advanced"),
-        dock_cat("events", "Events", "◌", "advanced"),
     ]
 }
 
@@ -830,7 +839,7 @@ async fn experience_home(
         },
         HomeActionCard {
             id: "catalog".to_string(),
-            title: "Template Store".to_string(),
+            title: "Template Foundry".to_string(),
             subtitle: "Sync & deploy".to_string(),
             icon: "catalog".to_string(),
             action: "navigate:app-store".to_string(),
@@ -1285,6 +1294,9 @@ mod tests {
         assert!(pages.contains(&"dashboard"));
         assert!(pages.contains(&"vms"));
         assert!(pages.contains(&"integrations"));
+        assert!(pages.contains(&"stack-health"));
+        let stack = catalog.iter().find(|c| c.page == "stack-health").unwrap();
+        assert_eq!(stack.min_tier, "power");
         let defaults = super::dock_defaults();
         assert_eq!(defaults.normal.len(), 4);
         assert!(defaults.power.contains(&"monitoring".to_string()));

@@ -1,172 +1,251 @@
-# Veyron UI — Architecture & Vision
+# CloudOS — Veyron Dashboard Architecture & Vision
 
-Veyron is a dark-theme, Kubernetes-native VM command center. The dashboard is a single-page application served inline from the Rust binary — no separate frontend build step, no CDN dependency.
+CloudOS is the default shell for the Veyron dashboard: a macOS Tahoe–inspired desktop for Kubernetes-native VM operations. The UI ships as a single self-contained SPA embedded in the Rust binary — no separate frontend build, no CDN at runtime.
+
+**Current dashboard revision:** `20260618d` (cache-bust via `?dash=<rev>` and `<meta name="veyron-dashboard-rev">`).
 
 ---
 
 ## 1. Overview
 
-The entire UI is one HTML file (`src/api/web/dashboard.html`, ~750 KB) with CSS and JavaScript injected at Rust compile time. `src/api/http_server.rs` reads three sibling files at startup via `include_str!` and performs a literal `replace()` substitution into the HTML template before serving `GET /`:
-
-| Injected asset | Source file | Approx size |
+| Asset | Source | Role |
 |---|---|---|
-| `<style>` block | `dashboard-veyron.css` | ~35 KB |
-| `<script>` block | `dashboard-veyron.js` | ~134 KB |
-| VMR CSS (compat) | `dashboard-vmr.css` | legacy shim |
+| HTML shell + inline JS | `src/api/web/dashboard.html` (~15k lines) | All 15 pages, CloudOS chrome, Ask Zeus modal |
+| Layout & VMR panels | `src/api/web/dashboard-veyron.css` | Glass surfaces, dock, Finder, fleet cards |
+| Page renderers | `src/api/web/dashboard-veyron.js` | Mission Control, Fleet, Foundry, capsule tabs |
+| Legacy shim | `src/api/web/dashboard-vmr.css` | Compat tokens |
 
-No external network requests are required at runtime. The binary is self-contained.
+At startup, `src/api/http_server.rs` reads the CSS/JS siblings via `include_str!` and performs literal `replace()` into the HTML template before serving `GET /`:
 
----
-
-## 2. Visual Language
-
-All color tokens are defined as CSS custom properties on `:root`.
-
-| Token | Value | Semantic use |
-|---|---|---|
-| `--blue` | `#3f7cff` | Primary actions, active nav highlight |
-| `--cyan` | `#27d7ff` | Live signals, network indicators |
-| `--green` | `#32e0b0` | Healthy states, success |
-| `--orange` | `#ff9d2e` | Warnings, degraded states |
-| `--red` | `#ff5570` | Failures, critical alerts |
-| `--violet` | `#9b7cff` | AI / Veyron Copilot surfaces |
-
-Panel background: `rgba(18, 24, 36, 0.74)` glass cards over a dark carbon body (`#0d1117`). Cards use `backdrop-filter: blur(12px)` and a `1px solid rgba(255,255,255,.08)` border.
-
----
-
-## 3. 15-Page Structure
-
-The sidebar is 240 px fixed-width. Each entry maps to a `data-page` section in the HTML.
-
-| Page | Sidebar Icon | Key Content |
-|---|---|---|
-| Mission Control | ◈ | Fleet health ring, Veyron Copilot recommendations, Quick Actions, Active Alerts, Pinned VMs, Recent Activity |
-| Fleet Command | ⚡ | VM cards / table / topology view, VM Inspector drawer, bulk start/stop/delete actions |
-| Forge VM | ⚙ | 6-step creation wizard: Template → Profile → Hardware → Network → Security → Review |
-| Template Foundry | 🗂 | 44+ OS templates, category rail, feature filters (GPU/Windows/UEFI/TPM), preview drawer |
-| ConsoleHub | ▶ | noVNC, SSH-expose, RDP-expose; Link quality presets (LAN / Balanced / Low bandwidth) |
-| VM Capsule | ⬡ | 8-tab single-VM deep dive: Overview / Performance / Network / Storage / Hardware / Security / Events / YAML |
-| Stack Health | ◎ | KubeVirt / CDI subsystem status cards, readiness timeline, failure diagnostics |
-| Event Intelligence | ⚠ | Filter bar (namespace/severity/time), incident cards with Impact / Root Cause / Suggested Fixes, timeline mode |
-| Security Posture | 🛡 | Fleet security score, per-VM findings table, compliance framework status (CIS, NIST, SOC 2) |
-| Network Intelligence | ⟷ | PacketWolf connection banner, flow table, traffic map |
-| Snapshots & Backups | ⊞ | Per-VM protection status table, backup policy builder, restore history |
-| Cost Explorer | $ | Namespace cost breakdown, 30-day forecast, optimization recommendations |
-| Workloads | ◻ | 7-tab workload view: VMs / VMIs / virt-launcher pods / CDI pods / KubeVirt controllers / Veyron pods |
-| Cluster Nodes | ○ | Per-node CPU/memory metrics, KubeVirt health, VM placement map, drain/cordon actions |
-| Settings | ⚙ | 12 config sections: General / Cluster / Namespaces / API Keys / RBAC / Console / Templates / Backup / PacketWolf / Prometheus / Theme / Audit |
-
----
-
-## 4. Architecture
-
-### Monolithic SPA
-
-`dashboard.html` contains all 15 page sections in a single DOM tree. Navigation is client-side only: JavaScript toggles `data-page` visibility; no HTML fragments are fetched after initial load. This keeps the binary fully self-contained and simplifies deployment behind TLS with a self-signed cert.
-
-### Backend — SharedState
-
-Every Axum handler shares a single `Arc<RwLock<WebState>>`:
-
-```rust
-pub type SharedState = Arc<RwLock<WebState>>;
-// WebState: KubeClient, namespace, API key table, rate limiter
-// All handlers: State(state): State<SharedState>
+```text
+/*__VMR_CSS__*/  →  dashboard-veyron.css (+ vmr shim)
+/*__VMR_JS__*/   →  dashboard-veyron.js
 ```
 
-Each handler module exposes `pub fn router(state: SharedState) -> Router` and is merged in `src/api/handlers/mod.rs`.
-
-### Auth
-
-Three equivalent bearer forms are accepted on all API routes:
-
-| Form | Example |
-|---|---|
-| Header | `X-API-Key: <key>` |
-| Bearer JWT | `Authorization: Bearer <token>` (HMAC-SHA256 or OIDC) |
-| Query param | `?token=<key>` |
-
-Multi-key RBAC: `VEYRON_API_KEYS="admin:key1,write:key2,readonly:key3"`. Route-level minimum roles enforced in `src/api/auth_context.rs`.
-
-### WebSocket endpoints
-
-| Path | Protocol | Purpose |
-|---|---|---|
-| `/api/v1/ws/vnc/:ns/:name` | noVNC binary | VM VNC console proxy |
-| `/api/v1/ws/serial/:ns/:name` | text | VM serial console |
-| `/api/v1/ws/metrics` | JSON frames | Live fleet metrics push |
-| `POST /api/v1/ws/ticket` | — | One-time ticket for VNC/serial auth |
-
-VNC and serial WebSocket upgrades are exempt from the `VEYRON_HTTP_REQUEST_TIMEOUT_SECS` layer.
+The binary is fully self-contained. Browsers cache aggressively; bump `DASH_REV` / `__VMROGUE_DASH_REV` when shipping UI changes.
 
 ---
 
-## 5. VM Inspector Drawer
+## 2. CloudOS Shell
 
-Selecting any VM row or card in Fleet Command opens a 480 px right-side panel without leaving the page. The drawer shows:
+The active layout uses `body.mac-desktop-root`. Legacy `veyron-topbar` / `veyron-sidebar` chrome was removed; navigation lives in the desktop shell.
 
-- VM name, running state badge, namespace, IP address, host node
+### Chrome layers
+
+| Layer | Purpose | Key shortcuts |
+|---|---|---|
+| **Menubar** (40px) | App menu, View, tier badge, clock, Control Center | ⌘J Ask Zeus, ⌘K Spotlight, ⌘⇧B Browse |
+| **Finder sidebar** | Collapsible sections: Favorites, VMs, Ask Zeus quick prompts, Platform | Visible on **Power** and **Advanced** tiers |
+| **Dock** | Pinned pages + Ask Zeus (✦) + trash metaphor | Click or Launchpad |
+| **mac-page-window** | Content pane for the active `data-page` section | `.mac-page-toolbar` replaces legacy `.page-header` on Normal/Power |
+| **Mission Control overlay** | Cluster overview grid (F3) | Fleet health at a glance |
+| **Launchpad** | Full-page app grid | All tier-allowed pages |
+| **Spotlight** | ⌘K fuzzy search | Pages, VMs, actions including Ask Zeus |
+| **Control Center** | Theme, wallpaper, tier, quick tiles | Ask Zeus tile, desktop tier switcher |
+| **Browse sheet** | Mega-menu of all pages (⌘⇧B) | Mobile: bottom sheet |
+
+### Desktop tiers
+
+### Desktop tiers
+
+Stored in `localStorage` as `veyron_desktop_tier` + `veyron_desktop_tier_auto`. Default: **Automatic** (all pages reachable; UI expands to Advanced chrome when you open platform pages).
+
+| Tier | Finder | Dock pages | Gated pages |
+|---|---|---|---|
+| **Automatic** | Visible | Power dock; expands to Advanced UI on platform pages | None — Spotlight/Finder/Browse always navigate |
+| **Normal** | Hidden | Core VM ops | Manual tier shows upgrade toast |
+| **Power** | Visible | Normal + Stack Health, Events, Snapshots | Advanced-only pages toast or auto-elevate |
+| **Advanced** | Visible | Full cluster surface | None |
+
+`autoElevateTierForPage()` bumps manual tiers; Automatic mode skips gating entirely.
+
+### Themes & wallpapers
+
+Eight themes in Settings → Theme and Control Center:
+
+| Theme key | Mood |
+|---|---|
+| `slate` | Default dark blue-grey |
+| `steel` | Cool neutral |
+| `zinc` | Flat grey |
+| `aurora` | Violet/cyan accent |
+| `ember` | Warm orange |
+| `obsidian` | Deep black |
+| `neon` | High-contrast cyber |
+| `frost` | Light mode |
+
+Keys: `veyron_theme`, `veyron_wallpaper`. Themes auto-pair with wallpaper presets. Frost extends glass tokens across inputs, panels, and toasts.
+
+### Typography & density
+
+- System stack: `-apple-system`, SF Pro, Segoe UI fallbacks
+- Menubar 40px; glass cards with `backdrop-filter: blur(12–20px)`
+- `--violet` (`#9b7cff`) for Ask Zeus / AI surfaces
+
+---
+
+## 3. Fifteen-Page Map
+
+Navigation is client-side: JavaScript toggles `[data-page]` visibility. Labels are centralized in `NAV_PAGE_LABELS` / `navPageLabel()` (HTML + `dashboard-veyron.js`).
+
+| Page ID | Label | Key content |
+|---|---|---|
+| `home` | Mission Control | Fleet health ring, Ask Zeus recommendations, quick actions, alerts, pinned VMs, activity |
+| `vms` | Fleet Command | VM cards/table/topology, inspector drawer, bulk lifecycle |
+| `create` | Forge VM | 6-step wizard: Template → Profile → Hardware → Network → Security → Review |
+| `app-store` | Template Foundry | 44+ OS templates, category rail, GPU/Windows/UEFI filters |
+| `console` | ConsoleHub | noVNC, SSH expose, RDP expose; link quality presets (`veyron_vnc_preset`) |
+| `vm-detail` | VM Capsule | 8-tab deep dive: Overview, Performance, Network, Storage, Hardware, Security, Events, YAML |
+| `stack-health` | Stack Health | KubeVirt/CDI readiness, subsystem cards |
+| `events` | Event Intelligence | Filtered incidents, timeline, suggested fixes |
+| `security` | Security Posture | Fleet score, findings, CIS/NIST/SOC2 frameworks |
+| `network` | Network Intelligence | PacketWolf banner, flows, Cilium context |
+| `snapshots` | Snapshots & Backups | Protection status, policies, restore history |
+| `costs` | Cost Explorer | Namespace breakdown, forecast, optimization |
+| `workloads` | Workloads | VMs, VMIs, virt-launcher, CDI, controllers, Veyron pods |
+| `nodes` | Cluster Nodes | Per-node metrics, placement, cordon/drain |
+| `settings` | Settings | General, cluster, namespaces, API keys, RBAC, console, templates, backup, PacketWolf, Prometheus, theme, audit |
+| `blueprint-studio` | Blueprint Studio | Edit `VeyronBlueprint` CRDs (Advanced tier) |
+
+---
+
+## 4. Ask Zeus (AI Assistant)
+
+**Ask Zeus** is the user-facing name for the experience-layer assistant. Internal JS still uses `openCopilot()` / `/api/v1/experience/copilot/*` for API compatibility.
+
+### Entry points
+
+| Surface | Action |
+|---|---|
+| Dock ✦ button | `openAskZeus()` |
+| ⌘J | Global shortcut |
+| Menubar → Ask Zeus… | Opens modal |
+| Finder → Ask Zeus section | Quick fleet prompts (Doctor, Storage, Cost, …) |
+| Control Center tile | Ask Zeus |
+| Spotlight / Launchpad | Search "zeus" or "copilot" (alias) |
+| VM context menu | Ask Zeus (scoped to VM) |
+| Mission Control briefing chips | Zeus briefing from `GET /experience/home` → `copilot_briefing` |
+| Page stat pills | "Ask Zeus" on clickable fleet metrics |
+
+The modal is a macOS-style sheet (`#copilot-modal`). Module badges show backend names (e.g. **Veyron Doctor**, **Veyron YAML Builder**); the default badge is **Ask Zeus**.
+
+### Backend modules
+
+See [VEYRON_AI.md](./VEYRON_AI.md) for the full API table. Deterministic advisors query KubeVirt/Kubernetes; optional LLM paraphrase/routing via `VEYRON_AI_*`.
+
+Configure OpenRouter from shell keys:
+
+```bash
+./scripts/configure-zeus-openrouter.sh HOST USER
+```
+
+---
+
+## 5. VM Inspector & Capsule
+
+Selecting a VM in Fleet opens a right-side drawer (480px) without leaving the page:
+
+- Identity, state, namespace, IP, node
 - Resource summary (vCPU, memory, disk)
-- Action buttons: **Console** (opens ConsoleHub), **Capsule** (opens VM Capsule tab), **YAML** (raw manifest viewer), **Veyron Copilot** (opens AI chat scoped to this VM)
+- **Console**, **Capsule**, **YAML**, **Ask Zeus**, **Diagnose**
 
-Recent VMs are tracked in `localStorage` under `veyron_recent_vms` and surfaced in Spotlight empty state.
+Recent VMs: `localStorage` key `veyron_recent_vms` (Spotlight empty state).
 
 ---
 
 ## 6. Forge VM Wizard
 
-Six sequential steps; progress is tracked in a step rail at the top of the panel.
+Six steps with a top progress rail:
 
-| Step | Content |
+1. **Template** — OS family from catalog
+2. **Profile** — optional `VMProfile` CRD
+3. **Hardware** — CPU, RAM, disk, GPU
+4. **Network** — masquerade/bridge/SRIOV, NADs
+5. **Security** — TPM, Secure Boot, backup/policy bindings, limits
+6. **Review** — summary grid + collapsible YAML → `POST /api/v1/vms`
+
+---
+
+## 7. Responsive & Mobile
+
+| Breakpoint | Behavior |
 |---|---|
-| 1 — Template | Pick from 44+ templates grouped by OS family; preview shows default CPU/RAM/firmware |
-| 2 — Profile | Optional VMProfile CRD from the cluster catalog; override fields shown inline |
-| 3 — Hardware | vCPU count, memory, root disk size, GPU passthrough toggle |
-| 4 — Network | Interface type (masquerade / bridge / SRIOV), NAD selection, extra NICs |
-| 5 — Security | TPM enable/disable, Secure Boot toggle, backup policy binding, network policy binding, resource limits (requests/limits for CPU and memory) |
-| 6 — Review | 3-column summary grid (Identity / Hardware / Security) + collapsible YAML preview of the generated KubeVirt `VirtualMachine` manifest; **Create VM** submits `POST /api/v1/vms` |
+| ≥ 1280px | Full CloudOS: Finder + dock + page window |
+| 768–1279px | Finder overlay with backdrop; quick nav bar |
+| &lt; 768px | Bottom mobile nav (Mission Control, Fleet, Forge, Console, Ask Zeus); Browse as bottom sheet |
+
+Mission Control and fleet grids use CSS Grid `auto-fit, minmax(320px, 1fr)`.
 
 ---
 
-## 7. Responsive Layout
+## 8. Backend Architecture
 
-| Breakpoint | Sidebar | Mission grid | Notes |
-|---|---|---|---|
-| 1280 × 720 | 240 px fixed | 2-column | Minimum supported resolution |
-| 1440 × 900 | 240 px fixed | 3-column | Default design target |
-| ≥ 1920 | 240 px fixed | 4-column | Wide fleet cards |
+### Monolithic SPA
 
-Topbar: 56 px fixed. Sidebar: 240 px fixed. Content area: `calc(100vw - 240px)` with `16px` padding. All glass cards use CSS Grid with `auto-fit, minmax(320px, 1fr)` so columns reflow without JavaScript.
+All pages live in one DOM tree. No fragment fetches after initial load — ideal for TLS with self-signed certs and air-gapped clusters.
 
----
+### SharedState
 
-## 8. Veyron Copilot Integration
+```rust
+pub type SharedState = Arc<RwLock<WebState>>;
+// WebState: KubeClient, namespace, API key table, rate limiter
+```
 
-Copilot surfaces use the `--violet` (`#9b7cff`) color token throughout. Each module name maps to a scoped AI chat panel:
+Handlers: `pub fn router(state: SharedState) -> Router` merged in `src/api/handlers/mod.rs`.
 
-| Module | Scope |
+### Auth
+
+| Form | Example |
 |---|---|
-| Veyron Copilot | General fleet assistant |
-| Veyron Doctor | Diagnose a failing VM |
-| Veyron Error Explainer | Translate raw K8s/KubeVirt error messages |
-| Veyron YAML Builder | Generate VMRogue/KubeVirt manifests from natural language |
-| Veyron Scheduling Explainer | Explain node placement decisions |
-| Veyron Blueprint Studio | Design multi-VM VMRogueBlueprint CRs |
-| Veyron Network Lens | Analyze Cilium policy and flow data |
-| Veyron Storage Doctor | Diagnose PVC / DataVolume issues |
-| Veyron Backup Advisor | Review snapshot and retention policies |
-| Veyron Security Sentinel | Surface CVEs and policy gaps |
-| Veyron GitOps Generator | Produce Kustomize / GitOps repo structure |
+| Header | `X-API-Key: <key>` |
+| Bearer | `Authorization: Bearer <jwt>` |
+| Query | `?token=<key>` |
 
-Copilot chat is routed through `/api/v1/experience/copilot/*`. The backend wires to an external LLM when `VEYRON_AI_*` environment variables are configured; without them the Copilot panels render but return a "not configured" response.
+Multi-key RBAC: `VEYRON_API_KEYS="admin:key1,write:key2,readonly:key3"`.
+
+### WebSockets
+
+| Path | Purpose |
+|---|---|
+| `/api/v1/ws/vnc/:ns/:name` | noVNC proxy |
+| `/api/v1/ws/serial/:ns/:name` | Serial console |
+| `/api/v1/ws/metrics` | Live fleet metrics |
+| `POST /api/v1/ws/ticket` | One-time VNC/serial ticket |
+
+VNC, serial, and metrics streams bypass `VEYRON_HTTP_REQUEST_TIMEOUT_SECS`.
 
 ---
 
-## 9. Related Docs
+## 9. Testing the Dashboard
 
-- `docs/OPTIONAL_INTEGRATIONS.md` — Prometheus, Grafana, PacketWolf
-- `docs/TEMPLATE_CATALOG.md` — VMTemplate / VMProfile CRDs
-- `docs/SOC.md` — Security Posture / SOC handler details
-- `docs/WINDOWS_KUBEVIRT_PRODUCTION.md` — Windows guest setup (RDP, Sysprep)
-- `src/api/handlers/experience.rs` — Experience API handler source
+After deploy to a remote cluster:
+
+```bash
+# HTTPS smoke (health, templates, VM list)
+./scripts/verify-veyron-remote.sh HOST [30151]
+
+# Full cluster E2E via SSH
+./scripts/test-remote.sh HOST USER
+
+# Daily VM lifecycle (~10–15 min)
+VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
+```
+
+Force cache refresh in browser: `https://HOST:30151/dashboard?dash=20260618b`
+
+Dashboard tier checks in `test-remote.sh` validate CloudOS shell markers (`mac-desktop-root`, dock, Ask Zeus entry).
+
+---
+
+## 10. Related Docs
+
+| Doc | Topic |
+|---|---|
+| [VEYRON_AI.md](./VEYRON_AI.md) | Ask Zeus API, modules, LLM agent layer |
+| [OPTIONAL_INTEGRATIONS.md](./OPTIONAL_INTEGRATIONS.md) | Prometheus, Grafana, PacketWolf |
+| [TEMPLATE_CATALOG.md](./TEMPLATE_CATALOG.md) | VMTemplate / VMProfile CRDs |
+| [SOC.md](./SOC.md) | Security Posture / SOC handlers |
+| [WINDOWS_KUBEVIRT_PRODUCTION.md](./WINDOWS_KUBEVIRT_PRODUCTION.md) | Windows RDP, Sysprep, golden images |
+| [USER_STORIES.md](./USER_STORIES.md) | Persona journeys & acceptance criteria |
+
+Source: `src/api/handlers/experience.rs`, `src/api/web/dashboard*.html|css|js`.
