@@ -73,10 +73,18 @@ body.mac-desktop-root[data-desktop-tier="normal"] .cloudos-finder {
 }
 
 body.mac-desktop-root.finder-collapsed .cloudos-finder {
-  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border: none !important;
 }
 
 body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed) .cloudos-finder,
+body.mac-desktop-root[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder,
 body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   display: flex !important;
 }
@@ -2280,14 +2288,12 @@ body.mac-desktop-root .vmr-panel {
 }
 
 body.mac-desktop-root .cloudos-finder {
-  width: 228px;
+  /* base layout — see pw-desktop-sidebar block at end of file */
 }
 
 body.mac-desktop-root .cloudos-finder-item.active {
-  border-left: 3px solid var(--cyan);
-  padding-left: 9px;
-  background: linear-gradient(90deg, rgba(39, 215, 255, 0.16), rgba(39, 215, 255, 0.04));
-  box-shadow: inset 0 0 24px rgba(39, 215, 255, 0.06);
+  border-left: none;
+  padding-left: 10px;
 }
 
 .finder-section-label {
@@ -2989,5 +2995,283 @@ body.mac-desktop-root .card-title {
 
 html[data-theme="frost"] body.mac-desktop-root .vmr-surface-card,
 html[data-theme="frost"] body.mac-desktop-root .mac-page-window > .card {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+/* ── PacketWolf-style navigation sidebar ── */
+
+body.mac-desktop-root .cloudos-body-row {
+  gap: 0;
+  align-items: stretch;
+}
+
+body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 220px;
+  flex-shrink: 0;
+  margin: 10px 0 10px 10px;
+  padding: 8px 8px 10px;
+  max-height: calc(100dvh - 108px);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  border-right: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 0 1.25rem 1.25rem 0;
+  background: rgba(28, 31, 40, 0.82);
+  backdrop-filter: blur(calc(20px + 10px)) saturate(1.45);
+  -webkit-backdrop-filter: blur(calc(20px + 10px)) saturate(1.45);
+  box-shadow:
+    inset -1px 0 0 rgba(255, 255, 255, 0.04),
+    4px 0 24px -12px rgba(0, 0, 0, 0.35);
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), padding 0.28s ease, opacity 0.2s ease, margin 0.28s ease;
+  overflow: hidden;
+}
+
+body.mac-desktop-root.finder-narrow .cloudos-finder.pw-desktop-sidebar {
+  width: 64px;
+  padding: 8px 6px 10px;
+}
+
+body.mac-desktop-root .finder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 10px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.mac-desktop-root .finder-sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(248, 250, 252, 0.82);
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+body.mac-desktop-root .finder-sidebar-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+  transform: scale(1.04);
+}
+
+body.mac-desktop-root .finder-toolbar-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+body.mac-desktop-root .finder-search-wrap {
+  position: relative;
+  padding: 8px 4px 10px;
+}
+
+body.mac-desktop-root .finder-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: var(--muted);
+  pointer-events: none;
+  z-index: 1;
+}
+
+body.mac-desktop-root .finder-nav-search {
+  width: 100%;
+  padding: 7px 10px 7px 28px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text-bright);
+  font-size: 0.72rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+body.mac-desktop-root .finder-nav-search:focus {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.12);
+}
+
+body.mac-desktop-root .finder-nav-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 2px 8px;
+  scrollbar-width: thin;
+}
+
+body.mac-desktop-root .finder-section-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 10px 10px 6px;
+}
+
+body.mac-desktop-root .cloudos-finder-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+body.mac-desktop-root .cloudos-finder-item .fi-icon {
+  width: 1.25rem;
+  text-align: center;
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+body.mac-desktop-root .cloudos-finder-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-bright);
+}
+
+body.mac-desktop-root .cloudos-finder-item.active {
+  border-color: rgba(56, 189, 248, 0.28);
+  background: linear-gradient(90deg, rgba(56, 189, 248, 0.16), rgba(56, 189, 248, 0.05));
+  color: var(--cyan);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.1);
+}
+
+body.mac-desktop-root.finder-narrow .finder-toolbar-title,
+body.mac-desktop-root.finder-narrow .finder-search-wrap,
+body.mac-desktop-root.finder-narrow .finder-section-label,
+body.mac-desktop-root.finder-narrow .finder-section-toggle,
+body.mac-desktop-root.finder-narrow .finder-footer,
+body.mac-desktop-root.finder-narrow .finder-browse-all .fi-label {
+  display: none;
+}
+
+body.mac-desktop-root.finder-narrow .cloudos-finder-item {
+  justify-content: center;
+  padding: 10px 6px;
+  font-size: 0;
+  gap: 0;
+}
+
+body.mac-desktop-root.finder-narrow .cloudos-finder-item .fi-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+body.mac-desktop-root.finder-narrow .finder-browse-all {
+  font-size: 0;
+}
+
+body.mac-desktop-root.finder-narrow .finder-browse-all .fi-icon {
+  font-size: 1rem;
+}
+
+body.mac-desktop-root.finder-narrow .finder-toolbar {
+  justify-content: center;
+  padding-bottom: 8px;
+}
+
+body.mac-desktop-root.finder-narrow .finder-section.collapsed .finder-section-body {
+  display: flex;
+}
+
+body.mac-desktop-root.finder-narrow .finder-section-body {
+  gap: 4px;
+}
+
+.finder-item-tooltip {
+  position: absolute;
+  left: calc(100% + 0.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 60;
+  white-space: nowrap;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(248, 250, 252, 0.95);
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+
+body.finder-narrow .cloudos-finder-item:hover .finder-item-tooltip,
+body.finder-narrow .cloudos-finder-item:focus-visible .finder-item-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.cloudos-finder-item.finder-filter-hidden {
+  display: none !important;
+}
+
+.finder-section.finder-filter-empty {
+  display: none !important;
+}
+
+.mac-menubar-sidebar-btn {
+  display: none;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(248, 250, 252, 0.85);
+  cursor: pointer;
+  font-family: inherit;
+  margin-right: 4px;
+}
+
+.mac-menubar-sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+body.mac-desktop-root .finder-footer {
+  margin-top: auto;
+  padding: 10px 6px 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.mac-desktop-root .finder-current-window {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cyan);
+  padding: 4px 8px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html[data-theme="frost"] body.mac-desktop-root .cloudos-finder.pw-desktop-sidebar {
   background: rgba(255, 255, 255, 0.88);
 }
