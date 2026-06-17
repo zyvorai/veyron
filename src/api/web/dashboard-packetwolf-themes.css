@@ -2286,3 +2286,52 @@ html[data-theme] .vm-inspector-tab.active {
   background: color-mix(in srgb, var(--pw-color-data) 12%, transparent);
   border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
 }
+
+/* Veyron sidebar nav items */
+html[data-theme] .veyron-nav-item:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .veyron-nav-item.active {
+  background: var(--pw-accent-medium);
+  box-shadow: inset 3px 0 0 var(--pw-color-data);
+}
+
+/* Copilot side-panel (violet/AI branded — use pw-color-ai) */
+html[data-theme] .veyron-copilot-panel {
+  border-color: color-mix(in srgb, var(--pw-color-ai) 25%, transparent);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--pw-color-ai) 12%, transparent),
+    color-mix(in srgb, var(--pw-color-data) 6%, transparent));
+}
+
+/* vmr-console protocol tab active */
+html[data-theme] .vmr-console-protocol-tabs button.active {
+  border-color: color-mix(in srgb, var(--pw-color-info) 35%, transparent);
+  color: var(--pw-color-info);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--pw-color-info) 16%, transparent),
+    color-mix(in srgb, var(--pw-color-info) 6%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--pw-color-info) 12%, transparent);
+}
+
+/* vmr-console empty state glow and icon */
+html[data-theme] .vmr-console-empty-glow {
+  background: radial-gradient(ellipse 70% 60% at 50% 50%,
+    color-mix(in srgb, var(--pw-color-info) 12%, transparent), transparent 70%);
+}
+
+html[data-theme] .vmr-console-empty-icon {
+  color: var(--pw-color-info);
+  background: linear-gradient(165deg,
+    color-mix(in srgb, var(--pw-color-info) 18%, transparent),
+    color-mix(in srgb, var(--pw-color-data) 8%, transparent));
+  border-color: color-mix(in srgb, var(--pw-color-info) 22%, transparent);
+  box-shadow: 0 8px 28px color-mix(in srgb, var(--pw-color-info) 12%, transparent);
+}
+
+/* vmr-console quick-pick hover */
+html[data-theme] .vmr-console-quick-pick:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
+  background: color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
