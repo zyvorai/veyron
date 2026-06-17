@@ -2263,3 +2263,9 @@ html[data-theme='tahoe-light'] body.mac-desktop-root[data-wallpaper='aurora']::b
 html[data-theme] .refresh-ring-progress {
   stroke: var(--pw-color-data);
 }
+
+/* VM detail remote-console panel */
+html[data-theme] .vd-remote-console {
+  border-color: color-mix(in srgb, var(--pw-color-data) 35%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pw-color-data) 12%, transparent), rgba(0,0,0,.2));
+}
