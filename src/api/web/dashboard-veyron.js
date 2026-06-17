@@ -2139,11 +2139,11 @@
             '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Generate NetworkPolicy for all VMs\')">Generate Network Policy</button>' +
           '</div>' +
         '</div>' +
-        '<div style="overflow-x:auto"><table class="table" style="min-width:800px"><thead><tr>' +
+        '<div class="vmr-network-flow-wrap"><div style="overflow-x:auto"><table class="table vmr-network-flow-table" style="min-width:800px"><thead><tr>' +
           '<th>Source</th><th>Namespace</th><th>Destination</th><th>Protocol</th><th>Port</th><th>Verdict</th><th>Policy</th><th></th>' +
         '</tr></thead><tbody id="vmr-network-flow-rows">' +
           '<tr><td colspan="8" style="color:var(--muted);text-align:center">Loading flows…</td></tr>' +
-        '</tbody></table></div>' +
+        '</tbody></table></div></div>' +
       '</div>';
   };
 
