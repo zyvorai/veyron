@@ -826,3 +826,531 @@ html[data-theme='frost'] body.mac-desktop-root .mac-control-center {
     transform: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════
+   PacketWolf surface tokens + Veyron bridge
+   ═══════════════════════════════════════════════════ */
+
+html[data-theme='tahoe'],
+html[data-theme='sonoma'],
+html[data-theme='graphite'],
+html[data-theme='wolf'],
+html[data-theme='forge'],
+html[data-theme='ember'] {
+  --pw-glass-intensity: 1;
+  --pw-text-primary: #f1f5f9;
+  --pw-text-secondary: #94a3b8;
+  --pw-text-muted: #64748b;
+  --glass-bg-tinted: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --glass-shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.25);
+  --pw-blur: calc(24px * var(--pw-glass-intensity, 1));
+  --pw-blur-heavy: calc(40px * var(--pw-glass-intensity, 1));
+  --pw-glass-saturate: calc(100% + 50% * var(--pw-glass-intensity, 1));
+  --glass-blur: blur(var(--pw-blur)) saturate(var(--pw-glass-saturate, 150%));
+}
+
+html[data-theme='tahoe'],
+html.theme-tahoe {
+  --pw-bg-deep: #0a0c11;
+  --pw-surface-glass: #11151c;
+  --pw-surface-elevated: #161b24;
+  --pw-border-glass: #1f2937;
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.1);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 94%, var(--pw-bg-deep));
+  --glass-border: rgba(255, 255, 255, 0.07);
+  --glass-border-strong: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme='tahoe-light'],
+html.theme-tahoe-light {
+  --pw-glass-intensity: 1;
+  --pw-bg-deep: #f5f7fb;
+  --pw-surface-glass: rgba(255, 255, 255, 0.88);
+  --pw-surface-elevated: #ffffff;
+  --pw-border-glass: rgba(0, 0, 0, 0.08);
+  --pw-text-primary: #0f172a;
+  --pw-text-secondary: #64748b;
+  --pw-text-muted: #94a3b8;
+  --glass-bg: rgba(255, 255, 255, 0.65);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.82);
+  --glass-bg-tinted: rgba(255, 255, 255, 0.92);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 98%, var(--pw-bg-deep));
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-strong: rgba(0, 0, 0, 0.12);
+  --glass-highlight: rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --glass-shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.05);
+  --pw-blur: 24px;
+  --pw-blur-heavy: 40px;
+  --pw-glass-saturate: 150%;
+  --glass-blur: blur(var(--pw-blur)) saturate(var(--pw-glass-saturate));
+}
+
+html[data-theme='sonoma'],
+html.theme-sonoma {
+  --pw-bg-deep: #0c0a18;
+  --pw-surface-glass: #12101f;
+  --pw-surface-elevated: #18152a;
+  --pw-border-glass: #2e2640;
+  --glass-bg: rgba(139, 92, 246, 0.08);
+  --glass-bg-elevated: rgba(139, 92, 246, 0.12);
+  --glass-bg-tinted: rgba(167, 139, 250, 0.16);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 94%, var(--pw-bg-deep));
+  --glass-border: rgba(167, 139, 250, 0.18);
+  --glass-border-strong: rgba(167, 139, 250, 0.28);
+}
+
+html[data-theme='graphite'],
+html.theme-graphite {
+  --pw-bg-deep: #0a0a0a;
+  --pw-surface-glass: #111111;
+  --pw-surface-elevated: #161616;
+  --pw-border-glass: #27272a;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.07);
+  --glass-bg-tinted: rgba(255, 255, 255, 0.1);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 94%, var(--pw-bg-deep));
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-strong: rgba(255, 255, 255, 0.16);
+  --pw-blur: 20px;
+  --pw-blur-heavy: 32px;
+  --pw-glass-saturate: 120%;
+}
+
+html[data-theme='wolf'],
+html.theme-wolf {
+  --pw-bg-deep: #09090b;
+  --pw-surface-glass: #141210;
+  --pw-surface-elevated: #1c1814;
+  --pw-border-glass: #3f3f20;
+  --glass-bg: rgba(245, 158, 11, 0.06);
+  --glass-bg-elevated: rgba(245, 158, 11, 0.1);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 94%, var(--pw-bg-deep));
+  --glass-border: rgba(245, 158, 11, 0.14);
+  --glass-border-strong: rgba(251, 191, 36, 0.22);
+}
+
+html[data-theme='forge'],
+html.theme-forge {
+  --pw-bg-deep: #0c0606;
+  --pw-surface-glass: #140a0a;
+  --pw-surface-elevated: #1c1010;
+  --pw-border-glass: #450a0a;
+  --glass-bg: rgba(239, 68, 68, 0.07);
+  --glass-bg-elevated: rgba(239, 68, 68, 0.11);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 94%, var(--pw-bg-deep));
+  --glass-border: rgba(239, 68, 68, 0.16);
+  --glass-border-strong: rgba(248, 113, 113, 0.24);
+}
+
+html[data-theme='ember'],
+html.theme-ember {
+  --pw-bg-deep: #060000;
+  --pw-surface-glass: #0c0404;
+  --pw-surface-elevated: #140808;
+  --pw-border-glass: #450a0a;
+  --glass-bg: rgba(220, 38, 38, 0.08);
+  --glass-bg-elevated: rgba(220, 38, 38, 0.12);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 94%, var(--pw-bg-deep));
+  --glass-border: rgba(220, 38, 38, 0.18);
+  --glass-border-strong: rgba(239, 68, 68, 0.28);
+}
+
+html[data-theme='light'],
+html.theme-light {
+  --pw-glass-intensity: 1;
+  --pw-bg-deep: #fafaf9;
+  --pw-surface-glass: rgba(255, 255, 255, 0.72);
+  --pw-surface-elevated: rgba(255, 255, 255, 0.85);
+  --pw-border-glass: rgba(0, 0, 0, 0.08);
+  --pw-text-primary: #18181b;
+  --pw-text-secondary: #3f3f46;
+  --pw-text-muted: #52525b;
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.85);
+  --glass-bg-tinted: rgba(255, 255, 255, 0.92);
+  --pw-field-bg: color-mix(in srgb, var(--pw-surface-elevated) 96%, var(--pw-bg-deep));
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glass-border-strong: rgba(0, 0, 0, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --glass-shadow-elevated: 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06);
+  --pw-blur: 24px;
+  --pw-blur-heavy: 40px;
+  --pw-glass-saturate: 140%;
+  --glass-blur: blur(var(--pw-blur)) saturate(var(--pw-glass-saturate));
+}
+
+html[data-theme] {
+  --pw-accent-soft: color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+  --pw-accent-medium: color-mix(in srgb, var(--pw-color-data) 18%, transparent);
+  --pw-accent-border: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
+  --pw-accent-ring: color-mix(in srgb, var(--pw-color-data) 12%, transparent);
+  --panel: var(--pw-surface-glass);
+  --panel-strong: var(--pw-surface-elevated);
+  --line: var(--glass-border);
+  --line-strong: var(--glass-border-strong);
+  --text: var(--pw-text-primary);
+  --text-muted: var(--pw-text-secondary);
+  --muted: var(--pw-text-muted);
+  --text-bright: var(--pw-text-primary);
+  --text-dim: var(--pw-text-muted);
+  --bg-deep: var(--pw-bg-deep);
+  --bg-card: var(--pw-surface-glass);
+  --bg: var(--pw-surface-glass);
+  --bg-0: var(--pw-bg-deep);
+  --bg-1: var(--pw-surface-glass);
+  --bg-2: var(--pw-surface-elevated);
+  --primary-blue: var(--pw-color-data);
+  --primary-purple: var(--pw-color-ai);
+  --glass-shadow-hero: var(--glass-shadow-elevated), 0 0 0 1px var(--pw-accent-ring);
+}
+
+body.mac-desktop-root {
+  --glass-bg: var(--pw-surface-glass, rgba(20, 22, 28, 0.68));
+  --glass-bg-elevated: var(--pw-surface-elevated, rgba(28, 31, 40, 0.82));
+  --glass-border: var(--glass-border, rgba(255, 255, 255, 0.08));
+  --glass-border-strong: var(--glass-border-strong, rgba(255, 255, 255, 0.15));
+  --glass-blur: blur(var(--pw-blur, 24px)) saturate(var(--pw-glass-saturate, 150%));
+  --glass-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.28));
+}
+
+/* Page aurora — subtle theme tint on main canvas */
+body.mac-desktop-root .cloudos-main {
+  position: relative;
+}
+
+body.mac-desktop-root .cloudos-main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+body.mac-desktop-root .cloudos-main > * {
+  position: relative;
+  z-index: 1;
+}
+
+html[data-theme='tahoe'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 90% 60% at 10% 0%, rgba(0, 122, 255, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 70% 50% at 90% 100%, rgba(90, 200, 250, 0.08) 0%, transparent 50%);
+}
+
+html[data-theme='tahoe-light'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 80% 55% at 15% 0%, rgba(0, 122, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 45% at 85% 100%, rgba(90, 200, 250, 0.08) 0%, transparent 50%);
+}
+
+html[data-theme='sonoma'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 85% 55% at 15% 0%, rgba(139, 92, 246, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse 65% 45% at 85% 100%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+}
+
+html[data-theme='graphite'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 70% 50% at 20% 0%, rgba(255, 255, 255, 0.04) 0%, transparent 45%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(161, 161, 170, 0.05) 0%, transparent 50%);
+}
+
+html[data-theme='wolf'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 0%, rgba(249, 115, 22, 0.08) 0%, transparent 45%),
+    radial-gradient(ellipse 60% 40% at 85% 100%, rgba(220, 38, 38, 0.05) 0%, transparent 50%);
+}
+
+html[data-theme='forge'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(239, 68, 68, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(249, 115, 22, 0.06) 0%, transparent 45%);
+}
+
+html[data-theme='ember'] body.mac-desktop-root .cloudos-main::before {
+  background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(153, 27, 27, 0.14) 0%, transparent 55%);
+}
+
+html[data-theme='light'] body.mac-desktop-root .cloudos-main::before {
+  background:
+    radial-gradient(ellipse 80% 55% at 15% 0%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 45% at 85% 100%, rgba(59, 130, 246, 0.06) 0%, transparent 50%);
+}
+
+/* Glass component surfaces */
+html[data-theme] .glass-card,
+html[data-theme] body.mac-desktop-root .vmr-surface-card,
+html[data-theme] body.mac-desktop-root .mac-page-window {
+  background: color-mix(in srgb, var(--glass-bg) calc(var(--pw-glass-intensity, 1) * 100%), transparent);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+html[data-theme] .glass-card:hover,
+html[data-theme] body.mac-desktop-root .vmr-surface-card:hover {
+  border-color: var(--pw-accent-border);
+  box-shadow: var(--glass-shadow-elevated), 0 0 24px var(--pw-accent-glow);
+}
+
+html[data-theme] .glass-card-hero {
+  background: var(--glass-bg-elevated);
+  border-color: var(--pw-accent-border);
+  box-shadow: var(--glass-shadow-hero);
+}
+
+html[data-theme] .glass-card-hero::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 100% 0%, var(--pw-accent-soft), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, color-mix(in srgb, var(--pw-color-ai) 8%, transparent), transparent 50%);
+}
+
+html[data-theme] .glass-btn-primary {
+  color: #fff;
+  border-color: var(--pw-accent-border);
+  background: linear-gradient(
+    135deg,
+    var(--pw-color-data) 0%,
+    color-mix(in srgb, var(--pw-color-data) 82%, #000) 100%
+  );
+  box-shadow: 0 4px 24px var(--pw-accent-glow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme] .glass-btn-primary:hover {
+  box-shadow: 0 8px 32px color-mix(in srgb, var(--pw-color-data) 35%, transparent);
+}
+
+html[data-theme] .glass-btn-secondary {
+  background: color-mix(in srgb, var(--pw-surface-elevated) 75%, transparent);
+  border-color: var(--glass-border);
+}
+
+html[data-theme] .glass-btn-secondary:hover {
+  background: color-mix(in srgb, var(--pw-surface-elevated) 92%, transparent);
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .form-input,
+html[data-theme] .form-select,
+html[data-theme] .toolbar-input,
+html[data-theme] .vmr-header-search,
+html[data-theme] .finder-nav-search,
+html[data-theme] .browse-filter-input {
+  background-color: var(--pw-field-bg);
+  border-color: var(--glass-border);
+  color: var(--pw-text-primary);
+}
+
+html[data-theme] .form-input:focus,
+html[data-theme] .form-select:focus,
+html[data-theme] .vmr-header-search:focus,
+html[data-theme] .finder-nav-search:focus {
+  border-color: var(--pw-accent-border);
+  box-shadow: 0 0 0 3px var(--pw-accent-ring);
+}
+
+html[data-theme] .table thead th,
+html[data-theme] body.mac-desktop-root .vmr-table thead th {
+  background: color-mix(in srgb, var(--pw-surface-elevated) 92%, transparent);
+  color: var(--pw-text-secondary);
+  border-color: var(--glass-border);
+}
+
+html[data-theme] .table tbody tr:hover,
+html[data-theme] body.mac-desktop-root .vmr-table tbody tr:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .glass-badge.other {
+  background: var(--pw-accent-soft);
+  color: var(--pw-color-info);
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .mac-menu-panel,
+html[data-theme] .mac-control-center,
+html[data-theme] .mac-notification-center {
+  background: color-mix(in srgb, var(--pw-bg-deep) 88%, transparent);
+  backdrop-filter: blur(var(--pw-blur-heavy)) saturate(160%);
+  -webkit-backdrop-filter: blur(var(--pw-blur-heavy)) saturate(160%);
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--glass-shadow-elevated);
+}
+
+html[data-theme] .mac-menu-item:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .mac-menu-item.active-tier {
+  background: var(--pw-accent-medium);
+  color: var(--spark);
+}
+
+html[data-theme] .cloudos-finder-item.active {
+  background: linear-gradient(90deg, var(--pw-accent-medium), var(--pw-accent-soft));
+  border-left-color: var(--pw-color-data);
+}
+
+html[data-theme] .cloudos-finder-item:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .table tbody tr:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .spotlight-input:focus,
+html[data-theme] .launchpad-search:focus,
+html[data-theme] .browse-filter-input:focus {
+  border-color: var(--pw-accent-border);
+  box-shadow: 0 0 0 3px var(--pw-accent-ring);
+}
+
+html[data-theme] .copilot-module-badge {
+  background: color-mix(in srgb, var(--pw-color-ai) 14%, transparent);
+  color: var(--pw-color-ai);
+}
+
+html[data-theme] .copilot-msg-user span {
+  background: color-mix(in srgb, var(--pw-color-ai) 16%, transparent);
+}
+
+html[data-theme] .copilot-tool-chip {
+  background: color-mix(in srgb, var(--pw-color-ai) 12%, transparent);
+  color: var(--pw-color-ai);
+  border-color: color-mix(in srgb, var(--pw-color-ai) 22%, transparent);
+}
+
+/* Tahoe hero + stat tones */
+html[data-theme] .vmr-page-hero,
+html[data-theme] .tahoe-hero {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 42%, transparent 100%),
+    linear-gradient(160deg, color-mix(in srgb, var(--pw-bg-deep) 78%, transparent) 0%, color-mix(in srgb, var(--pw-bg-deep) 92%, transparent) 100%);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  border-color: var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 28px 56px -28px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme] .vmr-page-hero::before {
+  background: linear-gradient(90deg, var(--pw-color-data), var(--pw-color-info), var(--pw-color-ai));
+}
+
+html[data-theme] .tahoe-stat-sky .gsv,
+html[data-theme] .tahoe-stat-sky .tahoe-stat-value {
+  color: var(--zeus-tone-sky);
+}
+
+html[data-theme] .tahoe-stat-violet .gsv,
+html[data-theme] .tahoe-stat-violet .tahoe-stat-value {
+  color: var(--zeus-tone-violet);
+}
+
+html[data-theme] .tahoe-stat-emerald .gsv,
+html[data-theme] .tahoe-stat-emerald .tahoe-stat-value {
+  color: var(--zeus-tone-emerald);
+}
+
+html[data-theme] .tahoe-stat-amber .gsv,
+html[data-theme] .tahoe-stat-amber .tahoe-stat-value {
+  color: var(--zeus-tone-amber);
+}
+
+html[data-theme] .tahoe-stat-red .gsv,
+html[data-theme] .tahoe-stat-red .tahoe-stat-value {
+  color: var(--zeus-tone-red);
+}
+
+html[data-theme] .tahoe-stat-pill,
+html[data-theme] .glass-stat-pill {
+  border-color: var(--glass-border);
+  background: color-mix(in srgb, var(--glass-bg) 90%, transparent);
+}
+
+html[data-theme] button.tahoe-stat-pill.clickable-stat:hover,
+html[data-theme] button.glass-stat-pill.clickable-stat:hover,
+html[data-theme] .glass-stat-pill.clickable-stat:hover {
+  border-color: var(--pw-accent-border);
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .mission-window-card {
+  border-color: var(--glass-border);
+  background: color-mix(in srgb, var(--glass-bg) 88%, transparent);
+}
+
+html[data-theme] .mission-window-card:hover {
+  border-color: var(--pw-accent-border);
+  box-shadow: 0 8px 24px var(--pw-accent-glow);
+}
+
+html[data-theme] .pw-mission-tile--sky,
+html[data-theme] .mission-window-card.pw-mission-tile--sky {
+  border-color: color-mix(in srgb, var(--zeus-tone-sky) 28%, transparent);
+}
+
+html[data-theme] .pw-mission-tile--emerald,
+html[data-theme] .mission-window-card.pw-mission-tile--emerald {
+  border-color: color-mix(in srgb, var(--zeus-tone-emerald) 28%, transparent);
+}
+
+html[data-theme] .pw-mission-tile--amber,
+html[data-theme] .mission-window-card.pw-mission-tile--amber {
+  border-color: color-mix(in srgb, var(--zeus-tone-amber) 28%, transparent);
+}
+
+html[data-theme] .pw-mission-tile--violet,
+html[data-theme] .mission-window-card.pw-mission-tile--violet {
+  border-color: color-mix(in srgb, var(--zeus-tone-violet) 28%, transparent);
+}
+
+html[data-theme] .pw-mission-tile--red,
+html[data-theme] .mission-window-card.pw-mission-tile--red {
+  border-color: color-mix(in srgb, var(--zeus-tone-red) 28%, transparent);
+}
+
+html[data-theme] .vm-sort-col.active {
+  color: var(--spark);
+  border-bottom-color: var(--pw-accent-border);
+}
+
+html[data-theme] .coming-soon-tag {
+  background: var(--pw-accent-soft);
+  color: var(--pw-color-info);
+  border-color: var(--pw-accent-border);
+}
+
+/* macOS chrome accent hovers (theme-tinted) */
+html[data-theme] .mac-toolbar-overflow-menu button:hover,
+html[data-theme] .mac-cc-tile:hover,
+html[data-theme] .mac-cc-toggle:hover,
+html[data-theme] .mac-dynamic-island:hover,
+html[data-theme] .mac-desktop-tab:hover,
+html[data-theme] .mac-desktop-tab-wrap:hover {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+html[data-theme] .mac-desktop-tab.active,
+html[data-theme] .mac-desktop-tab-wrap.active {
+  background: var(--pw-accent-medium);
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+
+html[data-theme] .mac-desktop-tab-wrap.active {
+  box-shadow: 0 -2px 12px var(--pw-accent-glow);
+}
+
+html[data-theme] .mac-dock-item-active {
+  box-shadow: 0 0 16px var(--pw-accent-glow);
+}

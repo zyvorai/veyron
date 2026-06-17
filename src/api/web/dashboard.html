@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618m">
+<meta name="veyron-dashboard-rev" content="20260618n">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618m';
+  var DASH_REV = '20260618n';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1070,12 +1070,12 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .form-input,.form-select{
   width:100%;padding:12px 14px;border-radius:12px;
-  background:var(--steel);border:1px solid var(--border);
-  color:var(--text-bright);font-family:var(--font-mono);font-size:.9rem;
+  background:var(--pw-field-bg, var(--steel));border:1px solid var(--glass-border, var(--border));
+  color:var(--pw-text-primary, var(--text-bright));font-family:var(--font-mono);font-size:.9rem;
   transition:border-color .15s, box-shadow .15s, transform .15s;outline:none;
 }
 .form-input::placeholder{color:var(--text-dim)}
-.form-input:focus,.form-select:focus{border-color:var(--ember);box-shadow:0 0 0 4px rgba(159,176,196,.12);transform:translateY(-1px)}
+.form-input:focus,.form-select:focus{border-color:var(--pw-accent-border, var(--ember));box-shadow:0 0 0 3px var(--pw-accent-ring, rgba(159,176,196,.12));transform:translateY(-1px)}
 .form-select option{background:var(--bg-card-solid);color:var(--text)}
 .form-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .btn-cancel{
@@ -1129,22 +1129,22 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   transition:border-color .25s,box-shadow .3s,transform .25s cubic-bezier(.16,1,.3,1);
 }
 .glass-card:hover{
-  border-color:rgba(148,163,184,.28);
-  box-shadow:0 12px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.08);
+  border-color:var(--pw-accent-border, var(--glass-border-strong));
+  box-shadow:var(--glass-shadow-elevated, var(--glass-shadow));
 }
 .glass-card-hero{
   background:var(--glass-bg-elevated);
   backdrop-filter:var(--glass-blur);
   -webkit-backdrop-filter:var(--glass-blur);
-  border:1px solid rgba(59,130,246,.22);
+  border:1px solid var(--pw-accent-border, var(--glass-border));
   border-radius:var(--glass-radius);
-  box-shadow:var(--glass-shadow-hero);
+  box-shadow:var(--glass-shadow-hero, var(--glass-shadow));
   position:relative;overflow:hidden;
 }
 .glass-card-hero::before{
   content:'';position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(ellipse 80% 60% at 100% 0%,rgba(59,130,246,.12),transparent 55%),
-    radial-gradient(ellipse 50% 40% at 0% 100%,rgba(139,92,246,.08),transparent 50%);
+  background:radial-gradient(ellipse 80% 60% at 100% 0%, var(--pw-accent-soft, rgba(59,130,246,.12)), transparent 55%),
+    radial-gradient(ellipse 50% 40% at 0% 100%, color-mix(in srgb, var(--pw-color-ai, #8b5cf6) 8%, transparent), transparent 50%);
 }
 .glass-card-hero > *{position:relative;z-index:1}
 .glass-badge{
@@ -1156,28 +1156,28 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .glass-badge.running{background:var(--success-dim);color:var(--success);border-color:rgba(34,197,94,.28)}
 .glass-badge.stopped{background:rgba(100,116,139,.12);color:var(--text-muted);border-color:rgba(100,116,139,.2)}
 .glass-badge.error{background:var(--error-dim);color:var(--error);border-color:rgba(239,68,68,.28)}
-.glass-badge.other{background:rgba(59,130,246,.12);color:var(--primary-blue);border-color:rgba(59,130,246,.25)}
+.glass-badge.other{background:var(--pw-accent-soft, rgba(59,130,246,.12));color:var(--pw-color-info, var(--primary-blue));border-color:var(--pw-accent-border, rgba(59,130,246,.25))}
 .glass-btn-primary{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:10px 18px;border-radius:12px;
   font-family:var(--font-sans);font-size:.78rem;font-weight:700;
   letter-spacing:.04em;text-transform:uppercase;
-  color:#fff;border:1px solid rgba(59,130,246,.45);
-  background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 50%,#1e40af 100%);
-  box-shadow:0 4px 24px rgba(37,99,235,.35),inset 0 1px 0 rgba(255,255,255,.1);
+  color:#fff;border:1px solid var(--pw-accent-border, rgba(59,130,246,.45));
+  background:linear-gradient(135deg, var(--pw-color-data, #2563eb) 0%, color-mix(in srgb, var(--pw-color-data, #2563eb) 82%, #000) 100%);
+  box-shadow:0 4px 24px var(--pw-accent-glow, rgba(37,99,235,.35)), inset 0 1px 0 rgba(255,255,255,.1);
   cursor:pointer;transition:transform .2s,box-shadow .2s;
 }
-.glass-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(37,99,235,.45)}
+.glass-btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 32px color-mix(in srgb, var(--pw-color-data, #2563eb) 35%, transparent)}
 .glass-btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
 .glass-btn-secondary{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:8px 14px;border-radius:10px;
   font-family:var(--font-sans);font-size:.74rem;font-weight:600;
   color:var(--text);border:1px solid var(--glass-border);
-  background:rgba(15,23,42,.55);cursor:pointer;transition:background .2s,border-color .2s;
+  background:color-mix(in srgb, var(--pw-surface-elevated, rgba(15,23,42,.55)) 75%, transparent);cursor:pointer;transition:background .2s,border-color .2s;
   backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
 }
-.glass-btn-secondary:hover{background:rgba(30,41,59,.75);border-color:rgba(148,163,184,.35)}
+.glass-btn-secondary:hover{background:color-mix(in srgb, var(--pw-surface-elevated, #1e293b) 92%, transparent);border-color:var(--pw-accent-border, rgba(148,163,184,.35))}
 .glass-btn-destructive{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:8px 14px;border-radius:10px;
@@ -3197,7 +3197,7 @@ body.mac-desktop-root .mac-sheet-titlebar{min-height:40px;padding:8px 14px}
 .tahoe-stat-pill.warn .gsv{color:var(--warning)}
 .tahoe-stat-pill.bad .gsv{color:var(--error)}
 button.tahoe-stat-pill.clickable-stat{text-align:left;width:100%;font-family:inherit;color:inherit;cursor:pointer;border:none}
-button.tahoe-stat-pill.clickable-stat:hover{border-color:rgba(56,189,248,.28);background:rgba(56,189,248,.08)}
+button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border, rgba(56,189,248,.28));background:var(--pw-accent-soft, rgba(56,189,248,.08))}
 .mac-toolbar-overflow-wrap{position:relative}
 .mac-toolbar-overflow-btn{padding:6px 10px;font-size:.72rem}
 .mac-toolbar-overflow-menu{
@@ -3349,9 +3349,9 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:rgba(56,189,248,.28);ba
   content:'';position:absolute;top:0;left:0;right:0;height:2px;
   background:linear-gradient(90deg,var(--cyan),var(--blue));opacity:0;transition:opacity .15s;
 }
-.mission-window-card:hover{transform:scale(1.02) translateY(-1px);border-color:rgba(56,189,248,.35);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.mission-window-card:hover{transform:scale(1.02) translateY(-1px);border-color:var(--pw-accent-border, rgba(56,189,248,.35));box-shadow:0 8px 24px var(--pw-accent-glow, rgba(0,0,0,.18))}
 .mission-window-card:hover::before{opacity:.85}
-.mission-window-card.active{border-color:rgba(56,189,248,.5);box-shadow:0 0 20px rgba(56,189,248,.15)}
+.mission-window-card.active{border-color:var(--pw-accent-border, rgba(56,189,248,.5));box-shadow:0 0 20px var(--pw-accent-glow, rgba(56,189,248,.15))}
 .mission-window-card.active::before{opacity:1}
 .mission-window-card h4{margin:0 0 4px;font-size:.9rem;color:var(--text-bright)}
 .mission-window-card p{margin:0;font-size:.74rem;color:var(--text-dim)}
@@ -5869,7 +5869,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618j';
+window.__VMROGUE_DASH_REV = '20260618n';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6039,13 +6039,23 @@ function hexToRgba(hex, alpha) {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
 }
 
+function chartThemeColors() {
+  const primary = cssVar('--pw-chart-1', cssVar('--chart-primary', '#27d7ff'));
+  const secondary = cssVar('--pw-chart-2', cssVar('--chart-secondary', '#3f7cff'));
+  return {
+    primary: primary,
+    secondary: secondary,
+    primaryGlow: hexToRgba(primary, 0.4),
+    secondaryGlow: hexToRgba(secondary, 0.4)
+  };
+}
+
 function redrawChartsFromTheme() {
-  const primary = cssVar('--chart-primary', '#27d7ff');
-  const secondary = cssVar('--chart-secondary', '#3f7cff');
+  const c = chartThemeColors();
   try {
     if (typeof drawChart === 'function' && document.getElementById('cpu-chart')) {
-      drawChart('cpu-chart', cpuHistory, primary, hexToRgba(primary, 0.4));
-      drawChart('mem-chart', memHistory, secondary, hexToRgba(secondary, 0.4));
+      drawChart('cpu-chart', cpuHistory, c.primary, c.primaryGlow);
+      drawChart('mem-chart', memHistory, c.secondary, c.secondaryGlow);
     }
   } catch (e) { console.warn('Chart redraw after theme change:', e); }
 }
@@ -10370,8 +10380,9 @@ async function fetchOverview() {
     memHistory.push(memPct); if(memHistory.length>MAX_PTS)memHistory.shift();
     document.getElementById('cpu-current').textContent=cpuPct+'%';
     document.getElementById('mem-current').textContent=memPct+'%';
-    drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
-    drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
+    const charts = chartThemeColors();
+    drawChart('cpu-chart',cpuHistory,charts.primary,charts.primaryGlow);
+    drawChart('mem-chart',memHistory,charts.secondary,charts.secondaryGlow);
     renderDashboardCommandCenter();
     updateHealth(true, null, false);
     if (typeof renderMissionControlVmr === 'function') renderMissionControlVmr();
@@ -13588,8 +13599,9 @@ window.addEventListener('load', async () => {
       initFinderCollapsed();
     }
     syncFinderMobileUi();
-    drawChart('cpu-chart',cpuHistory,'#38bdf8','rgba(56,189,248,.4)');
-    drawChart('mem-chart',memHistory,'#3b82f6','rgba(59,130,246,.4)');
+    const charts = chartThemeColors();
+    drawChart('cpu-chart',cpuHistory,charts.primary,charts.primaryGlow);
+    drawChart('mem-chart',memHistory,charts.secondary,charts.secondaryGlow);
   });
 });
 

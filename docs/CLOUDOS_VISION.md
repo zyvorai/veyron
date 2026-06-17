@@ -92,6 +92,8 @@ Five wallpapers in the picker: `tahoe`, `tahoe-light`, `sonoma`, `graphite`, `au
 
 Keys: `veyron_theme`, `veyron_wallpaper`. Themes auto-pair with wallpaper when the user has not set `veyron_wallpaper_manual`. Legacy theme IDs in `localStorage` migrate on load (e.g. `frost` → `tahoe-light`, `slate` → `tahoe`).
 
+**Surface tokens:** `dashboard-packetwolf-themes.css` mirrors PacketWolf `glass.css` — per-theme `--pw-surface-glass`, `--pw-field-bg`, `--glass-*`, accent mixins (`--pw-accent-soft/medium/border`), and a Veyron bridge (`--panel`, `--text`, `--line`). Glass cards, forms, tables, hero panels, and charts read these vars so Tahoe/Sonoma/Graphite/Wolf each tint hovers and KPI accents correctly.
+
 ### Typography & density
 
 - System stack: `-apple-system`, SF Pro, Segoe UI fallbacks
