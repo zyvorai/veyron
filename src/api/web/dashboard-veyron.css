@@ -504,11 +504,6 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   font-weight: 600;
 }
 
-body[data-desktop-tier="normal"] #fleet-command-grid,
-body[data-desktop-tier="power"] #fleet-command-grid {
-  display: none !important;
-}
-
 #page-vms .vm-list-toolbar.vmr-list-toolbar-compact .bulk-bar {
   margin-top: 0;
 }
