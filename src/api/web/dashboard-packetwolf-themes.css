@@ -1385,3 +1385,215 @@ html[data-theme] .mac-desktop-tab-wrap.active {
 html[data-theme] .mac-dock-item-active {
   box-shadow: 0 0 16px var(--pw-accent-glow);
 }
+
+/* Light-theme toasts (replaces legacy frost inline rules) */
+html[data-theme='tahoe-light'] .toast-success,
+html[data-theme='light'] .toast-success {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--pw-color-success);
+  border-color: color-mix(in srgb, var(--pw-color-success) 25%, transparent);
+}
+
+html[data-theme='tahoe-light'] .toast-error,
+html[data-theme='light'] .toast-error {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--pw-color-critical);
+  border-color: color-mix(in srgb, var(--pw-color-critical) 22%, transparent);
+}
+
+html[data-theme='tahoe-light'] .toast-info,
+html[data-theme='light'] .toast-info {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--pw-color-data);
+  border-color: color-mix(in srgb, var(--pw-color-data) 20%, transparent);
+}
+
+html[data-theme='tahoe-light'] .toast-warning,
+html[data-theme='light'] .toast-warning {
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--pw-color-warning);
+  border-color: color-mix(in srgb, var(--pw-color-warning) 22%, transparent);
+}
+
+/* Tahoe context bar — Advanced desktop tier */
+.tahoe-context-bar {
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  background: color-mix(in srgb, var(--pw-bg-deep) 46%, transparent);
+  backdrop-filter: blur(calc(var(--pw-blur, 24px) + 4px)) saturate(135%);
+  -webkit-backdrop-filter: blur(calc(var(--pw-blur, 24px) + 4px)) saturate(135%);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 var(--glass-highlight, rgba(255, 255, 255, 0.06));
+}
+
+.tahoe-context-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px 10px;
+  min-width: 0;
+}
+
+.tahoe-context-app {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+}
+
+.tahoe-context-app-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--pw-text-primary) 6%, transparent);
+  border: 1px solid var(--glass-border);
+  font-size: 0.85rem;
+}
+
+.tahoe-context-app-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pw-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 12rem;
+}
+
+.tahoe-context-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tahoe-context-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.tahoe-context-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--pw-text-primary) 62%, transparent);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tahoe-context-pill:hover {
+  color: var(--pw-text-primary);
+  background: color-mix(in srgb, var(--pw-text-primary) 6%, transparent);
+}
+
+.tahoe-context-ns-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--pw-text-primary) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pw-text-primary) 14%, transparent);
+  background: color-mix(in srgb, var(--pw-surface-glass) 55%, transparent);
+  flex-shrink: 0;
+}
+
+.tahoe-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='sky'] .tahoe-context-app-icon,
+html[data-theme] .tahoe-context-bar--sky .tahoe-context-app-icon {
+  border-color: color-mix(in srgb, var(--zeus-tone-sky) 35%, transparent);
+  background: color-mix(in srgb, var(--zeus-tone-sky) 12%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='emerald'] .tahoe-context-app-icon,
+html[data-theme] .tahoe-context-bar--emerald .tahoe-context-app-icon {
+  border-color: color-mix(in srgb, var(--zeus-tone-emerald) 35%, transparent);
+  background: color-mix(in srgb, var(--zeus-tone-emerald) 12%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='amber'] .tahoe-context-app-icon,
+html[data-theme] .tahoe-context-bar--amber .tahoe-context-app-icon {
+  border-color: color-mix(in srgb, var(--zeus-tone-amber) 35%, transparent);
+  background: color-mix(in srgb, var(--zeus-tone-amber) 12%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='violet'] .tahoe-context-app-icon,
+html[data-theme] .tahoe-context-bar--violet .tahoe-context-app-icon {
+  border-color: color-mix(in srgb, var(--zeus-tone-violet) 35%, transparent);
+  background: color-mix(in srgb, var(--zeus-tone-violet) 12%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='red'] .tahoe-context-app-icon,
+html[data-theme] .tahoe-context-bar--red .tahoe-context-app-icon {
+  border-color: color-mix(in srgb, var(--zeus-tone-red) 35%, transparent);
+  background: color-mix(in srgb, var(--zeus-tone-red) 12%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='sky'] .tahoe-context-pill-active,
+html[data-theme] .tahoe-context-bar--sky .tahoe-context-pill-active {
+  color: var(--zeus-tone-sky);
+  background: color-mix(in srgb, var(--zeus-tone-sky) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zeus-tone-sky) 25%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='emerald'] .tahoe-context-pill-active,
+html[data-theme] .tahoe-context-bar--emerald .tahoe-context-pill-active {
+  color: var(--zeus-tone-emerald);
+  background: color-mix(in srgb, var(--zeus-tone-emerald) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zeus-tone-emerald) 25%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='amber'] .tahoe-context-pill-active,
+html[data-theme] .tahoe-context-bar--amber .tahoe-context-pill-active {
+  color: var(--zeus-tone-amber);
+  background: color-mix(in srgb, var(--zeus-tone-amber) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zeus-tone-amber) 25%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='violet'] .tahoe-context-pill-active,
+html[data-theme] .tahoe-context-bar--violet .tahoe-context-pill-active {
+  color: var(--zeus-tone-violet);
+  background: color-mix(in srgb, var(--zeus-tone-violet) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zeus-tone-violet) 25%, transparent);
+}
+
+html[data-theme] .tahoe-context-bar[data-accent='red'] .tahoe-context-pill-active,
+html[data-theme] .tahoe-context-bar--red .tahoe-context-pill-active {
+  color: var(--zeus-tone-red);
+  background: color-mix(in srgb, var(--zeus-tone-red) 12%, transparent);
+  border-color: color-mix(in srgb, var(--zeus-tone-red) 25%, transparent);
+}
+
+html[data-theme='tahoe-light'] .tahoe-context-bar,
+html[data-theme='light'] .tahoe-context-bar {
+  background: color-mix(in srgb, var(--pw-surface-glass) 88%, transparent);
+  border-color: var(--glass-border);
+}

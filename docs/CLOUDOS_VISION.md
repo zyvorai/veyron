@@ -94,6 +94,10 @@ Keys: `veyron_theme`, `veyron_wallpaper`. Themes auto-pair with wallpaper when t
 
 **Surface tokens:** `dashboard-packetwolf-themes.css` mirrors PacketWolf `glass.css` — per-theme `--pw-surface-glass`, `--pw-field-bg`, `--glass-*`, accent mixins (`--pw-accent-soft/medium/border`), and a Veyron bridge (`--panel`, `--text`, `--line`). Glass cards, forms, tables, hero panels, and charts read these vars so Tahoe/Sonoma/Graphite/Wolf each tint hovers and KPI accents correctly.
 
+**Sign-in theme picker:** the API key modal includes an 8-theme appearance grid (same presets as Control Center). Theme choice persists via `veyron_theme` before connect.
+
+**Advanced context bar:** on **Advanced** desktop tier, the legacy page toolbar is replaced by PacketWolf-style `.tahoe-context-bar` — app icon, section pills (Fleet / Network / Security / …), namespace chip, and page actions. Legacy inline theme CSS blocks (`steel`, `zinc`, `aurora`, `frost`, etc.) were removed; all styling lives in `dashboard-packetwolf-themes.css`.
+
 ### Typography & density
 
 - System stack: `-apple-system`, SF Pro, Segoe UI fallbacks
