@@ -166,10 +166,13 @@
     var el = document.getElementById(elId);
     if (!el) return;
     el.className = 'vmr-metrics-strip';
-    el.innerHTML = metrics.map(function (m) {
-      var cls = m.tone ? ' vmr-metric-value ' + m.tone : ' vmr-metric-value';
-      return '<div class="vmr-metric"><div class="vmr-metric-label">' + esc(m.label) +
-        '</div><div class="' + cls.trim() + '">' + esc(String(m.value)) + '</div></div>';
+    var toneMap = { ok: 'emerald', warn: 'amber', bad: 'red' };
+    var toneCycle = ['sky', 'violet', 'emerald', 'amber'];
+    el.innerHTML = metrics.map(function (m, i) {
+      var zeusTone = m.tone ? (toneMap[m.tone] || m.tone) : toneCycle[i % toneCycle.length];
+      return '<div class="vmr-metric tahoe-stat-pill tahoe-stat-' + zeusTone + (m.tone ? ' ' + m.tone : '') + '">' +
+        '<div class="vmr-metric-label gsl">' + esc(m.label) +
+        '</div><div class="vmr-metric-value gsv' + (m.tone ? ' ' + m.tone : '') + '">' + esc(String(m.value)) + '</div></div>';
     }).join('');
   };
 
