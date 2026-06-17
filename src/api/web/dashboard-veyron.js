@@ -2984,8 +2984,8 @@
         '<div class="vmr-inspector-bar-name">' + esc(name) + '</div>' +
         '<div class="vmr-inspector-bar-meta">' + esc(ns) + ' · ' +
           (isRunning
-            ? '<span style="color:var(--green)">Running</span>'
-            : '<span style="color:var(--muted)">Stopped</span>') +
+            ? '<span class="vmr-inspector-status running">Running</span>'
+            : '<span class="vmr-inspector-status stopped">Stopped</span>') +
         '</div>' +
         '<div class="vmr-inspector-bar-actions">' +
           (isRunning

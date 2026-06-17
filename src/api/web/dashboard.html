@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618s">
+<meta name="veyron-dashboard-rev" content="20260618t">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618s';
+  var DASH_REV = '20260618t';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -5415,7 +5415,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618s';
+window.__VMROGUE_DASH_REV = '20260618t';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6232,7 +6232,10 @@ function loadPageData(page, opts) {
   if (page === 'integrations') fetchIntegrations();
   if (page === 'gitops') fetchGitOps();
   if (page === 'scheduling') fetchScheduling();
-  if (page === 'cilium') fetchCilium();
+  if (page === 'cilium') {
+    if (typeof renderCiliumVmr === 'function') renderCiliumVmr();
+    fetchCilium(opts);
+  }
   if (page === 'observability') fetchObservability();
   if (page === 'performance') fetchPerformance();
   if (page === 'webhooks') fetchWebhooks();
@@ -10783,6 +10786,7 @@ function selectVm(ns, name, opts) {
   selectedVmKey = key;
   selectedVmNs = ns;
   selectedVmName = name;
+  window._vmInspectorTab = 'overview';
   expandedVm = key;
   rememberVmForSnap(ns, name);
   recordRecentVm(ns, name);
@@ -10871,8 +10875,6 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   }
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
-  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>';
-  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>';
   rail += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
   rail += '</div></details>';
   const links = '<div class="vm-hero-links">' +
@@ -14054,6 +14056,7 @@ async function fetchScheduling() {
 }
 
 async function fetchCilium() {
+  if (typeof renderCiliumVmr === 'function') renderCiliumVmr();
   const summary = document.getElementById('cilium-summary');
   const tb = document.getElementById('cilium-body');
   const flowStats = document.getElementById('flow-stats');
@@ -14075,14 +14078,12 @@ async function fetchCilium() {
         '<div class="glass-stat-pill"><div class="gsl">Hubble</div><div class="gsv">' + (status.hubble_enabled ? 'On' : 'Off') + '</div></div>' +
         '<div class="glass-stat-pill"><div class="gsl">Encryption</div><div class="gsv">' + (status.encryption_enabled ? 'On' : 'Off') + '</div></div>';
     }
-    if (tb) {
-      const filtered = currentNamespace === 'all' ? items : items.filter(p => p.namespace === currentNamespace || p.policy_kind === 'CCNP');
-      tb.innerHTML = filtered.map(p => '<tr><td><span class="glass-badge other">' + esc(p.policy_kind || '—') + '</span></td><td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td>' + esc(Object.entries(p.endpoint_selector || {}).map(([k, v]) => k + '=' + v).join(', ') || '-') + '</td><td>' + p.ingress_rules + '</td><td>' + p.egress_rules + '</td></tr>').join('')
-        || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies in this scope (install Cilium CRDs for CNP/CCNP, or add Kubernetes NetworkPolicies)</td></tr>';
-    }
+    window._ciliumPoliciesCache = items;
     window._ciliumFlowsCache = flowData.flows || [];
-    window._ciliumFlowFilter = 'all';
+    window._ciliumFlowFilter = window._ciliumFlowFilter || 'all';
     window._lastCiliumFlowData = flowData;
+    initCiliumTabs();
+    renderCiliumPoliciesTable();
     renderCiliumFlowStats(flowData);
     renderCiliumFlowsTable(flowData.flow_source);
     fetchPacketWolfCiliumBanner();
@@ -14094,6 +14095,76 @@ async function fetchCilium() {
     if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg);
     console.error('Cilium fetch error:', e);
   }
+}
+
+window._ciliumViewTab = window._ciliumViewTab || 'policies';
+
+function initCiliumTabs() {
+  const tabs = document.getElementById('cilium-view-tabs');
+  if (!tabs) return;
+  const polCount = (window._ciliumPoliciesCache || []).length;
+  const flowCount = window._lastCiliumFlowData ? (window._lastCiliumFlowData.total_flows || 0) : 0;
+  tabs.innerHTML =
+    '<button type="button" class="vmr-capsule-tab-btn vmr-cilium-tab' + (window._ciliumViewTab === 'policies' ? ' active' : '') + '" data-tab="policies" onclick="setCiliumViewTab(\'policies\')">Policies <span class="vmr-cilium-tab-count">' + polCount + '</span></button>' +
+    '<button type="button" class="vmr-capsule-tab-btn vmr-cilium-tab' + (window._ciliumViewTab === 'flows' ? ' active' : '') + '" data-tab="flows" onclick="setCiliumViewTab(\'flows\')">Network flows <span class="vmr-cilium-tab-count">' + flowCount + '</span></button>';
+  setCiliumViewTab(window._ciliumViewTab);
+}
+
+function setCiliumViewTab(tab) {
+  window._ciliumViewTab = tab || 'policies';
+  document.querySelectorAll('.vmr-cilium-tab').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.tab === window._ciliumViewTab);
+  });
+  const pol = document.getElementById('cilium-policies-panel');
+  const fl = document.getElementById('cilium-flows-panel');
+  const search = document.getElementById('cilium-policy-search');
+  if (pol) pol.style.display = window._ciliumViewTab === 'policies' ? '' : 'none';
+  if (fl) fl.style.display = window._ciliumViewTab === 'flows' ? '' : 'none';
+  if (search) {
+    search.placeholder = window._ciliumViewTab === 'flows'
+      ? 'Filter flows by source, destination, protocol…'
+      : 'Filter policies by name, namespace, selector…';
+  }
+  filterCiliumView();
+}
+
+function ciliumSelectorText(p) {
+  const sel = p.endpoint_selector || {};
+  const text = Object.entries(sel).map(function (kv) { return kv[0] + '=' + kv[1]; }).join(', ') || '-';
+  return text.length > 72 ? text.slice(0, 69) + '…' : text;
+}
+
+function renderCiliumPoliciesTable() {
+  const tb = document.getElementById('cilium-body');
+  const countEl = document.getElementById('cilium-policy-count');
+  if (!tb) return;
+  const q = ((document.getElementById('cilium-policy-search') || {}).value || '').trim().toLowerCase();
+  let items = window._ciliumPoliciesCache || [];
+  if (currentNamespace !== 'all') {
+    items = items.filter(function (p) { return p.namespace === currentNamespace || p.policy_kind === 'CCNP'; });
+  }
+  if (q) {
+    items = items.filter(function (p) {
+      const hay = [p.name, p.namespace, p.policy_kind, JSON.stringify(p.endpoint_selector || {}), String(p.ingress_rules), String(p.egress_rules)].join(' ').toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+  }
+  if (countEl) countEl.textContent = items.length ? (items.length + ' shown') : '';
+  tb.innerHTML = items.map(function (p) {
+    const sel = ciliumSelectorText(p);
+    const fullSel = Object.entries(p.endpoint_selector || {}).map(function (kv) { return kv[0] + '=' + kv[1]; }).join(', ') || '-';
+    return '<tr><td><span class="glass-badge other">' + esc(p.policy_kind || '—') + '</span></td>' +
+      '<td><span class="vmr-wl-name">' + esc(p.name) + '</span></td>' +
+      '<td><span class="ns-chip">' + esc(p.namespace) + '</span></td>' +
+      '<td title="' + esc(fullSel) + '">' + esc(sel) + '</td>' +
+      '<td>' + p.ingress_rules + '</td><td>' + p.egress_rules + '</td></tr>';
+  }).join('') ||
+    '<tr><td colspan="6"><div class="vmr-workloads-empty">No policies in this scope. Install Cilium CRDs for CNP/CCNP, or add Kubernetes NetworkPolicies.</div></td></tr>';
+}
+
+function filterCiliumView() {
+  if (window._ciliumViewTab === 'policies') renderCiliumPoliciesTable();
+  else renderCiliumFlowsTable((window._lastCiliumFlowData || {}).flow_source);
 }
 
 async function fetchPacketWolfCiliumBanner() {
@@ -14117,6 +14188,8 @@ async function fetchPacketWolfCiliumBanner() {
       (pw.health_status ? ' — ' + esc(pw.health_status) + mode : '') + '</span>' +
       '<span class="veyron-cap-lim">Endpoint: <code>' + esc(pw.base_url || '') + '</code>. Live Hubble flows and threat intelligence via PacketWolf UI.</span>';
     if (openBtn) openBtn.style.display = pw.external_url ? '' : 'none';
+    const heroBtn = document.getElementById('cilium-packetwolf-open-hero');
+    if (heroBtn) heroBtn.style.display = pw.external_url ? '' : 'none';
   } catch (_) {
     banner.style.display = 'none';
     if (openBtn) openBtn.style.display = 'none';
@@ -14156,17 +14229,25 @@ function renderCiliumFlowsTable(flowSource) {
   const mode = window._ciliumFlowFilter || 'all';
   if (mode === 'allowed') flows = flows.filter(f => f.verdict === 'allowed');
   else if (mode === 'denied') flows = flows.filter(f => f.verdict === 'denied');
+  const q = ((document.getElementById('cilium-policy-search') || {}).value || '').trim().toLowerCase();
+  if (q) {
+    flows = flows.filter(function (f) {
+      const hay = [f.source, f.destination, f.protocol, String(f.port || ''), f.verdict].join(' ').toLowerCase();
+      return hay.indexOf(q) >= 0;
+    });
+  }
   const src = flowSource || 'none';
   const emptyMsg = flows.length ? '' : (
     src === 'kubernetes_network_policies'
-      ? '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or install Hubble for live flows (not wired to this API yet).</td></tr>'
-      : '<tr><td colspan="5" class="flow-empty-copy" style="text-align:center;color:var(--text-dim)">No NetworkPolicy-derived rows. Live Hubble flows require a Hubble Relay integration (gRPC); this table shows policy-shaped hints only.</td></tr>'
+      ? '<tr><td colspan="5"><div class="vmr-workloads-empty">No NetworkPolicy rows in this namespace scope. Try <strong>all</strong> namespaces, or open <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-intel\')">Network Intelligence</button> for live PacketWolf flows.</div></td></tr>'
+      : '<tr><td colspan="5"><div class="vmr-workloads-empty">No policy-derived flow rows. Live Hubble flows require PacketWolf — open Network Intelligence when wired.</div></td></tr>'
   );
-  flowsTb.innerHTML = flows.map(f => '<tr>' +
-    '<td>' + esc(f.source) + '</td><td>' + esc(f.destination) + '</td>' +
-    '<td>' + esc(f.protocol) + '</td><td>' + (f.port || '-') + '</td>' +
-    '<td><span class="network-verdict" style="color:' + (f.verdict === 'allowed' ? 'var(--success)' : 'var(--error)') + '">' + esc(f.verdict) + '</span></td>' +
-    '</tr>').join('') || emptyMsg;
+  flowsTb.innerHTML = flows.map(f => {
+    const verdictCls = f.verdict === 'allowed' ? 'running' : (f.verdict === 'denied' ? 'error' : 'other');
+    return '<tr><td><span class="vmr-wl-name">' + esc(f.source) + '</span></td><td>' + esc(f.destination) + '</td>' +
+      '<td>' + esc(f.protocol) + '</td><td>' + (f.port || '-') + '</td>' +
+      '<td><span class="glass-badge ' + verdictCls + '">' + esc(f.verdict) + '</span></td></tr>';
+  }).join('') || emptyMsg;
 }
 
 function ciliumCopilotChip(query) {
