@@ -2133,3 +2133,70 @@ html[data-theme] .cloudos-finder-item.active {
 html[data-theme] .copilot-msg-user span {
   background: color-mix(in srgb, var(--pw-color-info) 15%, transparent);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   Third-wave: desktop tabs, launchpad outline, notification centre
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Desktop tabs (mac-desktop-tab) */
+html[data-theme] .mac-desktop-tab:hover {
+  background: var(--pw-accent-soft);
+  color: var(--text);
+}
+html[data-theme] .mac-desktop-tab.active {
+  background: var(--pw-accent-medium);
+  border-color: var(--pw-accent-border);
+  color: var(--spark);
+}
+html[data-theme] .mac-desktop-tab-wrap.active {
+  border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
+  background: linear-gradient(180deg, var(--pw-accent-medium), var(--pw-accent-soft));
+  box-shadow: 0 -2px 12px var(--pw-accent-glow);
+}
+html[data-theme] .mac-desktop-tab-wrap:hover {
+  background: var(--pw-accent-soft);
+}
+
+/* Launchpad focused app outline */
+html[data-theme] .launchpad-app.launchpad-app-focus {
+  outline: 2px solid color-mix(in srgb, var(--pw-color-data) 55%, transparent);
+  outline-offset: 4px;
+}
+
+/* Notification centre item hover */
+html[data-theme] .mac-nc-item:hover {
+  background: var(--pw-accent-soft);
+}
+
+/* Context menu item hover */
+html[data-theme] .mac-context-item:hover {
+  background: color-mix(in srgb, var(--pw-color-data) 12%, transparent);
+  color: var(--spark);
+}
+
+/* NC toggle hover border */
+html[data-theme] .mac-nc-toggle:hover {
+  border-color: color-mix(in srgb, var(--pw-color-data) 35%, transparent);
+}
+
+/* ember-glow wallpaper: replace cyan accent with theme secondary */
+html[data-theme] body.mac-desktop-root[data-wallpaper='ember-glow']::before {
+  background:
+    radial-gradient(ellipse 55% 50% at 50% 60%, rgba(249,115,22,.42), transparent 55%),
+    radial-gradient(ellipse 45% 40% at 25% 20%, rgba(253,186,116,.25), transparent 50%),
+    radial-gradient(ellipse 50% 45% at 80% 25%, color-mix(in srgb, var(--pw-color-info) 18%, transparent), transparent 48%);
+}
+
+/* aurora wallpaper: keep artistic colors, just soften the cyan to theme info */
+html[data-theme] body.mac-desktop-root[data-wallpaper='aurora']::before {
+  background:
+    radial-gradient(ellipse 60% 50% at 15% 20%, rgba(167,139,250,.38), transparent 55%),
+    radial-gradient(ellipse 50% 45% at 90% 25%, rgba(236,72,153,.22), transparent 50%),
+    radial-gradient(ellipse 55% 50% at 60% 90%, color-mix(in srgb, var(--pw-color-info) 22%, transparent), transparent 52%),
+    radial-gradient(ellipse 100% 80% at 50% 120%, color-mix(in srgb, var(--pw-color-info) 10%, transparent), transparent 55%);
+}
+
+/* Refresh ring SVG stroke — inject via CSS property for the SVG circle */
+html[data-theme] .refresh-ring-progress {
+  stroke: var(--pw-color-data);
+}
