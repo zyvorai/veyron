@@ -2043,17 +2043,6 @@ html[data-theme] .vm-workspace-chip {
   border-color: color-mix(in srgb, var(--pw-color-data) 20%, transparent);
 }
 
-/* Finder active item gradient */
-html[data-theme] .cloudos-finder-item.active {
-  background: linear-gradient(90deg,
-    color-mix(in srgb, var(--pw-color-data) 14%, transparent),
-    color-mix(in srgb, var(--pw-color-data) 4%, transparent));
-}
-html[data-theme] .cloudos-finder-item:hover,
-html[data-theme] .cloudos-finder-item.active {
-  background: color-mix(in srgb, var(--pw-color-data) 10%, transparent);
-}
-
 /* App store / mission card hover */
 html[data-theme] .app-store-card:hover {
   border-color: var(--pw-accent-border);
