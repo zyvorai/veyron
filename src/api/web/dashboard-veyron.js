@@ -70,12 +70,14 @@
   function vmNodeName(v) { return (v && v.node && v.node !== 'N/A') ? v.node : ''; }
 
   window.syncVeyronSidebar = function syncVeyronSidebar(page) {
+    if (!document.body.classList.contains('veyron-shell')) return;
     document.querySelectorAll('.veyron-nav-item').forEach(function (btn) {
       btn.classList.toggle('active', btn.dataset.page === page);
     });
   };
 
   window.syncVeyronTopbar = function syncVeyronTopbar() {
+    if (!document.body.classList.contains('veyron-shell')) return;
     var pill = document.getElementById('veyron-alerts-pill');
     if (pill) {
       var n = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;

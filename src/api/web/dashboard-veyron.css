@@ -14,6 +14,20 @@
   --orange: #ff9d2e;
   --red: #ff5570;
   --violet: #9b7cff;
+  --text: #dde3ea;
+  --text-muted: #9aa7bc;
+  --text-bright: #f7f9fb;
+  --chart-primary: var(--cyan);
+  --chart-secondary: var(--blue);
+  --glow-healthy: 0 0 24px rgba(50, 224, 176, 0.28);
+  --glow-degraded: 0 0 24px rgba(255, 157, 46, 0.32);
+  --glow-critical: 0 0 28px rgba(255, 85, 112, 0.38);
+  --glass-bg: rgba(18, 24, 36, 0.74);
+  --glass-bg-elevated: rgba(26, 34, 50, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(24px) saturate(1.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --radius-liquid: 22px;
   --vmr-canvas-max: 1680px;
   --vmr-dock-safe: max(160px, calc(4.5rem + env(safe-area-inset-bottom, 0px)));
 }
@@ -52,7 +66,7 @@ body.mac-desktop-root .page.section-shell > .space-y.mac-page-window {
   max-width: var(--vmr-canvas-max);
 }
 
-body.mac-desktop-root:not([data-desktop-tier="advanced"]) .cloudos-finder {
+body.mac-desktop-root[data-desktop-tier="normal"] .cloudos-finder {
   display: none !important;
 }
 
@@ -60,7 +74,8 @@ body.mac-desktop-root.finder-collapsed .cloudos-finder {
   display: none !important;
 }
 
-body[data-desktop-tier="advanced"] .cloudos-finder {
+body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed) .cloudos-finder,
+body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   display: flex !important;
 }
 
@@ -553,7 +568,17 @@ body[data-desktop-tier="power"] #fleet-command-grid {
   .vmr-tab { padding: 8px 12px; font-size: 0.78rem; }
 }
 
-/* ── Veyron sidebar shell (default product chrome) ── */
+/* ── CloudOS shell (default) — hide legacy sidebar chrome ── */
+body.mac-desktop-root:not(.veyron-shell) .veyron-topbar,
+body.mac-desktop-root:not(.veyron-shell) .veyron-sidebar {
+  display: none !important;
+}
+
+body.mac-desktop-root:not(.veyron-shell) .vmr-primary-tabs {
+  display: none !important;
+}
+
+/* ── Veyron sidebar shell (optional legacy chrome) ── */
 body.veyron-shell::before,
 body.veyron-shell::after {
   display: none;
@@ -908,6 +933,12 @@ body.veyron-shell .cloudos-main {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  animation: ring-pop 1.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes ring-pop {
+  from { transform: scale(0.88); opacity: 0.55; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .vmr-health-ring-lg.warn { border-color: var(--orange); }
