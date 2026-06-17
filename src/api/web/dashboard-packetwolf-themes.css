@@ -2232,3 +2232,57 @@ html[data-theme] .cloudos-mobile-bar button.active {
   background: var(--pw-accent-soft);
   color: var(--text-bright);
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   VMR component library — tabs, quick-btns, foundry rail, filter chips
+   (dashboard-veyron.css still has rgba(63,124,255) hardcodes for these)
+   ══════════════════════════════════════════════════════════════════ */
+
+html[data-theme] .vmr-tab:hover {
+  background: var(--pw-accent-soft);
+}
+
+html[data-theme] .vmr-tab.active {
+  background: var(--pw-accent-medium);
+  box-shadow: inset 0 -2px 0 var(--pw-color-data);
+}
+
+html[data-theme] .vmr-view-switch button.active {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .vmr-quick-btn {
+  background: linear-gradient(165deg, var(--pw-accent-soft), color-mix(in srgb, var(--pw-color-data) 3%, transparent));
+}
+
+html[data-theme] .vmr-quick-btn:hover {
+  background: linear-gradient(165deg, var(--pw-accent-medium), var(--pw-accent-soft));
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+html[data-theme] .vmr-foundry-rail button:hover {
+  background: color-mix(in srgb, var(--pw-color-data) 6%, transparent);
+  border-color: color-mix(in srgb, var(--pw-color-data) 12%, transparent);
+}
+
+html[data-theme] .vmr-foundry-rail button.active {
+  background: var(--pw-accent-soft);
+  border-color: var(--pw-accent-border);
+}
+
+html[data-theme] .vmr-filter-chip.active {
+  border-color: var(--pw-color-data);
+  color: var(--pw-color-data);
+  background: color-mix(in srgb, var(--pw-color-data) 8%, transparent);
+}
+
+html[data-theme] .vmr-template-card:hover {
+  box-shadow: 0 10px 28px color-mix(in srgb, var(--pw-color-data) 10%, transparent);
+}
+
+/* VM inspector tab active state */
+html[data-theme] .vm-inspector-tab.active {
+  background: color-mix(in srgb, var(--pw-color-data) 12%, transparent);
+  border-color: color-mix(in srgb, var(--pw-color-data) 28%, transparent);
+}
