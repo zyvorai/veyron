@@ -7,7 +7,7 @@
 
 A powerful, ergonomic, and extensible Rust CLI, library, and web dashboard to declaratively build, validate, visualize, and apply KubeVirt VMs.
 
-## Features
+**Docs:** [Index](docs/README.md) · [User stories](docs/USER_STORIES.md) · ## Features
 
 ### Innovative Features (Unique to Veyron)
 - **VM Snapshots & Backup** - Production-grade snapshot management via real VirtualMachineSnapshot CRDs
