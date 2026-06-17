@@ -924,7 +924,7 @@ pub mod web {
                 .route("/api/v1/nodes", get(list_nodes_handler))
                 .route("/api/v1/pods", get(list_pods_handler))
                 .route(
-                    "/api/v1/pods/{name}/logs",
+                    "/api/v1/pods/:name/logs",
                     get(get_pod_logs_handler),
                 )
                 .route("/api/v1/profiles", get(list_profiles_handler))
