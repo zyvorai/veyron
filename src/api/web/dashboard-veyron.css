@@ -597,6 +597,142 @@ body[data-desktop-tier="advanced"]:not(.finder-collapsed) .cloudos-finder {
   align-content: start;
 }
 
+#vm-focus-content .zeus-inspector.vm-inspector-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  grid-template-columns: unset;
+}
+
+#vm-focus-content .vm-hero-title {
+  font-size: 1.35rem;
+}
+
+.vm-hero-meta-chip {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  align-self: center;
+}
+
+.vm-hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--glass-border, var(--line));
+}
+
+.vm-hero-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--spark, var(--cyan));
+  cursor: pointer;
+  opacity: 0.88;
+}
+
+.vm-hero-link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.vm-inspector-tabbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+
+.vm-inspector-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.vm-inspector-tab:hover {
+  color: var(--text-bright);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.vm-inspector-tab.active {
+  color: var(--text-bright);
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+.vm-inspector-panel {
+  display: none;
+}
+
+.vm-inspector-panel.active {
+  display: block;
+}
+
+.vm-inspector-panel.zeus-glass {
+  padding: 0;
+  overflow: hidden;
+}
+
+.vm-inspector-sub {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.vm-inspector-sub summary {
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  list-style: none;
+}
+
+.vm-inspector-sub summary::-webkit-details-marker {
+  display: none;
+}
+
+.vm-inspector-sub-body {
+  padding: 0 14px 14px;
+}
+
+.vm-inspector-empty,
+.vm-inspector-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.vm-inspector-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.vmr-inspector-status.running {
+  color: var(--green);
+}
+
+.vmr-inspector-status.stopped {
+  color: var(--muted);
+}
+
 #vm-focus-content .zeus-inspector-section {
   margin: 0;
   height: fit-content;
@@ -3170,148 +3306,6 @@ body.mac-desktop-root .vmr-table tbody tr:last-child td {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 14px;
-}
-
-.vmr-settings-shell {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.vmr-settings-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 4px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--line);
-}
-
-.vmr-settings-tab {
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.vmr-settings-tab:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.vmr-settings-tab.active {
-  color: var(--text);
-  background: rgba(63, 124, 255, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(63, 124, 255, 0.25);
-}
-
-.vmr-settings-panel {
-  display: none;
-}
-
-.vmr-settings-panel.active {
-  display: block;
-}
-
-.vmr-settings-panel .vmr-settings-grid {
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-}
-
-.vmr-settings-theme-block {
-  padding: 4px 0 8px;
-}
-
-.vmr-settings-theme-block .theme-swatch-grid {
-  margin-top: 8px;
-}
-
-.vmr-settings-sticky-bar {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 0 4px;
-  margin-top: 8px;
-  background: linear-gradient(to top, var(--surface, rgba(12, 12, 18, 0.96)) 70%, transparent);
-}
-
-.vmr-pod-logs-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 320;
-  background: rgba(0, 0, 0, 0.72);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.vmr-pod-logs-modal.open {
-  display: flex;
-}
-
-.vmr-pod-logs-sheet {
-  background: var(--surface, #13131f);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 18px 20px;
-  width: min(940px, 96vw);
-  max-height: 82vh;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
-}
-
-.vmr-pod-logs-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-}
-
-.vmr-pod-logs-title {
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.35;
-}
-
-.vmr-pod-logs-sub {
-  font-size: 0.74rem;
-  color: var(--muted);
-  margin-top: 2px;
-}
-
-.vmr-pod-logs-pre {
-  overflow: auto;
-  flex: 1;
-  font-size: 0.74rem;
-  line-height: 1.6;
-  color: var(--text, #e2e8f0);
-  margin: 0;
-  min-height: 200px;
-  max-height: 60vh;
-  white-space: pre-wrap;
-  word-break: break-all;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-  font-family: var(--font-mono, ui-monospace, monospace);
-}
-
-.vmr-pod-logs-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
 }
 
 .vmr-settings-footer {
