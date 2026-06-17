@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618f">
+<meta name="veyron-dashboard-rev" content="20260618h">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618f';
+  var DASH_REV = '20260618h';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -3089,13 +3089,18 @@ body.vm-focus-active .mac-inspector-header{display:flex}
 }
 .mac-dock-divider{width:1px;height:2.25rem;margin:0 .25rem;background:rgba(255,255,255,.12)}
 .mac-dock-spotlight{
-  display:flex;align-items:center;gap:.4rem;margin-left:.35rem;padding:.4rem .75rem;
+  position:relative;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;gap:.35rem;
+  width:2.5rem;height:2.5rem;padding:0 .55rem;
   border-radius:999px;font-size:.72rem;color:rgba(248,250,252,.85);
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);cursor:pointer;font-family:inherit;
   transition:transform .2s ease,background .15s ease;
 }
-.mac-dock-spotlight:hover{transform:scale(1.05);background:rgba(255,255,255,.1)}
-.mac-dock-ask{color:rgba(196,181,253,.98);border-color:rgba(155,124,255,.35);background:linear-gradient(165deg,rgba(155,124,255,.18),rgba(99,102,241,.08));box-shadow:0 0 0 1px rgba(155,124,255,.12),0 8px 24px rgba(99,102,241,.15)}
+.mac-dock-spotlight:hover{transform:scale(1.06) translateY(-2px);background:rgba(255,255,255,.1)}
+.mac-dock-spotlight:hover .mac-dock-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
+.mac-dock-utils{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:4px}
+.mac-dock-inner:hover .mac-dock-spotlight{transition:transform .2s cubic-bezier(.34,1.56,.64,1)}
+.mac-dock-ask{color:rgba(196,181,253,.98);border-color:rgba(155,124,255,.35);background:linear-gradient(165deg,rgba(155,124,255,.18),rgba(99,102,241,.08));box-shadow:0 0 0 1px rgba(155,124,255,.12),0 4px 14px rgba(99,102,241,.12)}
 .mac-dock-ask:hover{background:linear-gradient(165deg,rgba(155,124,255,.28),rgba(99,102,241,.12))}
 .dock-editor-list{max-height:240px;overflow-y:auto;margin:0;padding:0;list-style:none}
 .dock-editor-row{
@@ -4833,37 +4838,58 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div id="vmr-console-hero"></div>
   <div class="vmr-console-hub-layout" id="vmr-console-hub-layout">
-    <div class="vmr-console-sidebar">
-      <label class="form-label">Virtual machine</label>
-      <select class="form-select" id="vmr-console-vm-select" onchange="onConsoleHubVmSelect()"></select>
-      <div class="vmr-console-protocol-tabs" id="vmr-console-protocol-tabs">
-        <button type="button" class="active" data-proto="vnc" onclick="setConsoleHubProto('vnc')">VNC</button>
-        <button type="button" data-proto="rdp" onclick="setConsoleHubProto('rdp')">RDP</button>
-        <button type="button" data-proto="ssh" onclick="setConsoleHubProto('ssh')">SSH</button>
-        <button type="button" data-proto="serial" onclick="setConsoleHubProto('serial')">Serial</button>
+    <aside class="vmr-console-sidebar">
+      <div class="vmr-console-sidebar-head">
+        <span class="vmr-console-sidebar-kicker">Connection</span>
+        <span class="vmr-console-sidebar-hint">Browser-native access</span>
       </div>
-      <div id="vmr-console-status" class="vmr-console-status">Select a running VM</div>
+      <label class="form-label" for="vmr-console-vm-select">Virtual machine</label>
+      <select class="form-select vmr-console-vm-select" id="vmr-console-vm-select" onchange="onConsoleHubVmSelect()"></select>
+      <div class="vmr-console-protocol-tabs" id="vmr-console-protocol-tabs" role="tablist" aria-label="Console protocol">
+        <button type="button" class="active" data-proto="vnc" role="tab" aria-selected="true" onclick="setConsoleHubProto('vnc')"><span class="vmr-console-tab-icon">◫</span>VNC</button>
+        <button type="button" data-proto="rdp" role="tab" aria-selected="false" onclick="setConsoleHubProto('rdp')"><span class="vmr-console-tab-icon">▣</span>RDP</button>
+        <button type="button" data-proto="ssh" role="tab" aria-selected="false" onclick="setConsoleHubProto('ssh')"><span class="vmr-console-tab-icon">⌘</span>SSH</button>
+        <button type="button" data-proto="serial" role="tab" aria-selected="false" onclick="setConsoleHubProto('serial')"><span class="vmr-console-tab-icon">▤</span>Serial</button>
+      </div>
+      <div id="vmr-console-status" class="vmr-console-status">
+        <span class="vmr-console-status-pill idle">Select a running VM</span>
+      </div>
       <div class="vmr-console-actions" id="vmr-console-actions"></div>
-    </div>
-    <div class="vmr-console-surface" id="vmr-console-surface">
-      <div class="vmr-console-empty" id="vmr-console-empty">
-        <h3>Console offline</h3>
-        <p>Select a running VM or start a stopped machine to open a console.</p>
-      </div>
-      <div id="vmr-console-embed" style="display:none">
-        <div class="vmr-console-vnc-toolbar" id="vmr-console-vnc-toolbar">
-          <span id="vmr-console-vnc-status">Connecting…</span>
-          <select id="vmr-console-vnc-preset" class="form-select" title="Link quality" onchange="onConsoleHubVncPresetChange(this.value)" style="padding:4px 8px;font-size:.72rem;min-width:7rem;width:auto">
-            <option value="lan">LAN</option>
-            <option value="balanced" selected>Balanced</option>
-            <option value="low">Low bandwidth</option>
-          </select>
-          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="disconnectConsoleHubVnc()">Disconnect</button>
-          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openConsoleHubFullscreen()">Fullscreen</button>
+    </aside>
+    <div class="vmr-console-stage" id="vmr-console-stage">
+      <div class="vmr-console-surface" id="vmr-console-surface">
+        <div class="vmr-console-chrome" id="vmr-console-chrome">
+          <div class="vmr-console-traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+          <span class="vmr-console-chrome-title" id="vmr-console-chrome-title">ConsoleHub · No VM selected</span>
+          <span class="vmr-console-chrome-badge offline" id="vmr-console-chrome-badge">Offline</span>
         </div>
-        <div id="vmr-console-vnc-container" class="vmr-console-vnc-frame"></div>
-        <div id="vmr-console-vnc-placeholder" class="vmr-console-vnc-placeholder">Loading console…</div>
-        <div id="vmr-console-alt-panel" class="vmr-console-alt-panel" style="display:none"></div>
+        <div class="vmr-console-empty" id="vmr-console-empty">
+          <div class="vmr-console-empty-inner">
+            <div class="vmr-console-empty-glow" aria-hidden="true"></div>
+            <div class="vmr-console-empty-icon" aria-hidden="true">▶</div>
+            <h3>Console offline</h3>
+            <p class="vmr-console-empty-lead">Select a running VM or start a stopped machine to open an inline console.</p>
+            <div id="vmr-console-quick-picks" class="vmr-console-quick-picks"></div>
+          </div>
+        </div>
+        <div id="vmr-console-embed" style="display:none">
+          <div class="vmr-console-vnc-toolbar" id="vmr-console-vnc-toolbar">
+            <span class="vmr-console-vnc-dot" id="vmr-console-vnc-dot" aria-hidden="true"></span>
+            <span id="vmr-console-vnc-status">Connecting…</span>
+            <span class="vmr-console-vnc-spacer"></span>
+            <label class="vmr-console-vnc-preset-label" for="vmr-console-vnc-preset">Link quality</label>
+            <select id="vmr-console-vnc-preset" class="form-select vmr-console-vnc-preset-select" title="Link quality" onchange="onConsoleHubVncPresetChange(this.value)">
+              <option value="lan">LAN</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="low">Low bandwidth</option>
+            </select>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="disconnectConsoleHubVnc()">Disconnect</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openConsoleHubFullscreen()">Fullscreen</button>
+          </div>
+          <div id="vmr-console-vnc-container" class="vmr-console-vnc-frame"></div>
+          <div id="vmr-console-vnc-placeholder" class="vmr-console-vnc-placeholder">Loading console…</div>
+          <div id="vmr-console-alt-panel" class="vmr-console-alt-panel" style="display:none"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -5787,7 +5813,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618f';
+window.__VMROGUE_DASH_REV = '20260618h';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -6913,7 +6939,8 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Control Center', subtitle: 'Theme, wallpaper, workspace', action: 'mac:control_center', keys: ['control', 'center', 'appearance', 'wallpaper'] },
   { kind: 'action', title: 'Notification Center', subtitle: 'Recent alerts', action: 'mac:notifications', keys: ['notification', 'alerts', 'bell'] },
   { kind: 'action', title: 'Toggle Finder', subtitle: 'Show or hide sidebar (⌘\\)', action: 'mac:finder', keys: ['finder', 'sidebar'] },
-  { kind: 'action', title: 'Screen Sharing', subtitle: 'Open VMs to connect VNC', action: 'navigate:vms', keys: ['screen', 'sharing', 'vnc', 'connect'] },
+  { kind: 'action', title: 'Open ConsoleHub', subtitle: 'Inline VNC · RDP · SSH · Serial', action: 'navigate:console-hub', keys: ['console', 'consolehub', 'terminal', 'vnc', 'serial'] },
+  { kind: 'action', title: 'Screen Sharing', subtitle: 'ConsoleHub inline VNC', action: 'navigate:console-hub', keys: ['screen', 'sharing', 'connect'] },
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
   { kind: 'action', title: 'Forge a new VM', subtitle: 'Create from template', action: 'forge_vm', keys: ['forge', 'create', 'new vm'] },
   { kind: 'action', title: 'Ask Zeus', subtitle: 'Ask Zeus fleet assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
@@ -7085,9 +7112,11 @@ function renderCloudOsDock() {
       '</button>';
   });
   html += '<div class="mac-dock-divider" aria-hidden="true"></div>';
+  html += '<div class="mac-dock-utils">';
   html += '<button type="button" class="mac-dock-spotlight" title="Launchpad" aria-label="Launchpad" onclick="openLaunchpad()"><span class="mac-dock-icon">⬡</span></button>';
-  html += '<button type="button" class="mac-dock-item mac-dock-spotlight mac-dock-ask" title="Ask Zeus (⌘J)" aria-label="Ask Zeus" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-tooltip">Ask Zeus <kbd>⌘J</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Ask Zeus</span></button>';
-  html += '<button type="button" class="mac-dock-item mac-dock-spotlight" title="Spotlight (⌘K)" aria-label="Open Spotlight" onclick="openSpotlight()"><span class="mac-dock-icon">⌘</span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span><span class="mac-dock-spotlight-label" style="font-size:.72rem">Spotlight</span></button>';
+  html += '<button type="button" class="mac-dock-spotlight mac-dock-ask" aria-label="Ask Zeus (⌘J)" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-tooltip">Ask Zeus <kbd>⌘J</kbd></span></button>';
+  html += '<button type="button" class="mac-dock-spotlight" aria-label="Spotlight (⌘K)" onclick="openSpotlight()"><span class="mac-dock-icon">⌘</span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span></button>';
+  html += '</div>';
   inner.innerHTML = html;
 }
 
@@ -9428,7 +9457,16 @@ function renderSpotlightEmptyState() {
     subtitle: 'Recent',
     action: r.action
   }));
-  spotlightResults = shell.concat(vmRecents).concat(actionRecents);
+  const runningConsoles = (typeof vmData !== 'undefined' ? vmData : []).filter(function(v) { return v.status === 'Running'; }).slice(0, 6).map(function(v) {
+    var ns = v.namespace || 'default';
+    return {
+      kind: 'action',
+      title: 'Open console · ' + v.name,
+      subtitle: ns + ' · ConsoleHub VNC',
+      action: 'open_console_hub:' + ns + ':' + v.name + ':vnc'
+    };
+  });
+  spotlightResults = shell.concat(runningConsoles).concat(vmRecents).concat(actionRecents);
   spotlightActiveIndex = 0;
   renderSpotlightResults();
 }
@@ -9579,6 +9617,18 @@ function runSpotlightAction(action) {
     if (parts.length >= 3) {
       navigate('vms');
       setTimeout(function() { selectVm(parts[1], parts[2]); }, 300);
+    }
+    return;
+  }
+  if (action.indexOf('open_console_hub:') === 0) {
+    const parts = action.split(':');
+    if (parts.length >= 3) {
+      const proto = (parts[3] === 'rdp' || parts[3] === 'ssh' || parts[3] === 'serial') ? parts[3] : 'vnc';
+      navigate('console-hub');
+      setTimeout(function() {
+        if (typeof setConsoleHubProto === 'function') setConsoleHubProto(proto);
+        if (typeof selectConsoleHubVm === 'function') selectConsoleHubVm(parts[1], parts[2]);
+      }, 300);
     }
     return;
   }

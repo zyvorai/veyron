@@ -871,9 +871,57 @@
 
   window.setConsoleHubVncStatus = function setConsoleHubVncStatus(text, tone) {
     var el = document.getElementById('vmr-console-vnc-status');
+    var dot = document.getElementById('vmr-console-vnc-dot');
     if (!el) return;
     el.textContent = text;
-    el.style.color = tone === 'ok' ? 'var(--green)' : tone === 'bad' ? 'var(--red)' : 'var(--muted)';
+    el.className = tone === 'ok' ? 'ok' : tone === 'bad' ? 'bad' : '';
+    if (dot) {
+      dot.className = 'vmr-console-vnc-dot' + (tone === 'ok' ? ' live' : tone === 'bad' ? ' err' : '');
+    }
+  };
+
+  window.updateConsoleHubChrome = function updateConsoleHubChrome(ns, name, running, proto) {
+    var title = document.getElementById('vmr-console-chrome-title');
+    var badge = document.getElementById('vmr-console-chrome-badge');
+    if (title) {
+      title.textContent = ns && name
+        ? name + ' · ' + ns + ' · ' + (proto || 'vnc').toUpperCase()
+        : 'ConsoleHub · No VM selected';
+    }
+    if (badge) {
+      badge.textContent = running ? 'Live' : 'Offline';
+      badge.className = 'vmr-console-chrome-badge' + (running ? ' live' : ' offline');
+    }
+  };
+
+  window.renderConsoleHubEmptyState = function renderConsoleHubEmptyState() {
+    var quick = document.getElementById('vmr-console-quick-picks');
+    if (!quick) return;
+    var vms = (typeof vmData !== 'undefined' ? vmData : []).filter(function (v) { return v.status === 'Running'; });
+    if (!vms.length) {
+      quick.innerHTML =
+        '<div class="vmr-console-quick-empty">No running VMs in this workspace.</div>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'vms\')">Open Fleet Command</button>';
+      return;
+    }
+    quick.innerHTML =
+      '<div class="vmr-console-quick-label">Running · click to connect</div>' +
+      vms.slice(0, 6).map(function (vm) {
+        var ns = vm.namespace || 'default';
+        return '<button type="button" class="vmr-console-quick-pick" onclick="selectConsoleHubVm(' +
+          jsArgs(ns, vm.name) + ')">' +
+          '<span class="vmr-console-quick-dot" aria-hidden="true"></span>' +
+          '<span class="vmr-console-quick-name">' + esc(vm.name) + '</span>' +
+          '<span class="vmr-console-quick-ns">' + esc(ns) + '</span>' +
+          '</button>';
+      }).join('');
+  };
+
+  window.selectConsoleHubVm = function selectConsoleHubVm(ns, name) {
+    var sel = document.getElementById('vmr-console-vm-select');
+    if (!sel) return;
+    sel.value = ns + '/' + name;
+    onConsoleHubVmSelect();
   };
 
   window.onConsoleHubVncPresetChange = function onConsoleHubVncPresetChange(value) {
@@ -969,25 +1017,35 @@
   };
 
   window.renderConsoleHubVmr = function renderConsoleHubVmr() {
-    renderVmrPageHero('vmr-console-hero', 'Veyron ConsoleHub',
-      'Secure browser console access for virtual machines.',
-      '');
+    var uiTier = typeof uiTierForPage === 'function' ? uiTierForPage('console-hub') : 'power';
+    if (uiTier === 'advanced') {
+      renderVmrPageHero('vmr-console-hero', 'Veyron ConsoleHub',
+        'Secure browser console access for virtual machines.',
+        '');
+    } else {
+      var heroEl = document.getElementById('vmr-console-hero');
+      if (heroEl) heroEl.innerHTML = '';
+    }
     var sel = document.getElementById('vmr-console-vm-select');
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     if (sel) {
       sel.innerHTML = '<option value="">— Select VM —</option>' + vms.map(function (vm) {
         var ns = vm.namespace || 'default';
-        return '<option value="' + esc(ns + '/' + vm.name) + '">' + esc(vm.name) + ' (' + esc(vm.status) + ')</option>';
+        var tone = vm.status === 'Running' ? '●' : '○';
+        return '<option value="' + esc(ns + '/' + vm.name) + '">' + tone + ' ' + esc(vm.name) + ' (' + esc(vm.status) + ')</option>';
       }).join('');
     }
     window.vmrConsoleProto = window.vmrConsoleProto || 'vnc';
+    renderConsoleHubEmptyState();
     onConsoleHubVmSelect();
   };
 
   window.setConsoleHubProto = function setConsoleHubProto(p) {
     window.vmrConsoleProto = p;
     document.querySelectorAll('.vmr-console-protocol-tabs button').forEach(function (b) {
-      b.classList.toggle('active', b.dataset.proto === p);
+      var on = b.dataset.proto === p;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     onConsoleHubVmSelect();
   };
@@ -1003,10 +1061,12 @@
     var val = sel.value;
     if (!val) {
       window.consoleHubVm = null;
-      if (status) status.textContent = 'Select a running VM';
+      if (status) status.innerHTML = '<span class="vmr-console-status-pill idle">Select a running VM</span>';
       if (actions) actions.innerHTML = '';
       if (empty) empty.style.display = '';
       if (embed) embed.style.display = 'none';
+      updateConsoleHubChrome('', '', false, window.vmrConsoleProto || 'vnc');
+      renderConsoleHubEmptyState();
       return;
     }
     var parts = val.split('/');
@@ -1018,10 +1078,13 @@
     window.consoleHubVm = { ns: ns, name: name, vm: vm };
     var running = vm && vm.status === 'Running';
     var proto = window.vmrConsoleProto || 'vnc';
+    updateConsoleHubChrome(ns, name, running, proto);
     if (status) {
       status.innerHTML = running
-        ? '<span style="color:var(--green)">Connected-ready</span> · Protocol: ' + esc(proto.toUpperCase()) + ' · ' + esc(ns + '/' + name)
-        : '<span style="color:var(--orange)">Console offline</span> · VM stopped';
+        ? '<span class="vmr-console-status-pill live">Ready</span>' +
+          '<span class="vmr-console-status-meta">' + esc(proto.toUpperCase()) + ' · ' + esc(ns + '/' + name) + '</span>'
+        : '<span class="vmr-console-status-pill offline">Stopped</span>' +
+          '<span class="vmr-console-status-meta">' + esc(ns + '/' + name) + '</span>';
     }
     if (actions) {
       if (running) {
@@ -1041,6 +1104,7 @@
     if (empty) empty.style.display = running ? 'none' : '';
     if (!running) {
       if (embed) embed.style.display = 'none';
+      renderConsoleHubEmptyState();
       return;
     }
     connectConsoleHubForProto();
