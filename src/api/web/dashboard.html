@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260617c">
+<meta name="veyron-dashboard-rev" content="20260617d">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260617c';
+  var DASH_REV = '20260617d';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -260,6 +260,7 @@ body>*{position:relative;z-index:1}
   border-bottom:1px solid rgba(120,132,148,.2);
   background:rgba(8,10,13,.99);
   align-items:center;justify-content:space-between;gap:12px;
+  flex-wrap:wrap;
 }
 body.classic-nav-open .browse-mega-header{display:flex}
 @media(min-width:901px){
@@ -313,6 +314,27 @@ body.classic-nav-open .browse-mega-menu{display:grid}
 }
 .browse-mega-menu .nav-dropdown::before{display:none}
 .browse-mega-menu .nav-link{padding:7px 10px;font-size:.82rem}
+.browse-sheet-handle{
+  display:none;width:36px;height:4px;border-radius:999px;margin:0 auto 8px;
+  background:rgba(148,163,184,.45);flex-shrink:0;
+}
+@media(max-width:768px){
+  body.classic-nav-open .browse-mega-header{
+    top:auto;bottom:min(72vh,520px);left:0;right:0;
+    border-radius:20px 20px 0 0;border-bottom:1px solid var(--glass-border);
+    z-index:181;padding-top:10px;flex-direction:column;align-items:stretch;
+  }
+  body.classic-nav-open .browse-mega-header .browse-filter-input{width:100%}
+  body.classic-nav-open .browse-mega-menu{
+    top:auto;bottom:0;left:0;right:0;max-height:min(72vh,520px);
+    border-radius:0;border-bottom:none;z-index:180;
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 14px;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
+  }
+  body.classic-nav-open .classic-nav-backdrop{top:0;inset:0;z-index:178}
+  body.classic-nav-open .browse-sheet-handle{display:block}
+  body.classic-nav-open .cloudos-mobile-bar{opacity:.35;pointer-events:none}
+}
 .classic-nav-backdrop{
   display:none;position:fixed;inset:96px 0 0 0;z-index:125;background:rgba(0,0,0,.4);
 }
@@ -2292,6 +2314,30 @@ html[data-theme="frost"] .mac-dock-inner{
   background:rgba(255,255,255,.55);
   border-color:rgba(15,23,42,.1);
 }
+html[data-theme="frost"] .cloudos-mobile-bar{
+  background:rgba(255,255,255,.88);border-color:rgba(15,23,42,.1);
+  box-shadow:0 8px 28px rgba(15,23,42,.1);
+}
+html[data-theme="frost"] .table th{
+  background:rgba(241,245,249,.95);color:var(--text-muted);
+}
+html[data-theme="frost"] .table td{border-color:rgba(15,23,42,.06)}
+html[data-theme="frost"] .glass-badge,
+html[data-theme="frost"] .vmr-fleet-card,
+html[data-theme="frost"] .vmr-template-card{
+  box-shadow:0 4px 16px rgba(15,23,42,.06);
+}
+html[data-theme="frost"] .vmr-network-banner{
+  background:rgba(8,145,178,.08);border-color:rgba(8,145,178,.22);
+}
+html[data-theme="frost"] .browse-mega-header,
+html[data-theme="frost"] .browse-mega-menu{
+  background:rgba(255,255,255,.94);border-color:rgba(15,23,42,.08);
+}
+html[data-theme="frost"] .form-select,
+html[data-theme="frost"] .browse-filter-input{
+  background:#fff;border-color:rgba(15,23,42,.12);color:var(--text);
+}
 
 /* ── Zyvor CloudOS experience layer ── */
 .dc-cc-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
@@ -3476,6 +3522,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%;margin-top:8px" onclick="toggleNotificationCenter();navigate('notifications')">Show all</button>
 </div>
 <div class="browse-mega-header" id="browse-mega-header">
+  <span class="browse-sheet-handle" aria-hidden="true"></span>
   <span class="browse-mega-title">All pages</span>
   <input type="text" class="browse-filter-input" id="browse-filter-input" placeholder="Filter pages…" oninput="filterBrowseMenu()" autocomplete="off" spellcheck="false">
 </div>
@@ -5574,7 +5621,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260617c';
+window.__VMROGUE_DASH_REV = '20260617d';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -5637,7 +5684,25 @@ const NAV_PAGE_LABELS = {
   nodes: 'Cluster Nodes',
   settings: 'Settings',
   backups: 'Snapshots & Backups',
-  integrations: 'Integrations'
+  integrations: 'Integrations',
+  cilium: 'Cilium',
+  storage: 'Storage',
+  images: 'Images',
+  ingress: 'Ingress',
+  'network-policies': 'Network Policies',
+  topology: 'Topology',
+  compliance: 'Compliance',
+  rbac: 'RBAC',
+  soc: 'SOC',
+  helm: 'Helm',
+  gitops: 'GitOps',
+  catalog: 'Catalog',
+  pods: 'Pods',
+  alerts: 'Alerts',
+  metrics: 'Metrics',
+  slo: 'SLO',
+  chaos: 'Chaos',
+  notifications: 'Notifications'
 };
 
 function navPageLabel(page) {
@@ -5952,6 +6017,7 @@ function navigate(page, opts) {
   document.body.dataset.section = pageEl.dataset.section || page;
   syncFinderActive(page);
   syncDockActive(page);
+  syncCloudosMobileBar(page);
   upsertDesktopTab(page);
   renderDesktopTabs();
   updatePageContext(page);
@@ -7298,8 +7364,8 @@ async function openLaunchpad() {
     const templates = (data && data.templates) ? data.templates : asArray(data);
     launchpadApps = [
       { icon: '◫', label: 'Home', action: () => { closeLaunchpad(); navigate('dashboard'); } },
-      { icon: '▣', label: 'VMs', action: () => { closeLaunchpad(); navigate('vms'); } },
-      { icon: '⬡', label: 'Template Store', action: () => { closeLaunchpad(); navigate('app-store'); } },
+      { icon: '▣', label: navPageLabel('vms'), action: () => { closeLaunchpad(); navigate('vms'); } },
+      { icon: '⬡', label: navPageLabel('app-store'), action: () => { closeLaunchpad(); navigate('app-store'); } },
       { icon: '✦', label: 'Copilot', action: () => { closeLaunchpad(); openAskZeus(); } },
     ];
     templates.slice(0, 24).forEach(t => {
@@ -7651,7 +7717,7 @@ function initBrowsePinButtons() {
     btn.textContent = '★';
     btn.onclick = function(e) {
       e.stopPropagation();
-      pinPageToFinder(page, link.textContent.trim());
+      pinPageToFinder(page, navPageLabel(page));
     };
     link.style.display = 'flex';
     link.style.alignItems = 'center';
@@ -7723,12 +7789,32 @@ function toggleFinder() {
   setFinderCollapsed(!document.body.classList.contains('finder-collapsed'));
 }
 
+function syncBrowseMenuLabels() {
+  document.querySelectorAll('#browse-mega-menu .nav-link[data-page]').forEach(link => {
+    const page = link.dataset.page;
+    const pin = link.querySelector('.browse-pin-btn');
+    link.textContent = navPageLabel(page);
+    if (pin) link.appendChild(pin);
+  });
+}
+
+function syncCloudosMobileBar(page) {
+  const bar = document.getElementById('cloudos-mobile-bar');
+  if (!bar) return;
+  const browseOpen = document.body.classList.contains('classic-nav-open');
+  bar.querySelectorAll('button[data-mobile-nav]').forEach(btn => {
+    const key = btn.dataset.mobileNav;
+    btn.classList.toggle('active', key === 'browse' ? browseOpen : key === page);
+  });
+}
+
 function syncClassicNavUi() {
   const open = document.body.classList.contains('classic-nav-open');
   const btn = document.getElementById('btn-classic-nav');
   if (btn) btn.classList.toggle('active', open);
   const rail = document.getElementById('cloudos-browse-rail');
   if (rail) rail.classList.toggle('active', open);
+  syncCloudosMobileBar(typeof currentPage !== 'undefined' ? currentPage : 'dashboard');
 }
 
 function toggleClassicNav() {
@@ -7939,7 +8025,7 @@ async function fetchAppStore(opts) {
   } catch (e) {
     if (e && e.name === 'AbortError') return;
     if (opts && opts.signal && opts.signal.aborted) return;
-    toast('Template Store: ' + (e.message || String(e)), 'error');
+    toast(navPageLabel('app-store') + ': ' + (e.message || String(e)), 'error');
   }
 }
 
@@ -12879,6 +12965,7 @@ window.addEventListener('load', async () => {
   initZeusShell();
   initFinderSections();
   initBrowsePinButtons();
+  syncBrowseMenuLabels();
   fetchExperienceSession();
   fetchExperienceDesktop();
 
@@ -15020,10 +15107,10 @@ async function fetchIncidents() {
 </div>
 
 <nav id="cloudos-mobile-bar" class="cloudos-mobile-bar" aria-label="Quick navigation">
-  <button type="button" onclick="navigate('dashboard')">Home</button>
-  <button type="button" onclick="toggleClassicNav()">Browse</button>
-  <button type="button" onclick="openSpotlight()">Search</button>
-  <button type="button" onclick="openAskZeus()">Copilot</button>
+  <button type="button" data-mobile-nav="dashboard" onclick="navigate('dashboard')">Home</button>
+  <button type="button" data-mobile-nav="browse" onclick="toggleClassicNav()">Browse</button>
+  <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
+  <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Copilot</button>
 </nav>
 
 <footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
