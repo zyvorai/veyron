@@ -8558,22 +8558,43 @@ function _cmpRow(label, valA, valB, fmt) {
     '<td style="padding:6px 10px;font-size:.8rem;color:var(--text-primary)">' + esc(String(b)) + '</td>' +
     '</tr>';
 }
+function _cmpRowBar(label, rawA, rawB) {
+  // visual proportion bar for numeric compare rows
+  var nA = parseFloat(rawA) || 0, nB = parseFloat(rawB) || 0;
+  var max = Math.max(nA, nB, 0.001);
+  var pA = Math.round(nA / max * 100), pB = Math.round(nB / max * 100);
+  var diff = (String(rawA || '—') !== String(rawB || '—')) ? ' style="background:rgba(245,158,11,.07)"' : '';
+  var color = '#38bdf8';
+  function bar(pct, val) {
+    return '<div style="font-size:.8rem;color:var(--text-primary);margin-bottom:3px">' + esc(String(val || '—')) + '</div>' +
+      '<div style="height:5px;border-radius:3px;background:rgba(255,255,255,.07);overflow:hidden;width:100%">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px;transition:width .3s ease"></div>' +
+      '</div>';
+  }
+  return '<tr' + diff + '>' +
+    '<td style="padding:6px 10px 6px 0;font-size:.75rem;color:var(--text-dim);width:30%;white-space:nowrap;vertical-align:top">' + esc(label) + '</td>' +
+    '<td style="padding:6px 10px;vertical-align:top;min-width:80px">' + bar(pA, rawA) + '</td>' +
+    '<td style="padding:6px 10px;vertical-align:top;min-width:80px">' + bar(pB, rawB) + '</td>' +
+    '</tr>';
+}
 function _showVmCompareModal(a, b) {
   var overlay = document.getElementById('vm-compare-overlay');
   if (!overlay) return;
   var nsA = a.namespace || 'default', nsB = b.namespace || 'default';
   var statusDot = function(vm) { var s = (vm.status||'').toLowerCase(); return s === 'running' ? '🟢' : s === 'stopped' ? '⚫' : '🟡'; };
+  function memGi(s) { if (!s) return 0; var n = parseFloat(s); if (s.match(/[Gg]/)) return n; if (s.match(/[Mm]/)) return n/1024; return n; }
   var rows = [
     _cmpRow('Status', statusDot(a) + ' ' + a.status, statusDot(b) + ' ' + b.status),
     _cmpRow('Namespace', nsA, nsB),
-    _cmpRow('CPU', a.cpu, b.cpu),
-    _cmpRow('Memory', a.memory, b.memory),
+    _cmpRowBar('CPU', a.cpu, b.cpu),
+    _cmpRowBar('Memory', memGi(a.memory).toFixed(1) + 'Gi', memGi(b.memory).toFixed(1) + 'Gi'),
     _cmpRow('IP', a.ip, b.ip),
     _cmpRow('Node', a.node, b.node),
     _cmpRow('OS Family', guessOsFamily(a), guessOsFamily(b)),
+    _cmpRow('Age', a.age, b.age),
+    _cmpRowBar('Age (hrs)', parseAgeToHours(a.age), parseAgeToHours(b.age)),
     _cmpRow('Tags', getVmTags(nsA, a.name).join(', ') || '—', getVmTags(nsB, b.name).join(', ') || '—'),
     _cmpRow('Note', getVmNote(nsA, a.name) || '—', getVmNote(nsB, b.name) || '—'),
-    _cmpRow('Age', a.age, b.age),
     _cmpRow('Drift', a.drift_detected ? 'Yes' : 'No', b.drift_detected ? 'Yes' : 'No'),
   ].join('');
   var diffCount = (a.cpu !== b.cpu ? 1 : 0) + (a.memory !== b.memory ? 1 : 0) + (a.status !== b.status ? 1 : 0) + (a.node !== b.node ? 1 : 0);
