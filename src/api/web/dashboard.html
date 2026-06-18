@@ -4425,6 +4425,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div>
       <div class="vmr-foundry-filters" id="vmr-foundry-filters">
         <button type="button" class="vmr-filter-chip active">All</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAppStore()" title="Refresh template list" style="margin-left:auto">&#8635; Refresh</button>
         <button type="button" class="vmr-filter-chip">UEFI</button>
         <button type="button" class="vmr-filter-chip">Secure Boot</button>
         <button type="button" class="vmr-filter-chip">TPM</button>
@@ -4749,7 +4750,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-dr" data-section="ops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Disaster Recovery</h1><p>Export manifests and apply failover on this cluster</p></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div class="page-header-right" style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()">&#8635; Refresh</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runVeleroDrAdvisor()">Velero DR Advisor</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runMigrationAdvisor()">Migration Advisor</button></div></div>
     <div id="velero-dr-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
