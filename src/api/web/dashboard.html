@@ -6190,6 +6190,52 @@ function openVmDetailDeep(ns, name) {
   Promise.resolve(fetchVMs()).finally(function() { selectVm(ns, name, { skipHash: true }); });
 }
 
+let _capsuleVmNs = null, _capsuleVmName = null;
+
+function navigateToVmCapsule(ns, name) {
+  _capsuleVmNs = ns || selectedVmNs;
+  _capsuleVmName = name || selectedVmName;
+  navigate('vm-capsule');
+}
+
+function renderVmCapsuleVmr() {
+  const heroSlot = document.getElementById('vmr-capsule-hero-slot');
+  const body = document.getElementById('vmr-capsule-body');
+  if (!body) return;
+  if (!_capsuleVmName && selectedVmName) { _capsuleVmNs = selectedVmNs; _capsuleVmName = selectedVmName; }
+  if (!_capsuleVmName) {
+    body.innerHTML = '<div class="vmr-panel"><p style="color:var(--muted)">Select a VM from Fleet Command to open its capsule.</p>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="navigate(\'vms\')">Open Fleet Command</button></div>';
+    if (heroSlot) heroSlot.innerHTML = '';
+    return;
+  }
+  body.innerHTML = '<div class="detail-loading" style="padding:24px;color:var(--text-muted)">Loading VM capsule…</div>';
+  const ns = _capsuleVmNs || 'default', name = _capsuleVmName;
+  apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name)).then(function(j) {
+    const vm = unwrapData(j);
+    if (!vm) { body.innerHTML = '<div class="vmr-panel" style="color:var(--error)">VM not found.</div>'; return; }
+    const vmi = vm.vmi_status || {};
+    const ifaces = vmi.interfaces || [];
+    const guestOS = vmi.guest_os_info;
+    body.innerHTML = renderVmHero(vm, ns, name, vmi, {}) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS);
+    if (heroSlot) heroSlot.innerHTML = '';
+    fetchSecurity(ns, name).then(function(secHtml) {
+      const el = document.getElementById('security-' + name);
+      if (el && secHtml) el.innerHTML = secHtml;
+    });
+    loadExposePanel(ns, name);
+    loadRdpPanel(ns, name, vmi, vm);
+    loadGuestRuntimePanel(ns, name, vmi);
+    loadGuestFilesystemPanel(ns, name, vmi);
+    loadVmDriftPanel(ns, name, vm);
+    loadInternetPanel(ns, name);
+    loadDoctorPanel(ns, name);
+    loadVmMetricsPanel(ns, name);
+  }).catch(function(e) {
+    body.innerHTML = '<div class="vmr-panel" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+  });
+}
+
 function navigateToVmsFilter(status) {
   navigate('vms');
   setTimeout(function() {
