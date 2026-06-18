@@ -11090,7 +11090,7 @@ function filterPerformanceView(query) {
   }) : items;
   tb.innerHTML = filtered.map(function(p) {
     return '<tr class="clickable-row" ' + onHandler('openPerformanceVm(' + jsArgs(p.vm_name) + ')') + ' title="Open VM detail">' +
-      '<td>' + esc(p.vm_name) + '</td>' +
+      '<td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.vm_name) + ')') + '>' + esc(p.vm_name) + '<span class="vmr-copy-hint">copy</span></td>' +
       '<td>' + (typeof p.cpu_p95 === 'number' ? p.cpu_p95.toFixed(1) : p.cpu_p95) + '%</td>' +
       '<td>' + (typeof p.memory_p95 === 'number' ? p.memory_p95.toFixed(1) : p.memory_p95) + '%</td>' +
       '<td>' + p.iops_read + '</td>' +
