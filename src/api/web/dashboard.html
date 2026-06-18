@@ -3332,6 +3332,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="mac-cc-toggle" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">▥</button>
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
     <button type="button" class="btn-spotlight" onclick="openQuickForge()" title="Quick VM Launcher (⌘N)" style="color:var(--cyan)" aria-label="New VM">⌘N</button>
+    <span id="vmr-fleet-mood" title="Fleet health" aria-live="polite" style="font-size:.9rem;cursor:default;user-select:none;padding:0 4px;opacity:.85" onclick="navigate('vms')"></span>
     <button type="button" class="btn-spotlight" id="vmr-action-log-btn" onclick="toggleActionLog()" title="Session action log" style="position:relative" aria-label="Action log">◎<span id="vmr-action-log-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:#f59e0b;color:#000;border-radius:8px;font-size:.55rem;font-weight:700;min-width:14px;height:14px;line-height:14px;padding:0 3px;text-align:center"></span></button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
@@ -3930,6 +3931,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
             <button type="button" id="bulk-compare-btn" class="glass-btn-secondary glass-btn-sm" style="display:none;background:linear-gradient(90deg,rgba(56,189,248,.12),rgba(139,92,246,.12));border-color:rgba(56,189,248,.35)" onclick="bulkCompare()" title="Compare 2 selected VMs side by side">⧉ Compare</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkTagAll()" title="Add a tag to all selected VMs">🏷 Tag All…</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSelectedVmsJson()" title="Export selected VMs as JSON">↓ Export</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkPauseResume()" title="Pause all selected Running VMs / Resume all Paused VMs">⏸ Pause/↻</button>
             <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')" title="Delete selected VMs">✕ Delete</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="toggleSelectAll(false)">Clear</button>
           </div>
@@ -9075,6 +9077,19 @@ function updateAmbientGlow(running, total, failed) {
   el.classList.remove('warn', 'critical');
   if (failed > 0) el.classList.add('critical');
   else if (total > 0 && running < total * 0.6) el.classList.add('warn');
+  updateFleetMoodEmoji(running, total, failed);
+}
+function updateFleetMoodEmoji(running, total, failed) {
+  var mood = document.getElementById('vmr-fleet-mood');
+  if (!mood) return;
+  var emoji, tip;
+  if (!total) { emoji = ''; tip = ''; }
+  else if (failed > 0) { emoji = '🔴'; tip = failed + ' VM' + (failed > 1 ? 's' : '') + ' in error'; }
+  else if (total > 0 && running === total) { emoji = '🟢'; tip = 'All ' + total + ' VMs running'; }
+  else if (running === 0) { emoji = '⚫'; tip = 'All VMs stopped'; }
+  else { emoji = '🟡'; tip = running + '/' + total + ' VMs running'; }
+  mood.textContent = emoji;
+  mood.title = 'Fleet health: ' + (tip || 'no VMs');
 }
 
 // ── VM Custom Tags ──
@@ -15534,6 +15549,41 @@ async function loadVmSnapshotsPanel(ns, name) {
   } catch (e) {
     el.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem;margin:6px 0">Could not load snapshots.</p>';
   }
+}
+
+async function bulkPauseResume() {
+  if (selectedVMs.size === 0) return;
+  var all = window.lastVMs || vmData || [];
+  var toResume = [], toPause = [];
+  selectedVMs.forEach(function(key) {
+    var p = parseVmSelectionKey(key);
+    var vm = all.find(function(v) { return v.name === p.name && (v.namespace||'default') === p.ns; });
+    if (vm && vm.status === 'Paused') toResume.push(p);
+    else if (vm && vm.status === 'Running') toPause.push(p);
+  });
+  var msg = [];
+  if (toPause.length) msg.push('Pause ' + toPause.length + ' running VM' + (toPause.length > 1 ? 's' : ''));
+  if (toResume.length) msg.push('Resume ' + toResume.length + ' paused VM' + (toResume.length > 1 ? 's' : ''));
+  if (!msg.length) { showToast('Select Running or Paused VMs', 'info'); return; }
+  openGlassConfirm({
+    title: 'Bulk Pause/Resume',
+    body: msg.join(' · ') + '?',
+    confirmLabel: 'Proceed',
+    onConfirm: async function() {
+      var errs = [];
+      for (var i = 0; i < toPause.length; i++) {
+        try { await apiJson('/api/v1/vms/' + encodeURIComponent(toPause[i].ns) + '/' + encodeURIComponent(toPause[i].name) + '/pause', {method:'POST'}); }
+        catch(e) { errs.push(toPause[i].name); }
+      }
+      for (var j = 0; j < toResume.length; j++) {
+        try { await apiJson('/api/v1/vms/' + encodeURIComponent(toResume[j].ns) + '/' + encodeURIComponent(toResume[j].name) + '/unpause', {method:'POST'}); }
+        catch(e) { errs.push(toResume[j].name); }
+      }
+      if (errs.length) toast('Failed: ' + errs.slice(0,3).join(', '), 'error');
+      else toast('Done — ' + (toPause.length + toResume.length) + ' VM' + (toPause.length + toResume.length > 1 ? 's' : '') + ' updated', 'success');
+      setTimeout(refresh, 1500);
+    }
+  });
 }
 
 async function bulkSnapshot() {
