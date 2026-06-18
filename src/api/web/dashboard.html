@@ -14817,6 +14817,20 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  if ((e.metaKey || e.ctrlKey) && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      var _nsList = ['all'].concat(Array.from(new Set((vmData || []).map(function(v) { return v.namespace || 'default'; }))).sort());
+      var _nsIdx = _nsList.indexOf(currentNamespace);
+      if (_nsIdx < 0) _nsIdx = 0;
+      _nsIdx = e.key === 'ArrowRight' ? (_nsIdx + 1) % _nsList.length : (_nsIdx - 1 + _nsList.length) % _nsList.length;
+      var _nextNs = _nsList[_nsIdx];
+      setNamespace(_nextNs);
+      toast('Workspace: ' + (_nextNs === 'all' ? 'All' : _nextNs), 'info');
+      return;
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.key === 'ArrowUp') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
