@@ -6717,9 +6717,10 @@ function asArray(j) {
   return [];
 }
 
-function tbodyError(colspan, msg) {
+function tbodyError(colspan, msg, retryFn) {
+  const btn = retryFn ? '<br><button class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="' + esc(retryFn + '()') + '">&#8635; Retry</button>' : '';
   return '<tr><td colspan="' + colspan + '" style="text-align:center;color:var(--error);padding:14px;line-height:1.45">' +
-    esc(msg || 'Request failed') + '</td></tr>';
+    esc(msg || 'Request failed') + btn + '</td></tr>';
 }
 
 function summaryErrorHtml(msg) {
@@ -10240,7 +10241,7 @@ async function fetchEvents(full, opts) {
   } catch (e) {
     const dash = document.getElementById('dash-event-list');
     const fullEl = document.getElementById('events-full-list');
-    const msg = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+    const msg = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="fetchEvents(true)">&#8635; Retry</button></div>';
     if (dash) dash.innerHTML = msg;
     if (full && fullEl) fullEl.innerHTML = msg;
   }
@@ -13811,7 +13812,7 @@ async function fetchCRDs() {
     window.lastCrdVms = items;
     tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
   } catch (e) {
-    tb.innerHTML = tbodyError(8, e.message || String(e));
+    tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchCRDs');
   }
 }
 
@@ -13844,7 +13845,7 @@ async function fetchBlueprintStudio() {
       blueprintStudioSelect(_blueprintStudioSelection.ns, _blueprintStudioSelection.name, true);
     }
   } catch (e) {
-    tb.innerHTML = tbodyError(4, e.message || String(e));
+    tb.innerHTML = tbodyError(4, e.message || String(e), 'fetchBlueprintStudio');
   }
 }
 
@@ -13979,7 +13980,7 @@ async function fetchPolicies() {
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
     tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
   } catch (e) {
-    tb.innerHTML = tbodyError(8, e.message || String(e));
+    tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchPolicies');
   }
 }
 
@@ -14002,7 +14003,7 @@ async function fetchInsights() {
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
     tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
   } catch (e) {
-    tb.innerHTML = tbodyError(6, e.message || String(e));
+    tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchInsights');
   }
 }
 
@@ -14024,7 +14025,7 @@ async function fetchActions() {
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
     tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
   } catch (e) {
-    tb.innerHTML = tbodyError(6, e.message || String(e));
+    tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchActions');
   }
 }
 
@@ -14114,7 +14115,7 @@ async function fetchCosts(opts) {
     if (sumEl) sumEl.innerHTML = summaryErrorHtml(msg);
     if (nsEl) nsEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
     if (fcEl) fcEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
-    if (tb) tb.innerHTML = tbodyError(8, msg);
+    if (tb) tb.innerHTML = tbodyError(8, msg, 'fetchCosts');
   }
 }
 
@@ -14383,7 +14384,7 @@ async function fetchSecurityPage(opts) {
   } catch (e) {
     const msg = e.message || String(e);
     if (sum) sum.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(5, msg);
+    if (tb) tb.innerHTML = tbodyError(5, msg, 'fetchSecurityPage');
     console.error('Security fetch error:', e);
   }
 }
@@ -14484,8 +14485,8 @@ async function fetchMonitoring() {
   } catch (e) {
     const msg = e.message || String(e);
     if (sum) sum.innerHTML = summaryErrorHtml(msg);
-    if (recTb) recTb.innerHTML = tbodyError(5, msg);
-    if (anTb) anTb.innerHTML = tbodyError(7, msg);
+    if (recTb) recTb.innerHTML = tbodyError(5, msg, 'fetchMonitoring');
+    if (anTb) anTb.innerHTML = tbodyError(7, msg, 'fetchMonitoring');
     if (badge) {
       badge.textContent = 'Error';
       badge.className = 'anom-count-badge';
@@ -14529,7 +14530,7 @@ async function fetchWorkloads(opts) {
   } catch (e) {
     if (e && e.name === 'AbortError') return;
     if (opts && opts.signal && opts.signal.aborted) return;
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchWorkloads');
     console.error('Workloads fetch error:', e);
   }
 }
@@ -14558,7 +14559,7 @@ async function fetchAlerts() {
     }).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No active alerts</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchAlerts');
     console.error('Alerts fetch error:', e);
   }
 }
@@ -14587,7 +14588,7 @@ async function fetchAudit() {
   } catch (e) {
     const msg = e.message || String(e);
     if (sum) sum.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(6, msg);
+    if (tb) tb.innerHTML = tbodyError(6, msg, 'fetchAudit');
     console.error('Audit fetch error:', e);
   }
 }
@@ -14614,7 +14615,7 @@ async function fetchNotifications() {
     }).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No notifications</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e), 'fetchNotifications');
     console.error('Notifications fetch error:', e);
   }
 }
@@ -14639,7 +14640,7 @@ async function fetchHelm() {
     tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td><span class="glass-badge ${glassTableBadge(h.status)}">${esc(h.status)}</span></td><td>${h.revision}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Helm releases found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchHelm');
     console.error('Helm fetch error:', e);
   }
 }
@@ -14663,7 +14664,7 @@ async function fetchOperators() {
     tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td><span class="glass-badge ${glassTableBadge(o.status)}">${esc(o.status)}</span></td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No operators found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchOperators');
     console.error('Operators fetch error:', e);
   }
 }
@@ -14687,7 +14688,7 @@ async function fetchCustomResources() {
     tb.innerHTML = items.map(cr => `<tr><td>${esc(cr.name)}</td><td>${esc(cr.group)}</td><td>${esc(cr.version)}</td><td>${esc(cr.kind)}</td><td>${esc(cr.scope)}</td><td>${cr.instance_count}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No custom resources found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchCustomResources');
     console.error('Custom resources fetch error:', e);
   }
 }
@@ -14728,8 +14729,8 @@ async function fetchSlo() {
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO data</td></tr>';
   } catch (e) {
     const msg = e.message || String(e);
-    if (tb) tb.innerHTML = tbodyError(7, msg);
-    if (burnTb) burnTb.innerHTML = tbodyError(7, msg);
+    if (tb) tb.innerHTML = tbodyError(7, msg, 'fetchSlo');
+    if (burnTb) burnTb.innerHTML = tbodyError(7, msg, 'fetchSlo');
     console.error('SLO fetch error:', e);
   }
 }
@@ -14754,7 +14755,7 @@ async function fetchChaos() {
     tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td><span class="glass-badge ${glassTableBadge(c.status)}">${esc(c.status)}</span></td><td>${esc(c.duration)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchChaos');
     console.error('Chaos fetch error:', e);
   }
 }
@@ -14794,8 +14795,8 @@ async function fetchRbac() {
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
-    if (rolesBody) rolesBody.innerHTML = tbodyError(4, msg);
-    if (bindingsBody) bindingsBody.innerHTML = tbodyError(3, msg);
+    if (rolesBody) rolesBody.innerHTML = tbodyError(4, msg, 'fetchRbac');
+    if (bindingsBody) bindingsBody.innerHTML = tbodyError(3, msg, 'fetchRbac');
     console.error('RBAC fetch error:', e);
   }
 }
@@ -14818,7 +14819,7 @@ async function fetchQuotas() {
     tb.innerHTML = items.map(q => `<tr><td>${esc(q.name)}</td><td>${esc(q.namespace)}</td><td>${esc(q.cpu_used || '0')} / ${esc(q.cpu_limit || '-')}</td><td>${esc(q.memory_used || '0')} / ${esc(q.memory_limit || '-')}</td><td>${q.vm_count}${q.vm_limit ? ' / ' + q.vm_limit : ''}</td></tr>`).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No quotas found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e), 'fetchQuotas');
     console.error('Quota fetch error:', e);
   }
 }
@@ -14843,7 +14844,7 @@ async function fetchIngress() {
     tb.innerHTML = items.map(ing => `<tr><td>${esc(ing.name)}</td><td>${esc(ing.namespace)}</td><td>${esc(ing.class_name || '-')}</td><td>${esc((ing.hosts || []).join(', ') || '-')}</td><td>${ing.tls ? 'Yes' : 'No'}</td><td>${esc((ing.rules || []).map(r => (r.host || '*') + r.path + ' -> ' + r.service_name).join(', ') || '-')}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ingress resources found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchIngress');
     console.error('Ingress fetch error:', e);
   }
 }
@@ -14867,7 +14868,7 @@ async function fetchHpa() {
     tb.innerHTML = items.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.target_kind)}/${esc(h.target_name)}</td><td>${h.min_replicas}</td><td>${h.current_replicas}</td><td>${h.desired_replicas}</td><td>${h.max_replicas}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No HPAs found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchHpa');
     console.error('HPA fetch error:', e);
   }
 }
@@ -14891,7 +14892,7 @@ async function fetchBackups() {
     tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td><span class="glass-badge ${glassTableBadge(b.status)}">${esc(b.status)}</span></td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchBackups');
     console.error('Backups fetch error:', e);
   }
   await fetchVelero();
@@ -14939,7 +14940,7 @@ async function fetchTopology() {
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(3, msg);
+    if (tb) tb.innerHTML = tbodyError(3, msg, 'fetchTopology');
     console.error('Topology fetch error:', e);
   }
 }
@@ -14968,7 +14969,7 @@ async function fetchDependencies() {
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(3, msg);
+    if (tb) tb.innerHTML = tbodyError(3, msg, 'fetchDependencies');
     console.error('Dependencies fetch error:', e);
   }
 }
@@ -14992,7 +14993,7 @@ async function fetchAutoscaler() {
     tb.innerHTML = items.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.namespace)}</td><td>${esc(a.target_kind)}/${esc(a.target_name)}</td><td>${a.min_replicas}</td><td>${a.current_replicas}</td><td>${a.max_replicas}</td><td>${a.enabled ? 'Yes' : 'No'}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No autoscaler policies found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchAutoscaler');
     console.error('Autoscaler fetch error:', e);
   }
 }
@@ -15007,7 +15008,7 @@ async function fetchForecasting() {
     tb.innerHTML = items.map(f => `<tr><td>${esc(f.metric)}</td><td>${f.current_value}</td><td>${f.predicted_value}</td><td>${esc(f.prediction_window)}</td><td>${esc(f.trend)}</td><td>${Math.round((f.confidence || 0) * 100)}%</td><td>${esc(f.estimated_breach || '-')}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No predictions available</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchForecasting');
     console.error('Forecasting fetch error:', e);
   }
 }
@@ -15084,9 +15085,9 @@ async function fetchCilium() {
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(6, msg);
+    if (tb) tb.innerHTML = tbodyError(6, msg, 'fetchCilium');
     if (flowStats) flowStats.innerHTML = '<span style="color:var(--error)">' + esc(msg) + '</span>';
-    if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg);
+    if (flowsTb) flowsTb.innerHTML = tbodyError(5, msg, 'fetchCilium');
     console.error('Cilium fetch error:', e);
   }
 }
@@ -15625,7 +15626,7 @@ async function fetchPerformance() {
       if (sel.value && graphs.find(g => g.vm_name === sel.value)) renderFlamegraph();
     }
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchPerformance');
     console.error('Performance fetch error:', e);
   }
 }
@@ -15673,7 +15674,7 @@ async function fetchWebhooks() {
       <td><span class="glass-badge ${w.failure_count ? 'error' : 'running'}">${w.failure_count}</span></td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No webhooks found</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchWebhooks');
     console.error('Webhooks fetch error:', e);
   }
 }
@@ -15701,7 +15702,7 @@ async function fetchTraces() {
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(7, msg);
+    if (tb) tb.innerHTML = tbodyError(7, msg, 'fetchTraces');
     console.error('Traces fetch error:', e);
   }
 }
@@ -15834,8 +15835,8 @@ async function fetchSocPage(refresh) {
     if (sum) sum.innerHTML = summaryErrorHtml(msg);
     if (exportStrip) exportStrip.textContent = msg;
     if (detList) detList.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
-    if (evBody) evBody.innerHTML = tbodyError(6, msg);
-    if (asmBody) asmBody.innerHTML = tbodyError(4, msg);
+    if (evBody) evBody.innerHTML = tbodyError(6, msg, 'fetchSocPage');
+    if (asmBody) asmBody.innerHTML = tbodyError(4, msg, 'fetchSocPage');
     console.error('SOC fetch error:', e);
   }
 }
@@ -15906,8 +15907,8 @@ async function fetchCompliance() {
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
-    if (stBody) stBody.innerHTML = tbodyError(6, msg);
-    if (repBody) repBody.innerHTML = tbodyError(5, msg);
+    if (stBody) stBody.innerHTML = tbodyError(6, msg, 'fetchCompliance');
+    if (repBody) repBody.innerHTML = tbodyError(5, msg, 'fetchCompliance');
   }
 }
 
@@ -15941,7 +15942,7 @@ async function fetchHeatmap() {
       '<td>' + (n.vm_count ?? 0) + '</td><td>' + (n.heat_score || 0).toFixed(2) + '</td></tr>'
     ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No nodes</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchHeatmap');
     if (summaryEl) summaryEl.innerHTML = summaryErrorHtml(e.message || String(e));
   }
 }
@@ -15965,7 +15966,7 @@ async function fetchCustomDashboards() {
       <td>${esc(d.name)}</td><td>${esc(d.description || '')}</td><td>${(d.panels || []).length}</td>
       <td>${esc(d.created_by || '')}</td><td>${fmtTime(d.updated_at)}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No dashboards</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(5, e.message || String(e), 'fetchCustomDashboards');
   }
 }
 
@@ -15992,7 +15993,7 @@ async function fetchNetworkPolicies() {
     ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies</td></tr>';
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchNetworkPolicies');
   }
 }
 
@@ -16019,7 +16020,7 @@ async function fetchImages() {
       <td><span class="glass-badge ${imageStatusClass(img.status)}">${esc(img.status)}</span></td><td>${esc(img.capacity)}</td><td>${esc(img.age)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No images</td></tr>';
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
-    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchImages');
   }
 }
 
@@ -16207,8 +16208,8 @@ async function fetchCatalog() {
   } catch (e) {
     const msg = e.message || String(e);
     if (banner) { banner.className = 'catalog-banner warn'; banner.textContent = msg; }
-    if (tplTb) tplTb.innerHTML = tbodyError(4, msg);
-    if (profTb) profTb.innerHTML = tbodyError(5, msg);
+    if (tplTb) tplTb.innerHTML = tbodyError(4, msg, 'fetchCatalog');
+    if (profTb) profTb.innerHTML = tbodyError(5, msg, 'fetchCatalog');
   }
 }
 
@@ -16339,7 +16340,7 @@ async function fetchIntegrations(opts) {
         (i.configured ? '<span class="glass-badge running">Yes</span>' : '<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + integrationProbeClass(i.probe) + '">' + esc(i.probe) + '</span></td><td style="max-width:280px;font-size:.82em">' + esc(i.feeds) + '</td><td>' + openBtn + '</td></tr>';
     }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No integrations defined</td></tr>';
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e));
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchIntegrations');
     console.error('Integrations fetch error:', e);
   }
 }
@@ -16383,8 +16384,8 @@ async function fetchVelero() {
   } catch (e) {
     const msg = e.message || String(e);
     if (sum) sum.textContent = msg;
-    if (bb) bb.innerHTML = tbodyError(6, msg);
-    if (rb) rb.innerHTML = tbodyError(5, msg);
+    if (bb) bb.innerHTML = tbodyError(6, msg, 'fetchVelero');
+    if (rb) rb.innerHTML = tbodyError(5, msg, 'fetchVelero');
   }
 }
 
@@ -16472,7 +16473,7 @@ async function fetchIncidents() {
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
-    if (tb) tb.innerHTML = tbodyError(7, msg);
+    if (tb) tb.innerHTML = tbodyError(7, msg, 'fetchIncidents');
     console.error('Incidents fetch error:', e);
   }
 }
