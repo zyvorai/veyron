@@ -3902,6 +3902,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" data-view="map" onclick="setVmrFleetView('map')">Map</button>
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
       <button type="button" id="vm-group-btn" title="Group VMs by name prefix (G)" onclick="toggleVmGrouping()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">⊞</button>
+      <button type="button" id="vm-age-heat-btn" title="Age heat-map: tint cards by VM age (blue=new, amber=old)" onclick="toggleVmAgeHeat()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">🌡</button>
       <button type="button" title="Status Board — full-screen wall view" onclick="openStatusBoard()" style="margin-left:2px;font-size:.85rem;padding:4px 8px" aria-label="Status Board">⊡</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
@@ -9412,6 +9413,41 @@ function osFamilyIcon(family) {
   const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
   return icon[family] || '◫';
 }
+// ── VM Age Heat Map ──
+window._vmAgeHeatEnabled = false;
+function toggleVmAgeHeat() {
+  window._vmAgeHeatEnabled = !window._vmAgeHeatEnabled;
+  var btn = document.getElementById('vm-age-heat-btn');
+  if (btn) btn.classList.toggle('active', window._vmAgeHeatEnabled);
+  filterVMs();
+}
+function parseAgeToHours(ageStr) {
+  if (!ageStr) return null;
+  var s = ageStr.trim();
+  var total = 0;
+  var re = /(\d+(?:\.\d+)?)\s*([a-zA-Z]+)/g;
+  var m;
+  while ((m = re.exec(s)) !== null) {
+    var n = parseFloat(m[1]);
+    var u = m[2].toLowerCase();
+    if (u.startsWith('y')) total += n * 8760;
+    else if (u.startsWith('d')) total += n * 24;
+    else if (u.startsWith('h')) total += n;
+    else if (u.startsWith('m')) total += n / 60;
+    else if (u.startsWith('s')) total += n / 3600;
+  }
+  return total > 0 ? total : null;
+}
+function vmAgeTint(vm) {
+  var hours = parseAgeToHours(vm.age);
+  if (hours === null) return 'rgba(255,255,255,.03)';
+  if (hours < 1)    return 'rgba(56,189,248,.13)';   // < 1h: sky blue (brand new)
+  if (hours < 24)   return 'rgba(34,197,94,.08)';    // < 1d: green
+  if (hours < 168)  return 'rgba(255,255,255,.03)';  // < 1w: neutral
+  if (hours < 720)  return 'rgba(245,158,11,.08)';   // < 30d: amber
+  return 'rgba(239,68,68,.09)';                       // 30d+: warm red
+}
+
 function osFamilyTint(family) {
   const tints = {
     windows: 'rgba(59,130,246,.07)',
@@ -10040,7 +10076,7 @@ function vmCard(vm, showActions) {
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ',event)') + '>↻</button>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
-  const tint = osFamilyTint(family);
+  const tint = window._vmAgeHeatEnabled ? vmAgeTint(vm) : osFamilyTint(family);
   const retireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — consider retiring. Right-click → Mark as Keeper to suppress.">♻ stale?</span>' : '';
   return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" draggable="true" ' +
     'ondragstart="vmCardDragStart(event,' + jsArgs(ns, vm.name) + ')" ' +
