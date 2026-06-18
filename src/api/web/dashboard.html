@@ -4271,7 +4271,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div></div>
+<div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
+    <div class="page-header-right"><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"></div></div>
     
   <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
@@ -4295,7 +4296,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div></div>
     <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span><input type="search" id="chaos-search" class="form-input" placeholder="Filter experiments…" oninput="filterChaosView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
   </div>
 </div>
@@ -4324,7 +4325,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Quota Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('quota-advisor-card')">Dismiss</button></div>
     <div id="quota-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Resource Quotas</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Resource Quotas</span><input type="search" id="quotas-search" class="form-input" placeholder="Filter quotas…" oninput="filterQuotasView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>CPU Used / Limit</th><th>Memory Used / Limit</th><th>VMs</th></tr></thead><tbody id="quotas-body"></tbody></table></div>
 </div>
 </div>
@@ -4342,7 +4343,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div></div>
     <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span><input type="search" id="hpa-search" class="form-input" placeholder="Filter HPAs…" oninput="filterHpaView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
 </div>
 </div>
@@ -4583,7 +4584,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div></div>
     <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span><input type="search" id="deps-search" class="form-input" placeholder="Filter edges…" oninput="filterDepsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
 </div>
 </div>
@@ -4592,7 +4593,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div></div>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
 </div>
 </div>
@@ -4773,7 +4774,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div>
     <div id="heatmap-cap-banner"></div>
   <div id="heatmap-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span><input type="search" id="heatmap-search" class="form-input" placeholder="Filter nodes…" oninput="filterHeatmapView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Node</th><th>CPU %</th><th>Memory %</th><th>Disk %</th><th>Network est.</th><th>VMs</th><th>Heat</th></tr></thead><tbody id="heatmap-body"></tbody></table></div>
 </div>
 </div>
@@ -4868,7 +4869,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="card glass-card">
     <div class="card-header">
       <span class="card-title">Incident Timeline</span>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="search" id="incidents-search" class="form-input" placeholder="Filter by title, VM, namespace…" oninput="filterIncidentsView(this.value)" style="width:220px;font-size:.82rem">
         <select id="incident-severity-filter" class="toolbar-input" onchange="fetchIncidents()">
           <option value="">All Severities</option>
           <option value="critical">Critical</option>
@@ -10451,6 +10453,145 @@ function filterHelmView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
 }
 
+function filterDepsView(query) {
+  const tb = document.getElementById('dependencies-body');
+  if (!tb) return;
+  const edges = window.lastDepEdges || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? edges.filter(function(e) {
+    return (e.from || '').toLowerCase().includes(q) ||
+           (e.dependency_type || '').toLowerCase().includes(q) ||
+           (e.to || '').toLowerCase().includes(q);
+  }) : edges;
+  tb.innerHTML = filtered.map(function(e) {
+    return '<tr><td>' + esc(e.from) + '</td><td>' + esc(e.dependency_type) + '</td><td>' + esc(e.to) + '</td></tr>';
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching edges</td></tr>';
+}
+
+function filterAutoscalerView(query) {
+  const tb = document.getElementById('autoscaler-body');
+  if (!tb) return;
+  const items = window.lastAutoscalerPolicies || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(a) {
+    return (a.name || '').toLowerCase().includes(q) ||
+           (a.namespace || '').toLowerCase().includes(q) ||
+           (a.target_name || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(a) {
+    return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.namespace) + '</td><td>' + esc(a.target_kind) + '/' + esc(a.target_name) + '</td><td>' + a.min_replicas + '</td><td>' + a.current_replicas + '</td><td>' + a.max_replicas + '</td><td>' + (a.enabled ? 'Yes' : 'No') + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
+}
+
+function filterSloView(query) {
+  const tb = document.getElementById('slo-body');
+  const burnTb = document.getElementById('slo-burn-body');
+  const items = window.lastSloItems || [];
+  const burnRates = window.lastSloBurnRates || [];
+  const q = (query || '').toLowerCase().trim();
+  const fItems = q ? items.filter(function(s) {
+    return (s.name || '').toLowerCase().includes(q) || (s.service || '').toLowerCase().includes(q) || (s.status || '').toLowerCase().includes(q);
+  }) : items;
+  const fBurn = q ? burnRates.filter(function(br) { return (br.slo_name || '').toLowerCase().includes(q); }) : burnRates;
+  if (tb) tb.innerHTML = fItems.map(function(s) {
+    return '<tr><td>' + esc(s.name) + '</td><td>' + esc(s.service) + '</td><td>' + esc(s.sli_type) + '</td><td>' + s.target + '%</td><td>' + s.current + '%</td><td>' + s.error_budget_remaining + '%</td><td><span class="glass-badge ' + glassTableBadge(s.status) + '">' + esc(s.status) + '</span></td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching SLOs</td></tr>';
+  if (burnTb) burnTb.innerHTML = fBurn.map(function(br) {
+    const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
+    return '<tr><td>' + esc(br.slo_name) + '</td><td>' + br.budget_total_percent + '%</td><td>' + br.budget_consumed_percent + '%</td><td>' + br.burn_rate_1h + 'x</td><td>' + br.burn_rate_24h + 'x</td><td>' + ttl + '</td><td><span class="glass-badge ' + glassTableBadge(br.status) + '">' + esc(br.status) + '</span></td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching burn rates</td></tr>';
+}
+
+function filterChaosView(query) {
+  const tb = document.getElementById('chaos-body');
+  if (!tb) return;
+  const items = window.lastChaosExperiments || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(c) {
+    return (c.name || '').toLowerCase().includes(q) ||
+           (c.experiment_type || '').toLowerCase().includes(q) ||
+           (c.namespace || '').toLowerCase().includes(q) ||
+           (c.target || '').toLowerCase().includes(q) ||
+           (c.status || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(c) {
+    return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td><span class="glass-badge ' + glassTableBadge(c.status) + '">' + esc(c.status) + '</span></td><td>' + esc(c.duration) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
+}
+
+function filterHeatmapView(query) {
+  const tb = document.getElementById('heatmap-body');
+  if (!tb) return;
+  const nodes = window.lastHeatmapNodes || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? nodes.filter(function(n) { return (n.node_name || '').toLowerCase().includes(q); }) : nodes;
+  tb.innerHTML = filtered.map(function(n) {
+    return '<tr class="clickable-row" ' + onHandler('openNodeDetailDeep(' + jsArgs(n.node_name) + ')') + ' title="Open node detail">' +
+      '<td>' + esc(n.node_name) + '</td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
+      '<td>' + (n.disk_utilization || 0).toFixed(1) + '</td><td>' + (n.network_utilization || 0).toFixed(1) + '</td>' +
+      '<td>' + (n.vm_count ?? 0) + '</td><td>' + (n.heat_score || 0).toFixed(2) + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching nodes</td></tr>';
+}
+
+function filterHpaView(query) {
+  const tb = document.getElementById('hpa-body');
+  if (!tb) return;
+  const items = window.lastHpas || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(h) {
+    return (h.name || '').toLowerCase().includes(q) ||
+           (h.namespace || '').toLowerCase().includes(q) ||
+           (h.target_name || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(h) {
+    return '<tr><td>' + esc(h.name) + '</td><td>' + esc(h.namespace) + '</td><td>' + esc(h.target_kind) + '/' + esc(h.target_name) + '</td><td>' + h.min_replicas + '</td><td>' + h.current_replicas + '</td><td>' + h.desired_replicas + '</td><td>' + h.max_replicas + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching HPAs</td></tr>';
+}
+
+function filterQuotasView(query) {
+  const tb = document.getElementById('quotas-body');
+  if (!tb) return;
+  const items = window.lastQuotas || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(qo) {
+    return (qo.name || '').toLowerCase().includes(q) ||
+           (qo.namespace || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(qo) {
+    return '<tr><td>' + esc(qo.name) + '</td><td>' + esc(qo.namespace) + '</td><td>' + esc(qo.cpu_used || '0') + ' / ' + esc(qo.cpu_limit || '-') + '</td><td>' + esc(qo.memory_used || '0') + ' / ' + esc(qo.memory_limit || '-') + '</td><td>' + qo.vm_count + (qo.vm_limit ? ' / ' + qo.vm_limit : '') + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching quotas</td></tr>';
+}
+
+function filterIncidentsView(query) {
+  const tb = document.getElementById('incidents-body');
+  if (!tb) return;
+  const allEvents = window.lastIncidentEvents || [];
+  const q = (query || '').toLowerCase().trim();
+  const sev = (document.getElementById('incident-severity-filter') || {}).value || '';
+  const kind = (document.getElementById('incident-kind-filter') || {}).value || '';
+  let events = allEvents;
+  if (sev) events = events.filter(function(e) { return e.severity === sev; });
+  if (kind) events = events.filter(function(e) { return e.kind === kind; });
+  if (q) events = events.filter(function(e) {
+    return (e.title || '').toLowerCase().includes(q) ||
+           (e.vm_name || '').toLowerCase().includes(q) ||
+           (e.namespace || '').toLowerCase().includes(q) ||
+           (e.kind || '').toLowerCase().includes(q);
+  });
+  const kindColor = {'slo-breach':'var(--error)','k8s-event':'var(--warning)','action':'var(--spark)'};
+  tb.innerHTML = events.map(function(e) {
+    const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
+    const kc = kindColor[e.kind] || 'var(--text-muted)';
+    return '<tr><td class="incident-time">' + fmtTime(e.timestamp) + '</td>' +
+      '<td><span class="incident-kind" style="color:' + kc + '">' + esc(e.kind) + '</span></td>' +
+      '<td style="color:' + sc + ';font-weight:600">' + esc(e.severity) + '</td>' +
+      '<td>' + esc(e.title) + '</td>' +
+      '<td>' + (e.vm_name ? esc(e.vm_name) : '<span style="color:var(--text-dim)">—</span>') + '</td>' +
+      '<td>' + esc(e.namespace) + '</td>' +
+      '<td><span class="glass-badge ' + (e.resolved ? 'running' : 'other') + '">' + (e.resolved ? 'resolved' : 'open') + '</span></td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
+}
+
 function filterImagesView(query) {
   const tb = document.getElementById('images-body');
   if (!tb) return;
@@ -14562,6 +14703,8 @@ async function fetchSlo() {
     } catch (_) {
       burnRates = [];
     }
+    window.lastSloItems = items;
+    window.lastSloBurnRates = burnRates;
     if (tb) tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td><span class="glass-badge ${glassTableBadge(s.status)}">${esc(s.status)}</span></td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO objectives found</td></tr>';
 
@@ -14607,6 +14750,7 @@ async function fetchChaos() {
       ]);
     }
     if (!tb) return;
+    window.lastChaosExperiments = filtered;
     tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td><span class="glass-badge ${glassTableBadge(c.status)}">${esc(c.status)}</span></td><td>${esc(c.duration)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
   } catch (e) {
@@ -14670,6 +14814,7 @@ async function fetchQuotas() {
       ]);
     }
     if (!tb) return;
+    window.lastQuotas = items;
     tb.innerHTML = items.map(q => `<tr><td>${esc(q.name)}</td><td>${esc(q.namespace)}</td><td>${esc(q.cpu_used || '0')} / ${esc(q.cpu_limit || '-')}</td><td>${esc(q.memory_used || '0')} / ${esc(q.memory_limit || '-')}</td><td>${q.vm_count}${q.vm_limit ? ' / ' + q.vm_limit : ''}</td></tr>`).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No quotas found</td></tr>';
   } catch (e) {
@@ -14718,6 +14863,7 @@ async function fetchHpa() {
       ]);
     }
     if (!tb) return;
+    window.lastHpas = items;
     tb.innerHTML = items.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.target_kind)}/${esc(h.target_name)}</td><td>${h.min_replicas}</td><td>${h.current_replicas}</td><td>${h.desired_replicas}</td><td>${h.max_replicas}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No HPAs found</td></tr>';
   } catch (e) {
@@ -14815,6 +14961,7 @@ async function fetchDependencies() {
       ]);
     }
     if (tb) {
+      window.lastDepEdges = edges;
       tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.from)}</td><td>${esc(edge.dependency_type)}</td><td>${esc(edge.to)}</td></tr>`).join('')
         || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No dependencies found</td></tr>';
     }
@@ -14841,6 +14988,7 @@ async function fetchAutoscaler() {
       ]);
     }
     if (!tb) return;
+    window.lastAutoscalerPolicies = items;
     tb.innerHTML = items.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.namespace)}</td><td>${esc(a.target_kind)}/${esc(a.target_name)}</td><td>${a.min_replicas}</td><td>${a.current_replicas}</td><td>${a.max_replicas}</td><td>${a.enabled ? 'Yes' : 'No'}</td></tr>`).join('')
       || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No autoscaler policies found</td></tr>';
   } catch (e) {
@@ -15785,6 +15933,7 @@ async function fetchHeatmap() {
       }
     }
     if (!tb) return;
+    window.lastHeatmapNodes = nodes;
     tb.innerHTML = nodes.map(n =>
       '<tr class="clickable-row" ' + onHandler('openNodeDetailDeep(' + jsArgs(n.node_name) + ')') + ' title="Open node detail">' +
       '<td>' + esc(n.node_name) + '</td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
@@ -16318,23 +16467,8 @@ async function fetchIncidents() {
       { label: 'Resolved 24h', value: data.resolved_last_24h || 0, cls: ' ok' }
     ]);
     if (!tb) return;
-    let events = data.events || [];
-    if (sev) events = events.filter(e => e.severity === sev);
-    if (kind) events = events.filter(e => e.kind === kind);
-    const kindColor = {'slo-breach':'var(--error)','k8s-event':'var(--warning)','action':'var(--spark)'};
-    tb.innerHTML = events.map(e => {
-      const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
-      const kc = kindColor[e.kind] || 'var(--text-muted)';
-      return `<tr>
-        <td class="incident-time">${fmtTime(e.timestamp)}</td>
-        <td><span class="incident-kind" style="color:${kc}">${esc(e.kind)}</span></td>
-        <td style="color:${sc};font-weight:600">${esc(e.severity)}</td>
-        <td>${esc(e.title)}</td>
-        <td>${e.vm_name ? esc(e.vm_name) : '<span style="color:var(--text-dim)">—</span>'}</td>
-        <td>${esc(e.namespace)}</td>
-        <td><span class="glass-badge ${e.resolved ? 'running' : 'other'}">${e.resolved ? 'resolved' : 'open'}</span></td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
+    window.lastIncidentEvents = data.events || [];
+    filterIncidentsView((document.getElementById('incidents-search') || {}).value || '');
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
