@@ -4162,7 +4162,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAlerts()">&#8635; Refresh</button></div></div>
+<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAlertsCsv()" title="Export alerts as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAlerts()">&#8635; Refresh</button></div></div>
     
     <div id="alerts-summary" class="grid-4 page-glass-stats"></div>
 <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -4222,7 +4222,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <pre id="soc-hunt-results" style="margin:0 16px 16px;padding:12px;font-size:.76rem;max-height:240px;overflow:auto;background:rgba(0,0,0,.25);border-radius:8px"></pre>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Security event stream</span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem"></div>
+    <div class="card-header"><span class="card-title">Security event stream</span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocEventsCsv()" title="Export SOC events as CSV">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Time</th><th>Severity</th><th>Category</th><th>Source</th><th>Message</th><th>Resource</th></tr></thead><tbody id="soc-events-body"></tbody></table>
   </div>
   <div class="card glass-card" style="margin-top:16px">
@@ -4354,7 +4354,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBackups()">&#8635; Refresh</button></div></div>
+<div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBackupsCsv()" title="Export backups as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBackups()">&#8635; Refresh</button></div></div>
     
     <div id="backups-summary" class="grid-4 page-glass-stats"></div>
 <div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
@@ -8858,6 +8858,30 @@ function exportSnapshotsCsv() {
     rows.push([s.name, s.vm_name, s.namespace || '', s.ready ? 'Yes' : 'No', s.status || '', s.age || '']);
   });
   exportCsv(rows, 'snapshots.csv');
+}
+
+function exportAlertsCsv() {
+  const rows = [['Name', 'Severity', 'Status', 'Source', 'Message', 'Fired At']];
+  (window.lastAlerts || []).forEach(function(a) {
+    rows.push([a.name, a.severity, a.status, a.source, a.message, a.fired_at || '']);
+  });
+  exportCsv(rows, 'alerts.csv');
+}
+
+function exportSocEventsCsv() {
+  const rows = [['Timestamp', 'Severity', 'Category', 'Source', 'Message', 'Target']];
+  (window.lastSocEvents || []).forEach(function(e) {
+    rows.push([e.timestamp, e.severity, e.category, e.source, e.message, e.target || e.namespace || '']);
+  });
+  exportCsv(rows, 'soc-events.csv');
+}
+
+function exportBackupsCsv() {
+  const rows = [['Name', 'VM', 'Namespace', 'Status', 'Type', 'Created']];
+  (window.lastBackups || []).forEach(function(b) {
+    rows.push([b.name, b.vm_name, b.namespace, b.status, b.backup_type, b.created_at || '']);
+  });
+  exportCsv(rows, 'backups.csv');
 }
 
 function copyToClipboard(text) {
