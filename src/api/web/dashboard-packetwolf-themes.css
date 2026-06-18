@@ -2624,3 +2624,53 @@ html[data-theme='tahoe-light'] .topbar-location {
   background: color-mix(in srgb, var(--pw-text-primary) 5%, transparent);
   border-color: var(--glass-border);
 }
+
+/* ── Specificity-escalated field overrides ────────────────────────────────────
+   The dashboard.html base rules for these inputs use compound selectors
+   (0,2,0 or 0,3,0) that beat the generic html[data-theme] .form-input rule.
+   These rules restore the correct themed background.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+/* Modal glass-modal form inputs — more specific than .form-input catch-all */
+html[data-theme] .modal.glass-modal .form-input,
+html[data-theme] .modal.glass-modal .form-select {
+  background-color: var(--pw-field-bg);
+  border-color: var(--glass-border);
+  color: var(--pw-text-primary);
+}
+
+/* Spotlight search box, launchpad search, serial console input — not .form-input class */
+html[data-theme] .spotlight-input,
+html[data-theme] .launchpad-search,
+html[data-theme] .serial-drawer-footer .serial-input,
+html[data-theme] .copilot-drawer-body .form-input {
+  background-color: var(--pw-field-bg);
+  border-color: var(--glass-border);
+  color: var(--pw-text-primary);
+}
+
+/* VM fleet view-toggle base (hover/active already overridden; base dark is missed) */
+html[data-theme] .vm-view-toggle button {
+  background: color-mix(in srgb, var(--pw-surface-elevated) 72%, transparent);
+  border-color: var(--glass-border);
+  color: var(--pw-text-secondary);
+}
+
+/* Cilium flow filter chips — base dark; theme to glass */
+html[data-theme] .flow-stat-chip {
+  background: color-mix(in srgb, var(--pw-surface-elevated) 68%, transparent);
+  border-color: var(--glass-border);
+  color: var(--pw-text-secondary);
+}
+
+/* App-store card background gradient has a hardcoded dark stop; replace with pure glass */
+html[data-theme] .app-store-card {
+  background: var(--glass-bg-elevated);
+  border-color: var(--glass-border);
+}
+
+/* Launchpad app icon background gradient has a hardcoded dark stop; replace with glass */
+html[data-theme] .launchpad-icon {
+  background: var(--glass-bg-elevated);
+  border-color: var(--glass-border-strong);
+}
