@@ -8384,7 +8384,9 @@ function renderNsOverview() {
       var dotColor = !d ? 'rgba(255,255,255,.3)' : (d.running === d.total && d.total > 0 ? '#22c55e' : d.running > 0 ? '#f59e0b' : 'rgba(255,255,255,.25)');
       var label = ns === 'all' ? 'All' : ns;
       var stat = d ? (d.running + '/' + d.total + ' running') : (vms.length + ' total');
+      var nsAccent = (ns !== 'all') ? nsBadgeColor(ns) : 'rgba(255,255,255,.2)';
       return '<button type="button" class="vmr-ns-card' + (isActive ? ' active' : '') + '" ' +
+        'style="border-left:2px solid ' + nsAccent + (isActive ? ';background:' + nsAccent + '18' : '') + '" ' +
         'title="' + esc(label + ': ' + stat) + '" ' +
         'onclick="setNamespace(' + jsArgs(ns) + ')">' +
         '<span class="vmr-ns-dot" style="background:' + dotColor + '"></span>' +
@@ -8845,6 +8847,7 @@ function hideVmHoverCard() {
   var card = document.getElementById('vmr-hover-card');
   if (card) { card.classList.remove('visible'); setTimeout(function() { if (card) card.style.display = 'none'; }, 120); }
 }
+
 
 // ── Ambient Cluster Status Glow ──
 function updateAmbientGlow(running, total, failed) {
