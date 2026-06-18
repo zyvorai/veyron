@@ -3921,6 +3921,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-tag-filter-chips" class="vmr-filter-chips" style="display:none;gap:6px;padding:2px 0 4px;flex-wrap:wrap"></div>
   <div id="vmr-preset-chips" class="vmr-filter-chips" style="display:none;gap:5px;padding:2px 0 4px;flex-wrap:wrap;align-items:center"></div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
+  <div id="vm-search-tag-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div id="vmr-fleet-pinned" style="display:none;flex-wrap:wrap;gap:6px;padding:4px 0 6px;align-items:center"></div>
   <div class="vm-workspace zeus-glass mac-vm-workspace" id="vm-workspace">
@@ -9448,6 +9449,28 @@ function vmAgeTint(vm) {
   if (hours < 168)  return 'rgba(255,255,255,.03)';  // < 1w: neutral
   if (hours < 720)  return 'rgba(245,158,11,.08)';   // < 30d: amber
   return 'rgba(239,68,68,.09)';                       // 30d+: warm red
+}
+
+// ── Inspector Live Uptime Clock ──
+var _uptimeClockInterval = null;
+function startUptimeClock(vm) {
+  if (_uptimeClockInterval) clearInterval(_uptimeClockInterval);
+  var baseHours = parseAgeToHours(vm.age) || 0;
+  var baseSecs = Math.round(baseHours * 3600);
+  var capturedAt = Date.now();
+  function tick() {
+    var el = document.getElementById('vmr-uptime-val');
+    if (!el) { clearInterval(_uptimeClockInterval); _uptimeClockInterval = null; return; }
+    var secs = baseSecs + Math.round((Date.now() - capturedAt) / 1000);
+    var d = Math.floor(secs / 86400);
+    var h = Math.floor((secs % 86400) / 3600);
+    var m = Math.floor((secs % 3600) / 60);
+    var s = secs % 60;
+    var str = (d > 0 ? d + 'd ' : '') + (h > 0 || d > 0 ? h + 'h ' : '') + m + 'm ' + String(s).padStart(2, '0') + 's';
+    el.textContent = str;
+  }
+  tick();
+  _uptimeClockInterval = setInterval(tick, 1000);
 }
 
 function osFamilyTint(family) {
@@ -15283,6 +15306,7 @@ function syncVmSelectionUi() {
   if (empty) empty.style.display = selectedVmKey ? 'none' : 'block';
   if (content) content.style.display = selectedVmKey ? 'block' : 'none';
   if (!selectedVmKey) {
+    if (_uptimeClockInterval) { clearInterval(_uptimeClockInterval); _uptimeClockInterval = null; }
     const qp = document.getElementById('vm-focus-quick-picks');
     if (qp) {
       const recents = getRecentVms().slice(0, 4);
@@ -15460,6 +15484,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
           ? '<div class="vm-hero-metric vmr-copy-tile" title="Copy IP address" onclick="copyToClipboard(' + JSON.stringify(vm.ip) + ')">IP<strong>' + esc(vm.ip) + '</strong><span class="vmr-copy-hint">copy</span></div>'
           : '<div class="vm-hero-metric">IP<strong>—</strong></div>') +
         (vm.node ? '<div class="vm-hero-metric vmr-copy-tile" title="View node" onclick="openNodeDetailDeep(' + JSON.stringify(vm.node) + ')">Node<strong>' + esc(vm.node) + '</strong><span class="vmr-copy-hint">open</span></div>' : '<div class="vm-hero-metric">Node<strong>—</strong></div>') +
+        (vm.status === 'Running' ? '<div class="vm-hero-metric" id="vmr-uptime-clock" title="VM uptime (live)">Uptime<strong id="vmr-uptime-val">—</strong></div>' : '') +
       '</div>' +
       '<div class="vm-hero-rings">' + secRing + healthRing + '<span class="vm-hero-meta-chip">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
     '</div></div>' +
@@ -15555,6 +15580,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
       if (secD && secD.score != null) extras.securityScore = secD.score;
     } catch (_) {}
     content.innerHTML = renderVmHero(vm, ns, name, vmi, extras) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS);
+    if (vm.status === 'Running') startUptimeClock(vm);
     fetchSecurity(ns, name).then(function(secHtml) {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
@@ -16857,6 +16883,24 @@ function filterVMsDebounced() {
         nodeHint.style.display = 'flex';
       } else { nodeHint.style.display = 'none'; }
     } else { nodeHint.style.display = 'none'; }
+  }
+  // tag: autocomplete
+  const tagHint = document.getElementById('vm-search-tag-hint');
+  if (tagHint) {
+    if (val.startsWith('tag:')) {
+      const partial = val.slice(4).toLowerCase();
+      const allTags = (() => {
+        try { var a = JSON.parse(localStorage.getItem('veyron_vm_tags') || '{}'); var s = new Set(); Object.values(a).forEach(function(arr) { arr.forEach(function(t) { s.add(t); }); }); return [...s].sort(); } catch(e) { return []; }
+      })();
+      const matches = partial ? allTags.filter(function(t) { return t.toLowerCase().startsWith(partial); }) : allTags;
+      if (matches.length > 0 && matches.length < 20) {
+        tagHint.innerHTML = '<span style="font-size:.65rem;color:var(--text-dim);align-self:center;margin-right:2px">🏷</span>' +
+          matches.map(function(t) {
+            return '<button type="button" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:1px 8px;font-size:.7rem;color:#c4b5fd;cursor:pointer" onclick="document.getElementById(\'vm-search\').value=\'tag:\'+' + JSON.stringify(t) + ';filterVMs()">' + esc(t) + '</button>';
+          }).join('');
+        tagHint.style.display = 'flex';
+      } else { tagHint.style.display = 'none'; }
+    } else { tagHint.style.display = 'none'; }
   }
   clearTimeout(_filterVMsTimer);
   _filterVMsTimer = setTimeout(filterVMs, 150);
