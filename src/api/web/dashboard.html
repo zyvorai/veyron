@@ -2133,6 +2133,10 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 #vmr-fleet-full-btn.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.45);color:var(--cyan)}
 .vm-transitioning .vm-badge{animation:vm-status-pulse .9s ease-in-out infinite;opacity:.75}
 @keyframes vm-status-pulse{0%,100%{opacity:.75}50%{opacity:1}}
+.vmr-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 2px}
+.vmr-tag-chip{display:inline-flex;align-items:center;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:1px 8px;font-size:.68rem;color:rgba(167,139,250,.9);cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap}
+.vmr-tag-chip:hover{background:rgba(139,92,246,.22);border-color:rgba(139,92,246,.55)}
+.vmr-tag-chip.active{background:rgba(139,92,246,.3);border-color:rgba(167,139,250,.7);color:#c4b5fd;font-weight:600}
 .vmr-pin-chip{display:inline-flex;align-items:center;gap:5px;background:var(--glass-bg-elevated);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:3px 8px 3px 6px;font-size:.73rem;color:var(--text-muted);cursor:pointer;transition:border-color .15s,background .15s;flex-shrink:0}
 .vmr-pin-chip:hover{border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.06)}
 .vmr-pin-chip .vmr-pin-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -3817,6 +3821,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
+  <div id="vmr-tag-filter-chips" class="vmr-filter-chips" style="display:none;gap:6px;padding:2px 0 4px;flex-wrap:wrap"></div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div id="vmr-fleet-pinned" style="display:none;flex-wrap:wrap;gap:6px;padding:4px 0 6px;align-items:center"></div>
@@ -8302,6 +8307,78 @@ function renderNsOverview() {
     }).join('');
 }
 
+// ── VM Custom Tags ──
+var VM_TAGS_KEY = 'veyron_vm_tags';
+var _activeTagFilter = null;
+function getAllVmTags() {
+  try { var t = JSON.parse(localStorage.getItem(VM_TAGS_KEY) || '{}'); return typeof t === 'object' && t ? t : {}; } catch (e) { return {}; }
+}
+function getVmTags(ns, name) {
+  return (getAllVmTags()[ns + '/' + name] || []);
+}
+function setVmTags(ns, name, tags) {
+  var all = getAllVmTags();
+  if (!tags || !tags.length) delete all[ns + '/' + name];
+  else all[ns + '/' + name] = tags.map(function(t) { return t.toLowerCase().replace(/\s+/g, '-').slice(0, 32); }).filter(Boolean);
+  try { localStorage.setItem(VM_TAGS_KEY, JSON.stringify(all)); } catch (e) {}
+  filterVMs();
+  renderTagFilterChips();
+}
+function addVmTag(ns, name, tag) {
+  tag = (tag || '').toLowerCase().replace(/\s+/g, '-').slice(0, 32);
+  if (!tag) return;
+  var tags = getVmTags(ns, name);
+  if (!tags.includes(tag)) tags.push(tag);
+  setVmTags(ns, name, tags);
+}
+function removeVmTag(ns, name, tag) {
+  setVmTags(ns, name, getVmTags(ns, name).filter(function(t) { return t !== tag; }));
+}
+function openVmTagEditor(ns, name) {
+  var cur = getVmTags(ns, name).join(', ');
+  openGlassPrompt({
+    title: 'Tags for ' + name,
+    submitLabel: 'Save',
+    fields: [{ id: 'tags', label: 'Tags (comma-separated)', placeholder: 'production, web, critical', value: cur }],
+    onSubmit: function(v) {
+      var tags = (v.tags || '').split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+      setVmTags(ns, name, tags);
+      showToast('Tags updated for ' + name, 'success');
+    }
+  });
+}
+function allUsedTags() {
+  var all = getAllVmTags();
+  var tags = new Set();
+  Object.values(all).forEach(function(ts) { (ts || []).forEach(function(t) { tags.add(t); }); });
+  return Array.from(tags).sort();
+}
+function setTagFilter(tag) {
+  _activeTagFilter = (_activeTagFilter === tag) ? null : tag;
+  filterVMs();
+  renderTagFilterChips();
+}
+function vmTagsHtml(ns, name) {
+  var tags = getVmTags(ns, name);
+  if (!tags.length) return '';
+  return '<div class="vmr-tag-row">' + tags.map(function(t) {
+    return '<span class="vmr-tag-chip' + (_activeTagFilter === t ? ' active' : '') + '" ' +
+      onStopHandler('setTagFilter(' + jsArgs(t) + ')') + ' title="Filter by ' + esc(t) + '">' + esc(t) + '</span>';
+  }).join('') + '</div>';
+}
+function renderTagFilterChips() {
+  var el = document.getElementById('vmr-tag-filter-chips');
+  if (!el) return;
+  var tags = allUsedTags();
+  if (!tags.length) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="font-size:.65rem;color:var(--text-dim);align-self:center;flex-shrink:0">Tags:</span>' +
+    (_activeTagFilter ? '<button type="button" class="vmr-chip vmr-chip-active" onclick="setTagFilter(null)" style="background:rgba(56,189,248,.15)">× Clear</button>' : '') +
+    tags.map(function(t) {
+      return '<button type="button" class="vmr-chip' + (_activeTagFilter === t ? ' vmr-chip-active' : '') + '" onclick="setTagFilter(' + jsArgs(t) + ')">' + esc(t) + '</button>';
+    }).join('');
+}
+
 // ── Fleet VM Pinning ──
 var FLEET_PINS_KEY = 'veyron_fleet_pins';
 function getFleetPins() {
@@ -8985,6 +9062,7 @@ function showVmContextMenu(x, y, ns, name) {
   html += '<div class="mac-context-sep"></div>';
   var pinned = isFleetPinned(ns, name);
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();toggleFleetPin(' + jsArgs(ns, name) + ')">' + (pinned ? '📌 Unpin VM' : '📌 Pin VM') + '</button>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmTagEditor(' + jsArgs(ns, name) + ')">🏷 Edit Tags…</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(vm.ip) + ')">Copy IP</button>';
@@ -9054,6 +9132,7 @@ function vmCard(vm, showActions) {
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
+    vmTagsHtml(ns, vm.name) +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
 }
 
@@ -9606,7 +9685,8 @@ function vmRow(vm, showActions) {
   const nodeChip = vm.node ? '<button type="button" class="vmr-node-chip" ' +
     onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
     ' title="Filter VMs on ' + esc(vm.node) + '">◉ ' + esc(vm.node) + '</button>' : '';
-  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+esc(vm.name)+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+(nodeChip ? '<div>'+nodeChip+'</div>' : '')+'</div></div>'+rightCol+'</div>';
+  const tagHtml = vmTagsHtml(ns, vm.name);
+  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+esc(vm.name)+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+(nodeChip ? '<div>'+nodeChip+'</div>' : '')+tagHtml+'</div></div>'+rightCol+'</div>';
 }
 
 function initVmViewMode() {
@@ -15420,6 +15500,10 @@ function filterVMs() {
     if (driftFilter === 'drift' && v.drift_detected !== true) return false;
     if (driftFilter === 'clear' && !(v.veyron_managed === true && v.drift_detected === false)) return false;
     if (driftFilter === 'unmanaged' && v.veyron_managed === true) return false;
+    if (_activeTagFilter) {
+      const vtags = getVmTags(v.namespace || 'default', v.name);
+      if (!vtags.includes(_activeTagFilter)) return false;
+    }
     return true;
   });
   const countEl = document.getElementById('vm-filter-count');
@@ -15474,6 +15558,7 @@ function filterVMs() {
   }
   updateTabTitleIssueCount();
   updateFleetStatusBar();
+  renderTagFilterChips();
 }
 
 function updateTabTitleIssueCount() {
