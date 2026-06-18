@@ -1427,6 +1427,10 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vmr-fleet-briefing{padding:0 14px 6px}
+.vmr-briefing-pill{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:.72rem;line-height:1.4;border-left-width:3px;border-left-style:solid;backdrop-filter:blur(4px)}
+.vmr-briefing-icon{font-size:.8rem;flex-shrink:0;opacity:.9}
+.vmr-briefing-text{flex:1}
 .vm-list-scroll{flex:1;overflow-y:auto;min-height:200px}
 .vm-list-scroll .vm-row,.vm-list-scroll .vm-card-grid .vm-card{border-radius:0;border-left:3px solid transparent}
 .vm-row.selected,.vm-card.selected{border-left-color:var(--primary-blue)!important;background:rgba(59,130,246,.1)!important}
@@ -3900,6 +3904,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         <button class="vm-sort-col" data-sort="cpu" onclick="setVmSort('cpu')">CPU <span class="sort-arrow" id="sort-arrow-cpu"></span></button>
         <button class="vm-sort-col" data-sort="memory" onclick="setVmSort('memory')">Memory <span class="sort-arrow" id="sort-arrow-memory"></span></button>
       </div>
+      <div id="vmr-fleet-briefing" style="display:none"></div>
       <div class="vm-list-scroll" id="vm-full-list"></div>
     </div>
     <div class="vm-focus-pane mac-inspector-pane" id="vm-focus-pane">
@@ -16324,6 +16329,7 @@ function filterVMs() {
   }
   updateTabTitleIssueCount();
   updateFleetStatusBar();
+  renderFleetBriefing();
   renderTagFilterChips();
 }
 
@@ -16334,6 +16340,67 @@ function updateTabTitleIssueCount() {
   }).length;
   const pageName = (currentPage && currentPage !== 'dashboard') ? (navPageLabel(currentPage) + ' — ') : '';
   document.title = (issues > 0 ? '⚠' + issues + ' · ' : '') + pageName + 'VMRogue';
+}
+
+function renderFleetBriefing() {
+  var el = document.getElementById('vmr-fleet-briefing');
+  if (!el) return;
+  var vms = vmData || [];
+  if (!vms.length) { el.style.display = 'none'; return; }
+  var running = vms.filter(function(v) { return (v.status||'').toLowerCase() === 'running'; });
+  var stopped = vms.filter(function(v) { return (v.status||'').toLowerCase() === 'stopped'; });
+  var errors  = vms.filter(function(v) { var s=(v.status||'').toLowerCase(); return s==='failed'||s==='error'||s==='crashloopbackoff'; });
+  var transit = vms.filter(function(v) { var s=(v.status||'').toLowerCase(); return s==='starting'||s==='stopping'||s==='provisioning'||s==='pending'; });
+  var nsSet = {};
+  vms.forEach(function(v) { nsSet[v.namespace||'default'] = 1; });
+  var nsCount = Object.keys(nsSet).length;
+  var total = vms.length;
+
+  var tone, text, icon;
+  if (errors.length) {
+    tone = 'critical';
+    icon = '⚠';
+    var names = errors.slice(0,2).map(function(v){return v.name;}).join(', ');
+    var suffix = errors.length > 2 ? ' +' + (errors.length-2) + ' more' : '';
+    text = errors.length + ' VM' + (errors.length>1?'s':'') + ' in error state — ' + names + suffix + '.';
+  } else if (transit.length) {
+    tone = 'warn';
+    icon = '◌';
+    text = transit.length + ' VM' + (transit.length>1?'s are':' is') + ' transitioning. ' + running.length + ' of ' + total + ' running.';
+  } else if (running.length === total) {
+    tone = 'ok';
+    icon = '●';
+    text = 'All ' + total + ' VM' + (total>1?'s':'') + ' running' + (nsCount > 1 ? ' across ' + nsCount + ' namespaces' : '') + '. Fleet is healthy.';
+  } else if (running.length === 0) {
+    tone = 'dim';
+    icon = '○';
+    text = 'All ' + total + ' VM' + (total>1?'s are':' is') + ' stopped.';
+  } else {
+    tone = 'warn';
+    icon = '◑';
+    var stoppedNames = stopped.slice(0,2).map(function(v){return v.name;}).join(', ');
+    var extra = stopped.length > 2 ? ' +' + (stopped.length-2) : '';
+    text = running.length + ' of ' + total + ' VMs running.' + (stopped.length ? ' Stopped: ' + stoppedNames + extra + '.' : '');
+  }
+
+  var colors = {
+    ok:       'rgba(34,197,94,.18)',
+    warn:     'rgba(245,158,11,.16)',
+    critical: 'rgba(239,68,68,.18)',
+    dim:      'rgba(100,116,139,.13)',
+  };
+  var textColors = {
+    ok:       '#86efac',
+    warn:     '#fde68a',
+    critical: '#fca5a5',
+    dim:      'var(--text-dim)',
+  };
+
+  el.style.display = 'block';
+  el.innerHTML = '<div class="vmr-briefing-pill" style="background:' + colors[tone] + ';border-left:3px solid ' + textColors[tone] + ';color:' + textColors[tone] + '">' +
+    '<span class="vmr-briefing-icon">' + icon + '</span>' +
+    '<span class="vmr-briefing-text">' + esc(text) + '</span>' +
+    '</div>';
 }
 
 function updateFleetStatusBar() {
