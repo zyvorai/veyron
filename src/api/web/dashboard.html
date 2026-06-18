@@ -3935,7 +3935,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <!-- CRD PAGES -->
 <div class="page section-shell" id="page-crds" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Veyron VMs</h1><p>Operator-managed virtual machines (veyron.io CRDs)</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VeyronVM</button></div></div>
+  <div class="page-header"><div><h1>Veyron VMs</h1><p>Operator-managed virtual machines (veyron.io CRDs)</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCrdVmsCsv()" title="Export as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCRDs()">&#8635; Refresh</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VeyronVM</button></div></div>
     <div id="crds-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span><input type="search" id="crds-search" class="form-input" placeholder="Filter by name, namespace, template…" oninput="filterCrdsView(this.value)" style="width:240px;font-size:.82rem"></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
@@ -8842,6 +8842,14 @@ function exportHelmCsv() {
     rows.push([h.name, h.namespace, h.chart, h.chart_version || '', h.app_version || '', h.status, h.revision]);
   });
   exportCsv(rows, 'helm-releases.csv');
+}
+
+function exportCrdVmsCsv() {
+  const rows = [['Name', 'Namespace', 'Template', 'CPU', 'Memory', 'Phase', 'Node', 'IP']];
+  (window.lastCrdVms || []).forEach(function(v) {
+    rows.push([v.name, v.namespace, v.template || '', v.cpu_cores, v.memory, v.phase || '', v.node || '', v.ip || '']);
+  });
+  exportCsv(rows, 'veyronvms.csv');
 }
 
 function exportSnapshotsCsv() {
