@@ -4633,7 +4633,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-scheduling" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div></div>
+  <div class="page-header"><div><h1>Scheduling</h1><p>Pending workload pressure and node schedulability</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchScheduling()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSchedulingFleetAdvisor()">Scheduling Fleet</button></div></div>
     <div id="scheduling-fleet-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Scheduling Fleet</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('scheduling-fleet-advisor-card')">Dismiss</button></div>
     <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4823,6 +4823,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div><h1>Traces</h1><p>Cluster activity shaped as trace rows from Kubernetes Events (not a Jaeger/OTel backend)</p></div>
     <div style="display:flex;gap:8px;align-items:center">
       <input id="traces-search" class="toolbar-input" style="width:220px" placeholder="Trace ID, service, operation…" oninput="filterTraces()">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTraces()">&#8635; Refresh</button>
     </div>
   </div>
     <div id="traces-cap-banner"></div>
