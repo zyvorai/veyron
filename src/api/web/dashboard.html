@@ -10509,7 +10509,12 @@ function filterAuditView(query) {
            fmtTime(a.timestamp).toLowerCase().includes(q);
   }) : trail;
   tb.innerHTML = rows.map(function(a) {
-    return '<tr><td>' + fmtTime(a.timestamp) + '</td><td>' + esc(a.user) + '</td><td>' + esc(a.action) + '</td><td>' + esc(a.resource_type) + '</td><td>' + esc(a.namespace) + '/' + esc(a.resource_name) + '</td><td>' + esc(a.outcome) + '</td></tr>';
+    const resRef = esc(a.namespace) + '/' + esc(a.resource_name);
+    return '<tr><td>' + fmtTime(a.timestamp) + '</td>' +
+      '<td class="vmr-copy-tile" title="Copy user" ' + onStopHandler('copyToClipboard(' + jsArgs(a.user) + ')') + '>' + esc(a.user) + '<span class="vmr-copy-hint">copy</span></td>' +
+      '<td>' + esc(a.action) + '</td><td>' + esc(a.resource_type) + '</td>' +
+      '<td class="vmr-copy-tile" title="Copy resource ref" ' + onStopHandler('copyToClipboard(' + jsArgs(a.namespace + '/' + a.resource_name) + ')') + '>' + resRef + '<span class="vmr-copy-hint">copy</span></td>' +
+      '<td>' + esc(a.outcome) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching entries</td></tr>';
 }
 
@@ -11128,7 +11133,7 @@ function filterCustomResourcesView(query) {
            (cr.scope || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(cr) {
-    return '<tr><td>' + esc(cr.name) + '</td><td>' + esc(cr.group) + '</td><td>' + esc(cr.version) + '</td><td>' + esc(cr.kind) + '</td><td>' + esc(cr.scope) + '</td><td>' + cr.instance_count + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy CRD name" ' + onStopHandler('copyToClipboard(' + jsArgs(cr.name) + ')') + '>' + esc(cr.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(cr.group) + '</td><td>' + esc(cr.version) + '</td><td>' + esc(cr.kind) + '</td><td>' + esc(cr.scope) + '</td><td>' + cr.instance_count + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching resources</td></tr>';
 }
 
