@@ -1427,6 +1427,8 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vmr-card-pulse{animation:vmr-pulse-once 2.4s ease-out}
+@keyframes vmr-pulse-once{0%{box-shadow:0 0 0 0 rgba(59,130,246,.7),0 0 0 0 rgba(59,130,246,.4)}40%{box-shadow:0 0 0 8px rgba(59,130,246,.2),0 0 0 4px rgba(59,130,246,.1)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
 .vmr-vmgroup{margin-bottom:4px}
 .vmr-vmgroup-header{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;user-select:none;border-radius:6px;background:rgba(255,255,255,.04);border-left:3px solid rgba(255,255,255,.15);transition:background .1s}
 .vmr-vmgroup-header:hover{background:rgba(255,255,255,.07)}
@@ -16557,6 +16559,7 @@ function filterVMs() {
   updateFleetStatusBar();
   renderFleetBriefing();
   renderTagFilterChips();
+  requestAnimationFrame(pulseChangedVmCards);
 }
 
 function updateTabTitleIssueCount() {
@@ -16601,7 +16604,19 @@ function detectVmDelta(newList) {
 
   _vmPrevState = newMap;
   if (!changes.length) return;
+  _vmChangedKeys = new Set(changes.map(function(c) { return c.name; }));
   showVmDeltaStrip(changes);
+}
+var _vmChangedKeys = new Set();
+function pulseChangedVmCards() {
+  if (!_vmChangedKeys.size) return;
+  _vmChangedKeys.forEach(function(name) {
+    document.querySelectorAll('[data-vm-name="' + name.replace(/"/g, '') + '"]').forEach(function(el) {
+      el.classList.add('vmr-card-pulse');
+      setTimeout(function() { el.classList.remove('vmr-card-pulse'); }, 2400);
+    });
+  });
+  _vmChangedKeys = new Set();
 }
 function showVmDeltaStrip(changes) {
   var el = document.getElementById('vmr-delta-strip');
