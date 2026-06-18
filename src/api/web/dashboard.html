@@ -3872,7 +3872,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Cluster Nodes</span></div>
+    <div class="card-header"><span class="card-title">Cluster Nodes</span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:200px;font-size:.82rem"></div>
     <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
     <div id="node-list"></div>
   </div>
@@ -4218,7 +4218,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <pre id="soc-hunt-results" style="margin:0 16px 16px;padding:12px;font-size:.76rem;max-height:240px;overflow:auto;background:rgba(0,0,0,.25);border-radius:8px"></pre>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Security event stream</span></div>
+    <div class="card-header"><span class="card-title">Security event stream</span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem"></div>
     <table class="table"><thead><tr><th>Time</th><th>Severity</th><th>Category</th><th>Source</th><th>Message</th><th>Resource</th></tr></thead><tbody id="soc-events-body"></tbody></table>
   </div>
   <div class="card glass-card" style="margin-top:16px">
@@ -10341,6 +10341,55 @@ function filterAuditView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching entries</td></tr>';
 }
 
+function filterNodesView(query) {
+  const el = document.getElementById('node-list');
+  if (!el) return;
+  const nodes = window.lastNodes || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? nodes.filter(function(n) {
+    return (n.name || '').toLowerCase().includes(q) ||
+           (n.status || '').toLowerCase().includes(q) ||
+           (n.os_image || '').toLowerCase().includes(q) ||
+           (n.kubelet_version || '').toLowerCase().includes(q);
+  }) : nodes;
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><p>No matching nodes</p></div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(n) {
+    const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
+    return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
+      '<span class="cell-name">' + esc(n.name) + '</span>' +
+      '<span><span class="glass-badge ' + nodeStatusBadgeClass(n.status) + '">' + esc(n.status) + '</span></span>' +
+      '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
+      '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
+      '<span class="cell-mono">' + memGb + '</span>' +
+      '<span class="cell-mono">' + esc(n.kubelet_version) + '</span>' +
+      '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function filterSocEventsView(query) {
+  const el = document.getElementById('soc-events-body');
+  if (!el) return;
+  const events = window.lastSocEvents || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? events.filter(function(e) {
+    return (e.severity || '').toLowerCase().includes(q) ||
+           (e.category || '').toLowerCase().includes(q) ||
+           (e.source || '').toLowerCase().includes(q) ||
+           (e.message || '').toLowerCase().includes(q) ||
+           (e.target || e.namespace || '').toLowerCase().includes(q);
+  }) : events;
+  el.innerHTML = filtered.map(function(e) {
+    return '<tr><td>' + fmtTime(e.timestamp) + '</td>' +
+      '<td><span class="glass-badge ' + glassTableBadge(e.severity) + '">' + esc(e.severity) + '</span></td>' +
+      '<td>' + esc(e.category) + '</td><td>' + esc(e.source) + '</td>' +
+      '<td>' + esc(e.message) + '</td><td>' + esc(e.target || e.namespace || '') + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching events</td></tr>';
+}
+
 function filterEventsView(type, btn) {
   if (btn) {
     document.querySelectorAll('[data-evfilter]').forEach(function(b) {
@@ -11362,6 +11411,8 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
     '<div class="vm-inspector-panels">' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'overview' ? ' active' : '') + '" data-panel="overview"><div class="zeus-inspector-body"><div class="vd-kv-grid">' +
         vdKv('Phase', vmi.phase || vm.status) + vdKv('Ready', vm.ready ? 'Yes' : 'No') + vdKv('Age', vm.age || '—') +
+        (vm.cpu ? vdKv('CPU', vm.cpu) : '') + (vm.memory ? vdKv('Memory', vm.memory) : '') +
+        (vm.namespace && vm.namespace !== 'default' ? vdKv('Namespace', vm.namespace) : '') +
         (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
         vdKv('Guest runtime', '…') +
       '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div></div></div>' +
@@ -13356,7 +13407,7 @@ async function fetchStorage(opts) {
       scEl.innerHTML = '<div class="empty-state"><p>No storage classes</p></div>';
     }
   } catch (e) {
-    const msg = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p></div>';
+    const msg = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchStorage()">&#8635; Retry</button></div>';
     if (pvcEl) pvcEl.innerHTML = msg;
     if (scEl) scEl.innerHTML = msg;
   }
@@ -15364,6 +15415,7 @@ async function fetchSocPage(refresh) {
           }).join('')
         : '<p style="color:var(--text-dim);margin:0">No detections — cluster looks clear for configured rules</p>';
     }
+    window.lastSocEvents = events;
     if (evBody) {
       evBody.innerHTML = events.map(e =>
         '<tr><td>' + fmtTime(e.timestamp) + '</td>' +
