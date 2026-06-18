@@ -1451,6 +1451,8 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vmr-retire-badge{display:inline-flex;align-items:center;font-size:.62rem;font-weight:700;color:#d97706;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);border-radius:8px;padding:0 5px;letter-spacing:.04em;margin-right:4px;vertical-align:middle;cursor:help}
 .vmr-genome{display:inline-flex;width:28px;height:5px;border-radius:3px;overflow:hidden;gap:1px;flex-shrink:0;opacity:.75;align-self:center;cursor:help;transition:opacity .15s}
 .vm-card:hover .vmr-genome,.vm-row:hover .vmr-genome{opacity:1}
+.vmr-last-action-chip{display:inline-flex;align-items:center;gap:3px;font-size:.63rem;border:1px solid;border-radius:8px;padding:1px 5px;margin-left:3px;vertical-align:middle;opacity:.8;white-space:nowrap;flex-shrink:0}
+.vmr-momentum{font-size:.7rem;font-weight:700;margin-left:2px;vertical-align:middle;line-height:1}
 .vmr-delta-strip{padding:4px 14px 2px}
 .vmr-delta-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.7rem;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-wrap:wrap;animation:vmr-delta-in .2s ease}
 @keyframes vmr-delta-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -9564,6 +9566,42 @@ function osFamilyIcon(family) {
   const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
   return icon[family] || '◫';
 }
+// ── VM Last Action Chip ──
+function vmLastActionChip(ns, name) {
+  var recent = (_actionLog || []).find(function(a) {
+    return a.name === name && (a.ns || 'default') === ns && (Date.now() - a.ts) < 1800000; // 30 min
+  });
+  if (!recent) return '';
+  var icon = _ACTION_ICONS[recent.action] || '•';
+  var secs = Math.round((Date.now() - recent.ts) / 1000);
+  var ago = secs < 60 ? secs + 's' : Math.round(secs / 60) + 'm';
+  var ok = recent.status === 'ok';
+  return '<span class="vmr-last-action-chip" title="Last action: ' + esc(recent.action) + ' ' + ago + ' ago" ' +
+    'style="border-color:' + (ok ? 'rgba(34,197,94,.3)' : 'rgba(245,158,11,.3)') + ';color:' + (ok ? '#86efac' : '#fde68a') + '">' +
+    icon + ' ' + esc(recent.action) + ' ' + ago + '</span>';
+}
+
+// ── VM Momentum Arrow ──
+function vmMomentum(ns, name) {
+  var key = (ns || 'default') + '/' + name;
+  var hist = _vmHistory[key];
+  if (!hist || hist.length < 4) return '';
+  var tail = hist.slice(-3).map(function(h) { return h.running; });
+  var head = hist.slice(0, 3).map(function(h) { return h.running; });
+  var tailAvg = tail.reduce(function(a,b){return a+b;},0)/tail.length;
+  var headAvg = head.reduce(function(a,b){return a+b;},0)/head.length;
+  if (tailAvg - headAvg > 0.5) return '<span class="vmr-momentum" style="color:#22c55e" title="Just started">↑</span>';
+  if (headAvg - tailAvg > 0.5) return '<span class="vmr-momentum" style="color:#ef4444" title="Recently stopped">↓</span>';
+  // CPU trend on running VMs
+  var cpuTail = hist.slice(-3).map(function(h){return h.cpu;});
+  var cpuHead = hist.slice(0,3).map(function(h){return h.cpu;});
+  var cpuTailAvg = cpuTail.reduce(function(a,b){return a+b;},0)/cpuTail.length;
+  var cpuHeadAvg = cpuHead.reduce(function(a,b){return a+b;},0)/cpuHead.length;
+  if (cpuTailAvg > cpuHeadAvg + 1) return '<span class="vmr-momentum" style="color:#fb923c" title="CPU climbing">⬆</span>';
+  if (cpuHeadAvg > cpuTailAvg + 1) return '<span class="vmr-momentum" style="color:#60a5fa" title="CPU dropping">⬇</span>';
+  return '';
+}
+
 // ── VM Genome Strip ──
 // Encodes {OS, CPU tier, Mem tier, Status} as a 4-segment color bar.
 // VMs with identical specs share the same stripe — visually obvious clones.
@@ -10377,7 +10415,7 @@ function vmCard(vm, showActions) {
     'ondragover="vmCardDragOver(event)" ondragleave="vmCardDragLeave(event)" ondrop="vmCardDrop(event,' + jsArgs(ns, vm.name) + ')" ' +
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
     onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmGlassCtxMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + vmMomentum(ns, vm.name) + '</span>' + vmLastActionChip(ns, vm.name) + '</div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + highlightMatch(vm.name, activeSearchQuery()) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
@@ -11129,7 +11167,7 @@ function vmRow(vm, showActions) {
   const sshBlock = vmSshBlock(vm, showActions);
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
   const rowRetireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — right-click → Mark as Keeper to suppress">♻ stale?</span>' : '';
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+vmGenomeStrip(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+vmGenomeStrip(vm)+vmLastActionChip(ns, vm.name)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+vmMomentum(ns, vm.name)+'</span>'+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
   const nodeChip = vm.node ? '<button type="button" class="vmr-node-chip" ' +
     onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
