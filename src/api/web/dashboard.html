@@ -9191,6 +9191,36 @@ function updateFleetMoodEmoji(running, total, failed) {
     '<span style="font-size:.6rem">' + emoji + '</span>' + score + '</span>';
 }
 
+// ── VM Tag Frequency Panel (inspector overview) ──
+function renderVmTagFrequencyPanel(ns, name) {
+  var myTags = getVmTags(ns, name);
+  if (!myTags.length) return '';
+  var allTags = getAllVmTags();
+  var totalVms = (vmData || []).length || 1;
+  // count fleet-wide frequency of each tag
+  var freq = {};
+  Object.values(allTags).forEach(function(arr) {
+    arr.forEach(function(t) { freq[t] = (freq[t] || 0) + 1; });
+  });
+  var html = '<div style="margin-top:12px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid rgba(255,255,255,.08)">' +
+    '<div style="font-size:.67rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Tags — fleet frequency</div>' +
+    '<div style="display:flex;flex-direction:column;gap:6px">';
+  myTags.forEach(function(t) {
+    var count = freq[t] || 1;
+    var pct = Math.round(count / totalVms * 100);
+    var barColor = pct >= 50 ? '#38bdf8' : pct >= 20 ? '#818cf8' : '#c084fc';
+    html += '<div style="display:flex;align-items:center;gap:8px">' +
+      '<button type="button" style="background:rgba(139,92,246,.15);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:1px 8px;font-size:.7rem;color:#c4b5fd;cursor:pointer;flex-shrink:0" ' +
+        'onclick="document.getElementById(\'vm-search\').value=\'tag:\'+' + JSON.stringify(t) + ';filterVMs()" title="Filter fleet by this tag">' + esc(t) + '</button>' +
+      '<div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:2px"></div>' +
+      '</div>' +
+      '<span style="font-size:.65rem;color:var(--text-dim);flex-shrink:0;min-width:36px;text-align:right">' + count + ' VM' + (count !== 1 ? 's' : '') + '</span>' +
+    '</div>';
+  });
+  return html + '</div></div>';
+}
+
 // ── VM Custom Tags ──
 var VM_TAGS_KEY = 'veyron_vm_tags';
 var _activeTagFilter = null;
@@ -15633,7 +15663,8 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
         (vm.node ? '<div class="vd-kv"><div class="vd-kv-label">Node</div><div class="vd-kv-value vmr-copy-tile" title="Copy node" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.node) + ')') + '>' + esc(vm.node) + '<span class="vmr-copy-hint">copy</span></div></div>' : '') +
         (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
         vdKv('Guest runtime', '…') +
-      '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div>' +
+      '</div>' + renderVmTagFrequencyPanel(ns, name) +
+      '<div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div>' +
       '<div id="vm-event-history-' + name + '" style="margin-top:12px"></div>' +
       '<div id="vm-session-timeline-' + name + '" style="margin-top:12px"></div>' +
       '</div></div>' +
