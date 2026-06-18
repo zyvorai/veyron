@@ -3749,6 +3749,18 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="vmr-recent-activity"></div>
   </div>
   <div class="vmr-mission-bottom-row" id="vmr-mission-bottom"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px">
+    <div class="vmr-panel" style="align-items:center;text-align:center">
+      <div class="vmr-panel-title">CPU Allocation</div>
+      <canvas id="vmr-headroom-cpu" width="140" height="80" style="margin:6px auto 0;display:block"></canvas>
+      <div id="vmr-headroom-cpu-label" style="font-size:.72rem;color:var(--text-muted);margin-top:2px"></div>
+    </div>
+    <div class="vmr-panel" style="align-items:center;text-align:center">
+      <div class="vmr-panel-title">Memory Allocation</div>
+      <canvas id="vmr-headroom-mem" width="140" height="80" style="margin:6px auto 0;display:block"></canvas>
+      <div id="vmr-headroom-mem-label" style="font-size:.72rem;color:var(--text-muted);margin-top:2px"></div>
+    </div>
+  </div>
   <div style="display:none" aria-hidden="true">
     <div id="dc-greeting"></div><div id="dc-workspace"></div><div id="dc-health-ring"></div>
     <div id="dc-health-summary"></div><div id="dc-cc-chips"></div><div id="dc-copilot-briefing"></div>
@@ -9630,6 +9642,7 @@ function renderMissionControlVmr() {
       '<span style="font-size:.6rem;color:var(--text-dim);letter-spacing:.04em">PULSE</span></div>' +
       '</div></div>';
   setTimeout(drawClusterPulseSparkline, 30);
+  setTimeout(updateHeadroomGauges, 50);
   }
 
   const metrics = document.getElementById('vmr-mission-metrics');
@@ -9845,6 +9858,54 @@ function drawClusterPulseSparkline() {
   ctx.arc(last[0], last[1], 2.5, 0, Math.PI*2);
   ctx.fillStyle = 'rgba(56,189,248,.9)';
   ctx.fill();
+}
+
+function drawHeadroomGauge(canvasId, labelId, usedFrac, usedLabel, totalLabel) {
+  var canvas = document.getElementById(canvasId);
+  var label = document.getElementById(labelId);
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var W = 140, H = 80;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  var cx = W / 2, cy = H - 8, r = 58;
+  var startAngle = Math.PI, endAngle = 2 * Math.PI;
+  var pct = Math.min(1, Math.max(0, usedFrac));
+  var color = pct < 0.7 ? '#22c55e' : pct < 0.85 ? '#f59e0b' : '#ef4444';
+  // Background arc
+  ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, endAngle);
+  ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+  // Used arc
+  var used = startAngle + pct * Math.PI;
+  if (pct > 0.01) {
+    ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, used);
+    ctx.strokeStyle = color; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
+  }
+  // Text
+  ctx.fillStyle = color; ctx.font = 'bold ' + (14 * dpr / dpr) + 'px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(Math.round(pct * 100) + '%', cx, cy - 16);
+  ctx.fillStyle = 'rgba(255,255,255,.4)'; ctx.font = '10px system-ui, sans-serif';
+  ctx.fillText(usedLabel, cx, cy - 2);
+  if (label) label.textContent = totalLabel;
+}
+function updateHeadroomGauges() {
+  var vms = window.lastVMs || vmData || [];
+  var nodes = window.lastNodes || [];
+  var allocCpu = vms.reduce(function(s, v) { return s + (Number(v.cpu) || 0); }, 0);
+  var allocMem = vms.reduce(function(s, v) { return s + (Number(v.memory_bytes || v.memory) || 0); }, 0);
+  var capCpu = 0, capMem = 0;
+  if (nodes.length) {
+    nodes.forEach(function(n) {
+      capCpu += Number(n.cpu_capacity || n.cpu || 0);
+      capMem += Number(n.memory_capacity || n.memory_bytes || n.memory || 0);
+    });
+  }
+  if (!capCpu) capCpu = allocCpu || 1;
+  if (!capMem) capMem = allocMem || 1;
+  drawHeadroomGauge('vmr-headroom-cpu', 'vmr-headroom-cpu-label', allocCpu / capCpu, allocCpu + ' vCPU', 'of ' + capCpu + ' vCPU capacity');
+  drawHeadroomGauge('vmr-headroom-mem', 'vmr-headroom-mem-label', allocMem / capMem, fmtBytes(allocMem), 'of ' + fmtBytes(capMem) + ' capacity');
 }
 
 function renderEventIntelligenceVmr() {
@@ -15406,6 +15467,7 @@ async function fetchNodes(opts) {
     }
     const nodeCountEl = document.getElementById('node-count');
     if (nodeCountEl) nodeCountEl.textContent = nodes.length + ' nodes';
+    if (typeof updateHeadroomGauges === 'function') updateHeadroomGauges();
     if (!el) return;
     filterNodesView((document.getElementById('nodes-search') || {}).value || '');
   } catch (e) {
