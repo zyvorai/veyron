@@ -180,7 +180,7 @@ async fn resolve_client_role(
             };
         }
     }
-    ApiRole::Admin
+    ApiRole::ReadOnly
 }
 
 fn role_label(role: &crate::api::http_server::web::ApiRole) -> &'static str {
@@ -400,25 +400,25 @@ fn desktop_tiers() -> Vec<DesktopTierItem> {
 
 fn dock_catalog() -> Vec<DockCatalogItem> {
     vec![
-        dock_cat("dashboard", "Home", "◫", "normal"),
-        dock_cat("vms", "Virtual Machines", "▣", "normal"),
-        dock_cat("app-store", "Template Foundry", "◈", "normal"),
-        dock_cat("console-hub", "ConsoleHub", "▶", "normal"),
-        dock_cat("integrations", "Integrations", "⚙", "normal"),
-        dock_cat("settings", "Settings", "⚙", "normal"),
-        dock_cat("stack-health", "Stack Health", "♥", "power"),
-        dock_cat("monitoring", "Activity Monitor", "⬢", "power"),
-        dock_cat("snapshots", "Snapshots", "⧉", "power"),
-        dock_cat("events", "Events", "⚡", "power"),
-        dock_cat("backups", "Backups", "⧉", "power"),
-        dock_cat("nodes", "Nodes", "◇", "power"),
-        dock_cat("mission-control", "Mission Control", "◫", "advanced"),
-        dock_cat("storage", "Storage", "▣", "advanced"),
-        dock_cat("security", "Security", "⛨", "advanced"),
-        dock_cat("ingress", "Ingress", "⟷", "advanced"),
-        dock_cat("topology", "Topology", "⬢", "advanced"),
-        dock_cat("catalog", "Catalog", "⬡", "advanced"),
-        dock_cat("costs", "Costs", "$", "advanced"),
+        dock_cat("dashboard", "Home", "layout-dashboard", "normal"),
+        dock_cat("vms", "Virtual Machines", "server", "normal"),
+        dock_cat("app-store", "Template Foundry", "package", "normal"),
+        dock_cat("console-hub", "ConsoleHub", "monitor", "normal"),
+        dock_cat("integrations", "Integrations", "plug", "normal"),
+        dock_cat("settings", "Settings", "settings", "normal"),
+        dock_cat("stack-health", "Stack Health", "activity", "power"),
+        dock_cat("monitoring", "Activity Monitor", "bar-chart-2", "power"),
+        dock_cat("snapshots", "Snapshots", "camera", "power"),
+        dock_cat("events", "Events", "clock", "power"),
+        dock_cat("backups", "Backups", "archive", "power"),
+        dock_cat("nodes", "Nodes", "cpu", "power"),
+        dock_cat("mission-control", "Mission Control", "layout-dashboard", "advanced"),
+        dock_cat("storage", "Storage", "hard-drive", "advanced"),
+        dock_cat("security", "Security", "shield", "advanced"),
+        dock_cat("ingress", "Ingress", "arrow-right-left", "advanced"),
+        dock_cat("topology", "Topology", "share-2", "advanced"),
+        dock_cat("catalog", "Catalog", "book-open", "advanced"),
+        dock_cat("costs", "Costs", "dollar-sign", "advanced"),
     ]
 }
 
@@ -722,7 +722,13 @@ async fn experience_home(
     }
 
     let health_score = if total == 0 {
-        96
+        // No VMs found. Use node health if nodes are reachable; if nothing is
+        // reachable at all, avoid reporting a false 96 for a broken cluster.
+        if nodes.is_empty() {
+            50u8
+        } else {
+            ((ready_nodes as f64 / nodes.len() as f64 * 100.0) as u8).min(96)
+        }
     } else {
         let run_pct = (running as f64 / total as f64 * 70.0) as u8;
         let node_pct = if nodes.is_empty() {
