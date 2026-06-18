@@ -2096,6 +2096,13 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-workloads-metrics{margin-bottom:8px}
 .vmr-node-chip{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;padding:1px 7px;border-radius:4px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-muted);cursor:pointer;margin:2px 0 0;font-family:inherit;white-space:nowrap;transition:color .12s,border-color .12s}
 .vmr-node-chip:hover{color:var(--cyan);border-color:rgba(56,189,248,.45)}
+.vmr-cmdbar{position:fixed;bottom:0;left:0;right:0;z-index:10000;display:flex;align-items:center;gap:8px;padding:7px 18px;background:rgba(10,12,18,.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(56,189,248,.25);font-family:var(--font-mono,ui-monospace,monospace)}
+.vmr-cmdbar-prefix{font-size:1rem;color:var(--cyan);font-weight:700;user-select:none;line-height:1}
+.vmr-cmdbar-input{flex:1;background:transparent;border:none;outline:none;font-family:inherit;font-size:.88rem;color:var(--text);caret-color:var(--cyan);min-width:0}
+.vmr-cmdbar-input::placeholder{color:rgba(148,163,184,.35);font-size:.78rem}
+.vmr-cmdbar-hint{font-size:.73rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%;padding-left:10px;border-left:1px solid var(--glass-border)}
+.vmr-cmdbar-close{font-size:.65rem;padding:2px 7px;border-radius:4px;border:1px solid var(--glass-border);background:transparent;color:var(--text-dim);cursor:pointer;font-family:inherit;flex-shrink:0}
+.vmr-cmdbar-close:hover{color:var(--text);border-color:rgba(148,163,184,.5)}
 .vmr-snap-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--glass-border);min-width:0}
 .vmr-snap-row:last-child{border-bottom:none}
 .vmr-snap-name{font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
@@ -3516,6 +3523,13 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="toast-container" id="toasts"></div>
 <div class="mac-context-menu" id="vm-context-menu" role="menu" aria-label="VM actions"></div>
+<!-- VIM COMMAND BAR -->
+<div id="vmr-cmdbar" class="vmr-cmdbar" style="display:none" role="dialog" aria-label="Command mode">
+  <span class="vmr-cmdbar-prefix" aria-hidden="true">:</span>
+  <input type="text" id="vmr-cmdbar-input" class="vmr-cmdbar-input" autocomplete="off" spellcheck="false" placeholder="command (? for help, Tab to complete)" aria-label="Command input">
+  <span id="vmr-cmdbar-hint" class="vmr-cmdbar-hint"></span>
+  <button type="button" class="vmr-cmdbar-close" onclick="closeVimCmd()" aria-label="Close command bar">Esc</button>
+</div>
 
 <div class="console-drawer-overlay" id="copilot-modal" role="dialog" aria-modal="true" aria-labelledby="copilot-title">
   <div class="console-drawer-panel copilot-drawer-panel copilot-panel mac-copilot-sheet" tabindex="-1" onclick="event.stopPropagation()">
@@ -8349,6 +8363,7 @@ function renderSettingsVmr() {
     ['F3 / ⌘↑', 'Mission Control — dashboard overview'],
     ['/',    'Focus VM search (VMs page)'],
     ['?',    'Show this shortcuts reference'],
+    [':',    'Command bar — :start :stop :snap :go <page> :ns <name> …'],
     ['⌘R',   'Refresh data now'],
     ['⌘\\',  'Toggle Finder sidebar'],
     ['↑ / ↓ or j / k', 'Navigate VM list (vi-style j/k also works)'],
@@ -12744,6 +12759,7 @@ function renderAboutShortcuts() {
     { keys: '⌘R', label: 'Refresh current page' },
     { keys: '⌘,', label: 'Open Preferences / Settings' },
     { keys: '/', label: 'Focus VM search (VMs page)' },
+    { keys: ':', label: 'Command bar — :start :stop :snap :go <page> :ns <name>' },
     { keys: '↑ / ↓ or j / k', label: 'Navigate VM list (vi-style j/k also works)' },
     { keys: 'C', label: 'Forge a new VM (VMs page)' },
     { keys: '⌘A', label: 'Select / deselect all VMs (VMs page)' },
@@ -13248,6 +13264,15 @@ document.addEventListener('keydown', e => {
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select' && tag !== 'button') {
       const vm = vmData.find(function(v) { return v.name === selectedVmName && (v.namespace || 'default') === selectedVmNs; });
       if (vm && vm.status === 'Running') { e.preventDefault(); openConnectModal(selectedVmNs, selectedVmName); return; }
+    }
+  }
+  // : key — vim-style command bar (works on any page)
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === ':') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      if (typeof openVimCmd === 'function') openVimCmd();
+      return;
     }
   }
   const connectModal = document.getElementById('connect-modal');
@@ -13832,6 +13857,141 @@ function openVmCliSheet(ns, name) {
     if (btn) btn.className = 'glass-btn-primary';
   }, 20);
 }
+
+// ── Vim-style command bar ──────────────────────────────────────────────────
+var _vmrCmdOpen = false;
+var _vmrCmdTabCycle = [];
+var _vmrCmdTabIdx = 0;
+var VIM_CMD_HELP = {
+  start:   'start selected or named VM',
+  stop:    'stop selected or named VM',
+  restart: 'restart selected or named VM',
+  snap:    'snapshot selected VM',
+  ssh:     'open SSH panel for selected VM',
+  vnc:     'open VNC console for selected VM',
+  rdp:     'open RDP for selected VM',
+  delete:  'delete selected VM (with confirm)',
+  cli:     'show CLI commands for selected VM',
+  go:      'go <page>  — navigate to page',
+  ns:      'ns <name>  — switch namespace',
+  refresh: 'refresh current page',
+  help:    'show keyboard shortcuts',
+};
+
+function openVimCmd() {
+  _vmrCmdOpen = true;
+  const bar = document.getElementById('vmr-cmdbar');
+  const inp = document.getElementById('vmr-cmdbar-input');
+  if (!bar || !inp) return;
+  bar.style.display = 'flex';
+  inp.value = '';
+  inp.focus();
+  updateVimCmdHint('');
+  inp.onkeydown = function(ev) {
+    if (ev.key === 'Escape') { ev.preventDefault(); closeVimCmd(); return; }
+    if (ev.key === 'Enter') { ev.preventDefault(); executeVimCmd(inp.value); return; }
+    if (ev.key === 'Tab') {
+      ev.preventDefault();
+      const val = inp.value.trim().toLowerCase();
+      if (!_vmrCmdTabCycle.length || !val.startsWith(_vmrCmdTabCycle[0].slice(0, val.length))) {
+        _vmrCmdTabCycle = Object.keys(VIM_CMD_HELP).filter(function(c) { return c.startsWith(val); });
+        _vmrCmdTabIdx = 0;
+      }
+      if (_vmrCmdTabCycle.length) {
+        inp.value = _vmrCmdTabCycle[_vmrCmdTabIdx % _vmrCmdTabCycle.length];
+        _vmrCmdTabIdx++;
+        updateVimCmdHint(inp.value);
+      }
+      return;
+    }
+    setTimeout(function() { updateVimCmdHint(inp.value); _vmrCmdTabCycle = []; }, 0);
+  };
+}
+
+function closeVimCmd() {
+  _vmrCmdOpen = false;
+  const bar = document.getElementById('vmr-cmdbar');
+  if (bar) bar.style.display = 'none';
+  const inp = document.getElementById('vmr-cmdbar-input');
+  if (inp) inp.value = '';
+}
+
+function updateVimCmdHint(val) {
+  const hint = document.getElementById('vmr-cmdbar-hint');
+  if (!hint) return;
+  const parts = val.trim().split(/\s+/);
+  const cmd = (parts[0] || '').toLowerCase();
+  if (!cmd) {
+    hint.textContent = Object.keys(VIM_CMD_HELP).join('  ');
+    return;
+  }
+  if (VIM_CMD_HELP[cmd]) {
+    hint.textContent = VIM_CMD_HELP[cmd];
+    return;
+  }
+  const matches = Object.keys(VIM_CMD_HELP).filter(function(c) { return c.startsWith(cmd); });
+  hint.textContent = matches.length ? matches.join('  ') : 'unknown command';
+}
+
+async function executeVimCmd(raw) {
+  const parts = (raw || '').trim().split(/\s+/);
+  const cmd = (parts[0] || '').toLowerCase();
+  const arg = parts.slice(1).join(' ');
+  closeVimCmd();
+  if (!cmd) return;
+
+  if (cmd === 'help' || cmd === '?') { if (typeof openAboutModal === 'function') openAboutModal(); return; }
+  if (cmd === 'refresh') { refresh(); return; }
+  if (cmd === 'go' && arg) { navigate(arg); return; }
+  if (cmd === 'ns' && arg) {
+    currentNamespace = arg;
+    try { localStorage.setItem('veyron_default_ns', arg); } catch (_) {}
+    const sel = document.getElementById('namespace-select');
+    if (sel) sel.value = arg;
+    refresh();
+    toast('Namespace → ' + arg, 'info', 3000);
+    return;
+  }
+
+  const ns = arg ? (selectedVmNs || 'default') : selectedVmNs;
+  const name = arg || selectedVmName;
+  if (!name && ['start','stop','restart','snap','snapshot','ssh','vnc','rdp','delete','cli'].indexOf(cmd) >= 0) {
+    toast(':' + cmd + ' — select a VM first (j/k)', 'error');
+    return;
+  }
+
+  if (cmd === 'start' || cmd === 'stop' || cmd === 'restart') {
+    if (typeof vmAction === 'function') vmAction(ns || 'default', name, cmd, null);
+    return;
+  }
+  if (cmd === 'snap' || cmd === 'snapshot') {
+    if (typeof openSnapModalFor === 'function') openSnapModalFor(ns || 'default', name);
+    return;
+  }
+  if (cmd === 'vnc') {
+    if (typeof openConnectModal === 'function') openConnectModal(ns || 'default', name, 'vnc');
+    return;
+  }
+  if (cmd === 'rdp') {
+    if (typeof openConnectModal === 'function') openConnectModal(ns || 'default', name, 'rdp');
+    return;
+  }
+  if (cmd === 'ssh') {
+    if (currentPage !== 'vms') navigate('vms');
+    setTimeout(function() { if (typeof selectVm === 'function') selectVm(ns || 'default', name, {}); }, 200);
+    return;
+  }
+  if (cmd === 'delete') {
+    if (typeof vmDelete === 'function') vmDelete(ns || 'default', name);
+    return;
+  }
+  if (cmd === 'cli') {
+    if (typeof openVmCliSheet === 'function') openVmCliSheet(ns || 'default', name);
+    return;
+  }
+  toast('Unknown: :' + cmd + ' — try :help', 'error');
+}
+// ───────────────────────────────────────────────────────────────────────────
 
 function getConnectProtocol() {
   try { return localStorage.getItem(ZEUS_CONNECT_PROTO_KEY) || 'vnc'; } catch (e) { return 'vnc'; }
