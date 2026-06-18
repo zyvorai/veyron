@@ -4276,7 +4276,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
 <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
-    <div class="page-header-right"><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSlo()">&#8635; Refresh</button></div></div>
     
   <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
@@ -4309,7 +4309,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div>
-    <div class="page-header-right"><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchRbac()">&#8635; Refresh</button></div></div>
     <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
@@ -4323,7 +4323,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-quotas" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchQuotas()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div></div>
     <div id="quotas-summary" class="grid-4 page-glass-stats"></div>
   <div id="quota-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Quota Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('quota-advisor-card')">Dismiss</button></div>
@@ -4336,7 +4336,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-ingress" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div></div>
+  <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIngress()">&#8635; Refresh</button></div></div>
     <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
@@ -4586,7 +4586,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-dependencies" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div></div>
+  <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchDependencies()">&#8635; Refresh</button></div></div>
     <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span><input type="search" id="deps-search" class="form-input" placeholder="Filter edges…" oninput="filterDepsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
