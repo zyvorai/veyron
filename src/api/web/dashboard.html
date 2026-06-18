@@ -2090,6 +2090,10 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vm-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:12px}
 .vmr-topo-node-group{margin-bottom:20px}
 .vmr-topo-node-label{font-size:.82rem;font-weight:600;color:var(--text-muted);padding:4px 12px 2px;letter-spacing:.03em;border-bottom:1px solid var(--glass-border);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.vmr-foundry-rail-label{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);padding:6px 14px 2px}
+.vmr-foundry-rail-count{margin-left:auto;font-size:.72rem;color:var(--text-muted);font-weight:400}
+.vmr-quick-action-btn{margin:0 0 6px!important;width:100%}
+.vmr-workloads-metrics{margin-bottom:8px}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -9498,6 +9502,30 @@ function fetchSecurityVmr(opts) {
       { label: 'Total', value: findings.length },
     ]);
   }
+  // Top critical/high findings quick actions
+  const findingsEl = document.getElementById('vmr-security-findings');
+  if (findingsEl && window.lastSecurityFindings && window.lastSecurityFindings.length > 0) {
+    const critical = window.lastSecurityFindings.filter(function(f) {
+      return (f.severity || '').toLowerCase() === 'critical' || (f.severity || '').toLowerCase() === 'high';
+    }).slice(0, 3);
+    if (critical.length > 0) {
+      findingsEl.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--error)"><div class="vmr-panel-title">Priority Remediation</div>' +
+        critical.map(function(f) {
+          return '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border)">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+            '<strong style="font-size:.82rem">' + esc(f.title) + '</strong>' +
+            '<span class="glass-badge ' + glassTableBadge(f.severity) + '">' + esc(f.severity) + '</span></div>' +
+            '<div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">' + esc(f.recommendation || '') + '</div>' +
+            '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px;font-size:.72rem" ' +
+            onHandler('openAskZeus(\'Fix: ' + (f.title || '').replace(/'/g, "\\'") + '\')') + '>Ask Zeus to fix</button></div>';
+        }).join('') + '</div>';
+    } else {
+      findingsEl.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--success)">' +
+        '<div class="vmr-panel-title" style="color:var(--success)">✓ No critical or high severity findings</div></div>';
+    }
+  } else if (findingsEl) {
+    findingsEl.innerHTML = '';
+  }
 }
 
 function fetchSnapshotsVmr(opts) {
@@ -9550,6 +9578,17 @@ function fetchWorkloadsVmr(opts) {
           (unhealthy ? ' · <span style="color:var(--error)">' + unhealthy + ' unhealthy</span>' : ' · All healthy') + '</p></div>' +
           '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">↺ Refresh</button></div></div>';
       }
+      // Populate workloads metrics slot with type breakdown
+      const wlMetrics = document.getElementById('vmr-workloads-metrics');
+      if (wlMetrics && data.length > 0) {
+        const byType = {};
+        data.forEach(function(w) { const t = w.workload_type || w.kind || 'Other'; byType[t] = (byType[t] || 0) + 1; });
+        const pills = Object.entries(byType).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 4).map(function(kv) {
+          return { label: kv[0], value: kv[1] };
+        });
+        pills.push({ label: unhealthy + ' unhealthy', value: '', cls: unhealthy > 0 ? ' bad' : ' ok', onclick: "filterWorkloadsByType(document.querySelector('.vmr-chip-active')?.dataset?.wlfilter||'')" });
+        wlMetrics.innerHTML = renderGlassStatPills(pills);
+      }
       if (tb) renderWorkloadsList((document.getElementById('workloads-search') || {}).value || '');
       // Populate workloads toolbar with type filter chips
       const wlToolbar = document.getElementById('vmr-workloads-toolbar');
@@ -9597,16 +9636,58 @@ function filterWorkloadsByType(type) {
 }
 
 function renderFoundryVmr() {
+  const templates = window.appStoreCache || [];
+  const count = templates.length;
+  const windows = templates.filter(function(t) { return (t.os_family || '').toLowerCase() === 'windows'; }).length;
+  const linux = templates.filter(function(t) { return (t.os_family || '').toLowerCase() !== 'windows'; }).length;
+
   const hero = document.getElementById('vmr-foundry-hero');
-  if (!hero) return;
-  const count = window.appStoreCache ? window.appStoreCache.length : '—';
-  const windows = window.appStoreCache ? window.appStoreCache.filter(function(t) { return (t.os_family || '').toLowerCase() === 'windows'; }).length : 0;
-  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">◫</div>' +
-    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Template Foundry</h1>' +
-    '<p class="vmr-hero-sub">' + count + ' template' + (count !== 1 ? 's' : '') +
-    (typeof windows === 'number' && windows > 0 ? ' · ' + windows + ' Windows' : '') + ' · Click any tile to forge a VM</p></div>' +
-    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openForgeWizard()">Forge Wizard</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Quick Forge</button></div></div>';
+  if (hero) {
+    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">◫</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Template Foundry</h1>' +
+      '<p class="vmr-hero-sub">' + count + ' template' + (count !== 1 ? 's' : '') +
+      (windows > 0 ? ' · ' + windows + ' Windows' : '') + (linux > 0 ? ' · ' + linux + ' Linux' : '') + ' · Click any tile to forge a VM</p></div>' +
+      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openForgeWizard()">Forge Wizard</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Quick Forge</button></div></div>';
+  }
+
+  // Populate foundry rail with OS family nav
+  const rail = document.getElementById('vmr-foundry-rail');
+  if (rail && count > 0) {
+    const families = [...new Set(templates.map(function(t) { return t.os_family || 'other'; }))].sort();
+    const counts = {};
+    templates.forEach(function(t) { const f = t.os_family || 'other'; counts[f] = (counts[f] || 0) + 1; });
+    const osIcon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧', other: '◫' };
+    rail.innerHTML = '<div class="vmr-foundry-rail-label">OS Family</div>' +
+      '<button type="button" class="vmr-foundry-rail-item active" data-osfamily="" onclick="filterFoundryByFamily(this,\'\')">' +
+      '<span>All</span><span class="vmr-foundry-rail-count">' + count + '</span></button>' +
+      families.map(function(f) {
+        return '<button type="button" class="vmr-foundry-rail-item" data-osfamily="' + esc(f) + '" onclick="filterFoundryByFamily(this,' + jsArgs(f) + ')">' +
+          '<span>' + (osIcon[f.toLowerCase()] || '◫') + ' ' + esc(f) + '</span><span class="vmr-foundry-rail-count">' + (counts[f] || 0) + '</span></button>';
+      }).join('');
+  } else if (rail) {
+    rail.innerHTML = '';
+  }
+}
+
+function filterFoundryByFamily(btn, family) {
+  document.querySelectorAll('.vmr-foundry-rail-item').forEach(function(b) {
+    b.classList.toggle('active', b === btn);
+  });
+  const grid = document.getElementById('app-store-grid');
+  if (!grid) return;
+  const templates = window.appStoreCache || [];
+  const filtered = family ? templates.filter(function(t) { return (t.os_family || '').toLowerCase() === family.toLowerCase(); }) : templates;
+  const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
+  grid.innerHTML = filtered.map(function(t) {
+    const em = icon[t.os_family] || '◫';
+    return '<div class="app-store-card" ' + onHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>' +
+      '<div class="app-store-icon">' + em + '</div>' +
+      '<div class="app-store-title">' + esc(t.title) + '</div>' +
+      '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
+      '</div>';
+  }).join('') || '<div class="empty-state"><p>No ' + esc(family || '') + ' templates</p></div>';
 }
 
 function renderCiliumVmr() {
@@ -9832,6 +9913,14 @@ function renderConsoleHubVmr() {
   const sel = document.getElementById('vmr-console-vm-select');
   if (!sel) return;
   const running = vmData.filter(function(v) { return v.status === 'Running'; });
+  // Populate console hub hero
+  const consoleHero = document.getElementById('vmr-console-hero');
+  if (consoleHero) {
+    consoleHero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">▶</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">ConsoleHub</h1>' +
+      '<p class="vmr-hero-sub">' + running.length + ' VM' + (running.length !== 1 ? 's' : '') + ' available · VNC, RDP, SSH, and serial console access</p></div>' +
+      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'vms\')">Fleet Command</button></div></div>';
+  }
   const stopped = vmData.filter(function(v) { return v.status !== 'Running'; });
   sel.innerHTML = '<option value="">Select VM…</option>' +
     (running.length ? '<optgroup label="Running">' + running.map(function(v) { return '<option value="' + esc((v.namespace || 'default') + '/' + v.name) + '">' + esc(v.name) + (v.namespace && v.namespace !== 'default' ? ' (' + esc(v.namespace) + ')' : '') + '</option>'; }).join('') + '</optgroup>' : '') +
