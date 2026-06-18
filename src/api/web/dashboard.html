@@ -2145,6 +2145,12 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-alog-action{color:var(--text-dim);font-size:.7rem;flex-shrink:0}
 .vmr-alog-ns{color:var(--text-dim);font-size:.68rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .vmr-alog-ts{color:var(--text-dim);font-size:.68rem;flex-shrink:0;white-space:nowrap}
+.vmr-hover-card{position:fixed;z-index:950;pointer-events:none;background:rgba(12,14,20,.97);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 16px;min-width:200px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.7);backdrop-filter:blur(20px);font-size:.78rem;opacity:0;transition:opacity .12s ease;transform:translateY(-4px)}
+.vmr-hover-card.visible{opacity:1;transform:none}
+.vmr-hover-card-name{font-weight:700;font-size:.9rem;color:var(--text-primary);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vmr-hover-card-row{display:flex;justify-content:space-between;gap:12px;margin-bottom:3px;align-items:baseline}
+.vmr-hover-card-lbl{color:var(--text-dim);flex-shrink:0}
+.vmr-hover-card-val{color:var(--text-primary);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
 .vmr-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;transition:box-shadow 2s ease;border-radius:0}
 .vmr-ambient.warn{box-shadow:inset 0 0 80px rgba(245,158,11,.08),inset 0 0 180px rgba(245,158,11,.04)}
 .vmr-ambient.critical{box-shadow:inset 0 0 80px rgba(239,68,68,.12),inset 0 0 180px rgba(239,68,68,.06);animation:vmr-ambient-pulse 3s ease-in-out infinite}
@@ -3957,6 +3963,9 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeCloneModal()">Cancel</button><button type="button" class="glass-btn-primary" onclick="submitClone()">Clone</button></div>
   </div>
 </div>
+
+<!-- VM QUICK STATS HOVER CARD -->
+<div id="vmr-hover-card" class="vmr-hover-card" style="display:none" role="tooltip" aria-live="polite"></div>
 
 <!-- VM COMPARISON OVERLAY -->
 <div id="vm-compare-overlay" onclick="if(event.target===this)closeVmCompare()" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px"></div>
@@ -8792,6 +8801,50 @@ function vmNoteHtml(ns, name) {
   return '<div class="vmr-vm-note" ' + onStopHandler('openVmNoteEditor(' + jsArgs(ns, name) + ')') + ' title="' + esc(note) + '">📝 ' + esc(short) + '</div>';
 }
 
+// ── VM Quick Stats Hover Card ──
+var _hoverTimer = null, _hoverNs = null, _hoverName = null;
+function showVmHoverCard(e, ns, name) {
+  if (_hoverNs === ns && _hoverName === name) return;
+  hideVmHoverCard();
+  _hoverNs = ns; _hoverName = name;
+  _hoverTimer = setTimeout(function() {
+    var vm = (window.lastVMs || vmData || []).find(function(v) { return v.name === name && (v.namespace||'default') === ns; });
+    if (!vm) return;
+    var card = document.getElementById('vmr-hover-card');
+    if (!card) return;
+    var cls = sc(vm.status || '');
+    var tags = getVmTags(ns, name);
+    var note = getVmNote(ns, name);
+    card.innerHTML =
+      '<div class="vmr-hover-card-name">' + osFamilyIcon(guessOsFamily(vm)) + ' ' + esc(name) + '</div>' +
+      '<span class="vm-badge ' + cls + '" style="font-size:.7rem;margin-bottom:8px;display:inline-block">' + esc(vm.status || '?') + '</span>' +
+      '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">CPU</span><span class="vmr-hover-card-val">' + esc(vm.cpu || '—') + '</span></div>' +
+      '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">Memory</span><span class="vmr-hover-card-val">' + esc(vm.memory || '—') + '</span></div>' +
+      (vm.ip && vm.ip !== 'N/A' ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">IP</span><span class="vmr-hover-card-val">' + esc(vm.ip) + '</span></div>' : '') +
+      (vm.node ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">Node</span><span class="vmr-hover-card-val">' + esc(vm.node) + '</span></div>' : '') +
+      (vm.age ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">Age</span><span class="vmr-hover-card-val">' + esc(vm.age) + '</span></div>' : '') +
+      (tags.length ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">' + tags.map(function(t) { return '<span style="background:rgba(139,92,246,.2);border-radius:8px;padding:1px 6px;font-size:.67rem;color:#c4b5fd">' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
+      (note ? '<div style="margin-top:5px;font-size:.7rem;color:var(--text-dim);line-height:1.3;max-height:36px;overflow:hidden">📝 ' + esc(note.slice(0, 80)) + '</div>' : '');
+    var vp = { w: window.innerWidth, h: window.innerHeight };
+    var ex = e.clientX, ey = e.clientY;
+    card.style.display = 'block';
+    card.style.left = '';
+    card.style.right = '';
+    card.style.top = '';
+    card.style.bottom = '';
+    var cw = 300, ch = 180;
+    card.style.left = (ex + 16 + cw > vp.w ? ex - cw - 8 : ex + 16) + 'px';
+    card.style.top = (ey + 16 + ch > vp.h ? ey - ch - 8 : ey + 16) + 'px';
+    requestAnimationFrame(function() { card.classList.add('visible'); });
+  }, 480);
+}
+function hideVmHoverCard() {
+  clearTimeout(_hoverTimer);
+  _hoverNs = null; _hoverName = null;
+  var card = document.getElementById('vmr-hover-card');
+  if (card) { card.classList.remove('visible'); setTimeout(function() { if (card) card.style.display = 'none'; }, 120); }
+}
+
 // ── Ambient Cluster Status Glow ──
 function updateAmbientGlow(running, total, failed) {
   var el = document.getElementById('vmr-ambient');
@@ -9623,7 +9676,7 @@ function vmCard(vm, showActions) {
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   const tint = osFamilyTint(family);
-  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
@@ -10204,9 +10257,10 @@ function vmRow(vm, showActions) {
     '</div>' : '';
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(ns, vm.name) + ',this.checked)') + (selectedVMs.has(vmSelectionKey(ns, vm.name))?' checked':'') + '>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
+  const hoverAttr = ' onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()"';
   const clickAttr = showActions
-    ? (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"')
-    : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"');
+    ? (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"' + hoverAttr)
+    : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"' + hoverAttr);
   const sshBlock = vmSshBlock(vm, showActions);
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
