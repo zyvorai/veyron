@@ -2145,6 +2145,8 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-alog-action{color:var(--text-dim);font-size:.7rem;flex-shrink:0}
 .vmr-alog-ns{color:var(--text-dim);font-size:.68rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .vmr-alog-ts{color:var(--text-dim);font-size:.68rem;flex-shrink:0;white-space:nowrap}
+.vmr-vm-note{font-size:.7rem;color:var(--text-dim);line-height:1.3;margin:3px 0 2px;cursor:pointer;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vmr-vm-note:hover{opacity:1;color:var(--text-muted)}
 .vmr-tag-row{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0 2px}
 .vmr-tag-chip{display:inline-flex;align-items:center;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;padding:1px 8px;font-size:.68rem;color:rgba(167,139,250,.9);cursor:pointer;transition:background .15s,border-color .15s;white-space:nowrap}
 .vmr-tag-chip:hover{background:rgba(139,92,246,.22);border-color:rgba(139,92,246,.55)}
@@ -8386,6 +8388,37 @@ function clearActionLog() {
   _renderActionLogEntries();
 }
 
+// ── VM Persistent Notes ──
+var VM_NOTES_KEY = 'veyron_vm_notes';
+function getAllVmNotes() {
+  try { var n = JSON.parse(localStorage.getItem(VM_NOTES_KEY) || '{}'); return typeof n === 'object' && n ? n : {}; } catch(e) { return {}; }
+}
+function getVmNote(ns, name) { return (getAllVmNotes()[(ns || 'default') + '/' + name] || ''); }
+function setVmNote(ns, name, text) {
+  var all = getAllVmNotes();
+  var key = (ns || 'default') + '/' + name;
+  if (!text || !text.trim()) delete all[key]; else all[key] = text.trim().slice(0, 400);
+  try { localStorage.setItem(VM_NOTES_KEY, JSON.stringify(all)); } catch(e) {}
+  filterVMs();
+}
+function openVmNoteEditor(ns, name) {
+  openGlassPrompt({
+    title: '📝 Note for ' + name,
+    submitLabel: 'Save',
+    fields: [{ id: 'note', type: 'textarea', rows: 4, label: 'Note (up to 400 chars)', placeholder: 'Do not stop – prod traffic. Maintenance window: Mon 2am–4am.', value: getVmNote(ns, name) }],
+    onSubmit: function(v) {
+      setVmNote(ns, name, v.note || '');
+      showToast((v.note && v.note.trim()) ? 'Note saved for ' + name : 'Note cleared for ' + name, 'success');
+    }
+  });
+}
+function vmNoteHtml(ns, name) {
+  var note = getVmNote(ns, name);
+  if (!note) return '';
+  var short = note.length > 72 ? note.slice(0, 70) + '…' : note;
+  return '<div class="vmr-vm-note" ' + onStopHandler('openVmNoteEditor(' + jsArgs(ns, name) + ')') + ' title="' + esc(note) + '">📝 ' + esc(short) + '</div>';
+}
+
 // ── VM Custom Tags ──
 var VM_TAGS_KEY = 'veyron_vm_tags';
 var _activeTagFilter = null;
@@ -9142,6 +9175,7 @@ function showVmContextMenu(x, y, ns, name) {
   var pinned = isFleetPinned(ns, name);
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();toggleFleetPin(' + jsArgs(ns, name) + ')">' + (pinned ? '📌 Unpin VM' : '📌 Pin VM') + '</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmTagEditor(' + jsArgs(ns, name) + ')">🏷 Edit Tags…</button>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmNoteEditor(' + jsArgs(ns, name) + ')">📝 ' + (getVmNote(ns, name) ? 'Edit Note…' : 'Add Note…') + '</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(vm.ip) + ')">Copy IP</button>';
@@ -9212,6 +9246,7 @@ function vmCard(vm, showActions) {
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
     vmTagsHtml(ns, vm.name) +
+    vmNoteHtml(ns, vm.name) +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
 }
 
@@ -9768,7 +9803,8 @@ function vmRow(vm, showActions) {
     onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
     ' title="Filter VMs on ' + esc(vm.node) + '">◉ ' + esc(vm.node) + '</button>' : '';
   const tagHtml = vmTagsHtml(ns, vm.name);
-  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+esc(vm.name)+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+(nodeChip ? '<div>'+nodeChip+'</div>' : '')+tagHtml+'</div></div>'+rightCol+'</div>';
+  const noteHtml = vmNoteHtml(ns, vm.name);
+  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+esc(vm.name)+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+(nodeChip ? '<div>'+nodeChip+'</div>' : '')+tagHtml+noteHtml+'</div></div>'+rightCol+'</div>';
 }
 
 function initVmViewMode() {
