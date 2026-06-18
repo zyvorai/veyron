@@ -3970,7 +3970,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div></div>
+  <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPolicies()">&#8635; Refresh</button></div></div>
     <div id="policies-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
@@ -3980,7 +3980,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Insights</h1><p>VeyronInsight observability data</p></div></div>
+<div class="page-header"><div><h1>Insights</h1><p>VeyronInsight observability data</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchInsights()">&#8635; Refresh</button></div></div>
     
     <div id="insights-summary" class="grid-4 page-glass-stats"></div>
 <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -3995,7 +3995,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div></div>
+  <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
@@ -4188,7 +4188,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-audit" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div></div>
+  <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAudit()">&#8635; Refresh</button></div></div>
   
   <div id="audit-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAuditCsv()" title="Export audit trail as CSV">↓ CSV</button></div>
@@ -4234,7 +4234,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
+  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
@@ -4345,7 +4345,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-hpa" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div></div>
+  <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHpa()">&#8635; Refresh</button></div></div>
     <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span><input type="search" id="hpa-search" class="form-input" placeholder="Filter HPAs…" oninput="filterHpaView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
@@ -4354,7 +4354,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-backups" data-section="storage">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div></div>
+<div class="page-header"><div><h1>Backups</h1><p>Snapshot-backed backups and restore points</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBackups()">&#8635; Refresh</button></div></div>
     
     <div id="backups-summary" class="grid-4 page-glass-stats"></div>
 <div class="card glass-card" id="backup-advisor-card" style="display:none;margin-bottom:16px">
@@ -4558,7 +4558,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-metrics" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div></div>
+  <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMetrics()">&#8635; Refresh</button></div></div>
   
   <div id="metrics-summary" class="grid-4 page-glass-stats"></div>
 </div>
@@ -4577,7 +4577,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div></div>
+  <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology()">&#8635; Refresh</button></div></div>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span><input type="search" id="topology-search" class="form-input" placeholder="Filter edges…" oninput="filterTopologyView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
@@ -4619,7 +4619,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-gitops" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchGitOps()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div></div>
     <div id="gitops-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron GitOps Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('gitops-advisor-card')">Dismiss</button></div>
     <div id="gitops-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4674,7 +4674,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-observability" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div>
+  <div class="page-header"><div><h1>Observability</h1><p>Metrics, logs, and trace pipeline overview</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchObservability()">&#8635; Refresh</button></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runObservabilityAdvisor()">Observability Advisor</button></div>
     <div id="observability-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Observability Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('observability-advisor-card')">Dismiss</button></div>
@@ -4713,7 +4713,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-webhooks" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div></div>
+  <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWebhooks()">&#8635; Refresh</button></div></div>
   
   <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
@@ -4805,7 +4805,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-images" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div>
+  <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchImages()">&#8635; Refresh</button></div>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button>
   </div>
     <div id="images-cap-banner"></div>
