@@ -1427,6 +1427,12 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vmr-delta-strip{padding:4px 14px 2px}
+.vmr-delta-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.7rem;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-wrap:wrap;animation:vmr-delta-in .2s ease}
+@keyframes vmr-delta-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.vmr-delta-label{color:var(--text-dim);font-size:.67rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0;margin-right:2px}
+.vmr-delta-close{margin-left:auto;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.85rem;padding:0 2px;line-height:1;flex-shrink:0}
+.vmr-delta-close:hover{color:var(--text-primary)}
 .vmr-fleet-briefing{padding:0 14px 6px}
 .vmr-briefing-pill{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:.72rem;line-height:1.4;border-left-width:3px;border-left-style:solid;backdrop-filter:blur(4px)}
 .vmr-briefing-icon{font-size:.8rem;flex-shrink:0;opacity:.9}
@@ -3913,6 +3919,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         <button class="vm-sort-col" data-sort="cpu" onclick="setVmSort('cpu')">CPU <span class="sort-arrow" id="sort-arrow-cpu"></span></button>
         <button class="vm-sort-col" data-sort="memory" onclick="setVmSort('memory')">Memory <span class="sort-arrow" id="sort-arrow-memory"></span></button>
       </div>
+      <div id="vmr-delta-strip" style="display:none"></div>
       <div id="vmr-fleet-briefing" style="display:none"></div>
       <div class="vm-list-scroll" id="vm-full-list"></div>
     </div>
@@ -12772,6 +12779,7 @@ async function fetchVMs(opts) {
     const j = await apiJson('/api/v1/vms' + nsParam(), opts);
     if (j == null) return;
     const list = asArray(j);
+    detectVmDelta(list);
     vmData = list;
     const total = vmData.length;
     const running = vmData.filter(v => v.status === 'Running').length;
@@ -16407,6 +16415,62 @@ function updateTabTitleIssueCount() {
   }).length;
   const pageName = (currentPage && currentPage !== 'dashboard') ? (navPageLabel(currentPage) + ' — ') : '';
   document.title = (issues > 0 ? '⚠' + issues + ' · ' : '') + pageName + 'VMRogue';
+}
+
+// ── VM State Delta Tracker ──
+var _vmPrevState = null;
+var _vmDeltaTimer = null;
+function detectVmDelta(newList) {
+  if (!_vmPrevState) {
+    _vmPrevState = {};
+    newList.forEach(function(v) { _vmPrevState[(v.namespace||'default') + '/' + v.name] = v.status; });
+    return;
+  }
+  var prevKeys = Object.keys(_vmPrevState);
+  var newMap = {};
+  newList.forEach(function(v) { newMap[(v.namespace||'default') + '/' + v.name] = v.status; });
+  var newKeys = Object.keys(newMap);
+  var changes = [];
+
+  newKeys.forEach(function(k) {
+    if (!_vmPrevState[k]) {
+      var name = k.split('/').slice(1).join('/');
+      changes.push({ type: 'added', name: name, status: newMap[k] });
+    } else if (_vmPrevState[k] !== newMap[k]) {
+      var name2 = k.split('/').slice(1).join('/');
+      changes.push({ type: 'changed', name: name2, from: _vmPrevState[k], to: newMap[k] });
+    }
+  });
+  prevKeys.forEach(function(k) {
+    if (!newMap[k]) {
+      var name3 = k.split('/').slice(1).join('/');
+      changes.push({ type: 'removed', name: name3 });
+    }
+  });
+
+  _vmPrevState = newMap;
+  if (!changes.length) return;
+  showVmDeltaStrip(changes);
+}
+function showVmDeltaStrip(changes) {
+  var el = document.getElementById('vmr-delta-strip');
+  if (!el) return;
+  clearTimeout(_vmDeltaTimer);
+  var parts = changes.slice(0, 4).map(function(c) {
+    if (c.type === 'added')   return '<span style="color:#86efac">+ ' + esc(c.name) + '</span>';
+    if (c.type === 'removed') return '<span style="color:#f87171">- ' + esc(c.name) + '</span>';
+    var arrow = c.to === 'Running' ? '→ Running' : c.to === 'Stopped' ? '→ Stopped' : '→ ' + c.to;
+    var col = c.to === 'Running' ? '#86efac' : c.to === 'Stopped' ? '#94a3b8' : '#fde68a';
+    return '<span style="color:' + col + '">' + esc(c.name) + ' ' + arrow + '</span>';
+  });
+  if (changes.length > 4) parts.push('<span style="color:var(--text-dim)">+' + (changes.length - 4) + ' more</span>');
+  el.innerHTML = '<div class="vmr-delta-pill">' +
+    '<span class="vmr-delta-label">Changed:</span>' +
+    parts.join('<span style="color:var(--text-dim);padding:0 4px">·</span>') +
+    '<button type="button" class="vmr-delta-close" onclick="document.getElementById(\'vmr-delta-strip\').style.display=\'none\'" aria-label="Dismiss">×</button>' +
+    '</div>';
+  el.style.display = 'block';
+  _vmDeltaTimer = setTimeout(function() { if (el) el.style.display = 'none'; }, 8000);
 }
 
 function renderFleetBriefing() {
