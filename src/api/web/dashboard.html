@@ -10879,7 +10879,7 @@ function filterSloView(query) {
   }) : items;
   const fBurn = q ? burnRates.filter(function(br) { return (br.slo_name || '').toLowerCase().includes(q); }) : burnRates;
   if (tb) tb.innerHTML = fItems.map(function(s) {
-    return '<tr><td>' + esc(s.name) + '</td><td>' + esc(s.service) + '</td><td>' + esc(s.sli_type) + '</td><td>' + s.target + '%</td><td>' + s.current + '%</td><td>' + s.error_budget_remaining + '%</td><td><span class="glass-badge ' + glassTableBadge(s.status) + '">' + esc(s.status) + '</span></td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy SLO name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>' + esc(s.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(s.service) + '</td><td>' + esc(s.sli_type) + '</td><td>' + s.target + '%</td><td>' + s.current + '%</td><td>' + s.error_budget_remaining + '%</td><td><span class="glass-badge ' + glassTableBadge(s.status) + '">' + esc(s.status) + '</span></td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching SLOs</td></tr>';
   if (burnTb) burnTb.innerHTML = fBurn.map(function(br) {
     const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
@@ -10900,7 +10900,7 @@ function filterChaosView(query) {
            (c.status || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(c) {
-    return '<tr><td>' + esc(c.name) + '</td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td><span class="glass-badge ' + glassTableBadge(c.status) + '">' + esc(c.status) + '</span></td><td>' + esc(c.duration) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy experiment name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.name) + ')') + '>' + esc(c.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td><span class="glass-badge ' + glassTableBadge(c.status) + '">' + esc(c.status) + '</span></td><td>' + esc(c.duration) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
 }
 
@@ -10929,7 +10929,7 @@ function filterHpaView(query) {
            (h.target_name || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(h) {
-    return '<tr><td>' + esc(h.name) + '</td><td>' + esc(h.namespace) + '</td><td>' + esc(h.target_kind) + '/' + esc(h.target_name) + '</td><td>' + h.min_replicas + '</td><td>' + h.current_replicas + '</td><td>' + h.desired_replicas + '</td><td>' + h.max_replicas + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy HPA name" ' + onStopHandler('copyToClipboard(' + jsArgs(h.name) + ')') + '>' + esc(h.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(h.namespace) + '</td><td>' + esc(h.target_kind) + '/' + esc(h.target_name) + '</td><td>' + h.min_replicas + '</td><td>' + h.current_replicas + '</td><td>' + h.desired_replicas + '</td><td>' + h.max_replicas + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching HPAs</td></tr>';
 }
 
@@ -10990,7 +10990,7 @@ function filterImagesView(query) {
            (img.status || '').toLowerCase().includes(q);
   }) : images;
   tb.innerHTML = filtered.map(function(img) {
-    return '<tr><td>' + esc(img.name) + '</td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td><span class="glass-badge ' + imageStatusClass(img.status) + '">' + esc(img.status) + '</span></td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy image name" ' + onStopHandler('copyToClipboard(' + jsArgs(img.name) + ')') + '>' + esc(img.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td><span class="glass-badge ' + imageStatusClass(img.status) + '">' + esc(img.status) + '</span></td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching images</td></tr>';
 }
 
@@ -11026,10 +11026,10 @@ function filterRbacView(query) {
   }) : bindings;
   if (rolesBody) rolesBody.innerHTML = fRoles.map(function(role) {
     const resources = [...new Set((role.rules || []).flatMap(function(rule) { return rule.resources || []; }))].slice(0, 4);
-    return '<tr><td>' + esc(role.name) + '</td><td>' + (role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')) + '</td><td>' + (role.rules || []).length + '</td><td>' + esc(resources.join(', ') || '-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy role name" ' + onStopHandler('copyToClipboard(' + jsArgs(role.name) + ')') + '>' + esc(role.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + (role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')) + '</td><td>' + (role.rules || []).length + '</td><td>' + esc(resources.join(', ') || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No matching roles</td></tr>';
   if (bindingsBody) bindingsBody.innerHTML = fBindings.map(function(binding) {
-    return '<tr><td>' + esc(binding.name) + '</td><td>' + esc(binding.role_name) + '</td><td>' + esc((binding.subjects || []).map(function(s) { return s.kind + ':' + s.name; }).join(', ') || '-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy binding name" ' + onStopHandler('copyToClipboard(' + jsArgs(binding.name) + ')') + '>' + esc(binding.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(binding.role_name) + '</td><td>' + esc((binding.subjects || []).map(function(s) { return s.kind + ':' + s.name; }).join(', ') || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching bindings</td></tr>';
 }
 
@@ -11065,7 +11065,7 @@ function filterNetpolView(query) {
   }) : rows;
   tb.innerHTML = filtered.map(function(p) {
     return '<tr class="clickable-row" onclick="navigate(\'cilium\')" title="Open Cilium network view">' +
-      '<td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
+      '<td class="vmr-copy-tile" title="Copy policy name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
       '<td>' + (p.ingress_rules ?? 0) + '</td><td>' + (p.egress_rules ?? 0) + '</td><td>' + fmtTime(p.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
 }
@@ -11101,7 +11101,8 @@ function filterCrdsView(query) {
            (v.phase || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(v) {
-    return '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>';
+    const ipCell = v.ip ? '<span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(v.ip) + ')') + '>' + esc(v.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '-';
+    return '<tr><td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(v.name) + ')') + '>' + esc(v.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + ipCell + '</td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VeyronVMs</td></tr>';
 }
 
@@ -11150,7 +11151,7 @@ function filterBackupsView(query) {
            (b.backup_type || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(b) {
-    return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td><span class="glass-badge ' + glassTableBadge(b.status) + '">' + esc(b.status) + '</span></td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td><span class="glass-badge ' + glassTableBadge(b.status) + '">' + esc(b.status) + '</span></td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching backups</td></tr>';
 }
 
