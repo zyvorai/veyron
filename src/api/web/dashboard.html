@@ -3936,7 +3936,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Veyron VMs</h1><p>Operator-managed virtual machines (veyron.io CRDs)</p></div><div class="page-header-right"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VeyronVM</button></div></div>
     <div id="crds-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span><input type="search" id="crds-search" class="form-input" placeholder="Filter by name, namespace, template…" oninput="filterCrdsView(this.value)" style="width:240px;font-size:.82rem"></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
   </div>
 </div>
@@ -4253,7 +4253,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div></div>
     <div id="operators-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span><input type="search" id="operators-search" class="form-input" placeholder="Filter operators…" oninput="filterOperatorsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
   </div>
 </div>
@@ -4263,7 +4263,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
     <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
   </div>
 </div>
@@ -4355,7 +4355,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Backup Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('backup-advisor-card')">Dismiss</button></div>
     <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Velero (cluster)</span></div>
@@ -8504,6 +8504,7 @@ function showVmContextMenu(x, y, ns, name) {
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Zeus</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openSnapModalFor(' + jsArgs(ns, name) + ')">Snapshot</button>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();navigate(\'snapshots\')">View Snapshots</button>';
   html += '<div class="mac-context-sep"></div>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
@@ -10129,7 +10130,7 @@ async function fetchVMs(opts) {
       const dashVmList = document.getElementById('dash-vm-list');
       if (dashVmList) {
         dashVmList.innerHTML = vmData.length === 0
-          ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p></div>'
+          ? '<div class="empty-state"><div class="icon">&#9881;</div><p>No virtual machines deployed</p><p class="sub">Deploy a VM to forge your fleet</p><button class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="openCreateModal()">+ Forge a VM</button></div>'
           : vmData.slice(0, 10).map(v => dashVmRow(v)).join('');
       }
     }
@@ -10271,7 +10272,7 @@ function renderSnapList(query) {
   const q = (query || '').toLowerCase().trim();
   const sortMode = (document.getElementById('snap-sort') || {}).value || 'name';
   let filtered = q ? snaps.filter(function(s) {
-    return (s.name || '').toLowerCase().includes(q) || (s.vm_name || '').toLowerCase().includes(q);
+    return (s.name || '').toLowerCase().includes(q) || (s.vm_name || '').toLowerCase().includes(q) || (s.description || s.notes || '').toLowerCase().includes(q);
   }) : snaps.slice();
   filtered.sort(function(a, b) {
     if (sortMode === 'ready') return (b.ready ? 1 : 0) - (a.ready ? 1 : 0);
@@ -10440,6 +10441,71 @@ function filterHelmView(query) {
   tb.innerHTML = filtered.map(function(h) {
     return '<tr><td>' + esc(h.name) + '</td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(h.status) + '">' + esc(h.status) + '</span></td><td>' + h.revision + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
+}
+
+function filterCrdsView(query) {
+  const tb = document.getElementById('crds-body');
+  if (!tb) return;
+  const items = window.lastCrdVms || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(v) {
+    return (v.name || '').toLowerCase().includes(q) ||
+           (v.namespace || '').toLowerCase().includes(q) ||
+           (v.template || '').toLowerCase().includes(q) ||
+           (v.phase || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(v) {
+    return '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VeyronVMs</td></tr>';
+}
+
+function filterOperatorsView(query) {
+  const tb = document.getElementById('operators-body');
+  if (!tb) return;
+  const items = window.lastOperators || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(o) {
+    return (o.name || '').toLowerCase().includes(q) ||
+           (o.namespace || '').toLowerCase().includes(q) ||
+           (o.status || '').toLowerCase().includes(q) ||
+           ((o.managed_resources || []).join(' ')).toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(o) {
+    return '<tr><td>' + esc(o.name) + '</td><td>' + esc(o.namespace) + '</td><td>' + esc(o.version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(o.status) + '">' + esc(o.status) + '</span></td><td>' + esc((o.managed_resources || []).join(', ') || '-') + '</td><td>' + fmtTime(o.installed_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching operators</td></tr>';
+}
+
+function filterCustomResourcesView(query) {
+  const tb = document.getElementById('custom-resources-body');
+  if (!tb) return;
+  const items = window.lastCustomResources || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(cr) {
+    return (cr.name || '').toLowerCase().includes(q) ||
+           (cr.group || '').toLowerCase().includes(q) ||
+           (cr.kind || '').toLowerCase().includes(q) ||
+           (cr.scope || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(cr) {
+    return '<tr><td>' + esc(cr.name) + '</td><td>' + esc(cr.group) + '</td><td>' + esc(cr.version) + '</td><td>' + esc(cr.kind) + '</td><td>' + esc(cr.scope) + '</td><td>' + cr.instance_count + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching resources</td></tr>';
+}
+
+function filterBackupsView(query) {
+  const tb = document.getElementById('backups-body');
+  if (!tb) return;
+  const items = window.lastBackups || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(b) {
+    return (b.name || '').toLowerCase().includes(q) ||
+           (b.vm_name || '').toLowerCase().includes(q) ||
+           (b.namespace || '').toLowerCase().includes(q) ||
+           (b.status || '').toLowerCase().includes(q) ||
+           (b.backup_type || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(b) {
+    return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td><span class="glass-badge ' + glassTableBadge(b.status) + '">' + esc(b.status) + '</span></td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching backups</td></tr>';
 }
 
 function filterEventsView(type, btn) {
@@ -11409,7 +11475,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
     '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button></div>';
   return '<div class="vm-hero zeus-glass">' +
     '<div class="vm-hero-top"><div>' +
-      '<h2 class="vm-hero-title">' + esc(name) + '</h2>' +
+      '<h2 class="vm-hero-title vmr-copy-tile" title="Copy VM name" onclick="copyToClipboard(' + JSON.stringify(name) + ')">' + esc(name) + '<span class="vmr-copy-hint">copy</span></h2>' +
       '<div class="vm-hero-status ' + pillCls + '"><span class="status-dot"></span>' + esc(String(status)) + '</div>' +
       '<div class="vm-hero-metrics">' +
         '<div class="vm-hero-metric">CPU<strong>' + esc(vm.cpu || '—') + '</strong></div>' +
@@ -13482,6 +13548,7 @@ async function fetchCRDs() {
       ]);
     }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
+    window.lastCrdVms = items;
     tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
   } catch (e) {
     tb.innerHTML = tbodyError(8, e.message || String(e));
@@ -14332,6 +14399,7 @@ async function fetchOperators() {
       ]);
     }
     if (!tb) return;
+    window.lastOperators = filtered;
     tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td><span class="glass-badge ${glassTableBadge(o.status)}">${esc(o.status)}</span></td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No operators found</td></tr>';
   } catch (e) {
@@ -14355,6 +14423,7 @@ async function fetchCustomResources() {
       ]);
     }
     if (!tb) return;
+    window.lastCustomResources = items;
     tb.innerHTML = items.map(cr => `<tr><td>${esc(cr.name)}</td><td>${esc(cr.group)}</td><td>${esc(cr.version)}</td><td>${esc(cr.kind)}</td><td>${esc(cr.scope)}</td><td>${cr.instance_count}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No custom resources found</td></tr>';
   } catch (e) {
@@ -14550,6 +14619,7 @@ async function fetchBackups() {
       ]);
     }
     if (!tb) return;
+    window.lastBackups = items;
     tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td><span class="glass-badge ${glassTableBadge(b.status)}">${esc(b.status)}</span></td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
   } catch (e) {
