@@ -4060,6 +4060,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-security-metrics"></div>
 <div class="page-header"><div><h1>Veyron Security Posture</h1><p>Hardening, compliance, and risk visibility for virtual machines.</p></div>
   <div class="page-header-right">
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSecurityFindingsCsv()" title="Export findings as CSV">&#8595; CSV</button>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus('Auto-fix all security findings')">Fix All Issues</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSecurity()">Refresh</button>
   </div>
@@ -9075,6 +9076,13 @@ function exportWebhooksCsv() {
   });
   exportCsv(rows, 'webhooks.csv');
 }
+function exportSecurityFindingsCsv() {
+  const rows = [['Severity', 'Category', 'Title', 'Resource', 'Recommendation']];
+  (window.lastSecurityFindings || []).forEach(function(f) {
+    rows.push([f.severity, f.category, f.title, f.resource, f.recommendation]);
+  });
+  exportCsv(rows, 'security-findings.csv');
+}
 function exportPvcsCsv() {
   const rows = [['Name', 'Namespace', 'Capacity', 'Storage Class', 'Status']];
   (window.lastPvcRows || []).forEach(function(p) {
@@ -11431,9 +11439,11 @@ function filterEventsView(type, btn) {
   el.innerHTML = events.map(function(e) {
     const isWarn = e.type === 'Warning';
     const cls = isWarn ? 'warn' : 'info';
+    const obj = e.involved_object || '';
     return '<div class="event-row"><div class="event-dot ' + cls + '"></div>' +
       '<div class="event-body"><p class="event-msg">' + esc(e.message || e.reason || 'No message') + '</p>' +
-      '<div class="event-meta"><span>' + esc(e.namespace) + '</span><span>' + esc(e.involved_object) + '</span></div></div>' +
+      '<div class="event-meta"><span>' + esc(e.namespace) + '</span>' +
+      '<span class="vmr-copy-tile" title="Copy object ref" ' + onStopHandler('copyToClipboard(' + jsArgs(obj) + ')') + '>' + esc(obj) + '<span class="vmr-copy-hint">copy</span></span></div></div>' +
       '<span class="event-badge ' + cls + '">' + (isWarn ? 'Warning' : 'Info') + '</span>' +
       '<span class="event-time">' + fmtTime(e.timestamp) + '</span></div>';
   }).join('');
@@ -14994,6 +15004,7 @@ async function fetchSecurityPage(opts) {
     const posture = unwrapData(postureRaw) || postureRaw || {};
     const findingsObj = unwrapData(findingsRaw) || findingsRaw || {};
     const findings = Array.isArray(findingsObj.findings) ? findingsObj.findings : asArray(findingsObj);
+    window.lastSecurityFindings = findings;
     const cardsEl = document.getElementById('security-finding-cards');
     if (cardsEl) {
       cardsEl.innerHTML = findings.map(function(f) {
