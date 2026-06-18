@@ -3867,7 +3867,9 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')" title="Start selected VMs">▶ Start</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')" title="Stop selected VMs">■ Stop</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkSnapshot()" title="Snapshot selected VMs">◉ Snap</button>
-            <button type="button" id="bulk-compare-btn" class="glass-btn-secondary glass-btn-sm" style="display:none;background:linear-gradient(90deg,rgba(56,189,248,.12),rgba(139,92,246,.12));border-color:rgba(56,189,248,.35)" onclick="openVmCompare()" title="Compare 2 selected VMs side by side">⧉ Compare</button>
+            <button type="button" id="bulk-compare-btn" class="glass-btn-secondary glass-btn-sm" style="display:none;background:linear-gradient(90deg,rgba(56,189,248,.12),rgba(139,92,246,.12));border-color:rgba(56,189,248,.35)" onclick="bulkCompare()" title="Compare 2 selected VMs side by side">⧉ Compare</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkTagAll()" title="Add a tag to all selected VMs">🏷 Tag All…</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSelectedVmsJson()" title="Export selected VMs as JSON">↓ Export</button>
             <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')" title="Delete selected VMs">✕ Delete</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="toggleSelectAll(false)">Clear</button>
           </div>
@@ -14975,6 +14977,58 @@ async function bulkSnapshot() {
   });
 }
 
+function bulkCompare() {
+  if (selectedVMs.size !== 2) { toast('Select exactly 2 VMs to compare', 'error'); return; }
+  var keys = Array.from(selectedVMs);
+  var a = parseVmSelectionKey(keys[0]);
+  var b = parseVmSelectionKey(keys[1]);
+  var aVm = (window.lastVMs || vmData || []).find(function(v) { return v.name === a.name && (v.namespace||'default') === a.ns; });
+  var bVm = (window.lastVMs || vmData || []).find(function(v) { return v.name === b.name && (v.namespace||'default') === b.ns; });
+  if (!aVm || !bVm) { toast('Could not find both VMs in current data', 'error'); return; }
+  _vmcmpA = aVm; _vmcmpB = bVm;
+  _showVmCompareModal(aVm, bVm);
+}
+function bulkTagAll() {
+  if (!selectedVMs.size) return;
+  openGlassPrompt({
+    title: 'Tag ' + selectedVMs.size + ' selected VM' + (selectedVMs.size !== 1 ? 's' : ''),
+    submitLabel: 'Add Tag',
+    fields: [{ id: 'tag', label: 'Tag to add (single)', placeholder: 'e.g. production', required: true }],
+    onSubmit: function(v) {
+      var tag = (v.tag || '').trim().toLowerCase().replace(/\s+/g, '-');
+      if (!tag) return;
+      selectedVMs.forEach(function(key) {
+        var p = parseVmSelectionKey(key);
+        addVmTag(p.ns, p.name, tag);
+      });
+      showToast('Tag "' + tag + '" added to ' + selectedVMs.size + ' VM' + (selectedVMs.size !== 1 ? 's' : ''), 'success');
+      filterVMs();
+    }
+  });
+}
+function exportSelectedVmsJson() {
+  if (!selectedVMs.size) return;
+  var selected = [];
+  selectedVMs.forEach(function(key) {
+    var p = parseVmSelectionKey(key);
+    var v = (window.lastVMs || vmData || []).find(function(vm) { return vm.name === p.name && (vm.namespace||'default') === p.ns; });
+    if (v) selected.push({
+      name: v.name, namespace: v.namespace || 'default', status: v.status,
+      cpu: v.cpu, memory: v.memory, ip: v.ip, node: v.node, age: v.age,
+      os_family: guessOsFamily(v), veyron_managed: v.veyron_managed || false,
+      drift_detected: v.drift_detected || false,
+      tags: getVmTags(v.namespace || 'default', v.name),
+      note: getVmNote(v.namespace || 'default', v.name) || null,
+    });
+  });
+  var blob = new Blob([JSON.stringify({ exported_at: new Date().toISOString(), vms: selected }, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'selected-vms-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  showToast('Exported ' + selected.length + ' VMs as JSON', 'success');
+}
 async function openVmCompare() {
   if (selectedVMs.size !== 2) { toast('Select exactly 2 VMs to compare', 'error'); return; }
   const keys = [...selectedVMs];
