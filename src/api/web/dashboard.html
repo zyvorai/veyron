@@ -14940,7 +14940,7 @@ async function fetchWorkloads(opts) {
     }
     if (tb) {
       window.lastWorkloads = data;
-      renderWorkloadsList('');
+      renderWorkloadsList((document.getElementById('workloads-search') || {}).value || '');
     }
   } catch (e) {
     if (e && e.name === 'AbortError') return;
