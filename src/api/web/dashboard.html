@@ -1427,6 +1427,9 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vmr-focus-dim{opacity:.28;filter:blur(.4px);transition:opacity .25s ease,filter .25s ease;pointer-events:none}
+.vmr-focus-context{opacity:.62;transition:opacity .25s ease}
+#vm-full-list .vm-row:hover.vmr-focus-dim,#vm-full-list .vm-card:hover.vmr-focus-dim{opacity:.55;filter:none;pointer-events:auto}
 .vmr-delta-strip{padding:4px 14px 2px}
 .vmr-delta-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.7rem;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-wrap:wrap;animation:vmr-delta-in .2s ease}
 @keyframes vmr-delta-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -14919,6 +14922,29 @@ function syncVmSelectionUi() {
   }
   updateZeusAiPlaceholder();
   if (selectedVmKey && p) updatePageContext('VM — ' + p.name);
+  applyVmFocusContext();
+}
+
+function applyVmFocusContext() {
+  var items = document.querySelectorAll('#vm-full-list .vm-row, #vm-full-list .vm-card');
+  if (!selectedVmKey || !items.length) {
+    items.forEach(function(el) { el.classList.remove('vmr-focus-dim', 'vmr-focus-context'); });
+    return;
+  }
+  var selVm = (vmData || []).find(function(v) { return (v.namespace||'default') + '/' + v.name === selectedVmKey; });
+  var selNs = selVm ? (selVm.namespace || 'default') : null;
+  var selNode = selVm ? (selVm.node || null) : null;
+  items.forEach(function(el) {
+    var ens = el.dataset.vmNs || 'default';
+    var ename = el.dataset.vmName;
+    var isSelected = (ens + '/' + ename) === selectedVmKey;
+    var isContext = !isSelected && selNs && (ens === selNs || (selNode && (function() {
+      var vm = (vmData || []).find(function(v) { return v.name === ename && (v.namespace||'default') === ens; });
+      return vm && vm.node && vm.node === selNode;
+    })()));
+    el.classList.toggle('vmr-focus-dim', !isSelected && !isContext);
+    el.classList.toggle('vmr-focus-context', !!isContext);
+  });
 }
 
 function toggleVmDetail(ns, name, opts) {
