@@ -6,11 +6,11 @@ Configure OpenID Connect for human login while keeping API keys for automation. 
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VMROGUE_OIDC_ISSUER` | For JWKS | Expected `iss` claim (e.g. `https://keycloak.example.com/realms/veyron`) |
-| `VMROGUE_OIDC_JWKS_URL` | For JWKS | JWKS document URL |
-| `VMROGUE_OIDC_ROLE_CLAIM` | No | JWT claim for role mapping (default: `groups`) |
-| `VMROGUE_OIDC_USERINFO_URL` | Fallback | Userinfo endpoint when JWKS is not set |
-| `VMROGUE_JWT_SECRET` + `VMROGUE_JWT_ISSUER` | Optional | HMAC JWT for service accounts |
+| `VEYRON_OIDC_ISSUER` | For JWKS | Expected `iss` claim (e.g. `https://keycloak.example.com/realms/veyron`) |
+| `VEYRON_OIDC_JWKS_URL` | For JWKS | JWKS document URL |
+| `VEYRON_OIDC_ROLE_CLAIM` | No | JWT claim for role mapping (default: `groups`) |
+| `VEYRON_OIDC_USERINFO_URL` | Fallback | Userinfo endpoint when JWKS is not set |
+| `VEYRON_JWT_SECRET` + `VEYRON_JWT_ISSUER` | Optional | HMAC JWT for service accounts |
 
 Role mapping (first matching group wins):
 
@@ -22,10 +22,10 @@ Role mapping (first matching group wins):
 
 | Variable | Description |
 |----------|-------------|
-| `VMROGUE_OIDC_CLIENT_ID` | OAuth client id (exposed via discovery) |
-| `VMROGUE_OIDC_AUTHORIZATION_URL` | Authorization endpoint |
-| `VMROGUE_OIDC_TOKEN_URL` | Token endpoint |
-| `VMROGUE_OIDC_REDIRECT_URI` | Callback URL (default: `{origin}/dashboard`) |
+| `VEYRON_OIDC_CLIENT_ID` | OAuth client id (exposed via discovery) |
+| `VEYRON_OIDC_AUTHORIZATION_URL` | Authorization endpoint |
+| `VEYRON_OIDC_TOKEN_URL` | Token endpoint |
+| `VEYRON_OIDC_REDIRECT_URI` | Callback URL (default: `{origin}/dashboard`) |
 
 Clients read `GET /api/v1/auth/oidc/config` for issuer, client id, and endpoints. The classic dashboard uses PKCE (`POST /api/v1/auth/oidc/token` exchanges the authorization code server-side) and sends `Authorization: Bearer <access_token>` on API calls.
 

@@ -283,7 +283,7 @@ pub fn general_help() -> CopilotResponse {
     r
 }
 
-/// Apply optional LLM paraphrase when `VMROGUE_AI_URL` is configured.
+/// Apply optional LLM paraphrase when `VEYRON_AI_URL` is configured.
 pub async fn finalize_copilot(resp: CopilotResponse) -> CopilotResponse {
     llm::maybe_enhance_response(resp).await
 }

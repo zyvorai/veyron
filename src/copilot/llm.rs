@@ -2,10 +2,10 @@
 
 //! Optional OpenAI-compatible LLM layer for Copilot.
 //!
-//! `VMROGUE_AI_URL`, `VMROGUE_AI_API_KEY`, `VMROGUE_AI_MODEL` (default `gpt-4o-mini`).
+//! `VEYRON_AI_URL`, `VEYRON_AI_API_KEY`, `VEYRON_AI_MODEL` (default `gpt-4o-mini`).
 //! OpenRouter (Zeus): also accepts `OPENROUTER_API_KEY`, `ANTHROPIC_AUTH_TOKEN` (`sk-or-v1-…`),
 //! `ANTHROPIC_BASE_URL` / `OPENROUTER_API_URL`, and `ANTHROPIC_MODEL` / `OPENROUTER_MODEL`.
-//! `VMROGUE_AI_MODE`: `off` | `paraphrase` | `routing` | `agent`.
+//! `VEYRON_AI_MODE`: `off` | `paraphrase` | `routing` | `agent`.
 
 use super::intent::{self, CopilotIntent};
 use super::tools::{ToolInvokeArgs, parse_tool_args, tool_definitions};
@@ -83,21 +83,38 @@ fn is_openrouter_key(key: &str) -> bool {
 }
 
 fn normalize_openai_base_url(url: &str) -> String {
-    let mut base = url.trim().trim_end_matches('/').to_string();
+    let trimmed = url.trim().trim_end_matches('/');
+    // Block non-http(s) schemes and private/metadata hosts to prevent SSRF via env vars.
+    let lower = trimmed.to_lowercase();
+    let safe = (lower.starts_with("https://") || lower.starts_with("http://"))
+        && !lower.contains("169.254.")
+        && !lower.contains("metadata.")
+        && !lower.contains("localhost")
+        && !lower.starts_with("http://127.");
+    if !safe {
+        log::warn!("LLM base URL blocked (unsafe scheme or host): {trimmed}");
+        return "https://api.openai.com/v1".to_string();
+    }
+    let mut base = trimmed.to_string();
     if base.contains("openrouter.ai/api") && !base.ends_with("/v1") {
         base.push_str("/v1");
     }
     base
 }
 
+/// Strip CR/LF characters that would allow HTTP header injection.
+fn sanitize_header_value(v: &str) -> String {
+    v.chars().filter(|c| *c != '\r' && *c != '\n').collect()
+}
+
 fn resolve_api_key() -> Option<String> {
-    env_nonempty("VMROGUE_AI_API_KEY")
+    env_nonempty("VEYRON_AI_API_KEY")
         .or_else(|| env_nonempty("OPENROUTER_API_KEY"))
         .or_else(|| env_nonempty("ANTHROPIC_AUTH_TOKEN").filter(|k| is_openrouter_key(k)))
 }
 
 fn resolve_base_url(key: &str) -> String {
-    if let Some(url) = env_nonempty("VMROGUE_AI_URL")
+    if let Some(url) = env_nonempty("VEYRON_AI_URL")
         .or_else(|| env_nonempty("OPENROUTER_API_URL"))
         .or_else(|| env_nonempty("OPENROUTER_BASE_URL"))
         .or_else(|| env_nonempty("ANTHROPIC_BASE_URL"))
@@ -111,7 +128,7 @@ fn resolve_base_url(key: &str) -> String {
 }
 
 fn resolve_model(key: &str) -> String {
-    env_nonempty("VMROGUE_AI_MODEL")
+    env_nonempty("VEYRON_AI_MODEL")
         .or_else(|| env_nonempty("OPENROUTER_MODEL"))
         .or_else(|| env_nonempty("ANTHROPIC_MODEL"))
         .unwrap_or_else(|| {
@@ -135,7 +152,7 @@ pub fn llm_config() -> Option<LlmConfig> {
 }
 
 pub fn ai_mode() -> AiMode {
-    let explicit = std::env::var("VMROGUE_AI_MODE")
+    let explicit = std::env::var("VEYRON_AI_MODE")
         .ok()
         .map(|s| s.to_lowercase());
     match explicit.as_deref() {
@@ -155,21 +172,21 @@ pub fn ai_mode() -> AiMode {
 }
 
 pub fn max_tool_rounds() -> u32 {
-    std::env::var("VMROGUE_AI_MAX_TOOL_ROUNDS")
+    std::env::var("VEYRON_AI_MAX_TOOL_ROUNDS")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(2)
 }
 
 pub fn timeout_secs() -> u64 {
-    std::env::var("VMROGUE_AI_TIMEOUT_SECS")
+    std::env::var("VEYRON_AI_TIMEOUT_SECS")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(30)
 }
 
 pub fn ai_rate_limit_per_min() -> u64 {
-    std::env::var("VMROGUE_AI_RATE_LIMIT_PER_MIN")
+    std::env::var("VEYRON_AI_RATE_LIMIT_PER_MIN")
         .ok()
         .and_then(|s| s.parse().ok())
         .unwrap_or(20)
@@ -220,7 +237,7 @@ pub async fn maybe_enhance_response(mut resp: CopilotResponse) -> CopilotRespons
                 resp.recommendations = recs;
             }
         }
-        Err(e) => log::debug!("VMROGUE_AI paraphrase skipped: {e}"),
+        Err(e) => log::debug!("VEYRON_AI paraphrase skipped: {e}"),
     }
     resp
 }
@@ -416,14 +433,14 @@ async fn post_chat_raw(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Res
     };
     let mut req = client.post(url).bearer_auth(&cfg.api_key);
     if let Some(referer) =
-        env_nonempty("VMROGUE_AI_HTTP_REFERER").or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
+        env_nonempty("VEYRON_AI_HTTP_REFERER").or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
     {
-        req = req.header("HTTP-Referer", referer);
+        req = req.header("HTTP-Referer", sanitize_header_value(&referer));
     }
     if let Some(title) =
-        env_nonempty("VMROGUE_AI_APP_TITLE").or_else(|| env_nonempty("OPENROUTER_APP_TITLE"))
+        env_nonempty("VEYRON_AI_APP_TITLE").or_else(|| env_nonempty("OPENROUTER_APP_TITLE"))
     {
-        req = req.header("X-Title", title);
+        req = req.header("X-Title", sanitize_header_value(&title));
     }
     let resp = req.json(body).send().await?;
     if !resp.status().is_success() {
@@ -467,14 +484,14 @@ mod tests {
 
     #[test]
     fn ai_rate_limit_default_when_unset() {
-        if std::env::var("VMROGUE_AI_RATE_LIMIT_PER_MIN").is_err() {
+        if std::env::var("VEYRON_AI_RATE_LIMIT_PER_MIN").is_err() {
             assert_eq!(ai_rate_limit_per_min(), 20);
         }
     }
 
     #[test]
     fn max_tool_rounds_default() {
-        if std::env::var("VMROGUE_AI_MAX_TOOL_ROUNDS").is_err() {
+        if std::env::var("VEYRON_AI_MAX_TOOL_ROUNDS").is_err() {
             assert_eq!(max_tool_rounds(), 2);
         }
     }

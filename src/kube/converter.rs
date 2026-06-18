@@ -28,7 +28,7 @@ fn qemu_guest_agent_channel() -> Channel {
 /// KubeVirt 1.8+ auto-injects this channel; explicit channels fail strict validation unless needed.
 fn emit_guest_agent_channels() -> bool {
     matches!(
-        std::env::var("VMROGUE_EMIT_GUEST_AGENT_CHANNELS").as_deref(),
+        std::env::var("VEYRON_EMIT_GUEST_AGENT_CHANNELS").as_deref(),
         Ok("1") | Ok("true") | Ok("yes")
     )
 }

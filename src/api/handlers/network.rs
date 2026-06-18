@@ -55,9 +55,12 @@ async fn list_interfaces(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<NetworkInterfaceResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let vmis = s.client().list_vmis_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let vmis = kube_client.list_vmis_for_scope(&scope).await;
 
     let mut results: Vec<NetworkInterfaceResponse> = Vec::new();
 
@@ -99,9 +102,12 @@ async fn get_bandwidth(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<BandwidthResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let vmis = s.client().list_vmis_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let vmis = kube_client.list_vmis_for_scope(&scope).await;
 
     let now = chrono::Utc::now().to_rfc3339();
     let mut results: Vec<BandwidthResponse> = Vec::new();

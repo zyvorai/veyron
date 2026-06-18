@@ -18,7 +18,7 @@ pub fn env_var(key: &str) -> Option<String> {
 
 #[cfg(feature = "web")]
 pub fn cost_backend() -> &'static str {
-    match env_var("VMROGUE_COST_BACKEND").as_deref() {
+    match env_var("VEYRON_COST_BACKEND").as_deref() {
         Some("opencost") => "opencost",
         _ => "static",
     }
@@ -91,12 +91,12 @@ pub async fn deliver_email(
         "subject": subject,
         "text": body,
         "to": recipients,
-        "from": env_var("VMROGUE_EMAIL_FROM").unwrap_or_else(|| "veyron@local".to_string())
+        "from": env_var("VEYRON_EMAIL_FROM").unwrap_or_else(|| "veyron@local".to_string())
     });
     post_json(
         relay_url,
         &payload,
-        env_var("VMROGUE_EMAIL_RELAY_TOKEN").as_deref(),
+        env_var("VEYRON_EMAIL_RELAY_TOKEN").as_deref(),
     )
     .await
 }
@@ -107,12 +107,12 @@ pub async fn deliver_sms(relay_url: &str, body: &str, phone_numbers: &[String]) 
     let payload = serde_json::json!({
         "text": body,
         "to": phone_numbers,
-        "from": env_var("VMROGUE_SMS_FROM").unwrap_or_else(|| "veyron".to_string())
+        "from": env_var("VEYRON_SMS_FROM").unwrap_or_else(|| "veyron".to_string())
     });
     post_json(
         relay_url,
         &payload,
-        env_var("VMROGUE_SMS_WEBHOOK_TOKEN").as_deref(),
+        env_var("VEYRON_SMS_WEBHOOK_TOKEN").as_deref(),
     )
     .await
 }
@@ -120,7 +120,7 @@ pub async fn deliver_sms(relay_url: &str, body: &str, phone_numbers: &[String]) 
 /// OIDC userinfo validation — returns role string when token is valid.
 #[cfg(feature = "web")]
 pub async fn oidc_userinfo_role(token: &str) -> Result<Option<String>> {
-    let url = env_var("VMROGUE_OIDC_USERINFO_URL").context("VMROGUE_OIDC_USERINFO_URL not set")?;
+    let url = env_var("VEYRON_OIDC_USERINFO_URL").context("VEYRON_OIDC_USERINFO_URL not set")?;
     let client = http_client().await?;
     let resp = client
         .get(&url)
@@ -132,7 +132,7 @@ pub async fn oidc_userinfo_role(token: &str) -> Result<Option<String>> {
         return Ok(None);
     }
     let info: serde_json::Value = resp.json().await.context("userinfo json")?;
-    let role_claim = env_var("VMROGUE_OIDC_ROLE_CLAIM").unwrap_or_else(|| "groups".to_string());
+    let role_claim = env_var("VEYRON_OIDC_ROLE_CLAIM").unwrap_or_else(|| "groups".to_string());
     if let Some(v) = info.get(&role_claim) {
         if let Some(s) = v.as_str() {
             return Ok(Some(s.to_string()));
@@ -170,7 +170,7 @@ pub struct AmAlertStatus {
 #[cfg(feature = "web")]
 pub async fn fetch_alertmanager_alerts(base: &str) -> Result<Vec<AmAlert>> {
     let url = format!("{}/api/v2/alerts", base.trim_end_matches('/'));
-    let v = get_json(&url, env_var("VMROGUE_ALERTMANAGER_TOKEN").as_deref()).await?;
+    let v = get_json(&url, env_var("VEYRON_ALERTMANAGER_TOKEN").as_deref()).await?;
     Ok(serde_json::from_value(v).unwrap_or_else(|_| Vec::new()))
 }
 
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn cost_backend_defaults_static() {
         unsafe {
-            std::env::remove_var("VMROGUE_COST_BACKEND");
+            std::env::remove_var("VEYRON_COST_BACKEND");
         }
         assert_eq!(cost_backend(), "static");
     }

@@ -207,7 +207,7 @@ impl VulnerabilityScanner {
         let mut result = ScanResult::new(scan_id, &config.vm_name, config.scan_type.clone());
 
         #[cfg(feature = "web")]
-        if let Ok(trivy_url) = std::env::var("VMROGUE_TRIVY_URL") {
+        if let Ok(trivy_url) = std::env::var("VEYRON_TRIVY_URL") {
             if !trivy_url.is_empty() {
                 if let Ok(count) = Self::scan_via_trivy(&trivy_url, &config.vm_name, &mut result) {
                     result.statistics.packages_scanned = count as usize;

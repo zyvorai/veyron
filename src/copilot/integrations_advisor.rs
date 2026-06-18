@@ -8,18 +8,18 @@ const INTEGRATIONS: &[(&str, &str)] = &[
         "Metrics, PVC usage, performance p95",
     ),
     (
-        "VMROGUE_OPENCOST_URL",
-        "Real allocation costs (with VMROGUE_COST_BACKEND=opencost)",
+        "VEYRON_OPENCOST_URL",
+        "Real allocation costs (with VEYRON_COST_BACKEND=opencost)",
     ),
     (
-        "VMROGUE_TRIVY_URL",
+        "VEYRON_TRIVY_URL",
         "CVE findings merged into security posture",
     ),
-    ("VMROGUE_LOKI_URL", "Cluster-wide logs (LogQL)"),
-    ("VMROGUE_ALERTMANAGER_URL", "Active alert timeline"),
-    ("VMROGUE_ARGOCD_URL", "GitOps sync triggers"),
-    ("VMROGUE_GRAFANA_URL", "External Grafana console links"),
-    ("VMROGUE_JAEGER_QUERY_URL", "Distributed traces"),
+    ("VEYRON_LOKI_URL", "Cluster-wide logs (LogQL)"),
+    ("VEYRON_ALERTMANAGER_URL", "Active alert timeline"),
+    ("VEYRON_ARGOCD_URL", "GitOps sync triggers"),
+    ("VEYRON_GRAFANA_URL", "External Grafana console links"),
+    ("VEYRON_JAEGER_QUERY_URL", "Distributed traces"),
 ];
 
 /// Which optional backends are configured vs missing.

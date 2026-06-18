@@ -88,8 +88,8 @@ async fn list_soc_events(
     let (ns, k8s) = soc_namespace(&state, q.namespace.clone()).await;
     let mut events = store::load_events(&k8s, &ns).await;
     if q.refresh || events.is_empty() {
-        let s = state.read().await;
-        let collected = collect::collect_from_cluster(s.client(), &ns).await;
+        let kube_client = state.read().await.client().clone();
+        let collected = collect::collect_from_cluster(&kube_client, &ns).await;
         store::append_events(&k8s, &ns, collected).await;
         events = store::load_events(&k8s, &ns).await;
     }
@@ -114,8 +114,8 @@ async fn sync_soc_events(
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<SocEventsResponse> {
     let (ns, k8s) = soc_namespace(&state, q.namespace.clone()).await;
-    let s = state.read().await;
-    let collected = collect::collect_from_cluster(s.client(), &ns).await;
+    let kube_client = state.read().await.client().clone();
+    let collected = collect::collect_from_cluster(&kube_client, &ns).await;
     store::append_events(&k8s, &ns, collected).await;
     let events = store::load_events(&k8s, &ns).await;
     let total = events.len();
@@ -128,9 +128,9 @@ async fn list_soc_detections(
     Query(q): Query<SocDetectionsQuery>,
 ) -> Json<SocDetectionsResponse> {
     let (ns, k8s) = soc_namespace(&state, q.namespace.clone()).await;
-    let s = state.read().await;
+    let kube_client = state.read().await.client().clone();
     let stored = store::load_detections(&k8s, &ns).await;
-    let fresh = detections::evaluate_detections(s.client(), &ns).await;
+    let fresh = detections::evaluate_detections(&kube_client, &ns).await;
     let old_ids: std::collections::HashSet<String> = stored.iter().map(|d| d.id.clone()).collect();
     let merged = detections::merge_detections(fresh, &stored);
     store::save_detections(&k8s, &ns, &merged).await;

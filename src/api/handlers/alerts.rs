@@ -60,9 +60,12 @@ async fn list_alerts(
     State(state): State<SharedState>,
     Query(query): Query<AlertQuery>,
 ) -> Json<Vec<AlertResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
-    let events = s.client().list_events_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &default_ns);
+    let events = kube_client.list_events_for_scope(&scope).await;
 
     let results: Vec<AlertResponse> = events
         .iter()
@@ -100,9 +103,11 @@ async fn create_alert(
 ) -> (StatusCode, Json<serde_json::Value>) {
     use k8s_openapi::api::core::v1::ConfigMap;
 
-    let s = state.read().await;
-    let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let (raw_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.client(), s.namespace.clone())
+    };
+    let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(raw_client, &default_ns);
 
     let cm_name = format!("veyron-alert-{}", req.name.to_lowercase().replace(' ', "-"));
     let mut data = std::collections::BTreeMap::new();
@@ -120,7 +125,7 @@ async fn create_alert(
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
             name: Some(cm_name),
-            namespace: Some(s.namespace.clone()),
+            namespace: Some(default_ns.clone()),
             labels: Some(
                 [("veyron.io/type".to_string(), "alert-rule".to_string())]
                     .into_iter()
@@ -158,7 +163,10 @@ async fn resolve_alert(
 ) -> (StatusCode, Json<serde_json::Value>) {
     use k8s_openapi::api::core::v1::ConfigMap;
 
-    let s = state.read().await;
+    let (raw_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.client(), s.namespace.clone())
+    };
     let now = chrono::Utc::now().to_rfc3339();
 
     // Persist resolved state in a ConfigMap keyed by alert id
@@ -171,7 +179,7 @@ async fn resolve_alert(
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
             name: Some(cm_name),
-            namespace: Some(s.namespace.clone()),
+            namespace: Some(default_ns.clone()),
             labels: Some(
                 [("veyron.io/type".to_string(), "alert-resolved".to_string())]
                     .into_iter()
@@ -184,7 +192,7 @@ async fn resolve_alert(
     };
 
     let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+        kube::api::Api::namespaced(raw_client, &default_ns);
     let _ = api.create(&kube::api::PostParams::default(), &cm).await;
 
     log::info!("Alert resolved: id={}", id);

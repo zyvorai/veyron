@@ -18,7 +18,7 @@ SCRIPT="${ROOT}/cluster/install-cluster-prereqs.sh"
 [[ -f "${SCRIPT}" ]] || { echo "ERROR: missing ${SCRIPT}" >&2; exit 1; }
 
 _map() {
-  local name="$1" v9s="V9S_${name}" vmr="VMROGUE_${name}"
+  local name="$1" v9s="V9S_${name}" vmr="VEYRON_${name}"
   [[ -z "${!v9s:-}" && -n "${!vmr:-}" ]] && export "${v9s}=${!vmr}"
 }
 for _v in SKIP_CILIUM SKIP_CDI SKIP_KUBEVIRT SKIP_METRICS_SERVER SKIP_MULTUS \
@@ -28,7 +28,7 @@ for _v in SKIP_CILIUM SKIP_CDI SKIP_KUBEVIRT SKIP_METRICS_SERVER SKIP_MULTUS \
 done
 
 pkg_banner "${PRODUCT:-Cluster} prerequisites" "Cilium · metrics-server · KubeVirt · CDI"
-pkg_info "Flags: V9S_* and VMROGUE_* (see CLUSTER_SETUP.txt)"
+pkg_info "Flags: V9S_* and VEYRON_* (see CLUSTER_SETUP.txt)"
 pkg_detail "Skip examples: V9S_SKIP_CILIUM=1 V9S_SKIP_CDI=1"
 echo ""
 pkg_phase "Installer"

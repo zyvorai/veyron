@@ -8,7 +8,7 @@
 #
 # Usage:
 #   ./scripts/test-remote.sh [host] [user]
-#   VMROGUE_NODE_PORT=30151 VEYRON_API_KEY=... ./scripts/test-remote.sh
+#   VEYRON_NODE_PORT=30151 VEYRON_API_KEY=... ./scripts/test-remote.sh
 #   DEPLOY_HOST / DEPLOY_USER required if host/user omitted
 #   VEYRON_REMOTE_DIR=/home/you/veyron  (operator samples for tier 3–4)
 #
@@ -29,7 +29,7 @@ fi
 REMOTE="${USER}@${HOST}"
 
 NS="${VEYRON_NAMESPACE:-veyron-system}"
-NODE_PORT="${VMROGUE_NODE_PORT:-30151}"
+NODE_PORT="${VEYRON_NODE_PORT:-30151}"
 API_KEY="${VEYRON_API_KEY:-Admin@321}"
 REMOTE_DIR="${VEYRON_REMOTE_DIR:-/home/${USER}/veyron}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"

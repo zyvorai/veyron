@@ -58,9 +58,12 @@ async fn list_audit_trail(
     State(state): State<SharedState>,
     Query(query): Query<AuditQuery>,
 ) -> Json<Vec<AuditEntry>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
-    let events = s.client().list_events_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &default_ns);
+    let events = kube_client.list_events_for_scope(&scope).await;
 
     Json(map_audit_entries(&events))
 }

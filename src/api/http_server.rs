@@ -151,10 +151,10 @@ pub mod web {
 
     impl WebState {
         pub async fn new(namespace: String, rate_limit_per_minute: u64) -> anyhow::Result<Self> {
-            let api_key = env_var_first(&["VEYRON_API_KEY", "VMROGUE_API_KEY"]);
+            let api_key = env_var_first(&["VEYRON_API_KEY", "VEYRON_API_KEY"]);
             if api_key.is_none() {
                 log::warn!(
-                    "VEYRON_API_KEY (or VMROGUE_API_KEY) is not set - API will reject all requests. \
+                    "VEYRON_API_KEY (or VEYRON_API_KEY) is not set - API will reject all requests. \
                      Set VEYRON_API_KEY to enable access."
                 );
             }
@@ -169,7 +169,7 @@ pub mod web {
                     name: "primary".to_string(),
                 });
             }
-            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VMROGUE_API_KEYS"]) {
+            if let Some(keys_str) = env_var_first(&["VEYRON_API_KEYS", "VEYRON_API_KEYS"]) {
                 for entry in keys_str.split(',') {
                     let parts: Vec<&str> = entry.trim().split(':').collect();
                     if parts.len() >= 2 {
@@ -232,15 +232,15 @@ pub mod web {
 
         /// Authenticate a JWT Bearer token with HMAC-SHA256 signature verification.
         ///
-        /// **Required:** Set VMROGUE_JWT_SECRET (shared secret for HMAC-SHA256 signature).
-        /// **Required:** Set VMROGUE_JWT_ISSUER (expected issuer claim).
-        /// **Optional:** Set VMROGUE_JWT_ROLE_CLAIM (claim containing role, default: "role").
+        /// **Required:** Set VEYRON_JWT_SECRET (shared secret for HMAC-SHA256 signature).
+        /// **Required:** Set VEYRON_JWT_ISSUER (expected issuer claim).
+        /// **Optional:** Set VEYRON_JWT_ROLE_CLAIM (claim containing role, default: "role").
         /// JWT roles: "admin", "write", "readonly" (default: "readonly").
         ///
         /// The token signature is verified using HMAC-SHA256 before claims are trusted.
         pub fn authenticate_jwt(&self, token: &str) -> Option<ApiRole> {
-            let secret = std::env::var("VMROGUE_JWT_SECRET").ok()?;
-            let expected_issuer = std::env::var("VMROGUE_JWT_ISSUER").ok()?;
+            let secret = std::env::var("VEYRON_JWT_SECRET").ok()?;
+            let expected_issuer = std::env::var("VEYRON_JWT_ISSUER").ok()?;
             if secret.is_empty() || expected_issuer.is_empty() {
                 return None;
             }
@@ -261,7 +261,7 @@ pub mod web {
             .ok()?;
 
             let role_claim =
-                std::env::var("VMROGUE_JWT_ROLE_CLAIM").unwrap_or_else(|_| "role".to_string());
+                std::env::var("VEYRON_JWT_ROLE_CLAIM").unwrap_or_else(|_| "role".to_string());
             let role_str = token_data
                 .claims
                 .get(&role_claim)
@@ -410,7 +410,7 @@ pub mod web {
                     _ => ApiRole::ReadOnly,
                 });
         }
-        if crate::api::integrations::env_var("VMROGUE_OIDC_USERINFO_URL").is_some() {
+        if crate::api::integrations::env_var("VEYRON_OIDC_USERINFO_URL").is_some() {
             return match crate::api::integrations::oidc_userinfo_role(key).await {
                 Ok(Some(rstr)) => Some(match rstr.as_str() {
                     "admin" => ApiRole::Admin,
@@ -475,7 +475,7 @@ pub mod web {
                 let (status, json) = err_json(
                     503,
                     "AUTH_NOT_CONFIGURED",
-                    "API key not configured. Set VEYRON_API_KEY (or VMROGUE_API_KEY) environment variable.",
+                    "API key not configured. Set VEYRON_API_KEY (or VEYRON_API_KEY) environment variable.",
                 );
                 return (status, json).into_response();
             }
@@ -691,11 +691,11 @@ pub mod web {
 
     // ── CORS configuration ──────────────────────────────────────
 
-    /// Build a CORS layer. If `VMROGUE_CORS_ORIGINS` is set (comma-separated
+    /// Build a CORS layer. If `VEYRON_CORS_ORIGINS` is set (comma-separated
     /// list of origins), allow those origins. Otherwise default to same-origin
     /// only (no extra origins allowed).
     fn build_cors_layer() -> CorsLayer {
-        let origins = std::env::var("VMROGUE_CORS_ORIGINS").ok();
+        let origins = std::env::var("VEYRON_CORS_ORIGINS").ok();
 
         let allow_origin = match origins {
             Some(ref raw) if !raw.is_empty() => {
@@ -952,7 +952,7 @@ pub mod web {
                 .merge(
                     Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())),
                 )
-                // Veyron product alias — same handlers as /api/v1/* (VMROGUE_* env still supported).
+                // Veyron product alias — same handlers as /api/v1/* (VEYRON_* env still supported).
                 .merge(Router::new().nest(
                     "/api/v1/veyron",
                     crate::api::handlers::all_routes(state.clone()),
@@ -2491,15 +2491,19 @@ pub mod web {
             .unwrap_or_else(|_| {
                 tokio_tungstenite::tungstenite::handshake::client::Request::get(&ws_url)
                     .body(())
-                    .unwrap()
+                    .unwrap_or_else(|_| {
+                        // ws_url is malformed; build a safe no-op request so we fail at connect
+                        tokio_tungstenite::tungstenite::handshake::client::Request::get("ws://localhost/")
+                            .body(())
+                            .expect("localhost ws request is always valid")
+                    })
             });
 
         let sa_token_path = "/var/run/secrets/kubernetes.io/serviceaccount/token";
         if let Ok(token) = std::fs::read_to_string(sa_token_path) {
-            request.headers_mut().insert(
-                "Authorization",
-                format!("Bearer {}", token.trim()).parse().unwrap(),
-            );
+            if let Ok(header_val) = format!("Bearer {}", token.trim()).parse() {
+                request.headers_mut().insert("Authorization", header_val);
+            }
         }
 
         let k8s_ws = match tokio_tungstenite::connect_async_tls_with_config(
@@ -4326,7 +4330,14 @@ pub mod web {
     }
 
     async fn list_profiles_handler() -> impl IntoResponse {
-        let profiles = PROFILES.read().unwrap();
+        let profiles = match PROFILES.read() {
+            Ok(p) => p,
+            Err(_) => {
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/profiles");
+                let empty: Vec<ProfileItem> = vec![];
+                return ok_json(&ApiResponse::success(&empty, &ctx.request_id));
+            }
+        };
         let items: Vec<ProfileItem> = profiles
             .list()
             .into_iter()

@@ -16,14 +16,14 @@ use super::integrations;
 #[cfg(feature = "web")]
 pub async fn namespace_pod_costs() -> Result<HashMap<(String, String), f64>> {
     let base =
-        integrations::env_var("VMROGUE_OPENCOST_URL").context("VMROGUE_OPENCOST_URL not set")?;
+        integrations::env_var("VEYRON_OPENCOST_URL").context("VEYRON_OPENCOST_URL not set")?;
     let url = format!(
         "{}/allocation/compute?window=30d&aggregate=pod,namespace&step=1d",
         base.trim_end_matches('/')
     );
     let v = integrations::get_json(
         &url,
-        integrations::env_var("VMROGUE_OPENCOST_TOKEN").as_deref(),
+        integrations::env_var("VEYRON_OPENCOST_TOKEN").as_deref(),
     )
     .await?;
 

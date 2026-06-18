@@ -5,7 +5,7 @@
 use clap::{Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(name = "veyron", alias = "vmrogue")]
+#[command(name = "veyron", alias = "veyron")]
 #[command(about = "Veyron — Kubernetes-native VM command center (KubeVirt)")]
 #[command(long_about = "\
 Veyron — Kubernetes-native VM command center.
@@ -42,7 +42,7 @@ pub struct Cli {
     pub kubeconfig: Option<String>,
 
     /// Path to config file (default: ~/.config/veyron/config.toml)
-    #[arg(long, env = "VMROGUE_CONFIG")]
+    #[arg(long, env = "VEYRON_CONFIG")]
     pub config: Option<String>,
 
     /// Enable verbose logging

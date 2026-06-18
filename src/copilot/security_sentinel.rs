@@ -155,12 +155,12 @@ pub async fn security_sentinel(
 
 #[cfg(feature = "web")]
 async fn append_trivy_evidence(r: &mut CopilotResponse, vm_name: &str, findings: &mut u32) {
-    let Some(base) = std::env::var("VMROGUE_TRIVY_URL")
+    let Some(base) = std::env::var("VEYRON_TRIVY_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
     else {
         r.evidence
-            .push("Trivy not configured — set VMROGUE_TRIVY_URL for CVE scan".into());
+            .push("Trivy not configured — set VEYRON_TRIVY_URL for CVE scan".into());
         return;
     };
     match trivy_summary(&base, vm_name).await {
@@ -258,7 +258,7 @@ pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> Copilo
         r.evidence.push(format!("Operator drift: {key}"));
     }
 
-    let trivy_url = std::env::var("VMROGUE_TRIVY_URL")
+    let trivy_url = std::env::var("VEYRON_TRIVY_URL")
         .ok()
         .filter(|u| !u.trim().is_empty());
     if let Some(base) = trivy_url {
@@ -279,7 +279,7 @@ pub async fn security_sentinel_fleet(client: &KubeClient, scope: &str) -> Copilo
         }
     } else {
         r.evidence
-            .push("Trivy not configured — set VMROGUE_TRIVY_URL for CVE merge".into());
+            .push("Trivy not configured — set VEYRON_TRIVY_URL for CVE merge".into());
     }
 
     let issues = exposed_rdp.len() + drift.len();

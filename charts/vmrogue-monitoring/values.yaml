@@ -29,7 +29,7 @@ kps:
     enabled: true
     defaultDashboardsEnabled: true
     adminPassword: changeme
-    # Optional browser access via NodePort (bootstrap sets VMROGUE_GRAFANA_EXTERNAL_URL).
+    # Optional browser access via NodePort (bootstrap sets VEYRON_GRAFANA_EXTERNAL_URL).
     service:
       type: NodePort
       port: 80

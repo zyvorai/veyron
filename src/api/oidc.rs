@@ -35,9 +35,9 @@ static JWKS_CACHE: OnceLock<Jwks> = OnceLock::new();
 
 #[cfg(feature = "web")]
 pub fn oidc_configured() -> bool {
-    crate::api::integrations::env_var("VMROGUE_OIDC_CLIENT_ID").is_some()
-        && (crate::api::integrations::env_var("VMROGUE_OIDC_AUTHORIZATION_URL").is_some()
-            || crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER").is_some())
+    crate::api::integrations::env_var("VEYRON_OIDC_CLIENT_ID").is_some()
+        && (crate::api::integrations::env_var("VEYRON_OIDC_AUTHORIZATION_URL").is_some()
+            || crate::api::integrations::env_var("VEYRON_OIDC_ISSUER").is_some())
 }
 
 #[cfg(feature = "web")]
@@ -63,17 +63,17 @@ pub async fn exchange_oidc_authorization_code(
     }
 
     let token_url =
-        crate::api::integrations::env_var("VMROGUE_OIDC_TOKEN_URL").unwrap_or_else(|| {
-            crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
+        crate::api::integrations::env_var("VEYRON_OIDC_TOKEN_URL").unwrap_or_else(|| {
+            crate::api::integrations::env_var("VEYRON_OIDC_ISSUER")
                 .map(|i| format!("{i}/protocol/openid-connect/token"))
                 .unwrap_or_default()
         });
     if token_url.is_empty() {
-        return Err("VMROGUE_OIDC_TOKEN_URL or VMROGUE_OIDC_ISSUER must be set".to_string());
+        return Err("VEYRON_OIDC_TOKEN_URL or VEYRON_OIDC_ISSUER must be set".to_string());
     }
-    let client_id = crate::api::integrations::env_var("VMROGUE_OIDC_CLIENT_ID")
+    let client_id = crate::api::integrations::env_var("VEYRON_OIDC_CLIENT_ID")
         .filter(|s| !s.is_empty())
-        .ok_or_else(|| "VMROGUE_OIDC_CLIENT_ID not set".to_string())?;
+        .ok_or_else(|| "VEYRON_OIDC_CLIENT_ID not set".to_string())?;
 
     let client = crate::api::integrations::http_client()
         .await
@@ -123,9 +123,9 @@ pub async fn exchange_oidc_authorization_code(
 
 #[cfg(feature = "web")]
 pub fn oidc_public_config() -> serde_json::Value {
-    let issuer = crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER").unwrap_or_default();
-    let client_id = crate::api::integrations::env_var("VMROGUE_OIDC_CLIENT_ID").unwrap_or_default();
-    let auth_url = crate::api::integrations::env_var("VMROGUE_OIDC_AUTHORIZATION_URL")
+    let issuer = crate::api::integrations::env_var("VEYRON_OIDC_ISSUER").unwrap_or_default();
+    let client_id = crate::api::integrations::env_var("VEYRON_OIDC_CLIENT_ID").unwrap_or_default();
+    let auth_url = crate::api::integrations::env_var("VEYRON_OIDC_AUTHORIZATION_URL")
         .unwrap_or_else(|| {
             if issuer.is_empty() {
                 String::new()
@@ -134,14 +134,14 @@ pub fn oidc_public_config() -> serde_json::Value {
             }
         });
     let token_url =
-        crate::api::integrations::env_var("VMROGUE_OIDC_TOKEN_URL").unwrap_or_else(|| {
+        crate::api::integrations::env_var("VEYRON_OIDC_TOKEN_URL").unwrap_or_else(|| {
             if issuer.is_empty() {
                 String::new()
             } else {
                 format!("{issuer}/protocol/openid-connect/token")
             }
         });
-    let redirect = crate::api::integrations::env_var("VMROGUE_OIDC_REDIRECT_URI")
+    let redirect = crate::api::integrations::env_var("VEYRON_OIDC_REDIRECT_URI")
         .unwrap_or_else(|| "/dashboard".to_string());
     serde_json::json!({
         "enabled": oidc_configured(),
@@ -161,8 +161,8 @@ async fn fetch_jwks() -> Result<Jwks> {
             keys: cached.keys.clone(),
         });
     }
-    let url = crate::api::integrations::env_var("VMROGUE_OIDC_JWKS_URL")
-        .context("VMROGUE_OIDC_JWKS_URL")?;
+    let url = crate::api::integrations::env_var("VEYRON_OIDC_JWKS_URL")
+        .context("VEYRON_OIDC_JWKS_URL")?;
     let client = crate::api::integrations::http_client().await?;
     let jwks: Jwks = client
         .get(&url)
@@ -212,7 +212,7 @@ fn decode_jwt_header(token: &str) -> Option<serde_json::Value> {
 
 #[cfg(feature = "web")]
 fn map_role_claim(value: &serde_json::Value) -> String {
-    let claim = crate::api::integrations::env_var("VMROGUE_OIDC_ROLE_CLAIM")
+    let claim = crate::api::integrations::env_var("VEYRON_OIDC_ROLE_CLAIM")
         .unwrap_or_else(|| "groups".to_string());
     if let Some(s) = value.get(&claim).and_then(|v| v.as_str()) {
         return normalize_role(s);
@@ -248,7 +248,7 @@ fn normalize_role(s: &str) -> String {
 
 #[cfg(feature = "web")]
 fn issuer_matches(payload: &serde_json::Value) -> bool {
-    let expected = match crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER") {
+    let expected = match crate::api::integrations::env_var("VEYRON_OIDC_ISSUER") {
         Some(i) if !i.is_empty() => i,
         _ => return true,
     };
@@ -276,7 +276,7 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
         return None;
     }
 
-    if crate::api::integrations::env_var("VMROGUE_OIDC_JWKS_URL").is_some() {
+    if crate::api::integrations::env_var("VEYRON_OIDC_JWKS_URL").is_some() {
         if let Ok(jwks) = fetch_jwks().await {
             let header = decode_jwt_header(token)?;
             let kid = header.get("kid").and_then(|v| v.as_str());
@@ -289,7 +289,7 @@ pub async fn oidc_role_from_bearer(token: &str) -> Option<String> {
                         let mut validation =
                             jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::RS256);
                         if let Some(ref iss) =
-                            crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
+                            crate::api::integrations::env_var("VEYRON_OIDC_ISSUER")
                         {
                             if !iss.is_empty() {
                                 validation.set_issuer(&[iss.as_str()]);

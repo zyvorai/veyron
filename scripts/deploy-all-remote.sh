@@ -89,7 +89,7 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 API_KEY="${VEYRON_API_KEY:-Admin@321}"
 VEYRON_IMAGE="docker.io/library/veyron:latest"
 OPERATOR_IMAGE="docker.io/library/veyron-operator:latest"
-NAMESPACE="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
+NAMESPACE="${VEYRON_NAMESPACE:-veyron-system}"
 
 [ -f "$REPO_DIR/Cargo.toml" ] || { pkg_fail "Not in veyron repo (missing Cargo.toml)"; exit 1; }
 
@@ -313,11 +313,11 @@ deploy_phase_start "📋 [4/7] CDI (if missing), CRDs, NATS, RBAC, and Cilium eg
 deploy_ssh "${REMOTE}" "
     ${K8S_CMD} create namespace ${NAMESPACE} --dry-run=client -o yaml | ${K8S_CMD} apply -f -
     if [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" ] && [ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ] && ${K8S_CMD} get crd ciliumnetworkpolicies.cilium.io &>/dev/null; then
-        for cilium_yaml in ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml; do
+        for cilium_yaml in ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${DEPLOY_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml; do
             if [ -f \"\${cilium_yaml}\" ]; then
                 echo 'Applying Cilium egress policy for ${NAMESPACE} (veyron / nats workloads)...'
                 sed -e \"s|__VEYRON_APP_NAMESPACE__|${NAMESPACE}|g\" \
-                    -e \"s|namespace: vmrogue-system|namespace: ${NAMESPACE}|g\" \
+                    -e \"s|namespace: veyron-system|namespace: ${NAMESPACE}|g\" \
                     -e \"s|namespace: veyron-system|namespace: ${NAMESPACE}|g\" \
                     \"\${cilium_yaml}\" | ${K8S_CMD} apply -f -
                 break
@@ -362,12 +362,12 @@ deploy_phase_start "🚀 [5/7] Deploying Veyron API + Operator"
 # Tear down existing workloads so the next apply creates fresh ReplicaSets/pods.
 # --wait ensures objects are gone before apply (avoid races with stale pods).
 deploy_ssh "${REMOTE}" "
-    for ns in ${NAMESPACE} vmrogue-system; do
-        ${K8S_CMD} -n \"\${ns}\" delete deployment veyron-api veyron-operator vmrogue-api vmrogue-operator \
+    for ns in ${NAMESPACE} veyron-system; do
+        ${K8S_CMD} -n \"\${ns}\" delete deployment veyron-api veyron-operator veyron-api veyron-operator \
             --ignore-not-found --wait=true --timeout=180s 2>/dev/null || true
-        ${K8S_CMD} -n \"\${ns}\" delete svc veyron-api vmrogue-api \
+        ${K8S_CMD} -n \"\${ns}\" delete svc veyron-api veyron-api \
             --ignore-not-found --wait=true --timeout=60s 2>/dev/null || true
-        ${K8S_CMD} -n \"\${ns}\" delete secret veyron-api-key vmrogue-api-key \
+        ${K8S_CMD} -n \"\${ns}\" delete secret veyron-api-key veyron-api-key \
             --ignore-not-found --wait=false 2>/dev/null || true
     done
 " 2>&1

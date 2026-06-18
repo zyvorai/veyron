@@ -15,8 +15,8 @@
 #
 # Environment:
 #   DEPLOY_HOST / DEPLOY_USER     Defaults when host/user omitted
-#   VMROGUE_PACKAGE_DIR           Remote output dir (default: ~/veyron-dist)
-#   VMROGUE_PACKAGE_VERSION       Override version in archive name
+#   VEYRON_PACKAGE_DIR           Remote output dir (default: ~/veyron-dist)
+#   VEYRON_PACKAGE_VERSION       Override version in archive name
 #   DEPLOY_SSH_TIMEOUT            SSH connect timeout (default: 20)
 #   DEPLOY_SSH_PORT               SSH port (default: 22)
 #   VEYRON_REMOTE_SKIP_SSH_CHECK=1  Skip SSH preflight
@@ -66,13 +66,13 @@ fi
 
 [ -f "${REPO_DIR}/Cargo.toml" ] || { echo "Not in veyron repo (missing Cargo.toml)" >&2; exit 1; }
 
-VERSION="${VMROGUE_PACKAGE_VERSION:-$(sed -n 's/^version = "\(.*\)"/\1/p' "${REPO_DIR}/Cargo.toml" | head -1)}"
+VERSION="${VEYRON_PACKAGE_VERSION:-$(sed -n 's/^version = "\(.*\)"/\1/p' "${REPO_DIR}/Cargo.toml" | head -1)}"
 VERSION="${VERSION:-0.0.0}"
 ARCH="linux-amd64"
 REMOTE="${USER}@${HOST}"
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" 'echo "$HOME"')
 BUILD_DIR="${REMOTE_HOME}/.deployment/veyron-package"
-OUT_DIR="${VMROGUE_PACKAGE_DIR:-${REMOTE_HOME}/veyron-dist}"
+OUT_DIR="${VEYRON_PACKAGE_DIR:-${REMOTE_HOME}/veyron-dist}"
 IMAGE_TAG="veyron-package:${VERSION}"
 ARTIFACT="veyron-${VERSION}-${ARCH}"
 TARBALL="${ARTIFACT}.tar.gz"
@@ -236,7 +236,7 @@ cat > "\${OUT_DIR}/\${ARTIFACT}/cluster/env.sh" <<'ENVSH'
 PRODUCT=Veyron
 APP_NAMESPACE=veyron-system
 APP_PORT=5151
-ENV_PREFIX=VMROGUE
+ENV_PREFIX=VEYRON
 ENVSH
 
 cat > "\${OUT_DIR}/\${ARTIFACT}/QUICKSTART.txt" <<'QEOF'
@@ -295,7 +295,7 @@ ORDER: install-cluster.sh → deploy Veyron in cluster → apply-cluster-network
 CLUSTER FLAGS (also V9S_* aliases — see CLUSTER_SETUP.txt)
   VEYRON_SKIP_CILIUM=1  VEYRON_SKIP_CDI=1  VEYRON_SKIP_KUBEVIRT=1
   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1
-  VMROGUE_KUBEVIRT_VERSION / VMROGUE_CDI_VERSION / VMROGUE_CILIUM_CHART_VERSION
+  VEYRON_KUBEVIRT_VERSION / VEYRON_CDI_VERSION / VEYRON_CILIUM_CHART_VERSION
 
 CLIENT
   ./install.sh && nano veyron.env && ./veyron api-serve --host 0.0.0.0 --port 5151

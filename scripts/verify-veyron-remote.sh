@@ -11,14 +11,14 @@
 #
 # Environment:
 #   DEPLOY_HOST         Default host if arg omitted
-#   VMROGUE_NODE_PORT   Default port (default: 30151)
+#   VEYRON_NODE_PORT   Default port (default: 30151)
 #   VEYRON_API_KEY     API key (default: Admin@321)
 # ============================================================================
 
 set -euo pipefail
 
 HOST="${1:-${DEPLOY_HOST:-}}"
-PORT="${2:-${VMROGUE_NODE_PORT:-30151}}"
+PORT="${2:-${VEYRON_NODE_PORT:-30151}}"
 KEY="${VEYRON_API_KEY:-Admin@321}"
 
 if [[ -z "${HOST}" ]]; then

@@ -941,7 +941,7 @@ pub fn guestkit_binary_urls() -> Vec<String> {
             ));
         }
     }
-    if let Ok(ip) = std::env::var("VMROGUE_API_CLUSTER_IP") {
+    if let Ok(ip) = std::env::var("VEYRON_API_CLUSTER_IP") {
         if !ip.is_empty() {
             urls.push(format!("https://{ip}/api/v1/platform/guestkit/binary"));
         }

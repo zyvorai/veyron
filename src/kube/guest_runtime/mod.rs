@@ -112,18 +112,16 @@ pub struct GuestContext {
 impl GuestContext {
     pub async fn resolve(client: Client, namespace: &str, vm_name: &str) -> Result<Self> {
         let vmi_name = vm_name.to_string();
-        let vm_json = json!({});
-        let vmi_json = json!({});
-        let runtime_kind =
-            detect_runtime_kind(client.clone(), namespace, &vmi_name, None, None).await;
+        // vm_json/vmi_json are not available here; call resolve_runtime_kind() after
+        // populating them via with_json() if runtime detection is needed.
         Ok(Self {
             client,
             namespace: namespace.to_string(),
             vm_name: vm_name.to_string(),
             vmi_name,
-            vm_json,
-            vmi_json,
-            runtime_kind,
+            vm_json: json!({}),
+            vmi_json: json!({}),
+            runtime_kind: GuestRuntimeKind::Unknown,
         })
     }
 

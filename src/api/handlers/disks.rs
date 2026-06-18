@@ -61,9 +61,12 @@ async fn list_disks(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<DiskResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let pvcs = s.client().list_pvcs_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let pvcs = kube_client.list_pvcs_for_scope(&scope).await;
 
     let results: Vec<DiskResponse> = pvcs
         .iter()

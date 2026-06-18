@@ -180,38 +180,56 @@ pub fn parse_memory_gib(s: &str) -> f64 {
 /// Supports binary suffixes (Ti, Gi, Mi, Ki), decimal SI suffixes (T, G, M, k),
 /// fractional values (e.g. "1.5Gi"), and raw bytes.
 pub fn parse_memory_bytes(s: &str) -> u64 {
+    fn to_u64(f: f64) -> u64 {
+        if f.is_nan() || f < 0.0 {
+            0
+        } else if f >= u64::MAX as f64 {
+            u64::MAX
+        } else {
+            f as u64
+        }
+    }
     // Binary suffixes (powers of 1024)
     if let Some(v) = s.strip_suffix("Ti") {
-        (v.parse::<f64>().unwrap_or(0.0) * (1024.0 * 1024.0 * 1024.0 * 1024.0)) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * (1024.0 * 1024.0 * 1024.0 * 1024.0))
     } else if let Some(v) = s.strip_suffix("Gi") {
-        (v.parse::<f64>().unwrap_or(0.0) * (1024.0 * 1024.0 * 1024.0)) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * (1024.0 * 1024.0 * 1024.0))
     } else if let Some(v) = s.strip_suffix("Mi") {
-        (v.parse::<f64>().unwrap_or(0.0) * (1024.0 * 1024.0)) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * (1024.0 * 1024.0))
     } else if let Some(v) = s.strip_suffix("Ki") {
-        (v.parse::<f64>().unwrap_or(0.0) * 1024.0) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * 1024.0)
     // Decimal SI suffixes (powers of 1000)
     } else if let Some(v) = s.strip_suffix('T') {
-        (v.parse::<f64>().unwrap_or(0.0) * 1_000_000_000_000.0) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * 1_000_000_000_000.0)
     } else if let Some(v) = s.strip_suffix('G') {
-        (v.parse::<f64>().unwrap_or(0.0) * 1_000_000_000.0) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * 1_000_000_000.0)
     } else if let Some(v) = s.strip_suffix('M') {
-        (v.parse::<f64>().unwrap_or(0.0) * 1_000_000.0) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * 1_000_000.0)
     } else if let Some(v) = s.strip_suffix('k') {
-        (v.parse::<f64>().unwrap_or(0.0) * 1_000.0) as u64
+        to_u64(v.parse::<f64>().unwrap_or(0.0) * 1_000.0)
     } else {
-        s.parse::<f64>().unwrap_or(0.0) as u64
+        to_u64(s.parse::<f64>().unwrap_or(0.0))
     }
 }
 
 /// Parse a Kubernetes CPU quantity string to nanocores.
 /// Supports suffixes: n (nanocores), m (millicores), and whole cores.
 pub fn parse_cpu_nanocores(s: &str) -> u64 {
+    fn to_u64(f: f64) -> u64 {
+        if f.is_nan() || f < 0.0 {
+            0
+        } else if f >= u64::MAX as f64 {
+            u64::MAX
+        } else {
+            f as u64
+        }
+    }
     if let Some(n) = s.strip_suffix('n') {
         n.parse::<u64>().unwrap_or(0)
     } else if let Some(m) = s.strip_suffix('m') {
         m.parse::<u64>().unwrap_or(0) * 1_000_000
     } else {
-        (s.parse::<f64>().unwrap_or(0.0) * 1_000_000_000.0) as u64
+        to_u64(s.parse::<f64>().unwrap_or(0.0) * 1_000_000_000.0)
     }
 }
 

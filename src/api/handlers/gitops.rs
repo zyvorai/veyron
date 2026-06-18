@@ -210,7 +210,7 @@ async fn get_gitops_status(
 
     let note = if has_controllers {
         format!(
-            "Argo CD apps: {}. Flux kustomizations: {}. POST /gitops/sync can trigger Argo CD when VMROGUE_ARGOCD_URL is set.",
+            "Argo CD apps: {}. Flux kustomizations: {}. POST /gitops/sync can trigger Argo CD when VEYRON_ARGOCD_URL is set.",
             if argo_apps.is_empty() {
                 "none".into()
             } else {
@@ -242,11 +242,11 @@ async fn get_gitops_status(
 
 #[cfg(feature = "web")]
 async fn trigger_argocd_sync(app: &str) -> bool {
-    let base = match crate::api::integrations::env_var("VMROGUE_ARGOCD_URL") {
+    let base = match crate::api::integrations::env_var("VEYRON_ARGOCD_URL") {
         Some(u) => u,
         None => return false,
     };
-    let token = match crate::api::integrations::env_var("VMROGUE_ARGOCD_TOKEN") {
+    let token = match crate::api::integrations::env_var("VEYRON_ARGOCD_TOKEN") {
         Some(t) => t,
         None => return false,
     };
@@ -313,14 +313,14 @@ async fn trigger_sync(
     if !req.dry_run {
         if let Some(ref app) = req.argo_app {
             argo_triggered = trigger_argocd_sync(app).await;
-        } else if let Some(app) = crate::api::integrations::env_var("VMROGUE_ARGOCD_DEFAULT_APP") {
+        } else if let Some(app) = crate::api::integrations::env_var("VEYRON_ARGOCD_DEFAULT_APP") {
             argo_triggered = trigger_argocd_sync(&app).await;
         }
 
         if let Some(ref kust) = req.flux_kustomization {
             flux_triggered = trigger_flux_reconcile(s.client().client(), &namespace, kust).await;
         } else if let Some(kust) =
-            crate::api::integrations::env_var("VMROGUE_FLUX_DEFAULT_KUSTOMIZATION")
+            crate::api::integrations::env_var("VEYRON_FLUX_DEFAULT_KUSTOMIZATION")
         {
             flux_triggered = trigger_flux_reconcile(s.client().client(), &namespace, &kust).await;
         }

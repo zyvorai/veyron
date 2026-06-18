@@ -5,6 +5,14 @@ use super::event::SecurityEvent;
 use k8s_openapi::api::core::v1::ConfigMap;
 use kube::api::{Api, Patch, PatchParams, PostParams};
 use std::collections::BTreeMap;
+use std::sync::OnceLock;
+use tokio::sync::Mutex;
+
+static APPEND_EVENTS_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+fn events_lock() -> &'static Mutex<()> {
+    APPEND_EVENTS_LOCK.get_or_init(|| Mutex::new(()))
+}
 
 pub const SOC_EVENTS_LABEL_VALUE: &str = "soc-events";
 pub const SOC_DETECTIONS_LABEL_VALUE: &str = "soc-detections";
@@ -45,11 +53,37 @@ pub async fn save_events(client: &kube::Client, namespace: &str, events: &[Secur
 }
 
 #[cfg(feature = "web")]
+async fn try_load_events(
+    client: &kube::Client,
+    namespace: &str,
+) -> Result<Vec<SecurityEvent>, kube::Error> {
+    let api: kube::api::Api<k8s_openapi::api::core::v1::ConfigMap> =
+        kube::api::Api::namespaced(client.clone(), namespace);
+    let cm = api.get(EVENTS_CM_NAME).await?;
+    let raw = cm
+        .data
+        .as_ref()
+        .and_then(|d| d.get(EVENTS_KEY))
+        .map(String::as_str)
+        .unwrap_or("[]");
+    Ok(serde_json::from_str(raw).unwrap_or_default())
+}
+
+#[cfg(feature = "web")]
 pub async fn append_events(client: &kube::Client, namespace: &str, new_events: Vec<SecurityEvent>) {
     if new_events.is_empty() {
         return;
     }
-    let mut events = load_events(client, namespace).await;
+    let _guard = events_lock().lock().await;
+    let existing = match try_load_events(client, namespace).await {
+        Ok(v) => v,
+        Err(kube::Error::Api(ref e)) if e.code == 404 => vec![],
+        Err(e) => {
+            log::warn!("soc store: skipping append to avoid data loss on K8s error: {e}");
+            return;
+        }
+    };
+    let mut events = existing;
     events.extend(new_events);
     save_events(client, namespace, &events).await;
 }

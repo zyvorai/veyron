@@ -79,15 +79,15 @@ pub async fn gitops_advisor(client: &KubeClient, scope: &str) -> CopilotResponse
         }
     }
 
-    let argo_url = std::env::var("VMROGUE_ARGOCD_URL")
+    let argo_url = std::env::var("VEYRON_ARGOCD_URL")
         .ok()
         .filter(|u| !u.trim().is_empty());
     if argo_url.is_some() {
         r.evidence
-            .push("VMROGUE_ARGOCD_URL is set — POST /gitops/sync can refresh apps".into());
+            .push("VEYRON_ARGOCD_URL is set — POST /gitops/sync can refresh apps".into());
     } else {
         r.recommendations.push(
-            "Set VMROGUE_ARGOCD_URL + token to trigger Argo CD sync from the dashboard.".into(),
+            "Set VEYRON_ARGOCD_URL + token to trigger Argo CD sync from the dashboard.".into(),
         );
     }
 

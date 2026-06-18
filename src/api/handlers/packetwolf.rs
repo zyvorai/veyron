@@ -33,6 +33,34 @@ pub struct PacketWolfStatusResponse {
     pub external_url: Option<String>,
 }
 
+/// Returns an error string if the URL is unsafe to proxy to (non-http/https scheme,
+/// loopback, link-local, or cloud metadata endpoints).
+fn validate_proxy_url(url: &str) -> Result<(), String> {
+    let lower = url.trim().to_lowercase();
+    if !lower.starts_with("http://") && !lower.starts_with("https://") {
+        return Err(format!("unsafe URL scheme in proxy target: {url}"));
+    }
+    let host_part = lower
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .split('/')
+        .next()
+        .unwrap_or("")
+        .split('@')
+        .next_back()
+        .unwrap_or("")
+        .split(':')
+        .next()
+        .unwrap_or("");
+    let blocked = ["localhost", "127.", "169.254.", "::1", "0.0.0.0", "metadata."];
+    for prefix in &blocked {
+        if host_part == *prefix || host_part.starts_with(prefix) {
+            return Err(format!("proxy target host is blocked: {host_part}"));
+        }
+    }
+    Ok(())
+}
+
 pub fn packetwolf_base_url() -> Option<String> {
     crate::api::integrations::env_var("VEYRON_PACKETWOLF_URL")
 }
@@ -57,6 +85,7 @@ fn health_url(base: &str) -> String {
 
 #[cfg(feature = "web")]
 pub async fn probe_packetwolf_health(base: &str) -> Option<serde_json::Value> {
+    validate_proxy_url(base).ok()?;
     let url = health_url(base);
     let Ok(client) = crate::api::integrations::http_client().await else {
         return None;
@@ -92,6 +121,7 @@ async fn proxy_packetwolf_json(
         StatusCode::SERVICE_UNAVAILABLE,
         "PacketWolf not configured — set VEYRON_PACKETWOLF_URL".to_string(),
     ))?;
+    validate_proxy_url(&base).map_err(|e| (StatusCode::BAD_GATEWAY, e))?;
     let url = format!("{}{}", base.trim_end_matches('/'), path);
     let Ok(client) = crate::api::integrations::http_client().await else {
         return Err((

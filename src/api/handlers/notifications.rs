@@ -54,13 +54,16 @@ async fn list_notifications(
 ) -> Json<Vec<NotificationResponse>> {
     use k8s_openapi::api::core::v1::ConfigMap;
 
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
-    let events = s.client().list_events_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(query.namespace.clone(), &default_ns);
+    let events = kube_client.list_events_for_scope(&scope).await;
 
     // Read-state ConfigMap lives in the API default namespace when viewing cluster-wide.
     let read_cm_ns = if namespace_scope::is_all_namespaces(&scope) {
-        s.namespace.clone()
+        default_ns.clone()
     } else {
         scope.clone()
     };
@@ -68,7 +71,7 @@ async fn list_notifications(
     // Load set of read notification IDs from ConfigMap
     let read_ids: std::collections::HashSet<String> = {
         let api: kube::api::Api<ConfigMap> =
-            kube::api::Api::namespaced(s.client().client(), &read_cm_ns);
+            kube::api::Api::namespaced(kube_client.client(), &read_cm_ns);
         api.get("veyron-notifications-read")
             .await
             .ok()
@@ -132,9 +135,11 @@ async fn mark_notifications_read(
 ) -> Json<serde_json::Value> {
     use k8s_openapi::api::core::v1::ConfigMap;
 
-    let s = state.read().await;
-    let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(s.client().client(), &s.namespace);
+    let (raw_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.client(), s.namespace.clone())
+    };
+    let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(raw_client, &default_ns);
     let cm_name = "veyron-notifications-read";
 
     // Merge new IDs with any already stored
@@ -157,7 +162,7 @@ async fn mark_notifications_read(
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
             name: Some(cm_name.to_string()),
-            namespace: Some(s.namespace.clone()),
+            namespace: Some(default_ns.clone()),
             labels: Some(
                 [(
                     "veyron.io/type".to_string(),

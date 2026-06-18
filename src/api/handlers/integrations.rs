@@ -52,7 +52,7 @@ const DEFINITIONS: &[IntegrationDef] = &[
     IntegrationDef {
         id: "grafana",
         name: "Grafana",
-        env_var: "VMROGUE_GRAFANA_URL",
+        env_var: "VEYRON_GRAFANA_URL",
         feeds: "Dashboards (external UI when NodePort/URL is reachable)",
     },
     IntegrationDef {
@@ -64,43 +64,43 @@ const DEFINITIONS: &[IntegrationDef] = &[
     IntegrationDef {
         id: "alertmanager",
         name: "Alertmanager",
-        env_var: "VMROGUE_ALERTMANAGER_URL",
+        env_var: "VEYRON_ALERTMANAGER_URL",
         feeds: "Incidents timeline (active alerts)",
     },
     IntegrationDef {
         id: "loki",
         name: "Loki",
-        env_var: "VMROGUE_LOKI_URL",
+        env_var: "VEYRON_LOKI_URL",
         feeds: "Logs dashboard (LogQL)",
     },
     IntegrationDef {
         id: "opencost",
         name: "OpenCost",
-        env_var: "VMROGUE_OPENCOST_URL",
+        env_var: "VEYRON_OPENCOST_URL",
         feeds: "Costs summary, allocation, budgets context",
     },
     IntegrationDef {
         id: "trivy",
         name: "Trivy",
-        env_var: "VMROGUE_TRIVY_URL",
+        env_var: "VEYRON_TRIVY_URL",
         feeds: "Security findings (CVE merge)",
     },
     IntegrationDef {
         id: "jaeger",
         name: "Jaeger",
-        env_var: "VMROGUE_JAEGER_QUERY_URL",
+        env_var: "VEYRON_JAEGER_QUERY_URL",
         feeds: "Traces API",
     },
     IntegrationDef {
         id: "argocd",
         name: "Argo CD",
-        env_var: "VMROGUE_ARGOCD_URL",
+        env_var: "VEYRON_ARGOCD_URL",
         feeds: "GitOps sync (POST /gitops/sync)",
     },
     IntegrationDef {
         id: "argocd_token",
         name: "Argo CD token",
-        env_var: "VMROGUE_ARGOCD_TOKEN",
+        env_var: "VEYRON_ARGOCD_TOKEN",
         feeds: "Bearer auth for Argo CD API",
     },
     IntegrationDef {
@@ -152,8 +152,8 @@ pub fn router(state: SharedState) -> Router {
 fn integrations_context() -> super::feature_context::VmrogueFeatureContext {
     super::feature_context::VmrogueFeatureContext {
         data_source: "api_env_and_probe".to_string(),
-        scope: "Optional observability, FinOps, security, tracing, and GitOps backends wired via VMROGUE_* env vars.".to_string(),
-        limitations: "Probes are best-effort HTTP checks from the API pod (cluster DNS). OIDC is listed separately when VMROGUE_OIDC_* is set. Deploy bootstrap: scripts/lib/bootstrap-integrations.sh.".to_string(),
+        scope: "Optional observability, FinOps, security, tracing, and GitOps backends wired via VEYRON_* env vars.".to_string(),
+        limitations: "Probes are best-effort HTTP checks from the API pod (cluster DNS). OIDC is listed separately when VEYRON_OIDC_* is set. Deploy bootstrap: scripts/lib/bootstrap-integrations.sh.".to_string(),
     }
 }
 
@@ -309,11 +309,11 @@ async fn resolve_external_open(
     raw_url: Option<&str>,
 ) -> Option<IntegrationOpenLink> {
     let external_env = match id {
-        "grafana" => "VMROGUE_GRAFANA_EXTERNAL_URL",
+        "grafana" => "VEYRON_GRAFANA_EXTERNAL_URL",
         "prometheus" => "VEYRON_PROMETHEUS_EXTERNAL_URL",
-        "alertmanager" => "VMROGUE_ALERTMANAGER_EXTERNAL_URL",
-        "argocd" => "VMROGUE_ARGOCD_EXTERNAL_URL",
-        "jaeger" => "VMROGUE_JAEGER_EXTERNAL_URL",
+        "alertmanager" => "VEYRON_ALERTMANAGER_EXTERNAL_URL",
+        "argocd" => "VEYRON_ARGOCD_EXTERNAL_URL",
+        "jaeger" => "VEYRON_JAEGER_EXTERNAL_URL",
         "packetwolf" => "VEYRON_PACKETWOLF_EXTERNAL_URL",
         _ => return None,
     };
@@ -404,7 +404,7 @@ async fn get_integrations_status(
         };
         if let Some(url) = raw.as_deref().filter(|_| def.id != "argocd_token") {
             if def.id == "argocd" {
-                if let Some(token) = crate::api::integrations::env_var("VMROGUE_ARGOCD_TOKEN") {
+                if let Some(token) = crate::api::integrations::env_var("VEYRON_ARGOCD_TOKEN") {
                     let apps_url = format!("{}/api/v1/applications", url.trim_end_matches('/'));
                     probe_futures.push((def.id, apps_url.to_string(), Some(token)));
                 } else {
@@ -462,10 +462,10 @@ async fn get_integrations_status(
     integrations.push(IntegrationStatusItem {
         id: "oidc".to_string(),
         name: "OIDC / SSO".to_string(),
-        env_var: "VMROGUE_OIDC_ISSUER or VMROGUE_OIDC_AUTHORIZATION_URL".to_string(),
+        env_var: "VEYRON_OIDC_ISSUER or VEYRON_OIDC_AUTHORIZATION_URL".to_string(),
         configured: oidc_on,
-        endpoint: crate::api::integrations::env_var("VMROGUE_OIDC_ISSUER")
-            .or_else(|| crate::api::integrations::env_var("VMROGUE_OIDC_AUTHORIZATION_URL"))
+        endpoint: crate::api::integrations::env_var("VEYRON_OIDC_ISSUER")
+            .or_else(|| crate::api::integrations::env_var("VEYRON_OIDC_AUTHORIZATION_URL"))
             .and_then(|u| redact_endpoint(&u)),
         probe: if oidc_on {
             "ok".to_string()

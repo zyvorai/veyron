@@ -20,7 +20,7 @@ pub struct CopilotBriefingItem {
 /// Lightweight fleet scan for Datacenter home — max 3 actionable Copilot prompts.
 pub async fn fleet_briefing(client: &KubeClient, scope: &str) -> Vec<CopilotBriefingItem> {
     let mut items = Vec::new();
-    let vms = client.list_vms(scope).await.unwrap_or_default();
+    let vms = client.list_vms_for_scope(scope).await;
 
     let mut running = 0usize;
     let mut pending = 0usize;

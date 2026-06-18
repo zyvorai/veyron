@@ -14,7 +14,7 @@
 #
 # Optional environment (local):
 #   VEYRON_SKIP_CDI=1       — do not install CDI when the DataVolume CRD is missing
-#   VMROGUE_CDI_VERSION=v1.65.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
+#   VEYRON_CDI_VERSION=v1.65.0 — CDI release tag (default below); must match KubeVirt/CDI compatibility on your cluster
 #   VEYRON_CONTAINER_RUNTIME_IMPORT — full shell command that reads OCI/docker tar on stdin (default: k3s ctr import, or ctr -n k8s.io for plain kubectl)
 #   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1 — do not apply deploy/k8s/bootstrap/cilium-veyron-egress.yaml when Cilium is installed
 #   VEYRON_REQUIRE_KUBEVIRT=1 — fail deploy if KubeVirt VM CRD is missing (after rsync; remote kubectl check)
@@ -43,7 +43,7 @@ Usage:
   ./scripts/deploy-k8s-remote.sh --help
 
 Environment (local):
-  VEYRON_API_KEY, VMROGUE_NODE_PORT, VEYRON_SKIP_CDI, VMROGUE_CDI_VERSION
+  VEYRON_API_KEY, VEYRON_NODE_PORT, VEYRON_SKIP_CDI, VEYRON_CDI_VERSION
   VEYRON_CONTAINER_RUNTIME_IMPORT
   VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP=1  Skip Cilium egress bootstrap when Cilium CRD exists
   VEYRON_REQUIRE_KUBEVIRT=1              Fail if KubeVirt VM CRD is missing
@@ -63,9 +63,9 @@ HOST="${1:?Usage: $0 <host> [user]   (see --help)}"
 USER="${2:-root}"
 REMOTE_DIR="/home/${USER}/veyron"
 API_KEY="${VEYRON_API_KEY:-Admin@321}"
-NODE_PORT="${VEYRON_NODE_PORT:-${VMROGUE_NODE_PORT:-30151}}"
-NS="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
-CDI_VERSION="${VEYRON_CDI_VERSION:-${VMROGUE_CDI_VERSION:-v1.65.0}}"
+NODE_PORT="${VEYRON_NODE_PORT:-30151}"
+NS="${VEYRON_NAMESPACE:-veyron-system}"
+CDI_VERSION="${VEYRON_CDI_VERSION:-v1.65.0}"
 SKIP_CDI="${VEYRON_SKIP_CDI:-0}"
 RUN_STARTED_AT="$(date +%s)"
 
@@ -198,11 +198,11 @@ deploy_ssh "${USER}@${HOST}" "
     ${K} create namespace ${NS} 2>/dev/null || true
 
     if [[ \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"1\" && \"${VEYRON_SKIP_CILIUM_EGRESS_BOOTSTRAP:-}\" != \"true\" ]] && ${K} get crd ciliumnetworkpolicies.cilium.io &>/dev/null; then
-      for cilium_yaml in ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-vmrogue-egress.yaml; do
+      for cilium_yaml in ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml ${REMOTE_DIR}/deploy/k8s/bootstrap/cilium-veyron-egress.yaml; do
         if [[ -f \"\${cilium_yaml}\" ]]; then
           echo 'Applying Cilium egress bootstrap for ${NS} (veyron / nats workloads)...'
           sed -e \"s|__VEYRON_APP_NAMESPACE__|${NS}|g\" \
-              -e \"s|namespace: vmrogue-system|namespace: ${NS}|g\" \
+              -e \"s|namespace: veyron-system|namespace: ${NS}|g\" \
               -e \"s|namespace: veyron-system|namespace: ${NS}|g\" \
               \"\${cilium_yaml}\" | ${K} apply -f -
           break
@@ -426,7 +426,7 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
-            - name: VMROGUE_API_KEY
+            - name: VEYRON_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: veyron-api-key
@@ -437,17 +437,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: VMROGUE_API_NODE_HOST
+            - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
             - name: VEYRON_API_NODE_PORT
               value: '${NODE_PORT}'
-            - name: VMROGUE_API_NODE_PORT
+            - name: VEYRON_API_NODE_PORT
               value: '${NODE_PORT}'
             - name: VEYRON_CLUSTER_DNS
               value: '10.43.0.10'
-            - name: VMROGUE_CLUSTER_DNS
+            - name: VEYRON_CLUSTER_DNS
               value: '10.43.0.10'
           ports:
             - containerPort: 5151
