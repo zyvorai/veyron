@@ -13200,6 +13200,7 @@ async function fetchVMs(opts) {
     if (j == null) return;
     const list = asArray(j);
     detectVmDelta(list);
+    recordVmHistory(list);
     vmData = list;
     const total = vmData.length;
     const running = vmData.filter(v => v.status === 'Running').length;
@@ -15556,6 +15557,10 @@ function renderVmHero(vm, ns, name, vmi, extras) {
         (vm.node ? '<div class="vm-hero-metric vmr-copy-tile" title="View node" onclick="openNodeDetailDeep(' + JSON.stringify(vm.node) + ')">Node<strong>' + esc(vm.node) + '</strong><span class="vmr-copy-hint">open</span></div>' : '<div class="vm-hero-metric">Node<strong>—</strong></div>') +
         (vm.status === 'Running' ? '<div class="vm-hero-metric" id="vmr-uptime-clock" title="VM uptime (live)">Uptime<strong id="vmr-uptime-val">—</strong></div>' : '') +
       '</div>' +
+      '<div class="vm-hero-sparklines" style="display:flex;gap:16px;margin-top:8px;align-items:center">' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><span style="font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">CPU history</span><canvas id="vmr-spark-cpu-' + esc(name) + '" width="60" height="18" style="width:60px;height:18px;border-radius:2px"></canvas></div>' +
+        '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><span style="font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Run status</span><canvas id="vmr-spark-run-' + esc(name) + '" width="60" height="18" style="width:60px;height:18px;border-radius:2px"></canvas></div>' +
+      '</div>' +
       '<div class="vm-hero-rings">' + secRing + healthRing + '<span class="vm-hero-meta-chip">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
     '</div></div>' +
     '<div class="vm-action-rail">' + rail + '</div>' + links + '</div>';
@@ -15651,6 +15656,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
     } catch (_) {}
     content.innerHTML = renderVmHero(vm, ns, name, vmi, extras) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS);
     if (vm.status === 'Running') startUptimeClock(vm);
+    requestAnimationFrame(function() { mountVmSparklines(ns, name); });
     fetchSecurity(ns, name).then(function(secHtml) {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
@@ -17249,6 +17255,55 @@ function updateTabTitleIssueCount() {
   }).length;
   const pageName = (currentPage && currentPage !== 'dashboard') ? (navPageLabel(currentPage) + ' — ') : '';
   document.title = (issues > 0 ? '⚠' + issues + ' · ' : '') + pageName + 'VMRogue';
+}
+
+// ── VM History Ring Buffer (for in-session sparklines) ──
+var _vmHistory = {}; // key → [{cpu, running, ts}] (max 20 samples)
+function recordVmHistory(list) {
+  var now = Date.now();
+  list.forEach(function(v) {
+    var key = (v.namespace || 'default') + '/' + v.name;
+    if (!_vmHistory[key]) _vmHistory[key] = [];
+    _vmHistory[key].push({
+      cpu: parseInt(v.cpu, 10) || 0,
+      running: v.status === 'Running' ? 1 : 0,
+      ts: now
+    });
+    if (_vmHistory[key].length > 20) _vmHistory[key].shift();
+  });
+}
+function renderVmSparkline(canvasId, points, color) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas || !points || points.length < 2) return;
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.offsetWidth || 60, h = canvas.offsetHeight || 18;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  var min = Math.min.apply(null, points), max = Math.max.apply(null, points);
+  var range = max - min || 1;
+  ctx.clearRect(0, 0, w, h);
+  ctx.beginPath();
+  points.forEach(function(p, i) {
+    var x = i / (points.length - 1) * w;
+    var y = h - ((p - min) / range * (h - 3)) - 1.5;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = color || '#38bdf8';
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  // fill area
+  ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath();
+  ctx.fillStyle = (color || '#38bdf8').replace(')', ',.12)').replace('rgb', 'rgba');
+  ctx.fill();
+}
+function mountVmSparklines(ns, name) {
+  var key = ns + '/' + name;
+  var hist = _vmHistory[key];
+  if (!hist || hist.length < 3) return;
+  renderVmSparkline('vmr-spark-cpu-' + name, hist.map(function(h) { return h.cpu; }), '#38bdf8');
+  renderVmSparkline('vmr-spark-run-' + name, hist.map(function(h) { return h.running; }), '#22c55e');
 }
 
 // ── VM State Delta Tracker ──
