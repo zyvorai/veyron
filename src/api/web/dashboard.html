@@ -4687,14 +4687,14 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-performance" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Performance</h1><p>Live VM performance profiles and CPU flamegraphs</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPerformance()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div></div>
     <div id="performance-page-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-page-advisor-card')">Dismiss</button></div>
     <div id="performance-page-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="performance-cap-banner"></div>
   <div id="performance-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Profiles</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Profiles</span><input type="search" id="performance-search" class="form-input" placeholder="Filter by VM name…" oninput="filterPerformanceView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>VM</th><th>CPU P95</th><th>Memory P95</th><th>Read IOPS</th><th>Write IOPS</th><th>Collected</th></tr></thead><tbody id="performance-body"></tbody></table></div>
   <div class="card glass-card">
     <div class="card-header">
@@ -10685,6 +10685,26 @@ function filterWorkloadsView(query) {
   renderWorkloadsList(query);
 }
 
+function filterPerformanceView(query) {
+  const tb = document.getElementById('performance-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastPerformanceProfiles || [];
+  const filtered = q ? items.filter(function(p) {
+    return (p.vm_name || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(p) {
+    return '<tr class="clickable-row" ' + onHandler('openPerformanceVm(' + jsArgs(p.vm_name) + ')') + ' title="Open VM detail">' +
+      '<td>' + esc(p.vm_name) + '</td>' +
+      '<td>' + (typeof p.cpu_p95 === 'number' ? p.cpu_p95.toFixed(1) : p.cpu_p95) + '%</td>' +
+      '<td>' + (typeof p.memory_p95 === 'number' ? p.memory_p95.toFixed(1) : p.memory_p95) + '%</td>' +
+      '<td>' + p.iops_read + '</td>' +
+      '<td>' + p.iops_write + '</td>' +
+      '<td>' + fmtTime(p.collected_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No profiles match &ldquo;' + esc(q) + '&rdquo;' : 'No performance profiles found') + '</td></tr>';
+}
+
 function filterHelmView(query) {
   const tb = document.getElementById('helm-body');
   if (!tb) return;
@@ -15935,10 +15955,10 @@ async function fetchPerformance() {
           '<div class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Zeus"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></div>';
       }
     }
-    if (tb) tb.innerHTML = items.map(p =>
-      '<tr class="clickable-row" ' + onHandler('openPerformanceVm(' + jsArgs(p.vm_name) + ')') + ' title="Open VM detail">' +
-      '<td>' + esc(p.vm_name) + '</td><td>' + (p.cpu_p95.toFixed ? p.cpu_p95.toFixed(1) : p.cpu_p95) + '%</td><td>' + (p.memory_p95.toFixed ? p.memory_p95.toFixed(1) : p.memory_p95) + '%</td><td>' + p.iops_read + '</td><td>' + p.iops_write + '</td><td>' + fmtTime(p.collected_at) + '</td></tr>'
-    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No performance profiles found</td></tr>';
+    if (tb) {
+      window.lastPerformanceProfiles = items;
+      filterPerformanceView((document.getElementById('performance-search') || {}).value || '');
+    }
     _flamegraphData = graphs;
     const sel = document.getElementById('flamegraph-vm-select');
     if (sel && graphs.length) {
