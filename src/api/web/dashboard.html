@@ -9572,6 +9572,10 @@ function renderSettingsVmr() {
     ['1/2/3/4', 'Switch view: Cards / Table / Topology / Map (VMs page)'],
     ['⌘L',  'Select all running VMs (VMs page)'],
     ['c',    'Forge new VM shortcut'],
+    ['p',    'Pause / unpause selected VM (VMs page, VM selected)'],
+    ['s',    'Quick snapshot selected VM (VMs page, VM selected)'],
+    ['d',    'Diagnose selected VM with Zeus AI (VMs page, VM selected)'],
+    ['g',    'Toggle VM name-pattern grouping (VMs page)'],
     ['Enter', 'Open selected VM inspector'],
     ['Esc',  'Dismiss modal, drawer, or command bar'],
   ];
@@ -14743,6 +14747,30 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  // p = pause/unpause selected VM; s = snapshot; d = diagnose
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && currentPage === 'vms' && selectedVmNs && selectedVmName) {
+    const _tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (_tag !== 'input' && _tag !== 'textarea' && _tag !== 'select') {
+      const _vm = (vmData || []).find(function(v) { return v.name === selectedVmName && (v.namespace||'default') === selectedVmNs; });
+      if (e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        if (_vm && _vm.status === 'Paused') unpauseVM(selectedVmNs, selectedVmName);
+        else if (_vm && _vm.status === 'Running') pauseVM(selectedVmNs, selectedVmName);
+        else showToast('VM must be Running or Paused to toggle pause', 'info');
+        return;
+      }
+      if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        vmSnapshot(selectedVmNs, selectedVmName);
+        return;
+      }
+      if (e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        openCopilotDoctor(selectedVmNs, selectedVmName);
+        return;
+      }
+    }
+  }
   if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'c' && currentPage === 'vms' && selectedVmNs && selectedVmName) {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -17960,6 +17988,20 @@ async function submitResize() {
     closeResizeModal();
     setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function vmSnapshot(ns, name) {
+  var snapName = name + '-snap-' + Date.now().toString(36).slice(-6);
+  try {
+    await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ snapshot_name: snapName }),
+    });
+    logVmAction(ns, name, 'snapshot', 'ok');
+    toast('Snapshot queued for ' + name, 'success');
+    if (currentPage === 'snapshots') setTimeout(fetchSnapshots, 2000);
+  } catch(e) { toast('Snapshot failed: ' + (e.message || e), 'error'); }
 }
 
 async function pauseVM(ns, name) {
