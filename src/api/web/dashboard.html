@@ -11433,7 +11433,36 @@ function closeSpotlight() {
   if (modal) modal.classList.remove('open');
 }
 
+function spotlightLocalVmResults(q) {
+  var lq = q.toLowerCase();
+  var vms = window.lastVMs || vmData || [];
+  return vms.filter(function(v) {
+    return v.name && (v.name.toLowerCase().indexOf(lq) >= 0 ||
+      (v.ip || '').indexOf(lq) >= 0 ||
+      (v.namespace || '').toLowerCase().indexOf(lq) >= 0 ||
+      (v.node || '').toLowerCase().indexOf(lq) >= 0);
+  }).slice(0, 6).map(function(v) {
+    var ns = v.namespace || 'default';
+    var status = v.status || 'Unknown';
+    return {
+      kind: 'vm',
+      title: v.name,
+      subtitle: ns + ' · ' + status + (v.ip && v.ip !== 'N/A' ? ' · ' + v.ip : '') + (v.node ? ' · ' + v.node : ''),
+      action: 'vm:' + ns + '/' + v.name,
+      _local: true,
+    };
+  });
+}
+
 async function runSpotlightSearch(q) {
+  // Instant local results from cache
+  var localVms = spotlightLocalVmResults(q);
+  if (localVms.length) {
+    var localResults = mergeSpotlightShell(localVms, q);
+    spotlightResults = localResults;
+    spotlightActiveIndex = 0;
+    renderSpotlightResults(false);
+  }
   try {
     const data = await apiJson('/api/v1/experience/search?q=' + encodeURIComponent(q) + nsParam().replace('?', '&'));
     spotlightResults = mergeSpotlightShell(data.results || [], q);
@@ -11442,7 +11471,9 @@ async function runSpotlightSearch(q) {
     if (hint) hint.textContent = spotlightResults.length + ' results';
     renderSpotlightResults(false);
   } catch (e) {
-    document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--error)">' + esc(e.message) + '</div>';
+    if (!localVms.length) {
+      document.getElementById('spotlight-results').innerHTML = '<div style="padding:16px;color:var(--error)">' + esc(e.message) + '</div>';
+    }
   }
 }
 
