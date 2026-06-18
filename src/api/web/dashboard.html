@@ -3951,7 +3951,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
   <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zeus YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
-    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
     </div>
     <div class="card glass-card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
@@ -4364,11 +4364,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card glass-card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Velero (cluster)</span></div>
+    <div class="card-header"><span class="card-title">Velero (cluster)</span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:8px">&#8635; Refresh</button></div>
     <div id="velero-cap-banner"></div>
     <div id="velero-summary" class="grid-4 page-glass-stats"></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Storage location</th><th>Items</th><th>Completed</th></tr></thead><tbody id="velero-backups-body"></tbody></table>
-    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span></div>
+    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span><input type="search" id="velero-restores-search" class="form-input" placeholder="Filter restores…" oninput="filterVeleroRestoresView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Backup</th><th>Completed</th></tr></thead><tbody id="velero-restores-body"></tbody></table>
   </div>
 </div>
@@ -10685,6 +10685,57 @@ function filterWorkloadsView(query) {
   renderWorkloadsList(query);
 }
 
+function filterVeleroBackupsView(query) {
+  const tb = document.getElementById('velero-backups-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastVeleroBackups || [];
+  const filtered = q ? items.filter(function(b) {
+    return (b.name || '').toLowerCase().includes(q) ||
+           (b.namespace || '').toLowerCase().includes(q) ||
+           (b.phase || '').toLowerCase().includes(q) ||
+           (b.storage_location || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(b) {
+    return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No Velero backups match &ldquo;' + esc(q) + '&rdquo;' : 'No Velero backups') + '</td></tr>';
+}
+
+function filterVeleroRestoresView(query) {
+  const tb = document.getElementById('velero-restores-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastVeleroRestores || [];
+  const filtered = q ? items.filter(function(r) {
+    return (r.name || '').toLowerCase().includes(q) ||
+           (r.namespace || '').toLowerCase().includes(q) ||
+           (r.phase || '').toLowerCase().includes(q) ||
+           (r.backup_name || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(r) {
+    return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No restores match &ldquo;' + esc(q) + '&rdquo;' : 'No Velero restores') + '</td></tr>';
+}
+
+function filterBlueprintsView(query) {
+  const tb = document.getElementById('blueprint-studio-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastBlueprints || [];
+  const filtered = q ? items.filter(function(bp) {
+    return (bp.name || '').toLowerCase().includes(q) ||
+           (bp.namespace || '').toLowerCase().includes(q) ||
+           (bp.phase || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(bp) {
+    return '<tr style="cursor:pointer" ' + onHandler('blueprintStudioSelect(' + jsArgs(bp.namespace, bp.name) + ')') + '>' +
+      '<td>' + esc(bp.name) + '</td><td>' + esc(bp.namespace) + '</td><td>' + (bp.vm_count || 0) + '</td><td>' + esc(bp.phase || '—') + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No blueprints match &ldquo;' + esc(q) + '&rdquo;' : 'No blueprints found') + '</td></tr>';
+}
+
 function filterPerformanceView(query) {
   const tb = document.getElementById('performance-body');
   if (!tb) return;
@@ -14160,9 +14211,8 @@ async function fetchBlueprintStudio() {
       tb.innerHTML = crdEmptyRow(4, { message });
       return;
     }
-    tb.innerHTML = items.map(function(bp) {
-      return '<tr style="cursor:pointer" ' + onHandler('blueprintStudioSelect(' + jsArgs(bp.namespace, bp.name) + ')') + '><td>' + esc(bp.name) + '</td><td>' + esc(bp.namespace) + '</td><td>' + (bp.vm_count || 0) + '</td><td>' + esc(bp.phase || '—') + '</td></tr>';
-    }).join('');
+    window.lastBlueprints = items;
+    filterBlueprintsView((document.getElementById('blueprint-search') || {}).value || '');
     if (_blueprintStudioSelection) {
       blueprintStudioSelect(_blueprintStudioSelection.ns, _blueprintStudioSelection.name, true);
     }
@@ -16711,14 +16761,12 @@ async function fetchVelero() {
       ]);
     }
     if (bb) {
-      bb.innerHTML = backups.map(b =>
-        '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>'
-      ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Velero backups</td></tr>';
+      window.lastVeleroBackups = backups;
+      filterVeleroBackupsView((document.getElementById('velero-backups-search') || {}).value || '');
     }
     if (rb) {
-      rb.innerHTML = restores.map(r =>
-        '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>'
-      ).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No Velero restores</td></tr>';
+      window.lastVeleroRestores = restores;
+      filterVeleroRestoresView((document.getElementById('velero-restores-search') || {}).value || '');
     }
   } catch (e) {
     const msg = e.message || String(e);
