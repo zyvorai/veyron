@@ -4255,7 +4255,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-operators" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchOperators()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportOperatorsCsv()" title="Export operators as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchOperators()">&#8635; Refresh</button></div></div>
     <div id="operators-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span><input type="search" id="operators-search" class="form-input" placeholder="Filter operators…" oninput="filterOperatorsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
@@ -4267,7 +4267,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
     <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCustomResourcesCsv()" title="Export CRDs as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
   </div>
 </div>
@@ -8816,6 +8816,22 @@ function exportPodsCsv() {
     rows.push([p.name, p.namespace, p.phase, p.node_name || '', p.ip || '', restarts, formatPodAge(p.created_at) || p.age || '']);
   });
   exportCsv(rows, 'pods.csv');
+}
+
+function exportOperatorsCsv() {
+  const rows = [['Name', 'Namespace', 'Kind', 'Version', 'Status', 'Replicas', 'Ready']];
+  (window.lastOperators || []).forEach(function(o) {
+    rows.push([o.name, o.namespace, o.kind || '', o.version || '', o.status, o.replicas || '', o.ready_replicas || '']);
+  });
+  exportCsv(rows, 'operators.csv');
+}
+
+function exportCustomResourcesCsv() {
+  const rows = [['Name', 'Group', 'Version', 'Kind', 'Scope', 'Instances']];
+  (window.lastCustomResources || []).forEach(function(r) {
+    rows.push([r.name, r.group, r.version, r.kind, r.scope, r.instance_count || 0]);
+  });
+  exportCsv(rows, 'custom-resources.csv');
 }
 
 function exportHelmCsv() {
@@ -15926,7 +15942,7 @@ async function fetchTraces() {
     if (!tb) return;
     const items = data.traces || [];
     tb.innerHTML = items.map(t => `<tr>
-      <td style="font-family:var(--font-mono);font-size:.8em">${esc((t.trace_id||'').slice(0,16))}…</td>
+      <td style="font-family:var(--font-mono);font-size:.8em" class="vmr-copy-tile" title="Copy trace ID" onclick="copyToClipboard(${JSON.stringify(t.trace_id||'')})">${esc((t.trace_id||'').slice(0,16))}…<span class="vmr-copy-hint">copy</span></td>
       <td>${esc(t.service)}</td><td>${esc(t.operation)}</td>
       <td>${t.duration_ms}ms</td><td>${t.span_count}</td>
       <td><span class="glass-badge ${t.status==='ok'?'running':'error'}">${esc(t.status)}</span></td>
@@ -15976,7 +15992,7 @@ async function fetchLogs() {
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
-    if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px;line-height:1.45">' + esc(msg) + '</div>';
+    if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px;line-height:1.45">' + esc(msg) + '<br><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchLogs()">&#8635; Retry</button></div>';
     console.error('Logs fetch error:', e);
   }
 }
