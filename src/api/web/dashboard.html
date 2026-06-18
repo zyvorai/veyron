@@ -8635,7 +8635,7 @@ function vmCard(vm, showActions) {
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
-    '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
+    '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
@@ -9074,7 +9074,7 @@ function vmRow(vm, showActions) {
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
-  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div>'+nsLine+'</div></div>'+rightCol+'</div>';
+  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+esc(vm.name)+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+'</div></div>'+rightCol+'</div>';
 }
 
 function initVmViewMode() {
@@ -10841,7 +10841,7 @@ function filterCatalogTemplatesView(query) {
            ((t.tags || []).join(' ')).toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(t) {
-    return '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.family || '-') + '</td><td>' + esc(t.description || '-') + '</td><td>' + esc((t.tags || []).join(', ') || '-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy template name" ' + onStopHandler('copyToClipboard(' + jsArgs(t.name) + ')') + '>' + esc(t.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(t.family || '-') + '</td><td>' + esc(t.description || '-') + '</td><td>' + esc((t.tags || []).join(', ') || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No templates match &ldquo;' + esc(q) + '&rdquo;' : 'No templates') + '</td></tr>';
 }
@@ -10859,7 +10859,7 @@ function filterCatalogProfilesView(query) {
            (p.memory || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(p) {
-    return '<tr><td>' + esc(p.name) + '</td><td>' + p.cores + '</td><td>' + esc(p.memory) + '</td><td>' + esc(p.disk_size) + '</td><td>' + esc(p.description || '-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy profile name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + p.cores + '</td><td>' + esc(p.memory) + '</td><td>' + esc(p.disk_size) + '</td><td>' + esc(p.description || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No profiles match &ldquo;' + esc(q) + '&rdquo;' : 'No profiles') + '</td></tr>';
 }
