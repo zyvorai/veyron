@@ -3857,7 +3857,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
-  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select></div></div><div id="snap-list"></div></div>
+  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsCsv()" title="Export snapshots as CSV">&#8595; CSV</button></div></div><div id="snap-list"></div></div>
 </div>
 </div>
 
@@ -3887,7 +3887,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="page-header-right" id="pod-count"></div></div>
     <div id="pods-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Pods</span><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:200px;font-size:.82rem"></div>
+    <div class="card-header"><span class="card-title">Pods</span><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPodsCsv()" title="Export pod list as CSV">&#8595; CSV</button></div>
     <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span></div>
     <div id="pod-list"></div>
   </div>
@@ -8807,6 +8807,23 @@ function exportNodesCsv() {
   exportCsv(rows, 'nodes.csv');
 }
 
+function exportPodsCsv() {
+  const rows = [['Name', 'Namespace', 'Phase', 'Node', 'IP', 'Restarts', 'Age']];
+  (window.lastPods || []).forEach(function(p) {
+    const restarts = p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0);
+    rows.push([p.name, p.namespace, p.phase, p.node_name || '', p.ip || '', restarts, formatPodAge(p.created_at) || p.age || '']);
+  });
+  exportCsv(rows, 'pods.csv');
+}
+
+function exportSnapshotsCsv() {
+  const rows = [['Name', 'VM', 'Namespace', 'Ready', 'Status', 'Age']];
+  (window.lastSnapshots || []).forEach(function(s) {
+    rows.push([s.name, s.vm_name, s.namespace || '', s.ready ? 'Yes' : 'No', s.status || '', s.age || '']);
+  });
+  exportCsv(rows, 'snapshots.csv');
+}
+
 function copyToClipboard(text) {
   if (!text) return;
   navigator.clipboard.writeText(text).then(function() {
@@ -10934,7 +10951,7 @@ async function fetchSchedules() {
     }
     el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSchedule(' + jsArgs(s.namespace || 'default', s.name || '') + ')') + '>Delete</button></div></div>').join('');
   } catch(e) {
-    el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">'+esc(e.message)+'</p></div>';
+    el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchSchedules()">&#8635; Retry</button></div>';
   }
 }
 function openScheduleModal() {
@@ -10996,6 +11013,8 @@ async function fetchOverview() {
     if (d.platform && typeof window !== 'undefined') window.lastStackHealth = d.platform;
   } catch (e) {
     console.error('Overview fetch error:', e);
+    toast('Dashboard overview failed: ' + (e.message || String(e)), 'error');
+    updateHealth(false, e.message || 'Overview fetch failed', false);
   }
 }
 
@@ -11232,6 +11251,7 @@ async function fetchTemplates() {
     });
   } catch (e) {
     console.error('Templates fetch error:', e);
+    toast('Could not load VM templates: ' + (e.message || String(e)), 'error');
   }
 }
 
@@ -11255,6 +11275,7 @@ async function fetchProfiles() {
     renderProfilePicker();
   } catch (e) {
     console.error('Profiles fetch error:', e);
+    toast('Could not load VM profiles: ' + (e.message || String(e)), 'error');
   }
 }
 
