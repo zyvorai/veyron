@@ -4914,6 +4914,12 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       </div>
     </div>
   </div>
+  <div class="card glass-card" style="margin-top:0">
+    <div class="card-header"><span class="card-title">CPU Allocation Distribution</span></div>
+    <div style="padding:12px 16px 16px" id="metrics-cpu-hist-wrap">
+      <canvas id="metrics-cpu-hist" height="70" style="width:100%;height:70px;display:block"></canvas>
+    </div>
+  </div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">VM Inventory</span>
       <span id="metrics-vm-count" style="font-size:.78rem;color:var(--text-muted);margin-left:8px"></span>
@@ -19152,6 +19158,7 @@ function renderMetricsVmBreakdown() {
   }).join('');
 
   renderMetricsDonut(vms);
+  renderCpuHistogram(vms);
 
   if (tbody) {
     var rows = vms.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
@@ -19174,6 +19181,61 @@ function renderMetricsVmBreakdown() {
       '</tr>';
     }).join('');
   }
+}
+
+function renderCpuHistogram(vms) {
+  var canvas = document.getElementById('metrics-cpu-hist');
+  if (!canvas) return;
+  var buckets = [
+    { label: '1', min: 1, max: 1 },
+    { label: '2', min: 2, max: 2 },
+    { label: '4', min: 4, max: 4 },
+    { label: '8', min: 8, max: 8 },
+    { label: '16+', min: 16, max: Infinity },
+  ];
+  buckets.forEach(function(b) { b.count = 0; });
+  vms.forEach(function(v) {
+    var c = parseInt(v.cpu, 10) || 0;
+    var bk = buckets.find(function(b) { return c >= b.min && c <= b.max; });
+    if (bk) bk.count++;
+  });
+  var dpr = window.devicePixelRatio || 1;
+  var w = canvas.offsetWidth || 400;
+  var h = 70;
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(h * dpr);
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+  var maxCount = Math.max(1, Math.max.apply(null, buckets.map(function(b) { return b.count; })));
+  var bw = Math.floor((w - 20) / buckets.length);
+  var pad = 4;
+  var barH = h - 28;
+  buckets.forEach(function(b, i) {
+    var x = 10 + i * bw;
+    var filled = b.count / maxCount;
+    var bHeight = Math.max(2, filled * barH);
+    var y = barH - bHeight + 8;
+    var grad = ctx.createLinearGradient(0, y, 0, y + bHeight);
+    grad.addColorStop(0, 'rgba(96,165,250,.9)');
+    grad.addColorStop(1, 'rgba(59,130,246,.4)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(x + pad, y, bw - pad * 2, bHeight, 3) : ctx.rect(x + pad, y, bw - pad * 2, bHeight);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.7)';
+    ctx.font = '600 ' + (10 * dpr / dpr) + 'px system-ui';
+    ctx.textAlign = 'center';
+    if (b.count > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.fillText(String(b.count), x + bw / 2, y - 3);
+    }
+    ctx.fillStyle = 'rgba(255,255,255,.45)';
+    ctx.font = '10px system-ui';
+    ctx.fillText(b.label + (b.label === '16+' ? '' : ' CPU'), x + bw / 2, h - 4);
+  });
 }
 
 function renderMetricsDonut(vms) {
