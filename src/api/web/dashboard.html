@@ -3906,6 +3906,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" data-view="table" onclick="setVmrFleetView('table')">Table</button>
       <button type="button" data-view="topology" onclick="setVmrFleetView('topology')">Topology</button>
       <button type="button" data-view="map" onclick="setVmrFleetView('map')">Map</button>
+      <button type="button" data-view="pulse" onclick="setVmrFleetView('pulse')">Pulse</button>
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
       <button type="button" id="vm-group-btn" title="Group VMs by name prefix (G)" onclick="toggleVmGrouping()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">⊞</button>
       <button type="button" id="vm-age-heat-btn" title="Age heat-map: tint cards by VM age (blue=new, amber=old)" onclick="toggleVmAgeHeat()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">🌡</button>
@@ -8880,6 +8881,116 @@ document.addEventListener('mousedown', function(e) {
 
 // ── Cluster Map View (canvas bubble layout) ──
 var _cmapHit = []; // [{ns, name, x, y, r}] for click detection
+// ── VM Pulse View ──────────────────────────────────────────────────────────────
+// Breathing-circle fleet visualization: each VM is a circle;
+// radius ∝ memory, column = node, color = status, running VMs breathe.
+var _pulseAnimFrame = null;
+function renderPulseView(vms) {
+  var canvas = document.getElementById('vmr-pulse-canvas');
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var W = canvas.parentElement ? canvas.parentElement.clientWidth : 700;
+  var COLS = {};
+  vms.forEach(function(v) { var n = v.node || '(unscheduled)'; if (!COLS[n]) COLS[n] = []; COLS[n].push(v); });
+  var colKeys = Object.keys(COLS).sort();
+  var nCols = colKeys.length || 1;
+  var colW = W / nCols;
+  var maxMem = Math.max.apply(null, vms.map(function(v) { return parseMemGiB(v.memory) || 0; })) || 1;
+  var minR = 14, maxR = Math.min(36, colW * 0.38);
+  // Layout: assign x/y to each VM
+  var cells = [];
+  colKeys.forEach(function(node, ci) {
+    var col = COLS[node];
+    var cx = colW * ci + colW / 2;
+    var rows = col.length;
+    col.forEach(function(v, ri) {
+      var mem = parseMemGiB(v.memory) || 0;
+      var r = minR + (mem / maxMem) * (maxR - minR);
+      var rowH = (maxR * 2 + 12);
+      var totalH = rows * rowH;
+      var baseY = (canvas.clientHeight - totalH) / 2 + rowH / 2;
+      cells.push({ v: v, cx: cx, cy: baseY + ri * rowH, r: r, node: node, ci: ci, ri: ri });
+    });
+  });
+  var H = Math.max(200, Math.max.apply(null, colKeys.map(function(n) { return COLS[n].length; })) * (maxR * 2 + 12) + 80);
+  canvas.style.height = H + 'px';
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  var startTime = performance.now();
+  function statusCol(v) {
+    var s = (v.status || '').toLowerCase();
+    if (s === 'running') return '#22c55e';
+    if (s === 'stopped') return '#64748b';
+    if (s === 'failed' || s === 'error') return '#ef4444';
+    return '#f59e0b';
+  }
+  function draw(now) {
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(dpr, dpr);
+    var t = (now - startTime) / 1000;
+    // Draw column labels
+    colKeys.forEach(function(node, ci) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(148,163,184,.5)';
+      ctx.font = '10px ' + (getComputedStyle(document.body).getPropertyValue('--font-sans') || 'system-ui');
+      ctx.textAlign = 'center';
+      var label = node.length > 14 ? node.slice(0, 12) + '…' : node;
+      ctx.fillText(label, colW * ci + colW / 2, 16);
+      ctx.restore();
+    });
+    // Draw circles
+    cells.forEach(function(cell) {
+      var v = cell.v, cx = cell.cx, cy = cell.cy + 20, r = cell.r;
+      var col = statusCol(v);
+      var isRunning = (v.status || '').toLowerCase() === 'running';
+      // Breathing pulse for running VMs
+      var pulse = isRunning ? 1 + 0.06 * Math.sin(t * 2 + cell.ci * 0.7 + cell.ri * 1.1) : 1;
+      var pr = r * pulse;
+      // Glow for running
+      if (isRunning) {
+        var grd = ctx.createRadialGradient(cx, cy, pr * 0.3, cx, cy, pr * 1.5);
+        grd.addColorStop(0, col.replace(')', ',.15)').replace('rgb', 'rgba'));
+        grd.addColorStop(1, 'transparent');
+        ctx.beginPath(); ctx.arc(cx, cy, pr * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = grd; ctx.fill();
+      }
+      // Main circle
+      ctx.beginPath(); ctx.arc(cx, cy, pr, 0, Math.PI * 2);
+      ctx.fillStyle = col.replace(')', ',.18)').replace('rgb', 'rgba');
+      ctx.fill();
+      ctx.strokeStyle = col; ctx.lineWidth = isRunning ? 1.5 : 1; ctx.globalAlpha = isRunning ? 1 : 0.5;
+      ctx.stroke(); ctx.globalAlpha = 1;
+      // VM name
+      ctx.fillStyle = 'rgba(226,232,240,.82)'; ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      var label = v.name.length > 10 ? v.name.slice(0, 9) + '…' : v.name;
+      ctx.fillText(label, cx, cy);
+      // Memory label below
+      if (v.memory) {
+        ctx.fillStyle = 'rgba(148,163,184,.6)'; ctx.font = '8px system-ui';
+        ctx.fillText(v.memory, cx, cy + pr + 9);
+      }
+    });
+    ctx.scale(1/dpr, 1/dpr);
+    if (window.vmrFleetViewMode === 'pulse' && document.getElementById('vmr-pulse-canvas')) {
+      _pulseAnimFrame = requestAnimationFrame(draw);
+    }
+  }
+  if (_pulseAnimFrame) cancelAnimationFrame(_pulseAnimFrame);
+  _pulseAnimFrame = requestAnimationFrame(draw);
+  // Click to select VM
+  canvas.onclick = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top - 20;
+    cells.forEach(function(cell) {
+      var dx = mx - cell.cx, dy = my - cell.cy;
+      if (Math.sqrt(dx*dx + dy*dy) <= cell.r * 1.5) {
+        selectVm(cell.v.namespace || 'default', cell.v.name);
+      }
+    });
+  };
+}
+
 function renderClusterMap(vms) {
   var canvas = document.getElementById('vmr-cluster-map-canvas');
   if (!canvas) return;
@@ -17699,7 +17810,8 @@ function filterVMs() {
   });
   const isMapView = window.vmrFleetViewMode === 'map';
   const isTopologyView = window.vmrFleetViewMode === 'topology';
-  const isTableView = window.vmrFleetViewMode === 'table' || (vmViewMode === 'list' && !isTopologyView && !isMapView);
+  const isPulseView = window.vmrFleetViewMode === 'pulse';
+  const isTableView = window.vmrFleetViewMode === 'table' || (vmViewMode === 'list' && !isTopologyView && !isMapView && !isPulseView);
   const listHeader = document.getElementById('vm-list-header');
   if (listHeader) listHeader.style.display = isTableView ? 'flex' : 'none';
   const sorted = sortVMs(filtered);
@@ -17710,6 +17822,9 @@ function filterVMs() {
   }
   if (sorted.length === 0) {
     document.getElementById('vm-full-list').innerHTML = vmListEmptyHtml(true);
+  } else if (isPulseView) {
+    document.getElementById('vm-full-list').innerHTML = '<canvas id="vmr-pulse-canvas" style="width:100%;display:block;border-radius:10px;cursor:pointer" aria-label="Fleet Pulse View"></canvas>';
+    requestAnimationFrame(function() { renderPulseView(sorted); });
   } else if (isMapView) {
     document.getElementById('vm-full-list').innerHTML = '<canvas id="vmr-cluster-map-canvas" style="width:100%;display:block;border-radius:10px;cursor:crosshair" aria-label="Cluster map"></canvas>';
     requestAnimationFrame(function() { renderClusterMap(sorted); });
