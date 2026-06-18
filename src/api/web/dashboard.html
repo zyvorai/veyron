@@ -3917,6 +3917,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="generateFleetReport()" title="Generate Markdown fleet report for sharing">📋</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="saveFilterPreset()" title="Save current search + status filter as a named preset">⊛ Preset</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="snapshotAllRunning()" title="Snapshot every currently-Running VM at once">◉ Snap All</button>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
   <div id="vmr-tag-filter-chips" class="vmr-filter-chips" style="display:none;gap:6px;padding:2px 0 4px;flex-wrap:wrap"></div>
@@ -5404,7 +5405,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div id="vmr-forge-recents" style="display:none;margin-bottom:14px"></div>
       <div class="form-group">
         <label class="form-label">VM Name</label>
-        <input type="text" class="form-input" id="vm-name" placeholder="my-vm" autocomplete="off">
+        <input type="text" class="form-input" id="vm-name" placeholder="my-vm" autocomplete="off" oninput="checkForgeNameCollision()">
+        <div id="vm-name-warn" style="display:none;font-size:.75rem;color:#f59e0b;margin-top:4px">⚠ A VM with this name already exists in the cluster.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Template</label>
@@ -8686,13 +8688,17 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ── VM Search History ──
-var _searchHistory = [];
+var _SEARCH_HIST_KEY = 'veyron_search_history';
+var _searchHistory = (function() {
+  try { var h = JSON.parse(localStorage.getItem(_SEARCH_HIST_KEY) || '[]'); return Array.isArray(h) ? h : []; } catch (e) { return []; }
+})();
 function pushSearchHistory(q) {
   q = (q || '').trim();
   if (!q || q.length < 2) return;
   _searchHistory = _searchHistory.filter(function(s) { return s !== q; });
   _searchHistory.unshift(q);
-  if (_searchHistory.length > 8) _searchHistory.length = 8;
+  if (_searchHistory.length > 12) _searchHistory.length = 12;
+  try { localStorage.setItem(_SEARCH_HIST_KEY, JSON.stringify(_searchHistory)); } catch (e) {}
 }
 function showSearchHistory() {
   var inp = document.getElementById('vm-search');
@@ -8712,6 +8718,7 @@ function showSearchHistory() {
 }
 function removeSearchHistory(q) {
   _searchHistory = _searchHistory.filter(function(s) { return s !== q; });
+  try { localStorage.setItem(_SEARCH_HIST_KEY, JSON.stringify(_searchHistory)); } catch (e) {}
   showSearchHistory();
 }
 
@@ -15789,6 +15796,39 @@ async function bulkPauseResume() {
   });
 }
 
+async function snapshotAllRunning() {
+  var running = (vmData || []).filter(function(v) { return v.status === 'Running'; });
+  if (!running.length) { toast('No running VMs to snapshot', 'info'); return; }
+  openGlassConfirm({
+    title: 'Snapshot all ' + running.length + ' running VM' + (running.length === 1 ? '' : 's'),
+    body: 'This will queue an immediate snapshot for every running VM. Continue?',
+    confirmLabel: 'Snapshot all',
+    onConfirm: async function() {
+      var ok = 0, errs = [];
+      var snapTag = Date.now().toString(36).slice(-5);
+      for (var i = 0; i < running.length; i++) {
+        var v = running[i];
+        var ns = v.namespace || 'default';
+        toast('Snapping ' + v.name + ' (' + (i + 1) + '/' + running.length + ')', 'info');
+        try {
+          var snapName = v.name + '-snapall-' + snapTag;
+          await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(v.name) + '/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ snapshot_name: snapName })
+          });
+          logVmAction(ns, v.name, 'snapshot', 'ok');
+          ok++;
+        } catch (e) {
+          errs.push(v.name);
+        }
+      }
+      var msg = ok + ' snapshot' + (ok === 1 ? '' : 's') + ' queued';
+      if (errs.length) msg += ' · ' + errs.length + ' failed (' + errs.slice(0, 3).join(', ') + ')';
+      toast(msg, errs.length ? 'warn' : 'success');
+    }
+  });
+}
 async function bulkSnapshot() {
   if (selectedVMs.size === 0) return;
   const keys = [...selectedVMs];
@@ -16805,6 +16845,17 @@ function updateVmFreshness() {
   const s = Math.round((Date.now() - window._vmsRefreshedAt) / 1000);
   el.textContent = s < 10 ? 'Updated just now' : s < 60 ? 'Updated ' + s + 's ago' : 'Updated ' + Math.round(s / 60) + 'm ago';
   el.classList.toggle('freshness-stale', s > 90);
+}
+
+// ── Forge VM Name Collision Warning ──
+function checkForgeNameCollision() {
+  var val = (document.getElementById('vm-name') || {}).value || '';
+  var warn = document.getElementById('vm-name-warn');
+  if (!warn) return;
+  val = val.trim();
+  if (!val) { warn.style.display = 'none'; return; }
+  var exists = (window.lastVMs || vmData || []).some(function(v) { return v.name === val; });
+  warn.style.display = exists ? '' : 'none';
 }
 
 // ── Forge VM Quick Launch History ──
