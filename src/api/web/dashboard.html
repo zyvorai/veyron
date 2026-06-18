@@ -4303,7 +4303,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div></div>
+  <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div>
+    <div class="page-header-right"><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"></div></div>
     <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
@@ -4332,7 +4333,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div></div>
     <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
 </div>
 </div>
@@ -4717,7 +4718,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-compliance" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center">
+      <input type="search" id="compliance-search" class="form-input" placeholder="Filter frameworks or reports…" oninput="filterComplianceView(this.value)" style="width:230px;font-size:.82rem">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button>
+    </div></div>
     <div id="compliance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Compliance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('compliance-advisor-card')">Dismiss</button></div>
     <div id="compliance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4788,7 +4792,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div>
     <div id="netpol-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="netpol-search" class="form-input" placeholder="Filter policies…" oninput="filterNetpolView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
 </div>
 </div>
@@ -10443,6 +10447,82 @@ function filterHelmView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
 }
 
+function filterRbacView(query) {
+  const rolesBody = document.getElementById('rbac-roles-body');
+  const bindingsBody = document.getElementById('rbac-bindings-body');
+  const roles = window.lastRbacRoles || [];
+  const bindings = window.lastRbacBindings || [];
+  const q = (query || '').toLowerCase().trim();
+  const fRoles = q ? roles.filter(function(r) {
+    return (r.name || '').toLowerCase().includes(q) ||
+           (r.namespace || '').toLowerCase().includes(q);
+  }) : roles;
+  const fBindings = q ? bindings.filter(function(b) {
+    return (b.name || '').toLowerCase().includes(q) ||
+           (b.role_name || '').toLowerCase().includes(q) ||
+           ((b.subjects || []).map(function(s) { return s.kind + ':' + s.name; }).join(' ')).toLowerCase().includes(q);
+  }) : bindings;
+  if (rolesBody) rolesBody.innerHTML = fRoles.map(function(role) {
+    const resources = [...new Set((role.rules || []).flatMap(function(rule) { return rule.resources || []; }))].slice(0, 4);
+    return '<tr><td>' + esc(role.name) + '</td><td>' + (role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')) + '</td><td>' + (role.rules || []).length + '</td><td>' + esc(resources.join(', ') || '-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No matching roles</td></tr>';
+  if (bindingsBody) bindingsBody.innerHTML = fBindings.map(function(binding) {
+    return '<tr><td>' + esc(binding.name) + '</td><td>' + esc(binding.role_name) + '</td><td>' + esc((binding.subjects || []).map(function(s) { return s.kind + ':' + s.name; }).join(', ') || '-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching bindings</td></tr>';
+}
+
+function filterIngressView(query) {
+  const tb = document.getElementById('ingress-body');
+  if (!tb) return;
+  const items = window.lastIngress || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(ing) {
+    return (ing.name || '').toLowerCase().includes(q) ||
+           (ing.namespace || '').toLowerCase().includes(q) ||
+           ((ing.hosts || []).join(' ')).toLowerCase().includes(q) ||
+           (ing.class_name || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(ing) {
+    return '<tr><td>' + esc(ing.name) + '</td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + esc((ing.hosts || []).join(', ') || '-') + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching ingresses</td></tr>';
+}
+
+function filterNetpolView(query) {
+  const tb = document.getElementById('netpol-body');
+  if (!tb) return;
+  const rows = window.lastNetpols || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? rows.filter(function(p) {
+    return (p.name || '').toLowerCase().includes(q) ||
+           (p.namespace || '').toLowerCase().includes(q) ||
+           ((p.policy_types || []).join(' ')).toLowerCase().includes(q);
+  }) : rows;
+  tb.innerHTML = filtered.map(function(p) {
+    return '<tr class="clickable-row" onclick="navigate(\'cilium\')" title="Open Cilium network view">' +
+      '<td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
+      '<td>' + (p.ingress_rules ?? 0) + '</td><td>' + (p.egress_rules ?? 0) + '</td><td>' + fmtTime(p.created_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
+}
+
+function filterComplianceView(query) {
+  const stBody = document.getElementById('compliance-status-body');
+  const repBody = document.getElementById('compliance-reports-body');
+  const statuses = window.lastComplianceStatuses || [];
+  const reports = window.lastComplianceReports || [];
+  const q = (query || '').toLowerCase().trim();
+  const fSt = q ? statuses.filter(function(s) { return (s.framework || '').toLowerCase().includes(q); }) : statuses;
+  const fRep = q ? reports.filter(function(r) { return (r.framework || '').toLowerCase().includes(q) || (r.id || '').toLowerCase().includes(q); }) : reports;
+  if (stBody) stBody.innerHTML = fSt.map(function(s) {
+    return '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
+      '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
+      '<td><span class="glass-badge ' + (s.compliant ? 'running' : 'error') + '">' + (s.compliant ? 'yes' : 'no') + '</span></td>' +
+      '<td>' + fmtTime(s.last_checked) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching frameworks</td></tr>';
+  if (repBody) repBody.innerHTML = fRep.map(function(r) {
+    return '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.framework) + '</td><td>' + fmtTime(r.generated_at) + '</td><td>' + (r.summary && r.summary.score != null ? r.summary.score : '-') + '%</td><td>' + (r.findings || []).length + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching reports</td></tr>';
+}
+
 function filterCrdsView(query) {
   const tb = document.getElementById('crds-body');
   if (!tb) return;
@@ -14516,6 +14596,8 @@ async function fetchRbac() {
         { label: 'Scope', value: 'Cluster' }
       ]);
     }
+    window.lastRbacRoles = roles;
+    window.lastRbacBindings = bindings;
     if (rolesBody) {
       rolesBody.innerHTML = roles.map(role => {
         const resources = [...new Set((role.rules || []).flatMap(rule => rule.resources || []))].slice(0, 4);
@@ -14573,6 +14655,7 @@ async function fetchIngress() {
       ]);
     }
     if (!tb) return;
+    window.lastIngress = items;
     tb.innerHTML = items.map(ing => `<tr><td>${esc(ing.name)}</td><td>${esc(ing.namespace)}</td><td>${esc(ing.class_name || '-')}</td><td>${esc((ing.hosts || []).join(', ') || '-')}</td><td>${ing.tls ? 'Yes' : 'No'}</td><td>${esc((ing.rules || []).map(r => (r.host || '*') + r.path + ' -> ' + r.service_name).join(', ') || '-')}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ingress resources found</td></tr>';
   } catch (e) {
@@ -15621,6 +15704,8 @@ async function fetchCompliance() {
         '<div class="glass-stat-pill' + (failing ? ' warn' : '') + '"><div class="gsl">Failing controls</div><div class="gsv">' + failing + '</div></div>' +
         '<div class="glass-stat-pill"><div class="gsl">Reports</div><div class="gsv">' + reports.length + '</div></div>';
     }
+    window.lastComplianceStatuses = statuses;
+    window.lastComplianceReports = reports;
     if (stBody) stBody.innerHTML = statuses.map(s =>
       '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
       '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
@@ -15710,6 +15795,7 @@ async function fetchNetworkPolicies() {
         '<div class="glass-stat-pill"><div class="gsl">Scope</div><div class="gsv" style="font-size:1rem">' + esc(currentNamespace) + '</div></div>';
     }
     if (!tb) return;
+    window.lastNetpols = rows;
     tb.innerHTML = rows.map(p =>
       '<tr class="clickable-row" onclick="navigate(\'cilium\')" title="Open Cilium network view">' +
       '<td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
