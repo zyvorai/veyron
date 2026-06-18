@@ -4715,7 +4715,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWebhooks()">&#8635; Refresh</button></div></div>
   
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span><input type="search" id="webhooks-search" class="form-input" placeholder="Filter webhooks…" oninput="filterWebhooksView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
 </div>
 </div>
@@ -10590,6 +10590,24 @@ function filterCostsView(query) {
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
 }
 
+function filterWebhooksView(query) {
+  const tb = document.getElementById('webhooks-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastWebhooks || [];
+  const filtered = q ? items.filter(function(w) {
+    return (w.name || '').toLowerCase().includes(q) ||
+           (w.url || '').toLowerCase().includes(q) ||
+           (w.events || []).join(' ').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(w) {
+    return '<tr><td>' + esc(w.name) + '</td><td style="font-size:.8em;font-family:var(--font-mono)">' + esc(w.url) + '</td><td>' + esc((w.events || []).join(', ') || '-') + '</td>' +
+      '<td><span class="glass-badge ' + (w.active ? 'running' : 'stopped') + '">' + (w.active ? 'Yes' : 'No') + '</span></td>' +
+      '<td>' + (w.secret_configured ? 'Yes' : 'No') + '</td>' +
+      '<td><span class="glass-badge ' + (w.failure_count ? 'error' : 'running') + '">' + w.failure_count + '</span></td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No webhooks match &ldquo;' + esc(q) + '&rdquo;' : 'No webhooks found') + '</td></tr>';
+}
+
 function filterPoliciesView(query) {
   const tb = document.getElementById('policies-body');
   if (!tb) return;
@@ -15972,12 +15990,8 @@ async function fetchWebhooks() {
   try {
     const items = asArray(await apiJson('/api/v1/webhooks' + nsParam()));
     if (!tb) return;
-    tb.innerHTML = items.map(w => `<tr>
-      <td>${esc(w.name)}</td><td>${esc(w.url)}</td><td>${esc((w.events || []).join(', ') || '-')}</td>
-      <td><span class="glass-badge ${w.active ? 'running' : 'stopped'}">${w.active ? 'Yes' : 'No'}</span></td>
-      <td>${w.secret_configured ? 'Yes' : 'No'}</td>
-      <td><span class="glass-badge ${w.failure_count ? 'error' : 'running'}">${w.failure_count}</span></td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No webhooks found</td></tr>';
+    window.lastWebhooks = items;
+    filterWebhooksView((document.getElementById('webhooks-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchWebhooks');
     console.error('Webhooks fetch error:', e);
