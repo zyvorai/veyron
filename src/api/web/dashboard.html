@@ -10930,6 +10930,8 @@ function renderWorkloadsList(query) {
            (w.namespace || '').toLowerCase().includes(q) ||
            (w.status || '').toLowerCase().includes(q);
   }) : data;
+  const wlCountEl = document.getElementById('vmr-workloads-count');
+  if (wlCountEl) wlCountEl.textContent = filtered.length === data.length ? data.length + ' workloads' : filtered.length + ' of ' + data.length + ' workloads';
   if (!filtered.length) {
     tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No workloads match &ldquo;' + esc(q) + '&rdquo;' : 'No Deployments, StatefulSets, or DaemonSets found') + '</td></tr>';
     return;
