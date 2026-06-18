@@ -1449,6 +1449,8 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vmr-node-peer{box-shadow:0 0 0 1.5px rgba(250,189,47,.45),0 0 10px rgba(250,189,47,.12)!important;transition:box-shadow .2s ease}
 .vmr-node-peer-label{position:absolute;top:4px;right:6px;font-size:.6rem;color:rgba(250,189,47,.75);font-weight:600;letter-spacing:.04em;pointer-events:none;z-index:2}
 .vmr-retire-badge{display:inline-flex;align-items:center;font-size:.62rem;font-weight:700;color:#d97706;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);border-radius:8px;padding:0 5px;letter-spacing:.04em;margin-right:4px;vertical-align:middle;cursor:help}
+.vmr-genome{display:inline-flex;width:28px;height:5px;border-radius:3px;overflow:hidden;gap:1px;flex-shrink:0;opacity:.75;align-self:center;cursor:help;transition:opacity .15s}
+.vm-card:hover .vmr-genome,.vm-row:hover .vmr-genome{opacity:1}
 .vmr-delta-strip{padding:4px 14px 2px}
 .vmr-delta-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.7rem;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-wrap:wrap;animation:vmr-delta-in .2s ease}
 @keyframes vmr-delta-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -9556,6 +9558,26 @@ function osFamilyIcon(family) {
   const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
   return icon[family] || '◫';
 }
+// ── VM Genome Strip ──
+// Encodes {OS, CPU tier, Mem tier, Status} as a 4-segment color bar.
+// VMs with identical specs share the same stripe — visually obvious clones.
+function vmGenomeStrip(vm) {
+  var osColors = { windows:'#60a5fa', ubuntu:'#fb923c', debian:'#a78bfa', fedora:'#34d399', linux:'#38bdf8' };
+  var osCol = osColors[guessOsFamily(vm)] || '#94a3b8';
+  var cpu = parseCpuCount(vm.cpu) || 0;
+  var cpuCol = cpu >= 16 ? '#f87171' : cpu >= 8 ? '#fb923c' : cpu >= 4 ? '#fbbf24' : '#4ade80';
+  var mem = parseMemGiB(vm.memory) || 0;
+  var memCol = mem >= 64 ? '#f87171' : mem >= 16 ? '#fb923c' : mem >= 8 ? '#60a5fa' : '#94a3b8';
+  var st = (vm.status || '').toLowerCase();
+  var stCol = st === 'running' ? '#22c55e' : st === 'stopped' ? '#64748b' : st === 'failed' || st === 'error' ? '#ef4444' : '#f59e0b';
+  return '<span class="vmr-genome" title="Genome: ' + guessOsFamily(vm) + ' · ' + (vm.cpu||'?') + ' · ' + (vm.memory||'?') + ' · ' + (vm.status||'?') + '">' +
+    '<span style="background:' + osCol  + ';flex:1"></span>' +
+    '<span style="background:' + cpuCol + ';flex:1"></span>' +
+    '<span style="background:' + memCol + ';flex:1"></span>' +
+    '<span style="background:' + stCol  + ';flex:1"></span>' +
+    '</span>';
+}
+
 // ── VM Age Heat Map ──
 window._vmAgeHeatEnabled = false;
 function toggleVmAgeHeat() {
@@ -10349,7 +10371,7 @@ function vmCard(vm, showActions) {
     'ondragover="vmCardDragOver(event)" ondragleave="vmCardDragLeave(event)" ondrop="vmCardDrop(event,' + jsArgs(ns, vm.name) + ')" ' +
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
     onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmGlassCtxMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + highlightMatch(vm.name, activeSearchQuery()) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
@@ -11101,7 +11123,7 @@ function vmRow(vm, showActions) {
   const sshBlock = vmSshBlock(vm, showActions);
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
   const rowRetireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — right-click → Mark as Keeper to suppress">♻ stale?</span>' : '';
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+vmGenomeStrip(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
   const nodeChip = vm.node ? '<button type="button" class="vmr-node-chip" ' +
     onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
