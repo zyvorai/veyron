@@ -3915,6 +3915,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
+    <button type="button" id="vmr-diff-btn" class="glass-btn-secondary glass-btn-sm" onclick="fleetDiffAction()" title="Save fleet baseline for diff, or compare current state to saved baseline">⧟ Diff</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="generateFleetReport()" title="Generate Markdown fleet report for sharing">📋</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="saveFilterPreset()" title="Save current search + status filter as a named preset">⊛ Preset</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="snapshotAllRunning()" title="Snapshot every currently-Running VM at once">◉ Snap All</button>
@@ -10440,6 +10441,87 @@ function exportFleetJson() {
   showToast('Fleet snapshot exported (' + vms.length + ' VMs)', 'success');
 }
 
+// ── Fleet Diff ──
+var _FLEET_BASELINE_KEY = 'veyron_fleet_baseline';
+function saveFleetBaseline() {
+  var snap = (vmData || []).map(function(v) {
+    return { name: v.name, namespace: v.namespace || 'default', status: v.status, cpu: v.cpu, memory: v.memory, node: v.node };
+  });
+  try { localStorage.setItem(_FLEET_BASELINE_KEY, JSON.stringify({ ts: Date.now(), vms: snap })); } catch (e) {}
+  var btn = document.getElementById('vmr-diff-btn');
+  if (btn) { btn.textContent = '⧟ Diff ✓'; btn.style.color = '#22c55e'; setTimeout(function() { btn.textContent = '⧟ Diff'; btn.style.color = ''; }, 3000); }
+  toast('Fleet baseline saved (' + snap.length + ' VMs). Click Diff again to compare.', 'success');
+}
+function loadFleetBaseline() {
+  try { var raw = localStorage.getItem(_FLEET_BASELINE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
+function fleetDiffAction() {
+  var base = loadFleetBaseline();
+  if (!base) { saveFleetBaseline(); return; }
+  openFleetDiffModal(base);
+}
+function openFleetDiffModal(base) {
+  var curr = vmData || [];
+  var baseMap = {};
+  base.vms.forEach(function(v) { baseMap[v.namespace + '/' + v.name] = v; });
+  var currMap = {};
+  curr.forEach(function(v) { currMap[(v.namespace||'default') + '/' + v.name] = v; });
+  var added = [], removed = [], changed = [], unchanged = 0;
+  Object.keys(currMap).forEach(function(k) {
+    if (!baseMap[k]) { added.push(currMap[k]); }
+    else {
+      var b = baseMap[k], c = currMap[k];
+      var diffs = [];
+      if (b.status !== c.status) diffs.push('status: ' + b.status + ' → ' + c.status);
+      if (b.cpu !== c.cpu) diffs.push('cpu: ' + b.cpu + ' → ' + c.cpu);
+      if (b.memory !== c.memory) diffs.push('memory: ' + b.memory + ' → ' + c.memory);
+      if (b.node !== c.node) diffs.push('node: ' + (b.node||'?') + ' → ' + (c.node||'?'));
+      if (diffs.length) changed.push({ name: c.name, ns: c.namespace||'default', diffs: diffs });
+      else unchanged++;
+    }
+  });
+  Object.keys(baseMap).forEach(function(k) { if (!currMap[k]) removed.push(baseMap[k]); });
+  var ago = Math.round((Date.now() - base.ts) / 60000);
+  var agoStr = ago < 2 ? 'just now' : ago < 60 ? ago + 'm ago' : Math.round(ago/60) + 'h ago';
+  var html = '<div class="vmr-cmp-modal" style="max-height:80vh;overflow-y:auto">' +
+    '<div class="vmr-cmp-header"><div class="vmr-cmp-title">Fleet Diff</div>' +
+    '<span style="font-size:.72rem;color:var(--text-muted);margin-left:8px">vs baseline saved ' + esc(agoStr) + '</span>' +
+    '<div style="display:flex;gap:6px;margin-left:auto">' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="saveFleetBaseline()" title="Update baseline to current state">↺ Update baseline</button>' +
+    '<button type="button" class="vmr-cmp-close" onclick="closeVmCompare()">×</button></div></div>';
+  function section(title, rows) {
+    if (!rows.length) return '';
+    return '<div style="margin:10px 0 4px;font-size:.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">' + title + ' (' + rows.length + ')</div>' + rows.join('');
+  }
+  var addedRows = added.map(function(v) {
+    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);margin-bottom:3px;font-size:.8rem;display:flex;gap:8px;align-items:center">' +
+      '<span style="color:#22c55e;flex-shrink:0">+</span><span style="font-weight:600">' + esc(v.name) + '</span>' +
+      '<span style="color:var(--text-muted)">' + esc(v.namespace||'default') + ' · ' + esc(v.status) + '</span></div>';
+  });
+  var removedRows = removed.map(function(v) {
+    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);margin-bottom:3px;font-size:.8rem;display:flex;gap:8px;align-items:center">' +
+      '<span style="color:#ef4444;flex-shrink:0">−</span><span style="font-weight:600">' + esc(v.name) + '</span>' +
+      '<span style="color:var(--text-muted)">' + esc(v.namespace||'default') + '</span></div>';
+  });
+  var changedRows = changed.map(function(c) {
+    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);margin-bottom:3px;font-size:.8rem">' +
+      '<span style="font-weight:600">' + esc(c.name) + '</span> <span style="color:var(--text-muted);font-size:.72rem">' + esc(c.ns) + '</span>' +
+      '<div style="margin-top:3px;font-size:.72rem;color:#fde68a">' + c.diffs.map(esc).join(' · ') + '</div></div>';
+  });
+  if (!added.length && !removed.length && !changed.length) {
+    html += '<div style="text-align:center;padding:24px;color:#22c55e;font-size:.9rem">✓ Fleet unchanged since baseline (' + unchanged + ' VMs)</div>';
+  } else {
+    html += '<div style="padding:0 2px">' + section('Added', addedRows) + section('Removed', removedRows) + section('Changed', changedRows);
+    if (unchanged) html += '<div style="font-size:.72rem;color:var(--text-dim);margin-top:8px">' + unchanged + ' VM' + (unchanged !== 1 ? 's' : '') + ' unchanged</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  var overlay = document.getElementById('vm-compare-overlay');
+  if (!overlay) return;
+  overlay.innerHTML = html;
+  overlay.style.display = 'flex';
+}
+
 function exportAuditCsv() {
   const rows = [['Timestamp', 'User', 'Action', 'Resource Type', 'Resource', 'Outcome']];
   (window.lastAuditTrail || []).forEach(function(a) {
@@ -15618,8 +15700,10 @@ function vmInspectorTabBtn(id, label, active) {
   return '<button type="button" class="vm-inspector-tab' + (active ? ' active' : '') + '" data-tab="' + esc(id) + '" onclick="setVmInspectorTab(' + jsArgs(id) + ')">' + esc(label) + '</button>';
 }
 
+var _vmTabMemory = {}; // vmKey → last active tab
 function setVmInspectorTab(tab) {
   window._vmInspectorTab = tab || 'overview';
+  if (selectedVmKey) _vmTabMemory[selectedVmKey] = window._vmInspectorTab;
   document.querySelectorAll('.vm-inspector-tab').forEach(function(el) {
     el.classList.toggle('active', el.dataset.tab === window._vmInspectorTab);
   });
@@ -15629,7 +15713,9 @@ function setVmInspectorTab(tab) {
 }
 
 function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
-  window._vmInspectorTab = window._vmInspectorTab || 'overview';
+  // restore last tab used for this VM, fall back to overview
+  var vmKey = (ns || 'default') + '/' + name;
+  window._vmInspectorTab = _vmTabMemory[vmKey] || 'overview';
   let ifaceTable = '<p class="vm-inspector-empty">No network interfaces reported yet.</p>';
   if (ifaces.length) {
     ifaceTable = '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
