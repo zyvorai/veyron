@@ -2120,6 +2120,12 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-recent-chip{display:inline-flex;align-items:center;gap:5px;font-size:.73rem;padding:3px 10px;border-radius:20px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-muted);cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:color .12s,border-color .12s,background .12s}
 .vmr-recent-chip:hover{color:var(--text);border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.07)}
 #vmr-recent-strip::-webkit-scrollbar{display:none}
+.vmr-heatmap-grid{display:flex;flex-wrap:wrap;gap:8px;padding:16px}
+.vmr-heat-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:10px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-family:inherit;transition:transform .12s,box-shadow .12s;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.vmr-heat-tile:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 6px 20px rgba(0,0,0,.35);z-index:2}
+.vmr-heat-tile-name{font-size:.7rem;font-weight:600;color:rgba(0,0,0,.8);text-align:center;word-break:break-all;padding:0 4px;line-height:1.2}
+.vmr-heat-tile-vms{font-size:.65rem;color:rgba(0,0,0,.65)}
+.vmr-heat-tile-score{font-size:.6rem;color:rgba(0,0,0,.5);font-family:var(--font-mono,monospace)}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -4855,6 +4861,18 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHeatmapCsv()" title="Export heatmap as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHeatmap()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div></div>
     <div id="heatmap-cap-banner"></div>
   <div id="heatmap-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card" style="margin-bottom:10px">
+    <div class="card-header">
+      <span class="card-title">Node Heat Grid</span>
+      <span style="font-size:.72rem;color:var(--text-dim);margin-left:8px">tile size = VM count · color = heat score</span>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <span style="font-size:.72rem;color:var(--text-dim)">Cool</span>
+        <div style="width:80px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(52,211,153,.8),rgba(251,191,36,.8),rgba(239,68,68,.8))"></div>
+        <span style="font-size:.72rem;color:var(--text-dim)">Hot</span>
+      </div>
+    </div>
+    <div id="heatmap-grid" class="vmr-heatmap-grid"></div>
+  </div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span><span id="heatmap-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="heatmap-search" class="form-input" placeholder="Filter nodes…" oninput="filterHeatmapView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Node</th><th>CPU %</th><th>Memory %</th><th>Disk %</th><th>Network est.</th><th>VMs</th><th>Heat</th></tr></thead><tbody id="heatmap-body"></tbody></table></div>
 </div>
@@ -12302,6 +12320,19 @@ function filterChaosView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
 }
 
+function heatColor(score) {
+  const s = Math.max(0, Math.min(1, Number(score) || 0));
+  if (s < 0.5) {
+    const t = s * 2;
+    const r = Math.round(52 + (251-52)*t), g = Math.round(211 + (191-211)*t), b = Math.round(153 + (36-153)*t);
+    return 'rgba(' + r + ',' + g + ',' + b + ',.85)';
+  } else {
+    const t = (s - 0.5) * 2;
+    const r = Math.round(251 + (239-251)*t), g = Math.round(191 + (68-191)*t), b = Math.round(36 + (68-36)*t);
+    return 'rgba(' + r + ',' + g + ',' + b + ',.85)';
+  }
+}
+
 function filterHeatmapView(query) {
   const tb = document.getElementById('heatmap-body');
   if (!tb) return;
@@ -12316,6 +12347,29 @@ function filterHeatmapView(query) {
       '<td>' + (n.disk_utilization || 0).toFixed(1) + '</td><td>' + (n.network_utilization || 0).toFixed(1) + '</td>' +
       '<td>' + (n.vm_count ?? 0) + '</td><td>' + (n.heat_score || 0).toFixed(2) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching nodes</td></tr>';
+  // Visual heat grid
+  const grid = document.getElementById('heatmap-grid');
+  if (grid) {
+    if (!filtered.length) { grid.innerHTML = '<p style="color:var(--text-dim);padding:16px">No nodes</p>'; return; }
+    const maxVms = Math.max(1, ...filtered.map(function(n) { return Number(n.vm_count) || 0; }));
+    grid.innerHTML = filtered.map(function(n) {
+      const heat = Number(n.heat_score) || 0;
+      const vms = Number(n.vm_count) || 0;
+      const size = 72 + Math.round((vms / maxVms) * 48);
+      const bg = heatColor(heat);
+      const label = (n.node_name || '').split('.')[0];
+      const shortLabel = label.length > 12 ? label.slice(0, 10) + '…' : label;
+      const tipParts = [n.node_name, 'CPU: ' + (n.cpu_utilization||0).toFixed(1) + '%', 'Mem: ' + (n.memory_utilization||0).toFixed(1) + '%', 'VMs: ' + vms, 'Heat: ' + heat.toFixed(2)];
+      return '<button type="button" class="vmr-heat-tile" ' +
+        'style="width:' + size + 'px;height:' + size + 'px;background:' + bg + '"' +
+        ' title="' + esc(tipParts.join(' · ')) + '"' +
+        ' onclick="document.getElementById(\'heatmap-search\').value=' + JSON.stringify(n.node_name) + ';filterHeatmapView(' + JSON.stringify(n.node_name) + ')">' +
+        '<div class="vmr-heat-tile-name">' + esc(shortLabel) + '</div>' +
+        '<div class="vmr-heat-tile-vms">' + vms + ' VM' + (vms !== 1 ? 's' : '') + '</div>' +
+        '<div class="vmr-heat-tile-score">' + heat.toFixed(2) + '</div>' +
+        '</button>';
+    }).join('');
+  }
 }
 
 function filterHpaView(query) {
