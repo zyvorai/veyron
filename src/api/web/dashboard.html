@@ -14236,7 +14236,7 @@ async function fetchCRDs() {
     }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
     window.lastCrdVms = items;
-    tb.innerHTML = items.map(v => '<tr><td>' + esc(v.name) + '</td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + esc(v.ip||'-') + '</td></tr>').join('');
+    filterCrdsView((document.getElementById('crds-search') || {}).value || '');
   } catch (e) {
     tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchCRDs');
   }
@@ -16216,14 +16216,7 @@ async function fetchSocPage(refresh) {
         : '<p style="color:var(--text-dim);margin:0">No detections — cluster looks clear for configured rules</p>';
     }
     window.lastSocEvents = events;
-    if (evBody) {
-      evBody.innerHTML = events.map(e =>
-        '<tr><td>' + fmtTime(e.timestamp) + '</td>' +
-        '<td><span class="glass-badge ' + glassTableBadge(e.severity) + '">' + esc(e.severity) + '</span></td>' +
-        '<td>' + esc(e.category) + '</td><td>' + esc(e.source) + '</td>' +
-        '<td>' + esc(e.message) + '</td><td>' + esc(e.target || e.namespace || '') + '</td></tr>'
-      ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No security events</td></tr>';
-    }
+    if (evBody) filterSocEventsView((document.getElementById('soc-events-search') || {}).value || '');
     if (asmBody) {
       asmBody.innerHTML = asm.map(a =>
         '<tr class="clickable-row" ' + (a.vm_name ? onHandler('openVmDetailDeep(' + jsArgs(a.vm_namespace, a.vm_name) + ')') : '') + '>' +
@@ -16298,15 +16291,7 @@ async function fetchCompliance() {
     }
     window.lastComplianceStatuses = statuses;
     window.lastComplianceReports = reports;
-    if (stBody) stBody.innerHTML = statuses.map(s =>
-      '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
-      '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
-      '<td><span class="glass-badge ' + (s.compliant ? 'running' : 'error') + '">' + (s.compliant ? 'yes' : 'no') + '</span></td>' +
-      '<td>' + fmtTime(s.last_checked) + '</td></tr>'
-    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No frameworks</td></tr>';
-    if (repBody) repBody.innerHTML = reports.map(r => `<tr>
-      <td>${esc(r.id)}</td><td>${esc(r.framework)}</td><td>${fmtTime(r.generated_at)}</td>
-      <td>${r.summary?.score ?? '-'}%</td><td>${(r.findings || []).length}</td></tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No reports</td></tr>';
+    filterComplianceView((document.getElementById('compliance-search') || {}).value || '');
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
