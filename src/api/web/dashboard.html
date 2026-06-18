@@ -2126,6 +2126,11 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-heat-tile-name{font-size:.7rem;font-weight:600;color:rgba(0,0,0,.8);text-align:center;word-break:break-all;padding:0 4px;line-height:1.2}
 .vmr-heat-tile-vms{font-size:.65rem;color:rgba(0,0,0,.65)}
 .vmr-heat-tile-score{font-size:.6rem;color:rgba(0,0,0,.5);font-family:var(--font-mono,monospace)}
+.vmr-fsbar-seg{flex:none;height:100%;transition:flex .25s;cursor:pointer}
+.vmr-fsbar-seg:hover{filter:brightness(1.25)}
+body.vmr-fleet-full #vm-workspace{grid-template-columns:1fr!important}
+body.vmr-fleet-full .vm-focus-pane{display:none!important}
+#vmr-fleet-full-btn.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.45);color:var(--cyan)}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -3764,6 +3769,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+    <div id="vmr-fleet-status-bar" title="Fleet status: click to filter" style="display:none;flex-shrink:0;cursor:pointer;gap:1px;border-radius:4px;overflow:hidden;height:14px;width:72px;align-items:stretch"></div>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
@@ -8426,6 +8433,7 @@ function renderSettingsVmr() {
     ['/',    'Focus VM search (VMs page)'],
     ['?',    'Show this shortcuts reference'],
     [':',    'Command bar — :start :stop :snap :go <page> :ns <name> …'],
+    ['Z',    'Zen mode — expand VM list full-width (VMs page)'],
     ['⌘R',   'Refresh data now'],
     ['⌘\\',  'Toggle Finder sidebar'],
     ['↑ / ↓ or j / k', 'Navigate VM list (vi-style j/k also works)'],
@@ -13451,6 +13459,15 @@ document.addEventListener('keydown', e => {
       if (vm && vm.status === 'Running') { e.preventDefault(); openConnectModal(selectedVmNs, selectedVmName); return; }
     }
   }
+  // Z key — Zen mode (list-only, hide inspector) on VMs page
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'z' || e.key === 'Z') && currentPage === 'vms') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      if (typeof toggleVmrFleetFull === 'function') toggleVmrFleetFull();
+      return;
+    }
+  }
   // : key — vim-style command bar (works on any page)
   if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === ':') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
@@ -15022,6 +15039,7 @@ function filterVMs() {
       : sorted.map(v => vmRow(v, true)).join('');
   }
   updateTabTitleIssueCount();
+  updateFleetStatusBar();
 }
 
 function updateTabTitleIssueCount() {
@@ -15031,6 +15049,38 @@ function updateTabTitleIssueCount() {
   }).length;
   const pageName = (currentPage && currentPage !== 'dashboard') ? (navPageLabel(currentPage) + ' — ') : '';
   document.title = (issues > 0 ? '⚠' + issues + ' · ' : '') + pageName + 'VMRogue';
+}
+
+function updateFleetStatusBar() {
+  const bar = document.getElementById('vmr-fleet-status-bar');
+  if (!bar || !vmData.length) { if (bar) bar.style.display = 'none'; return; }
+  const running = vmData.filter(function(v) { return (v.status||'').toLowerCase() === 'running'; }).length;
+  const stopped = vmData.filter(function(v) { return (v.status||'').toLowerCase() === 'stopped'; }).length;
+  const issues = vmData.filter(function(v) { const s=(v.status||'').toLowerCase(); return s==='failed'||s==='error'; }).length;
+  const other = vmData.length - running - stopped - issues;
+  const total = vmData.length || 1;
+  function seg(count, color, filter, title) {
+    if (!count) return '';
+    const pct = (count / total * 100).toFixed(1);
+    return '<div class="vmr-fsbar-seg" style="flex:' + count + ';background:' + color + '" ' +
+      'title="' + esc(count + ' ' + title) + '" ' +
+      'onclick="setVmStatusFilter(document.querySelector(\'.vmr-chip[data-filter=\\\"' + filter + '\\\"]\'),' + JSON.stringify(filter) + ')"></div>';
+  }
+  bar.style.display = 'flex';
+  bar.innerHTML =
+    seg(running, 'rgba(52,211,153,.7)', 'Running', 'Running') +
+    seg(stopped, 'rgba(100,116,139,.5)', 'Stopped', 'Stopped') +
+    seg(issues, 'rgba(239,68,68,.7)', '__issues__', 'Issues') +
+    seg(other, 'rgba(100,116,139,.3)', '', 'Other');
+}
+
+var _vmrFleetFull = false;
+function toggleVmrFleetFull() {
+  _vmrFleetFull = !_vmrFleetFull;
+  document.body.classList.toggle('vmr-fleet-full', _vmrFleetFull);
+  const btn = document.getElementById('vmr-fleet-full-btn');
+  if (btn) btn.classList.toggle('active', _vmrFleetFull);
+  btn && (btn.title = _vmrFleetFull ? 'Exit Zen mode (Z)' : 'Zen mode — expand list full-width (Z)');
 }
 
 // ── Nodes ──
