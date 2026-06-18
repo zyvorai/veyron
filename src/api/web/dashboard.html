@@ -3898,7 +3898,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-storage" data-section="storage">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Storage</h1><p>PVCs and storage classes</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runStorageDoctor()">Storage Doctor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchStorage()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runStorageDoctor()">Storage Doctor</button></div></div>
     <div class="card glass-card" id="storage-doctor-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Storage Doctor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('storage-doctor-card')">Dismiss</button></div>
     <div id="storage-doctor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -3907,7 +3907,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="storage-summary" class="grid-4 page-glass-stats"></div>
   <p id="storage-prometheus-hint" style="display:none;margin:0 0 10px;font-size:.82em;color:var(--text-dim);font-family:var(--font-mono)"></p>
   <div class="grid-2">
-    <div class="card glass-card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span><input type="search" id="pvc-search" class="form-input" placeholder="Filter PVCs…" oninput="filterPvcsView(this.value)" style="width:180px;font-size:.82rem"></div><div id="pvc-list"></div></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span><input type="search" id="pvc-search" class="form-input" placeholder="Filter PVCs…" oninput="filterPvcsView(this.value)" style="width:180px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPvcsCsv()" title="Export PVCs as CSV" style="margin-left:8px">&#8595; CSV</button></div><div id="pvc-list"></div></div>
     <div class="card glass-card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
   </div>
 </div>
@@ -9075,6 +9075,13 @@ function exportWebhooksCsv() {
   });
   exportCsv(rows, 'webhooks.csv');
 }
+function exportPvcsCsv() {
+  const rows = [['Name', 'Namespace', 'Capacity', 'Storage Class', 'Status']];
+  (window.lastPvcRows || []).forEach(function(p) {
+    rows.push([p.name, p.namespace, p.capacity, p.storage_class, p.status]);
+  });
+  exportCsv(rows, 'pvcs.csv');
+}
 function exportIncidentsCsv() {
   const rows = [['Time', 'Type', 'Severity', 'Title', 'VM', 'Namespace', 'State']];
   (window.lastIncidentEvents || []).forEach(function(e) {
@@ -10825,7 +10832,7 @@ function filterCostsView(query) {
     const stor = Number(c.storage_cost) || 0;
     const tot = Number(c.total_cost) || 0;
     return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
-      '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
+      '<td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.vm_name) + ')') + '>' + esc(c.vm_name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
       '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
 }
@@ -11401,9 +11408,11 @@ function filterEventsFullList(query) {
   el.innerHTML = filtered.map(function(e) {
     const isWarn = e.type === 'Warning';
     const cls = isWarn ? 'warn' : 'info';
+    const obj = e.involved_object || '';
     return '<div class="event-row"><div class="event-dot ' + cls + '"></div>' +
       '<div class="event-body"><p class="event-msg">' + esc(e.message || e.reason || 'No message') + '</p>' +
-      '<div class="event-meta"><span>' + esc(e.namespace) + '</span><span>' + esc(e.involved_object) + '</span></div></div>' +
+      '<div class="event-meta"><span>' + esc(e.namespace) + '</span>' +
+      '<span class="vmr-copy-tile" title="Copy object ref" ' + onStopHandler('copyToClipboard(' + jsArgs(obj) + ')') + '>' + esc(obj) + '<span class="vmr-copy-hint">copy</span></span></div></div>' +
       '<span class="event-badge ' + cls + '">' + (isWarn ? 'Warning' : 'Info') + '</span>' +
       '<span class="event-time">' + fmtTime(e.timestamp) + '</span></div>';
   }).join('');
