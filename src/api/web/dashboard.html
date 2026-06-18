@@ -3722,8 +3722,14 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="vm-list-pane">
       <div class="vm-list-toolbar vmr-list-toolbar-compact">
         <div class="bulk-bar" id="bulk-bar" style="margin-top:10px">
-          <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)">
+          <input type="checkbox" class="bulk-check" id="bulk-select-all" onchange="toggleSelectAll(this.checked)" title="Select all (⌘A)">
           <span id="bulk-count">0 selected</span>
+          <div class="bulk-actions" id="bulk-actions" style="display:none;gap:5px;align-items:center">
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')" title="Start selected VMs">▶ Start</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')" title="Stop selected VMs">■ Stop</button>
+            <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')" title="Delete selected VMs">✕ Delete</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="toggleSelectAll(false)">Clear</button>
+          </div>
         </div>
         <span id="vms-freshness" class="vmr-freshness-label"></span>
       </div>
@@ -10886,6 +10892,15 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a' && currentPage === 'vms') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      const allChecked = selectedVMs.size === vmData.length && vmData.length > 0;
+      toggleSelectAll(!allChecked);
+      return;
+    }
+  }
   if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key.toLowerCase() === 'c') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -13180,6 +13195,8 @@ function toggleBulkBar() {
   const bar = document.getElementById('bulk-bar');
   bar.classList.toggle('visible', selectedVMs.size > 0);
   document.getElementById('bulk-count').textContent = selectedVMs.size + ' selected';
+  const acts = document.getElementById('bulk-actions');
+  if (acts) acts.style.display = selectedVMs.size > 0 ? 'flex' : 'none';
 }
 
 function toggleVMSelect(ns, name, checked) {
