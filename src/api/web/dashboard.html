@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260619a">
+<meta name="veyron-dashboard-rev" content="20260619b">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260619a';
+  var DASH_REV = '20260619b';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -1968,7 +1968,7 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   .table-header{display:none!important}
   .filter-bar{flex-direction:column}
   .filter-bar .form-input,.filter-bar .form-select{max-width:100%}
-  .modal{width:95vw;max-height:90vh}
+  .modal{width:95vw;max-height:90vh;overflow-y:auto}
   .btn-group{flex-wrap:wrap}
 }
 @media(max-width:480px){
@@ -2989,7 +2989,8 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
   transition:background .2s;font-family:inherit;cursor:pointer}
 .login-btn-secondary:hover{background:rgba(30,41,59,.9)}
 @media(max-width:1023px){.login-hero,.login-beam{display:none!important}.login-panel{min-height:100vh;padding:40px 20px}}
-@media(prefers-reduced-motion:reduce){.login-aurora,.login-scanline,.login-spotlight,.login-orb,.login-particle,.login-beam,.login-logo-ring,.login-glass{animation:none!important}.login-fade-in,.login-fade-in-d1,.login-fade-in-d2,.login-fade-in-d3,.login-fade-in-d4{animation:none!important;opacity:1!important}.login-btn-primary::after{animation:none!important}.login-feature-card:hover{transform:none!important}}
+@media(min-width:1024px) and (max-width:1279px){.login-panel{padding:32px 20px}.login-glass{max-width:400px;width:100%}}
+@media(prefers-reduced-motion:reduce){.login-aurora,.login-scanline,.login-spotlight,.login-orb,.login-particle,.login-beam,.login-logo-ring,.login-glass{animation:none!important}.login-fade-in,.login-fade-in-d1,.login-fade-in-d2,.login-fade-in-d3,.login-fade-in-d4{animation:none!important;opacity:1!important}.login-btn-primary::after{animation:none!important;display:none}.login-btn-primary:hover{background:linear-gradient(135deg,#3b82f6 0%,#2563eb 50%,#1d4ed8 100%)!important}.login-feature-card:hover{transform:none!important}}
 /* theme picker (reused below glass card) */
 .signin-theme-picker{margin-top:20px;margin-bottom:14px}
 .signin-theme-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:8px;text-align:center}
@@ -5864,6 +5865,12 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
             </span>
           </div>
 
+          <!-- inline error (shown on bad key) -->
+          <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:rgba(127,29,29,.5);border:1px solid rgba(239,68,68,.4);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:#fca5a5;line-height:1.45">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="apikey-error-msg">Invalid API key — check and try again.</span>
+          </div>
+
           <!-- SSO section (shown when OIDC configured) -->
           <div id="oidc-login-section" style="display:none;margin-bottom:16px">
             <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
@@ -6136,7 +6143,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260619a';
+window.__VMROGUE_DASH_REV = '20260619b';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -7303,16 +7310,41 @@ function requireApiKey() {
 }
 
 function submitApiKey() {
-  const key = document.getElementById('apikey-input').value.trim();
-  if (!key) return;
+  const inp = document.getElementById('apikey-input');
+  const errEl = document.getElementById('apikey-error');
+  const errMsg = document.getElementById('apikey-error-msg');
+  const btn = document.querySelector('#apikey-modal .login-btn-primary');
+  if (!inp) return;
+  const key = inp.value.trim();
+  if (!key) { inp.focus(); return; }
+  if (errEl) errEl.style.display = 'none';
   sessionStorage.removeItem(OIDC_TOKEN_KEY);
-  const remember = document.getElementById('apikey-remember').checked;
-  if (remember) {
-    localStorage.setItem('veyron_api_key', key);
-  } else {
-    sessionStorage.setItem('veyron_api_key', key);
-    localStorage.removeItem('veyron_api_key');
-  }
+  const rememberEl = document.getElementById('apikey-remember');
+  const remember = rememberEl ? rememberEl.checked : false;
+
+  // Store key then probe to validate before closing the modal
+  if (remember) { localStorage.setItem('veyron_api_key', key); } else { sessionStorage.setItem('veyron_api_key', key); localStorage.removeItem('veyron_api_key'); }
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+  fetch('/api/v1/experience/desktop', { headers: { 'X-API-Key': key }, signal: AbortSignal.timeout ? AbortSignal.timeout(6000) : undefined })
+    .then(function(r) {
+      if (r.status === 401 || r.status === 403) {
+        localStorage.removeItem('veyron_api_key'); sessionStorage.removeItem('veyron_api_key');
+        if (errMsg) errMsg.textContent = r.status === 403 ? 'Key lacks permission for this cluster.' : 'Invalid API key — check and try again.';
+        if (errEl) errEl.style.display = 'flex';
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        inp.select(); inp.focus();
+        return;
+      }
+      _applyKeyAccepted(key);
+    })
+    .catch(function() {
+      // Network unreachable — accept key anyway, dashboard will show proper errors
+      _applyKeyAccepted(key);
+    });
+}
+function _applyKeyAccepted(key) {
+  const btn = document.querySelector('#apikey-modal .login-btn-primary');
+  if (btn) { btn.disabled = false; btn.style.opacity = ''; }
   document.getElementById('apikey-modal').classList.remove('open');
   updateAuthSessionUI();
   if (apiKeyResolve) { apiKeyResolve(key); apiKeyResolve = null; }
@@ -7322,6 +7354,7 @@ function submitApiKey() {
 function toggleKeyVisibility() {
   const inp = document.getElementById('apikey-input');
   const btn = document.getElementById('eye-toggle');
+  if (!inp || !btn) return;
   if (inp.type === 'password') {
     inp.type = 'text';
     btn.innerHTML = '&#128064;';
@@ -12653,13 +12686,14 @@ function openCopilotWithVm(prefill, vmNs, vmName) {
   const panel = modal && modal.querySelector('.copilot-panel');
   if (!modal) return;
   copilotReturnFocus = document.activeElement;
+  const wasOpen = modal.classList.contains('open');
   modal.classList.add('open');
   document.body.style.overflow = 'hidden';
   document.getElementById('copilot-result').innerHTML = '';
   renderCopilotThread();
   loadCopilotStatus();
   setCopilotContext(vmNs, vmName);
-  document.addEventListener('keydown', onCopilotKeydown, true);
+  if (!wasOpen) document.addEventListener('keydown', onCopilotKeydown, true);
   if (input) {
     input.value = prefill || '';
     setTimeout(function() { input.focus(); }, 50);
