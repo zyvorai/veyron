@@ -6075,6 +6075,8 @@ function navigate(page, opts) {
   upsertDesktopTab(page);
   renderDesktopTabs();
   updatePageContext(page);
+  const scrollPane = pageEl.querySelector('.mac-page-window') || pageEl;
+  scrollPane.scrollTop = 0;
   loadPageData(page);
   if (!opts || !opts.skipHash) setDashboardHash(page, null, false);
 }
