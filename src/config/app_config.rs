@@ -453,10 +453,7 @@ mod tests {
         );
         assert_eq!(config.logging.level, "debug");
         assert_eq!(config.logging.format, "json");
-        assert_eq!(
-            config.logging.file,
-            Some("/var/log/veyron.log".to_string())
-        );
+        assert_eq!(config.logging.file, Some("/var/log/veyron.log".to_string()));
         assert_eq!(config.api.port, 443);
         assert_eq!(config.api.host, "127.0.0.1");
         assert!(config.api.tls);

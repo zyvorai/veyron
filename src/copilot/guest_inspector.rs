@@ -54,9 +54,7 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
 
     append_guest_evidence(&mut r, &vmi);
 
-    let agent_up = vmi_json
-        .as_ref()
-        .is_some_and(vmi_guest_agent_connected);
+    let agent_up = vmi_json.as_ref().is_some_and(vmi_guest_agent_connected);
     if agent_up {
         r.evidence
             .push("Guest runtime: connected (AgentConnected=True)".into());
@@ -136,9 +134,7 @@ pub async fn guest_inspector(client: &KubeClient, namespace: &str, name: &str) -
 pub fn enrich_doctor_with_guest(r: &mut CopilotResponse, vmi: &VirtualMachineInstance) {
     append_guest_evidence(r, vmi);
     let vmi_json = to_value(vmi).ok();
-    let agent_up = vmi_json
-        .as_ref()
-        .is_some_and(vmi_guest_agent_connected);
+    let agent_up = vmi_json.as_ref().is_some_and(vmi_guest_agent_connected);
     if !agent_up {
         r.recommendations.push(
             "Guest runtime not connected — Linux VMs use GuestKit; Windows uses QEMU Guest Agent."
@@ -191,8 +187,9 @@ fn append_guestkit_evidence(r: &mut CopilotResponse, evidence: &EvidenceSnapshot
         ));
     }
     if evidence.security.pending_security_updates {
-        r.recommendations
-            .push("Guest reports pending security updates — patch during a maintenance window.".into());
+        r.recommendations.push(
+            "Guest reports pending security updates — patch during a maintenance window.".into(),
+        );
     }
 }
 

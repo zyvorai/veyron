@@ -12,9 +12,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 #[cfg(feature = "web")]
-use crate::soc::{
-    asm, collect, detections, event::SecurityEvent, export, hunts, playbooks, store,
-};
+use crate::soc::{asm, collect, detections, event::SecurityEvent, export, hunts, playbooks, store};
 
 #[cfg(feature = "web")]
 use super::namespace_scope::{self, DashboardNamespaceQuery};
@@ -133,8 +131,7 @@ async fn list_soc_detections(
     let s = state.read().await;
     let stored = store::load_detections(&k8s, &ns).await;
     let fresh = detections::evaluate_detections(s.client(), &ns).await;
-    let old_ids: std::collections::HashSet<String> =
-        stored.iter().map(|d| d.id.clone()).collect();
+    let old_ids: std::collections::HashSet<String> = stored.iter().map(|d| d.id.clone()).collect();
     let merged = detections::merge_detections(fresh, &stored);
     store::save_detections(&k8s, &ns, &merged).await;
 
@@ -147,7 +144,13 @@ async fn list_soc_detections(
         }
     }
     export::push_events_batch(
-        &store::load_events(&k8s, &ns).await.iter().rev().take(20).cloned().collect::<Vec<_>>(),
+        &store::load_events(&k8s, &ns)
+            .await
+            .iter()
+            .rev()
+            .take(20)
+            .cloned()
+            .collect::<Vec<_>>(),
     )
     .await;
 
@@ -181,7 +184,10 @@ async fn ack_soc_detection(
 ) -> Result<Json<detections::SocDetection>, StatusCode> {
     let (ns, k8s) = soc_namespace(&state, q.namespace).await;
     let mut list = store::load_detections(&k8s, &ns).await;
-    let det = list.iter_mut().find(|d| d.id == id).ok_or(StatusCode::NOT_FOUND)?;
+    let det = list
+        .iter_mut()
+        .find(|d| d.id == id)
+        .ok_or(StatusCode::NOT_FOUND)?;
     det.status = "acknowledged".to_string();
     det.acked_by = body.acked_by.or(Some("analyst".into()));
     det.acked_at = Some(chrono::Utc::now().to_rfc3339());
@@ -209,14 +215,13 @@ async fn list_soc_hunts(
 }
 
 #[cfg(feature = "web")]
-async fn run_soc_hunt(Json(req): Json<hunts::RunHuntRequest>) -> Result<Json<serde_json::Value>, StatusCode> {
-    hunts::run_hunt(&req)
-        .await
-        .map(Json)
-        .map_err(|e| {
-            log::warn!("soc hunt: {e}");
-            StatusCode::BAD_GATEWAY
-        })
+async fn run_soc_hunt(
+    Json(req): Json<hunts::RunHuntRequest>,
+) -> Result<Json<serde_json::Value>, StatusCode> {
+    hunts::run_hunt(&req).await.map(Json).map_err(|e| {
+        log::warn!("soc hunt: {e}");
+        StatusCode::BAD_GATEWAY
+    })
 }
 
 #[cfg(feature = "web")]

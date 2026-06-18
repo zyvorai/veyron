@@ -93,9 +93,7 @@ fn normalize_openai_base_url(url: &str) -> String {
 fn resolve_api_key() -> Option<String> {
     env_nonempty("VMROGUE_AI_API_KEY")
         .or_else(|| env_nonempty("OPENROUTER_API_KEY"))
-        .or_else(|| {
-            env_nonempty("ANTHROPIC_AUTH_TOKEN").filter(|k| is_openrouter_key(k))
-        })
+        .or_else(|| env_nonempty("ANTHROPIC_AUTH_TOKEN").filter(|k| is_openrouter_key(k)))
 }
 
 fn resolve_base_url(key: &str) -> String {
@@ -417,8 +415,8 @@ async fn post_chat_raw(cfg: &LlmConfig, body: &serde_json::Value) -> anyhow::Res
         format!("{}/chat/completions", cfg.base_url)
     };
     let mut req = client.post(url).bearer_auth(&cfg.api_key);
-    if let Some(referer) = env_nonempty("VMROGUE_AI_HTTP_REFERER")
-        .or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
+    if let Some(referer) =
+        env_nonempty("VMROGUE_AI_HTTP_REFERER").or_else(|| env_nonempty("OPENROUTER_HTTP_REFERER"))
     {
         req = req.header("HTTP-Referer", referer);
     }

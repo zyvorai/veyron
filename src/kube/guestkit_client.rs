@@ -6,9 +6,9 @@
 use anyhow::{Context, Result};
 use guestkit_agent_protocol::{read_line, write_line};
 use k8s_openapi::api::core::v1::Pod;
-use kube::api::{AttachParams, Api, ListParams};
 use kube::Client;
-use serde_json::{json, Value};
+use kube::api::{Api, AttachParams, ListParams};
+use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 use tokio::io::AsyncReadExt;
 
@@ -81,7 +81,10 @@ async fn exec_in_virt_launcher(
     if let Some(mut err) = attached.stderr() {
         err.read_to_end(&mut stderr).await?;
     }
-    attached.join().await.context("virt-launcher pod exec join")?;
+    attached
+        .join()
+        .await
+        .context("virt-launcher pod exec join")?;
     Ok((
         String::from_utf8_lossy(&stdout).to_string(),
         String::from_utf8_lossy(&stderr).to_string(),
@@ -274,9 +277,10 @@ mod tests {
     fn parse_virsh_qga_output_surfaces_virsh_error() {
         let err = super::parse_virsh_qga_output("", "error: Guest agent is not connected");
         assert!(err.is_err());
-        assert!(err
-            .unwrap_err()
-            .to_string()
-            .contains("Guest agent is not connected"));
+        assert!(
+            err.unwrap_err()
+                .to_string()
+                .contains("Guest agent is not connected")
+        );
     }
 }

@@ -33,7 +33,14 @@ pub struct SocDetection {
 }
 
 impl SocDetection {
-    pub fn open(rule_id: &str, severity: &str, title: &str, message: &str, resource: &str, ns: &str) -> Self {
+    pub fn open(
+        rule_id: &str,
+        severity: &str,
+        title: &str,
+        message: &str,
+        resource: &str,
+        ns: &str,
+    ) -> Self {
         let now = Utc::now().to_rfc3339();
         let id = format!("det-{}-{}", rule_id, resource.replace('/', "-"));
         Self {

@@ -30,10 +30,7 @@ fn role_rank(role: &ApiRole) -> u8 {
 
 /// Minimum role required for a route. Safe methods always require ReadOnly.
 pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
-    if matches!(
-        method,
-        &Method::GET | &Method::HEAD | &Method::OPTIONS
-    ) {
+    if matches!(method, &Method::GET | &Method::HEAD | &Method::OPTIONS) {
         return ApiRole::ReadOnly;
     }
 
@@ -97,10 +94,7 @@ mod tests {
     #[test]
     fn admin_required_for_snapshot_restore() {
         assert_eq!(
-            min_role_for_route(
-                &Method::POST,
-                "/api/v1/snapshots/default/my-snap/restore"
-            ),
+            min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-snap/restore"),
             ApiRole::Admin
         );
     }

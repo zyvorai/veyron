@@ -71,9 +71,9 @@ pub mod observability;
 pub mod profiles;
 pub mod secrets;
 pub mod security;
-pub mod soc;
 pub mod servicemesh;
 pub mod snapshots;
+pub mod soc;
 
 // Operator CRD types (veyron.io/v1alpha1)
 pub mod operator_crds;

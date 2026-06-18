@@ -8,13 +8,13 @@ mod types;
 
 pub use types::*;
 
-use crate::kube::guest_os::{detect_guest_os_family, GuestOsFamily};
+use crate::kube::guest_os::{GuestOsFamily, detect_guest_os_family};
 use crate::kube::guestkit_client;
 use crate::kube::windows_rdp::{is_windows_guest, vmi_guest_agent_connected};
 use anyhow::{Context, Result};
 use guestkit::evidence::EvidenceSnapshot;
 use kube::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::env;
 
 /// Preferred guest runtime backend from environment.
@@ -42,7 +42,10 @@ fn runtime_kind_from_guest_info(raw: &Value) -> Option<GuestRuntimeKind> {
         .or_else(|| raw.get("supported_commands"))
         .and_then(|v| v.as_array());
     if let Some(list) = commands {
-        if list.iter().any(|c| c.as_str() == Some("guestkit-get-evidence")) {
+        if list
+            .iter()
+            .any(|c| c.as_str() == Some("guestkit-get-evidence"))
+        {
             return Some(GuestRuntimeKind::GuestKit);
         }
     }
@@ -160,17 +163,8 @@ impl GuestContext {
     }
 }
 
-pub async fn guest_exec(
-    ctx: &GuestContext,
-    body: Value,
-) -> Result<Value> {
-    kubevirt::vmi_guest_exec(
-        ctx.client.clone(),
-        &ctx.namespace,
-        &ctx.vmi_name,
-        body,
-    )
-    .await
+pub async fn guest_exec(ctx: &GuestContext, body: Value) -> Result<Value> {
+    kubevirt::vmi_guest_exec(ctx.client.clone(), &ctx.namespace, &ctx.vmi_name, body).await
 }
 
 pub async fn guestkit_evidence(ctx: &GuestContext) -> Result<EvidenceSnapshot> {

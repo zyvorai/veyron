@@ -2,13 +2,13 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-pub mod guest_runtime;
-pub mod guestkit_client;
 pub mod converter;
 pub mod guest_filesystem;
 pub mod guest_os;
 #[cfg(feature = "web")]
 pub mod guest_prometheus;
+pub mod guest_runtime;
+pub mod guestkit_client;
 #[cfg(not(feature = "web"))]
 pub mod guest_prometheus {
     use super::guest_filesystem::GuestFilesystemMount;
@@ -1307,8 +1307,7 @@ impl KubeClient {
                 vmi_j,
             )
             .await?;
-            resp.guest_runtime =
-                Some(guest_runtime::runtime_kind_label(kind).to_string());
+            resp.guest_runtime = Some(guest_runtime::runtime_kind_label(kind).to_string());
             resp.prometheus_mounts = prom_mounts.clone();
             resp.sources.extend(prom_sources);
             return Ok(resp);
@@ -1445,11 +1444,7 @@ impl KubeClient {
     }
 
     /// Live GuestKit runtime metrics (CPU, memory, disk, network).
-    pub async fn guest_metrics(
-        &self,
-        namespace: &str,
-        vm_name: &str,
-    ) -> Result<serde_json::Value> {
+    pub async fn guest_metrics(&self, namespace: &str, vm_name: &str) -> Result<serde_json::Value> {
         let ctx = self.build_guest_context(namespace, vm_name).await?;
         if !ctx.connected() {
             anyhow::bail!("Guest runtime is not connected (AgentConnected condition is not True)");
@@ -1651,8 +1646,7 @@ impl KubeClient {
 
     /// KubeVirt / CDI signals for Veyron Stack Health.
     pub async fn platform_readiness(&self) -> PlatformReadiness {
-        const VIRTCTL: &str =
-            "virtctl runs on your workstation — optional for the dashboard; use for CLI console/VNC.";
+        const VIRTCTL: &str = "virtctl runs on your workstation — optional for the dashboard; use for CLI console/VNC.";
 
         let (kubevirt_api_ok, kubevirt_api_message) = match self.list_all_vms().await {
             Ok(_) => (true, None),

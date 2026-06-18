@@ -374,8 +374,9 @@ fn desktop_tiers() -> Vec<DesktopTierItem> {
         DesktopTierItem {
             id: "auto".to_string(),
             label: "Automatic".to_string(),
-            hint: "Recommended — all pages unlock as you explore; chrome expands for platform views."
-                .to_string(),
+            hint:
+                "Recommended — all pages unlock as you explore; chrome expands for platform views."
+                    .to_string(),
         },
         DesktopTierItem {
             id: "normal".to_string(),
@@ -469,12 +470,8 @@ async fn experience_desktop(
         (s.kube_client.clone(), s.namespace.clone())
     };
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
-    let summary = if let Ok(vms) = client.list_vms(&scope).await {
-        let n = vms.len();
-        Some(format!("Veyron · {n} virtual machine(s) in scope"))
-    } else {
-        None
-    };
+    let n = client.list_vms_for_scope(&scope).await.len();
+    let summary = Some(format!("Veyron · {n} virtual machine(s) in scope"));
     Json(ExperienceDesktopResponse {
         veyron_context: experience_context(),
         product: "Veyron".to_string(),
@@ -516,28 +513,26 @@ async fn fleet_health(
     };
     let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     let mut items = Vec::new();
-    if let Ok(vms) = client.list_vms(&scope).await {
-        for vm in vms {
-            let name = vm.metadata.name.clone().unwrap_or_default();
-            let ns = vm
-                .metadata
-                .namespace
-                .clone()
-                .unwrap_or_else(|| "default".to_string());
-            let status = vm
-                .status
-                .as_ref()
-                .and_then(|s| s.printable_status.clone())
-                .unwrap_or_else(|| "Unknown".to_string());
-            let (health_score, health_label) = vm_health_score(&status, false);
-            items.push(VmFleetHealthItem {
-                namespace: ns,
-                name,
-                status,
-                health_score,
-                health_label,
-            });
-        }
+    for vm in client.list_vms_for_scope(&scope).await {
+        let name = vm.metadata.name.clone().unwrap_or_default();
+        let ns = vm
+            .metadata
+            .namespace
+            .clone()
+            .unwrap_or_else(|| "default".to_string());
+        let status = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.printable_status.clone())
+            .unwrap_or_else(|| "Unknown".to_string());
+        let (health_score, health_label) = vm_health_score(&status, false);
+        items.push(VmFleetHealthItem {
+            namespace: ns,
+            name,
+            status,
+            health_score,
+            health_label,
+        });
     }
     Json(FleetHealthResponse {
         veyron_context: experience_context(),
@@ -686,7 +681,7 @@ async fn experience_home(
         scope.clone()
     };
 
-    let vms = client.list_vms(&scope).await.unwrap_or_default();
+    let vms = client.list_vms_for_scope(&scope).await;
     let total = vms.len();
     let mut running = 0usize;
     let mut stopped = 0usize;
@@ -922,97 +917,107 @@ async fn experience_search(
     };
     let scope = namespace_scope::resolve_opt(q.ns.namespace.clone(), &default_ns);
 
-    if let Ok(vms) = client.list_vms(&scope).await {
-        let wants_vnc = needle.contains("vnc") || needle.contains("console");
-        let wants_serial = needle.contains("serial");
-        let wants_rdp = needle.contains("rdp") || needle.contains("remote desktop");
-        let wants_migrate = needle.contains("migrate");
-        let wants_ssh = needle.contains("ssh");
-        let wants_connect =
-            needle.contains("connect") || needle.contains("open") || needle.contains("show");
-        let verb_tokens = ["open", "connect", "show", "vnc", "serial", "rdp", "migrate", "ssh"];
-        let name_needle = {
-            let mut tokens: Vec<&str> = needle.split_whitespace().collect();
-            tokens.retain(|t| !verb_tokens.contains(t));
-            tokens.join(" ")
-        };
-        for vm in vms {
-            let name = vm.metadata.name.as_deref().unwrap_or("");
-            let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
-            let name_lc = name.to_lowercase();
-            let ns_lc = ns.to_lowercase();
-            let matches_name = name_lc.contains(&needle)
-                || ns_lc.contains(&needle)
-                || (!name_needle.is_empty() && name_lc.contains(&name_needle));
-            if !matches_name {
-                continue;
-            }
-            let status = vm
-                .status
-                .as_ref()
-                .and_then(|s| s.printable_status.clone())
-                .unwrap_or_else(|| "Unknown".to_string());
+    let wants_vnc = needle.contains("vnc") || needle.contains("console");
+    let wants_serial = needle.contains("serial");
+    let wants_rdp = needle.contains("rdp") || needle.contains("remote desktop");
+    let wants_migrate = needle.contains("migrate");
+    let wants_ssh = needle.contains("ssh");
+    let wants_connect =
+        needle.contains("connect") || needle.contains("open") || needle.contains("show");
+    let verb_tokens = [
+        "open", "connect", "show", "vnc", "serial", "rdp", "migrate", "ssh",
+    ];
+    let name_needle = {
+        let mut tokens: Vec<&str> = needle.split_whitespace().collect();
+        tokens.retain(|t| !verb_tokens.contains(t));
+        tokens.join(" ")
+    };
+    for vm in client.list_vms_for_scope(&scope).await {
+        let name = vm.metadata.name.as_deref().unwrap_or("");
+        let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
+        let name_lc = name.to_lowercase();
+        let ns_lc = ns.to_lowercase();
+        let matches_name = name_lc.contains(&needle)
+            || ns_lc.contains(&needle)
+            || (!name_needle.is_empty() && name_lc.contains(&name_needle));
+        if !matches_name {
+            continue;
+        }
+        let status = vm
+            .status
+            .as_ref()
+            .and_then(|s| s.printable_status.clone())
+            .unwrap_or_else(|| "Unknown".to_string());
+        results.push(SearchResultItem {
+            kind: "vm".to_string(),
+            id: format!("{ns}/{name}"),
+            title: name.to_string(),
+            subtitle: format!("{ns} · {status}"),
+            action: format!("open_vm:{ns}:{name}"),
+        });
+        if wants_vnc
+            || (wants_connect && !wants_serial && !wants_ssh && !wants_migrate && !wants_rdp)
+        {
             results.push(SearchResultItem {
-                kind: "vm".to_string(),
-                id: format!("{ns}/{name}"),
-                title: name.to_string(),
-                subtitle: format!("{ns} · {status}"),
-                action: format!("open_vm:{ns}:{name}"),
+                kind: "action".to_string(),
+                id: format!("vnc-{ns}-{name}"),
+                title: format!("Open VNC for {name}"),
+                subtitle: format!("{ns} · Connect console"),
+                action: format!("open_vnc:{ns}:{name}"),
             });
-            if wants_vnc || (wants_connect && !wants_serial && !wants_ssh && !wants_migrate && !wants_rdp) {
-                results.push(SearchResultItem {
-                    kind: "action".to_string(),
-                    id: format!("vnc-{ns}-{name}"),
-                    title: format!("Open VNC for {name}"),
-                    subtitle: format!("{ns} · Connect console"),
-                    action: format!("open_vnc:{ns}:{name}"),
-                });
-            }
-            if wants_rdp || (wants_connect && needle.contains("rdp")) {
-                results.push(SearchResultItem {
-                    kind: "action".to_string(),
-                    id: format!("rdp-{ns}-{name}"),
-                    title: format!("Remote Desktop (RDP) for {name}"),
-                    subtitle: format!("{ns} · NodePort expose"),
-                    action: format!("open_rdp:{ns}:{name}"),
-                });
-            }
-            if wants_serial {
-                results.push(SearchResultItem {
-                    kind: "action".to_string(),
-                    id: format!("serial-{ns}-{name}"),
-                    title: format!("Open serial console for {name}"),
-                    subtitle: format!("{ns} · Serial"),
-                    action: format!("open_serial:{ns}:{name}"),
-                });
-            }
-            if wants_ssh {
-                results.push(SearchResultItem {
-                    kind: "action".to_string(),
-                    id: format!("ssh-{ns}-{name}"),
-                    title: format!("SSH to {name}"),
-                    subtitle: format!("{ns} · Copy commands"),
-                    action: format!("open_ssh:{ns}:{name}"),
-                });
-            }
-            if wants_migrate {
-                results.push(SearchResultItem {
-                    kind: "action".to_string(),
-                    id: format!("migrate-{ns}-{name}"),
-                    title: format!("Live migrate {name}"),
-                    subtitle: format!("{ns} · Migration"),
-                    action: format!("migrate:{ns}:{name}"),
-                });
-            }
+        }
+        if wants_rdp || (wants_connect && needle.contains("rdp")) {
+            results.push(SearchResultItem {
+                kind: "action".to_string(),
+                id: format!("rdp-{ns}-{name}"),
+                title: format!("Remote Desktop (RDP) for {name}"),
+                subtitle: format!("{ns} · NodePort expose"),
+                action: format!("open_rdp:{ns}:{name}"),
+            });
+        }
+        if wants_serial {
+            results.push(SearchResultItem {
+                kind: "action".to_string(),
+                id: format!("serial-{ns}-{name}"),
+                title: format!("Open serial console for {name}"),
+                subtitle: format!("{ns} · Serial"),
+                action: format!("open_serial:{ns}:{name}"),
+            });
+        }
+        if wants_ssh {
+            results.push(SearchResultItem {
+                kind: "action".to_string(),
+                id: format!("ssh-{ns}-{name}"),
+                title: format!("SSH to {name}"),
+                subtitle: format!("{ns} · Copy commands"),
+                action: format!("open_ssh:{ns}:{name}"),
+            });
+        }
+        if wants_migrate {
+            results.push(SearchResultItem {
+                kind: "action".to_string(),
+                id: format!("migrate-{ns}-{name}"),
+                title: format!("Live migrate {name}"),
+                subtitle: format!("{ns} · Migration"),
+                action: format!("migrate:{ns}:{name}"),
+            });
         }
     }
 
     let pages = [
         ("dashboard", "Veyron Mission Control", "Fleet overview"),
         ("vms", "Veyron Fleet Command", "KubeVirt fleet"),
-        ("app-store", "Veyron Template Foundry", "Forge VM from templates"),
+        (
+            "app-store",
+            "Veyron Template Foundry",
+            "Forge VM from templates",
+        ),
         ("console-hub", "Veyron ConsoleHub", "VNC, serial, RDP"),
-        ("stack-health", "Veyron Stack Health", "KubeVirt + CDI readiness"),
+        (
+            "stack-health",
+            "Veyron Stack Health",
+            "KubeVirt + CDI readiness",
+        ),
         ("catalog", "Catalog (advanced)", "VMTemplate CRD sync"),
         ("backups", "Backups", "Snapshots & Velero"),
         ("monitoring", "Activity Monitor", "Health & metrics"),
@@ -1195,7 +1200,9 @@ async fn experience_search(
             action: "mac:launchpad".to_string(),
         });
     }
-    if needle.contains("dock") && (needle.contains("custom") || needle.contains("edit") || needle.contains("pin")) {
+    if needle.contains("dock")
+        && (needle.contains("custom") || needle.contains("edit") || needle.contains("pin"))
+    {
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "dock-editor".to_string(),
@@ -1204,7 +1211,9 @@ async fn experience_search(
             action: "mac:dock_editor".to_string(),
         });
     }
-    if needle.contains("control center") || (needle.contains("control") && needle.contains("center")) {
+    if needle.contains("control center")
+        || (needle.contains("control") && needle.contains("center"))
+    {
         results.push(SearchResultItem {
             kind: "action".to_string(),
             id: "control-center".to_string(),

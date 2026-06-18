@@ -45,11 +45,7 @@ pub async fn save_events(client: &kube::Client, namespace: &str, events: &[Secur
 }
 
 #[cfg(feature = "web")]
-pub async fn append_events(
-    client: &kube::Client,
-    namespace: &str,
-    new_events: Vec<SecurityEvent>,
-) {
+pub async fn append_events(client: &kube::Client, namespace: &str, new_events: Vec<SecurityEvent>) {
     if new_events.is_empty() {
         return;
     }
@@ -60,21 +56,11 @@ pub async fn append_events(
 
 #[cfg(feature = "web")]
 pub async fn load_detections(client: &kube::Client, namespace: &str) -> Vec<SocDetection> {
-    read_json_array(
-        client,
-        namespace,
-        DETECTIONS_CM_NAME,
-        DETECTIONS_KEY,
-    )
-    .await
+    read_json_array(client, namespace, DETECTIONS_CM_NAME, DETECTIONS_KEY).await
 }
 
 #[cfg(feature = "web")]
-pub async fn save_detections(
-    client: &kube::Client,
-    namespace: &str,
-    detections: &[SocDetection],
-) {
+pub async fn save_detections(client: &kube::Client, namespace: &str, detections: &[SocDetection]) {
     let owned: Vec<SocDetection> = detections.to_vec();
     write_json_array(
         client,

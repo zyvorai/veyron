@@ -104,10 +104,7 @@ async fn create_alert(
     let api: kube::api::Api<ConfigMap> =
         kube::api::Api::namespaced(s.client().client(), &s.namespace);
 
-    let cm_name = format!(
-        "veyron-alert-{}",
-        req.name.to_lowercase().replace(' ', "-")
-    );
+    let cm_name = format!("veyron-alert-{}", req.name.to_lowercase().replace(' ', "-"));
     let mut data = std::collections::BTreeMap::new();
     data.insert("name".to_string(), req.name.clone());
     data.insert("severity".to_string(), req.severity.clone());

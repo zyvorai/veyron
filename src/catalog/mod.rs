@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use crate::operator_crds::{VMProfile, VMProfileSpec, VeyronVMSpec, VMTemplate, VMTemplateSpec};
+use crate::operator_crds::{VMProfile, VMProfileSpec, VMTemplate, VMTemplateSpec, VeyronVMSpec};
 use crate::profiles::PROFILES;
 use crate::templates::TEMPLATES;
 

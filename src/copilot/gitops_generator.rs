@@ -83,7 +83,8 @@ kind: Kustomization\n\
 resources:\n\
   - ../../base\n\
 # patches:\n\
-#   - path: vm-patch.yaml\n".to_string();
+#   - path: vm-patch.yaml\n"
+        .to_string();
 
     let mut files = BTreeMap::new();
     files.insert("base/kustomization.yaml".into(), kustomization);
@@ -109,10 +110,9 @@ fn sanitize_slug(s: &str) -> String {
     for ch in lower.chars() {
         if ch.is_ascii_alphanumeric() || ch == '-' {
             out.push(ch);
-        } else if (ch.is_whitespace() || ch == '_')
-            && !out.ends_with('-') && !out.is_empty() {
-                out.push('-');
-            }
+        } else if (ch.is_whitespace() || ch == '_') && !out.ends_with('-') && !out.is_empty() {
+            out.push('-');
+        }
     }
     let trimmed = out.trim_matches('-');
     if trimmed.is_empty() {

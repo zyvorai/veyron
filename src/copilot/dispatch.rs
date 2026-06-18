@@ -114,11 +114,7 @@ fn vm_name_required(module: &str, intent: &str, summary: impl Into<String>) -> C
 }
 
 async fn list_unhealthy_vms(client: &KubeClient, scope: &str) -> CopilotResponse {
-    let mut r = CopilotResponse::new(
-        "Veyron Doctor",
-        "unhealthy_fleet",
-        "Unhealthy VMs in scope",
-    );
+    let mut r = CopilotResponse::new("Veyron Doctor", "unhealthy_fleet", "Unhealthy VMs in scope");
     let vms = client.list_vms_for_scope(scope).await;
     let mut unhealthy = Vec::new();
     for vm in &vms {

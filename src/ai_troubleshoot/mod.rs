@@ -137,9 +137,7 @@ impl TroubleshootSession {
                         prerequisites: vec!["Available cluster resources".to_string()],
                         rollback_plan: "Revert resource allocation to previous values".to_string(),
                         automated: true,
-                        commands: vec![
-                            "veyron resources scale --cpu +2 --memory +2Gi".to_string(),
-                        ],
+                        commands: vec!["veyron resources scale --cpu +2 --memory +2Gi".to_string()],
                     });
                 }
                 SymptomCategory::Connectivity => {
