@@ -3959,6 +3959,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       </div>
       <div id="vmr-delta-strip" style="display:none"></div>
       <div id="vmr-fleet-briefing" style="display:none"></div>
+      <div id="vmr-anomaly-ribbon" style="display:none"></div>
       <div class="vm-list-scroll" id="vm-full-list"></div>
     </div>
     <div class="vm-focus-pane mac-inspector-pane" id="vm-focus-pane">
@@ -17064,6 +17065,7 @@ function filterVMs() {
   renderTagFilterChips();
   renderFilterPresetChips();
   updateFleetCapacityBar();
+  renderFleetAnomalyRibbon();
   requestAnimationFrame(pulseChangedVmCards);
 }
 
@@ -17142,6 +17144,62 @@ function showVmDeltaStrip(changes) {
     '</div>';
   el.style.display = 'block';
   _vmDeltaTimer = setTimeout(function() { if (el) el.style.display = 'none'; }, 8000);
+}
+
+// ── Fleet Anomaly Pulse ──
+var _dismissedAnomalies = new Set();
+function detectFleetAnomalies(vms) {
+  var alerts = [];
+  if (!vms || !vms.length) return alerts;
+  var running = vms.filter(function(v) { return v.status === 'Running'; });
+  var stopped = vms.filter(function(v) { return v.status === 'Stopped'; });
+  var failed = vms.filter(function(v) { return v.status === 'Failed' || v.status === 'Error'; });
+  var nodeMap = {};
+  vms.forEach(function(v) { if (v.node) { nodeMap[v.node] = (nodeMap[v.node] || 0) + 1; } });
+  var nodes = Object.keys(nodeMap);
+  // 1. All VMs on single node (risk: single point of failure)
+  if (vms.length >= 3 && nodes.length === 1) {
+    alerts.push({ id: 'single-node', sev: 'warn', msg: 'All ' + vms.length + ' VMs are on one node (' + nodes[0] + ') — single point of failure.' });
+  }
+  // 2. Fleet-wide stopped (no running VMs despite having several)
+  if (vms.length >= 3 && running.length === 0) {
+    alerts.push({ id: 'all-stopped', sev: 'warn', msg: 'Fleet is fully stopped — ' + stopped.length + ' VMs, zero running.' });
+  }
+  // 3. High failure rate
+  if (vms.length >= 2 && failed.length > 0 && failed.length / vms.length >= 0.3) {
+    alerts.push({ id: 'high-fail', sev: 'critical', msg: failed.length + ' of ' + vms.length + ' VMs are in a Failed/Error state (' + Math.round(failed.length/vms.length*100) + '%).' });
+  }
+  // 4. Majority stale (>60% are retire candidates)
+  var staleCount = vms.filter(function(v) { return isRetireCandidate(v); }).length;
+  if (vms.length >= 4 && staleCount / vms.length >= 0.6) {
+    alerts.push({ id: 'many-stale', sev: 'info', msg: staleCount + ' of ' + vms.length + ' VMs look stale (♻ Stale filter). Consider cleanup.' });
+  }
+  // 5. No IP on running VMs (networking issue)
+  var noIpRunning = running.filter(function(v) { return !v.ip || v.ip === 'N/A'; });
+  if (running.length >= 2 && noIpRunning.length === running.length) {
+    alerts.push({ id: 'no-ip', sev: 'warn', msg: 'No running VMs have a guest IP — possible CNI or QEMU guest agent issue.' });
+  }
+  return alerts.filter(function(a) { return !_dismissedAnomalies.has(a.id); });
+}
+function renderFleetAnomalyRibbon() {
+  var el = document.getElementById('vmr-anomaly-ribbon');
+  if (!el) return;
+  var anomalies = detectFleetAnomalies(vmData);
+  if (!anomalies.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  var sevColor = { warn: '#f59e0b', critical: '#ef4444', info: '#38bdf8' };
+  var sevBg    = { warn: 'rgba(245,158,11,.1)', critical: 'rgba(239,68,68,.1)', info: 'rgba(56,189,248,.08)' };
+  el.style.display = 'block';
+  el.innerHTML = '<div style="padding:0 14px 6px;display:flex;flex-direction:column;gap:5px">' +
+    anomalies.map(function(a) {
+      var c = sevColor[a.sev] || sevColor.warn;
+      var bg = sevBg[a.sev] || sevBg.warn;
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:' + bg + ';border:1px solid ' + c + '40;font-size:.75rem;color:var(--text-primary)">' +
+        '<span style="color:' + c + ';flex-shrink:0;font-size:.85rem">' + (a.sev === 'critical' ? '⚠' : a.sev === 'info' ? 'ℹ' : '◈') + '</span>' +
+        '<span style="flex:1">' + esc(a.msg) + '</span>' +
+        '<button type="button" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.75rem;padding:0 2px;flex-shrink:0" ' +
+          'onclick="_dismissedAnomalies.add(' + JSON.stringify(a.id) + ');renderFleetAnomalyRibbon()" title="Dismiss">✕</button>' +
+      '</div>';
+    }).join('') + '</div>';
 }
 
 function renderFleetBriefing() {
