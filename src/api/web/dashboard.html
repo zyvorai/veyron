@@ -8784,7 +8784,8 @@ function vmRow(vm, showActions) {
     ? (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"')
     : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"');
   const sshBlock = vmSshBlock(vm, showActions);
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
   return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div>'+nsLine+'</div></div>'+rightCol+'</div>';
 }
@@ -10298,7 +10299,7 @@ function renderSnapList(query) {
   }
   el.innerHTML = filtered.map(function(s) {
     const ready = s.ready;
-    return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="glass-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
+    return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy snapshot name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>'+esc(s.name)+'<span class="vmr-copy-hint">copy</span></div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="glass-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
       (ready ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
       '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
       '</div></div>';
@@ -10371,12 +10372,12 @@ function filterNodesView(query) {
   el.innerHTML = filtered.map(function(n) {
     const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
     return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
-      '<span class="cell-name">' + esc(n.name) + '</span>' +
+      '<span class="cell-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '>' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
       '<span><span class="glass-badge ' + nodeStatusBadgeClass(n.status) + '">' + esc(n.status) + '</span></span>' +
       '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
       '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
       '<span class="cell-mono">' + memGb + '</span>' +
-      '<span class="cell-mono">' + esc(n.kubelet_version) + '</span>' +
+      '<span class="cell-mono vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(n.kubelet_version) + ')') + '>' + esc(n.kubelet_version) + '<span class="vmr-copy-hint">copy</span></span>' +
       '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
       '</div>';
   }).join('');
@@ -10920,13 +10921,22 @@ function renderAboutShortcuts() {
   if (!ul) return;
   const fromApi = (lastExperienceDesktop && lastExperienceDesktop.keyboard_shortcuts) || [];
   const fallback = [
-    { keys: '⌘⇧B', label: 'Browse all pages' },
     { keys: '⌘K', label: 'Spotlight search' },
-    { keys: 'F3', label: 'Mission Control' },
-    { keys: '⌃↑', label: 'Mission Control' },
+    { keys: '⌘J', label: 'Ask Zeus AI assistant' },
+    { keys: 'F3 / ⌃↑', label: 'Mission Control (cluster overview)' },
     { keys: '⌘\\', label: 'Toggle Finder sidebar' },
-    { keys: 'Esc', label: 'Close overlays / return from console' },
-    { keys: '⌘W', label: 'Close Screen Sharing / RDP sheet' }
+    { keys: '⌘⇧B', label: 'Browse all pages' },
+    { keys: '⌘R', label: 'Refresh current page' },
+    { keys: '⌘,', label: 'Open Preferences / Settings' },
+    { keys: '/', label: 'Focus VM search (VMs page)' },
+    { keys: '↑ / ↓', label: 'Navigate VM list (VMs page)' },
+    { keys: 'C', label: 'Forge a new VM (VMs page)' },
+    { keys: '⌘A', label: 'Select / deselect all VMs (VMs page)' },
+    { keys: 'C (inspector)', label: 'Open Connect modal for selected VM' },
+    { keys: '?', label: 'Open this shortcuts reference' },
+    { keys: 'Esc', label: 'Close overlays / dismiss VM inspector' },
+    { keys: '⌘W', label: 'Close Screen Sharing / RDP sheet' },
+    { keys: '1–9', label: 'Jump to zone / window (Mission Control)' }
   ];
   const items = fromApi.length ? fromApi : fallback;
   let html = items.map(s =>
@@ -12580,12 +12590,12 @@ async function fetchNodes(opts) {
     el.innerHTML = nodes.map(n => {
       const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
       return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
-        '<span class="cell-name">' + esc(n.name) + '</span>' +
+        '<span class="cell-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '>' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
         '<span><span class="glass-badge ' + nodeStatusBadgeClass(n.status) + '">' + esc(n.status) + '</span></span>' +
         '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
         '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
         '<span class="cell-mono">' + memGb + '</span>' +
-        '<span class="cell-mono">' + esc(n.kubelet_version) + '</span>' +
+        '<span class="cell-mono vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(n.kubelet_version) + ')') + '>' + esc(n.kubelet_version) + '<span class="vmr-copy-hint">copy</span></span>' +
         '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
         '</div>';
     }).join('');
@@ -12855,11 +12865,12 @@ async function fetchPods(opts) {
       const phaseCls = p.phase === 'Running' ? 'running' : p.phase === 'Pending' ? 'pending' : p.phase === 'Failed' ? 'failed' : 'succeeded';
       const restarts = p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0);
       const age = formatPodAge(p.created_at) || p.age || '—';
+      const nodeSpan = p.node_name ? '<span class="cell-mono vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.node_name) + ')') + '>' + esc(p.node_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
+      const ipSpan = p.ip ? '<span class="cell-mono vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(p.ip) + ')') + '>' + esc(p.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
       return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
-        '<span class="cell-name">' + esc(p.name) + '</span>' +
+        '<span class="cell-name vmr-copy-tile" title="Copy pod name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></span>' +
         '<span><span class="glass-badge ' + podPhaseBadgeClass(p.phase) + '">' + esc(p.phase) + '</span></span>' +
-        '<span class="cell-mono">' + esc(p.node_name || '—') + '</span>' +
-        '<span class="cell-mono">' + esc(p.ip || '—') + '</span>' +
+        nodeSpan + ipSpan +
         '<span class="cell-mono">' + restarts + '</span>' +
         '<span class="cell-mono">' + esc(age) + '</span>' +
         '</div>';
@@ -12889,11 +12900,12 @@ function filterPodsView(query) {
   el.innerHTML = filtered.map(function(p) {
     const restarts = p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0);
     const age = formatPodAge(p.created_at) || p.age || '—';
+    const nodeSpan = p.node_name ? '<span class="cell-mono vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.node_name) + ')') + '>' + esc(p.node_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
+    const ipSpan = p.ip ? '<span class="cell-mono vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(p.ip) + ')') + '>' + esc(p.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
     return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
-      '<span class="cell-name">' + esc(p.name) + '</span>' +
+      '<span class="cell-name vmr-copy-tile" title="Copy pod name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></span>' +
       '<span><span class="glass-badge ' + podPhaseBadgeClass(p.phase) + '">' + esc(p.phase) + '</span></span>' +
-      '<span class="cell-mono">' + esc(p.node_name || '—') + '</span>' +
-      '<span class="cell-mono">' + esc(p.ip || '—') + '</span>' +
+      nodeSpan + ipSpan +
       '<span class="cell-mono">' + restarts + '</span>' +
       '<span class="cell-mono">' + esc(age) + '</span></div>';
   }).join('');
