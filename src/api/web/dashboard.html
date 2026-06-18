@@ -2117,6 +2117,9 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-cmp-label{padding:5px 10px 5px 0;color:var(--text-muted);font-size:.78rem;vertical-align:middle;white-space:nowrap}
 .vmr-cmp-val{padding:5px 10px;font-family:var(--font-mono,monospace);font-size:.78rem;border-left:1px solid var(--glass-border)}
 .vmr-cmp-section td{padding:10px 0 3px;font-size:.67rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--glass-border)}
+.vmr-recent-chip{display:inline-flex;align-items:center;gap:5px;font-size:.73rem;padding:3px 10px;border-radius:20px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-muted);cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;transition:color .12s,border-color .12s,background .12s}
+.vmr-recent-chip:hover{color:var(--text);border-color:rgba(56,189,248,.4);background:rgba(56,189,248,.07)}
+#vmr-recent-strip::-webkit-scrollbar{display:none}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -3733,6 +3736,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div id="vmr-fleet-hero"></div>
   <div id="vmr-fleet-metrics"></div>
+  <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar">
     <div style="position:relative;display:inline-flex;align-items:center">
       <input type="text" class="form-input" id="vm-search" placeholder="Search name, node:, ip:, ns: ( / )" oninput="filterVMsDebounced()" style="min-width:220px;padding-right:28px" title="Search by name, namespace, or node. Prefixes: node:worker-1, ip:10.x, ns:default">
@@ -8058,6 +8062,7 @@ function recordRecentVm(ns, name) {
     filtered.unshift(entry);
     localStorage.setItem(RECENT_VMS_KEY, JSON.stringify(filtered.slice(0, 8)));
     renderFinderRecentVms();
+    if (currentPage === 'vms' && typeof renderRecentVmsStrip === 'function') renderRecentVmsStrip();
   } catch (e) {}
 }
 
@@ -8072,6 +8077,21 @@ function renderFinderRecentVms() {
     '<button type="button" class="cloudos-finder-item" ' + onHandler('finderOpenVm(' + jsArgs(r.ns) + ',' + jsArgs(r.name) + ')') + '>' +
       '<span class="fi-icon">▣</span>' + esc(r.name) + '<span class="fi-meta">' + esc(r.ns) + '</span></button>'
   ).join('');
+}
+
+function renderRecentVmsStrip() {
+  const strip = document.getElementById('vmr-recent-strip');
+  if (!strip) return;
+  const recents = getRecentVms().slice(0, 8);
+  if (!recents.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'flex';
+  strip.innerHTML = '<span style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;align-self:center;padding-right:4px;flex-shrink:0">Recent:</span>' +
+    recents.map(function(r) {
+      const vm = vmData.find(function(v) { return v.name === r.name && (v.namespace || 'default') === (r.ns || 'default'); });
+      const statusDot = vm ? '<span class="vmr-chip-dot ' + (vm.status === 'Running' ? 'running' : vm.status === 'Stopped' ? 'stopped' : 'other') + '" style="flex-shrink:0"></span>' : '';
+      return '<button type="button" class="vmr-recent-chip" onclick="selectVm(' + jsArgs(r.ns || 'default', r.name) + ',{})" title="' + esc((r.ns || 'default') + '/' + r.name) + '">' +
+        statusDot + esc(r.name) + '</button>';
+    }).join('');
 }
 
 function finderOpenVm(ns, name) {
@@ -11589,6 +11609,7 @@ async function fetchVMs(opts) {
     }
     if (currentPage === 'vms') {
       filterVMs();
+      if (typeof renderRecentVmsStrip === 'function') renderRecentVmsStrip();
       if (selectedVmNs && selectedVmName) {
         fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
       }
