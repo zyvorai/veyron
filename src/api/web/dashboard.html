@@ -2096,6 +2096,15 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-workloads-metrics{margin-bottom:8px}
 .vmr-node-chip{display:inline-flex;align-items:center;gap:3px;font-size:.7rem;padding:1px 7px;border-radius:4px;border:1px solid var(--glass-border);background:var(--glass-bg);color:var(--text-muted);cursor:pointer;margin:2px 0 0;font-family:inherit;white-space:nowrap;transition:color .12s,border-color .12s}
 .vmr-node-chip:hover{color:var(--cyan);border-color:rgba(56,189,248,.45)}
+.vmr-snap-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--glass-border);min-width:0}
+.vmr-snap-row:last-child{border-bottom:none}
+.vmr-snap-name{font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.vmr-cli-sheet{display:flex;flex-direction:column;gap:2px;margin-top:10px;max-height:55vh;overflow-y:auto}
+.vmr-cli-hdr{font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--glass-border)}
+.vmr-cli-hdr:first-child{margin-top:0}
+.vmr-cli-row{display:flex;align-items:center;gap:6px;padding:3px 0}
+.vmr-cli-code{flex:1;font-family:var(--font-mono,monospace);font-size:.75rem;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px;padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.vmr-cli-copy{flex-shrink:0;padding:2px 8px!important;font-size:.68rem!important}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -3740,6 +3749,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           <div class="bulk-actions" id="bulk-actions" style="display:none;gap:5px;align-items:center">
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')" title="Start selected VMs">▶ Start</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')" title="Stop selected VMs">■ Stop</button>
+            <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkSnapshot()" title="Snapshot selected VMs">◉ Snap</button>
             <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')" title="Delete selected VMs">✕ Delete</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="toggleSelectAll(false)">Clear</button>
           </div>
@@ -6246,6 +6256,7 @@ function renderVmCapsuleVmr() {
     loadInternetPanel(ns, name);
     loadDoctorPanel(ns, name);
     loadVmMetricsPanel(ns, name);
+    loadVmSnapshotsPanel(ns, name);
   }).catch(function(e) {
     body.innerHTML = '<div class="vmr-panel" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
   });
@@ -13578,7 +13589,8 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   const links = '<div class="vm-hero-links">' +
     '<button type="button" class="vm-hero-link" ' + onStopHandler('navigateToVmCapsule(' + jsArgs(ns, name) + ')') + '>Full Capsule</button>' +
     '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')') + '>Ask Zeus</button>' +
-    '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button></div>';
+    '<button type="button" class="vm-hero-link" ' + onStopHandler('openCopilotDoctor(' + jsArgs(ns, name) + ')') + '>Diagnose</button>' +
+    '<button type="button" class="vm-hero-link" ' + onStopHandler('openVmCliSheet(' + jsArgs(ns, name) + ')') + '>CLI</button></div>';
   return '<div class="vm-hero zeus-glass">' +
     '<div class="vm-hero-top"><div>' +
       '<h2 class="vm-hero-title vmr-copy-tile" title="Copy VM name" onclick="copyToClipboard(' + JSON.stringify(name) + ')">' + esc(name) + '<span class="vmr-copy-hint">copy</span></h2>' +
@@ -13650,12 +13662,13 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'compute' ? ' active' : '') + '" data-panel="compute"><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '">Loading metrics…</div><div id="guest-fs-panel-' + name + '" style="margin-top:12px">Loading storage…</div></div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'security' ? ' active' : '') + '" data-panel="security"><div class="zeus-inspector-body"><div id="security-' + name + '">Loading…</div></div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'backups' ? ' active' : '') + '" data-panel="backups"><div class="zeus-inspector-body">' +
-        '<p class="vm-inspector-hint">Snapshots and Velero backups for this VM.</p>' +
         '<div class="vm-inspector-backup-actions">' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">Open snapshots</button>' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Backups &amp; Velero</button>' +
-          '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>Take snapshot</button>' +
-        '</div></div></div>' +
+          '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>+ Snapshot</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">All snapshots</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Velero</button>' +
+        '</div>' +
+        '<div id="vm-snaps-panel-' + name + '" style="margin-top:10px"><p style="color:var(--text-muted);font-size:.82rem;margin:6px 0">Loading…</p></div>' +
+        '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'ai' ? ' active' : '') + '" data-panel="ai"><div class="zeus-inspector-body">' +
         '<div id="doctor-panel-' + name + '">Loading…</div><div id="drift-panel-' + name + '" style="margin-top:12px">Loading…</div></div></div>' +
     '</div></div>';
@@ -13693,6 +13706,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
     loadInternetPanel(ns, name);
     loadDoctorPanel(ns, name);
     loadVmMetricsPanel(ns, name);
+    loadVmSnapshotsPanel(ns, name);
   } catch (e) {
     if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
     toast('Failed to load VM: ' + (e.message || String(e)), 'error');
@@ -13701,6 +13715,122 @@ async function fetchVmWorkspaceDetail(ns, name) {
 
 async function fetchVmDetail(ns, name) {
   selectVm(ns, name, { skipHash: true, force: true });
+}
+
+async function loadVmSnapshotsPanel(ns, name) {
+  const el = document.getElementById('vm-snaps-panel-' + name);
+  if (!el) return;
+  try {
+    const j = await apiJson('/api/v1/snapshots?namespace=' + encodeURIComponent(ns));
+    const all = Array.isArray(j) ? j : (j && Array.isArray(j.data) ? j.data : (j && Array.isArray(j.items) ? j.items : []));
+    const snaps = all.filter(function(s) {
+      return (s.vm_name || s.source_vm || s.spec_source_vm || '').toLowerCase() === name.toLowerCase();
+    });
+    if (!snaps.length) {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem;margin:6px 0">No snapshots yet for this VM.</p>';
+      return;
+    }
+    el.innerHTML = snaps.map(function(s) {
+      const sname = s.name || s.snapshot_name || '—';
+      const sAge = s.age || s.created_at || '';
+      const sStatus = s.status || s.ready_to_use === true ? 'Ready' : (s.ready_to_use === false ? 'Pending' : (s.status || '—'));
+      const sSize = s.size || '';
+      const statusCls = (sStatus === 'Ready' || sStatus === 'ready') ? 'color:var(--green)' : 'color:var(--text-muted)';
+      return '<div class="vmr-snap-row">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div class="vmr-snap-name vmr-copy-tile" title="Copy snapshot name" onclick="copyToClipboard(' + JSON.stringify(sname) + ')">' + esc(sname) + '<span class="vmr-copy-hint">copy</span></div>' +
+          '<div style="font-size:.73rem;color:var(--text-muted);margin-top:1px">' + (sAge ? esc(sAge) : '') + (sSize ? ' · ' + esc(sSize) : '') + '</div>' +
+        '</div>' +
+        '<span style="font-size:.72rem;' + statusCls + ';margin:0 8px;white-space:nowrap">' + esc(sStatus) + '</span>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="openRestoreSnapModal(' + jsArgs(ns, sname, name) + ')">Restore</button>' +
+        '<button type="button" class="glass-btn-destructive glass-btn-sm" style="padding:2px 8px;font-size:.72rem;margin-left:4px" onclick="deleteSnapshot(' + jsArgs(ns, sname) + ')">✕</button>' +
+      '</div>';
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:.82rem;margin:6px 0">Could not load snapshots.</p>';
+  }
+}
+
+async function bulkSnapshot() {
+  if (selectedVMs.size === 0) return;
+  const keys = [...selectedVMs];
+  const count = keys.length;
+  openGlassConfirm({
+    title: 'Snapshot ' + count + ' VM' + (count > 1 ? 's' : ''),
+    body: 'Take a snapshot of each selected VM now?',
+    confirmLabel: 'Snapshot all',
+    onConfirm: async function() {
+      let ok = 0, errs = [];
+      for (const key of keys) {
+        try {
+          const { ns, name } = parseVmSelectionKey(key);
+          const snapName = name + '-bulk-' + Date.now().toString(36).slice(-5);
+          await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {
+            method: 'POST',
+            body: JSON.stringify({ name: snapName })
+          });
+          ok++;
+        } catch (e) {
+          errs.push(key + ': ' + (e.message || e));
+        }
+      }
+      if (errs.length) toast(errs.slice(0, 3).join(' · '), 'error');
+      else toast(ok + ' snapshot' + (ok > 1 ? 's' : '') + ' queued', 'success');
+      selectedVMs.clear();
+      toggleBulkBar();
+      setTimeout(refresh, 1500);
+    }
+  });
+}
+
+function openVmCliSheet(ns, name) {
+  const vm = vmData.find(function(v) { return v.name === name && (v.namespace || 'default') === ns; }) || _vmDetailCache || {};
+  const ip = vm.ip && vm.ip !== 'N/A' ? vm.ip : null;
+  const win = isWindowsVm(vm);
+  const u = (!win && name) ? (guessSshUser(name) || 'user') : null;
+  function cmd(c) { return '<div class="vmr-cli-row"><code class="vmr-cli-code">' + esc(c) + '</code><button type="button" class="glass-btn-secondary glass-btn-sm vmr-cli-copy" onclick="copyToClipboard(' + JSON.stringify(c) + ')">Copy</button></div>'; }
+  function hdr(t) { return '<div class="vmr-cli-hdr">' + esc(t) + '</div>'; }
+  let html = '<div class="vmr-cli-sheet">';
+  html += hdr('Inspect');
+  html += cmd('kubectl get vm ' + name + ' -n ' + ns + ' -o yaml');
+  html += cmd('kubectl get vmi ' + name + ' -n ' + ns);
+  html += cmd('kubectl describe vmi ' + name + ' -n ' + ns);
+  html += hdr('Control');
+  html += cmd('virtctl start ' + name + ' -n ' + ns);
+  html += cmd('virtctl stop ' + name + ' -n ' + ns);
+  html += cmd('virtctl restart ' + name + ' -n ' + ns);
+  html += cmd('virtctl pause ' + name + ' -n ' + ns);
+  html += hdr('Connect');
+  if (!win) {
+    if (ip && u) html += cmd('ssh ' + u + '@' + ip);
+    html += cmd('virtctl ssh --user ' + (u || 'user') + ' ' + name + ' -n ' + ns);
+  }
+  html += cmd('virtctl vnc ' + name + ' -n ' + ns);
+  if (win) html += cmd('virtctl rdp ' + name + ' -n ' + ns);
+  html += cmd('virtctl console ' + name + ' -n ' + ns);
+  html += hdr('Snapshots');
+  html += cmd('kubectl get vmsnapshot -n ' + ns + ' -l kubevirt.io/vm=' + name);
+  html += cmd('virtctl vmsnapshotcreate ' + name + '-snap --vm=' + name + ' -n ' + ns);
+  html += hdr('Migrate');
+  html += cmd('virtctl migrate ' + name + ' -n ' + ns);
+  html += cmd('kubectl get vmim -n ' + ns);
+  html += '</div>';
+  openGlassConfirm({
+    title: 'CLI Commands · ' + name,
+    body: '▸ Use these commands from your terminal with kubectl + virtctl.',
+    confirmLabel: 'Done',
+    onConfirm: function() {}
+  });
+  setTimeout(function() {
+    const bodyEl = document.getElementById('glass-confirm-body');
+    if (bodyEl) {
+      bodyEl.innerHTML = html;
+      bodyEl.style.fontSize = '';
+      bodyEl.style.lineHeight = '';
+    }
+    const btn = document.getElementById('glass-confirm-btn');
+    if (btn) btn.className = 'glass-btn-primary';
+  }, 20);
 }
 
 function getConnectProtocol() {
@@ -14453,6 +14583,11 @@ function filterVMs() {
   const listHeader = document.getElementById('vm-list-header');
   if (listHeader) listHeader.style.display = isTableView ? 'flex' : 'none';
   const sorted = sortVMs(filtered);
+  // Auto-select when search resolves to exactly 1 VM
+  if (sorted.length === 1 && q && sorted[0].name !== selectedVmName) {
+    const v = sorted[0];
+    selectVm(v.namespace || 'default', v.name, { skipHash: false });
+  }
   if (sorted.length === 0) {
     document.getElementById('vm-full-list').innerHTML = vmListEmptyHtml(true);
   } else if (isTopologyView) {
