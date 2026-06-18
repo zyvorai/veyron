@@ -15075,8 +15075,7 @@ async function fetchHelm() {
     }
     if (!tb) return;
     window.lastHelmReleases = filtered;
-    tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td><span class="glass-badge ${glassTableBadge(h.status)}">${esc(h.status)}</span></td><td>${h.revision}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Helm releases found</td></tr>';
+    filterHelmView((document.getElementById('helm-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchHelm');
     console.error('Helm fetch error:', e);
@@ -15099,8 +15098,7 @@ async function fetchOperators() {
     }
     if (!tb) return;
     window.lastOperators = filtered;
-    tb.innerHTML = filtered.map(o => `<tr><td>${esc(o.name)}</td><td>${esc(o.namespace)}</td><td>${esc(o.version || '-')}</td><td><span class="glass-badge ${glassTableBadge(o.status)}">${esc(o.status)}</span></td><td>${esc((o.managed_resources || []).join(', ') || '-')}</td><td>${fmtTime(o.installed_at)}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No operators found</td></tr>';
+    filterOperatorsView((document.getElementById('operators-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchOperators');
     console.error('Operators fetch error:', e);
@@ -15123,8 +15121,7 @@ async function fetchCustomResources() {
     }
     if (!tb) return;
     window.lastCustomResources = items;
-    tb.innerHTML = items.map(cr => `<tr><td>${esc(cr.name)}</td><td>${esc(cr.group)}</td><td>${esc(cr.version)}</td><td>${esc(cr.kind)}</td><td>${esc(cr.scope)}</td><td>${cr.instance_count}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No custom resources found</td></tr>';
+    filterCustomResourcesView((document.getElementById('custom-resources-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchCustomResources');
     console.error('Custom resources fetch error:', e);
@@ -15144,8 +15141,7 @@ async function fetchSlo() {
     }
     window.lastSloItems = items;
     window.lastSloBurnRates = burnRates;
-    if (tb) tb.innerHTML = items.map(s => `<tr><td>${esc(s.name)}</td><td>${esc(s.service)}</td><td>${esc(s.sli_type)}</td><td>${s.target}%</td><td>${s.current}%</td><td>${s.error_budget_remaining}%</td><td><span class="glass-badge ${glassTableBadge(s.status)}">${esc(s.status)}</span></td></tr>`).join('')
-      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO objectives found</td></tr>';
+    if (tb) filterSloView((document.getElementById('slo-search') || {}).value || '');
 
     // Burn rate stats
     const stats = document.getElementById('slo-burn-stats');
@@ -15190,8 +15186,7 @@ async function fetchChaos() {
     }
     if (!tb) return;
     window.lastChaosExperiments = filtered;
-    tb.innerHTML = filtered.map(c => `<tr><td>${esc(c.name)}</td><td>${esc(c.experiment_type)}</td><td>${esc(c.namespace)}</td><td>${esc(c.target)}</td><td><span class="glass-badge ${glassTableBadge(c.status)}">${esc(c.status)}</span></td><td>${esc(c.duration)}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No chaos experiments found</td></tr>';
+    filterChaosView((document.getElementById('chaos-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchChaos');
     console.error('Chaos fetch error:', e);
@@ -15220,16 +15215,7 @@ async function fetchRbac() {
     }
     window.lastRbacRoles = roles;
     window.lastRbacBindings = bindings;
-    if (rolesBody) {
-      rolesBody.innerHTML = roles.map(role => {
-        const resources = [...new Set((role.rules || []).flatMap(rule => rule.resources || []))].slice(0, 4);
-        return `<tr><td>${esc(role.name)}</td><td>${role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')}</td><td>${(role.rules || []).length}</td><td>${esc(resources.join(', ') || '-')}</td></tr>`;
-      }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No roles found</td></tr>';
-    }
-    if (bindingsBody) {
-      bindingsBody.innerHTML = bindings.map(binding => `<tr><td>${esc(binding.name)}</td><td>${esc(binding.role_name)}</td><td>${esc((binding.subjects || []).map(s => s.kind + ':' + s.name).join(', ') || '-')}</td></tr>`).join('')
-        || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No bindings found</td></tr>';
-    }
+    filterRbacView((document.getElementById('rbac-search') || {}).value || '');
   } catch (e) {
     const msg = e.message || String(e);
     if (summary) summary.innerHTML = summaryErrorHtml(msg);
@@ -15254,8 +15240,7 @@ async function fetchQuotas() {
     }
     if (!tb) return;
     window.lastQuotas = items;
-    tb.innerHTML = items.map(q => `<tr><td>${esc(q.name)}</td><td>${esc(q.namespace)}</td><td>${esc(q.cpu_used || '0')} / ${esc(q.cpu_limit || '-')}</td><td>${esc(q.memory_used || '0')} / ${esc(q.memory_limit || '-')}</td><td>${q.vm_count}${q.vm_limit ? ' / ' + q.vm_limit : ''}</td></tr>`).join('')
-      || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No quotas found</td></tr>';
+    filterQuotasView((document.getElementById('quotas-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(5, e.message || String(e), 'fetchQuotas');
     console.error('Quota fetch error:', e);
@@ -15279,8 +15264,7 @@ async function fetchIngress() {
     }
     if (!tb) return;
     window.lastIngress = items;
-    tb.innerHTML = items.map(ing => `<tr><td>${esc(ing.name)}</td><td>${esc(ing.namespace)}</td><td>${esc(ing.class_name || '-')}</td><td>${esc((ing.hosts || []).join(', ') || '-')}</td><td>${ing.tls ? 'Yes' : 'No'}</td><td>${esc((ing.rules || []).map(r => (r.host || '*') + r.path + ' -> ' + r.service_name).join(', ') || '-')}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ingress resources found</td></tr>';
+    filterIngressView((document.getElementById('ingress-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchIngress');
     console.error('Ingress fetch error:', e);
@@ -15303,8 +15287,7 @@ async function fetchHpa() {
     }
     if (!tb) return;
     window.lastHpas = items;
-    tb.innerHTML = items.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.target_kind)}/${esc(h.target_name)}</td><td>${h.min_replicas}</td><td>${h.current_replicas}</td><td>${h.desired_replicas}</td><td>${h.max_replicas}</td></tr>`).join('')
-      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No HPAs found</td></tr>';
+    filterHpaView((document.getElementById('hpa-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchHpa');
     console.error('HPA fetch error:', e);
@@ -15327,8 +15310,7 @@ async function fetchBackups() {
     }
     if (!tb) return;
     window.lastBackups = items;
-    tb.innerHTML = items.map(b => `<tr><td>${esc(b.name)}</td><td>${esc(b.vm_name)}</td><td>${esc(b.namespace)}</td><td><span class="glass-badge ${glassTableBadge(b.status)}">${esc(b.status)}</span></td><td>${esc(b.backup_type)}</td><td>${fmtTime(b.created_at)}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No backups found</td></tr>';
+    filterBackupsView((document.getElementById('backups-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchBackups');
     console.error('Backups fetch error:', e);
@@ -15426,8 +15408,7 @@ async function fetchAutoscaler() {
     }
     if (!tb) return;
     window.lastAutoscalerPolicies = items;
-    tb.innerHTML = items.map(a => `<tr><td>${esc(a.name)}</td><td>${esc(a.namespace)}</td><td>${esc(a.target_kind)}/${esc(a.target_name)}</td><td>${a.min_replicas}</td><td>${a.current_replicas}</td><td>${a.max_replicas}</td><td>${a.enabled ? 'Yes' : 'No'}</td></tr>`).join('')
-      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No autoscaler policies found</td></tr>';
+    filterAutoscalerView((document.getElementById('autoscaler-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchAutoscaler');
     console.error('Autoscaler fetch error:', e);
