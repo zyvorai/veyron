@@ -47,7 +47,7 @@ pub async fn query_range(
     search: Option<&str>,
     limit: u32,
 ) -> Result<Vec<LokiLogLine>> {
-    let base = integrations::env_var("VMROGUE_LOKI_URL").context("VMROGUE_LOKI_URL not set")?;
+    let base = integrations::env_var("VEYRON_LOKI_URL").context("VEYRON_LOKI_URL not set")?;
     let now = Utc::now();
     let start = (now - chrono::TimeDelta::hours(1))
         .timestamp_nanos_opt()
@@ -74,7 +74,7 @@ pub async fn query_range(
 
     let client = integrations::http_client().await?;
     let mut req = client.get(&url);
-    if let Some(t) = integrations::env_var("VMROGUE_LOKI_TOKEN") {
+    if let Some(t) = integrations::env_var("VEYRON_LOKI_TOKEN") {
         req = req.bearer_auth(t);
     }
     let resp = req.send().await.context("loki query")?;

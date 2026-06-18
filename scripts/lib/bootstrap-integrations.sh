@@ -62,12 +62,12 @@ bootstrap_argocd_credentials() {
                     if [[ -n "${argocd_token}" ]]; then
                         echo "Argo CD session token obtained for ${argocd_ns}"
                     else
-                        echo "Argo CD: could not obtain session token (set VMROGUE_ARGOCD_TOKEN manually)"
+                        echo "Argo CD: could not obtain session token (set VEYRON_ARGOCD_TOKEN manually)"
                     fi
                 fi
             fi
         else
-            echo "Argo CD: argocd-initial-admin-secret not found — URL only; add VMROGUE_ARGOCD_TOKEN manually"
+            echo "Argo CD: argocd-initial-admin-secret not found — URL only; add VEYRON_ARGOCD_TOKEN manually"
         fi
     fi
 
@@ -228,21 +228,21 @@ type: Opaque
 stringData:
 EOF
     [[ -n "${prom_url}" ]] && echo "  VEYRON_PROMETHEUS_URL: \"${prom_url}\"" >>"${tmp}"
-    [[ -n "${am_url}" ]] && echo "  VMROGUE_ALERTMANAGER_URL: \"${am_url}\"" >>"${tmp}"
-    [[ -n "${loki_url}" ]] && echo "  VMROGUE_LOKI_URL: \"${loki_url}\"" >>"${tmp}"
-    [[ -n "${opencost_url}" ]] && echo "  VMROGUE_OPENCOST_URL: \"${opencost_url}\"" >>"${tmp}"
-    [[ -n "${trivy_url}" ]] && echo "  VMROGUE_TRIVY_URL: \"${trivy_url}\"" >>"${tmp}"
-    [[ -n "${jaeger_url}" ]] && echo "  VMROGUE_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
-    [[ -n "${grafana_url}" ]] && echo "  VMROGUE_GRAFANA_URL: \"${grafana_url}\"" >>"${tmp}"
-    [[ -n "${grafana_ext}" ]] && echo "  VMROGUE_GRAFANA_EXTERNAL_URL: \"${grafana_ext}\"" >>"${tmp}"
+    [[ -n "${am_url}" ]] && echo "  VEYRON_ALERTMANAGER_URL: \"${am_url}\"" >>"${tmp}"
+    [[ -n "${loki_url}" ]] && echo "  VEYRON_LOKI_URL: \"${loki_url}\"" >>"${tmp}"
+    [[ -n "${opencost_url}" ]] && echo "  VEYRON_OPENCOST_URL: \"${opencost_url}\"" >>"${tmp}"
+    [[ -n "${trivy_url}" ]] && echo "  VEYRON_TRIVY_URL: \"${trivy_url}\"" >>"${tmp}"
+    [[ -n "${jaeger_url}" ]] && echo "  VEYRON_JAEGER_QUERY_URL: \"${jaeger_url}\"" >>"${tmp}"
+    [[ -n "${grafana_url}" ]] && echo "  VEYRON_GRAFANA_URL: \"${grafana_url}\"" >>"${tmp}"
+    [[ -n "${grafana_ext}" ]] && echo "  VEYRON_GRAFANA_EXTERNAL_URL: \"${grafana_ext}\"" >>"${tmp}"
     [[ -n "${prom_ext}" ]] && echo "  VEYRON_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
-    [[ -n "${am_ext}" ]] && echo "  VMROGUE_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
-    [[ -n "${jaeger_ext}" ]] && echo "  VMROGUE_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
+    [[ -n "${am_ext}" ]] && echo "  VEYRON_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
+    [[ -n "${jaeger_ext}" ]] && echo "  VEYRON_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
     [[ -n "${packetwolf_url}" ]] && echo "  VEYRON_PACKETWOLF_URL: \"${packetwolf_url}\"" >>"${tmp}"
     [[ -n "${packetwolf_ext}" ]] && echo "  VEYRON_PACKETWOLF_EXTERNAL_URL: \"${packetwolf_ext}\"" >>"${tmp}"
-    [[ -n "${argocd_url}" ]] && echo "  VMROGUE_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
-    [[ -n "${argocd_token}" ]] && echo "  VMROGUE_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
-    [[ -n "${argocd_default_app}" ]] && echo "  VMROGUE_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"
+    [[ -n "${argocd_url}" ]] && echo "  VEYRON_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
+    [[ -n "${argocd_token}" ]] && echo "  VEYRON_ARGOCD_TOKEN: \"${argocd_token}\"" >>"${tmp}"
+    [[ -n "${argocd_default_app}" ]] && echo "  VEYRON_ARGOCD_DEFAULT_APP: \"${argocd_default_app}\"" >>"${tmp}"
 
     ${k8s} apply -f "${tmp}"
     rm -f "${tmp}"

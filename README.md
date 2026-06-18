@@ -14,7 +14,7 @@ Rogue VM management for **KubeVirt** — forged in Rust. Declarative VM builder,
 └──────────────────────────────────────────────────────────────┘
 ```
 
-> Local folder may be named `VMRogue` · GitHub repo: **Veyron**
+> Local folder may be named `Veyron` · GitHub repo: **Veyron**
 
 ---
 
@@ -39,7 +39,7 @@ Rogue VM management for **KubeVirt** — forged in Rust. Declarative VM builder,
 | **Web** | React dashboard — `web/` |
 | **Templates** | 44 OS images + 8 resource profiles |
 | **Blueprints** | LAMP, K8s, 3-tier, CI/CD stacks |
-| **Terraform** | Provider — `terraform-provider-vmrogue/` |
+| **Terraform** | Provider — `terraform-provider-veyron/` |
 
 ---
 

@@ -2,7 +2,7 @@
 // Proprietary software — see LICENSE in the repository root.
 // https://zyvor.dev · info@zyvor.dev
 
-//! Pluggable local/remote template registry (VMROGUE_TEMPLATE_REGISTRY).
+//! Pluggable local/remote template registry (VEYRON_TEMPLATE_REGISTRY).
 
 use crate::config::VMConfig;
 use anyhow::{Context, Result};
@@ -28,7 +28,7 @@ pub struct TemplateRegistry {
 
 impl TemplateRegistry {
     pub fn registry_path() -> Option<PathBuf> {
-        if let Ok(p) = std::env::var("VMROGUE_TEMPLATE_REGISTRY") {
+        if let Ok(p) = std::env::var("VEYRON_TEMPLATE_REGISTRY") {
             if !p.trim().is_empty() {
                 return Some(PathBuf::from(p));
             }

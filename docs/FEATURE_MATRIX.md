@@ -148,10 +148,10 @@ Single-page dashboard embedded in the API binary (`src/api/web/dashboard.html`).
 | Veyron Scheduling Explainer | Working | `GET /experience/copilot/scheduling/:ns/:name` |
 | Velero on backups | Working | `GET /api/v1/velero/status` section on `page-backups` |
 | Multi-cluster bar | Working | `GET/POST /api/v1/clusters` when kubeconfig has multiple contexts |
-| OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VMROGUE_OIDC_*` set |
+| OIDC / SSO | Partial | Backend JWKS + PKCE token exchange; classic dashboard Sign in with SSO when `VEYRON_OIDC_*` set |
 
 ## Immediate Next Steps
 
 1. Run `./scripts/generate-catalog-crds.sh` before deploy; `deploy-all-remote.sh` applies catalog YAML automatically.
 2. `./scripts/test-remote.sh` tier 3+ uses local samples when remote checkout is absent; Windows blueprint test when VMTemplate CRDs exist.
-3. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VMROGUE_OPENCOST_URL`, `VMROGUE_TRIVY_URL`, `VEYRON_PROMETHEUS_URL`, …).
+3. Tighten remaining heuristic pages — optional backends: see [OPTIONAL_INTEGRATIONS.md](OPTIONAL_INTEGRATIONS.md) (`VEYRON_OPENCOST_URL`, `VEYRON_TRIVY_URL`, `VEYRON_PROMETHEUS_URL`, …).

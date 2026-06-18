@@ -212,7 +212,7 @@ async fn fetch_logs_with_backends(
     ns: &str,
     params: &LogQueryParams,
 ) -> (Vec<LogEntry>, VmrogueFeatureContext) {
-    if let Ok(loki_url) = std::env::var("VMROGUE_LOKI_URL") {
+    if let Ok(loki_url) = std::env::var("VEYRON_LOKI_URL") {
         if !loki_url.is_empty() {
             let limit = params.limit.unwrap_or(500);
             match crate::api::loki::query_range(ns, params.search.as_deref(), limit).await {

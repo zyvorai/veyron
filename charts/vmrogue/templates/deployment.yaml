@@ -83,39 +83,39 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.opencostUrl }}
-            - name: VMROGUE_OPENCOST_URL
+            - name: VEYRON_OPENCOST_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.opencostToken }}
-            - name: VMROGUE_OPENCOST_TOKEN
+            - name: VEYRON_OPENCOST_TOKEN
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.trivyUrl }}
-            - name: VMROGUE_TRIVY_URL
+            - name: VEYRON_TRIVY_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.lokiUrl }}
-            - name: VMROGUE_LOKI_URL
+            - name: VEYRON_LOKI_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.jaegerQueryUrl }}
-            - name: VMROGUE_JAEGER_QUERY_URL
+            - name: VEYRON_JAEGER_QUERY_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.tempoQueryUrl }}
-            - name: VMROGUE_TEMPO_QUERY_URL
+            - name: VEYRON_TEMPO_QUERY_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.alertmanagerUrl }}
-            - name: VMROGUE_ALERTMANAGER_URL
+            - name: VEYRON_ALERTMANAGER_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.argocdUrl }}
-            - name: VMROGUE_ARGOCD_URL
+            - name: VEYRON_ARGOCD_URL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.argocdToken }}
-            - name: VMROGUE_ARGOCD_TOKEN
+            - name: VEYRON_ARGOCD_TOKEN
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.integrations.packetwolfUrl }}
@@ -131,31 +131,31 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.ai.url }}
-            - name: VMROGUE_AI_URL
+            - name: VEYRON_AI_URL
               value: {{ . | quote }}
             {{- end }}
             {{- if .Values.ai.apiKey }}
-            - name: VMROGUE_AI_API_KEY
+            - name: VEYRON_AI_API_KEY
               value: {{ .Values.ai.apiKey | quote }}
             {{- end }}
             {{- with .Values.ai.model }}
-            - name: VMROGUE_AI_MODEL
+            - name: VEYRON_AI_MODEL
               value: {{ . | quote }}
             {{- end }}
             {{- with .Values.ai.mode }}
-            - name: VMROGUE_AI_MODE
+            - name: VEYRON_AI_MODE
               value: {{ . | quote }}
             {{- end }}
             {{- if .Values.ai.maxToolRounds }}
-            - name: VMROGUE_AI_MAX_TOOL_ROUNDS
+            - name: VEYRON_AI_MAX_TOOL_ROUNDS
               value: {{ .Values.ai.maxToolRounds | quote }}
             {{- end }}
             {{- if .Values.ai.timeoutSecs }}
-            - name: VMROGUE_AI_TIMEOUT_SECS
+            - name: VEYRON_AI_TIMEOUT_SECS
               value: {{ .Values.ai.timeoutSecs | quote }}
             {{- end }}
             {{- if .Values.ai.rateLimitPerMin }}
-            - name: VMROGUE_AI_RATE_LIMIT_PER_MIN
+            - name: VEYRON_AI_RATE_LIMIT_PER_MIN
               value: {{ .Values.ai.rateLimitPerMin | quote }}
             {{- end }}
           {{- if .Values.integrations.existingSecret }}

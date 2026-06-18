@@ -92,9 +92,12 @@ async fn list_pods(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<PodResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let pods = list_pods_resolved(s.client(), &scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let pods = list_pods_resolved(&kube_client, &scope).await;
     let results: Vec<PodResponse> = pods.iter().map(pod_to_response).collect();
     Json(results)
 }
@@ -105,9 +108,12 @@ pub async fn get_pod(
     Path(name): Path<String>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Option<PodResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let pods = list_pods_resolved(s.client(), &scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let pods = list_pods_resolved(&kube_client, &scope).await;
     Json(pods.iter().map(pod_to_response).find(|p| p.name == name))
 }
 
@@ -120,20 +126,23 @@ async fn get_pod_logs(
     use k8s_openapi::api::core::v1::Pod;
     use kube::api::LogParams;
 
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     let pod_ns = if namespace_scope::is_all_namespaces(&scope) {
-        list_pods_resolved(s.client(), &scope)
+        list_pods_resolved(&kube_client, &scope)
             .await
             .into_iter()
             .find(|p| p.metadata.name.as_deref() == Some(name.as_str()))
             .and_then(|p| p.metadata.namespace)
-            .unwrap_or_else(|| s.namespace.clone())
+            .unwrap_or(default_ns)
     } else {
         scope
     };
 
-    let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(s.client().client(), &pod_ns);
+    let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(kube_client.client(), &pod_ns);
 
     let container_names: Vec<String> = match pods_api.get(&name).await {
         Ok(pod) => pod

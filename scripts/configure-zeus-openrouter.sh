@@ -16,8 +16,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/scripts/lib/read-openrouter-env.sh"
 
 NS="${VEYRON_NAMESPACE:-veyron-system}"
-SECRET="${VMROGUE_INTEGRATIONS_SECRET:-veyron-integrations}"
-RC_FILE="${VMROGUE_ZSHRC:-${HOME}/.zshrc}"
+SECRET="${VEYRON_INTEGRATIONS_SECRET:-veyron-integrations}"
+RC_FILE="${VEYRON_ZSHRC:-${HOME}/.zshrc}"
 
 print_env() {
   read_openrouter_env "$RC_FILE"
@@ -27,7 +27,7 @@ apply_local_env() {
   while IFS= read -r line; do
     export "$line"
   done < <(print_env)
-  echo "Zeus OpenRouter env loaded from $RC_FILE (mode=${VMROGUE_AI_MODE}, model=${VMROGUE_AI_MODEL})" >&2
+  echo "Zeus OpenRouter env loaded from $RC_FILE (mode=${VEYRON_AI_MODE}, model=${VEYRON_AI_MODEL})" >&2
 }
 
 remote_kubectl() {
@@ -65,12 +65,12 @@ case "${1:-}" in
   -h|--help)
     cat <<EOF
 Usage:
-  $0 --print-env          # emit VMROGUE_AI_* for eval
+  $0 --print-env          # emit VEYRON_AI_* for eval
   $0 --local              # export into current shell
   $0 HOST USER            # patch ${SECRET} on remote k3s and restart API
 
 Environment:
-  VMROGUE_ZSHRC           rc file to read (default ~/.zshrc)
+  VEYRON_ZSHRC           rc file to read (default ~/.zshrc)
   VEYRON_NAMESPACE       Kubernetes namespace (default veyron-system)
 EOF
     ;;

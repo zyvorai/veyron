@@ -257,7 +257,7 @@ spec:
                 secretKeyRef:
                   name: veyron-api-key
                   key: api-key
-            - name: VMROGUE_API_KEY
+            - name: VEYRON_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: veyron-api-key
@@ -268,17 +268,17 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: VMROGUE_API_NODE_HOST
+            - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
             - name: VEYRON_API_NODE_PORT
               value: "30151"
-            - name: VMROGUE_API_NODE_PORT
+            - name: VEYRON_API_NODE_PORT
               value: "30151"
             - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
-            - name: VMROGUE_CLUSTER_DNS
+            - name: VEYRON_CLUSTER_DNS
               value: "10.43.0.10"
           envFrom:
             - secretRef:

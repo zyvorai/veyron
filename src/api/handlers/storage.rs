@@ -71,11 +71,11 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn list_storage_pools(State(state): State<SharedState>) -> Json<StoragePoolsResponse> {
-    let s = state.read().await;
-    let storage_classes = s.client().list_storage_classes().await.unwrap_or_default();
+    let kube_client = { let s = state.read().await; s.kube_client.clone() };
+    let storage_classes = kube_client.list_storage_classes().await.unwrap_or_default();
 
     // Aggregate PVC capacities per StorageClass across all namespaces
-    let all_pvcs = s.client().list_all_pvcs().await.unwrap_or_default();
+    let all_pvcs = kube_client.list_all_pvcs().await.unwrap_or_default();
 
     // Build map: storage_class_name → (total_bytes, volume_count)
     let mut sc_stats: std::collections::HashMap<String, (u64, u32)> =
@@ -177,10 +177,13 @@ async fn get_storage_usage(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<StorageUsageResponse> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let pvcs = s.client().list_pvcs_for_scope(&scope).await;
-    let kc = s.client().client();
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let pvcs = kube_client.list_pvcs_for_scope(&scope).await;
+    let kc = kube_client.client();
 
     let prom_url = std::env::var("VEYRON_PROMETHEUS_URL").ok();
     let pvc_used_bytes = if let Some(ref base) = prom_url {

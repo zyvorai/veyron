@@ -15,7 +15,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TT="$(cd "${ROOT}/.." && pwd)"
-VMROGUE="${TT}/Veyron"
+VEYRON="${TT}/Veyron"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
@@ -44,7 +44,7 @@ done
 REMOTE="${USER}@${HOST}"
 SSH_OPTS=(-o ConnectTimeout=15 -o BatchMode=yes -o StrictHostKeyChecking=accept-new)
 TEST_SCRIPT="${SCRIPT_DIR}/test-packages-remote-only.sh"
-[[ -f "${TEST_SCRIPT}" ]] || TEST_SCRIPT="${VMROGUE}/scripts/test-packages-remote-only.sh"
+[[ -f "${TEST_SCRIPT}" ]] || TEST_SCRIPT="${VEYRON}/scripts/test-packages-remote-only.sh"
 
 echo "==> Remote customer E2E → ${REMOTE}"
 echo ""
@@ -54,7 +54,7 @@ scp "${SSH_OPTS[@]}" "${TEST_SCRIPT}" "${REMOTE}:~/test-packages-remote-only.sh"
 package_script_for() {
   local key="${1,,}"
   case "${key}" in
-    veyron) echo "${VMROGUE}/scripts/package-binary-remote.sh" ;;
+    veyron) echo "${VEYRON}/scripts/package-binary-remote.sh" ;;
     machina) echo "${TT}/machina/scripts/package-binary-remote.sh" ;;
     v9s) echo "${TT}/v9s/scripts/package-binary-remote.sh" ;;
     guestkit) echo "${TT}/guestkit/scripts/package-binary-remote.sh" ;;

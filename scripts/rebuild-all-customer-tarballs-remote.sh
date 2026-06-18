@@ -13,7 +13,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 TT="$(cd "${ROOT}/.." && pwd)"
-VMROGUE="${TT}/Veyron"
+VEYRON="${TT}/Veyron"
 
 HOST="${1:?HOST}"
 USER="${2:?USER}"
@@ -33,7 +33,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 declare -a PRODUCTS=(
-  "Veyron:${VMROGUE}/scripts/package-binary-remote.sh"
+  "Veyron:${VEYRON}/scripts/package-binary-remote.sh"
   "machina:${TT}/machina/scripts/package-binary-remote.sh"
   "v9s:${TT}/v9s/scripts/package-binary-remote.sh"
   "guestkit:${TT}/guestkit/scripts/package-binary-remote.sh"

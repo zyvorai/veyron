@@ -79,7 +79,7 @@ integrations:
   # Reference an existing Secret (all keys become env vars), e.g. veyron-integrations
   existingSecret: ""
 
-# Optional OpenAI-compatible LLM for Copilot (see docs/VMROGUE_AI.md).
+# Optional OpenAI-compatible LLM for Copilot (see docs/VEYRON_AI.md).
 ai:
   url: ""
   apiKey: ""

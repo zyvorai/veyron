@@ -24,23 +24,20 @@ impl KubeClient {
         let spec = &mut vm.spec.template.spec;
 
         let networks = spec.networks.get_or_insert_with(Vec::new);
-        if spec.domain.devices.is_none() {
-            spec.domain.devices = Some(Devices {
-                disks: None,
-                interfaces: Some(Vec::new()),
-                tpm: None,
-                rng: None,
-                inputs: None,
-                host_devices: None,
-                watchdog: None,
-                autoattach_graphics_device: None,
-                autoattach_mem_balloon: None,
-                network_interface_multiqueue: None,
-                video: None,
-                ..Default::default()
-            });
-        }
-        let devices = spec.domain.devices.as_mut().unwrap();
+        let devices = spec.domain.devices.get_or_insert_with(|| Devices {
+            disks: None,
+            interfaces: Some(Vec::new()),
+            tpm: None,
+            rng: None,
+            inputs: None,
+            host_devices: None,
+            watchdog: None,
+            autoattach_graphics_device: None,
+            autoattach_mem_balloon: None,
+            network_interface_multiqueue: None,
+            video: None,
+            ..Default::default()
+        });
         let interfaces = devices.interfaces.get_or_insert_with(Vec::new);
 
         let multus_network_name = if nad_namespace == namespace || nad_namespace.is_empty() {

@@ -63,9 +63,12 @@ async fn get_security_posture(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<SecurityPosture> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let vms = s.client().list_vms_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let vms = kube_client.list_vms_for_scope(&scope).await;
 
     let mut critical = 0u32;
     let mut high = 0u32;
@@ -133,7 +136,7 @@ async fn get_security_posture(
     }
     .to_string();
 
-    let trivy_enabled = std::env::var("VMROGUE_TRIVY_URL")
+    let trivy_enabled = std::env::var("VEYRON_TRIVY_URL")
         .map(|u| !u.trim().is_empty())
         .unwrap_or(false);
 
@@ -158,9 +161,12 @@ async fn list_security_findings(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<SecurityFindingsResponse> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let vms = s.client().list_vms_for_scope(&scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let vms = kube_client.list_vms_for_scope(&scope).await;
     let now = chrono::Utc::now().to_rfc3339();
     let mut findings = Vec::new();
     let mut id_counter = 0u32;
@@ -250,7 +256,7 @@ async fn list_security_findings(
         }
     }
 
-    let trivy_url = std::env::var("VMROGUE_TRIVY_URL")
+    let trivy_url = std::env::var("VEYRON_TRIVY_URL")
         .ok()
         .filter(|u| !u.trim().is_empty());
     let mut used_trivy = false;

@@ -40,13 +40,13 @@ pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
         }
     }
 
-    let prom = std::env::var("VMROGUE_ALERTMANAGER_URL")
+    let prom = std::env::var("VEYRON_ALERTMANAGER_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some();
     if prom {
         r.evidence.push(
-            "VMROGUE_ALERTMANAGER_URL set — dashboard Alerts page can join firing alerts".into(),
+            "VEYRON_ALERTMANAGER_URL set — dashboard Alerts page can join firing alerts".into(),
         );
     }
 
@@ -65,7 +65,7 @@ pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
     }
     if !prom {
         r.recommendations.push(
-            "Set VMROGUE_ALERTMANAGER_URL to merge Prometheus Alertmanager timelines.".into(),
+            "Set VEYRON_ALERTMANAGER_URL to merge Prometheus Alertmanager timelines.".into(),
         );
     }
 

@@ -50,9 +50,12 @@ async fn list_vmis(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Vec<VmiResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
-    let vmis = list_vmis_resolved(s.client(), &scope).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let vmis = list_vmis_resolved(&kube_client, &scope).await;
 
     let results: Vec<VmiResponse> = vmis
         .iter()
@@ -181,11 +184,14 @@ async fn get_vmi(
     Path(name): Path<String>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<Option<VmiResponse>> {
-    let s = state.read().await;
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
 
     if namespace_scope::is_all_namespaces(&scope) {
-        let vmis = list_vmis_resolved(s.client(), &scope).await;
+        let vmis = list_vmis_resolved(&kube_client, &scope).await;
         let found = vmis
             .iter()
             .filter(|v| v.metadata.name.as_deref() == Some(name.as_str()))
@@ -200,7 +206,7 @@ async fn get_vmi(
         return Json(None);
     }
 
-    match s.client().get_vmi(&scope, &name).await {
+    match kube_client.get_vmi(&scope, &name).await {
         Ok(vmi) => Json(Some(vmi_to_response(&vmi))),
         Err(_) => Json(None),
     }

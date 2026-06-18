@@ -400,7 +400,7 @@ fn render_logs_tab(f: &mut Frame, vm: &crate::tui::state::VmInfo, area: ratatui:
         Line::from(""),
         Line::from("Virt-launcher pod logs (preview):"),
         Line::from("  Use GET /api/v1/logs?vm=<name> for full log search."),
-        Line::from("  Set VMROGUE_LOKI_URL for cluster-wide Loki queries."),
+        Line::from("  Set VEYRON_LOKI_URL for cluster-wide Loki queries."),
         Line::from(""),
         Line::from(
             "Press 'l' in the VM list to refresh metrics; console: 'c' (serial/VNC via API).",

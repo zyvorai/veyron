@@ -1,4 +1,4 @@
-# VMRogue Documentation
+# Veyron Documentation
 
 Veyron — Kubernetes-native KubeVirt VM command center
 

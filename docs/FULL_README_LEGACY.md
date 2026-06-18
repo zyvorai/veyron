@@ -691,13 +691,13 @@ fn main() -> anyhow::Result<()> {
 
 ### Product boundary
 
-Veyron operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [HyperSDK](https://zyvor.dev/hypersdk). See [docs/VMROGUE_HYPERSDK_BOUNDARY.md](docs/VMROGUE_HYPERSDK_BOUNDARY.md).
+Veyron operates KubeVirt on Kubernetes (lifecycle, policy, observability). **Cross-hypervisor migration** (VMware, Hyper-V, virt-v2v) belongs in [HyperSDK](https://zyvor.dev/hypersdk). See [docs/VEYRON_HYPERSDK_BOUNDARY.md](docs/VEYRON_HYPERSDK_BOUNDARY.md).
 
 ### Future Enhancements
 
 - [x] Profile auto-selection based on template — `veyron create --template` via `ProfileManager::suggest_profile_for_template`
 - [ ] ML-based optimization *(partial: Prometheus-backed forecasting when `VEYRON_PROMETHEUS_URL` is set; see [docs/OPTIONAL_INTEGRATIONS.md](docs/OPTIONAL_INTEGRATIONS.md))*
-- [x] Pluggable template registry — `~/.config/veyron/templates.toml` or `VMROGUE_TEMPLATE_REGISTRY`
+- [x] Pluggable template registry — `~/.config/veyron/templates.toml` or `VEYRON_TEMPLATE_REGISTRY`
 - [x] Terraform provider — see [`terraform-provider-veyron/`](terraform-provider-veyron/)
 - [x] SR-IOV networking — VM config, converter, and CLI support
 - [x] OVN networking — `NetworkType::Ovn` + `add_ovn_network()` builder

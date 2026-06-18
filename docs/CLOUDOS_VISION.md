@@ -22,7 +22,7 @@ At startup, `src/api/http_server.rs` reads the CSS/JS siblings via `include_str!
 /*__VMR_JS__*/   →  dashboard-veyron.js
 ```
 
-The binary is fully self-contained. Browsers cache aggressively; bump `DASH_REV` / `__VMROGUE_DASH_REV` when shipping UI changes.
+The binary is fully self-contained. Browsers cache aggressively; bump `DASH_REV` / `__VEYRON_DASH_REV` when shipping UI changes.
 
 ---
 

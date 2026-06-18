@@ -75,7 +75,7 @@ pub async fn cost_advisor(client: &KubeClient, scope: &str) -> CopilotResponse {
 
     if pricing_model == "reference_rates" {
         r.recommendations.push(
-            "Set VMROGUE_OPENCOST_URL (and VMROGUE_COST_BACKEND=opencost) for allocation-based costs from the cluster.".into(),
+            "Set VEYRON_OPENCOST_URL (and VEYRON_COST_BACKEND=opencost) for allocation-based costs from the cluster.".into(),
         );
     }
 

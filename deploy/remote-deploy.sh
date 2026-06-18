@@ -13,7 +13,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   echo "Use:"
   echo "  ./scripts/deploy-k8s-remote.sh <host> [user]"
   echo ""
-  echo "Optional: VEYRON_API_KEY, VMROGUE_NODE_PORT, VEYRON_NAMESPACE (see that script)."
+  echo "Optional: VEYRON_API_KEY, VEYRON_NODE_PORT, VEYRON_NAMESPACE (see that script)."
   exit 0
 fi
 

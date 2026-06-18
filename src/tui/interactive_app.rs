@@ -572,6 +572,7 @@ impl InteractiveApp {
                 }
                 KeyCode::Esc => {
                     self.mode = InteractiveMode::Normal;
+                    self.dialog_vm_name = None;
                 }
                 _ => {}
             },

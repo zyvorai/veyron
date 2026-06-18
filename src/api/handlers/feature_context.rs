@@ -34,7 +34,7 @@ impl VmrogueFeatureContext {
             data_source: "kubernetes_events".to_string(),
             scope: "Kubernetes Events in the selected namespace scope, shown as trace-like rows."
                 .to_string(),
-            limitations: "Not OpenTelemetry or Jaeger: configure VMROGUE_JAEGER_QUERY_URL for real traces. duration_ms is nominal when using Events fallback.".to_string(),
+            limitations: "Not OpenTelemetry or Jaeger: configure VEYRON_JAEGER_QUERY_URL for real traces. duration_ms is nominal when using Events fallback.".to_string(),
         }
     }
 
@@ -42,7 +42,7 @@ impl VmrogueFeatureContext {
         Self {
             data_source: "loki_query_range".to_string(),
             scope: "Log lines from Loki for the selected namespace scope.".to_string(),
-            limitations: "Requires VMROGUE_LOKI_URL. Query uses LogQL namespace selector."
+            limitations: "Requires VEYRON_LOKI_URL. Query uses LogQL namespace selector."
                 .to_string(),
         }
     }
@@ -52,7 +52,7 @@ impl VmrogueFeatureContext {
             data_source: "alertmanager_v2_alerts".to_string(),
             scope: "Active Alertmanager alerts mapped to incident rows.".to_string(),
             limitations:
-                "Requires VMROGUE_ALERTMANAGER_URL. Falls back to Warning Events when unset."
+                "Requires VEYRON_ALERTMANAGER_URL. Falls back to Warning Events when unset."
                     .to_string(),
         }
     }
@@ -61,7 +61,7 @@ impl VmrogueFeatureContext {
         Self {
             data_source: "argocd_flux_crd_status".to_string(),
             scope: "Argo CD Application and Flux Kustomization CR status in namespace.".to_string(),
-            limitations: "POST /gitops/sync triggers Argo CD API when VMROGUE_ARGOCD_URL+TOKEN are set, or Flux reconcile annotation when flux_kustomization is set; otherwise updates ConfigMap only.".to_string(),
+            limitations: "POST /gitops/sync triggers Argo CD API when VEYRON_ARGOCD_URL+TOKEN are set, or Flux reconcile annotation when flux_kustomization is set; otherwise updates ConfigMap only.".to_string(),
         }
     }
 
@@ -149,7 +149,7 @@ impl VmrogueFeatureContext {
         Self {
             data_source: "opencost_allocation".to_string(),
             scope: "Monthly costs from OpenCost allocation API joined to VMs via virt-launcher pods.".to_string(),
-            limitations: "Requires VMROGUE_OPENCOST_URL and OpenCost installed. Falls back to static rates when unavailable.".to_string(),
+            limitations: "Requires VEYRON_OPENCOST_URL and OpenCost installed. Falls back to static rates when unavailable.".to_string(),
         }
     }
 
@@ -239,7 +239,7 @@ impl VmrogueFeatureContext {
             data_source: "vm_spec_security_rules".to_string(),
             scope: "Configuration-derived findings from VM spec (host network, resources, TPM, RNG)."
                 .to_string(),
-            limitations: "Not vulnerability scanning. Set VMROGUE_TRIVY_URL to merge Trivy CVE findings when a scanner is deployed."
+            limitations: "Not vulnerability scanning. Set VEYRON_TRIVY_URL to merge Trivy CVE findings when a scanner is deployed."
                 .to_string(),
         }
     }
@@ -249,7 +249,7 @@ impl VmrogueFeatureContext {
             data_source: "vm_spec_plus_trivy".to_string(),
             scope: "VM config analysis merged with optional Trivy scanner results."
                 .to_string(),
-            limitations: "Trivy integration requires VMROGUE_TRIVY_URL pointing at a Veyron-compatible scan API."
+            limitations: "Trivy integration requires VEYRON_TRIVY_URL pointing at a Veyron-compatible scan API."
                 .to_string(),
         }
     }

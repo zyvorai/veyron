@@ -49,7 +49,7 @@ pub async fn deliver_budget_alert(
         }
         NotificationType::Email => {
             #[cfg(feature = "web")]
-            if let Some(relay) = integrations::env_var("VMROGUE_EMAIL_RELAY_URL") {
+            if let Some(relay) = integrations::env_var("VEYRON_EMAIL_RELAY_URL") {
                 match integrations::deliver_email(&relay, &summary, &summary, &alert.recipients)
                     .await
                 {
@@ -60,7 +60,7 @@ pub async fn deliver_budget_alert(
                 }
             } else {
                 log::warn!(
-                    "Email: set VMROGUE_EMAIL_RELAY_URL. {} (recipients: {:?})",
+                    "Email: set VEYRON_EMAIL_RELAY_URL. {} (recipients: {:?})",
                     summary,
                     alert.recipients
                 );
@@ -70,13 +70,13 @@ pub async fn deliver_budget_alert(
         }
         NotificationType::Slack => {
             #[cfg(feature = "web")]
-            if let Some(url) = integrations::env_var("VMROGUE_SLACK_WEBHOOK_URL") {
+            if let Some(url) = integrations::env_var("VEYRON_SLACK_WEBHOOK_URL") {
                 match integrations::deliver_slack(&url, &summary).await {
                     Ok(true) => log::info!("Budget Slack alert sent for '{}'", budget_name),
                     Ok(false) | Err(_) => log::warn!("Budget Slack delivery failed"),
                 }
             } else {
-                log::warn!("Slack: set VMROGUE_SLACK_WEBHOOK_URL. {}", summary);
+                log::warn!("Slack: set VEYRON_SLACK_WEBHOOK_URL. {}", summary);
             }
             #[cfg(not(feature = "web"))]
             log::warn!("Slack delivery requires web feature. {}", summary);
@@ -117,7 +117,7 @@ pub async fn deliver_observability_notification(
         }
         NotificationChannel::Email { recipients } => {
             #[cfg(feature = "web")]
-            if let Some(relay) = integrations::env_var("VMROGUE_EMAIL_RELAY_URL") {
+            if let Some(relay) = integrations::env_var("VEYRON_EMAIL_RELAY_URL") {
                 match integrations::deliver_email(
                     &relay,
                     &notification.subject,
@@ -131,7 +131,7 @@ pub async fn deliver_observability_notification(
                     Err(e) => notification.mark_failed(format!("Email error: {}", e)),
                 }
             } else {
-                notification.mark_failed("Set VMROGUE_EMAIL_RELAY_URL for email delivery");
+                notification.mark_failed("Set VEYRON_EMAIL_RELAY_URL for email delivery");
             }
             #[cfg(not(feature = "web"))]
             notification.mark_failed("Email delivery requires web feature");
@@ -142,14 +142,14 @@ pub async fn deliver_observability_notification(
                 notification.subject, notification.message, channel
             );
             #[cfg(feature = "web")]
-            if let Some(url) = integrations::env_var("VMROGUE_SLACK_WEBHOOK_URL") {
+            if let Some(url) = integrations::env_var("VEYRON_SLACK_WEBHOOK_URL") {
                 match integrations::deliver_slack(&url, &text).await {
                     Ok(true) => notification.mark_sent(),
                     Ok(false) => notification.mark_failed("Slack webhook failed"),
                     Err(e) => notification.mark_failed(format!("Slack error: {}", e)),
                 }
             } else {
-                notification.mark_failed("Set VMROGUE_SLACK_WEBHOOK_URL for Slack delivery");
+                notification.mark_failed("Set VEYRON_SLACK_WEBHOOK_URL for Slack delivery");
             }
             #[cfg(not(feature = "web"))]
             let _ = text;
@@ -162,12 +162,12 @@ pub async fn deliver_observability_notification(
             #[cfg(feature = "web")]
             {
                 let key = if integration_key.is_empty() {
-                    integrations::env_var("VMROGUE_PAGERDUTY_ROUTING_KEY").unwrap_or_default()
+                    integrations::env_var("VEYRON_PAGERDUTY_ROUTING_KEY").unwrap_or_default()
                 } else {
                     integration_key.clone()
                 };
                 if key.is_empty() {
-                    notification.mark_failed("Set VMROGUE_PAGERDUTY_ROUTING_KEY or routing_key");
+                    notification.mark_failed("Set VEYRON_PAGERDUTY_ROUTING_KEY or routing_key");
                     return;
                 }
                 match integrations::deliver_pagerduty(&key, &notification.subject, "error").await {
@@ -181,7 +181,7 @@ pub async fn deliver_observability_notification(
         }
         NotificationChannel::SMS { phone_numbers } => {
             #[cfg(feature = "web")]
-            if let Some(relay) = integrations::env_var("VMROGUE_SMS_WEBHOOK_URL") {
+            if let Some(relay) = integrations::env_var("VEYRON_SMS_WEBHOOK_URL") {
                 match integrations::deliver_sms(&relay, &notification.subject, phone_numbers).await
                 {
                     Ok(true) => notification.mark_sent(),
@@ -190,11 +190,11 @@ pub async fn deliver_observability_notification(
                 }
             } else {
                 log::warn!(
-                    "SMS: set VMROGUE_SMS_WEBHOOK_URL. {} (phones: {:?})",
+                    "SMS: set VEYRON_SMS_WEBHOOK_URL. {} (phones: {:?})",
                     notification.subject,
                     phone_numbers
                 );
-                notification.mark_failed("SMS requires VMROGUE_SMS_WEBHOOK_URL");
+                notification.mark_failed("SMS requires VEYRON_SMS_WEBHOOK_URL");
             }
             #[cfg(not(feature = "web"))]
             notification.mark_failed("SMS requires web feature");
@@ -208,14 +208,14 @@ pub async fn deliver_test_notification() -> Vec<(String, bool, String)> {
     let mut results = Vec::new();
     let msg = "Veyron notification channel test";
 
-    if let Some(url) = integrations::env_var("VMROGUE_SLACK_WEBHOOK_URL") {
+    if let Some(url) = integrations::env_var("VEYRON_SLACK_WEBHOOK_URL") {
         let ok = integrations::deliver_slack(&url, msg)
             .await
             .unwrap_or(false);
         results.push(("slack".into(), ok, url));
     }
-    if let Some(relay) = integrations::env_var("VMROGUE_EMAIL_RELAY_URL") {
-        let to = integrations::env_var("VMROGUE_EMAIL_TEST_TO")
+    if let Some(relay) = integrations::env_var("VEYRON_EMAIL_RELAY_URL") {
+        let to = integrations::env_var("VEYRON_EMAIL_TEST_TO")
             .map(|s| vec![s])
             .unwrap_or_else(|| vec!["test@local".into()]);
         let ok = integrations::deliver_email(&relay, "Veyron test", msg, &to)
@@ -223,7 +223,7 @@ pub async fn deliver_test_notification() -> Vec<(String, bool, String)> {
             .unwrap_or(false);
         results.push(("email".into(), ok, relay));
     }
-    if let Some(key) = integrations::env_var("VMROGUE_PAGERDUTY_ROUTING_KEY") {
+    if let Some(key) = integrations::env_var("VEYRON_PAGERDUTY_ROUTING_KEY") {
         let ok = integrations::deliver_pagerduty(&key, msg, "info")
             .await
             .unwrap_or(false);

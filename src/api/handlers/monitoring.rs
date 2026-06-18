@@ -67,10 +67,12 @@ async fn get_monitoring_status(
 ) -> Json<MonitoringStatus> {
     use k8s_openapi::api::core::v1::Service;
 
-    let s = state.read().await;
-    let kube = s.client();
+    let (kube, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
     let client = kube.client();
-    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &s.namespace);
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
     let events = kube.list_events_for_scope(&scope).await;
 
     // Check for Prometheus, Grafana, Alertmanager across relevant namespaces
@@ -171,7 +173,7 @@ async fn get_monitoring_status(
     {
         prometheus = true;
     }
-    if std::env::var("VMROGUE_ALERTMANAGER_URL")
+    if std::env::var("VEYRON_ALERTMANAGER_URL")
         .map(|u| !u.trim().is_empty())
         .unwrap_or(false)
     {
@@ -198,9 +200,12 @@ async fn list_anomalies(
     State(state): State<SharedState>,
     Query(query): Query<AnomalyQuery>,
 ) -> Json<Vec<Anomaly>> {
-    let s = state.read().await;
-    let namespace = namespace_scope::resolve_opt(query.namespace.clone(), &s.namespace);
-    let vms = s.client().list_vms_for_scope(&namespace).await;
+    let (kube_client, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let namespace = namespace_scope::resolve_opt(query.namespace.clone(), &default_ns);
+    let vms = kube_client.list_vms_for_scope(&namespace).await;
     let now = chrono::Utc::now().to_rfc3339();
     let mut anomalies = Vec::new();
 

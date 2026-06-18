@@ -73,11 +73,11 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some();
-    let loki_env = std::env::var("VMROGUE_LOKI_URL")
+    let loki_env = std::env::var("VEYRON_LOKI_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some();
-    let jaeger_env = std::env::var("VMROGUE_JAEGER_QUERY_URL")
+    let jaeger_env = std::env::var("VEYRON_JAEGER_QUERY_URL")
         .ok()
         .filter(|u| !u.trim().is_empty())
         .is_some();
@@ -103,7 +103,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
             "not detected"
         },
         if loki_env {
-            "+ VMROGUE_LOKI_URL"
+            "+ VEYRON_LOKI_URL"
         } else {
             "services only"
         }
@@ -116,7 +116,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
             "not detected"
         },
         if jaeger_env {
-            "+ VMROGUE_JAEGER_QUERY_URL"
+            "+ VEYRON_JAEGER_QUERY_URL"
         } else {
             "services only"
         }
@@ -132,7 +132,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
     r.summary = match active {
         3 => "Full observability pillars detected — metrics, logs, and traces.".into(),
         0 => {
-            "No observability stack detected — install kube-prometheus-stack or set VMROGUE_* URLs."
+            "No observability stack detected — install kube-prometheus-stack or set VEYRON_* URLs."
                 .into()
         }
         n => format!("{n}/3 observability pillars active in cluster or via env vars."),
@@ -145,7 +145,7 @@ pub async fn observability_advisor(client: &KubeClient, scope: &str) -> CopilotR
     }
     if !logs && !loki_env {
         r.recommendations.push(
-            "Add Loki or Elasticsearch and set VMROGUE_LOKI_URL for LogQL in the dashboard.".into(),
+            "Add Loki or Elasticsearch and set VEYRON_LOKI_URL for LogQL in the dashboard.".into(),
         );
     }
 

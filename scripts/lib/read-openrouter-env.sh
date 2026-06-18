@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Library: read_openrouter_env [rc-file]
-# Prints VMROGUE_AI_* KEY=value lines (no logging of secrets).
+# Prints VEYRON_AI_* KEY=value lines (no logging of secrets).
 
 read_openrouter_env() {
   local RC_FILE="${1:-${HOME}/.zshrc}"
@@ -31,7 +31,7 @@ read_openrouter_env() {
     API_KEY="$(read_export OPENROUTER_API_KEY 2>/dev/null || true)"
   fi
   if [[ -z "$API_KEY" ]]; then
-    API_KEY="$(read_export VMROGUE_AI_API_KEY 2>/dev/null || true)"
+    API_KEY="$(read_export VEYRON_AI_API_KEY 2>/dev/null || true)"
   fi
   if [[ -z "$API_KEY" ]]; then
     echo "read_openrouter_env: no OpenRouter key in $RC_FILE" >&2
@@ -43,7 +43,7 @@ read_openrouter_env() {
     BASE_URL="$(read_export OPENROUTER_API_URL 2>/dev/null || true)"
   fi
   if [[ -z "$BASE_URL" ]]; then
-    BASE_URL="$(read_export VMROGUE_AI_URL 2>/dev/null || true)"
+    BASE_URL="$(read_export VEYRON_AI_URL 2>/dev/null || true)"
   fi
   if [[ -z "$BASE_URL" ]]; then
     BASE_URL="https://openrouter.ai/api/v1"
@@ -51,7 +51,7 @@ read_openrouter_env() {
     BASE_URL="${BASE_URL%/}/v1"
   fi
 
-  MODEL="$(read_export VMROGUE_AI_MODEL 2>/dev/null || true)"
+  MODEL="$(read_export VEYRON_AI_MODEL 2>/dev/null || true)"
   if [[ -z "$MODEL" ]]; then
     MODEL="$(read_export ANTHROPIC_MODEL 2>/dev/null || true)"
   fi
@@ -62,21 +62,21 @@ read_openrouter_env() {
     MODEL="openrouter/free"
   fi
 
-  MODE="$(read_export VMROGUE_AI_MODE 2>/dev/null || true)"
+  MODE="$(read_export VEYRON_AI_MODE 2>/dev/null || true)"
   if [[ -z "$MODE" ]]; then
     MODE="routing"
   fi
 
-  APP_TITLE="$(read_export VMROGUE_AI_APP_TITLE 2>/dev/null || true)"
+  APP_TITLE="$(read_export VEYRON_AI_APP_TITLE 2>/dev/null || true)"
   if [[ -z "$APP_TITLE" ]]; then
     APP_TITLE="ZeusOS"
   fi
 
-  printf 'VMROGUE_AI_API_KEY=%s\n' "$API_KEY"
-  printf 'VMROGUE_AI_URL=%s\n' "$BASE_URL"
-  printf 'VMROGUE_AI_MODEL=%s\n' "$MODEL"
-  printf 'VMROGUE_AI_MODE=%s\n' "$MODE"
-  printf 'VMROGUE_AI_APP_TITLE=%s\n' "$APP_TITLE"
+  printf 'VEYRON_AI_API_KEY=%s\n' "$API_KEY"
+  printf 'VEYRON_AI_URL=%s\n' "$BASE_URL"
+  printf 'VEYRON_AI_MODEL=%s\n' "$MODEL"
+  printf 'VEYRON_AI_MODE=%s\n' "$MODE"
+  printf 'VEYRON_AI_APP_TITLE=%s\n' "$APP_TITLE"
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

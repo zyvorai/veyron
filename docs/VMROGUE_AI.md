@@ -103,7 +103,7 @@ veyron ai recommend "I need a VM for PostgreSQL"
 | 7 | AI Guest Inspector | **Done** — guest agent, OS info, Doctor merge |
 | 8 | AI Storage Doctor | **Done** — PVC pressure, snapshot sprawl |
 | 9 | AI Security Sentinel | **Done** — RDP expose, drift, policies |
-| 10 | Optional LLM backend | **Done** — `VMROGUE_AI_URL` paraphrase layer |
+| 10 | Optional LLM backend | **Done** — `VEYRON_AI_URL` paraphrase layer |
 | 11 | AI Cost Advisor | **Done** — OpenCost or reference rates, fleet + per-VM |
 
 ## Safety rails (product policy)
@@ -147,23 +147,23 @@ Natural-language routing via `POST /experience/copilot/ask` recognizes the same 
 
 ## LLM upgrade (agent layer)
 
-When an API key is set (`VMROGUE_AI_API_KEY`, `OPENROUTER_API_KEY`, or `ANTHROPIC_AUTH_TOKEN` with `sk-or-v1-…`):
+When an API key is set (`VEYRON_AI_API_KEY`, `OPENROUTER_API_KEY`, or `ANTHROPIC_AUTH_TOKEN` with `sk-or-v1-…`):
 
 | Env | Purpose |
 |-----|---------|
-| `VMROGUE_AI_URL` | OpenAI-compatible base (OpenRouter default `https://openrouter.ai/api/v1`) |
-| `VMROGUE_AI_API_KEY` | Bearer token |
-| `VMROGUE_AI_MODE` | `off` / `paraphrase` (default) / `routing` / `agent` |
-| `VMROGUE_AI_MODEL` | Model id (`openrouter/free` default for OpenRouter keys) |
-| `VMROGUE_AI_APP_TITLE` | Optional OpenRouter `X-Title` (e.g. **ZeusOS**) |
+| `VEYRON_AI_URL` | OpenAI-compatible base (OpenRouter default `https://openrouter.ai/api/v1`) |
+| `VEYRON_AI_API_KEY` | Bearer token |
+| `VEYRON_AI_MODE` | `off` / `paraphrase` (default) / `routing` / `agent` |
+| `VEYRON_AI_MODEL` | Model id (`openrouter/free` default for OpenRouter keys) |
+| `VEYRON_AI_APP_TITLE` | Optional OpenRouter `X-Title` (e.g. **ZeusOS**) |
 
 **OpenRouter from `~/.zshrc`:** `./scripts/configure-zeus-openrouter.sh --print-env` or `./scripts/configure-zeus-openrouter.sh HOST USER` to patch `veyron-integrations` and restart the API.
 
 | Env | Purpose |
 |-----|---------|
-| `VMROGUE_AI_MAX_TOOL_ROUNDS` | Agent tool invocations per message (default `2`) |
-| `VMROGUE_AI_TIMEOUT_SECS` | LLM HTTP timeout (default `30`) |
-| `VMROGUE_AI_RATE_LIMIT_PER_MIN` | Separate rate bucket for `POST /copilot/chat` and `/copilot/ask` when LLM active (default `20`) |
+| `VEYRON_AI_MAX_TOOL_ROUNDS` | Agent tool invocations per message (default `2`) |
+| `VEYRON_AI_TIMEOUT_SECS` | LLM HTTP timeout (default `30`) |
+| `VEYRON_AI_RATE_LIMIT_PER_MIN` | Separate rate bucket for `POST /copilot/chat` and `/copilot/ask` when LLM active (default `20`) |
 
 | Route | Purpose |
 |-------|---------|
@@ -174,7 +174,7 @@ Evidence, validation, and YAML remain deterministic — LLM only routes or parap
 
 The agent tool registry exposes **27 tools** (all fleet/per-VM advisors plus `yaml_preview` and `explain_error`).
 
-When `VMROGUE_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_trace` array showing which deterministic tools ran (displayed as chips in the Copilot modal).
+When `VEYRON_AI_MODE=agent`, `POST /experience/copilot/chat` returns a `tool_trace` array showing which deterministic tools ran (displayed as chips in the Copilot modal).
 
 **Proactive briefing:** `GET /experience/home` includes `copilot_briefing` — up to 3 fleet insights (failed/pending/degraded VMs, node pressure) with one-click Copilot actions on the Datacenter home hero.
 

@@ -47,10 +47,10 @@ else
 fi
 
 if [[ -n "${VEYRON_API_KEY:-}" ]]; then
-  if curl -sf "http://127.0.0.1:${VMROGUE_PORT:-5151}/api/v1/health" >/dev/null 2>&1; then
-    pkg_ok "API health :${VMROGUE_PORT:-5151}"
+  if curl -sf "http://127.0.0.1:${VEYRON_PORT:-5151}/api/v1/health" >/dev/null 2>&1; then
+    pkg_ok "API health :${VEYRON_PORT:-5151}"
   else
-    pkg_skip "API not listening — start: ./veyron api-serve --host 0.0.0.0 --port ${VMROGUE_PORT:-5151}"
+    pkg_skip "API not listening — start: ./veyron api-serve --host 0.0.0.0 --port ${VEYRON_PORT:-5151}"
   fi
 else
   pkg_skip "HTTP health (set VEYRON_API_KEY and start api-serve)"

@@ -28,12 +28,12 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn list_namespaces(State(state): State<SharedState>) -> Json<Vec<NamespaceResponse>> {
-    let s = state.read().await;
-    let namespaces = s.client().list_namespaces().await.unwrap_or_default();
+    let kube_client = { let s = state.read().await; s.kube_client.clone() };
+    let namespaces = kube_client.list_namespaces().await.unwrap_or_default();
 
     // Count VMs per namespace with a single cluster-wide API call
     let mut vm_counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
-    if let Ok(all_vms) = s.client().list_all_vms().await {
+    if let Ok(all_vms) = kube_client.list_all_vms().await {
         for vm in &all_vms {
             let ns = vm.metadata.namespace.as_deref().unwrap_or("default");
             *vm_counts.entry(ns.to_string()).or_insert(0) += 1;

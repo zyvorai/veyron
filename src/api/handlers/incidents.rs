@@ -66,7 +66,7 @@ async fn get_incident_timeline(
     let now = chrono::Utc::now();
     let mut ctx = VmrogueFeatureContext::incidents();
 
-    if let Some(am_url) = crate::api::integrations::env_var("VMROGUE_ALERTMANAGER_URL") {
+    if let Some(am_url) = crate::api::integrations::env_var("VEYRON_ALERTMANAGER_URL") {
         match crate::api::integrations::fetch_alertmanager_alerts(&am_url).await {
             Ok(alerts) if !alerts.is_empty() => {
                 ctx = VmrogueFeatureContext::incidents_alertmanager();

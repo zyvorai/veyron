@@ -20,7 +20,7 @@ REPO="${VEYRON_REGISTRY:-ghcr.io/ssahani/veyron}"
 VERSION="${VERSION:-$(grep '^version' Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')}"
 IMAGE="${REPO}:${VERSION}"
 IMAGE_LATEST="${REPO}:latest"
-NAMESPACE="${VEYRON_NAMESPACE:-${VMROGUE_NAMESPACE:-veyron-system}}"
+NAMESPACE="${VEYRON_NAMESPACE:-veyron-system}"
 MANIFEST="deploy/k8s.yaml"
 API_KEY="CHANGE_ME"
 

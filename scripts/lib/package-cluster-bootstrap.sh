@@ -34,7 +34,7 @@ _apply() {
     sed \
       -e "s|__V9S_APP_NAMESPACE__|${APP_NAMESPACE}|g" \
       -e "s|__VEYRON_APP_NAMESPACE__|${APP_NAMESPACE}|g" \
-      -e "s|namespace: vmrogue-system|namespace: ${APP_NAMESPACE}|g" \
+      -e "s|namespace: veyron-system|namespace: ${APP_NAMESPACE}|g" \
       -e "s|namespace: veyron-system|namespace: ${APP_NAMESPACE}|g" \
       "${f}" | kubectl apply -f -
   else

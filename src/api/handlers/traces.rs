@@ -53,8 +53,8 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 fn jaeger_query_url() -> Option<String> {
-    crate::api::integrations::env_var("VMROGUE_JAEGER_QUERY_URL")
-        .or_else(|| crate::api::integrations::env_var("VMROGUE_TEMPO_QUERY_URL"))
+    crate::api::integrations::env_var("VEYRON_JAEGER_QUERY_URL")
+        .or_else(|| crate::api::integrations::env_var("VEYRON_TEMPO_QUERY_URL"))
 }
 
 #[cfg(feature = "web")]
@@ -63,7 +63,7 @@ fn traces_context(jaeger: bool) -> super::feature_context::VmrogueFeatureContext
         super::feature_context::VmrogueFeatureContext {
             data_source: "jaeger_tempo_query_api".to_string(),
             scope: "Distributed traces from Jaeger or Tempo query API.".to_string(),
-            limitations: "Configure VMROGUE_JAEGER_QUERY_URL (e.g. http://jaeger:16686/api/traces) or VMROGUE_TEMPO_QUERY_URL.".to_string(),
+            limitations: "Configure VEYRON_JAEGER_QUERY_URL (e.g. http://jaeger:16686/api/traces) or VEYRON_TEMPO_QUERY_URL.".to_string(),
         }
     } else {
         super::feature_context::VmrogueFeatureContext::traces_fallback()
