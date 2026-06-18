@@ -8729,37 +8729,100 @@ function showVmSearchAC() {
   var inp = document.getElementById('vm-search');
   var ac = document.getElementById('vm-search-ac');
   if (!inp || !ac) return;
-  var q = (inp.value || '').trim().toLowerCase();
-  if (!q || q.length < 1) { showSearchHistory(); return; }
+  var fullVal = (inp.value || '').trim();
+  if (!fullVal || fullVal.length < 1) { showSearchHistory(); return; }
+  // Multi-token: complete only the last space-separated token; prefix = prior tokens
+  var parts = fullVal.split(/\s+/);
+  var prefix = parts.length > 1 ? parts.slice(0, -1).join(' ') + ' ' : '';
+  var q = parts[parts.length - 1].toLowerCase();
+  if (!q) { hideVmSearchAC(); return; }
   var vms = window.lastVMs || vmData || [];
   var suggestions = [];
   var seen = new Set();
-  vms.forEach(function(v) {
-    if (v.name && v.name.toLowerCase().includes(q) && !seen.has('vm:' + v.name)) {
-      seen.add('vm:' + v.name);
-      suggestions.push({ text: v.name, hint: (v.namespace || 'default') + ' · ' + v.status, apply: v.name });
-    }
-  });
-  vms.forEach(function(v) {
-    if (v.node && v.node.toLowerCase().includes(q) && !seen.has('node:' + v.node)) {
-      seen.add('node:' + v.node);
-      suggestions.push({ text: 'node:' + v.node, hint: 'Filter by node', apply: 'node:' + v.node });
-    }
-    if (v.ip && v.ip !== 'N/A' && v.ip.includes(q) && !seen.has('ip:' + v.ip)) {
-      seen.add('ip:' + v.ip);
-      suggestions.push({ text: 'ip:' + v.ip, hint: v.name, apply: 'ip:' + v.ip });
-    }
-    var ns = v.namespace || 'default';
-    if (ns.toLowerCase().includes(q) && !seen.has('ns:' + ns)) {
-      seen.add('ns:' + ns);
-      suggestions.push({ text: 'ns:' + ns, hint: 'Filter by namespace', apply: 'ns:' + ns });
-    }
-  });
-  suggestions = suggestions.slice(0, 8);
+  // CPU numeric suggestions
+  if (q.startsWith('cpu')) {
+    var cpuCounts = [...new Set(vms.map(function(v){return parseCpuCount(v.cpu);}).filter(Boolean))].sort(function(a,b){return a-b;});
+    cpuCounts.forEach(function(c) {
+      var tok = 'cpu>' + c;
+      var cnt = vms.filter(function(v){return (parseCpuCount(v.cpu)||0) > c;}).length;
+      if (!seen.has(tok)) { seen.add(tok); suggestions.push({text:tok, hint:cnt + ' VMs', apply:tok}); }
+    });
+    // Also suggest cpu<max
+    var maxCpu = Math.max.apply(null, cpuCounts);
+    if (maxCpu && !seen.has('cpu<'+maxCpu)) { seen.add('cpu<'+maxCpu); suggestions.push({text:'cpu<'+maxCpu, hint:vms.filter(function(v){return (parseCpuCount(v.cpu)||0)<maxCpu;}).length+' VMs', apply:'cpu<'+maxCpu}); }
+  }
+  // Memory numeric suggestions
+  if (q.startsWith('mem')) {
+    var memTiers = [2, 4, 8, 16, 32, 64];
+    memTiers.forEach(function(gi) {
+      var tok = 'mem>' + gi + 'gi';
+      var cnt = vms.filter(function(v){return (parseMemGiB(v.memory)||0) > gi;}).length;
+      if (cnt > 0 && !seen.has(tok)) { seen.add(tok); suggestions.push({text:tok, hint:cnt + ' VMs', apply:tok}); }
+    });
+  }
+  // Age suggestions
+  if (q.startsWith('age')) {
+    [['age>1d','older than 1 day'], ['age>7d','older than 7 days'], ['age>30d','older than 30 days'],
+     ['age<1h','younger than 1 hour'], ['age<24h','younger than 24 hours']].forEach(function(t) {
+      if (!seen.has(t[0])) { seen.add(t[0]); suggestions.push({text:t[0], hint:t[1], apply:t[0]}); }
+    });
+  }
+  // Tag suggestions
+  if (q.startsWith('tag:')) {
+    var tagPart = q.slice(4);
+    var allTags = [];
+    try { var notes = JSON.parse(localStorage.getItem('veyron_vm_tags') || '{}'); Object.values(notes).forEach(function(ts){allTags=allTags.concat(ts);}); } catch(e){}
+    [...new Set(allTags)].filter(function(t){return t.toLowerCase().startsWith(tagPart);}).forEach(function(t) {
+      var tok = 'tag:' + t;
+      if (!seen.has(tok)) { seen.add(tok); suggestions.push({text:tok, hint:'Filter by tag', apply:tok}); }
+    });
+  }
+  // OS suggestions
+  if (q.startsWith('os:')) {
+    var osPart = q.slice(3);
+    ['ubuntu','debian','centos','rhel','windows','fedora','opensuse','alpine','arch'].filter(function(o){return o.startsWith(osPart);}).forEach(function(o) {
+      var cnt = vms.filter(function(v){return guessOsFamily(v).includes(o);}).length;
+      if (cnt > 0 && !seen.has('os:'+o)) { seen.add('os:'+o); suggestions.push({text:'os:'+o, hint:cnt+' VMs', apply:'os:'+o}); }
+    });
+  }
+  // Status suggestions
+  if (q.startsWith('status:')) {
+    var sPart = q.slice(7);
+    ['running','stopped','failed','pending','paused'].filter(function(s){return s.startsWith(sPart);}).forEach(function(s) {
+      var cnt = vms.filter(function(v){return (v.status||'').toLowerCase()===s;}).length;
+      if (!seen.has('status:'+s)) { seen.add('status:'+s); suggestions.push({text:'status:'+s, hint:cnt+' VMs', apply:'status:'+s}); }
+    });
+  }
+  // VM name / node / IP / ns (existing)
+  if (!suggestions.length || q.length >= 2) {
+    vms.forEach(function(v) {
+      if (v.name && v.name.toLowerCase().includes(q) && !seen.has('vm:'+v.name)) {
+        seen.add('vm:'+v.name);
+        suggestions.push({text:v.name, hint:(v.namespace||'default')+' · '+v.status, apply:v.name});
+      }
+    });
+    vms.forEach(function(v) {
+      if (v.node && v.node.toLowerCase().includes(q) && !seen.has('node:'+v.node)) {
+        seen.add('node:'+v.node);
+        suggestions.push({text:'node:'+v.node, hint:'Filter by node', apply:'node:'+v.node});
+      }
+      if (v.ip && v.ip !== 'N/A' && v.ip.includes(q) && !seen.has('ip:'+v.ip)) {
+        seen.add('ip:'+v.ip);
+        suggestions.push({text:'ip:'+v.ip, hint:v.name, apply:'ip:'+v.ip});
+      }
+      var ns = v.namespace || 'default';
+      if (ns.toLowerCase().includes(q) && !seen.has('ns:'+ns)) {
+        seen.add('ns:'+ns);
+        suggestions.push({text:'ns:'+ns, hint:'Filter by namespace', apply:'ns:'+ns});
+      }
+    });
+  }
+  suggestions = suggestions.slice(0, 10);
   if (!suggestions.length) { hideVmSearchAC(); return; }
   _vmAcIdx = -1;
   ac.innerHTML = suggestions.map(function(s, i) {
-    return '<div class="vmr-ac-item" data-idx="' + i + '" data-apply="' + esc(s.apply) + '" onmousedown="vmSearchAcApply(' + JSON.stringify(s.apply) + ')" role="option">' +
+    var applyFull = prefix + s.apply;
+    return '<div class="vmr-ac-item" data-idx="' + i + '" data-apply="' + esc(applyFull) + '" onmousedown="vmSearchAcApply(' + JSON.stringify(applyFull) + ')" role="option">' +
       '<span class="vmr-ac-text">' + esc(s.text) + '</span>' +
       '<span class="vmr-ac-hint">' + esc(s.hint) + '</span></div>';
   }).join('');
