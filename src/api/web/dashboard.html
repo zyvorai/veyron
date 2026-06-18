@@ -9473,6 +9473,22 @@ function vmAgeTint(vm) {
   return 'rgba(239,68,68,.09)';                       // 30d+: warm red
 }
 
+// ── Search Match Highlighting ──
+function highlightMatch(text, q) {
+  if (!q || !text) return esc(text || '');
+  // Only highlight for plain name searches (not prefix searches like node:, tag:, etc.)
+  if (q.includes(':')) return esc(text);
+  var idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return esc(text);
+  return esc(text.slice(0, idx)) +
+    '<mark style="background:rgba(251,191,36,.3);color:inherit;border-radius:2px;padding:0 1px">' + esc(text.slice(idx, idx + q.length)) + '</mark>' +
+    esc(text.slice(idx + q.length));
+}
+function activeSearchQuery() {
+  var el = document.getElementById('vm-search');
+  return el ? (el.value || '').toLowerCase() : '';
+}
+
 // ── Inspector Live Uptime Clock ──
 var _uptimeClockInterval = null;
 function startUptimeClock(vm) {
@@ -10131,7 +10147,7 @@ function vmCard(vm, showActions) {
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
     onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmGlassCtxMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
-    '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
+    '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + highlightMatch(vm.name, activeSearchQuery()) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
     vmTagsHtml(ns, vm.name) +
@@ -10792,7 +10808,7 @@ function vmRow(vm, showActions) {
     ' title="Filter VMs on ' + esc(vm.node) + '">◉ ' + esc(vm.node) + '</button>' : '';
   const tagHtml = vmTagsHtml(ns, vm.name);
   const noteHtml = vmNoteHtml(ns, vm.name);
-  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+esc(vm.name)+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+(nodeChip ? '<div>'+nodeChip+'</div>' : '')+tagHtml+noteHtml+'</div></div>'+rightCol+'</div>';
+  return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name vmr-copy-tile" title="Copy VM name" '+onStopHandler('copyToClipboard('+jsArgs(vm.name)+')')+'>'+highlightMatch(vm.name, activeSearchQuery())+'<span class="vmr-copy-hint">copy</span></div>'+nsLine+(nodeChip ? '<div>'+nodeChip+'</div>' : '')+tagHtml+noteHtml+'</div></div>'+rightCol+'</div>';
 }
 
 function initVmViewMode() {
