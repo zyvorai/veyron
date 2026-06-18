@@ -3972,7 +3972,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPolicies()">&#8635; Refresh</button></div></div>
     <div id="policies-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span><input type="search" id="policies-search" class="form-input" placeholder="Filter policies…" oninput="filterPoliciesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
   </div>
 </div>
@@ -3987,7 +3987,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Drift Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('drift-advisor-card')">Dismiss</button></div>
     <div id="drift-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Insights</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Insights</span><input type="search" id="insights-search" class="form-input" placeholder="Filter insights…" oninput="filterInsightsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="insights-table"><thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>VM</th><th>Title</th><th>State</th></tr></thead><tbody id="insights-body"></tbody></table>
   </div>
 </div>
@@ -3997,7 +3997,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span><input type="search" id="actions-search" class="form-input" placeholder="Filter actions…" oninput="filterActionsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
   </div>
 </div>
@@ -10590,6 +10590,57 @@ function filterCostsView(query) {
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
 }
 
+function filterPoliciesView(query) {
+  const tb = document.getElementById('policies-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastPolicies || [];
+  const filtered = q ? items.filter(function(p) {
+    return (p.name || '').toLowerCase().includes(q) ||
+           (p.enforcement || '').toLowerCase().includes(q) ||
+           (p.severity || '').toLowerCase().includes(q) ||
+           (p.framework || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(p) {
+    return '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">' + (q ? 'No policies match &ldquo;' + esc(q) + '&rdquo;' : 'No policies') + '</td></tr>';
+}
+
+function filterInsightsView(query) {
+  const tb = document.getElementById('insights-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastInsights || [];
+  const filtered = q ? items.filter(function(i) {
+    return (i.name || '').toLowerCase().includes(q) ||
+           (i.insight_type || '').toLowerCase().includes(q) ||
+           (i.severity || '').toLowerCase().includes(q) ||
+           (i.vm_ref || '').toLowerCase().includes(q) ||
+           (i.title || '').toLowerCase().includes(q) ||
+           (i.state || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(i) {
+    return '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No insights match &ldquo;' + esc(q) + '&rdquo;' : 'No insights') + '</td></tr>';
+}
+
+function filterActionsView(query) {
+  const tb = document.getElementById('actions-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastActions || [];
+  const filtered = q ? items.filter(function(a) {
+    return (a.name || '').toLowerCase().includes(q) ||
+           (a.action_type || '').toLowerCase().includes(q) ||
+           (a.vm_ref || '').toLowerCase().includes(q) ||
+           (a.phase || '').toLowerCase().includes(q) ||
+           (a.message || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(a) {
+    return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No actions match &ldquo;' + esc(q) + '&rdquo;' : 'No actions') + '</td></tr>';
+}
+
 function renderWorkloadsList(query) {
   const tb = document.getElementById('workloads-body');
   if (!tb) return;
@@ -14211,7 +14262,8 @@ async function fetchPolicies() {
       ]);
     }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(8, { message }); return; }
-    tb.innerHTML = items.map(p => '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>').join('');
+    window.lastPolicies = items;
+    filterPoliciesView((document.getElementById('policies-search') || {}).value || '');
   } catch (e) {
     tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchPolicies');
   }
@@ -14234,7 +14286,8 @@ async function fetchInsights() {
       ]);
     }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
-    tb.innerHTML = items.map(i => '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>').join('');
+    window.lastInsights = items;
+    filterInsightsView((document.getElementById('insights-search') || {}).value || '');
   } catch (e) {
     tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchInsights');
   }
@@ -14256,7 +14309,8 @@ async function fetchActions() {
       ]);
     }
     if (items.length === 0) { tb.innerHTML = crdEmptyRow(6, { message }); return; }
-    tb.innerHTML = items.map(a => '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>').join('');
+    window.lastActions = items;
+    filterActionsView((document.getElementById('actions-search') || {}).value || '');
   } catch (e) {
     tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchActions');
   }
