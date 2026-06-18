@@ -2145,6 +2145,9 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-alog-action{color:var(--text-dim);font-size:.7rem;flex-shrink:0}
 .vmr-alog-ns{color:var(--text-dim);font-size:.68rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .vmr-alog-ts{color:var(--text-dim);font-size:.68rem;flex-shrink:0;white-space:nowrap}
+.vmr-cmd-ac{position:absolute;bottom:calc(100% + 6px);left:0;min-width:300px;max-height:260px;overflow-y:auto;background:rgba(10,12,18,.98);border:1px solid rgba(56,189,248,.25);border-radius:10px;box-shadow:0 -6px 28px rgba(0,0,0,.7);backdrop-filter:blur(20px);z-index:1100;scrollbar-width:thin}
+.vmr-cmd-ac-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;cursor:pointer;transition:background .1s;font-size:.8rem}
+.vmr-cmd-ac-item:hover,.vmr-cmd-ac-item.active{background:rgba(56,189,248,.1)}
 .vmr-search-ac{position:absolute;top:calc(100% + 4px);left:0;min-width:260px;max-height:280px;overflow-y:auto;background:rgba(14,16,23,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(16px);z-index:900;scrollbar-width:thin}
 .vmr-ac-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;cursor:pointer;transition:background .1s;font-size:.8rem}
 .vmr-ac-item:hover,.vmr-ac-item.active{background:rgba(56,189,248,.1)}
@@ -3604,7 +3607,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <!-- VIM COMMAND BAR -->
 <div id="vmr-cmdbar" class="vmr-cmdbar" style="display:none" role="dialog" aria-label="Command mode">
   <span class="vmr-cmdbar-prefix" aria-hidden="true">:</span>
-  <input type="text" id="vmr-cmdbar-input" class="vmr-cmdbar-input" autocomplete="off" spellcheck="false" placeholder="command (? for help, Tab to complete)" aria-label="Command input">
+  <div style="position:relative;flex:1;display:flex;align-items:center">
+    <input type="text" id="vmr-cmdbar-input" class="vmr-cmdbar-input" autocomplete="off" spellcheck="false" placeholder="command (? for help, Tab to complete)" aria-label="Command input" oninput="vmrCmdAcUpdate()" style="flex:1">
+    <div id="vmr-cmd-ac" class="vmr-cmd-ac" style="display:none" role="listbox"></div>
+  </div>
   <span id="vmr-cmdbar-hint" class="vmr-cmdbar-hint"></span>
   <button type="button" class="vmr-cmdbar-close" onclick="closeVimCmd()" aria-label="Close command bar">Esc</button>
 </div>
@@ -15201,8 +15207,10 @@ function openVimCmd() {
   inp.focus();
   updateVimCmdHint('');
   inp.onkeydown = function(ev) {
-    if (ev.key === 'Escape') { ev.preventDefault(); closeVimCmd(); return; }
-    if (ev.key === 'Enter') { ev.preventDefault(); executeVimCmd(inp.value); return; }
+    if (ev.key === 'Escape') { ev.preventDefault(); var ac2 = document.getElementById('vmr-cmd-ac'); if (ac2 && ac2.style.display !== 'none') { vmrCmdAcHide(); } else { closeVimCmd(); } return; }
+    if (ev.key === 'ArrowDown') { ev.preventDefault(); var ac3 = document.getElementById('vmr-cmd-ac'); if (ac3 && ac3.style.display !== 'none') { var its3 = ac3.querySelectorAll('.vmr-cmd-ac-item'); _vmrCmdAcIdx = Math.min(_vmrCmdAcIdx + 1, its3.length - 1); its3.forEach(function(it,i){ it.classList.toggle('active', i === _vmrCmdAcIdx); }); } return; }
+    if (ev.key === 'ArrowUp') { ev.preventDefault(); var ac4 = document.getElementById('vmr-cmd-ac'); if (ac4 && ac4.style.display !== 'none') { var its4 = ac4.querySelectorAll('.vmr-cmd-ac-item'); _vmrCmdAcIdx = Math.max(_vmrCmdAcIdx - 1, -1); its4.forEach(function(it,i){ it.classList.toggle('active', i === _vmrCmdAcIdx); }); } return; }
+    if (ev.key === 'Enter') { ev.preventDefault(); var ac5 = document.getElementById('vmr-cmd-ac'); if (ac5 && ac5.style.display !== 'none' && _vmrCmdAcIdx >= 0) { var sel5 = ac5.querySelectorAll('.vmr-cmd-ac-item')[_vmrCmdAcIdx]; if (sel5) { vmrCmdAcApply(sel5.dataset.cmd); return; } } executeVimCmd(inp.value); return; }
     if (ev.key === 'Tab') {
       ev.preventDefault();
       const val = inp.value.trim().toLowerCase();
@@ -15227,6 +15235,34 @@ function closeVimCmd() {
   if (bar) bar.style.display = 'none';
   const inp = document.getElementById('vmr-cmdbar-input');
   if (inp) inp.value = '';
+  vmrCmdAcHide();
+}
+var _vmrCmdAcIdx = -1;
+function vmrCmdAcUpdate() {
+  var inp = document.getElementById('vmr-cmdbar-input');
+  var ac = document.getElementById('vmr-cmd-ac');
+  if (!inp || !ac) return;
+  var val = inp.value.trim().toLowerCase();
+  var firstWord = val.split(/\s+/)[0];
+  if (!firstWord || val.indexOf(' ') >= 0) { vmrCmdAcHide(); return; }
+  var matches = Object.keys(VIM_CMD_HELP).filter(function(c) { return c.startsWith(firstWord) && c !== firstWord; });
+  if (!matches.length) { vmrCmdAcHide(); return; }
+  _vmrCmdAcIdx = -1;
+  ac.innerHTML = matches.slice(0, 8).map(function(cmd, i) {
+    return '<div class="vmr-cmd-ac-item" data-cmd="' + esc(cmd) + '" data-idx="' + i + '" onmousedown="vmrCmdAcApply(' + JSON.stringify(cmd) + ')" role="option">' +
+      '<span class="vmr-ac-text">:' + esc(cmd) + '</span>' +
+      '<span class="vmr-ac-hint">' + esc(VIM_CMD_HELP[cmd] || '') + '</span></div>';
+  }).join('');
+  ac.style.display = 'block';
+}
+function vmrCmdAcHide() {
+  var ac = document.getElementById('vmr-cmd-ac');
+  if (ac) { ac.style.display = 'none'; _vmrCmdAcIdx = -1; }
+}
+function vmrCmdAcApply(cmd) {
+  var inp = document.getElementById('vmr-cmdbar-input');
+  if (inp) { inp.value = cmd; inp.focus(); updateVimCmdHint(cmd); }
+  vmrCmdAcHide();
 }
 
 function updateVimCmdHint(val) {
