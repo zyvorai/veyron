@@ -3222,6 +3222,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="mac-nc-toggle" id="mac-nc-toggle" onclick="toggleNotificationCenter()" title="Notification Center" aria-label="Notification Center">🔔<span class="mac-nc-badge" id="mac-nc-badge" style="display:none">0</span></button>
     <button type="button" class="mac-cc-toggle" id="mac-cc-toggle" onclick="toggleControlCenter()" title="Control Center" aria-label="Control Center">▥</button>
     <button type="button" class="btn-nav-browse" id="btn-classic-nav" onclick="toggleClassicNav()" title="All pages (Compute, Network, Platform…)">Browse</button>
+    <button type="button" class="btn-spotlight" onclick="openQuickForge()" title="Quick VM Launcher (⌘N)" style="color:var(--cyan)" aria-label="New VM">⌘N</button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
       <optgroup label="macOS">
@@ -3861,6 +3862,49 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div class="form-group"><label class="form-label">New VM name</label><input type="text" class="form-input" id="clone-new-name" placeholder="my-vm-clone" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();submitClone();}"></div>
     </div>
     <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeCloneModal()">Cancel</button><button type="button" class="glass-btn-primary" onclick="submitClone()">Clone</button></div>
+  </div>
+</div>
+
+<!-- QUICK FORGE MODAL -->
+<div class="modal-overlay" id="quick-forge-modal" onclick="if(event.target===this)closeQuickForge()">
+  <div class="modal glass-modal" style="width:min(480px,96vw);padding:0;border-radius:16px;overflow:hidden">
+    <div style="padding:18px 20px 6px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)">
+      <span style="font-size:1.1rem;color:var(--cyan)">⚡</span>
+      <span style="font-size:.9rem;font-weight:600;letter-spacing:.03em">Quick Forge VM</span>
+      <span style="margin-left:auto;font-size:.72rem;color:var(--text-dim)">⌘N</span>
+    </div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">VM Name</label>
+        <input type="text" id="qf-name" class="form-input" placeholder="my-vm-01" autocomplete="off" spellcheck="false"
+          oninput="qfSuggestName()" onkeydown="if(event.key==='Enter')submitQuickForge();if(event.key==='Escape')closeQuickForge()">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Template</label>
+          <select class="form-select" id="qf-template" onchange="qfOnTemplateChange()"></select>
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Namespace</label>
+          <input type="text" id="qf-ns" class="form-input" value="default">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">CPU <span id="qf-cpu-hint" style="color:var(--text-dim);font-weight:normal;font-size:.72rem"></span></label>
+          <input type="number" id="qf-cpu" class="form-input" value="2" min="1" max="64">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Memory <span id="qf-mem-hint" style="color:var(--text-dim);font-weight:normal;font-size:.72rem"></span></label>
+          <input type="text" id="qf-mem" class="form-input" value="2Gi">
+        </div>
+      </div>
+      <div id="qf-status" style="min-height:18px;font-size:.78rem;color:var(--text-muted)"></div>
+    </div>
+    <div style="padding:10px 20px 18px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,.06)">
+      <button type="button" class="glass-btn-secondary" onclick="closeQuickForge()">Cancel</button>
+      <button type="button" class="glass-btn-primary" id="qf-submit-btn" onclick="submitQuickForge()" style="min-width:100px">Launch VM</button>
+    </div>
   </div>
 </div>
 
@@ -4644,9 +4688,29 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-metrics" data-section="observe">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMetrics()">&#8635; Refresh</button></div></div>
-  
+  <div class="page-header"><div><h1>Metrics</h1><p>Cluster capacity and VM runtime totals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMetrics()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('heatmap')">Heat Map</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('monitoring')">Monitoring</button></div></div>
+
   <div id="metrics-summary" class="grid-4 page-glass-stats"></div>
+  <div class="grid-2" style="gap:16px">
+    <div class="card glass-card">
+      <div class="card-header"><span class="card-title">CPU Allocation</span><span style="font-size:.72rem;color:var(--text-dim)">vCPUs assigned per VM</span></div>
+      <div id="metrics-cpu-breakdown" style="padding:12px 16px"></div>
+    </div>
+    <div class="card glass-card">
+      <div class="card-header"><span class="card-title">Memory Allocation</span><span style="font-size:.72rem;color:var(--text-dim)">GiB assigned per VM</span></div>
+      <div id="metrics-mem-breakdown" style="padding:12px 16px"></div>
+    </div>
+  </div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">VM Inventory</span>
+      <span id="metrics-vm-count" style="font-size:.78rem;color:var(--text-muted);margin-left:8px"></span>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="navigate('vms')">Open Fleet Command →</button>
+    </div>
+    <table class="table" id="metrics-vm-table">
+      <thead><tr><th>VM</th><th>Namespace</th><th>Status</th><th>CPU</th><th>Memory</th><th>Node</th><th>Age</th></tr></thead>
+      <tbody id="metrics-vm-body"></tbody>
+    </table>
+  </div>
 </div>
 </div>
 
@@ -13346,6 +13410,14 @@ document.addEventListener('keydown', e => {
     openSpotlight();
     return;
   }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'n') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      openQuickForge();
+      return;
+    }
+  }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -17436,15 +17508,86 @@ async function fetchMetrics() {
   try {
     const metrics = await apiJson('/api/v1/metrics');
     if (!summary) return;
+    const stopped = (metrics.total_vms || 0) - (metrics.running_vms || 0);
     summary.innerHTML = renderGlassStatPills([
       { label: 'Total VMs', value: metrics.total_vms || 0, onclick: "navigate('vms')", title: 'View VMs' },
       { label: 'Running', value: metrics.running_vms || 0, cls: ' ok', onclick: "navigateToVmsFilter('Running')", title: 'Running VMs' },
-      { label: 'CPU capacity', value: metrics.total_cpu_cores || 0 },
+      { label: 'Stopped', value: stopped, onclick: "navigateToVmsFilter('Stopped')", title: 'Stopped VMs' },
+      { label: 'vCPUs', value: metrics.total_cpu_cores || 0 },
       { label: 'Memory', value: fmtBytes(metrics.total_memory_bytes) }
     ]);
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('Metrics fetch error:', e);
+  }
+  renderMetricsVmBreakdown();
+}
+
+function renderMetricsVmBreakdown() {
+  const vms = (window.lastVMs || vmData || []).filter(function(v) {
+    return currentNamespace === 'all' || (v.namespace || 'default') === currentNamespace;
+  });
+
+  var cpuEl = document.getElementById('metrics-cpu-breakdown');
+  var memEl = document.getElementById('metrics-mem-breakdown');
+  var tbody = document.getElementById('metrics-vm-body');
+  var countEl = document.getElementById('metrics-vm-count');
+
+  if (countEl) countEl.textContent = vms.length + ' VMs' + (currentNamespace !== 'all' ? ' in ' + currentNamespace : ' across all namespaces');
+
+  if (!vms.length) {
+    if (cpuEl) cpuEl.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">No VMs in scope</p>';
+    if (memEl) memEl.innerHTML = '<p style="color:var(--text-muted);font-size:.8rem">No VMs in scope</p>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">No VMs</td></tr>';
+    return;
+  }
+
+  var maxCpu = Math.max(1, Math.max.apply(null, vms.map(function(v) { return Number(v.cpu) || 0; })));
+  var maxMem = Math.max(1, Math.max.apply(null, vms.map(function(v) { return Number(v.memory_bytes || v.memory) || 0; })));
+
+  function barRow(label, val, maxVal, fmtFn, status) {
+    var pct = Math.min(100, Math.round((val / maxVal) * 100));
+    var color = (status || '').toLowerCase() === 'running' ? 'var(--cyan)' : 'var(--text-dim)';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+      '<div style="width:120px;font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(label) + '">' + esc(label) + '</div>' +
+      '<div style="flex:1;background:rgba(255,255,255,.06);border-radius:3px;height:8px;overflow:hidden">' +
+        '<div style="width:' + pct + '%;height:100%;background:' + color + ';border-radius:3px;transition:width .3s"></div>' +
+      '</div>' +
+      '<div style="width:48px;text-align:right;font-size:.73rem;color:var(--text-muted)">' + fmtFn(val) + '</div>' +
+    '</div>';
+  }
+
+  var sortedByCpu = vms.slice().sort(function(a,b){ return (Number(b.cpu)||0)-(Number(a.cpu)||0); }).slice(0, 12);
+  var sortedByMem = vms.slice().sort(function(a,b){ return (Number(b.memory_bytes||b.memory)||0)-(Number(a.memory_bytes||a.memory)||0); }).slice(0, 12);
+
+  if (cpuEl) cpuEl.innerHTML = sortedByCpu.map(function(v) {
+    return barRow(v.name, Number(v.cpu)||0, maxCpu, function(n){ return n + ' vCPU'; }, v.status);
+  }).join('');
+
+  if (memEl) memEl.innerHTML = sortedByMem.map(function(v) {
+    return barRow(v.name, Number(v.memory_bytes||v.memory)||0, maxMem, fmtBytes, v.status);
+  }).join('');
+
+  if (tbody) {
+    var rows = vms.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+    tbody.innerHTML = rows.map(function(v) {
+      var status = v.status || 'Unknown';
+      var statusCls = status.toLowerCase() === 'running' ? 'status-running' : status.toLowerCase() === 'stopped' ? 'status-stopped' : 'status-other';
+      var ns = v.namespace || 'default';
+      var cpu = Number(v.cpu) || 0;
+      var mem = fmtBytes(Number(v.memory_bytes || v.memory) || 0);
+      var node = v.node || v.nodeName || '—';
+      var age = v.creation_timestamp ? timeAgo(v.creation_timestamp) : '—';
+      return '<tr style="cursor:pointer" onclick="navigate(\'vms\');setTimeout(function(){openVmWorkspace(' + jsArgs(ns, v.name) + ')},400)">' +
+        '<td><span class="font-mono" style="font-size:.82rem">' + esc(v.name) + '</span></td>' +
+        '<td><span class="ns-badge">' + esc(ns) + '</span></td>' +
+        '<td><span class="status-pill ' + statusCls + '">' + esc(status) + '</span></td>' +
+        '<td style="text-align:right">' + cpu + '</td>' +
+        '<td style="text-align:right">' + mem + '</td>' +
+        '<td style="color:var(--text-muted)">' + esc(node) + '</td>' +
+        '<td style="color:var(--text-muted)">' + age + '</td>' +
+      '</tr>';
+    }).join('');
   }
 }
 
@@ -17786,6 +17929,96 @@ function runCiliumCopilotAsk() {
   const q = (inp && inp.value || '').trim() || 'Cilium and network policy posture';
   openCopilot(q);
   setTimeout(runCopilotAsk, 80);
+}
+
+// ── Quick Forge ──
+var _qfTemplates = [];
+function openQuickForge() {
+  const modal = document.getElementById('quick-forge-modal');
+  if (!modal) return;
+  modal.classList.add('open');
+  const nsEl = document.getElementById('qf-ns');
+  if (nsEl && currentNamespace && currentNamespace !== 'all') nsEl.value = currentNamespace;
+  setTimeout(function() { const n = document.getElementById('qf-name'); if (n) n.focus(); }, 60);
+  qfLoadTemplates();
+}
+function closeQuickForge() {
+  const modal = document.getElementById('quick-forge-modal');
+  if (modal) modal.classList.remove('open');
+}
+function qfLoadTemplates() {
+  const sel = document.getElementById('qf-template');
+  if (!sel) return;
+  if (_qfTemplates.length) { qfPopulateTemplateSelect(); return; }
+  apiJson('/api/v1/templates').then(function(j) {
+    _qfTemplates = asArray(j);
+    qfPopulateTemplateSelect();
+  }).catch(function() {
+    _qfTemplates = [{name:'ubuntu-22.04',display_name:'Ubuntu 22.04',default_cpu:2,default_memory:'2Gi'},{name:'debian-12',display_name:'Debian 12',default_cpu:2,default_memory:'2Gi'},{name:'fedora-40',display_name:'Fedora 40',default_cpu:2,default_memory:'2Gi'},{name:'windows-server-2022',display_name:'Windows Server 2022',default_cpu:4,default_memory:'8Gi'}];
+    qfPopulateTemplateSelect();
+  });
+}
+function qfPopulateTemplateSelect() {
+  const sel = document.getElementById('qf-template');
+  if (!sel) return;
+  sel.innerHTML = _qfTemplates.map(function(t) {
+    return '<option value="' + esc(t.name) + '">' + esc(t.display_name || t.name) + '</option>';
+  }).join('');
+  qfOnTemplateChange();
+}
+function qfOnTemplateChange() {
+  const sel = document.getElementById('qf-template');
+  if (!sel) return;
+  const tpl = _qfTemplates.find(function(t) { return t.name === sel.value; });
+  if (!tpl) return;
+  const cpuEl = document.getElementById('qf-cpu');
+  const memEl = document.getElementById('qf-mem');
+  const cpuHint = document.getElementById('qf-cpu-hint');
+  const memHint = document.getElementById('qf-mem-hint');
+  if (cpuEl && tpl.default_cpu) cpuEl.value = tpl.default_cpu;
+  if (memEl && tpl.default_memory) memEl.value = tpl.default_memory;
+  if (cpuHint) cpuHint.textContent = '(default: ' + (tpl.default_cpu || 2) + ')';
+  if (memHint) memHint.textContent = '(default: ' + (tpl.default_memory || '2Gi') + ')';
+}
+function qfSuggestName() {
+  const nameEl = document.getElementById('qf-name');
+  if (!nameEl) return;
+  const val = nameEl.value.trim();
+  const statusEl = document.getElementById('qf-status');
+  if (!statusEl) return;
+  if (!val) { statusEl.textContent = ''; return; }
+  const exists = (window.lastVMs || vmData || []).some(function(v) { return v.name === val; });
+  statusEl.textContent = exists ? '⚠ A VM named "' + val + '" already exists in this cluster' : '';
+  statusEl.style.color = exists ? 'var(--ember)' : 'var(--text-muted)';
+}
+async function submitQuickForge() {
+  const nameEl = document.getElementById('qf-name');
+  const nsEl = document.getElementById('qf-ns');
+  const tplSel = document.getElementById('qf-template');
+  const cpuEl = document.getElementById('qf-cpu');
+  const memEl = document.getElementById('qf-mem');
+  const btn = document.getElementById('qf-submit-btn');
+  const statusEl = document.getElementById('qf-status');
+  const name = (nameEl && nameEl.value.trim()) || '';
+  const ns = (nsEl && nsEl.value.trim()) || 'default';
+  const template = tplSel && tplSel.value;
+  const cpu = parseInt(cpuEl && cpuEl.value) || 2;
+  const memory = (memEl && memEl.value.trim()) || '2Gi';
+  if (!name) { if (nameEl) nameEl.focus(); return; }
+  if (!template) { if (statusEl) { statusEl.textContent = 'Select a template'; statusEl.style.color = 'var(--ember)'; } return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Launching…'; }
+  if (statusEl) { statusEl.textContent = ''; }
+  try {
+    await apiJson('/api/v1/vms', { method: 'POST', body: JSON.stringify({ name, namespace: ns, template, cpu, memory }) });
+    closeQuickForge();
+    showToast('VM "' + name + '" created — launching…', 'success');
+    if (currentPage === 'vms') { setTimeout(function() { refresh(); }, 800); }
+    else { navigate('vms'); setTimeout(function() { refresh(); }, 1200); }
+  } catch (err) {
+    if (statusEl) { statusEl.textContent = 'Error: ' + (err.message || String(err)); statusEl.style.color = 'var(--error)'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Launch VM'; }
+  }
 }
 
 let _glassConfirmSubmit = null;
