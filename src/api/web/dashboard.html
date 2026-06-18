@@ -4022,7 +4022,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="cost-forecast" style="padding:12px"></div>
     </div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span><input type="search" id="costs-search" class="form-input" placeholder="Filter by VM or namespace…" oninput="filterCostsView(this.value)" style="width:220px;font-size:.82rem"></div>
   <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th><th>Trend</th><th>Recommendation</th></tr></thead><tbody id="costs-body"></tbody></table>
   </div>
 
@@ -4233,7 +4233,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:220px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Title</th><th>Severity</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifications-body"></tbody></table>
   </div>
 </div>
@@ -4243,7 +4243,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
     <div id="helm-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
   </div>
 </div>
@@ -10390,6 +10390,58 @@ function filterSocEventsView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching events</td></tr>';
 }
 
+function filterNotificationsView(query) {
+  const tb = document.getElementById('notifications-body');
+  if (!tb) return;
+  const items = window.lastNotifications || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? items.filter(function(n) {
+    return (n.title || '').toLowerCase().includes(q) ||
+           (n.message || '').toLowerCase().includes(q) ||
+           (n.severity || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(n) {
+    const sevCls = glassTableBadge(n.severity);
+    return '<tr><td>' + esc(n.title) + '</td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching notifications</td></tr>';
+}
+
+function filterCostsView(query) {
+  const tb = document.getElementById('costs-body');
+  if (!tb) return;
+  const costs = window.lastCosts || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? costs.filter(function(c) {
+    return (c.vm_name || '').toLowerCase().includes(q) ||
+           (c.namespace || '').toLowerCase().includes(q);
+  }) : costs;
+  tb.innerHTML = filtered.map(function(c) {
+    const cpu = Number(c.cpu_cost) || 0;
+    const mem = Number(c.memory_cost) || 0;
+    const stor = Number(c.storage_cost) || 0;
+    const tot = Number(c.total_cost) || 0;
+    return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
+      '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
+      '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
+}
+
+function filterHelmView(query) {
+  const tb = document.getElementById('helm-body');
+  if (!tb) return;
+  const releases = window.lastHelmReleases || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? releases.filter(function(h) {
+    return (h.name || '').toLowerCase().includes(q) ||
+           (h.namespace || '').toLowerCase().includes(q) ||
+           (h.chart || '').toLowerCase().includes(q) ||
+           (h.status || '').toLowerCase().includes(q);
+  }) : releases;
+  tb.innerHTML = filtered.map(function(h) {
+    return '<tr><td>' + esc(h.name) + '</td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(h.status) + '">' + esc(h.status) + '</span></td><td>' + h.revision + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
+}
+
 function filterEventsView(type, btn) {
   if (btn) {
     document.querySelectorAll('[data-evfilter]').forEach(function(b) {
@@ -13719,7 +13771,8 @@ async function fetchCosts(opts) {
       tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No cost data</td></tr>';
       return;
     }
-    tb.innerHTML = costs.sort((a,b) => (Number(b.total_cost) || 0) - (Number(a.total_cost) || 0)).map(c => {
+    window.lastCosts = costs.sort((a,b) => (Number(b.total_cost) || 0) - (Number(a.total_cost) || 0));
+    tb.innerHTML = window.lastCosts.map(c => {
       const cpu = Number(c.cpu_cost) || 0;
       const mem = Number(c.memory_cost) || 0;
       const stor = Number(c.storage_cost) || 0;
@@ -14227,6 +14280,7 @@ async function fetchNotifications() {
         { label: 'Events', value: '→', onclick: "navigate('events')", title: 'View events' }
       ]);
     }
+    window.lastNotifications = items;
     tb.innerHTML = items.map(n => {
       const sevCls = glassTableBadge(n.severity);
       return `<tr><td>${esc(n.title)}</td><td><span class="glass-badge ${sevCls}">${esc(n.severity)}</span></td><td>${esc(n.message)}</td><td><span class="glass-badge ${n.read ? 'stopped' : 'running'}">${n.read ? 'Read' : 'Unread'}</span></td><td>${fmtTime(n.created_at)}</td></tr>`;
@@ -14254,6 +14308,7 @@ async function fetchHelm() {
       ]);
     }
     if (!tb) return;
+    window.lastHelmReleases = filtered;
     tb.innerHTML = filtered.map(h => `<tr><td>${esc(h.name)}</td><td>${esc(h.namespace)}</td><td>${esc(h.chart)} ${esc(h.chart_version || '')}</td><td>${esc(h.app_version || '-')}</td><td><span class="glass-badge ${glassTableBadge(h.status)}">${esc(h.status)}</span></td><td>${h.revision}</td></tr>`).join('')
       || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Helm releases found</td></tr>';
   } catch (e) {
