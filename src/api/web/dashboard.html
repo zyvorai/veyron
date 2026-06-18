@@ -11296,7 +11296,7 @@ function filterIngressView(query) {
     const hostsCell = ing.hosts && ing.hosts.length
       ? '<span class="vmr-copy-tile" title="Copy hosts" ' + onStopHandler('copyToClipboard(' + jsArgs(hostsStr) + ')') + '>' + esc(hostsStr) + '<span class="vmr-copy-hint">copy</span></span>'
       : '-';
-    return '<tr><td>' + esc(ing.name) + '</td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + hostsCell + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy ingress name" ' + onStopHandler('copyToClipboard(' + jsArgs(ing.name) + ')') + '>' + esc(ing.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + hostsCell + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching ingresses</td></tr>';
 }
 
