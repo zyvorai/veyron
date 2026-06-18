@@ -3926,6 +3926,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="vmr-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="vmr-panel-title">Event Intelligence Feed</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="events-intel-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+        <input type="search" id="events-intel-search" class="form-input" placeholder="Search events…" oninput="filterEventsIntelSearch(this.value)" style="width:200px;font-size:.82rem">
+      </div>
     </div>
     <div id="vmr-events-list"></div>
   </div>
@@ -9289,17 +9293,138 @@ function syncVeyronTopbar() {
 
 // ── Hero slot renderers ──────────────────────────────────────────────────────
 function renderMissionControlVmr() {
-  const hero = document.getElementById('vmr-mission-hero');
-  if (!hero) return;
-  const vmCount = window.lastVMs ? window.lastVMs.length : 0;
-  const running = window.lastVMs ? window.lastVMs.filter(function(v) { return (v.status || '').toLowerCase() === 'running'; }).length : 0;
+  const vms = window.lastVMs || [];
+  const vmCount = vms.length;
+  const running = vms.filter(function(v) { return (v.status || '').toLowerCase() === 'running'; }).length;
+  const stopped = vms.filter(function(v) { return (v.status || '').toLowerCase() === 'stopped'; }).length;
+  const failed = vms.filter(function(v) { const s = (v.status || '').toLowerCase(); return s === 'failed' || s === 'error'; }).length;
+  const other = vmCount - running - stopped - failed;
   const alerts = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
-    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Mission Control</h1>' +
-    '<p class="vmr-hero-sub">' + running + ' of ' + vmCount + ' VM' + (vmCount !== 1 ? 's' : '') + ' running' +
-    (alerts ? ' · <span style="color:var(--error)">' + alerts + ' alert' + (alerts !== 1 ? 's' : '') + '</span>' : '') + '</p></div>' +
-    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\')">Fleet Command</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button></div></div>';
+
+  const hero = document.getElementById('vmr-mission-hero');
+  if (hero) {
+    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Mission Control</h1>' +
+      '<p class="vmr-hero-sub">' + running + ' of ' + vmCount + ' VM' + (vmCount !== 1 ? 's' : '') + ' running' +
+      (failed > 0 ? ' · <span style="color:var(--error)">' + failed + ' failed</span>' : '') +
+      (alerts ? ' · <span style="color:var(--error)">' + alerts + ' alert' + (alerts !== 1 ? 's' : '') + '</span>' : '') + '</p></div>' +
+      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\')">Fleet Command</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button></div></div>';
+  }
+
+  const metrics = document.getElementById('vmr-mission-metrics');
+  if (metrics && vmCount > 0) {
+    metrics.innerHTML = renderGlassStatPills([
+      { label: 'Total VMs', value: vmCount, onclick: "navigate('vms')", title: 'View all VMs' },
+      { label: 'Running', value: running, cls: running > 0 ? ' ok' : '', onclick: "navigateToVmsFilter('Running')", title: 'Running VMs' },
+      { label: 'Stopped', value: stopped, cls: stopped > 0 ? ' warn' : '', onclick: "navigateToVmsFilter('Stopped')", title: 'Stopped VMs' },
+      { label: 'Issues', value: failed, cls: failed > 0 ? ' bad' : '', onclick: "navigateToVmsIssues()", title: 'Failed or error VMs' },
+    ]);
+  }
+
+  // Fleet health panel — top VMs by health score from fleetHealthMap
+  const fleetHealth = document.getElementById('vmr-fleet-health');
+  if (fleetHealth) {
+    const healthItems = vms.map(function(v) {
+      const key = (v.namespace || 'default') + '/' + v.name;
+      const h = (typeof fleetHealthMap !== 'undefined' && fleetHealthMap[key]) || null;
+      return { vm: v, score: h ? h.health_score : null, label: h ? h.health_label : null };
+    }).filter(function(item) { return item.score !== null; }).sort(function(a, b) { return a.score - b.score; });
+    if (healthItems.length === 0) {
+      // Show VM status summary instead
+      fleetHealth.innerHTML = vms.slice(0, 6).map(function(v) {
+        const s = (v.status || '').toLowerCase();
+        const cls = s === 'running' ? 'ok' : s === 'stopped' ? 'warn' : 'bad';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border)">' +
+          '<span style="font-size:.82rem" class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(v.name) + ')') + '>' + esc(v.name) + '<span class="vmr-copy-hint">copy</span></span>' +
+          '<span class="glass-badge ' + cls + '">' + esc(v.status || '—') + '</span></div>';
+      }).join('') || '<div style="color:var(--text-dim);font-size:.84rem;padding:12px 0">No VMs in scope</div>';
+    } else {
+      // Show health scores sorted ascending (worst first)
+      fleetHealth.innerHTML = healthItems.slice(0, 6).map(function(item) {
+        const scoreCls = item.score >= 85 ? 'ok' : item.score >= 65 ? 'warn' : 'bad';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border)">' +
+          '<span style="font-size:.82rem">' + esc(item.vm.name) + '</span>' +
+          '<span class="glass-badge ' + scoreCls + '">' + item.score + '% ' + esc(item.label || '') + '</span></div>';
+      }).join('');
+    }
+  }
+
+  // Quick actions panel
+  const quickActions = document.getElementById('vmr-quick-actions');
+  if (quickActions) {
+    const actions = [
+      { label: '+ Forge VM', onclick: "openCreateModal()", primary: true },
+      { label: 'Forge Wizard', onclick: "openForgeWizard()" },
+      { label: 'Snapshots', onclick: "navigate('snapshots')" },
+      { label: 'Events', onclick: "navigate('events')" },
+      { label: 'Nodes', onclick: "navigate('nodes')" },
+      { label: 'Costs', onclick: "navigate('costs')" },
+    ];
+    quickActions.innerHTML = actions.map(function(a) {
+      return '<button type="button" class="' + (a.primary ? 'glass-btn-primary' : 'glass-btn-secondary') + ' glass-btn-sm vmr-quick-action-btn" onclick="' + esc(a.onclick) + '">' + esc(a.label) + '</button>';
+    }).join('');
+  }
+
+  // Active alerts panel
+  const activeAlerts = document.getElementById('vmr-active-alerts');
+  if (activeAlerts) {
+    const alertList = window.lastAlerts || [];
+    const firing = alertList.filter(function(a) { return (a.status || '').toLowerCase() === 'firing' || !a.resolved; });
+    if (!firing.length) {
+      activeAlerts.innerHTML = '<div style="color:var(--success);font-size:.84rem;padding:12px 0;text-align:center">✓ No active alerts</div>';
+    } else {
+      activeAlerts.innerHTML = firing.slice(0, 5).map(function(a) {
+        const sev = (a.severity || '').toLowerCase();
+        const cls = sev === 'critical' ? 'error' : sev === 'warning' ? 'warn' : 'other';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border)">' +
+          '<span style="font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(a.name || a.alert_name || 'Alert') + '</span>' +
+          '<span class="glass-badge ' + cls + '" style="margin-left:8px;flex-shrink:0">' + esc(a.severity || 'unknown') + '</span></div>';
+      }).join('') +
+      (firing.length > 5 ? '<div style="font-size:.76rem;color:var(--text-muted);text-align:center;margin-top:6px">+' + (firing.length - 5) + ' more · <button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'alerts\')">View all</button></div>' : '');
+    }
+  }
+
+  // Copilot recommendations panel
+  const copilotRec = document.getElementById('vmr-copilot-recommendations');
+  if (copilotRec) {
+    const briefing = window._copilotBriefingCache || window._vmrCopilotDisplayCache || [];
+    if (briefing.length > 0) {
+      copilotRec.innerHTML = briefing.slice(0, 4).map(function(item, i) {
+        const sev = item.severity || 'info';
+        const sevCls = sev === 'critical' ? 'bad' : sev === 'warning' ? 'warn' : 'ok';
+        return '<button type="button" class="dc-briefing-item ' + esc(sev) + '" style="width:100%;text-align:left;margin-bottom:6px" ' +
+          onHandler('runCopilotBriefing(' + i + ',\'vmr\')') + '>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+          '<span class="glass-badge ' + sevCls + '" style="font-size:.7rem;flex-shrink:0">' + esc(sev) + '</span>' +
+          '<span class="dc-briefing-title" style="font-size:.82rem">' + esc(item.title) + '</span></div>' +
+          (item.detail ? '<div class="dc-briefing-detail" style="font-size:.76rem;margin-top:3px">' + esc(item.detail) + '</div>' : '') +
+          '</button>';
+      }).join('') +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%;margin-top:4px;font-size:.76rem" onclick="openAskZeus()">Open Ask Zeus →</button>';
+    } else {
+      copilotRec.innerHTML = '<div style="color:var(--text-dim);font-size:.84rem;padding:8px 0;line-height:1.5">Ask Zeus for insights about your fleet, costs, or security posture.</div>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:8px;width:100%" onclick="openAskZeus()">Ask Zeus →</button>';
+    }
+  }
+
+  // Recent activity panel — recent events as activity feed
+  const recentActivity = document.getElementById('vmr-recent-activity');
+  if (recentActivity) {
+    const events = (typeof lastEvents !== 'undefined' ? lastEvents : []).slice(0, 8);
+    if (!events.length) {
+      recentActivity.innerHTML = '<div style="color:var(--text-dim);font-size:.84rem;padding:8px 0">No recent events</div>';
+    } else {
+      recentActivity.innerHTML = events.map(function(e) {
+        const isWarn = e.type === 'Warning';
+        return '<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--glass-border)">' +
+          '<div class="event-dot ' + (isWarn ? 'warn' : 'info') + '" style="margin-top:4px;flex-shrink:0"></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(e.message || e.reason || 'Event') + '</div>' +
+          '<div style="font-size:.72rem;color:var(--text-muted)">' + esc(e.namespace || '—') + ' · ' + fmtTime(e.timestamp) + '</div></div></div>';
+      }).join('') +
+      '<div style="margin-top:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%;font-size:.76rem" onclick="navigate(\'events\')">View all events →</button></div>';
+    }
+  }
 }
 
 function renderEventIntelligenceVmr() {
@@ -9313,38 +9438,78 @@ function renderEventIntelligenceVmr() {
 }
 
 function renderCostsVmr() {
-  const hero = document.getElementById('vmr-costs-hero');
-  if (!hero) return;
   const total = window.lastCostSummary || '—';
   const count = window.lastCostVmCount != null ? window.lastCostVmCount : '—';
   const forecast = window.lastCostForecast || null;
-  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">💰</div>' +
-    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">FinOps</h1>' +
-    '<p class="vmr-hero-sub">Monthly total: <strong>' + esc(total) + '</strong>' +
-    (forecast ? ' · Projected: <strong>' + esc(forecast) + '</strong>' : '') +
-    ' · ' + count + ' VM' + (count !== 1 ? 's' : '') + ' tracked</p></div>' +
-    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCosts()">↺ Refresh</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCsv(window.lastCosts || [], \'costs.csv\')">Export CSV</button></div></div>';
+  const hero = document.getElementById('vmr-costs-hero');
+  if (hero) {
+    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">💰</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">FinOps</h1>' +
+      '<p class="vmr-hero-sub">Monthly total: <strong>' + esc(total) + '</strong>' +
+      (forecast ? ' · Projected: <strong>' + esc(forecast) + '</strong>' : '') +
+      ' · ' + count + ' VM' + (count !== 1 ? 's' : '') + ' tracked</p></div>' +
+      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCosts()">↺ Refresh</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()">Export CSV</button></div></div>';
+  }
+  // Top-5 most expensive VMs mini-chart
+  const metricsEl = document.getElementById('vmr-costs-metrics');
+  if (metricsEl && window.lastCosts && window.lastCosts.length > 0) {
+    const top5 = window.lastCosts.slice(0, 5);
+    const maxCost = Number(top5[0].total_cost) || 1;
+    metricsEl.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">Top Cost Consumers</div>' +
+      top5.map(function(c) {
+        const cost = Number(c.total_cost) || 0;
+        const pct = Math.min(100, (cost / maxCost) * 100);
+        return '<div class="cost-ns-bar" style="margin-bottom:6px">' +
+          '<div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px">' +
+          '<span class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.vm_name || c.name || '') + ')') + '>' +
+          esc(c.vm_name || c.name || '—') + '<span class="vmr-copy-hint">copy</span></span>' +
+          '<span style="color:var(--text-muted)">$' + cost.toFixed(2) + '/mo</span></div>' +
+          glassProgressBar('', pct) + '</div>';
+      }).join('') + '</div>';
+  } else if (metricsEl) {
+    metricsEl.innerHTML = '';
+  }
 }
 
 function fetchSecurityVmr(opts) {
   const hero = document.getElementById('vmr-security-hero');
-  if (!hero) return;
-  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">🔐</div>' +
-    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Security</h1>' +
-    '<p class="vmr-hero-sub">Posture scoring, findings, SOC detections, and compliance</p></div>' +
-    '<div class="vmr-hero-actions">' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'compliance\')">Compliance</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'soc\')">SOC</button></div></div>';
+  if (hero) {
+    const findings = window.lastSecurityFindings ? window.lastSecurityFindings.length : '—';
+    const critical = window.lastSecurityFindings ? window.lastSecurityFindings.filter(function(f) { return (f.severity || '').toLowerCase() === 'critical'; }).length : 0;
+    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">🔐</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Security Posture</h1>' +
+      '<p class="vmr-hero-sub">' + findings + ' finding' + (findings !== 1 ? 's' : '') +
+      (critical > 0 ? ' · <span style="color:var(--error)">' + critical + ' critical</span>' : '') +
+      ' · Posture scoring, SOC detections, and compliance</p></div>' +
+      '<div class="vmr-hero-actions">' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'compliance\')">Compliance</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'soc\')">SOC</button></div></div>';
+  }
+  const metricsEl = document.getElementById('vmr-security-metrics');
+  if (metricsEl && window.lastSecurityFindings) {
+    const findings = window.lastSecurityFindings;
+    const bySev = {};
+    findings.forEach(function(f) { const s = f.severity || 'Unknown'; bySev[s] = (bySev[s] || 0) + 1; });
+    metricsEl.innerHTML = renderGlassStatPills([
+      { label: 'Critical', value: bySev['Critical'] || bySev['critical'] || 0, cls: (bySev['Critical'] || bySev['critical'] || 0) > 0 ? ' bad' : ' ok' },
+      { label: 'High', value: bySev['High'] || bySev['high'] || 0, cls: (bySev['High'] || bySev['high'] || 0) > 0 ? ' warn' : '' },
+      { label: 'Medium', value: bySev['Medium'] || bySev['medium'] || 0 },
+      { label: 'Total', value: findings.length },
+    ]);
+  }
 }
 
 function fetchSnapshotsVmr(opts) {
   const hero = document.getElementById('vmr-snapshots-hero');
   if (!hero) return;
-  const count = window.lastSnapshots ? window.lastSnapshots.length : '—';
+  const snaps = window.lastSnapshots || [];
+  const count = snaps.length;
+  const ready = snaps.filter(function(s) { return s.ready; }).length;
   hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">📸</div>' +
     '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Snapshots</h1>' +
-    '<p class="vmr-hero-sub">' + count + ' snapshot' + (count !== 1 ? 's' : '') + ' · Scheduled and on-demand VM point-in-time recovery</p></div>' +
+    '<p class="vmr-hero-sub">' + (count > 0 ? count + ' snapshot' + (count !== 1 ? 's' : '') + ' · ' + ready + ' ready' : 'No snapshots yet') +
+    ' · Scheduled and on-demand VM point-in-time recovery</p></div>' +
     '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSnapshots()">↺ Refresh</button>' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openSnapModalPick()">New Snapshot</button></div></div>';
 }
@@ -9386,12 +9551,49 @@ function fetchWorkloadsVmr(opts) {
           '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">↺ Refresh</button></div></div>';
       }
       if (tb) renderWorkloadsList((document.getElementById('workloads-search') || {}).value || '');
+      // Populate workloads toolbar with type filter chips
+      const wlToolbar = document.getElementById('vmr-workloads-toolbar');
+      if (wlToolbar && data.length > 0) {
+        const types = [...new Set(data.map(function(w) { return w.workload_type || w.kind || 'Unknown'; }))].sort();
+        wlToolbar.innerHTML = '<div class="vmr-filter-chips" style="padding:8px 0">' +
+          '<button type="button" class="vmr-chip vmr-chip-active" data-wlfilter="" onclick="filterWorkloadsView((document.getElementById(\'workloads-search\')||{}).value||\'\')" style="font-size:.76rem">All</button>' +
+          types.map(function(t) {
+            return '<button type="button" class="vmr-chip" data-wlfilter="' + esc(t) + '" onclick="filterWorkloadsByType(' + jsArgs(t) + ')" style="font-size:.76rem">' + esc(t) + '</button>';
+          }).join('') +
+          '</div>';
+      }
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       if (opts && opts.signal && opts.signal.aborted) return;
       if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchWorkloads');
     }
   })(opts);
+}
+
+function filterWorkloadsByType(type) {
+  document.querySelectorAll('[data-wlfilter]').forEach(function(b) {
+    b.classList.toggle('vmr-chip-active', b.dataset.wlfilter === type);
+  });
+  const q = ((document.getElementById('workloads-search') || {}).value || '').toLowerCase().trim();
+  const tb = document.getElementById('workloads-body');
+  if (!tb) return;
+  const data = window.lastWorkloads || [];
+  const filtered = data.filter(function(w) {
+    const matchType = !type || (w.workload_type || w.kind || '').toLowerCase() === type.toLowerCase();
+    const matchQ = !q || (w.name || '').toLowerCase().includes(q) || (w.namespace || '').toLowerCase().includes(q);
+    return matchType && matchQ;
+  });
+  const wlCountEl = document.getElementById('vmr-workloads-count');
+  if (wlCountEl) wlCountEl.textContent = filtered.length === data.length ? data.length + ' workloads' : filtered.length + ' of ' + data.length + ' workloads';
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ' + esc(type || '') + ' workloads match</td></tr>';
+    return;
+  }
+  tb.innerHTML = filtered.map(function(w) {
+    const ok = w.ready_replicas >= w.replicas;
+    const badgeCls = ok ? 'running' : 'other';
+    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+  }).join('');
 }
 
 function renderFoundryVmr() {
@@ -11126,7 +11328,29 @@ async function fetchVMs(opts) {
         fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
       }
       maybeSuggestAllWorkspace();
+      // Populate VMR fleet hero and metrics
+      const fleetHero = document.getElementById('vmr-fleet-hero');
+      if (fleetHero) {
+        fleetHero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
+          '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Fleet Command</h1>' +
+          '<p class="vmr-hero-sub">' + running + ' of ' + total + ' VM' + (total !== 1 ? 's' : '') + ' running' +
+          (driftN > 0 ? ' · <span style="color:var(--warn)">' + driftN + ' with drift</span>' : '') +
+          (failed > 0 ? ' · <span style="color:var(--error)">' + failed + ' failed</span>' : '') + '</p></div>' +
+          '<div class="vmr-hero-actions">' +
+          '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openForgeWizard()">Forge Wizard</button></div></div>';
+      }
+      const fleetMetrics = document.getElementById('vmr-fleet-metrics');
+      if (fleetMetrics) {
+        fleetMetrics.innerHTML = renderGlassStatPills([
+          { label: 'Running', value: running, cls: running > 0 ? ' ok' : '', onclick: "setVmStatusFilter(document.querySelector('[data-filter=\"Running\"]'),'Running')", title: 'Filter running VMs' },
+          { label: 'Stopped', value: stopped, cls: stopped > 0 ? ' warn' : '', onclick: "setVmStatusFilter(document.querySelector('[data-filter=\"Stopped\"]'),'Stopped')", title: 'Filter stopped VMs' },
+          { label: 'vCPUs', value: totalCpu },
+          { label: 'Memory', value: totalMemGb.toFixed(1) + ' GiB' },
+        ]);
+      }
     }
+    if (typeof renderMissionControlVmr === 'function' && currentPage === 'dashboard') renderMissionControlVmr();
     updateMacStatusIsland();
     updateFinderBadges();
     window._vmsRefreshedAt = Date.now();
@@ -11166,6 +11390,9 @@ async function fetchEvents(full, opts) {
     renderEvents(events.slice(0, 5), document.getElementById('dash-event-list'));
     if (full) {
       renderEvents(events, document.getElementById('events-full-list'));
+      renderEvents(events, document.getElementById('vmr-events-list'));
+      const countEl = document.getElementById('events-intel-count');
+      if (countEl) countEl.textContent = events.length + ' event' + (events.length !== 1 ? 's' : '');
       const sumEl = document.getElementById('events-summary');
       if (sumEl) {
         const warnings = events.filter(e => e.type === 'Warning').length;
@@ -11220,6 +11447,40 @@ async function fetchSnapshots(opts) {
         { label: 'Backups', value: '→', onclick: "navigate('backups')", title: 'Velero backups' },
         { label: 'DR', value: '→', onclick: "navigate('dr')", title: 'Disaster recovery' }
       ]);
+    }
+    // Populate snapshots metrics slot
+    const snapsMetrics = document.getElementById('vmr-snapshots-metrics');
+    if (snapsMetrics) {
+      const notReady = snaps.length - readyCount;
+      const vmNames = [...new Set(snaps.map(function(s) { return s.vm_name; }).filter(Boolean))];
+      snapsMetrics.innerHTML = renderGlassStatPills([
+        { label: 'Snapshots', value: snaps.length, onclick: "document.getElementById('snap-search')?.focus()", title: 'All snapshots' },
+        { label: 'Ready', value: readyCount, cls: snaps.length && readyCount === snaps.length ? ' ok' : readyCount < snaps.length ? ' warn' : '' },
+        { label: 'Pending', value: notReady, cls: notReady > 0 ? ' warn' : '' },
+        { label: 'VMs covered', value: vmNames.length },
+      ]);
+    }
+    // VM protection summary
+    const snapsProtection = document.getElementById('vmr-snapshots-protection');
+    if (snapsProtection && window.lastVMs && window.lastVMs.length > 0) {
+      const snapVmNames = new Set(snaps.map(function(s) { return s.vm_name; }).filter(Boolean));
+      const protectedVms = window.lastVMs.filter(function(v) { return snapVmNames.has(v.name); });
+      const unprotected = window.lastVMs.filter(function(v) { return !snapVmNames.has(v.name); });
+      if (unprotected.length > 0) {
+        snapsProtection.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--warn)">' +
+          '<div class="vmr-panel-title" style="display:flex;align-items:center;gap:8px">⚠ Unprotected VMs <span style="font-size:.78rem;font-weight:400;color:var(--text-muted)">' + unprotected.length + ' VM' + (unprotected.length !== 1 ? 's' : '') + ' with no snapshot</span></div>' +
+          '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px">' +
+          unprotected.slice(0, 12).map(function(v) {
+            return '<button type="button" class="glass-btn-secondary glass-btn-sm" ' +
+              onHandler('openSnapModalFor(' + jsArgs(v.namespace || 'default', v.name) + ')') +
+              ' title="Create snapshot for ' + esc(v.name) + '">+ ' + esc(v.name) + '</button>';
+          }).join('') +
+          (unprotected.length > 12 ? '<span style="font-size:.78rem;color:var(--text-muted);align-self:center">+' + (unprotected.length - 12) + ' more</span>' : '') +
+          '</div></div>';
+      } else {
+        snapsProtection.innerHTML = '<div class="vmr-panel" style="border-left:3px solid var(--success)">' +
+          '<div class="vmr-panel-title" style="color:var(--success)">✓ All ' + window.lastVMs.length + ' VM' + (window.lastVMs.length !== 1 ? 's' : '') + ' protected</div></div>';
+      }
     }
     if (snaps.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
@@ -12065,17 +12326,9 @@ function filterEventsFullList(query) {
   }).join('');
 }
 
-function filterEventsView(type, btn) {
-  if (btn) {
-    document.querySelectorAll('[data-evfilter]').forEach(function(b) {
-      b.classList.toggle('vmr-chip-active', b === btn);
-    });
-  }
-  const el = document.getElementById('events-full-list');
-  if (!el) return;
-  const events = type === 'all' ? lastEvents : lastEvents.filter(function(e) { return e.type === type; });
-  if (!events.length) { el.innerHTML = '<div class="empty-state"><p>No ' + esc(type === 'all' ? '' : type + ' ') + 'events</p></div>'; return; }
-  el.innerHTML = events.map(function(e) {
+function _renderEventsHtml(events, type) {
+  if (!events.length) return '<div class="empty-state"><p>No ' + esc(type === 'all' ? '' : type + ' ') + 'events</p></div>';
+  return events.map(function(e) {
     const isWarn = e.type === 'Warning';
     const cls = isWarn ? 'warn' : 'info';
     const obj = e.involved_object || '';
@@ -12086,6 +12339,40 @@ function filterEventsView(type, btn) {
       '<span class="event-badge ' + cls + '">' + (isWarn ? 'Warning' : 'Info') + '</span>' +
       '<span class="event-time">' + fmtTime(e.timestamp) + '</span></div>';
   }).join('');
+}
+
+function filterEventsView(type, btn) {
+  if (btn) {
+    document.querySelectorAll('[data-evfilter]').forEach(function(b) {
+      b.classList.toggle('vmr-chip-active', b === btn);
+    });
+  }
+  window._eventsViewType = type || 'all';
+  const q = ((document.getElementById('events-intel-search') || {}).value || '').toLowerCase().trim();
+  filterEventsIntelSearch(q);
+}
+
+function filterEventsIntelSearch(query) {
+  const q = (query || '').toLowerCase().trim();
+  const type = window._eventsViewType || 'all';
+  const all = lastEvents || [];
+  let events = type === 'all' ? all : all.filter(function(e) { return e.type === type; });
+  if (q) {
+    events = events.filter(function(e) {
+      return (e.message || '').toLowerCase().includes(q) ||
+             (e.reason || '').toLowerCase().includes(q) ||
+             (e.namespace || '').toLowerCase().includes(q) ||
+             (e.involved_object || '').toLowerCase().includes(q);
+    });
+  }
+  const countEl = document.getElementById('events-intel-count');
+  if (countEl) countEl.textContent = events.length === all.length ? all.length + ' events' : events.length + ' of ' + all.length + ' events';
+  const intelEl = document.getElementById('vmr-events-list');
+  if (intelEl) intelEl.innerHTML = _renderEventsHtml(events, type);
+  const fullEl = document.getElementById('events-full-list');
+  if (fullEl) fullEl.innerHTML = _renderEventsHtml(events, type);
+  const fullCountEl = document.getElementById('events-full-count');
+  if (fullCountEl) fullCountEl.textContent = countEl ? countEl.textContent : '';
 }
 
 async function fetchSchedules() {
@@ -13898,13 +14185,44 @@ async function fetchNodes(opts) {
       return;
     }
     const ready = nodes.filter(n => n.status === 'Ready').length;
+    const notReady = nodes.length - ready;
     if (summaryEl) {
       summaryEl.innerHTML = renderGlassStatPills([
         { label: 'Nodes', value: nodes.length },
         { label: 'Ready', value: ready, cls: ready === nodes.length ? ' ok' : ' warn' },
-        { label: 'Not ready', value: nodes.length - ready, cls: (nodes.length - ready) ? ' bad' : '' },
+        { label: 'Not ready', value: notReady, cls: notReady ? ' bad' : '' },
         { label: 'Heatmap', value: '→', onclick: "navigate('heatmap')", title: 'Resource heatmap' }
       ]);
+    }
+    // Populate nodes hero
+    const nodesHero = document.getElementById('vmr-nodes-hero');
+    if (nodesHero) {
+      const totalVms = nodes.reduce(function(n, nd) { return n + (nd.vm_count || 0); }, 0);
+      nodesHero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">◉</div>' +
+        '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Cluster Nodes</h1>' +
+        '<p class="vmr-hero-sub">' + ready + ' of ' + nodes.length + ' node' + (nodes.length !== 1 ? 's' : '') + ' ready' +
+        (notReady > 0 ? ' · <span style="color:var(--error)">' + notReady + ' not ready</span>' : '') +
+        ' · ' + totalVms + ' VM' + (totalVms !== 1 ? 's' : '') + ' scheduled</p></div>' +
+        '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'heatmap\')">Heatmap</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Node capacity and pressure\')">Ask Zeus</button></div></div>';
+    }
+    // Populate node placement summary (VM distribution across nodes)
+    const nodesPlacement = document.getElementById('vmr-nodes-placement');
+    if (nodesPlacement && nodes.some(function(n) { return n.vm_count > 0; })) {
+      const vmNodes = nodes.filter(function(n) { return n.vm_count > 0; }).sort(function(a, b) { return (b.vm_count || 0) - (a.vm_count || 0); });
+      const maxVms = vmNodes[0] ? (vmNodes[0].vm_count || 1) : 1;
+      nodesPlacement.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">VM Placement</div>' +
+        vmNodes.map(function(n) {
+          const pct = Math.min(100, (n.vm_count / maxVms) * 100);
+          const statusCls = n.status === 'Ready' ? 'var(--success)' : 'var(--error)';
+          return '<div class="cost-ns-bar" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px">' +
+            '<span class="vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '><span style="color:' + statusCls + '">●</span> ' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
+            '<span style="color:var(--text-muted)">' + (n.vm_count || 0) + ' VM' + ((n.vm_count || 0) !== 1 ? 's' : '') + '</span></div>' +
+            glassProgressBar('', pct) + '</div>';
+        }).join('') +
+        '</div>';
+    } else if (nodesPlacement) {
+      nodesPlacement.innerHTML = '';
     }
     const nodeCountEl = document.getElementById('node-count');
     if (nodeCountEl) nodeCountEl.textContent = nodes.length + ' nodes';
@@ -15662,6 +15980,7 @@ async function fetchSecurityPage(opts) {
     const findingsObj = unwrapData(findingsRaw) || findingsRaw || {};
     const findings = Array.isArray(findingsObj.findings) ? findingsObj.findings : asArray(findingsObj);
     window.lastSecurityFindings = findings;
+    if (typeof fetchSecurityVmr === 'function') fetchSecurityVmr();
     const cardsEl = document.getElementById('security-finding-cards');
     if (cardsEl) {
       cardsEl.innerHTML = findings.map(function(f) {
@@ -15842,6 +16161,7 @@ async function fetchAlerts() {
   try {
     const alerts = asArray(await apiJson('/api/v1/alerts' + nsParam()));
     window.lastAlerts = alerts;
+    if (currentPage === 'dashboard' && typeof renderMissionControlVmr === 'function') renderMissionControlVmr();
     if (sumEl) {
       const firing = alerts.filter(a => (a.status || '').toLowerCase() === 'firing').length;
       const critical = alerts.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
