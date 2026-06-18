@@ -3911,6 +3911,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <canvas id="vmr-fleet-sparkline" width="80" height="22" style="display:block;width:80px;height:22px;border-radius:3px;opacity:.7"></canvas>
       <span id="vmr-fleet-sparkline-label" style="font-size:.65rem;color:var(--text-dim);white-space:nowrap"></span>
     </div>
+    <div id="vmr-fleet-cost-tile" style="display:none;flex-shrink:0;font-size:.65rem;cursor:pointer;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:3px 8px;white-space:nowrap" onclick="openFleetCapacitySettings()" title="Estimated running fleet cost (click to set rate)"></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
@@ -16864,6 +16865,20 @@ function updateFleetCapacityBar() {
   if (memEl) memEl.outerHTML = bar(memPct, totalMem, cap.mem, 'GB', 'vmr-capacity-mem');
   wrap.style.display = '';
 }
+function updateFleetCostTile() {
+  var tile = document.getElementById('vmr-fleet-cost-tile');
+  if (!tile) return;
+  var running = (vmData || []).filter(function(v) { return v.status === 'Running'; });
+  if (!running.length) { tile.style.display = 'none'; return; }
+  var totalCpu = running.reduce(function(s, v) { return s + (parseInt(v.cpu, 10) || 0); }, 0);
+  var rate = getCostRatePerVcpu();
+  var hourly = totalCpu * rate;
+  var daily = hourly * 24;
+  tile.style.display = '';
+  tile.innerHTML = '<span style="color:rgba(34,197,94,.7);font-weight:600;margin-right:3px">$</span>' +
+    '<span style="color:var(--text-primary)">~$' + hourly.toFixed(2) + '/hr</span>' +
+    '<span style="color:var(--text-dim);margin-left:4px">· $' + daily.toFixed(0) + '/d</span>';
+}
 function openFleetCapacitySettings() {
   var cap = getFleetCap();
   openGlassPrompt({
@@ -17130,6 +17145,7 @@ function filterVMs() {
   renderTagFilterChips();
   renderFilterPresetChips();
   updateFleetCapacityBar();
+  updateFleetCostTile();
   renderFleetAnomalyRibbon();
   requestAnimationFrame(pulseChangedVmCards);
 }
