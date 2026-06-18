@@ -3849,7 +3849,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">All Snapshots</span></div><div id="snap-list"></div></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">All Snapshots</span><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:200px;font-size:.82rem"></div><div id="snap-list"></div></div>
 </div>
 </div>
 
@@ -10227,17 +10227,38 @@ async function fetchSnapshots(opts) {
       el.innerHTML = '<div class="empty-state"><div class="icon">&#9670;</div><p>No snapshots captured</p><p class="sub">Create a snapshot for a VM — the name is filled from the VM you last opened on the VMs page, or pick from the list.</p><p style="margin-top:14px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create snapshot</button></p></div>';
       return;
     }
-    el.innerHTML = snaps.map(s => {
-      const ready = s.ready;
-      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="glass-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
-        (ready ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
-        '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
-        '</div></div>';
-    }).join('');
+    renderSnapList('');
   } catch(e) {
     const el = document.getElementById('snap-list');
     if (el) el.innerHTML='<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchSnapshots()">&#8635; Retry</button></div>';
   }
+}
+
+function renderSnapList(query) {
+  const el = document.getElementById('snap-list');
+  if (!el) return;
+  const snaps = window.lastSnapshots || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? snaps.filter(function(s) {
+    return (s.name || '').toLowerCase().includes(q) || (s.vm_name || '').toLowerCase().includes(q);
+  }) : snaps;
+  if (filtered.length === 0) {
+    el.innerHTML = q
+      ? '<div class="empty-state"><p>No snapshots match "<strong>' + esc(q) + '</strong>"</p></div>'
+      : '<div class="empty-state"><p>No snapshots captured</p></div>';
+    return;
+  }
+  el.innerHTML = filtered.map(function(s) {
+    const ready = s.ready;
+    return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.name)+'</div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="glass-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
+      (ready ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
+      '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+function filterSnapshots(query) {
+  renderSnapList(query);
 }
 
 async function fetchSchedules() {
@@ -15408,8 +15429,14 @@ async function loadDoctorPanel(ns, name) {
     if (data.summary) html += '<p style="margin:0 0 8px;font-size:.86rem;color:var(--text-muted)">' + esc(data.summary) + '</p>';
     if (data.health_score != null) html += '<p style="margin:0"><strong>Health ' + data.health_score + '/100</strong></p>';
     if (data.recommendations && data.recommendations.length) {
-      html += '<ul style="margin:8px 0 0 18px;font-size:.82rem">';
-      data.recommendations.slice(0, 3).forEach(r => { html += '<li>' + esc(r) + '</li>'; });
+      html += '<ul style="margin:8px 0 0 14px;font-size:.82rem;list-style:none;padding:0">';
+      data.recommendations.slice(0, 3).forEach(function(r) {
+        html += '<li style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">' +
+          '<span style="flex:1">▸ ' + esc(r) + '</span>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem;padding:2px 7px;flex-shrink:0" ' +
+          'onclick="openCopilotWithVm(' + JSON.stringify('Fix this issue: ' + r) + ',' + JSON.stringify(ns) + ',' + JSON.stringify(name) + ')">Fix →</button>' +
+          '</li>';
+      });
       html += '</ul>';
     }
     el.innerHTML = html || 'No issues reported.';
