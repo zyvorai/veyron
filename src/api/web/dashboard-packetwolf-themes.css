@@ -2751,3 +2751,36 @@ html[data-theme="light"] .vmr-chip.vmr-chip-active {
 }
 .vmr-chip-dot.running  { background: #22c55e; }
 .vmr-chip-dot.stopped  { background: #94a3b8; }
+
+/* ── Namespace color pills ───────────────────────────────────────────── */
+.vmr-ns-pill {
+  font-size: .72rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 100px;
+  border: 1px solid;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+/* ── Copy-tile in inspector hero ─────────────────────────────────────── */
+.vmr-copy-tile {
+  cursor: pointer;
+  position: relative;
+  transition: background .15s, transform .1s;
+}
+.vmr-copy-tile:hover {
+  background: rgba(59,130,246,.12) !important;
+  transform: translateY(-1px);
+}
+.vmr-copy-hint {
+  display: block;
+  font-size: .64rem;
+  color: var(--pw-text-secondary);
+  margin-top: 3px;
+  opacity: 0;
+  transition: opacity .15s;
+  font-family: var(--font-sans, inherit);
+  font-weight: 400;
+}
+.vmr-copy-tile:hover .vmr-copy-hint { opacity: 1; }
