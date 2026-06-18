@@ -4595,7 +4595,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div></div>
+  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscalerPolicies ? fetchAutoscalerPolicies() : fetchHpa()">&#8635; Refresh</button></div></div>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
@@ -4605,7 +4605,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchForecasting()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div></div>
     <div id="forecast-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Forecast Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('forecast-advisor-card')">Dismiss</button></div>
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
