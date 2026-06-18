@@ -14944,6 +14944,16 @@ function filterVMs() {
       ? '<div class="vm-card-grid">' + sorted.map(v => vmCard(v, true)).join('') + '</div>'
       : sorted.map(v => vmRow(v, true)).join('');
   }
+  updateTabTitleIssueCount();
+}
+
+function updateTabTitleIssueCount() {
+  const issues = vmData.filter(function(v) {
+    const s = (v.status || '').toLowerCase();
+    return s === 'failed' || s === 'error' || s === 'crashloopbackoff';
+  }).length;
+  const pageName = (currentPage && currentPage !== 'dashboard') ? (navPageLabel(currentPage) + ' — ') : '';
+  document.title = (issues > 0 ? '⚠' + issues + ' · ' : '') + pageName + 'VMRogue';
 }
 
 // ── Nodes ──
