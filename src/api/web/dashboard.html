@@ -10666,8 +10666,13 @@ async function forgeVM() {
     } else {
       toast('VM "' + name + '" forged successfully', 'success');
     }
+    const _forgedNs = body.namespace || 'default';
+    const _forgedName = name;
     closeCreateModal();
-    setTimeout(refresh, 1500);
+    if (currentPage !== 'vms') navigate('vms');
+    fetchVMs().then(function() {
+      selectVm(_forgedNs, _forgedName, { force: true });
+    }).catch(function() {});
   } catch (e) {
     toast('Error: ' + e.message, 'error');
   } finally {
@@ -10992,6 +10997,25 @@ function syncVmSelectionUi() {
   const content = document.getElementById('vm-focus-content');
   if (empty) empty.style.display = selectedVmKey ? 'none' : 'block';
   if (content) content.style.display = selectedVmKey ? 'block' : 'none';
+  if (!selectedVmKey) {
+    const qp = document.getElementById('vm-focus-quick-picks');
+    if (qp) {
+      const recents = getRecentVms().slice(0, 4);
+      if (recents.length) {
+        qp.innerHTML = '<p style="width:100%;text-align:center;font-size:.75rem;color:var(--text-dim);margin:0 0 8px">Recently viewed</p>' +
+          recents.map(function(r) {
+            const c = nsBadgeColor(r.ns || 'default');
+            return '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quickpick" ' +
+              'onclick="selectVm(' + jsArgs(r.ns, r.name) + ')" ' +
+              'style="display:inline-flex;align-items:center;gap:6px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+              '<span class="vmr-chip-dot" style="background:' + c + ';flex-shrink:0"></span>' +
+              esc(r.name) + '</button>';
+          }).join('');
+      } else {
+        qp.innerHTML = '';
+      }
+    }
+  }
   updateZeusAiPlaceholder();
   if (selectedVmKey && p) updatePageContext('VM — ' + p.name);
 }
