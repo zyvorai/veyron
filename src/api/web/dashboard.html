@@ -2131,6 +2131,13 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 body.vmr-fleet-full #vm-workspace{grid-template-columns:1fr!important}
 body.vmr-fleet-full .vm-focus-pane{display:none!important}
 #vmr-fleet-full-btn.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.45);color:var(--cyan)}
+.vmr-pin-chip{display:inline-flex;align-items:center;gap:5px;background:var(--glass-bg-elevated);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:3px 8px 3px 6px;font-size:.73rem;color:var(--text-muted);cursor:pointer;transition:border-color .15s,background .15s;flex-shrink:0}
+.vmr-pin-chip:hover{border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.06)}
+.vmr-pin-chip .vmr-pin-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.vmr-pin-chip .vmr-pin-name{font-weight:500;color:var(--text-primary);max-width:100px;overflow:hidden;text-overflow:ellipsis}
+.vmr-pin-chip .vmr-pin-unpin{opacity:.4;font-size:.9rem;line-height:1;margin-left:2px;padding:0 1px}
+.vmr-pin-chip .vmr-pin-unpin:hover{opacity:.9}
+.vmr-pin-label{font-size:.65rem;color:var(--text-dim);letter-spacing:.05em;align-self:center;flex-shrink:0;margin-right:2px}
 .vmr-ns-card{flex-shrink:0;display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:8px;padding:6px 12px;cursor:pointer;transition:border-color .2s,background .2s;min-width:0;white-space:nowrap}
 .vmr-ns-card:hover{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.04)}
 .vmr-ns-card.active{border-color:rgba(56,189,248,.5);background:rgba(56,189,248,.08)}
@@ -3798,6 +3805,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
+  <div id="vmr-fleet-pinned" style="display:none;flex-wrap:wrap;gap:6px;padding:4px 0 6px;align-items:center"></div>
   <div class="vm-workspace zeus-glass mac-vm-workspace" id="vm-workspace">
     <div class="vm-list-pane">
       <div class="vm-list-toolbar vmr-list-toolbar-compact">
@@ -8239,6 +8247,42 @@ function renderNsOverview() {
     }).join('');
 }
 
+// ── Fleet VM Pinning ──
+var FLEET_PINS_KEY = 'veyron_fleet_pins';
+function getFleetPins() {
+  try { var p = JSON.parse(localStorage.getItem(FLEET_PINS_KEY) || '[]'); return Array.isArray(p) ? p : []; } catch (e) { return []; }
+}
+function isFleetPinned(ns, name) {
+  return getFleetPins().some(function(p) { return p.ns === ns && p.name === name; });
+}
+function toggleFleetPin(ns, name) {
+  var pins = getFleetPins();
+  var idx = pins.findIndex(function(p) { return p.ns === ns && p.name === name; });
+  if (idx >= 0) { pins.splice(idx, 1); showToast('"' + name + '" unpinned', 'info'); }
+  else { if (pins.length >= 6) { showToast('Max 6 VMs pinned', 'warn'); return; } pins.push({ ns: ns, name: name }); showToast('"' + name + '" pinned to top', 'success'); }
+  try { localStorage.setItem(FLEET_PINS_KEY, JSON.stringify(pins)); } catch (e) {}
+  renderFleetPinnedStrip();
+}
+function renderFleetPinnedStrip() {
+  var el = document.getElementById('vmr-fleet-pinned');
+  if (!el) return;
+  var pins = getFleetPins();
+  if (!pins.length) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span class="vmr-pin-label">📌 PINNED</span>' +
+    pins.map(function(p) {
+      var vm = (vmData || []).find(function(v) { return v.name === p.name && (v.namespace || 'default') === p.ns; });
+      var s = vm ? (vm.status || 'unknown').toLowerCase() : 'unknown';
+      var dotColor = s === 'running' ? '#22c55e' : s === 'stopped' ? '#94a3b8' : '#f59e0b';
+      var label = p.ns !== 'default' ? (p.ns + '/' + p.name) : p.name;
+      return '<span class="vmr-pin-chip" onclick="selectVm(' + jsArgs(p.ns, p.name) + ',{})" title="' + esc(p.ns + '/' + p.name) + '">' +
+        '<span class="vmr-pin-dot" style="background:' + dotColor + '"></span>' +
+        '<span class="vmr-pin-name">' + esc(label) + '</span>' +
+        '<button type="button" class="vmr-pin-unpin" ' + onStopHandler('toggleFleetPin(' + jsArgs(p.ns, p.name) + ')') + ' title="Unpin">×</button>' +
+      '</span>';
+    }).join('');
+}
+
 function finderOpenVm(ns, name) {
   navigate('vms');
   selectVm(ns, name);
@@ -8547,18 +8591,22 @@ function renderSettingsVmr() {
 
   // Section C: Shortcuts table rows
   const shortcuts = [
-    ['⌘K',   'Spotlight — jump to any page'],
+    ['⌘K',   'Spotlight — jump to any page or VM'],
+    ['⌘N',   'Quick Forge — launch a VM from anywhere'],
     ['⌘J',   'Ask Zeus AI assistant'],
     ['F3 / ⌘↑', 'Mission Control — dashboard overview'],
     ['/',    'Focus VM search (VMs page)'],
     ['?',    'Show this shortcuts reference'],
-    [':',    'Command bar — :start :stop :snap :go <page> :ns <name> …'],
+    [':',    'Command bar — :start :stop :snap :vnc :go <page> :ns <name> …'],
     ['Z',    'Zen mode — expand VM list full-width (VMs page)'],
+    ['T',    'Toggle live event ticker (Bloomberg-style event feed)'],
     ['⌘R',   'Refresh data now'],
     ['⌘\\',  'Toggle Finder sidebar'],
+    ['⌘,',   'Open Preferences / Settings'],
     ['↑ / ↓ or j / k', 'Navigate VM list (vi-style j/k also works)'],
-    ['Esc',  'Dismiss modal or drawer'],
-    ['c',    'Forge new VM (from anywhere)'],
+    ['c',    'Forge new VM shortcut'],
+    ['Enter', 'Open selected VM inspector'],
+    ['Esc',  'Dismiss modal, drawer, or command bar'],
   ];
   const shortcutRows = shortcuts.map(function(r) {
     return '<tr><td style=”padding:5px 12px 5px 0;white-space:nowrap”>' +
@@ -8869,6 +8917,8 @@ function showVmContextMenu(x, y, ns, name) {
   html += '<div class="mac-context-sep"></div>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmCliSheet(' + jsArgs(ns, name) + ')">CLI Commands…</button>';
   html += '<div class="mac-context-sep"></div>';
+  var pinned = isFleetPinned(ns, name);
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();toggleFleetPin(' + jsArgs(ns, name) + ')">' + (pinned ? '📌 Unpin VM' : '📌 Pin VM') + '</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(vm.ip) + ')">Copy IP</button>';
@@ -11843,6 +11893,7 @@ async function fetchVMs(opts) {
       filterVMs();
       if (typeof renderRecentVmsStrip === 'function') renderRecentVmsStrip();
       renderNsOverview();
+      renderFleetPinnedStrip();
       if (selectedVmNs && selectedVmName) {
         fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
       }
