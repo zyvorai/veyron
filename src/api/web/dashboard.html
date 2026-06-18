@@ -9444,7 +9444,12 @@ function renderMissionControlVmr() {
       (failed > 0 ? ' · <span style="color:var(--error)">' + failed + ' failed</span>' : '') +
       (alerts ? ' · <span style="color:var(--error)">' + alerts + ' alert' + (alerts !== 1 ? 's' : '') + '</span>' : '') + '</p></div>' +
       '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\')">Fleet Command</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button></div></div>';
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-left:8px" title="VM count trend (last ' + _clusterPulseData.length + ' polls)">' +
+      '<canvas id="vmr-pulse-canvas" style="border-radius:3px;opacity:.85"></canvas>' +
+      '<span style="font-size:.6rem;color:var(--text-dim);letter-spacing:.04em">PULSE</span></div>' +
+      '</div></div>';
+  setTimeout(drawClusterPulseSparkline, 30);
   }
 
   const metrics = document.getElementById('vmr-mission-metrics');
@@ -9588,6 +9593,78 @@ function renderMissionControlVmr() {
       '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'settings\')">Settings</button>' +
       '</div></div>';
   }
+
+  // Recent Activity — last 6 VMs visited
+  const recentActivity = document.getElementById('vmr-recent-activity');
+  if (recentActivity) {
+    const recents = getRecentVms().slice(0, 6);
+    if (!recents.length) {
+      recentActivity.innerHTML = '<div style="color:var(--text-dim);font-size:.82rem;padding:8px 0">No recent VMs — visit a VM to build history.</div>';
+    } else {
+      recentActivity.innerHTML = recents.map(function(r) {
+        const vm = vms.find(function(v) { return v.name === r.name && (v.namespace || 'default') === (r.ns || 'default'); });
+        const s = vm ? (vm.status || '') : '';
+        const dotCls = s === 'Running' ? 'ok' : s === 'Stopped' ? 'warn' : s ? 'bad' : '';
+        const since = r.ts ? Math.round((Date.now() - r.ts) / 60000) : null;
+        const timeStr = since === null ? '' : since < 1 ? 'just now' : since < 60 ? since + 'm ago' : Math.round(since/60) + 'h ago';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--glass-border)">' +
+          '<span class="glass-badge ' + dotCls + '" style="width:8px;height:8px;padding:0;border-radius:50%;flex-shrink:0"></span>' +
+          '<button type="button" class="vmr-recent-chip" style="flex:1;text-align:left;border-radius:6px;justify-content:flex-start;font-size:.8rem" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(r.ns||'default', r.name) + ',{});},200)">' + esc(r.name) + '</button>' +
+          (timeStr ? '<span style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;flex-shrink:0">' + esc(timeStr) + '</span>' : '') +
+          '</div>';
+      }).join('');
+    }
+  }
+
+  // Cluster Pulse — ring buffer of VM counts, drawn as sparkline
+  updateClusterPulse(vmCount);
+}
+
+var _clusterPulseData = [];
+function updateClusterPulse(count) {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('veyron_cluster_pulse') || '[]');
+    if (Array.isArray(stored)) _clusterPulseData = stored;
+  } catch (_) {}
+  _clusterPulseData.push(count);
+  if (_clusterPulseData.length > 12) _clusterPulseData = _clusterPulseData.slice(-12);
+  try { sessionStorage.setItem('veyron_cluster_pulse', JSON.stringify(_clusterPulseData)); } catch (_) {}
+  drawClusterPulseSparkline();
+}
+
+function drawClusterPulseSparkline() {
+  const canvas = document.getElementById('vmr-pulse-canvas');
+  if (!canvas || _clusterPulseData.length < 2) return;
+  const data = _clusterPulseData;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 80 * dpr; canvas.height = 28 * dpr;
+  canvas.style.width = '80px'; canvas.style.height = '28px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, 80, 28);
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+  const pts = data.map(function(v, i) {
+    return [4 + (i / (data.length - 1)) * 72, 24 - ((v - min) / range) * 20];
+  });
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.strokeStyle = 'rgba(56,189,248,.7)';
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  // Fill under line
+  ctx.lineTo(pts[pts.length-1][0], 28); ctx.lineTo(pts[0][0], 28);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(56,189,248,.1)';
+  ctx.fill();
+  // Last dot
+  const last = pts[pts.length-1];
+  ctx.beginPath();
+  ctx.arc(last[0], last[1], 2.5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(56,189,248,.9)';
+  ctx.fill();
 }
 
 function renderEventIntelligenceVmr() {
