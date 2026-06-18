@@ -9585,6 +9585,7 @@ function showSearchSyntaxHint() {
   var tokens = [
     ['node:worker-1','filter by node'],['ns:default','namespace'],['tag:prod','VM tag'],
     ['os:ubuntu','OS family'],['ip:10.0','IP prefix'],['note:text','VM note'],
+    ['status:running','by status'],
     ['cpu>4','vCPUs greater than'],['cpu<8','vCPUs less than'],
     ['mem>8gi','memory ≥ 8 GiB'],['age>7d','older than 7 days'],['age<1h','younger than 1 hour'],
   ];
@@ -9616,7 +9617,16 @@ function highlightMatch(text, q) {
 }
 function activeSearchQuery() {
   var el = document.getElementById('vm-search');
-  return el ? (el.value || '').toLowerCase() : '';
+  if (!el) return '';
+  // Return the first plain-text token (no prefix) for highlight purposes
+  var val = (el.value || '').toLowerCase().trim();
+  if (!val) return '';
+  var tokens = val.split(/\s+/);
+  for (var i = 0; i < tokens.length; i++) {
+    var t = tokens[i];
+    if (t && !/^(node:|ip:|ns:|namespace:|tag:|note:|os:|status:|cpu|mem|memory|age|vcpu)/.test(t)) return t;
+  }
+  return '';
 }
 
 // ── Inspector Live Uptime Clock ──
@@ -17357,26 +17367,38 @@ function filterVMs() {
       const vns = (v.namespace || '').toLowerCase();
       const vnode = (v.node || '').toLowerCase();
       const vip = (v.ip || '').toLowerCase();
-      if (q.startsWith('node:')) {
-        if (!vnode.includes(q.slice(5).trim())) return false;
-      } else if (q.startsWith('ip:')) {
-        if (!vip.includes(q.slice(3).trim())) return false;
-      } else if (q.startsWith('ns:') || q.startsWith('namespace:')) {
-        const nsq = q.startsWith('ns:') ? q.slice(3).trim() : q.slice(10).trim();
-        if (!vns.includes(nsq)) return false;
-      } else if (q.startsWith('tag:')) {
-        var tagQ = q.slice(4).trim();
-        if (!getVmTags(v.namespace || 'default', v.name).some(function(t) { return t.includes(tagQ); })) return false;
-      } else if (q.startsWith('note:')) {
-        var noteQ = q.slice(5).trim();
-        if (!getVmNote(v.namespace || 'default', v.name).toLowerCase().includes(noteQ)) return false;
-      } else if (q.startsWith('os:')) {
-        if (!guessOsFamily(v).includes(q.slice(3).trim())) return false;
-      } else {
-        var numResult = parseNumericToken(q, v);
-        if (numResult !== null) {
-          if (!numResult) return false;
-        } else if (!vname.includes(q) && !vns.includes(q) && !vnode.includes(q) && !vip.includes(q)) return false;
+      // Split on spaces — each chunk must pass independently (AND semantics)
+      const tokens = q.trim().split(/\s+/);
+      for (var _ti = 0; _ti < tokens.length; _ti++) {
+        var tok = tokens[_ti];
+        if (!tok) continue;
+        var tokenPassed = true;
+        if (tok.startsWith('node:')) {
+          if (!vnode.includes(tok.slice(5).trim())) tokenPassed = false;
+        } else if (tok.startsWith('ip:')) {
+          if (!vip.includes(tok.slice(3).trim())) tokenPassed = false;
+        } else if (tok.startsWith('ns:') || tok.startsWith('namespace:')) {
+          const nsq = tok.startsWith('ns:') ? tok.slice(3).trim() : tok.slice(10).trim();
+          if (!vns.includes(nsq)) tokenPassed = false;
+        } else if (tok.startsWith('tag:')) {
+          var tagQ = tok.slice(4).trim();
+          if (!getVmTags(v.namespace || 'default', v.name).some(function(t) { return t.includes(tagQ); })) tokenPassed = false;
+        } else if (tok.startsWith('note:')) {
+          var noteQ = tok.slice(5).trim();
+          if (!getVmNote(v.namespace || 'default', v.name).toLowerCase().includes(noteQ)) tokenPassed = false;
+        } else if (tok.startsWith('os:')) {
+          if (!guessOsFamily(v).includes(tok.slice(3).trim())) tokenPassed = false;
+        } else if (tok.startsWith('status:')) {
+          if ((v.status || '').toLowerCase() !== tok.slice(7).trim()) tokenPassed = false;
+        } else {
+          var numResult = parseNumericToken(tok, v);
+          if (numResult !== null) {
+            if (!numResult) tokenPassed = false;
+          } else if (!vname.includes(tok) && !vns.includes(tok) && !vnode.includes(tok) && !vip.includes(tok)) {
+            tokenPassed = false;
+          }
+        }
+        if (!tokenPassed) return false;
       }
     }
     if (statusFilter === '__issues__') {
