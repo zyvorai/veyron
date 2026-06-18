@@ -1453,6 +1453,8 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-card:hover .vmr-genome,.vm-row:hover .vmr-genome{opacity:1}
 .vmr-last-action-chip{display:inline-flex;align-items:center;gap:3px;font-size:.63rem;border:1px solid;border-radius:8px;padding:1px 5px;margin-left:3px;vertical-align:middle;opacity:.8;white-space:nowrap;flex-shrink:0}
 .vmr-momentum{font-size:.7rem;font-weight:700;margin-left:2px;vertical-align:middle;line-height:1}
+.vmr-peer-chip{font-size:.65rem;padding:2px 7px;border-radius:8px;cursor:pointer;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);margin:0 2px 3px 0;transition:background .12s,border-color .12s;display:inline-flex;align-items:center}
+.vmr-peer-chip:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}
 .vmr-delta-strip{padding:4px 14px 2px}
 .vmr-delta-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.7rem;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-wrap:wrap;animation:vmr-delta-in .2s ease}
 @keyframes vmr-delta-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -6659,6 +6661,9 @@ function renderVmCapsuleVmr() {
     loadDoctorPanel(ns, name);
     loadVmMetricsPanel(ns, name);
     loadVmSnapshotsPanel(ns, name);
+    loadVmEventHistory(ns, name);
+    loadVmSessionTimeline(ns, name);
+    loadVmPeersPanel(ns, name);
   }).catch(function(e) {
     body.innerHTML = '<div class="vmr-panel" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
   });
@@ -15967,6 +15972,7 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
       '<div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div>' +
       '<div id="vm-event-history-' + name + '" style="margin-top:12px"></div>' +
       '<div id="vm-session-timeline-' + name + '" style="margin-top:12px"></div>' +
+      '<div id="vmr-peers-' + name + '" style="margin-top:12px"></div>' +
       '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'network' ? ' active' : '') + '" data-panel="network"><div class="zeus-inspector-body">' + networkBody + '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'compute' ? ' active' : '') + '" data-panel="compute"><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '">Loading metrics…</div><div id="guest-fs-panel-' + name + '" style="margin-top:12px">Loading storage…</div></div></div>' +
@@ -16021,6 +16027,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
     loadVmSnapshotsPanel(ns, name);
     loadVmEventHistory(ns, name);
     loadVmSessionTimeline(ns, name);
+    loadVmPeersPanel(ns, name);
   } catch (e) {
     if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
     toast('Failed to load VM: ' + (e.message || String(e)), 'error');
@@ -16080,6 +16087,47 @@ function loadVmSessionTimeline(ns, name) {
         '</div>';
     }).join('') +
     '</div></div>';
+}
+
+function loadVmPeersPanel(ns, name) {
+  var el = document.getElementById('vmr-peers-' + name);
+  if (!el) return;
+  var all = window.lastVMs || vmData || [];
+  var vm = all.find(function(v) { return v.name === name && (v.namespace || 'default') === ns; });
+  if (!vm) { el.innerHTML = ''; return; }
+  // Same namespace (excluding self)
+  var nspeers = all.filter(function(v) { return (v.namespace || 'default') === ns && v.name !== name; });
+  // Same node
+  var nodepeers = vm.node ? all.filter(function(v) { return v.node === vm.node && v.name !== name; }) : [];
+  // Genome twins — same OS+cpu+mem
+  var myGenomeKey = guessOsFamily(vm) + '|' + (parseCpuCount(vm.cpu)||0) + '|' + Math.round(parseMemGiB(vm.memory)||0);
+  var twins = all.filter(function(v) {
+    if (v.name === name && (v.namespace||'default') === ns) return false;
+    var k = guessOsFamily(v) + '|' + (parseCpuCount(v.cpu)||0) + '|' + Math.round(parseMemGiB(v.memory)||0);
+    return k === myGenomeKey;
+  });
+  if (!nspeers.length && !nodepeers.length && !twins.length) { el.innerHTML = ''; return; }
+  function chip(v, extra) {
+    var cls = sc(v.status);
+    var vns = v.namespace || 'default';
+    return '<button type="button" class="vmr-peer-chip vm-badge ' + cls + '" onclick="selectVm(' + jsArgs(vns, v.name) + ')" title="' + esc(vns + '/' + v.name + ' · ' + v.status) + '">' +
+      '<span class="vm-dot ' + cls + '" style="width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:3px"></span>' + esc(v.name) + (extra ? '<span style="opacity:.6;font-size:.6em;margin-left:3px">' + extra + '</span>' : '') + '</button>';
+  }
+  var html = '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px">Peers</div>';
+  if (twins.length) {
+    html += '<div style="margin-bottom:5px"><span style="font-size:.65rem;color:var(--text-dim);margin-right:4px">⦿ twin spec</span>' +
+      twins.slice(0,5).map(function(v){return chip(v,'twin');}).join('') + '</div>';
+  }
+  if (nodepeers.length) {
+    html += '<div style="margin-bottom:5px"><span style="font-size:.65rem;color:var(--text-dim);margin-right:4px">◉ ' + esc(vm.node||'') + '</span>' +
+      nodepeers.slice(0,6).map(function(v){return chip(v);}).join('') + '</div>';
+  }
+  if (nspeers.length) {
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px"><span style="font-size:.65rem;color:var(--text-dim);margin-right:2px;align-self:center">ns ' + esc(ns) + '</span>' +
+      nspeers.slice(0,10).map(function(v){return chip(v);}).join('') +
+      (nspeers.length > 10 ? '<span style="font-size:.65rem;color:var(--text-dim);align-self:center">+' + (nspeers.length-10) + '</span>' : '') + '</div>';
+  }
+  el.innerHTML = '<div style="padding:10px 0 0;border-top:1px solid rgba(255,255,255,.06)">' + html + '</div>';
 }
 
 async function loadVmSnapshotsPanel(ns, name) {
