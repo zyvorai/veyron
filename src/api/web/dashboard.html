@@ -9269,6 +9269,221 @@ function setVmViewMode(mode, writeStorage) {
   filterVMs();
 }
 
+// ── syncVeyronTopbar — update topbar page context label on navigate ──────────
+function syncVeyronTopbar() {
+  const meta = document.getElementById('cluster-context-meta');
+  const wrap = document.getElementById('topbar-location-wrap');
+  if (wrap && desktopTier !== 'normal') wrap.style.display = '';
+  const page = typeof currentPage !== 'undefined' ? currentPage : '';
+  const label = page ? navPageLabel(page) : '';
+  if (meta && meta.textContent && meta.textContent.startsWith('Location:')) {
+    // Not yet fetched — leave the cluster context label untouched until fetchClusterContext updates it
+    return;
+  }
+  // Append page hint to cluster context if already populated
+  if (meta && label && !meta.textContent.endsWith(' · ' + label)) {
+    const base = meta.textContent.replace(/ · [^·]+$/, '');
+    meta.textContent = base ? base + ' · ' + label : label;
+  }
+}
+
+// ── Hero slot renderers ──────────────────────────────────────────────────────
+function renderMissionControlVmr() {
+  const hero = document.getElementById('vmr-mission-hero');
+  if (!hero) return;
+  const vmCount = window.lastVMs ? window.lastVMs.length : 0;
+  const running = window.lastVMs ? window.lastVMs.filter(function(v) { return (v.status || '').toLowerCase() === 'running'; }).length : 0;
+  const alerts = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Mission Control</h1>' +
+    '<p class="vmr-hero-sub">' + running + ' of ' + vmCount + ' VM' + (vmCount !== 1 ? 's' : '') + ' running' +
+    (alerts ? ' · <span style="color:var(--error)">' + alerts + ' alert' + (alerts !== 1 ? 's' : '') + '</span>' : '') + '</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\')">Fleet Command</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button></div></div>';
+}
+
+function renderEventIntelligenceVmr() {
+  const hero = document.getElementById('vmr-events-hero');
+  if (!hero) return;
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⚡</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Event Intelligence</h1>' +
+    '<p class="vmr-hero-sub">Kubernetes event stream with warning detection and signal filtering</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchEvents(true)">↺ Refresh</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCsv(window.lastEvents || [], \'events.csv\')">Export CSV</button></div></div>';
+}
+
+function renderCostsVmr() {
+  const hero = document.getElementById('vmr-costs-hero');
+  if (!hero) return;
+  const total = window.lastCostSummary || '—';
+  const count = window.lastCostVmCount != null ? window.lastCostVmCount : '—';
+  const forecast = window.lastCostForecast || null;
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">💰</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">FinOps</h1>' +
+    '<p class="vmr-hero-sub">Monthly total: <strong>' + esc(total) + '</strong>' +
+    (forecast ? ' · Projected: <strong>' + esc(forecast) + '</strong>' : '') +
+    ' · ' + count + ' VM' + (count !== 1 ? 's' : '') + ' tracked</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCosts()">↺ Refresh</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCsv(window.lastCosts || [], \'costs.csv\')">Export CSV</button></div></div>';
+}
+
+function fetchSecurityVmr(opts) {
+  const hero = document.getElementById('vmr-security-hero');
+  if (!hero) return;
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">🔐</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Security</h1>' +
+    '<p class="vmr-hero-sub">Posture scoring, findings, SOC detections, and compliance</p></div>' +
+    '<div class="vmr-hero-actions">' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'compliance\')">Compliance</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'soc\')">SOC</button></div></div>';
+}
+
+function fetchSnapshotsVmr(opts) {
+  const hero = document.getElementById('vmr-snapshots-hero');
+  if (!hero) return;
+  const count = window.lastSnapshots ? window.lastSnapshots.length : '—';
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">📸</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Snapshots</h1>' +
+    '<p class="vmr-hero-sub">' + count + ' snapshot' + (count !== 1 ? 's' : '') + ' · Scheduled and on-demand VM point-in-time recovery</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSnapshots()">↺ Refresh</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openSnapModalPick()">New Snapshot</button></div></div>';
+}
+
+function fetchWorkloadsVmr(opts) {
+  const hero = document.getElementById('vmr-workloads-hero');
+  if (!hero) return Promise.resolve();
+  const count = window.lastWorkloads ? window.lastWorkloads.length : '—';
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⬡</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Workloads</h1>' +
+    '<p class="vmr-hero-sub">' + count + ' workload' + (count !== 1 ? 's' : '') + ' · Deployments, DaemonSets, StatefulSets, and Jobs</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">↺ Refresh</button></div></div>';
+  // Now run the real fetch without hero re-entry
+  return (async function(o) {
+    const tb = document.getElementById('workloads-body');
+    const sumEl = document.getElementById('workloads-summary');
+    try {
+      const raw = await apiJson('/api/v1/workloads' + nsParam(), o);
+      if (raw == null) return;
+      const data = asArray(raw);
+      window.lastWorkloads = data;
+      const unhealthy = data.filter(function(w) { return w.ready_replicas < w.replicas; }).length;
+      const replicas = data.reduce(function(n, w) { return n + (w.replicas || 0); }, 0);
+      if (sumEl) {
+        sumEl.innerHTML = renderGlassStatPills([
+          { label: 'Workloads', value: data.length },
+          { label: 'Unhealthy', value: unhealthy, cls: unhealthy ? ' bad' : ' ok' },
+          { label: 'Replicas', value: replicas },
+          { label: 'Pods', value: '→', onclick: "navigate('pods')", title: 'View pods' }
+        ]);
+      }
+      // Update hero with real count
+      const heroEl = document.getElementById('vmr-workloads-hero');
+      if (heroEl) {
+        heroEl.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⬡</div>' +
+          '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Workloads</h1>' +
+          '<p class="vmr-hero-sub">' + data.length + ' workload' + (data.length !== 1 ? 's' : '') +
+          (unhealthy ? ' · <span style="color:var(--error)">' + unhealthy + ' unhealthy</span>' : ' · All healthy') + '</p></div>' +
+          '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">↺ Refresh</button></div></div>';
+      }
+      if (tb) renderWorkloadsList((document.getElementById('workloads-search') || {}).value || '');
+    } catch (e) {
+      if (e && e.name === 'AbortError') return;
+      if (opts && opts.signal && opts.signal.aborted) return;
+      if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchWorkloads');
+    }
+  })(opts);
+}
+
+function renderFoundryVmr() {
+  const hero = document.getElementById('vmr-foundry-hero');
+  if (!hero) return;
+  const count = window.appStoreCache ? window.appStoreCache.length : '—';
+  const windows = window.appStoreCache ? window.appStoreCache.filter(function(t) { return (t.os_family || '').toLowerCase() === 'windows'; }).length : 0;
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">◫</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Template Foundry</h1>' +
+    '<p class="vmr-hero-sub">' + count + ' template' + (count !== 1 ? 's' : '') +
+    (typeof windows === 'number' && windows > 0 ? ' · ' + windows + ' Windows' : '') + ' · Click any tile to forge a VM</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openForgeWizard()">Forge Wizard</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Quick Forge</button></div></div>';
+}
+
+function renderCiliumVmr() {
+  const hero = document.getElementById('vmr-cilium-hero');
+  if (!hero) return;
+  const polCount = window._ciliumPoliciesCache ? window._ciliumPoliciesCache.length : '—';
+  const flowData = window._lastCiliumFlowData;
+  const allowed = flowData ? (flowData.allowed || 0) : 0;
+  const denied = flowData ? (flowData.denied || 0) : 0;
+  hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">🌿</div>' +
+    '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Cilium</h1>' +
+    '<p class="vmr-hero-sub">' + polCount + ' network polic' + (polCount !== 1 ? 'ies' : 'y') +
+    (flowData ? ' · ' + allowed + ' allowed / ' + (denied > 0 ? '<span style="color:var(--error)">' + denied + ' denied</span>' : '0 denied') : '') + '</p></div>' +
+    '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCilium()">↺ Refresh</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-policies\')">K8s NetPol</button></div></div>';
+}
+
+async function fetchNetworkIntelData(opts) {
+  const hero = document.getElementById('vmr-network-intel-hero');
+  const metrics = document.getElementById('vmr-network-intel-metrics');
+  const body = document.getElementById('vmr-network-intel-body');
+  if (hero) {
+    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">🌐</div>' +
+      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Network Intelligence</h1>' +
+      '<p class="vmr-hero-sub">Live flow analysis, topology, and PacketWolf integration</p></div>' +
+      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkIntelData()">↺ Refresh</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'cilium\')">Cilium</button></div></div>';
+  }
+  try {
+    const [overview, flows] = await Promise.all([
+      apiJson('/api/v1/packetwolf/network/overview' + nsParam(), opts).catch(function() { return null; }),
+      apiJson('/api/v1/packetwolf/flows' + nsParam(), opts).catch(function() { return null; }),
+    ]);
+    if (metrics) {
+      if (!overview) {
+        metrics.innerHTML = '<div class="vmr-panel"><p style="color:var(--text-dim)">PacketWolf not configured — set <code>VEYRON_PACKETWOLF_URL</code>. See <a href="#" onclick="navigate(\'integrations\');return false">Integrations</a>.</p></div>';
+      } else {
+        const ov = overview.overview || overview || {};
+        metrics.innerHTML = renderGlassStatPills([
+          { label: 'Total flows', value: ov.total_flows || 0 },
+          { label: 'Active endpoints', value: ov.active_endpoints || 0 },
+          { label: 'Namespaces', value: ov.namespace_count || 0 },
+          { label: 'Policies active', value: ov.active_policies || 0 },
+        ]);
+      }
+    }
+    if (body && flows) {
+      const flowList = asArray(flows.flows || flows);
+      if (!flowList.length) {
+        body.innerHTML = '<div class="vmr-panel"><div class="empty-state"><p>No flows captured</p></div></div>';
+      } else {
+        body.innerHTML = '<div class="vmr-panel"><div class="vmr-panel-title">Recent Flows</div>' +
+          '<table class="glass-table"><thead><tr><th>Source</th><th>Destination</th><th>Protocol</th><th>Verdict</th><th>Bytes</th></tr></thead><tbody>' +
+          flowList.slice(0, 100).map(function(f) {
+            const verdict = (f.verdict || '').toLowerCase();
+            const cls = verdict === 'dropped' ? 'error' : verdict === 'forwarded' ? 'running' : '';
+            return '<tr><td><code style="font-size:.82rem">' + esc(f.source || f.src || '—') + '</code></td>' +
+              '<td><code style="font-size:.82rem">' + esc(f.destination || f.dst || '—') + '</code></td>' +
+              '<td>' + esc(f.protocol || '—') + '</td>' +
+              '<td><span class="glass-badge ' + cls + '">' + esc(f.verdict || '—') + '</span></td>' +
+              '<td>' + (f.bytes != null ? f.bytes : '—') + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div>';
+      }
+    } else if (body && !flows) {
+      body.innerHTML = '<div class="vmr-panel"><div class="empty-state"><p>PacketWolf not reachable</p></div></div>';
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return;
+    if (body) body.innerHTML = '<div class="vmr-panel"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="fetchNetworkIntelData()">↺ Retry</button></div>';
+  }
+}
+
+// ── Pod logs drawer close (Escape handler) ───────────────────────────────────
+function closePodLogsVmr() {
+  // Close any expanded pod detail rows
+  document.querySelectorAll('.vm-detail[id^="pod-detail-"]').forEach(function(el) { el.remove(); });
+}
+
 function setVmrFleetView(mode) {
   window.vmrFleetViewMode = mode;
   document.querySelectorAll('.vmr-view-switch [data-view]').forEach(function(btn) {
