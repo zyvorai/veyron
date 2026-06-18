@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618y">
+<meta name="veyron-dashboard-rev" content="20260619a">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
 <script>
 (function(){
-  var DASH_REV = '20260618y';
+  var DASH_REV = '20260619a';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -2775,7 +2776,10 @@ body.vm-focus-active .mac-inspector-header{display:flex}
 }
 .mac-dock-item-preview{opacity:.55;border:1px dashed rgba(255,255,255,.18);background:rgba(255,255,255,.03)}
 .mac-dock-item-preview:hover{opacity:.85;background:rgba(255,255,255,.07)}
-.mac-dock-icon{font-size:1.15rem;line-height:1}
+.mac-dock-icon{display:flex;align-items:center;justify-content:center;width:22px;height:22px;font-size:1.15rem;line-height:1}
+.mac-dock-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.fi-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0}
+.fi-icon svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .mac-dock-tooltip{
   position:absolute;bottom:calc(100% + .35rem);left:50%;
   transform:translateX(-50%) translateY(4px);
@@ -2880,10 +2884,116 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
 }
 .mac-cc-tile:hover{background:rgba(56,189,248,.1);color:var(--spark);border-color:rgba(56,189,248,.25)}
 .mac-cc-tile-icon{display:block;font-size:1.1rem;margin-bottom:4px}
-.modal-overlay.mac-signin-overlay{align-items:center;padding-top:12vh}
-.mac-signin-sheet{max-width:min(440px,96vw)}
-.signin-theme-picker{margin-bottom:14px}
-.signin-theme-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:8px}
+/* ── Premium login shell (Machina split-hero, ported from v9s) ── */
+@keyframes login-gradient-shift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes login-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-18px) scale(1.02)}}
+@keyframes login-fade-in-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes login-pulse-glow{0%,100%{box-shadow:0 0 24px rgba(59,130,246,.12),inset 0 1px 0 rgba(255,255,255,.06)}50%{box-shadow:0 0 40px rgba(59,130,246,.2),inset 0 1px 0 rgba(255,255,255,.1)}}
+@keyframes login-shimmer{0%{transform:translateX(-100%) skewX(-12deg)}100%{transform:translateX(200%) skewX(-12deg)}}
+@keyframes login-aurora-drift{0%,100%{opacity:.55;transform:translate(0,0) scale(1)}33%{opacity:.85;transform:translate(4%,-3%) scale(1.05)}66%{opacity:.65;transform:translate(-3%,2%) scale(.98)}}
+@keyframes login-spotlight-pulse{0%,100%{opacity:.35}50%{opacity:.65}}
+@keyframes login-particle-float{0%,100%{opacity:.15;transform:translateY(0)}50%{opacity:.75;transform:translateY(-12px)}}
+@keyframes login-beam-pulse{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes login-scan{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes login-logo-glow{0%,100%{box-shadow:0 0 24px rgba(59,130,246,.35),0 0 48px rgba(99,102,241,.15)}50%{box-shadow:0 0 36px rgba(59,130,246,.55),0 0 64px rgba(139,92,246,.25)}}
+@keyframes login-shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.modal-overlay.mac-signin-overlay{
+  background:#020617;backdrop-filter:none;-webkit-backdrop-filter:none;
+  align-items:stretch;padding-top:0;flex-direction:row;
+}
+.login-page{isolation:isolate;display:flex;flex-direction:row;flex:1;position:relative;overflow:hidden;min-height:100vh}
+.login-aurora{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 55% 45% at 15% 20%,rgba(59,130,246,.22),transparent 55%),radial-gradient(ellipse 50% 40% at 85% 75%,rgba(237,25,68,.12),transparent 50%),radial-gradient(ellipse 45% 50% at 70% 15%,rgba(139,92,246,.14),transparent 55%);
+  animation:login-aurora-drift 14s ease-in-out infinite}
+.login-scanline{position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.04;
+  background:linear-gradient(180deg,transparent,rgba(148,163,184,.15) 50%,transparent);animation:login-scan 8s linear infinite}
+.login-hero{
+  position:relative;width:58%;flex-shrink:0;display:flex;flex-direction:column;
+  justify-content:space-between;padding:40px;overflow:hidden;
+  background:linear-gradient(145deg,#020617 0%,#0f172a 35%,#1e3a5f 65%,#0f172a 100%);
+  background-size:400% 400%;animation:login-gradient-shift 18s ease infinite}
+.login-hero::before{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(148,163,184,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.05) 1px,transparent 1px);
+  background-size:48px 48px;mask-image:radial-gradient(ellipse 80% 70% at 50% 40%,black 20%,transparent 75%)}
+.login-hero-mesh{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(148,163,184,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.06) 1px,transparent 1px);
+  background-size:40px 40px;mask-image:radial-gradient(ellipse 90% 80% at 40% 30%,black 10%,transparent 70%)}
+.login-spotlight{position:absolute;top:-20%;left:10%;width:70%;height:60%;
+  background:radial-gradient(ellipse at center,rgba(96,165,250,.2) 0%,transparent 65%);
+  animation:login-spotlight-pulse 6s ease-in-out infinite;pointer-events:none}
+.login-particles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.login-particle{position:absolute;border-radius:9999px;background:rgba(147,197,253,.8);
+  box-shadow:0 0 8px rgba(96,165,250,.6);animation:login-particle-float 4s ease-in-out infinite}
+.login-orb{position:absolute;border-radius:9999px;pointer-events:none;
+  animation:login-float var(--login-duration,10s) ease-in-out infinite;animation-delay:var(--login-delay,0s)}
+.login-orb-blue{background:radial-gradient(circle,rgba(59,130,246,.22) 0%,transparent 70%)}
+.login-orb-violet{background:radial-gradient(circle,rgba(139,92,246,.2) 0%,transparent 70%)}
+.login-orb-cyan{background:radial-gradient(circle,rgba(34,211,238,.16) 0%,transparent 70%)}
+.login-orb-red{background:radial-gradient(circle,rgba(237,25,68,.14) 0%,transparent 70%)}
+.login-logo-ring{border-radius:1rem;animation:login-logo-glow 3.5s ease-in-out infinite}
+.login-fade-in{animation:login-fade-in-up .65s ease-out forwards}
+.login-fade-in-d1{animation-delay:.1s;opacity:0}
+.login-fade-in-d2{animation-delay:.2s;opacity:0}
+.login-fade-in-d3{animation-delay:.3s;opacity:0}
+.login-fade-in-d4{animation-delay:.4s;opacity:0}
+.login-text-gradient{background:linear-gradient(135deg,#93c5fd 0%,#e2e8f0 50%,#60a5fa 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.login-stat-pill{display:inline-flex;align-items:center;gap:.375rem;padding:.25rem .625rem;
+  border-radius:9999px;font-size:.75rem;font-weight:500;
+  background:rgba(255,255,255,.06);border:1px solid rgba(148,163,184,.15);color:rgba(226,232,240,.85)}
+.login-feature-card{transition:border-color .25s,transform .25s,box-shadow .25s}
+.login-feature-card:hover{transform:translateX(4px)}
+.login-feature-card-highlight{
+  background:linear-gradient(135deg,rgba(127,29,29,.35) 0%,rgba(15,23,42,.5) 100%);
+  border:1px solid rgba(237,25,68,.35);box-shadow:0 0 32px rgba(237,25,68,.12),inset 0 1px 0 rgba(255,255,255,.06)}
+.login-beam{position:absolute;top:0;bottom:0;width:2px;z-index:5;
+  background:linear-gradient(180deg,transparent,rgba(96,165,250,.9) 30%,rgba(167,139,250,.9) 70%,transparent);
+  box-shadow:0 0 24px rgba(59,130,246,.6),0 0 48px rgba(139,92,246,.3);
+  animation:login-beam-pulse 3s ease-in-out infinite}
+.login-beam-w58{left:58%}
+.login-panel{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;padding:48px 24px;min-height:100vh;
+  background-color:#020617;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(59,130,246,.12),transparent),linear-gradient(180deg,#020617 0%,#0f172a 100%)}
+.login-panel-grid{position:absolute;inset:0;opacity:.04;pointer-events:none;
+  background-image:radial-gradient(circle at 1px 1px,rgba(148,163,184,.9) 1px,transparent 0);background-size:32px 32px}
+.login-panel-glow{position:absolute;top:50%;left:50%;width:min(90vw,480px);height:320px;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse,rgba(37,99,235,.12) 0%,transparent 70%);pointer-events:none}
+.login-glass{background:rgba(15,23,42,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid rgba(51,65,85,.6);animation:login-pulse-glow 5s ease-in-out infinite}
+.login-glass-border{position:relative}
+.login-glass-border::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;
+  background:linear-gradient(135deg,rgba(59,130,246,.5),rgba(139,92,246,.25),rgba(51,65,85,.4));
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.login-input{width:100%;padding:.75rem 2.75rem;border-radius:.75rem;font-size:.875rem;color:#f1f5f9;
+  background:rgba(15,23,42,.8);border:1px solid rgba(51,65,85,.7);font-family:inherit;
+  transition:border-color .2s,box-shadow .2s}
+.login-input:focus{outline:none;border-color:rgba(59,130,246,.6);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.login-field-icon{position:absolute;left:.875rem;top:50%;transform:translateY(-50%);
+  width:1rem;height:1rem;color:#64748b;transition:color .2s;pointer-events:none}
+.group:focus-within .login-field-icon{color:#60a5fa}
+.login-btn-primary{position:relative;overflow:hidden;display:flex;align-items:center;
+  justify-content:center;gap:.5rem;width:100%;padding:.75rem 1rem;font-size:.875rem;font-weight:600;
+  color:#fff;border-radius:.75rem;border:1px solid rgba(59,130,246,.4);cursor:pointer;
+  background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 50%,#1e40af 100%);
+  box-shadow:0 4px 24px rgba(37,99,235,.35),inset 0 1px 0 rgba(255,255,255,.1);
+  transition:transform .2s,box-shadow .2s;font-family:inherit}
+.login-btn-primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 32px rgba(37,99,235,.45)}
+.login-btn-primary::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.12) 50%,transparent 60%);
+  animation:login-shimmer 3s ease-in-out infinite}
+.login-btn-secondary{padding:.75rem 1rem;font-size:.875rem;font-weight:600;color:#e2e8f0;
+  border-radius:.75rem;border:1px solid rgba(51,65,85,.7);background:rgba(15,23,42,.6);
+  transition:background .2s;font-family:inherit;cursor:pointer}
+.login-btn-secondary:hover{background:rgba(30,41,59,.9)}
+@media(max-width:1023px){.login-hero,.login-beam{display:none!important}.login-panel{min-height:100vh;padding:40px 20px}}
+@media(prefers-reduced-motion:reduce){.login-aurora,.login-scanline,.login-spotlight,.login-orb,.login-particle,.login-beam,.login-logo-ring,.login-glass{animation:none!important}.login-fade-in,.login-fade-in-d1,.login-fade-in-d2,.login-fade-in-d3,.login-fade-in-d4{animation:none!important;opacity:1!important}.login-btn-primary::after{animation:none!important}.login-feature-card:hover{transform:none!important}}
+/* theme picker (reused below glass card) */
+.signin-theme-picker{margin-top:20px;margin-bottom:14px}
+.signin-theme-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:8px;text-align:center}
 .signin-theme-grid{grid-template-columns:repeat(4,1fr)!important;gap:6px}
 .signin-theme-grid .theme-swatch{border-radius:10px;padding:0;min-width:0}
 .signin-theme-grid .theme-swatch-preview{height:26px;border-radius:8px 8px 0 0}
@@ -3568,78 +3678,78 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="finder-section" id="finder-sec-platform" data-finder-section="platform">
     <div class="finder-section-label">Platform</div>
     <div class="finder-section-body" id="finder-platform">
-      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon">♥</span>Stack Health</button>
-      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon">⧉</span>Snapshots &amp; Backups</button>
-      <button type="button" class="cloudos-finder-item" data-page="network-intel" data-min-tier="advanced" onclick="finderNavigate('network-intel')"><span class="fi-icon">⟷</span>Network Intelligence</button>
-      <button type="button" class="cloudos-finder-item" data-page="security" data-min-tier="advanced" onclick="finderNavigate('security')"><span class="fi-icon">⛨</span>Security Posture</button>
-      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon">⚡</span>Event Intelligence</button>
-      <button type="button" class="cloudos-finder-item" data-page="costs" data-min-tier="advanced" onclick="finderNavigate('costs')"><span class="fi-icon">$</span>Cost Explorer</button>
-      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon">◧</span>Workloads</button>
-      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon">⬢</span>Cluster Nodes</button>
-      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon">⚙</span>Settings</button>
+      <button type="button" class="cloudos-finder-item" data-page="stack-health" onclick="finderNavigate('stack-health')"><span class="fi-icon"><i data-lucide="activity"></i></span>Stack Health</button>
+      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon"><i data-lucide="camera"></i></span>Snapshots &amp; Backups</button>
+      <button type="button" class="cloudos-finder-item" data-page="network-intel" data-min-tier="advanced" onclick="finderNavigate('network-intel')"><span class="fi-icon"><i data-lucide="network"></i></span>Network Intelligence</button>
+      <button type="button" class="cloudos-finder-item" data-page="security" data-min-tier="advanced" onclick="finderNavigate('security')"><span class="fi-icon"><i data-lucide="shield"></i></span>Security Posture</button>
+      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon"><i data-lucide="clock"></i></span>Event Intelligence</button>
+      <button type="button" class="cloudos-finder-item" data-page="costs" data-min-tier="advanced" onclick="finderNavigate('costs')"><span class="fi-icon"><i data-lucide="dollar-sign"></i></span>Cost Explorer</button>
+      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon"><i data-lucide="layers"></i></span>Workloads</button>
+      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon"><i data-lucide="cpu"></i></span>Cluster Nodes</button>
+      <button type="button" class="cloudos-finder-item" data-page="settings" onclick="finderNavigate('settings')"><span class="fi-icon"><i data-lucide="settings"></i></span>Settings</button>
     </div>
   </div>
   <div class="finder-section collapsed" id="finder-sec-favorites" data-finder-section="favorites">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('favorites')">Favorites <span style="display:flex;align-items:center;gap:2px"><span class="finder-count-badge" id="finder-badge-vms"></span><span class="finder-chevron">▾</span></span></button>
     <div class="finder-section-body" id="finder-favorites">
-      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Mission Control</button>
-      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Fleet Command</button>
-      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">◈</span>Template Foundry</button>
-      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon">▶</span>ConsoleHub</button>
-      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon">◎</span>VM Capsule</button>
+      <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span>Mission Control</button>
+      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon"><i data-lucide="server"></i></span>Fleet Command</button>
+      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon"><i data-lucide="package"></i></span>Template Foundry</button>
+      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon"><i data-lucide="monitor"></i></span>ConsoleHub</button>
+      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon"><i data-lucide="box"></i></span>VM Capsule</button>
     </div>
   </div>
   <div class="finder-section collapsed" id="finder-sec-operations" data-finder-section="operations">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('operations')">Operations <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-operations">
-      <button type="button" class="cloudos-finder-item" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon">◫</span>Mission Control</button>
-      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon">▣</span>Fleet Command</button>
-      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon">◈</span>Template Foundry</button>
-      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon">▶</span>ConsoleHub</button>
-      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon">◎</span>VM Capsule</button>
+      <button type="button" class="cloudos-finder-item" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span>Mission Control</button>
+      <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon"><i data-lucide="server"></i></span>Fleet Command</button>
+      <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon"><i data-lucide="package"></i></span>Template Foundry</button>
+      <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon"><i data-lucide="monitor"></i></span>ConsoleHub</button>
+      <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon"><i data-lucide="box"></i></span>VM Capsule</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
     <div class="finder-section-label">Ask Zeus</div>
     <div class="finder-section-body" id="finder-ai">
-      <button type="button" class="cloudos-finder-item" onclick="openAskZeus()"><span class="fi-icon">✦</span>Ask Zeus</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon">♥</span>Unhealthy VMs</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon">⧉</span>Backup Advisor</button>
-      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon">▣</span>Storage Doctor</button>
+      <button type="button" class="cloudos-finder-item" onclick="openAskZeus()"><span class="fi-icon"><i data-lucide="sparkles"></i></span>Ask Zeus</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span>Unhealthy VMs</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon"><i data-lucide="archive"></i></span>Backup Advisor</button>
+      <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span>Storage Doctor</button>
     </div>
   </div>
   <div class="finder-section collapsed" id="finder-sec-network" data-finder-section="network">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('network')">Network <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-network">
-      <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon">⟷</span>Ingress</button>
-      <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon">⚙</span>Integrations</button>
+      <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon"><i data-lucide="arrow-right-left"></i></span>Ingress</button>
+      <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon"><i data-lucide="plug"></i></span>Integrations</button>
     </div>
   </div>
   <div class="finder-section collapsed" id="finder-sec-compute" data-finder-section="compute">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('compute')">Compute <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-compute">
-      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon">◇</span>Nodes</button>
-      <button type="button" class="cloudos-finder-item" data-page="pods" onclick="finderNavigate('pods')"><span class="fi-icon">◫</span>Pods</button>
-      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon">⬢</span>Workloads</button>
-      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon">⧉</span>Snapshots</button>
-      <button type="button" class="cloudos-finder-item" data-page="storage" onclick="finderNavigate('storage')"><span class="fi-icon">▣</span>Storage</button>
+      <button type="button" class="cloudos-finder-item" data-page="nodes" onclick="finderNavigate('nodes')"><span class="fi-icon"><i data-lucide="cpu"></i></span>Nodes</button>
+      <button type="button" class="cloudos-finder-item" data-page="pods" onclick="finderNavigate('pods')"><span class="fi-icon"><i data-lucide="container"></i></span>Pods</button>
+      <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon"><i data-lucide="layers"></i></span>Workloads</button>
+      <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon"><i data-lucide="camera"></i></span>Snapshots</button>
+      <button type="button" class="cloudos-finder-item" data-page="storage" onclick="finderNavigate('storage')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span>Storage</button>
     </div>
   </div>
   <div class="finder-section collapsed" id="finder-sec-observe" data-finder-section="observe">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('observe')">Observe <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-observe">
-      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon">⚡</span>Events</button>
-      <button type="button" class="cloudos-finder-item" data-page="alerts" onclick="finderNavigate('alerts')"><span class="fi-icon">⚠</span>Alerts</button>
-      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon">≡</span>Logs</button>
-      <button type="button" class="cloudos-finder-item" data-page="metrics" onclick="finderNavigate('metrics')"><span class="fi-icon">⬡</span>Metrics</button>
+      <button type="button" class="cloudos-finder-item" data-page="events" onclick="finderNavigate('events')"><span class="fi-icon"><i data-lucide="clock"></i></span>Events</button>
+      <button type="button" class="cloudos-finder-item" data-page="alerts" onclick="finderNavigate('alerts')"><span class="fi-icon"><i data-lucide="bell"></i></span>Alerts</button>
+      <button type="button" class="cloudos-finder-item" data-page="logs" onclick="finderNavigate('logs')"><span class="fi-icon"><i data-lucide="file-text"></i></span>Logs</button>
+      <button type="button" class="cloudos-finder-item" data-page="metrics" onclick="finderNavigate('metrics')"><span class="fi-icon"><i data-lucide="bar-chart-2"></i></span>Metrics</button>
     </div>
   </div>
   <div class="finder-section collapsed" id="finder-sec-security-grp" data-finder-section="security-grp">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('security-grp')">Security <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-security-grp">
-      <button type="button" class="cloudos-finder-item" data-page="security" onclick="finderNavigate('security')"><span class="fi-icon">⛨</span>Security</button>
-      <button type="button" class="cloudos-finder-item" data-page="rbac" onclick="finderNavigate('rbac')"><span class="fi-icon">⚿</span>RBAC</button>
-      <button type="button" class="cloudos-finder-item" data-page="compliance" onclick="finderNavigate('compliance')"><span class="fi-icon">✓</span>Compliance</button>
+      <button type="button" class="cloudos-finder-item" data-page="security" onclick="finderNavigate('security')"><span class="fi-icon"><i data-lucide="shield"></i></span>Security</button>
+      <button type="button" class="cloudos-finder-item" data-page="rbac" onclick="finderNavigate('rbac')"><span class="fi-icon"><i data-lucide="lock"></i></span>RBAC</button>
+      <button type="button" class="cloudos-finder-item" data-page="compliance" onclick="finderNavigate('compliance')"><span class="fi-icon"><i data-lucide="check-square"></i></span>Compliance</button>
     </div>
   </div>
   <div class="finder-section" id="finder-sec-recent-vms" data-finder-section="recent-vms" style="display:none">
@@ -3650,7 +3760,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('pinned')">Pinned <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-pinned-links"></div>
   </div>
-  <button type="button" class="cloudos-finder-item finder-browse-all" onclick="toggleClassicNav()"><span class="fi-icon">⋯</span><span class="fi-label">Advanced… Browse all</span></button>
+  <button type="button" class="cloudos-finder-item finder-browse-all" onclick="toggleClassicNav()"><span class="fi-icon"><i data-lucide="more-horizontal"></i></span><span class="fi-label">Advanced… Browse all</span></button>
   </div>
   <div class="finder-footer">
     <div id="finder-current-window" class="finder-current-window" title="Active window">Home</div>
@@ -5632,50 +5742,179 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
 </div>
 
-<!-- API KEY MODAL -->
+<!-- API KEY MODAL — Machina premium split-hero login -->
 <div class="modal-overlay mac-signin-overlay" id="apikey-modal">
-  <div class="modal glass-modal mac-sheet-modal mac-signin-sheet" style="width:400px">
-    <div class="mac-sheet-titlebar">
-      <div class="mac-window-traffic" aria-label="Window controls">
-        <span class="mac-traffic-btn mac-traffic-close" style="opacity:.2;pointer-events:none" aria-hidden="true"></span>
-        <span class="mac-traffic-btn mac-traffic-min" style="opacity:.2;pointer-events:none" aria-hidden="true"></span>
-        <span class="mac-traffic-btn mac-traffic-full" style="opacity:.2;pointer-events:none" aria-hidden="true"></span>
+  <div class="login-page">
+    <div class="login-aurora" aria-hidden="true"></div>
+    <div class="login-scanline" aria-hidden="true"></div>
+
+    <!-- ── Left hero panel ── -->
+    <aside class="login-hero">
+      <div class="login-hero-mesh" aria-hidden="true"></div>
+      <div class="login-spotlight" aria-hidden="true"></div>
+      <!-- orbs -->
+      <div class="login-orb login-orb-blue"   style="width:340px;height:340px;top:4%;left:6%;--login-delay:0s;--login-duration:11s"   aria-hidden="true"></div>
+      <div class="login-orb login-orb-violet" style="width:220px;height:220px;top:55%;left:12%;--login-delay:2.2s;--login-duration:13s" aria-hidden="true"></div>
+      <div class="login-orb login-orb-cyan"   style="width:180px;height:180px;top:18%;left:58%;--login-delay:0.8s;--login-duration:9s"  aria-hidden="true"></div>
+      <div class="login-orb login-orb-red"    style="width:400px;height:400px;top:58%;left:68%;--login-delay:3.2s;--login-duration:15s" aria-hidden="true"></div>
+      <!-- particles -->
+      <div class="login-particles" aria-hidden="true">
+        <span class="login-particle" style="left:7%;top:11%;width:2px;height:2px;animation-delay:0s"></span>
+        <span class="login-particle" style="left:24%;top:34%;width:3px;height:3px;animation-delay:0.45s"></span>
+        <span class="login-particle" style="left:41%;top:57%;width:4px;height:4px;animation-delay:0.9s"></span>
+        <span class="login-particle" style="left:58%;top:80%;width:2px;height:2px;animation-delay:1.35s"></span>
+        <span class="login-particle" style="left:75%;top:3%;width:3px;height:3px;animation-delay:1.8s"></span>
+        <span class="login-particle" style="left:92%;top:26%;width:4px;height:4px;animation-delay:2.25s"></span>
+        <span class="login-particle" style="left:9%;top:49%;width:2px;height:2px;animation-delay:2.7s"></span>
+        <span class="login-particle" style="left:26%;top:72%;width:3px;height:3px;animation-delay:0s"></span>
+        <span class="login-particle" style="left:43%;top:95%;width:4px;height:4px;animation-delay:0.45s"></span>
+        <span class="login-particle" style="left:60%;top:18%;width:2px;height:2px;animation-delay:0.9s"></span>
+        <span class="login-particle" style="left:77%;top:41%;width:3px;height:3px;animation-delay:1.35s"></span>
+        <span class="login-particle" style="left:94%;top:64%;width:4px;height:4px;animation-delay:1.8s"></span>
+        <span class="login-particle" style="left:11%;top:87%;width:2px;height:2px;animation-delay:2.25s"></span>
+        <span class="login-particle" style="left:28%;top:10%;width:3px;height:3px;animation-delay:2.7s"></span>
+        <span class="login-particle" style="left:45%;top:33%;width:4px;height:4px;animation-delay:0s"></span>
+        <span class="login-particle" style="left:62%;top:56%;width:2px;height:2px;animation-delay:0.45s"></span>
+        <span class="login-particle" style="left:79%;top:79%;width:3px;height:3px;animation-delay:0.9s"></span>
+        <span class="login-particle" style="left:96%;top:2%;width:4px;height:4px;animation-delay:1.35s"></span>
+        <span class="login-particle" style="left:13%;top:25%;width:2px;height:2px;animation-delay:1.8s"></span>
+        <span class="login-particle" style="left:30%;top:48%;width:3px;height:3px;animation-delay:2.25s"></span>
+        <span class="login-particle" style="left:47%;top:71%;width:4px;height:4px;animation-delay:2.7s"></span>
+        <span class="login-particle" style="left:64%;top:94%;width:2px;height:2px;animation-delay:0s"></span>
+        <span class="login-particle" style="left:81%;top:17%;width:3px;height:3px;animation-delay:0.45s"></span>
+        <span class="login-particle" style="left:98%;top:40%;width:4px;height:4px;animation-delay:0.9s"></span>
+        <span class="login-particle" style="left:15%;top:63%;width:2px;height:2px;animation-delay:1.35s"></span>
+        <span class="login-particle" style="left:32%;top:86%;width:3px;height:3px;animation-delay:1.8s"></span>
+        <span class="login-particle" style="left:49%;top:9%;width:4px;height:4px;animation-delay:2.25s"></span>
+        <span class="login-particle" style="left:66%;top:32%;width:2px;height:2px;animation-delay:2.7s"></span>
       </div>
-      <div class="mac-sheet-title">Sign in to Veyron</div>
-    </div>
-    <div class="modal-body">
-      <div class="signin-theme-picker">
-        <div class="signin-theme-label">Appearance</div>
-        <div class="theme-swatch-grid signin-theme-grid" id="signin-theme-swatch-grid" role="radiogroup" aria-label="Theme">
-          <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
-          <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Light</span></button>
-          <button type="button" class="theme-swatch" data-theme="sonoma" role="radio" onclick="setTheme('sonoma')"><span class="theme-swatch-preview sonoma"></span><span class="theme-swatch-label">Sonoma</span></button>
-          <button type="button" class="theme-swatch" data-theme="graphite" role="radio" onclick="setTheme('graphite')"><span class="theme-swatch-preview graphite"></span><span class="theme-swatch-label">Graphite</span></button>
-          <button type="button" class="theme-swatch" data-theme="wolf" role="radio" onclick="setTheme('wolf')"><span class="theme-swatch-preview wolf"></span><span class="theme-swatch-label">Wolf</span></button>
-          <button type="button" class="theme-swatch" data-theme="forge" role="radio" onclick="setTheme('forge')"><span class="theme-swatch-preview forge"></span><span class="theme-swatch-label">Forge</span></button>
-          <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
-          <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Day</span></button>
+
+      <!-- hero content: logo + headline + pills -->
+      <div style="position:relative;z-index:10">
+        <div class="login-fade-in" style="display:flex;align-items:center;gap:16px;margin-bottom:32px">
+          <div class="login-logo-ring" style="width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#4f46e5);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;font-family:'Sora',sans-serif;flex-shrink:0">V</div>
+          <div>
+            <span style="font-size:2.25rem;font-weight:800;letter-spacing:-.02em;color:#fff;display:block;line-height:1">Veyron</span>
+            <span style="font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.28em;color:rgba(125,211,252,.8);margin-top:4px;display:block">VM Command Center</span>
+          </div>
+        </div>
+        <h2 class="login-fade-in login-fade-in-d1" style="font-size:2.75rem;font-weight:900;color:#fff;line-height:1.08;margin:0 0 16px;max-width:480px">
+          Your VM fleet,<br><span class="login-text-gradient">one pane of glass</span>
+        </h2>
+        <p class="login-fade-in login-fade-in-d2" style="font-size:1.1rem;color:rgba(203,213,225,.9);max-width:440px;line-height:1.65;margin:0">
+          KubeVirt-native management — provision, monitor, secure, and operate virtual machines at cluster scale.
+        </p>
+        <div class="login-fade-in login-fade-in-d3" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:24px">
+          <span class="login-stat-pill">⚡ KubeVirt · Kubernetes</span>
+          <span class="login-stat-pill">🛡 RBAC-aware</span>
+          <span class="login-stat-pill">📸 Snapshots &amp; DR</span>
         </div>
       </div>
-      <div id="oidc-login-section" style="display:none;margin-bottom:4px">
-        <button type="button" class="glass-btn-primary" style="width:100%" onclick="startOidcLogin()">Sign in with SSO</button>
-        <div class="auth-divider">or use API key</div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Enter your Veyron API key</label>
-        <div class="key-input-wrap">
-          <input type="password" class="form-input" id="apikey-input" placeholder="API key" autocomplete="off">
-          <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide key">&#128065;</button>
+
+      <!-- feature cards -->
+      <div style="position:relative;z-index:10;display:flex;flex-direction:column;gap:10px;max-height:42vh;overflow-y:auto">
+        <div class="login-feature-card login-feature-card-highlight login-fade-in" style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-radius:12px;backdrop-filter:blur(12px);animation-delay:.35s;opacity:0">
+          <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,rgba(139,92,246,.95),rgba(67,56,202,.95));box-shadow:0 4px 16px rgba(139,92,246,.25);font-size:1.2rem">🖥</div>
+          <div><div style="font-size:.875rem;font-weight:600;color:#fff">VM Fleet</div><p style="font-size:.75rem;margin:4px 0 0;color:#94a3b8;line-height:1.5">Provision, start/stop, resize, and live-migrate VMs across namespaces</p></div>
+        </div>
+        <div class="login-feature-card login-fade-in" style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-radius:12px;backdrop-filter:blur(12px);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);animation-delay:.42s;opacity:0">
+          <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,rgba(245,158,11,.95),rgba(194,65,12,.95));box-shadow:0 4px 16px rgba(245,158,11,.25);font-size:1.2rem">📸</div>
+          <div><div style="font-size:.875rem;font-weight:600;color:#fff">Snapshots &amp; Backup</div><p style="font-size:.75rem;margin:4px 0 0;color:#94a3b8;line-height:1.5">Point-in-time snapshots, scheduled retention, and one-click restore</p></div>
+        </div>
+        <div class="login-feature-card login-fade-in" style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-radius:12px;backdrop-filter:blur(12px);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);animation-delay:.49s;opacity:0">
+          <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,rgba(14,165,233,.95),rgba(6,182,212,.95));box-shadow:0 4px 16px rgba(14,165,233,.25);font-size:1.2rem">🛡</div>
+          <div><div style="font-size:.875rem;font-weight:600;color:#fff">SOC &amp; Security</div><p style="font-size:.75rem;margin:4px 0 0;color:#94a3b8;line-height:1.5">Real-time detection rules, SIEM export, and compliance timeline</p></div>
+        </div>
+        <div class="login-feature-card login-fade-in" style="display:flex;align-items:flex-start;gap:16px;padding:16px;border-radius:12px;backdrop-filter:blur(12px);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);animation-delay:.56s;opacity:0">
+          <div style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:linear-gradient(135deg,rgba(20,184,166,.95),rgba(5,150,105,.95));box-shadow:0 4px 16px rgba(20,184,166,.25);font-size:1.2rem">💰</div>
+          <div><div style="font-size:.875rem;font-weight:600;color:#fff">FinOps</div><p style="font-size:.75rem;margin:4px 0 0;color:#94a3b8;line-height:1.5">Per-namespace cost breakdowns, budget alerts, and chargeback reports</p></div>
         </div>
       </div>
-      <div class="remember-row">
-        <input type="checkbox" id="apikey-remember">
-        <label for="apikey-remember">Remember me</label>
+
+      <!-- hero footer -->
+      <div class="login-fade-in login-fade-in-d4" style="display:flex;align-items:center;gap:24px;font-size:.75rem;color:#64748b;position:relative;z-index:10">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:6px;height:6px;border-radius:9999px;background:#a78bfa;display:inline-block;animation:login-pulse-glow 2s infinite"></span>
+          Veyron session security
+        </span>
+        <span style="width:1px;height:12px;background:#334155"></span>
+        <span>KubeVirt · Kubernetes</span>
       </div>
-    </div>
-    <div class="modal-footer">
-      <button type="button" class="glass-btn-primary" onclick="submitApiKey()">Connect</button>
-    </div>
+    </aside>
+
+    <!-- ── Animated beam divider ── -->
+    <div class="login-beam login-beam-w58" aria-hidden="true"></div>
+
+    <!-- ── Right form panel ── -->
+    <main class="login-panel" aria-label="Sign in to Veyron">
+      <div class="login-panel-grid" aria-hidden="true"></div>
+      <div class="login-panel-glow" aria-hidden="true"></div>
+      <div style="width:100%;max-width:420px;position:relative;z-index:10">
+        <div style="margin-bottom:32px">
+          <h2 style="font-size:1.5rem;font-weight:700;color:#fff;margin:0 0 4px">Welcome to Veyron</h2>
+          <p style="font-size:.875rem;color:#94a3b8;margin:0">Sign in to continue</p>
+        </div>
+
+        <!-- glass card -->
+        <div class="login-glass login-glass-border" style="border-radius:1rem;padding:32px;box-shadow:0 25px 50px rgba(0,0,0,.5)">
+          <!-- auth mode badge -->
+          <div style="margin-bottom:20px">
+            <span style="display:inline-flex;align-items:center;gap:6px;border-radius:8px;border:1px solid rgba(139,92,246,.3);background:rgba(88,28,135,.4);padding:4px 10px;font-size:11px;font-weight:500;color:rgba(221,214,254,.9)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:rgba(196,181,253,.9)" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              API Key
+            </span>
+          </div>
+
+          <!-- SSO section (shown when OIDC configured) -->
+          <div id="oidc-login-section" style="display:none;margin-bottom:16px">
+            <button type="button" class="login-btn-secondary" style="width:100%;text-align:center" onclick="startOidcLogin()">Sign in with SSO</button>
+            <div class="auth-divider">or use API key</div>
+          </div>
+
+          <!-- API key field -->
+          <div style="margin-bottom:20px">
+            <label style="display:block;font-size:.875rem;font-weight:500;color:#cbd5e1;margin-bottom:8px" for="apikey-input">API key</label>
+            <div style="position:relative" class="group">
+              <svg class="login-field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input type="password" class="login-input" id="apikey-input" placeholder="Enter your API key" autocomplete="off" autofocus>
+              <button class="eye-btn" type="button" onclick="toggleKeyVisibility()" id="eye-toggle" title="Show/hide key" aria-label="Show/hide API key" style="right:14px;color:#64748b">&#128065;</button>
+            </div>
+          </div>
+
+          <!-- remember me -->
+          <div class="remember-row" style="margin-top:0">
+            <input type="checkbox" id="apikey-remember">
+            <label for="apikey-remember">Remember me on this device</label>
+          </div>
+
+          <!-- connect button -->
+          <button type="button" class="login-btn-primary" onclick="submitApiKey()" style="margin-top:24px">
+            <span style="position:relative;z-index:1">Connect to Veyron</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="position:relative;z-index:1" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+
+        <!-- hint -->
+        <p style="font-size:.72rem;text-align:center;margin-top:14px;max-width:340px;margin-left:auto;margin-right:auto;line-height:1.6;color:#475569">
+          Default key: <code style="font-family:monospace;color:#94a3b8;font-size:.72rem">CHANGE_ME</code> — change after first sign-in.
+        </p>
+
+        <!-- theme picker (below glass card) -->
+        <div class="signin-theme-picker">
+          <div class="signin-theme-label">Appearance</div>
+          <div class="theme-swatch-grid signin-theme-grid" id="signin-theme-swatch-grid" role="radiogroup" aria-label="Theme">
+            <button type="button" class="theme-swatch" data-theme="tahoe"       role="radio" onclick="setTheme('tahoe')">      <span class="theme-swatch-preview tahoe"></span>      <span class="theme-swatch-label">Tahoe</span></button>
+            <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Light</span></button>
+            <button type="button" class="theme-swatch" data-theme="sonoma"      role="radio" onclick="setTheme('sonoma')">     <span class="theme-swatch-preview sonoma"></span>     <span class="theme-swatch-label">Sonoma</span></button>
+            <button type="button" class="theme-swatch" data-theme="graphite"    role="radio" onclick="setTheme('graphite')">   <span class="theme-swatch-preview graphite"></span>   <span class="theme-swatch-label">Graphite</span></button>
+            <button type="button" class="theme-swatch" data-theme="wolf"        role="radio" onclick="setTheme('wolf')">       <span class="theme-swatch-preview wolf"></span>       <span class="theme-swatch-label">Wolf</span></button>
+            <button type="button" class="theme-swatch" data-theme="forge"       role="radio" onclick="setTheme('forge')">      <span class="theme-swatch-preview forge"></span>      <span class="theme-swatch-label">Forge</span></button>
+            <button type="button" class="theme-swatch" data-theme="ember"       role="radio" onclick="setTheme('ember')">      <span class="theme-swatch-preview ember"></span>      <span class="theme-swatch-label">Ember</span></button>
+            <button type="button" class="theme-swatch" data-theme="light"       role="radio" onclick="setTheme('light')">      <span class="theme-swatch-preview light"></span>      <span class="theme-swatch-label">Day</span></button>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 </div>
 
@@ -5898,7 +6137,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618y';
+window.__VMROGUE_DASH_REV = '20260619a';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -7322,28 +7561,46 @@ function isPageAllowedForTier(page, tier) {
 }
 
 const FALLBACK_DOCK_CATALOG = [
-  { page: 'dashboard', label: 'Mission Control', icon: '◫', min_tier: 'normal' },
-  { page: 'vms', label: 'Fleet Command', icon: '▣', min_tier: 'normal' },
-  { page: 'app-store', label: 'Template Foundry', icon: '◈', min_tier: 'normal' },
-  { page: 'console-hub', label: 'ConsoleHub', icon: '▶', min_tier: 'normal' },
-  { page: 'vm-capsule', label: 'VM Capsule', icon: '◎', min_tier: 'normal' },
-  { page: 'settings', label: 'Settings', icon: '⚙', min_tier: 'normal' },
-  { page: 'snapshots', label: 'Snapshots', icon: '⧉', min_tier: 'power' },
-  { page: 'events', label: 'Events', icon: '⚡', min_tier: 'power' },
-  { page: 'stack-health', label: 'Stack Health', icon: '♥', min_tier: 'power' },
-  { page: 'network-intel', label: 'Network Intel', icon: '⟷', min_tier: 'advanced' },
-  { page: 'security', label: 'Security', icon: '⛨', min_tier: 'advanced' },
-  { page: 'costs', label: 'Costs', icon: '$', min_tier: 'advanced' },
-  { page: 'workloads', label: 'Workloads', icon: '◧', min_tier: 'advanced' },
-  { page: 'nodes', label: 'Nodes', icon: '⬢', min_tier: 'advanced' },
-  { page: 'integrations', label: 'Integrations', icon: '⚙', min_tier: 'power' },
-  { page: 'monitoring', label: 'Activity Monitor', icon: '⬢', min_tier: 'power' },
-  { page: 'backups', label: 'Backups', icon: '⧉', min_tier: 'power' },
-  { page: 'storage', label: 'Storage', icon: '▣', min_tier: 'advanced' },
-  { page: 'ingress', label: 'Ingress', icon: '⟷', min_tier: 'advanced' },
-  { page: 'topology', label: 'Topology', icon: '⬢', min_tier: 'advanced' },
-  { page: 'catalog', label: 'Catalog', icon: '⬡', min_tier: 'advanced' },
+  { page: 'dashboard',    label: 'Mission Control',  icon: 'layout-dashboard', min_tier: 'normal' },
+  { page: 'vms',          label: 'Fleet Command',    icon: 'server',           min_tier: 'normal' },
+  { page: 'app-store',    label: 'Template Foundry', icon: 'package',          min_tier: 'normal' },
+  { page: 'console-hub',  label: 'ConsoleHub',       icon: 'monitor',          min_tier: 'normal' },
+  { page: 'vm-capsule',   label: 'VM Capsule',       icon: 'box',              min_tier: 'normal' },
+  { page: 'settings',     label: 'Settings',         icon: 'settings',         min_tier: 'normal' },
+  { page: 'snapshots',    label: 'Snapshots',        icon: 'camera',           min_tier: 'power' },
+  { page: 'events',       label: 'Events',           icon: 'clock',            min_tier: 'power' },
+  { page: 'stack-health', label: 'Stack Health',     icon: 'activity',         min_tier: 'power' },
+  { page: 'network-intel',label: 'Network Intel',    icon: 'network',          min_tier: 'advanced' },
+  { page: 'security',     label: 'Security',         icon: 'shield',           min_tier: 'advanced' },
+  { page: 'costs',        label: 'Costs',            icon: 'dollar-sign',      min_tier: 'advanced' },
+  { page: 'workloads',    label: 'Workloads',        icon: 'layers',           min_tier: 'advanced' },
+  { page: 'nodes',        label: 'Nodes',            icon: 'cpu',              min_tier: 'advanced' },
+  { page: 'integrations', label: 'Integrations',     icon: 'plug',             min_tier: 'power' },
+  { page: 'monitoring',   label: 'Activity Monitor', icon: 'gauge',            min_tier: 'power' },
+  { page: 'backups',      label: 'Backups',          icon: 'archive',          min_tier: 'power' },
+  { page: 'storage',      label: 'Storage',          icon: 'hard-drive',       min_tier: 'advanced' },
+  { page: 'ingress',      label: 'Ingress',          icon: 'arrow-right-left', min_tier: 'advanced' },
+  { page: 'topology',     label: 'Topology',         icon: 'share-2',          min_tier: 'advanced' },
+  { page: 'catalog',      label: 'Catalog',          icon: 'book-open',        min_tier: 'advanced' },
 ];
+
+function _lucideIcon(name) {
+  if (!window.lucide) return '';
+  try {
+    const key = name.split('-').map((w, i) => i === 0 ? w : w[0].toUpperCase() + w.slice(1)).join('');
+    const def = lucide[key] || lucide[key.charAt(0).toUpperCase() + key.slice(1)];
+    if (!def) return '';
+    const el = lucide.createElement(def);
+    return el.outerHTML;
+  } catch (e) { return ''; }
+}
+
+function _refreshLucide(root) {
+  if (!window.lucide) return;
+  try {
+    lucide.createIcons({ nameAttr: 'data-lucide', attrs: { 'stroke-width': 1.75 }, root: root || document });
+  } catch (e) {}
+}
 
 function dockCatalogList() {
   const byPage = new Map();
@@ -7429,7 +7686,7 @@ function renderCloudOsDock() {
     html += '<button type="button" class="' + cls + '" data-page="' + esc(item.page) + '"' + previewAttr +
       ' title="' + label + previewTitle + '" aria-label="' + label + (item.preview ? ' preview' : '') + '"' +
       (active ? ' aria-current="page"' : '') + '>' +
-      '<span class="mac-dock-icon" aria-hidden="true">' + esc(item.icon) + '</span>' +
+      '<span class="mac-dock-icon" aria-hidden="true"><i data-lucide="' + esc(item.icon) + '"></i></span>' +
       '<span class="mac-dock-tooltip">' + label + '</span>' +
       (active ? '<span class="mac-dock-dot" aria-hidden="true"></span>' : '') +
       ((item.page === 'events' || item.page === 'stack-health') && islandAlertCount > 0
@@ -7438,11 +7695,12 @@ function renderCloudOsDock() {
   });
   html += '<div class="mac-dock-divider" aria-hidden="true"></div>';
   html += '<div class="mac-dock-utils">';
-  html += '<button type="button" class="mac-dock-spotlight" title="Launchpad" aria-label="Launchpad" onclick="openLaunchpad()"><span class="mac-dock-icon">⬡</span></button>';
-  html += '<button type="button" class="mac-dock-spotlight mac-dock-ask" aria-label="Ask Zeus (⌘J)" onclick="openAskZeus()"><span class="mac-dock-icon">✦</span><span class="mac-dock-tooltip">Ask Zeus <kbd>⌘J</kbd></span></button>';
-  html += '<button type="button" class="mac-dock-spotlight" aria-label="Spotlight (⌘K)" onclick="openSpotlight()"><span class="mac-dock-icon">⌘</span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span></button>';
+  html += '<button type="button" class="mac-dock-spotlight" title="Launchpad" aria-label="Launchpad" onclick="openLaunchpad()"><span class="mac-dock-icon"><i data-lucide="grid-2x2"></i></span></button>';
+  html += '<button type="button" class="mac-dock-spotlight mac-dock-ask" aria-label="Ask Zeus (⌘J)" onclick="openAskZeus()"><span class="mac-dock-icon"><i data-lucide="sparkles"></i></span><span class="mac-dock-tooltip">Ask Zeus <kbd>⌘J</kbd></span></button>';
+  html += '<button type="button" class="mac-dock-spotlight" aria-label="Spotlight (⌘K)" onclick="openSpotlight()"><span class="mac-dock-icon"><i data-lucide="search"></i></span><span class="mac-dock-tooltip">Spotlight <kbd>⌘K</kbd></span></button>';
   html += '</div>';
   inner.innerHTML = html;
+  _refreshLucide(inner);
 }
 
 function dockItemClick(page, isPreview) {
@@ -8441,8 +8699,9 @@ function renderFinderRecentVms() {
   sec.style.display = '';
   body.innerHTML = recents.slice(0, 6).map(r =>
     '<button type="button" class="cloudos-finder-item" ' + onHandler('finderOpenVm(' + jsArgs(r.ns) + ',' + jsArgs(r.name) + ')') + '>' +
-      '<span class="fi-icon">▣</span>' + esc(r.name) + '<span class="fi-meta">' + esc(r.ns) + '</span></button>'
+      '<span class="fi-icon"><i data-lucide="server"></i></span>' + esc(r.name) + '<span class="fi-meta">' + esc(r.ns) + '</span></button>'
   ).join('');
+  _refreshLucide(body);
 }
 
 function renderRecentVmsStrip() {
@@ -9619,8 +9878,9 @@ function renderFinderPins() {
   sec.style.display = '';
   body.innerHTML = pins.map(p =>
     '<button type="button" class="cloudos-finder-item" data-page="' + esc(p.id) + '" ' + onHandler('finderNavigate(' + jsArgs(p.id) + ')') + '>' +
-      '<span class="fi-icon">★</span>' + esc(p.label) + '</button>'
+      '<span class="fi-icon"><i data-lucide="pin"></i></span>' + esc(p.label) + '</button>'
   ).join('');
+  _refreshLucide(body);
 }
 
 function filterBrowseMenu() {
@@ -19742,6 +20002,7 @@ function refresh() {
 }
 
 window.addEventListener('load', async () => {
+  _refreshLucide();
   initTheme();
   initMacPageWindows();
   updatePageContext(currentPage);
