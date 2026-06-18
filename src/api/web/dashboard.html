@@ -3956,6 +3956,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
     <div class="card glass-card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
       <div style="display:flex;gap:8px">
+        <button type="button" class="glass-btn-secondary glass-btn-sm" id="blueprint-studio-copy-btn" disabled onclick="copyToClipboard(document.getElementById('blueprint-studio-spec').value)" title="Copy JSON to clipboard">Copy JSON</button>
         <button type="button" class="glass-btn-primary glass-btn-sm" id="blueprint-studio-save-btn" disabled onclick="blueprintStudioSave()">Save</button>
         <button type="button" class="glass-btn-destructive glass-btn-sm" id="blueprint-studio-delete-btn" disabled onclick="blueprintStudioDelete()">Delete</button>
       </div></div>
@@ -14513,6 +14514,7 @@ async function blueprintStudioSelect(ns, name, quiet) {
   const specEl = document.getElementById('blueprint-studio-spec');
   const saveBtn = document.getElementById('blueprint-studio-save-btn');
   const delBtn = document.getElementById('blueprint-studio-delete-btn');
+  const copyBtn = document.getElementById('blueprint-studio-copy-btn');
   if (title) title.textContent = ns + '/' + name;
   if (specEl) {
     specEl.disabled = false;
@@ -14529,6 +14531,7 @@ async function blueprintStudioSelect(ns, name, quiet) {
     }
     if (saveBtn) saveBtn.disabled = false;
     if (delBtn) delBtn.disabled = false;
+    if (copyBtn) copyBtn.disabled = false;
     if (!quiet) toast('Loaded blueprint ' + name, 'success');
   } catch (e) {
     if (specEl) specEl.value = '';
