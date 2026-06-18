@@ -10614,7 +10614,7 @@ function filterWebhooksView(query) {
            (w.events || []).join(' ').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(w) {
-    return '<tr><td>' + esc(w.name) + '</td><td style="font-size:.8em;font-family:var(--font-mono)">' + esc(w.url) + '</td><td>' + esc((w.events || []).join(', ') || '-') + '</td>' +
+    return '<tr><td>' + esc(w.name) + '</td><td style="font-size:.8em;font-family:var(--font-mono)" class="vmr-copy-tile" title="Copy webhook URL" ' + onStopHandler('copyToClipboard(' + jsArgs(w.url) + ')') + '>' + esc(w.url) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc((w.events || []).join(', ') || '-') + '</td>' +
       '<td><span class="glass-badge ' + (w.active ? 'running' : 'stopped') + '">' + (w.active ? 'Yes' : 'No') + '</span></td>' +
       '<td>' + (w.secret_configured ? 'Yes' : 'No') + '</td>' +
       '<td><span class="glass-badge ' + (w.failure_count ? 'error' : 'running') + '">' + w.failure_count + '</span></td></tr>';
@@ -10633,7 +10633,7 @@ function filterPoliciesView(query) {
            (p.framework || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(p) {
-    return '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy policy name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">' + (q ? 'No policies match &ldquo;' + esc(q) + '&rdquo;' : 'No policies') + '</td></tr>';
 }
 
@@ -10651,7 +10651,7 @@ function filterInsightsView(query) {
            (i.state || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(i) {
-    return '<tr><td>' + esc(i.name) + '</td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy insight name" ' + onStopHandler('copyToClipboard(' + jsArgs(i.name) + ')') + '>' + esc(i.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No insights match &ldquo;' + esc(q) + '&rdquo;' : 'No insights') + '</td></tr>';
 }
 
@@ -10668,7 +10668,7 @@ function filterActionsView(query) {
            (a.message || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(a) {
-    return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy action name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No actions match &ldquo;' + esc(q) + '&rdquo;' : 'No actions') + '</td></tr>';
 }
 
@@ -10690,7 +10690,7 @@ function renderWorkloadsList(query) {
   tb.innerHTML = filtered.map(function(w) {
     const ok = w.ready_replicas >= w.replicas;
     const badgeCls = ok ? 'running' : 'other';
-    return '<tr><td>' + esc(w.name) + '</td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
   }).join('');
 }
 
@@ -11085,7 +11085,7 @@ function filterComplianceView(query) {
       '<td>' + fmtTime(s.last_checked) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching frameworks</td></tr>';
   if (repBody) repBody.innerHTML = fRep.map(function(r) {
-    return '<tr><td>' + esc(r.id) + '</td><td>' + esc(r.framework) + '</td><td>' + fmtTime(r.generated_at) + '</td><td>' + (r.summary && r.summary.score != null ? r.summary.score : '-') + '%</td><td>' + (r.findings || []).length + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy report ID" ' + onStopHandler('copyToClipboard(' + jsArgs(r.id) + ')') + '>' + esc(r.id) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(r.framework) + '</td><td>' + fmtTime(r.generated_at) + '</td><td>' + (r.summary && r.summary.score != null ? r.summary.score : '-') + '%</td><td>' + (r.findings || []).length + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching reports</td></tr>';
 }
 
