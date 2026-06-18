@@ -3881,7 +3881,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar">
     <div style="position:relative;display:inline-flex;align-items:center" id="vm-search-wrap">
-      <input type="text" class="form-input" id="vm-search" placeholder="Search name, tag:, note:, os:, node:, ip:, ns:" oninput="filterVMsDebounced();showVmSearchAC()" onfocus="showSearchHistory()" onblur="setTimeout(function(){pushSearchHistory(document.getElementById('vm-search').value)},200)" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Search prefixes: node:worker-1, ip:10.x, ns:default, tag:production, note:maintenance, os:windows">
+      <input type="text" class="form-input" id="vm-search" placeholder="Search name · tag: node: ns: cpu>4 mem>8gi age>7d …" oninput="filterVMsDebounced();showVmSearchAC();(this.value?hideSearchSyntaxHint():showSearchSyntaxHint())" onfocus="showSearchHistory();if(!this.value)showSearchSyntaxHint()" onblur="setTimeout(function(){pushSearchHistory(document.getElementById('vm-search').value);hideSearchSyntaxHint()},200)" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Tokens: node:, ip:, ns:, tag:, note:, os:, cpu>N, mem>Ngi, age>Nd">
       <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs();hideVmSearchAC()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
       <div id="vm-search-ac" class="vmr-search-ac" style="display:none" role="listbox"></div>
     </div>
@@ -9526,6 +9526,81 @@ function vmAgeTint(vm) {
   if (hours < 168)  return 'rgba(255,255,255,.03)';  // < 1w: neutral
   if (hours < 720)  return 'rgba(245,158,11,.08)';   // < 30d: amber
   return 'rgba(239,68,68,.09)';                       // 30d+: warm red
+}
+
+// ── Numeric search token helpers ──
+function parseCpuCount(cpuStr) {
+  if (!cpuStr) return null;
+  var n = parseFloat(String(cpuStr).replace(/[^\d.]/g, ''));
+  return isNaN(n) ? null : n;
+}
+function parseMemGiB(memStr) {
+  if (!memStr) return null;
+  var s = String(memStr).trim();
+  var n = parseFloat(s.replace(/[^\d.]/g, ''));
+  if (isNaN(n)) return null;
+  var l = s.toLowerCase();
+  if (l.includes('ti')) return n * 1024;
+  if (l.includes('gi')) return n;
+  if (l.includes('mi') || l.includes('mb')) return n / 1024;
+  if (l.includes('ki') || l.includes('kb')) return n / (1024 * 1024);
+  if (l.includes('g')) return n;
+  if (l.includes('m')) return n / 1024;
+  return n; // assume GiB
+}
+function parseNumericToken(q, v) {
+  // Returns true if the VM passes, false if it fails, null if token not recognized
+  var m = q.match(/^(cpu|mem|memory|age|vcpu)(>=?|<=?|=)(.+)$/);
+  if (!m) return null;
+  var field = m[1], op = m[2], rawVal = m[3].trim();
+  var vmVal, cmpVal;
+  if (field === 'cpu' || field === 'vcpu') {
+    vmVal = parseCpuCount(v.cpu);
+    cmpVal = parseFloat(rawVal);
+  } else if (field === 'mem' || field === 'memory') {
+    vmVal = parseMemGiB(v.memory);
+    cmpVal = parseMemGiB(rawVal) || parseFloat(rawVal);
+  } else if (field === 'age') {
+    vmVal = parseAgeToHours(v.age);
+    cmpVal = parseAgeToHours(rawVal) || parseFloat(rawVal);
+  } else { return null; }
+  if (vmVal === null || isNaN(cmpVal)) return null;
+  if (op === '>' || op === 'gt') return vmVal > cmpVal;
+  if (op === '>=' || op === 'gte') return vmVal >= cmpVal;
+  if (op === '<' || op === 'lt') return vmVal < cmpVal;
+  if (op === '<=' || op === 'lte') return vmVal <= cmpVal;
+  if (op === '=') return Math.abs(vmVal - cmpVal) < 0.001;
+  return null;
+}
+// ── Search Syntax Hint Panel ──
+var _searchHintShown = false;
+function showSearchSyntaxHint() {
+  var wrap = document.getElementById('vm-search-wrap');
+  if (!wrap) return;
+  var existing = document.getElementById('vmr-search-syntax-hint');
+  if (existing) { existing.style.display = 'flex'; return; }
+  var hint = document.createElement('div');
+  hint.id = 'vmr-search-syntax-hint';
+  hint.style.cssText = 'position:absolute;top:calc(100% + 6px);left:0;z-index:2000;background:var(--glass-bg-elevated,rgba(15,23,42,.97));border:1px solid var(--glass-border);border-radius:10px;padding:10px 14px;min-width:360px;max-width:480px;display:flex;flex-wrap:wrap;gap:6px 16px;backdrop-filter:blur(16px);box-shadow:0 8px 32px rgba(0,0,0,.4)';
+  var tokens = [
+    ['node:worker-1','filter by node'],['ns:default','namespace'],['tag:prod','VM tag'],
+    ['os:ubuntu','OS family'],['ip:10.0','IP prefix'],['note:text','VM note'],
+    ['cpu>4','vCPUs greater than'],['cpu<8','vCPUs less than'],
+    ['mem>8gi','memory ≥ 8 GiB'],['age>7d','older than 7 days'],['age<1h','younger than 1 hour'],
+  ];
+  hint.innerHTML = '<div style="width:100%;font-size:.68rem;font-weight:700;color:var(--text-dim,#64748b);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Search tokens</div>' +
+    tokens.map(function(t) {
+      return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:.72rem;white-space:nowrap;cursor:pointer" onclick="var el=document.getElementById(\'vm-search\');el.value=\'' + t[0] + '\';filterVMsDebounced();el.focus()">' +
+        '<kbd style="background:var(--glass-bg,rgba(30,41,59,.8));border:1px solid var(--glass-border);border-radius:4px;padding:1px 5px;font-size:.7rem">' + esc(t[0]) + '</kbd>' +
+        '<span style="color:var(--text-muted,#94a3b8)">' + esc(t[1]) + '</span></span>';
+    }).join('') +
+    '<div style="width:100%;font-size:.65rem;color:var(--text-dim,#64748b);margin-top:4px">Combine: <kbd style="font-size:.65rem;padding:1px 4px;border-radius:3px;border:1px solid var(--glass-border);background:var(--glass-bg)">cpu>4</kbd> works alongside status filter chips</div>';
+  wrap.appendChild(hint);
+  setTimeout(function() { hint.style.display = 'flex'; }, 0);
+}
+function hideSearchSyntaxHint() {
+  var h = document.getElementById('vmr-search-syntax-hint');
+  if (h) h.style.display = 'none';
 }
 
 // ── Search Match Highlighting ──
@@ -17298,7 +17373,10 @@ function filterVMs() {
       } else if (q.startsWith('os:')) {
         if (!guessOsFamily(v).includes(q.slice(3).trim())) return false;
       } else {
-        if (!vname.includes(q) && !vns.includes(q) && !vnode.includes(q) && !vip.includes(q)) return false;
+        var numResult = parseNumericToken(q, v);
+        if (numResult !== null) {
+          if (!numResult) return false;
+        } else if (!vname.includes(q) && !vns.includes(q) && !vnode.includes(q) && !vip.includes(q)) return false;
       }
     }
     if (statusFilter === '__issues__') {
