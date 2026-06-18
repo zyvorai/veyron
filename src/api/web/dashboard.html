@@ -3849,7 +3849,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">All Snapshots</span><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:200px;font-size:.82rem"></div><div id="snap-list"></div></div>
+  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select></div></div><div id="snap-list"></div></div>
 </div>
 </div>
 
@@ -10195,7 +10195,18 @@ async function fetchEvents(full, opts) {
       try { renderDashboardCommandCenter(); } catch (e) { console.error('renderDashboardCommandCenter', e); }
       if (typeof renderMissionControlVmr === 'function') renderMissionControlVmr();
     }
-    if (currentPage === 'events' && typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
+    if (currentPage === 'events') {
+      const filterBar = document.getElementById('vmr-events-filter-bar');
+      if (filterBar) {
+        filterBar.innerHTML =
+          '<div class="vmr-filter-chips" style="margin-bottom:4px">' +
+          '<button type="button" class="vmr-chip vmr-chip-active" data-evfilter="all" onclick="filterEventsView(\'all\',this)">All</button>' +
+          '<button type="button" class="vmr-chip" data-evfilter="Warning" onclick="filterEventsView(\'Warning\',this)"><span class="vmr-chip-dot" style="background:#f59e0b"></span>Warnings</button>' +
+          '<button type="button" class="vmr-chip" data-evfilter="Normal" onclick="filterEventsView(\'Normal\',this)"><span class="vmr-chip-dot" style="background:#22c55e"></span>Normal</button>' +
+          '</div>';
+      }
+      if (typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
+    }
   } catch (e) {
     const dash = document.getElementById('dash-event-list');
     const fullEl = document.getElementById('events-full-list');
@@ -10239,9 +10250,15 @@ function renderSnapList(query) {
   if (!el) return;
   const snaps = window.lastSnapshots || [];
   const q = (query || '').toLowerCase().trim();
-  const filtered = q ? snaps.filter(function(s) {
+  const sortMode = (document.getElementById('snap-sort') || {}).value || 'name';
+  let filtered = q ? snaps.filter(function(s) {
     return (s.name || '').toLowerCase().includes(q) || (s.vm_name || '').toLowerCase().includes(q);
-  }) : snaps;
+  }) : snaps.slice();
+  filtered.sort(function(a, b) {
+    if (sortMode === 'ready') return (b.ready ? 1 : 0) - (a.ready ? 1 : 0);
+    if (sortMode === 'age') return (a.age || '').localeCompare(b.age || '');
+    return (a.name || '').localeCompare(b.name || '');
+  });
   if (filtered.length === 0) {
     el.innerHTML = q
       ? '<div class="empty-state"><p>No snapshots match "<strong>' + esc(q) + '</strong>"</p></div>'
@@ -10259,6 +10276,27 @@ function renderSnapList(query) {
 
 function filterSnapshots(query) {
   renderSnapList(query);
+}
+
+function filterEventsView(type, btn) {
+  if (btn) {
+    document.querySelectorAll('[data-evfilter]').forEach(function(b) {
+      b.classList.toggle('vmr-chip-active', b === btn);
+    });
+  }
+  const el = document.getElementById('events-full-list');
+  if (!el) return;
+  const events = type === 'all' ? lastEvents : lastEvents.filter(function(e) { return e.type === type; });
+  if (!events.length) { el.innerHTML = '<div class="empty-state"><p>No ' + esc(type === 'all' ? '' : type + ' ') + 'events</p></div>'; return; }
+  el.innerHTML = events.map(function(e) {
+    const isWarn = e.type === 'Warning';
+    const cls = isWarn ? 'warn' : 'info';
+    return '<div class="event-row"><div class="event-dot ' + cls + '"></div>' +
+      '<div class="event-body"><p class="event-msg">' + esc(e.message || e.reason || 'No message') + '</p>' +
+      '<div class="event-meta"><span>' + esc(e.namespace) + '</span><span>' + esc(e.involved_object) + '</span></div></div>' +
+      '<span class="event-badge ' + cls + '">' + (isWarn ? 'Warning' : 'Info') + '</span>' +
+      '<span class="event-time">' + fmtTime(e.timestamp) + '</span></div>';
+  }).join('');
 }
 
 async function fetchSchedules() {
@@ -11170,7 +11208,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
         (vm.ip && vm.ip !== 'N/A'
           ? '<div class="vm-hero-metric vmr-copy-tile" title="Copy IP address" onclick="copyToClipboard(' + JSON.stringify(vm.ip) + ')">IP<strong>' + esc(vm.ip) + '</strong><span class="vmr-copy-hint">copy</span></div>'
           : '<div class="vm-hero-metric">IP<strong>—</strong></div>') +
-        '<div class="vm-hero-metric">Node<strong>' + esc(vm.node || '—') + '</strong></div>' +
+        (vm.node ? '<div class="vm-hero-metric vmr-copy-tile" title="View node" onclick="openNodeDetailDeep(' + JSON.stringify(vm.node) + ')">Node<strong>' + esc(vm.node) + '</strong><span class="vmr-copy-hint">open</span></div>' : '<div class="vm-hero-metric">Node<strong>—</strong></div>') +
       '</div>' +
       '<div class="vm-hero-rings">' + secRing + healthRing + '<span class="vm-hero-meta-chip">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
     '</div></div>' +
