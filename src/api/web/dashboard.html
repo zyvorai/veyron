@@ -5408,7 +5408,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div id="vmr-forge-recents" style="display:none;margin-bottom:14px"></div>
       <div class="form-group">
         <label class="form-label">VM Name</label>
-        <input type="text" class="form-input" id="vm-name" placeholder="my-vm" autocomplete="off" oninput="checkForgeNameCollision()">
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" class="form-input" id="vm-name" placeholder="my-vm" autocomplete="off" oninput="checkForgeNameCollision()" style="flex:1">
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="suggestForgeName('vm-name')" title="Generate a random memorable name" style="white-space:nowrap;flex-shrink:0">✦ Suggest</button>
+        </div>
         <div id="vm-name-warn" style="display:none;font-size:.75rem;color:#f59e0b;margin-top:4px">⚠ A VM with this name already exists in the cluster.</div>
       </div>
       <div class="form-group">
@@ -5505,7 +5508,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         <h3>Choose template</h3>
         <p class="vmr-tagline">Linux, Windows, BSD, Talos, or custom image.</p>
         <select class="form-select" id="forge-wiz-template" onchange="onTemplateChange()" style="max-width:420px;margin-top:12px"></select>
-        <input type="text" class="form-input" id="forge-wiz-name" placeholder="VM name" style="max-width:420px;margin-top:12px">
+        <div style="display:flex;gap:6px;align-items:center;margin-top:12px;max-width:420px">
+          <input type="text" class="form-input" id="forge-wiz-name" placeholder="VM name" style="flex:1">
+          <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="suggestForgeName('forge-wiz-name')" title="Generate a random memorable name" style="white-space:nowrap;flex-shrink:0">✦ Suggest</button>
+        </div>
         <input type="text" class="form-input" id="forge-wiz-namespace" placeholder="Namespace" value="default" style="max-width:420px;margin-top:8px">
       </div>
       <div class="forge-step-pane" data-step="2">
@@ -17167,6 +17173,43 @@ function checkForgeNameCollision() {
   if (!val) { warn.style.display = 'none'; return; }
   var exists = (window.lastVMs || vmData || []).some(function(v) { return v.name === val; });
   warn.style.display = exists ? '' : 'none';
+}
+
+// ── VM Name Generator ──
+var _VMR_ADJS = ['agile','amber','azure','bold','calm','coral','crisp','cyan','dark','deep',
+  'dense','dim','dusk','east','epic','fast','firm','fleet','flit','flux','gold','grey','grim',
+  'hazy','iron','jade','keen','lake','late','lean','light','lime','lone','lost','mint','mist',
+  'neon','next','nova','null','oak','pale','peak','pine','pink','pure','quiet','rapid','rich',
+  'rose','ruby','rust','sage','salt','sand','silk','slim','slow','snow','soft','solo','stark',
+  'still','storm','strong','swift','tan','teal','thin','thorn','void','warm','wild','wise','worn'];
+var _VMR_NOUNS = ['arc','ash','bay','beam','berg','bolt','brook','burn','cape','cave','cedar',
+  'cliff','cloud','coast','core','crane','creek','crest','crow','dale','dart','dawn','dell',
+  'delta','dome','dove','dune','dust','edge','elk','elm','fern','fjord','flint','fog','ford',
+  'fork','frost','gale','glen','gorge','gust','hawk','hazel','heath','helm','hill','hollow',
+  'horn','hull','isle','kite','knoll','lake','lark','lava','leaf','ledge','lynx','marsh',
+  'mesa','mire','mist','moat','mole','moon','moor','moss','moth','oak','orbit','peak','pine',
+  'plain','plum','pond','pool','port','raft','rain','raven','reef','ridge','rift','rook',
+  'root','rush','sage','salt','sand','seal','shard','shore','silt','slate','slope','slough',
+  'smoke','snake','solar','spark','spine','spring','spur','star','stem','stone','storm',
+  'strand','stray','stream','surge','swale','swift','tarn','tide','tor','trail','vale',
+  'vault','veil','vent','vex','vine','void','wade','wake','wold','wren','zone'];
+function generateVmName() {
+  var used = new Set((window.lastVMs || vmData || []).map(function(v) { return v.name; }));
+  for (var i = 0; i < 20; i++) {
+    var adj  = _VMR_ADJS[Math.floor(Math.random() * _VMR_ADJS.length)];
+    var noun = _VMR_NOUNS[Math.floor(Math.random() * _VMR_NOUNS.length)];
+    var name = adj + '-' + noun;
+    if (!used.has(name)) return name;
+  }
+  // fallback: append random suffix
+  return _VMR_ADJS[0] + '-' + _VMR_NOUNS[0] + '-' + Math.floor(Math.random() * 99 + 1);
+}
+function suggestForgeName(inputId) {
+  var el = document.getElementById(inputId || 'vm-name');
+  if (!el) return;
+  el.value = generateVmName();
+  el.dispatchEvent(new Event('input'));
+  el.focus();
 }
 
 // ── Forge VM Quick Launch History ──
