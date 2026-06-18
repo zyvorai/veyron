@@ -3833,6 +3833,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" data-view="cards" class="active" onclick="setVmrFleetView('cards')">Cards</button>
       <button type="button" data-view="table" onclick="setVmrFleetView('table')">Table</button>
       <button type="button" data-view="topology" onclick="setVmrFleetView('topology')">Topology</button>
+      <button type="button" data-view="map" onclick="setVmrFleetView('map')">Map</button>
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
@@ -8433,6 +8434,91 @@ function _showVmCompareModal(a, b) {
 function closeVmCompare() {
   var overlay = document.getElementById('vm-compare-overlay');
   if (overlay) overlay.style.display = 'none';
+}
+
+// ── Cluster Map View (canvas bubble layout) ──
+var _cmapHit = []; // [{ns, name, x, y, r}] for click detection
+function renderClusterMap(vms) {
+  var canvas = document.getElementById('vmr-cluster-map-canvas');
+  if (!canvas) return;
+  var dpr = window.devicePixelRatio || 1;
+  var W = canvas.parentElement ? canvas.parentElement.clientWidth : 700;
+  var byNode = {};
+  vms.forEach(function(v) { var n = v.node || '(unscheduled)'; (byNode[n] = byNode[n] || []).push(v); });
+  var nodes = Object.keys(byNode).sort();
+  var maxVms = Math.max.apply(null, nodes.map(function(n) { return byNode[n].length; }));
+  var minR = 60, maxR = 120;
+  // Layout: arrange nodes in a single row or wrap
+  var nodeRs = nodes.map(function(n) { return minR + (byNode[n].length / Math.max(1, maxVms)) * (maxR - minR); });
+  var totalW = nodeRs.reduce(function(s, r) { return s + r * 2 + 20; }, 0);
+  var cols = Math.max(1, Math.floor(W / (maxR * 2 + 40)));
+  var rows = Math.ceil(nodes.length / cols);
+  var H = rows * (maxR * 2 + 60) + 40;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  var ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+  _cmapHit = [];
+  var STATUS_COLOR = { Running: '#22c55e', Stopped: '#64748b', Failed: '#ef4444', Error: '#ef4444', Pending: '#f59e0b' };
+  nodes.forEach(function(node, i) {
+    var col = i % cols, row = Math.floor(i / cols);
+    var cellW = W / cols, cellH = maxR * 2 + 60;
+    var cx = col * cellW + cellW / 2;
+    var cy = row * cellH + maxR + 24;
+    var nr = nodeRs[i];
+    // Node circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, nr, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(56,189,248,.06)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(56,189,248,.22)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Node label
+    ctx.fillStyle = 'rgba(148,163,184,.7)';
+    ctx.font = '11px system-ui,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(node.length > 22 ? '…' + node.slice(-20) : node, cx, cy - nr - 6);
+    ctx.fillStyle = 'rgba(100,116,139,.5)';
+    ctx.font = '10px system-ui,sans-serif';
+    ctx.fillText(byNode[node].length + ' VM' + (byNode[node].length !== 1 ? 's' : ''), cx, cy + nr + 14);
+    // VM dots
+    var vmsInNode = byNode[node];
+    var dotR = Math.min(10, Math.max(5, (nr * 0.55) / Math.ceil(Math.sqrt(vmsInNode.length))));
+    var spread = nr - dotR - 8;
+    vmsInNode.forEach(function(v, vi) {
+      var angle = (vi / vmsInNode.length) * Math.PI * 2 - Math.PI / 2;
+      var dist = vmsInNode.length === 1 ? 0 : spread * 0.7;
+      var dx = cx + dist * Math.cos(angle);
+      var dy = cy + dist * Math.sin(angle);
+      var color = STATUS_COLOR[v.status] || '#94a3b8';
+      ctx.beginPath();
+      ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.globalAlpha = 0.85;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(0,0,0,.3)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      _cmapHit.push({ ns: v.namespace || 'default', name: v.name, x: dx, y: dy, r: dotR + 4 });
+    });
+  });
+  // Wire up click handler (once)
+  canvas.onclick = function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var mx = (e.clientX - rect.left) * (W / rect.width);
+    var my = (e.clientY - rect.top) * (H / (canvas.height / dpr));
+    for (var i = 0; i < _cmapHit.length; i++) {
+      var h = _cmapHit[i];
+      if (Math.sqrt((mx - h.x) * (mx - h.x) + (my - h.y) * (my - h.y)) <= h.r) {
+        selectVm(h.ns, h.name);
+        return;
+      }
+    }
+  };
+  canvas.title = 'Click a VM dot to select it. Nodes are sized by VM count.';
 }
 
 // ── Fleet Running Sparkline ──
@@ -15826,8 +15912,9 @@ function filterVMs() {
       badge.remove();
     }
   });
+  const isMapView = window.vmrFleetViewMode === 'map';
   const isTopologyView = window.vmrFleetViewMode === 'topology';
-  const isTableView = window.vmrFleetViewMode === 'table' || (vmViewMode === 'list' && !isTopologyView);
+  const isTableView = window.vmrFleetViewMode === 'table' || (vmViewMode === 'list' && !isTopologyView && !isMapView);
   const listHeader = document.getElementById('vm-list-header');
   if (listHeader) listHeader.style.display = isTableView ? 'flex' : 'none';
   const sorted = sortVMs(filtered);
@@ -15838,6 +15925,9 @@ function filterVMs() {
   }
   if (sorted.length === 0) {
     document.getElementById('vm-full-list').innerHTML = vmListEmptyHtml(true);
+  } else if (isMapView) {
+    document.getElementById('vm-full-list').innerHTML = '<canvas id="vmr-cluster-map-canvas" style="width:100%;display:block;border-radius:10px;cursor:crosshair" aria-label="Cluster map"></canvas>';
+    requestAnimationFrame(function() { renderClusterMap(sorted); });
   } else if (isTopologyView) {
     const byNode = {};
     sorted.forEach(function(v) { const n = v.node || '(unscheduled)'; (byNode[n] = byNode[n] || []).push(v); });
