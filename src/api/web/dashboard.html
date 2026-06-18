@@ -6069,6 +6069,7 @@ function navigate(page, opts) {
   if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
   else document.body.classList.toggle('mission-control-home', page === 'dashboard' && document.body.dataset.desktopTier !== 'advanced');
   if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
+  if (typeof renderVmrPrimaryTabs === 'function') renderVmrPrimaryTabs();
   recordSpotlightRecent({ kind: 'page', title: navPageLabel(page), action: 'navigate:' + page });
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const pageEl = document.getElementById('page-' + page);
@@ -9295,6 +9296,30 @@ function syncVeyronTopbar() {
   }
 }
 
+// ── renderVmrPrimaryTabs — populate primary section nav tab bar ──────────────
+function renderVmrPrimaryTabs() {
+  const el = document.getElementById('vmr-primary-tabs');
+  if (!el) return;
+  const SECTIONS = [
+    { label: 'Home',     section: 'dashboard', page: 'dashboard'     },
+    { label: 'Compute',  section: 'compute',   page: 'vms'           },
+    { label: 'Observe',  section: 'observe',   page: 'monitoring'    },
+    { label: 'Storage',  section: 'storage',   page: 'storage'       },
+    { label: 'Network',  section: 'network',   page: 'network-intel' },
+    { label: 'Security', section: 'security',  page: 'security'      },
+    { label: 'FinOps',   section: 'finops',    page: 'costs'         },
+    { label: 'Ops',      section: 'ops',       page: 'actions'       },
+    { label: 'Platform', section: 'platform',  page: 'settings'      },
+  ];
+  const curSection = document.body.dataset.section || (typeof currentPage !== 'undefined' ? currentPage : 'dashboard');
+  el.innerHTML = SECTIONS.map(function(s) {
+    const active = curSection === s.section;
+    return '<button type="button" class="vmr-tab' + (active ? ' active' : '') + '" ' +
+      'onclick="navigate(' + JSON.stringify(s.page) + ')" ' +
+      'aria-selected="' + active + '" role="tab">' + esc(s.label) + '</button>';
+  }).join('');
+}
+
 // ── Hero slot renderers ──────────────────────────────────────────────────────
 function renderMissionControlVmr() {
   const vms = window.lastVMs || [];
@@ -9428,6 +9453,34 @@ function renderMissionControlVmr() {
       }).join('') +
       '<div style="margin-top:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%;font-size:.76rem" onclick="navigate(\'events\')">View all events →</button></div>';
     }
+  }
+
+  // Bottom row: Compute, Storage, Platform summary (3 columns)
+  const bottom = document.getElementById('vmr-mission-bottom');
+  if (bottom) {
+    const snapCount = (window.lastSnapshots || []).length;
+    const nodeCount = typeof window.lastNodes !== 'undefined' ? window.lastNodes.length : '—';
+    const podCount = typeof window.lastPods !== 'undefined' ? window.lastPods.length : '—';
+    const wlCount = (window.lastWorkloads || []).length || '—';
+    bottom.innerHTML =
+      '<div class="vmr-panel"><div class="vmr-panel-title">Compute at a Glance</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;font-size:.82rem">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Nodes</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'nodes\')">' + nodeCount + ' →</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Pods</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'pods\')">' + podCount + ' →</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Workloads</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'workloads\')">' + wlCount + ' →</button></div>' +
+      '</div></div>' +
+      '<div class="vmr-panel"><div class="vmr-panel-title">Storage &amp; Snapshots</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;font-size:.82rem">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'snapshots\')">' + snapCount + ' →</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Backups</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'backups\')">View →</button></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">PVCs</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'storage\')">View →</button></div>' +
+      '</div></div>' +
+      '<div class="vmr-panel"><div class="vmr-panel-title">Platform</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'catalog\')">VM Catalog</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'stack-health\')">Stack Health</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'settings\')">Settings</button>' +
+      '</div></div>';
   }
 }
 
@@ -9601,6 +9654,21 @@ function fetchWorkloadsVmr(opts) {
           }).join('') +
           '</div>';
       }
+      // Namespace tab bar
+      const wlTabbar = document.getElementById('vmr-wl-tabbar');
+      if (wlTabbar) {
+        const namespaces = [...new Set(data.map(function(w) { return w.namespace || 'default'; }))].sort();
+        if (namespaces.length > 1) {
+          wlTabbar.innerHTML =
+            '<button type="button" class="vmr-capsule-tab-btn active" data-wlns="" onclick="filterWlByNamespace(this,\'\')">All</button>' +
+            namespaces.map(function(ns) {
+              const cnt = data.filter(function(w) { return (w.namespace || 'default') === ns; }).length;
+              return '<button type="button" class="vmr-capsule-tab-btn" data-wlns="' + esc(ns) + '" onclick="filterWlByNamespace(this,' + jsArgs(ns) + ')">' + esc(ns) + ' <span style="opacity:.6;font-weight:400">(' + cnt + ')</span></button>';
+            }).join('');
+        } else {
+          wlTabbar.innerHTML = '';
+        }
+      }
     } catch (e) {
       if (e && e.name === 'AbortError') return;
       if (opts && opts.signal && opts.signal.aborted) return;
@@ -9626,6 +9694,30 @@ function filterWorkloadsByType(type) {
   if (wlCountEl) wlCountEl.textContent = filtered.length === data.length ? data.length + ' workloads' : filtered.length + ' of ' + data.length + ' workloads';
   if (!filtered.length) {
     tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No ' + esc(type || '') + ' workloads match</td></tr>';
+    return;
+  }
+  tb.innerHTML = filtered.map(function(w) {
+    const ok = w.ready_replicas >= w.replicas;
+    const badgeCls = ok ? 'running' : 'other';
+    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+  }).join('');
+}
+
+function filterWlByNamespace(btn, ns) {
+  document.querySelectorAll('[data-wlns]').forEach(function(b) { b.classList.toggle('active', b.dataset.wlns === ns); });
+  const q = ((document.getElementById('workloads-search') || {}).value || '').toLowerCase().trim();
+  const tb = document.getElementById('workloads-body');
+  if (!tb) return;
+  const data = window.lastWorkloads || [];
+  const filtered = data.filter(function(w) {
+    const matchNs = !ns || (w.namespace || 'default') === ns;
+    const matchQ = !q || (w.name || '').toLowerCase().includes(q) || (w.namespace || '').toLowerCase().includes(q);
+    return matchNs && matchQ;
+  });
+  const wlCountEl = document.getElementById('vmr-workloads-count');
+  if (wlCountEl) wlCountEl.textContent = filtered.length === data.length ? data.length + ' workloads' : filtered.length + ' of ' + data.length + ' workloads';
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No workloads in namespace ' + esc(ns || 'all') + '</td></tr>';
     return;
   }
   tb.innerHTML = filtered.map(function(w) {
@@ -9931,6 +10023,18 @@ function renderConsoleHubVmr() {
       return '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="selectConsoleHubVm(' + jsArgs(v.namespace || 'default', v.name) + ')">' + esc(v.name) + '</button>';
     }).join('');
   }
+  // Populate the (hidden) VM list for programmatic access / future list-view toggle
+  const listEl = document.getElementById('vmr-console-list');
+  if (listEl) {
+    listEl.innerHTML = vmData.map(function(v) {
+      const isRun = (v.status || '').toLowerCase() === 'running';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line)">' +
+        '<span class="glass-badge ' + (isRun ? 'running' : 'stopped') + '" style="font-size:.7rem">' + esc(v.status || 'Unknown') + '</span>' +
+        '<span style="flex:1;font-size:.82rem">' + esc(v.name) + '</span>' +
+        (isRun ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="selectConsoleHubVm(' + jsArgs(v.namespace || 'default', v.name) + ')">Connect</button>' : '') +
+        '</div>';
+    }).join('') || '<div style="padding:16px;color:var(--text-dim);font-size:.84rem">No VMs in scope</div>';
+  }
 }
 
 function selectConsoleHubVm(ns, name) {
@@ -9940,6 +10044,19 @@ function selectConsoleHubVm(ns, name) {
   const titleEl = document.getElementById('vmr-console-chrome-title');
   if (titleEl) titleEl.textContent = 'ConsoleHub · ' + name;
   setConsoleHubProto(_consoleHubProto);
+  // Populate context actions for selected VM
+  const actionsEl = document.getElementById('vmr-console-actions');
+  if (actionsEl) {
+    const vm = (window.lastVMs || []).find(function(v) { return v.name === name && (v.namespace || 'default') === ns; });
+    const isRunning = vm && (vm.status || '').toLowerCase() === 'running';
+    actionsEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--glass-border)">' +
+      '<div style="font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:2px">VM Actions</div>' +
+      (!isRunning ? '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'start') + ',event)">▶ Start</button>' : '') +
+      (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'stop') + ',event)">■ Stop</button>' : '') +
+      (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="vmAction(' + jsArgs(ns, name, 'restart') + ',event)">↻ Restart</button>' : '') +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, name) + ',{});},300)">Inspect VM</button>' +
+      '</div>';
+  }
 }
 
 function onConsoleHubVmSelect() {
@@ -16040,6 +16157,7 @@ window.addEventListener('load', async () => {
   fetchIntegrations();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   setInterval(updateVmFreshness, 15000);
+  renderVmrPrimaryTabs();
   if (location.hash) applyDashboardHash();
   window.addEventListener('popstate', function() { applyDashboardHash(); });
   window.addEventListener('resize', () => {
