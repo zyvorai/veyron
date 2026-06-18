@@ -6785,6 +6785,7 @@ const SPOTLIGHT_SHELL = [
   { kind: 'action', title: 'Screen Sharing', subtitle: 'ConsoleHub inline VNC', action: 'navigate:console-hub', keys: ['screen', 'sharing', 'connect'] },
   { kind: 'action', title: 'Remote Desktop (RDP)', subtitle: 'Windows NodePort RDP expose', action: 'navigate:vms', keys: ['rdp', 'remote', 'desktop', 'windows', '3389'] },
   { kind: 'action', title: 'Forge a new VM', subtitle: 'Create from template', action: 'forge_vm', keys: ['forge', 'create', 'new vm'] },
+  { kind: 'action', title: 'Forge VM (Wizard)', subtitle: '6-step guided wizard', action: 'forge_vm_wizard', keys: ['forge wizard', 'wizard', 'guided', 'step'] },
   { kind: 'action', title: 'Ask Zeus', subtitle: 'Ask Zeus fleet assistant (⌘J)', action: 'mac:ask_zeus', keys: ['ask', 'zeus', 'ai', 'copilot', 'assistant'] },
   { kind: 'page', title: 'Settings', subtitle: 'Platform preferences & integrations', action: 'navigate:settings', keys: ['settings', 'preferences', 'config', 'api key'] },
   { kind: 'page', title: 'Workloads', subtitle: 'Pods, VMIs, virt-launcher, CDI', action: 'navigate:workloads', keys: ['workloads', 'pods', 'virt-launcher', 'cdi'] },
@@ -9232,6 +9233,276 @@ function setVmrFleetView(mode) {
   filterVMs();
 }
 
+// ── Template Foundry preview drawer ──
+function closeFoundryPreview() {
+  const drawer = document.getElementById('vmr-foundry-drawer');
+  if (drawer) { drawer.style.display = 'none'; drawer.setAttribute('aria-hidden', 'true'); }
+}
+
+function openFoundryPreview(title, bodyHtml) {
+  const drawer = document.getElementById('vmr-foundry-drawer');
+  const titleEl = document.getElementById('vmr-fdrawer-title');
+  const bodyEl = document.getElementById('vmr-fdrawer-body');
+  if (!drawer) return;
+  if (titleEl) titleEl.textContent = title || 'Template Preview';
+  if (bodyEl) bodyEl.innerHTML = bodyHtml || '';
+  drawer.style.display = 'flex';
+  drawer.removeAttribute('aria-hidden');
+}
+
+// ── Forge Wizard ──
+let _forgeWizardStep = 1;
+const FORGE_WIZARD_STEPS = 6;
+
+function openForgeWizard() {
+  _forgeWizardStep = 1;
+  document.getElementById('forge-wizard-modal').classList.add('open');
+  _forgeWizardSyncStep();
+  if (templateCache.length === 0) {
+    fetchTemplates().then(function() { _forgeWizardPopulateTemplates(); });
+  } else {
+    _forgeWizardPopulateTemplates();
+  }
+}
+
+function closeForgeWizard() {
+  document.getElementById('forge-wizard-modal').classList.remove('open');
+}
+
+function _forgeWizardPopulateTemplates() {
+  const sel = document.getElementById('forge-wiz-template');
+  if (!sel || sel.options.length > 1) return;
+  sel.innerHTML = '<option value="">Select template…</option>' +
+    templateCache.map(function(t) { return '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>'; }).join('');
+}
+
+function _forgeWizardSyncStep() {
+  document.querySelectorAll('#forge-wizard-steps [data-step]').forEach(function(btn) {
+    btn.classList.toggle('active', Number(btn.dataset.step) === _forgeWizardStep);
+  });
+  document.querySelectorAll('#forge-wizard-body .forge-step-pane').forEach(function(pane) {
+    pane.classList.toggle('active', Number(pane.dataset.step) === _forgeWizardStep);
+  });
+  const isLast = _forgeWizardStep === FORGE_WIZARD_STEPS;
+  const nextBtn = document.getElementById('forge-wiz-next');
+  const submitBtn = document.getElementById('forge-wiz-submit');
+  const submitStartBtn = document.getElementById('forge-wiz-submit-start');
+  const exportBtn = document.getElementById('forge-wiz-export-yaml');
+  const blueprintBtn = document.getElementById('forge-wiz-save-blueprint');
+  if (nextBtn) nextBtn.style.display = isLast ? 'none' : '';
+  if (submitBtn) submitBtn.style.display = isLast ? '' : 'none';
+  if (submitStartBtn) submitStartBtn.style.display = isLast ? '' : 'none';
+  if (exportBtn) exportBtn.style.display = isLast ? '' : 'none';
+  if (blueprintBtn) blueprintBtn.style.display = isLast ? '' : 'none';
+  if (isLast) renderForgeWizardReview();
+}
+
+function forgeWizardNext() {
+  if (_forgeWizardStep >= FORGE_WIZARD_STEPS) return;
+  _forgeWizardStep++;
+  _forgeWizardSyncStep();
+}
+
+function forgeWizardPrev() {
+  if (_forgeWizardStep <= 1) return;
+  _forgeWizardStep--;
+  _forgeWizardSyncStep();
+}
+
+function renderForgeWizardReview() {
+  const el = document.getElementById('forge-wiz-review');
+  if (!el) return;
+  const name = (document.getElementById('forge-wiz-name') || {}).value || '(unnamed)';
+  const ns = (document.getElementById('forge-wiz-namespace') || {}).value || 'default';
+  const tpl = (document.getElementById('forge-wiz-template') || {}).value || '(none)';
+  const cpus = (document.getElementById('forge-wiz-cpus') || {}).value || '2';
+  const mem = (document.getElementById('forge-wiz-memory') || {}).value || '4Gi';
+  const disk = (document.getElementById('forge-wiz-disk') || {}).value || '20Gi';
+  const expose = (document.getElementById('forge-wiz-expose') || {}).checked;
+  const internet = (document.getElementById('forge-wiz-internet') || {}).checked;
+  const autostart = (document.getElementById('forge-wiz-autostart') || {}).checked;
+  el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:.84rem">' +
+    ['VM name', 'Namespace', 'Template', 'CPU', 'Memory', 'Disk', 'Internet', 'Expose port', 'Auto-start'].map(function(label, i) {
+      const vals = [name, ns, tpl, cpus + ' cores', mem, disk, internet ? 'Yes' : 'No', expose ? 'Yes' : 'No', autostart ? 'Yes' : 'No'];
+      return '<tr><td style="color:var(--text-muted);padding:4px 8px 4px 0;white-space:nowrap">' + esc(label) + '</td><td style="font-weight:500;padding:4px 0">' + esc(vals[i]) + '</td></tr>';
+    }).join('') + '</table>';
+}
+
+async function submitForgeWizard(andStart) {
+  const name = (document.getElementById('forge-wiz-name') || {}).value.trim();
+  if (!name) { toast('VM name is required', 'error'); return; }
+  const submitBtn = document.getElementById(andStart ? 'forge-wiz-submit-start' : 'forge-wiz-submit');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Forging…'; }
+  const body = {
+    name: name,
+    namespace: (document.getElementById('forge-wiz-namespace') || {}).value.trim() || 'default',
+    template: (document.getElementById('forge-wiz-template') || {}).value || null,
+    cpus: parseInt((document.getElementById('forge-wiz-cpus') || {}).value) || 2,
+    memory: (document.getElementById('forge-wiz-memory') || {}).value.trim() || '4Gi',
+    disk_size: (document.getElementById('forge-wiz-disk') || {}).value.trim() || '20Gi',
+    start: !!andStart || !!((document.getElementById('forge-wiz-autostart') || {}).checked),
+    allow_internet: !!((document.getElementById('forge-wiz-internet') || {}).checked),
+    cloud_init: (document.getElementById('forge-wiz-cloudinit') || {}).value.trim() || null,
+  };
+  if ((document.getElementById('forge-wiz-expose') || {}).checked) {
+    const port = parseInt((document.getElementById('forge-wiz-expose-port') || {}).value, 10) || 22;
+    body.expose = { enabled: true, service_type: 'ClusterIP', ports: [{ name: 'ssh', port: port, target_port: port, protocol: 'TCP' }] };
+  }
+  try {
+    await apiJson('/api/v1/vms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    toast('VM "' + name + '" forged' + (andStart ? ' and starting' : ''), 'success');
+    closeForgeWizard();
+    if (currentPage !== 'vms') navigate('vms');
+    setTimeout(function() { fetchVMs(); selectVm(body.namespace, name, {}); }, 1200);
+  } catch (e) {
+    toast('Forge failed: ' + (e.message || String(e)), 'error');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = andStart ? 'Forge + Start' : 'Forge VM'; }
+  }
+}
+
+// ── ConsoleHub ──
+let _consoleHubVncRfb = null;
+let _consoleHubVm = { ns: '', name: '' };
+let _consoleHubProto = 'vnc';
+
+function renderConsoleHubVmr() {
+  const sel = document.getElementById('vmr-console-vm-select');
+  if (!sel) return;
+  const running = vmData.filter(function(v) { return v.status === 'Running'; });
+  const stopped = vmData.filter(function(v) { return v.status !== 'Running'; });
+  sel.innerHTML = '<option value="">Select VM…</option>' +
+    (running.length ? '<optgroup label="Running">' + running.map(function(v) { return '<option value="' + esc((v.namespace || 'default') + '/' + v.name) + '">' + esc(v.name) + (v.namespace && v.namespace !== 'default' ? ' (' + esc(v.namespace) + ')' : '') + '</option>'; }).join('') + '</optgroup>' : '') +
+    (stopped.length ? '<optgroup label="Stopped">' + stopped.map(function(v) { return '<option value="' + esc((v.namespace || 'default') + '/' + v.name) + '" disabled>' + esc(v.name) + ' (stopped)</option>'; }).join('') + '</optgroup>' : '');
+  const quickPicks = document.getElementById('vmr-console-quick-picks');
+  if (quickPicks) {
+    quickPicks.innerHTML = running.slice(0, 4).map(function(v) {
+      return '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="selectConsoleHubVm(' + jsArgs(v.namespace || 'default', v.name) + ')">' + esc(v.name) + '</button>';
+    }).join('');
+  }
+}
+
+function selectConsoleHubVm(ns, name) {
+  _consoleHubVm = { ns: ns, name: name };
+  const sel = document.getElementById('vmr-console-vm-select');
+  if (sel) sel.value = (ns || 'default') + '/' + name;
+  const titleEl = document.getElementById('vmr-console-chrome-title');
+  if (titleEl) titleEl.textContent = 'ConsoleHub · ' + name;
+  setConsoleHubProto(_consoleHubProto);
+}
+
+function onConsoleHubVmSelect() {
+  const sel = document.getElementById('vmr-console-vm-select');
+  if (!sel || !sel.value) return;
+  const parts = sel.value.split('/');
+  const ns = parts[0] || 'default';
+  const name = parts.slice(1).join('/');
+  selectConsoleHubVm(ns, name);
+}
+
+function setConsoleHubProto(proto) {
+  _consoleHubProto = proto;
+  document.querySelectorAll('#vmr-console-protocol-tabs [data-proto]').forEach(function(btn) {
+    const sel = btn.dataset.proto === proto;
+    btn.classList.toggle('active', sel);
+    btn.setAttribute('aria-selected', String(sel));
+  });
+  if (!_consoleHubVm.name) return;
+  const embed = document.getElementById('vmr-console-embed');
+  const empty = document.getElementById('vmr-console-empty');
+  const vncToolbar = document.getElementById('vmr-console-vnc-toolbar');
+  const altPanel = document.getElementById('vmr-console-alt-panel');
+  const vncContainer = document.getElementById('vmr-console-vnc-container');
+  if (embed) embed.style.display = 'block';
+  if (empty) empty.style.display = 'none';
+  if (vncToolbar) vncToolbar.style.display = proto === 'vnc' ? 'flex' : 'none';
+  if (altPanel) { altPanel.style.display = proto !== 'vnc' ? 'block' : 'none'; }
+  if (proto === 'vnc') {
+    _connectConsoleHubVnc();
+  } else if (proto === 'ssh') {
+    disconnectConsoleHubVnc();
+    if (altPanel) altPanel.innerHTML = '<div style="padding:20px;color:var(--text-muted)"><strong>SSH</strong><br><br>Click below to open SSH in the VM inspector:</div>' +
+      '<div style="padding:0 20px"><button class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ',{});setTimeout(showSshPopover.bind(null,' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + '),600);},300)">Open SSH for ' + esc(_consoleHubVm.name) + '</button></div>';
+  } else if (proto === 'rdp') {
+    disconnectConsoleHubVnc();
+    if (altPanel) altPanel.innerHTML = '<div style="padding:20px;color:var(--text-muted)"><strong>RDP</strong><br><br>Click below to open the RDP sheet:</div>' +
+      '<div style="padding:0 20px"><button class="glass-btn-primary glass-btn-sm" onclick="openRdpSheet(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ')">Open RDP for ' + esc(_consoleHubVm.name) + '</button></div>';
+  } else if (proto === 'serial') {
+    disconnectConsoleHubVnc();
+    if (altPanel) altPanel.innerHTML = '<div style="padding:20px;color:var(--text-muted)"><strong>Serial console</strong><br><br>Click below to open the serial console window:</div>' +
+      '<div style="padding:0 20px"><button class="glass-btn-primary glass-btn-sm" onclick="openSerialConsole(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ')">Open serial for ' + esc(_consoleHubVm.name) + '</button></div>';
+  }
+}
+
+async function _connectConsoleHubVnc() {
+  if (_consoleHubVncRfb) { _consoleHubVncRfb.disconnect(); _consoleHubVncRfb = null; }
+  const container = document.getElementById('vmr-console-vnc-container');
+  const placeholder = document.getElementById('vmr-console-vnc-placeholder');
+  const statusEl = document.getElementById('vmr-console-vnc-status');
+  const dotEl = document.getElementById('vmr-console-vnc-dot');
+  const badgeEl = document.getElementById('vmr-console-chrome-badge');
+  function setStatus(msg, cls) {
+    if (statusEl) statusEl.textContent = msg;
+    if (dotEl) dotEl.className = 'vmr-console-vnc-dot ' + (cls || '');
+    if (badgeEl) { badgeEl.textContent = cls === 'connected' ? 'Online' : 'Offline'; badgeEl.className = 'vmr-console-chrome-badge ' + (cls === 'connected' ? 'online' : 'offline'); }
+  }
+  setStatus('Connecting…', '');
+  if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'Connecting…'; }
+  if (!window.RFB) {
+    try {
+      const mod = await import('/assets/novnc.min.js');
+      window.RFB = mod.default;
+    } catch (e) {
+      setStatus('noVNC load failed', 'error');
+      if (placeholder) placeholder.textContent = 'Failed to load VNC client: ' + e.message;
+      return;
+    }
+  }
+  let url;
+  try {
+    url = await wsConsoleUrl('/api/v1/vms/' + encodeURIComponent(_consoleHubVm.ns) + '/' + encodeURIComponent(_consoleHubVm.name) + '/vnc');
+  } catch (e) {
+    setStatus('Ticket error', 'error');
+    if (placeholder) placeholder.textContent = 'VNC ticket error: ' + (e.message || String(e));
+    return;
+  }
+  if (placeholder) placeholder.style.display = 'none';
+  if (container) container.querySelectorAll('canvas, div:not(#vmr-console-vnc-placeholder)').forEach(function(el) { el.remove(); });
+  const enc = vncPresetParams();
+  try {
+    _consoleHubVncRfb = new window.RFB(container, url, { wsProtocols: ['binary'], qualityLevel: enc.qualityLevel, compressionLevel: enc.compressionLevel, clipViewport: enc.clipViewport });
+    _consoleHubVncRfb.scaleViewport = true;
+    _consoleHubVncRfb.resizeSession = false;
+    _consoleHubVncRfb.addEventListener('connect', function() { setStatus('Connected', 'connected'); });
+    _consoleHubVncRfb.addEventListener('disconnect', function(e) { setStatus(e.detail?.clean ? 'Disconnected' : 'Connection lost', 'error'); _consoleHubVncRfb = null; });
+    _consoleHubVncRfb.addEventListener('credentialsrequired', function() { _consoleHubVncRfb.sendCredentials({ password: '' }); });
+  } catch (e) {
+    setStatus('VNC error', 'error');
+    if (placeholder) { placeholder.style.display = 'block'; placeholder.textContent = 'VNC error: ' + e.message; }
+  }
+}
+
+function disconnectConsoleHubVnc() {
+  if (_consoleHubVncRfb) { _consoleHubVncRfb.disconnect(); _consoleHubVncRfb = null; }
+  const badgeEl = document.getElementById('vmr-console-chrome-badge');
+  if (badgeEl) { badgeEl.textContent = 'Offline'; badgeEl.className = 'vmr-console-chrome-badge offline'; }
+  const statusEl = document.getElementById('vmr-console-vnc-status');
+  if (statusEl) statusEl.textContent = 'Disconnected';
+}
+
+function onConsoleHubVncPresetChange(val) {
+  try { localStorage.setItem('veyron_vnc_preset', val); } catch (e) {}
+  if (_consoleHubVncRfb) {
+    const enc = vncPresetParams();
+    _consoleHubVncRfb.qualityLevel = enc.qualityLevel;
+    _consoleHubVncRfb.compressionLevel = enc.compressionLevel;
+  }
+}
+
+function openConsoleHubFullscreen() {
+  const el = document.getElementById('vmr-console-vnc-container') || document.getElementById('vmr-console-stage');
+  if (el && el.requestFullscreen) el.requestFullscreen();
+}
+
 async function fetchExperienceHome() {
   try {
     const data = await apiJson('/api/v1/experience/home' + nsParam());
@@ -10146,6 +10417,7 @@ function runSpotlightAction(action) {
   if (runMacShellAction(action)) return;
   if (handleCopilotAction(action)) return;
   if (action === 'create_vm' || action === 'forge_vm') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openCreateModal(); return; }
+  if (action === 'forge_vm_wizard') { if (!cloudOsSession.can_write) { toast('Read-only session', 'error'); return; } openForgeWizard(); return; }
   if (action.indexOf('navigate:') === 0) {
     const target = action.slice(9);
     if (typeof isPageAllowedForTier === 'function' && !isPageAllowedForTier(target, desktopTier)) {
