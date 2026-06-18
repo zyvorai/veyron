@@ -4903,6 +4903,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
   <div id="gitops-cap-banner"></div>
   <div id="gitops-summary" class="grid-4 page-glass-stats"></div>
+  <div id="gitops-drift-panel"></div>
 </div>
 </div>
 
@@ -4914,6 +4915,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="scheduling-fleet-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="scheduling-summary" class="grid-4 page-glass-stats"></div>
+  <div id="scheduling-detail-panel"></div>
 </div>
 </div>
 
@@ -12384,6 +12386,7 @@ async function fetchVMs(opts) {
       if (typeof renderRecentVmsStrip === 'function') renderRecentVmsStrip();
       renderNsOverview();
       renderFleetPinnedStrip();
+      if (currentPage === 'gitops') renderGitopsDriftPanel();
       renderFleetSparkline();
       if (selectedVmNs && selectedVmName) {
         fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
@@ -18416,10 +18419,50 @@ async function fetchGitOps() {
       '<div class="glass-stat-pill' + (syncOk ? ' ok' : ' warn') + '"><div class="gsl">Sync</div><div class="gsv" style="font-size:1rem">' + esc(status.sync_status || 'unknown') + '</div></div>' +
       '<button type="button" class="glass-stat-pill' + (status.drift_detected ? ' bad' : ' ok') + ' clickable-stat" onclick="' + (status.drift_detected ? 'runGitOpsAdvisor()' : 'navigate(\'insights\')') + '" title="' + (status.drift_detected ? 'Run GitOps advisor' : 'View insights') + '"><div class="gsl">Drift</div><div class="gsv">' + (status.drift_detected ? 'Detected' : 'Clear') + '</div></button>' +
       note;
+    renderGitopsDriftPanel();
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('GitOps fetch error:', e);
   }
+  renderGitopsDriftPanel();
+}
+function renderGitopsDriftPanel() {
+  var el = document.getElementById('gitops-drift-panel');
+  if (!el) return;
+  var all = window.lastVMs || vmData || [];
+  var drifted = all.filter(function(v) { return v.veyron_managed === true && v.drift_detected === true; });
+  var managed = all.filter(function(v) { return v.veyron_managed === true; });
+  var unmanaged = all.filter(function(v) { return !v.veyron_managed; });
+  var driftRows = drifted.map(function(v) {
+    var ns = v.namespace || 'default';
+    return '<tr><td style="padding:7px 10px 7px 0"><button type="button" class="vmr-node-chip" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, v.name) + ')},300)">' + esc(v.name) + '</button></td>' +
+      '<td style="padding:7px 10px;font-size:.78rem;color:var(--text-dim)">' + esc(ns) + '</td>' +
+      '<td style="padding:7px 10px"><span class="vm-badge ' + sc(v.status) + '" style="font-size:.72rem">' + esc(v.status) + '</span></td>' +
+      '<td style="padding:7px 10px"><button type="button" class="glass-btn-secondary glass-btn-sm" ' +
+        'onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, v.name) + ')},300)">Inspect</button></td></tr>';
+  }).join('');
+  el.innerHTML = '<div class="grid-2" style="gap:16px;margin-top:0">' +
+    '<div class="card glass-card"><div class="card-header"><span class="card-title">⚠ Drift Detected</span>' +
+    '<span style="font-size:.73rem;color:' + (drifted.length ? 'var(--warn)' : '#22c55e') + ';margin-left:auto">' + (drifted.length ? drifted.length + ' VM' + (drifted.length !== 1 ? 's' : '') + ' with drift' : '✓ All in sync') + '</span>' +
+    '</div>' +
+    (drifted.length ? '<table class="table" style="margin:0"><thead><tr><th>VM</th><th>Namespace</th><th>Status</th><th></th></tr></thead><tbody>' + driftRows + '</tbody></table>'
+      : '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:.82rem">All managed VMs are in sync with their VeyronVM spec.</div>') +
+    '</div>' +
+    '<div class="card glass-card"><div class="card-header"><span class="card-title">VM Management</span></div>' +
+    '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:10px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">' +
+      '<span style="color:var(--text-dim)">Operator-managed</span>' +
+      '<span style="color:var(--text-primary);font-weight:600">' + managed.length + ' VMs</span></div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">' +
+      '<span style="color:var(--text-dim)">Unmanaged (manual)</span>' +
+      '<span style="color:var(--text-primary);font-weight:600">' + unmanaged.length + ' VMs</span></div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.83rem">' +
+      '<span style="color:var(--text-dim)">Drift detected</span>' +
+      '<span style="color:' + (drifted.length ? 'var(--warn)' : '#22c55e') + ';font-weight:600">' + drifted.length + ' VMs</span></div>' +
+    '<div style="border-top:1px solid rgba(255,255,255,.06);padding-top:10px;margin-top:2px">' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById(\'vm-filter-drift\').value=\'drift\';navigate(\'vms\');setTimeout(filterVMs,200)" style="width:100%">Show drifted VMs →</button>' +
+    '</div></div></div>' +
+  '</div>';
 }
 
 async function fetchScheduling() {
@@ -18433,10 +18476,40 @@ async function fetchScheduling() {
       { label: 'Unschedulable nodes', value: (status.unschedulable_nodes || []).length, cls: (status.unschedulable_nodes || []).length ? ' bad' : '' },
       { label: 'Preemptions', value: status.preemptions || 0 }
     ]);
+    renderSchedulingDetailPanel(status);
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('Scheduling fetch error:', e);
   }
+}
+function renderSchedulingDetailPanel(status) {
+  var el = document.getElementById('scheduling-detail-panel');
+  if (!el) return;
+  var unschedulable = status.unschedulable_nodes || [];
+  var nodeRows = unschedulable.map(function(n) {
+    return '<tr><td style="padding:6px 10px 6px 0;font-size:.8rem;color:var(--text-primary)">' + esc(n) + '</td>' +
+      '<td style="padding:6px 10px"><span class="vm-badge error" style="font-size:.72rem">Unschedulable</span></td></tr>';
+  }).join('');
+  // VM scheduling pressure: count pending VMs (if status = Pending in vmData)
+  var pendingVms = (window.lastVMs || vmData || []).filter(function(v) { return (v.status || '').toLowerCase() === 'pending'; });
+  var vmPressureRows = pendingVms.map(function(v) {
+    var ns = v.namespace || 'default';
+    return '<tr><td style="padding:6px 10px 6px 0"><button type="button" class="vmr-node-chip" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, v.name) + ')},300)">' + esc(v.name) + '</button></td>' +
+      '<td style="padding:6px 10px;font-size:.78rem;color:var(--text-dim)">' + esc(ns) + '</td>' +
+      '<td style="padding:6px 10px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){openCopilotScheduling(' + jsArgs(ns, v.name) + ')},400)">Diagnose</button></td></tr>';
+  }).join('');
+  el.innerHTML = '<div class="grid-2" style="gap:16px;margin-top:0">' +
+    '<div class="card glass-card"><div class="card-header"><span class="card-title">Pending VMs</span>' +
+    '<span style="font-size:.73rem;color:' + (pendingVms.length ? 'var(--warn)' : '#22c55e') + ';margin-left:auto">' + (pendingVms.length || '✓ None') + '</span></div>' +
+    (pendingVms.length
+      ? '<table class="table" style="margin:0"><thead><tr><th>VM</th><th>Namespace</th><th></th></tr></thead><tbody>' + vmPressureRows + '</tbody></table>'
+      : '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:.82rem">No VMs pending scheduling — all scheduled or stopped.</div>') +
+    '</div>' +
+    '<div class="card glass-card"><div class="card-header"><span class="card-title">Node Schedulability</span></div>' +
+    (unschedulable.length
+      ? '<table class="table" style="margin:0"><thead><tr><th>Node</th><th>Status</th></tr></thead><tbody>' + nodeRows + '</tbody></table>'
+      : '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:.82rem">✓ All nodes are schedulable.</div>') +
+    '</div></div>';
 }
 
 async function fetchCilium() {
