@@ -2131,6 +2131,12 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 body.vmr-fleet-full #vm-workspace{grid-template-columns:1fr!important}
 body.vmr-fleet-full .vm-focus-pane{display:none!important}
 #vmr-fleet-full-btn.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.45);color:var(--cyan)}
+.vmr-ns-card{flex-shrink:0;display:flex;align-items:center;gap:8px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:8px;padding:6px 12px;cursor:pointer;transition:border-color .2s,background .2s;min-width:0;white-space:nowrap}
+.vmr-ns-card:hover{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.04)}
+.vmr-ns-card.active{border-color:rgba(56,189,248,.5);background:rgba(56,189,248,.08)}
+.vmr-ns-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.vmr-ns-name{font-size:.78rem;font-weight:600;color:var(--text-primary);max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.vmr-ns-stat{font-size:.68rem;color:var(--text-muted);margin-left:2px}
 .vmr-event-ticker{position:fixed;bottom:72px;left:0;right:0;z-index:180;height:28px;display:flex;align-items:center;gap:8px;background:rgba(10,12,18,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.07);padding:0 10px 0 8px}
 .vmr-ticker-label{flex-shrink:0;font-size:.6rem;font-weight:700;letter-spacing:.12em;color:var(--ember);background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:3px;padding:1px 5px;line-height:1.4;animation:vmr-live-blink 2s ease-in-out infinite}
 @keyframes vmr-live-blink{0%,100%{opacity:1}50%{opacity:.45}}
@@ -3762,6 +3768,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div id="vmr-fleet-hero"></div>
   <div id="vmr-fleet-metrics"></div>
+  <div id="vmr-ns-overview" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:2px 0 4px;scrollbar-width:none"></div>
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar">
     <div style="position:relative;display:inline-flex;align-items:center">
@@ -8197,6 +8204,41 @@ function renderRecentVmsStrip() {
     }).join('');
 }
 
+function renderNsOverview() {
+  const el = document.getElementById('vmr-ns-overview');
+  if (!el) return;
+  const vms = vmData || [];
+  if (!vms.length) { el.style.display = 'none'; return; }
+  var nsMap = {};
+  vms.forEach(function(v) {
+    var ns = v.namespace || 'default';
+    if (!nsMap[ns]) nsMap[ns] = { total: 0, running: 0, cpu: 0, mem: 0 };
+    nsMap[ns].total++;
+    if ((v.status || '').toLowerCase() === 'running') nsMap[ns].running++;
+    nsMap[ns].cpu += Number(v.cpu) || 0;
+    nsMap[ns].mem += Number(v.memory_bytes || v.memory) || 0;
+  });
+  var nsNames = Object.keys(nsMap).sort();
+  if (nsNames.length < 2) { el.style.display = 'none'; return; }
+  var activeNs = currentNamespace;
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;align-self:center;padding-right:6px;flex-shrink:0">NS:</span>' +
+    ['all'].concat(nsNames).map(function(ns) {
+      var d = ns === 'all' ? null : nsMap[ns];
+      var isActive = ns === activeNs || (ns === 'all' && activeNs === 'all');
+      var dotColor = !d ? 'rgba(255,255,255,.3)' : (d.running === d.total && d.total > 0 ? '#22c55e' : d.running > 0 ? '#f59e0b' : 'rgba(255,255,255,.25)');
+      var label = ns === 'all' ? 'All' : ns;
+      var stat = d ? (d.running + '/' + d.total + ' running') : (vms.length + ' total');
+      return '<button type="button" class="vmr-ns-card' + (isActive ? ' active' : '') + '" ' +
+        'title="' + esc(label + ': ' + stat) + '" ' +
+        'onclick="setNamespace(' + jsArgs(ns) + ')">' +
+        '<span class="vmr-ns-dot" style="background:' + dotColor + '"></span>' +
+        '<span class="vmr-ns-name">' + esc(label) + '</span>' +
+        (d ? '<span class="vmr-ns-stat">' + d.running + '/' + d.total + '</span>' : '') +
+      '</button>';
+    }).join('');
+}
+
 function finderOpenVm(ns, name) {
   navigate('vms');
   selectVm(ns, name);
@@ -11800,6 +11842,7 @@ async function fetchVMs(opts) {
     if (currentPage === 'vms') {
       filterVMs();
       if (typeof renderRecentVmsStrip === 'function') renderRecentVmsStrip();
+      renderNsOverview();
       if (selectedVmNs && selectedVmName) {
         fetchVmWorkspaceDetail(selectedVmNs, selectedVmName);
       }
@@ -16226,6 +16269,10 @@ function setNamespace(ns) {
   fetchExperienceDesktop();
   refresh();
   loadPageData(currentPage);
+  document.querySelectorAll('.vmr-ns-card').forEach(function(btn) {
+    var match = btn.title && btn.title.startsWith((ns === 'all' ? 'All' : ns) + ':');
+    btn.classList.toggle('active', match);
+  });
 }
 
 function nsParam() {
