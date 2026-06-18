@@ -3941,6 +3941,14 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           </div>
         </div>
         <span id="vms-freshness" class="vmr-freshness-label"></span>
+        <div id="vmr-capacity-bar" style="display:none;margin-top:8px;padding:6px 10px;border-radius:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:.67rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">Fleet Capacity</span>
+            <button type="button" style="font-size:.65rem;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:0" onclick="openFleetCapacitySettings()" title="Set fleet CPU/memory cap">⚙</button>
+          </div>
+          <div id="vmr-capacity-cpu" style="margin-bottom:4px"></div>
+          <div id="vmr-capacity-mem"></div>
+        </div>
       </div>
       <div class="vm-list-header" id="vm-list-header" style="display:none">
         <button class="vm-sort-col active" data-sort="status" onclick="setVmSort('status')">Status <span class="sort-arrow" id="sort-arrow-status">↑</span></button>
@@ -16648,6 +16656,67 @@ function updateVmFreshness() {
   el.classList.toggle('freshness-stale', s > 90);
 }
 
+// ── Fleet Capacity Headroom ──
+var _FLEET_CAP_KEY = 'veyron_fleet_cap';
+function getFleetCap() {
+  try { var c = JSON.parse(localStorage.getItem(_FLEET_CAP_KEY) || 'null'); if (c && c.cpu && c.mem) return c; } catch (e) {}
+  return { cpu: 64, mem: 256 };
+}
+function updateFleetCapacityBar() {
+  var wrap = document.getElementById('vmr-capacity-bar');
+  if (!wrap) return;
+  var vms = vmData || [];
+  if (!vms.length) { wrap.style.display = 'none'; return; }
+  var cap = getFleetCap();
+  var totalCpu = 0, totalMem = 0;
+  vms.forEach(function(v) {
+    var c = parseInt(v.cpu, 10) || 0;
+    totalCpu += c;
+    var m = v.memory || '';
+    var mg = parseFloat(m);
+    if (m.toLowerCase().includes('gi') || m.toLowerCase().includes('g')) totalMem += mg;
+    else if (m.toLowerCase().includes('mi') || m.toLowerCase().includes('m')) totalMem += mg / 1024;
+    else if (mg > 0) totalMem += mg;
+  });
+  var cpuPct = Math.min(100, Math.round(totalCpu / cap.cpu * 100));
+  var memPct = Math.min(100, Math.round(totalMem / cap.mem * 100));
+  function bar(pct, used, total, unit, id) {
+    var color = pct > 85 ? '#ef4444' : pct > 65 ? '#f59e0b' : '#22c55e';
+    return '<div id="' + id + '" style="display:flex;align-items:center;gap:6px">' +
+      '<span style="font-size:.65rem;color:var(--text-muted);width:28px;flex-shrink:0">' + unit + '</span>' +
+      '<div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:2px;transition:width .4s ease"></div>' +
+      '</div>' +
+      '<span style="font-size:.65rem;color:var(--text-muted);min-width:52px;text-align:right">' +
+        used.toFixed(used < 10 ? 1 : 0) + '/' + total + unit + ' (' + pct + '%)' +
+      '</span>' +
+    '</div>';
+  }
+  var cpuEl = document.getElementById('vmr-capacity-cpu');
+  var memEl = document.getElementById('vmr-capacity-mem');
+  if (cpuEl) cpuEl.outerHTML = bar(cpuPct, totalCpu, cap.cpu, 'vCPU', 'vmr-capacity-cpu');
+  if (memEl) memEl.outerHTML = bar(memPct, totalMem, cap.mem, 'GB', 'vmr-capacity-mem');
+  wrap.style.display = '';
+}
+function openFleetCapacitySettings() {
+  var cap = getFleetCap();
+  openGlassPrompt({
+    title: 'Fleet Capacity Cap',
+    submitLabel: 'Save',
+    fields: [
+      { id: 'cpu', label: 'Max vCPUs', placeholder: '64', value: String(cap.cpu), type: 'number' },
+      { id: 'mem', label: 'Max Memory (GB)', placeholder: '256', value: String(cap.mem), type: 'number' }
+    ],
+    onSubmit: function(vals) {
+      var cpu = parseInt(vals.cpu, 10) || 64;
+      var mem = parseInt(vals.mem, 10) || 256;
+      try { localStorage.setItem(_FLEET_CAP_KEY, JSON.stringify({ cpu: cpu, mem: mem })); } catch (e) {}
+      updateFleetCapacityBar();
+      toast('Fleet cap set: ' + cpu + ' vCPUs · ' + mem + ' GB', 'success');
+    }
+  });
+}
+
 // ── Search & Filter ──
 let _filterVMsTimer = 0;
 function filterVMsDebounced() {
@@ -16876,6 +16945,7 @@ function filterVMs() {
   renderFleetBriefing();
   renderTagFilterChips();
   renderFilterPresetChips();
+  updateFleetCapacityBar();
   requestAnimationFrame(pulseChangedVmCards);
 }
 
