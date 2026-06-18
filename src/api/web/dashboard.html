@@ -10707,12 +10707,28 @@ function exportIncidentsCsv() {
 
 function copyToClipboard(text) {
   if (!text) return;
+  // _lastCopyTile is set by the document delegation listener before invoking this function
+  var hint = window._lastCopyTile && window._lastCopyTile.querySelector('.vmr-copy-hint');
+  window._lastCopyTile = null;
   navigator.clipboard.writeText(text).then(function() {
-    toast('Copied to clipboard', 'success');
+    if (hint) {
+      var orig = hint.textContent;
+      hint.textContent = '✓';
+      hint.style.color = '#22c55e';
+      hint.style.opacity = '1';
+      setTimeout(function() { hint.textContent = orig; hint.style.color = ''; hint.style.opacity = ''; }, 1200);
+    } else {
+      toast('Copied to clipboard', 'success');
+    }
   }).catch(function() {
     toast('Could not copy — check browser clipboard permission', 'error');
   });
 }
+// Capture the source tile element before any click invokes copyToClipboard
+document.addEventListener('click', function(e) {
+  var tile = e.target.closest && e.target.closest('.vmr-copy-tile');
+  if (tile) window._lastCopyTile = tile;
+}, true); // capture phase — fires before onclick
 
 function copyVmJsonToClipboard(ns, name) {
   var vm = _vmDetailCache || (window.lastVMs || vmData || []).find(function(v) { return v.name === name && (v.namespace||'default') === ns; });
