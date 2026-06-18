@@ -3833,7 +3833,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar">
     <div style="position:relative;display:inline-flex;align-items:center" id="vm-search-wrap">
-      <input type="text" class="form-input" id="vm-search" placeholder="Search name, node:, ip:, ns: ( / )" oninput="filterVMsDebounced();showVmSearchAC()" onfocus="showVmSearchAC()" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Search by name, namespace, or node. Prefixes: node:worker-1, ip:10.x, ns:default">
+      <input type="text" class="form-input" id="vm-search" placeholder="Search name, node:, ip:, ns: ( / )" oninput="filterVMsDebounced();showVmSearchAC()" onfocus="showSearchHistory()" onblur="setTimeout(function(){pushSearchHistory(document.getElementById('vm-search').value)},200)" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Search by name, namespace, or node. Prefixes: node:worker-1, ip:10.x, ns:default">
       <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs();hideVmSearchAC()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
       <div id="vm-search-ac" class="vmr-search-ac" style="display:none" role="listbox"></div>
     </div>
@@ -8471,6 +8471,36 @@ function closeVmCompare() {
   if (overlay) overlay.style.display = 'none';
 }
 
+// ── VM Search History ──
+var _searchHistory = [];
+function pushSearchHistory(q) {
+  q = (q || '').trim();
+  if (!q || q.length < 2) return;
+  _searchHistory = _searchHistory.filter(function(s) { return s !== q; });
+  _searchHistory.unshift(q);
+  if (_searchHistory.length > 8) _searchHistory.length = 8;
+}
+function showSearchHistory() {
+  var inp = document.getElementById('vm-search');
+  var ac = document.getElementById('vm-search-ac');
+  if (!inp || !ac) return;
+  if ((inp.value || '').trim()) { showVmSearchAC(); return; }
+  if (!_searchHistory.length) { hideVmSearchAC(); return; }
+  _vmAcIdx = -1;
+  ac.innerHTML = '<div style="padding:5px 12px 3px;font-size:.67rem;color:var(--text-dim);letter-spacing:.04em;font-weight:600">RECENT</div>' +
+    _searchHistory.map(function(q, i) {
+      return '<div class="vmr-ac-item vmr-hist-item" data-idx="' + i + '" data-apply="' + esc(q) + '" onmousedown="vmSearchAcApply(' + JSON.stringify(q) + ')">' +
+        '<span class="vmr-ac-text">⏱ ' + esc(q) + '</span>' +
+        '<button type="button" onmousedown="event.stopPropagation();removeSearchHistory(' + JSON.stringify(q) + ')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.85rem;padding:0 2px;line-height:1;opacity:.5" title="Remove">×</button>' +
+        '</div>';
+    }).join('');
+  ac.style.display = 'block';
+}
+function removeSearchHistory(q) {
+  _searchHistory = _searchHistory.filter(function(s) { return s !== q; });
+  showSearchHistory();
+}
+
 // ── VM Search Autocomplete ──
 var _vmAcIdx = -1;
 function showVmSearchAC() {
@@ -8478,7 +8508,7 @@ function showVmSearchAC() {
   var ac = document.getElementById('vm-search-ac');
   if (!inp || !ac) return;
   var q = (inp.value || '').trim().toLowerCase();
-  if (!q || q.length < 1) { hideVmSearchAC(); return; }
+  if (!q || q.length < 1) { showSearchHistory(); return; }
   var vms = window.lastVMs || vmData || [];
   var suggestions = [];
   var seen = new Set();
