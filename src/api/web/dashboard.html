@@ -13358,9 +13358,11 @@ function filterPvcsView(query) {
       const parts = [];
       if (u.used && u.capacity) parts.push(esc(u.used) + ' / ' + esc(u.capacity) + (pct ? ' (' + pct + ')' : ''));
       else if (u.capacity) parts.push(esc(u.capacity));
-      if (parts.length) usageLine = '<div class="snap-vm" style="margin-top:4px;font-size:.82em;opacity:.9">' + parts.join(' · ') + '</div>';
+      if (u.usage_basis) parts.push(esc(u.usage_basis));
+      if (u.csi_free_min_for_class) parts.push('CSI class free (min): ' + esc(u.csi_free_min_for_class));
+      if (parts.length) usageLine = '<div class="snap-vm" style="margin-top:4px;font-size:.82em;opacity:.9;line-height:1.35">' + parts.join(' · ') + '</div>';
     }
-    return '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) +
+    return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy PVC name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span>' +
       '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
       '</div><div class="snap-status"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span></div></div>';
   }).join('');
@@ -14188,29 +14190,7 @@ async function fetchStorage(opts) {
         { label: 'Snapshots', value: '→', onclick: "navigate('snapshots')", title: 'View snapshots' }
       ]);
     }
-    if (pvcRows.length > 0) {
-      pvcEl.innerHTML = pvcRows.map(function (p) {
-        const k = (p.namespace || '') + '/' + (p.name || '');
-        const u = usageMap.get(k);
-        let usageLine = '';
-        if (u) {
-          const pct = (typeof u.usage_percent === 'number' && !isNaN(u.usage_percent))
-            ? u.usage_percent.toFixed(0) + '%'
-            : '';
-          const parts = [];
-          if (u.used && u.capacity) parts.push(esc(u.used) + ' / ' + esc(u.capacity) + (pct ? ' (' + pct + ')' : ''));
-          else if (u.capacity) parts.push(esc(u.capacity));
-          if (u.usage_basis) parts.push(esc(u.usage_basis));
-          if (u.csi_free_min_for_class) parts.push('CSI class free (min): ' + esc(u.csi_free_min_for_class));
-          if (parts.length) usageLine = '<div class="snap-vm" style="margin-top:4px;font-size:.82em;opacity:.9;line-height:1.35">' + parts.join(' · ') + '</div>';
-        }
-        return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy PVC name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span>' +
-          '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
-          '</div><div class="snap-status"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span></div></div>';
-      }).join('');
-    } else {
-      pvcEl.innerHTML = '<div class="empty-state"><p>No PVCs</p></div>';
-    }
+    filterPvcsView((document.getElementById('pvc-search') || {}).value || '');
 
     if (scRows.length > 0) {
       scEl.innerHTML = scRows.map(s =>
@@ -16402,9 +16382,7 @@ async function fetchImages() {
     }
     if (!tb) return;
     window.lastImages = images;
-    tb.innerHTML = images.map(img => `<tr>
-      <td>${esc(img.name)}</td><td>${esc(img.namespace)}</td><td>${esc(img.kind)}</td><td>${esc(img.source_type)}</td>
-      <td><span class="glass-badge ${imageStatusClass(img.status)}">${esc(img.status)}</span></td><td>${esc(img.capacity)}</td><td>${esc(img.age)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No images</td></tr>';
+    filterImagesView((document.getElementById('images-search') || {}).value || '');
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchImages');
