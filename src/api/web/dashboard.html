@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618w">
+<meta name="veyron-dashboard-rev" content="20260618x">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618w';
+  var DASH_REV = '20260618x';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -5898,7 +5898,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618w';
+window.__VMROGUE_DASH_REV = '20260618x';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -11355,200 +11355,7 @@ function renderVmrPrimaryTabs() {
   }).join('');
 }
 
-// ── Hero slot renderers ──────────────────────────────────────────────────────
-function renderMissionControlVmr() {
-  const vms = window.lastVMs || [];
-  const vmCount = vms.length;
-  const running = vms.filter(function(v) { return (v.status || '').toLowerCase() === 'running'; }).length;
-  const stopped = vms.filter(function(v) { return (v.status || '').toLowerCase() === 'stopped'; }).length;
-  const failed = vms.filter(function(v) { const s = (v.status || '').toLowerCase(); return s === 'failed' || s === 'error'; }).length;
-  const other = vmCount - running - stopped - failed;
-  const alerts = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-
-  const hero = document.getElementById('vmr-mission-hero');
-  if (hero) {
-    hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">⊛</div>' +
-      '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Mission Control</h1>' +
-      '<p class="vmr-hero-sub">' + running + ' of ' + vmCount + ' VM' + (vmCount !== 1 ? 's' : '') + ' running' +
-      (failed > 0 ? ' · <span style="color:var(--error)">' + failed + ' failed</span>' : '') +
-      (alerts ? ' · <span style="color:var(--error)">' + alerts + ' alert' + (alerts !== 1 ? 's' : '') + '</span>' : '') + '</p></div>' +
-      '<div class="vmr-hero-actions"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\')">Fleet Command</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus()">Ask Zeus</button>' +
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-left:8px" title="VM count trend (last ' + _clusterPulseData.length + ' polls)">' +
-      '<canvas id="vmr-pulse-canvas" style="border-radius:3px;opacity:.85"></canvas>' +
-      '<span style="font-size:.6rem;color:var(--text-dim);letter-spacing:.04em">PULSE</span></div>' +
-      '</div></div>';
-  setTimeout(drawClusterPulseSparkline, 30);
-  setTimeout(updateHeadroomGauges, 50);
-  }
-
-  const metrics = document.getElementById('vmr-mission-metrics');
-  if (metrics && vmCount > 0) {
-    metrics.innerHTML = renderGlassStatPills([
-      { label: 'Total VMs', value: vmCount, onclick: "navigate('vms')", title: 'View all VMs' },
-      { label: 'Running', value: running, cls: running > 0 ? ' ok' : '', onclick: "navigateToVmsFilter('Running')", title: 'Running VMs' },
-      { label: 'Stopped', value: stopped, cls: stopped > 0 ? ' warn' : '', onclick: "navigateToVmsFilter('Stopped')", title: 'Stopped VMs' },
-      { label: 'Issues', value: failed, cls: failed > 0 ? ' bad' : '', onclick: "navigateToVmsIssues()", title: 'Failed or error VMs' },
-    ]);
-  }
-
-  // Fleet health panel — top VMs by health score from fleetHealthMap
-  const fleetHealth = document.getElementById('vmr-fleet-health');
-  if (fleetHealth) {
-    const healthItems = vms.map(function(v) {
-      const key = (v.namespace || 'default') + '/' + v.name;
-      const h = (typeof fleetHealthMap !== 'undefined' && fleetHealthMap[key]) || null;
-      return { vm: v, score: h ? h.health_score : null, label: h ? h.health_label : null };
-    }).filter(function(item) { return item.score !== null; }).sort(function(a, b) { return a.score - b.score; });
-    if (healthItems.length === 0) {
-      // Show VM status summary instead
-      fleetHealth.innerHTML = vms.slice(0, 6).map(function(v) {
-        const s = (v.status || '').toLowerCase();
-        const cls = s === 'running' ? 'ok' : s === 'stopped' ? 'warn' : 'bad';
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border)">' +
-          '<span style="font-size:.82rem" class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(v.name) + ')') + '>' + esc(v.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-          '<span class="glass-badge ' + cls + '">' + esc(v.status || '—') + '</span></div>';
-      }).join('') || '<div style="color:var(--text-dim);font-size:.84rem;padding:12px 0">No VMs in scope</div>';
-    } else {
-      // Show health scores sorted ascending (worst first)
-      fleetHealth.innerHTML = healthItems.slice(0, 6).map(function(item) {
-        const scoreCls = item.score >= 85 ? 'ok' : item.score >= 65 ? 'warn' : 'bad';
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border)">' +
-          '<span style="font-size:.82rem">' + esc(item.vm.name) + '</span>' +
-          '<span class="glass-badge ' + scoreCls + '">' + item.score + '% ' + esc(item.label || '') + '</span></div>';
-      }).join('');
-    }
-  }
-
-  // Quick actions panel
-  const quickActions = document.getElementById('vmr-quick-actions');
-  if (quickActions) {
-    const actions = [
-      { label: '+ Forge VM', onclick: "openCreateModal()", primary: true },
-      { label: 'Forge Wizard', onclick: "openForgeWizard()" },
-      { label: 'Snapshots', onclick: "navigate('snapshots')" },
-      { label: 'Events', onclick: "navigate('events')" },
-      { label: 'Nodes', onclick: "navigate('nodes')" },
-      { label: 'Costs', onclick: "navigate('costs')" },
-    ];
-    quickActions.innerHTML = actions.map(function(a) {
-      return '<button type="button" class="' + (a.primary ? 'glass-btn-primary' : 'glass-btn-secondary') + ' glass-btn-sm vmr-quick-action-btn" onclick="' + esc(a.onclick) + '">' + esc(a.label) + '</button>';
-    }).join('');
-  }
-
-  // Active alerts panel
-  const activeAlerts = document.getElementById('vmr-active-alerts');
-  if (activeAlerts) {
-    const alertList = window.lastAlerts || [];
-    const firing = alertList.filter(function(a) { return (a.status || '').toLowerCase() === 'firing' || !a.resolved; });
-    if (!firing.length) {
-      activeAlerts.innerHTML = '<div style="color:var(--success);font-size:.84rem;padding:12px 0;text-align:center">✓ No active alerts</div>';
-    } else {
-      activeAlerts.innerHTML = firing.slice(0, 5).map(function(a) {
-        const sev = (a.severity || '').toLowerCase();
-        const cls = sev === 'critical' ? 'error' : sev === 'warning' ? 'warn' : 'other';
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--glass-border)">' +
-          '<span style="font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(a.name || a.alert_name || 'Alert') + '</span>' +
-          '<span class="glass-badge ' + cls + '" style="margin-left:8px;flex-shrink:0">' + esc(a.severity || 'unknown') + '</span></div>';
-      }).join('') +
-      (firing.length > 5 ? '<div style="font-size:.76rem;color:var(--text-muted);text-align:center;margin-top:6px">+' + (firing.length - 5) + ' more · <button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'alerts\')">View all</button></div>' : '');
-    }
-  }
-
-  // Copilot recommendations panel
-  const copilotRec = document.getElementById('vmr-copilot-recommendations');
-  if (copilotRec) {
-    const briefing = window._copilotBriefingCache || window._vmrCopilotDisplayCache || [];
-    if (briefing.length > 0) {
-      copilotRec.innerHTML = briefing.slice(0, 4).map(function(item, i) {
-        const sev = item.severity || 'info';
-        const sevCls = sev === 'critical' ? 'bad' : sev === 'warning' ? 'warn' : 'ok';
-        return '<button type="button" class="dc-briefing-item ' + esc(sev) + '" style="width:100%;text-align:left;margin-bottom:6px" ' +
-          onHandler('runCopilotBriefing(' + i + ',\'vmr\')') + '>' +
-          '<div style="display:flex;align-items:center;gap:6px">' +
-          '<span class="glass-badge ' + sevCls + '" style="font-size:.7rem;flex-shrink:0">' + esc(sev) + '</span>' +
-          '<span class="dc-briefing-title" style="font-size:.82rem">' + esc(item.title) + '</span></div>' +
-          (item.detail ? '<div class="dc-briefing-detail" style="font-size:.76rem;margin-top:3px">' + esc(item.detail) + '</div>' : '') +
-          '</button>';
-      }).join('') +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%;margin-top:4px;font-size:.76rem" onclick="openAskZeus()">Open Ask Zeus →</button>';
-    } else {
-      copilotRec.innerHTML = '<div style="color:var(--text-dim);font-size:.84rem;padding:8px 0;line-height:1.5">Ask Zeus for insights about your fleet, costs, or security posture.</div>' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:8px;width:100%" onclick="openAskZeus()">Ask Zeus →</button>';
-    }
-  }
-
-  // Recent activity panel — recent events as activity feed
-  const recentActivity = document.getElementById('vmr-recent-activity');
-  if (recentActivity) {
-    const events = (typeof lastEvents !== 'undefined' ? lastEvents : []).slice(0, 8);
-    if (!events.length) {
-      recentActivity.innerHTML = '<div style="color:var(--text-dim);font-size:.84rem;padding:8px 0">No recent events</div>';
-    } else {
-      recentActivity.innerHTML = events.map(function(e) {
-        const isWarn = e.type === 'Warning';
-        return '<div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--glass-border)">' +
-          '<div class="event-dot ' + (isWarn ? 'warn' : 'info') + '" style="margin-top:4px;flex-shrink:0"></div>' +
-          '<div style="flex:1;min-width:0"><div style="font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(e.message || e.reason || 'Event') + '</div>' +
-          '<div style="font-size:.72rem;color:var(--text-muted)">' + esc(e.namespace || '—') + ' · ' + fmtTime(e.timestamp) + '</div></div></div>';
-      }).join('') +
-      '<div style="margin-top:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" style="width:100%;font-size:.76rem" onclick="navigate(\'events\')">View all events →</button></div>';
-    }
-  }
-
-  // Bottom row: Compute, Storage, Platform summary (3 columns)
-  const bottom = document.getElementById('vmr-mission-bottom');
-  if (bottom) {
-    const snapCount = (window.lastSnapshots || []).length;
-    const nodeCount = typeof window.lastNodes !== 'undefined' ? window.lastNodes.length : '—';
-    const podCount = typeof window.lastPods !== 'undefined' ? window.lastPods.length : '—';
-    const wlCount = (window.lastWorkloads || []).length || '—';
-    bottom.innerHTML =
-      '<div class="vmr-panel"><div class="vmr-panel-title">Compute at a Glance</div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px;font-size:.82rem">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Nodes</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'nodes\')">' + nodeCount + ' →</button></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Pods</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'pods\')">' + podCount + ' →</button></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Workloads</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'workloads\')">' + wlCount + ' →</button></div>' +
-      '</div></div>' +
-      '<div class="vmr-panel"><div class="vmr-panel-title">Storage &amp; Snapshots</div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px;font-size:.82rem">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'snapshots\')">' + snapCount + ' →</button></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">Backups</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'backups\')">View →</button></div>' +
-      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:var(--text-muted)">PVCs</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="navigate(\'storage\')">View →</button></div>' +
-      '</div></div>' +
-      '<div class="vmr-panel"><div class="vmr-panel-title">Platform</div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px">' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'catalog\')">VM Catalog</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'stack-health\')">Stack Health</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm vmr-quick-action-btn" onclick="navigate(\'settings\')">Settings</button>' +
-      '</div></div>';
-  }
-
-  // Recent Activity — last 6 VMs visited
-  const recentActivity = document.getElementById('vmr-recent-activity');
-  if (recentActivity) {
-    const recents = getRecentVms().slice(0, 6);
-    if (!recents.length) {
-      recentActivity.innerHTML = '<div style="color:var(--text-dim);font-size:.82rem;padding:8px 0">No recent VMs — visit a VM to build history.</div>';
-    } else {
-      recentActivity.innerHTML = recents.map(function(r) {
-        const vm = vms.find(function(v) { return v.name === r.name && (v.namespace || 'default') === (r.ns || 'default'); });
-        const s = vm ? (vm.status || '') : '';
-        const dotCls = s === 'Running' ? 'ok' : s === 'Stopped' ? 'warn' : s ? 'bad' : '';
-        const since = r.ts ? Math.round((Date.now() - r.ts) / 60000) : null;
-        const timeStr = since === null ? '' : since < 1 ? 'just now' : since < 60 ? since + 'm ago' : Math.round(since/60) + 'h ago';
-        return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--glass-border)">' +
-          '<span class="glass-badge ' + dotCls + '" style="width:8px;height:8px;padding:0;border-radius:50%;flex-shrink:0"></span>' +
-          '<button type="button" class="vmr-recent-chip" style="flex:1;text-align:left;border-radius:6px;justify-content:flex-start;font-size:.8rem" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(r.ns||'default', r.name) + ',{});},200)">' + esc(r.name) + '</button>' +
-          (timeStr ? '<span style="font-size:.68rem;color:var(--text-dim);white-space:nowrap;flex-shrink:0">' + esc(timeStr) + '</span>' : '') +
-          '</div>';
-      }).join('');
-    }
-  }
-
-  // Cluster Pulse — ring buffer of VM counts, drawn as sparkline
-  updateClusterPulse(vmCount);
-}
+// Mission Control rendering: window.renderMissionControlVmr in dashboard-veyron.js
 
 var _clusterPulseData = [];
 function updateClusterPulse(count) {
@@ -13662,6 +13469,7 @@ async function fetchVMs(opts) {
     recordVmHistory(list);
     requestNotifPermission();
     vmData = list;
+    window.lastVMs = list;
     const total = vmData.length;
     const running = vmData.filter(v => v.status === 'Running').length;
     const stopped = vmData.filter(v => v.status === 'Stopped').length;

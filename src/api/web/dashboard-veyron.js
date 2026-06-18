@@ -309,6 +309,8 @@
     if (typeof renderPinnedVmsFromClient === 'function') renderPinnedVmsFromClient();
     if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
     if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
+    if (typeof updateClusterPulse === 'function') updateClusterPulse(vms.length);
+    if (typeof updateHeadroomGauges === 'function') setTimeout(updateHeadroomGauges, 50);
   };
 
   window.renderVeyronFleetHealth = function renderVeyronFleetHealth() {
