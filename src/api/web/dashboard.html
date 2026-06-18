@@ -3887,7 +3887,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="page-header-right" id="pod-count"></div></div>
     <div id="pods-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Pods</span><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPodsCsv()" title="Export pod list as CSV">&#8595; CSV</button></div>
+    <div class="card-header"><span class="card-title">Pods</span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><button type="button" class="vmr-chip vmr-chip-active" data-podphase="all" onclick="setPodPhaseFilter('all',this)">All</button><button type="button" class="vmr-chip" data-podphase="Running" onclick="setPodPhaseFilter('Running',this)"><span class="vmr-chip-dot" style="background:#22c55e"></span>Running</button><button type="button" class="vmr-chip" data-podphase="Pending" onclick="setPodPhaseFilter('Pending',this)"><span class="vmr-chip-dot" style="background:#f59e0b"></span>Pending</button><button type="button" class="vmr-chip" data-podphase="Failed" onclick="setPodPhaseFilter('Failed',this)"><span class="vmr-chip-dot" style="background:#ef4444"></span>Failed</button><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:170px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPodsCsv()" title="Export pod list as CSV">&#8595; CSV</button></div></div>
     <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span></div>
     <div id="pod-list"></div>
   </div>
@@ -13070,20 +13070,33 @@ async function fetchPods(opts) {
   }
 }
 
+let _podPhaseFilter = 'all';
+
+function setPodPhaseFilter(phase, btn) {
+  _podPhaseFilter = phase || 'all';
+  document.querySelectorAll('[data-podphase]').forEach(function(b) {
+    b.classList.toggle('vmr-chip-active', b === btn);
+  });
+  filterPodsView((document.getElementById('pod-search') || {}).value || '');
+}
+
 function filterPodsView(query) {
   const el = document.getElementById('pod-list');
   if (!el) return;
   const pods = window.lastPods || [];
   const q = (query || '').toLowerCase().trim();
-  const filtered = q ? pods.filter(function(p) {
+  const phase = _podPhaseFilter || 'all';
+  let filtered = phase !== 'all' ? pods.filter(function(p) { return p.phase === phase; }) : pods;
+  if (q) filtered = filtered.filter(function(p) {
     return (p.name || '').toLowerCase().includes(q) ||
            (p.namespace || '').toLowerCase().includes(q) ||
            (p.node_name || '').toLowerCase().includes(q) ||
            (p.ip || '').toLowerCase().includes(q);
-  }) : pods;
+  });
   if (!filtered.length) {
-    el.innerHTML = q ? '<div class="empty-state"><p>No pods match "<strong>' + esc(q) + '</strong>"</p></div>'
-      : '<div class="empty-state"><p>No pods found</p></div>';
+    const hint = phase !== 'all' ? phase + ' pods' : 'pods';
+    el.innerHTML = q ? '<div class="empty-state"><p>No ' + hint + ' match &ldquo;' + esc(q) + '&rdquo;</p></div>'
+      : '<div class="empty-state"><p>No ' + hint + ' found</p></div>';
     return;
   }
   el.innerHTML = filtered.map(function(p) {
