@@ -1427,6 +1427,9 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vmr-preset-chip{display:inline-flex;align-items:center;gap:0}
+.vmr-preset-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.75rem;padding:0 5px;line-height:1;border-radius:0 4px 4px 0;margin-left:-1px;height:22px;display:inline-flex;align-items:center}
+.vmr-preset-del:hover{color:#f87171;background:rgba(239,68,68,.12)}
 .vmr-card-pulse{animation:vmr-pulse-once 2.4s ease-out}
 @keyframes vmr-pulse-once{0%{box-shadow:0 0 0 0 rgba(59,130,246,.7),0 0 0 0 rgba(59,130,246,.4)}40%{box-shadow:0 0 0 8px rgba(59,130,246,.2),0 0 0 4px rgba(59,130,246,.1)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
 .vmr-vmgroup{margin-bottom:4px}
@@ -3906,9 +3909,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="generateFleetReport()" title="Generate Markdown fleet report for sharing">📋</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="saveFilterPreset()" title="Save current search + status filter as a named preset">⊛ Preset</button>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
   <div id="vmr-tag-filter-chips" class="vmr-filter-chips" style="display:none;gap:6px;padding:2px 0 4px;flex-wrap:wrap"></div>
+  <div id="vmr-preset-chips" class="vmr-filter-chips" style="display:none;gap:5px;padding:2px 0 4px;flex-wrap:wrap;align-items:center"></div>
   <div id="vm-search-node-hint" style="display:none;flex-wrap:wrap;gap:4px;padding:4px 0 2px;align-items:center"></div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div id="vmr-fleet-pinned" style="display:none;flex-wrap:wrap;gap:6px;padding:4px 0 6px;align-items:center"></div>
@@ -9130,6 +9135,59 @@ function vmTagsHtml(ns, name) {
       onStopHandler('setTagFilter(' + jsArgs(t) + ')') + ' title="Filter by ' + esc(t) + '">' + esc(t) + '</span>';
   }).join('') + '</div>';
 }
+// ── Filter Presets ──
+var FILTER_PRESETS_KEY = 'veyron_filter_presets';
+function getAllFilterPresets() {
+  try { return JSON.parse(localStorage.getItem(FILTER_PRESETS_KEY) || '[]'); } catch (e) { return []; }
+}
+function saveFilterPreset() {
+  var q = (document.getElementById('vm-search') || {}).value || '';
+  var st = (document.getElementById('vm-filter-status') || {}).value || '';
+  if (!q && !st) { showToast('Set a search or status filter first', 'info'); return; }
+  openGlassPrompt({
+    title: 'Save filter preset',
+    fields: [{ id: 'pname', label: 'Preset name', placeholder: 'e.g. "Prod Running"', value: (st || q).slice(0, 24) }],
+    submitLabel: 'Save',
+    onSubmit: function(vals) {
+      var name = (vals.pname || '').trim();
+      if (!name) return;
+      var presets = getAllFilterPresets().filter(function(p) { return p.name !== name; });
+      presets.unshift({ name: name, q: q, status: st });
+      if (presets.length > 8) presets = presets.slice(0, 8);
+      try { localStorage.setItem(FILTER_PRESETS_KEY, JSON.stringify(presets)); } catch (e) {}
+      renderFilterPresetChips();
+      showToast('Preset "' + name + '" saved', 'success');
+    }
+  });
+}
+function applyFilterPreset(preset) {
+  var search = document.getElementById('vm-search');
+  var statusSel = document.getElementById('vm-filter-status');
+  if (search) search.value = preset.q || '';
+  if (statusSel) statusSel.value = preset.status || '';
+  syncChipsFromSelect();
+  filterVMs();
+}
+function deleteFilterPreset(name) {
+  var presets = getAllFilterPresets().filter(function(p) { return p.name !== name; });
+  try { localStorage.setItem(FILTER_PRESETS_KEY, JSON.stringify(presets)); } catch (e) {}
+  renderFilterPresetChips();
+}
+function renderFilterPresetChips() {
+  var el = document.getElementById('vmr-preset-chips');
+  if (!el) return;
+  var presets = getAllFilterPresets();
+  if (!presets.length) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span style="font-size:.65rem;color:var(--text-dim);align-self:center;flex-shrink:0;padding-right:4px">Presets:</span>' +
+    presets.map(function(p) {
+      return '<span class="vmr-preset-chip">' +
+        '<button type="button" class="vmr-chip" onclick="applyFilterPreset(' + JSON.stringify(p) + ')">' + esc(p.name) + '</button>' +
+        '<button type="button" class="vmr-preset-del" onclick="event.stopPropagation();deleteFilterPreset(' + JSON.stringify(p.name) + ')" title="Delete preset" aria-label="Delete">×</button>' +
+        '</span>';
+    }).join('');
+}
+
 function renderTagFilterChips() {
   var el = document.getElementById('vmr-tag-filter-chips');
   if (!el) return;
@@ -16642,6 +16700,7 @@ function filterVMs() {
   updateFleetStatusBar();
   renderFleetBriefing();
   renderTagFilterChips();
+  renderFilterPresetChips();
   requestAnimationFrame(pulseChangedVmCards);
 }
 
