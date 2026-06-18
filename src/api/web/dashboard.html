@@ -10979,7 +10979,7 @@ function filterDepsView(query) {
            (e.to || '').toLowerCase().includes(q);
   }) : edges;
   tb.innerHTML = filtered.map(function(e) {
-    return '<tr><td>' + esc(e.from) + '</td><td>' + esc(e.dependency_type) + '</td><td>' + esc(e.to) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(e.from) + ')') + '>' + esc(e.from) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(e.dependency_type) + '</td><td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(e.to) + ')') + '>' + esc(e.to) + '<span class="vmr-copy-hint">copy</span></td></tr>';
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching edges</td></tr>';
 }
 
@@ -11135,7 +11135,7 @@ function filterTopologyView(query) {
            (e.target || '').toLowerCase().includes(q);
   }) : edges;
   tb.innerHTML = filtered.map(function(e) {
-    return '<tr><td>' + esc(e.source) + '</td><td>' + esc(e.relation) + '</td><td>' + esc(e.target) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(e.source) + ')') + '>' + esc(e.source) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(e.relation) + '</td><td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(e.target) + ')') + '>' + esc(e.target) + '<span class="vmr-copy-hint">copy</span></td></tr>';
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching edges</td></tr>';
 }
 
@@ -12327,7 +12327,11 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
   if (ifaces.length) {
     ifaceTable = '<table class="iface-table"><thead><tr><th>Name</th><th>IP</th><th>MAC</th></tr></thead><tbody>';
     ifaces.forEach(function(i) {
-      ifaceTable += '<tr><td>' + esc(i.interface_name || i.name || '—') + '</td><td>' + esc(i.ip_address || i.ip || '—') + '</td><td>' + esc(i.mac || '—') + '</td></tr>';
+      const ip = i.ip_address || i.ip || '';
+      const mac = i.mac || '';
+      const ipCell = ip ? '<span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(ip) + ')') + '>' + esc(ip) + '<span class="vmr-copy-hint">copy</span></span>' : '—';
+      const macCell = mac ? '<span class="vmr-copy-tile" title="Copy MAC" ' + onStopHandler('copyToClipboard(' + jsArgs(mac) + ')') + '>' + esc(mac) + '<span class="vmr-copy-hint">copy</span></span>' : '—';
+      ifaceTable += '<tr><td>' + esc(i.interface_name || i.name || '—') + '</td><td>' + ipCell + '</td><td>' + macCell + '</td></tr>';
     });
     ifaceTable += '</tbody></table>';
   }
@@ -12348,6 +12352,8 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
         vdKv('Phase', vmi.phase || vm.status) + vdKv('Ready', vm.ready ? 'Yes' : 'No') + vdKv('Age', vm.age || '—') +
         (vm.cpu ? vdKv('CPU', vm.cpu) : '') + (vm.memory ? vdKv('Memory', vm.memory) : '') +
         (vm.namespace && vm.namespace !== 'default' ? vdKv('Namespace', vm.namespace) : '') +
+        (vm.ip && vm.ip !== 'N/A' ? '<div class="vd-kv"><div class="vd-kv-label">IP</div><div class="vd-kv-value vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></div></div>' : '') +
+        (vm.node ? '<div class="vd-kv"><div class="vd-kv-label">Node</div><div class="vd-kv-value vmr-copy-tile" title="Copy node" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.node) + ')') + '>' + esc(vm.node) + '<span class="vmr-copy-hint">copy</span></div></div>' : '') +
         (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
         vdKv('Guest runtime', '…') +
       '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div></div></div>' +
