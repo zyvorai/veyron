@@ -4401,11 +4401,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">VMTemplate CRDs</span></div>
+    <div class="card-header"><span class="card-title">VMTemplate CRDs</span><input type="search" id="catalog-templates-search" class="form-input" placeholder="Filter templates…" oninput="filterCatalogTemplatesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"></div>
     <table class="table"><thead><tr><th>Name</th><th>Family</th><th>Description</th><th>Tags</th></tr></thead><tbody id="catalog-templates-body"></tbody></table>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">VMProfile CRDs</span></div>
+    <div class="card-header"><span class="card-title">VMProfile CRDs</span><input type="search" id="catalog-profiles-search" class="form-input" placeholder="Filter profiles…" oninput="filterCatalogProfilesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"></div>
     <table class="table"><thead><tr><th>Name</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Description</th></tr></thead><tbody id="catalog-profiles-body"></tbody></table>
   </div>
 </div>
@@ -4611,7 +4611,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="forecasting-cap-banner"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Predictions</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Predictions</span><input type="search" id="forecasting-search" class="form-input" placeholder="Filter by metric or trend…" oninput="filterForecastingView(this.value)" style="width:210px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
 </div>
 </div>
@@ -10685,6 +10685,59 @@ function filterWorkloadsView(query) {
   renderWorkloadsList(query);
 }
 
+function filterCatalogTemplatesView(query) {
+  const tb = document.getElementById('catalog-templates-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastCatalogTemplates || [];
+  if (!items.length) { tb.innerHTML = crdEmptyRow ? crdEmptyRow(4, { message: window._catalogTemplatesMessage }) : ''; return; }
+  const filtered = q ? items.filter(function(t) {
+    return (t.name || '').toLowerCase().includes(q) ||
+           (t.family || '').toLowerCase().includes(q) ||
+           (t.description || '').toLowerCase().includes(q) ||
+           ((t.tags || []).join(' ')).toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(t) {
+    return '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.family || '-') + '</td><td>' + esc(t.description || '-') + '</td><td>' + esc((t.tags || []).join(', ') || '-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No templates match &ldquo;' + esc(q) + '&rdquo;' : 'No templates') + '</td></tr>';
+}
+
+function filterCatalogProfilesView(query) {
+  const tb = document.getElementById('catalog-profiles-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastCatalogProfiles || [];
+  if (!items.length) { tb.innerHTML = crdEmptyRow ? crdEmptyRow(5, { message: window._catalogProfilesMessage }) : ''; return; }
+  const filtered = q ? items.filter(function(p) {
+    return (p.name || '').toLowerCase().includes(q) ||
+           (p.description || '').toLowerCase().includes(q) ||
+           String(p.cores || '').includes(q) ||
+           (p.memory || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(p) {
+    return '<tr><td>' + esc(p.name) + '</td><td>' + p.cores + '</td><td>' + esc(p.memory) + '</td><td>' + esc(p.disk_size) + '</td><td>' + esc(p.description || '-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No profiles match &ldquo;' + esc(q) + '&rdquo;' : 'No profiles') + '</td></tr>';
+}
+
+function filterForecastingView(query) {
+  const tb = document.getElementById('forecasting-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastForecastingItems || [];
+  const filtered = q ? items.filter(function(f) {
+    return (f.metric || '').toLowerCase().includes(q) ||
+           (f.trend || '').toLowerCase().includes(q) ||
+           (f.estimated_breach || '').toLowerCase().includes(q) ||
+           (f.prediction_window || '').toLowerCase().includes(q);
+  }) : items;
+  tb.innerHTML = filtered.map(function(f) {
+    return '<tr><td>' + esc(f.metric) + '</td><td>' + f.current_value + '</td><td>' + f.predicted_value + '</td><td>' + esc(f.prediction_window) + '</td><td>' + esc(f.trend) + '</td><td>' + Math.round((f.confidence || 0) * 100) + '%</td><td>' + esc(f.estimated_breach || '-') + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">' +
+    (q ? 'No predictions match &ldquo;' + esc(q) + '&rdquo;' : 'No predictions available') + '</td></tr>';
+}
+
 function filterVeleroBackupsView(query) {
   const tb = document.getElementById('velero-backups-body');
   if (!tb) return;
@@ -15398,8 +15451,8 @@ async function fetchForecasting() {
     setCapBanner('forecasting-cap-banner', predRes.veyron_context);
     const items = predRes && predRes.predictions != null ? predRes.predictions : asArray(predRes);
     if (!tb) return;
-    tb.innerHTML = items.map(f => `<tr><td>${esc(f.metric)}</td><td>${f.current_value}</td><td>${f.predicted_value}</td><td>${esc(f.prediction_window)}</td><td>${esc(f.trend)}</td><td>${Math.round((f.confidence || 0) * 100)}%</td><td>${esc(f.estimated_breach || '-')}</td></tr>`).join('')
-      || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No predictions available</td></tr>';
+    window.lastForecastingItems = items;
+    filterForecastingView((document.getElementById('forecasting-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchForecasting');
     console.error('Forecasting fetch error:', e);
@@ -16577,14 +16630,14 @@ async function fetchCatalog() {
         (missTpl || missProf ? ' · Missing ' + missTpl + ' template(s), ' + missProf + ' profile(s)' : '');
     }
     if (tplTb) {
-      tplTb.innerHTML = tpl.items.length ? tpl.items.map(t =>
-        '<tr><td>' + esc(t.name) + '</td><td>' + esc(t.family || '-') + '</td><td>' + esc(t.description || '-') + '</td><td>' + esc((t.tags || []).join(', ') || '-') + '</td></tr>'
-      ).join('') : crdEmptyRow(4, { message: tpl.message });
+      window.lastCatalogTemplates = tpl.items;
+      window._catalogTemplatesMessage = tpl.message;
+      filterCatalogTemplatesView((document.getElementById('catalog-templates-search') || {}).value || '');
     }
     if (profTb) {
-      profTb.innerHTML = prof.items.length ? prof.items.map(p =>
-        '<tr><td>' + esc(p.name) + '</td><td>' + p.cores + '</td><td>' + esc(p.memory) + '</td><td>' + esc(p.disk_size) + '</td><td>' + esc(p.description || '-') + '</td></tr>'
-      ).join('') : crdEmptyRow(5, { message: prof.message });
+      window.lastCatalogProfiles = prof.items;
+      window._catalogProfilesMessage = prof.message;
+      filterCatalogProfilesView((document.getElementById('catalog-profiles-search') || {}).value || '');
     }
     if (tplSel) {
       tplSel.innerHTML = tpl.items.map(t => '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>').join('')
