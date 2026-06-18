@@ -3287,7 +3287,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="nav-dropdown">
       <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
       <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
-      <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts</button>
+      <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts<span id="alerts-nav-badge" class="vmr-nav-badge" style="display:none"></span></button>
       <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
       <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
       <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
@@ -3362,7 +3362,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
       <button class="nav-link" data-page="dr" onclick="navigate('dr')">Disaster Recovery</button>
       <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
-      <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications</button>
+      <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications<span id="notif-nav-badge" class="vmr-nav-badge" style="display:none"></span></button>
     </div>
   </div>
   <div class="nav-group">
@@ -14742,6 +14742,8 @@ async function fetchAlerts() {
     if (sumEl) {
       const firing = alerts.filter(a => (a.status || '').toLowerCase() === 'firing').length;
       const critical = alerts.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
+      const alertsBadge = document.getElementById('alerts-nav-badge');
+      if (alertsBadge) { alertsBadge.textContent = firing > 99 ? '99+' : firing; alertsBadge.style.display = firing ? '' : 'none'; }
       sumEl.innerHTML = renderGlassStatPills([
         { label: 'Alerts', value: alerts.length },
         { label: 'Firing', value: firing, cls: firing ? ' warn' : ' ok' },
@@ -14823,6 +14825,8 @@ async function fetchNotifications() {
     }
     const markBtn = document.getElementById('notif-mark-read-btn');
     if (markBtn) markBtn.style.display = unread ? '' : 'none';
+    const navBadge = document.getElementById('notif-nav-badge');
+    if (navBadge) { navBadge.textContent = unread > 99 ? '99+' : unread; navBadge.style.display = unread ? '' : 'none'; }
     window.lastNotifications = items;
     tb.innerHTML = items.map(n => {
       const sevCls = glassTableBadge(n.severity);
