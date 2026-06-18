@@ -2145,6 +2145,10 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-alog-action{color:var(--text-dim);font-size:.7rem;flex-shrink:0}
 .vmr-alog-ns{color:var(--text-dim);font-size:.68rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .vmr-alog-ts{color:var(--text-dim);font-size:.68rem;flex-shrink:0;white-space:nowrap}
+.vmr-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;transition:box-shadow 2s ease;border-radius:0}
+.vmr-ambient.warn{box-shadow:inset 0 0 80px rgba(245,158,11,.08),inset 0 0 180px rgba(245,158,11,.04)}
+.vmr-ambient.critical{box-shadow:inset 0 0 80px rgba(239,68,68,.12),inset 0 0 180px rgba(239,68,68,.06);animation:vmr-ambient-pulse 3s ease-in-out infinite}
+@keyframes vmr-ambient-pulse{0%,100%{opacity:.7}50%{opacity:1}}
 .vmr-cmd-ac{position:absolute;bottom:calc(100% + 6px);left:0;min-width:300px;max-height:260px;overflow-y:auto;background:rgba(10,12,18,.98);border:1px solid rgba(56,189,248,.25);border-radius:10px;box-shadow:0 -6px 28px rgba(0,0,0,.7);backdrop-filter:blur(20px);z-index:1100;scrollbar-width:thin}
 .vmr-cmd-ac-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;cursor:pointer;transition:background .1s;font-size:.8rem}
 .vmr-cmd-ac-item:hover,.vmr-cmd-ac-item.active{background:rgba(56,189,248,.1)}
@@ -3179,6 +3183,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto">
+<div id="vmr-ambient" class="vmr-ambient" aria-hidden="true"></div>
 <header class="navbar cloudos-topbar mac-menubar" role="banner">
   <div class="mac-menubar-left navbar-left">
     <div class="mac-menubar-menus">
@@ -8757,6 +8762,15 @@ function vmNoteHtml(ns, name) {
   return '<div class="vmr-vm-note" ' + onStopHandler('openVmNoteEditor(' + jsArgs(ns, name) + ')') + ' title="' + esc(note) + '">📝 ' + esc(short) + '</div>';
 }
 
+// ── Ambient Cluster Status Glow ──
+function updateAmbientGlow(running, total, failed) {
+  var el = document.getElementById('vmr-ambient');
+  if (!el) return;
+  el.classList.remove('warn', 'critical');
+  if (failed > 0) el.classList.add('critical');
+  else if (total > 0 && running < total * 0.6) el.classList.add('warn');
+}
+
 // ── VM Custom Tags ──
 var VM_TAGS_KEY = 'veyron_vm_tags';
 var _activeTagFilter = null;
@@ -12604,6 +12618,7 @@ async function fetchVMs(opts) {
       subEl.textContent = 'KubeVirt fleet command' + (driftN ? ' — ' + driftN + ' with operator drift' : '');
     }
     _pushFleetRunHistory(running, total);
+    updateAmbientGlow(running, total, failed);
     if (currentPage === 'vms') {
       filterVMs();
       if (typeof renderRecentVmsStrip === 'function') renderRecentVmsStrip();
