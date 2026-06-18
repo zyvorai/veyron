@@ -4341,7 +4341,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportIngressCsv()" title="Export ingress as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIngress()">&#8635; Refresh</button></div></div>
     <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><span id="ingress-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
 </div>
 </div>
@@ -4584,7 +4584,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportTopologyCsv()" title="Export topology as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology()">&#8635; Refresh</button></div></div>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span><input type="search" id="topology-search" class="form-input" placeholder="Filter edges…" oninput="filterTopologyView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span><span id="topology-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="topology-search" class="form-input" placeholder="Filter edges…" oninput="filterTopologyView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
 </div>
 </div>
@@ -4593,7 +4593,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportDepsCsv()" title="Export dependencies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchDependencies()">&#8635; Refresh</button></div></div>
     <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span><input type="search" id="deps-search" class="form-input" placeholder="Filter edges…" oninput="filterDepsView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span><span id="deps-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="deps-search" class="form-input" placeholder="Filter edges…" oninput="filterDepsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
 </div>
 </div>
@@ -4602,7 +4602,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscalerPolicies ? fetchAutoscalerPolicies() : fetchHpa()">&#8635; Refresh</button></div></div>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><span id="autoscaler-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
 </div>
 </div>
@@ -4616,7 +4616,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="forecasting-cap-banner"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Predictions</span><input type="search" id="forecasting-search" class="form-input" placeholder="Filter by metric or trend…" oninput="filterForecastingView(this.value)" style="width:210px;font-size:.82rem;margin-left:auto"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Predictions</span><span id="forecasting-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="forecasting-search" class="form-input" placeholder="Filter by metric or trend…" oninput="filterForecastingView(this.value)" style="width:210px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
 </div>
 </div>
@@ -4699,7 +4699,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
   <div id="performance-cap-banner"></div>
   <div id="performance-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Profiles</span><input type="search" id="performance-search" class="form-input" placeholder="Filter by VM name…" oninput="filterPerformanceView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Profiles</span><span id="performance-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="performance-search" class="form-input" placeholder="Filter by VM name…" oninput="filterPerformanceView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>VM</th><th>CPU P95</th><th>Memory P95</th><th>Read IOPS</th><th>Write IOPS</th><th>Collected</th></tr></thead><tbody id="performance-body"></tbody></table></div>
   <div class="card glass-card">
     <div class="card-header">
@@ -4720,7 +4720,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportWebhooksCsv()" title="Export webhooks as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWebhooks()">&#8635; Refresh</button></div></div>
   
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span><input type="search" id="webhooks-search" class="form-input" placeholder="Filter webhooks…" oninput="filterWebhooksView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span><span id="webhooks-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="webhooks-search" class="form-input" placeholder="Filter webhooks…" oninput="filterWebhooksView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
 </div>
 </div>
@@ -4730,6 +4730,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
     <div class="page-header-right" style="display:flex;gap:8px;align-items:center">
       <input type="search" id="compliance-search" class="form-input" placeholder="Filter frameworks or reports…" oninput="filterComplianceView(this.value)" style="width:230px;font-size:.82rem">
+      <span id="compliance-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportComplianceCsv()" title="Export compliance as CSV">&#8595; CSV</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCompliance()">&#8635; Refresh</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button>
@@ -4786,7 +4787,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHeatmapCsv()" title="Export heatmap as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHeatmap()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div></div>
     <div id="heatmap-cap-banner"></div>
   <div id="heatmap-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span><input type="search" id="heatmap-search" class="form-input" placeholder="Filter nodes…" oninput="filterHeatmapView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span><span id="heatmap-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="heatmap-search" class="form-input" placeholder="Filter nodes…" oninput="filterHeatmapView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Node</th><th>CPU %</th><th>Memory %</th><th>Disk %</th><th>Network est.</th><th>VMs</th><th>Heat</th></tr></thead><tbody id="heatmap-body"></tbody></table></div>
 </div>
 </div>
@@ -4805,7 +4806,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div>
     <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNetpolCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkPolicies()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div></div>
     <div id="netpol-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="netpol-search" class="form-input" placeholder="Filter policies…" oninput="filterNetpolView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><span id="netpol-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="netpol-search" class="form-input" placeholder="Filter policies…" oninput="filterNetpolView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
 </div>
 </div>
@@ -4816,7 +4817,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
     <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span><input type="search" id="images-search" class="form-input" placeholder="Filter images…" oninput="filterImagesView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span><span id="images-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="images-search" class="form-input" placeholder="Filter images…" oninput="filterImagesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th></tr></thead><tbody id="images-body"></tbody></table></div>
 </div>
 </div>
@@ -4881,8 +4882,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="incidents-stats" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header">
-      <span class="card-title">Incident Timeline</span>
-      <div style="display:flex;gap:8px;align-items:center">
+      <span class="card-title">Incident Timeline</span><span id="incidents-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+      <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
         <input type="search" id="incidents-search" class="form-input" placeholder="Filter by title, VM, namespace…" oninput="filterIncidentsView(this.value)" style="width:220px;font-size:.82rem">
         <select id="incident-severity-filter" class="toolbar-input" onchange="fetchIncidents()">
           <option value="">All Severities</option>
@@ -10884,6 +10885,8 @@ function filterWebhooksView(query) {
            (w.url || '').toLowerCase().includes(q) ||
            (w.events || []).join(' ').toLowerCase().includes(q);
   }) : items;
+  const webhooksCountEl = document.getElementById('webhooks-filter-count');
+  if (webhooksCountEl) webhooksCountEl.textContent = filtered.length === items.length ? items.length + ' webhooks' : filtered.length + ' of ' + items.length + ' webhooks';
   tb.innerHTML = filtered.map(function(w) {
     return '<tr><td>' + esc(w.name) + '</td><td style="font-size:.8em;font-family:var(--font-mono)" class="vmr-copy-tile" title="Copy webhook URL" ' + onStopHandler('copyToClipboard(' + jsArgs(w.url) + ')') + '>' + esc(w.url) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc((w.events || []).join(', ') || '-') + '</td>' +
       '<td><span class="glass-badge ' + (w.active ? 'running' : 'stopped') + '">' + (w.active ? 'Yes' : 'No') + '</span></td>' +
@@ -11028,6 +11031,8 @@ function filterForecastingView(query) {
            (f.estimated_breach || '').toLowerCase().includes(q) ||
            (f.prediction_window || '').toLowerCase().includes(q);
   }) : items;
+  const forecastCountEl = document.getElementById('forecasting-filter-count');
+  if (forecastCountEl) forecastCountEl.textContent = filtered.length === items.length ? items.length + ' predictions' : filtered.length + ' of ' + items.length + ' predictions';
   tb.innerHTML = filtered.map(function(f) {
     return '<tr><td>' + esc(f.metric) + '</td><td>' + f.current_value + '</td><td>' + f.predicted_value + '</td><td>' + esc(f.prediction_window) + '</td><td>' + esc(f.trend) + '</td><td>' + Math.round((f.confidence || 0) * 100) + '%</td><td>' + esc(f.estimated_breach || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">' +
@@ -11099,6 +11104,8 @@ function filterPerformanceView(query) {
   const filtered = q ? items.filter(function(p) {
     return (p.vm_name || '').toLowerCase().includes(q);
   }) : items;
+  const perfCountEl = document.getElementById('performance-filter-count');
+  if (perfCountEl) perfCountEl.textContent = filtered.length === items.length ? items.length + ' profiles' : filtered.length + ' of ' + items.length + ' profiles';
   tb.innerHTML = filtered.map(function(p) {
     return '<tr class="clickable-row" ' + onHandler('openPerformanceVm(' + jsArgs(p.vm_name) + ')') + ' title="Open VM detail">' +
       '<td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.vm_name) + ')') + '>' + esc(p.vm_name) + '<span class="vmr-copy-hint">copy</span></td>' +
@@ -11139,6 +11146,8 @@ function filterDepsView(query) {
            (e.dependency_type || '').toLowerCase().includes(q) ||
            (e.to || '').toLowerCase().includes(q);
   }) : edges;
+  const depsCountEl = document.getElementById('deps-filter-count');
+  if (depsCountEl) depsCountEl.textContent = filtered.length === edges.length ? edges.length + ' edges' : filtered.length + ' of ' + edges.length + ' edges';
   tb.innerHTML = filtered.map(function(e) {
     return '<tr><td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(e.from) + ')') + '>' + esc(e.from) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(e.dependency_type) + '</td><td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(e.to) + ')') + '>' + esc(e.to) + '<span class="vmr-copy-hint">copy</span></td></tr>';
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching edges</td></tr>';
@@ -11154,6 +11163,8 @@ function filterAutoscalerView(query) {
            (a.namespace || '').toLowerCase().includes(q) ||
            (a.target_name || '').toLowerCase().includes(q);
   }) : items;
+  const autoscalerCountEl = document.getElementById('autoscaler-filter-count');
+  if (autoscalerCountEl) autoscalerCountEl.textContent = filtered.length === items.length ? items.length + ' policies' : filtered.length + ' of ' + items.length + ' policies';
   tb.innerHTML = filtered.map(function(a) {
     return '<tr><td class="vmr-copy-tile" title="Copy autoscaler name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.namespace) + '</td><td>' + esc(a.target_kind) + '/' + esc(a.target_name) + '</td><td>' + a.min_replicas + '</td><td>' + a.current_replicas + '</td><td>' + a.max_replicas + '</td><td>' + (a.enabled ? 'Yes' : 'No') + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
@@ -11205,6 +11216,8 @@ function filterHeatmapView(query) {
   const nodes = window.lastHeatmapNodes || [];
   const q = (query || '').toLowerCase().trim();
   const filtered = q ? nodes.filter(function(n) { return (n.node_name || '').toLowerCase().includes(q); }) : nodes;
+  const heatmapCountEl = document.getElementById('heatmap-filter-count');
+  if (heatmapCountEl) heatmapCountEl.textContent = filtered.length === nodes.length ? nodes.length + ' nodes' : filtered.length + ' of ' + nodes.length + ' nodes';
   tb.innerHTML = filtered.map(function(n) {
     return '<tr class="clickable-row" ' + onHandler('openNodeDetailDeep(' + jsArgs(n.node_name) + ')') + ' title="Open node detail">' +
       '<td class="vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.node_name) + ')') + '>' + esc(n.node_name) + '<span class="vmr-copy-hint">copy</span></td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
@@ -11262,6 +11275,8 @@ function filterIncidentsView(query) {
            (e.namespace || '').toLowerCase().includes(q) ||
            (e.kind || '').toLowerCase().includes(q);
   });
+  const incidentsCountEl = document.getElementById('incidents-filter-count');
+  if (incidentsCountEl) incidentsCountEl.textContent = events.length === allEvents.length ? allEvents.length + ' incidents' : events.length + ' of ' + allEvents.length + ' incidents';
   const kindColor = {'slo-breach':'var(--error)','k8s-event':'var(--warning)','action':'var(--spark)'};
   tb.innerHTML = events.map(function(e) {
     const sc = e.severity === 'critical' ? 'var(--error)' : 'var(--warning)';
@@ -11288,6 +11303,8 @@ function filterImagesView(query) {
            (img.source_type || '').toLowerCase().includes(q) ||
            (img.status || '').toLowerCase().includes(q);
   }) : images;
+  const imagesCountEl = document.getElementById('images-filter-count');
+  if (imagesCountEl) imagesCountEl.textContent = filtered.length === images.length ? images.length + ' images' : filtered.length + ' of ' + images.length + ' images';
   tb.innerHTML = filtered.map(function(img) {
     return '<tr><td class="vmr-copy-tile" title="Copy image name" ' + onStopHandler('copyToClipboard(' + jsArgs(img.name) + ')') + '>' + esc(img.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td><span class="glass-badge ' + imageStatusClass(img.status) + '">' + esc(img.status) + '</span></td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching images</td></tr>';
@@ -11303,6 +11320,8 @@ function filterTopologyView(query) {
            (e.relation || '').toLowerCase().includes(q) ||
            (e.target || '').toLowerCase().includes(q);
   }) : edges;
+  const topoCountEl = document.getElementById('topology-filter-count');
+  if (topoCountEl) topoCountEl.textContent = filtered.length === edges.length ? edges.length + ' edges' : filtered.length + ' of ' + edges.length + ' edges';
   tb.innerHTML = filtered.map(function(e) {
     return '<tr><td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(e.source) + ')') + '>' + esc(e.source) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(e.relation) + '</td><td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(e.target) + ')') + '>' + esc(e.target) + '<span class="vmr-copy-hint">copy</span></td></tr>';
   }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching edges</td></tr>';
@@ -11345,6 +11364,8 @@ function filterIngressView(query) {
            ((ing.hosts || []).join(' ')).toLowerCase().includes(q) ||
            (ing.class_name || '').toLowerCase().includes(q);
   }) : items;
+  const ingressCountEl = document.getElementById('ingress-filter-count');
+  if (ingressCountEl) ingressCountEl.textContent = filtered.length === items.length ? items.length + ' ingresses' : filtered.length + ' of ' + items.length + ' ingresses';
   tb.innerHTML = filtered.map(function(ing) {
     const hostsStr = (ing.hosts || []).join(', ') || '-';
     const hostsCell = ing.hosts && ing.hosts.length
@@ -11364,6 +11385,8 @@ function filterNetpolView(query) {
            (p.namespace || '').toLowerCase().includes(q) ||
            ((p.policy_types || []).join(' ')).toLowerCase().includes(q);
   }) : rows;
+  const netpolCountEl = document.getElementById('netpol-filter-count');
+  if (netpolCountEl) netpolCountEl.textContent = filtered.length === rows.length ? rows.length + ' policies' : filtered.length + ' of ' + rows.length + ' policies';
   tb.innerHTML = filtered.map(function(p) {
     return '<tr class="clickable-row" onclick="navigate(\'cilium\')" title="Open Cilium network view">' +
       '<td class="vmr-copy-tile" title="Copy policy name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
@@ -11379,6 +11402,8 @@ function filterComplianceView(query) {
   const q = (query || '').toLowerCase().trim();
   const fSt = q ? statuses.filter(function(s) { return (s.framework || '').toLowerCase().includes(q); }) : statuses;
   const fRep = q ? reports.filter(function(r) { return (r.framework || '').toLowerCase().includes(q) || (r.id || '').toLowerCase().includes(q); }) : reports;
+  const complianceCountEl = document.getElementById('compliance-filter-count');
+  if (complianceCountEl) complianceCountEl.textContent = fSt.length === statuses.length ? statuses.length + ' frameworks' : fSt.length + ' of ' + statuses.length + ' frameworks';
   if (stBody) stBody.innerHTML = fSt.map(function(s) {
     return '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
       '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
