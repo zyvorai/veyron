@@ -3970,7 +3970,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-policies" data-section="security">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPolicies()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPoliciesCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPolicies()">&#8635; Refresh</button></div></div>
     <div id="policies-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span><input type="search" id="policies-search" class="form-input" placeholder="Filter policies…" oninput="filterPoliciesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
@@ -3980,7 +3980,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-insights" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Insights</h1><p>VeyronInsight observability data</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchInsights()">&#8635; Refresh</button></div></div>
+<div class="page-header"><div><h1>Insights</h1><p>VeyronInsight observability data</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportInsightsCsv()" title="Export insights as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchInsights()">&#8635; Refresh</button></div></div>
     
     <div id="insights-summary" class="grid-4 page-glass-stats"></div>
 <div id="drift-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -3995,7 +3995,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-actions" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportActionsCsv()" title="Export actions as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span><input type="search" id="actions-search" class="form-input" placeholder="Filter actions…" oninput="filterActionsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
@@ -8858,6 +8858,30 @@ function exportSnapshotsCsv() {
     rows.push([s.name, s.vm_name, s.namespace || '', s.ready ? 'Yes' : 'No', s.status || '', s.age || '']);
   });
   exportCsv(rows, 'snapshots.csv');
+}
+
+function exportPoliciesCsv() {
+  const rows = [['Name', 'Enforcement', 'Severity', 'Framework', 'Rules', 'Enabled', 'Matching', 'Violations']];
+  (window.lastPolicies || []).forEach(function(p) {
+    rows.push([p.name, p.enforcement, p.severity, p.framework||'', p.rule_count, p.enabled?'Yes':'No', p.matching_vms||0, p.violating_vms||0]);
+  });
+  exportCsv(rows, 'policies.csv');
+}
+
+function exportInsightsCsv() {
+  const rows = [['Name', 'Type', 'Severity', 'VM', 'Title', 'State']];
+  (window.lastInsights || []).forEach(function(i) {
+    rows.push([i.name, i.insight_type, i.severity, i.vm_ref||'', i.title, i.state||'New']);
+  });
+  exportCsv(rows, 'insights.csv');
+}
+
+function exportActionsCsv() {
+  const rows = [['Name', 'Action', 'VM', 'Approved', 'Phase', 'Message']];
+  (window.lastActions || []).forEach(function(a) {
+    rows.push([a.name, a.action_type, a.vm_ref||'', a.approved?'Yes':'No', a.phase||'Pending', a.message||'']);
+  });
+  exportCsv(rows, 'actions.csv');
 }
 
 function exportAlertsCsv() {
