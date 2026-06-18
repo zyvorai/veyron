@@ -4160,9 +4160,16 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
   <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">Active Alerts</span>
     <div style="display:flex;gap:8px;flex:1;min-width:240px;justify-content:flex-end">
-      <input type="search" class="form-input" id="alerts-copilot-input" placeholder="Ask Zeus about alerts…" style="max-width:320px;min-width:160px" onkeydown="if(event.key==='Enter'){event.preventDefault();pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')}">
+      <input type="search" class="form-input" id="alerts-search" placeholder="Filter alerts…" oninput="filterAlertsView()" style="max-width:200px;min-width:120px;font-size:.82rem">
+      <input type="search" class="form-input" id="alerts-copilot-input" placeholder="Ask Zeus about alerts…" style="max-width:240px;min-width:140px" onkeydown="if(event.key==='Enter'){event.preventDefault();pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')}">
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')">Ask Zeus</button>
     </div></div>
+    <div style="padding:8px 16px 0;display:flex;gap:6px;flex-wrap:wrap">
+      <button type="button" class="vmr-chip vmr-chip-active" data-alertfilter="all" onclick="setAlertFilter(this,'all')">All</button>
+      <button type="button" class="vmr-chip" data-alertfilter="firing" onclick="setAlertFilter(this,'firing')"><span class="vmr-chip-dot" style="background:#f59e0b"></span>Firing</button>
+      <button type="button" class="vmr-chip" data-alertfilter="critical" onclick="setAlertFilter(this,'critical')"><span class="vmr-chip-dot" style="background:#ef4444"></span>Critical</button>
+      <button type="button" class="vmr-chip" data-alertfilter="warning" onclick="setAlertFilter(this,'warning')"><span class="vmr-chip-dot" style="background:#f97316"></span>Warning</button>
+    </div>
   <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
   </div>
 </div>
@@ -10278,6 +10285,33 @@ function filterSnapshots(query) {
   renderSnapList(query);
 }
 
+let _alertFilterMode = 'all';
+function setAlertFilter(btn, mode) {
+  _alertFilterMode = mode;
+  document.querySelectorAll('[data-alertfilter]').forEach(function(b) {
+    b.classList.toggle('vmr-chip-active', b === btn);
+  });
+  filterAlertsView();
+}
+function filterAlertsView() {
+  const tb = document.getElementById('alerts-body');
+  if (!tb) return;
+  const q = ((document.getElementById('alerts-search') || {}).value || '').toLowerCase().trim();
+  const mode = _alertFilterMode || 'all';
+  let alerts = window.lastAlerts || [];
+  if (mode === 'firing') alerts = alerts.filter(function(a) { return (a.status || '').toLowerCase() === 'firing'; });
+  else if (mode === 'critical') alerts = alerts.filter(function(a) { return (a.severity || '').toLowerCase() === 'critical'; });
+  else if (mode === 'warning') alerts = alerts.filter(function(a) { return (a.severity || '').toLowerCase() === 'warning'; });
+  if (q) alerts = alerts.filter(function(a) {
+    return (a.name || '').toLowerCase().includes(q) || (a.message || '').toLowerCase().includes(q) || (a.source || '').toLowerCase().includes(q);
+  });
+  tb.innerHTML = alerts.map(function(a) {
+    const sevCls = glassTableBadge(a.severity);
+    const stCls = glassTableBadge(a.status);
+    return '<tr class="clickable-row" onclick="pageCopilotChip(\'alerts-copilot-input\',' + JSON.stringify('Explain alert ' + (a.name || '')) + ',\'Active warning events in namespace\')" title="Ask Zeus"><td>' + esc(a.name) + '</td><td><span class="glass-badge ' + sevCls + '">' + esc(a.severity) + '</span></td><td><span class="glass-badge ' + stCls + '">' + esc(a.status) + '</span></td><td>' + esc(a.source) + '</td><td>' + esc(a.message) + '</td><td>' + fmtTime(a.fired_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No matching alerts</td></tr>';
+}
+
 function filterEventsView(type, btn) {
   if (btn) {
     document.querySelectorAll('[data-evfilter]').forEach(function(b) {
@@ -13919,6 +13953,7 @@ async function fetchAlerts() {
   const sumEl = document.getElementById('alerts-summary');
   try {
     const alerts = asArray(await apiJson('/api/v1/alerts' + nsParam()));
+    window.lastAlerts = alerts;
     if (sumEl) {
       const firing = alerts.filter(a => (a.status || '').toLowerCase() === 'firing').length;
       const critical = alerts.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
