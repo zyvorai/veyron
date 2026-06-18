@@ -16331,12 +16331,7 @@ async function fetchHeatmap() {
     }
     if (!tb) return;
     window.lastHeatmapNodes = nodes;
-    tb.innerHTML = nodes.map(n =>
-      '<tr class="clickable-row" ' + onHandler('openNodeDetailDeep(' + jsArgs(n.node_name) + ')') + ' title="Open node detail">' +
-      '<td>' + esc(n.node_name) + '</td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
-      '<td>' + (n.disk_utilization || 0).toFixed(1) + '</td><td>' + (n.network_utilization || 0).toFixed(1) + '</td>' +
-      '<td>' + (n.vm_count ?? 0) + '</td><td>' + (n.heat_score || 0).toFixed(2) + '</td></tr>'
-    ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No nodes</td></tr>';
+    filterHeatmapView((document.getElementById('heatmap-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchHeatmap');
     if (summaryEl) summaryEl.innerHTML = summaryErrorHtml(e.message || String(e));
@@ -16382,11 +16377,7 @@ async function fetchNetworkPolicies() {
     }
     if (!tb) return;
     window.lastNetpols = rows;
-    tb.innerHTML = rows.map(p =>
-      '<tr class="clickable-row" onclick="navigate(\'cilium\')" title="Open Cilium network view">' +
-      '<td>' + esc(p.name) + '</td><td>' + esc(p.namespace) + '</td><td><span class="glass-badge other">' + esc((p.policy_types || []).join(', ') || '—') + '</span></td>' +
-      '<td>' + (p.ingress_rules ?? 0) + '</td><td>' + (p.egress_rules ?? 0) + '</td><td>' + fmtTime(p.created_at) + '</td></tr>'
-    ).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No policies</td></tr>';
+    filterNetpolView((document.getElementById('netpol-search') || {}).value || '');
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchNetworkPolicies');
