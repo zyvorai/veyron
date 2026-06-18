@@ -12996,18 +12996,7 @@ async function fetchNodes(opts) {
     const nodeCountEl = document.getElementById('node-count');
     if (nodeCountEl) nodeCountEl.textContent = nodes.length + ' nodes';
     if (!el) return;
-    el.innerHTML = nodes.map(n => {
-      const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
-      return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
-        '<span class="cell-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '>' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-        '<span><span class="glass-badge ' + nodeStatusBadgeClass(n.status) + '">' + esc(n.status) + '</span></span>' +
-        '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
-        '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
-        '<span class="cell-mono">' + memGb + '</span>' +
-        '<span class="cell-mono vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(n.kubelet_version) + ')') + '>' + esc(n.kubelet_version) + '<span class="vmr-copy-hint">copy</span></span>' +
-        '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
-        '</div>';
-    }).join('');
+    filterNodesView((document.getElementById('nodes-search') || {}).value || '');
   } catch (e) {
     const el = document.getElementById('node-list');
     if (el) el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchNodes()">&#8635; Retry</button></div>';
@@ -13270,20 +13259,7 @@ async function fetchPods(opts) {
       ]);
     }
     document.getElementById('pod-count').textContent = pods.length + ' pods';
-    el.innerHTML = pods.map(p => {
-      const phaseCls = p.phase === 'Running' ? 'running' : p.phase === 'Pending' ? 'pending' : p.phase === 'Failed' ? 'failed' : 'succeeded';
-      const restarts = p.restart_count != null ? p.restart_count : (p.restarts != null ? p.restarts : 0);
-      const age = formatPodAge(p.created_at) || p.age || '—';
-      const nodeSpan = p.node_name ? '<span class="cell-mono vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.node_name) + ')') + '>' + esc(p.node_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
-      const ipSpan = p.ip ? '<span class="cell-mono vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(p.ip) + ')') + '>' + esc(p.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
-      return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
-        '<span class="cell-name vmr-copy-tile" title="Copy pod name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-        '<span><span class="glass-badge ' + podPhaseBadgeClass(p.phase) + '">' + esc(p.phase) + '</span></span>' +
-        nodeSpan + ipSpan +
-        '<span class="cell-mono">' + restarts + '</span>' +
-        '<span class="cell-mono">' + esc(age) + '</span>' +
-        '</div>';
-    }).join('');
+    filterPodsView((document.getElementById('pod-search') || {}).value || '');
   } catch (e) {
     const el = document.getElementById('pod-list');
     if (el) el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchPods()">&#8635; Retry</button></div>';
