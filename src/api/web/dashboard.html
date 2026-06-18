@@ -3894,6 +3894,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" data-view="map" onclick="setVmrFleetView('map')">Map</button>
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
       <button type="button" id="vm-group-btn" title="Group VMs by name prefix (G)" onclick="toggleVmGrouping()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">⊞</button>
+      <button type="button" title="Status Board — full-screen wall view" onclick="openStatusBoard()" style="margin-left:2px;font-size:.85rem;padding:4px 8px" aria-label="Status Board">⊡</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <div id="vmr-fleet-status-bar" title="Fleet status: click to filter" style="display:none;flex-shrink:0;cursor:pointer;gap:1px;border-radius:4px;overflow:hidden;height:14px;width:72px;align-items:stretch"></div>
@@ -4006,6 +4007,18 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <!-- VM QUICK STATS HOVER CARD -->
 <div id="vmr-hover-card" class="vmr-hover-card" style="display:none" role="tooltip" aria-live="polite"></div>
 <div id="vmr-ctx-menu" class="vmr-ctx-menu" style="display:none" role="menu"></div>
+
+<!-- FLEET STATUS BOARD -->
+<div id="vmr-status-board" style="display:none;position:fixed;inset:0;z-index:800;background:#080a0f;overflow:auto;flex-direction:column" role="dialog" aria-label="Fleet Status Board">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0">
+    <span style="font-size:1rem;font-weight:700;letter-spacing:.05em;color:rgba(255,255,255,.9)">FLEET STATUS BOARD</span>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="vmr-sb-ts" style="font-size:.75rem;color:rgba(255,255,255,.35)"></span>
+      <button type="button" onclick="closeStatusBoard()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:rgba(255,255,255,.7);padding:5px 12px;cursor:pointer;font-size:.8rem">✕ Exit</button>
+    </div>
+  </div>
+  <div id="vmr-sb-grid" style="display:flex;flex-wrap:wrap;gap:12px;padding:20px 24px;align-content:flex-start;flex:1"></div>
+</div>
 
 <!-- VM COMPARISON OVERLAY -->
 <div id="vm-compare-overlay" onclick="if(event.target===this)closeVmCompare()" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px"></div>
@@ -8562,6 +8575,70 @@ function closeVmCompare() {
   var overlay = document.getElementById('vm-compare-overlay');
   if (overlay) overlay.style.display = 'none';
 }
+
+// ── Fleet Status Board ──
+var _sbTimer = null;
+function openStatusBoard() {
+  var board = document.getElementById('vmr-status-board');
+  if (!board) return;
+  board.style.display = 'flex';
+  renderStatusBoard();
+  clearInterval(_sbTimer);
+  _sbTimer = setInterval(function() {
+    fetchVMs().then(function() { renderStatusBoard(); }).catch(function() {});
+  }, 15000);
+}
+function closeStatusBoard() {
+  var board = document.getElementById('vmr-status-board');
+  if (board) board.style.display = 'none';
+  clearInterval(_sbTimer);
+  _sbTimer = null;
+}
+function renderStatusBoard() {
+  var grid = document.getElementById('vmr-sb-grid');
+  var ts = document.getElementById('vmr-sb-ts');
+  if (!grid) return;
+  var vms = vmData || [];
+  var now = new Date();
+  if (ts) ts.textContent = 'Last updated: ' + now.toLocaleTimeString();
+  var tileW = Math.max(120, Math.min(200, Math.floor((window.innerWidth - 48) / Math.max(1, Math.ceil(Math.sqrt(vms.length * 1.5)))) - 12));
+  var statusColors = {
+    running:  { bg: 'rgba(22,101,52,.85)',  border: '#22c55e', text: '#86efac' },
+    stopped:  { bg: 'rgba(30,41,59,.85)',   border: '#475569', text: '#94a3b8' },
+    failed:   { bg: 'rgba(127,29,29,.85)',  border: '#f87171', text: '#fca5a5' },
+    error:    { bg: 'rgba(127,29,29,.85)',  border: '#f87171', text: '#fca5a5' },
+    starting: { bg: 'rgba(6,78,59,.85)',    border: '#34d399', text: '#6ee7b7' },
+    stopping: { bg: 'rgba(69,26,3,.85)',    border: '#f59e0b', text: '#fde68a' },
+    pending:  { bg: 'rgba(49,46,129,.85)',  border: '#818cf8', text: '#c7d2fe' },
+    paused:   { bg: 'rgba(76,29,149,.85)',  border: '#c084fc', text: '#e9d5ff' },
+  };
+  grid.innerHTML = vms.sort(function(a,b) {
+    var order = { Failed:0,Error:0,Stopping:1,Starting:2,Running:3,Paused:4,Pending:5,Stopped:6 };
+    return (order[a.status]||9) - (order[b.status]||9) || a.name.localeCompare(b.name);
+  }).map(function(v) {
+    var s = (v.status || 'unknown').toLowerCase();
+    var c = statusColors[s] || { bg: 'rgba(30,41,59,.7)', border: '#475569', text: '#94a3b8' };
+    var icon = osFamilyIcon(guessOsFamily(v));
+    return '<div onclick="closeStatusBoard();navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(v.namespace||'default', v.name) + ')},300)" ' +
+      'style="width:' + tileW + 'px;padding:14px 16px;background:' + c.bg + ';border:1px solid ' + c.border + ';border-radius:10px;' +
+      'cursor:pointer;display:flex;flex-direction:column;gap:6px;transition:transform .1s,box-shadow .1s;' +
+      'box-shadow:0 0 12px ' + c.border + '22" ' +
+      'onmouseenter="this.style.transform=\'scale(1.03)\';this.style.boxShadow=\'0 0 20px ' + c.border + '55\'" ' +
+      'onmouseleave="this.style.transform=\'\';this.style.boxShadow=\'0 0 12px ' + c.border + '22\'">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between">' +
+      '<span style="font-size:1.1rem">' + icon + '</span>' +
+      '<span style="font-size:.65rem;font-weight:700;letter-spacing:.06em;color:' + c.text + ';text-transform:uppercase">' + esc(v.status) + '</span>' +
+      '</div>' +
+      '<div style="font-size:.8rem;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(v.name) + '">' + esc(v.name) + '</div>' +
+      '<div style="font-size:.65rem;color:rgba(255,255,255,.4)">' + esc(v.namespace || 'default') + '</div>' +
+      '</div>';
+  }).join('');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && document.getElementById('vmr-status-board') && document.getElementById('vmr-status-board').style.display !== 'none') {
+    closeStatusBoard();
+  }
+});
 
 // ── VM Search History ──
 var _searchHistory = [];
