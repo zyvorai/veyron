@@ -10829,7 +10829,7 @@ function filterHelmView(query) {
            (h.status || '').toLowerCase().includes(q);
   }) : releases;
   tb.innerHTML = filtered.map(function(h) {
-    return '<tr><td>' + esc(h.name) + '</td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(h.status) + '">' + esc(h.status) + '</span></td><td>' + h.revision + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy release name" ' + onStopHandler('copyToClipboard(' + jsArgs(h.name) + ')') + '>' + esc(h.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(h.status) + '">' + esc(h.status) + '</span></td><td>' + h.revision + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
 }
 
@@ -11040,7 +11040,11 @@ function filterIngressView(query) {
            (ing.class_name || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(ing) {
-    return '<tr><td>' + esc(ing.name) + '</td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + esc((ing.hosts || []).join(', ') || '-') + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td></tr>';
+    const hostsStr = (ing.hosts || []).join(', ') || '-';
+    const hostsCell = ing.hosts && ing.hosts.length
+      ? '<span class="vmr-copy-tile" title="Copy hosts" ' + onStopHandler('copyToClipboard(' + jsArgs(hostsStr) + ')') + '>' + esc(hostsStr) + '<span class="vmr-copy-hint">copy</span></span>'
+      : '-';
+    return '<tr><td>' + esc(ing.name) + '</td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + hostsCell + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching ingresses</td></tr>';
 }
 
@@ -11108,7 +11112,7 @@ function filterOperatorsView(query) {
            ((o.managed_resources || []).join(' ')).toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(o) {
-    return '<tr><td>' + esc(o.name) + '</td><td>' + esc(o.namespace) + '</td><td>' + esc(o.version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(o.status) + '">' + esc(o.status) + '</span></td><td>' + esc((o.managed_resources || []).join(', ') || '-') + '</td><td>' + fmtTime(o.installed_at) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy operator name" ' + onStopHandler('copyToClipboard(' + jsArgs(o.name) + ')') + '>' + esc(o.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(o.namespace) + '</td><td>' + esc(o.version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(o.status) + '">' + esc(o.status) + '</span></td><td>' + esc((o.managed_resources || []).join(', ') || '-') + '</td><td>' + fmtTime(o.installed_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching operators</td></tr>';
 }
 
