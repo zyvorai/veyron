@@ -1427,6 +1427,15 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-workspace{display:grid;grid-template-columns:minmax(280px,.9fr) minmax(360px,1.1fr);gap:0;min-height:min(72vh,720px);border:1px solid var(--border);border-radius:14px;overflow:hidden;background:rgba(0,0,0,.25)}
 .vm-list-pane{display:flex;flex-direction:column;border-right:1px solid var(--border);min-height:0;overflow:hidden}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.vmr-vmgroup{margin-bottom:4px}
+.vmr-vmgroup-header{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;user-select:none;border-radius:6px;background:rgba(255,255,255,.04);border-left:3px solid rgba(255,255,255,.15);transition:background .1s}
+.vmr-vmgroup-header:hover{background:rgba(255,255,255,.07)}
+.vmr-vmgroup-chevron{font-size:.75rem;color:var(--text-dim);width:12px;flex-shrink:0}
+.vmr-vmgroup-name{font-weight:600;font-size:.82rem;color:var(--text-primary);flex:1}
+.vmr-vmgroup-count{font-size:.75rem;font-weight:500;flex-shrink:0}
+.vmr-vmgroup-hint{font-size:.65rem;color:var(--text-dim);opacity:0;transition:opacity .15s;margin-left:4px}
+.vmr-vmgroup-header:hover .vmr-vmgroup-hint{opacity:1}
+.vmr-vmgroup-body{padding:6px 0 6px 12px}
 .vmr-dragging{opacity:.45;transform:scale(.97);transition:opacity .1s,transform .1s}
 .vmr-drag-target{box-shadow:0 0 0 2px var(--accent-primary),0 4px 20px rgba(59,130,246,.3)!important;transform:scale(1.02);transition:transform .1s,box-shadow .1s}
 .vmr-focus-dim{opacity:.28;filter:blur(.4px);transition:opacity .25s ease,filter .25s ease;pointer-events:none}
@@ -3882,6 +3891,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" data-view="topology" onclick="setVmrFleetView('topology')">Topology</button>
       <button type="button" data-view="map" onclick="setVmrFleetView('map')">Map</button>
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
+      <button type="button" id="vm-group-btn" title="Group VMs by name prefix (G)" onclick="toggleVmGrouping()" style="margin-left:2px;font-size:.85rem;padding:4px 8px">⊞</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <div id="vmr-fleet-status-bar" title="Fleet status: click to filter" style="display:none;flex-shrink:0;cursor:pointer;gap:1px;border-radius:4px;overflow:hidden;height:14px;width:72px;align-items:stretch"></div>
@@ -14704,6 +14714,14 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'g' || e.key === 'G') && currentPage === 'vms') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      if (typeof toggleVmGrouping === 'function') toggleVmGrouping();
+      return;
+    }
+  }
   if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'z' || e.key === 'Z') && currentPage === 'vms') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -16371,6 +16389,70 @@ function syncChipsFromSelect() {
   });
 }
 
+// ── VM Name-Pattern Grouping ──
+window._vmGroupingEnabled = false;
+var _vmGroupCollapsed = {};
+
+function vmNamePrefix(name) {
+  var m = name.match(/^(.*?)[-_]?\d+$/);
+  return m ? m[1] : name;
+}
+
+function groupVmsByPattern(vms) {
+  var prefixMap = {};
+  vms.forEach(function(v) {
+    var p = vmNamePrefix(v.name);
+    (prefixMap[p] = prefixMap[p] || []).push(v);
+  });
+  var groups = [], singles = [];
+  Object.keys(prefixMap).sort().forEach(function(p) {
+    if (prefixMap[p].length >= 2) groups.push({ prefix: p, vms: prefixMap[p] });
+    else singles.push(prefixMap[p][0]);
+  });
+  return { groups: groups, singles: singles };
+}
+
+function renderGroupedVmList(vms) {
+  var isGrid = vmViewMode === 'grid';
+  var result = groupVmsByPattern(vms);
+  var html = '';
+  result.groups.forEach(function(g) {
+    var collapsed = !!_vmGroupCollapsed[g.prefix];
+    var running = g.vms.filter(function(v) { return v.status === 'Running'; }).length;
+    var statusColor = running === g.vms.length ? '#22c55e' : running > 0 ? '#f59e0b' : '#64748b';
+    html += '<div class="vmr-vmgroup">' +
+      '<div class="vmr-vmgroup-header" onclick="toggleVmGroup(' + JSON.stringify(g.prefix) + ')">' +
+      '<span class="vmr-vmgroup-chevron">' + (collapsed ? '▸' : '▾') + '</span>' +
+      '<span class="vmr-vmgroup-name">' + esc(g.prefix) + '</span>' +
+      '<span class="vmr-vmgroup-count" style="color:' + statusColor + '">' + running + '/' + g.vms.length + ' running</span>' +
+      '<span class="vmr-vmgroup-hint">' + (collapsed ? 'expand' : 'collapse') + '</span>' +
+      '</div>' +
+      (collapsed ? '' : ('<div class="vmr-vmgroup-body">' +
+        (isGrid ? '<div class="vm-card-grid">' + g.vms.map(function(v) { return vmCard(v, true); }).join('') + '</div>'
+          : g.vms.map(function(v) { return vmRow(v, true); }).join('')) +
+        '</div>')) +
+      '</div>';
+  });
+  if (result.singles.length) {
+    html += isGrid
+      ? '<div class="vm-card-grid">' + result.singles.map(function(v) { return vmCard(v, true); }).join('') + '</div>'
+      : result.singles.map(function(v) { return vmRow(v, true); }).join('');
+  }
+  return html;
+}
+
+function toggleVmGroup(prefix) {
+  _vmGroupCollapsed[prefix] = !_vmGroupCollapsed[prefix];
+  filterVMs();
+}
+
+function toggleVmGrouping() {
+  window._vmGroupingEnabled = !window._vmGroupingEnabled;
+  var btn = document.getElementById('vm-group-btn');
+  if (btn) btn.classList.toggle('active', window._vmGroupingEnabled);
+  filterVMs();
+}
+
 function filterVMs() {
   syncChipsFromSelect();
   const q = (document.getElementById('vm-search').value || '').toLowerCase();
@@ -16464,6 +16546,8 @@ function filterVMs() {
         ' <span style="font-size:.75rem;color:var(--text-muted);font-weight:400">' + byNode[node].length + ' VM' + (byNode[node].length !== 1 ? 's' : '') + '</span></div>' +
         '<div class="vm-card-grid">' + byNode[node].map(function(v) { return vmCard(v, true); }).join('') + '</div></div>';
     }).join('');
+  } else if (window._vmGroupingEnabled) {
+    document.getElementById('vm-full-list').innerHTML = renderGroupedVmList(sorted);
   } else {
     document.getElementById('vm-full-list').innerHTML = vmViewMode === 'grid'
       ? '<div class="vm-card-grid">' + sorted.map(v => vmCard(v, true)).join('') + '</div>'
