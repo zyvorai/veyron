@@ -3844,6 +3844,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-snapshots-metrics"></div>
   <div id="vmr-snapshots-protection"></div>
   <div class="page-header"><div><h1>Veyron Snapshots &amp; Backups</h1><p>Protect, restore, and replicate virtual machines.</p></div><div class="page-header-right">
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSnapshots()">&#8635; Refresh</button>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create backup policy for all VMs')">+ Backup Policy</button>
   </div></div>
@@ -3857,7 +3858,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="snap-cap-banner"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
-  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsCsv()" title="Export snapshots as CSV">&#8595; CSV</button></div></div><div id="snap-list"></div></div>
+  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><span id="snap-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsCsv()" title="Export snapshots as CSV">&#8595; CSV</button></div></div><div id="snap-list"></div></div>
 </div>
 </div>
 
@@ -3907,7 +3908,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="storage-summary" class="grid-4 page-glass-stats"></div>
   <p id="storage-prometheus-hint" style="display:none;margin:0 0 10px;font-size:.82em;color:var(--text-dim);font-family:var(--font-mono)"></p>
   <div class="grid-2">
-    <div class="card glass-card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span><input type="search" id="pvc-search" class="form-input" placeholder="Filter PVCs…" oninput="filterPvcsView(this.value)" style="width:180px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPvcsCsv()" title="Export PVCs as CSV" style="margin-left:8px">&#8595; CSV</button></div><div id="pvc-list"></div></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span><span id="pvc-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="pvc-search" class="form-input" placeholder="Filter PVCs…" oninput="filterPvcsView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPvcsCsv()" title="Export PVCs as CSV" style="margin-left:8px">&#8595; CSV</button></div><div id="pvc-list"></div></div>
     <div class="card glass-card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
   </div>
 </div>
@@ -3927,7 +3928,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="vmr-events-list"></div>
   </div>
   <details class="operator-details"><summary>Classic signal table</summary>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span><input type="search" id="events-full-search" class="form-input" placeholder="Filter events…" oninput="filterEventsFullList(this.value)" style="width:200px;font-size:.82rem"></div><div id="events-full-list"></div></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span><span id="events-full-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="events-full-search" class="form-input" placeholder="Filter events…" oninput="filterEventsFullList(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div><div id="events-full-list"></div></div>
   </details>
 </div>
 </div>
@@ -3937,7 +3938,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Veyron VMs</h1><p>Operator-managed virtual machines (veyron.io CRDs)</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCrdVmsCsv()" title="Export as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCRDs()">&#8635; Refresh</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openCrdCreateModal()">+ Create VeyronVM</button></div></div>
     <div id="crds-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span><input type="search" id="crds-search" class="form-input" placeholder="Filter by name, namespace, template…" oninput="filterCrdsView(this.value)" style="width:240px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VeyronVM Resources</span><span id="crds-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="crds-search" class="form-input" placeholder="Filter by name, namespace, template…" oninput="filterCrdsView(this.value)" style="width:240px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="crds-table"><thead><tr><th>Name</th><th>Namespace</th><th>Template</th><th>CPU</th><th>Memory</th><th>Phase</th><th>Node</th><th>IP</th></tr></thead><tbody id="crds-body"></tbody></table>
   </div>
 </div>
@@ -3951,7 +3952,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
   <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zeus YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
-    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBlueprintsCsv()" title="Export blueprints as CSV" style="margin-left:8px">&#8595; CSV</button></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><span id="blueprint-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBlueprintsCsv()" title="Export blueprints as CSV" style="margin-left:8px">&#8595; CSV</button></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
     </div>
     <div class="card glass-card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
@@ -3973,7 +3974,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Policies</h1><p>VeyronPolicy compliance enforcement</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPoliciesCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPolicies()">&#8635; Refresh</button></div></div>
     <div id="policies-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span><input type="search" id="policies-search" class="form-input" placeholder="Filter policies…" oninput="filterPoliciesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Policies</span><span id="policies-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="policies-search" class="form-input" placeholder="Filter policies…" oninput="filterPoliciesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="policies-table"><thead><tr><th>Name</th><th>Enforcement</th><th>Severity</th><th>Framework</th><th>Rules</th><th>Enabled</th><th>Matching</th><th>Violations</th></tr></thead><tbody id="policies-body"></tbody></table>
   </div>
 </div>
@@ -3988,7 +3989,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Drift Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('drift-advisor-card')">Dismiss</button></div>
     <div id="drift-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Insights</span><input type="search" id="insights-search" class="form-input" placeholder="Filter insights…" oninput="filterInsightsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Active Insights</span><span id="insights-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="insights-search" class="form-input" placeholder="Filter insights…" oninput="filterInsightsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="insights-table"><thead><tr><th>Name</th><th>Type</th><th>Severity</th><th>VM</th><th>Title</th><th>State</th></tr></thead><tbody id="insights-body"></tbody></table>
   </div>
 </div>
@@ -3998,7 +3999,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportActionsCsv()" title="Export actions as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span><input type="search" id="actions-search" class="form-input" placeholder="Filter actions…" oninput="filterActionsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span><span id="actions-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="actions-search" class="form-input" placeholder="Filter actions…" oninput="filterActionsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
   </div>
 </div>
@@ -4009,7 +4010,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-costs-hero"></div>
   <div id="vmr-costs-metrics"></div>
   <div class="page-header"><div><h1>Veyron Cost Explorer</h1><p>Usage, cost, forecast, and optimization for VM infrastructure.</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCostAdvisor()">Cost Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()" title="Export VM costs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCosts()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCostAdvisor()">Cost Advisor</button></div></div>
     <div id="cost-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Cost Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cost-advisor-card')">Dismiss</button></div>
     <div id="cost-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4193,7 +4194,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAudit()">&#8635; Refresh</button></div></div>
   
   <div id="audit-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAuditCsv()" title="Export audit trail as CSV">↓ CSV</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><span id="audit-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:220px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAuditCsv()" title="Export audit trail as CSV">↓ CSV</button></div>
   <table class="table"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Type</th><th>Resource</th><th>Outcome</th></tr></thead><tbody id="audit-body"></tbody></table>
   </div>
 </div>
@@ -4224,7 +4225,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <pre id="soc-hunt-results" style="margin:0 16px 16px;padding:12px;font-size:.76rem;max-height:240px;overflow:auto;background:rgba(0,0,0,.25);border-radius:8px"></pre>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Security event stream</span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocEventsCsv()" title="Export SOC events as CSV">&#8595; CSV</button></div>
+    <div class="card-header"><span class="card-title">Security event stream</span><span id="soc-events-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocEventsCsv()" title="Export SOC events as CSV">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Time</th><th>Severity</th><th>Category</th><th>Source</th><th>Message</th><th>Resource</th></tr></thead><tbody id="soc-events-body"></tbody></table>
   </div>
   <div class="card glass-card" style="margin-top:16px">
@@ -4249,7 +4250,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHelm()">&#8635; Refresh</button></div></div>
     <div id="helm-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><span id="helm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
   </div>
 </div>
@@ -4311,7 +4312,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportRbacCsv()" title="Export RBAC as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchRbac()">&#8635; Refresh</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><span id="rbac-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap"></span><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportRbacCsv()" title="Export RBAC as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchRbac()">&#8635; Refresh</button></div></div>
     <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
@@ -4646,7 +4647,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-cilium" data-section="network">
 <div class="space-y animate-fade-in">
   <div id="vmr-cilium-hero"></div>
-  <div class="page-header vmr-legacy-page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
+  <div class="page-header vmr-legacy-page-header"><div><h1>Cilium</h1><p>Agent status (cluster-wide discovery), CiliumNetworkPolicy / CCNP when installed, plus Kubernetes NetworkPolicies for the namespace selector. Flows are derived from NetworkPolicy rules, not live Hubble gRPC. Live Hubble intelligence: <strong>PacketWolf</strong> when <code>VEYRON_PACKETWOLF_URL</code> is wired.</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" id="cilium-packetwolf-open" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">Open PacketWolf</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCilium()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCiliumAdvisor()">Cilium Advisor</button></div></div>
   <div id="cilium-packetwolf-banner" class="veyron-cap-banner glass-banner vmr-cilium-pw-banner" style="display:none;margin-bottom:16px" role="status"></div>
     <div id="cilium-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Cilium Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('cilium-advisor-card')">Dismiss</button></div>
@@ -4853,6 +4854,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         <option value="debug">Debug</option>
       </select>
       <input id="logs-search" class="toolbar-input" style="width:240px" placeholder="Search logs…" oninput="fetchLogs()">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchLogs()">&#8635; Refresh</button>
     </div>
   </div>
     <div id="logs-cap-banner"></div>
@@ -10696,6 +10698,8 @@ function renderSnapList(query) {
     if (sortMode === 'age') return (a.age || '').localeCompare(b.age || '');
     return (a.name || '').localeCompare(b.name || '');
   });
+  const snapCountEl = document.getElementById('snap-filter-count');
+  if (snapCountEl) snapCountEl.textContent = filtered.length === snaps.length ? snaps.length + ' snapshots' : filtered.length + ' of ' + snaps.length + ' snapshots';
   if (filtered.length === 0) {
     el.innerHTML = q
       ? '<div class="empty-state"><p>No snapshots match "<strong>' + esc(q) + '</strong>"</p></div>'
@@ -10756,6 +10760,8 @@ function filterAuditView(query) {
            (a.outcome || '').toLowerCase().includes(q) ||
            fmtTime(a.timestamp).toLowerCase().includes(q);
   }) : trail;
+  const auditCountEl = document.getElementById('audit-filter-count');
+  if (auditCountEl) auditCountEl.textContent = rows.length === trail.length ? trail.length + ' entries' : rows.length + ' of ' + trail.length + ' entries';
   tb.innerHTML = rows.map(function(a) {
     const resRef = esc(a.namespace) + '/' + esc(a.resource_name);
     return '<tr><td>' + fmtTime(a.timestamp) + '</td>' +
@@ -10809,6 +10815,8 @@ function filterSocEventsView(query) {
            (e.message || '').toLowerCase().includes(q) ||
            (e.target || e.namespace || '').toLowerCase().includes(q);
   }) : events;
+  const socCountEl = document.getElementById('soc-events-count');
+  if (socCountEl) socCountEl.textContent = filtered.length === events.length ? events.length + ' events' : filtered.length + ' of ' + events.length + ' events';
   el.innerHTML = filtered.map(function(e) {
     const srcVal = e.source || '';
     const tgtVal = e.target || e.namespace || '';
@@ -10886,6 +10894,8 @@ function filterPoliciesView(query) {
            (p.severity || '').toLowerCase().includes(q) ||
            (p.framework || '').toLowerCase().includes(q);
   }) : items;
+  const policiesCountEl = document.getElementById('policies-filter-count');
+  if (policiesCountEl) policiesCountEl.textContent = filtered.length === items.length ? items.length + ' policies' : filtered.length + ' of ' + items.length + ' policies';
   tb.innerHTML = filtered.map(function(p) {
     return '<tr><td class="vmr-copy-tile" title="Copy policy name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">' + (q ? 'No policies match &ldquo;' + esc(q) + '&rdquo;' : 'No policies') + '</td></tr>';
@@ -10904,6 +10914,8 @@ function filterInsightsView(query) {
            (i.title || '').toLowerCase().includes(q) ||
            (i.state || '').toLowerCase().includes(q);
   }) : items;
+  const insightsCountEl = document.getElementById('insights-filter-count');
+  if (insightsCountEl) insightsCountEl.textContent = filtered.length === items.length ? items.length + ' insights' : filtered.length + ' of ' + items.length + ' insights';
   tb.innerHTML = filtered.map(function(i) {
     return '<tr><td class="vmr-copy-tile" title="Copy insight name" ' + onStopHandler('copyToClipboard(' + jsArgs(i.name) + ')') + '>' + esc(i.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No insights match &ldquo;' + esc(q) + '&rdquo;' : 'No insights') + '</td></tr>';
@@ -10921,6 +10933,8 @@ function filterActionsView(query) {
            (a.phase || '').toLowerCase().includes(q) ||
            (a.message || '').toLowerCase().includes(q);
   }) : items;
+  const actionsCountEl = document.getElementById('actions-filter-count');
+  if (actionsCountEl) actionsCountEl.textContent = filtered.length === items.length ? items.length + ' actions' : filtered.length + ' of ' + items.length + ' actions';
   tb.innerHTML = filtered.map(function(a) {
     return '<tr><td class="vmr-copy-tile" title="Copy action name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No actions match &ldquo;' + esc(q) + '&rdquo;' : 'No actions') + '</td></tr>';
@@ -11051,6 +11065,8 @@ function filterBlueprintsView(query) {
            (bp.namespace || '').toLowerCase().includes(q) ||
            (bp.phase || '').toLowerCase().includes(q);
   }) : items;
+  const bpCountEl = document.getElementById('blueprint-filter-count');
+  if (bpCountEl) bpCountEl.textContent = filtered.length === items.length ? items.length + ' blueprints' : filtered.length + ' of ' + items.length + ' blueprints';
   tb.innerHTML = filtered.map(function(bp) {
     return '<tr style="cursor:pointer" ' + onHandler('blueprintStudioSelect(' + jsArgs(bp.namespace, bp.name) + ')') + '>' +
       '<td class="vmr-copy-tile" title="Copy blueprint name" ' + onStopHandler('copyToClipboard(' + jsArgs(bp.name) + ')') + '>' + esc(bp.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(bp.namespace) + '</td><td>' + (bp.vm_count || 0) + '</td><td>' + esc(bp.phase || '—') + '</td></tr>';
@@ -11089,6 +11105,8 @@ function filterHelmView(query) {
            (h.chart || '').toLowerCase().includes(q) ||
            (h.status || '').toLowerCase().includes(q);
   }) : releases;
+  const helmCountEl = document.getElementById('helm-filter-count');
+  if (helmCountEl) helmCountEl.textContent = filtered.length === releases.length ? releases.length + ' releases' : filtered.length + ' of ' + releases.length + ' releases';
   tb.innerHTML = filtered.map(function(h) {
     return '<tr><td class="vmr-copy-tile" title="Copy release name" ' + onStopHandler('copyToClipboard(' + jsArgs(h.name) + ')') + '>' + esc(h.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(h.status) + '">' + esc(h.status) + '</span></td><td>' + h.revision + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
@@ -11280,6 +11298,8 @@ function filterRbacView(query) {
            (b.role_name || '').toLowerCase().includes(q) ||
            ((b.subjects || []).map(function(s) { return s.kind + ':' + s.name; }).join(' ')).toLowerCase().includes(q);
   }) : bindings;
+  const rbacCountEl = document.getElementById('rbac-filter-count');
+  if (rbacCountEl) rbacCountEl.textContent = q ? fRoles.length + ' roles, ' + fBindings.length + ' bindings' : roles.length + ' roles, ' + bindings.length + ' bindings';
   if (rolesBody) rolesBody.innerHTML = fRoles.map(function(role) {
     const resources = [...new Set((role.rules || []).flatMap(function(rule) { return rule.resources || []; }))].slice(0, 4);
     return '<tr><td class="vmr-copy-tile" title="Copy role name" ' + onStopHandler('copyToClipboard(' + jsArgs(role.name) + ')') + '>' + esc(role.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + (role.is_cluster_role ? 'Cluster' : esc(role.namespace || '-')) + '</td><td>' + (role.rules || []).length + '</td><td>' + esc(resources.join(', ') || '-') + '</td></tr>';
@@ -11356,6 +11376,8 @@ function filterCrdsView(query) {
            (v.template || '').toLowerCase().includes(q) ||
            (v.phase || '').toLowerCase().includes(q);
   }) : items;
+  const crdsCountEl = document.getElementById('crds-filter-count');
+  if (crdsCountEl) crdsCountEl.textContent = filtered.length === items.length ? items.length + ' resources' : filtered.length + ' of ' + items.length + ' resources';
   tb.innerHTML = filtered.map(function(v) {
     const ipCell = v.ip ? '<span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(v.ip) + ')') + '>' + esc(v.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '-';
     return '<tr><td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(v.name) + ')') + '>' + esc(v.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + ipCell + '</td></tr>';
@@ -11423,6 +11445,8 @@ function filterEventsFullList(query) {
            (e.involved_object || '').toLowerCase().includes(q) ||
            (e.type || '').toLowerCase().includes(q);
   }) : events;
+  const evFullCountEl = document.getElementById('events-full-count');
+  if (evFullCountEl) evFullCountEl.textContent = filtered.length === events.length ? events.length + ' events' : filtered.length + ' of ' + events.length + ' events';
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><p>' + (q ? 'No events match &ldquo;' + esc(q) + '&rdquo;' : 'No signals intercepted') + '</p></div>';
     return;
@@ -13598,6 +13622,8 @@ function filterPvcsView(query) {
            (p.namespace || '').toLowerCase().includes(q) ||
            (p.storage_class || '').toLowerCase().includes(q);
   }) : pvcs;
+  const pvcCountEl = document.getElementById('pvc-filter-count');
+  if (pvcCountEl) pvcCountEl.textContent = filtered.length === pvcs.length ? pvcs.length + ' PVCs' : filtered.length + ' of ' + pvcs.length + ' PVCs';
   if (!filtered.length) {
     el.innerHTML = q ? '<div class="empty-state"><p>No PVCs match "<strong>' + esc(q) + '</strong>"</p></div>'
       : '<div class="empty-state"><p>No PVCs</p></div>';
