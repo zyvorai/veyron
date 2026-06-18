@@ -2088,6 +2088,8 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vm-view-toggle button:hover{border-color:rgba(59,130,246,.28);color:var(--text-bright)}
 .vm-view-toggle button.active{background:rgba(59,130,246,.15);color:var(--primary-blue);border-color:rgba(59,130,246,.35)}
 .vm-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:12px}
+.vmr-topo-node-group{margin-bottom:20px}
+.vmr-topo-node-label{font-size:.82rem;font-weight:600;color:var(--text-muted);padding:4px 12px 2px;letter-spacing:.03em;border-bottom:1px solid var(--glass-border);margin-bottom:2px;display:flex;align-items:center;gap:6px}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -9220,6 +9222,16 @@ function setVmViewMode(mode, writeStorage) {
   filterVMs();
 }
 
+function setVmrFleetView(mode) {
+  window.vmrFleetViewMode = mode;
+  document.querySelectorAll('.vmr-view-switch [data-view]').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.view === mode);
+  });
+  if (mode === 'cards') vmViewMode = 'grid';
+  else if (mode === 'table') vmViewMode = 'list';
+  filterVMs();
+}
+
 async function fetchExperienceHome() {
   try {
     const data = await apiJson('/api/v1/experience/home' + nsParam());
@@ -13312,15 +13324,27 @@ function filterVMs() {
       ? (vmData.length + ' VMs')
       : (filtered.length + ' of ' + vmData.length + ' VMs');
   }
-  const isTableView = window.vmrFleetViewMode === 'table' || vmViewMode === 'list';
+  const isTopologyView = window.vmrFleetViewMode === 'topology';
+  const isTableView = window.vmrFleetViewMode === 'table' || (vmViewMode === 'list' && !isTopologyView);
   const listHeader = document.getElementById('vm-list-header');
   if (listHeader) listHeader.style.display = isTableView ? 'flex' : 'none';
   const sorted = sortVMs(filtered);
-  document.getElementById('vm-full-list').innerHTML = sorted.length === 0 ?
-    vmListEmptyHtml(true) :
-    (vmViewMode === 'grid'
+  if (sorted.length === 0) {
+    document.getElementById('vm-full-list').innerHTML = vmListEmptyHtml(true);
+  } else if (isTopologyView) {
+    const byNode = {};
+    sorted.forEach(function(v) { const n = v.node || '(unscheduled)'; (byNode[n] = byNode[n] || []).push(v); });
+    document.getElementById('vm-full-list').innerHTML = Object.keys(byNode).sort().map(function(node) {
+      return '<div class="vmr-topo-node-group">' +
+        '<div class="vmr-topo-node-label"><span class="vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(node) + ')') + '>' + esc(node) + '<span class="vmr-copy-hint">copy</span></span>' +
+        ' <span style="font-size:.75rem;color:var(--text-muted);font-weight:400">' + byNode[node].length + ' VM' + (byNode[node].length !== 1 ? 's' : '') + '</span></div>' +
+        '<div class="vm-card-grid">' + byNode[node].map(function(v) { return vmCard(v, true); }).join('') + '</div></div>';
+    }).join('');
+  } else {
+    document.getElementById('vm-full-list').innerHTML = vmViewMode === 'grid'
       ? '<div class="vm-card-grid">' + sorted.map(v => vmCard(v, true)).join('') + '</div>'
-      : sorted.map(v => vmRow(v, true)).join(''));
+      : sorted.map(v => vmRow(v, true)).join('');
+  }
 }
 
 // ── Nodes ──
