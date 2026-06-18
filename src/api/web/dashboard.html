@@ -4574,7 +4574,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div></div>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span><input type="search" id="topology-search" class="form-input" placeholder="Filter edges…" oninput="filterTopologyView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
 </div>
 </div>
@@ -4804,7 +4804,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
     <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span><input type="search" id="images-search" class="form-input" placeholder="Filter images…" oninput="filterImagesView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th></tr></thead><tbody id="images-body"></tbody></table></div>
 </div>
 </div>
@@ -5151,6 +5151,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div class="form-group">
         <label class="form-label">Snapshot Name (optional)</label>
         <input type="text" class="form-input" id="snap-name" placeholder="Auto-generated if empty">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description (optional)</label>
+        <input type="text" class="form-input" id="snap-description" placeholder="Notes about this snapshot">
       </div>
     </div>
     <div class="modal-footer">
@@ -10447,6 +10451,38 @@ function filterHelmView(query) {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
 }
 
+function filterImagesView(query) {
+  const tb = document.getElementById('images-body');
+  if (!tb) return;
+  const images = window.lastImages || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? images.filter(function(img) {
+    return (img.name || '').toLowerCase().includes(q) ||
+           (img.namespace || '').toLowerCase().includes(q) ||
+           (img.kind || '').toLowerCase().includes(q) ||
+           (img.source_type || '').toLowerCase().includes(q) ||
+           (img.status || '').toLowerCase().includes(q);
+  }) : images;
+  tb.innerHTML = filtered.map(function(img) {
+    return '<tr><td>' + esc(img.name) + '</td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td><span class="glass-badge ' + imageStatusClass(img.status) + '">' + esc(img.status) + '</span></td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching images</td></tr>';
+}
+
+function filterTopologyView(query) {
+  const tb = document.getElementById('topology-body');
+  if (!tb) return;
+  const edges = window.lastTopologyEdges || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? edges.filter(function(e) {
+    return (e.source || '').toLowerCase().includes(q) ||
+           (e.relation || '').toLowerCase().includes(q) ||
+           (e.target || '').toLowerCase().includes(q);
+  }) : edges;
+  tb.innerHTML = filtered.map(function(e) {
+    return '<tr><td>' + esc(e.source) + '</td><td>' + esc(e.relation) + '</td><td>' + esc(e.target) + '</td></tr>';
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No matching edges</td></tr>';
+}
+
 function filterRbacView(query) {
   const rolesBody = document.getElementById('rbac-roles-body');
   const bindingsBody = document.getElementById('rbac-bindings-body');
@@ -12826,6 +12862,8 @@ function closeSnapModal() {
   document.getElementById('snap-vm-select-group').style.display = 'none';
   const sel = document.getElementById('snap-vm-select');
   if (sel) sel.onchange = null;
+  const descEl = document.getElementById('snap-description');
+  if (descEl) descEl.value = '';
 }
 
 async function createSnapshot() {
@@ -12840,13 +12878,14 @@ async function createSnapshot() {
     vmName = document.getElementById('snap-vm-name').value;
   }
   const snapName = document.getElementById('snap-name').value.trim() || null;
+  const snapDesc = document.getElementById('snap-description')?.value?.trim() || null;
   const btn = document.getElementById('btn-create-snap');
   btn.disabled = true; btn.textContent = 'Creating...';
   try {
     await apiJson('/api/v1/snapshots/' + encodeURIComponent(snapNs) + '/' + encodeURIComponent(vmName) + '/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ snapshot_name: snapName }),
+      body: JSON.stringify({ snapshot_name: snapName, description: snapDesc }),
     });
     toast('Snapshot created for ' + vmName, 'success');
     closeSnapModal();
@@ -14747,6 +14786,7 @@ async function fetchTopology() {
       ]);
     }
     if (tb) {
+      window.lastTopologyEdges = edges;
       tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.source)}</td><td>${esc(edge.relation)}</td><td>${esc(edge.target)}</td></tr>`).join('')
         || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No topology edges found</td></tr>';
     }
@@ -15824,6 +15864,7 @@ async function fetchImages() {
         '<button type="button" class="glass-stat-pill clickable-stat" onclick="openImageImportModal()" title="Import DataVolume"><div class="gsl">Import</div><div class="gsv">+</div></button>';
     }
     if (!tb) return;
+    window.lastImages = images;
     tb.innerHTML = images.map(img => `<tr>
       <td>${esc(img.name)}</td><td>${esc(img.namespace)}</td><td>${esc(img.kind)}</td><td>${esc(img.source_type)}</td>
       <td><span class="glass-badge ${imageStatusClass(img.status)}">${esc(img.status)}</span></td><td>${esc(img.capacity)}</td><td>${esc(img.age)}</td></tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No images</td></tr>';
