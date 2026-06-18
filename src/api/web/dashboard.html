@@ -3908,6 +3908,47 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
 </div>
 
+<!-- VM FOCUS OVERLAY (F key) -->
+<div class="modal-overlay" id="vm-focus-overlay" onclick="if(event.target===this)closeVmFocusOverlay()" style="background:rgba(0,0,0,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
+  <div style="width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(16,18,26,.95)">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.07)">
+      <span id="vfo-status-dot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0"></span>
+      <span id="vfo-title" style="font-size:.95rem;font-weight:600;letter-spacing:.02em;color:var(--text-bright)">VM Focus</span>
+      <span id="vfo-status" style="font-size:.75rem;color:var(--text-muted);margin-left:4px"></span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button type="button" id="vfo-start-btn" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="vfoAction('start')">Start</button>
+        <button type="button" id="vfo-stop-btn" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="vfoAction('stop')">Stop</button>
+        <button type="button" id="vfo-vnc-btn" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="vfoOpenVnc()">VNC</button>
+        <button type="button" id="vfo-snap-btn" class="glass-btn-secondary glass-btn-sm" onclick="vfoSnap()">Snapshot</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeVmFocusOverlay()">Esc</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;flex:1;overflow:hidden">
+      <div style="padding:16px;border-right:1px solid rgba(255,255,255,.06);overflow-y:auto">
+        <div id="vfo-kv" style="font-size:.8rem"></div>
+        <div id="vfo-ifaces" style="margin-top:12px;font-size:.78rem"></div>
+        <div id="vfo-events" style="margin-top:12px"></div>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto">
+        <div>
+          <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">CPU</div>
+          <canvas id="vfo-cpu-spark" width="280" height="48" style="width:100%;height:48px;display:block"></canvas>
+          <div id="vfo-cpu-val" style="font-size:.72rem;color:var(--text-muted);margin-top:2px"></div>
+        </div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Memory</div>
+          <canvas id="vfo-mem-spark" width="280" height="48" style="width:100%;height:48px;display:block"></canvas>
+          <div id="vfo-mem-val" style="font-size:.72rem;color:var(--text-muted);margin-top:2px"></div>
+        </div>
+        <div>
+          <div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Snapshots</div>
+          <div id="vfo-snaps" style="font-size:.78rem;color:var(--text-muted)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- QUICK FORGE MODAL -->
 <div class="modal-overlay" id="quick-forge-modal" onclick="if(event.target===this)closeQuickForge()">
   <div class="modal glass-modal" style="width:min(480px,96vw);padding:0;border-radius:16px;overflow:hidden">
@@ -13748,6 +13789,14 @@ document.addEventListener('keydown', e => {
     }
   }
   // Z key — Zen mode (list-only, hide inspector) on VMs page
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'f' || e.key === 'F') && currentPage === 'vms' && selectedVmNs && selectedVmName) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      openVmFocusOverlay(selectedVmNs, selectedVmName);
+      return;
+    }
+  }
   if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -13790,6 +13839,7 @@ document.addEventListener('keydown', e => {
     closeCreateModal(); closeSnapModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt(); closeConnectModal(); closeSshPopover();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal(); closeDockEditor(); closeRdpSheet(false); closeMacPreferences();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
+    closeVmFocusOverlay(); closeQuickForge(); if (typeof closeVmCompare === 'function') closeVmCompare();
     if (typeof closePodLogsVmr === 'function') closePodLogsVmr();
     if (typeof closeForgeWizard === 'function') closeForgeWizard();
     closeDockEditor(); closeMacMenus(); closeMissionControlOverlay(); closeLaunchpad();
@@ -18189,6 +18239,119 @@ function runCiliumCopilotAsk() {
   openCopilot(q);
   setTimeout(runCopilotAsk, 80);
 }
+
+// ── VM Focus Overlay (F key) ──
+var _vfoNs = null, _vfoName = null, _vfoTimer = null, _vfoMetricHistory = { cpu: [], mem: [] };
+function openVmFocusOverlay(ns, name) {
+  var modal = document.getElementById('vm-focus-overlay');
+  if (!modal) return;
+  _vfoNs = ns; _vfoName = name; _vfoMetricHistory = { cpu: [], mem: [] };
+  document.getElementById('vfo-title').textContent = name;
+  document.getElementById('vfo-status').textContent = '';
+  document.getElementById('vfo-status-dot').style.background = '#94a3b8';
+  document.getElementById('vfo-kv').innerHTML = '<div style="color:var(--text-dim);font-size:.78rem">Loading…</div>';
+  document.getElementById('vfo-events').innerHTML = '';
+  document.getElementById('vfo-ifaces').innerHTML = '';
+  document.getElementById('vfo-snaps').innerHTML = 'Loading…';
+  modal.classList.add('open');
+  vfoLoad();
+  _vfoTimer = setInterval(vfoLoad, 5000);
+}
+function closeVmFocusOverlay() {
+  var modal = document.getElementById('vm-focus-overlay');
+  if (modal) modal.classList.remove('open');
+  if (_vfoTimer) { clearInterval(_vfoTimer); _vfoTimer = null; }
+  _vfoNs = null; _vfoName = null;
+}
+async function vfoLoad() {
+  if (!_vfoNs || !_vfoName) return;
+  var ns = _vfoNs, name = _vfoName;
+  try {
+    var vm = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name));
+    if (ns !== _vfoNs || name !== _vfoName) return;
+    vm = unwrapData(vm) || vm;
+    var status = vm.status || 'Unknown';
+    var running = status === 'Running';
+    var dotColor = running ? '#22c55e' : status === 'Stopped' ? '#94a3b8' : '#f59e0b';
+    document.getElementById('vfo-status-dot').style.background = dotColor;
+    document.getElementById('vfo-status').textContent = status;
+    var startBtn = document.getElementById('vfo-start-btn'); if (startBtn) startBtn.style.display = running ? 'none' : '';
+    var stopBtn = document.getElementById('vfo-stop-btn'); if (stopBtn) stopBtn.style.display = running ? '' : 'none';
+    var vncBtn = document.getElementById('vfo-vnc-btn'); if (vncBtn) vncBtn.style.display = running ? '' : 'none';
+    var vmi = vm.vmi_status || {};
+    var ifaces = vmi.interfaces || [];
+    var ip = (ifaces[0] && ifaces[0].ip_address) || vm.ip || '';
+    var kv = [
+      ['Namespace', vm.namespace || ns],
+      ['CPU', (vm.cpu || '—') + ' vCPU'],
+      ['Memory', vm.memory || fmtBytes(vm.memory_bytes || 0)],
+      ['Node', vm.node || '—'],
+      ['IP', ip || '—'],
+      ['Age', vm.age || vm.creation_timestamp ? timeAgo(vm.creation_timestamp) : '—'],
+    ];
+    document.getElementById('vfo-kv').innerHTML = '<div class="vd-kv-grid">' +
+      kv.map(function(r) { return '<div class="vd-kv"><div class="vd-kv-label">' + esc(r[0]) + '</div><div class="vd-kv-value">' + esc(r[1]) + '</div></div>'; }).join('') +
+    '</div>';
+    if (ifaces.length) {
+      document.getElementById('vfo-ifaces').innerHTML = '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Interfaces</div>' +
+        ifaces.map(function(i) { return '<div style="color:var(--text-muted)">' + esc(i.interface_name || i.name || '') + ' · ' + esc(i.ip_address || i.ip || '—') + '</div>'; }).join('');
+    }
+    var events = (window.lastEvents || []).filter(function(e) {
+      return (e.involved_object || '').indexOf(name) >= 0 || (e.message || '').indexOf(name) >= 0;
+    }).slice(0, 5);
+    document.getElementById('vfo-events').innerHTML = events.length ? '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Events</div>' +
+      events.map(function(ev) {
+        return '<div style="font-size:.72rem;color:' + (ev.type === 'Warning' ? '#fbbf24' : 'var(--text-muted)') + ';padding:2px 0">' + esc((ev.reason || '') + ': ' + (ev.message || '').slice(0, 60)) + '</div>';
+      }).join('') : '';
+    // Metrics sparklines
+    try {
+      var mj = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/metrics');
+      if (ns === _vfoNs && name === _vfoName) {
+        var cpu = mj && (mj.cpu_usage_percent || mj.cpu || 0);
+        var mem = mj && (mj.memory_usage_percent || mj.memory || 0);
+        _vfoMetricHistory.cpu.push(cpu); if (_vfoMetricHistory.cpu.length > 20) _vfoMetricHistory.cpu.shift();
+        _vfoMetricHistory.mem.push(mem); if (_vfoMetricHistory.mem.length > 20) _vfoMetricHistory.mem.shift();
+        vfoDrawSparkline('vfo-cpu-spark', _vfoMetricHistory.cpu, 'var(--cyan)');
+        vfoDrawSparkline('vfo-mem-spark', _vfoMetricHistory.mem, 'var(--accent-secondary, #a78bfa)');
+        document.getElementById('vfo-cpu-val').textContent = 'Current: ' + (typeof cpu === 'number' ? cpu.toFixed(1) + '%' : cpu);
+        document.getElementById('vfo-mem-val').textContent = 'Current: ' + (typeof mem === 'number' ? mem.toFixed(1) + '%' : mem);
+      }
+    } catch (_) {}
+    // Snapshots
+    try {
+      var sj = await apiJson('/api/v1/snapshots?namespace=' + encodeURIComponent(ns));
+      var all = Array.isArray(sj) ? sj : (sj && Array.isArray(sj.data) ? sj.data : []);
+      var snaps = all.filter(function(s) { return (s.vm_name || s.source_vm || '').toLowerCase() === name.toLowerCase(); }).slice(0, 4);
+      var sEl = document.getElementById('vfo-snaps');
+      if (ns === _vfoNs && name === _vfoName && sEl) {
+        sEl.innerHTML = snaps.length ? snaps.map(function(s) {
+          return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0">' +
+            '<span style="color:#22c55e">◉</span><span>' + esc(s.name) + '</span>' +
+            '<span style="color:var(--text-dim);margin-left:auto">' + (s.creation_timestamp ? timeAgo(s.creation_timestamp) : '') + '</span></div>';
+        }).join('') : '<div style="color:var(--text-dim)">No snapshots</div>';
+      }
+    } catch (_) { var sEl2 = document.getElementById('vfo-snaps'); if (sEl2) sEl2.textContent = 'Unavailable'; }
+  } catch (e) { /* keep overlay open */ }
+}
+function vfoDrawSparkline(id, data, color) {
+  var canvas = document.getElementById(id); if (!canvas || data.length < 2) return;
+  var dpr = window.devicePixelRatio || 1;
+  var W = canvas.offsetWidth || 280, H = 48;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  var ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+  var max = Math.max(100, Math.max.apply(null, data));
+  var pts = data.map(function(v, i) { return [i / (data.length - 1) * W, H - (v / max) * (H - 4) - 2]; });
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  pts.forEach(function(p) { ctx.lineTo(p[0], p[1]); });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.stroke();
+  ctx.lineTo(pts[pts.length-1][0], H); ctx.lineTo(pts[0][0], H); ctx.closePath();
+  ctx.fillStyle = color.replace(')', ', .12)').replace('var(', 'rgba(').replace('--cyan', '56,189,248').replace('--accent-secondary, #a78bfa', '167,139,250'); ctx.fill();
+}
+function vfoAction(action) { if (_vfoNs && _vfoName) { vmAction(_vfoNs, _vfoName, action, null); setTimeout(vfoLoad, 2000); } }
+function vfoOpenVnc() { if (_vfoNs && _vfoName) { closeVmFocusOverlay(); openConnectModal(_vfoNs, _vfoName, 'vnc'); } }
+function vfoSnap() { if (_vfoNs && _vfoName) { openSnapModalFor(_vfoNs, _vfoName); } }
 
 // ── Quick Forge ──
 var _qfTemplates = [];
