@@ -1446,6 +1446,9 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vmr-focus-dim{opacity:.28;filter:blur(.4px);transition:opacity .25s ease,filter .25s ease;pointer-events:none}
 .vmr-focus-context{opacity:.62;transition:opacity .25s ease}
 #vm-full-list .vm-row:hover.vmr-focus-dim,#vm-full-list .vm-card:hover.vmr-focus-dim{opacity:.55;filter:none;pointer-events:auto}
+.vmr-node-peer{box-shadow:0 0 0 1.5px rgba(250,189,47,.45),0 0 10px rgba(250,189,47,.12)!important;transition:box-shadow .2s ease}
+.vmr-node-peer-label{position:absolute;top:4px;right:6px;font-size:.6rem;color:rgba(250,189,47,.75);font-weight:600;letter-spacing:.04em;pointer-events:none;z-index:2}
+.vmr-retire-badge{display:inline-flex;align-items:center;font-size:.62rem;font-weight:700;color:#d97706;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);border-radius:8px;padding:0 5px;letter-spacing:.04em;margin-right:4px;vertical-align:middle;cursor:help}
 .vmr-delta-strip{padding:4px 14px 2px}
 .vmr-delta-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;font-size:.7rem;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.25);flex-wrap:wrap;animation:vmr-delta-in .2s ease}
 @keyframes vmr-delta-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
@@ -3887,9 +3890,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" class="vmr-chip" data-filter="Running" onclick="setVmStatusFilter(this,'Running')"><span class="vmr-chip-dot running"></span>Running</button>
       <button type="button" class="vmr-chip" data-filter="Stopped" onclick="setVmStatusFilter(this,'Stopped')"><span class="vmr-chip-dot stopped"></span>Stopped</button>
       <button type="button" class="vmr-chip" data-filter="__issues__" onclick="setVmStatusFilter(this,'__issues__')">⚠ Issues</button>
+      <button type="button" class="vmr-chip" data-filter="__retire__" onclick="setVmStatusFilter(this,'__retire__')" title="Stopped VMs that look disposable — temp names, no keeper tag">♻ Stale</button>
     </div>
     <select class="form-select" id="vm-filter-status" style="display:none" onchange="syncChipsFromSelect();filterVMs()">
-      <option value="">All status</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option>
+      <option value="">All status</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option><option value="__retire__">Stale</option>
     </select>
     <div class="vmr-view-switch">
       <button type="button" data-view="cards" class="active" onclick="setVmrFleetView('cards')">Cards</button>
@@ -9003,6 +9007,25 @@ function showVmHoverCard(e, ns, name) {
     card.style.left = (ex + 16 + cw > vp.w ? ex - cw - 8 : ex + 16) + 'px';
     card.style.top = (ey + 16 + ch > vp.h ? ey - ch - 8 : ey + 16) + 'px';
     requestAnimationFrame(function() { card.classList.add('visible'); });
+    // highlight VMs co-located on the same node
+    if (vm.node) {
+      document.querySelectorAll('#vm-full-list .vm-card,#vm-full-list .vm-row').forEach(function(el) {
+        var ens = el.dataset.vmNs || 'default';
+        var ename = el.dataset.vmName;
+        if (ens === ns && ename === name) return; // skip self
+        var peer = (window.lastVMs || vmData || []).find(function(v) { return v.name === ename && (v.namespace||'default') === ens; });
+        if (peer && peer.node === vm.node) {
+          el.classList.add('vmr-node-peer');
+          if (!el.querySelector('.vmr-node-peer-label')) {
+            var lbl = document.createElement('span');
+            lbl.className = 'vmr-node-peer-label';
+            lbl.textContent = '⬡ same node';
+            el.style.position = 'relative';
+            el.appendChild(lbl);
+          }
+        }
+      });
+    }
   }, 480);
 }
 function hideVmHoverCard() {
@@ -9010,6 +9033,12 @@ function hideVmHoverCard() {
   _hoverNs = null; _hoverName = null;
   var card = document.getElementById('vmr-hover-card');
   if (card) { card.classList.remove('visible'); setTimeout(function() { if (card) card.style.display = 'none'; }, 120); }
+  // clear node peer highlights
+  document.querySelectorAll('.vmr-node-peer').forEach(function(el) {
+    el.classList.remove('vmr-node-peer');
+    var lbl = el.querySelector('.vmr-node-peer-label');
+    if (lbl) lbl.remove();
+  });
 }
 
 // ── VM Right-Click Context Menu ──
@@ -9046,6 +9075,10 @@ function showVmGlassCtxMenu(e, ns, name) {
   html += item('⎘', 'Copy VM name',         'copyToClipboard(' + jsArgs(name) + ')');
   if (vm && vm.ip && vm.ip !== 'N/A') {
     html += item('⎘', 'Copy IP',            'copyToClipboard(' + jsArgs(vm.ip) + ')');
+  }
+  if (vm && isRetireCandidate(vm)) {
+    html += '<div class="vmr-ctx-sep"></div>';
+    html += item('♻', 'Mark as Keeper',    'markVmKeeper(' + jsArgs(ns, name) + ')');
   }
   html += '<div class="vmr-ctx-sep"></div>';
   html += item('✕', 'Delete',              'vmDelete(' + jsArgs(ns, name) + ')', 'danger');
@@ -9119,6 +9152,24 @@ function addVmTag(ns, name, tag) {
 function removeVmTag(ns, name, tag) {
   setVmTags(ns, name, getVmTags(ns, name).filter(function(t) { return t !== tag; }));
 }
+
+// ── Retire Candidate Detection ──
+// A "stale" VM: stopped/paused, not tagged 'keeper', name looks disposable
+var _RETIRE_NAME_RE = /(?:^|[-_])(test|tmp|temp|demo|scratch|spike|poc|dev\d|sandbox|playground|trial|wip|draft)(?:[-_\d]|$)/i;
+function isRetireCandidate(vm) {
+  if (!vm) return false;
+  var st = vm.status || '';
+  if (st !== 'Stopped' && st !== 'Paused') return false;
+  var ns = vm.namespace || 'default';
+  var tags = getVmTags(ns, vm.name);
+  if (tags.includes('keeper') || tags.includes('production') || tags.includes('prod')) return false;
+  return _RETIRE_NAME_RE.test(vm.name);
+}
+function markVmKeeper(ns, name) {
+  addVmTag(ns, name, 'keeper');
+  toast('"' + name + '" marked as keeper', 'success');
+}
+
 function openVmTagEditor(ns, name) {
   var cur = getVmTags(ns, name).join(', ');
   openGlassPrompt({
@@ -9974,12 +10025,13 @@ function vmCard(vm, showActions) {
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   const tint = osFamilyTint(family);
+  const retireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — consider retiring. Right-click → Mark as Keeper to suppress.">♻ stale?</span>' : '';
   return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" draggable="true" ' +
     'ondragstart="vmCardDragStart(event,' + jsArgs(ns, vm.name) + ')" ' +
     'ondragover="vmCardDragOver(event)" ondragleave="vmCardDragLeave(event)" ondrop="vmCardDrop(event,' + jsArgs(ns, vm.name) + ')" ' +
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
     onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmGlassCtxMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
@@ -10633,7 +10685,8 @@ function vmRow(vm, showActions) {
     : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"' + hoverAttr + ctxAttr);
   const sshBlock = vmSshBlock(vm, showActions);
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rowRetireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — right-click → Mark as Keeper to suppress">♻ stale?</span>' : '';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
   const nodeChip = vm.node ? '<button type="button" class="vmr-node-chip" ' +
     onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
@@ -16749,6 +16802,8 @@ function filterVMs() {
     }
     if (statusFilter === '__issues__') {
       if (v.status !== 'Failed' && v.status !== 'Error') return false;
+    } else if (statusFilter === '__retire__') {
+      if (!isRetireCandidate(v)) return false;
     } else if (statusFilter && v.status !== statusFilter) return false;
     if (driftFilter === 'drift' && v.drift_detected !== true) return false;
     if (driftFilter === 'clear' && !(v.veyron_managed === true && v.drift_detected === false)) return false;
@@ -16771,6 +16826,7 @@ function filterVMs() {
     const s = v.status || '';
     chipCounts[s] = (chipCounts[s] || 0) + 1;
     if (s === 'Failed' || s === 'Error') chipCounts['__issues__'] = (chipCounts['__issues__'] || 0) + 1;
+    if (isRetireCandidate(v)) chipCounts['__retire__'] = (chipCounts['__retire__'] || 0) + 1;
   });
   document.querySelectorAll('#vmr-filter-chips .vmr-chip[data-filter]').forEach(function(b) {
     const f = b.dataset.filter;
