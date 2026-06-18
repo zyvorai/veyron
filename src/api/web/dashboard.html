@@ -5398,6 +5398,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <div class="mac-sheet-title">Forge New VM</div>
     </div>
     <div class="modal-body">
+      <div id="vmr-forge-recents" style="display:none;margin-bottom:14px"></div>
       <div class="form-group">
         <label class="form-label">VM Name</label>
         <input type="text" class="form-input" id="vm-name" placeholder="my-vm" autocomplete="off">
@@ -14703,6 +14704,7 @@ async function openCreateModal() {
   }
   document.getElementById('vm-name').focus();
   renderProfilePicker();
+  renderForgeRecents();
 }
 
 function closeCreateModal() {
@@ -14758,6 +14760,7 @@ async function forgeVM() {
       toast('VM created; internet policy failed: ' + data.internet.error, 'error');
     } else {
       toast('VM "' + name + '" forged successfully', 'success');
+    saveForgeHistory({ template: body.template, cpus: body.cpus, memory: body.memory, disk_size: body.disk_size, namespace: body.namespace });
     }
     const _forgedNs = body.namespace || 'default';
     const _forgedName = name;
@@ -16698,6 +16701,47 @@ function updateVmFreshness() {
   const s = Math.round((Date.now() - window._vmsRefreshedAt) / 1000);
   el.textContent = s < 10 ? 'Updated just now' : s < 60 ? 'Updated ' + s + 's ago' : 'Updated ' + Math.round(s / 60) + 'm ago';
   el.classList.toggle('freshness-stale', s > 90);
+}
+
+// ── Forge VM Quick Launch History ──
+var _FORGE_HISTORY_KEY = 'veyron_forge_history';
+function getForgeHistory() {
+  try { var h = JSON.parse(localStorage.getItem(_FORGE_HISTORY_KEY) || '[]'); return Array.isArray(h) ? h : []; } catch (e) { return []; }
+}
+function saveForgeHistory(config) {
+  var hist = getForgeHistory();
+  // dedupe by template+cpu+memory
+  hist = hist.filter(function(h) { return !(h.template === config.template && h.cpus === config.cpus && h.memory === config.memory); });
+  hist.unshift(config);
+  hist = hist.slice(0, 5);
+  try { localStorage.setItem(_FORGE_HISTORY_KEY, JSON.stringify(hist)); } catch (e) {}
+}
+function applyForgePreset(config) {
+  if (config.template) document.getElementById('vm-template').value = config.template;
+  if (config.cpus) document.getElementById('vm-cpus').value = config.cpus;
+  if (config.memory) document.getElementById('vm-memory').value = config.memory;
+  if (config.disk_size) document.getElementById('vm-disk').value = config.disk_size;
+  if (config.namespace) document.getElementById('vm-namespace').value = config.namespace;
+  if (config.cloud_init) document.getElementById('vm-cloudinit').value = config.cloud_init;
+  if (typeof onTemplateChange === 'function') onTemplateChange();
+  toast('Preset loaded — set a unique name and forge', 'info');
+}
+function renderForgeRecents() {
+  var el = document.getElementById('vmr-forge-recents');
+  if (!el) return;
+  var hist = getForgeHistory();
+  if (!hist.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = '<div style="font-size:.68rem;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Quick launch</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+    hist.map(function(c, i) {
+      var label = (c.template || 'custom') + ' · ' + (c.cpus || '?') + 'vCPU · ' + (c.memory || '?');
+      return '<button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem;padding:4px 10px;border-radius:10px" ' +
+        'onclick="applyForgePreset(' + JSON.stringify(c).replace(/"/g, '&quot;') + ')" ' +
+        'title="Load: ' + esc(label) + '">' +
+        '↺ ' + esc(label) + '</button>';
+    }).join('') +
+    '</div>';
 }
 
 // ── VM Cost Estimate ──
