@@ -2131,6 +2131,20 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 body.vmr-fleet-full #vm-workspace{grid-template-columns:1fr!important}
 body.vmr-fleet-full .vm-focus-pane{display:none!important}
 #vmr-fleet-full-btn.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.45);color:var(--cyan)}
+.vmr-event-ticker{position:fixed;bottom:72px;left:0;right:0;z-index:180;height:28px;display:flex;align-items:center;gap:8px;background:rgba(10,12,18,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.07);padding:0 10px 0 8px}
+.vmr-ticker-label{flex-shrink:0;font-size:.6rem;font-weight:700;letter-spacing:.12em;color:var(--ember);background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:3px;padding:1px 5px;line-height:1.4;animation:vmr-live-blink 2s ease-in-out infinite}
+@keyframes vmr-live-blink{0%,100%{opacity:1}50%{opacity:.45}}
+.vmr-ticker-track-wrap{flex:1;overflow:hidden;height:100%;display:flex;align-items:center;position:relative}
+.vmr-ticker-track{display:flex;align-items:center;gap:12px;white-space:nowrap;animation:vmr-ticker-scroll 60s linear infinite;will-change:transform}
+.vmr-ticker-track:hover{animation-play-state:paused}
+@keyframes vmr-ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.vmr-ticker-item{display:inline-flex;align-items:center;gap:5px;font-size:.71rem;color:var(--text-muted);flex-shrink:0}
+.vmr-ticker-item.warn{color:#fbbf24}
+.vmr-ticker-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.vmr-ticker-sep{color:rgba(255,255,255,.18);margin:0 4px}
+.vmr-ticker-close{flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.3);font-size:1rem;line-height:1;padding:2px 4px;cursor:pointer;border-radius:3px}
+.vmr-ticker-close:hover{color:var(--text-muted)}
+body.vmr-ticker-on .mac-dock{margin-bottom:28px}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -11840,6 +11854,7 @@ async function fetchEvents(full, opts) {
     if (j == null) return;
     const events = asArray(j);
     lastEvents = events;
+    updateEventTicker(events);
     const renderEvents = (items, target) => {
       if (!target) return;
       if (items.length===0) { target.innerHTML='<div class="empty-state"><div class="icon">&#9889;</div><p>No signals intercepted</p></div>'; return; }
@@ -11890,6 +11905,47 @@ async function fetchEvents(full, opts) {
     if (dash) dash.innerHTML = msg;
     if (full && fullEl) fullEl.innerHTML = msg;
   }
+}
+
+// ── Event Ticker ──
+var _tickerVisible = localStorage.getItem('veyron_ticker') !== 'off';
+function showEventTicker() {
+  _tickerVisible = true;
+  localStorage.setItem('veyron_ticker', 'on');
+  const el = document.getElementById('vmr-event-ticker');
+  if (el) el.style.display = 'flex';
+  document.body.classList.add('vmr-ticker-on');
+}
+function hideEventTicker() {
+  _tickerVisible = false;
+  localStorage.setItem('veyron_ticker', 'off');
+  const el = document.getElementById('vmr-event-ticker');
+  if (el) el.style.display = 'none';
+  document.body.classList.remove('vmr-ticker-on');
+}
+function toggleEventTicker() { if (_tickerVisible) hideEventTicker(); else showEventTicker(); }
+function updateEventTicker(events) {
+  const track = document.getElementById('vmr-ticker-track');
+  if (!track) return;
+  const items = (events || []).slice(0, 40);
+  if (!items.length) { hideEventTicker(); return; }
+  const hasWarning = items.some(function(e) { return e.type === 'Warning'; });
+  if (!_tickerVisible && !hasWarning) return;
+  if (hasWarning && _tickerVisible) showEventTicker();
+  else if (_tickerVisible) showEventTicker();
+  const chips = items.map(function(ev) {
+    const isWarn = ev.type === 'Warning';
+    const obj = ev.involved_object || ev.namespace || '';
+    const msg = ev.reason ? (ev.reason + ': ' + (ev.message || '').slice(0, 60)) : ((ev.message || '').slice(0, 72));
+    return '<span class="vmr-ticker-item' + (isWarn ? ' warn' : '') + '">' +
+      '<span class="vmr-ticker-dot"></span>' +
+      (obj ? '<span style="opacity:.55">' + esc(obj) + '</span> ' : '') +
+      esc(msg) +
+    '</span><span class="vmr-ticker-sep">·</span>';
+  }).join('');
+  track.innerHTML = chips + chips;
+  const duration = Math.max(30, items.length * 3);
+  track.style.animationDuration = duration + 's';
 }
 
 // Fetch Snapshots
@@ -13532,6 +13588,14 @@ document.addEventListener('keydown', e => {
     }
   }
   // Z key — Zen mode (list-only, hide inspector) on VMs page
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 't' || e.key === 'T')) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      toggleEventTicker();
+      return;
+    }
+  }
   if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'z' || e.key === 'Z') && currentPage === 'vms') {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
     if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
@@ -16941,6 +17005,7 @@ window.addEventListener('load', async () => {
   fetchIntegrations();
   if (refreshInterval > 0) refreshTimer = setInterval(refresh, refreshInterval);
   setInterval(updateVmFreshness, 15000);
+  if (localStorage.getItem('veyron_ticker') !== 'off') { _tickerVisible = true; }
   renderVmrPrimaryTabs();
   if (location.hash) applyDashboardHash();
   window.addEventListener('popstate', function() { applyDashboardHash(); });
@@ -19295,6 +19360,15 @@ async function fetchIncidents() {
   <button type="button" data-mobile-nav="spotlight" onclick="openSpotlight()">Search</button>
   <button type="button" data-mobile-nav="copilot" onclick="openAskZeus()">Ask Zeus</button>
 </nav>
+
+<!-- EVENT TICKER -->
+<div id="vmr-event-ticker" class="vmr-event-ticker" style="display:none" aria-live="polite" aria-label="Cluster event feed">
+  <span class="vmr-ticker-label">LIVE</span>
+  <div class="vmr-ticker-track-wrap">
+    <div class="vmr-ticker-track" id="vmr-ticker-track"></div>
+  </div>
+  <button type="button" class="vmr-ticker-close" onclick="hideEventTicker()" title="Hide ticker (T)">×</button>
+</div>
 
 <footer id="cloudos-dock" class="mac-dock" role="navigation" aria-label="Veyron dock">
   <div class="mac-dock-inner mac-dock-inner-scroll" id="cloudos-dock-inner"></div>
