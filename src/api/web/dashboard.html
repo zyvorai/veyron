@@ -2149,6 +2149,15 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-alog-action{color:var(--text-dim);font-size:.7rem;flex-shrink:0}
 .vmr-alog-ns{color:var(--text-dim);font-size:.68rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .vmr-alog-ts{color:var(--text-dim);font-size:.68rem;flex-shrink:0;white-space:nowrap}
+.vmr-ctx-menu{position:fixed;z-index:980;background:rgba(12,14,22,.97);border:1px solid rgba(255,255,255,.14);border-radius:10px;padding:4px 0;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,.75);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);font-size:.8rem;animation:vmr-ctx-in .09s ease}
+@keyframes vmr-ctx-in{from{opacity:0;transform:scale(.95) translateY(-4px)}to{opacity:1;transform:none}}
+.vmr-ctx-item{display:flex;align-items:center;gap:9px;padding:6px 14px;color:var(--text-primary);cursor:pointer;user-select:none;white-space:nowrap;border-radius:0;transition:background .1s}
+.vmr-ctx-item:hover{background:rgba(255,255,255,.08)}
+.vmr-ctx-item.danger{color:#f87171}
+.vmr-ctx-item.danger:hover{background:rgba(239,68,68,.13)}
+.vmr-ctx-icon{width:18px;text-align:center;font-size:.85rem;flex-shrink:0;opacity:.8}
+.vmr-ctx-sep{height:1px;background:rgba(255,255,255,.08);margin:3px 0}
+.vmr-ctx-header{padding:5px 14px 3px;font-size:.68rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
 .vmr-hover-card{position:fixed;z-index:950;pointer-events:none;background:rgba(12,14,20,.97);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 16px;min-width:200px;max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.7);backdrop-filter:blur(20px);font-size:.78rem;opacity:0;transition:opacity .12s ease;transform:translateY(-4px)}
 .vmr-hover-card.visible{opacity:1;transform:none}
 .vmr-hover-card-name{font-weight:700;font-size:.9rem;color:var(--text-primary);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -3972,6 +3981,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <!-- VM QUICK STATS HOVER CARD -->
 <div id="vmr-hover-card" class="vmr-hover-card" style="display:none" role="tooltip" aria-live="polite"></div>
+<div id="vmr-ctx-menu" class="vmr-ctx-menu" style="display:none" role="menu"></div>
 
 <!-- VM COMPARISON OVERLAY -->
 <div id="vm-compare-overlay" onclick="if(event.target===this)closeVmCompare()" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px"></div>
@@ -8853,6 +8863,62 @@ function hideVmHoverCard() {
   if (card) { card.classList.remove('visible'); setTimeout(function() { if (card) card.style.display = 'none'; }, 120); }
 }
 
+// ── VM Right-Click Context Menu ──
+function showVmContextMenu(e, ns, name) {
+  e.preventDefault();
+  e.stopPropagation();
+  hideVmHoverCard();
+  var menu = document.getElementById('vmr-ctx-menu');
+  if (!menu) return;
+  var vm = (window.lastVMs || vmData || []).find(function(v) { return v.name === name && (v.namespace||'default') === ns; });
+  var isRunning = vm && vm.status === 'Running';
+  var isStopped = vm && (vm.status === 'Stopped' || vm.status === 'Paused');
+  function item(icon, label, action, cls) {
+    return '<div class="vmr-ctx-item' + (cls ? ' ' + cls : '') + '" role="menuitem" tabindex="0" ' +
+      'onclick="hideVmContextMenu();' + action + '">' +
+      '<span class="vmr-ctx-icon">' + icon + '</span>' + esc(label) + '</div>';
+  }
+  var html = '<div class="vmr-ctx-header">' + esc(name) + '</div><div class="vmr-ctx-sep"></div>';
+  if (isRunning) {
+    html += item('▶', 'Connect / Console',   'openConnectModal(' + jsArgs(ns, name) + ')');
+    html += item('■', 'Stop',                'vmAction(' + jsArgs(ns, name, 'stop') + ',null)');
+    html += item('↻', 'Restart',             'vmAction(' + jsArgs(ns, name, 'restart') + ',null)');
+  } else if (isStopped) {
+    html += item('▶', 'Start',               'vmAction(' + jsArgs(ns, name, 'start') + ',null)');
+  }
+  html += '<div class="vmr-ctx-sep"></div>';
+  html += item('◉', 'Snapshot',             'vmSnapshot(' + jsArgs(ns, name) + ')');
+  html += item('⧉', 'Compare with…',        'openVmCompare(' + jsArgs(ns, name) + ')');
+  html += item('🏷', 'Edit tags',            'openVmTagEditor(' + jsArgs(ns, name) + ')');
+  html += item('📝', 'Edit note',            'openVmNoteEditor(' + jsArgs(ns, name) + ')');
+  html += '<div class="vmr-ctx-sep"></div>';
+  html += item('⊞', 'Open in inspector',    'selectVm(' + jsArgs(ns, name) + ')');
+  html += item('⎘', 'Copy VM name',         'copyToClipboard(' + jsArgs(name) + ')');
+  if (vm && vm.ip && vm.ip !== 'N/A') {
+    html += item('⎘', 'Copy IP',            'copyToClipboard(' + jsArgs(vm.ip) + ')');
+  }
+  html += '<div class="vmr-ctx-sep"></div>';
+  html += item('✕', 'Delete',              'vmDelete(' + jsArgs(ns, name) + ')', 'danger');
+
+  menu.innerHTML = html;
+  menu.style.display = 'block';
+  var vp = { w: window.innerWidth, h: window.innerHeight };
+  var mx = e.clientX, my = e.clientY;
+  var mw = 220, mh = 280;
+  menu.style.left = (mx + mw > vp.w ? mx - mw : mx) + 'px';
+  menu.style.top  = (my + mh > vp.h ? my - mh : my) + 'px';
+}
+function hideVmContextMenu() {
+  var menu = document.getElementById('vmr-ctx-menu');
+  if (menu) menu.style.display = 'none';
+}
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('vmr-ctx-menu');
+  if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) hideVmContextMenu();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') hideVmContextMenu();
+}, true);
 
 // ── Ambient Cluster Status Glow ──
 function updateAmbientGlow(running, total, failed) {
@@ -9687,7 +9753,7 @@ function vmCard(vm, showActions) {
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   const tint = osFamilyTint(family);
-  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
+  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmContextMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
@@ -10325,9 +10391,10 @@ function vmRow(vm, showActions) {
   const checkbox = showActions ? '<input type="checkbox" class="bulk-check vm-check" ' + onHandler('event.stopPropagation();toggleVMSelect(' + jsArgs(ns, vm.name) + ',this.checked)') + (selectedVMs.has(vmSelectionKey(ns, vm.name))?' checked':'') + '>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   const hoverAttr = ' onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()"';
+  const ctxAttr = ' oncontextmenu="showVmContextMenu(event,' + jsArgs(ns, vm.name) + ')"';
   const clickAttr = showActions
-    ? (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"' + hoverAttr)
-    : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"' + hoverAttr);
+    ? (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' style="cursor:pointer"' + hoverAttr + ctxAttr)
+    : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"' + hoverAttr + ctxAttr);
   const sshBlock = vmSshBlock(vm, showActions);
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
