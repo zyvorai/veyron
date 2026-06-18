@@ -4323,7 +4323,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-quotas" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Quotas</h1><p>Namespace quota usage</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchQuotas()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportQuotasCsv()" title="Export quotas as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchQuotas()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runQuotaAdvisor()">Quota Advisor</button></div></div>
     <div id="quotas-summary" class="grid-4 page-glass-stats"></div>
   <div id="quota-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Quota Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('quota-advisor-card')">Dismiss</button></div>
@@ -4336,7 +4336,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-ingress" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIngress()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportIngressCsv()" title="Export ingress as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIngress()">&#8635; Refresh</button></div></div>
     <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
@@ -4345,7 +4345,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-hpa" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHpa()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHpasCsv()" title="Export HPAs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHpa()">&#8635; Refresh</button></div></div>
     <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span><input type="search" id="hpa-search" class="form-input" placeholder="Filter HPAs…" oninput="filterHpaView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
@@ -4796,7 +4796,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-network-policies" data-section="network">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Network Policies</h1><p>Kubernetes NetworkPolicy inventory in namespace scope</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNetpolCsv()" title="Export policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNetworkPolicies()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate('cilium')">Open Cilium</button></div></div>
     <div id="netpol-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="netpol-search" class="form-input" placeholder="Filter policies…" oninput="filterNetpolView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Types</th><th>Ingress rules</th><th>Egress rules</th><th>Created</th></tr></thead><tbody id="netpol-body"></tbody></table></div>
@@ -8858,6 +8858,38 @@ function exportSnapshotsCsv() {
     rows.push([s.name, s.vm_name, s.namespace || '', s.ready ? 'Yes' : 'No', s.status || '', s.age || '']);
   });
   exportCsv(rows, 'snapshots.csv');
+}
+
+function exportQuotasCsv() {
+  const rows = [['Name', 'Namespace', 'CPU Used', 'CPU Limit', 'Memory Used', 'Memory Limit', 'VMs']];
+  (window.lastQuotas || []).forEach(function(q) {
+    rows.push([q.name, q.namespace, q.cpu_used||'0', q.cpu_limit||'-', q.memory_used||'0', q.memory_limit||'-', q.vm_count]);
+  });
+  exportCsv(rows, 'quotas.csv');
+}
+
+function exportIngressCsv() {
+  const rows = [['Name', 'Namespace', 'Class', 'Hosts', 'TLS']];
+  (window.lastIngress || []).forEach(function(i) {
+    rows.push([i.name, i.namespace, i.class_name||'-', (i.hosts||[]).join('; '), i.tls?'Yes':'No']);
+  });
+  exportCsv(rows, 'ingress.csv');
+}
+
+function exportHpasCsv() {
+  const rows = [['Name', 'Namespace', 'Target', 'Min', 'Current', 'Desired', 'Max']];
+  (window.lastHpas || []).forEach(function(h) {
+    rows.push([h.name, h.namespace, h.target_kind+'/'+h.target_name, h.min_replicas, h.current_replicas, h.desired_replicas, h.max_replicas]);
+  });
+  exportCsv(rows, 'hpas.csv');
+}
+
+function exportNetpolCsv() {
+  const rows = [['Name', 'Namespace', 'Types', 'Ingress Rules', 'Egress Rules', 'Created']];
+  (window.lastNetpols || []).forEach(function(p) {
+    rows.push([p.name, p.namespace, (p.policy_types||[]).join(', '), p.ingress_rules??0, p.egress_rules??0, p.created_at||'']);
+  });
+  exportCsv(rows, 'network-policies.csv');
 }
 
 function exportSloCsv() {
