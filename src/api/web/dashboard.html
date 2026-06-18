@@ -4228,7 +4228,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <table class="table"><thead><tr><th>Time</th><th>Severity</th><th>Category</th><th>Source</th><th>Message</th><th>Resource</th></tr></thead><tbody id="soc-events-body"></tbody></table>
   </div>
   <div class="card glass-card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Attack surface</span></div>
+    <div class="card-header"><span class="card-title">Attack surface</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocAsmCsv()" title="Export attack surface as CSV" style="margin-left:auto">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>VM</th><th>Exposure</th><th>Risk</th><th>Detail</th></tr></thead><tbody id="soc-asm-body"></tbody></table>
   </div>
 </div>
@@ -9078,6 +9078,13 @@ function exportWebhooksCsv() {
     rows.push([w.name, w.url, (w.events || []).join('; '), w.enabled ? 'yes' : 'no']);
   });
   exportCsv(rows, 'webhooks.csv');
+}
+function exportSocAsmCsv() {
+  const rows = [['VM', 'Exposure Type', 'Risk Score', 'Detail']];
+  (window.lastSocAsm || []).forEach(function(a) {
+    rows.push([(a.vm_namespace || '') + '/' + (a.vm_name || ''), a.exposure_type, a.risk_score ?? 0, a.detail]);
+  });
+  exportCsv(rows, 'attack-surface.csv');
 }
 function exportSecurityFindingsCsv() {
   const rows = [['Severity', 'Category', 'Title', 'Resource', 'Recommendation']];
@@ -16454,15 +16461,18 @@ async function fetchSocPage(refresh) {
         : '<p style="color:var(--text-dim);margin:0">No detections — cluster looks clear for configured rules</p>';
     }
     window.lastSocEvents = events;
+    window.lastSocAsm = asm;
     if (evBody) filterSocEventsView((document.getElementById('soc-events-search') || {}).value || '');
     if (asmBody) {
-      asmBody.innerHTML = asm.map(a =>
-        '<tr class="clickable-row" ' + (a.vm_name ? onHandler('openVmDetailDeep(' + jsArgs(a.vm_namespace, a.vm_name) + ')') : '') + '>' +
-        '<td>' + esc(a.vm_namespace) + '/' + esc(a.vm_name) + '</td>' +
-        '<td>' + esc(a.exposure_type) + '</td>' +
-        '<td>' + (a.risk_score ?? 0) + '</td>' +
-        '<td>' + esc(a.detail) + '</td></tr>'
-      ).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No exposed assets in scope</td></tr>';
+      asmBody.innerHTML = asm.map(a => {
+        const vmRef = esc(a.vm_namespace) + '/' + esc(a.vm_name);
+        const vmRefRaw = (a.vm_namespace || '') + '/' + (a.vm_name || '');
+        return '<tr class="clickable-row" ' + (a.vm_name ? onHandler('openVmDetailDeep(' + jsArgs(a.vm_namespace, a.vm_name) + ')') : '') + '>' +
+          '<td class="vmr-copy-tile" title="Copy VM ref" ' + onStopHandler('copyToClipboard(' + jsArgs(vmRefRaw) + ')') + '>' + vmRef + '<span class="vmr-copy-hint">copy</span></td>' +
+          '<td>' + esc(a.exposure_type) + '</td>' +
+          '<td>' + (a.risk_score ?? 0) + '</td>' +
+          '<td>' + esc(a.detail) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No exposed assets in scope</td></tr>';
     }
   } catch (e) {
     const msg = e.message || String(e);
