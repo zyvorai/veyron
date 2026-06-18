@@ -9040,6 +9040,7 @@ function showVmContextMenu(e, ns, name) {
   html += item('📝', 'Edit note',            'openVmNoteEditor(' + jsArgs(ns, name) + ')');
   html += '<div class="vmr-ctx-sep"></div>';
   html += item('⊞', 'Open in inspector',    'selectVm(' + jsArgs(ns, name) + ')');
+  html += item('⊕', 'Clone to new VM',       'cloneVm(' + jsArgs(ns, name) + ')');
   html += item('⎘', 'Copy VM name',         'copyToClipboard(' + jsArgs(name) + ')');
   if (vm && vm.ip && vm.ip !== 'N/A') {
     html += item('⎘', 'Copy IP',            'copyToClipboard(' + jsArgs(vm.ip) + ')');
@@ -14548,6 +14549,28 @@ function selectProfile(name) {
     document.getElementById('vm-disk').value = p.disk_size;
   }
   renderProfilePicker();
+}
+
+async function cloneVm(ns, name) {
+  var vm = (window.lastVMs || vmData || []).find(function(v) { return v.name === name && (v.namespace||'default') === ns; });
+  await openCreateModal();
+  document.getElementById('vm-name').value = name + '-clone';
+  document.getElementById('vm-namespace').value = ns;
+  if (vm) {
+    var cpuEl = document.getElementById('vm-cpus');
+    var memEl = document.getElementById('vm-memory');
+    if (cpuEl && vm.cpu) cpuEl.value = parseInt(vm.cpu, 10) || 1;
+    if (memEl && vm.memory) memEl.value = vm.memory;
+    if (vm.template) {
+      var tmplEl = document.getElementById('vm-template');
+      if (tmplEl) {
+        var opt = Array.from(tmplEl.options).find(function(o) { return o.value === vm.template; });
+        if (opt) tmplEl.value = vm.template;
+      }
+    }
+  }
+  document.getElementById('vm-name').focus();
+  showToast('Forge prefilled from ' + name + ' — adjust settings and forge', 'info');
 }
 
 async function openCreateModal() {
