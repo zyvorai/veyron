@@ -2112,6 +2112,11 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .vmr-cli-row{display:flex;align-items:center;gap:6px;padding:3px 0}
 .vmr-cli-code{flex:1;font-family:var(--font-mono,monospace);font-size:.75rem;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:4px;padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
 .vmr-cli-copy{flex-shrink:0;padding:2px 8px!important;font-size:.68rem!important}
+.vmr-cmp-table{width:100%;border-collapse:collapse;font-size:.83rem}
+.vmr-cmp-table thead th{text-align:left;padding:6px 10px;border-bottom:1px solid var(--glass-border);font-weight:600;font-size:.8rem;color:var(--text-muted)}
+.vmr-cmp-label{padding:5px 10px 5px 0;color:var(--text-muted);font-size:.78rem;vertical-align:middle;white-space:nowrap}
+.vmr-cmp-val{padding:5px 10px;font-family:var(--font-mono,monospace);font-size:.78rem;border-left:1px solid var(--glass-border)}
+.vmr-cmp-section td{padding:10px 0 3px;font-size:.67rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--glass-border)}
 .vm-card{
   border-radius:var(--glass-radius);border:1px solid var(--glass-border);
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -3764,6 +3769,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('start')" title="Start selected VMs">▶ Start</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkAction('stop')" title="Stop selected VMs">■ Stop</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="bulkSnapshot()" title="Snapshot selected VMs">◉ Snap</button>
+            <button type="button" id="bulk-compare-btn" class="glass-btn-secondary glass-btn-sm" style="display:none;background:linear-gradient(90deg,rgba(56,189,248,.12),rgba(139,92,246,.12));border-color:rgba(56,189,248,.35)" onclick="openVmCompare()" title="Compare 2 selected VMs side by side">⧉ Compare</button>
             <button type="button" class="glass-btn-destructive glass-btn-sm" onclick="bulkAction('delete')" title="Delete selected VMs">✕ Delete</button>
             <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:4px" onclick="toggleSelectAll(false)">Clear</button>
           </div>
@@ -3870,6 +3876,24 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
     <div class="modal-body" id="glass-prompt-fields"></div>
     <div class="modal-footer"><button type="button" class="glass-btn-secondary" onclick="closeGlassPrompt()">Cancel</button><button type="button" class="glass-btn-primary" id="glass-prompt-submit-btn" onclick="submitGlassPrompt()">Submit</button></div>
+  </div>
+</div>
+
+<!-- VM COMPARE MODAL -->
+<div class="modal-overlay" id="vm-compare-modal" onclick="if(event.target===this)closeVmCompare()">
+  <div class="modal glass-modal mac-sheet-modal" style="width:min(920px,96vw);max-height:85vh;display:flex;flex-direction:column">
+    <div class="mac-sheet-titlebar">
+      <div class="mac-window-traffic" aria-label="Window controls">
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeVmCompare()" aria-label="Close"></button>
+        <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+        <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+      </div>
+      <div class="mac-sheet-title" id="vm-compare-title">Compare VMs</div>
+    </div>
+    <div class="modal-body" id="vm-compare-body" style="overflow-y:auto;flex:1;padding:16px 20px"></div>
+    <div class="modal-footer">
+      <button type="button" class="glass-btn-secondary" onclick="closeVmCompare()">Close</button>
+    </div>
   </div>
 </div>
 
@@ -13808,6 +13832,78 @@ async function bulkSnapshot() {
   });
 }
 
+async function openVmCompare() {
+  if (selectedVMs.size !== 2) { toast('Select exactly 2 VMs to compare', 'error'); return; }
+  const keys = [...selectedVMs];
+  const a = parseVmSelectionKey(keys[0]);
+  const b = parseVmSelectionKey(keys[1]);
+  const modal = document.getElementById('vm-compare-modal');
+  const body = document.getElementById('vm-compare-body');
+  const title = document.getElementById('vm-compare-title');
+  if (!modal || !body) return;
+  if (title) title.textContent = 'Compare · ' + a.name + ' vs ' + b.name;
+  body.innerHTML = '<div style="display:flex;gap:12px;color:var(--text-muted);padding:20px">Loading VMs…</div>';
+  modal.classList.add('open');
+  try {
+    const [ja, jb] = await Promise.all([
+      apiJson('/api/v1/vms/' + encodeURIComponent(a.ns) + '/' + encodeURIComponent(a.name)),
+      apiJson('/api/v1/vms/' + encodeURIComponent(b.ns) + '/' + encodeURIComponent(b.name)),
+    ]);
+    const va = unwrapData(ja) || {};
+    const vb = unwrapData(jb) || {};
+    function row(label, va2, vb2) {
+      const diff = String(va2 || '—') !== String(vb2 || '—');
+      const diffStyle = diff ? 'background:rgba(251,191,36,.08);' : '';
+      const a2 = va2 != null && va2 !== '' ? esc(String(va2)) : '<span style="color:var(--text-dim)">—</span>';
+      const b2 = vb2 != null && vb2 !== '' ? esc(String(vb2)) : '<span style="color:var(--text-dim)">—</span>';
+      return '<tr style="' + diffStyle + '"><td class="vmr-cmp-label">' + esc(label) + (diff ? ' <span style="font-size:.65rem;color:var(--warning);vertical-align:middle">≠</span>' : '') + '</td>' +
+        '<td class="vmr-cmp-val">' + a2 + '</td><td class="vmr-cmp-val">' + b2 + '</td></tr>';
+    }
+    function section(title2) {
+      return '<tr><td colspan="3" class="vmr-cmp-section">' + esc(title2) + '</td></tr>';
+    }
+    const vmiA = va.vmi_status || {};
+    const vmiB = vb.vmi_status || {};
+    const ifA = (vmiA.interfaces || [])[0] || {};
+    const ifB = (vmiB.interfaces || [])[0] || {};
+    const html =
+      '<table class="vmr-cmp-table"><thead><tr>' +
+      '<th style="width:28%">Field</th><th style="width:36%">' + esc(a.name) + '</th><th style="width:36%">' + esc(b.name) + '</th></tr></thead><tbody>' +
+      section('Identity') +
+      row('Name', va.name, vb.name) +
+      row('Namespace', va.namespace, vb.namespace) +
+      row('Status', va.status, vb.status) +
+      row('Ready', va.ready, vb.ready) +
+      row('Age', va.age, vb.age) +
+      section('Compute') +
+      row('CPU', va.cpu, vb.cpu) +
+      row('Memory', va.memory, vb.memory) +
+      row('Node', va.node, vb.node) +
+      section('Network') +
+      row('IP', va.ip, vb.ip) +
+      row('Primary iface', ifA.interface_name, ifB.interface_name) +
+      row('MAC', ifA.mac, ifB.mac) +
+      section('Guest') +
+      row('Phase', vmiA.phase, vmiB.phase) +
+      row('Guest OS', (vmiA.guest_os_info && vmiA.guest_os_info.name) || '', (vmiB.guest_os_info && vmiB.guest_os_info.name) || '') +
+      section('Operator') +
+      row('Veyron-managed', va.veyron_managed, vb.veyron_managed) +
+      row('Drift', va.drift_detected, vb.drift_detected) +
+      '</tbody></table>' +
+      '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
+      '<button class="glass-btn-secondary glass-btn-sm" onclick="selectVm(' + jsArgs(a.ns, a.name) + ',{});closeVmCompare()">Inspect ' + esc(a.name) + '</button>' +
+      '<button class="glass-btn-secondary glass-btn-sm" onclick="selectVm(' + jsArgs(b.ns, b.name) + ',{});closeVmCompare()">Inspect ' + esc(b.name) + '</button>' +
+      '</div>';
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<p style="color:var(--error)">' + esc(e.message || String(e)) + '</p>';
+  }
+}
+function closeVmCompare() {
+  const modal = document.getElementById('vm-compare-modal');
+  if (modal) modal.classList.remove('open');
+}
+
 function openVmCliSheet(ns, name) {
   const vm = vmData.find(function(v) { return v.name === name && (v.namespace || 'default') === ns; }) || _vmDetailCache || {};
   const ip = vm.ip && vm.ip !== 'N/A' ? vm.ip : null;
@@ -15899,6 +15995,8 @@ function toggleBulkBar() {
   document.getElementById('bulk-count').textContent = selectedVMs.size + ' selected';
   const acts = document.getElementById('bulk-actions');
   if (acts) acts.style.display = selectedVMs.size > 0 ? 'flex' : 'none';
+  const cmpBtn = document.getElementById('bulk-compare-btn');
+  if (cmpBtn) cmpBtn.style.display = selectedVMs.size === 2 ? 'inline-flex' : 'none';
 }
 
 function toggleVMSelect(ns, name, checked) {
