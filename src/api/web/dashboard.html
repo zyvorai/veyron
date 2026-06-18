@@ -2131,6 +2131,8 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 body.vmr-fleet-full #vm-workspace{grid-template-columns:1fr!important}
 body.vmr-fleet-full .vm-focus-pane{display:none!important}
 #vmr-fleet-full-btn.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.45);color:var(--cyan)}
+.vm-transitioning .vm-badge{animation:vm-status-pulse .9s ease-in-out infinite;opacity:.75}
+@keyframes vm-status-pulse{0%,100%{opacity:.75}50%{opacity:1}}
 .vmr-pin-chip{display:inline-flex;align-items:center;gap:5px;background:var(--glass-bg-elevated);border:1px solid rgba(56,189,248,.35);border-radius:20px;padding:3px 8px 3px 6px;font-size:.73rem;color:var(--text-muted);cursor:pointer;transition:border-color .15s,background .15s;flex-shrink:0}
 .vmr-pin-chip:hover{border-color:rgba(56,189,248,.6);background:rgba(56,189,248,.06)}
 .vmr-pin-chip .vmr-pin-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
@@ -13159,6 +13161,7 @@ function renderAboutShortcuts() {
   const fromApi = (lastExperienceDesktop && lastExperienceDesktop.keyboard_shortcuts) || [];
   const fallback = [
     { keys: '⌘K', label: 'Spotlight search' },
+    { keys: '⌘N', label: 'Quick Forge — launch a VM from anywhere' },
     { keys: '⌘J', label: 'Ask Zeus AI assistant' },
     { keys: 'F3 / ⌃↑', label: 'Mission Control (cluster overview)' },
     { keys: '⌘\\', label: 'Toggle Finder sidebar' },
@@ -13166,11 +13169,13 @@ function renderAboutShortcuts() {
     { keys: '⌘R', label: 'Refresh current page' },
     { keys: '⌘,', label: 'Open Preferences / Settings' },
     { keys: '/', label: 'Focus VM search (VMs page)' },
-    { keys: ':', label: 'Command bar — :start :stop :snap :go <page> :ns <name>' },
+    { keys: ':', label: 'Command bar — :start :stop :snap :vnc :go <page> :ns <name>' },
+    { keys: 'Z', label: 'Zen mode — expand VM list full-width (VMs page)' },
+    { keys: 'T', label: 'Toggle live event ticker strip' },
     { keys: '↑ / ↓ or j / k', label: 'Navigate VM list (vi-style j/k also works)' },
+    { keys: 'Enter', label: 'Open inspector for selected VM' },
     { keys: 'C', label: 'Forge a new VM (VMs page)' },
     { keys: '⌘A', label: 'Select / deselect all VMs (VMs page)' },
-    { keys: 'C (inspector)', label: 'Open Connect modal for selected VM' },
     { keys: '?', label: 'Open this shortcuts reference' },
     { keys: 'Esc', label: 'Close overlays / dismiss VM inspector' },
     { keys: '⌘W', label: 'Close Screen Sharing / RDP sheet' },
@@ -14114,7 +14119,9 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
         (vm.node ? '<div class="vd-kv"><div class="vd-kv-label">Node</div><div class="vd-kv-value vmr-copy-tile" title="Copy node" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.node) + ')') + '>' + esc(vm.node) + '<span class="vmr-copy-hint">copy</span></div></div>' : '') +
         (guestOS ? vdKv('Guest OS', (guestOS.name || guestOS.id || '') + (guestOS.version ? ' · ' + guestOS.version : '')) : '') +
         vdKv('Guest runtime', '…') +
-      '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div></div></div>' +
+      '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div>' +
+      '<div id="vm-event-history-' + name + '" style="margin-top:12px"></div>' +
+      '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'network' ? ' active' : '') + '" data-panel="network"><div class="zeus-inspector-body">' + networkBody + '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'compute' ? ' active' : '') + '" data-panel="compute"><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '">Loading metrics…</div><div id="guest-fs-panel-' + name + '" style="margin-top:12px">Loading storage…</div></div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'security' ? ' active' : '') + '" data-panel="security"><div class="zeus-inspector-body"><div id="security-' + name + '">Loading…</div></div></div>' +
@@ -14164,6 +14171,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
     loadDoctorPanel(ns, name);
     loadVmMetricsPanel(ns, name);
     loadVmSnapshotsPanel(ns, name);
+    loadVmEventHistory(ns, name);
   } catch (e) {
     if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
     toast('Failed to load VM: ' + (e.message || String(e)), 'error');
@@ -14172,6 +14180,32 @@ async function fetchVmWorkspaceDetail(ns, name) {
 
 async function fetchVmDetail(ns, name) {
   selectVm(ns, name, { skipHash: true, force: true });
+}
+
+function loadVmEventHistory(ns, name) {
+  var el = document.getElementById('vm-event-history-' + name);
+  if (!el) return;
+  var events = (window.lastEvents || []).filter(function(e) {
+    var obj = (e.involved_object || '').toLowerCase();
+    var msg = (e.message || '').toLowerCase();
+    var evNs = (e.namespace || '').toLowerCase();
+    return obj.indexOf(name.toLowerCase()) >= 0 || msg.indexOf(name.toLowerCase()) >= 0;
+  }).slice(0, 6);
+  if (!events.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div style="margin-top:4px">' +
+    '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Recent Events</div>' +
+    events.map(function(ev) {
+      var isWarn = ev.type === 'Warning';
+      var dotColor = isWarn ? '#f59e0b' : '#22c55e';
+      var msg = (ev.reason ? ev.reason + ': ' : '') + (ev.message || '').slice(0, 80);
+      var ts = ev.timestamp ? timeAgo(ev.timestamp) : '';
+      return '<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+        '<span style="width:5px;height:5px;border-radius:50%;background:' + dotColor + ';margin-top:5px;flex-shrink:0"></span>' +
+        '<span style="flex:1;font-size:.73rem;color:' + (isWarn ? '#fbbf24' : 'var(--text-muted)') + ';word-break:break-word;line-height:1.4">' + esc(msg) + '</span>' +
+        (ts ? '<span style="font-size:.65rem;color:var(--text-dim);white-space:nowrap;flex-shrink:0">' + esc(ts) + '</span>' : '') +
+      '</div>';
+    }).join('') +
+  '</div>';
 }
 
 async function loadVmSnapshotsPanel(ns, name) {
