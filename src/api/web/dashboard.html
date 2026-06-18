@@ -4103,7 +4103,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-monitoring" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Monitoring</h1><p>Observability stack discovery, VM policy hints, and threshold-based workload anomalies — all scoped by the namespace selector in the header.</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMonitoring()">↺ Refresh</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runPerformanceAdvisor()">Performance Advisor</button>
+    </div></div>
     <div id="performance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Performance Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('performance-advisor-card')">Dismiss</button></div>
     <div id="performance-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4234,7 +4237,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div></div>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:220px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
   <table class="table"><thead><tr><th>Title</th><th>Severity</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifications-body"></tbody></table>
   </div>
 </div>
@@ -8578,7 +8581,7 @@ function vmCard(vm, showActions) {
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name">' + esc(vm.name) + '</div>' +
     vmWorkspaceChip(ns) +
-    '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · ' + esc(vm.ip) : '') + '</div>' +
+    '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
     '<div class="vm-card-actions">' + actions + vmDriftBadge(vm) + '</div></div>';
 }
 
@@ -14653,6 +14656,21 @@ async function fetchAudit() {
   }
 }
 
+async function markAllNotificationsRead() {
+  const items = window.lastNotifications || [];
+  const unread = items.filter(function(n) { return !n.read; });
+  if (!unread.length) { toast('No unread notifications', 'success'); return; }
+  try {
+    await apiJson('/api/v1/notifications/read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notification_ids: unread.map(function(n) { return n.id; }) })
+    });
+    toast('Marked ' + unread.length + ' notification' + (unread.length === 1 ? '' : 's') + ' as read', 'success');
+    fetchNotifications();
+  } catch(e) { toast('Mark read: ' + (e.message || String(e)), 'error'); }
+}
+
 async function fetchNotifications() {
   const tb = document.getElementById('notifications-body');
   try {
@@ -14668,10 +14686,12 @@ async function fetchNotifications() {
         { label: 'Events', value: '→', onclick: "navigate('events')", title: 'View events' }
       ]);
     }
+    const markBtn = document.getElementById('notif-mark-read-btn');
+    if (markBtn) markBtn.style.display = unread ? '' : 'none';
     window.lastNotifications = items;
     tb.innerHTML = items.map(n => {
       const sevCls = glassTableBadge(n.severity);
-      return `<tr><td>${esc(n.title)}</td><td><span class="glass-badge ${sevCls}">${esc(n.severity)}</span></td><td>${esc(n.message)}</td><td><span class="glass-badge ${n.read ? 'stopped' : 'running'}">${n.read ? 'Read' : 'Unread'}</span></td><td>${fmtTime(n.created_at)}</td></tr>`;
+      return `<tr class="${n.read ? '' : 'notif-unread'}"><td>${esc(n.title)}</td><td><span class="glass-badge ${sevCls}">${esc(n.severity)}</span></td><td>${esc(n.message)}</td><td><span class="glass-badge ${n.read ? 'stopped' : 'running'}">${n.read ? 'Read' : 'Unread'}</span></td><td>${fmtTime(n.created_at)}</td></tr>`;
     }).join('')
       || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No notifications</td></tr>';
   } catch (e) {

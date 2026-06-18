@@ -2705,6 +2705,14 @@ html[data-theme='tahoe-light'] .vmr-template-card {
   color: var(--pw-color-warning);
 }
 
+/* Unread notification row highlight */
+.notif-unread td:first-child {
+  font-weight: 600;
+}
+.notif-unread {
+  background: rgba(var(--spark-rgb, 99,102,241), .04);
+}
+
 /* ── Status filter chips ─────────────────────────────────────────────── */
 .vmr-filter-chips {
   display: flex;
