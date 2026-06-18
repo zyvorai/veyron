@@ -4276,7 +4276,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
 <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSlo()">&#8635; Refresh</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSloCsv()" title="Export SLOs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSlo()">&#8635; Refresh</button></div></div>
     
   <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
@@ -4298,7 +4298,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-chaos" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div></div>
+  <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportChaosCsv()" title="Export experiments as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchChaos()">&#8635; Refresh</button></div></div>
     <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span><input type="search" id="chaos-search" class="form-input" placeholder="Filter experiments…" oninput="filterChaosView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
@@ -4309,7 +4309,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-rbac" data-section="security">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>RBAC</h1><p>Cluster roles and bindings</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchRbac()">&#8635; Refresh</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="rbac-search" class="form-input" placeholder="Filter roles and bindings…" oninput="filterRbacView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportRbacCsv()" title="Export RBAC as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchRbac()">&#8635; Refresh</button></div></div>
     <div id="rbac-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Roles</span></div>
@@ -8858,6 +8858,33 @@ function exportSnapshotsCsv() {
     rows.push([s.name, s.vm_name, s.namespace || '', s.ready ? 'Yes' : 'No', s.status || '', s.age || '']);
   });
   exportCsv(rows, 'snapshots.csv');
+}
+
+function exportSloCsv() {
+  const rows = [['Name', 'Service', 'SLI Type', 'Target %', 'Current %', 'Budget Remaining %', 'Status']];
+  (window.lastSloItems || []).forEach(function(s) {
+    rows.push([s.name, s.service, s.sli_type, s.target, s.current, s.error_budget_remaining, s.status]);
+  });
+  exportCsv(rows, 'slos.csv');
+}
+
+function exportChaosCsv() {
+  const rows = [['Name', 'Type', 'Namespace', 'Target', 'Status', 'Duration']];
+  (window.lastChaosExperiments || []).forEach(function(c) {
+    rows.push([c.name, c.experiment_type, c.namespace, c.target, c.status, c.duration]);
+  });
+  exportCsv(rows, 'chaos-experiments.csv');
+}
+
+function exportRbacCsv() {
+  const rows = [['Kind', 'Name', 'Namespace/Scope', 'Details']];
+  (window.lastRbacRoles || []).forEach(function(r) {
+    rows.push(['Role', r.name, r.is_cluster_role ? 'Cluster' : (r.namespace||'-'), (r.rules||[]).length + ' rules']);
+  });
+  (window.lastRbacBindings || []).forEach(function(b) {
+    rows.push(['Binding', b.name, '-', 'refs ' + b.role_name]);
+  });
+  exportCsv(rows, 'rbac.csv');
 }
 
 function exportPoliciesCsv() {
