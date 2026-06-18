@@ -4172,7 +4172,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Alert Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('alert-advisor-card')">Dismiss</button></div>
     <div id="alert-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">Active Alerts</span>
+  <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">Active Alerts</span><span id="alerts-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <div style="display:flex;gap:8px;flex:1;min-width:240px;justify-content:flex-end">
       <input type="search" class="form-input" id="alerts-search" placeholder="Filter alerts…" oninput="filterAlertsView()" style="max-width:200px;min-width:120px;font-size:.82rem">
       <input type="search" class="form-input" id="alerts-copilot-input" placeholder="Ask Zeus about alerts…" style="max-width:240px;min-width:140px" onkeydown="if(event.key==='Enter'){event.preventDefault();pageCopilotChip('alerts-copilot-input','Summarize firing alerts','Alerts page')}">
@@ -4279,7 +4279,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-slo" data-section="observe">
 <div class="space-y animate-fade-in">
 <div class="page-header"><div><h1>SLO</h1><p>Availability objectives, error budgets, and burn rates</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSloCsv()" title="Export SLOs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSlo()">&#8635; Refresh</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><span id="slo-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap"></span><input type="search" id="slo-search" class="form-input" placeholder="Filter SLOs…" oninput="filterSloView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSloCsv()" title="Export SLOs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSlo()">&#8635; Refresh</button></div></div>
     
   <div id="slo-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron SLO Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('slo-advisor-card')">Dismiss</button></div>
@@ -4350,7 +4350,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>HPA</h1><p>Horizontal pod autoscaler targets</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHpasCsv()" title="Export HPAs as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHpa()">&#8635; Refresh</button></div></div>
     <div id="hpa-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span><input type="search" id="hpa-search" class="form-input" placeholder="Filter HPAs…" oninput="filterHpaView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Autoscalers</span><span id="hpa-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="hpa-search" class="form-input" placeholder="Filter HPAs…" oninput="filterHpaView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Desired</th><th>Max</th></tr></thead><tbody id="hpa-body"></tbody></table></div>
 </div>
 </div>
@@ -10741,6 +10741,9 @@ function filterAlertsView() {
   if (q) alerts = alerts.filter(function(a) {
     return (a.name || '').toLowerCase().includes(q) || (a.message || '').toLowerCase().includes(q) || (a.source || '').toLowerCase().includes(q);
   });
+  const alertsCountEl = document.getElementById('alerts-filter-count');
+  const allAlerts = window.lastAlerts || [];
+  if (alertsCountEl) alertsCountEl.textContent = alerts.length === allAlerts.length ? allAlerts.length + ' alerts' : alerts.length + ' of ' + allAlerts.length + ' alerts';
   tb.innerHTML = alerts.map(function(a) {
     const sevCls = glassTableBadge(a.severity);
     const stCls = glassTableBadge(a.status);
@@ -11158,6 +11161,8 @@ function filterSloView(query) {
     return (s.name || '').toLowerCase().includes(q) || (s.service || '').toLowerCase().includes(q) || (s.status || '').toLowerCase().includes(q);
   }) : items;
   const fBurn = q ? burnRates.filter(function(br) { return (br.slo_name || '').toLowerCase().includes(q); }) : burnRates;
+  const sloCountEl = document.getElementById('slo-filter-count');
+  if (sloCountEl) sloCountEl.textContent = fItems.length === items.length ? items.length + ' SLOs' : fItems.length + ' of ' + items.length + ' SLOs';
   if (tb) tb.innerHTML = fItems.map(function(s) {
     return '<tr><td class="vmr-copy-tile" title="Copy SLO name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>' + esc(s.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(s.service) + '</td><td>' + esc(s.sli_type) + '</td><td>' + s.target + '%</td><td>' + s.current + '%</td><td>' + s.error_budget_remaining + '%</td><td><span class="glass-badge ' + glassTableBadge(s.status) + '">' + esc(s.status) + '</span></td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching SLOs</td></tr>';
@@ -11210,6 +11215,8 @@ function filterHpaView(query) {
            (h.namespace || '').toLowerCase().includes(q) ||
            (h.target_name || '').toLowerCase().includes(q);
   }) : items;
+  const hpaCountEl = document.getElementById('hpa-filter-count');
+  if (hpaCountEl) hpaCountEl.textContent = filtered.length === items.length ? items.length + ' HPAs' : filtered.length + ' of ' + items.length + ' HPAs';
   tb.innerHTML = filtered.map(function(h) {
     return '<tr><td class="vmr-copy-tile" title="Copy HPA name" ' + onStopHandler('copyToClipboard(' + jsArgs(h.name) + ')') + '>' + esc(h.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(h.namespace) + '</td><td>' + esc(h.target_kind) + '/' + esc(h.target_name) + '</td><td>' + h.min_replicas + '</td><td>' + h.current_replicas + '</td><td>' + h.desired_replicas + '</td><td>' + h.max_replicas + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching HPAs</td></tr>';
