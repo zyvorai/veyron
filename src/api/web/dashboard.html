@@ -3843,6 +3843,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
   <div id="vmr-tag-filter-chips" class="vmr-filter-chips" style="display:none;gap:6px;padding:2px 0 4px;flex-wrap:wrap"></div>
@@ -9539,6 +9540,35 @@ function exportVmsCsv() {
     rows.push([vm.name, vm.namespace, vm.status, vm.cpu, vm.memory, vm.ip, vm.node, vm.age]);
   });
   exportCsv(rows, 'vms-' + currentNamespace + '.csv');
+}
+function exportFleetJson() {
+  var vms = vmData || [];
+  var payload = {
+    exported_at: new Date().toISOString(),
+    namespace: currentNamespace,
+    vm_count: vms.length,
+    vms: vms.map(function(v) {
+      var ns = v.namespace || 'default';
+      return {
+        name: v.name, namespace: ns, status: v.status,
+        cpu: v.cpu, memory: v.memory, ip: v.ip, node: v.node, age: v.age,
+        os_family: guessOsFamily(v),
+        veyron_managed: v.veyron_managed || false,
+        drift_detected: v.drift_detected || false,
+        tags: getVmTags(ns, v.name),
+        note: getVmNote(ns, v.name) || null,
+        pinned: isFleetPinned(ns, v.name),
+      };
+    })
+  };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fleet-snapshot-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  logVmAction('fleet', 'all', 'export', 'ok');
+  showToast('Fleet snapshot exported (' + vms.length + ' VMs)', 'success');
 }
 
 function exportAuditCsv() {
