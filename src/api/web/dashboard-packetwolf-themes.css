@@ -2564,3 +2564,63 @@ html[data-theme='tahoe-light'] .vmr-fdrawer-tag.win {
   border-color: rgba(139, 92, 246, 0.28);
   color: #7c3aed;
 }
+
+/* Page toolbar (VM list, Nodes, etc.) — hardcoded near-black gradient; lift to frosted white on light themes */
+html[data-theme='light'] .mac-page-toolbar,
+html[data-theme='tahoe-light'] .mac-page-toolbar {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.92), rgba(241, 245, 249, 0.78));
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* VM workspace content pane — hardcoded dark blue-black; lift to frosted white on light themes */
+html[data-theme='light'] .vm-workspace.mac-vm-workspace,
+html[data-theme='tahoe-light'] .vm-workspace.mac-vm-workspace {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(15, 23, 42, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* VM fleet list sort header — dark on light; lift to frosted slate */
+html[data-theme='light'] .vm-list-header,
+html[data-theme='tahoe-light'] .vm-list-header {
+  background: rgba(241, 245, 249, 0.92);
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+/* VM inspector focus pane (bare, not inside .veyron-shell) — dark gradient; lift to glass on light */
+html[data-theme='light'] .vm-focus-pane.mac-inspector-pane,
+html[data-theme='tahoe-light'] .vm-focus-pane.mac-inspector-pane {
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.82) 0%, rgba(255, 255, 255, 0.92) 100%);
+  border-left-color: rgba(15, 23, 42, 0.08);
+}
+
+/* zeus-glass cards (VM hero, inspector sections, mission tiles, popovers) — hardcoded dark navy; follow glass vars on light themes */
+html[data-theme='light'] .zeus-glass,
+html[data-theme='tahoe-light'] .zeus-glass {
+  background: var(--glass-bg-elevated);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* Menubar action buttons (spotlight, finder toggle) — dark glass; lift to translucent on light themes */
+html[data-theme='light'] .btn-spotlight,
+html[data-theme='tahoe-light'] .btn-spotlight {
+  background: color-mix(in srgb, var(--pw-text-primary) 6%, transparent);
+  border-color: var(--glass-border);
+  color: var(--pw-text-secondary);
+}
+
+/* Stage Manager tabs bar (advanced tier) — near-black; lift to frosted white on light themes */
+html[data-theme='light'] .mac-desktop-tabs,
+html[data-theme='tahoe-light'] .mac-desktop-tabs {
+  background: rgba(248, 250, 252, 0.88);
+  border-bottom-color: rgba(15, 23, 42, 0.08);
+}
+
+/* Cluster location pill in menubar (advanced tier) — dark glass; lift to frosted on light themes */
+html[data-theme='light'] .topbar-location,
+html[data-theme='tahoe-light'] .topbar-location {
+  background: color-mix(in srgb, var(--pw-text-primary) 5%, transparent);
+  border-color: var(--glass-border);
+}
