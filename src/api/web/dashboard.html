@@ -14959,6 +14959,15 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  // 1-6 = inspector tab shortcuts when a VM is selected
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && currentPage === 'vms' && selectedVmNs && selectedVmName && e.key >= '1' && e.key <= '6') {
+    const _tag6 = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (_tag6 !== 'input' && _tag6 !== 'textarea' && _tag6 !== 'select') {
+      const _tabs = ['overview','network','compute','security','backups','ai'];
+      const _tab = _tabs[parseInt(e.key, 10) - 1];
+      if (_tab) { e.preventDefault(); setVmInspectorTab(_tab); return; }
+    }
+  }
   // p = pause/unpause selected VM; s = snapshot; d = diagnose
   if (!e.metaKey && !e.ctrlKey && !e.altKey && currentPage === 'vms' && selectedVmNs && selectedVmName) {
     const _tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
