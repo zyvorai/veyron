@@ -15388,6 +15388,7 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
         vdKv('Guest runtime', '…') +
       '</div><div id="guest-runtime-panel-' + name + '" style="margin-top:12px"></div>' +
       '<div id="vm-event-history-' + name + '" style="margin-top:12px"></div>' +
+      '<div id="vm-session-timeline-' + name + '" style="margin-top:12px"></div>' +
       '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'network' ? ' active' : '') + '" data-panel="network"><div class="zeus-inspector-body">' + networkBody + '</div></div>' +
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'compute' ? ' active' : '') + '" data-panel="compute"><div class="zeus-inspector-body"><div id="vm-metrics-panel-' + name + '">Loading metrics…</div><div id="guest-fs-panel-' + name + '" style="margin-top:12px">Loading storage…</div></div></div>' +
@@ -15439,6 +15440,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
     loadVmMetricsPanel(ns, name);
     loadVmSnapshotsPanel(ns, name);
     loadVmEventHistory(ns, name);
+    loadVmSessionTimeline(ns, name);
   } catch (e) {
     if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
     toast('Failed to load VM: ' + (e.message || String(e)), 'error');
@@ -15473,6 +15475,31 @@ function loadVmEventHistory(ns, name) {
       '</div>';
     }).join('') +
   '</div>';
+}
+
+function loadVmSessionTimeline(ns, name) {
+  var el = document.getElementById('vm-session-timeline-' + name);
+  if (!el) return;
+  var entries = (_actionLog || []).filter(function(e) { return e.name === name && (e.ns || 'default') === ns; });
+  if (!entries.length) { el.innerHTML = ''; return; }
+  var icons = { start:'▶', stop:'■', restart:'↻', pause:'⏸', unpause:'▶', migrate:'⇄', delete:'✕', snapshot:'◉', tag:'🏷', forge:'⊕' };
+  var statusColors = { ok:'#86efac', error:'#f87171', pending:'#fde68a' };
+  el.innerHTML = '<div style="margin-top:4px">' +
+    '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Session Activity</div>' +
+    '<div style="position:relative;padding-left:14px;border-left:1px solid rgba(255,255,255,.1)">' +
+    entries.map(function(e) {
+      var icon = icons[e.action] || '·';
+      var sc = statusColors[e.status] || 'var(--text-dim)';
+      var t = e.ts ? new Date(e.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '';
+      return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:.72rem">' +
+        '<span style="position:absolute;left:-5px;width:9px;height:9px;border-radius:50%;background:' + sc + ';border:1px solid rgba(0,0,0,.4)"></span>' +
+        '<span style="color:rgba(255,255,255,.6);flex-shrink:0;margin-left:4px">' + icon + '</span>' +
+        '<span style="color:var(--text-primary);flex:1">' + esc(e.action) + '</span>' +
+        (e.status !== 'ok' ? '<span style="color:' + sc + ';font-size:.65rem">' + esc(e.status) + '</span>' : '') +
+        (t ? '<span style="color:var(--text-dim);flex-shrink:0">' + esc(t) + '</span>' : '') +
+        '</div>';
+    }).join('') +
+    '</div></div>';
 }
 
 async function loadVmSnapshotsPanel(ns, name) {
