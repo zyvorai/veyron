@@ -3873,7 +3873,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Cluster Nodes</span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:180px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">↓ CSV</button></div>
+    <div class="card-header"><span class="card-title">Cluster Nodes</span><span id="node-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">↓ CSV</button></div>
     <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
     <div id="node-list"></div>
   </div>
@@ -10769,6 +10769,8 @@ function filterNodesView(query) {
            (n.os_image || '').toLowerCase().includes(q) ||
            (n.kubelet_version || '').toLowerCase().includes(q);
   }) : nodes;
+  const nodeCountEl = document.getElementById('node-filter-count');
+  if (nodeCountEl) nodeCountEl.textContent = filtered.length === nodes.length ? nodes.length + ' nodes' : filtered.length + ' of ' + nodes.length + ' nodes';
   if (!filtered.length) {
     el.innerHTML = '<div class="empty-state"><p>' + (q ? 'No nodes match &ldquo;' + esc(q) + '&rdquo;' : 'No nodes found') + '</p></div>';
     return;
@@ -13553,6 +13555,8 @@ function filterPodsView(query) {
            (p.node_name || '').toLowerCase().includes(q) ||
            (p.ip || '').toLowerCase().includes(q);
   });
+  const podCountEl = document.getElementById('pod-count');
+  if (podCountEl) podCountEl.textContent = filtered.length === pods.length ? pods.length + ' pods' : filtered.length + ' of ' + pods.length + ' pods';
   if (!filtered.length) {
     const hint = phase !== 'all' ? phase + ' pods' : 'pods';
     el.innerHTML = q ? '<div class="empty-state"><p>No ' + hint + ' match &ldquo;' + esc(q) + '&rdquo;</p></div>'
