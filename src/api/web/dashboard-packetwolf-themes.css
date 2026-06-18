@@ -2674,3 +2674,12 @@ html[data-theme] .launchpad-icon {
   background: var(--glass-bg-elevated);
   border-color: var(--glass-border-strong);
 }
+
+/* Fleet / template cards — gradient has hardcoded dark second stop; flatten to panel-strong on light themes */
+html[data-theme='light'] .vmr-fleet-card,
+html[data-theme='tahoe-light'] .vmr-fleet-card,
+html[data-theme='light'] .vmr-template-card,
+html[data-theme='tahoe-light'] .vmr-template-card {
+  background: var(--glass-bg-elevated);
+  border-color: var(--glass-border);
+}
