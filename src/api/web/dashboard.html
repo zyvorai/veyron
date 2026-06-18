@@ -8430,6 +8430,16 @@ function osFamilyIcon(family) {
   const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
   return icon[family] || '◫';
 }
+function osFamilyTint(family) {
+  const tints = {
+    windows: 'rgba(59,130,246,.07)',
+    ubuntu:  'rgba(234,88,12,.07)',
+    debian:  'rgba(220,38,38,.06)',
+    fedora:  'rgba(30,64,175,.07)',
+    linux:   'rgba(34,197,94,.05)',
+  };
+  return tints[family] || '';
+}
 
 function isWindowsVm(vm) {
   return guessOsFamily(vm) === 'windows';
@@ -9038,7 +9048,8 @@ function vmCard(vm, showActions) {
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, vm.name, 'restart') + ',event)') + '>↻</button>' +
     '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onStopHandler('vmDelete(' + jsArgs(ns, vm.name) + ')') + '>×</button>' : '';
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
-  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+  const tint = osFamilyTint(family);
+  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status) + '</span></div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + esc(vm.name) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
@@ -10720,7 +10731,8 @@ function pinnedVmCard(vm) {
     (isRunning
       ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, name) + ')') + '>Console</button>'
       : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>');
-  return '<div class="vm-card">' +
+  const tintP = osFamilyTint(family);
+  return '<div class="vm-card"' + (tintP ? ' style="background-image:linear-gradient(' + tintP + ',' + tintP + ')"' : '') + '>' +
     '<div class="vm-card-top"><div class="vm-card-icon">' + osFamilyIcon(family) + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status || 'Unknown') + '</span></div>' +
     '<div class="vm-card-name">' + esc(name) + '</div>' +
     vmWorkspaceChip(ns) +
