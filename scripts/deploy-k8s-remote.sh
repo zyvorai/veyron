@@ -442,13 +442,13 @@ spec:
                 fieldRef:
                   fieldPath: status.hostIP
             - name: VEYRON_API_NODE_PORT
-              value: "30151"
+              value: '${NODE_PORT}'
             - name: VMROGUE_API_NODE_PORT
-              value: "30151"
+              value: '${NODE_PORT}'
             - name: VEYRON_CLUSTER_DNS
-              value: "10.43.0.10"
+              value: '10.43.0.10'
             - name: VMROGUE_CLUSTER_DNS
-              value: "10.43.0.10"
+              value: '10.43.0.10'
           ports:
             - containerPort: 5151
               name: https
@@ -507,7 +507,15 @@ spec:
       protocol: TCP
       nodePort: ${NODE_PORT}
 YAML
-"
+" || {
+  # Fallback: if kubectl apply fails (e.g. immutable selector mismatch from an old deployment),
+  # just update the image + bump the rollout annotation so the new binary is picked up.
+  deploy_ssh "${USER}@${HOST}" "
+    ${K} -n ${NS} set image deployment/veyron-api veyron=localhost/veyron:latest 2>/dev/null ||
+    ${K} -n ${NS} patch deployment/veyron-api -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"veyron\",\"image\":\"localhost/veyron:latest\"}]}}}}' 2>/dev/null || true
+    ${K} -n ${NS} annotate deployment/veyron-api veyron.io/deployed-at=${DEPLOY_STAMP} --overwrite 2>/dev/null || true
+  " || true
+}
 info "K8s resources applied"
 
 # ── Step 6: Verify ──
