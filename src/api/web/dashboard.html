@@ -10849,7 +10849,7 @@ function filterNotificationsView(query) {
   if (notifCountEl) notifCountEl.textContent = filtered.length === items.length ? items.length + ' notifications' : filtered.length + ' of ' + items.length + ' notifications';
   tb.innerHTML = filtered.map(function(n) {
     const sevCls = glassTableBadge(n.severity);
-    return '<tr class="' + (n.read ? '' : 'notif-unread') + '"><td>' + esc(n.title) + '</td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
+    return '<tr class="' + (n.read ? '' : 'notif-unread') + '"><td class="vmr-copy-tile" title="Copy title" ' + onStopHandler('copyToClipboard(' + jsArgs(n.title) + ')') + '>' + esc(n.title) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching notifications</td></tr>';
 }
 
@@ -11034,7 +11034,7 @@ function filterForecastingView(query) {
   const forecastCountEl = document.getElementById('forecasting-filter-count');
   if (forecastCountEl) forecastCountEl.textContent = filtered.length === items.length ? items.length + ' predictions' : filtered.length + ' of ' + items.length + ' predictions';
   tb.innerHTML = filtered.map(function(f) {
-    return '<tr><td>' + esc(f.metric) + '</td><td>' + f.current_value + '</td><td>' + f.predicted_value + '</td><td>' + esc(f.prediction_window) + '</td><td>' + esc(f.trend) + '</td><td>' + Math.round((f.confidence || 0) * 100) + '%</td><td>' + esc(f.estimated_breach || '-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy metric" ' + onStopHandler('copyToClipboard(' + jsArgs(f.metric) + ')') + '>' + esc(f.metric) + '<span class="vmr-copy-hint">copy</span></td><td>' + f.current_value + '</td><td>' + f.predicted_value + '</td><td>' + esc(f.prediction_window) + '</td><td>' + esc(f.trend) + '</td><td>' + Math.round((f.confidence || 0) * 100) + '%</td><td>' + esc(f.estimated_breach || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No predictions match &ldquo;' + esc(q) + '&rdquo;' : 'No predictions available') + '</td></tr>';
 }
