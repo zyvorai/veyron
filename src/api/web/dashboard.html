@@ -4595,7 +4595,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscalerPolicies ? fetchAutoscalerPolicies() : fetchHpa()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscalerPolicies ? fetchAutoscalerPolicies() : fetchHpa()">&#8635; Refresh</button></div></div>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
@@ -4605,7 +4605,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-forecasting" data-section="finops">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Forecasting</h1><p>Short-horizon capacity forecasts</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchForecasting()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportForecastingCsv()" title="Export predictions as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchForecasting()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runForecastAdvisor()">Forecast Advisor</button></div></div>
     <div id="forecast-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron Forecast Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('forecast-advisor-card')">Dismiss</button></div>
     <div id="forecast-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -4805,8 +4805,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-images" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchImages()">&#8635; Refresh</button></div>
-    <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button>
+  <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportImagesCsv()" title="Export images as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchImages()">&#8635; Refresh</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button></div>
   </div>
     <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
@@ -8858,6 +8857,30 @@ function exportSnapshotsCsv() {
     rows.push([s.name, s.vm_name, s.namespace || '', s.ready ? 'Yes' : 'No', s.status || '', s.age || '']);
   });
   exportCsv(rows, 'snapshots.csv');
+}
+
+function exportForecastingCsv() {
+  const rows = [['Metric', 'Current', 'Predicted', 'Window', 'Trend', 'Confidence %', 'Breach']];
+  (window.lastForecastingItems || []).forEach(function(f) {
+    rows.push([f.metric, f.current_value, f.predicted_value, f.prediction_window, f.trend, Math.round((f.confidence||0)*100), f.estimated_breach||'-']);
+  });
+  exportCsv(rows, 'forecasting.csv');
+}
+
+function exportImagesCsv() {
+  const rows = [['Name', 'Namespace', 'Kind', 'Source', 'Status', 'Capacity', 'Age']];
+  (window.lastImages || []).forEach(function(img) {
+    rows.push([img.name, img.namespace, img.kind, img.source_type, img.status, img.capacity, img.age]);
+  });
+  exportCsv(rows, 'golden-images.csv');
+}
+
+function exportAutoscalerCsv() {
+  const rows = [['Name', 'Namespace', 'Target', 'Min', 'Current', 'Max', 'Enabled']];
+  (window.lastAutoscalerPolicies || []).forEach(function(a) {
+    rows.push([a.name, a.namespace, a.target_kind+'/'+a.target_name, a.min_replicas, a.current_replicas, a.max_replicas, a.enabled?'Yes':'No']);
+  });
+  exportCsv(rows, 'autoscaler-policies.csv');
 }
 
 function exportQuotasCsv() {
