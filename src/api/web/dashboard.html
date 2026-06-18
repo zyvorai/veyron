@@ -9161,17 +9161,34 @@ function updateAmbientGlow(running, total, failed) {
   else if (total > 0 && running < total * 0.6) el.classList.add('warn');
   updateFleetMoodEmoji(running, total, failed);
 }
+function computeFleetHealthScore(vms) {
+  if (!vms || !vms.length) return null;
+  var total = vms.length;
+  var running = vms.filter(function(v) { return v.status === 'Running'; }).length;
+  var failed = vms.filter(function(v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
+  var nodes = new Set(vms.map(function(v) { return v.node; }).filter(Boolean));
+  var stale = vms.filter(function(v) { return isRetireCandidate(v); }).length;
+  // running ratio: 40pts
+  var runScore = Math.round(running / total * 40);
+  // failure penalty: 30pts (lose proportionally)
+  var failScore = Math.round((1 - Math.min(1, failed / total * 2)) * 30);
+  // node spread: 20pts (1 node = 0, ≥3 nodes = 20)
+  var nodeScore = nodes.size <= 1 ? 0 : nodes.size >= 3 ? 20 : 10;
+  // stale penalty: 10pts
+  var staleScore = Math.round((1 - Math.min(1, stale / total)) * 10);
+  return Math.min(100, runScore + failScore + nodeScore + staleScore);
+}
 function updateFleetMoodEmoji(running, total, failed) {
   var mood = document.getElementById('vmr-fleet-mood');
   if (!mood) return;
-  var emoji, tip;
-  if (!total) { emoji = ''; tip = ''; }
-  else if (failed > 0) { emoji = '🔴'; tip = failed + ' VM' + (failed > 1 ? 's' : '') + ' in error'; }
-  else if (total > 0 && running === total) { emoji = '🟢'; tip = 'All ' + total + ' VMs running'; }
-  else if (running === 0) { emoji = '⚫'; tip = 'All VMs stopped'; }
-  else { emoji = '🟡'; tip = running + '/' + total + ' VMs running'; }
-  mood.textContent = emoji;
-  mood.title = 'Fleet health: ' + (tip || 'no VMs');
+  if (!total) { mood.innerHTML = ''; mood.title = 'Fleet health: no VMs'; return; }
+  var score = computeFleetHealthScore(vmData || []);
+  var color = score >= 80 ? '#22c55e' : score >= 55 ? '#f59e0b' : '#ef4444';
+  var emoji = score >= 80 ? '▲' : score >= 55 ? '▲' : '▼';
+  var tip = 'Fleet health score: ' + score + '/100 — running ' + running + '/' + total + (failed ? ', ' + failed + ' failed' : '');
+  mood.title = tip;
+  mood.innerHTML = '<span style="display:inline-flex;align-items:center;gap:3px;background:' + color + '18;border:1px solid ' + color + '44;border-radius:6px;padding:1px 6px;font-size:.72rem;font-weight:700;color:' + color + '">' +
+    '<span style="font-size:.6rem">' + emoji + '</span>' + score + '</span>';
 }
 
 // ── VM Custom Tags ──
