@@ -3715,6 +3715,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
   </div>
   <div id="vm-page-summary" class="grid-4 page-glass-stats" style="display:none"></div>
@@ -3872,7 +3873,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="node-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Cluster Nodes</span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:200px;font-size:.82rem"></div>
+    <div class="card-header"><span class="card-title">Cluster Nodes</span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:180px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">↓ CSV</button></div>
     <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
     <div id="node-list"></div>
   </div>
@@ -4022,7 +4023,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="cost-forecast" style="padding:12px"></div>
     </div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span><input type="search" id="costs-search" class="form-input" placeholder="Filter by VM or namespace…" oninput="filterCostsView(this.value)" style="width:220px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span><input type="search" id="costs-search" class="form-input" placeholder="Filter by VM or namespace…" oninput="filterCostsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()" title="Export VM costs as CSV">↓ CSV</button></div>
   <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th><th>Trend</th><th>Recommendation</th></tr></thead><tbody id="costs-body"></tbody></table>
   </div>
 
@@ -4187,7 +4188,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div></div>
   
   <div id="audit-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:250px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAuditCsv()" title="Export audit trail as CSV">↓ CSV</button></div>
   <table class="table"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Type</th><th>Resource</th><th>Outcome</th></tr></thead><tbody id="audit-body"></tbody></table>
   </div>
 </div>
@@ -8701,6 +8702,53 @@ function guessSshUser(vmName) {
   if (n.indexOf('fedora') !== -1) return 'fedora';
   if (n.indexOf('coreos') !== -1 || n.indexOf('fcos') !== -1) return 'core';
   return 'root';
+}
+
+function exportCsv(rows, filename) {
+  const text = rows.map(function(row) {
+    return row.map(function(cell) { return '"' + String(cell == null ? '' : cell).replace(/"/g, '""') + '"'; }).join(',');
+  }).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(text);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Exported ' + filename, 'success');
+}
+
+function exportVmsCsv() {
+  const rows = [['Name', 'Namespace', 'Status', 'CPU', 'Memory', 'IP', 'Node', 'Age']];
+  (vmData || []).forEach(function(vm) {
+    rows.push([vm.name, vm.namespace, vm.status, vm.cpu, vm.memory, vm.ip, vm.node, vm.age]);
+  });
+  exportCsv(rows, 'vms-' + currentNamespace + '.csv');
+}
+
+function exportAuditCsv() {
+  const rows = [['Timestamp', 'User', 'Action', 'Resource Type', 'Resource', 'Outcome']];
+  (window.lastAuditTrail || []).forEach(function(a) {
+    rows.push([a.timestamp, a.user, a.action, a.resource_type, (a.namespace || '') + '/' + (a.resource_name || ''), a.outcome]);
+  });
+  exportCsv(rows, 'audit-trail.csv');
+}
+
+function exportCostsCsv() {
+  const rows = [['VM', 'Namespace', 'CPU Cost', 'Memory Cost', 'Storage Cost', 'Total']];
+  (window.lastCosts || []).forEach(function(c) {
+    const tot = ((c.cpu_cost || 0) + (c.memory_cost || 0) + (c.storage_cost || 0)).toFixed(4);
+    rows.push([c.vm_name, c.namespace, (c.cpu_cost || 0).toFixed(4), (c.memory_cost || 0).toFixed(4), (c.storage_cost || 0).toFixed(4), tot]);
+  });
+  exportCsv(rows, 'vm-costs.csv');
+}
+
+function exportNodesCsv() {
+  const rows = [['Name', 'Status', 'CPU Capacity', 'CPU Allocatable', 'Memory', 'Kubelet Version', 'OS Image']];
+  (window.lastNodes || []).forEach(function(n) {
+    const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
+    rows.push([n.name, n.status, n.cpu_capacity, n.cpu_allocatable, memGb, n.kubelet_version, n.os_image]);
+  });
+  exportCsv(rows, 'nodes.csv');
 }
 
 function copyToClipboard(text) {
@@ -13782,7 +13830,7 @@ async function fetchStorage(opts) {
           if (u.csi_free_min_for_class) parts.push('CSI class free (min): ' + esc(u.csi_free_min_for_class));
           if (parts.length) usageLine = '<div class="snap-vm" style="margin-top:4px;font-size:.82em;opacity:.9;line-height:1.35">' + parts.join(' · ') + '</div>';
         }
-        return '<div class="snap-row"><div class="snap-info"><div class="snap-name">' + esc(p.name) +
+        return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy PVC name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span>' +
           '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
           '</div><div class="snap-status"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span></div></div>';
       }).join('');
