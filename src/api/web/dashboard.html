@@ -9002,6 +9002,14 @@ function showVmHoverCard(e, ns, name) {
       (vm.ip && vm.ip !== 'N/A' ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">IP</span><span class="vmr-hover-card-val">' + esc(vm.ip) + '</span></div>' : '') +
       (vm.node ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">Node</span><span class="vmr-hover-card-val">' + esc(vm.node) + '</span></div>' : '') +
       (vm.age ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">Age</span><span class="vmr-hover-card-val">' + esc(vm.age) + '</span></div>' : '') +
+      (function() {
+        var cost = estimateVmCost(vm);
+        if (!cost) return '';
+        return '<div class="vmr-hover-card-row" style="margin-top:4px;border-top:1px solid rgba(255,255,255,.08);padding-top:4px">' +
+          '<span class="vmr-hover-card-lbl" style="color:#86efac">Cost</span>' +
+          '<span class="vmr-hover-card-val" style="color:#86efac">~$' + cost.hourly.toFixed(3) + '/hr · $' + cost.daily.toFixed(2) + '/day</span>' +
+        '</div>';
+      })() +
       (tags.length ? '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:3px">' + tags.map(function(t) { return '<span style="background:rgba(139,92,246,.2);border-radius:8px;padding:1px 6px;font-size:.67rem;color:#c4b5fd">' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
       (note ? '<div style="margin-top:5px;font-size:.7rem;color:var(--text-dim);line-height:1.3;max-height:36px;overflow:hidden">📝 ' + esc(note.slice(0, 80)) + '</div>' : '');
     var vp = { w: window.innerWidth, h: window.innerHeight };
@@ -16654,6 +16662,22 @@ function updateVmFreshness() {
   const s = Math.round((Date.now() - window._vmsRefreshedAt) / 1000);
   el.textContent = s < 10 ? 'Updated just now' : s < 60 ? 'Updated ' + s + 's ago' : 'Updated ' + Math.round(s / 60) + 'm ago';
   el.classList.toggle('freshness-stale', s > 90);
+}
+
+// ── VM Cost Estimate ──
+var _COST_RATE_KEY = 'veyron_cost_rate_per_vcpu';
+function getCostRatePerVcpu() {
+  try { var r = parseFloat(localStorage.getItem(_COST_RATE_KEY)); if (r > 0) return r; } catch (e) {}
+  return 0.048; // $0.048/vCPU/hour default (roughly c5.xlarge / 4 vCPU = $0.192/h split)
+}
+function estimateVmCost(vm) {
+  if (!vm || vm.status !== 'Running') return null;
+  var cpus = parseInt(vm.cpu, 10);
+  if (!cpus || cpus <= 0) return null;
+  var rate = getCostRatePerVcpu();
+  var hourly = cpus * rate;
+  var daily = hourly * 24;
+  return { hourly: hourly, daily: daily };
 }
 
 // ── Fleet Capacity Headroom ──
