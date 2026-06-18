@@ -3833,7 +3833,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar">
     <div style="position:relative;display:inline-flex;align-items:center" id="vm-search-wrap">
-      <input type="text" class="form-input" id="vm-search" placeholder="Search name, node:, ip:, ns: ( / )" oninput="filterVMsDebounced();showVmSearchAC()" onfocus="showSearchHistory()" onblur="setTimeout(function(){pushSearchHistory(document.getElementById('vm-search').value)},200)" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Search by name, namespace, or node. Prefixes: node:worker-1, ip:10.x, ns:default">
+      <input type="text" class="form-input" id="vm-search" placeholder="Search name, tag:, note:, os:, node:, ip:, ns:" oninput="filterVMsDebounced();showVmSearchAC()" onfocus="showSearchHistory()" onblur="setTimeout(function(){pushSearchHistory(document.getElementById('vm-search').value)},200)" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Search prefixes: node:worker-1, ip:10.x, ns:default, tag:production, note:maintenance, os:windows">
       <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs();hideVmSearchAC()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
       <div id="vm-search-ac" class="vmr-search-ac" style="display:none" role="listbox"></div>
     </div>
@@ -16106,6 +16106,14 @@ function filterVMs() {
       } else if (q.startsWith('ns:') || q.startsWith('namespace:')) {
         const nsq = q.startsWith('ns:') ? q.slice(3).trim() : q.slice(10).trim();
         if (!vns.includes(nsq)) return false;
+      } else if (q.startsWith('tag:')) {
+        var tagQ = q.slice(4).trim();
+        if (!getVmTags(v.namespace || 'default', v.name).some(function(t) { return t.includes(tagQ); })) return false;
+      } else if (q.startsWith('note:')) {
+        var noteQ = q.slice(5).trim();
+        if (!getVmNote(v.namespace || 'default', v.name).toLowerCase().includes(noteQ)) return false;
+      } else if (q.startsWith('os:')) {
+        if (!guessOsFamily(v).includes(q.slice(3).trim())) return false;
       } else {
         if (!vname.includes(q) && !vns.includes(q) && !vnode.includes(q) && !vip.includes(q)) return false;
       }
