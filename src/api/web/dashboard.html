@@ -3946,7 +3946,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-blueprint-studio" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Blueprint Studio</h1><p>Edit VeyronBlueprint CRDs saved from Ask Zeus or created here</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBlueprintStudio()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="blueprintStudioNew()">+ New Blueprint</button></div></div>
     <div id="blueprint-summary" class="grid-4 page-glass-stats"></div>
 
   <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zeus YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
@@ -4266,7 +4266,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-custom-resources" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div></div>
+  <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCustomResources()">&#8635; Refresh</button></div></div>
     <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCustomResourcesCsv()" title="Export CRDs as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
@@ -4380,6 +4380,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header">
     <div><h1>Template catalog</h1><p>Cluster VMTemplate / VMProfile CRDs vs embedded library</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCatalog()">&#8635; Refresh</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runCatalogAdvisor()">Catalog Advisor</button>
       <button type="button" class="glass-btn-primary glass-btn-sm" onclick="catalogSync()">Sync cluster catalog</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCatalogPublishTemplate()">+ Publish template</button>
