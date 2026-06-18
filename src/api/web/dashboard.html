@@ -13188,7 +13188,7 @@ function renderNodeDetailHeader(node) {
   const actions = '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('nodes', { kind: 'node', name: node.name }) + ')') + '>Copy link</button>';
   return '<div class="vm-detail-header">' +
     '<div class="vm-detail-header-left">' +
-      '<div class="vm-detail-name">' + esc(node.name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(node.status || 'Unknown') + '</span></div>' +
+      '<div class="vm-detail-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(node.name) + ')') + '>' + esc(node.name) + '<span class="vmr-copy-hint">copy</span> <span class="glass-badge ' + badgeCls + '">' + esc(node.status || 'Unknown') + '</span></div>' +
       '<div class="vm-detail-meta">' +
         '<span class="ns-chip">' + esc(roles) + '</span>' +
         '<span class="ns-chip">' + (node.vm_count || 0) + ' VM' + ((node.vm_count || 0) === 1 ? '' : 's') + '</span>' +
@@ -13287,8 +13287,8 @@ function renderPodDetailHeader(pod) {
       '<div class="vm-detail-name">' + esc(pod.name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(pod.phase || 'Unknown') + '</span></div>' +
       '<div class="vm-detail-meta">' +
         '<span class="ns-chip">' + esc(pod.namespace) + '</span>' +
-        (pod.node_name ? '<span>Node: <strong>' + esc(pod.node_name) + '</strong></span>' : '') +
-        (pod.ip ? '<span>IP: <code>' + esc(pod.ip) + '</code></span>' : '') +
+        (pod.node_name ? '<span>Node: <strong class="vmr-copy-tile" title="Copy node" ' + onStopHandler('copyToClipboard(' + jsArgs(pod.node_name) + ')') + '>' + esc(pod.node_name) + '<span class="vmr-copy-hint">copy</span></strong></span>' : '') +
+        (pod.ip ? '<span>IP: <code class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(pod.ip) + ')') + '>' + esc(pod.ip) + '<span class="vmr-copy-hint">copy</span></code></span>' : '') +
       '</div>' +
     '</div>' +
     '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
