@@ -752,9 +752,7 @@ impl AppState {
             SortMode::NameDesc => self.vms.sort_by(|a, b| b.name.cmp(&a.name)),
             SortMode::StatusAsc => self.vms.sort_by(|a, b| a.status.cmp(&b.status)),
             SortMode::StatusDesc => self.vms.sort_by(|a, b| b.status.cmp(&a.status)),
-            SortMode::AgeAsc => self
-                .vms
-                .sort_by_key(|a| parse_age_to_seconds(&a.age)),
+            SortMode::AgeAsc => self.vms.sort_by_key(|a| parse_age_to_seconds(&a.age)),
             SortMode::AgeDesc => self
                 .vms
                 .sort_by_key(|b| std::cmp::Reverse(parse_age_to_seconds(&b.age))),

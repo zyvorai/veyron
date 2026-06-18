@@ -1,8 +1,8 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use super::SocExportStatus;
-use crate::soc::event::to_ecs_doc;
 use crate::soc::event::SecurityEvent;
+use crate::soc::event::to_ecs_doc;
 
 static LAST_ERROR: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
 static EVENTS_PUSHED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -23,8 +23,8 @@ pub fn config() -> Option<SentinelConfig> {
     let dcr_rule = std::env::var("VEYRON_SENTINEL_DCR_RULE")
         .ok()
         .filter(|s| !s.trim().is_empty())?;
-    let stream = std::env::var("VEYRON_SENTINEL_STREAM")
-        .unwrap_or_else(|_| "Custom-VeyronSecurity".into());
+    let stream =
+        std::env::var("VEYRON_SENTINEL_STREAM").unwrap_or_else(|_| "Custom-VeyronSecurity".into());
     let tenant_id = std::env::var("VEYRON_SENTINEL_TENANT_ID").ok()?;
     let client_id = std::env::var("VEYRON_SENTINEL_CLIENT_ID").ok()?;
     let client_secret = std::env::var("VEYRON_SENTINEL_CLIENT_SECRET").ok()?;

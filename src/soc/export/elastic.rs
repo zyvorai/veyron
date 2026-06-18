@@ -1,7 +1,7 @@
 // Copyright (c) 2026 ZyvorAI Labs Private Limited. All rights reserved.
 
 use super::SocExportStatus;
-use crate::soc::event::{to_ecs_doc, SecurityEvent};
+use crate::soc::event::{SecurityEvent, to_ecs_doc};
 
 static LAST_ERROR: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
 static EVENTS_PUSHED: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -127,12 +127,8 @@ pub async fn run_hunt(query: &str, time_range: &str) -> anyhow::Result<serde_jso
 }
 
 fn parse_time_range(tr: &str) -> String {
-    let hours = tr
-        .trim_end_matches('h')
-        .parse::<i64>()
-        .unwrap_or(24);
-    (chrono::Utc::now() - chrono::Duration::hours(hours))
-        .to_rfc3339()
+    let hours = tr.trim_end_matches('h').parse::<i64>().unwrap_or(24);
+    (chrono::Utc::now() - chrono::Duration::hours(hours)).to_rfc3339()
 }
 
 #[cfg(feature = "web")]

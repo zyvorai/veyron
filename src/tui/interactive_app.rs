@@ -613,11 +613,10 @@ impl InteractiveApp {
                         self.handle_menu_selection(key_char).await?;
                     }
                 }
-                KeyCode::Char(c)
-                    if menu.select_by_key(c).is_some() => {
-                        self.mode = InteractiveMode::Normal;
-                        self.handle_menu_selection(c).await?;
-                    }
+                KeyCode::Char(c) if menu.select_by_key(c).is_some() => {
+                    self.mode = InteractiveMode::Normal;
+                    self.handle_menu_selection(c).await?;
+                }
                 KeyCode::Esc => {
                     self.mode = InteractiveMode::Normal;
                 }
@@ -743,17 +742,15 @@ impl InteractiveApp {
     /// Handle view-specific keys
     async fn handle_view_key(&mut self, key: KeyEvent) -> Result<()> {
         match self.current_view {
-            View::Dashboard
-                if key.code == KeyCode::Char('i') => {
-                    self.state.show_stats_bar = !self.state.show_stats_bar;
-                }
+            View::Dashboard if key.code == KeyCode::Char('i') => {
+                self.state.show_stats_bar = !self.state.show_stats_bar;
+            }
             View::VmList => self.handle_vm_list_key(key).await?,
             View::VmDetails => self.handle_vm_details_key(key)?,
             View::Snapshots => self.handle_snapshots_key(key).await?,
-            View::Profiles | View::Blueprints
-                if key.code == KeyCode::Backspace => {
-                    self.navigate_back();
-                }
+            View::Profiles | View::Blueprints if key.code == KeyCode::Backspace => {
+                self.navigate_back();
+            }
             View::ActivityLog => match key.code {
                 KeyCode::Down | KeyCode::Char('j') => self.state.activity_scroll_down(),
                 KeyCode::Up | KeyCode::Char('k') => self.state.activity_scroll_up(),
@@ -805,9 +802,10 @@ impl InteractiveApp {
             | View::ChangeApproval
             | View::MacroView
             | View::SessionSharing
-                if key.code == KeyCode::Backspace => {
-                    self.navigate_back();
-                }
+                if key.code == KeyCode::Backspace =>
+            {
+                self.navigate_back();
+            }
             _ => {}
         }
         Ok(())
@@ -1046,16 +1044,12 @@ impl InteractiveApp {
                 self.state.detail_events_scroll = 0;
             }
             // Scroll within events tab
-            KeyCode::Down | KeyCode::Char('j')
-                if self.detail_tab == 2 => {
-                    self.state.detail_events_scroll =
-                        self.state.detail_events_scroll.saturating_add(1);
-                }
-            KeyCode::Up | KeyCode::Char('k')
-                if self.detail_tab == 2 => {
-                    self.state.detail_events_scroll =
-                        self.state.detail_events_scroll.saturating_sub(1);
-                }
+            KeyCode::Down | KeyCode::Char('j') if self.detail_tab == 2 => {
+                self.state.detail_events_scroll = self.state.detail_events_scroll.saturating_add(1);
+            }
+            KeyCode::Up | KeyCode::Char('k') if self.detail_tab == 2 => {
+                self.state.detail_events_scroll = self.state.detail_events_scroll.saturating_sub(1);
+            }
             _ => {}
         }
         Ok(())

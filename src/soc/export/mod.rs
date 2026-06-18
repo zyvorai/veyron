@@ -42,11 +42,7 @@ pub async fn push_events_batch(events: &[super::event::SecurityEvent]) {
 }
 
 #[cfg(feature = "web")]
-pub fn spawn_export_loop(
-    namespace: String,
-    client: kube::Client,
-    interval_secs: u64,
-) {
+pub fn spawn_export_loop(namespace: String, client: kube::Client, interval_secs: u64) {
     tokio::spawn(async move {
         let mut tick = tokio::time::interval(std::time::Duration::from_secs(interval_secs));
         loop {

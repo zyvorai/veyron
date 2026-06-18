@@ -333,10 +333,7 @@ fn vm_to_config(vm: &VirtualMachine, namespace: &str) -> VMConfig {
                 .collect();
         }
         if let Some(ref video) = dev.video {
-            let first = video
-                .as_array()
-                .and_then(|a| a.first())
-                .unwrap_or(video);
+            let first = video.as_array().and_then(|a| a.first()).unwrap_or(video);
             if let Some(t) = first.get("type").and_then(|v| v.as_str()) {
                 config.kubevirt_video_type = Some(t.to_string());
             } else if let Some(m) = first.get("model").and_then(|v| v.as_str()) {
@@ -1981,9 +1978,10 @@ pub async fn handle_search(query: Vec<String>, namespace: &str) -> Result<()> {
                         }
                     }
                     crate::nlp_search::Filter::Name(n)
-                        if !name.to_lowercase().contains(&n.to_lowercase()) => {
-                            return false;
-                        }
+                        if !name.to_lowercase().contains(&n.to_lowercase()) =>
+                    {
+                        return false;
+                    }
                     crate::nlp_search::Filter::Namespace(ns) => {
                         let vm_ns = vm.metadata.namespace.as_deref().unwrap_or("");
                         if !vm_ns.to_lowercase().contains(&ns.to_lowercase()) {

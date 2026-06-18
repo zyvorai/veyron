@@ -187,10 +187,7 @@ async fn sample_guest_filesystem(
             continue;
         };
         let vmi_json = to_value(&vmi).ok();
-        if !vmi_json
-            .as_ref()
-            .is_some_and(vmi_guest_agent_connected)
-        {
+        if !vmi_json.as_ref().is_some_and(vmi_guest_agent_connected) {
             continue;
         }
         let vm_json = to_value(vm).ok();

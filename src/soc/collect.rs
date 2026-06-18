@@ -78,7 +78,11 @@ pub fn api_audit_event(
     outcome: &str,
     namespace: Option<&str>,
 ) -> SecurityEvent {
-    let severity = if outcome == "success" { "low" } else { "medium" };
+    let severity = if outcome == "success" {
+        "low"
+    } else {
+        "medium"
+    };
     let mut ev = SecurityEvent::new(
         "audit",
         severity,

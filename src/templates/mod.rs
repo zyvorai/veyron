@@ -947,8 +947,7 @@ pub fn guestkit_binary_urls() -> Vec<String> {
         }
     }
     urls.push(
-        "https://veyron-api.veyron-system.svc.cluster.local/api/v1/platform/guestkit/binary"
-            .into(),
+        "https://veyron-api.veyron-system.svc.cluster.local/api/v1/platform/guestkit/binary".into(),
     );
     urls.dedup();
     urls
@@ -1036,7 +1035,8 @@ pub fn refresh_guestkit_cloud_init(user_data: &str) -> String {
         {
             if let Some(content_start) = user_data[start..].find("content: |\n") {
                 let abs_content = start + content_start + "content: |\n".len();
-                if let Some(end) = user_data[abs_content..].find("\n  - path: /etc/systemd/system/guestkit-agent.service")
+                if let Some(end) = user_data[abs_content..]
+                    .find("\n  - path: /etc/systemd/system/guestkit-agent.service")
                 {
                     let mut out = String::new();
                     out.push_str(&user_data[..abs_content]);
@@ -1168,9 +1168,10 @@ mod tests {
     #[test]
     fn test_guestkit_binary_urls_always_include_cluster_service() {
         let urls = guestkit_binary_urls();
-        assert!(urls
-            .iter()
-            .any(|u| u.contains("veyron-api.veyron-system.svc")));
+        assert!(
+            urls.iter()
+                .any(|u| u.contains("veyron-api.veyron-system.svc"))
+        );
     }
 
     #[test]

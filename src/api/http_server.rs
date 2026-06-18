@@ -33,8 +33,8 @@ pub mod web {
     };
     use k8s_openapi::api::core::v1::Service;
     use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
-    use serde::{Deserialize, Serialize};
     use once_cell::sync::Lazy;
+    use serde::{Deserialize, Serialize};
     use std::borrow::Cow;
     use std::collections::HashMap;
     use std::sync::Arc;
@@ -245,8 +245,7 @@ pub mod web {
                 return None;
             }
 
-            let mut validation =
-                jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS256);
+            let mut validation = jsonwebtoken::Validation::new(jsonwebtoken::Algorithm::HS256);
             validation.set_issuer(&[expected_issuer.as_str()]);
             validation.validate_exp = true;
 
@@ -376,11 +375,7 @@ pub mod web {
         let outcome_c = outcome.to_string();
         tokio::spawn(async move {
             crate::api::handlers::soc::record_api_audit(
-                &state_c,
-                "api",
-                &method_c,
-                &path_c,
-                &outcome_c,
+                &state_c, "api", &method_c, &path_c, &outcome_c,
             )
             .await;
         });
@@ -489,10 +484,8 @@ pub mod web {
 
         // Check X-API-Key header, Authorization: Bearer, ?ticket= (WS consoles), or legacy ?token=
         let ws_ticket = request.uri().query().and_then(|q| {
-            q.split('&').find_map(|p| {
-                p.strip_prefix("ticket=")
-                    .map(percent_decode)
-            })
+            q.split('&')
+                .find_map(|p| p.strip_prefix("ticket=").map(percent_decode))
         });
         if auth_context::is_ws_console_path(path) {
             if let Some(ticket) = ws_ticket {
@@ -522,9 +515,8 @@ pub mod web {
             })
             .or_else(|| {
                 request.uri().query().and_then(|q| {
-                    q.split('&').find_map(|p| {
-                        p.strip_prefix("token=").map(percent_decode)
-                    })
+                    q.split('&')
+                        .find_map(|p| p.strip_prefix("token=").map(percent_decode))
                 })
             });
 
@@ -875,10 +867,7 @@ pub mod web {
                     "/api/v1/vms/:ns/:name/guest/migrate-score",
                     get(guest_migrate_score_handler),
                 )
-                .route(
-                    "/api/v1/vms/:ns/:name/guest/exec",
-                    post(guest_exec_handler),
-                )
+                .route("/api/v1/vms/:ns/:name/guest/exec", post(guest_exec_handler))
                 .route(
                     "/api/v1/platform/guestkit/binary",
                     get(guestkit_binary_handler),
@@ -923,10 +912,7 @@ pub mod web {
                 // Cluster resources
                 .route("/api/v1/nodes", get(list_nodes_handler))
                 .route("/api/v1/pods", get(list_pods_handler))
-                .route(
-                    "/api/v1/pods/:name/logs",
-                    get(get_pod_logs_handler),
-                )
+                .route("/api/v1/pods/:name/logs", get(get_pod_logs_handler))
                 .route("/api/v1/profiles", get(list_profiles_handler))
                 .route("/api/v1/namespaces", get(list_namespaces_handler))
                 .route("/api/v1/activity", get(activity_feed_handler))
@@ -967,12 +953,10 @@ pub mod web {
                     Router::new().nest("/api/v1", crate::api::handlers::all_routes(state.clone())),
                 )
                 // Veyron product alias — same handlers as /api/v1/* (VMROGUE_* env still supported).
-                .merge(
-                    Router::new().nest(
-                        "/api/v1/veyron",
-                        crate::api::handlers::all_routes(state.clone()),
-                    ),
-                )
+                .merge(Router::new().nest(
+                    "/api/v1/veyron",
+                    crate::api::handlers::all_routes(state.clone()),
+                ))
                 .layer(TimeoutLayer::with_status_code(
                     StatusCode::REQUEST_TIMEOUT,
                     std::time::Duration::from_secs(request_timeout_secs),
@@ -1459,8 +1443,7 @@ pub mod web {
                     .unwrap_or((None, None, false));
                 let mut info = VmInfo::from_vm_with_vmi_data(vm, ip, node);
                 info.guest_agent_connected = Some(agent_connected);
-                if let Some((drift, message)) =
-                    drift_index.get(&(ns.to_string(), name.to_string()))
+                if let Some((drift, message)) = drift_index.get(&(ns.to_string(), name.to_string()))
                 {
                     info.veyron_managed = Some(true);
                     info.drift_detected = Some(*drift);
@@ -2096,10 +2079,7 @@ pub mod web {
         if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
             return resp;
         }
-        let target = params
-            .get("target")
-            .map(String::as_str)
-            .unwrap_or("kvm");
+        let target = params.get("target").map(String::as_str).unwrap_or("kvm");
         let kube = {
             let s = state.read().await;
             s.kube_client.clone()
@@ -2162,20 +2142,14 @@ pub mod web {
         if let Some(resp) = validate_k8s_params(&[("namespace", &ns), ("name", &name)]) {
             return resp;
         }
-        let target = params
-            .get("target")
-            .map(String::as_str)
-            .unwrap_or("kvm");
+        let target = params.get("target").map(String::as_str).unwrap_or("kvm");
         let kube = {
             let s = state.read().await;
             s.kube_client.clone()
         };
         match kube.guest_migrate_score(&ns, &name, target).await {
             Ok(resp) => {
-                let ctx = req_ctx(
-                    HttpMethod::GET,
-                    "/api/v1/vms/:ns/:name/guest/migrate-score",
-                );
+                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest/migrate-score");
                 ok_json(&ApiResponse::success(&resp, &ctx.request_id))
             }
             Err(e) => err_json(500, "GUEST_MIGRATE_SCORE_FAILED", &sanitize_error(&e)),
@@ -2216,12 +2190,9 @@ pub mod web {
                 bytes,
             )
                 .into_response(),
-            Err(e) => err_json(
-                503,
-                "GUESTKIT_BINARY_UNAVAILABLE",
-                &sanitize_error(&e),
-            )
-            .into_response(),
+            Err(e) => {
+                err_json(503, "GUESTKIT_BINARY_UNAVAILABLE", &sanitize_error(&e)).into_response()
+            }
         }
     }
 
@@ -3499,9 +3470,7 @@ pub mod web {
                 }
                 // Preserve cloud-init, features, clock from template
                 if let Some(ref ci) = tpl_config.cloud_init {
-                    b = b.cloud_init(crate::templates::refresh_guestkit_cloud_init(
-                        &ci.user_data,
-                    ));
+                    b = b.cloud_init(crate::templates::refresh_guestkit_cloud_init(&ci.user_data));
                 }
                 if tpl_config.enable_rng {
                     b = b.enable_rng();
@@ -4317,8 +4286,7 @@ pub mod web {
             scope.to_string()
         };
 
-        let pods_api: kube::api::Api<Pod> =
-            kube::api::Api::namespaced(client.client(), &pod_ns);
+        let pods_api: kube::api::Api<Pod> = kube::api::Api::namespaced(client.client(), &pod_ns);
 
         let params = LogParams {
             tail_lines: Some(200),
@@ -4581,9 +4549,8 @@ pub mod web {
 
     async fn ws_ticket_handler() -> impl IntoResponse {
         const TTL_SECS: u64 = 60;
-        let ticket = crate::api::ws_ticket::issue_ws_ticket(Some(std::time::Duration::from_secs(
-            TTL_SECS,
-        )));
+        let ticket =
+            crate::api::ws_ticket::issue_ws_ticket(Some(std::time::Duration::from_secs(TTL_SECS)));
         let ctx = req_ctx(HttpMethod::POST, "/api/v1/ws/ticket");
         ok_json(&ApiResponse::success(
             &WsTicketResponse {

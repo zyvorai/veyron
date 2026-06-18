@@ -117,7 +117,10 @@ async fn proxy_packetwolf_json(
         let body = resp.text().await.unwrap_or_default();
         return Err((
             StatusCode::BAD_GATEWAY,
-            format!("PacketWolf returned {status}: {}", body.trim().chars().take(200).collect::<String>()),
+            format!(
+                "PacketWolf returned {status}: {}",
+                body.trim().chars().take(200).collect::<String>()
+            ),
         ));
     }
     let json: serde_json::Value = resp.json().await.map_err(|e| {
@@ -133,13 +136,18 @@ async fn proxy_packetwolf_json(
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/packetwolf/status", get(get_packetwolf_status))
-        .route("/packetwolf/network/overview", get(get_packetwolf_network_overview))
+        .route(
+            "/packetwolf/network/overview",
+            get(get_packetwolf_network_overview),
+        )
         .route("/packetwolf/flows", get(get_packetwolf_flows))
         .with_state(state)
 }
 
 #[cfg(feature = "web")]
-async fn get_packetwolf_status(State(_state): State<SharedState>) -> Json<PacketWolfStatusResponse> {
+async fn get_packetwolf_status(
+    State(_state): State<SharedState>,
+) -> Json<PacketWolfStatusResponse> {
     let base = packetwolf_base_url();
     let external = packetwolf_external_url();
     if base.is_none() {

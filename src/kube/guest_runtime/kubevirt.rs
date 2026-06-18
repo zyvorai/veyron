@@ -4,7 +4,7 @@ pub use crate::kube::kubevirt_subresources::vmi_guest_exec;
 
 use anyhow::Result;
 use kube::Client;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 pub async fn guest_info(client: Client, namespace: &str, vmi_name: &str) -> Result<Value> {
     let body = json!({ "execute": "guest-info" });
