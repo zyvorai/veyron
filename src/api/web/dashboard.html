@@ -2145,6 +2145,11 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-alog-action{color:var(--text-dim);font-size:.7rem;flex-shrink:0}
 .vmr-alog-ns{color:var(--text-dim);font-size:.68rem;opacity:.6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:80px}
 .vmr-alog-ts{color:var(--text-dim);font-size:.68rem;flex-shrink:0;white-space:nowrap}
+.vmr-search-ac{position:absolute;top:calc(100% + 4px);left:0;min-width:260px;max-height:280px;overflow-y:auto;background:rgba(14,16,23,.97);border:1px solid rgba(255,255,255,.12);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.6);backdrop-filter:blur(16px);z-index:900;scrollbar-width:thin}
+.vmr-ac-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;cursor:pointer;transition:background .1s;font-size:.8rem}
+.vmr-ac-item:hover,.vmr-ac-item.active{background:rgba(56,189,248,.1)}
+.vmr-ac-text{color:var(--text-primary);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vmr-ac-hint{color:var(--text-dim);font-size:.72rem;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
 .vmr-cmp-modal{background:rgba(14,16,23,.97);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px 24px;width:min(600px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 12px 60px rgba(0,0,0,.7)}
 .vmr-cmp-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);padding-bottom:12px}
 .vmr-cmp-title{font-weight:600;font-size:.92rem;color:var(--text-primary);flex:1}
@@ -3816,9 +3821,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-ns-overview" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:2px 0 4px;scrollbar-width:none"></div>
   <div id="vmr-recent-strip" style="display:none;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:4px 0 6px;scrollbar-width:none"></div>
   <div class="vmr-fleet-toolbar">
-    <div style="position:relative;display:inline-flex;align-items:center">
-      <input type="text" class="form-input" id="vm-search" placeholder="Search name, node:, ip:, ns: ( / )" oninput="filterVMsDebounced()" style="min-width:220px;padding-right:28px" title="Search by name, namespace, or node. Prefixes: node:worker-1, ip:10.x, ns:default">
-      <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
+    <div style="position:relative;display:inline-flex;align-items:center" id="vm-search-wrap">
+      <input type="text" class="form-input" id="vm-search" placeholder="Search name, node:, ip:, ns: ( / )" oninput="filterVMsDebounced();showVmSearchAC()" onfocus="showVmSearchAC()" onkeydown="vmSearchAcKey(event)" autocomplete="off" style="min-width:220px;padding-right:28px" title="Search by name, namespace, or node. Prefixes: node:worker-1, ip:10.x, ns:default">
+      <button type="button" id="vm-search-clear" onclick="document.getElementById('vm-search').value='';filterVMs();hideVmSearchAC()" aria-label="Clear search" title="Clear search" style="display:none;position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1rem;line-height:1;padding:0 2px;opacity:.7">×</button>
+      <div id="vm-search-ac" class="vmr-search-ac" style="display:none" role="listbox"></div>
     </div>
     <div class="vmr-filter-chips" id="vmr-filter-chips" role="group" aria-label="Status filter">
       <button type="button" class="vmr-chip vmr-chip-active" data-filter="" onclick="setVmStatusFilter(this,'')">All</button>
@@ -8435,6 +8441,83 @@ function closeVmCompare() {
   var overlay = document.getElementById('vm-compare-overlay');
   if (overlay) overlay.style.display = 'none';
 }
+
+// ── VM Search Autocomplete ──
+var _vmAcIdx = -1;
+function showVmSearchAC() {
+  var inp = document.getElementById('vm-search');
+  var ac = document.getElementById('vm-search-ac');
+  if (!inp || !ac) return;
+  var q = (inp.value || '').trim().toLowerCase();
+  if (!q || q.length < 1) { hideVmSearchAC(); return; }
+  var vms = window.lastVMs || vmData || [];
+  var suggestions = [];
+  var seen = new Set();
+  vms.forEach(function(v) {
+    if (v.name && v.name.toLowerCase().includes(q) && !seen.has('vm:' + v.name)) {
+      seen.add('vm:' + v.name);
+      suggestions.push({ text: v.name, hint: (v.namespace || 'default') + ' · ' + v.status, apply: v.name });
+    }
+  });
+  vms.forEach(function(v) {
+    if (v.node && v.node.toLowerCase().includes(q) && !seen.has('node:' + v.node)) {
+      seen.add('node:' + v.node);
+      suggestions.push({ text: 'node:' + v.node, hint: 'Filter by node', apply: 'node:' + v.node });
+    }
+    if (v.ip && v.ip !== 'N/A' && v.ip.includes(q) && !seen.has('ip:' + v.ip)) {
+      seen.add('ip:' + v.ip);
+      suggestions.push({ text: 'ip:' + v.ip, hint: v.name, apply: 'ip:' + v.ip });
+    }
+    var ns = v.namespace || 'default';
+    if (ns.toLowerCase().includes(q) && !seen.has('ns:' + ns)) {
+      seen.add('ns:' + ns);
+      suggestions.push({ text: 'ns:' + ns, hint: 'Filter by namespace', apply: 'ns:' + ns });
+    }
+  });
+  suggestions = suggestions.slice(0, 8);
+  if (!suggestions.length) { hideVmSearchAC(); return; }
+  _vmAcIdx = -1;
+  ac.innerHTML = suggestions.map(function(s, i) {
+    return '<div class="vmr-ac-item" data-idx="' + i + '" data-apply="' + esc(s.apply) + '" onmousedown="vmSearchAcApply(' + JSON.stringify(s.apply) + ')" role="option">' +
+      '<span class="vmr-ac-text">' + esc(s.text) + '</span>' +
+      '<span class="vmr-ac-hint">' + esc(s.hint) + '</span></div>';
+  }).join('');
+  ac.style.display = 'block';
+}
+function hideVmSearchAC() {
+  var ac = document.getElementById('vm-search-ac');
+  if (ac) { ac.style.display = 'none'; _vmAcIdx = -1; }
+}
+function vmSearchAcApply(val) {
+  var inp = document.getElementById('vm-search');
+  if (inp) { inp.value = val; filterVMs(); }
+  hideVmSearchAC();
+}
+function vmSearchAcKey(e) {
+  var ac = document.getElementById('vm-search-ac');
+  if (!ac || ac.style.display === 'none') return;
+  var items = ac.querySelectorAll('.vmr-ac-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _vmAcIdx = Math.min(_vmAcIdx + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _vmAcIdx = Math.max(_vmAcIdx - 1, -1);
+  } else if (e.key === 'Enter' && _vmAcIdx >= 0) {
+    e.preventDefault();
+    var item = items[_vmAcIdx];
+    if (item) vmSearchAcApply(item.dataset.apply);
+    return;
+  } else if (e.key === 'Escape') {
+    hideVmSearchAC();
+    return;
+  } else { return; }
+  items.forEach(function(it, i) { it.classList.toggle('active', i === _vmAcIdx); });
+}
+// Hide AC when clicking outside
+document.addEventListener('mousedown', function(e) {
+  if (!e.target.closest('#vm-search-wrap')) hideVmSearchAC();
+});
 
 // ── Cluster Map View (canvas bubble layout) ──
 var _cmapHit = []; // [{ns, name, x, y, r}] for click detection
