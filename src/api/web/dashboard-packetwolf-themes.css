@@ -2704,3 +2704,50 @@ html[data-theme='tahoe-light'] .vmr-template-card {
 .vmr-freshness-label.freshness-stale {
   color: var(--pw-color-warning);
 }
+
+/* ── Status filter chips ─────────────────────────────────────────────── */
+.vmr-filter-chips {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.vmr-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 100px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--pw-text-secondary);
+  font-size: .78rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s;
+  line-height: 1.4;
+}
+.vmr-chip:hover {
+  background: var(--glass-bg-elevated);
+  color: var(--pw-text-primary);
+}
+.vmr-chip.vmr-chip-active {
+  background: var(--accent-primary, rgba(59,130,246,.9));
+  color: #fff;
+  border-color: transparent;
+  font-weight: 500;
+}
+html[data-theme="tahoe-light"] .vmr-chip.vmr-chip-active,
+html[data-theme="light"] .vmr-chip.vmr-chip-active {
+  background: var(--accent-primary, #0a84ff);
+  color: #fff;
+}
+.vmr-chip-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.vmr-chip-dot.running  { background: #22c55e; }
+.vmr-chip-dot.stopped  { background: #94a3b8; }

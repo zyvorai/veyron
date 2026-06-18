@@ -3699,7 +3699,13 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-fleet-metrics"></div>
   <div class="vmr-fleet-toolbar">
     <input type="text" class="form-input" id="vm-search" placeholder="Search VMs… ( / )" oninput="filterVMsDebounced()" style="min-width:180px">
-    <select class="form-select" id="vm-filter-status" onchange="filterVMs()">
+    <div class="vmr-filter-chips" id="vmr-filter-chips" role="group" aria-label="Status filter">
+      <button type="button" class="vmr-chip vmr-chip-active" data-filter="" onclick="setVmStatusFilter(this,'')">All</button>
+      <button type="button" class="vmr-chip" data-filter="Running" onclick="setVmStatusFilter(this,'Running')"><span class="vmr-chip-dot running"></span>Running</button>
+      <button type="button" class="vmr-chip" data-filter="Stopped" onclick="setVmStatusFilter(this,'Stopped')"><span class="vmr-chip-dot stopped"></span>Stopped</button>
+      <button type="button" class="vmr-chip" data-filter="__issues__" onclick="setVmStatusFilter(this,'__issues__')">⚠ Issues</button>
+    </div>
+    <select class="form-select" id="vm-filter-status" style="display:none" onchange="syncChipsFromSelect();filterVMs()">
       <option value="">All status</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option>
     </select>
     <div class="vmr-view-switch">
@@ -10775,6 +10781,29 @@ document.addEventListener('keydown', e => {
       return;
     }
   }
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && currentPage === 'vms') {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      const listEl = document.getElementById('vm-full-list');
+      if (!listEl) return;
+      const rows = Array.from(listEl.querySelectorAll('[data-vm-name]'));
+      if (!rows.length) return;
+      e.preventDefault();
+      const selRow = listEl.querySelector('[data-vm-name].selected');
+      const currentIdx = selRow ? rows.indexOf(selRow) : -1;
+      const nextIdx = e.key === 'ArrowDown'
+        ? Math.min(currentIdx + 1, rows.length - 1)
+        : Math.max(currentIdx - 1, 0);
+      const next = rows[nextIdx];
+      if (next) {
+        next.setAttribute('tabindex', '0');
+        next.focus();
+        next.scrollIntoView({ block: 'nearest' });
+        selectVm(next.dataset.vmNs, next.dataset.vmName);
+      }
+      return;
+    }
+  }
   const connectModal = document.getElementById('connect-modal');
   if (connectModal && connectModal.classList.contains('open') && e.key === 'Enter' && !e.metaKey && !e.ctrlKey) {
     const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
@@ -10882,17 +10911,29 @@ if (dockEditorModalEl) {
 }
 // VM list keyboard navigation
 document.getElementById('vm-full-list').addEventListener('keydown', function(e) {
-  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const isNav = e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter';
+  if (!isNav) return;
   const rows = Array.from(this.querySelectorAll('[data-vm-name]'));
   if (!rows.length) return;
-  e.preventDefault();
   const focused = document.activeElement;
-  const currentIdx = rows.indexOf(focused.closest ? focused.closest('[data-vm-name]') : null);
+  const curEl = focused && focused.closest ? focused.closest('[data-vm-name]') : null;
+  if (e.key === 'Enter') {
+    const target = curEl || rows[0];
+    if (target) { e.preventDefault(); selectVm(target.dataset.vmNs, target.dataset.vmName); }
+    return;
+  }
+  e.preventDefault();
+  const currentIdx = rows.indexOf(curEl);
   const nextIdx = e.key === 'ArrowDown'
-    ? Math.min(currentIdx + 1, rows.length - 1)
+    ? Math.min((currentIdx < 0 ? -1 : currentIdx) + 1, rows.length - 1)
     : Math.max(currentIdx - 1, 0);
   const next = rows[nextIdx];
-  if (next) { next.setAttribute('tabindex', '0'); next.focus(); }
+  if (next) {
+    next.setAttribute('tabindex', '0');
+    next.focus();
+    next.scrollIntoView({ block: 'nearest' });
+    selectVm(next.dataset.vmNs, next.dataset.vmName);
+  }
 });
 
 
@@ -10961,7 +11002,7 @@ function selectVm(ns, name, opts) {
   selectedVmKey = key;
   selectedVmNs = ns;
   selectedVmName = name;
-  window._vmInspectorTab = 'overview';
+  window._vmInspectorTab = window._vmInspectorTab || 'overview';
   expandedVm = key;
   rememberVmForSnap(ns, name);
   recordRecentVm(ns, name);
@@ -11806,7 +11847,25 @@ function updateVmFreshness() {
 // ── Search & Filter ──
 let _filterVMsTimer = 0;
 function filterVMsDebounced() { clearTimeout(_filterVMsTimer); _filterVMsTimer = setTimeout(filterVMs, 150); }
+
+function setVmStatusFilter(btn, val) {
+  const sel = document.getElementById('vm-filter-status');
+  if (sel) sel.value = val;
+  document.querySelectorAll('#vmr-filter-chips .vmr-chip').forEach(function(b) {
+    b.classList.toggle('vmr-chip-active', b === btn);
+  });
+  filterVMs();
+}
+
+function syncChipsFromSelect() {
+  const val = (document.getElementById('vm-filter-status') || {}).value || '';
+  document.querySelectorAll('#vmr-filter-chips .vmr-chip').forEach(function(b) {
+    b.classList.toggle('vmr-chip-active', b.dataset.filter === val);
+  });
+}
+
 function filterVMs() {
+  syncChipsFromSelect();
   const q = (document.getElementById('vm-search').value || '').toLowerCase();
   const statusFilter = document.getElementById('vm-filter-status').value;
   const driftFilter = (document.getElementById('vm-filter-drift') || {}).value || '';
