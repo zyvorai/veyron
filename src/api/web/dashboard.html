@@ -10893,7 +10893,7 @@ function filterVeleroBackupsView(query) {
            (b.storage_location || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(b) {
-    return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No Velero backups match &ldquo;' + esc(q) + '&rdquo;' : 'No Velero backups') + '</td></tr>';
 }
@@ -10910,7 +10910,7 @@ function filterVeleroRestoresView(query) {
            (r.backup_name || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(r) {
-    return '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy restore name" ' + onStopHandler('copyToClipboard(' + jsArgs(r.name) + ')') + '>' + esc(r.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No restores match &ldquo;' + esc(q) + '&rdquo;' : 'No Velero restores') + '</td></tr>';
 }
@@ -10927,7 +10927,7 @@ function filterBlueprintsView(query) {
   }) : items;
   tb.innerHTML = filtered.map(function(bp) {
     return '<tr style="cursor:pointer" ' + onHandler('blueprintStudioSelect(' + jsArgs(bp.namespace, bp.name) + ')') + '>' +
-      '<td>' + esc(bp.name) + '</td><td>' + esc(bp.namespace) + '</td><td>' + (bp.vm_count || 0) + '</td><td>' + esc(bp.phase || '—') + '</td></tr>';
+      '<td class="vmr-copy-tile" title="Copy blueprint name" ' + onStopHandler('copyToClipboard(' + jsArgs(bp.name) + ')') + '>' + esc(bp.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(bp.namespace) + '</td><td>' + (bp.vm_count || 0) + '</td><td>' + esc(bp.phase || '—') + '</td></tr>';
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No blueprints match &ldquo;' + esc(q) + '&rdquo;' : 'No blueprints found') + '</td></tr>';
 }
@@ -11042,7 +11042,7 @@ function filterHeatmapView(query) {
   const filtered = q ? nodes.filter(function(n) { return (n.node_name || '').toLowerCase().includes(q); }) : nodes;
   tb.innerHTML = filtered.map(function(n) {
     return '<tr class="clickable-row" ' + onHandler('openNodeDetailDeep(' + jsArgs(n.node_name) + ')') + ' title="Open node detail">' +
-      '<td>' + esc(n.node_name) + '</td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
+      '<td class="vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.node_name) + ')') + '>' + esc(n.node_name) + '<span class="vmr-copy-hint">copy</span></td><td>' + (n.cpu_utilization || 0).toFixed(1) + '</td><td>' + (n.memory_utilization || 0).toFixed(1) + '</td>' +
       '<td>' + (n.disk_utilization || 0).toFixed(1) + '</td><td>' + (n.network_utilization || 0).toFixed(1) + '</td>' +
       '<td>' + (n.vm_count ?? 0) + '</td><td>' + (n.heat_score || 0).toFixed(2) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching nodes</td></tr>';
