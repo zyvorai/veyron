@@ -4187,7 +4187,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Audit</h1><p>Event-derived audit trail and summary</p></div></div>
   
   <div id="audit-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Audit Trail</span><input type="search" id="audit-search" class="form-input" placeholder="Filter by user, action, resource…" oninput="filterAuditView(this.value)" style="width:250px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Type</th><th>Resource</th><th>Outcome</th></tr></thead><tbody id="audit-body"></tbody></table>
   </div>
 </div>
@@ -10324,6 +10324,23 @@ function filterAlertsView() {
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No matching alerts</td></tr>';
 }
 
+function filterAuditView(query) {
+  const tb = document.getElementById('audit-body');
+  if (!tb) return;
+  const trail = window.lastAuditTrail || [];
+  const q = (query || '').toLowerCase().trim();
+  const rows = q ? trail.filter(function(a) {
+    return (a.user || '').toLowerCase().includes(q) ||
+           (a.action || '').toLowerCase().includes(q) ||
+           (a.resource_type || '').toLowerCase().includes(q) ||
+           (a.resource_name || '').toLowerCase().includes(q) ||
+           (a.outcome || '').toLowerCase().includes(q);
+  }) : trail;
+  tb.innerHTML = rows.map(function(a) {
+    return '<tr><td>' + fmtTime(a.timestamp) + '</td><td>' + esc(a.user) + '</td><td>' + esc(a.action) + '</td><td>' + esc(a.resource_type) + '</td><td>' + esc(a.namespace) + '/' + esc(a.resource_name) + '</td><td>' + esc(a.outcome) + '</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching entries</td></tr>';
+}
+
 function filterEventsView(type, btn) {
   if (btn) {
     document.querySelectorAll('[data-evfilter]').forEach(function(b) {
@@ -10975,6 +10992,8 @@ document.addEventListener('keydown', e => {
     if (nc) nc.classList.remove('open');
     hideVmContextMenu();
     if (dynamicIslandOpen) toggleDynamicIsland();
+    // Escape with no modal open → clear VM inspector if one is open
+    if (currentPage === 'vms' && selectedVmKey) { clearVmSelection(); return; }
   }
 });
 document.getElementById('spotlight-modal').addEventListener('click', e => {
@@ -11051,6 +11070,13 @@ document.getElementById('rdp-sheet-modal')?.addEventListener('click', e => {
 });
 document.getElementById('vnc-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeVncModal(true);
+});
+document.getElementById('vnc-modal').addEventListener('keydown', function(e) {
+  if (!this.classList.contains('open')) return;
+  if (e.key.toLowerCase() === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea') { e.preventDefault(); toggleVncFullscreen(); }
+  }
 });
 document.getElementById('serial-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeSerialModal(true);
@@ -14115,6 +14141,7 @@ async function fetchAudit() {
       apiJson('/api/v1/audit/stats' + nsParam()),
     ]);
     const trail = asArray(trailRaw);
+    window.lastAuditTrail = trail;
     if (sum) {
       sum.innerHTML = renderGlassStatPills([
         { label: 'Total events', value: stats.total_events || 0 },
