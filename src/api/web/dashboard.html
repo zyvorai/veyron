@@ -3951,7 +3951,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
   <div class="veyron-cap-banner glass-banner" role="note"><span class="veyron-cap-label">Operator CRDs</span><span class="veyron-cap-scope">Changes apply to <code>VeyronBlueprint</code> resources; the operator reconciles VMs from the spec.</span><span class="veyron-cap-lim">Save from Ask Zeus YAML via <strong>Save as Blueprint</strong>, or edit JSON below and click Save.</span></div>
   <div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.2fr);gap:16px;align-items:start">
-    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"></div>
+    <div class="card glass-card"><div class="card-header"><span class="card-title">Blueprints</span><input type="search" id="blueprint-search" class="form-input" placeholder="Filter blueprints…" oninput="filterBlueprintsView(this.value)" style="width:160px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportBlueprintsCsv()" title="Export blueprints as CSV" style="margin-left:8px">&#8595; CSV</button></div>
       <table class="table" id="blueprint-studio-table"><thead><tr><th>Name</th><th>NS</th><th>VMs</th><th>Phase</th></tr></thead><tbody id="blueprint-studio-body"></tbody></table>
     </div>
     <div class="card glass-card"><div class="card-header"><span class="card-title" id="blueprint-studio-editor-title">Select a blueprint</span>
@@ -4147,7 +4147,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-workloads-metrics"></div>
   <div id="workloads-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div class="card glass-card vmr-workloads-table-card">
-    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><input type="search" id="workloads-search" class="form-input" placeholder="Filter workloads…" oninput="filterWorkloadsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">&#8635;</button></div></div>
+    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><input type="search" id="workloads-search" class="form-input" placeholder="Filter workloads…" oninput="filterWorkloadsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportWorkloadsCsv()" title="Export workloads as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">&#8635;</button></div></div>
     <div id="vmr-workloads-toolbar" class="vmr-workloads-toolbar" style="padding:0 16px"></div>
     <div id="vmr-wl-tabbar" class="vmr-capsule-tabs" style="margin:0 16px 12px"></div>
     <div class="vmr-table-wrap vmr-workloads-table-wrap">
@@ -4234,7 +4234,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNotificationsCsv()" title="Export notifications as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
@@ -4364,11 +4364,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card glass-card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Velero (cluster)</span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:8px">&#8635; Refresh</button></div>
+    <div class="card-header"><span class="card-title">Velero (cluster)</span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroBackupsCsv()" title="Export Velero backups as CSV" style="margin-left:8px">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:4px">&#8635; Refresh</button></div>
     <div id="velero-cap-banner"></div>
     <div id="velero-summary" class="grid-4 page-glass-stats"></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Storage location</th><th>Items</th><th>Completed</th></tr></thead><tbody id="velero-backups-body"></tbody></table>
-    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span><input type="search" id="velero-restores-search" class="form-input" placeholder="Filter restores…" oninput="filterVeleroRestoresView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"></div>
+    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span><input type="search" id="velero-restores-search" class="form-input" placeholder="Filter restores…" oninput="filterVeleroRestoresView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroRestoresCsv()" title="Export Velero restores as CSV" style="margin-left:8px">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Backup</th><th>Completed</th></tr></thead><tbody id="velero-restores-body"></tbody></table>
   </div>
 </div>
@@ -4401,11 +4401,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">VMTemplate CRDs</span><input type="search" id="catalog-templates-search" class="form-input" placeholder="Filter templates…" oninput="filterCatalogTemplatesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"></div>
+    <div class="card-header"><span class="card-title">VMTemplate CRDs</span><input type="search" id="catalog-templates-search" class="form-input" placeholder="Filter templates…" oninput="filterCatalogTemplatesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCatalogTemplatesCsv()" title="Export templates as CSV" style="margin-left:8px">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Name</th><th>Family</th><th>Description</th><th>Tags</th></tr></thead><tbody id="catalog-templates-body"></tbody></table>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">VMProfile CRDs</span><input type="search" id="catalog-profiles-search" class="form-input" placeholder="Filter profiles…" oninput="filterCatalogProfilesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"></div>
+    <div class="card-header"><span class="card-title">VMProfile CRDs</span><input type="search" id="catalog-profiles-search" class="form-input" placeholder="Filter profiles…" oninput="filterCatalogProfilesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCatalogProfilesCsv()" title="Export profiles as CSV" style="margin-left:8px">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Name</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Description</th></tr></thead><tbody id="catalog-profiles-body"></tbody></table>
   </div>
 </div>
@@ -4577,7 +4577,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportTopologyCsv()" title="Export topology as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology()">&#8635; Refresh</button></div></div>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span><input type="search" id="topology-search" class="form-input" placeholder="Filter edges…" oninput="filterTopologyView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
@@ -4586,7 +4586,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-dependencies" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchDependencies()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Dependencies</h1><p>VM dependency graph from labels and annotations</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportDepsCsv()" title="Export dependencies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchDependencies()">&#8635; Refresh</button></div></div>
     <div id="dependencies-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Dependency Edges</span><input type="search" id="deps-search" class="form-input" placeholder="Filter edges…" oninput="filterDepsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>From</th><th>Type</th><th>To</th></tr></thead><tbody id="dependencies-body"></tbody></table></div>
@@ -4713,7 +4713,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-webhooks" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWebhooks()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Webhooks</h1><p>Configured outbound automation hooks</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportWebhooksCsv()" title="Export webhooks as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWebhooks()">&#8635; Refresh</button></div></div>
   
   <div class="card glass-card"><div class="card-header"><span class="card-title">Webhooks</span><input type="search" id="webhooks-search" class="form-input" placeholder="Filter webhooks…" oninput="filterWebhooksView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>URL</th><th>Events</th><th>Active</th><th>Secret</th><th>Failures</th></tr></thead><tbody id="webhooks-body"></tbody></table></div>
@@ -4725,6 +4725,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
     <div class="page-header-right" style="display:flex;gap:8px;align-items:center">
       <input type="search" id="compliance-search" class="form-input" placeholder="Filter frameworks or reports…" oninput="filterComplianceView(this.value)" style="width:230px;font-size:.82rem">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportComplianceCsv()" title="Export compliance as CSV">&#8595; CSV</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCompliance()">&#8635; Refresh</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button>
     </div></div>
@@ -4776,7 +4777,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-heatmap" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Resource Heatmap</h1><p>Per-node utilization heuristics from capacity vs VM density</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHeatmapCsv()" title="Export heatmap as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHeatmap()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runNodeAdvisor()">Node Advisor</button></div></div>
     <div id="heatmap-cap-banner"></div>
   <div id="heatmap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Nodes</span><input type="search" id="heatmap-search" class="form-input" placeholder="Filter nodes…" oninput="filterHeatmapView(this.value)" style="width:200px;font-size:.82rem"></div>
@@ -4866,7 +4867,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-incidents" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Incidents</h1><p>Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p></div></div>
+  <div class="page-header"><div><h1>Incidents</h1><p>Warning Events plus simple SLO hints — not Alertmanager or a ticketing queue</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportIncidentsCsv()" title="Export incidents as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIncidents()">&#8635; Refresh</button></div></div>
   
   <div id="incidents-cap-banner"></div>
   <div id="incidents-stats" class="grid-4 page-glass-stats"></div>
@@ -8990,6 +8991,98 @@ function exportBackupsCsv() {
   exportCsv(rows, 'backups.csv');
 }
 
+function exportComplianceCsv() {
+  const rows = [['Framework', 'Score %', 'Passing', 'Failing', 'Compliant', 'Last Checked']];
+  (window.lastComplianceStatuses || []).forEach(function(s) {
+    rows.push([s.framework, s.score ?? 0, s.passing_controls ?? 0, s.failing_controls ?? 0, s.compliant ? 'yes' : 'no', s.last_checked || '']);
+  });
+  exportCsv(rows, 'compliance.csv');
+}
+function exportHeatmapCsv() {
+  const rows = [['Node', 'CPU %', 'Memory %', 'Disk %', 'Network est.', 'VMs', 'Heat Score']];
+  (window.lastHeatmapNodes || []).forEach(function(n) {
+    rows.push([n.node_name, (n.cpu_utilization || 0).toFixed(1), (n.memory_utilization || 0).toFixed(1), (n.disk_utilization || 0).toFixed(1), (n.network_utilization || 0).toFixed(1), n.vm_count ?? 0, (n.heat_score || 0).toFixed(2)]);
+  });
+  exportCsv(rows, 'heatmap.csv');
+}
+function exportVeleroBackupsCsv() {
+  const rows = [['Name', 'Namespace', 'Phase', 'Storage Location', 'Items', 'Completed']];
+  (window.lastVeleroBackups || []).forEach(function(b) {
+    rows.push([b.name, b.namespace, b.phase, b.storage_location, b.item_count ?? 0, b.completion_timestamp || '']);
+  });
+  exportCsv(rows, 'velero-backups.csv');
+}
+function exportVeleroRestoresCsv() {
+  const rows = [['Name', 'Namespace', 'Phase', 'Backup', 'Completed']];
+  (window.lastVeleroRestores || []).forEach(function(r) {
+    rows.push([r.name, r.namespace, r.phase, r.backup_name || '', r.completion_timestamp || '']);
+  });
+  exportCsv(rows, 'velero-restores.csv');
+}
+function exportCatalogTemplatesCsv() {
+  const rows = [['Name', 'Family', 'Description', 'Tags']];
+  (window.lastCatalogTemplates || []).forEach(function(t) {
+    rows.push([t.name, t.family || '', t.description || '', (t.tags || []).join('; ')]);
+  });
+  exportCsv(rows, 'catalog-templates.csv');
+}
+function exportCatalogProfilesCsv() {
+  const rows = [['Name', 'Description', 'CPU Cores', 'Memory', 'Storage']];
+  (window.lastCatalogProfiles || []).forEach(function(p) {
+    rows.push([p.name, p.description || '', p.cpu_cores || '', p.memory || '', p.storage || '']);
+  });
+  exportCsv(rows, 'catalog-profiles.csv');
+}
+function exportBlueprintsCsv() {
+  const rows = [['Name', 'Namespace', 'Template', 'Profile', 'VMs', 'Status']];
+  (window.lastBlueprints || []).forEach(function(bp) {
+    rows.push([bp.name, bp.namespace, bp.template || '', bp.profile || '', bp.vm_count ?? 0, bp.phase || '']);
+  });
+  exportCsv(rows, 'blueprints.csv');
+}
+function exportWorkloadsCsv() {
+  const rows = [['Name', 'Type', 'Replicas', 'Ready', 'Status', 'Namespace']];
+  (window.lastWorkloads || []).forEach(function(w) {
+    rows.push([w.name, w.workload_type, w.replicas, w.ready_replicas, w.status, w.namespace]);
+  });
+  exportCsv(rows, 'workloads.csv');
+}
+function exportTopologyCsv() {
+  const rows = [['Source', 'Relation', 'Target']];
+  (window.lastTopologyEdges || []).forEach(function(e) {
+    rows.push([e.source, e.relation, e.target]);
+  });
+  exportCsv(rows, 'topology.csv');
+}
+function exportDepsCsv() {
+  const rows = [['Source', 'Dependency Type', 'Target']];
+  (window.lastDepEdges || []).forEach(function(e) {
+    rows.push([e.from, e.dependency_type, e.to]);
+  });
+  exportCsv(rows, 'dependencies.csv');
+}
+function exportNotificationsCsv() {
+  const rows = [['Title', 'Message', 'Severity', 'Source', 'Created']];
+  (window.lastNotifications || []).forEach(function(n) {
+    rows.push([n.title || '', n.message || '', n.severity || '', n.source || '', n.created_at || '']);
+  });
+  exportCsv(rows, 'notifications.csv');
+}
+function exportWebhooksCsv() {
+  const rows = [['Name', 'URL', 'Events', 'Enabled']];
+  (window.lastWebhooks || []).forEach(function(w) {
+    rows.push([w.name, w.url, (w.events || []).join('; '), w.enabled ? 'yes' : 'no']);
+  });
+  exportCsv(rows, 'webhooks.csv');
+}
+function exportIncidentsCsv() {
+  const rows = [['Time', 'Type', 'Severity', 'Title', 'VM', 'Namespace', 'State']];
+  (window.lastIncidentEvents || []).forEach(function(e) {
+    rows.push([e.timestamp || e.occurred_at || '', e.kind || '', e.severity || '', e.title || '', e.vm_name || '', e.namespace || '', e.state || '']);
+  });
+  exportCsv(rows, 'incidents.csv');
+}
+
 function copyToClipboard(text) {
   if (!text) return;
   navigator.clipboard.writeText(text).then(function() {
@@ -10690,10 +10783,14 @@ function filterSocEventsView(query) {
            (e.target || e.namespace || '').toLowerCase().includes(q);
   }) : events;
   el.innerHTML = filtered.map(function(e) {
+    const srcVal = e.source || '';
+    const tgtVal = e.target || e.namespace || '';
     return '<tr><td>' + fmtTime(e.timestamp) + '</td>' +
       '<td><span class="glass-badge ' + glassTableBadge(e.severity) + '">' + esc(e.severity) + '</span></td>' +
-      '<td>' + esc(e.category) + '</td><td>' + esc(e.source) + '</td>' +
-      '<td>' + esc(e.message) + '</td><td>' + esc(e.target || e.namespace || '') + '</td></tr>';
+      '<td>' + esc(e.category) + '</td>' +
+      '<td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(srcVal) + ')') + '>' + esc(srcVal) + '<span class="vmr-copy-hint">copy</span></td>' +
+      '<td>' + esc(e.message) + '</td>' +
+      '<td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(tgtVal) + ')') + '>' + esc(tgtVal) + '<span class="vmr-copy-hint">copy</span></td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching events</td></tr>';
 }
 
@@ -10994,7 +11091,7 @@ function filterAutoscalerView(query) {
            (a.target_name || '').toLowerCase().includes(q);
   }) : items;
   tb.innerHTML = filtered.map(function(a) {
-    return '<tr><td>' + esc(a.name) + '</td><td>' + esc(a.namespace) + '</td><td>' + esc(a.target_kind) + '/' + esc(a.target_name) + '</td><td>' + a.min_replicas + '</td><td>' + a.current_replicas + '</td><td>' + a.max_replicas + '</td><td>' + (a.enabled ? 'Yes' : 'No') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy autoscaler name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.namespace) + '</td><td>' + esc(a.target_kind) + '/' + esc(a.target_name) + '</td><td>' + a.min_replicas + '</td><td>' + a.current_replicas + '</td><td>' + a.max_replicas + '</td><td>' + (a.enabled ? 'Yes' : 'No') + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
 }
 
@@ -11101,7 +11198,7 @@ function filterIncidentsView(query) {
       '<td><span class="incident-kind" style="color:' + kc + '">' + esc(e.kind) + '</span></td>' +
       '<td style="color:' + sc + ';font-weight:600">' + esc(e.severity) + '</td>' +
       '<td>' + esc(e.title) + '</td>' +
-      '<td>' + (e.vm_name ? esc(e.vm_name) : '<span style="color:var(--text-dim)">—</span>') + '</td>' +
+      '<td>' + (e.vm_name ? '<span class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(e.vm_name) + ')') + '>' + esc(e.vm_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span style="color:var(--text-dim)">—</span>') + '</td>' +
       '<td>' + esc(e.namespace) + '</td>' +
       '<td><span class="glass-badge ' + (e.resolved ? 'running' : 'other') + '">' + (e.resolved ? 'resolved' : 'open') + '</span></td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
@@ -13192,7 +13289,7 @@ function renderNodeDetailHeader(node) {
       '<div class="vm-detail-meta">' +
         '<span class="ns-chip">' + esc(roles) + '</span>' +
         '<span class="ns-chip">' + (node.vm_count || 0) + ' VM' + ((node.vm_count || 0) === 1 ? '' : 's') + '</span>' +
-        (node.kubelet_version ? '<span>Kubelet: <strong>' + esc(node.kubelet_version) + '</strong></span>' : '') +
+        (node.kubelet_version ? '<span>Kubelet: <strong class="vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(node.kubelet_version) + ')') + '>' + esc(node.kubelet_version) + '<span class="vmr-copy-hint">copy</span></strong></span>' : '') +
       '</div>' +
     '</div>' +
     '<div class="vm-detail-actions-hdr">' + actions + '</div>' +
@@ -13300,8 +13397,8 @@ function renderPodInfoColumn(pod) {
   html += '<div class="detail-section"><div class="detail-section-title">Pod info</div>';
   html += detailRow('Namespace', pod.namespace || 'N/A');
   html += detailRow('Phase', pod.phase || 'N/A');
-  html += detailRow('Node', pod.node_name || 'N/A');
-  html += detailRow('IP', pod.ip || 'N/A');
+  html += '<div class="detail-row"><span class="lbl">Node</span><span class="val">' + (pod.node_name ? '<span class="vmr-copy-tile" title="Copy node" ' + onStopHandler('copyToClipboard(' + jsArgs(pod.node_name) + ')') + '>' + esc(pod.node_name) + '<span class="vmr-copy-hint">copy</span></span>' : 'N/A') + '</span></div>';
+  html += '<div class="detail-row"><span class="lbl">IP</span><span class="val">' + (pod.ip ? '<span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(pod.ip) + ')') + '>' + esc(pod.ip) + '<span class="vmr-copy-hint">copy</span></span>' : 'N/A') + '</span></div>';
   html += detailRow('Restarts', pod.restart_count != null ? pod.restart_count : 0);
   html += detailRow('Age', formatPodAge(pod.created_at) || 'N/A');
   html += '</div>';
