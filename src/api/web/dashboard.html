@@ -13218,6 +13218,7 @@ async function fetchVMs(opts) {
     const list = asArray(j);
     detectVmDelta(list);
     recordVmHistory(list);
+    requestNotifPermission();
     vmData = list;
     const total = vmData.length;
     const running = vmData.filter(v => v.status === 'Running').length;
@@ -17358,6 +17359,35 @@ function detectVmDelta(newList) {
   if (!changes.length) return;
   _vmChangedKeys = new Set(changes.map(function(c) { return c.name; }));
   showVmDeltaStrip(changes);
+  sendFleetPulseNotifications(changes);
+}
+
+// ── Fleet Pulse Browser Notifications ──
+var _notifPermAsked = false;
+function requestNotifPermission() {
+  if (_notifPermAsked || !('Notification' in window) || Notification.permission !== 'default') return;
+  _notifPermAsked = true;
+  // Ask quietly after first non-trivial data load
+  setTimeout(function() {
+    if (Notification.permission === 'default') Notification.requestPermission();
+  }, 8000);
+}
+function sendFleetPulseNotifications(changes) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (document.visibilityState === 'visible') return; // only when tab is in background
+  changes.forEach(function(c) {
+    if (c.type === 'changed') {
+      var isCritical = c.to === 'Failed' || c.to === 'Error';
+      var isStarted = c.from !== 'Running' && c.to === 'Running';
+      if (isCritical) {
+        new Notification('VMRogue — VM failed', { body: c.name + ' transitioned to ' + c.to, icon: '' });
+      } else if (isStarted) {
+        new Notification('VMRogue — VM started', { body: c.name + ' is now Running' });
+      }
+    } else if (c.type === 'added' && (c.status === 'Failed' || c.status === 'Error')) {
+      new Notification('VMRogue — VM in error state', { body: c.name + ': ' + c.status });
+    }
+  });
 }
 var _vmChangedKeys = new Set();
 function pulseChangedVmCards() {
