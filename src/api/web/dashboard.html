@@ -9294,6 +9294,8 @@ function renderSettingsVmr() {
     ['⌘\\',  'Toggle Finder sidebar'],
     ['⌘,',   'Open Preferences / Settings'],
     ['↑ / ↓ or j / k', 'Navigate VM list (vi-style j/k also works)'],
+    ['1/2/3/4', 'Switch view: Cards / Table / Topology / Map (VMs page)'],
+    ['⌘L',  'Select all running VMs (VMs page)'],
     ['c',    'Forge new VM shortcut'],
     ['Enter', 'Open selected VM inspector'],
     ['Esc',  'Dismiss modal, drawer, or command bar'],
@@ -14525,6 +14527,28 @@ document.addEventListener('keydown', e => {
       if (typeof toggleVmrFleetFull === 'function') toggleVmrFleetFull();
       return;
     }
+  }
+  // 1/2/3/4 — view mode on VMs page
+  if (!e.metaKey && !e.ctrlKey && !e.altKey && currentPage === 'vms' && ['1','2','3','4'].includes(e.key)) {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+      e.preventDefault();
+      const modes = ['1','2','3','4'];
+      const modeMap = { '1': 'cards', '2': 'table', '3': 'topology', '4': 'map' };
+      setVmrFleetView(modeMap[e.key]);
+      return;
+    }
+  }
+  // ⌘L — select all running VMs
+  if ((e.metaKey || e.ctrlKey) && !e.altKey && e.key.toLowerCase() === 'l' && currentPage === 'vms') {
+    e.preventDefault();
+    var running = (vmData || []).filter(function(v) { return v.status === 'Running'; });
+    selectedVMs.clear();
+    running.forEach(function(v) { selectedVMs.add(vmSelectionKey(v.namespace || 'default', v.name)); });
+    filterVMs();
+    if (typeof updateBulkSelectionUi === 'function') updateBulkSelectionUi();
+    showToast(running.length + ' running VM' + (running.length !== 1 ? 's' : '') + ' selected', 'success');
+    return;
   }
   // : key — vim-style command bar (works on any page)
   if (!e.metaKey && !e.ctrlKey && !e.altKey && e.key === ':') {
