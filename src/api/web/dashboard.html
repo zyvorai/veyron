@@ -4725,6 +4725,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Compliance</h1><p>Framework scores from VM spec and cluster policy signals</p></div>
     <div class="page-header-right" style="display:flex;gap:8px;align-items:center">
       <input type="search" id="compliance-search" class="form-input" placeholder="Filter frameworks or reports…" oninput="filterComplianceView(this.value)" style="width:230px;font-size:.82rem">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCompliance()">&#8635; Refresh</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runComplianceAdvisor()">Compliance Advisor</button>
     </div></div>
     <div id="compliance-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
