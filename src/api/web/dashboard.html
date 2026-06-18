@@ -4147,7 +4147,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-workloads-metrics"></div>
   <div id="workloads-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div class="card glass-card vmr-workloads-table-card">
-    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span></div>
+    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span><input type="search" id="workloads-search" class="form-input" placeholder="Filter workloads…" oninput="filterWorkloadsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
     <div id="vmr-workloads-toolbar" class="vmr-workloads-toolbar" style="padding:0 16px"></div>
     <div id="vmr-wl-tabbar" class="vmr-capsule-tabs" style="margin:0 16px 12px"></div>
     <div class="vmr-table-wrap vmr-workloads-table-wrap">
@@ -4247,7 +4247,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
     <div id="helm-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
   </div>
 </div>
@@ -6045,6 +6045,7 @@ function navigate(page, opts) {
     }
   }
   currentPage = page;
+  document.title = (page === 'dashboard' ? '' : navPageLabel(page) + ' — ') + 'VMRogue';
   if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
   else document.body.classList.toggle('mission-control-home', page === 'dashboard' && document.body.dataset.desktopTier !== 'advanced');
   if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
@@ -8816,6 +8817,14 @@ function exportPodsCsv() {
   exportCsv(rows, 'pods.csv');
 }
 
+function exportHelmCsv() {
+  const rows = [['Name', 'Namespace', 'Chart', 'Chart Version', 'App Version', 'Status', 'Revision']];
+  (window.lastHelmReleases || []).forEach(function(h) {
+    rows.push([h.name, h.namespace, h.chart, h.chart_version || '', h.app_version || '', h.status, h.revision]);
+  });
+  exportCsv(rows, 'helm-releases.csv');
+}
+
 function exportSnapshotsCsv() {
   const rows = [['Name', 'VM', 'Namespace', 'Ready', 'Status', 'Age']];
   (window.lastSnapshots || []).forEach(function(s) {
@@ -10489,7 +10498,7 @@ function filterNodesView(query) {
            (n.kubelet_version || '').toLowerCase().includes(q);
   }) : nodes;
   if (!filtered.length) {
-    el.innerHTML = '<div class="empty-state"><p>No matching nodes</p></div>';
+    el.innerHTML = '<div class="empty-state"><p>' + (q ? 'No nodes match &ldquo;' + esc(q) + '&rdquo;' : 'No nodes found') + '</p></div>';
     return;
   }
   el.innerHTML = filtered.map(function(n) {
@@ -10560,6 +10569,32 @@ function filterCostsView(query) {
       '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
       '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
+}
+
+function renderWorkloadsList(query) {
+  const tb = document.getElementById('workloads-body');
+  if (!tb) return;
+  const data = window.lastWorkloads || [];
+  const q = (query || '').toLowerCase().trim();
+  const filtered = q ? data.filter(function(w) {
+    return (w.name || '').toLowerCase().includes(q) ||
+           (w.workload_type || '').toLowerCase().includes(q) ||
+           (w.namespace || '').toLowerCase().includes(q) ||
+           (w.status || '').toLowerCase().includes(q);
+  }) : data;
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No workloads match &ldquo;' + esc(q) + '&rdquo;' : 'No Deployments, StatefulSets, or DaemonSets found') + '</td></tr>';
+    return;
+  }
+  tb.innerHTML = filtered.map(function(w) {
+    const ok = w.ready_replicas >= w.replicas;
+    const badgeCls = ok ? 'running' : 'other';
+    return '<tr><td>' + esc(w.name) + '</td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+  }).join('');
+}
+
+function filterWorkloadsView(query) {
+  renderWorkloadsList(query);
 }
 
 function filterHelmView(query) {
@@ -14687,11 +14722,8 @@ async function fetchWorkloads(opts) {
       ]);
     }
     if (tb) {
-      tb.innerHTML = data.map(w => {
-        const ok = w.ready_replicas >= w.replicas;
-        const badgeCls = ok ? 'running' : 'other';
-        return `<tr><td>${esc(w.name)}</td><td><span class="glass-badge stopped">${esc(w.workload_type)}</span></td><td>${w.replicas}</td><td><span class="glass-badge ${badgeCls}">${w.ready_replicas}</span></td><td><span class="glass-badge ${badgeCls}">${esc(w.status)}</span></td><td>${esc(w.namespace)}</td></tr>`;
-      }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);line-height:1.55">No Deployments, StatefulSets, or DaemonSets in <code>' + esc(currentNamespace) + '</code>. Try the <strong>all</strong> namespace filter if system workloads live elsewhere (cluster-wide listing falls back per-namespace when RBAC blocks <code>list</code> on all namespaces at once).</td></tr>';
+      window.lastWorkloads = data;
+      renderWorkloadsList('');
     }
   } catch (e) {
     if (e && e.name === 'AbortError') return;
