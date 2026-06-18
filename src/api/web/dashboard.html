@@ -8018,7 +8018,8 @@ function isWindowsVm(vm) {
 
 function vmWorkspaceChip(ns) {
   if (currentNamespace !== 'all') return '';
-  return '<span class="vm-workspace-chip">' + esc(ns || 'default') + '</span>';
+  const c = nsBadgeColor(ns || 'default');
+  return '<span class="vmr-ns-pill" style="display:inline-block;margin:4px 0 6px;background:' + c + '18;color:' + c + ';border-color:' + c + '38">' + esc(ns || 'default') + '</span>';
 }
 
 function syncIslandFromVmData() {
@@ -8158,6 +8159,18 @@ function vmSkeletonHtml(n) {
       '<div class="skel skel-line skel-l" style="margin-left:auto"></div>' +
       '</div>';
   }).join('');
+}
+
+function nsBadgeColor(ns) {
+  let h = 0;
+  for (let i = 0; i < ns.length; i++) h = (h * 31 + ns.charCodeAt(i)) & 0xffff;
+  return 'hsl(' + (h % 360) + ',55%,62%)';
+}
+
+function nsLabel(ns) {
+  if (currentNamespace !== 'all') return '';
+  const c = nsBadgeColor(ns);
+  return '<div class="vm-ns"><span class="vmr-ns-pill" style="background:' + c + '18;color:' + c + ';border-color:' + c + '38">' + esc(ns) + '</span></div>';
 }
 
 function renderComingSoon(containerId, title, description, icon) {
@@ -8477,6 +8490,11 @@ function showVmContextMenu(x, y, ns, name) {
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotWithVm(' + jsArgs('') + ',' + jsArgs(ns) + ',' + jsArgs(name) + ')">Ask Zeus</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openCopilotDoctor(' + jsArgs(ns, name) + ')">Diagnose</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openSnapModalFor(' + jsArgs(ns, name) + ')">Snapshot</button>';
+  html += '<div class="mac-context-sep"></div>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
+  if (vm.ip && vm.ip !== 'N/A') {
+    html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(vm.ip) + ')">Copy IP</button>';
+  }
   menu.innerHTML = html;
   menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
   menu.style.top = Math.min(y, window.innerHeight - 200) + 'px';
@@ -8736,7 +8754,7 @@ function vmRow(vm, showActions) {
     : (' class="vm-row' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '"');
   const sshBlock = vmSshBlock(vm, showActions);
   const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+(vm.ip&&vm.ip!=='N/A'?' &bull; '+esc(vm.ip):'')+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+'</span>'+actions+'</div>'+sshBlock+'</div>';
-  const nsLine = currentNamespace === 'all' ? '<div class="vm-ns">' + esc(ns) + '</div>' : '';
+  const nsLine = nsLabel(ns);
   return '<div'+clickAttr+'><div class="vm-info">'+checkbox+'<div class="vm-dot '+cls+'"></div><div><div class="vm-name">'+esc(vm.name)+'</div>'+nsLine+'</div></div>'+rightCol+'</div>';
 }
 
@@ -11104,7 +11122,9 @@ function renderVmHero(vm, ns, name, vmi, extras) {
       '<div class="vm-hero-metrics">' +
         '<div class="vm-hero-metric">CPU<strong>' + esc(vm.cpu || '—') + '</strong></div>' +
         '<div class="vm-hero-metric">Memory<strong>' + esc(vm.memory || '—') + '</strong></div>' +
-        '<div class="vm-hero-metric">IP<strong>' + esc(vm.ip || '—') + '</strong></div>' +
+        (vm.ip && vm.ip !== 'N/A'
+          ? '<div class="vm-hero-metric vmr-copy-tile" title="Copy IP address" onclick="copyToClipboard(' + JSON.stringify(vm.ip) + ')">IP<strong>' + esc(vm.ip) + '</strong><span class="vmr-copy-hint">copy</span></div>'
+          : '<div class="vm-hero-metric">IP<strong>—</strong></div>') +
         '<div class="vm-hero-metric">Node<strong>' + esc(vm.node || '—') + '</strong></div>' +
       '</div>' +
       '<div class="vm-hero-rings">' + secRing + healthRing + '<span class="vm-hero-meta-chip">' + esc(ns) + ' · ' + vmDriftBadge(vm) + '</span></div>' +
