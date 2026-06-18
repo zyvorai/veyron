@@ -10566,7 +10566,7 @@ function filterNotificationsView(query) {
   }) : items;
   tb.innerHTML = filtered.map(function(n) {
     const sevCls = glassTableBadge(n.severity);
-    return '<tr><td>' + esc(n.title) + '</td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
+    return '<tr class="' + (n.read ? '' : 'notif-unread') + '"><td>' + esc(n.title) + '</td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching notifications</td></tr>';
 }
 
@@ -14971,12 +14971,7 @@ async function fetchAlerts() {
       ]);
     }
     if (!tb) return;
-    tb.innerHTML = alerts.map(a => {
-      const sevCls = glassTableBadge(a.severity);
-      const stCls = glassTableBadge(a.status);
-      return `<tr class="clickable-row" onclick="pageCopilotChip('alerts-copilot-input', ${JSON.stringify('Explain alert ' + (a.name || ''))}, 'Active warning events in namespace')" title="Ask Zeus"><td>${esc(a.name)}</td><td><span class="glass-badge ${sevCls}">${esc(a.severity)}</span></td><td><span class="glass-badge ${stCls}">${esc(a.status)}</span></td><td>${esc(a.source)}</td><td>${esc(a.message)}</td><td>${fmtTime(a.fired_at)}</td></tr>`;
-    }).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No active alerts</td></tr>';
+    filterAlertsView();
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchAlerts');
     console.error('Alerts fetch error:', e);
@@ -15002,8 +14997,7 @@ async function fetchAudit() {
       ]);
     }
     if (!tb) return;
-    tb.innerHTML = trail.map(a => `<tr><td>${fmtTime(a.timestamp)}</td><td>${esc(a.user)}</td><td>${esc(a.action)}</td><td>${esc(a.resource_type)}</td><td>${esc(a.namespace)}/${esc(a.resource_name)}</td><td>${esc(a.outcome)}</td></tr>`).join('')
-      || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No audit entries</td></tr>';
+    filterAuditView((document.getElementById('audit-search') || {}).value || '');
   } catch (e) {
     const msg = e.message || String(e);
     if (sum) sum.innerHTML = summaryErrorHtml(msg);
@@ -15047,11 +15041,7 @@ async function fetchNotifications() {
     const navBadge = document.getElementById('notif-nav-badge');
     if (navBadge) { navBadge.textContent = unread > 99 ? '99+' : unread; navBadge.style.display = unread ? '' : 'none'; }
     window.lastNotifications = items;
-    tb.innerHTML = items.map(n => {
-      const sevCls = glassTableBadge(n.severity);
-      return `<tr class="${n.read ? '' : 'notif-unread'}"><td>${esc(n.title)}</td><td><span class="glass-badge ${sevCls}">${esc(n.severity)}</span></td><td>${esc(n.message)}</td><td><span class="glass-badge ${n.read ? 'stopped' : 'running'}">${n.read ? 'Read' : 'Unread'}</span></td><td>${fmtTime(n.created_at)}</td></tr>`;
-    }).join('')
-      || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No notifications</td></tr>';
+    filterNotificationsView((document.getElementById('notifications-search') || {}).value || '');
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(5, e.message || String(e), 'fetchNotifications');
     console.error('Notifications fetch error:', e);
