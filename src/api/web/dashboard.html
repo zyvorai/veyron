@@ -8654,6 +8654,7 @@ function renderSettingsVmr() {
     ['?',    'Show this shortcuts reference'],
     [':',    'Command bar — :start :stop :snap :vnc :go <page> :ns <name> …'],
     ['Z',    'Zen mode — expand VM list full-width (VMs page)'],
+    ['F',    'Focus VM — fullscreen live dashboard (VMs page, VM selected)'],
     ['T',    'Toggle live event ticker (Bloomberg-style event feed)'],
     ['⌘R',   'Refresh data now'],
     ['⌘\\',  'Toggle Finder sidebar'],
@@ -13273,6 +13274,7 @@ function renderAboutShortcuts() {
     { keys: '/', label: 'Focus VM search (VMs page)' },
     { keys: ':', label: 'Command bar — :start :stop :snap :vnc :go <page> :ns <name>' },
     { keys: 'Z', label: 'Zen mode — expand VM list full-width (VMs page)' },
+    { keys: 'F', label: 'Focus VM — fullscreen live dashboard for selected VM' },
     { keys: 'T', label: 'Toggle live event ticker strip' },
     { keys: '↑ / ↓ or j / k', label: 'Navigate VM list (vi-style j/k also works)' },
     { keys: 'Enter', label: 'Open inspector for selected VM' },
@@ -14519,10 +14521,14 @@ var VIM_CMD_HELP = {
   ssh:     'open SSH panel for selected VM',
   vnc:     'open VNC console for selected VM',
   rdp:     'open RDP for selected VM',
+  focus:   'focus mode overlay for selected VM (F)',
+  pin:     'toggle fleet pin for selected VM',
   delete:  'delete selected VM (with confirm)',
   cli:     'show CLI commands for selected VM',
+  forge:   'open Quick Forge VM launcher (⌘N)',
   go:      'go <page>  — navigate to page',
   ns:      'ns <name>  — switch namespace',
+  ticker:  'toggle live event ticker (T)',
   refresh: 'refresh current page',
   help:    'show keyboard shortcuts',
 };
@@ -14638,6 +14644,16 @@ async function executeVimCmd(raw) {
     if (typeof openVmCliSheet === 'function') openVmCliSheet(ns || 'default', name);
     return;
   }
+  if (cmd === 'focus') {
+    if (typeof openVmFocusOverlay === 'function') openVmFocusOverlay(ns || 'default', name || selectedVmName || '');
+    return;
+  }
+  if (cmd === 'pin') {
+    if (typeof toggleFleetPin === 'function') toggleFleetPin(ns || 'default', name || selectedVmName || '');
+    return;
+  }
+  if (cmd === 'forge') { if (typeof openQuickForge === 'function') openQuickForge(); return; }
+  if (cmd === 'ticker') { if (typeof toggleEventTicker === 'function') toggleEventTicker(); return; }
   toast('Unknown: :' + cmd + ' — try :help', 'error');
 }
 // ───────────────────────────────────────────────────────────────────────────
