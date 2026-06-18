@@ -14528,15 +14528,7 @@ async function fetchCosts(opts) {
       return;
     }
     window.lastCosts = costs.sort((a,b) => (Number(b.total_cost) || 0) - (Number(a.total_cost) || 0));
-    tb.innerHTML = window.lastCosts.map(c => {
-      const cpu = Number(c.cpu_cost) || 0;
-      const mem = Number(c.memory_cost) || 0;
-      const stor = Number(c.storage_cost) || 0;
-      const tot = Number(c.total_cost) || 0;
-      return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
-        '<td>' + esc(c.vm_name) + '</td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
-        '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
-    }).join('');
+    filterCostsView((document.getElementById('costs-search') || {}).value || '');
   } catch(e) {
     if (e && e.name === 'AbortError') return;
     const msg = e.message || String(e);
@@ -15380,8 +15372,7 @@ async function fetchTopology() {
     }
     if (tb) {
       window.lastTopologyEdges = edges;
-      tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.source)}</td><td>${esc(edge.relation)}</td><td>${esc(edge.target)}</td></tr>`).join('')
-        || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No topology edges found</td></tr>';
+      filterTopologyView((document.getElementById('topology-search') || {}).value || '');
     }
   } catch (e) {
     const msg = e.message || String(e);
@@ -15409,8 +15400,7 @@ async function fetchDependencies() {
     }
     if (tb) {
       window.lastDepEdges = edges;
-      tb.innerHTML = edges.map(edge => `<tr><td>${esc(edge.from)}</td><td>${esc(edge.dependency_type)}</td><td>${esc(edge.to)}</td></tr>`).join('')
-        || '<tr><td colspan="3" style="text-align:center;color:var(--text-dim)">No dependencies found</td></tr>';
+      filterDepsView((document.getElementById('deps-search') || {}).value || '');
     }
   } catch (e) {
     const msg = e.message || String(e);
