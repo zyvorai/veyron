@@ -4367,11 +4367,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><span id="backups-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card glass-card" style="margin-top:16px">
-    <div class="card-header"><span class="card-title">Velero (cluster)</span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroBackupsCsv()" title="Export Velero backups as CSV" style="margin-left:8px">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:4px">&#8635; Refresh</button></div>
+    <div class="card-header"><span class="card-title">Velero (cluster)</span><span id="velero-backups-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroBackupsCsv()" title="Export Velero backups as CSV" style="margin-left:8px">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:4px">&#8635; Refresh</button></div>
     <div id="velero-cap-banner"></div>
     <div id="velero-summary" class="grid-4 page-glass-stats"></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Storage location</th><th>Items</th><th>Completed</th></tr></thead><tbody id="velero-backups-body"></tbody></table>
-    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span><input type="search" id="velero-restores-search" class="form-input" placeholder="Filter restores…" oninput="filterVeleroRestoresView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroRestoresCsv()" title="Export Velero restores as CSV" style="margin-left:8px">&#8595; CSV</button></div>
+    <div class="card-header" style="margin-top:12px"><span class="card-title">Velero restores</span><span id="velero-restores-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="velero-restores-search" class="form-input" placeholder="Filter restores…" oninput="filterVeleroRestoresView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroRestoresCsv()" title="Export Velero restores as CSV" style="margin-left:8px">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Backup</th><th>Completed</th></tr></thead><tbody id="velero-restores-body"></tbody></table>
   </div>
 </div>
@@ -4405,11 +4405,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">VMTemplate CRDs</span><input type="search" id="catalog-templates-search" class="form-input" placeholder="Filter templates…" oninput="filterCatalogTemplatesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCatalogTemplatesCsv()" title="Export templates as CSV" style="margin-left:8px">&#8595; CSV</button></div>
+    <div class="card-header"><span class="card-title">VMTemplate CRDs</span><span id="catalog-templates-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="catalog-templates-search" class="form-input" placeholder="Filter templates…" oninput="filterCatalogTemplatesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCatalogTemplatesCsv()" title="Export templates as CSV" style="margin-left:8px">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Name</th><th>Family</th><th>Description</th><th>Tags</th></tr></thead><tbody id="catalog-templates-body"></tbody></table>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">VMProfile CRDs</span><input type="search" id="catalog-profiles-search" class="form-input" placeholder="Filter profiles…" oninput="filterCatalogProfilesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCatalogProfilesCsv()" title="Export profiles as CSV" style="margin-left:8px">&#8595; CSV</button></div>
+    <div class="card-header"><span class="card-title">VMProfile CRDs</span><span id="catalog-profiles-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="catalog-profiles-search" class="form-input" placeholder="Filter profiles…" oninput="filterCatalogProfilesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCatalogProfilesCsv()" title="Export profiles as CSV" style="margin-left:8px">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>Name</th><th>CPU</th><th>Memory</th><th>Disk</th><th>Description</th></tr></thead><tbody id="catalog-profiles-body"></tbody></table>
   </div>
 </div>
@@ -10989,6 +10989,8 @@ function filterCatalogTemplatesView(query) {
            (t.description || '').toLowerCase().includes(q) ||
            ((t.tags || []).join(' ')).toLowerCase().includes(q);
   }) : items;
+  const ctCountEl = document.getElementById('catalog-templates-count');
+  if (ctCountEl) ctCountEl.textContent = filtered.length === items.length ? items.length + ' templates' : filtered.length + ' of ' + items.length + ' templates';
   tb.innerHTML = filtered.map(function(t) {
     return '<tr><td class="vmr-copy-tile" title="Copy template name" ' + onStopHandler('copyToClipboard(' + jsArgs(t.name) + ')') + '>' + esc(t.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(t.family || '-') + '</td><td>' + esc(t.description || '-') + '</td><td>' + esc((t.tags || []).join(', ') || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">' +
@@ -11007,6 +11009,8 @@ function filterCatalogProfilesView(query) {
            String(p.cores || '').includes(q) ||
            (p.memory || '').toLowerCase().includes(q);
   }) : items;
+  const cpCountEl = document.getElementById('catalog-profiles-count');
+  if (cpCountEl) cpCountEl.textContent = filtered.length === items.length ? items.length + ' profiles' : filtered.length + ' of ' + items.length + ' profiles';
   tb.innerHTML = filtered.map(function(p) {
     return '<tr><td class="vmr-copy-tile" title="Copy profile name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + p.cores + '</td><td>' + esc(p.memory) + '</td><td>' + esc(p.disk_size) + '</td><td>' + esc(p.description || '-') + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
@@ -11041,6 +11045,8 @@ function filterVeleroBackupsView(query) {
            (b.phase || '').toLowerCase().includes(q) ||
            (b.storage_location || '').toLowerCase().includes(q);
   }) : items;
+  const vbCountEl = document.getElementById('velero-backups-count');
+  if (vbCountEl) vbCountEl.textContent = filtered.length === items.length ? items.length + ' backups' : filtered.length + ' of ' + items.length + ' backups';
   tb.innerHTML = filtered.map(function(b) {
     return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.namespace) + '</td><td>' + esc(b.phase) + '</td><td>' + esc(b.storage_location || '-') + '</td><td>' + (b.items_backed_up != null ? b.items_backed_up : '-') + '</td><td>' + fmtTime(b.completion_timestamp) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' +
@@ -11058,6 +11064,8 @@ function filterVeleroRestoresView(query) {
            (r.phase || '').toLowerCase().includes(q) ||
            (r.backup_name || '').toLowerCase().includes(q);
   }) : items;
+  const vrCountEl = document.getElementById('velero-restores-count');
+  if (vrCountEl) vrCountEl.textContent = filtered.length === items.length ? items.length + ' restores' : filtered.length + ' of ' + items.length + ' restores';
   tb.innerHTML = filtered.map(function(r) {
     return '<tr><td class="vmr-copy-tile" title="Copy restore name" ' + onStopHandler('copyToClipboard(' + jsArgs(r.name) + ')') + '>' + esc(r.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(r.namespace) + '</td><td>' + esc(r.phase) + '</td><td>' + esc(r.backup_name || '-') + '</td><td>' + fmtTime(r.completion_timestamp) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">' +
