@@ -8739,6 +8739,8 @@ function showVmContextMenu(x, y, ns, name) {
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openSnapModalFor(' + jsArgs(ns, name) + ')">Snapshot</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();navigate(\'snapshots\')">View Snapshots</button>';
   html += '<div class="mac-context-sep"></div>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmCliSheet(' + jsArgs(ns, name) + ')">CLI Commands…</button>';
+  html += '<div class="mac-context-sep"></div>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(vm.ip) + ')">Copy IP</button>';
@@ -8747,6 +8749,13 @@ function showVmContextMenu(x, y, ns, name) {
       const sshCmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ' + sshUser + '@' + vm.ip;
       html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(sshCmd) + ')">Copy SSH Command</button>';
     }
+  }
+  if (selectedVmName && selectedVmName !== name) {
+    html += '<div class="mac-context-sep"></div>';
+    html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();' +
+      'selectedVMs.clear();selectedVMs.add(vmSelectionKey(' + jsArgs(selectedVmNs||'default', selectedVmName) + '));' +
+      'selectedVMs.add(vmSelectionKey(' + jsArgs(ns, name) + '));' +
+      'toggleBulkBar();openVmCompare()">Compare with ' + esc(selectedVmName) + '</button>';
   }
   menu.innerHTML = html;
   menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
