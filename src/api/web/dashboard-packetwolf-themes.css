@@ -2683,3 +2683,24 @@ html[data-theme='tahoe-light'] .vmr-template-card {
   background: var(--glass-bg-elevated);
   border-color: var(--glass-border);
 }
+
+/* ── UX enhancement: VM action transition pulse ──────────────────────────── */
+@keyframes vm-status-pulse {
+  0%, 100% { opacity: 0.65; }
+  50%       { opacity: 1;    }
+}
+.vm-transitioning .vm-badge {
+  animation: vm-status-pulse 0.9s ease-in-out infinite;
+}
+
+/* VM list freshness label */
+.vmr-freshness-label {
+  font-size: .7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-left: auto;
+  padding: 0 4px;
+}
+.vmr-freshness-label.freshness-stale {
+  color: var(--pw-color-warning);
+}
