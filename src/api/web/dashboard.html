@@ -16453,10 +16453,17 @@ var VIM_CMD_HELP = {
   focus:   'focus mode overlay for selected VM (F)',
   pin:     'toggle fleet pin for selected VM',
   delete:  'delete selected VM (with confirm)',
+  clone:   'clone selected VM to a new name',
   cli:     'show CLI commands for selected VM',
   forge:   'open Quick Forge VM launcher (⌘N)',
   go:      'go <page>  — navigate to page',
   ns:      'ns <name>  — switch namespace',
+  filter:  'filter <query>  — set VM search filter',
+  tag:     'tag <name>  — add tag to selected VM',
+  note:    'note <text>  — set note on selected VM',
+  diff:    'open Fleet Diff (compare to saved baseline)',
+  theme:   'theme <name>  — switch color theme',
+  age:     'toggle VM age heat-map overlay',
   ticker:  'toggle live event ticker (T)',
   refresh: 'refresh current page',
   help:    'show keyboard shortcuts',
@@ -16613,6 +16620,42 @@ async function executeVimCmd(raw) {
   }
   if (cmd === 'forge') { if (typeof openQuickForge === 'function') openQuickForge(); return; }
   if (cmd === 'ticker') { if (typeof toggleEventTicker === 'function') toggleEventTicker(); return; }
+  if (cmd === 'clone') {
+    if (!name) { toast(':clone — select a VM first', 'error'); return; }
+    if (typeof cloneVM === 'function') cloneVM(ns || 'default', name);
+    return;
+  }
+  if (cmd === 'filter') {
+    var inp2 = document.getElementById('vm-search');
+    if (inp2) { inp2.value = arg; filterVMsDebounced(); navigate('vms'); }
+    return;
+  }
+  if (cmd === 'tag') {
+    if (!arg) { toast(':tag <name> — tag name required', 'error'); return; }
+    if (!name) { toast(':tag — select a VM first', 'error'); return; }
+    if (typeof addVmTag === 'function') addVmTag(ns || 'default', name, arg);
+    toast('Tagged ' + name + ' → ' + arg, 'success');
+    filterVMs();
+    return;
+  }
+  if (cmd === 'note') {
+    if (!name) { toast(':note — select a VM first', 'error'); return; }
+    if (arg) {
+      if (typeof setVmNote === 'function') setVmNote(ns || 'default', name, arg);
+      toast('Note set on ' + name, 'success');
+      filterVMs();
+    } else {
+      if (typeof openVmNoteEditor === 'function') openVmNoteEditor(ns || 'default', name);
+    }
+    return;
+  }
+  if (cmd === 'diff') { if (typeof fleetDiffAction === 'function') fleetDiffAction(); return; }
+  if (cmd === 'theme') {
+    if (arg && typeof applyTheme === 'function') { applyTheme(arg, true); toast('Theme → ' + arg, 'success'); }
+    else { toast('Themes: ' + (typeof THEME_PRESETS !== 'undefined' ? THEME_PRESETS.map(function(t){return t.id;}).join(', ') : '(list unavailable)'), 'info', 5000); }
+    return;
+  }
+  if (cmd === 'age') { if (typeof toggleVmAgeHeat === 'function') toggleVmAgeHeat(); return; }
   toast('Unknown: :' + cmd + ' — try :help', 'error');
 }
 // ───────────────────────────────────────────────────────────────────────────
