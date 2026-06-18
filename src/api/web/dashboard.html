@@ -4025,7 +4025,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div id="cost-forecast" style="padding:12px"></div>
     </div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span><input type="search" id="costs-search" class="form-input" placeholder="Filter by VM or namespace…" oninput="filterCostsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()" title="Export VM costs as CSV">↓ CSV</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span><span id="costs-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="costs-search" class="form-input" placeholder="Filter by VM or namespace…" oninput="filterCostsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()" title="Export VM costs as CSV">↓ CSV</button></div>
   <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th><th>Trend</th><th>Recommendation</th></tr></thead><tbody id="costs-body"></tbody></table>
   </div>
 
@@ -4240,7 +4240,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNotificationsCsv()" title="Export notifications as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><span id="notif-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
   <table class="table"><thead><tr><th>Title</th><th>Severity</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifications-body"></tbody></table>
   </div>
 </div>
@@ -4260,7 +4260,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportOperatorsCsv()" title="Export operators as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchOperators()">&#8635; Refresh</button></div></div>
     <div id="operators-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span><input type="search" id="operators-search" class="form-input" placeholder="Filter operators…" oninput="filterOperatorsView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span><span id="operators-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="operators-search" class="form-input" placeholder="Filter operators…" oninput="filterOperatorsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
   </div>
 </div>
@@ -4270,7 +4270,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Custom Resources</h1><p>Installed CRDs and live instance counts</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCustomResources()">&#8635; Refresh</button></div></div>
     <div id="custom-resources-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCustomResourcesCsv()" title="Export CRDs as CSV">&#8595; CSV</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Custom Resources</span><span id="custom-resources-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="custom-resources-search" class="form-input" placeholder="Filter by name, group, kind…" oninput="filterCustomResourcesView(this.value)" style="width:220px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCustomResourcesCsv()" title="Export CRDs as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Group</th><th>Version</th><th>Kind</th><th>Scope</th><th>Instances</th></tr></thead><tbody id="custom-resources-body"></tbody></table>
   </div>
 </div>
@@ -4303,7 +4303,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportChaosCsv()" title="Export experiments as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchChaos()">&#8635; Refresh</button></div></div>
     <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span><input type="search" id="chaos-search" class="form-input" placeholder="Filter experiments…" oninput="filterChaosView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span><span id="chaos-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="chaos-search" class="form-input" placeholder="Filter experiments…" oninput="filterChaosView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
   </div>
 </div>
@@ -4332,7 +4332,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Quota Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('quota-advisor-card')">Dismiss</button></div>
     <div id="quota-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Resource Quotas</span><input type="search" id="quotas-search" class="form-input" placeholder="Filter quotas…" oninput="filterQuotasView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Resource Quotas</span><span id="quotas-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="quotas-search" class="form-input" placeholder="Filter quotas…" oninput="filterQuotasView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>CPU Used / Limit</th><th>Memory Used / Limit</th><th>VMs</th></tr></thead><tbody id="quotas-body"></tbody></table></div>
 </div>
 </div>
@@ -4364,7 +4364,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="card-header"><span class="card-title">Veyron Backup Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('backup-advisor-card')">Dismiss</button></div>
     <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><span id="backups-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Velero (cluster)</span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroBackupsCsv()" title="Export Velero backups as CSV" style="margin-left:8px">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:4px">&#8635; Refresh</button></div>
@@ -10839,6 +10839,8 @@ function filterNotificationsView(query) {
            (n.message || '').toLowerCase().includes(q) ||
            (n.severity || '').toLowerCase().includes(q);
   }) : items;
+  const notifCountEl = document.getElementById('notif-filter-count');
+  if (notifCountEl) notifCountEl.textContent = filtered.length === items.length ? items.length + ' notifications' : filtered.length + ' of ' + items.length + ' notifications';
   tb.innerHTML = filtered.map(function(n) {
     const sevCls = glassTableBadge(n.severity);
     return '<tr class="' + (n.read ? '' : 'notif-unread') + '"><td>' + esc(n.title) + '</td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
@@ -10854,6 +10856,8 @@ function filterCostsView(query) {
     return (c.vm_name || '').toLowerCase().includes(q) ||
            (c.namespace || '').toLowerCase().includes(q);
   }) : costs;
+  const costsCountEl = document.getElementById('costs-filter-count');
+  if (costsCountEl) costsCountEl.textContent = filtered.length === costs.length ? costs.length + ' VMs' : filtered.length + ' of ' + costs.length + ' VMs';
   tb.innerHTML = filtered.map(function(c) {
     const cpu = Number(c.cpu_cost) || 0;
     const mem = Number(c.memory_cost) || 0;
@@ -11173,6 +11177,8 @@ function filterChaosView(query) {
            (c.target || '').toLowerCase().includes(q) ||
            (c.status || '').toLowerCase().includes(q);
   }) : items;
+  const chaosCountEl = document.getElementById('chaos-filter-count');
+  if (chaosCountEl) chaosCountEl.textContent = filtered.length === items.length ? items.length + ' experiments' : filtered.length + ' of ' + items.length + ' experiments';
   tb.innerHTML = filtered.map(function(c) {
     return '<tr><td class="vmr-copy-tile" title="Copy experiment name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.name) + ')') + '>' + esc(c.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td><span class="glass-badge ' + glassTableBadge(c.status) + '">' + esc(c.status) + '</span></td><td>' + esc(c.duration) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
@@ -11216,6 +11222,8 @@ function filterQuotasView(query) {
     return (qo.name || '').toLowerCase().includes(q) ||
            (qo.namespace || '').toLowerCase().includes(q);
   }) : items;
+  const quotasCountEl = document.getElementById('quotas-filter-count');
+  if (quotasCountEl) quotasCountEl.textContent = filtered.length === items.length ? items.length + ' quotas' : filtered.length + ' of ' + items.length + ' quotas';
   tb.innerHTML = filtered.map(function(qo) {
     return '<tr><td class="vmr-copy-tile" title="Copy quota name" ' + onStopHandler('copyToClipboard(' + jsArgs(qo.name) + ')') + '>' + esc(qo.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(qo.namespace) + '</td><td>' + esc(qo.cpu_used || '0') + ' / ' + esc(qo.cpu_limit || '-') + '</td><td>' + esc(qo.memory_used || '0') + ' / ' + esc(qo.memory_limit || '-') + '</td><td>' + qo.vm_count + (qo.vm_limit ? ' / ' + qo.vm_limit : '') + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching quotas</td></tr>';
@@ -11395,6 +11403,8 @@ function filterOperatorsView(query) {
            (o.status || '').toLowerCase().includes(q) ||
            ((o.managed_resources || []).join(' ')).toLowerCase().includes(q);
   }) : items;
+  const operatorsCountEl = document.getElementById('operators-filter-count');
+  if (operatorsCountEl) operatorsCountEl.textContent = filtered.length === items.length ? items.length + ' operators' : filtered.length + ' of ' + items.length + ' operators';
   tb.innerHTML = filtered.map(function(o) {
     return '<tr><td class="vmr-copy-tile" title="Copy operator name" ' + onStopHandler('copyToClipboard(' + jsArgs(o.name) + ')') + '>' + esc(o.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(o.namespace) + '</td><td>' + esc(o.version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(o.status) + '">' + esc(o.status) + '</span></td><td>' + esc((o.managed_resources || []).join(', ') || '-') + '</td><td>' + fmtTime(o.installed_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching operators</td></tr>';
@@ -11411,6 +11421,8 @@ function filterCustomResourcesView(query) {
            (cr.kind || '').toLowerCase().includes(q) ||
            (cr.scope || '').toLowerCase().includes(q);
   }) : items;
+  const crCountEl = document.getElementById('custom-resources-filter-count');
+  if (crCountEl) crCountEl.textContent = filtered.length === items.length ? items.length + ' CRDs' : filtered.length + ' of ' + items.length + ' CRDs';
   tb.innerHTML = filtered.map(function(cr) {
     return '<tr><td class="vmr-copy-tile" title="Copy CRD name" ' + onStopHandler('copyToClipboard(' + jsArgs(cr.name) + ')') + '>' + esc(cr.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(cr.group) + '</td><td>' + esc(cr.version) + '</td><td>' + esc(cr.kind) + '</td><td>' + esc(cr.scope) + '</td><td>' + cr.instance_count + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching resources</td></tr>';
@@ -11428,6 +11440,8 @@ function filterBackupsView(query) {
            (b.status || '').toLowerCase().includes(q) ||
            (b.backup_type || '').toLowerCase().includes(q);
   }) : items;
+  const backupsCountEl = document.getElementById('backups-filter-count');
+  if (backupsCountEl) backupsCountEl.textContent = filtered.length === items.length ? items.length + ' backups' : filtered.length + ' of ' + items.length + ' backups';
   tb.innerHTML = filtered.map(function(b) {
     return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td><span class="glass-badge ' + glassTableBadge(b.status) + '">' + esc(b.status) + '</span></td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching backups</td></tr>';
