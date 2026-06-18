@@ -2784,3 +2784,17 @@ html[data-theme="light"] .vmr-chip.vmr-chip-active {
   font-weight: 400;
 }
 .vmr-copy-tile:hover .vmr-copy-hint { opacity: 1; }
+
+/* ── VM list compact density ─────────────────────────────────────────── */
+#vm-full-list.vmr-compact-rows .vm-row {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  min-height: 0;
+}
+#vm-full-list.vmr-compact-rows .vm-ssh-line,
+#vm-full-list.vmr-compact-rows .ssh-option-block {
+  display: none;
+}
+#vm-full-list.vmr-compact-rows .vm-meta {
+  font-size: .74rem;
+}

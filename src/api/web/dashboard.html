@@ -3712,6 +3712,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" data-view="cards" class="active" onclick="setVmrFleetView('cards')">Cards</button>
       <button type="button" data-view="table" onclick="setVmrFleetView('table')">Table</button>
       <button type="button" data-view="topology" onclick="setVmrFleetView('topology')">Topology</button>
+      <button type="button" id="vm-density-btn" title="Toggle compact density" onclick="toggleVmDensity()" style="margin-left:4px;font-size:.85rem;padding:4px 8px">⇕</button>
     </div>
     <span id="vm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
     <button type="button" class="btn-create glass-btn-primary glass-btn-sm" onclick="openCreateModal()">+ Forge VM</button>
@@ -8501,6 +8502,11 @@ function showVmContextMenu(x, y, ns, name) {
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
     html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(vm.ip) + ')">Copy IP</button>';
+    const sshUser = guessSshUser(name);
+    if (sshUser && running) {
+      const sshCmd = 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ' + sshUser + '@' + vm.ip;
+      html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(sshCmd) + ')">Copy SSH Command</button>';
+    }
   }
   menu.innerHTML = html;
   menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
@@ -10971,6 +10977,25 @@ document.getElementById('copilot-input').addEventListener('keydown', e => {
     runCopilotAsk();
   }
 });
+// Connect modal: V=VNC, S=SSH, R=RDP keyboard shortcuts
+document.getElementById('connect-modal').addEventListener('keydown', function(e) {
+  const modal = this;
+  if (!modal.classList.contains('open')) return;
+  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea') return;
+  const keyMap = { v: 'vnc', s: 'ssh', r: 'rdp', c: 'serial' };
+  const proto = keyMap[e.key.toLowerCase()];
+  if (proto) {
+    const opt = modal.querySelector('.connect-protocol-opt[data-protocol="' + proto + '"]');
+    if (opt && !opt.classList.contains('disabled')) {
+      e.preventDefault();
+      modal.querySelectorAll('.connect-protocol-opt').forEach(function(o) { o.classList.remove('selected'); });
+      opt.classList.add('selected');
+      const radio = opt.querySelector('input');
+      if (radio) radio.checked = true;
+    }
+  }
+});
 document.getElementById('fixit-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) closeFixItModal();
 });
@@ -11992,6 +12017,20 @@ function updateVmFreshness() {
 // ── Search & Filter ──
 let _filterVMsTimer = 0;
 function filterVMsDebounced() { clearTimeout(_filterVMsTimer); _filterVMsTimer = setTimeout(filterVMs, 150); }
+
+let _vmCompact = localStorage.getItem('veyron_vm_compact') === '1';
+function toggleVmDensity() {
+  _vmCompact = !_vmCompact;
+  localStorage.setItem('veyron_vm_compact', _vmCompact ? '1' : '0');
+  const list = document.getElementById('vm-full-list');
+  if (list) list.classList.toggle('vmr-compact-rows', _vmCompact);
+  const btn = document.getElementById('vm-density-btn');
+  if (btn) btn.title = _vmCompact ? 'Comfortable density' : 'Compact density';
+}
+(function() {
+  const list = document.getElementById('vm-full-list');
+  if (list && _vmCompact) list.classList.add('vmr-compact-rows');
+})();
 
 function setVmStatusFilter(btn, val) {
   const sel = document.getElementById('vm-filter-status');
