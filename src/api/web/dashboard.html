@@ -3884,7 +3884,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-pods" data-section="compute">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Pods</h1><p>Namespace workloads</p></div>
-    <div class="page-header-right" id="pod-count"></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px;align-items:center"><span id="pod-count"></span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchPods()">&#8635; Refresh</button></div></div>
     <div id="pods-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Pods</span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><button type="button" class="vmr-chip vmr-chip-active" data-podphase="all" onclick="setPodPhaseFilter('all',this)">All</button><button type="button" class="vmr-chip" data-podphase="Running" onclick="setPodPhaseFilter('Running',this)"><span class="vmr-chip-dot" style="background:#22c55e"></span>Running</button><button type="button" class="vmr-chip" data-podphase="Pending" onclick="setPodPhaseFilter('Pending',this)"><span class="vmr-chip-dot" style="background:#f59e0b"></span>Pending</button><button type="button" class="vmr-chip" data-podphase="Failed" onclick="setPodPhaseFilter('Failed',this)"><span class="vmr-chip-dot" style="background:#ef4444"></span>Failed</button><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:170px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPodsCsv()" title="Export pod list as CSV">&#8595; CSV</button></div></div>
@@ -4147,7 +4147,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="vmr-workloads-metrics"></div>
   <div id="workloads-summary" class="grid-4 page-glass-stats" style="display:none"></div>
   <div class="card glass-card vmr-workloads-table-card">
-    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span><input type="search" id="workloads-search" class="form-input" placeholder="Filter workloads…" oninput="filterWorkloadsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
+    <div class="card-header"><span class="card-title">Cluster Workloads</span><span id="vmr-workloads-count" class="vmr-workloads-count"></span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><input type="search" id="workloads-search" class="form-input" placeholder="Filter workloads…" oninput="filterWorkloadsView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchWorkloads()">&#8635;</button></div></div>
     <div id="vmr-workloads-toolbar" class="vmr-workloads-toolbar" style="padding:0 16px"></div>
     <div id="vmr-wl-tabbar" class="vmr-capsule-tabs" style="margin:0 16px 12px"></div>
     <div class="vmr-table-wrap vmr-workloads-table-wrap">
@@ -4162,7 +4162,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div></div>
+<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAlerts()">&#8635; Refresh</button></div></div>
     
     <div id="alerts-summary" class="grid-4 page-glass-stats"></div>
 <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -4245,7 +4245,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-helm" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div></div>
+  <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHelm()">&#8635; Refresh</button></div></div>
     <div id="helm-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
@@ -4255,7 +4255,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-operators" data-section="platform">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div></div>
+  <div class="page-header"><div><h1>Operators</h1><p>Detected controllers and operator deployments</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchOperators()">&#8635; Refresh</button></div></div>
     <div id="operators-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Operators</span><input type="search" id="operators-search" class="form-input" placeholder="Filter operators…" oninput="filterOperatorsView(this.value)" style="width:200px;font-size:.82rem"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Version</th><th>Status</th><th>Managed Resources</th><th>Installed</th></tr></thead><tbody id="operators-body"></tbody></table>
