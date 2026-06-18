@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta name="veyron-dashboard-rev" content="20260618x">
+<meta name="veyron-dashboard-rev" content="20260618y">
 <title>Veyron · Kubernetes VM Command Center</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
-  var DASH_REV = '20260618x';
+  var DASH_REV = '20260618y';
   var revParam = 'dash=' + DASH_REV;
   if (location.search.indexOf(revParam) === -1) {
     location.replace(location.pathname + '?' + revParam + location.hash);
@@ -4053,7 +4053,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 </div>
 
 <!-- VM COMPARISON OVERLAY -->
-<div id="vm-compare-overlay" onclick="if(event.target===this)closeVmCompare()" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px"></div>
+<div id="vm-compare-overlay" onclick="if(event.target===this)closeVmCompareOverlay()" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:16px"></div>
 
 <!-- SESSION ACTION LOG PANEL -->
 <div id="vmr-action-log-panel" class="vmr-alog-panel" style="display:none" role="dialog" aria-label="Session action log">
@@ -5898,7 +5898,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 
 <script>
 // Bump when dashboard JS changes — forces reload after deploy.
-window.__VMROGUE_DASH_REV = '20260618x';
+window.__VMROGUE_DASH_REV = '20260618y';
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -8534,12 +8534,12 @@ document.addEventListener('dragend', function() {
 
 // ── VM Comparison Modal ──
 var _vmcmpA = null, _vmcmpB = null;
-function openVmCompare(ns, name) {
+function openVmComparePicker(ns, name) {
   var allVms = window.lastVMs || vmData || [];
   _vmcmpA = allVms.find(function(v) { return v.name === name && (v.namespace || 'default') === ns; });
-  if (!_vmcmpA) { showToast('VM not found', 'error'); return; }
+  if (!_vmcmpA) { toast('VM not found', 'error'); return; }
   var others = allVms.filter(function(v) { return !(v.name === name && (v.namespace || 'default') === ns); });
-  if (!others.length) { showToast('No other VMs to compare', 'info'); return; }
+  if (!others.length) { toast('No other VMs to compare', 'info'); return; }
   var overlay = document.getElementById('vm-compare-overlay');
   if (!overlay) return;
   var optHtml = others.map(function(v) {
@@ -8547,13 +8547,13 @@ function openVmCompare(ns, name) {
   }).join('');
   overlay.innerHTML = '<div class="vmr-cmp-modal" style="max-width:440px">' +
     '<div class="vmr-cmp-header"><div class="vmr-cmp-title">Compare ' + esc(name) + ' with…</div>' +
-    '<button type="button" class="vmr-cmp-close" onclick="closeVmCompare()">×</button></div>' +
+    '<button type="button" class="vmr-cmp-close" onclick="closeVmCompareOverlay()">×</button></div>' +
     '<div class="form-group" style="margin:16px 0">' +
     '<label class="form-label">Select VM to compare</label>' +
     '<select class="form-select" id="vmcmp-target-sel" style="width:100%">' + optHtml + '</select>' +
     '</div>' +
     '<div style="display:flex;justify-content:flex-end;gap:8px">' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeVmCompare()">Cancel</button>' +
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeVmCompareOverlay()">Cancel</button>' +
     '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="_vmcmpPickAndShow()">Compare</button>' +
     '</div>' +
     '</div>';
@@ -8622,7 +8622,7 @@ function _showVmCompareModal(a, b) {
     '<div class="vmr-cmp-header">' +
       '<div class="vmr-cmp-title">VM Comparison</div>' +
       (diffCount ? '<span style="font-size:.72rem;color:var(--warn);margin-left:8px">' + diffCount + ' differences highlighted</span>' : '<span style="font-size:.72rem;color:#22c55e;margin-left:8px">✓ Identical spec</span>') +
-      '<button type="button" class="vmr-cmp-close" onclick="closeVmCompare()">×</button>' +
+      '<button type="button" class="vmr-cmp-close" onclick="closeVmCompareOverlay()">×</button>' +
     '</div>' +
     '<table style="width:100%;border-collapse:collapse"><thead><tr>' +
       '<th style="padding:6px 10px 6px 0;font-size:.7rem;color:var(--text-dim);text-align:left;font-weight:500;width:30%">Field</th>' +
@@ -8630,12 +8630,12 @@ function _showVmCompareModal(a, b) {
       '<th style="padding:6px 10px;font-size:.78rem;color:var(--accent-primary);font-weight:600;text-align:left">' + esc(b.name) + '</th>' +
     '</tr></thead><tbody>' + rows + '</tbody></table>' +
     '<div style="padding-top:10px;display:flex;justify-content:flex-end">' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeVmCompare()">Close</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeVmCompareOverlay()">Close</button>' +
     '</div>' +
   '</div>';
   overlay.style.display = 'flex';
 }
-function closeVmCompare() {
+function closeVmCompareOverlay() {
   var overlay = document.getElementById('vm-compare-overlay');
   if (overlay) overlay.style.display = 'none';
 }
@@ -9305,7 +9305,7 @@ function showVmGlassCtxMenu(e, ns, name) {
   }
   html += '<div class="vmr-ctx-sep"></div>';
   html += item('◉', 'Snapshot',             'vmSnapshot(' + jsArgs(ns, name) + ')');
-  html += item('⧉', 'Compare with…',        'openVmCompare(' + jsArgs(ns, name) + ')');
+  html += item('⧉', 'Compare with…',        'openVmComparePicker(' + jsArgs(ns, name) + ')');
   html += item('🏷', 'Edit tags',            'openVmTagEditor(' + jsArgs(ns, name) + ')');
   html += item('📝', 'Edit note',            'openVmNoteEditor(' + jsArgs(ns, name) + ')');
   html += '<div class="vmr-ctx-sep"></div>';
@@ -10458,7 +10458,7 @@ function showVmContextMenu(x, y, ns, name) {
   var pinned = isFleetPinned(ns, name);
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();toggleFleetPin(' + jsArgs(ns, name) + ')">' + (pinned ? '📌 Unpin VM' : '📌 Pin VM') + '</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmTagEditor(' + jsArgs(ns, name) + ')">🏷 Edit Tags…</button>';
-  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmCompare(' + jsArgs(ns, name) + ')">⇄ Compare with…</button>';
+  html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmComparePicker(' + jsArgs(ns, name) + ')">⇄ Compare with…</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();openVmNoteEditor(' + jsArgs(ns, name) + ')">📝 ' + (getVmNote(ns, name) ? 'Edit Note…' : 'Add Note…') + '</button>';
   html += '<button type="button" class="mac-context-item" onclick="hideVmContextMenu();copyToClipboard(' + jsArgs(name) + ')">Copy Name</button>';
   if (vm.ip && vm.ip !== 'N/A') {
@@ -10818,7 +10818,7 @@ function openFleetDiffModal(base) {
     '<span style="font-size:.72rem;color:var(--text-muted);margin-left:8px">vs baseline saved ' + esc(agoStr) + '</span>' +
     '<div style="display:flex;gap:6px;margin-left:auto">' +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="saveFleetBaseline()" title="Update baseline to current state">↺ Update baseline</button>' +
-    '<button type="button" class="vmr-cmp-close" onclick="closeVmCompare()">×</button></div></div>';
+    '<button type="button" class="vmr-cmp-close" onclick="closeVmCompareOverlay()">×</button></div></div>';
   function section(title, rows) {
     if (!rows.length) return '';
     return '<div style="margin:10px 0 4px;font-size:.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">' + title + ' (' + rows.length + ')</div>' + rows.join('');
@@ -15462,7 +15462,7 @@ document.addEventListener('keydown', e => {
     closeCreateModal(); closeSnapModal(); closeResizeModal(); closeCloneModal(); closeGlassConfirm(); closeGlassPrompt(); closeConnectModal(); closeSshPopover();
     closePlatformInstallModal(); closeAboutModal(); closeSpotlight(); closeFixItModal(); closeDockEditor(); closeRdpSheet(false); closeMacPreferences();
     closeCopilot(); closeGitOpsExportModal(); closeImageImportModal(); closeCrdCreateModal(); closeScheduleModal();
-    closeVmFocusOverlay(); closeQuickForge(); if (typeof closeVmCompare === 'function') closeVmCompare();
+    closeVmFocusOverlay(); closeQuickForge(); closeVmCompareOverlay(); if (typeof closeVmCompare === 'function') closeVmCompare();
     if (typeof closePodLogsVmr === 'function') closePodLogsVmr();
     if (typeof closeForgeWizard === 'function') closeForgeWizard();
     closeDockEditor(); closeMacMenus(); closeMissionControlOverlay(); closeLaunchpad();
@@ -15492,7 +15492,7 @@ document.getElementById('copilot-input').addEventListener('keydown', e => {
   }
 });
 // Connect modal: V=VNC, S=SSH, R=RDP keyboard shortcuts
-document.getElementById('connect-modal').addEventListener('keydown', function(e) {
+document.getElementById('connect-modal')?.addEventListener('keydown', function(e) {
   const modal = this;
   if (!modal.classList.contains('open')) return;
   const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
