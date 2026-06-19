@@ -5,8 +5,9 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Query, State},
-    routing::get,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    routing::{get, patch},
 };
 use serde::{Deserialize, Serialize};
 
@@ -61,11 +62,18 @@ pub struct StorageUsage {
     pub bound_to_vm: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "web", derive(Default))]
+pub struct PvcResizeRequest {
+    pub new_size: String,
+}
+
 #[cfg(feature = "web")]
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/storage/pools", get(list_storage_pools))
         .route("/storage/usage", get(get_storage_usage))
+        .route("/storage/pvcs/:ns/:name", patch(resize_pvc))
         .with_state(state)
 }
 
@@ -279,4 +287,39 @@ async fn get_storage_usage(
         prometheus_query_url: prom_url,
         usage: results,
     })
+}
+
+#[cfg(feature = "web")]
+async fn resize_pvc(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+    Json(req): Json<PvcResizeRequest>,
+) -> (StatusCode, Json<serde_json::Value>) {
+    use k8s_openapi::api::core::v1::PersistentVolumeClaim;
+    use kube::api::{Api, Patch, PatchParams};
+
+    if req.new_size.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "new_size is required" })),
+        );
+    }
+    let client = { let s = state.read().await; s.kube_client.client() };
+    let api: Api<PersistentVolumeClaim> = Api::namespaced(client, &ns);
+    let patch = serde_json::json!({
+        "spec": { "resources": { "requests": { "storage": req.new_size } } }
+    });
+    match api
+        .patch(&name, &PatchParams::default(), &Patch::Merge(patch))
+        .await
+    {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!({ "status": "resized", "pvc": name, "namespace": ns, "new_size": req.new_size })),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": e.to_string() })),
+        ),
+    }
 }

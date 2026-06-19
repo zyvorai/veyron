@@ -6,6 +6,8 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="veyron-dashboard-rev" content="20260619d">
 <title>Veyron · Kubernetes VM Command Center</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23ff8a3d'/%3E%3Cstop offset='1' stop-color='%23f0583a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='8' y1='8' x2='56' y2='56' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0' stop-color='%23ff8a3d'/%3E%3Cstop offset='1' stop-color='%23f0583a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23bg)'/%3E%3Cpath d='M19 18h26v7L29 40h16v7H19v-7l16-15H19z' fill='%23fff'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Sora:wght@500;600;700;800&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <script>
 (function(){
@@ -1390,7 +1392,7 @@ body.vm-focus-active .vm-workspace{grid-template-columns:1fr}
 body.vm-focus-active .vm-focus-back{display:inline-flex!important}
 @media(min-width:1025px){body.vm-focus-active .vm-list-pane{display:flex}body.vm-focus-active .vm-focus-back{display:none!important}}
 .mac-app-menu{display:inline-flex;align-items:center;gap:7px;padding:4px 10px 4px 6px;font-weight:700;letter-spacing:-.02em}
-.veyron-logo-svg{flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(249,115,22,.28))}
+.veyron-logo-svg{flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(240,88,58,.35))}
 .veyron-menu-wordmark{
   font-family:var(--font-display);font-size:.82rem;font-weight:800;letter-spacing:-.03em;
   background:linear-gradient(135deg,#f8fafc 0%,#e2e8f0 42%,#94a3b8 100%);
@@ -2468,7 +2470,8 @@ body.mac-desktop-root .cloudos-main{padding-bottom:120px}
   border-color:rgba(245,158,11,.35);transform:translateY(-2px);
   box-shadow:0 10px 28px rgba(245,158,11,.1);
 }
-.app-store-icon{font-size:1.6rem;margin-bottom:8px}
+.app-store-icon{width:52px;height:52px;margin-bottom:10px;border-radius:12px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.6rem}
+.app-store-icon svg{width:52px;height:52px;display:block}
 .app-store-title{font-weight:600;font-size:.95rem}
 .app-store-sub{font-size:.78rem;color:var(--text-dim);margin:6px 0 10px;line-height:1.45}
 .vm-health-pill{
@@ -3172,12 +3175,13 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
 .launchpad-app:hover .launchpad-icon{transform:scale(1.08) translateY(-2px);box-shadow:var(--glass-shadow),0 12px 28px rgba(63,124,255,.18)}
 .launchpad-icon{
   width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;
-  font-size:1.75rem;
+  font-size:1.75rem;overflow:hidden;
   background:linear-gradient(165deg,var(--glass-bg-elevated),rgba(15,23,42,.45));
   border:1px solid var(--glass-border-strong);
   box-shadow:var(--glass-shadow),inset 0 1px 0 rgba(255,255,255,.08);
   transition:transform .2s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;
 }
+.launchpad-icon svg{width:48px;height:48px;display:block;flex-shrink:0}
 .launchpad-label{font-size:.72rem;text-align:center;color:var(--text-muted);max-width:90px;line-height:1.3}
 .launchpad-app.launchpad-app-focus{outline:2px solid rgba(245,158,11,.55);outline-offset:4px}
 .mac-context-menu{
@@ -3373,11 +3377,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="mac-menubar-menus">
       <div class="mac-menu-wrap">
         <button type="button" class="mac-menu-trigger mac-app-menu" id="mac-menu-zeusos-btn" onclick="toggleMacMenu('zeusos')" aria-haspopup="true" aria-expanded="false" aria-label="Veyron menu">
-          <svg class="veyron-logo-svg" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true" focusable="false">
-            <defs><linearGradient id="vrg-mark" x1="4" y1="4" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#fdba74"/><stop offset=".45" stop-color="#f97316"/><stop offset="1" stop-color="#38bdf8"/></linearGradient></defs>
-            <rect width="32" height="32" rx="7" fill="#121820"/>
-            <path d="M7 23h18" stroke="url(#vrg-mark)" stroke-width="2.2" stroke-linecap="round"/>
-            <path d="M9 22L16 9l7 13h-3.2L16 14.5 12.2 22H9z" fill="url(#vrg-mark)"/>
+          <svg class="veyron-logo-svg" viewBox="0 0 64 64" width="22" height="22" aria-hidden="true" focusable="false">
+            <defs><linearGradient id="zyvor-mg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#f0583a"/></linearGradient></defs>
+            <rect width="64" height="64" rx="14" fill="url(#zyvor-mg)"/>
+            <path d="M19 18h26v7L29 40h16v7H19v-7l16-15H19z" fill="#fff"/>
           </svg>
           <span class="veyron-menu-wordmark">Veyron</span>
         </button>
@@ -3733,7 +3736,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="finder-section" id="finder-sec-ai" data-finder-section="ai">
     <div class="finder-section-label">Ask Zeus</div>
     <div class="finder-section-body" id="finder-ai">
-      <button type="button" class="cloudos-finder-item" onclick="openAskZeus()"><span class="fi-icon"><i data-lucide="sparkles"></i></span>Ask Zeus</button>
+      <button type="button" class="cloudos-finder-item" data-page="ask-zeus" onclick="finderNavigate('ask-zeus')"><span class="fi-icon"><i data-lucide="sparkles"></i></span>Ask Zeus</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Show all unhealthy VMs')"><span class="fi-icon"><i data-lucide="heart-pulse"></i></span>Unhealthy VMs</button>
       <button type="button" class="cloudos-finder-item" onclick="finderBackupAdvisor()"><span class="fi-icon"><i data-lucide="archive"></i></span>Backup Advisor</button>
       <button type="button" class="cloudos-finder-item" onclick="finderRunCopilotQuick('Which PVCs are almost full?')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span>Storage Doctor</button>
@@ -5164,7 +5167,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="page section-shell" id="page-gitops" data-section="platform">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>GitOps</h1><p>Repository sync status and drift visibility</p></div>
-    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchGitOps()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div></div>
+    <div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchGitOps()">&#8635; Refresh</button><button type="button" id="gitops-sync-btn" class="glass-btn-primary glass-btn-sm" onclick="triggerGitOpsSync()">⟳ Sync</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runGitOpsAdvisor()">GitOps Advisor</button></div></div>
     <div id="gitops-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
     <div class="card-header"><span class="card-title">Veyron GitOps Advisor</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dismissAdvisorCard('gitops-advisor-card')">Dismiss</button></div>
     <div id="gitops-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
@@ -5172,6 +5175,28 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div id="gitops-cap-banner"></div>
   <div id="gitops-summary" class="grid-4 page-glass-stats"></div>
   <div id="gitops-drift-panel"></div>
+</div>
+</div>
+
+<div class="page section-shell" id="page-ask-zeus" data-section="ai">
+<div class="space-y animate-fade-in">
+  <div class="page-header"><div><h1>Ask Zeus</h1><p>AI fleet intelligence — VMs, storage, security, costs, and more</p></div>
+    <div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azNewChat()">New chat</button></div></div>
+  <div class="card glass-card" style="max-width:860px">
+    <div id="az-thread" class="copilot-thread" style="min-height:280px;max-height:460px;overflow-y:auto;padding:16px"></div>
+    <div style="padding:12px 16px;border-top:1px solid var(--glass-border);display:flex;flex-direction:column;gap:8px">
+      <textarea class="form-input" id="az-input" rows="2" placeholder="Ask Zeus… fleet health, VMs, storage, security" style="width:100%;font-size:.9rem" onkeydown="if((event.metaKey||event.ctrlKey)&&event.key==='Enter'){event.preventDefault();azSend();}"></textarea>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button type="button" class="glass-btn-primary glass-btn-sm" onclick="azSend()">Send</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Show all unhealthy VMs')">Unhealthy VMs</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Which VMs have no backups?')">Backups</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Which PVCs are almost full?')">Storage</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Node capacity and pressure')">Nodes</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Security review for production VMs')">Security</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="azChip('Which VMs are most expensive?')">Costs</button>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -6123,6 +6148,10 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
       <div class="mac-sheet-title" id="about-modal-title">About Veyron</div>
     </div>
     <div class="modal-body" style="font-size:.88rem;line-height:1.55;color:var(--text-muted)">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--glass-border)">
+        <svg viewBox="0 0 64 64" width="56" height="56" style="flex-shrink:0;border-radius:14px;box-shadow:0 4px 18px rgba(240,88,58,.35)"><defs><linearGradient id="zav-about" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ff8a3d"/><stop offset="1" stop-color="#f0583a"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#zav-about)"/><path d="M19 18h26v7L29 40h16v7H19v-7l16-15H19z" fill="#fff"/></svg>
+        <div><div style="font-size:1.15rem;font-weight:700;color:var(--text);line-height:1.1">Veyron</div><div style="font-size:.78rem;color:var(--text-dim);margin-top:3px">by Zyvor · Kubernetes VM Command Center</div></div>
+      </div>
       <p style="margin:0 0 12px"><strong>Veyron</strong> by Zyvor — Kubernetes-native VM command center. KubeVirt fleet operations, templates, consoles, snapshots, security, and automation on Kubernetes.</p>
       <p style="margin:0 0 16px">Visit <a href="https://zyvor.dev" target="_blank" rel="noopener noreferrer" style="color:#f97316;font-weight:600;text-decoration:none">zyvor.dev</a> for documentation, product guides, and support.</p>
       <div id="about-version-row" style="display:none;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:rgba(0,0,0,.12);margin-bottom:16px">
@@ -7057,6 +7086,7 @@ function loadPageData(page, opts) {
     if (typeof fetchStackHealth === 'function') fetchStackHealth();
     else renderComingSoon('vmr-stack-hero', 'Stack Health', 'KubeVirt, CDI, and operator health diagnostics — rolling out soon.', '⬡');
   }
+  if (page === 'ask-zeus') loadAskZeusPage();
   if (page === 'settings') {
     if (typeof renderSettingsVmr === 'function') renderSettingsVmr();
   }
@@ -8431,7 +8461,7 @@ async function openLaunchpad() {
     ];
     templates.slice(0, 24).forEach(t => {
       launchpadApps.push({
-        icon: '⬡',
+        icon: distroSvg(t.id || t.title),
         label: t.title || t.id,
         action: () => { closeLaunchpad(); forgeFromTemplate(t.id); },
       });
@@ -8441,7 +8471,7 @@ async function openLaunchpad() {
     if (search) { search.value = ''; setTimeout(() => search.focus(), 80); }
     grid.innerHTML = launchpadApps.map((a, i) =>
       '<button type="button" class="launchpad-app" data-lp-idx="' + i + '">' +
-      '<span class="launchpad-icon">' + esc(a.icon) + '</span><span class="launchpad-label">' + esc(a.label) + '</span></button>'
+      '<span class="launchpad-icon">' + (a.icon && a.icon.startsWith('<svg') ? a.icon : esc(a.icon)) + '</span><span class="launchpad-label">' + esc(a.label) + '</span></button>'
     ).join('');
     grid.querySelectorAll('.launchpad-app').forEach((btn, i) => {
       btn.addEventListener('click', () => { launchpadFocusIdx = i; if (launchpadApps[i] && launchpadApps[i].action) launchpadApps[i].action(); });
@@ -10696,6 +10726,57 @@ function vmHealthPill(vm) {
 
 let appStoreCache = [];
 
+function distroSvg(name) {
+  const n = (name || '').toLowerCase();
+  // Ubuntu
+  if (n.includes('ubuntu'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#E95420"/><circle cx="20" cy="7.5" r="3.8" fill="white"/><circle cx="9" cy="26.5" r="3.8" fill="white"/><circle cx="31" cy="26.5" r="3.8" fill="white"/><circle cx="20" cy="20" r="9" fill="none" stroke="white" stroke-width="2.5"/><line x1="20" y1="11.3" x2="20" y2="13.2" stroke="white" stroke-width="2.2"/><line x1="11.7" y1="22.5" x2="13.3" y2="23.5" stroke="white" stroke-width="2.2"/><line x1="28.3" y1="22.5" x2="26.7" y2="23.5" stroke="white" stroke-width="2.2"/></svg>';
+  // Debian
+  if (n.includes('debian'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#D70A53"/><path d="M20 5C12.3 5 6 11.3 6 19c0 6.4 4.2 11.9 10 13.7C14 30.5 13 27.9 13 25c0-6.1 4.7-11 10.5-11 1 0 2 .1 2.9.4C24.5 10.4 21.4 9 18 9" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round"/><path d="M20 35c7.7 0 14-6.3 14-14 0-4.1-1.8-7.8-4.6-10.4C31.1 13 32 16 32 19c0 6.1-4.7 11-10.5 11-.8 0-1.6-.1-2.3-.2C21.2 31.6 23 33 25 34" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" opacity=".75"/></svg>';
+  // Fedora
+  if (n.includes('fedora'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#294172"/><circle cx="22" cy="20" r="10" fill="none" stroke="#60A8DC" stroke-width="3"/><path d="M22 10 L22 20 L32 20" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 20 L22 30" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"/><circle cx="22" cy="10" r="3.5" fill="#60A8DC"/></svg>';
+  // CentOS
+  if (n.includes('centos'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#1A1A2E"/><polygon points="20,20 6,6 6,20" fill="#932279"/><polygon points="20,20 34,6 20,6" fill="#EDA729"/><polygon points="20,20 34,34 34,20" fill="#004358"/><polygon points="20,20 6,34 20,34" fill="#6D9E31"/><rect x="16" y="16" width="8" height="8" rx="2" fill="#1A1A2E"/></svg>';
+  // AlmaLinux
+  if (n.includes('alma'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#1C3F5E"/><path d="M20 6 L8 28 L14 28 L20 16 L26 28 L32 28 Z" fill="#00A3E0" opacity=".9"/><path d="M20 14 L12 28 L28 28 Z" fill="#1C3F5E"/><path d="M20 18 L15 28 L25 28 Z" fill="#00A3E0" opacity=".6"/></svg>';
+  // Rocky Linux
+  if (n.includes('rocky'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#10B981"/><path d="M8 30 L20 10 L32 30 Z" fill="white" opacity=".9"/><path d="M13 30 L20 17 L27 30 Z" fill="#10B981"/><path d="M16 30 L20 23 L24 30 Z" fill="white" opacity=".6"/></svg>';
+  // RHEL / Red Hat
+  if (n.includes('rhel') || n.includes('red-hat') || n.includes('redhat'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#EE0000"/><ellipse cx="20" cy="14" rx="12" ry="7" fill="#CC0000"/><ellipse cx="20" cy="13" rx="12" ry="7" fill="#FF5555"/><ellipse cx="20" cy="12" rx="8" ry="4.5" fill="#EE0000"/><path d="M10 20 Q10 29 20 31 Q30 29 30 20" fill="#CC0000"/><ellipse cx="20" cy="19.5" rx="12" ry="1.5" fill="#CC0000"/></svg>';
+  // Alpine
+  if (n.includes('alpine'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#0D597F"/><polygon points="20,7 5,33 35,33" fill="none" stroke="white" stroke-width="2.5"/><polygon points="20,14 10,33 30,33" fill="white" opacity=".35"/><line x1="20" y1="7" x2="20" y2="33" stroke="white" stroke-width="0.8" opacity=".5"/></svg>';
+  // Arch
+  if (n.includes('arch'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#1793D1"/><path d="M20 4 L33 34 L29 34 L20 12 L11 34 L7 34 Z" fill="white"/><path d="M14.5 26 L25.5 26 L24 30 L16 30 Z" fill="#1793D1"/></svg>';
+  // openSUSE
+  if (n.includes('suse') || n.includes('opensuse'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#73BA25"/><circle cx="20" cy="20" r="12" fill="none" stroke="white" stroke-width="3"/><path d="M20 14 C24 14 28 16 28 20 C28 24 24 26 20 26" stroke="white" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="14" cy="20" r="2.5" fill="white"/></svg>';
+  // Oracle
+  if (n.includes('oracle'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#C74634"/><path d="M20 9 C12.3 9 6 13.9 6 20 C6 26.1 12.3 31 20 31 C27.7 31 34 26.1 34 20 C34 13.9 27.7 9 20 9Z M20 14 C25.5 14 30 16.7 30 20 C30 23.3 25.5 26 20 26 C14.5 26 10 23.3 10 20 C10 16.7 14.5 14 20 14Z" fill="white"/></svg>';
+  // Windows
+  if (n.includes('windows') || n.includes('win'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#0078D4"/><rect x="7" y="7" width="11" height="11" rx="1" fill="white"/><rect x="22" y="7" width="11" height="11" rx="1" fill="white"/><rect x="7" y="22" width="11" height="11" rx="1" fill="white"/><rect x="22" y="22" width="11" height="11" rx="1" fill="white"/></svg>';
+  // Talos
+  if (n.includes('talos'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#FF8D00"/><polygon points="20,6 34,34 6,34" fill="white" opacity=".9"/><polygon points="20,14 28,34 12,34" fill="#FF8D00"/></svg>';
+  // Flatcar
+  if (n.includes('flatcar'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#003366"/><rect x="7" y="11" width="26" height="5" rx="2.5" fill="white" opacity=".9"/><rect x="7" y="20" width="20" height="5" rx="2.5" fill="white" opacity=".7"/><rect x="7" y="29" width="14" height="5" rx="2.5" fill="white" opacity=".5"/></svg>';
+  // FreeBSD
+  if (n.includes('freebsd') || n.includes('bsd'))
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#AB2B28"/><circle cx="20" cy="16" r="7" fill="none" stroke="white" stroke-width="2.5"/><path d="M13 9 Q7 16 13 23" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M27 9 Q33 16 27 23" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M16 28 L14 36" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M24 28 L26 36" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>';
+  // Linux / generic
+  return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#334155"/><circle cx="20" cy="15" r="6" fill="white" opacity=".9"/><ellipse cx="20" cy="28" rx="9" ry="5" fill="white" opacity=".7"/><line x1="14" y1="34" x2="16" y2="28" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".7"/><line x1="26" y1="34" x2="24" y2="28" stroke="white" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>';
+}
+
 async function fetchAppStore(opts) {
   try {
     let data = null;
@@ -10733,14 +10814,12 @@ async function fetchAppStore(opts) {
     }
     const grid = document.getElementById('app-store-grid');
     if (!grid) return;
-    const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
     grid.innerHTML = appStoreCache.map(t => {
-      const em = icon[t.os_family] || '◫';
       return '<div class="app-store-card" ' + onHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>' +
-        '<div class="app-store-icon">' + em + '</div>' +
+        '<div class="app-store-icon">' + distroSvg(t.id || t.title) + '</div>' +
         '<div class="app-store-title">' + esc(t.title) + '</div>' +
         '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
+        '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button>' +
       '</div>';
     }).join('') || '<div class="empty-state"><p>No templates in store</p></div>';
   } catch (e) {
@@ -12102,14 +12181,12 @@ function filterFoundryByFamily(btn, family) {
   if (!grid) return;
   const templates = window.appStoreCache || [];
   const filtered = family ? templates.filter(function(t) { return (t.os_family || '').toLowerCase() === family.toLowerCase(); }) : templates;
-  const icon = { windows: '🪟', ubuntu: '🐧', debian: '🐧', fedora: '🎩', linux: '🐧' };
   grid.innerHTML = filtered.map(function(t) {
-    const em = icon[t.os_family] || '◫';
     return '<div class="app-store-card" ' + onHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>' +
-      '<div class="app-store-icon">' + em + '</div>' +
+      '<div class="app-store-icon">' + distroSvg(t.id || t.title) + '</div>' +
       '<div class="app-store-title">' + esc(t.title) + '</div>' +
       '<div class="app-store-sub">' + esc(t.subtitle) + '</div>' +
-      '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Get</button>' +
+      '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('forgeFromTemplate(' + jsArgs(t.id) + ')') + '>Forge VM</button>' +
       '</div>';
   }).join('') || '<div class="empty-state"><p>No ' + esc(family || '') + ' templates</p></div>';
 }
@@ -18741,7 +18818,8 @@ function filterPvcsView(query) {
     }
     return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy PVC name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span>' +
       '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
-      '</div><div class="snap-status"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span></div></div>';
+      '</div><div class="snap-status" style="display:flex;align-items:center;gap:6px"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" ' + onStopHandler('resizePvc(' + jsArgs(p.namespace || 'default', p.name, p.capacity) + ')') + '>Resize</button></div></div>';
   }).join('');
 }
 
@@ -21060,6 +21138,111 @@ function renderGitopsDriftPanel() {
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="document.getElementById(\'vm-filter-drift\').value=\'drift\';navigate(\'vms\');setTimeout(filterVMs,200)" style="width:100%">Show drifted VMs →</button>' +
     '</div></div></div>' +
   '</div>';
+}
+
+async function triggerGitOpsSync() {
+  const btn = document.getElementById('gitops-sync-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  try {
+    const data = await apiJson('/api/v1/gitops/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dry_run: false, force: false })
+    });
+    const what = data.argo_sync_triggered ? 'ArgoCD triggered' : data.flux_reconcile_triggered ? 'Flux triggered' : 'State updated';
+    toast('GitOps sync: ' + what + ' — ' + (data.vms_in_cluster || 0) + ' VMs in scope', 'success');
+    fetchGitOps();
+  } catch(e) {
+    toast('Sync failed: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Sync'; }
+  }
+}
+
+async function resizePvc(ns, name, currentSize) {
+  const newSize = window.prompt('Resize PVC "' + name + '" (current: ' + (currentSize || 'unknown') + ')\nEnter new size (e.g. 20Gi, 100Gi):', currentSize || '');
+  if (!newSize || newSize.trim() === (currentSize || '').trim()) return;
+  try {
+    const data = await apiJson('/api/v1/storage/pvcs/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_size: newSize.trim() })
+    });
+    if (data.error) { toast('Resize failed: ' + data.error, 'error'); return; }
+    toast('PVC "' + name + '" resize requested → ' + newSize.trim(), 'success');
+    setTimeout(fetchStorage, 1500);
+  } catch(e) {
+    toast('Resize failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+let _azHistory = [];
+
+function loadAskZeusPage() {
+  if (!_azHistory.length) renderAzThread();
+  const inp = document.getElementById('az-input');
+  if (inp) setTimeout(function() { inp.focus(); }, 120);
+}
+
+async function azSend() {
+  const inp = document.getElementById('az-input');
+  const q = inp ? inp.value.trim() : '';
+  if (!q) return;
+  if (inp) inp.value = '';
+  _azHistory.push({ role: 'user', content: q });
+  renderAzThread();
+  const azThread = document.getElementById('az-thread');
+  if (azThread) azThread.insertAdjacentHTML('beforeend', '<div id="az-thinking" style="color:var(--text-dim);padding:8px;font-size:.84rem">Zeus is thinking…</div>');
+  try {
+    const body = {
+      query: q,
+      messages: _azHistory.slice(0, -1),
+      namespace: (typeof currentNamespace !== 'undefined' && currentNamespace !== 'all') ? currentNamespace : null
+    };
+    const data = await apiJson('/api/v1/experience/copilot/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const cop = data.copilot || data;
+    const reply = data.message ? data.message.content : (cop.summary || cop.title || JSON.stringify(cop));
+    _azHistory.push({ role: 'assistant', content: reply || '(no response)' });
+  } catch(e) {
+    _azHistory.push({ role: 'error', content: e.message || String(e) });
+  }
+  renderAzThread();
+}
+
+function azChip(q) {
+  const inp = document.getElementById('az-input');
+  if (inp) { inp.value = q; azSend(); }
+}
+
+function azNewChat() {
+  _azHistory = [];
+  renderAzThread();
+  const inp = document.getElementById('az-input');
+  if (inp) { inp.value = ''; inp.focus(); }
+}
+
+function renderAzThread() {
+  const el = document.getElementById('az-thread');
+  if (!el) return;
+  const thinking = document.getElementById('az-thinking');
+  if (thinking) thinking.remove();
+  if (!_azHistory.length) {
+    el.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px;font-size:.9rem">Ask Zeus anything about your Veyron fleet…<br><span style="font-size:.8rem;opacity:.6">Try: "Show all unhealthy VMs" or "Which PVCs are almost full?"</span></div>';
+    return;
+  }
+  el.innerHTML = _azHistory.map(function(m) {
+    const isUser = m.role === 'user';
+    const isErr = m.role === 'error';
+    return '<div style="margin-bottom:12px;display:flex;' + (isUser ? 'justify-content:flex-end' : 'justify-content:flex-start') + '">' +
+      '<span style="display:inline-block;max-width:82%;padding:9px 13px;border-radius:10px;font-size:.86rem;white-space:pre-wrap;word-break:break-word;line-height:1.5;background:' +
+      (isUser ? 'var(--accent,#6d56fa)' : isErr ? 'rgba(255,80,80,.15)' : 'rgba(255,255,255,.07)') +
+      ';color:' + (isErr ? 'var(--error,#f87171)' : 'var(--text)') + '">' + esc(m.content) + '</span></div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
 }
 
 async function fetchScheduling() {
