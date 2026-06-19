@@ -509,11 +509,11 @@ spec:
 YAML
 " || {
   # Fallback: if kubectl apply fails (e.g. immutable selector mismatch from an old deployment),
-  # just update the image + bump the rollout annotation so the new binary is picked up.
+  # patch the pod template directly so the new image + annotation bump triggers a rollout.
   deploy_ssh "${USER}@${HOST}" "
-    ${K} -n ${NS} set image deployment/veyron-api veyron=localhost/veyron:latest 2>/dev/null ||
-    ${K} -n ${NS} patch deployment/veyron-api -p '{\"spec\":{\"template\":{\"spec\":{\"containers\":[{\"name\":\"veyron\",\"image\":\"localhost/veyron:latest\"}]}}}}' 2>/dev/null || true
-    ${K} -n ${NS} annotate deployment/veyron-api veyron.io/deployed-at=${DEPLOY_STAMP} --overwrite 2>/dev/null || true
+    ${K} -n ${NS} patch deployment/veyron-api --type=strategic -p \
+      '{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"veyron.io/deployed-at\":\"${DEPLOY_STAMP}\"}},\"spec\":{\"containers\":[{\"name\":\"veyron\",\"image\":\"localhost/veyron:latest\"}]}}}}' \
+      2>/dev/null || true
   " || true
 }
 info "K8s resources applied"
