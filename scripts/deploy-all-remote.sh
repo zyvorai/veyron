@@ -147,6 +147,36 @@ else
     deploy_skip_phase "⏭️  [0/7] Skipping full diagnostics (set VEYRON_DEPLOY_DIAGNOSTICS=1 for cluster-wide pod listing)"
 fi
 
+# ── Prereqs: Ensure remote build tools ──
+deploy_phase_start "🔧 Ensuring remote build prerequisites"
+deploy_ssh "${REMOTE}" bash -s <<'REMOTE_PREREQS'
+set -euo pipefail
+if command -v apt-get >/dev/null 2>&1; then
+  sudo apt-get update -qq 2>/dev/null || true
+  sudo apt-get install -y -qq build-essential pkg-config libssl-dev curl wget git ca-certificates 2>/dev/null || true
+elif command -v dnf >/dev/null 2>&1; then
+  sudo dnf install -y gcc make pkgconfig openssl-devel curl wget git ca-certificates 2>/dev/null || true
+fi
+_cur=0; command -v node >/dev/null 2>&1 && _cur="$(node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')"
+if [ "${_cur}" -lt 18 ]; then
+  if command -v apt-get >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - 2>/dev/null || true
+    sudo apt-get install -y -qq nodejs 2>/dev/null || true
+  elif command -v dnf >/dev/null 2>&1; then
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash - 2>/dev/null || true
+    sudo dnf install -y nodejs 2>/dev/null || true
+  fi
+fi
+echo "  [prereq] node $(node -v 2>/dev/null || echo NOT_FOUND)"
+source "${HOME}/.cargo/env" 2>/dev/null || true
+if ! command -v cargo >/dev/null 2>&1; then
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  source "${HOME}/.cargo/env"
+fi
+echo "  [prereq] $(cargo --version)"
+REMOTE_PREREQS
+deploy_phase_end
+
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
 if [[ "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "1" && "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "true" ]] \
