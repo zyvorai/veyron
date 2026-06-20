@@ -1,4 +1,4 @@
-VMRogue monitoring stack (Prometheus Operator + Prometheus + Grafana + Alertmanager).
+Veyron monitoring stack (Prometheus Operator + Prometheus + Grafana + Alertmanager).
 
 1) Grafana (default admin user: admin)
 
@@ -14,11 +14,11 @@ VMRogue monitoring stack (Prometheus Operator + Prometheus + Grafana + Alertmana
 
      kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-kps-alertmanager 9093:9093
 
-3) VMRogue UI
+3) Veyron dashboard
 
-   With the API in namespace "{{ .Values.vmrogue.namespace }}", the Monitoring page should show
-   Prometheus / Grafana as "In cluster" when this release lives in a scanned namespace
-   (e.g. monitoring, prometheus, observability) or matches your API default namespace.
+   The Monitoring page shows Prometheus / Grafana as "In cluster" when this release lives in a
+   scanned namespace (e.g. monitoring, prometheus, observability) or matches your Veyron API
+   default namespace (VEYRON_NAMESPACE / --namespace).
 
 4) KubeVirt metrics
 
@@ -27,4 +27,4 @@ VMRogue monitoring stack (Prometheus Operator + Prometheus + Grafana + Alertmana
 
 5) Disable the bundle
 
-   helm upgrade {{ .Release.Name }} ./charts/vmrogue-monitoring -n {{ .Release.Namespace }} --set kps.enabled=false
+   helm upgrade {{ .Release.Name }} ./charts/veyron-monitoring -n {{ .Release.Namespace }} --set kps.enabled=false
