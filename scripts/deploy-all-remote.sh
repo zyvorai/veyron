@@ -157,7 +157,11 @@ if command -v apt-get >/dev/null 2>&1; then
 elif command -v dnf >/dev/null 2>&1; then
   sudo dnf install -y gcc make pkgconfig openssl-devel curl wget git ca-certificates 2>/dev/null || true
 fi
-_cur=0; command -v node >/dev/null 2>&1 && _cur="$(node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')"
+_cur=0
+if command -v node >/dev/null 2>&1; then
+  _ver="$(node -v 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')"
+  [ -n "${_ver}" ] && _cur="${_ver}"
+fi
 if [ "${_cur}" -lt 18 ]; then
   if command -v apt-get >/dev/null 2>&1; then
     curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - 2>/dev/null || true

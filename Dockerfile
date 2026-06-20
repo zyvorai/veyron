@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.4
 # Multi-stage build for minimal production image
 # Run scripts/prepare-guestkit-docker.sh before docker build (copies ../guestkit -> ./guestkit).
-FROM rust:1.94-slim-bookworm AS builder
+FROM docker.io/library/rust:1.94-slim-bookworm AS builder
 
 ARG VIRTCTL_VERSION=v1.4.0
 
@@ -41,7 +41,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     && install -Dm755 target/x86_64-unknown-linux-musl/release/veyron /out/veyron
 
 # Runtime image — alpine for minimal size with debugging capability
-FROM alpine:3.20
+FROM docker.io/library/alpine:3.20
 
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /out/veyron /usr/local/bin/veyron
