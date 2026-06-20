@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Distro SVG icons** — per-distro inline SVG icons (`distroSvg()`) for app store, foundry, and launchpad pages; Launchpad fixed to render SVGs correctly (overflow:hidden + sizing CSS).
+- **Ask Zeus page** — standalone `/ask-zeus` route with chat thread UI and quick-chip prompts (`src/api/web/dashboard.html`).
+- **PVC resize API** — `PATCH /api/v1/storage/pvcs/:ns/:name` with `new_size` body; **Resize** button wired in the storage dashboard UI (`src/api/handlers/storage.rs`).
+- **Dashboard favicon** — inline SVG data URI (Veyron orange-to-red gradient with V mark).
+- **GitOps Sync button** — `POST /api/v1/gitops/sync` with toast feedback in the GitOps dashboard page.
+- **Helm PodDisruptionBudget** — `charts/veyron/templates/pdb.yaml` with `maxUnavailable: 1`; enabled by default in `charts/veyron/values.yaml`.
+- **Auto-install build prerequisites** — `deploy-all-remote.sh` installs `build-essential`, `pkg-config`, `libssl-dev`, Node.js ≥18 (via NodeSource 22.x), and Rust/cargo on first deploy; idempotent on re-runs.
+
+### Changed
+
+- **Helm charts version** — `charts/veyron` and `charts/veyron-operator` bumped from 0.2.0 to 0.3.0.
+- **Dashboard app store** — "Get" label on Forge VM cards replaced with "Forge VM".
+- **About modal** — Veyron app icon + Zyvor branding header.
+
+### Fixed
+
+- **Dockerfiles for podman** — `FROM rust:…`, `FROM alpine:…`, `FROM golang:…` rewritten to fully-qualified `docker.io/library/…` names; podman clusters without unqualified-search registries configured in `/etc/containers/registries.conf` no longer fail image builds.
+- **Deploy node version check** — hardened `_cur` assignment in `deploy-all-remote.sh` prereqs block against empty `sed` output to prevent `[ "" -lt 18 ]` arithmetic error under `set -euo pipefail`.
+- **Deploy rollout fallback** — `deploy-all-remote.sh` patches pod template annotation (not the Deployment itself) to force a rollout when the same image tag is reused and `imagePullPolicy: Never` would otherwise leave stale pods.
+- **Deploy script YAML quoting** — fixed integer quoting and image fallback for selector mismatch in deploy manifests.
+- **Launchpad icon rendering** — SVG icons in the launchpad now display correctly (was clipped/invisible).
+
 - **PacketWolf integration** — `VEYRON_PACKETWOLF_URL` / optional `VEYRON_PACKETWOLF_EXTERNAL_URL` and `VEYRON_PACKETWOLF_API_KEY`; auto-wired by `scripts/lib/bootstrap-integrations.sh` when `packetwolf-api` exists in `cilium-system` or `packetwolf`; `GET /api/v1/packetwolf/status`; Integrations page probe; Cilium dashboard banner (`src/api/handlers/packetwolf.rs`).
 - **API auth hardening** — route-level RBAC via `src/api/auth_context.rs`; short-lived single-use WebSocket console tickets (`POST /api/v1/ws/ticket`, `src/api/ws_ticket.rs`) for VNC/serial upgrades.
 - **`scripts/test-vm-daily-ops-remote.sh`** — curl-based HTTPS E2E for daily VM API workflows (create, lifecycle, SSH/RDP expose, snapshots); optional `VEYRON_E2E_RESTORE=1`.

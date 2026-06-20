@@ -352,12 +352,24 @@ check_json_grep "GET /api/v1/costs (list)" \
     "${BASE}/api/v1/costs?namespace=all" '"costs"\s*:'
 check_json_grep "GET /api/v1/costs/forecast" \
     "${BASE}/api/v1/costs/forecast?namespace=all" 'projected_monthly'
-check_json_grep "GET /api/v1/packetwolf/status" \
-    "${BASE}/api/v1/packetwolf/status" '"reachable"\s*:\s*true'
-check_json_grep "GET /api/v1/packetwolf/network/overview" \
-    "${BASE}/api/v1/packetwolf/network/overview?namespace=all" 'live_connections'
-check_json_grep "GET /api/v1/packetwolf/flows" \
-    "${BASE}/api/v1/packetwolf/flows?limit=5" '"flows"\s*:'
+pw_status=$(curl -skS --connect-timeout 15 --max-time 45 \
+    -H "X-API-Key: ${KEY}" "${BASE}/api/v1/packetwolf/status" || true)
+if echo "${pw_status}" | grep -q '"configured"\s*:\s*true'; then
+    if echo "${pw_status}" | grep -q '"reachable"\s*:\s*true'; then
+        echo "  ✔ GET /api/v1/packetwolf/status"
+        check_json_grep "GET /api/v1/packetwolf/network/overview" \
+            "${BASE}/api/v1/packetwolf/network/overview?namespace=all" 'live_connections'
+        check_json_grep "GET /api/v1/packetwolf/flows" \
+            "${BASE}/api/v1/packetwolf/flows?limit=5" '"flows"\s*:'
+    else
+        echo "  ✗ GET /api/v1/packetwolf/status (configured but not reachable)"
+        echo "${pw_status}" | head -c 400 | sed 's/^/    /'
+        echo ""
+        FAIL=$((FAIL + 1))
+    fi
+else
+    echo "  ○ GET /api/v1/packetwolf/status (not configured — set VEYRON_PACKETWOLF_URL to enable)"
+fi
 check_json_grep "GET /api/v1/cilium/flows" \
     "${BASE}/api/v1/cilium/flows?namespace=all" 'flow_source'
 check_html_contains "GET /dashboard (Template Foundry page)" "${BASE}/dashboard" 'id="page-app-store"'

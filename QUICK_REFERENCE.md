@@ -19,6 +19,12 @@ VEYRON_DEPLOY_DIAGNOSTICS=1 ./scripts/deploy-remote.sh HOST USER  # full preflig
 # API-only remote deploy
 ./scripts/deploy-k8s-remote.sh HOST USER
 
+# Post-deploy smoke test (NodePort health, templates, VM list)
+VEYRON_API_KEY='CHANGE_ME' ./scripts/verify-veyron-remote.sh HOST [30151]
+
+# VM daily ops E2E (create, lifecycle, SSH/RDP expose, snapshots; ~10–15 min)
+VEYRON_API_KEY='CHANGE_ME' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
+
 # Client tarball (linux/amd64 binary) — see docs/PACKAGE_BINARY_REMOTE.md
 ./scripts/package-binary-remote.sh HOST USER --fetch
 ./scripts/package-binary-remote.sh HOST USER --reuse-image --fetch   # skip rebuild if image exists
@@ -97,6 +103,9 @@ veyron disk-expand my-vm rootdisk 100Gi --plan
 veyron disk-health my-vm --detailed
 veyron disk-script --filesystem lvm --device /dev/vda
 veyron disk-usage
+
+# PVC resize via API (also available in dashboard storage UI)
+# PATCH /api/v1/storage/pvcs/:ns/:name   body: {"new_size":"50Gi"}
 
 veyron network-list my-vm
 veyron network-get my-vm eth0
