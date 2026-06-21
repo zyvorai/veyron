@@ -78,6 +78,9 @@ pub mod soc;
 // Operator CRD types (veyron.io/v1alpha1)
 pub mod operator_crds;
 
+// Trial license enforcement
+pub mod license;
+
 // Features ported from v9s
 pub mod advanced_filter;
 pub mod ai_troubleshoot;
@@ -115,6 +118,10 @@ use config::AppConfig;
 
 /// Main entry point for the library
 pub async fn run(mut cli: Cli) -> Result<()> {
+    // Enforce trial licence on every invocation
+    let lic = license::load_and_check()?;
+    eprintln!("Veyron trial licence: {} — valid until {}", lic.licensee, lic.expires);
+
     // Disable colored output if --no-color, NO_COLOR is set, or stdout is not a TTY
     use std::io::IsTerminal;
     if cli.no_color || std::env::var_os("NO_COLOR").is_some() || !std::io::stdout().is_terminal() {
