@@ -43,6 +43,8 @@ indicatif = "0.17"
 rand = "0.8"
 zeroize = "1.8"
 base64 = "0.22"
+hmac = "0.12"
+sha2 = "0.10"
 http = "1.1"
 guestkit-agent-protocol = { path = "guestkit/crates/guestkit-agent-protocol" }
 guestkit = { path = "guestkit", default-features = false, features = ["guest-inspect"] }
