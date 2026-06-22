@@ -1,27 +1,23 @@
 # Veyron Trial Quickstart
 
-Request a 30-day trial key at https://zyvor.dev/contact?intent=trial&product=veyron
-or email sales@zyvor.dev. You will receive a key string like:
-
-```
-eyJwIjoidmV5cm9uIiwiaXNzIjoiMjAyNi0wNi0yMiIsImV4cCI6IjIwMjYtMDctMjIiLCJ3aG8iOiJBY21lIENvcnAifQ.SomeSig
-```
+Veyron includes a **30-day free trial** — no key or sign-up required to install.
+After 30 days the pod will stop and show an upgrade message. Contact sales@zyvor.dev
+to obtain a licence key and continue running.
 
 ## Install via Helm
 
 **Prerequisites:** Kubernetes cluster with KubeVirt installed, Helm 3.8+.
 
 ```bash
-# Install Veyron with your trial key (OCI chart — no repo add needed)
+# Install — no licence key needed
 helm install veyron oci://ghcr.io/hypersdk/charts/veyron \
   --version 0.3.0 \
   --namespace veyron-system \
-  --create-namespace \
-  --set license.key="<your-trial-key>"
+  --create-namespace
 
-# Confirm the pod started and the licence was accepted
+# Confirm the pod started
 kubectl -n veyron-system logs deploy/veyron-api | head -3
-# → Veyron trial licence: Acme Corp — valid until 2026-07-22
+# → Veyron trial licence: Trial — valid until 2026-07-22
 ```
 
 The dashboard is available at `https://<node-ip>:30151` (NodePort, self-signed cert).
@@ -31,36 +27,30 @@ Default API key is auto-generated; retrieve it with:
 kubectl -n veyron-system get secret veyron-api-key -o jsonpath='{.data.api-key}' | base64 -d
 ```
 
-## Using an existing Secret (GitOps / ArgoCD)
+## After the trial — apply a licence key
 
-Create the secret before `helm install`:
+Once you receive a key from sales@zyvor.dev:
 
 ```bash
 kubectl create secret generic veyron-license \
-  --from-literal=license.key="<your-trial-key>" \
+  --from-literal=license.key="<your-key>" \
+  -n veyron-system
+
+helm upgrade veyron oci://ghcr.io/hypersdk/charts/veyron \
+  --version 0.3.0 \
+  --reuse-values \
+  --set license.existingSecret="veyron-license" \
   -n veyron-system
 ```
 
-Then install without embedding the key in Helm values:
+## Trial expiry message
 
-```bash
-helm install veyron oci://ghcr.io/hypersdk/charts/veyron \
-  --version 0.3.0 \
-  --namespace veyron-system \
-  --create-namespace \
-  --set license.existingSecret="veyron-license"
-```
-
-## Trial expiry
-
-When the trial expires the pod will not start. `kubectl logs` on the failed pod shows:
+When the trial expires the pod exits with:
 
 ```
-Veyron trial licence expired on 2026-07-22.
-Contact sales@zyvor.dev to purchase a commercial licence.
+Veyron 30-day trial has expired (build: 2026-06-22).
+To continue, contact sales@zyvor.dev for a licence key.
 ```
-
-Contact sales@zyvor.dev to obtain a commercial licence key and update the Secret.
 
 ## Upgrade
 
