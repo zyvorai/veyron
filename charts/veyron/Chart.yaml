@@ -11,9 +11,9 @@ keywords:
   - virtual-machine
   - kvm
   - vm-management
-home: https://github.com/ssahani/Veyron
+home: https://github.com/hypersdk/Veyron
 sources:
-  - https://github.com/ssahani/Veyron
+  - https://github.com/hypersdk/Veyron
 maintainers:
   - name: ZyvorAI Labs Private Limited
-    url: https://github.com/ssahani
+    url: https://github.com/hypersdk

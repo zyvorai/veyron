@@ -10,12 +10,12 @@ keywords:
   - kubevirt
   - prometheus
   - grafana
-home: https://github.com/ssahani/Veyron
+home: https://github.com/hypersdk/Veyron
 sources:
-  - https://github.com/ssahani/Veyron
+  - https://github.com/hypersdk/Veyron
 maintainers:
   - name: ZyvorAI Labs Private Limited
-    url: https://github.com/ssahani
+    url: https://github.com/hypersdk
 dependencies:
   - name: kube-prometheus-stack
     version: 83.6.0

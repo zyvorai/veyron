@@ -4,7 +4,7 @@ replicaCount: 1
 fullnameOverride: "veyron-api"
 
 image:
-  repository: ghcr.io/ssahani/veyron
+  repository: ghcr.io/hypersdk/veyron
   tag: ""  # defaults to Chart.appVersion; same image ships veyron + veyron binaries
   pullPolicy: IfNotPresent
 
