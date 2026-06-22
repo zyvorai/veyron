@@ -3,7 +3,7 @@ replicaCount: 1
 fullnameOverride: "veyron-operator"
 
 image:
-  repository: ghcr.io/ssahani/veyron-operator
+  repository: ghcr.io/hypersdk/veyron-operator
   tag: ""
   pullPolicy: IfNotPresent
 

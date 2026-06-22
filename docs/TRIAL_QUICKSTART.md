@@ -13,7 +13,7 @@ eyJwIjoidmV5cm9uIiwiaXNzIjoiMjAyNi0wNi0yMiIsImV4cCI6IjIwMjYtMDctMjIiLCJ3aG8iOiJB
 
 ```bash
 # Add the Zyvor Helm repository
-helm repo add zyvor https://ssahani.github.io/veyron
+helm repo add zyvor https://hypersdk.github.io/veyron
 helm repo update
 
 # Install Veyron with your trial key
