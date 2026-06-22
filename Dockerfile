@@ -26,7 +26,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     && install -Dm755 target/x86_64-unknown-linux-musl/release/guestkit /out/guestkit
 
 # Cache Veyron dependency compilation
-COPY Cargo.toml Cargo.lock ./
+COPY Cargo.toml Cargo.lock build.rs ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/build/target,sharing=locked \
     mkdir src && echo "fn main() {}" > src/main.rs && echo "" > src/lib.rs \
