@@ -11,7 +11,7 @@ to obtain a licence key and continue running.
 ```bash
 # Install — no licence key needed
 helm install veyron oci://ghcr.io/hypersdk/charts/veyron \
-  --version 0.3.0 \
+  --version 0.3.2 \
   --namespace veyron-system \
   --create-namespace
 
@@ -37,7 +37,7 @@ kubectl create secret generic veyron-license \
   -n veyron-system
 
 helm upgrade veyron oci://ghcr.io/hypersdk/charts/veyron \
-  --version 0.3.0 \
+  --version 0.3.2 \
   --reuse-values \
   --set license.existingSecret="veyron-license" \
   -n veyron-system
