@@ -125,3 +125,27 @@ jobs:
             dist/veyron-linux-arm64/veyron-linux-arm64
             dist/veyron-darwin-amd64/veyron-darwin-amd64
             dist/veyron-darwin-arm64/veyron-darwin-arm64
+
+  helm-publish:
+    name: Publish Helm Charts
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Run chart-releaser
+        uses: helm/chart-releaser-action@v1.6.0
+        with:
+          charts_dir: charts
+        env:
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"

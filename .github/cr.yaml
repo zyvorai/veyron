@@ -1,0 +1,3 @@
+owner: ssahani
+git-repo: veyron
+release-name-template: "{{ .Version }}"

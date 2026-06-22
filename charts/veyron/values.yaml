@@ -36,6 +36,10 @@ auth:
   additionalKeys: ""
   secretName: "veyron-api-key"
 
+license:
+  key: ""           # trial key received from sales@zyvor.dev (creates veyron-api-license Secret)
+  existingSecret: "" # alternative: name of a pre-created Secret with a "license.key" data key
+
 rateLimit:
   perMinute: 60
 
