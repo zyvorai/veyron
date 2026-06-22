@@ -9,15 +9,12 @@ eyJwIjoidmV5cm9uIiwiaXNzIjoiMjAyNi0wNi0yMiIsImV4cCI6IjIwMjYtMDctMjIiLCJ3aG8iOiJB
 
 ## Install via Helm
 
-**Prerequisites:** Kubernetes cluster with KubeVirt installed.
+**Prerequisites:** Kubernetes cluster with KubeVirt installed, Helm 3.8+.
 
 ```bash
-# Add the Zyvor Helm repository
-helm repo add zyvor https://hypersdk.github.io/veyron
-helm repo update
-
-# Install Veyron with your trial key
-helm install veyron zyvor/veyron \
+# Install Veyron with your trial key (OCI chart — no repo add needed)
+helm install veyron oci://ghcr.io/hypersdk/charts/veyron \
+  --version 0.3.0 \
   --namespace veyron-system \
   --create-namespace \
   --set license.key="<your-trial-key>"
@@ -47,7 +44,8 @@ kubectl create secret generic veyron-license \
 Then install without embedding the key in Helm values:
 
 ```bash
-helm install veyron zyvor/veyron \
+helm install veyron oci://ghcr.io/hypersdk/charts/veyron \
+  --version 0.3.0 \
   --namespace veyron-system \
   --create-namespace \
   --set license.existingSecret="veyron-license"
@@ -67,8 +65,7 @@ Contact sales@zyvor.dev to obtain a commercial licence key and update the Secret
 ## Upgrade
 
 ```bash
-helm repo update
-helm upgrade veyron zyvor/veyron -n veyron-system
+helm upgrade veyron oci://ghcr.io/hypersdk/charts/veyron --version <new-version> -n veyron-system
 ```
 
 ## Uninstall

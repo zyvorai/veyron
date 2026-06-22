@@ -1,3 +1,0 @@
-owner: hypersdk
-git-repo: veyron
-release-name-template: "{{ .Version }}"

@@ -8,7 +8,11 @@ env:
   CARGO_TERM_COLOR: always
   RUST_MIN_STACK: 8388608
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Images and charts are published under the hypersdk org.
+  # Requires HYPERSDK_GHCR_TOKEN secret: a PAT from the hypersdk account
+  # with write:packages scope (repo Settings → Secrets → Actions).
+  IMAGE_NAME: hypersdk/veyron
+  CHARTS_REPO: ghcr.io/hypersdk/charts
 
 permissions:
   contents: write
@@ -84,12 +88,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to GHCR
+      - name: Log in to GHCR (hypersdk)
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: hypersdk
+          password: ${{ secrets.HYPERSDK_GHCR_TOKEN }}
 
       - name: Extract version
         id: version
@@ -127,25 +131,24 @@ jobs:
             dist/veyron-darwin-arm64/veyron-darwin-arm64
 
   helm-publish:
-    name: Publish Helm Charts
+    name: Publish Helm Charts (OCI)
     needs: [test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Install Helm
         uses: azure/setup-helm@v4
 
-      - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.6.0
-        with:
-          charts_dir: charts
-        env:
-          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Log in to GHCR (hypersdk)
+        run: echo "${{ secrets.HYPERSDK_GHCR_TOKEN }}" | helm registry login ghcr.io -u hypersdk --password-stdin
+
+      - name: Package and push charts
+        run: |
+          mkdir -p /tmp/charts
+          for chart in charts/veyron charts/veyron-operator charts/veyron-monitoring; do
+            helm package "$chart" -d /tmp/charts
+          done
+          for tgz in /tmp/charts/*.tgz; do
+            helm push "$tgz" oci://${{ env.CHARTS_REPO }}
+          done
