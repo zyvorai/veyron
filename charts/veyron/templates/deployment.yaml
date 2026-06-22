@@ -48,8 +48,6 @@ spec:
             - "{{ .Values.api.port }}"
             - --host
             - "{{ .Values.api.host }}"
-            - --namespace
-            - "{{ .Values.api.namespace }}"
             {{- if .Values.tls.enabled }}
             - --tls
             - --tls-cert
@@ -76,6 +74,8 @@ spec:
             - name: VEYRON_API_KEYS
               value: {{ .Values.auth.additionalKeys | quote }}
             {{- end }}
+            - name: VEYRON_NAMESPACE
+              value: {{ .Values.api.namespace | quote }}
             - name: RUST_LOG
               value: "info"
             {{- if or .Values.license.key .Values.license.existingSecret }}
