@@ -78,13 +78,6 @@ spec:
               value: {{ .Values.api.namespace | quote }}
             - name: RUST_LOG
               value: "info"
-            {{- if or .Values.license.key .Values.license.existingSecret }}
-            - name: VEYRON_LICENSE_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.license.existingSecret | default (printf "%s-license" (include "veyron.fullname" .)) }}
-                  key: license.key
-            {{- end }}
             - name: VEYRON_API_NODE_HOST
               valueFrom:
                 fieldRef:

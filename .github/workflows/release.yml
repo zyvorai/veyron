@@ -129,26 +129,3 @@ jobs:
             dist/veyron-linux-arm64/veyron-linux-arm64
             dist/veyron-darwin-amd64/veyron-darwin-amd64
             dist/veyron-darwin-arm64/veyron-darwin-arm64
-
-  helm-publish:
-    name: Publish Helm Charts (OCI)
-    needs: [test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-
-      - name: Log in to GHCR (hypersdk)
-        run: echo "${{ secrets.HYPERSDK_GHCR_TOKEN }}" | helm registry login ghcr.io -u hypersdk --password-stdin
-
-      - name: Package and push charts
-        run: |
-          mkdir -p /tmp/charts
-          for chart in charts/veyron charts/veyron-operator charts/veyron-monitoring; do
-            helm package "$chart" -d /tmp/charts
-          done
-          for tgz in /tmp/charts/*.tgz; do
-            helm push "$tgz" oci://${{ env.CHARTS_REPO }}
-          done
