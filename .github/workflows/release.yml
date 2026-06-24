@@ -8,11 +8,8 @@ env:
   CARGO_TERM_COLOR: always
   RUST_MIN_STACK: 8388608
   REGISTRY: ghcr.io
-  # Images and charts are published under the hypersdk org.
-  # Requires HYPERSDK_GHCR_TOKEN secret: a PAT from the hypersdk account
-  # with write:packages scope (repo Settings → Secrets → Actions).
-  IMAGE_NAME: hypersdk/veyron
-  CHARTS_REPO: ghcr.io/hypersdk/charts
+  IMAGE_NAME: ssahani/veyron
+  CHARTS_REPO: ghcr.io/ssahani/charts
 
 permissions:
   contents: write
@@ -88,12 +85,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to GHCR (hypersdk)
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: hypersdk
-          password: ${{ secrets.HYPERSDK_GHCR_TOKEN }}
+          username: ssahani
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Extract version
         id: version
