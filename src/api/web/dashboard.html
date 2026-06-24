@@ -12301,12 +12301,18 @@ const FORGE_WIZARD_STEPS = 6;
 
 function openForgeWizard() {
   _forgeWizardStep = 1;
+  _forgeWizSelectedProfile = '';
   document.getElementById('forge-wizard-modal').classList.add('open');
   _forgeWizardSyncStep();
   if (templateCache.length === 0) {
     fetchTemplates().then(function() { _forgeWizardPopulateTemplates(); });
   } else {
     _forgeWizardPopulateTemplates();
+  }
+  if (profileCache.length === 0) {
+    fetchProfiles().then(function() { _forgeWizardRenderProfiles(); });
+  } else {
+    _forgeWizardRenderProfiles();
   }
 }
 
@@ -12321,6 +12327,38 @@ function _forgeWizardPopulateTemplates() {
     templateCache.map(function(t) { return '<option value="' + esc(t.name) + '">' + esc(t.name) + '</option>'; }).join('');
 }
 
+let _forgeWizSelectedProfile = '';
+
+function _forgeWizardRenderProfiles() {
+  const el = document.getElementById('forge-wiz-profiles');
+  if (!el) return;
+  if (profileCache.length === 0) {
+    el.innerHTML = '<p style="color:var(--text-muted);font-size:.88rem">No profiles found. You can skip this step.</p>';
+    return;
+  }
+  el.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px">' +
+    profileCache.map(function(p) {
+      const sel = _forgeWizSelectedProfile === p.name;
+      return '<div class="profile-card' + (sel ? ' selected' : '') + '" style="cursor:pointer" ' +
+        onHandler('_forgeWizSelectProfile(' + jsArgs(p.name) + ')') + '>' +
+        '<div class="pc-name">' + esc(p.name) + '</div>' +
+        '<div class="pc-spec">' + esc(String(p.cpu_cores || '')) + 'C / ' + esc(p.memory || '') + '</div>' +
+        '</div>';
+    }).join('') +
+    '</div>';
+}
+
+function _forgeWizSelectProfile(name) {
+  _forgeWizSelectedProfile = (_forgeWizSelectedProfile === name) ? '' : name;
+  const p = profileCache.find(function(x) { return x.name === name; });
+  if (p && _forgeWizSelectedProfile) {
+    if (p.cpu_cores) document.getElementById('forge-wiz-cpus').value = p.cpu_cores;
+    if (p.memory)    document.getElementById('forge-wiz-memory').value = p.memory;
+    if (p.disk_size) document.getElementById('forge-wiz-disk').value = p.disk_size;
+  }
+  _forgeWizardRenderProfiles();
+}
+
 function _forgeWizardSyncStep() {
   document.querySelectorAll('#forge-wizard-steps [data-step]').forEach(function(btn) {
     btn.classList.toggle('active', Number(btn.dataset.step) === _forgeWizardStep);
@@ -12328,6 +12366,7 @@ function _forgeWizardSyncStep() {
   document.querySelectorAll('#forge-wizard-body .forge-step-pane').forEach(function(pane) {
     pane.classList.toggle('active', Number(pane.dataset.step) === _forgeWizardStep);
   });
+  if (_forgeWizardStep === 2) _forgeWizardRenderProfiles();
   const isLast = _forgeWizardStep === FORGE_WIZARD_STEPS;
   const nextBtn = document.getElementById('forge-wiz-next');
   const submitBtn = document.getElementById('forge-wiz-submit');

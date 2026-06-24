@@ -133,10 +133,6 @@ esac
 
 deploy_main_banner "${REMOTE}" "${CTR_BUILD}" "${K8S_RUNTIME}" "${CLUSTER_FLAVOR}" "${K8S_CMD}" "${QUICK}"
 
-if [ "$CTR_BUILD" = "none" ] && ! $QUICK; then
-    deploy_build_fail "${HOST}"
-fi
-
 # ── Step 0: Remote diagnostics (light by default) ──
 if [[ "${VEYRON_DEPLOY_DIAGNOSTICS:-}" == "1" || "${VEYRON_DEPLOY_DIAGNOSTICS:-}" == "true" ]]; then
     deploy_phase_start "🩺 [0/7] Remote system and cluster diagnostics"
@@ -171,6 +167,16 @@ if [ "${_cur}" -lt 18 ]; then
     sudo dnf install -y nodejs 2>/dev/null || true
   fi
 fi
+if ! command -v podman >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1 && ! command -v nerdctl >/dev/null 2>&1; then
+  echo "  [prereq] installing podman…"
+  if command -v apt-get >/dev/null 2>&1; then
+    sudo apt-get install -y -qq podman 2>/dev/null || true
+  elif command -v dnf >/dev/null 2>&1; then
+    sudo dnf install -y podman 2>/dev/null || true
+  elif command -v yum >/dev/null 2>&1; then
+    sudo yum install -y podman 2>/dev/null || true
+  fi
+fi
 echo "  [prereq] node $(node -v 2>/dev/null || echo NOT_FOUND)"
 source "${HOME}/.cargo/env" 2>/dev/null || true
 if ! command -v cargo >/dev/null 2>&1; then
@@ -180,6 +186,12 @@ fi
 echo "  [prereq] $(cargo --version)"
 REMOTE_PREREQS
 deploy_phase_end
+
+# Re-detect build tool in case podman was just installed by the prereqs step
+CTR_BUILD=$(deploy_ssh "${REMOTE}" 'if command -v podman >/dev/null 2>&1; then echo podman; elif command -v docker >/dev/null 2>&1; then echo docker; elif command -v nerdctl >/dev/null 2>&1; then echo nerdctl; else echo none; fi')
+if [ "$CTR_BUILD" = "none" ] && ! $QUICK; then
+    deploy_build_fail "${HOST}"
+fi
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
