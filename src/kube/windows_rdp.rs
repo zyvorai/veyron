@@ -283,6 +283,11 @@ fn merge_rdp_metadata_labels(vm: &mut Value) {
         .or_insert(json!("enabled"));
 }
 
+/// Public alias: add port 3389 to masquerade/bridge interfaces only (no userdata/labels).
+pub fn merge_rdp_interface_ports_only(vm: &mut Value) {
+    merge_rdp_interface_ports(vm);
+}
+
 fn merge_rdp_interface_ports(vm: &mut Value) {
     let Some(interfaces) = vm
         .pointer_mut("/spec/template/spec/domain/devices/interfaces")

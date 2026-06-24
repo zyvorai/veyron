@@ -44,7 +44,7 @@ use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
 use kube::{
     Client, Config,
-    api::{Api, DeleteParams, ListParams, Patch, PatchParams, PostParams},
+    api::{Api, ApiResource, DeleteParams, DynamicObject, GroupVersionKind, ListParams, Patch, PatchParams, PostParams},
 };
 use serde::Serialize;
 use serde_json::json;
@@ -290,11 +290,15 @@ impl KubeClient {
         let mut vm = vm_config_to_kubevirt(config)?;
         if let Ok(mut v) = serde_json::to_value(&vm) {
             let template_hint = config.labels.get("veyron.io/template").map(|s| s.as_str());
-            if windows_rdp::should_apply_windows_rdp(&v, template_hint) {
+            let is_windows = windows_rdp::should_apply_windows_rdp(&v, template_hint);
+            if is_windows {
                 windows_rdp::merge_windows_rdp_defaults(&mut v);
-                if let Ok(parsed) = serde_json::from_value(v) {
-                    vm = parsed;
-                }
+            }
+            if is_windows || windows_rdp::is_windows_vm(&v) {
+                self.ensure_virtio_cd_for_windows(&config.namespace, &mut v).await;
+            }
+            if let Ok(parsed) = serde_json::from_value(v) {
+                vm = parsed;
             }
         }
 
@@ -1707,6 +1711,185 @@ impl KubeClient {
             cdi_detail,
             forge_vm_ready,
             virtctl_note: VIRTCTL,
+        }
+    }
+
+    // ── Windows VirtIO CD auto-attach ─────────────────────────────────────────
+
+    const VIRTIO_WIN_ISO_PVC: &'static str = "virtio-win-iso";
+    const VIRTIO_WIN_ISO_URL: &'static str = "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso";
+
+    /// For Windows VM creation: ensure virtio-win-iso PVC exists (create CDI DataVolume if not),
+    /// then inject a CD-ROM disk + volume into the VM JSON before it is applied to the cluster.
+    pub async fn ensure_virtio_cd_for_windows(
+        &self,
+        namespace: &str,
+        vm_json: &mut serde_json::Value,
+    ) {
+        let pvc_name = std::env::var("VEYRON_VIRTIO_WIN_ISO_PVC")
+            .unwrap_or_else(|_| Self::VIRTIO_WIN_ISO_PVC.to_string());
+
+        // Skip if already attached
+        if virtio_cd_already_in_vm(vm_json, &pvc_name) {
+            return;
+        }
+
+        // Check whether the PVC / DataVolume exists
+        let pvc_exists = Api::<PersistentVolumeClaim>::namespaced(self.client.clone(), namespace)
+            .get(&pvc_name)
+            .await
+            .is_ok();
+
+        if !pvc_exists {
+            let url = std::env::var("VEYRON_VIRTIO_WIN_ISO_URL")
+                .unwrap_or_else(|_| Self::VIRTIO_WIN_ISO_URL.to_string());
+            match self.create_virtio_win_datavolume(namespace, &pvc_name, &url).await {
+                Ok(_) => log::info!("Created VirtIO CDI DataVolume '{}/{}'", namespace, pvc_name),
+                Err(e) => {
+                    log::warn!("Could not create VirtIO DataVolume, skipping CD attach: {}", e);
+                    return;
+                }
+            }
+        }
+
+        inject_virtio_cdrom(vm_json, &pvc_name);
+        log::info!("Injected VirtIO CD-ROM '{}' into Windows VM spec", pvc_name);
+    }
+
+    async fn create_virtio_win_datavolume(
+        &self,
+        namespace: &str,
+        name: &str,
+        url: &str,
+    ) -> Result<()> {
+        let gvk = GroupVersionKind::gvk("cdi.kubevirt.io", "v1beta1", "DataVolume");
+        let mut ar = ApiResource::from_gvk(&gvk);
+        ar.plural = "datavolumes".to_string();
+        let dv_api: Api<DynamicObject> = Api::namespaced_with(self.client.clone(), namespace, &ar);
+
+        let body = json!({
+            "apiVersion": "cdi.kubevirt.io/v1beta1",
+            "kind": "DataVolume",
+            "metadata": {
+                "name": name,
+                "namespace": namespace,
+                "labels": { "veyron.io/type": "virtio-driver-cd" }
+            },
+            "spec": {
+                "source": { "http": { "url": url } },
+                "pvc": {
+                    "accessModes": ["ReadWriteOnce"],
+                    "resources": { "requests": { "storage": "700Mi" } }
+                }
+            }
+        });
+        let obj: DynamicObject =
+            serde_json::from_value(body).map_err(kube::Error::SerdeError)?;
+        dv_api.create(&PostParams::default(), &obj).await?;
+        Ok(())
+    }
+
+    // ── RDP masquerade port auto-patch ────────────────────────────────────────
+
+    /// Ensure port 3389 is in the VM's masquerade interface ports.
+    /// Returns `true` if a patch was applied (VMI was restarted), `false` if already present.
+    pub async fn ensure_rdp_masquerade_port(&self, namespace: &str, name: &str) -> Result<bool> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+        let vm = vms.get(name).await?;
+        let mut vm_json = serde_json::to_value(&vm)?;
+
+        if windows_rdp::vm_spec_has_rdp_port(&vm_json) {
+            return Ok(false);
+        }
+
+        // Apply the port merge onto the JSON, then extract updated interfaces
+        windows_rdp::merge_rdp_interface_ports_only(&mut vm_json);
+
+        let interfaces = vm_json
+            .pointer("/spec/template/spec/domain/devices/interfaces")
+            .cloned();
+
+        if let Some(ifaces) = interfaces {
+            let patch = json!({
+                "spec": {
+                    "template": {
+                        "spec": {
+                            "domain": {
+                                "devices": {
+                                    "interfaces": ifaces
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            vms.patch(name, &PatchParams::default(), &Patch::Merge(&patch))
+                .await
+                .context("Failed to patch VM masquerade ports")?;
+        }
+
+        // Delete the VMI so KubeVirt recreates it with the new masquerade rules.
+        // runStrategy:Always will restart automatically; for running:true VMs the VM
+        // controller also brings it back up.
+        let vmis: Api<VirtualMachineInstance> =
+            Api::namespaced(self.client.clone(), namespace);
+        match vmis.delete(name, &DeleteParams::default()).await {
+            Ok(_) => {}
+            Err(kube::Error::Api(ref ae)) if ae.code == 404 => {}
+            Err(e) => log::warn!("VMI delete after masquerade patch: {}", e),
+        }
+
+        log::info!("Patched masquerade port 3389 on VM '{}/{}' and restarted VMI", namespace, name);
+        Ok(true)
+    }
+}
+
+/// Check whether a virtio CD-ROM volume is already attached to the VM JSON.
+fn virtio_cd_already_in_vm(vm_json: &serde_json::Value, pvc_name: &str) -> bool {
+    let Some(volumes) = vm_json.pointer("/spec/template/spec/volumes") else {
+        return false;
+    };
+    let Some(arr) = volumes.as_array() else {
+        return false;
+    };
+    arr.iter().any(|v| {
+        v.get("persistentVolumeClaim")
+            .and_then(|p| p.get("claimName"))
+            .and_then(|c| c.as_str())
+            == Some(pvc_name)
+            || v.get("dataVolume")
+                .and_then(|d| d.get("name"))
+                .and_then(|n| n.as_str())
+                == Some(pvc_name)
+    })
+}
+
+/// Inject a virtio-win CD-ROM disk + volume entry into the VM JSON spec.
+fn inject_virtio_cdrom(vm_json: &mut serde_json::Value, pvc_name: &str) {
+    let disk_entry = json!({
+        "name": "virtio-win-cd",
+        "cdrom": { "bus": "sata", "readonly": true }
+    });
+    let vol_entry = json!({
+        "name": "virtio-win-cd",
+        "persistentVolumeClaim": { "claimName": pvc_name }
+    });
+
+    if let Some(disks) = vm_json
+        .pointer_mut("/spec/template/spec/domain/devices/disks")
+        .and_then(|v| v.as_array_mut())
+    {
+        if !disks.iter().any(|d| d.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd")) {
+            disks.push(disk_entry);
+        }
+    }
+
+    if let Some(vols) = vm_json
+        .pointer_mut("/spec/template/spec/volumes")
+        .and_then(|v| v.as_array_mut())
+    {
+        if !vols.iter().any(|v| v.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd")) {
+            vols.push(vol_entry);
         }
     }
 }
