@@ -82,7 +82,7 @@ impl SnapshotManager {
                     name: config.vm_name.clone(),
                 },
                 deletion_policy: Some("Delete".to_string()),
-                failure_deadline: Some(3600), // 1 hour
+                failure_deadline: Some("3600s".to_string()), // 1 hour
             },
             status: None,
         };

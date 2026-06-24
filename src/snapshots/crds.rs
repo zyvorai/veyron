@@ -24,12 +24,12 @@ pub struct VirtualMachineSnapshotSpec {
     pub source: SnapshotSource,
 
     /// Deletion policy for snapshot content
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "deletionPolicy", skip_serializing_if = "Option::is_none")]
     pub deletion_policy: Option<String>,
 
-    /// Failure deadline in seconds
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub failure_deadline: Option<i64>,
+    /// Failure deadline as a duration string e.g. "300s", "5m0s" (Kubernetes Duration type)
+    #[serde(rename = "failureDeadline", skip_serializing_if = "Option::is_none")]
+    pub failure_deadline: Option<String>,
 }
 
 /// Source specification for snapshot
@@ -276,7 +276,7 @@ mod tests {
                 name: "my-vm".to_string(),
             },
             deletion_policy: Some("Delete".to_string()),
-            failure_deadline: Some(3600),
+            failure_deadline: Some("3600s".to_string()),
         };
 
         assert_eq!(spec.source.name, "my-vm");
