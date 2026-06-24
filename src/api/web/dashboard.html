@@ -6207,6 +6207,25 @@ window.__VEYRON_DASH_REV = '20260619d';
 
 // Stale-cache shim removed — use renderDcTodayStats() below.
 
+/** Default virtio-win container disk image — attached as a SATA CDROM for Windows VMs so drivers are available on first boot. */
+const VIRTIO_WIN_CONTAINER_DISK = 'quay.io/containerdisks/virtio-win:latest';
+
+/** Align with server `ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY`: mirror `quay.io/kubevirt/*` to a private prefix. */
+let _kubeVirtDiskImageRegistry = null;
+
+/**
+ * Resolve a container disk image through the optional private registry mirror.
+ * If `ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY` is set on the server it is surfaced
+ * via `/api/v1/health` → `data.kubevirt_disk_image_registry`. When present,
+ * `quay.io/<path>` images are rewritten to `<registry>/<path>`.
+ */
+function resolveContainerDiskImage(image) {
+  if (_kubeVirtDiskImageRegistry && image.startsWith('quay.io/')) {
+    return _kubeVirtDiskImageRegistry.replace(/\/$/, '') + '/' + image.replace(/^quay\.io\//, '');
+  }
+  return image;
+}
+
 // State
 let currentPage = 'dashboard';
 let vmData = [];
@@ -20088,7 +20107,7 @@ async function submitCrdCreate() {
       source: { type: srcType },
       deviceType: 'disk'
     };
-    if (srcType === 'containerDisk' && ref) disk.source.image = ref;
+    if (srcType === 'containerDisk' && ref) disk.source.image = resolveContainerDiskImage(ref);
     if (srcType === 'pvc' && ref) disk.source.name = ref;
     disks.push(disk);
   });
@@ -20238,6 +20257,13 @@ window.addEventListener('load', async () => {
 
   // Ensure auth (API key or OIDC) before any API calls
   await initAuth();
+
+  // Populate registry mirror from server config (ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY)
+  apiJson('/api/v1/health').then(function(h) {
+    const reg = h && h.data && h.data.kubevirt_disk_image_registry;
+    if (reg) _kubeVirtDiskImageRegistry = reg;
+  }).catch(function() {});
+
   initVmViewMode();
   initDesktopShell();
   initFinderCollapsed();

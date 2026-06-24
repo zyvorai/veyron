@@ -4584,10 +4584,12 @@ pub mod web {
 
     async fn health_handler() -> impl IntoResponse {
         let ctx = req_ctx(HttpMethod::GET, "/api/v1/health");
+        let registry = std::env::var("ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY").ok();
         let health = serde_json::json!({
             "status": "healthy",
             "version": "v1",
-            "service": "veyron-api"
+            "service": "veyron-api",
+            "kubevirt_disk_image_registry": registry
         });
         ok_json(&ApiResponse::success(&health, &ctx.request_id))
     }
