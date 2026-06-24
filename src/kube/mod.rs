@@ -290,15 +290,14 @@ impl KubeClient {
         let mut vm = vm_config_to_kubevirt(config)?;
         if let Ok(mut v) = serde_json::to_value(&vm) {
             let template_hint = config.labels.get("veyron.io/template").map(|s| s.as_str());
-            let is_windows = windows_rdp::should_apply_windows_rdp(&v, template_hint);
+            let is_windows = windows_rdp::should_apply_windows_rdp(&v, template_hint)
+                || windows_rdp::is_windows_vm(&v);
             if is_windows {
                 windows_rdp::merge_windows_rdp_defaults(&mut v);
-            }
-            if is_windows || windows_rdp::is_windows_vm(&v) {
                 self.ensure_virtio_cd_for_windows(&config.namespace, &mut v).await;
-            }
-            if let Ok(parsed) = serde_json::from_value(v) {
-                vm = parsed;
+                if let Ok(parsed) = serde_json::from_value(v) {
+                    vm = parsed;
+                }
             }
         }
 
