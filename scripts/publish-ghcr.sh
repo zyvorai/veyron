@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Publish Docker image + Helm charts to ghcr.io/hypersdk from the remote build server.
+# Publish Docker image + Helm charts to ghcr.io/ssahani from the remote build server.
 # The remote already has the built image from the last deploy — no rebuild needed.
 #
 # Usage:
-#   HYPERSDK_GHCR_TOKEN=<pat> ./scripts/publish-ghcr.sh [host] [user] [version]
+#   GHCR_TOKEN=<pat> ./scripts/publish-ghcr.sh [host] [user] [version]
 #
 # Example:
-#   HYPERSDK_GHCR_TOKEN=ghp_xxx ./scripts/publish-ghcr.sh HOST sus 0.3.0
+#   GHCR_TOKEN=ghp_xxx ./scripts/publish-ghcr.sh HOST sus 0.3.0
 
 set -euo pipefail
 
@@ -14,11 +14,11 @@ HOST="${1:-HOST}"
 RUSER="${2:-sus}"
 VERSION="${3:-0.3.0}"
 REMOTE="${RUSER}@${HOST}"
-ORG="hypersdk"
+ORG="ssahani"
 
-if [[ -z "${HYPERSDK_GHCR_TOKEN:-}" ]]; then
-  echo "Error: set HYPERSDK_GHCR_TOKEN before running" >&2
-  echo "  export HYPERSDK_GHCR_TOKEN='ghp_...'" >&2
+if [[ -z "${GHCR_TOKEN:-}" ]]; then
+  echo "Error: set GHCR_TOKEN before running" >&2
+  echo "  export GHCR_TOKEN='ghp_...'" >&2
   exit 1
 fi
 
@@ -28,7 +28,7 @@ echo "==> Publishing veyron v${VERSION} to ghcr.io/${ORG}"
 echo "==> [1/2] Pushing Docker image to ghcr.io/${ORG}/veyron"
 ssh "$REMOTE" bash -s <<ENDSSH
 set -euo pipefail
-echo "${HYPERSDK_GHCR_TOKEN}" | podman login ghcr.io -u ${ORG} --password-stdin
+echo "${GHCR_TOKEN}" | podman login ghcr.io -u ${ORG} --password-stdin
 podman tag docker.io/library/veyron:latest ghcr.io/${ORG}/veyron:${VERSION}
 podman tag docker.io/library/veyron:latest ghcr.io/${ORG}/veyron:latest
 podman push ghcr.io/${ORG}/veyron:${VERSION}
@@ -52,7 +52,7 @@ if ! command -v helm &>/dev/null; then
   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 fi
 
-echo "${HYPERSDK_GHCR_TOKEN}" | helm registry login ghcr.io -u ${ORG} --password-stdin
+echo "${GHCR_TOKEN}" | helm registry login ghcr.io -u ${ORG} --password-stdin
 
 mkdir -p /tmp/helm-packages
 for chart in ${CHARTS_DIR}/veyron ${CHARTS_DIR}/veyron-operator ${CHARTS_DIR}/veyron-monitoring; do
