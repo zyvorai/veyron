@@ -249,7 +249,7 @@ EOF
 
                 curl_api GET "/api/v1/vms/${NS}/${VM_NAME}/guest/evidence"
                 body="${_CURL_BODY}"
-                if body_success "${body}" && echo "${body}" | grep -qE '"evidence"'; then
+                if body_success "${body}" && echo "${body}" | grep -qE '"boot"|"network"|"hardware"'; then
                     pass "GET guest/evidence"
                 else
                     fail "GET guest/evidence" "$(echo "${body}" | head -c 300)"
@@ -282,6 +282,16 @@ EOF
         fi
 
         if [[ "${FAIL}" -eq 0 ]]; then
+            # VNC WebSocket ticket
+            vnc_ticket_body="$(printf '{"namespace":"%s","name":"%s","type":"vnc"}' "${NS}" "${VM_NAME}")"
+            curl_api POST "/api/v1/ws/ticket" "${vnc_ticket_body}"
+            body="${_CURL_BODY}"
+            if body_success "${body}" && echo "${body}" | grep -qE '"ticket"'; then
+                pass "POST VNC ws/ticket issued"
+            else
+                fail "POST VNC ws/ticket" "$(echo "${body}" | head -c 300)"
+            fi
+
             curl_api POST "/api/v1/vms/${NS}/${VM_NAME}/stop" '{}'
             body="${_CURL_BODY}"
             body_success "${body}" && pass "POST stop" || fail "POST stop" "$(echo "${body}" | head -c 300)"
