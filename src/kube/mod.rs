@@ -44,7 +44,7 @@ use k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta;
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
 use kube::{
     Client, Config,
-    api::{Api, ApiResource, DeleteParams, DynamicObject, GroupVersionKind, ListParams, Patch, PatchParams, PostParams},
+    api::{Api, DeleteParams, ListParams, Patch, PatchParams, PostParams},
 };
 use serde::Serialize;
 use serde_json::json;
@@ -1714,79 +1714,28 @@ impl KubeClient {
         }
     }
 
-    // ── Windows VirtIO CD auto-attach ─────────────────────────────────────────
+    // ── Windows VirtIO CD auto-attach (containerDisk) ────────────────────────
 
-    const VIRTIO_WIN_ISO_PVC: &'static str = "virtio-win-iso";
-    const VIRTIO_WIN_ISO_URL: &'static str = "https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso";
+    /// Default virtio-win container disk — attached as SATA CD-ROM for Windows VMs.
+    /// Override with `VEYRON_VIRTIO_WIN_CONTAINER_DISK`.
+    const VIRTIO_WIN_CONTAINER_DISK: &'static str = "quay.io/containerdisks/virtio-win:latest";
 
-    /// For Windows VM creation: ensure virtio-win-iso PVC exists (create CDI DataVolume if not),
-    /// then inject a CD-ROM disk + volume into the VM JSON before it is applied to the cluster.
+    /// For Windows VM creation: inject the virtio-win container disk as a SATA CD-ROM.
+    /// Applies `ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY` to mirror quay.io/* to a private prefix.
+    /// No PVC or CDI DataVolume is needed — KubeVirt pulls the image directly.
     pub async fn ensure_virtio_cd_for_windows(
         &self,
-        namespace: &str,
+        _namespace: &str,
         vm_json: &mut serde_json::Value,
     ) {
-        let pvc_name = std::env::var("VEYRON_VIRTIO_WIN_ISO_PVC")
-            .unwrap_or_else(|_| Self::VIRTIO_WIN_ISO_PVC.to_string());
-
-        // Skip if already attached
-        if virtio_cd_already_in_vm(vm_json, &pvc_name) {
+        if virtio_cd_already_in_vm(vm_json) {
             return;
         }
-
-        // Check whether the PVC / DataVolume exists
-        let pvc_exists = Api::<PersistentVolumeClaim>::namespaced(self.client.clone(), namespace)
-            .get(&pvc_name)
-            .await
-            .is_ok();
-
-        if !pvc_exists {
-            let url = std::env::var("VEYRON_VIRTIO_WIN_ISO_URL")
-                .unwrap_or_else(|_| Self::VIRTIO_WIN_ISO_URL.to_string());
-            match self.create_virtio_win_datavolume(namespace, &pvc_name, &url).await {
-                Ok(_) => log::info!("Created VirtIO CDI DataVolume '{}/{}'", namespace, pvc_name),
-                Err(e) => {
-                    log::warn!("Could not create VirtIO DataVolume, skipping CD attach: {}", e);
-                    return;
-                }
-            }
-        }
-
-        inject_virtio_cdrom(vm_json, &pvc_name);
-        log::info!("Injected VirtIO CD-ROM '{}' into Windows VM spec", pvc_name);
-    }
-
-    async fn create_virtio_win_datavolume(
-        &self,
-        namespace: &str,
-        name: &str,
-        url: &str,
-    ) -> Result<()> {
-        let gvk = GroupVersionKind::gvk("cdi.kubevirt.io", "v1beta1", "DataVolume");
-        let mut ar = ApiResource::from_gvk(&gvk);
-        ar.plural = "datavolumes".to_string();
-        let dv_api: Api<DynamicObject> = Api::namespaced_with(self.client.clone(), namespace, &ar);
-
-        let body = json!({
-            "apiVersion": "cdi.kubevirt.io/v1beta1",
-            "kind": "DataVolume",
-            "metadata": {
-                "name": name,
-                "namespace": namespace,
-                "labels": { "veyron.io/type": "virtio-driver-cd" }
-            },
-            "spec": {
-                "source": { "http": { "url": url } },
-                "pvc": {
-                    "accessModes": ["ReadWriteOnce"],
-                    "resources": { "requests": { "storage": "700Mi" } }
-                }
-            }
-        });
-        let obj: DynamicObject =
-            serde_json::from_value(body).map_err(kube::Error::SerdeError)?;
-        dv_api.create(&PostParams::default(), &obj).await?;
-        Ok(())
+        let image = std::env::var("VEYRON_VIRTIO_WIN_CONTAINER_DISK")
+            .unwrap_or_else(|_| Self::VIRTIO_WIN_CONTAINER_DISK.to_string());
+        let image = resolve_container_disk_image(&image);
+        inject_virtio_container_disk(vm_json, &image);
+        log::info!("Injected VirtIO container disk '{}' into Windows VM spec", image);
     }
 
     // ── RDP masquerade port auto-patch ────────────────────────────────────────
@@ -1844,35 +1793,40 @@ impl KubeClient {
     }
 }
 
-/// Check whether a virtio CD-ROM volume is already attached to the VM JSON.
-fn virtio_cd_already_in_vm(vm_json: &serde_json::Value, pvc_name: &str) -> bool {
-    let Some(volumes) = vm_json.pointer("/spec/template/spec/volumes") else {
-        return false;
-    };
-    let Some(arr) = volumes.as_array() else {
-        return false;
-    };
-    arr.iter().any(|v| {
-        v.get("persistentVolumeClaim")
-            .and_then(|p| p.get("claimName"))
-            .and_then(|c| c.as_str())
-            == Some(pvc_name)
-            || v.get("dataVolume")
-                .and_then(|d| d.get("name"))
-                .and_then(|n| n.as_str())
-                == Some(pvc_name)
-    })
+/// Apply `ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY` to mirror quay.io/* images to a private prefix.
+/// E.g. `quay.io/containerdisks/fedora:39` → `myregistry.example.com/containerdisks/fedora:39`.
+pub fn resolve_container_disk_image(image: &str) -> String {
+    if let Ok(registry) = std::env::var("ZEUS_OS_KUBEVIRT_DISK_IMAGE_REGISTRY") {
+        let reg = registry.trim_end_matches('/');
+        if let Some(path) = image.strip_prefix("quay.io/") {
+            return format!("{}/{}", reg, path);
+        }
+    }
+    image.to_string()
 }
 
-/// Inject a virtio-win CD-ROM disk + volume entry into the VM JSON spec.
-fn inject_virtio_cdrom(vm_json: &mut serde_json::Value, pvc_name: &str) {
+/// Check whether a virtio-win-cd volume is already in the VM JSON (by disk name).
+fn virtio_cd_already_in_vm(vm_json: &serde_json::Value) -> bool {
+    vm_json
+        .pointer("/spec/template/spec/volumes")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter().any(|v| {
+                v.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd")
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// Inject a virtio-win SATA CD-ROM backed by a containerDisk into the VM JSON spec.
+fn inject_virtio_container_disk(vm_json: &mut serde_json::Value, image: &str) {
     let disk_entry = json!({
         "name": "virtio-win-cd",
         "cdrom": { "bus": "sata", "readonly": true }
     });
     let vol_entry = json!({
         "name": "virtio-win-cd",
-        "persistentVolumeClaim": { "claimName": pvc_name }
+        "containerDisk": { "image": image, "imagePullPolicy": "IfNotPresent" }
     });
 
     if let Some(disks) = vm_json
