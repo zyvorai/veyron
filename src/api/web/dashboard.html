@@ -98,6 +98,31 @@
   --radius-liquid-lg:28px;
   --blur-liquid:24px;
   --glass-border-strong:rgba(255,255,255,.15);
+  /* ── Instrument Deck design system tokens ── */
+  --void:        #0a0c14;
+  --hull:        #0f1320;
+  --panel:       #151a2b;
+  --panel-2:     #1b2236;
+  --panel-hi:    #232c45;
+  --hairline:    #27304a;
+  --hairline-hi: #3a466b;
+  --plasma:      #7F77DD;
+  --plasma-deep: #534AB7;
+  --plasma-glow: rgba(127,119,221,0.18);
+  --plasma-line: rgba(127,119,221,0.45);
+  --nominal:     #1D9E75;  --nominal-bg: rgba(29,158,117,0.12);
+  --caution:     #EF9F27;  --caution-bg: rgba(239,159,39,0.12);
+  --critical:    #E24B4A;  --critical-bg: rgba(226,75,74,0.12);
+  --inert:       #5F5E5A;  --inert-bg: rgba(95,94,90,0.10);
+  --info-deck:   #378ADD;  --info-deck-bg: rgba(55,138,221,0.12);
+  --ink:         #e8ecf6;
+  --ink-2:       #97a0bd;
+  --ink-3:       #5f6884;
+  --sans-deck:   'Space Grotesk','Inter',system-ui,sans-serif;
+  --r-sm:6px; --r-deck:10px; --r-lg-deck:14px;
+  --gap-deck:16px;
+  --shadow-deck:0 1px 0 rgba(255,255,255,0.03) inset,0 8px 24px rgba(0,0,0,0.4);
+  --glow-deck:0 0 0 1px var(--plasma-line),0 0 24px var(--plasma-glow);
 }
 /*__VMR_CSS__*/
 /* Token bridge — slate aliases to canonical CloudOS tokens */
@@ -3368,6 +3393,129 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   body.mac-desktop-root .cloudos-main{padding-bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 48px)}
 }
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ════════════════════════════════════════════
+   INSTRUMENT DECK — component library
+   ════════════════════════════════════════════ */
+
+/* Telemetry spine */
+.id-spine{height:28px;border-bottom:1px solid var(--hairline);background:var(--void);display:flex;align-items:center;overflow:hidden;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--ink-3);flex-shrink:0;position:relative;z-index:30}
+.id-spine .id-scan{position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--plasma-glow),transparent);width:140px;animation:id-sweep 6s linear infinite;pointer-events:none}
+@keyframes id-sweep{from{transform:translateX(-160px)}to{transform:translateX(100vw)}}
+.id-seg{padding:0 14px;border-right:1px solid var(--hairline);white-space:nowrap;z-index:1;display:flex;align-items:center;gap:7px}
+.id-seg b{color:var(--ink-2);font-weight:500}
+.id-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex-shrink:0}
+.id-dot-ok{background:var(--nominal);box-shadow:0 0 8px var(--nominal)}
+.id-dot-warn{background:var(--caution);box-shadow:0 0 8px var(--caution)}
+.id-live{color:var(--nominal);display:flex;align-items:center;gap:5px;font-weight:600}
+.id-live i{width:6px;height:6px;border-radius:50%;background:var(--nominal);display:inline-block;animation:id-blink 1.4s infinite}
+@keyframes id-blink{50%{opacity:.25}}
+
+/* Signal pills */
+.id-sig{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:3px 9px;border-radius:99px;border:1px solid}
+.id-sig .id-pulse{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.id-sig-ok{color:var(--nominal);background:var(--nominal-bg);border-color:rgba(29,158,117,0.3)}
+.id-sig-ok .id-pulse{background:var(--nominal);box-shadow:0 0 8px var(--nominal);animation:id-blink 1.6s infinite}
+.id-sig-warn{color:var(--caution);background:var(--caution-bg);border-color:rgba(239,159,39,0.3)}
+.id-sig-warn .id-pulse{background:var(--caution);box-shadow:0 0 8px var(--caution)}
+.id-sig-crit{color:var(--critical);background:var(--critical-bg);border-color:rgba(226,75,74,0.35)}
+.id-sig-crit .id-pulse{background:var(--critical);box-shadow:0 0 8px var(--critical);animation:id-blink .9s infinite}
+.id-sig-inert{color:var(--ink-2);background:var(--inert-bg);border-color:var(--hairline)}
+.id-sig-inert .id-pulse{background:var(--inert)}
+
+/* Buttons */
+.id-btn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:9px;border:1px solid var(--hairline);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:.15s}
+.id-btn:hover{border-color:var(--hairline-hi);background:var(--panel-hi)}
+.id-btn-plasma{background:linear-gradient(135deg,var(--plasma),var(--plasma-deep));border-color:transparent;color:#fff;box-shadow:0 4px 16px var(--plasma-glow)}
+.id-btn-plasma:hover{box-shadow:0 6px 22px var(--plasma-glow);transform:translateY(-1px)}
+.id-btn-sm{padding:5px 10px;font-size:11.5px}
+.id-btn-ghost{background:transparent;border-color:transparent}
+
+/* Cards */
+.id-card{background:var(--panel);border:1px solid var(--hairline);border-radius:14px;box-shadow:var(--shadow-deck)}
+.id-card-pad{padding:18px 20px}
+.id-card-h{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--hairline)}
+.id-card-h h3{font-family:var(--sans-deck);font-size:14px;font-weight:600;letter-spacing:.2px}
+.id-card-h .id-sub{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;color:var(--ink-3);margin-left:auto;letter-spacing:1px;text-transform:uppercase}
+
+/* Eyebrow + metric */
+.id-eyebrow{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.id-metric{font-family:var(--sans-deck);font-weight:700;font-feature-settings:"tnum";letter-spacing:-.5px}
+
+/* KPI tiles */
+.id-tile{background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
+.id-tile::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:var(--plasma-glow);filter:blur(20px);opacity:.5;pointer-events:none}
+.id-tile .id-eyebrow{margin-bottom:10px}
+.id-tile .id-big{font-family:var(--sans-deck);font-size:30px;font-weight:700;letter-spacing:-.5px}
+.id-tile .id-delta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;margin-top:6px;display:flex;align-items:center;gap:5px}
+.id-up{color:var(--nominal)} .id-down{color:var(--critical)}
+.id-spark{height:30px;margin-top:10px}
+
+/* VM cards */
+.id-vmcard{background:var(--panel);border:1px solid var(--hairline);border-radius:14px;overflow:hidden;transition:.18s;position:relative}
+.id-vmcard:hover{border-color:var(--plasma-line);box-shadow:0 0 0 1px var(--plasma-line),0 12px 30px rgba(0,0,0,.4);transform:translateY(-2px)}
+.id-vmcard .id-strip{height:3px;background:var(--nominal)}
+.id-vmcard.id-warn .id-strip{background:var(--caution)}
+.id-vmcard.id-crit .id-strip{background:var(--critical)}
+.id-vmcard.id-off .id-strip{background:var(--inert)}
+.id-vmcard .id-body{padding:16px 18px}
+.id-vmcard .id-title{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.id-vmcard .id-os{width:26px;height:26px;border-radius:7px;background:var(--panel-2);display:grid;place-items:center;font-size:13px;border:1px solid var(--hairline)}
+.id-vmcard .id-title h4{font-size:14px;font-weight:600;font-family:var(--sans-deck)}
+.id-vmcard .id-meta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-3);line-height:1.7}
+.id-bars{display:flex;gap:4px;margin:14px 0}
+.id-bars .id-b{flex:1;height:24px;border-radius:4px;background:var(--panel-2);border:1px solid var(--hairline);position:relative;overflow:hidden}
+.id-bars .id-b .id-fill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,var(--plasma),var(--plasma-deep))}
+.id-vmcard .id-actions{display:flex;gap:7px;margin-top:4px}
+
+/* Readout rows */
+.id-readout{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--hairline);font-size:13px}
+.id-readout:last-child{border:0}
+.id-readout .id-lbl{color:var(--ink-2);display:flex;align-items:center;gap:9px}
+
+/* Alert rows */
+.id-alert{display:flex;gap:13px;padding:14px 16px;border-radius:10px;border:1px solid;align-items:flex-start;margin-bottom:10px}
+.id-alert.id-warn{background:var(--caution-bg);border-color:rgba(239,159,39,.3)}
+.id-alert.id-crit{background:var(--critical-bg);border-color:rgba(226,75,74,.35)}
+.id-alert .id-ai{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;flex-shrink:0;font-size:15px}
+.id-alert.id-warn .id-ai{background:rgba(239,159,39,.18);color:var(--caution)}
+.id-alert.id-crit .id-ai{background:rgba(226,75,74,.18);color:var(--critical)}
+.id-alert .id-ax{flex:1}
+.id-alert .id-ax h5{font-size:13px;font-weight:600;font-family:var(--sans-deck);margin-bottom:2px}
+.id-alert .id-ax p{font-size:11.5px;color:var(--ink-2);font-family:'IBM Plex Mono',ui-monospace,monospace}
+
+/* Template cards */
+.id-tpl{background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:16px;transition:.18s}
+.id-tpl:hover{border-color:var(--plasma-line);transform:translateY(-2px)}
+.id-tpl .id-th{display:flex;align-items:center;gap:11px;margin-bottom:12px}
+.id-tpl .id-glyph{width:36px;height:36px;border-radius:9px;background:var(--panel-2);border:1px solid var(--hairline);display:grid;place-items:center;font-size:18px}
+.id-tpl .id-specs{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:var(--ink-3);display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.id-tpl .id-specs span{background:var(--panel-2);border:1px solid var(--hairline);padding:2px 8px;border-radius:6px;color:var(--ink-2)}
+
+/* Ask Zeus panel */
+.id-zeus{background:linear-gradient(135deg,rgba(127,119,221,.10),rgba(83,74,183,.04));border:1px solid var(--plasma-line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.id-zeus::before{content:"";position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:var(--plasma-glow);filter:blur(40px);pointer-events:none}
+.id-zeus .id-zh{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.id-zeus .id-zh .id-orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--plasma),var(--plasma-deep));box-shadow:0 0 18px var(--plasma-glow);animation:id-float 4s ease-in-out infinite}
+@keyframes id-float{50%{transform:translateY(-4px)}}
+.id-zeus .id-zh h3{font-family:var(--sans-deck);font-size:14px;font-weight:600}
+
+/* Section heading */
+.id-sec-h{display:flex;align-items:center;gap:12px;margin:0 0 16px}
+.id-sec-h h2{font-family:var(--sans-deck);font-size:16px;font-weight:600}
+.id-sec-h .id-line{flex:1;height:1px;background:linear-gradient(90deg,var(--hairline),transparent)}
+
+/* Chips */
+.id-chip{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;padding:6px 12px;border-radius:99px;border:1px solid var(--hairline);background:var(--panel);color:var(--ink-2);cursor:pointer;transition:.15s}
+.id-chip:hover{border-color:var(--hairline-hi)}
+.id-chip.id-on{background:var(--plasma-glow);border-color:var(--plasma-line);color:var(--ink)}
+
+/* Gauge */
+.id-gauge{position:relative;width:150px;height:150px}
+.id-gauge svg{transform:rotate(-90deg)}
+.id-gauge .id-read{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.id-gauge .id-read .id-v{font-family:var(--sans-deck);font-size:30px;font-weight:700;letter-spacing:-1px}
+.id-gauge .id-read .id-l{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto">
@@ -3683,6 +3831,17 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <button type="button" id="veyron-alerts-pill" class="veyron-alerts-pill empty" hidden>No alerts</button>
   <select id="veyron-ns-select" hidden aria-hidden="true" tabindex="-1"></select>
   <input type="text" id="veyron-copilot-input" class="veyron-copilot-input" hidden aria-hidden="true" tabindex="-1">
+</div>
+
+<!-- ── Instrument Deck telemetry spine ── -->
+<div class="id-spine" id="id-spine" aria-hidden="true">
+  <div class="id-scan"></div>
+  <div class="id-seg id-live"><i></i>LIVE</div>
+  <div class="id-seg"><span class="id-dot id-dot-ok"></span><b id="id-t-vm">—</b>&nbsp;running</div>
+  <div class="id-seg">cpu <b id="id-t-cpu">—</b></div>
+  <div class="id-seg">mem <b id="id-t-mem">—</b></div>
+  <div class="id-seg"><span class="id-dot id-dot-warn" id="id-alert-dot" style="display:none"></span><b id="id-t-alert">0</b>&nbsp;alerts</div>
+  <div class="id-seg">net <b id="id-t-net">—</b> Mb/s</div>
 </div>
 
 <div class="cloudos-body-row">
@@ -23667,6 +23826,36 @@ async function fetchIncidents() {
     console.error('Incidents fetch error:', e);
   }
 }
+/* ── Instrument Deck telemetry spine ── */
+(function(){
+  function set(id, v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+  function updateSpine(data) {
+    var vms = Array.isArray(data) ? data : (data.vms || data.data || data.items || []);
+    var running = vms.filter(function(v){ return v.status==='Running'; }).length;
+    var alerts  = vms.filter(function(v){ return v.status==='Failed'||v.status==='Error'||(v.status&&v.status.indexOf('Error')>=0); }).length;
+    set('id-t-vm', running);
+    set('id-t-alert', alerts);
+    var dot = document.getElementById('id-alert-dot');
+    if (dot) dot.style.display = alerts > 0 ? 'inline-block' : 'none';
+  }
+  function updateSpineMetrics(h) {
+    var nodes = (h && h.nodes) ? h.nodes : [];
+    if (!nodes.length) return;
+    var cpuSum=0, memSum=0, netSum=0, n=nodes.length;
+    nodes.forEach(function(nd){ cpuSum+=nd.cpu_utilization||0; memSum+=nd.memory_utilization||0; netSum+=nd.network_utilization||0; });
+    set('id-t-cpu', Math.round(cpuSum/n)+'%');
+    set('id-t-mem', Math.round(memSum/n)+'%');
+    set('id-t-net', Math.round(netSum/n*10));
+  }
+  function spineRefresh(){
+    if (typeof apiJson !== 'function') return;
+    apiJson('/api/v1/vms?namespace=all').then(updateSpine).catch(function(){});
+    apiJson('/api/v1/heatmap/resources').then(updateSpineMetrics).catch(function(){});
+  }
+  spineRefresh();
+  setInterval(spineRefresh, 20000);
+  window._idSpineRefresh = spineRefresh;
+})();
 /*__VMR_JS__*/
 </script>
 <div class="modal-overlay mac-console-overlay" id="rdp-sheet-modal" role="dialog" aria-modal="true" aria-label="Remote Desktop" style="z-index:276">
