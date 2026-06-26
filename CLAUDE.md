@@ -195,3 +195,68 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 - **Linux templates** (`src/templates/mod.rs`): `.interactive_console_defaults()` enables **USB tablet**, **disables virtio-balloon**, and sets **`ioThreadsPolicy: shared`** for smoother browser consoles. Windows templates already set the same levers explicitly.
 - **KubeVirt virtio video (optional):** set `kubevirt_video_type` on `VMConfig` (builder: `.kubevirt_video_type("virtio")`) to emit `domain.devices.video`. This requires the cluster KubeVirt **`VideoConfig` alpha feature gate**; without it the API may reject or ignore the field depending on version.
 - **Windows day-to-day remoting:** prefer **RDP** for interactive work; KubeVirt VNC through the dashboard is best-effort over WebSockets. See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
+
+## Design system — Instrument Deck (non-negotiable)
+
+The dashboard (`src/api/web/dashboard.html`) uses the **Instrument Deck** design language. Every future edit to the dashboard must follow these rules without exception.
+
+### Color — token-only, zero raw hex
+
+**All colors must use CSS custom properties.** No hex literals (`#7F77DD`), no `rgb()`/`rgba()` values outside the `:root` token block at the top of `<style>`. A raw color value anywhere in component HTML or CSS is a bug.
+
+| Purpose | Token |
+|---|---|
+| Deepest background | `--void` |
+| Page background | `--hull` |
+| Card surface | `--panel` |
+| Raised surface | `--panel-2` |
+| Hover/active surface | `--panel-hi` |
+| Default border | `--hairline` |
+| Emphasis border | `--hairline-hi` |
+| Brand accent | `--plasma` (violet — the ONLY brand color) |
+| Plasma variants | `--plasma-deep` `--plasma-glow` `--plasma-line` |
+| Status: healthy/running | `--nominal` + `--nominal-bg` |
+| Status: warning | `--caution` + `--caution-bg` |
+| Status: error/critical | `--critical` + `--critical-bg` |
+| Status: stopped/off | `--inert` + `--inert-bg` |
+| Primary text | `--ink` |
+| Secondary text | `--ink-2` |
+| Muted/caption text | `--ink-3` |
+
+**Do not introduce a second brand color.** `--plasma` is the only accent. Status must always use the four signal colors above — never invent a new color for a new state.
+
+### Status rendering — signal dots, never flat rectangles
+
+Status is always rendered as a pulsing `.id-sig` pill with a `.id-pulse` dot inside it:
+- Running → `<span class="id-sig id-sig-ok"><span class="id-pulse"></span>running</span>`
+- Warning → `id-sig-warn`
+- Critical/Error → `id-sig-crit` (blinks fast)
+- Stopped → `id-sig-inert`
+
+Never use a flat colored badge, colored background div, or colored text alone to convey VM/resource status.
+
+### Typography
+
+- **Display / headings**: `font-family: var(--sans-deck)` (Space Grotesk)
+- **All data, IPs, specs, eyebrow labels**: `font-family: 'IBM Plex Mono', ui-monospace, monospace`
+- **Numbers**: always `font-feature-settings: "tnum"` so they don't jitter on live updates
+- **Eyebrow labels**: monospace, 10px, `letter-spacing: 2px`, `text-transform: uppercase`, color `--ink-3`
+
+### Page structure — every page must have
+
+1. **Telemetry spine** — already rendered globally via `#id-spine`; do not add a second one per page
+2. **KPI tile row** — use `.id-tile` cards with `.id-eyebrow` + `.id-big` metric + `.id-spark` sparkline
+3. **Section headings** — `.id-sec-h` with `<h2>` + `.id-line` fade line
+
+### Component classes (use these, don't reinvent)
+
+All Instrument Deck components are in `src/api/web/dashboard.html` under the `id-` prefix:
+
+`.id-tile` · `.id-vmcard` · `.id-gauge` · `.id-sig-ok/warn/crit/inert` · `.id-alert` · `.id-zeus` · `.id-btn-plasma` · `.id-btn-ghost` · `.id-chip` · `.id-card-h` · `.id-readout` · `.id-bars` · `.id-tpl` · `.id-eyebrow` · `.id-metric` · `.id-sec-h`
+
+### Signature interactions (apply to every interactive element)
+
+- **Cards**: `transform: translateY(-2px)` + plasma border on hover — use `.id-vmcard`'s built-in hover, or add `transition:.18s` + `:hover{border-color:var(--plasma-line);box-shadow:0 0 0 1px var(--plasma-line)}`
+- **Running VMs**: pulse animation on status dot (built into `.id-sig-ok`)
+- **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in)
+- **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zeus integration
