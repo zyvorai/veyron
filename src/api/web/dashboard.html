@@ -10297,6 +10297,9 @@ function closeLaunchpad() {
   }
 }
 
+// Track original parents so we can restore panels after teleport
+var _macMenuOrigins = {};
+
 function toggleMacMenu(id) {
   const panel = document.getElementById('mac-menu-' + id);
   const btn = document.getElementById('mac-menu-' + id + '-btn');
@@ -10304,9 +10307,12 @@ function toggleMacMenu(id) {
   const open = panel.classList.contains('open');
   closeMacMenus();
   if (!open) {
-    // Use position:fixed so the panel escapes the navbar's overflow:hidden clip
     const rect = btn ? btn.getBoundingClientRect() : {bottom: 40, left: 0};
-    panel.style.cssText = 'position:fixed!important;top:' + Math.round(rect.bottom + 4) + 'px;left:' + Math.round(rect.left) + 'px;z-index:2000;min-width:200px';
+    // Teleport panel to body to escape the menubar's backdrop-filter containing block
+    // (backdrop-filter traps position:fixed descendants inside overflow:hidden)
+    if (!_macMenuOrigins[id]) _macMenuOrigins[id] = { parent: panel.parentElement, next: panel.nextSibling };
+    document.body.appendChild(panel);
+    panel.style.cssText = 'position:fixed;top:' + Math.round(rect.bottom + 4) + 'px;left:' + Math.round(rect.left) + 'px;z-index:9000;min-width:200px';
     panel.classList.add('open');
     panel.removeAttribute('hidden');
     if (btn) { btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
@@ -10315,8 +10321,21 @@ function toggleMacMenu(id) {
 
 function closeMacMenus() {
   document.querySelectorAll('.mac-menu-panel').forEach(p => {
+    if (!p.classList.contains('open')) return;
     p.classList.remove('open');
     p.setAttribute('hidden', '');
+    p.style.cssText = '';
+    // Restore panel to its original position in the DOM
+    const menuId = p.id ? p.id.replace('mac-menu-', '') : null;
+    if (menuId && _macMenuOrigins[menuId]) {
+      const o = _macMenuOrigins[menuId];
+      if (o.next && o.next.parentNode === o.parent) o.parent.insertBefore(p, o.next);
+      else o.parent.appendChild(p);
+    }
+  });
+  document.querySelectorAll('.mac-menu-panel:not(.open)').forEach(p => {
+    p.classList.remove('open');
+    if (!p.hasAttribute('hidden')) p.setAttribute('hidden', '');
     p.style.cssText = '';
   });
   document.querySelectorAll('.mac-menu-trigger').forEach(b => {
