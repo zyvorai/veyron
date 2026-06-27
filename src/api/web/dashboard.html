@@ -475,7 +475,7 @@ body:not([data-page="dashboard"])::before{animation:none!important}
 .nav-status{display:flex;align-items:center;gap:8px;color:var(--text-muted);font-family:var(--font-mono);font-size:.8rem}
 .nav-dot{width:8px;height:8px;border-radius:50%}
 .nav-dot.ok{background:var(--success);box-shadow:var(--glow-success);animation:forge-pulse 2.5s ease-in-out infinite}
-.nav-dot.err{background:var(--error);box-shadow:0 0 10px rgba(255,34,68,.4)}
+.nav-dot.err{background:var(--error);box-shadow:0 0 10px rgba(226,75,74,.4)}
 .nav-dot.warn{background:var(--warning);box-shadow:0 0 8px rgba(245,158,11,.35)}
 .refresh-text{font-size:.78rem;color:var(--text-dim);font-family:var(--font-mono)}
 
@@ -793,7 +793,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .vm-dot.running::after{border-color:rgba(29,158,117,.2)}
 .vm-dot.stopped{background:var(--text-dim);box-shadow:none}
-.vm-dot.error{background:var(--error);box-shadow:0 0 8px rgba(255,34,68,.4)}
+.vm-dot.error{background:var(--error);box-shadow:0 0 8px rgba(226,75,74,.4)}
 .vm-dot.other{background:var(--spark);box-shadow:0 0 8px rgba(0,180,255,.3)}
 .vm-name{
   font-weight:600;color:var(--text-bright);font-size:1rem;
@@ -808,7 +808,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .vm-badge.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(29,158,117,.2)}
 .vm-badge.stopped{background:rgba(100,100,120,.15);color:var(--text-muted);border:1px solid rgba(100,100,120,.15)}
-.vm-badge.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(255,34,68,.15)}
+.vm-badge.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(226,75,74,.15)}
 .vm-badge.other{background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
 .vm-meta{font-size:.8rem;color:var(--text-dim);font-family:var(--font-mono)}
 .vm-right-stack{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:0;flex:1;max-width:min(100%,560px)}
@@ -833,9 +833,9 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   letter-spacing:.04em;text-transform:uppercase;
 }
 .btn-delete{
-  background:var(--error-dim);color:var(--error);border-color:rgba(255,34,68,.15);
+  background:var(--error-dim);color:var(--error);border-color:rgba(226,75,74,.15);
 }
-.btn-delete:hover{background:rgba(255,34,68,.2);box-shadow:0 0 12px rgba(255,34,68,.15)}
+.btn-delete:hover{background:rgba(226,75,74,.2);box-shadow:0 0 12px rgba(226,75,74,.15)}
 .btn:disabled{opacity:.3;cursor:not-allowed;box-shadow:none}
 .btn-group{display:flex;gap:5px}
 
@@ -853,7 +853,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .event-dot.warn{background:var(--warning);box-shadow:0 0 6px rgba(255,170,0,.3)}
 .event-dot.info{background:var(--spark);box-shadow:0 0 6px rgba(0,180,255,.3)}
-.event-dot.error{background:var(--error);box-shadow:0 0 6px rgba(255,34,68,.3)}
+.event-dot.error{background:var(--error);box-shadow:0 0 6px rgba(226,75,74,.3)}
 .event-body{flex:1;min-width:0}
 .event-msg{font-size:.95rem;font-weight:500;color:var(--text)}
 .event-meta{font-size:.8rem;color:var(--text-dim);margin-top:6px;display:flex;gap:14px;font-family:var(--font-mono)}
@@ -1004,8 +1004,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 }
 .toast-error{
   background:rgba(40,5,5,.95);color:var(--error);
-  border:1px solid rgba(255,34,68,.2);
-  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(255,34,68,.08);
+  border:1px solid rgba(226,75,74,.2);
+  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(226,75,74,.08);
 }
 .toast-info{
   background:rgba(0,15,40,.92);color:var(--spark);
@@ -4873,8 +4873,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   </div>
   <div class="monitor-capabilities">
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(239,159,39,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(226,75,74,.08);border-color:rgba(226,75,74,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--nominal-bg);border-color:rgba(29,158,117,.2);color:var(--nominal)">&#8866;</div><div><h3>Also in Veyron</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
   </div>
   <div id="monitoring-status" class="monitor-overview"></div>
@@ -5620,7 +5620,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <span style="font-size:.72rem;color:var(--text-dim);margin-left:8px">tile size = VM count · color = heat score</span>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
         <span style="font-size:.72rem;color:var(--text-dim)">Cool</span>
-        <div style="width:80px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(52,211,153,.8),rgba(251,191,36,.8),rgba(239,68,68,.8))"></div>
+        <div style="width:80px;height:8px;border-radius:4px;background:linear-gradient(90deg,rgba(29,158,117,.8),rgba(239,159,39,.8),rgba(226,75,74,.8))"></div>
         <span style="font-size:.72rem;color:var(--text-dim)">Hot</span>
       </div>
     </div>
@@ -6419,7 +6419,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
           </div>
 
           <!-- inline error (shown on bad key) -->
-          <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:rgba(127,29,29,.5);border:1px solid rgba(239,68,68,.4);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:#fca5a5;line-height:1.45">
+          <div id="apikey-error" role="alert" style="display:none;align-items:flex-start;gap:8px;background:var(--critical-bg);border:1px solid rgba(226,75,74,.4);border-radius:10px;padding:10px 12px;margin-bottom:16px;font-size:.8rem;color:var(--critical);line-height:1.45">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:1px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <span id="apikey-error-msg">Invalid API key — check and try again.</span>
           </div>
@@ -10279,8 +10279,8 @@ function renderStatusBoard() {
   var statusColors = {
     running:  { bg: 'rgba(22,101,52,.85)',  border: VMR_SIG.ok, text: '#86efac' },
     stopped:  { bg: 'rgba(30,41,59,.85)',   border: '#475569', text: '#94a3b8' },
-    failed:   { bg: 'rgba(127,29,29,.85)',  border: '#f87171', text: '#fca5a5' },
-    error:    { bg: 'rgba(127,29,29,.85)',  border: '#f87171', text: '#fca5a5' },
+    failed:   { bg: 'rgba(100,30,30,.85)',  border: VMR_SIG.crit, text: '#f0a0a0' },
+    error:    { bg: 'rgba(100,30,30,.85)',  border: VMR_SIG.crit, text: '#f0a0a0' },
     starting: { bg: 'rgba(6,78,59,.85)',    border: '#34d399', text: '#6ee7b7' },
     stopping: { bg: 'rgba(69,26,3,.85)',    border: VMR_SIG.warn, text: '#fde68a' },
     pending:  { bg: 'rgba(49,46,129,.85)',  border: '#818cf8', text: '#c7d2fe' },
@@ -11336,9 +11336,9 @@ function vmGenomeStrip(vm) {
   var osColors = { windows:'#60a5fa', ubuntu:'#fb923c', debian:'#a78bfa', fedora:'#34d399', linux:'#38bdf8' };
   var osCol = osColors[guessOsFamily(vm)] || '#94a3b8';
   var cpu = parseCpuCount(vm.cpu) || 0;
-  var cpuCol = cpu >= 16 ? '#f87171' : cpu >= 8 ? '#fb923c' : cpu >= 4 ? '#fbbf24' : '#4ade80';
+  var cpuCol = cpu >= 16 ? VMR_SIG.crit : cpu >= 8 ? VMR_SIG.warn : cpu >= 4 ? VMR_SIG.warn : VMR_SIG.ok;
   var mem = parseMemGiB(vm.memory) || 0;
-  var memCol = mem >= 64 ? '#f87171' : mem >= 16 ? '#fb923c' : mem >= 8 ? '#60a5fa' : '#94a3b8';
+  var memCol = mem >= 64 ? VMR_SIG.crit : mem >= 16 ? VMR_SIG.warn : mem >= 8 ? VMR_SIG.plasma : VMR_SIG.off;
   var st = (vm.status || '').toLowerCase();
   var stCol = st === 'running' ? VMR_SIG.ok : st === 'stopped' ? '#64748b' : st === 'failed' || st === 'error' ? VMR_SIG.crit : VMR_SIG.warn;
   return '<span class="vmr-genome" title="Genome: ' + guessOsFamily(vm) + ' · ' + (vm.cpu||'?') + ' · ' + (vm.memory||'?') + ' · ' + (vm.status||'?') + '">' +
@@ -11511,7 +11511,7 @@ function osFamilyTint(family) {
   const tints = {
     windows: 'rgba(59,130,246,.07)',
     ubuntu:  'rgba(234,88,12,.07)',
-    debian:  'rgba(220,38,38,.06)',
+    debian:  'rgba(226,75,74,.06)',
     fedora:  'rgba(30,64,175,.07)',
     linux:   'rgba(29,158,117,.05)',
   };
@@ -12486,12 +12486,12 @@ function openFleetDiffModal(base) {
       '<span style="color:var(--text-muted)">' + esc(v.namespace||'default') + ' · ' + esc(v.status) + '</span></div>';
   });
   var removedRows = removed.map(function(v) {
-    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);margin-bottom:3px;font-size:.8rem;display:flex;gap:8px;align-items:center">' +
+    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(226,75,74,.08);border:1px solid rgba(226,75,74,.2);margin-bottom:3px;font-size:.8rem;display:flex;gap:8px;align-items:center">' +
       '<span style="color:'+VMR_SIG.crit+';flex-shrink:0">−</span><span style="font-weight:600">' + esc(v.name) + '</span>' +
       '<span style="color:var(--text-muted)">' + esc(v.namespace||'default') + '</span></div>';
   });
   var changedRows = changed.map(function(c) {
-    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);margin-bottom:3px;font-size:.8rem">' +
+    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(239,159,39,.07);border:1px solid rgba(239,159,39,.25);margin-bottom:3px;font-size:.8rem">' +
       '<span style="font-weight:600">' + esc(c.name) + '</span> <span style="color:var(--text-muted);font-size:.72rem">' + esc(c.ns) + '</span>' +
       '<div style="margin-top:3px;font-size:.72rem;color:#fde68a">' + c.diffs.map(esc).join(' · ') + '</div></div>';
   });
@@ -17684,7 +17684,7 @@ function loadVmSessionTimeline(ns, name) {
   var entries = (_actionLog || []).filter(function(e) { return e.name === name && (e.ns || 'default') === ns; });
   if (!entries.length) { el.innerHTML = ''; return; }
   var icons = { start:'▶', stop:'■', restart:'↻', pause:'⏸', unpause:'▶', migrate:'⇄', delete:'✕', snapshot:'◉', tag:'🏷', forge:'⊕' };
-  var statusColors = { ok:'#86efac', error:'#f87171', pending:'#fde68a' };
+  var statusColors = { ok:VMR_SIG.ok, error:VMR_SIG.crit, pending:VMR_SIG.warn };
   el.innerHTML = '<div style="margin-top:4px">' +
     '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Session Activity</div>' +
     '<div style="position:relative;padding-left:14px;border-left:1px solid rgba(255,255,255,.1)">' +
@@ -19498,9 +19498,9 @@ function showVmDeltaStrip(changes) {
   clearTimeout(_vmDeltaTimer);
   var parts = changes.slice(0, 4).map(function(c) {
     if (c.type === 'added')   return '<span style="color:#86efac">+ ' + esc(c.name) + '</span>';
-    if (c.type === 'removed') return '<span style="color:#f87171">- ' + esc(c.name) + '</span>';
+    if (c.type === 'removed') return '<span style="color:'+VMR_SIG.crit+'">- ' + esc(c.name) + '</span>';
     var arrow = c.to === 'Running' ? '→ Running' : c.to === 'Stopped' ? '→ Stopped' : '→ ' + c.to;
-    var col = c.to === 'Running' ? '#86efac' : c.to === 'Stopped' ? '#94a3b8' : '#fde68a';
+    var col = c.to === 'Running' ? VMR_SIG.ok : c.to === 'Stopped' ? VMR_SIG.off : VMR_SIG.warn;
     return '<span style="color:' + col + '">' + esc(c.name) + ' ' + arrow + '</span>';
   });
   if (changes.length > 4) parts.push('<span style="color:var(--text-dim)">+' + (changes.length - 4) + ' more</span>');
@@ -19554,7 +19554,7 @@ function renderFleetAnomalyRibbon() {
   var anomalies = detectFleetAnomalies(vmData);
   if (!anomalies.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
   var sevColor = { warn: VMR_SIG.warn, critical: VMR_SIG.crit, info: '#38bdf8' };
-  var sevBg    = { warn: 'rgba(245,158,11,.1)', critical: 'rgba(239,68,68,.1)', info: 'rgba(56,189,248,.08)' };
+  var sevBg    = { warn: 'rgba(239,159,39,.1)', critical: 'rgba(226,75,74,.1)', info: 'rgba(56,189,248,.08)' };
   el.style.display = 'block';
   el.innerHTML = '<div style="padding:0 14px 6px;display:flex;flex-direction:column;gap:5px">' +
     anomalies.map(function(a) {
@@ -19617,9 +19617,9 @@ function renderFleetBriefing() {
     dim:      'rgba(100,116,139,.13)',
   };
   var textColors = {
-    ok:       '#86efac',
-    warn:     '#fde68a',
-    critical: '#fca5a5',
+    ok:       VMR_SIG.ok,
+    warn:     VMR_SIG.warn,
+    critical: VMR_SIG.crit,
     dim:      'var(--text-dim)',
   };
 
@@ -19647,9 +19647,9 @@ function updateFleetStatusBar() {
   }
   bar.style.display = 'flex';
   bar.innerHTML =
-    seg(running, 'rgba(52,211,153,.7)', 'Running', 'Running') +
+    seg(running, 'rgba(29,158,117,.7)', 'Running', 'Running') +
     seg(stopped, 'rgba(100,116,139,.5)', 'Stopped', 'Stopped') +
-    seg(issues, 'rgba(239,68,68,.7)', '__issues__', 'Issues') +
+    seg(issues, 'rgba(226,75,74,.7)', '__issues__', 'Issues') +
     seg(other, 'rgba(100,116,139,.3)', '', 'Other');
 }
 
@@ -21644,7 +21644,7 @@ async function fetchMonitoring() {
       badge.className = 'anom-count-badge';
       badge.style.background = 'var(--error-dim)';
       badge.style.color = 'var(--error)';
-      badge.style.border = '1px solid rgba(255,34,68,.2)';
+      badge.style.border = '1px solid rgba(226,75,74,.2)';
     }
     if (recBadge) { recBadge.style.display = 'none'; }
     console.error('Monitoring fetch error:', e);
