@@ -127,6 +127,19 @@
   --gap-deck:16px;
   --shadow-deck:0 1px 0 rgba(255,255,255,0.03) inset,0 8px 24px rgba(0,0,0,0.4);
   --glow-deck:0 0 0 1px var(--plasma-line),0 0 24px var(--plasma-glow);
+  /* Section accent tokens — nav identity colors */
+  --section-compute:  #8ab4ff;
+  --section-observe:  #8ee8d9;
+  --section-storage:  #e9d18b;
+  --section-network:  #a4c8ff;
+  --section-security: #ff9e9e;
+  --section-platform: #d1b3ff;
+  --section-finops:   #b5e48c;
+  --section-ops:      #f4b183;
+  /* macOS traffic light tokens */
+  --mac-close: #ff5f57;
+  --mac-min:   #febc2e;
+  --mac-full:  #28c840;
 }
 /*__VMR_CSS__*/
 /* Token bridge — slate aliases to canonical CloudOS tokens */
@@ -687,14 +700,14 @@ body:not([data-page="dashboard"])::before{animation:none!important}
 .priority-state.good{color:var(--success)}
 
 .section-shell .page-header h1::before{transition:color .2s ease}
-body[data-section="compute"] .page-header h1::before{color:#8ab4ff}
-body[data-section="observe"] .page-header h1::before{color:#8ee8d9}
-body[data-section="storage"] .page-header h1::before{color:#e9d18b}
-body[data-section="network"] .page-header h1::before{color:#a4c8ff}
-body[data-section="security"] .page-header h1::before{color:#ff9e9e}
-body[data-section="platform"] .page-header h1::before{color:#d1b3ff}
-body[data-section="finops"] .page-header h1::before{color:#b5e48c}
-body[data-section="ops"] .page-header h1::before{color:#f4b183}
+body[data-section="compute"] .page-header h1::before{color:var(--section-compute)}
+body[data-section="observe"] .page-header h1::before{color:var(--section-observe)}
+body[data-section="storage"] .page-header h1::before{color:var(--section-storage)}
+body[data-section="network"] .page-header h1::before{color:var(--section-network)}
+body[data-section="security"] .page-header h1::before{color:var(--section-security)}
+body[data-section="platform"] .page-header h1::before{color:var(--section-platform)}
+body[data-section="finops"] .page-header h1::before{color:var(--section-finops)}
+body[data-section="ops"] .page-header h1::before{color:var(--section-ops)}
 body[data-section="dashboard"] .page-header h1::before{color:var(--molten)}
 body[data-section="compute"] .page.active .card-header{background:linear-gradient(90deg,rgba(138,180,255,.11),transparent)}
 body[data-section="observe"] .page.active .card-header{background:linear-gradient(90deg,rgba(142,232,217,.11),transparent)}
@@ -1739,9 +1752,9 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   transition:filter .15s,transform .1s;font-size:0;
 }
 .mac-traffic-btn:hover{filter:brightness(1.15);transform:scale(1.08)}
-.mac-traffic-close{background:#ff5f57;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
-.mac-traffic-min{background:#febc2e;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
-.mac-traffic-full{background:#28c840;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.mac-traffic-close{background:var(--mac-close);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.mac-traffic-min{background:var(--mac-min);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.mac-traffic-full{background:var(--mac-full);box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
 .mac-console-back{
   display:inline-flex;align-items:center;gap:4px;padding:5px 12px 5px 8px;border-radius:8px;
   border:1px solid var(--glass-border);background:rgba(255,255,255,.06);
@@ -1813,15 +1826,15 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
 }
 
 .drift-badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;vertical-align:middle}
-.drift-badge.sync{background:rgba(29,158,117,.15);color:#15803d}
-.drift-badge.drift{background:rgba(239,159,39,.2);color:#92400e}
-.drift-badge.na{background:rgba(148,163,184,.15);color:#6b7280}
+.drift-badge.sync{background:var(--nominal-bg);color:var(--nominal)}
+.drift-badge.drift{background:var(--caution-bg);color:var(--caution)}
+.drift-badge.na{background:var(--inert-bg);color:var(--inert)}
 .cluster-context-bar{display:none;padding:8px 20px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:.82rem}
 .cluster-context-bar.visible{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .cluster-context-meta{color:var(--text-muted)}
 .catalog-banner{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.88rem;line-height:1.45}
-.catalog-banner.ok{background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.25);color:#166534}
-.catalog-banner.warn{background:rgba(239,159,39,.12);border:1px solid rgba(239,159,39,.28);color:#92400e}
+.catalog-banner.ok{background:var(--nominal-bg);border:1px solid rgba(29,158,117,.25);color:var(--nominal)}
+.catalog-banner.warn{background:var(--caution-bg);border:1px solid rgba(239,159,39,.28);color:var(--caution)}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
 .detail-section{
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -3659,19 +3672,19 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .vc-card{background:var(--vc-glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--vc-glass-border);border-radius:24px;padding:24px;cursor:pointer;transition:transform .4s cubic-bezier(.4,0,.2,1),box-shadow .4s}
 .vc-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 25px 50px -12px rgba(0,245,255,.15)}
 .vc-card.vc-running{border-color:var(--vc-run-border)}
-.vc-card.vc-crit{border-color:rgba(226,75,74,.35)}
+.vc-card.vc-crit{border-color:var(--critical-bg)}
 .vc-badge-run{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--vc-run-bg);color:var(--vc-run);border:1px solid var(--vc-run-border);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
 .vc-badge-run .vc-dot{width:6px;height:6px;border-radius:50%;background:var(--vc-run);animation:vc-ping 2s cubic-bezier(0,0,.2,1) infinite}
 .vc-badge-stop{display:inline-flex;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
-.vc-badge-crit{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(226,75,74,.10);color:#E24B4A;border:1px solid rgba(226,75,74,.30);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
+.vc-badge-crit{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--critical-bg);color:var(--critical);border:1px solid rgba(226,75,74,.30);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
 @keyframes vc-ping{75%,100%{transform:scale(2.2);opacity:0}}
 .vc-bar-track{height:6px;background:rgba(255,255,255,.10);border-radius:99px;overflow:hidden;margin-top:6px}
-.vc-bar-cpu{height:100%;background:linear-gradient(90deg,var(--vc-cyan),#22d3ee);border-radius:99px;transition:width .6s ease}
-.vc-bar-mem{height:100%;background:linear-gradient(90deg,var(--vc-magenta),#f472b6);border-radius:99px;transition:width .6s ease}
-.vc-btn-primary{background:linear-gradient(90deg,var(--vc-cyan),#22d3ee);color:#000;font-weight:700;padding:11px 22px;border-radius:16px;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.5px;transition:filter .15s}
+.vc-bar-cpu{height:100%;background:linear-gradient(90deg,var(--vc-cyan),var(--vc-cyan));border-radius:99px;transition:width .6s ease}
+.vc-bar-mem{height:100%;background:linear-gradient(90deg,var(--vc-magenta),var(--vc-magenta));border-radius:99px;transition:width .6s ease}
+.vc-btn-primary{background:linear-gradient(90deg,var(--vc-cyan),var(--vc-cyan));color:var(--void);font-weight:700;padding:11px 22px;border-radius:16px;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.5px;transition:filter .15s}
 .vc-btn-primary:hover{filter:brightness(1.1)}
-.vc-btn-stop{background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.30);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:background .15s}
-.vc-btn-stop:hover{background:rgba(239,68,68,.20)}
+.vc-btn-stop{background:var(--critical-bg);color:var(--critical);border:1px solid rgba(226,75,74,.30);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:background .15s}
+.vc-btn-stop:hover{background:rgba(226,75,74,.20)}
 .vc-btn-start{background:var(--vc-run);color:#000;border:none;padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:600;cursor:pointer;transition:filter .15s}
 .vc-btn-start:hover{filter:brightness(1.1)}
 .vc-btn-ghost{background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:border-color .15s}
@@ -3689,7 +3702,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 #page-vcentre[data-vc-theme="arctic"]{--vc-bg:#06080f;--vc-cyan:#60a5fa;--vc-magenta:#a78bfa;--vc-glass:rgba(96,165,250,.04);--vc-glass-border:rgba(96,165,250,.12);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,.10);--vc-run-border:rgba(16,185,129,.30)}
 .vc-theme-btn{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0}
 .vc-theme-btn:hover{transform:scale(1.2)}
-.vc-theme-btn.active{border-color:#fff}
+.vc-theme-btn.active{border-color:var(--ink)}
 
 /* — vmr-chip-dot signals — */
 .vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
@@ -4488,11 +4501,11 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="dashboard-command-grid">
     <div class="dashboard-side-stack">
       <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--spark)">&#9889;</span> CPU Usage</span><span class="chart-current" id="cpu-current">--</span></div><div class="chart-area"><canvas id="cpu-chart"></canvas></div></div>
-      <div class="card glass-card"><div class="card-header"><span class="card-title">Virtual Machines</span><button class="nav-link table-action-link" onclick="navigate('vms')">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
+      <div class="card glass-card"><div class="card-header"><span class="card-title">Virtual Machines</span><button type="button" class="nav-link table-action-link" onclick="navigate('vms')">View all &#8250;</button></div><div id="dash-vm-list"></div></div>
     </div>
     <div class="dashboard-side-stack">
       <div class="chart-card"><div class="chart-header"><span class="chart-title"><span style="color:var(--molten)">&#9632;</span> Memory Usage</span><span class="chart-current" id="mem-current">--</span></div><div class="chart-area"><canvas id="mem-chart"></canvas></div></div>
-      <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span><button class="nav-link table-action-link" onclick="navigate('events')">View all &#8250;</button></div><div id="dash-event-list"></div></div>
+      <div class="card glass-card"><div class="card-header"><span class="card-title">Signal Feed</span><button type="button" class="nav-link table-action-link" onclick="navigate('events')">View all &#8250;</button></div><div id="dash-event-list"></div></div>
     </div>
   </div>
   </details>
@@ -4540,7 +4553,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <canvas id="vmr-fleet-sparkline" width="80" height="22" style="display:block;width:80px;height:22px;border-radius:3px;opacity:.7"></canvas>
       <span id="vmr-fleet-sparkline-label" style="font-size:.65rem;color:var(--text-dim);white-space:nowrap"></span>
     </div>
-    <div id="vmr-fleet-cost-tile" style="display:none;flex-shrink:0;font-size:.65rem;cursor:pointer;background:var(--nominal-bg);border:1px solid rgba(29,158,117,.2);border-radius:7px;padding:3px 8px;white-space:nowrap" onclick="openFleetCapacitySettings()" title="Estimated running fleet cost (click to set rate)"></div>
+    <div id="vmr-fleet-cost-tile" role="button" tabindex="0" style="display:none;flex-shrink:0;font-size:.65rem;cursor:pointer;background:var(--nominal-bg);border:1px solid var(--nominal);border-radius:7px;padding:3px 8px;white-space:nowrap" onclick="openFleetCapacitySettings()" onkeydown="if(event.key==='Enter'||event.key===' ')openFleetCapacitySettings()" title="Estimated running fleet cost (click to set rate)"></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
@@ -4692,7 +4705,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 <div class="modal-overlay" id="vm-focus-overlay" onclick="if(event.target===this)closeVmFocusOverlay()" style="background:rgba(0,0,0,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)">
   <div style="width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:rgba(16,18,26,.95)">
     <div style="display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.07)">
-      <span id="vfo-status-dot" style="width:8px;height:8px;border-radius:50%;background:#94a3b8;flex-shrink:0"></span>
+      <span id="vfo-status-dot" style="width:8px;height:8px;border-radius:50%;background:var(--inert);flex-shrink:0"></span>
       <span id="vfo-title" style="font-size:.95rem;font-weight:600;letter-spacing:.02em;color:var(--text-bright)">VM Focus</span>
       <span id="vfo-status" style="font-size:.75rem;color:var(--text-muted);margin-left:4px"></span>
       <div style="margin-left:auto;display:flex;gap:6px">
@@ -5987,12 +6000,12 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         </span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        <button id="fc-mode-load" class="glass-btn-secondary glass-btn-sm">Load</button>
-        <button id="fc-mode-mem"  class="glass-btn-secondary glass-btn-sm">Memory</button>
-        <button id="fc-mode-net"  class="glass-btn-secondary glass-btn-sm">Network</button>
+        <button type="button" id="fc-mode-load" class="glass-btn-secondary glass-btn-sm">Load</button>
+        <button type="button" id="fc-mode-mem"  class="glass-btn-secondary glass-btn-sm">Memory</button>
+        <button type="button" id="fc-mode-net"  class="glass-btn-secondary glass-btn-sm">Network</button>
         <span style="width:1px;height:18px;background:var(--border);margin:0 2px"></span>
-        <button id="fc-spin-btn"  class="glass-btn-secondary glass-btn-sm">&#8635; Auto-orbit</button>
-        <button class="glass-btn-secondary glass-btn-sm" onclick="fetchFleetConstellation()">&#8635; Refresh</button>
+        <button type="button" id="fc-spin-btn"  class="glass-btn-secondary glass-btn-sm">&#8635; Auto-orbit</button>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchFleetConstellation()">&#8635; Refresh</button>
       </div>
     </div>
 
@@ -6205,8 +6218,8 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     </div>
     <div class="gw-spacer"></div>
     <div class="gw-seg">
-      <button class="gw-on" data-gd="comfy">Comfortable</button>
-      <button data-gd="dense">Dense</button>
+      <button type="button" class="gw-on" data-gd="comfy">Comfortable</button>
+      <button type="button" data-gd="dense">Dense</button>
     </div>
   </div>
 
@@ -6215,8 +6228,8 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <span class="gw-tg">Live view</span>
     <span class="gw-st">Watch the wall react as fleet health changes — toggle to simulate incident</span>
     <div class="gw-stoggle">
-      <button class="gw-ok gw-on" id="gw-b-ok">Healthy</button>
-      <button class="gw-bad" id="gw-b-bad">Incident</button>
+      <button type="button" class="gw-ok gw-on" id="gw-b-ok">Healthy</button>
+      <button type="button" class="gw-bad" id="gw-b-bad">Incident</button>
     </div>
   </div>
 
@@ -6271,7 +6284,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <hr style="border-color:var(--border);margin:12px 0">
       <h3 class="section-subtitle">Disks</h3>
       <div id="crd-disks-list"></div>
-      <button class="glass-btn-secondary glass-btn-sm" onclick="addCrdDisk()" style="margin-top:4px">+ Add Disk</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="addCrdDisk()" style="margin-top:4px">+ Add Disk</button>
       <hr style="border-color:var(--border);margin:12px 0">
       <h3 class="section-subtitle">Network</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -7765,7 +7778,7 @@ function renderVmCapsuleVmr() {
     loadVmPeersPanel(ns, name);
     loadEditHardwarePanel(ns, name, vm);
   }).catch(function(e) {
-    body.innerHTML = '<div class="vmr-panel" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div class="vmr-panel" style="color:var(--critical);padding:16px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="selectVm(' + jsArgs(ns, name) + ',{})">&#8635; Retry</button></div>';
   });
 }
 
@@ -8799,7 +8812,7 @@ function loadPageData(page, opts) {
     var actionBtn = running
       ? '<button type="button" class="vc-btn-stop" onclick="event.stopPropagation();vmAction(' + jsArgs(ns,vm.name,'stop') + ',event)">Stop</button>'
       : '<button type="button" class="vc-btn-start" onclick="event.stopPropagation();vmAction(' + jsArgs(ns,vm.name,'start') + ',event)">Start</button>';
-    return '<div class="' + cardCls + '" onclick="vcOpenDetail(' + jsArgs(ns,vm.name) + ')">' +
+    return '<div class="' + cardCls + '" role="button" tabindex="0" onclick="vcOpenDetail(' + jsArgs(ns,vm.name) + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')vcOpenDetail(' + jsArgs(ns,vm.name) + ')">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' + vcBadge(vm) +
       '<button type="button" class="vc-btn-ghost" style="padding:7px 14px;font-size:11px" onclick="event.stopPropagation();vcOpenDetail(' + jsArgs(ns,vm.name) + ')">Details</button></div>' +
       '<div style="margin-bottom:4px;font-family:\'Space Grotesk\',sans-serif;font-size:16px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(vm.name) + '</div>' +
@@ -9892,7 +9905,7 @@ async function loadNotificationCenterPreview() {
       '</button>';
     }).join('');
   } catch (e) {
-    list.innerHTML = '<div style="padding:8px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    list.innerHTML = '<div style="padding:8px;color:var(--critical)">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px" onclick="refreshNotificationList()">&#8635; Retry</button></div>';
   }
 }
 
@@ -10149,7 +10162,7 @@ async function loadMissionControlOverlay() {
         '</div>';
     }
   } catch (e) {
-    if (zones) zones.innerHTML = '<p style="color:var(--error)">' + esc(e.message || String(e)) + '</p>';
+    if (zones) zones.innerHTML = '<div style="padding:16px;text-align:center"><p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="openMissionControlOverlay()">&#8635; Retry</button></div>';
   }
 }
 
@@ -10271,7 +10284,7 @@ async function openLaunchpad() {
     highlightLaunchpadFocus();
   } catch (e) {
     launchpadApps = [];
-    grid.innerHTML = '<p style="color:var(--error)">' + esc(e.message || String(e)) + '</p>';
+    grid.innerHTML = '<p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p>';
   }
 }
 
@@ -14377,15 +14390,15 @@ function setConsoleHubProto(proto) {
   } else if (proto === 'ssh') {
     disconnectConsoleHubVnc();
     if (altPanel) altPanel.innerHTML = '<div style="padding:20px;color:var(--text-muted)"><strong>SSH</strong><br><br>Click below to open SSH in the VM inspector:</div>' +
-      '<div style="padding:0 20px"><button class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ',{});setTimeout(showSshPopover.bind(null,' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + '),600);},300)">Open SSH for ' + esc(_consoleHubVm.name) + '</button></div>';
+      '<div style="padding:0 20px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ',{});setTimeout(showSshPopover.bind(null,' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + '),600);},300)">Open SSH for ' + esc(_consoleHubVm.name) + '</button></div>';
   } else if (proto === 'rdp') {
     disconnectConsoleHubVnc();
     if (altPanel) altPanel.innerHTML = '<div style="padding:20px;color:var(--text-muted)"><strong>RDP</strong><br><br>Click below to open the RDP sheet:</div>' +
-      '<div style="padding:0 20px"><button class="glass-btn-primary glass-btn-sm" onclick="openRdpSheet(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ')">Open RDP for ' + esc(_consoleHubVm.name) + '</button></div>';
+      '<div style="padding:0 20px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openRdpSheet(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ')">Open RDP for ' + esc(_consoleHubVm.name) + '</button></div>';
   } else if (proto === 'serial') {
     disconnectConsoleHubVnc();
     if (altPanel) altPanel.innerHTML = '<div style="padding:20px;color:var(--text-muted)"><strong>Serial console</strong><br><br>Click below to open the serial console window:</div>' +
-      '<div style="padding:0 20px"><button class="glass-btn-primary glass-btn-sm" onclick="openSerialConsole(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ')">Open serial for ' + esc(_consoleHubVm.name) + '</button></div>';
+      '<div style="padding:0 20px"><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSerialConsole(' + jsArgs(_consoleHubVm.ns, _consoleHubVm.name) + ')">Open serial for ' + esc(_consoleHubVm.name) + '</button></div>';
   }
 }
 
@@ -14878,7 +14891,7 @@ function openCopilotDoctor(ns, name) {
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Running Veyron Doctor…</div>';
   apiJson('/api/v1/experience/copilot/doctor/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
     .then(data => renderCopilotResult(data))
-    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>'; });
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="openCopilotDoctor(' + jsArgs(ns,name) + ')">&#8635; Retry</button></div>'; });
 }
 
 async function runCopilotAskScoped(ns, name, query) {
@@ -14896,7 +14909,7 @@ async function runCopilotAskScoped(ns, name, query) {
     });
     renderCopilotResult(data);
   } catch (e) {
-    if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runCopilotAskScoped(' + jsArgs(ns,name,query) + ')">&#8635; Retry</button></div>';
   }
 }
 
@@ -14911,7 +14924,7 @@ async function runBackupAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runBackupAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -14930,7 +14943,7 @@ async function runCostAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runCostAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -14977,7 +14990,7 @@ async function runCopilotAsk() {
     updateCopilotModeBadge(data.mode, true);
     if (input) input.value = '';
   } catch (e) {
-    if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runCopilotAsk()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15548,7 +15561,7 @@ function openCopilotNetwork(ns, name) {
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Running Network Lens…</div>';
   apiJson('/api/v1/experience/copilot/network/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
     .then(data => renderCopilotResult(data))
-    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>'; });
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="openCopilotNetwork(' + jsArgs(ns,name) + ')">&#8635; Retry</button></div>'; });
 }
 
 function openCopilotScheduling(ns, name) {
@@ -15557,7 +15570,7 @@ function openCopilotScheduling(ns, name) {
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Analyzing scheduling…</div>';
   apiJson('/api/v1/experience/copilot/scheduling/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
     .then(data => renderCopilotResult(data))
-    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>'; });
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="openCopilotScheduling(' + jsArgs(ns,name) + ')">&#8635; Retry</button></div>'; });
 }
 
 function openCopilotGuest(ns, name) {
@@ -15566,7 +15579,7 @@ function openCopilotGuest(ns, name) {
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Inspecting guest…</div>';
   apiJson('/api/v1/experience/copilot/guest/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name))
     .then(data => renderCopilotResult(data))
-    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>'; });
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="openCopilotGuest(' + jsArgs(ns,name) + ')">&#8635; Retry</button></div>'; });
 }
 
 function openCopilotFilesystem(ns, name) {
@@ -15575,7 +15588,7 @@ function openCopilotFilesystem(ns, name) {
   if (el) el.innerHTML = '<div style="color:var(--text-dim);padding:8px">Reading guest filesystem…</div>';
   apiJson('/api/v1/experience/copilot/guest/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/filesystem')
     .then(data => renderCopilotResult(data))
-    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>'; });
+    .catch(e => { if (el) el.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="openCopilotFilesystem(' + jsArgs(ns,name) + ')">&#8635; Retry</button></div>'; });
 }
 
 async function runStorageDoctor() {
@@ -15593,7 +15606,7 @@ async function runStorageDoctor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runStorageDoctor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15612,7 +15625,7 @@ async function runSecuritySentinel() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runSecuritySentinel()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15635,7 +15648,7 @@ async function runPerformanceAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runPerformanceAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15654,7 +15667,7 @@ async function runGitOpsAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runGitOpsAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15673,7 +15686,7 @@ async function runForecastAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runForecastAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15692,7 +15705,7 @@ async function runIntegrationsAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runIntegrationsAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15711,7 +15724,7 @@ async function runSchedulingFleetAdvisor() {
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runSchedulingFleetAdvisor()">&#8635; Retry</button></div>';
   }
 }
 
@@ -15731,7 +15744,7 @@ async function runFleetCopilotAdvisor(cardId, bodyId, apiPath, fallbackQuery, lo
     body.innerHTML = '';
     renderCopilotResultInto(body, data);
   } catch (e) {
-    body.innerHTML = '<div style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    body.innerHTML = '<div style="color:var(--critical);padding:8px">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="runFleetCopilotAdvisor(' + jsArgs(cardId,bodyId,apiPath,fallbackQuery,loadingMsg) + ')">&#8635; Retry</button></div>';
   }
 }
 
@@ -18133,7 +18146,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   return '<div class="vm-hero zeus-glass">' +
     '<div class="vm-hero-top"><div>' +
       '<h2 class="vm-hero-title vmr-copy-tile" title="Copy VM name" onclick="copyToClipboard(' + JSON.stringify(name) + ')">' + esc(name) + '<span class="vmr-copy-hint">copy</span></h2>' +
-      '<div class="vm-hero-status ' + pillCls + '"><span class="status-dot"></span>' + esc(String(status)) + '</div>' +
+      idSig(String(status)) +
       '<div class="vm-hero-metrics">' +
         '<div class="vm-hero-metric">CPU<strong>' + esc(vm.cpu || '—') + '</strong></div>' +
         '<div class="vm-hero-metric">Memory<strong>' + esc(vm.memory || '—') + '</strong></div>' +
@@ -18266,7 +18279,7 @@ async function fetchVmWorkspaceDetail(ns, name) {
     loadVmSessionTimeline(ns, name);
     loadVmPeersPanel(ns, name);
   } catch (e) {
-    if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--error)">' + esc(e.message || String(e)) + '</div>';
+    if (content) content.innerHTML = '<div class="zeus-glass" style="padding:20px;color:var(--critical)">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="selectVm(' + jsArgs(ns,name) + ',{})">&#8635; Retry</button></div>';
     toast('Failed to load VM: ' + (e.message || String(e)), 'error');
   }
 }
@@ -18612,12 +18625,12 @@ async function openVmCompare() {
       row('Drift', va.drift_detected, vb.drift_detected) +
       '</tbody></table>' +
       '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">' +
-      '<button class="glass-btn-secondary glass-btn-sm" onclick="selectVm(' + jsArgs(a.ns, a.name) + ',{});closeVmCompare()">Inspect ' + esc(a.name) + '</button>' +
-      '<button class="glass-btn-secondary glass-btn-sm" onclick="selectVm(' + jsArgs(b.ns, b.name) + ',{});closeVmCompare()">Inspect ' + esc(b.name) + '</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="selectVm(' + jsArgs(a.ns, a.name) + ',{});closeVmCompare()">Inspect ' + esc(a.name) + '</button>' +
+      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="selectVm(' + jsArgs(b.ns, b.name) + ',{});closeVmCompare()">Inspect ' + esc(b.name) + '</button>' +
       '</div>';
     body.innerHTML = html;
   } catch (e) {
-    body.innerHTML = '<p style="color:var(--error)">' + esc(e.message || String(e)) + '</p>';
+    body.innerHTML = '<div style="padding:16px;text-align:center"><p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="renderVmCompare()">&#8635; Retry</button></div>';
   }
 }
 function closeVmCompare() {
@@ -19819,7 +19832,7 @@ function renderGroupedVmList(vms) {
     var running = g.vms.filter(function(v) { return v.status === 'Running'; }).length;
     var statusColor = running === g.vms.length ? VMR_SIG.ok : running > 0 ? VMR_SIG.warn : VMR_SIG.off;
     html += '<div class="vmr-vmgroup">' +
-      '<div class="vmr-vmgroup-header" onclick="toggleVmGroup(' + JSON.stringify(g.prefix) + ')">' +
+      '<div class="vmr-vmgroup-header" role="button" tabindex="0" onclick="toggleVmGroup(' + JSON.stringify(g.prefix) + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')toggleVmGroup(' + JSON.stringify(g.prefix) + ')">' +
       '<span class="vmr-vmgroup-chevron">' + (collapsed ? '▸' : '▾') + '</span>' +
       '<span class="vmr-vmgroup-name">' + esc(g.prefix) + '</span>' +
       '<span class="vmr-vmgroup-count" style="color:' + statusColor + '">' + running + '/' + g.vms.length + ' running</span>' +
@@ -22053,7 +22066,7 @@ function setRefreshInterval(val) {
 function refresh() {
   if (refreshPaused) return;
   resetRefreshRing();
-  const island = document.getElementById('mac-dynamic-island');
+  const island = document.getElementById('mac-dynamic-island-btn');
   if (island) island.classList.add('refreshing');
   if (refreshAbortController) refreshAbortController.abort();
   refreshAbortController = new AbortController();
@@ -22080,7 +22093,7 @@ function refresh() {
   if (typeof syncMissionRefreshLabel === 'function') syncMissionRefreshLabel();
   refreshIslandAlerts();
   setTimeout(function() {
-    const isl = document.getElementById('mac-dynamic-island');
+    const isl = document.getElementById('mac-dynamic-island-btn');
     if (isl) isl.classList.remove('refreshing');
   }, 900);
 }
@@ -23917,8 +23930,8 @@ function runGitOpsCopilotAsk() {
 }
 
 function monitorStackPill(label, available) {
-  return '<div class="glass-stat-pill' + (available ? ' ok' : '') + ' clickable-stat" onclick="navigate(\'observability\')" title="Open observability">' +
-    '<div class="gsl">' + esc(label) + '</div><div class="gsv" style="font-size:.95rem">' + (available ? 'In cluster' : 'Not detected') + '</div></div>';
+  return '<button type="button" class="glass-stat-pill' + (available ? ' ok' : '') + ' clickable-stat" onclick="navigate(\'observability\')" title="Open observability">' +
+    '<div class="gsl">' + esc(label) + '</div><div class="gsv" style="font-size:.95rem">' + (available ? 'In cluster' : 'Not detected') + '</div></button>';
 }
 
 function imageStatusClass(status) {
@@ -23980,7 +23993,7 @@ async function fetchPerformance() {
           '<div class="glass-stat-pill"><div class="gsl">Profiles</div><div class="gsv">' + items.length + '</div></div>' +
           '<div class="glass-stat-pill' + (avgCpu >= 85 ? ' warn' : '') + '"><div class="gsl">Avg CPU P95</div><div class="gsv">' + avgCpu.toFixed(1) + '%</div></div>' +
           '<div class="glass-stat-pill' + (avgMem >= 85 ? ' warn' : '') + '"><div class="gsl">Avg mem P95</div><div class="gsv">' + avgMem.toFixed(1) + '%</div></div>' +
-          '<div class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Zeus"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></div>';
+          '<button type="button" class="glass-stat-pill' + (hot ? ' bad' : ' ok') + ' clickable-stat" onclick="performanceCopilotChip(\'Which VMs have high CPU or memory?\')" title="Ask Zeus"><div class="gsl">Hot VMs</div><div class="gsv">' + hot + '</div></button>';
       }
     }
     if (tb) {
