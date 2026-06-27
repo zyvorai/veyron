@@ -20818,6 +20818,23 @@ async function deleteSnapshot(ns, snapName) {
   });
 }
 
+// Called from VM Capsule snapshot list — delegates to restoreSnapshot
+function openRestoreSnapModal(ns, snapName, vmName) {
+  restoreSnapshot(ns, snapName);
+}
+
+// Accordion toggle for Edit Hardware panel in VM Capsule
+function toggleAccord(key) {
+  var section = document.getElementById('accord-' + key);
+  if (!section) return;
+  var body = section.querySelector('.vmr-accord-body');
+  var chev = section.querySelector('.vmr-accord-chev');
+  if (!body) return;
+  var open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : '';
+  if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
+}
+
 async function restoreSnapshot(ns, snapName) {
   openGlassConfirm({
     title: 'Restore snapshot',
