@@ -5648,7 +5648,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 
 <div class="page section-shell" id="page-autoscaler" data-section="compute">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscalerPolicies ? fetchAutoscalerPolicies() : fetchHpa()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscaler()">&#8635; Refresh</button></div></div>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><span id="autoscaler-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
@@ -6536,7 +6536,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <div class="mac-sheet-title">Snapshot Schedule</div>
     </div>
     <div class="modal-body">
-      <div class="form-group"><label class="form-label">VM Name</label><input type="text" class="form-input" id="sched-vm-name" placeholder="my-vm"></div>
+      <div class="form-group"><label class="form-label">VM Name</label><input type="text" class="form-input" id="sched-vm-name" placeholder="my-vm" required></div>
       <div class="form-group"><label class="form-label">Cron (UTC)</label><input type="text" class="form-input" id="sched-cron" placeholder="0 2 * * *" value="0 2 * * *"></div>
       <div class="form-group"><label class="form-label">Prefix</label><input type="text" class="form-input" id="sched-prefix" placeholder="sched" value="sched"></div>
       <div class="form-group"><label class="form-label">Max snapshots (retention)</label><input type="number" class="form-input" id="sched-max" min="0" value="5"></div>
@@ -7595,6 +7595,10 @@ function navigate(page, opts) {
     }
   }
   if (currentPage === 'vcentre' && page !== 'vcentre' && window.vcCloseDetail) vcCloseDetail();
+  // Clear page-specific polling intervals when leaving those pages
+  if (currentPage === 'fleet-constellation' && page !== 'fleet-constellation' && window.destroyFleetConstellation) destroyFleetConstellation();
+  if (currentPage === 'topology' && page !== 'topology' && window.destroyTopologySurface) destroyTopologySurface();
+  if (currentPage === 'gallery-wall' && page !== 'gallery-wall' && window.destroyGalleryWall) destroyGalleryWall();
   currentPage = page;
   document.title = (page === 'dashboard' ? '' : navPageLabel(page) + ' — ') + 'Veyron';
   if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
@@ -8320,10 +8324,14 @@ function loadPageData(page, opts) {
     }).catch(()=>render());
   };
 
+  let _topoTimer = null;
   window.initTopologySurface=function() {
     render();
-    if(!_inited){_inited=true;setInterval(fetchTopologySurface,15000);}
+    if(!_inited){_inited=true;_topoTimer=setInterval(fetchTopologySurface,15000);}
     fetchTopologySurface();
+  };
+  window.destroyTopologySurface=function() {
+    if(_topoTimer){clearInterval(_topoTimer);_topoTimer=null;_inited=false;}
   };
 })();
 
@@ -8440,20 +8448,23 @@ function loadPageData(page, opts) {
       requestAnimationFrame(loop);
     }
 
-    setInterval(() => {
+    let _fcJitterTimer = setInterval(() => {
       _vms.forEach(vm => {
         if (vm.status === 'stopped') return;
         vm.load = Math.max(0.05, Math.min(0.98, vm.load + (Math.random()-0.5)*0.06));
         vm.mem  = Math.max(0.10, Math.min(0.97, vm.mem  + (Math.random()-0.5)*0.03));
         vm.net  = Math.max(0,    Math.min(1,    vm.net  + (Math.random()-0.5)*0.10));
-        vm.status = vm.load > 0.9 ? 'critical' : vm.load > 0.78 ? 'warning' : 'healthy';
+        // Derive display status inline — do NOT write back to vm.status (preserves real KubeVirt state)
       });
       _renderStats();
       const dot = document.getElementById('fc-live-dot');
       if (dot) dot.style.opacity = dot.style.opacity === '0.3' ? '1' : '0.3';
     }, 1400);
-
-    setInterval(fetchFleetConstellation, 15000);
+    let _fcFetchTimer = setInterval(fetchFleetConstellation, 15000);
+    window.destroyFleetConstellation = function() {
+      clearInterval(_fcJitterTimer); clearInterval(_fcFetchTimer);
+      _fcJitterTimer = null; _fcFetchTimer = null; _inited = false;
+    };
 
     fetchFleetConstellation();
     requestAnimationFrame(loop);
@@ -8780,7 +8791,8 @@ function loadPageData(page, opts) {
       requestAnimationFrame(loop);
     }
 
-    setInterval(fetchGalleryWall, 20000);
+    let _gwTimer = setInterval(fetchGalleryWall, 20000);
+    window.destroyGalleryWall = function() { clearInterval(_gwTimer); _gwTimer = null; };
     fetchGalleryWall();
     requestAnimationFrame(loop);
   };
@@ -8894,13 +8906,13 @@ function loadPageData(page, opts) {
   window.initVCentre = function() {
     if (document.body.dataset.page !== 'vcentre') { vcCloseDetail(); return; }
     vcSetTheme(localStorage.getItem('veyron_vc_theme') || 'nebula');
-    if (!_vcInited) {
-      _vcInited = true;
-      _vcInterval = setInterval(function() {
-        if (document.body.dataset.page !== 'vcentre') return;
-        fetchVMs();
-      }, 5000);
-    }
+    // Always clear and restart so repeated navigate('vcentre') doesn't stack intervals
+    if (_vcInterval) { clearInterval(_vcInterval); _vcInterval = null; }
+    _vcInited = true;
+    _vcInterval = setInterval(function() {
+      if (document.body.dataset.page !== 'vcentre') return;
+      fetchVMs();
+    }, 5000);
     vcRender();
   };
 })();
@@ -17044,9 +17056,13 @@ function openScheduleModal() {
 }
 function closeScheduleModal() { document.getElementById('snap-schedule-modal').classList.remove('open'); }
 async function createSchedule() {
-  const body = { vm_name: document.getElementById('sched-vm-name').value, cron: document.getElementById('sched-cron').value, snapshot_prefix: document.getElementById('sched-prefix').value, max_snapshots: parseInt(document.getElementById('sched-max').value,10)||0, enabled: true };
-  await apiJson('/api/v1/snapshot-schedules', { method: 'POST', body: JSON.stringify(body) });
-  closeScheduleModal(); toast('Schedule created','success'); fetchSchedules();
+  const vmName = (document.getElementById('sched-vm-name').value || '').trim();
+  if (!vmName) { toast('VM name is required', 'error'); return; }
+  const body = { vm_name: vmName, cron: document.getElementById('sched-cron').value, snapshot_prefix: document.getElementById('sched-prefix').value, max_snapshots: parseInt(document.getElementById('sched-max').value,10)||0, enabled: true };
+  try {
+    await apiJson('/api/v1/snapshot-schedules', { method: 'POST', body: JSON.stringify(body) });
+    closeScheduleModal(); toast('Schedule created', 'success'); fetchSchedules();
+  } catch (e) { toast('Failed to create schedule: ' + (e.message || String(e)), 'error'); }
 }
 async function deleteSchedule(ns, name) {
   openGlassConfirm({
@@ -17055,8 +17071,10 @@ async function deleteSchedule(ns, name) {
     confirmLabel: 'Delete',
     destructive: true,
     onConfirm: async function() {
-      await apiJson('/api/v1/snapshot-schedules/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), { method: 'DELETE' });
-      toast('Schedule deleted','success'); fetchSchedules();
+      try {
+        await apiJson('/api/v1/snapshot-schedules/'+encodeURIComponent(ns)+'/'+encodeURIComponent(name), { method: 'DELETE' });
+        toast('Schedule deleted', 'success'); fetchSchedules();
+      } catch (e) { toast('Failed to delete schedule: ' + (e.message || String(e)), 'error'); }
     }
   });
 }
