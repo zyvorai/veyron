@@ -110,6 +110,10 @@
   --plasma-deep: #534AB7;
   --plasma-glow: rgba(127,119,221,0.18);
   --plasma-line: rgba(127,119,221,0.45);
+  /* Reactive ambient layer — JS overwrites these on every VM fetch tick */
+  --fleet-health:   100;
+  --deck-temp:      #7F77DD;
+  --deck-temp-glow: rgba(127,119,221,.18);
   --nominal:     #1D9E75;  --nominal-bg: rgba(29,158,117,0.12);
   --caution:     #EF9F27;  --caution-bg: rgba(239,159,39,0.12);
   --critical:    #E24B4A;  --critical-bg: rgba(226,75,74,0.12);
@@ -155,6 +159,47 @@
   --border-hot:   var(--hairline-hi);
   --bg-card:      var(--panel);
 }
+
+/* ── Light mode: tahoe-light / light themes ──────────────────── */
+html[data-theme="tahoe-light"],
+html[data-theme="light"] {
+  /* Depth tokens flip to slate-white */
+  --void:       #EEF0F5;
+  --hull:       #F7F8FC;
+  --panel:      #FFFFFF;
+  --panel-2:    #F0F2F7;
+  --panel-hi:   #E6E9F0;
+  --hairline:   rgba(0,0,0,.09);
+  --hairline-hi:rgba(0,0,0,.18);
+  /* Ink flips to dark */
+  --ink:        #111318;
+  --ink-2:      #3D4558;
+  --ink-3:      #6B7280;
+  /* Derived aliases */
+  --text:       var(--ink);
+  --text-dim:   var(--ink-3);
+  --text-muted: var(--ink-2);
+  --text-bright:var(--ink);
+  --border:     var(--hairline);
+  --border-hot: var(--hairline-hi);
+  --bg:         var(--hull);
+  --bg-deep:    var(--void);
+  --bg-card:    var(--panel);
+  /* Signal + plasma tokens intentionally unchanged */
+  /* --deck-temp starts at plasma; applyDeckTemp() overwrites on data load */
+}
+html[data-theme="tahoe-light"] .id-spine,
+html[data-theme="light"] .id-spine {
+  background: var(--hull);
+  border-bottom-color: var(--hairline);
+}
+html[data-theme="tahoe-light"] .mac-menubar.navbar,
+html[data-theme="light"] .mac-menubar.navbar {
+  background: rgba(247,248,252,0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+/* ──────────────────────────────────────────────────────────────── */
 
 *{margin:0;padding:0;box-sizing:border-box}
 
@@ -2573,7 +2618,7 @@ body.mac-desktop-root .cloudos-finder{top:var(--cloudos-menubar-h, 40px)}
 @media(max-width:960px){
   body.mac-desktop-root .cloudos-finder{top:var(--cloudos-menubar-h, 40px)}
 }
-.mac-menubar.navbar{min-height:40px;height:40px;padding:0 10px}
+.mac-menubar.navbar{min-height:40px;height:40px;padding:0 10px;box-shadow:0 1px 0 color-mix(in srgb,var(--deck-temp) 28%,transparent);transition:box-shadow 1.2s ease}
 .mac-menubar-left{display:flex;align-items:center;gap:4px;min-width:0;flex:1}
 .mac-menubar-menus{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .mac-menu-wrap{position:relative}
@@ -3416,7 +3461,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 /* Telemetry spine */
 .id-spine{height:28px;border-bottom:1px solid var(--hairline);background:var(--void);display:flex;align-items:center;overflow:hidden;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10.5px;color:var(--ink-3);flex-shrink:0;position:relative;z-index:30}
-.id-spine .id-scan{position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--plasma-glow),transparent);width:140px;animation:id-sweep 6s linear infinite;pointer-events:none}
+.id-spine .id-scan{position:absolute;inset:0;background:linear-gradient(90deg,transparent,var(--deck-temp-glow),transparent);width:140px;animation:id-sweep 6s linear infinite;pointer-events:none}
 @keyframes id-sweep{from{transform:translateX(-160px)}to{transform:translateX(100vw)}}
 .id-seg{padding:0 14px;border-right:1px solid var(--hairline);white-space:nowrap;z-index:1;display:flex;align-items:center;gap:7px}
 .id-seg b{color:var(--ink-2);font-weight:500}
@@ -3442,8 +3487,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 /* Buttons */
 .id-btn{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;padding:8px 14px;border-radius:9px;border:1px solid var(--hairline);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:.15s}
 .id-btn:hover{border-color:var(--hairline-hi);background:var(--panel-hi)}
-.id-btn-plasma{background:linear-gradient(135deg,var(--plasma),var(--plasma-deep));border-color:transparent;color:#fff;box-shadow:0 4px 16px var(--plasma-glow)}
-.id-btn-plasma:hover{box-shadow:0 6px 22px var(--plasma-glow);transform:translateY(-1px)}
+.id-btn-plasma{background:linear-gradient(135deg,var(--plasma),var(--plasma-deep));border-color:transparent;color:#fff;box-shadow:0 4px 16px var(--deck-temp-glow)}
+.id-btn-plasma:hover{box-shadow:0 6px 22px var(--deck-temp-glow);transform:translateY(-1px)}
 .id-btn-sm{padding:5px 10px;font-size:11.5px}
 .id-btn-ghost{background:transparent;border-color:transparent}
 
@@ -3460,7 +3505,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 /* KPI tiles */
 .id-tile{background:var(--panel);border:1px solid var(--hairline);border-radius:14px;padding:16px 18px;position:relative;overflow:hidden}
-.id-tile::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:var(--plasma-glow);filter:blur(20px);opacity:.5;pointer-events:none}
+.id-tile::after{content:"";position:absolute;right:-30px;top:-30px;width:90px;height:90px;border-radius:50%;background:var(--deck-temp-glow);filter:blur(20px);opacity:.5;pointer-events:none}
 .id-tile .id-eyebrow{margin-bottom:10px}
 .id-tile .id-big{font-family:var(--sans-deck);font-size:30px;font-weight:700;letter-spacing:-.5px}
 .id-tile .id-delta{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;margin-top:6px;display:flex;align-items:center;gap:5px}
@@ -3608,6 +3653,34 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 /* — Metric / KPI typography — */
 .stat-value,.metric-value,.kpi-value{font-family:'IBM Plex Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
 .stat-label,.metric-label,.kpi-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+
+/* — page-insights: glass-stat-pill Instrument Deck alignment — */
+.glass-stat-pill .gsv{font-size:1.35rem;font-weight:700;font-family:'IBM Plex Mono',ui-monospace,monospace;font-feature-settings:"tnum";color:var(--ink);margin-top:6px}
+.glass-stat-pill .gsl{font-size:.72rem;font-weight:700;font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+.glass-badge.other{background:var(--caution-bg);color:var(--caution);border-color:rgba(239,159,39,.3)}
+
+/* — page-app-store: Instrument Deck patch — */
+/* Issue 1: replace raw amber rgba() with plasma tokens on card hover */
+.app-store-card:hover{border-color:var(--plasma-line);box-shadow:0 10px 28px var(--plasma-glow)}
+/* Issue 2: define missing vmr-filter-chip component using Instrument Deck tokens */
+.vmr-filter-chip{display:inline-flex;align-items:center;padding:3px 12px;border-radius:999px;border:1px solid var(--hairline);background:var(--panel);color:var(--ink-2);font-size:.75rem;cursor:pointer;transition:border-color .15s,color .15s}
+.vmr-filter-chip.active,.vmr-filter-chip:hover{border-color:var(--plasma-line);color:var(--plasma)}
+/* Issue 3a: tahoe-stat-pill KPI typography — IBM Plex Mono + tnum + ink-3 labels */
+.tahoe-stat-pill .gsv{font-family:'IBM Plex Mono',ui-monospace,monospace;font-feature-settings:"tnum";color:var(--ink)}
+.tahoe-stat-pill .gsl{font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:2px;color:var(--ink-3)}
+/* Issue 3b: mac-desktop-root overrides both pill types; correct to IBM Plex Mono (overrides line 2909) */
+body.mac-desktop-root .glass-stat-pill .gsv,body.mac-desktop-root .tahoe-stat-pill .gsv{font-family:'IBM Plex Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+body.mac-desktop-root .glass-stat-pill .gsl,body.mac-desktop-root .tahoe-stat-pill .gsl{font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:2px;color:var(--ink-3)}
+/* page-mission-control: Instrument Deck KPI typography patch */
+/* Fix 1+2: IBM Plex Mono + tabular figures on all .mt-val KPI numbers */
+/* Fix 3: replace non-ID gradient (--cyan/--blue) with brand plasma tokens */
+#page-mission-control .mission-tile .mt-val,
+.mission-control-overlay .mission-tile .mt-val{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-feature-settings:"tnum";
+  background:linear-gradient(135deg,var(--plasma-deep),var(--plasma));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto">
@@ -5007,7 +5080,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Helm</h1><p>Cluster-discovered Helm releases</p></div><div class="page-header-right"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchHelm()">&#8635; Refresh</button></div></div>
     <div id="helm-summary" class="grid-4 page-glass-stats"></div>
-  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><span id="helm-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Helm Releases</span><span id="helm-filter-count" style="font-size:.78rem;color:var(--ink-2);white-space:nowrap;padding:0 4px"></span><input type="search" id="helm-search" class="form-input" placeholder="Filter releases…" oninput="filterHelmView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportHelmCsv()" title="Export Helm releases as CSV">&#8595; CSV</button></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Chart</th><th>App Version</th><th>Status</th><th>Revision</th></tr></thead><tbody id="helm-body"></tbody></table>
   </div>
 </div>
@@ -5903,6 +5976,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 @keyframes gwCritglow{0%,100%{box-shadow:inset 0 0 0 1px var(--gw-crit-ln),0 0 0 0 var(--gw-crit-bg)}50%{box-shadow:inset 0 0 0 1px var(--gw-crit),0 0 22px -2px rgba(255,93,108,.4)}}
 @media(max-width:1100px){#page-gallery-wall .gw-wall{grid-template-columns:repeat(3,1fr)}#page-gallery-wall .gw-wall.gw-dense{grid-template-columns:repeat(4,1fr)}#page-gallery-wall .gw-strip{grid-template-columns:1fr 1fr}#page-gallery-wall .gw-bigring{grid-column:1/-1}}
 @media(max-width:720px){#page-gallery-wall .gw-wall,#page-gallery-wall .gw-wall.gw-dense{grid-template-columns:repeat(2,1fr)}#page-gallery-wall .gw-strip{grid-template-columns:1fr}#page-gallery-wall .gw-h1{font-size:34px}#page-gallery-wall .gw-headact{display:none}}
+/* — page-snapshots vmr-metric KPI labels & values — */
+.vmr-metric-label{font-family:var(--font-mono);font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3);font-weight:600}
+.vmr-metric-value{font-family:var(--font-mono);font-size:1.6rem;font-weight:700;font-feature-settings:"tnum";letter-spacing:-.5px;color:var(--ink)}
+.vmr-metric-value.ok{color:var(--nominal)}
+.vmr-metric-value.warn{color:var(--caution)}
 </style>
 
 <div class="gw-wrap" id="gw-root">
@@ -10953,6 +11031,23 @@ document.addEventListener('keydown', function(e) {
 }, true);
 
 // ── Ambient Cluster Status Glow ──
+function applyDeckTemp(health) {
+  // Three-stop ambient interpolation: plasma-violet@100 → caution-amber@50 → critical-red@0
+  // Uses same channel values as VMR_SIG so the ambient layer is perceptually tied to the signal system
+  var P = [127,119,221],   // #7F77DD  VMR_SIG.plasma
+      A = [239,159, 39],   // #EF9F27  VMR_SIG.warn
+      C = [226, 75, 74];   // #E24B4A  VMR_SIG.crit
+  var from, to, t;
+  if (health >= 50) { from = P; to = A; t = (100 - health) / 50; }
+  else              { from = A; to = C; t = (50  - health) / 50; }
+  var ch = function(i) { return Math.round(from[i] + (to[i] - from[i]) * t); };
+  var r = ch(0), g = ch(1), b = ch(2);
+  var hex = '#' + [r,g,b].map(function(v){return v.toString(16).padStart(2,'0');}).join('');
+  var root = document.documentElement;
+  root.style.setProperty('--deck-temp', hex);
+  root.style.setProperty('--deck-temp-glow', 'rgba('+r+','+g+','+b+',.18)');
+  root.style.setProperty('--fleet-health', health);
+}
 function updateAmbientGlow(running, total, failed) {
   var el = document.getElementById('vmr-ambient');
   if (!el) return;
@@ -10960,6 +11055,9 @@ function updateAmbientGlow(running, total, failed) {
   if (failed > 0) el.classList.add('critical');
   else if (total > 0 && running < total * 0.6) el.classList.add('warn');
   updateFleetMoodEmoji(running, total, failed);
+  // Drive reactive ambient deck temperature
+  var score = computeFleetHealthScore(vmData || []);
+  if (score !== null) applyDeckTemp(score);
 }
 function computeFleetHealthScore(vms) {
   if (!vms || !vms.length) return null;
@@ -23071,7 +23169,7 @@ function glassTableBadge(severity) {
   const s = (severity || '').toLowerCase();
   if (s === 'critical' || s === 'high' || s === 'failed' || s === 'error' || s === 'hot') return 'error';
   if (s === 'medium' || s === 'warn' || s === 'warning' || s === 'pending') return 'other';
-  if (s === 'running' || s === 'ok' || s === 'ready' || s === 'success' || s === 'clear' || s === 'good') return 'running';
+  if (s === 'running' || s === 'ok' || s === 'ready' || s === 'success' || s === 'clear' || s === 'good' || s === 'deployed') return 'running';
   if (s === 'stopped' || s === 'low') return 'stopped';
   return 'other';
 }

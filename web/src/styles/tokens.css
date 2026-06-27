@@ -22,6 +22,11 @@
   --plasma-glow: rgba(127,119,221,0.18);
   --plasma-line: rgba(127,119,221,0.45);
 
+  /* ── Reactive ambient layer (JS-driven) ─────────────────── */
+  --fleet-health:   100;
+  --deck-temp:      #7F77DD;           /* initial = plasma; JS overwrites per tick */
+  --deck-temp-glow: rgba(127,119,221,.18);
+
   /* ── Signal colors ─────────────────────────────────────── */
   --nominal:    #1D9E75;
   --nominal-bg: rgba(29,158,117,0.12);
@@ -53,4 +58,26 @@
   --border:      var(--hairline);
   --border-hot:  var(--hairline-hi);
   --bg-card:     var(--panel);
+}
+
+/* ── Light mode overrides ───────────────────────────────────── */
+html[data-theme="tahoe-light"],
+html[data-theme="light"] {
+  --void:        #EEF0F5;
+  --hull:        #F7F8FC;
+  --panel:       #FFFFFF;
+  --panel-2:     #F0F2F7;
+  --panel-hi:    #E6E9F0;
+  --hairline:    rgba(0,0,0,.09);
+  --hairline-hi: rgba(0,0,0,.18);
+  --ink:         #111318;
+  --ink-2:       #3D4558;
+  --ink-3:       #6B7280;
+  --text-dim:    var(--ink-3);
+  --text-muted:  var(--ink-2);
+  --text-bright: var(--ink);
+  --border:      var(--hairline);
+  --border-hot:  var(--hairline-hi);
+  --bg-card:     var(--panel);
+  /* Signal + plasma + deck-temp unchanged — reactive layer still works in light mode */
 }
