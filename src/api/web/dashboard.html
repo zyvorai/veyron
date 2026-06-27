@@ -2110,8 +2110,11 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .dc-health-ring.clickable:hover{transform:scale(1.04);box-shadow:0 0 24px rgba(245,158,11,.25)}
 .command-metric.clickable{cursor:pointer;border-radius:12px;padding:4px;transition:background .15s}
 .command-metric.clickable:hover{background:rgba(245,158,11,.08)}
+.command-metric.clickable:focus{outline:2px solid var(--plasma);outline-offset:2px;background:rgba(245,158,11,.08)}
 .priority-item.clickable{cursor:pointer;transition:transform .15s,box-shadow .15s}
 .priority-item.clickable:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.priority-item.clickable:focus{outline:2px solid var(--plasma);outline-offset:2px;transform:translateY(-1px)}
+.mission-tile:focus{outline:2px solid var(--plasma);outline-offset:2px}
 .cilium-glass-stats .glass-stat-pill{min-width:0}
 .flow-stat-chip{
   padding:5px 12px;border-radius:999px;border:1px solid var(--glass-border);
@@ -4037,102 +4040,102 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">◆</span><span class="nav-label">Compute</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
-      <button class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
-      <button class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
-      <button class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
-      <button class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
-      <button class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
-      <button class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
+      <button type="button" class="nav-link" data-page="vms" onclick="navigate('vms')">VMs</button>
+      <button type="button" class="nav-link" data-page="nodes" onclick="navigate('nodes')">Nodes</button>
+      <button type="button" class="nav-link" data-page="pods" onclick="navigate('pods')">Pods</button>
+      <button type="button" class="nav-link" data-page="workloads" onclick="navigate('workloads')">Workloads</button>
+      <button type="button" class="nav-link" data-page="scheduling" onclick="navigate('scheduling')">Scheduling</button>
+      <button type="button" class="nav-link" data-page="hpa" onclick="navigate('hpa')">HPA</button>
+      <button type="button" class="nav-link" data-page="autoscaler" onclick="navigate('autoscaler')">Autoscaler</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">⬢</span><span class="nav-label">Observe</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
-      <button class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
-      <button class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts<span id="alerts-nav-badge" class="vmr-nav-badge" style="display:none"></span></button>
-      <button class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
-      <button class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
-      <button class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
-      <button class="nav-link" data-page="heatmap" onclick="navigate('heatmap')">Heatmap</button>
-      <button class="nav-link" data-page="custom-dashboards" onclick="navigate('custom-dashboards')">Custom Dashboards</button>
-      <button class="nav-link" data-page="observability" onclick="navigate('observability')">Overview</button>
-      <button class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
+      <button type="button" class="nav-link" data-page="monitoring" onclick="navigate('monitoring')">Monitoring</button>
+      <button type="button" class="nav-link" data-page="metrics" onclick="navigate('metrics')">Metrics</button>
+      <button type="button" class="nav-link" data-page="alerts" onclick="navigate('alerts')">Alerts<span id="alerts-nav-badge" class="vmr-nav-badge" style="display:none"></span></button>
+      <button type="button" class="nav-link" data-page="events" onclick="navigate('events')">Events</button>
+      <button type="button" class="nav-link" data-page="slo" onclick="navigate('slo')">SLO</button>
+      <button type="button" class="nav-link" data-page="performance" onclick="navigate('performance')">Performance</button>
+      <button type="button" class="nav-link" data-page="heatmap" onclick="navigate('heatmap')">Heatmap</button>
+      <button type="button" class="nav-link" data-page="custom-dashboards" onclick="navigate('custom-dashboards')">Custom Dashboards</button>
+      <button type="button" class="nav-link" data-page="observability" onclick="navigate('observability')">Overview</button>
+      <button type="button" class="nav-link" data-page="insights" onclick="navigate('insights')">Insights</button>
       <div class="nav-dropdown-sep"></div>
-      <button class="nav-link" data-page="traces" onclick="navigate('traces')">Traces</button>
-      <button class="nav-link" data-page="logs" onclick="navigate('logs')">Logs</button>
-      <button class="nav-link" data-page="incidents" onclick="navigate('incidents')">Incidents</button>
+      <button type="button" class="nav-link" data-page="traces" onclick="navigate('traces')">Traces</button>
+      <button type="button" class="nav-link" data-page="logs" onclick="navigate('logs')">Logs</button>
+      <button type="button" class="nav-link" data-page="incidents" onclick="navigate('incidents')">Incidents</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">▣</span><span class="nav-label">Storage</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
-      <button class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
-      <button class="nav-link" data-page="images" onclick="navigate('images')">Images</button>
-      <button class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
+      <button type="button" class="nav-link" data-page="snapshots" onclick="navigate('snapshots')">Snapshots</button>
+      <button type="button" class="nav-link" data-page="storage" onclick="navigate('storage')">Storage</button>
+      <button type="button" class="nav-link" data-page="images" onclick="navigate('images')">Images</button>
+      <button type="button" class="nav-link" data-page="backups" onclick="navigate('backups')">Backups</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">⟷</span><span class="nav-label">Network</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
-      <button class="nav-link" data-page="network-policies" onclick="navigate('network-policies')">Network Policies</button>
-      <button class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
-      <button class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
-      <button class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
+      <button type="button" class="nav-link" data-page="ingress" onclick="navigate('ingress')">Ingress</button>
+      <button type="button" class="nav-link" data-page="network-policies" onclick="navigate('network-policies')">Network Policies</button>
+      <button type="button" class="nav-link" data-page="cilium" onclick="navigate('cilium')">Cilium</button>
+      <button type="button" class="nav-link" data-page="topology" onclick="navigate('topology')">Topology</button>
+      <button type="button" class="nav-link" data-page="dependencies" onclick="navigate('dependencies')">Dependencies</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">⛨</span><span class="nav-label">Security</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
-      <button class="nav-link" data-page="compliance" onclick="navigate('compliance')">Compliance</button>
-      <button class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
-      <button class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
-      <button class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
-      <button class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
-      <button class="nav-link" data-page="soc" onclick="navigate('soc')">SOC</button>
+      <button type="button" class="nav-link" data-page="security" onclick="navigate('security')">Posture</button>
+      <button type="button" class="nav-link" data-page="compliance" onclick="navigate('compliance')">Compliance</button>
+      <button type="button" class="nav-link" data-page="rbac" onclick="navigate('rbac')">RBAC</button>
+      <button type="button" class="nav-link" data-page="policies" onclick="navigate('policies')">Policies</button>
+      <button type="button" class="nav-link" data-page="quotas" onclick="navigate('quotas')">Quotas</button>
+      <button type="button" class="nav-link" data-page="audit" onclick="navigate('audit')">Audit</button>
+      <button type="button" class="nav-link" data-page="soc" onclick="navigate('soc')">SOC</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">▦</span><span class="nav-label">Platform</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" type="button" onclick="openPlatformInstallModal(); closeClassicNav();">Install KubeVirt stack…</button>
+      <button type="button" class="nav-link" type="button" onclick="openPlatformInstallModal(); closeClassicNav();">Install KubeVirt stack…</button>
       <div class="nav-dropdown-sep"></div>
-      <button class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
-      <button class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
-      <button class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
-      <button class="nav-link" data-page="blueprint-studio" onclick="navigate('blueprint-studio')">Blueprint Studio</button>
-      <button class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
-      <button class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
-      <button class="nav-link" data-page="app-store" onclick="navigate('app-store')">Template Foundry</button>
-      <button class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
-      <button class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
-      <button class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
+      <button type="button" class="nav-link" data-page="helm" onclick="navigate('helm')">Helm</button>
+      <button type="button" class="nav-link" data-page="operators" onclick="navigate('operators')">Operators</button>
+      <button type="button" class="nav-link" data-page="crds" onclick="navigate('crds')">CRDs</button>
+      <button type="button" class="nav-link" data-page="blueprint-studio" onclick="navigate('blueprint-studio')">Blueprint Studio</button>
+      <button type="button" class="nav-link" data-page="custom-resources" onclick="navigate('custom-resources')">Custom Resources</button>
+      <button type="button" class="nav-link" data-page="catalog" onclick="navigate('catalog')">Catalog</button>
+      <button type="button" class="nav-link" data-page="app-store" onclick="navigate('app-store')">Template Foundry</button>
+      <button type="button" class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
+      <button type="button" class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
+      <button type="button" class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">◌</span><span class="nav-label">FinOps</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
-      <button class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
+      <button type="button" class="nav-link" data-page="costs" onclick="navigate('costs')">Costs</button>
+      <button type="button" class="nav-link" data-page="forecasting" onclick="navigate('forecasting')">Forecasting</button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">✦</span><span class="nav-label">Ops</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
-      <button class="nav-link" data-page="dr" onclick="navigate('dr')">Disaster Recovery</button>
-      <button class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
-      <button class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications<span id="notif-nav-badge" class="vmr-nav-badge" style="display:none"></span></button>
+      <button type="button" class="nav-link" data-page="chaos" onclick="navigate('chaos')">Chaos</button>
+      <button type="button" class="nav-link" data-page="dr" onclick="navigate('dr')">Disaster Recovery</button>
+      <button type="button" class="nav-link" data-page="actions" onclick="navigate('actions')">Actions</button>
+      <button type="button" class="nav-link" data-page="notifications" onclick="navigate('notifications')">Notifications<span id="notif-nav-badge" class="vmr-nav-badge" style="display:none"></span></button>
     </div>
   </div>
   <div class="nav-group">
     <button type="button" class="nav-group-btn"><span class="nav-icon">?</span><span class="nav-label">Help</span></button>
     <div class="nav-dropdown">
-      <button class="nav-link" type="button" onclick="openAboutModal(); closeClassicNav();">About Veyron</button>
+      <button type="button" class="nav-link" type="button" onclick="openAboutModal(); closeClassicNav();">About Veyron</button>
       <a class="nav-link" href="https://zyvor.dev/docs/intro" target="_blank" rel="noopener noreferrer">Documentation</a>
       <a class="nav-link" href="https://zyvor.dev/docs/products" target="_blank" rel="noopener noreferrer">Product suite</a>
       <a class="nav-link" href="https://zyvor.dev/contact" target="_blank" rel="noopener noreferrer">Contact</a>
@@ -4582,10 +4585,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         </div>
       </div>
       <div class="vm-list-header" id="vm-list-header" style="display:none">
-        <button class="vm-sort-col active" data-sort="status" onclick="setVmSort('status')">Status <span class="sort-arrow" id="sort-arrow-status">↑</span></button>
-        <button class="vm-sort-col" data-sort="name" onclick="setVmSort('name')">Name <span class="sort-arrow" id="sort-arrow-name"></span></button>
-        <button class="vm-sort-col" data-sort="cpu" onclick="setVmSort('cpu')">CPU <span class="sort-arrow" id="sort-arrow-cpu"></span></button>
-        <button class="vm-sort-col" data-sort="memory" onclick="setVmSort('memory')">Memory <span class="sort-arrow" id="sort-arrow-memory"></span></button>
+        <button type="button" class="vm-sort-col active" data-sort="status" onclick="setVmSort('status')">Status <span class="sort-arrow" id="sort-arrow-status">↑</span></button>
+        <button type="button" class="vm-sort-col" data-sort="name" onclick="setVmSort('name')">Name <span class="sort-arrow" id="sort-arrow-name"></span></button>
+        <button type="button" class="vm-sort-col" data-sort="cpu" onclick="setVmSort('cpu')">CPU <span class="sort-arrow" id="sort-arrow-cpu"></span></button>
+        <button type="button" class="vm-sort-col" data-sort="memory" onclick="setVmSort('memory')">Memory <span class="sort-arrow" id="sort-arrow-memory"></span></button>
       </div>
       <div id="vmr-delta-strip" style="display:none"></div>
       <div id="vmr-fleet-briefing" style="display:none"></div>
@@ -6154,10 +6157,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <div class="gw-sub"><b id="gw-h-run">0</b> running · <b id="gw-h-tot">0</b> total · <b id="gw-h-nodes">0</b> nodes · vitality <b id="gw-h-vit" style="color:var(--gw-ok)">—</b></div>
     </div>
     <div class="gw-headact">
-      <button class="gw-btn gw-ai" onclick="openAskZeus()">
+      <button type="button" class="gw-btn gw-ai" onclick="openAskZeus()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Ask Zeus
       </button>
-      <button class="gw-btn gw-primary" onclick="navigate('vms')">
+      <button type="button" class="gw-btn gw-primary" onclick="navigate('vms')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Fleet Command
       </button>
     </div>
@@ -6187,7 +6190,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <div class="gw-tt" id="gw-ib-title">VMs need attention</div>
       <div class="gw-ss" id="gw-ib-sub"></div>
     </div>
-    <button class="gw-btn gw-ai" style="margin-left:auto;flex:none" onclick="openAskZeus('Which VMs need attention and what should I do?')">
+    <button type="button" class="gw-btn gw-ai" style="margin-left:auto;flex:none" onclick="openAskZeus('Which VMs need attention and what should I do?')">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3"/></svg>Review fix
     </button>
   </div>
@@ -17220,9 +17223,9 @@ function renderDashboardCommandCenter() {
   const cpuAlloc = nodes.total_cpu_allocatable ? Math.round(((cluster.total_vcpus_allocated || 0) / nodes.total_cpu_allocatable) * 100) + '%' : 'n/a';
 
   metricEl.innerHTML =
-    '<div class="command-metric clickable" onclick="navigateToVmsFilter(\'Running\')" title="View running VMs"><div class="command-metric-label">Running fleet</div><div class="command-metric-value">' + running + ' / ' + vmData.length + '</div></div>' +
-    '<div class="command-metric clickable" onclick="navigate(\'events\')" title="View warning events"><div class="command-metric-label">Warning pressure</div><div class="command-metric-value">' + warnings + ' signals</div></div>' +
-    '<div class="command-metric clickable" onclick="navigate(\'nodes\')" title="View cluster nodes"><div class="command-metric-label">Node readiness</div><div class="command-metric-value">' + readyNodes + '</div></div>';
+    '<div class="command-metric clickable" role="button" tabindex="0" onclick="navigateToVmsFilter(\'Running\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigateToVmsFilter(\'Running\')" title="View running VMs"><div class="command-metric-label">Running fleet</div><div class="command-metric-value">' + running + ' / ' + vmData.length + '</div></div>' +
+    '<div class="command-metric clickable" role="button" tabindex="0" onclick="navigate(\'events\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'events\')" title="View warning events"><div class="command-metric-label">Warning pressure</div><div class="command-metric-value">' + warnings + ' signals</div></div>' +
+    '<div class="command-metric clickable" role="button" tabindex="0" onclick="navigate(\'nodes\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'nodes\')" title="View cluster nodes"><div class="command-metric-label">Node readiness</div><div class="command-metric-value">' + readyNodes + '</div></div>';
 
   if (badgeEl) {
     badgeEl.innerHTML =
@@ -17260,7 +17263,7 @@ function renderDashboardCommandCenter() {
   }
 
   const priorityHtml = priorities.map(item =>
-    '<div class="priority-item state-' + item.state + ' clickable" ' + onHandler('priorityNavigateByTitle(' + jsArgs(item.title) + ')') + '>' +
+    '<div class="priority-item state-' + item.state + ' clickable" role="button" tabindex="0" ' + onHandler('priorityNavigateByTitle(' + jsArgs(item.title) + ')') + ' onkeydown="if(event.key===\'Enter\'||event.key===\' \')priorityNavigateByTitle(' + jsArgs(item.title) + ')">' +
       '<div class="priority-icon">' + item.icon + '</div>' +
       '<div class="priority-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(item.detail) + '</span></div>' +
       '<div class="priority-state ' + item.state + '">' + (item.state === 'hot' ? 'Critical' : item.state === 'warn' ? 'Watch' : 'Stable') + '</div>' +
@@ -19039,13 +19042,13 @@ async function fetchMissionControl() {
     const edges = (map && map.edges) ? map.edges : [];
     const policies = asArray(netpol);
     wall.innerHTML =
-      '<div class="mission-tile zeus-glass" onclick="navigate(\'nodes\')"><h3>Hosts</h3><div class="mt-val">' + nodeList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">Kubernetes nodes</p></div>' +
-      '<div class="mission-tile zeus-glass" onclick="navigate(\'vms\')"><h3>VMs</h3><div class="mt-val">' + vmList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">' + running + ' running</p></div>' +
-      '<div class="mission-tile zeus-glass" onclick="navigate(\'network-policies\')"><h3>Networks</h3><div class="mt-val">' + policies.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Network policies</p></div>' +
-      '<div class="mission-tile zeus-glass" onclick="navigate(\'storage\')"><h3>Storage</h3><div class="mt-val">' + edges.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Topology edges</p></div>';
+      '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'nodes\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'nodes\')"><h3>Hosts</h3><div class="mt-val">' + nodeList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">Kubernetes nodes</p></div>' +
+      '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'vms\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'vms\')"><h3>VMs</h3><div class="mt-val">' + vmList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">' + running + ' running</p></div>' +
+      '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'network-policies\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'network-policies\')"><h3>Networks</h3><div class="mt-val">' + policies.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Network policies</p></div>' +
+      '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'storage\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'storage\')"><h3>Storage</h3><div class="mt-val">' + edges.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Topology edges</p></div>';
     if (topo) topo.textContent = (map.nodes || []).length + ' nodes, ' + edges.length + ' edges in scope ' + currentNamespace;
   } catch (e) {
-    if (wall) wall.innerHTML = '<p style="color:var(--error)">' + esc(e.message || String(e)) + '</p>';
+    if (wall) wall.innerHTML = '<div style="padding:24px;text-align:center"><p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchMissionControl()">&#8635; Retry</button></div>';
   }
 }
 
