@@ -9360,6 +9360,9 @@ function tbodyError(colspan, msg, retryFn) {
   return '<tr><td colspan="' + colspan + '" style="text-align:center;color:var(--error);padding:14px;line-height:1.45">' +
     esc(msg || 'Request failed') + btn + '</td></tr>';
 }
+function tbodyLoading(colspan) {
+  return '<tr><td colspan="' + colspan + '" style="text-align:center;color:var(--ink-3);padding:16px">Loading…</td></tr>';
+}
 
 function summaryErrorHtml(msg) {
   return '<div class="glass-stat-pill bad" style="grid-column:1/-1"><div class="gsl">API error</div><div class="gsv" style="font-size:.92rem;line-height:1.35;font-weight:500">' +
@@ -10801,7 +10804,7 @@ function _vmcmpPickAndShow() {
   var parts = sel.value.split('/');
   var bNs = parts[0], bName = parts.slice(1).join('/');
   _vmcmpB = (window.lastVMs || vmData || []).find(function(vm) { return vm.name === bName && (vm.namespace||'default') === bNs; });
-  if (!_vmcmpB) { showToast('Target VM not found', 'error'); return; }
+  if (!_vmcmpB) { toast('Target VM not found', 'error'); return; }
   _showVmCompareModal(_vmcmpA, _vmcmpB);
 }
 function _cmpRow(label, valA, valB, fmt) {
@@ -11427,7 +11430,7 @@ function openVmNoteEditor(ns, name) {
     fields: [{ id: 'note', type: 'textarea', rows: 4, label: 'Note (up to 400 chars)', placeholder: 'Do not stop – prod traffic. Maintenance window: Mon 2am–4am.', value: getVmNote(ns, name) }],
     onSubmit: function(v) {
       setVmNote(ns, name, v.note || '');
-      showToast((v.note && v.note.trim()) ? 'Note saved for ' + name : 'Note cleared for ' + name, 'success');
+      toast((v.note && v.note.trim()) ? 'Note saved for ' + name : 'Note cleared for ' + name, 'success');
     }
   });
 }
@@ -11720,7 +11723,7 @@ function openVmTagEditor(ns, name) {
     onSubmit: function(v) {
       var tags = (v.tags || '').split(',').map(function(t) { return t.trim(); }).filter(Boolean);
       setVmTags(ns, name, tags);
-      showToast('Tags updated for ' + name, 'success');
+      toast('Tags updated for ' + name, 'success');
     }
   });
 }
@@ -11751,7 +11754,7 @@ function getAllFilterPresets() {
 function saveFilterPreset() {
   var q = (document.getElementById('vm-search') || {}).value || '';
   var st = (document.getElementById('vm-filter-status') || {}).value || '';
-  if (!q && !st) { showToast('Set a search or status filter first', 'info'); return; }
+  if (!q && !st) { toast('Set a search or status filter first', 'info'); return; }
   openGlassPrompt({
     title: 'Save filter preset',
     fields: [{ id: 'pname', label: 'Preset name', placeholder: 'e.g. "Prod Running"', value: (st || q).slice(0, 24) }],
@@ -11764,7 +11767,7 @@ function saveFilterPreset() {
       if (presets.length > 8) presets = presets.slice(0, 8);
       try { localStorage.setItem(FILTER_PRESETS_KEY, JSON.stringify(presets)); } catch (e) {}
       renderFilterPresetChips();
-      showToast('Preset "' + name + '" saved', 'success');
+      toast('Preset "' + name + '" saved', 'success');
     }
   });
 }
@@ -11820,8 +11823,8 @@ function isFleetPinned(ns, name) {
 function toggleFleetPin(ns, name) {
   var pins = getFleetPins();
   var idx = pins.findIndex(function(p) { return p.ns === ns && p.name === name; });
-  if (idx >= 0) { pins.splice(idx, 1); showToast('"' + name + '" unpinned', 'info'); }
-  else { if (pins.length >= 6) { showToast('Max 6 VMs pinned', 'warn'); return; } pins.push({ ns: ns, name: name }); showToast('"' + name + '" pinned to top', 'success'); }
+  if (idx >= 0) { pins.splice(idx, 1); toast('"' + name + '" unpinned', 'info'); }
+  else { if (pins.length >= 6) { toast('Max 6 VMs pinned', 'warn'); return; } pins.push({ ns: ns, name: name }); toast('"' + name + '" pinned to top', 'success'); }
   try { localStorage.setItem(FLEET_PINS_KEY, JSON.stringify(pins)); } catch (e) {}
   renderFleetPinnedStrip();
 }
@@ -13039,7 +13042,7 @@ function generateFleetReport() {
     fields: [{ id: 'report', type: 'textarea', rows: 14, label: 'Copy and paste into Slack, email, or Confluence', value: md }],
     onSubmit: function() {
       copyToClipboard(md);
-      showToast('Fleet report copied to clipboard', 'success');
+      toast('Fleet report copied to clipboard', 'success');
     }
   });
 }
@@ -13070,7 +13073,7 @@ function exportFleetJson() {
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
   logVmAction('fleet', 'all', 'export', 'ok');
-  showToast('Fleet snapshot exported (' + vms.length + ' VMs)', 'success');
+  toast('Fleet snapshot exported (' + vms.length + ' VMs)', 'success');
 }
 
 // ── Fleet Diff ──
@@ -14108,7 +14111,7 @@ async function fetchNetworkIntelData(opts) {
     ]);
     if (metrics) {
       if (!overview) {
-        metrics.innerHTML = '<div class="vmr-panel"><p style="color:var(--text-dim)">PacketWolf not configured — set <code>VEYRON_PACKETWOLF_URL</code>. See <a href="#" onclick="navigate(\'integrations\');return false">Integrations</a>.</p></div>';
+        metrics.innerHTML = '<div class="vmr-panel"><p style="color:var(--text-dim)">PacketWolf not configured — set <code>VEYRON_PACKETWOLF_URL</code>. See <button type="button" class="glass-btn-ghost glass-btn-sm" style="display:inline;padding:0;font-size:inherit;vertical-align:baseline" onclick="navigate(\'integrations\')">Integrations</button>.</p></div>';
       } else {
         const ov = overview.overview || overview || {};
         metrics.innerHTML = renderGlassStatPills([
@@ -14324,6 +14327,7 @@ async function submitForgeWizard(andStart) {
     setTimeout(function() { fetchVMs().then(function() { selectVm(body.namespace, name, {}); }); }, 1200);
   } catch (e) {
     toast('Forge failed: ' + (e.message || String(e)), 'error');
+  } finally {
     if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = andStart ? 'Forge + Start' : 'Forge VM'; }
   }
 }
@@ -15960,7 +15964,7 @@ async function fetchEvents(full, opts) {
     const j = await apiJson('/api/v1/events' + nsParam(), opts);
     if (j == null) return;
     const events = asArray(j);
-    lastEvents = events;
+    lastEvents = window.lastEvents = events;
     updateEventTicker(events);
     const renderEvents = (items, target) => {
       if (!target) return;
@@ -17638,7 +17642,7 @@ document.addEventListener('keydown', e => {
         e.preventDefault();
         if (_vm && _vm.status === 'Paused') unpauseVM(selectedVmNs, selectedVmName);
         else if (_vm && _vm.status === 'Running') pauseVM(selectedVmNs, selectedVmName);
-        else showToast('VM must be Running or Paused to toggle pause', 'info');
+        else toast('VM must be Running or Paused to toggle pause', 'info');
         return;
       }
       if (e.key.toLowerCase() === 's') {
@@ -17802,7 +17806,7 @@ document.addEventListener('keydown', e => {
     running.forEach(function(v) { selectedVMs.add(vmSelectionKey(v.namespace || 'default', v.name)); });
     filterVMs();
     if (typeof updateBulkSelectionUi === 'function') updateBulkSelectionUi();
-    showToast(running.length + ' running VM' + (running.length !== 1 ? 's' : '') + ' selected', 'success');
+    toast(running.length + ' running VM' + (running.length !== 1 ? 's' : '') + ' selected', 'success');
     return;
   }
   // : key — vim-style command bar (works on any page)
@@ -18465,7 +18469,7 @@ async function bulkPauseResume() {
   var msg = [];
   if (toPause.length) msg.push('Pause ' + toPause.length + ' running VM' + (toPause.length > 1 ? 's' : ''));
   if (toResume.length) msg.push('Resume ' + toResume.length + ' paused VM' + (toResume.length > 1 ? 's' : ''));
-  if (!msg.length) { showToast('Select Running or Paused VMs', 'info'); return; }
+  if (!msg.length) { toast('Select Running or Paused VMs', 'info'); return; }
   openGlassConfirm({
     title: 'Bulk Pause/Resume',
     body: msg.join(' · ') + '?',
@@ -18576,7 +18580,7 @@ function bulkTagAll() {
         var p = parseVmSelectionKey(key);
         addVmTag(p.ns, p.name, tag);
       });
-      showToast('Tag "' + tag + '" added to ' + selectedVMs.size + ' VM' + (selectedVMs.size !== 1 ? 's' : ''), 'success');
+      toast('Tag "' + tag + '" added to ' + selectedVMs.size + ' VM' + (selectedVMs.size !== 1 ? 's' : ''), 'success');
       filterVMs();
     }
   });
@@ -18602,7 +18606,7 @@ function exportSelectedVmsJson() {
   a.download = 'selected-vms-' + new Date().toISOString().slice(0, 10) + '.json';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
-  showToast('Exported ' + selected.length + ' VMs as JSON', 'success');
+  toast('Exported ' + selected.length + ' VMs as JSON', 'success');
 }
 async function openVmCompare() {
   if (selectedVMs.size !== 2) { toast('Select exactly 2 VMs to compare', 'error'); return; }
@@ -22383,6 +22387,7 @@ async function fetchWorkloads(opts) {
 async function fetchAlerts() {
   const tb = document.getElementById('alerts-body');
   const sumEl = document.getElementById('alerts-summary');
+  if (tb) tb.innerHTML = tbodyLoading(6);
   try {
     const alerts = asArray(await apiJson('/api/v1/alerts' + nsParam()));
     window.lastAlerts = alerts;
@@ -22410,6 +22415,7 @@ async function fetchAlerts() {
 async function fetchAudit() {
   const sum = document.getElementById('audit-summary');
   const tb = document.getElementById('audit-body');
+  if (tb) tb.innerHTML = tbodyLoading(6);
   try {
     const [trailRaw, stats] = await Promise.all([
       apiJson('/api/v1/audit/trail' + nsParam()),
@@ -22480,6 +22486,7 @@ async function fetchNotifications() {
 async function fetchHelm() {
   const tb = document.getElementById('helm-body');
   const sumEl = document.getElementById('helm-summary');
+  if (tb) tb.innerHTML = tbodyLoading(6);
   try {
     const items = asArray(await apiJson('/api/v1/helm/releases'));
     const filtered = currentNamespace === 'all' ? items : items.filter(h => h.namespace === currentNamespace);
@@ -22504,6 +22511,7 @@ async function fetchHelm() {
 async function fetchOperators() {
   const tb = document.getElementById('operators-body');
   const sumEl = document.getElementById('operators-summary');
+  if (tb) tb.innerHTML = tbodyLoading(6);
   try {
     const items = asArray(await apiJson('/api/v1/operators'));
     const filtered = currentNamespace === 'all' ? items : items.filter(o => o.namespace === currentNamespace);
@@ -22527,6 +22535,7 @@ async function fetchOperators() {
 async function fetchCustomResources() {
   const tb = document.getElementById('custom-resources-body');
   const sumEl = document.getElementById('custom-resources-summary');
+  if (tb) tb.innerHTML = tbodyLoading(6);
   try {
     const items = asArray(await apiJson('/api/v1/custom-resources'));
     if (sumEl) {
@@ -22550,6 +22559,8 @@ async function fetchCustomResources() {
 async function fetchSlo() {
   const tb = document.getElementById('slo-body');
   const burnTb = document.getElementById('slo-burn-body');
+  if (tb) tb.innerHTML = tbodyLoading(7);
+  if (burnTb) burnTb.innerHTML = tbodyLoading(7);
   try {
     const items = asArray(await apiJson('/api/v1/slo/objectives' + nsParam()));
     let burnRates = [];
@@ -22591,6 +22602,7 @@ async function fetchSlo() {
 async function fetchChaos() {
   const tb = document.getElementById('chaos-body');
   const sumEl = document.getElementById('chaos-summary');
+  if (tb) tb.innerHTML = tbodyLoading(6);
   try {
     const items = asArray(await apiJson('/api/v1/chaos/experiments'));
     const filtered = currentNamespace === 'all' ? items : items.filter(c => c.namespace === currentNamespace);
@@ -22616,6 +22628,8 @@ async function fetchRbac() {
   const summary = document.getElementById('rbac-summary');
   const rolesBody = document.getElementById('rbac-roles-body');
   const bindingsBody = document.getElementById('rbac-bindings-body');
+  if (rolesBody) rolesBody.innerHTML = tbodyLoading(4);
+  if (bindingsBody) bindingsBody.innerHTML = tbodyLoading(3);
   try {
     const [rRaw, bRaw] = await Promise.all([
       apiJson('/api/v1/rbac/roles'),
@@ -23649,7 +23663,7 @@ async function submitQuickForge() {
   try {
     await apiJson('/api/v1/vms', { method: 'POST', body: JSON.stringify({ name, namespace: ns, template, cpu, memory }) });
     closeQuickForge();
-    showToast('VM "' + name + '" created — launching…', 'success');
+    toast('VM "' + name + '" created — launching…', 'success');
     if (currentPage === 'vms') { setTimeout(function() { refresh(); }, 800); }
     else { navigate('vms'); setTimeout(function() { refresh(); }, 1200); }
   } catch (err) {
