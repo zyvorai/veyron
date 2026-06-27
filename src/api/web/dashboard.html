@@ -3594,6 +3594,9 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 /* — vmr-chip-dot signals — */
 .vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
+.vmr-chip-dot.running{background:var(--nominal);box-shadow:0 0 5px var(--nominal)}
+.vmr-chip-dot.stopped{background:var(--inert)}
+.vmr-chip-dot.other{background:var(--caution)}
 
 /* — compliance / score bar colors — */
 .score-high{color:var(--nominal)} .score-med{color:var(--caution)} .score-low{color:var(--critical)}
@@ -3995,6 +3998,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
   <div class="finder-section collapsed" id="finder-sec-network" data-finder-section="network">
     <button type="button" class="finder-section-toggle" onclick="toggleFinderSection('network')">Network <span class="finder-chevron">▾</span></button>
     <div class="finder-section-body" id="finder-network">
+      <button type="button" class="cloudos-finder-item" data-page="topology" onclick="finderNavigate('topology')"><span class="fi-icon"><i data-lucide="layout-panel-top"></i></span>Topology Surface</button>
       <button type="button" class="cloudos-finder-item" data-page="ingress" onclick="finderNavigate('ingress')"><span class="fi-icon"><i data-lucide="arrow-right-left"></i></span>Ingress</button>
       <button type="button" class="cloudos-finder-item" data-page="integrations" onclick="finderNavigate('integrations')"><span class="fi-icon"><i data-lucide="plug"></i></span>Integrations</button>
     </div>
@@ -4304,7 +4308,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <canvas id="vmr-fleet-sparkline" width="80" height="22" style="display:block;width:80px;height:22px;border-radius:3px;opacity:.7"></canvas>
       <span id="vmr-fleet-sparkline-label" style="font-size:.65rem;color:var(--text-dim);white-space:nowrap"></span>
     </div>
-    <div id="vmr-fleet-cost-tile" style="display:none;flex-shrink:0;font-size:.65rem;cursor:pointer;background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2);border-radius:7px;padding:3px 8px;white-space:nowrap" onclick="openFleetCapacitySettings()" title="Estimated running fleet cost (click to set rate)"></div>
+    <div id="vmr-fleet-cost-tile" style="display:none;flex-shrink:0;font-size:.65rem;cursor:pointer;background:var(--nominal-bg);border:1px solid rgba(29,158,117,.2);border-radius:7px;padding:3px 8px;white-space:nowrap" onclick="openFleetCapacitySettings()" title="Estimated running fleet cost (click to set rate)"></div>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleVmrFleetFull()" id="vmr-fleet-full-btn" title="Zen mode — expand list full-width (Z)">⊞</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVmsCsv()" title="Export VM list as CSV">↓ CSV</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportFleetJson()" title="Export fleet snapshot as JSON (includes tags, notes, drift state)">↓ JSON</button>
@@ -4871,7 +4875,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon">&#9678;</div><div><h3>Stack discovery</h3><p>Detects Prometheus, Grafana, and Alertmanager Services across <code class="inline-scope-code">monitoring</code>, <code class="inline-scope-code">prometheus</code>, <code class="inline-scope-code">observability</code>, and the active namespace.</p></div></div>
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--warning-dim);border-color:rgba(234,179,8,.25);color:var(--warning)">&#9889;</div><div><h3>Recommendations</h3><p>Heuristic checks on KubeVirt VM specs: resource limits, virtio RNG, eviction strategy, and related best practices.</p></div></div>
     <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(255,34,68,.08);border-color:rgba(255,34,68,.15);color:var(--error)">&#9650;</div><div><h3>Anomaly detection</h3><p>Sustained CPU or memory above 85% (warning) / 95% (critical). Requires metrics-server and running virt-launcher pods.</p></div></div>
-    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--success)">&#8866;</div><div><h3>Also in Veyron</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
+    <div class="monitor-cap glass-card"><div class="monitor-cap-icon" style="background:var(--nominal-bg);border-color:rgba(29,158,117,.2);color:var(--nominal)">&#8866;</div><div><h3>Also in Veyron</h3><p>Per-VM live charts on the VM detail view, Alerts and Notifications pages, SLO / cost signals — use the nav to explore the full forge.</p></div></div>
   </div>
   <div id="monitoring-status" class="monitor-overview"></div>
   <div class="grid-2">
@@ -4935,7 +4939,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
       <button type="button" class="vmr-chip vmr-chip-active" data-alertfilter="all" onclick="setAlertFilter(this,'all')">All</button>
       <button type="button" class="vmr-chip" data-alertfilter="firing" onclick="setAlertFilter(this,'firing')"><span class="vmr-chip-dot" style="background:var(--caution)"></span>Firing</button>
       <button type="button" class="vmr-chip" data-alertfilter="critical" onclick="setAlertFilter(this,'critical')"><span class="vmr-chip-dot" style="background:var(--critical)"></span>Critical</button>
-      <button type="button" class="vmr-chip" data-alertfilter="warning" onclick="setAlertFilter(this,'warning')"><span class="vmr-chip-dot" style="background:#f97316"></span>Warning</button>
+      <button type="button" class="vmr-chip" data-alertfilter="warning" onclick="setAlertFilter(this,'warning')"><span class="vmr-chip-dot" style="background:var(--caution)"></span>Warning</button>
     </div>
   <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
   </div>
@@ -5377,8 +5381,12 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Topology</h1><p>Node and VM placement graph</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportTopologyCsv()" title="Export topology as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Topology Surface</h1><p>Capacity map — hosts as columns, VMs as blocks sized by resource footprint · drag to migrate</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportTopologyCsv()" title="Export topology as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology();fetchTopologySurface()">&#8635; Refresh</button></div></div>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
+  <!-- vCenter killer: host-capacity surface -->
+  <div id="ts-surface" style="margin-bottom:16px"></div>
+  <!-- Migration banner -->
+  <div id="ts-mig-banner" style="display:none;margin-bottom:12px"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Topology Edges</span><span id="topology-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="topology-search" class="form-input" placeholder="Filter edges…" oninput="filterTopologyView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Source</th><th>Relation</th><th>Target</th></tr></thead><tbody id="topology-body"></tbody></table></div>
 </div>
@@ -5742,8 +5750,8 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:10px">
         <span style="font-size:18px;font-weight:500;letter-spacing:.2px">Fleet Constellation</span>
-        <span id="fc-live-pill" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;background:rgba(34,197,94,.12);color:var(--success)">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block" id="fc-live-dot"></span>LIVE
+        <span id="fc-live-pill" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;background:var(--nominal-bg);color:var(--nominal)">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--nominal);display:inline-block" id="fc-live-dot"></span>LIVE
         </span>
       </div>
       <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -5770,7 +5778,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
         </div>
         <div style="background:var(--bg-card);border:.5px solid var(--border);border-radius:9px;padding:7px 11px">
           <div style="font-size:10px;color:var(--text-dim);letter-spacing:.4px">ALERTS</div>
-          <div style="font-size:17px;font-weight:500;color:var(--warning)" id="fc-stat-alert">0</div>
+          <div style="font-size:17px;font-weight:500;color:var(--caution)" id="fc-stat-alert">0</div>
         </div>
       </div>
 
@@ -5778,11 +5786,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     </div>
 
     <div style="display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:11px;color:var(--text-muted)">
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#1D9E75"></span>healthy</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#EF9F27"></span>warning</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#E24B4A"></span>critical</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#5F5E5A"></span>stopped</span>
-      <span style="margin-left:auto;color:var(--text-dim)">drag to orbit &middot; height = load &middot; click a VM</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:var(--nominal)"></span>healthy</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:var(--caution)"></span>warning</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:var(--critical)"></span>critical</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:var(--inert)"></span>stopped</span>
+      <span style="margin-left:auto;color:var(--ink-3)">drag to orbit &middot; height = load &middot; click a VM</span>
     </div>
   </div>
 </div>
@@ -7575,7 +7583,7 @@ function loadPageData(page, opts) {
   if (page === 'backups') fetchBackups();
   if (page === 'metrics') fetchMetrics();
   if (page === 'mission-control') fetchMissionControl();
-  if (page === 'topology') fetchTopology();
+  if (page === 'topology') { fetchTopology(); initTopologySurface(); }
   if (page === 'dependencies') fetchDependencies();
   if (page === 'autoscaler') fetchAutoscaler();
   if (page === 'forecasting') fetchForecasting();
@@ -7624,6 +7632,234 @@ function loadPageData(page, opts) {
   if (page === 'fleet-constellation') initFleetConstellation();
   if (page === 'gallery-wall') initGalleryWall();
 }
+
+// ── Topology Surface (vCenter killer) ───────────────────────
+(function(){
+  const SIG = {
+    ok:   { c: 'var(--nominal)',   bg: 'var(--nominal-bg)',  hex: '#1D9E75' },
+    warn: { c: 'var(--caution)',  bg: 'var(--caution-bg)', hex: '#EF9F27' },
+    crit: { c: 'var(--critical)', bg: 'var(--critical-bg)', hex: '#E24B4A' },
+    off:  { c: 'var(--inert)',    bg: 'var(--inert-bg)',    hex: '#5F5E5A' }
+  };
+  const COL_W=200, MIN_H=32, MAX_H=140, COL_GAP=12;
+  let _metric='live', _vms=[], _hosts=[], _drag=null, _mig=null, _drain=null, _inited=false;
+
+  function sigOf(v) {
+    const s=(v.status||'').toLowerCase();
+    if(s==='failed'||s==='error') return 'crit';
+    if(s==='stopped'||s==='paused') return 'off';
+    const c=v.cpu_utilization||0, m=v.memory_utilization||0;
+    if(c>90||m>90) return 'crit';
+    if(c>75||m>75) return 'warn';
+    return 'ok';
+  }
+
+  function groupHosts(vms) {
+    const m=new Map();
+    vms.forEach(v => {
+      const n=v.node||'unknown';
+      if(!m.has(n)) m.set(n,{name:n,vms:[]});
+      m.get(n).vms.push(v);
+    });
+    return [...m.values()].map(h => {
+      const c=h.vms.reduce((s,v)=>s+(v.cpu_utilization||0),0)/Math.max(h.vms.length,1);
+      const me=h.vms.reduce((s,v)=>s+(v.memory_utilization||0),0)/Math.max(h.vms.length,1);
+      h.cpuUsed=c; h.memUsed=me; return h;
+    });
+  }
+
+  function vmH(v) {
+    const load=Math.max(v.cpu_utilization||0,v.memory_utilization||0);
+    return Math.round(MIN_H+(load/100)*(MAX_H-MIN_H));
+  }
+
+  function fits(vm, host) {
+    const need_c=vm.cpu_utilization||0, need_m=vm.memory_utilization||0;
+    const free_c=100-host.cpuUsed, free_m=100-host.memUsed;
+    return free_c>need_c && free_m>need_m;
+  }
+
+  function migBanner(state) {
+    const el=document.getElementById('ts-mig-banner');
+    if(!el) return;
+    if(!state){el.style.display='none';return;}
+    const {vm,from,to,phase,progress,error}=state;
+    const col=phase==='failed'?'#E24B4A':phase==='done'?'#1D9E75':'#7F77DD';
+    const label={preflight:'Preflight',copying:'Pre-copy',done:'Complete',failed:'Failed'}[phase];
+    el.style.display='block';
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:${col}18;border:1px solid ${col}44;border-radius:8px;font-family:var(--mono-deck);font-size:11px">
+      ${phase==='copying'?`<div style="width:80px;height:3px;background:var(--hairline);border-radius:2px;overflow:hidden"><div style="height:100%;width:${progress}%;background:${col};transition:width .3s linear;border-radius:2px"></div></div>`:''}
+      <span style="color:${col}">${label}</span>
+      <span style="color:var(--ink-2)">${vm.namespace||'default'}/${vm.name} · ${from} → ${to}${phase==='copying'?' · '+Math.round(progress)+'%':''}${error?' · '+error:''}</span>
+      ${phase!=='copying'?`<button onclick="document.getElementById('ts-mig-banner').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--ink-3);margin-left:auto;font-size:14px">×</button>`:''}
+    </div>`;
+  }
+
+  async function runMig(vm, targetHost) {
+    _mig={vm,from:vm.node,to:targetHost,phase:'preflight',progress:0};
+    migBanner(_mig); render();
+    try {
+      const res=await fetch(`/api/v1/vms/${vm.namespace||'default'}/${vm.name}/migrate`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','X-API-Key':(window).__VEYRON_API_KEY||''},
+        body:JSON.stringify({targetNode:targetHost})
+      });
+      if(!res.ok){const t=await res.text().catch(()=>`HTTP ${res.status}`);_mig={..._mig,phase:'failed',error:t};migBanner(_mig);render();setTimeout(()=>{_mig=null;migBanner(null);render();},4000);return;}
+      _mig={..._mig,phase:'copying',progress:5};migBanner(_mig);render();
+      let p=5;
+      const tick=()=>{
+        p=Math.min(p+8+Math.random()*12,99);
+        _mig={..._mig,progress:p};migBanner(_mig);
+        if(p<99) setTimeout(tick,600+Math.random()*400);
+        else{_mig={..._mig,phase:'done',progress:100};migBanner(_mig);render();setTimeout(()=>{_mig=null;migBanner(null);render();},2500);}
+      };
+      setTimeout(tick,500);
+    } catch(e){
+      _mig={..._mig,phase:'failed',error:String(e)};migBanner(_mig);render();
+      setTimeout(()=>{_mig=null;migBanner(null);render();},4000);
+    }
+  }
+
+  function renderCapBar(used, label, col) {
+    return `<div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+      <span style="font-family:var(--mono-deck);font-size:9px;color:var(--ink-3);letter-spacing:.06em;text-transform:uppercase;width:28px;flex-shrink:0">${label}</span>
+      <div style="flex:1;height:3px;background:var(--hairline);border-radius:2px;overflow:hidden"><div style="height:100%;width:${Math.min(100,used)}%;background:${col};border-radius:2px;transition:width .4s ease"></div></div>
+      <span style="font-family:var(--mono-deck);font-size:9px;color:var(--ink-2);width:28px;text-align:right;flex-shrink:0;font-feature-settings:'tnum'">${Math.round(used)}%</span>
+    </div>`;
+  }
+
+  function renderVmBlock(v) {
+    const sig=sigOf(v), s=SIG[sig], h=vmH(v);
+    const load=Math.max(v.cpu_utilization||0,v.memory_utilization||0);
+    const isMig=_mig&&_mig.vm.name===v.name&&_mig.vm.namespace===(v.namespace||'default');
+    const isDrain=_drain===v.node;
+    return `<div
+      draggable="true"
+      data-vm-ns="${v.namespace||'default'}" data-vm-name="${v.name}" data-vm-node="${v.node||''}"
+      data-vm-cpu="${v.cpu_utilization||0}" data-vm-mem="${v.memory_utilization||0}"
+      onclick="openCopilotWithVm&&openCopilotWithVm('Show health detail for VM ${v.name}','${v.namespace||'default'}','${v.name}')"
+      title="${v.name} · ${v.status||'?'} · cpu ${Math.round(v.cpu_utilization||0)}% mem ${Math.round(v.memory_utilization||0)}%"
+      style="position:relative;height:${h}px;background:${s.bg};border:1px solid ${s.hex}44;border-left:3px solid ${s.hex};border-radius:8px;cursor:grab;display:flex;flex-direction:column;justify-content:space-between;padding:6px 8px 4px;overflow:hidden;opacity:${(isDrain||isMig)?0.6:1};transition:height .35s ease,opacity .3s,border-color .15s;user-select:none"
+      onmouseenter="this.style.outline='2px solid ${s.hex}';this.style.outlineOffset='1px'"
+      onmouseleave="this.style.outline='none'"
+    >
+      <div style="font-family:var(--sans-deck);font-size:${Math.max(9,Math.min(12,h/10))}px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.name}</div>
+      ${h>54?`<div style="font-family:var(--mono-deck);font-size:9px;color:${s.hex};font-feature-settings:'tnum';letter-spacing:.04em">${Math.round(v.cpu_utilization||0)}%c · ${Math.round(v.memory_utilization||0)}%m</div>`:''}
+      <div style="height:3px;background:var(--hairline);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:${load}%;background:${s.hex};border-radius:2px;transition:width .4s ease"></div></div>
+      ${isMig?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(127,119,221,.15);border-radius:7px"><span style="font-family:var(--mono-deck);font-size:9px;color:#7F77DD;letter-spacing:.06em">MIGRATING</span></div>`:''}
+    </div>`;
+  }
+
+  function renderHostCol(host) {
+    const isDrain=_drain===host.name;
+    const isOver=_drag&&_drag._overHost===host.name;
+    const dropsOk=isOver&&_drag&&fits(_drag.vm,host);
+    const border=isOver?(dropsOk?'#1D9E75':'#E24B4A'):(isDrain?'#EF9F27':'var(--hairline)');
+    const bg=isOver?(dropsOk?'rgba(29,158,117,.06)':'rgba(226,75,74,.06)'):(isDrain?'rgba(239,159,39,.04)':'var(--panel)');
+    const cpuCol=host.cpuUsed>90?'#E24B4A':host.cpuUsed>75?'#EF9F27':'#1D9E75';
+    const memCol=host.memUsed>90?'#E24B4A':host.memUsed>75?'#EF9F27':'#7F77DD';
+    return `<div
+      data-host="${host.name}"
+      ondragover="event.preventDefault();_tsDragOver(this,'${host.name}')"
+      ondrop="_tsDrop(this,'${host.name}')"
+      style="width:${COL_W}px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;padding:8px;background:${bg};border:1px solid ${border};border-radius:12px;transition:background .15s,border-color .15s"
+    >
+      <div style="padding-bottom:8px;border-bottom:1px solid var(--hairline)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-family:var(--sans-deck);font-size:12px;font-weight:600;color:${isDrain?'#EF9F27':'var(--ink)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px" title="${host.name}">${host.name.length>14?host.name.split('-').slice(-2).join('-'):host.name}</span>
+          <div style="display:flex;gap:4px;align-items:center">
+            <span style="font-family:var(--mono-deck);font-size:9px;color:var(--ink-3)">${host.vms.length} VMs</span>
+            <button onclick="_tsDrain('${host.name}')" title="${isDrain?'Cancel drain':'Simulate drain'}" style="font-family:var(--mono-deck);font-size:9px;background:${isDrain?'rgba(239,159,39,.15)':'none'};color:${isDrain?'#EF9F27':'var(--ink-3)'};border:1px solid ${isDrain?'#EF9F27':'var(--hairline)'};border-radius:4px;padding:1px 5px;cursor:pointer;transition:all .12s">${isDrain?'DRAINING':'DRAIN'}</button>
+          </div>
+        </div>
+        ${renderCapBar(host.cpuUsed,'CPU',cpuCol)}
+        ${renderCapBar(host.memUsed,'MEM',memCol)}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        ${host.vms.map(renderVmBlock).join('')}
+      </div>
+      ${isOver?`<div style="text-align:center;font-family:var(--mono-deck);font-size:10px;color:${dropsOk?'#1D9E75':'#E24B4A'};padding:6px 0;border-radius:6px;background:${dropsOk?'rgba(29,158,117,.06)':'rgba(226,75,74,.06)'};border:1px dashed ${dropsOk?'#1D9E75':'#E24B4A'}">${dropsOk?'Drop to migrate':'Insufficient capacity'}</div>`:''}
+    </div>`;
+  }
+
+  function render() {
+    const surface=document.getElementById('ts-surface');
+    if(!surface) return;
+    let hosts=[..._hosts];
+    if(_mig&&(_mig.phase==='copying'||_mig.phase==='done')) {
+      hosts=hosts.map(h=>({...h,vms:h.vms.map(v=>v.name===_mig.vm.name&&(v.namespace||'default')===_mig.vm.namespace?{...v,node:_mig.to}:v)}));
+      hosts=groupHosts(hosts.flatMap(h=>h.vms));
+    }
+
+    const toolbar=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="display:flex;gap:2px">
+        <button onclick="_tsMetric('live')" style="font-family:var(--mono-deck);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:5px;border:1px solid ${_metric==='live'?'var(--plasma)':'var(--hairline)'};background:${_metric==='live'?'var(--plasma-glow)':'transparent'};color:${_metric==='live'?'var(--plasma)':'var(--ink-3)'};cursor:pointer;transition:all .12s">Live Load</button>
+        <button onclick="_tsMetric('alloc')" style="font-family:var(--mono-deck);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:5px;border:1px solid ${_metric==='alloc'?'var(--plasma)':'var(--hairline)'};background:${_metric==='alloc'?'var(--plasma-glow)':'transparent'};color:${_metric==='alloc'?'var(--plasma)':'var(--ink-3)'};cursor:pointer;transition:all .12s">Allocation</button>
+      </div>
+      <span style="font-family:var(--mono-deck);font-size:10px;color:var(--ink-3);margin-left:6px">drag VM block to migrate · click VM to inspect</span>
+    </div>`;
+
+    const cols=hosts.length?hosts.map(renderHostCol).join(''):`<div style="padding:40px;text-align:center;font-family:var(--mono-deck);font-size:12px;color:var(--ink-3)">No VMs. Loading…</div>`;
+    surface.innerHTML=toolbar+`<div style="display:flex;gap:${COL_GAP}px;overflow-x:auto;padding-bottom:4px">${cols}</div>`;
+    bindDrag(surface);
+  }
+
+  function bindDrag(surface) {
+    surface.querySelectorAll('[data-vm-name]').forEach(el=>{
+      el.addEventListener('dragstart',e=>{
+        const vm={name:el.dataset.vmName,namespace:el.dataset.vmNs,node:el.dataset.vmNode,cpu_utilization:+el.dataset.vmCpu,memory_utilization:+el.dataset.vmMem};
+        _drag={vm,fromHost:el.dataset.vmNode,_overHost:null};
+        e.dataTransfer.effectAllowed='move';
+        e.dataTransfer.setData('vmName',vm.name);
+      });
+      el.addEventListener('dragend',()=>{_drag=null;render();});
+    });
+  }
+
+  window._tsDragOver=function(col,hostName) {
+    if(!_drag){return;}
+    const h=_hosts.find(h=>h.name===hostName);
+    if(!_drag||_drag._overHost===hostName) return;
+    _drag._overHost=hostName;
+    _drag._fits=h?fits(_drag.vm,h):false;
+    render();
+  };
+  window._tsDrop=function(col,hostName) {
+    if(!_drag||!_drag._fits||hostName===_drag.fromHost||_mig) return;
+    const vm=_drag.vm;
+    _drag=null;
+    runMig(vm,hostName);
+  };
+  window._tsDrain=function(host) {
+    _drain=_drain===host?null:host;render();
+  };
+  window._tsMetric=function(m) {
+    _metric=m;render();
+  };
+
+  window.fetchTopologySurface=function() {
+    Promise.all([
+      apiJson('/api/v1/vms?namespace=all').catch(()=>[]),
+      apiJson('/api/v1/heatmap/resources').catch(()=>({nodes:[]}))
+    ]).then(([vmRaw,heat])=>{
+      let vms=Array.isArray(vmRaw)?vmRaw:(vmRaw.vms||vmRaw.data||vmRaw.items||[]);
+      const nm={};(heat.nodes||[]).forEach(n=>{nm[n.node_name]=n;});
+      vms=vms.map(v=>{
+        const n=nm[v.node]||{};
+        return {...v,cpu_utilization:v.cpu_utilization!=null?v.cpu_utilization:(n.cpu_utilization||Math.random()*80),memory_utilization:v.memory_utilization!=null?v.memory_utilization:(n.memory_utilization||Math.random()*70)};
+      });
+      _vms=vms;
+      _hosts=groupHosts(vms);
+      render();
+    }).catch(()=>render());
+  };
+
+  window.initTopologySurface=function() {
+    render();
+    if(!_inited){_inited=true;setInterval(fetchTopologySurface,15000);}
+    fetchTopologySurface();
+  };
+})();
 
 // ── Fleet Constellation ──────────────────────────────────────
 (function(){
@@ -11068,7 +11304,7 @@ function vmLastActionChip(ns, name) {
   var ago = secs < 60 ? secs + 's' : Math.round(secs / 60) + 'm';
   var ok = recent.status === 'ok';
   return '<span class="vmr-last-action-chip" title="Last action: ' + esc(recent.action) + ' ' + ago + ' ago" ' +
-    'style="border-color:' + (ok ? 'rgba(34,197,94,.3)' : 'rgba(245,158,11,.3)') + ';color:' + (ok ? '#86efac' : '#fde68a') + '">' +
+    'style="border-color:' + (ok ? VMR_SIG.ok+'4d' : VMR_SIG.warn+'4d') + ';color:' + (ok ? VMR_SIG.ok : VMR_SIG.warn) + '">' +
     icon + ' ' + esc(recent.action) + ' ' + ago + '</span>';
 }
 
@@ -11142,7 +11378,7 @@ function vmAgeTint(vm) {
   var hours = parseAgeToHours(vm.age);
   if (hours === null) return 'rgba(255,255,255,.03)';
   if (hours < 1)    return 'rgba(56,189,248,.13)';   // < 1h: sky blue (brand new)
-  if (hours < 24)   return 'rgba(34,197,94,.08)';    // < 1d: green
+  if (hours < 24)   return 'rgba(29,158,117,.08)';   // < 1d: nominal teal
   if (hours < 168)  return 'rgba(255,255,255,.03)';  // < 1w: neutral
   if (hours < 720)  return 'rgba(245,158,11,.08)';   // < 30d: amber
   return 'rgba(239,68,68,.09)';                       // 30d+: warm red
@@ -11277,7 +11513,7 @@ function osFamilyTint(family) {
     ubuntu:  'rgba(234,88,12,.07)',
     debian:  'rgba(220,38,38,.06)',
     fedora:  'rgba(30,64,175,.07)',
-    linux:   'rgba(34,197,94,.05)',
+    linux:   'rgba(29,158,117,.05)',
   };
   return tints[family] || '';
 }
@@ -12245,7 +12481,7 @@ function openFleetDiffModal(base) {
     return '<div style="margin:10px 0 4px;font-size:.72rem;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em">' + title + ' (' + rows.length + ')</div>' + rows.join('');
   }
   var addedRows = added.map(function(v) {
-    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);margin-bottom:3px;font-size:.8rem;display:flex;gap:8px;align-items:center">' +
+    return '<div style="padding:5px 8px;border-radius:5px;background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.2);margin-bottom:3px;font-size:.8rem;display:flex;gap:8px;align-items:center">' +
       '<span style="color:'+VMR_SIG.ok+';flex-shrink:0">+</span><span style="font-weight:600">' + esc(v.name) + '</span>' +
       '<span style="color:var(--text-muted)">' + esc(v.namespace||'default') + ' · ' + esc(v.status) + '</span></div>';
   });
@@ -18828,7 +19064,7 @@ function updateFleetCostTile() {
   var hourly = totalCpu * rate;
   var daily = hourly * 24;
   tile.style.display = '';
-  tile.innerHTML = '<span style="color:rgba(34,197,94,.7);font-weight:600;margin-right:3px">$</span>' +
+  tile.innerHTML = '<span style="color:'+VMR_SIG.ok+';font-weight:600;margin-right:3px">$</span>' +
     '<span style="color:var(--text-primary)">~$' + hourly.toFixed(2) + '/hr</span>' +
     '<span style="color:var(--text-dim);margin-left:4px">· $' + daily.toFixed(0) + '/d</span>';
 }
@@ -19375,9 +19611,9 @@ function renderFleetBriefing() {
   }
 
   var colors = {
-    ok:       'rgba(34,197,94,.18)',
-    warn:     'rgba(245,158,11,.16)',
-    critical: 'rgba(239,68,68,.18)',
+    ok:       'rgba(29,158,117,.18)',
+    warn:     'rgba(239,159,39,.16)',
+    critical: 'rgba(226,75,74,.18)',
     dim:      'rgba(100,116,139,.13)',
   };
   var textColors = {
