@@ -20824,6 +20824,11 @@ function openRestoreSnapModal(ns, snapName, vmName) {
   restoreSnapshot(ns, snapName);
 }
 
+// Navigate to VMs page and open a specific VM's workspace panel
+function openVmWorkspace(ns, name) {
+  selectVm(ns, name);
+}
+
 // Accordion toggle for Edit Hardware panel in VM Capsule
 function toggleAccord(key) {
   var section = document.getElementById('accord-' + key);
