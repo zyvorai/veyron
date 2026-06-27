@@ -414,7 +414,8 @@ body.classic-nav-open .browse-mega-menu{display:grid}
   box-shadow:none;padding:0 0 10px;min-width:0;backdrop-filter:none;
 }
 .browse-mega-menu .nav-dropdown::before{display:none}
-.browse-mega-menu .nav-link{padding:7px 10px;font-size:.82rem}
+.browse-mega-menu .nav-link{padding:7px 10px;font-size:.82rem;white-space:normal;word-break:break-word;overflow:hidden;text-overflow:ellipsis}
+.browse-mega-menu .nav-group{overflow:hidden}
 .browse-sheet-handle{
   display:none;width:36px;height:4px;border-radius:999px;margin:0 auto 8px;
   background:rgba(148,163,184,.45);flex-shrink:0;
@@ -3680,6 +3681,12 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .vc-header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .vc-stat{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(255,255,255,.55)}
 .vc-stat.ok{border-color:var(--vc-run-border);color:var(--vc-run)}
+#page-vcentre[data-vc-theme="matrix"]{--vc-bg:#050f05;--vc-cyan:#00ff41;--vc-magenta:#00cc33;--vc-glass:rgba(0,255,65,.04);--vc-glass-border:rgba(0,255,65,.12);--vc-run:#00ff41;--vc-run-bg:rgba(0,255,65,.08);--vc-run-border:rgba(0,255,65,.28)}
+#page-vcentre[data-vc-theme="ember"]{--vc-bg:#0f0800;--vc-cyan:#ff6b35;--vc-magenta:#ff2d55;--vc-glass:rgba(255,107,53,.04);--vc-glass-border:rgba(255,107,53,.12);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,.10);--vc-run-border:rgba(16,185,129,.30)}
+#page-vcentre[data-vc-theme="arctic"]{--vc-bg:#06080f;--vc-cyan:#60a5fa;--vc-magenta:#a78bfa;--vc-glass:rgba(96,165,250,.04);--vc-glass-border:rgba(96,165,250,.12);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,.10);--vc-run-border:rgba(16,185,129,.30)}
+.vc-theme-btn{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s,border-color .15s;flex-shrink:0}
+.vc-theme-btn:hover{transform:scale(1.2)}
+.vc-theme-btn.active{border-color:#fff}
 
 /* — vmr-chip-dot signals — */
 .vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
@@ -6715,6 +6722,12 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <span class="vc-stat ok" id="vc-running-count"></span>
       <span class="vc-stat" id="vc-stopped-count"></span>
       <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25)" id="vc-last-updated"></span>
+      <div style="display:flex;align-items:center;gap:6px" id="vc-theme-picker">
+        <button type="button" class="vc-theme-btn active" data-vct="nebula" style="background:linear-gradient(135deg,#00f5ff,#ff00aa)" title="Nebula" onclick="vcSetTheme('nebula')"></button>
+        <button type="button" class="vc-theme-btn" data-vct="matrix" style="background:linear-gradient(135deg,#00ff41,#00cc33)" title="Matrix" onclick="vcSetTheme('matrix')"></button>
+        <button type="button" class="vc-theme-btn" data-vct="ember" style="background:linear-gradient(135deg,#ff6b35,#ff2d55)" title="Ember" onclick="vcSetTheme('ember')"></button>
+        <button type="button" class="vc-theme-btn" data-vct="arctic" style="background:linear-gradient(135deg,#60a5fa,#a78bfa)" title="Arctic" onclick="vcSetTheme('arctic')"></button>
+      </div>
       <button type="button" class="vc-btn-primary" onclick="navigate('create-vm')">&#9889; FORGE VM</button>
     </div>
   </div>
@@ -8850,8 +8863,20 @@ function loadPageData(page, opts) {
     if (panel) panel.classList.remove('open');
   };
 
+  window.vcSetTheme = function(name) {
+    var pg = document.getElementById('page-vcentre');
+    if (!pg) return;
+    if (name === 'nebula') pg.removeAttribute('data-vc-theme');
+    else pg.setAttribute('data-vc-theme', name);
+    localStorage.setItem('veyron_vc_theme', name);
+    document.querySelectorAll('.vc-theme-btn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.vct === name);
+    });
+  };
+
   window.initVCentre = function() {
     if (document.body.dataset.page !== 'vcentre') { vcCloseDetail(); return; }
+    vcSetTheme(localStorage.getItem('veyron_vc_theme') || 'nebula');
     if (!_vcInited) {
       _vcInited = true;
       _vcInterval = setInterval(function() {
@@ -10262,6 +10287,9 @@ function toggleMacMenu(id) {
   const open = panel.classList.contains('open');
   closeMacMenus();
   if (!open) {
+    // Use position:fixed so the panel escapes the navbar's overflow:hidden clip
+    const rect = btn ? btn.getBoundingClientRect() : {bottom: 40, left: 0};
+    panel.style.cssText = 'position:fixed!important;top:' + Math.round(rect.bottom + 4) + 'px;left:' + Math.round(rect.left) + 'px;z-index:2000;min-width:200px';
     panel.classList.add('open');
     panel.removeAttribute('hidden');
     if (btn) { btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
@@ -10272,6 +10300,7 @@ function closeMacMenus() {
   document.querySelectorAll('.mac-menu-panel').forEach(p => {
     p.classList.remove('open');
     p.setAttribute('hidden', '');
+    p.style.cssText = '';
   });
   document.querySelectorAll('.mac-menu-trigger').forEach(b => {
     b.classList.remove('open');
