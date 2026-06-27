@@ -3637,6 +3637,18 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 /* — glow-success — */
 --glow-success:0 0 12px rgba(29,158,117,.2);
 
+/* — vmr-chip: Instrument Deck filter pill (design-system .chip) — */
+.vmr-chip{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;padding:6px 12px;
+  border-radius:99px;border:1px solid var(--hairline);background:var(--panel);
+  color:var(--ink-2);cursor:pointer;transition:.15s;
+  display:inline-flex;align-items:center;gap:6px}
+.vmr-chip:hover{border-color:var(--hairline-hi);color:var(--ink)}
+.vmr-chip.vmr-chip-active,.vmr-chip.on{background:var(--plasma-glow);border-color:var(--plasma-line);color:var(--ink)}
+
+/* — vm-view-toggle: plasma tokens (replace amber) — */
+.vm-view-toggle button:hover{border-color:var(--hairline-hi)!important;color:var(--ink)!important}
+.vm-view-toggle button.active{background:var(--plasma-glow)!important;color:var(--plasma)!important;border-color:var(--plasma-line)!important}
+
 /* — vmr-chip-dot signals — */
 .vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
 .vmr-chip-dot.running{background:var(--nominal);box-shadow:0 0 5px var(--nominal)}
@@ -7653,7 +7665,7 @@ function renderVmCapsuleVmr() {
     const vmi = vm.vmi_status || {};
     const ifaces = vmi.interfaces || [];
     const guestOS = vmi.guest_os_info;
-    body.innerHTML = renderVmHero(vm, ns, name, vmi, {}) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS);
+    body.innerHTML = renderVmHero(vm, ns, name, vmi, {}) + renderVmWaveSection(ns, name, vm) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) + renderEditHardwareAccordion(name);
     if (heroSlot) heroSlot.innerHTML = '';
     fetchSecurity(ns, name).then(function(secHtml) {
       const el = document.getElementById('security-' + name);
@@ -7671,9 +7683,189 @@ function renderVmCapsuleVmr() {
     loadVmEventHistory(ns, name);
     loadVmSessionTimeline(ns, name);
     loadVmPeersPanel(ns, name);
+    loadEditHardwarePanel(ns, name, vm);
   }).catch(function(e) {
     body.innerHTML = '<div class="vmr-panel" style="color:var(--error)">' + esc(e.message || String(e)) + '</div>';
   });
+}
+
+/* ── Edit Hardware panel (Part D) ─────────────────────────────────── */
+function renderEditHardwareAccordion(vmName) {
+  return '<div class="vmr-accord-section" id="accord-hw-' + vmName + '">' +
+    '<button type="button" class="vmr-accord-hdr" onclick="toggleAccord(\'hw-' + vmName + '\')" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 16px;background:none;border:none;border-top:1px solid var(--hairline);cursor:pointer;color:var(--ink-2);font-size:.88rem;font-weight:600">' +
+    '<span>◎ Edit Hardware</span><span class="vmr-accord-chev">▾</span></button>' +
+    '<div class="vmr-accord-body" id="accord-hw-body-' + vmName + '" style="display:none;padding:12px 16px">' +
+    '<div id="hw-panel-' + vmName + '" style="color:var(--ink-3);font-size:.82rem">Loading host data…</div>' +
+    '</div></div>';
+}
+
+function loadEditHardwarePanel(ns, name, vm) {
+  var el = document.getElementById('hw-panel-' + name);
+  if (!el) return;
+  var curCpu = (vm.cpu && parseInt(vm.cpu)) || 2;
+  var curMem = (vm.memory_gb && parseInt(vm.memory_gb)) || (vm.memory && parseInt(vm.memory)) || 2;
+  var curDisk = 36;
+  apiJson('/api/v1/heatmap/resources').catch(function() { return {nodes:[]}; }).then(function(heat) {
+    var nodes = heat.nodes || [];
+    var nd = nodes.find(function(n) { return n.node_name === vm.node; }) || {};
+    var hostCores = nd.cpu_capacity || 32;
+    var hostMem = nd.memory_capacity_gb || 64;
+    var usedCpu = nd.cpu_used || 8;
+    var usedMem = nd.memory_used_gb || 16;
+    var freeCpu = Math.max(0, hostCores - usedCpu);
+    var freeMem = Math.max(0, hostMem - usedMem);
+    window['_hwBase_' + name] = {cpu:curCpu, mem:curMem, disk:curDisk, freeCpu:freeCpu, freeMem:freeMem, hostCores:hostCores, hostMem:hostMem};
+    el.innerHTML = renderEditHardwarePanel(name, curCpu, curMem, curDisk, hostCores, hostMem, freeCpu, freeMem);
+    hwUpd(name);
+  });
+}
+
+function renderEditHardwarePanel(vmName, bCpu, bMem, bDisk, hostCores, hostMem, freeCpu, freeMem) {
+  return '<div style="max-width:520px;padding:4px 0">' +
+    '<div style="display:flex;gap:8px;margin-bottom:14px;font-family:var(--mono-deck);font-size:11px;color:var(--ink-3)">host headroom' +
+    ' <span id="hh-cpu-' + vmName + '" style="padding:3px 9px;border-radius:7px;background:var(--panel-2)">' + freeCpu + '/' + hostCores + 'c free</span>' +
+    ' <span id="hh-mem-' + vmName + '" style="padding:3px 9px;border-radius:7px;background:var(--panel-2)">' + freeMem + '/' + hostMem + 'Gi free</span></div>' +
+    hwRow(vmName,'cpu','vCPU cores','hot',1,Math.max(16,hostCores),bCpu,'c') +
+    hwRow(vmName,'mem','memory','hot',1,Math.max(64,hostMem),bMem,'Gi') +
+    hwRow(vmName,'disk','root disk','cold',bDisk,512,bDisk,'Gi') +
+    '<div id="hw-impact-' + vmName + '" style="border-radius:12px;padding:13px 16px;margin:14px 0;font-family:var(--mono-deck);font-size:12px;background:var(--panel-2);color:var(--ink-2)">✓ no changes yet</div>' +
+    '<div style="display:flex;gap:9px;justify-content:flex-end">' +
+    '<button type="button" class="id-btn-ghost" onclick="hwReset(' + JSON.stringify(vmName) + ',' + bCpu + ',' + bMem + ',' + bDisk + ')">Reset</button>' +
+    '<button type="button" class="id-btn-plasma" id="hw-apply-' + vmName + '" disabled style="opacity:.5" onclick="hwApply(' + JSON.stringify(vmName) + ')">✓ Apply changes</button></div></div>';
+}
+
+function hwRow(vmName, id, label, hot, mn, mx, vl, unit) {
+  var hotBg = hot === 'hot' ? 'var(--nominal-bg)' : 'var(--caution-bg)';
+  var hotCol = hot === 'hot' ? 'var(--nominal)' : 'var(--caution)';
+  var hotTxt = hot === 'hot' ? '⚡ hot-plug' : '↻ reboot';
+  var step = id === 'disk' ? 4 : 1;
+  return '<div style="background:var(--panel);border:1px solid var(--hairline);border-radius:12px;padding:15px 17px;margin-bottom:12px">' +
+    '<div style="display:flex;align-items:center;gap:9px;margin-bottom:13px">' +
+    '<span style="font-family:var(--mono-deck);font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-3)">' + label + '</span>' +
+    '<span style="font-family:var(--mono-deck);font-size:9.5px;text-transform:uppercase;padding:2px 8px;border-radius:999px;margin-left:auto;background:' + hotBg + ';color:' + hotCol + '">' + hotTxt + '</span></div>' +
+    '<div style="display:flex;align-items:center;gap:14px">' +
+    '<span style="font-family:var(--sans-deck);font-size:26px;font-weight:700;min-width:74px;font-feature-settings:\'tnum\'">' +
+    '<span id="hw-' + vmName + '-' + id + '-v">' + vl + '</span>' +
+    '<span style="font-size:15px;color:var(--ink-3)">' + (unit === 'c' ? '' : unit) + '</span>' +
+    '<span id="hw-' + vmName + '-' + id + '-chg" style="font-family:var(--mono-deck);font-size:11px;color:var(--plasma);margin-left:7px"></span></span>' +
+    '<input type="range" id="hw-' + vmName + '-' + id + '" min="' + mn + '" max="' + mx + '" step="' + step + '" value="' + vl + '" style="flex:1" oninput="hwUpd(' + JSON.stringify(vmName) + ')"></div></div>';
+}
+
+function hwUpd(vmName) {
+  var cpuEl = document.getElementById('hw-' + vmName + '-cpu');
+  var memEl = document.getElementById('hw-' + vmName + '-mem');
+  var diskEl = document.getElementById('hw-' + vmName + '-disk');
+  if (!cpuEl || !memEl || !diskEl) return;
+  var cpu = +cpuEl.value, mem = +memEl.value, disk = +diskEl.value;
+  document.getElementById('hw-' + vmName + '-cpu-v').textContent = cpu;
+  document.getElementById('hw-' + vmName + '-mem-v').textContent = mem;
+  document.getElementById('hw-' + vmName + '-disk-v').textContent = disk;
+  var base = window['_hwBase_' + vmName] || {cpu:2,mem:2,disk:36,freeCpu:8,freeMem:50,hostCores:32,hostMem:64};
+  var addCpu = cpu - base.cpu, addMem = mem - base.mem;
+  var overCpu = addCpu > base.freeCpu, overMem = addMem > base.freeMem;
+  var changed = cpu !== base.cpu || mem !== base.mem || disk !== base.disk;
+  var reboot = disk !== base.disk;
+  var hhCpu = document.getElementById('hh-cpu-' + vmName);
+  var hhMem = document.getElementById('hh-mem-' + vmName);
+  if (hhCpu) hhCpu.textContent = (base.freeCpu - Math.max(addCpu, 0)) + '/' + base.hostCores + 'c free';
+  if (hhMem) hhMem.textContent = (base.freeMem - Math.max(addMem, 0)) + '/' + base.hostMem + 'Gi free';
+  function mkDelta(elId, d, u) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    el.textContent = d === 0 ? '' : (d > 0 ? '+' + d + u : d + u);
+    el.style.color = d > 0 ? 'var(--plasma)' : d < 0 ? 'var(--caution)' : '';
+  }
+  mkDelta('hw-' + vmName + '-cpu-chg', cpu - base.cpu, 'c');
+  mkDelta('hw-' + vmName + '-mem-chg', mem - base.mem, 'Gi');
+  mkDelta('hw-' + vmName + '-disk-chg', disk - base.disk, 'Gi');
+  var imp = document.getElementById('hw-impact-' + vmName);
+  var ap = document.getElementById('hw-apply-' + vmName);
+  if (!imp || !ap) return;
+  if (overCpu || overMem) {
+    imp.style.background = 'var(--critical-bg)'; imp.style.color = 'var(--critical)';
+    imp.innerHTML = '⚠ exceeds host headroom — ' + (overCpu ? 'cpu' : 'memory') + ' won\'t fit. Migrate first or reduce.';
+    ap.disabled = true; ap.style.opacity = '.4';
+  } else if (!changed) {
+    imp.style.background = 'var(--panel-2)'; imp.style.color = 'var(--ink-2)';
+    imp.innerHTML = '✓ no changes yet'; ap.disabled = true; ap.style.opacity = '.5';
+  } else if (reboot) {
+    imp.style.background = 'var(--caution-bg)'; imp.style.color = 'var(--caution)';
+    imp.innerHTML = '↻ disk resize needs a reboot · cpu + memory apply hot, no downtime';
+    ap.disabled = false; ap.style.opacity = '1';
+  } else {
+    imp.style.background = 'var(--nominal-bg)'; imp.style.color = 'var(--nominal)';
+    imp.innerHTML = '⚡ all changes hot-plug · applies live with zero downtime';
+    ap.disabled = false; ap.style.opacity = '1';
+  }
+}
+
+function hwReset(vmName, bCpu, bMem, bDisk) {
+  var cpuEl = document.getElementById('hw-' + vmName + '-cpu');
+  var memEl = document.getElementById('hw-' + vmName + '-mem');
+  var diskEl = document.getElementById('hw-' + vmName + '-disk');
+  if (cpuEl) cpuEl.value = bCpu;
+  if (memEl) memEl.value = bMem;
+  if (diskEl) diskEl.value = bDisk;
+  hwUpd(vmName);
+}
+
+function hwApply(vmName) {
+  var cpuEl = document.getElementById('hw-' + vmName + '-cpu');
+  var memEl = document.getElementById('hw-' + vmName + '-mem');
+  var diskEl = document.getElementById('hw-' + vmName + '-disk');
+  if (!cpuEl) return;
+  var cpu = +cpuEl.value, mem = +memEl.value, disk = +diskEl.value;
+  if (typeof openCopilotWithVm === 'function') {
+    openCopilotWithVm('Apply hardware: ' + cpu + ' vCPU, ' + mem + 'Gi mem, ' + disk + 'Gi disk to ' + vmName, _capsuleVmNs, vmName);
+  }
+}
+
+/* ── Waveform mini-chart helper (Part E) ──────────────────────────── */
+var _vmWaveHist = {};
+
+function vmrWavePush(ns, name, cpuPct, memPct) {
+  var k = ns + '/' + name;
+  if (!_vmWaveHist[k]) _vmWaveHist[k] = {cpu:[], mem:[]};
+  var h = _vmWaveHist[k];
+  h.cpu.push(cpuPct / 100); if (h.cpu.length > 48) h.cpu.shift();
+  h.mem.push(memPct / 100); if (h.mem.length > 48) h.mem.shift();
+}
+
+function vmrWave(hist, col, w, h) {
+  if (!hist || !hist.length) return '<div style="height:' + h + 'px"></div>';
+  var max = Math.max.apply(null, hist.concat([0.05]));
+  var pts = hist.map(function(v, i) {
+    return ((i / (hist.length - 1)) * w) + ',' + (h - (v / max) * h * 0.9 - 2);
+  }).join(' ');
+  var last = hist[hist.length - 1];
+  var lx = w, ly = h - (last / max) * h * 0.9 - 2;
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" preserveAspectRatio="none">' +
+    '<polygon points="0,' + h + ' ' + pts + ' ' + w + ',' + h + '" fill="' + col + '" opacity="0.12"/>' +
+    '<polyline points="' + pts + '" fill="none" stroke="' + col + '" stroke-width="2"/>' +
+    '<circle cx="' + lx + '" cy="' + ly + '" r="3" fill="' + col + '"/></svg>';
+}
+
+function renderVmWaveSection(ns, name, vm) {
+  var k = ns + '/' + name;
+  var wh = _vmWaveHist[k];
+  var status = (vm && vm.status) || 'Unknown';
+  var sigCol = status === 'Running' ? VMR_SIG.ok : status === 'Failed' ? VMR_SIG.crit : VMR_SIG.warn;
+  var cpuHist = (wh && wh.cpu && wh.cpu.length > 1) ? wh.cpu : null;
+  var memHist = (wh && wh.mem && wh.mem.length > 1) ? wh.mem : null;
+  if (!cpuHist && !memHist) return '';
+  var cpuLast = cpuHist ? Math.round((cpuHist[cpuHist.length-1]||0)*100) : 0;
+  var memLast = memHist ? Math.round((memHist[memHist.length-1]||0)*100) : 0;
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--hairline);border:1px solid var(--hairline);border-radius:0 0 12px 12px;overflow:hidden;margin-top:-1px">' +
+    '<div style="background:var(--panel);padding:15px 18px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+    '<span style="font-family:var(--mono-deck);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-3)">cpu</span>' +
+    '<span style="font-family:var(--sans-deck);font-size:22px;font-weight:700;font-feature-settings:\'tnum\'">' + (cpuHist ? cpuLast + '%' : '—') + '</span></div>' +
+    (cpuHist ? vmrWave(cpuHist, sigCol, 300, 48) : '') + '</div>' +
+    '<div style="background:var(--panel);padding:15px 18px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
+    '<span style="font-family:var(--mono-deck);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-3)">memory</span>' +
+    '<span style="font-family:var(--sans-deck);font-size:22px;font-weight:700;font-feature-settings:\'tnum\'">' + (memHist ? memLast + '%' : '—') + '</span></div>' +
+    (memHist ? vmrWave(memHist, '#7F77DD', 300, 48) : '') + '</div></div>';
 }
 
 function navigateToVmsFilter(status) {
@@ -18924,6 +19116,9 @@ async function loadVmMetricsPanel(ns, name) {
     const j = await apiJson('/api/v1/metrics/' + encodeURIComponent(name) + q);
     const m = unwrapData(j);
     if (!m || (m.cpu_usage_percent == null && m.memory_usage_percent == null)) return;
+    if (m.cpu_usage_percent != null || m.memory_usage_percent != null) {
+      vmrWavePush(ns, name, m.cpu_usage_percent || 0, m.memory_usage_percent || 0);
+    }
     let html = '';
     if (m.cpu_usage_percent != null) html += glassProgressBar('CPU live', m.cpu_usage_percent);
     if (m.memory_usage_percent != null) html += glassProgressBar('Memory live', m.memory_usage_percent);
