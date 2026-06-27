@@ -8308,7 +8308,7 @@ function loadPageData(page, opts) {
     if(el('gw-h-vit'))   { el('gw-h-vit').textContent=vit+'%'; el('gw-h-vit').style.color=m==='ok'?'var(--gw-ok)':'var(--gw-warn)'; }
     if(el('gw-hero-word')) el('gw-hero-word').textContent=m==='ok'?'running clean':'under pressure';
     if(el('gw-ring-n'))  el('gw-ring-n').textContent=vit+'%';
-    if(el('gw-ring-s'))  el('gw-ring-s').innerHTML=m==='ok'?'<b>All systems nominal.</b><br>Fleet healthy across <b>'+nodeSet.size+'</b> node'+(nodeSet.size!==1?'s':')+'.':'<b>'+critN+' VM'+(critN!==1?'s':'')+' need attention.</b><br>Zeus has a fix ready.';
+    if(el('gw-ring-s'))  el('gw-ring-s').innerHTML=m==='ok'?'<b>All systems nominal.</b><br>Fleet healthy across <b>'+nodeSet.size+'</b> node'+(nodeSet.size!==1?'s':'')+'.':'<b>'+critN+' VM'+(critN!==1?'s':'')+' need attention.</b><br>Zeus has a fix ready.';
     if(el('gw-store-card')) el('gw-store-card').classList.toggle('gw-alert',m==='bad');
     // incident banner
     if(m==='bad' && critN>0){
@@ -13290,7 +13290,7 @@ function fetchSecurityVmr(opts) {
           return '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border)">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
             '<strong style="font-size:.82rem">' + esc(f.title) + '</strong>' +
-            idSig(f.severity)</div>' +
+            idSig(f.severity) + '</div>' +
             '<div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">' + esc(f.recommendation || '') + '</div>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px;font-size:.72rem" ' +
             onHandler('openAskZeus(\'Fix: ' + (f.title || '').replace(/'/g, "\\'") + '\')') + '>Ask Zeus to fix</button></div>';
