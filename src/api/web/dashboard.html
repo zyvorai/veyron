@@ -10829,7 +10829,7 @@ function showVmHoverCard(e, ns, name) {
     var note = getVmNote(ns, name);
     card.innerHTML =
       '<div class="vmr-hover-card-name">' + osFamilyIcon(guessOsFamily(vm)) + ' ' + esc(name) + '</div>' +
-      '<span class="vm-badge ' + cls + '" style="font-size:.7rem;margin-bottom:8px;display:inline-block">' + esc(vm.status || '?') + '</span>' +
+      idSig(vm.status || '?') +
       '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">CPU</span><span class="vmr-hover-card-val">' + esc(vm.cpu || '—') + '</span></div>' +
       '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">Memory</span><span class="vmr-hover-card-val">' + esc(vm.memory || '—') + '</span></div>' +
       (vm.ip && vm.ip !== 'N/A' ? '<div class="vmr-hover-card-row"><span class="vmr-hover-card-lbl">IP</span><span class="vmr-hover-card-val">' + esc(vm.ip) + '</span></div>' : '') +
@@ -11882,7 +11882,7 @@ async function fetchStackHealth() {
   function tile(title, sub, cls, badge) {
     return '<div class="glass-stat-pill ' + cls + '" style="flex-direction:column;align-items:flex-start;gap:6px;min-height:72px;padding:14px 16px">' +
       '<div style="display:flex;align-items:center;gap:8px;width:100%"><div class="gsl" style="font-size:.78rem;font-weight:600;color:var(--text-muted)">' + esc(title) + '</div>' +
-      '<span class="glass-badge ' + badge + '" style="margin-left:auto;font-size:.72rem">' + esc((badge === ok ? 'Healthy' : badge === warn ? 'Warning' : badge === bad ? 'Error' : 'Unknown')) + '</span></div>' +
+      idSig(badge === ok ? 'running' : badge === warn ? 'warning' : badge === bad ? 'error' : 'stopped', badge === ok ? 'Healthy' : badge === warn ? 'Warning' : badge === bad ? 'Error' : 'Unknown') + '</div>' +
       '<div class="gsv" style="font-size:.9rem;font-weight:500;line-height:1.3">' + esc(sub) + '</div></div>';
   }
   const apiStatus = healthRes.status === 'healthy' ? ok : warn;
@@ -11911,7 +11911,7 @@ async function fetchStackHealth() {
     (operators.length ? '<div class="card glass-card"><div class="card-header"><span class="card-title">Installed Operators</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'operators\')">View all</button></div>' +
     '<table class="table"><thead><tr><th>Name</th><th>Version</th><th>Status</th><th>CRDs</th></tr></thead><tbody>' +
     operators.map(function(o) {
-      return '<tr><td>' + esc(o.name) + '</td><td>' + esc(o.version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(o.status) + '">' + esc(o.status) + '</span></td><td>' + esc((o.managed_resources || []).slice(0, 3).join(', ') || '-') + '</td></tr>';
+      return '<tr><td>' + esc(o.name) + '</td><td>' + esc(o.version || '-') + '</td><td>' + idSig(o.status) + '</td><td>' + esc((o.managed_resources || []).slice(0, 3).join(', ') || '-') + '</td></tr>';
     }).join('') + '</tbody></table></div>' : '');
 }
 
@@ -12188,7 +12188,7 @@ function vmCard(vm, showActions) {
     'ondragover="vmCardDragOver(event)" ondragleave="vmCardDragLeave(event)" ondrop="vmCardDrop(event,' + jsArgs(ns, vm.name) + ')" ' +
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
     onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' oncontextmenu="showVmGlassCtxMenu(event,' + jsArgs(ns, vm.name) + ')" onmouseenter="showVmHoverCard(event,' + jsArgs(ns, vm.name) + ')" onmouseleave="hideVmHoverCard()">' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + '<span class="vm-badge ' + cls + '">' + esc(vm.status) + vmMomentum(ns, vm.name) + '</span>' + vmLastActionChip(ns, vm.name) + '</div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + icon + '</div>' + retireBadge + vmGenomeStrip(vm) + idSig(vm.status) + vmMomentum(ns, vm.name) + vmLastActionChip(ns, vm.name) + '</div>' +
     '<div class="vm-card-name vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.name) + ')') + '>' + highlightMatch(vm.name, activeSearchQuery()) + '<span class="vmr-copy-hint">copy</span></div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + vmHealthPill(vm) + (vm.ip && vm.ip !== 'N/A' ? ' · <span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '') + '</div>' +
@@ -12241,8 +12241,8 @@ function markVmTransitioning(ns, name, label) {
   document.querySelectorAll('[data-vm-ns][data-vm-name]').forEach(function(el) {
     if (el.dataset.vmNs === ns && el.dataset.vmName === name) {
       el.classList.add('vm-transitioning');
-      const badge = el.querySelector('.vm-badge');
-      if (badge) { badge.textContent = label; badge.className = 'vm-badge other'; }
+      const badge = el.querySelector('.id-sig');
+      if (badge) { badge.outerHTML = idSig('pending', label); }
     }
   });
 }
@@ -12263,8 +12263,8 @@ async function pollVmUntilStable(ns, name, maxSec) {
       if (vm && vm.status) {
         document.querySelectorAll('[data-vm-ns][data-vm-name]').forEach(function(el) {
           if (el.dataset.vmNs === ns && el.dataset.vmName === name) {
-            const badge = el.querySelector('.vm-badge');
-            if (badge) { badge.textContent = vm.status; badge.className = 'vm-badge ' + sc(vm.status); }
+            const badge = el.querySelector('.id-sig');
+            if (badge) { badge.outerHTML = idSig(vm.status); }
           }
         });
         if (STABLE.has(vm.status)) { clearVmTransitioning(ns, name); refresh(); return; }
@@ -12940,7 +12940,7 @@ function vmRow(vm, showActions) {
   const sshBlock = vmSshBlock(vm, showActions);
   const ipPart = (vm.ip && vm.ip !== 'N/A') ? ' &bull; <span class="vmr-copy-tile" title="Copy IP" style="display:inline-flex;align-items:center;gap:2px" ' + onStopHandler('copyToClipboard(' + jsArgs(vm.ip) + ')') + '>' + esc(vm.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '';
   const rowRetireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — right-click → Mark as Keeper to suppress">♻ stale?</span>' : '';
-  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+vmGenomeStrip(vm)+vmLastActionChip(ns, vm.name)+'<span class="vm-badge '+cls+'">'+esc(vm.status)+vmMomentum(ns, vm.name)+'</span>'+actions+'</div>'+sshBlock+'</div>';
+  const rightCol = '<div class="vm-right-stack"><div class="vm-right"><span class="vm-meta">'+esc(vm.cpu || '—')+' &bull; '+esc(vm.memory || '—')+ipPart+vmHealthPill(vm)+'</span>'+vmDriftBadge(vm)+rowRetireBadge+vmGenomeStrip(vm)+vmLastActionChip(ns, vm.name)+idSig(vm.status)+vmMomentum(ns, vm.name)+actions+'</div>'+sshBlock+'</div>';
   const nsLine = nsLabel(ns);
   const nodeChip = vm.node ? '<button type="button" class="vmr-node-chip" ' +
     onStopHandler('document.getElementById(\'vm-search\').value=\'node:\'+' + jsArgs(vm.node) + ';filterVMsDebounced()') +
@@ -13192,7 +13192,7 @@ function fetchSecurityVmr(opts) {
           return '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border)">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
             '<strong style="font-size:.82rem">' + esc(f.title) + '</strong>' +
-            '<span class="glass-badge ' + glassTableBadge(f.severity) + '">' + esc(f.severity) + '</span></div>' +
+            idSig(f.severity)</div>' +
             '<div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">' + esc(f.recommendation || '') + '</div>' +
             '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px;font-size:.72rem" ' +
             onHandler('openAskZeus(\'Fix: ' + (f.title || '').replace(/'/g, "\\'") + '\')') + '>Ask Zeus to fix</button></div>';
@@ -13324,7 +13324,7 @@ function filterWorkloadsByType(type) {
   tb.innerHTML = filtered.map(function(w) {
     const ok = w.ready_replicas >= w.replicas;
     const badgeCls = ok ? 'running' : 'other';
-    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td>' + idSig(ok ? 'running' : 'warn', String(w.ready_replicas)) + '</td><td>' + idSig(w.status) + '</td><td>' + esc(w.namespace) + '</td></tr>';
   }).join('');
 }
 
@@ -13348,7 +13348,7 @@ function filterWlByNamespace(btn, ns) {
   tb.innerHTML = filtered.map(function(w) {
     const ok = w.ready_replicas >= w.replicas;
     const badgeCls = ok ? 'running' : 'other';
-    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td>' + idSig(ok ? 'running' : 'warn', String(w.ready_replicas)) + '</td><td>' + idSig(w.status) + '</td><td>' + esc(w.namespace) + '</td></tr>';
   }).join('');
 }
 
@@ -13462,7 +13462,7 @@ async function fetchNetworkIntelData(opts) {
             return '<tr><td><code style="font-size:.82rem">' + esc(f.source || f.src || '—') + '</code></td>' +
               '<td><code style="font-size:.82rem">' + esc(f.destination || f.dst || '—') + '</code></td>' +
               '<td>' + esc(f.protocol || '—') + '</td>' +
-              '<td><span class="glass-badge ' + cls + '">' + esc(f.verdict || '—') + '</span></td>' +
+              '<td>' + idSig(f.verdict || '—') + '</td>' +
               '<td>' + (f.bytes != null ? f.bytes : '—') + '</td></tr>';
           }).join('') +
           '</tbody></table></div>';
@@ -13691,7 +13691,7 @@ function renderConsoleHubVmr() {
     listEl.innerHTML = vmData.map(function(v) {
       const isRun = (v.status || '').toLowerCase() === 'running';
       return '<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--line)">' +
-        '<span class="glass-badge ' + (isRun ? 'running' : 'stopped') + '" style="font-size:.7rem">' + esc(v.status || 'Unknown') + '</span>' +
+        idSig(v.status || 'Unknown') +
         '<span style="flex:1;font-size:.82rem">' + esc(v.name) + '</span>' +
         (isRun ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" onclick="selectConsoleHubVm(' + jsArgs(v.namespace || 'default', v.name) + ')">Connect</button>' : '') +
         '</div>';
@@ -13898,7 +13898,7 @@ function dashVmRow(vm) {
   return '<div class="dash-vm-row" ' + onHandler('openVmDetailDeep(' + jsArgs(ns, vm.name) + ')') + '>' +
     '<div class="dash-vm-main"><span class="vm-dot ' + cls + '"></span><div><div class="dash-vm-name">' + esc(vm.name) + '</div>' +
     '<div class="dash-vm-meta">' + esc(ns) + ' · ' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + '</div></div></div>' +
-    '<span class="glass-badge ' + badgeCls + '">' + esc(vm.status) + '</span>' +
+    idSig(vm.status) +
     '<div class="dash-vm-actions" onclick="event.stopPropagation()">' +
     (isRunning ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVncConsole(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' : '') +
     '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('openVmDetailDeep(' + jsArgs(ns, vm.name) + ')') + '>Details</button>' +
@@ -13918,7 +13918,7 @@ function pinnedVmCard(vm) {
       : '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('vmAction(' + jsArgs(ns, name, 'start') + ',event)') + '>Start</button>');
   const tintP = osFamilyTint(family);
   return '<div class="vm-card"' + (tintP ? ' style="background-image:linear-gradient(' + tintP + ',' + tintP + ')"' : '') + '>' +
-    '<div class="vm-card-top"><div class="vm-card-icon">' + osFamilyIcon(family) + '</div><span class="vm-badge ' + cls + '">' + esc(vm.status || 'Unknown') + '</span></div>' +
+    '<div class="vm-card-top"><div class="vm-card-icon">' + osFamilyIcon(family) + '</div>' + idSig(vm.status || 'Unknown') + '</div>' +
     '<div class="vm-card-name">' + esc(name) + '</div>' +
     vmWorkspaceChip(ns) +
     '<div class="vm-card-meta">' + esc(vm.cpu || '—') + ' · ' + esc(vm.memory || '—') + '</div>' +
@@ -15471,7 +15471,7 @@ function renderSnapList(query) {
   }
   el.innerHTML = filtered.map(function(s) {
     const ready = s.ready;
-    return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy snapshot name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>'+esc(s.name)+'<span class="vmr-copy-hint">copy</span></div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status"><span class="glass-badge '+(ready?'running':'other')+'">'+(ready?'Ready':esc(s.status))+'</span>' +
+    return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy snapshot name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>'+esc(s.name)+'<span class="vmr-copy-hint">copy</span></div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status">'+idSig(ready?'running':'stopped',ready?'Ready':esc(s.status)) +
       (ready ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
       '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
       '</div></div>';
@@ -15506,9 +15506,7 @@ function filterAlertsView() {
   const allAlerts = window.lastAlerts || [];
   if (alertsCountEl) alertsCountEl.textContent = alerts.length === allAlerts.length ? allAlerts.length + ' alerts' : alerts.length + ' of ' + allAlerts.length + ' alerts';
   tb.innerHTML = alerts.map(function(a) {
-    const sevCls = glassTableBadge(a.severity);
-    const stCls = glassTableBadge(a.status);
-    return '<tr class="clickable-row" onclick="pageCopilotChip(\'alerts-copilot-input\',' + JSON.stringify('Explain alert ' + (a.name || '')) + ',\'Active warning events in namespace\')" title="Ask Zeus"><td class="vmr-copy-tile" title="Copy alert name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge ' + sevCls + '">' + esc(a.severity) + '</span></td><td><span class="glass-badge ' + stCls + '">' + esc(a.status) + '</span></td><td>' + esc(a.source) + '</td><td>' + esc(a.message) + '</td><td>' + fmtTime(a.fired_at) + '</td></tr>';
+    return '<tr class="clickable-row" onclick="pageCopilotChip(\'alerts-copilot-input\',' + JSON.stringify('Explain alert ' + (a.name || '')) + ',\'Active warning events in namespace\')" title="Ask Zeus"><td class="vmr-copy-tile" title="Copy alert name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + idSig(a.severity) + '</td><td>' + idSig(a.status) + '</td><td>' + esc(a.source) + '</td><td>' + esc(a.message) + '</td><td>' + fmtTime(a.fired_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No matching alerts</td></tr>';
 }
 
@@ -15559,7 +15557,7 @@ function filterNodesView(query) {
     const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
     return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
       '<span class="cell-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '>' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-      '<span><span class="glass-badge ' + nodeStatusBadgeClass(n.status) + '">' + esc(n.status) + '</span></span>' +
+      idSig(n.status) +
       '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
       '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
       '<span class="cell-mono">' + memGb + '</span>' +
@@ -15587,7 +15585,7 @@ function filterSocEventsView(query) {
     const srcVal = e.source || '';
     const tgtVal = e.target || e.namespace || '';
     return '<tr><td>' + fmtTime(e.timestamp) + '</td>' +
-      '<td><span class="glass-badge ' + glassTableBadge(e.severity) + '">' + esc(e.severity) + '</span></td>' +
+      '<td>' + idSig(e.severity) + '</td>' +
       '<td>' + esc(e.category) + '</td>' +
       '<td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(srcVal) + ')') + '>' + esc(srcVal) + '<span class="vmr-copy-hint">copy</span></td>' +
       '<td>' + esc(e.message || String(e)) + '</td>' +
@@ -15608,8 +15606,7 @@ function filterNotificationsView(query) {
   const notifCountEl = document.getElementById('notif-filter-count');
   if (notifCountEl) notifCountEl.textContent = filtered.length === items.length ? items.length + ' notifications' : filtered.length + ' of ' + items.length + ' notifications';
   tb.innerHTML = filtered.map(function(n) {
-    const sevCls = glassTableBadge(n.severity);
-    return '<tr class="' + (n.read ? '' : 'notif-unread') + '"><td class="vmr-copy-tile" title="Copy title" ' + onStopHandler('copyToClipboard(' + jsArgs(n.title) + ')') + '>' + esc(n.title) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge ' + sevCls + '">' + esc(n.severity) + '</span></td><td>' + esc(n.message) + '</td><td><span class="glass-badge ' + (n.read ? 'stopped' : 'running') + '">' + (n.read ? 'Read' : 'Unread') + '</span></td><td>' + fmtTime(n.created_at) + '</td></tr>';
+    return '<tr class="' + (n.read ? '' : 'notif-unread') + '"><td class="vmr-copy-tile" title="Copy title" ' + onStopHandler('copyToClipboard(' + jsArgs(n.title) + ')') + '>' + esc(n.title) + '<span class="vmr-copy-hint">copy</span></td><td>' + idSig(n.severity) + '</td><td>' + esc(n.message) + '</td><td>' + idSig(n.read ? 'stopped' : 'running', n.read ? 'Read' : 'Unread') + '</td><td>' + fmtTime(n.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching notifications</td></tr>';
 }
 
@@ -15649,9 +15646,9 @@ function filterWebhooksView(query) {
   if (webhooksCountEl) webhooksCountEl.textContent = filtered.length === items.length ? items.length + ' webhooks' : filtered.length + ' of ' + items.length + ' webhooks';
   tb.innerHTML = filtered.map(function(w) {
     return '<tr><td>' + esc(w.name) + '</td><td style="font-size:.8em;font-family:var(--font-mono)" class="vmr-copy-tile" title="Copy webhook URL" ' + onStopHandler('copyToClipboard(' + jsArgs(w.url) + ')') + '>' + esc(w.url) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc((w.events || []).join(', ') || '-') + '</td>' +
-      '<td><span class="glass-badge ' + (w.active ? 'running' : 'stopped') + '">' + (w.active ? 'Yes' : 'No') + '</span></td>' +
+      '<td>' + idSig(w.active ? 'running' : 'stopped', w.active ? 'Yes' : 'No') + '</td>' +
       '<td>' + (w.secret_configured ? 'Yes' : 'No') + '</td>' +
-      '<td><span class="glass-badge ' + (w.failure_count ? 'error' : 'running') + '">' + w.failure_count + '</span></td></tr>';
+      '<td>' + idSig(w.failure_count ? 'error' : 'running', String(w.failure_count)) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No webhooks match &ldquo;' + esc(q) + '&rdquo;' : 'No webhooks found') + '</td></tr>';
 }
 
@@ -15669,7 +15666,7 @@ function filterPoliciesView(query) {
   const policiesCountEl = document.getElementById('policies-filter-count');
   if (policiesCountEl) policiesCountEl.textContent = filtered.length === items.length ? items.length + ' policies' : filtered.length + ' of ' + items.length + ' policies';
   tb.innerHTML = filtered.map(function(p) {
-    return '<tr><td class="vmr-copy-tile" title="Copy policy name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(p.enforcement) + '</td><td><span class="glass-badge ' + glassTableBadge(p.severity) + '">' + esc(p.severity) + '</span></td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy policy name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(p.enforcement) + '</td><td>' + idSig(p.severity) + '</td><td>' + esc(p.framework||'-') + '</td><td>' + p.rule_count + '</td><td>' + (p.enabled?'Yes':'No') + '</td><td>' + (p.matching_vms||0) + '</td><td>' + (p.violating_vms||0) + '</td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">' + (q ? 'No policies match &ldquo;' + esc(q) + '&rdquo;' : 'No policies') + '</td></tr>';
 }
 
@@ -15689,7 +15686,7 @@ function filterInsightsView(query) {
   const insightsCountEl = document.getElementById('insights-filter-count');
   if (insightsCountEl) insightsCountEl.textContent = filtered.length === items.length ? items.length + ' insights' : filtered.length + ' of ' + items.length + ' insights';
   tb.innerHTML = filtered.map(function(i) {
-    return '<tr><td class="vmr-copy-tile" title="Copy insight name" ' + onStopHandler('copyToClipboard(' + jsArgs(i.name) + ')') + '>' + esc(i.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(i.insight_type) + '</td><td><span class="glass-badge ' + glassTableBadge(i.severity) + '">' + esc(i.severity) + '</span></td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy insight name" ' + onStopHandler('copyToClipboard(' + jsArgs(i.name) + ')') + '>' + esc(i.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(i.insight_type) + '</td><td>' + idSig(i.severity) + '</td><td>' + esc(i.vm_ref||'-') + '</td><td>' + esc(i.title) + '</td><td>' + esc(i.state||'New') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No insights match &ldquo;' + esc(q) + '&rdquo;' : 'No insights') + '</td></tr>';
 }
 
@@ -15708,7 +15705,7 @@ function filterActionsView(query) {
   const actionsCountEl = document.getElementById('actions-filter-count');
   if (actionsCountEl) actionsCountEl.textContent = filtered.length === items.length ? items.length + ' actions' : filtered.length + ' of ' + items.length + ' actions';
   tb.innerHTML = filtered.map(function(a) {
-    return '<tr><td class="vmr-copy-tile" title="Copy action name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?'<span class="glass-badge running">Yes</span>':'<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + glassTableBadge(a.phase||'') + '">' + esc(a.phase||'Pending') + '</span></td><td>' + esc(a.message||'-') + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy action name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?idSig('running','Yes'):idSig('stopped','No')) + '</td><td>' + idSig(a.phase||'Pending') + '</td><td>' + esc(a.message||'-') + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No actions match &ldquo;' + esc(q) + '&rdquo;' : 'No actions') + '</td></tr>';
 }
 
@@ -15732,7 +15729,7 @@ function renderWorkloadsList(query) {
   tb.innerHTML = filtered.map(function(w) {
     const ok = w.ready_replicas >= w.replicas;
     const badgeCls = ok ? 'running' : 'other';
-    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td><span class="glass-badge ' + badgeCls + '">' + w.ready_replicas + '</span></td><td><span class="glass-badge ' + badgeCls + '">' + esc(w.status) + '</span></td><td>' + esc(w.namespace) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy workload name" ' + onStopHandler('copyToClipboard(' + jsArgs(w.name) + ')') + '>' + esc(w.name) + '<span class="vmr-copy-hint">copy</span></td><td><span class="glass-badge stopped">' + esc(w.workload_type) + '</span></td><td>' + w.replicas + '</td><td>' + idSig(ok ? 'running' : 'warn', String(w.ready_replicas)) + '</td><td>' + idSig(w.status) + '</td><td>' + esc(w.namespace) + '</td></tr>';
   }).join('');
 }
 
@@ -15892,7 +15889,7 @@ function filterHelmView(query) {
   const helmCountEl = document.getElementById('helm-filter-count');
   if (helmCountEl) helmCountEl.textContent = filtered.length === releases.length ? releases.length + ' releases' : filtered.length + ' of ' + releases.length + ' releases';
   tb.innerHTML = filtered.map(function(h) {
-    return '<tr><td class="vmr-copy-tile" title="Copy release name" ' + onStopHandler('copyToClipboard(' + jsArgs(h.name) + ')') + '>' + esc(h.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(h.status) + '">' + esc(h.status) + '</span></td><td>' + h.revision + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy release name" ' + onStopHandler('copyToClipboard(' + jsArgs(h.name) + ')') + '>' + esc(h.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(h.namespace) + '</td><td>' + esc(h.chart) + ' ' + esc(h.chart_version || '') + '</td><td>' + esc(h.app_version || '-') + '</td><td>' + idSig(h.status) + '</td><td>' + h.revision + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching releases</td></tr>';
 }
 
@@ -15943,11 +15940,11 @@ function filterSloView(query) {
   const sloCountEl = document.getElementById('slo-filter-count');
   if (sloCountEl) sloCountEl.textContent = fItems.length === items.length ? items.length + ' SLOs' : fItems.length + ' of ' + items.length + ' SLOs';
   if (tb) tb.innerHTML = fItems.map(function(s) {
-    return '<tr><td class="vmr-copy-tile" title="Copy SLO name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>' + esc(s.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(s.service) + '</td><td>' + esc(s.sli_type) + '</td><td>' + s.target + '%</td><td>' + s.current + '%</td><td>' + s.error_budget_remaining + '%</td><td><span class="glass-badge ' + glassTableBadge(s.status) + '">' + esc(s.status) + '</span></td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy SLO name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>' + esc(s.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(s.service) + '</td><td>' + esc(s.sli_type) + '</td><td>' + s.target + '%</td><td>' + s.current + '%</td><td>' + s.error_budget_remaining + '%</td><td>' + idSig(s.status) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching SLOs</td></tr>';
   if (burnTb) burnTb.innerHTML = fBurn.map(function(br) {
     const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
-    return '<tr><td>' + esc(br.slo_name) + '</td><td>' + br.budget_total_percent + '%</td><td>' + br.budget_consumed_percent + '%</td><td>' + br.burn_rate_1h + 'x</td><td>' + br.burn_rate_24h + 'x</td><td>' + ttl + '</td><td><span class="glass-badge ' + glassTableBadge(br.status) + '">' + esc(br.status) + '</span></td></tr>';
+    return '<tr><td>' + esc(br.slo_name) + '</td><td>' + br.budget_total_percent + '%</td><td>' + br.budget_consumed_percent + '%</td><td>' + br.burn_rate_1h + 'x</td><td>' + br.burn_rate_24h + 'x</td><td>' + ttl + '</td><td>' + idSig(br.status) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching burn rates</td></tr>';
 }
 
@@ -15966,7 +15963,7 @@ function filterChaosView(query) {
   const chaosCountEl = document.getElementById('chaos-filter-count');
   if (chaosCountEl) chaosCountEl.textContent = filtered.length === items.length ? items.length + ' experiments' : filtered.length + ' of ' + items.length + ' experiments';
   tb.innerHTML = filtered.map(function(c) {
-    return '<tr><td class="vmr-copy-tile" title="Copy experiment name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.name) + ')') + '>' + esc(c.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td><span class="glass-badge ' + glassTableBadge(c.status) + '">' + esc(c.status) + '</span></td><td>' + esc(c.duration) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy experiment name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.name) + ')') + '>' + esc(c.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td>' + idSig(c.status) + '</td><td>' + esc(c.duration) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
 }
 
@@ -16083,7 +16080,7 @@ function filterIncidentsView(query) {
       '<td>' + esc(e.title) + '</td>' +
       '<td>' + (e.vm_name ? '<span class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(e.vm_name) + ')') + '>' + esc(e.vm_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span style="color:var(--text-dim)">—</span>') + '</td>' +
       '<td>' + esc(e.namespace) + '</td>' +
-      '<td><span class="glass-badge ' + (e.resolved ? 'running' : 'other') + '">' + (e.resolved ? 'resolved' : 'open') + '</span></td></tr>';
+      '<td>' + idSig(e.resolved ? 'running' : 'stopped', e.resolved ? 'resolved' : 'open') + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No incidents</td></tr>';
 }
 
@@ -16102,7 +16099,7 @@ function filterImagesView(query) {
   const imagesCountEl = document.getElementById('images-filter-count');
   if (imagesCountEl) imagesCountEl.textContent = filtered.length === images.length ? images.length + ' images' : filtered.length + ' of ' + images.length + ' images';
   tb.innerHTML = filtered.map(function(img) {
-    return '<tr><td class="vmr-copy-tile" title="Copy image name" ' + onStopHandler('copyToClipboard(' + jsArgs(img.name) + ')') + '>' + esc(img.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td><span class="glass-badge ' + imageStatusClass(img.status) + '">' + esc(img.status) + '</span></td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy image name" ' + onStopHandler('copyToClipboard(' + jsArgs(img.name) + ')') + '>' + esc(img.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td>' + idSig(img.status) + '</td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
   }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching images</td></tr>';
 }
 
@@ -16203,7 +16200,7 @@ function filterComplianceView(query) {
   if (stBody) stBody.innerHTML = fSt.map(function(s) {
     return '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
       '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
-      '<td><span class="glass-badge ' + (s.compliant ? 'running' : 'error') + '">' + (s.compliant ? 'yes' : 'no') + '</span></td>' +
+      '<td>' + idSig(s.compliant ? 'running' : 'error', s.compliant ? 'yes' : 'no') + '</td>' +
       '<td>' + fmtTime(s.last_checked) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching frameworks</td></tr>';
   if (repBody) repBody.innerHTML = fRep.map(function(r) {
@@ -16226,7 +16223,7 @@ function filterCrdsView(query) {
   if (crdsCountEl) crdsCountEl.textContent = filtered.length === items.length ? items.length + ' resources' : filtered.length + ' of ' + items.length + ' resources';
   tb.innerHTML = filtered.map(function(v) {
     const ipCell = v.ip ? '<span class="vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(v.ip) + ')') + '>' + esc(v.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '-';
-    return '<tr><td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(v.name) + ')') + '>' + esc(v.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td><span class="glass-badge ' + glassTableBadge(v.phase||'') + '">' + esc(v.phase||'-') + '</span></td><td>' + esc(v.node||'-') + '</td><td>' + ipCell + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(v.name) + ')') + '>' + esc(v.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(v.namespace) + '</td><td>' + esc(v.template||'-') + '</td><td>' + v.cpu_cores + '</td><td>' + esc(v.memory) + '</td><td>' + idSig(v.phase||'-') + '</td><td>' + esc(v.node||'-') + '</td><td>' + ipCell + '</td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VeyronVMs</td></tr>';
 }
 
@@ -16244,7 +16241,7 @@ function filterOperatorsView(query) {
   const operatorsCountEl = document.getElementById('operators-filter-count');
   if (operatorsCountEl) operatorsCountEl.textContent = filtered.length === items.length ? items.length + ' operators' : filtered.length + ' of ' + items.length + ' operators';
   tb.innerHTML = filtered.map(function(o) {
-    return '<tr><td class="vmr-copy-tile" title="Copy operator name" ' + onStopHandler('copyToClipboard(' + jsArgs(o.name) + ')') + '>' + esc(o.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(o.namespace) + '</td><td>' + esc(o.version || '-') + '</td><td><span class="glass-badge ' + glassTableBadge(o.status) + '">' + esc(o.status) + '</span></td><td>' + esc((o.managed_resources || []).join(', ') || '-') + '</td><td>' + fmtTime(o.installed_at) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy operator name" ' + onStopHandler('copyToClipboard(' + jsArgs(o.name) + ')') + '>' + esc(o.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(o.namespace) + '</td><td>' + esc(o.version || '-') + '</td><td>' + idSig(o.status) + '</td><td>' + esc((o.managed_resources || []).join(', ') || '-') + '</td><td>' + fmtTime(o.installed_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching operators</td></tr>';
 }
 
@@ -16281,7 +16278,7 @@ function filterBackupsView(query) {
   const backupsCountEl = document.getElementById('backups-filter-count');
   if (backupsCountEl) backupsCountEl.textContent = filtered.length === items.length ? items.length + ' backups' : filtered.length + ' of ' + items.length + ' backups';
   tb.innerHTML = filtered.map(function(b) {
-    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td><span class="glass-badge ' + glassTableBadge(b.status) + '">' + esc(b.status) + '</span></td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td>' + idSig(b.status) + '</td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
   }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching backups</td></tr>';
 }
 
@@ -19769,7 +19766,7 @@ function renderNodeDetailHeader(node) {
   const actions = '<button type="button" class="glass-btn-secondary" ' + onStopHandler('copyDashboardDeepLink(' + jsArgs('nodes', { kind: 'node', name: node.name }) + ')') + '>Copy link</button>';
   return '<div class="vm-detail-header">' +
     '<div class="vm-detail-header-left">' +
-      '<div class="vm-detail-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(node.name) + ')') + '>' + esc(node.name) + '<span class="vmr-copy-hint">copy</span> <span class="glass-badge ' + badgeCls + '">' + esc(node.status || 'Unknown') + '</span></div>' +
+      '<div class="vm-detail-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(node.name) + ')') + '>' + esc(node.name) + '<span class="vmr-copy-hint">copy</span> ' + idSig(node.status || 'Unknown') + '</div>' +
       '<div class="vm-detail-meta">' +
         '<span class="ns-chip">' + esc(roles) + '</span>' +
         '<span class="ns-chip">' + (node.vm_count || 0) + ' VM' + ((node.vm_count || 0) === 1 ? '' : 's') + '</span>' +
@@ -19808,7 +19805,7 @@ function renderNodeWorkloadsColumn(nodeName, pods) {
       html += '<div class="detail-row" style="align-items:flex-start">';
       html += '<span class="lbl"><span style="font-family:var(--font-mono);font-size:.82em;color:var(--text-bright)">' + esc(p.name) + '</span>';
       html += '<br><span style="font-size:.76rem;color:var(--text-dim)">' + esc(p.namespace) + '</span></span>';
-      html += '<span class="val"><span class="glass-badge ' + cls + '">' + esc(p.phase || 'Unknown') + '</span>';
+      html += '<span class="val">' + idSig(p.phase || 'Unknown');
       html += ' <button type="button" class="glass-btn-secondary" style="padding:4px 10px;font-size:.72rem;margin-left:8px" onclick="openPodDetailDeep(' + jsArgs(p.namespace, p.name) + ')">Open</button></span></div>';
     });
     html += '</div>';
@@ -19865,7 +19862,7 @@ function renderPodDetailHeader(pod) {
   }
   return '<div class="vm-detail-header">' +
     '<div class="vm-detail-header-left">' +
-      '<div class="vm-detail-name">' + esc(pod.name) + ' <span class="glass-badge ' + badgeCls + '">' + esc(pod.phase || 'Unknown') + '</span></div>' +
+      '<div class="vm-detail-name">' + esc(pod.name) + ' ' + idSig(pod.phase || 'Unknown') + '</div>' +
       '<div class="vm-detail-meta">' +
         '<span class="ns-chip">' + esc(pod.namespace) + '</span>' +
         (pod.node_name ? '<span>Node: <strong class="vmr-copy-tile" title="Copy node" ' + onStopHandler('copyToClipboard(' + jsArgs(pod.node_name) + ')') + '>' + esc(pod.node_name) + '<span class="vmr-copy-hint">copy</span></strong></span>' : '') +
@@ -20031,7 +20028,7 @@ function filterPodsView(query) {
     const ipSpan = p.ip ? '<span class="cell-mono vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(p.ip) + ')') + '>' + esc(p.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
     return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
       '<span class="cell-name vmr-copy-tile" title="Copy pod name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></span>' +
-      '<span><span class="glass-badge ' + podPhaseBadgeClass(p.phase) + '">' + esc(p.phase) + '</span></span>' +
+      idSig(p.phase) +
       nodeSpan + ipSpan +
       '<span class="cell-mono">' + restarts + '</span>' +
       '<span class="cell-mono">' + esc(age) + '</span></div>';
@@ -20071,7 +20068,7 @@ function filterPvcsView(query) {
     }
     return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy PVC name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span>' +
       '</div><div class="snap-vm">' + esc(p.namespace || '') + ' · ' + esc(p.capacity) + ' &bull; ' + esc(p.storage_class) + '</div>' + usageLine +
-      '</div><div class="snap-status" style="display:flex;align-items:center;gap:6px"><span class="glass-badge ' + glassTableBadge(p.status) + '">' + esc(p.status) + '</span>' +
+      '</div><div class="snap-status" style="display:flex;align-items:center;gap:6px">' + idSig(p.status) + '' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" style="font-size:.72rem" ' + onStopHandler('resizePvc(' + jsArgs(p.namespace || 'default', p.name, p.capacity) + ')') + '>Resize</button></div></div>';
   }).join('');
 }
@@ -21224,8 +21221,7 @@ async function fetchCosts(opts) {
       try {
         const fc = apiObject(await apiJson('/api/v1/costs/forecast' + nsParam(), opts));
         const fcCap = fc.veyron_context && fc.veyron_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.veyron_context.limitations) + '</p>' : '';
-        const trendCls = fc.trend === 'growing' ? 'error' : 'running';
-        fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (Number(fc.projected_monthly) || 0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px"><span class="glass-badge ' + trendCls + '">' + esc(fc.trend || 'stable') + '</span></div>' + fcCap + '</div>';
+        fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (Number(fc.projected_monthly) || 0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px">' + idSig(fc.trend === 'growing' ? 'error' : 'running', fc.trend || 'stable') + '</div>' + fcCap + '</div>';
         if (fc.projected_monthly != null) {
           window.lastCostForecast = '$' + Number(fc.projected_monthly).toFixed(2);
         }
@@ -21515,7 +21511,7 @@ async function fetchSecurityPage(opts) {
       cardsEl.innerHTML = findings.map(function(f) {
         const sev = (f.severity || '').toLowerCase();
         const cardCls = sev === 'critical' ? 'critical' : sev === 'high' ? 'high' : 'medium';
-        return '<div class="security-finding-card zeus-glass ' + cardCls + '"><div style="display:flex;justify-content:space-between;gap:8px"><strong>' + esc(f.title) + '</strong><span class="glass-badge ' + glassTableBadge(f.severity) + '">' + esc(f.severity) + '</span></div><div style="font-size:.82rem;color:var(--text-dim);margin-top:6px">' + esc(f.category) + ' · ' + esc(f.resource) + '</div><div style="font-size:.8rem;margin-top:8px;line-height:1.4">' + esc(f.recommendation) + '</div></div>';
+        return '<div class="security-finding-card zeus-glass ' + cardCls + '"><div style="display:flex;justify-content:space-between;gap:8px"><strong>' + esc(f.title) + '</strong>' + idSig(f.severity) + '</div><div style="font-size:.82rem;color:var(--text-dim);margin-top:6px">' + esc(f.category) + ' · ' + esc(f.resource) + '</div><div style="font-size:.8rem;margin-top:8px;line-height:1.4">' + esc(f.recommendation) + '</div></div>';
       }).join('') || '<div class="zeus-glass" style="padding:20px;text-align:center;color:var(--success)">No security findings</div>';
     }
     if (sum) {
@@ -21529,8 +21525,7 @@ async function fetchSecurityPage(opts) {
     }
     if (tb) {
       tb.innerHTML = findings.map(f => {
-        const sevCls = glassTableBadge(f.severity);
-        return `<tr><td><span class="glass-badge ${sevCls}">${esc(f.severity)}</span></td><td>${esc(f.category)}</td><td>${esc(f.title)}</td><td><code style="font-size:.84rem">${esc(f.resource)}</code></td><td>${esc(f.recommendation)}</td></tr>`;
+        return `<tr><td>${idSig(f.severity)}</td><td>${esc(f.category)}</td><td>${esc(f.title)}</td><td><code style="font-size:.84rem">${esc(f.resource)}</code></td><td>${esc(f.recommendation)}</td></tr>`;
       }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--success)">No security findings</td></tr>';
     }
   } catch (e) {
@@ -21600,7 +21595,7 @@ async function fetchMonitoring() {
         </div></td></tr>`;
       recTb.innerHTML = recList.map(r => {
         const badgeCls = r.priority === 'High' ? 'error' : r.priority === 'Medium' ? 'other' : 'stopped';
-        return `<tr><td><span class="glass-badge ${badgeCls}">${esc(r.priority)}</span></td><td>${esc(r.category)}</td><td>${esc(r.title)}</td><td><code>${esc(r.resource)}</code></td><td>${esc(r.impact)}</td></tr>`;
+        return '<tr><td>' + idSigSev(r.priority) + '</td><td>' + esc(r.category) + '</td><td>' + esc(r.title) + '</td><td><code>' + esc(r.resource) + '</code></td><td>' + esc(r.impact) + '</td></tr>';
       }).join('') || recEmpty;
     }
     if (badge) {
@@ -21626,12 +21621,11 @@ async function fetchMonitoring() {
           </ul>
         </div></td></tr>`;
       anTb.innerHTML = anoList.map(a => {
-      const sevCls = a.severity === 'critical' ? 'error' : 'other';
       const valShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.current_value : (a.current_value+'%');
       const thrShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.threshold : (a.threshold+'%');
       return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(a.namespace) + ',' + jsArgs(a.vm_name) + ')') + ' title="Open VM detail">' +
         '<td>' + esc(a.vm_name) + '</td><td>' + esc(a.metric) + '</td><td>' + valShow + '</td><td>' + thrShow + '</td>' +
-        '<td>' + a.deviation_percent + '%</td><td><span class="glass-badge ' + sevCls + '">' + esc(a.severity) + '</span></td><td>' + fmtTime(a.detected_at) + '</td></tr>';
+        '<td>' + a.deviation_percent + '%</td><td>' + idSig(a.severity) + '</td><td>' + fmtTime(a.detected_at) + '</td></tr>';
     }).join('') || anoEmpty;
     }
   } catch (e) {
@@ -21882,7 +21876,7 @@ async function fetchSlo() {
     if (burnTb) burnTb.innerHTML = burnRates.map(br => {
       const ttl = br.projected_exhaustion_hours != null ? br.projected_exhaustion_hours.toFixed(1) + 'h' : '∞';
       const sColor = {healthy:'badge-green',at_risk:'badge-muted',burning_fast:'',exhausted:''}[br.status] || '';
-      return `<tr><td>${esc(br.slo_name)}</td><td>${br.budget_total_percent}%</td><td>${br.budget_consumed_percent}%</td><td>${br.burn_rate_1h}x</td><td>${br.burn_rate_24h}x</td><td>${ttl}</td><td><span class="glass-badge ${glassTableBadge(br.status)}">${esc(br.status)}</span></td></tr>`;
+      return `<tr><td>${esc(br.slo_name)}</td><td>${br.budget_total_percent}%</td><td>${br.budget_consumed_percent}%</td><td>${br.burn_rate_1h}x</td><td>${br.burn_rate_24h}x</td><td>${ttl}</td><td>${idSig(br.status)}</td></tr>`;
     }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No SLO data</td></tr>';
   } catch (e) {
     const msg = e.message || String(e);
@@ -22372,7 +22366,7 @@ function renderGitopsDriftPanel() {
     var ns = v.namespace || 'default';
     return '<tr><td style="padding:7px 10px 7px 0"><button type="button" class="vmr-node-chip" onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, v.name) + ')},300)">' + esc(v.name) + '</button></td>' +
       '<td style="padding:7px 10px;font-size:.78rem;color:var(--text-dim)">' + esc(ns) + '</td>' +
-      '<td style="padding:7px 10px"><span class="vm-badge ' + sc(v.status) + '" style="font-size:.72rem">' + esc(v.status) + '</span></td>' +
+      '<td style="padding:7px 10px">' + idSig(v.status) + '</td>' +
       '<td style="padding:7px 10px"><button type="button" class="glass-btn-secondary glass-btn-sm" ' +
         'onclick="navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(ns, v.name) + ')},300)">Inspect</button></td></tr>';
   }).join('');
@@ -22528,7 +22522,7 @@ function renderSchedulingDetailPanel(status) {
   var unschedulable = status.unschedulable_nodes || [];
   var nodeRows = unschedulable.map(function(n) {
     return '<tr><td style="padding:6px 10px 6px 0;font-size:.8rem;color:var(--text-primary)">' + esc(n) + '</td>' +
-      '<td style="padding:6px 10px"><span class="vm-badge error" style="font-size:.72rem">Unschedulable</span></td></tr>';
+      '<td style="padding:6px 10px">' + idSig('error','Unschedulable') + '</td></tr>';
   }).join('');
   // VM scheduling pressure: count pending VMs (if status = Pending in vmData)
   var pendingVms = (window.lastVMs || vmData || []).filter(function(v) { return (v.status || '').toLowerCase() === 'pending'; });
@@ -22743,7 +22737,7 @@ function renderCiliumFlowsTable(flowSource) {
     const verdictCls = f.verdict === 'allowed' ? 'running' : (f.verdict === 'denied' ? 'error' : 'other');
     return '<tr><td><span class="vmr-wl-name">' + esc(f.source) + '</span></td><td>' + esc(f.destination) + '</td>' +
       '<td>' + esc(f.protocol) + '</td><td>' + (f.port || '-') + '</td>' +
-      '<td><span class="glass-badge ' + verdictCls + '">' + esc(f.verdict) + '</span></td></tr>';
+      '<td>' + idSig(f.verdict) + '</td></tr>';
   }).join('') || emptyMsg;
 }
 
@@ -23082,6 +23076,28 @@ function glassTableBadge(severity) {
   return 'other';
 }
 
+// ── Instrument Deck signal pills ─────────────────────────────
+// Returns a pulsing .id-sig pill for any VM/resource status.
+function idSig(status, label) {
+  var s = (status || '').toLowerCase();
+  var cls = s === 'running' ? 'id-sig-ok' :
+            (s === 'failed' || s === 'error') ? 'id-sig-crit' :
+            (s === 'stopped' || s === 'paused' || s === 'disabled' || s === 'clear') ? 'id-sig-inert' :
+            (s === 'ready' || s === 'success' || s === 'ok' || s === 'good' || s === 'healthy') ? 'id-sig-ok' :
+            (s === 'warning' || s === 'warn' || s === 'starting' || s === 'stopping' || s === 'pending' || s === 'degraded') ? 'id-sig-warn' :
+            'id-sig-inert';
+  return '<span class="id-sig ' + cls + '"><span class="id-pulse"></span>' + esc(label !== undefined ? label : (status || '?')) + '</span>';
+}
+// Returns a pulsing .id-sig pill for severity values (critical/warning/info/low).
+function idSigSev(sev, label) {
+  var s = (sev || '').toLowerCase();
+  var cls = (s === 'critical' || s === 'high') ? 'id-sig-crit' :
+            (s === 'warning' || s === 'warn' || s === 'medium') ? 'id-sig-warn' :
+            (s === 'info' || s === 'low' || s === 'informational') ? 'id-sig-inert' :
+            'id-sig-inert';
+  return '<span class="id-sig ' + cls + '"><span class="id-pulse"></span>' + esc(label !== undefined ? label : (sev || '?')) + '</span>';
+}
+
 function dismissAdvisorCard(cardId) {
   const el = document.getElementById(cardId);
   if (el) el.style.display = 'none';
@@ -23397,7 +23413,7 @@ async function fetchTraces() {
       <td style="font-family:var(--font-mono);font-size:.8em" class="vmr-copy-tile" title="Copy trace ID" onclick="copyToClipboard(${JSON.stringify(t.trace_id||'')})">${esc((t.trace_id||'').slice(0,16))}…<span class="vmr-copy-hint">copy</span></td>
       <td>${esc(t.service)}</td><td>${esc(t.operation)}</td>
       <td>${t.duration_ms}ms</td><td>${t.span_count}</td>
-      <td><span class="glass-badge ${t.status==='ok'?'running':'error'}">${esc(t.status)}</span></td>
+      <td>${idSig(t.status === 'ok' ? 'running' : 'error', t.status)}</td>
       <td>${fmtTime(t.started_at)}</td>
     </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No recent cluster events to show as traces</td></tr>';
   } catch (e) {
@@ -23487,7 +23503,7 @@ async function fetchSocPage(refresh) {
             const ok = e.configured && e.last_push_ok;
             const badge = e.configured ? (ok ? 'running' : 'error') : 'stopped';
             const err = e.last_error ? ' — ' + esc(e.last_error) : '';
-            return '<span style="margin-right:14px"><span class="glass-badge ' + badge + '">' + esc(e.backend) + '</span> ' +
+            return '<span style="margin-right:14px">' + idSig(badge, e.backend) + ' ' +
               (e.configured ? (e.events_pushed || 0) + ' pushed' : 'not configured') + err + '</span>';
           }).join('')
         : '<span style="color:var(--text-dim)">No SIEM exporters — configure VEYRON_ELASTIC_* / VEYRON_SPLUNK_* in Integrations</span>';
@@ -23496,15 +23512,13 @@ async function fetchSocPage(refresh) {
     if (detList) {
       detList.innerHTML = detections.length
         ? detections.map(d => {
-            const sevCls = glassTableBadge(d.severity);
-            const stCls = d.status === 'open' ? 'error' : (d.status === 'acknowledged' ? 'stopped' : 'other');
             const ackBtn = d.status === 'open'
               ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:8px" onclick="ackSocDetection(' + jsArgs(d.id) + ')">Ack</button>'
               : '';
             return '<div class="soc-det-row" style="padding:10px 0;border-bottom:1px solid var(--border)">' +
               '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">' +
-              '<span class="glass-badge ' + sevCls + '">' + esc(d.severity) + '</span>' +
-              '<span class="glass-badge ' + stCls + '">' + esc(d.status) + '</span>' +
+              idSig(d.severity) +
+              idSig(d.status) +
               '<strong>' + esc(d.title) + '</strong>' + ackBtn +
               '</div>' +
               '<div style="font-size:.82rem;color:var(--text-muted);margin-top:6px">' + esc(d.message) + '</div>' +
@@ -24015,7 +24029,7 @@ async function fetchIntegrations(opts) {
         }
       }
       return '<tr><td>' + esc(i.name) + '</td><td><code style="font-size:.78em">' + esc(i.env_var) + '</code></td><td>' +
-        (i.configured ? '<span class="glass-badge running">Yes</span>' : '<span class="glass-badge stopped">No</span>') + '</td><td><span class="glass-badge ' + integrationProbeClass(i.probe) + '">' + esc(i.probe) + '</span></td><td style="max-width:280px;font-size:.82em">' + esc(i.feeds) + '</td><td>' + openBtn + '</td></tr>';
+        (i.configured ? idSig('running','Yes') : idSig('stopped','No')) + '</td><td>' + idSig(i.probe) + '</td><td style="max-width:280px;font-size:.82em">' + esc(i.feeds) + '</td><td>' + openBtn + '</td></tr>';
     }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No integrations defined</td></tr>';
   } catch (e) {
     if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchIntegrations');
