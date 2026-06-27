@@ -10334,7 +10334,7 @@ function renderDockEditorList() {
       '<label>' + esc(label) + '</label>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dockEditorMove(' + idx + ',-1)"' + (idx === 0 ? ' disabled' : '') + '>↑</button>' +
       '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dockEditorMove(' + idx + ',1)"' + (idx >= dockEditorPaths.length - 1 ? ' disabled' : '') + '>↓</button>' +
-      '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="dockEditorRemove(\'' + esc(page).replace(/'/g, "\\'") + '\')">Remove</button>' +
+      '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="dockEditorRemove(\'' + esc(page).replace(/'/g, "\\'") + '\')">Remove</button>' +
       '</li>';
   }).join('');
 }
@@ -19246,7 +19246,7 @@ async function loadGuestRuntimePanel(ns, name, vmi) {
     const st = unwrapData(j) || {};
     const rt = guestRuntimeLabel(st.guest_runtime);
     const ver = st.version ? ' · v' + st.version : '';
-    el.innerHTML = '<div class="detail-row"><span class="lbl">Guest runtime</span><span class="val"><span class="status-pill running">' + esc(rt) + '</span>' + esc(ver) + (st.connected ? '' : ' (disconnected)') + '</span></div>';
+    el.innerHTML = '<div class="detail-row"><span class="lbl">Guest runtime</span><span class="val">' + idSig(st.connected ? 'running' : 'stopped', esc(rt) + esc(ver) + (st.connected ? '' : ' (disconnected)')) + '</span></div>';
   } catch (e) {
     el.innerHTML = '<div class="detail-row"><span class="lbl">Guest runtime</span><span class="val" style="color:var(--error)">' + esc(e.message || String(e)) + '</span></div>';
   }
@@ -22755,7 +22755,6 @@ function renderMetricsVmBreakdown() {
     var rows = vms.slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
     tbody.innerHTML = rows.map(function(v) {
       var status = v.status || 'Unknown';
-      var statusCls = status.toLowerCase() === 'running' ? 'status-running' : status.toLowerCase() === 'stopped' ? 'status-stopped' : 'status-other';
       var ns = v.namespace || 'default';
       var cpu = Number(v.cpu) || 0;
       var mem = fmtBytes(Number(v.memory_bytes || v.memory) || 0);
@@ -22764,7 +22763,7 @@ function renderMetricsVmBreakdown() {
       return '<tr style="cursor:pointer" onclick="navigate(\'vms\');setTimeout(function(){openVmWorkspace(' + jsArgs(ns, v.name) + ')},400)">' +
         '<td><span class="font-mono" style="font-size:.82rem">' + esc(v.name) + '</span></td>' +
         '<td><span class="ns-badge">' + esc(ns) + '</span></td>' +
-        '<td><span class="status-pill ' + statusCls + '">' + esc(status) + '</span></td>' +
+        '<td>' + idSig(status) + '</td>' +
         '<td style="text-align:right">' + cpu + '</td>' +
         '<td style="text-align:right">' + mem + '</td>' +
         '<td style="color:var(--text-muted)">' + esc(node) + '</td>' +
