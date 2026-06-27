@@ -2288,7 +2288,7 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-ticker-track:hover{animation-play-state:paused}
 @keyframes vmr-ticker-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .vmr-ticker-item{display:inline-flex;align-items:center;gap:5px;font-size:.71rem;color:var(--text-muted);flex-shrink:0}
-.vmr-ticker-item.warn{color:#fbbf24}
+.vmr-ticker-item.warn{color:var(--caution)}
 .vmr-ticker-dot{width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
 .vmr-ticker-sep{color:rgba(255,255,255,.18);margin:0 4px}
 .vmr-ticker-close{flex-shrink:0;background:none;border:none;color:rgba(255,255,255,.3);font-size:1rem;line-height:1;padding:2px 4px;cursor:pointer;border-radius:3px}
@@ -4791,19 +4791,19 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
     <div class="vmr-panel-title">Optimization Recommendations</div>
     <div id="cost-optimization-body" style="margin-top:8px">
       <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Downsize idle VMs</strong><div style="font-size:.78rem;color:var(--muted)">VMs with sustained low CPU may be over-provisioned</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find idle VMs to downsize')">Analyze</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Delete orphaned PVCs</strong><div style="font-size:.78rem;color:var(--muted)">Unbound PersistentVolumeClaims accumulate storage costs</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Find orphaned PVCs')">Find PVCs</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Schedule-based shutdown</strong><div style="font-size:.78rem;color:var(--muted)">Stop dev/test VMs outside business hours</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create shutdown schedule for dev VMs')">Configure</button>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(255,157,46,.06);border:1px solid rgba(255,157,46,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:rgba(239,159,39,.06);border:1px solid rgba(239,159,39,.2)">
           <div><strong style="font-size:.84rem">Move to cheaper storage class</strong><div style="font-size:.78rem;color:var(--muted)">Cold workloads can use HDD or object storage tiers</div></div>
           <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Suggest cheaper storage classes for VMs')">Suggest</button>
         </div>
@@ -10277,21 +10277,21 @@ function renderStatusBoard() {
   if (ts) ts.textContent = 'Last updated: ' + now.toLocaleTimeString();
   var tileW = Math.max(120, Math.min(200, Math.floor((window.innerWidth - 48) / Math.max(1, Math.ceil(Math.sqrt(vms.length * 1.5)))) - 12));
   var statusColors = {
-    running:  { bg: 'rgba(22,101,52,.85)',  border: VMR_SIG.ok, text: '#86efac' },
-    stopped:  { bg: 'rgba(30,41,59,.85)',   border: '#475569', text: '#94a3b8' },
-    failed:   { bg: 'rgba(100,30,30,.85)',  border: VMR_SIG.crit, text: '#f0a0a0' },
-    error:    { bg: 'rgba(100,30,30,.85)',  border: VMR_SIG.crit, text: '#f0a0a0' },
-    starting: { bg: 'rgba(6,78,59,.85)',    border: '#34d399', text: '#6ee7b7' },
-    stopping: { bg: 'rgba(69,26,3,.85)',    border: VMR_SIG.warn, text: '#fde68a' },
-    pending:  { bg: 'rgba(49,46,129,.85)',  border: '#818cf8', text: '#c7d2fe' },
-    paused:   { bg: 'rgba(76,29,149,.85)',  border: '#c084fc', text: '#e9d5ff' },
+    running:  { bg: 'rgba(22,101,52,.85)',  border: VMR_SIG.ok,     text: '#86efac' },
+    stopped:  { bg: 'rgba(30,41,59,.85)',   border: VMR_SIG.off,    text: VMR_SIG.off },
+    failed:   { bg: 'rgba(100,30,30,.85)',  border: VMR_SIG.crit,   text: '#f0a0a0' },
+    error:    { bg: 'rgba(100,30,30,.85)',  border: VMR_SIG.crit,   text: '#f0a0a0' },
+    starting: { bg: 'rgba(6,78,59,.85)',    border: VMR_SIG.ok,     text: VMR_SIG.ok },
+    stopping: { bg: 'rgba(69,26,3,.85)',    border: VMR_SIG.warn,   text: VMR_SIG.warn },
+    pending:  { bg: 'rgba(49,46,129,.85)',  border: VMR_SIG.plasma, text: VMR_SIG.plasma },
+    paused:   { bg: 'rgba(76,29,149,.85)',  border: VMR_SIG.plasma, text: VMR_SIG.plasma },
   };
   grid.innerHTML = vmData.slice().sort(function(a,b) {
     var order = { Failed:0,Error:0,Stopping:1,Starting:2,Running:3,Paused:4,Pending:5,Stopped:6 };
     return (order[a.status]||9) - (order[b.status]||9) || a.name.localeCompare(b.name);
   }).map(function(v) {
     var s = (v.status || 'unknown').toLowerCase();
-    var c = statusColors[s] || { bg: 'rgba(30,41,59,.7)', border: '#475569', text: '#94a3b8' };
+    var c = statusColors[s] || { bg: 'rgba(30,41,59,.7)', border: VMR_SIG.off, text: VMR_SIG.off };
     var icon = osFamilyIcon(guessOsFamily(v));
     return '<div onclick="closeStatusBoard();navigate(\'vms\');setTimeout(function(){selectVm(' + jsArgs(v.namespace||'default', v.name) + ')},300)" ' +
       'style="width:' + tileW + 'px;padding:14px 16px;background:' + c.bg + ';border:1px solid ' + c.border + ';border-radius:10px;' +
@@ -10529,7 +10529,7 @@ function renderPulseView(vms) {
   function statusCol(v) {
     var s = (v.status || '').toLowerCase();
     if (s === 'running') return VMR_SIG.ok;
-    if (s === 'stopped') return '#64748b';
+    if (s === 'stopped') return VMR_SIG.off;
     if (s === 'failed' || s === 'error') return VMR_SIG.crit;
     return VMR_SIG.warn;
   }
@@ -10655,7 +10655,7 @@ function renderClusterMap(vms) {
       var dist = vmsInNode.length === 1 ? 0 : spread * 0.7;
       var dx = cx + dist * Math.cos(angle);
       var dy = cy + dist * Math.sin(angle);
-      var color = STATUS_COLOR[v.status] || '#94a3b8';
+      var color = STATUS_COLOR[v.status] || VMR_SIG.off;
       ctx.beginPath();
       ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
       ctx.fillStyle = color;
@@ -11190,7 +11190,7 @@ function renderFleetPinnedStrip() {
     pins.map(function(p) {
       var vm = (vmData || []).find(function(v) { return v.name === p.name && (v.namespace || 'default') === p.ns; });
       var s = vm ? (vm.status || 'unknown').toLowerCase() : 'unknown';
-      var dotColor = s === 'running' ? VMR_SIG.ok : s === 'stopped' ? '#94a3b8' : VMR_SIG.warn;
+      var dotColor = s === 'running' ? VMR_SIG.ok : s === 'stopped' ? VMR_SIG.off : VMR_SIG.warn;
       var label = p.ns !== 'default' ? (p.ns + '/' + p.name) : p.name;
       return '<span class="vmr-pin-chip" onclick="selectVm(' + jsArgs(p.ns, p.name) + ',{})" title="' + esc(p.ns + '/' + p.name) + '">' +
         '<span class="vmr-pin-dot" style="background:' + dotColor + '"></span>' +
@@ -11334,13 +11334,13 @@ function vmMomentum(ns, name) {
 // VMs with identical specs share the same stripe — visually obvious clones.
 function vmGenomeStrip(vm) {
   var osColors = { windows:'#60a5fa', ubuntu:'#fb923c', debian:'#a78bfa', fedora:'#34d399', linux:'#38bdf8' };
-  var osCol = osColors[guessOsFamily(vm)] || '#94a3b8';
+  var osCol = osColors[guessOsFamily(vm)] || VMR_SIG.off;
   var cpu = parseCpuCount(vm.cpu) || 0;
   var cpuCol = cpu >= 16 ? VMR_SIG.crit : cpu >= 8 ? VMR_SIG.warn : cpu >= 4 ? VMR_SIG.warn : VMR_SIG.ok;
   var mem = parseMemGiB(vm.memory) || 0;
   var memCol = mem >= 64 ? VMR_SIG.crit : mem >= 16 ? VMR_SIG.warn : mem >= 8 ? VMR_SIG.plasma : VMR_SIG.off;
   var st = (vm.status || '').toLowerCase();
-  var stCol = st === 'running' ? VMR_SIG.ok : st === 'stopped' ? '#64748b' : st === 'failed' || st === 'error' ? VMR_SIG.crit : VMR_SIG.warn;
+  var stCol = st === 'running' ? VMR_SIG.ok : st === 'stopped' ? VMR_SIG.off : st === 'failed' || st === 'error' ? VMR_SIG.crit : VMR_SIG.warn;
   return '<span class="vmr-genome" title="Genome: ' + guessOsFamily(vm) + ' · ' + (vm.cpu||'?') + ' · ' + (vm.memory||'?') + ' · ' + (vm.status||'?') + '">' +
     '<span style="background:' + osCol  + ';flex:1"></span>' +
     '<span style="background:' + cpuCol + ';flex:1"></span>' +
@@ -11381,7 +11381,7 @@ function vmAgeTint(vm) {
   if (hours < 24)   return 'rgba(29,158,117,.08)';   // < 1d: nominal teal
   if (hours < 168)  return 'rgba(255,255,255,.03)';  // < 1w: neutral
   if (hours < 720)  return 'rgba(245,158,11,.08)';   // < 30d: amber
-  return 'rgba(239,68,68,.09)';                       // 30d+: warm red
+  return 'rgba(226,75,74,.09)';                       // 30d+: warm red
 }
 
 // ── Numeric search token helpers ──
@@ -12493,7 +12493,7 @@ function openFleetDiffModal(base) {
   var changedRows = changed.map(function(c) {
     return '<div style="padding:5px 8px;border-radius:5px;background:rgba(239,159,39,.07);border:1px solid rgba(239,159,39,.25);margin-bottom:3px;font-size:.8rem">' +
       '<span style="font-weight:600">' + esc(c.name) + '</span> <span style="color:var(--text-muted);font-size:.72rem">' + esc(c.ns) + '</span>' +
-      '<div style="margin-top:3px;font-size:.72rem;color:#fde68a">' + c.diffs.map(esc).join(' · ') + '</div></div>';
+      '<div style="margin-top:3px;font-size:.72rem;color:'+VMR_SIG.warn+'">' + c.diffs.map(esc).join(' · ') + '</div></div>';
   });
   if (!added.length && !removed.length && !changed.length) {
     html += '<div style="text-align:center;padding:24px;color:'+VMR_SIG.ok+';font-size:.9rem">✓ Fleet unchanged since baseline (' + unchanged + ' VMs)</div>';
@@ -17671,7 +17671,7 @@ function loadVmEventHistory(ns, name) {
       var ts = ev.timestamp ? timeAgo(ev.timestamp) : '';
       return '<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
         '<span style="width:5px;height:5px;border-radius:50%;background:' + dotColor + ';margin-top:5px;flex-shrink:0"></span>' +
-        '<span style="flex:1;font-size:.73rem;color:' + (isWarn ? '#fbbf24' : 'var(--text-muted)') + ';word-break:break-word;line-height:1.4">' + esc(msg) + '</span>' +
+        '<span style="flex:1;font-size:.73rem;color:' + (isWarn ? VMR_SIG.warn : 'var(--text-muted)') + ';word-break:break-word;line-height:1.4">' + esc(msg) + '</span>' +
         (ts ? '<span style="font-size:.65rem;color:var(--text-dim);white-space:nowrap;flex-shrink:0">' + esc(ts) + '</span>' : '') +
       '</div>';
     }).join('') +
@@ -19191,7 +19191,7 @@ function renderGroupedVmList(vms) {
   result.groups.forEach(function(g) {
     var collapsed = !!_vmGroupCollapsed[g.prefix];
     var running = g.vms.filter(function(v) { return v.status === 'Running'; }).length;
-    var statusColor = running === g.vms.length ? VMR_SIG.ok : running > 0 ? VMR_SIG.warn : '#64748b';
+    var statusColor = running === g.vms.length ? VMR_SIG.ok : running > 0 ? VMR_SIG.warn : VMR_SIG.off;
     html += '<div class="vmr-vmgroup">' +
       '<div class="vmr-vmgroup-header" onclick="toggleVmGroup(' + JSON.stringify(g.prefix) + ')">' +
       '<span class="vmr-vmgroup-chevron">' + (collapsed ? '▸' : '▾') + '</span>' +
@@ -22236,12 +22236,12 @@ function renderMetricsDonut(vms) {
   var osMap = {};
   vms.forEach(function(v) { var f = guessOsFamily(v); osMap[f] = (osMap[f] || 0) + 1; });
   var OS_COLORS = { windows:'#3b82f6', ubuntu:'#ea580c', debian:'#dc2626', fedora:'#1e40af', linux:VMR_SIG.ok };
-  var osData = Object.keys(osMap).sort().map(function(f) { return { label: f, count: osMap[f], color: OS_COLORS[f] || '#64748b' }; });
+  var osData = Object.keys(osMap).sort().map(function(f) { return { label: f, count: osMap[f], color: OS_COLORS[f] || VMR_SIG.off }; });
   drawDonut('metrics-os-donut', 'metrics-os-legend', osData);
   var statusMap = {};
   vms.forEach(function(v) { var s = v.status || 'Unknown'; statusMap[s] = (statusMap[s] || 0) + 1; });
   var STATUS_COLORS = { Running: VMR_SIG.ok, Stopped: VMR_SIG.off, Failed: VMR_SIG.crit, Error: VMR_SIG.crit, Pending: VMR_SIG.warn };
-  var statusData = Object.keys(statusMap).sort().map(function(s) { return { label: s, count: statusMap[s], color: STATUS_COLORS[s] || '#94a3b8' }; });
+  var statusData = Object.keys(statusMap).sort().map(function(s) { return { label: s, count: statusMap[s], color: STATUS_COLORS[s] || VMR_SIG.off }; });
   drawDonut('metrics-status-donut', 'metrics-status-legend', statusData);
 }
 
@@ -22768,7 +22768,7 @@ function openVmFocusOverlay(ns, name) {
   _vfoNs = ns; _vfoName = name; _vfoMetricHistory = { cpu: [], mem: [] };
   document.getElementById('vfo-title').textContent = name;
   document.getElementById('vfo-status').textContent = '';
-  document.getElementById('vfo-status-dot').style.background = '#94a3b8';
+  document.getElementById('vfo-status-dot').style.background = VMR_SIG.off;
   document.getElementById('vfo-kv').innerHTML = '<div style="color:var(--text-dim);font-size:.78rem">Loading…</div>';
   document.getElementById('vfo-events').innerHTML = '';
   document.getElementById('vfo-ifaces').innerHTML = '';
@@ -22792,7 +22792,7 @@ async function vfoLoad() {
     vm = unwrapData(vm) || vm;
     var status = vm.status || 'Unknown';
     var running = status === 'Running';
-    var dotColor = running ? VMR_SIG.ok : status === 'Stopped' ? '#94a3b8' : VMR_SIG.warn;
+    var dotColor = running ? VMR_SIG.ok : status === 'Stopped' ? VMR_SIG.off : VMR_SIG.warn;
     document.getElementById('vfo-status-dot').style.background = dotColor;
     document.getElementById('vfo-status').textContent = status;
     var startBtn = document.getElementById('vfo-start-btn'); if (startBtn) startBtn.style.display = running ? 'none' : '';
@@ -22821,7 +22821,7 @@ async function vfoLoad() {
     }).slice(0, 5);
     document.getElementById('vfo-events').innerHTML = events.length ? '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Events</div>' +
       events.map(function(ev) {
-        return '<div style="font-size:.72rem;color:' + (ev.type === 'Warning' ? '#fbbf24' : 'var(--text-muted)') + ';padding:2px 0">' + esc((ev.reason || '') + ': ' + (ev.message || '').slice(0, 60)) + '</div>';
+        return '<div style="font-size:.72rem;color:' + (ev.type === 'Warning' ? VMR_SIG.warn : 'var(--text-muted)') + ';padding:2px 0">' + esc((ev.reason || '') + ': ' + (ev.message || '').slice(0, 60)) + '</div>';
       }).join('') : '';
     // Metrics sparklines
     try {
