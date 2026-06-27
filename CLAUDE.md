@@ -260,3 +260,51 @@ All Instrument Deck components are in `src/api/web/dashboard.html` under the `id
 - **Running VMs**: pulse animation on status dot (built into `.id-sig-ok`)
 - **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in)
 - **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zeus integration
+
+### Component library — `web/src/components/instrument/`
+
+All reusable UI is in this directory. **Never hand-roll equivalent components in page HTML** — compose pages from these:
+
+| Component | File | Purpose |
+|---|---|---|
+| `SignalDot` | `SignalDot.tsx` | Pulsing status dot (ok/warn/crit/off) |
+| `MetricTile` | `MetricTile.tsx` | KPI tile with sparkline |
+| `Gauge` | `Gauge.tsx` | SVG arc gauge for single metric |
+| `VmCard` | `VmCard.tsx` | VM summary card with status strip + bars |
+| `AlertRow` | `AlertRow.tsx` | Alert list item with level icon |
+| `TelemetrySpine` | `TelemetrySpine.tsx` | React version of the id-spine strip |
+| `ZeusPanel` | `ZeusPanel.tsx` | Ask Zeus input panel with plasma orb |
+| `SectionHeading` | `SectionHeading.tsx` | h2 with eyebrow + fade line |
+| `Chip` | `Chip.tsx` | Filter/tag chip (active/idle) |
+| `ReactorCore` | `ReactorCore.tsx` | Canvas fleet instrument (orbital rings) |
+| `TopologySurface` | `TopologySurface.tsx` | vCenter-killer host/VM capacity map, drag-to-migrate |
+| `useFleetTelemetry` | `useFleetTelemetry.ts` | SSE+polling fleet data hook |
+
+Tokens standalone file: `web/src/styles/tokens.css` — import first in any React app.
+
+Stylelint guardrail: `web/.stylelintrc` — `color-no-hex: true` (ignores `tokens.css`).
+
+### Per-page sweep procedure
+
+When applying Instrument Deck to any page section in `dashboard.html`:
+
+1. **Read** the page's `<div class="page section-shell" id="page-…">` block
+2. **Identify violations**: raw hex colors, flat status badges, non-Signal-Dot status indicators, missing KPI tiles, non-`--ink/ink-2/ink-3` text colors
+3. **Replace** status badges with `.id-sig.id-sig-ok/warn/crit/inert` pills
+4. **Replace** KPI numbers with `.id-tile > .id-eyebrow + .id-big` patterns
+5. **Replace** any `color:#xxx` or `background:#xxx` inline styles with `var(--token)`
+6. **Replace** JS canvas/SVG hex strings with `VMR_SIG.ok / .warn / .crit / .off`
+7. **Add** section heading with `.id-sec-h` if missing
+8. **Wire** VM-level clicks to `openCopilotWithVm()`
+9. **Test**: `cargo build --features web` must succeed; no new raw hex in the diff
+
+### Batch sequence
+
+Work pages in this order (each batch is a single commit+push):
+
+- **Batch 1** (done) — token foundation, component library, `.stylelintrc`
+- **Batch 2** — Hero pages: `#page-vms`, `#page-vm-capsule`, `#page-fleet-constellation`, `#page-topology`
+- **Batch 3** — Platform pages: `#page-storage`, `#page-networking`, `#page-nodes`, `#page-monitoring`, `#page-alerts`
+- **Batch 4** — Long tail: SOC, compliance, cost, backup, gitops, chaos, inference, and all remaining sections
+
+Never skip the build check between batches.

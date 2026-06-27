@@ -1,0 +1,56 @@
+/* ============================================================
+   web/src/styles/tokens.css
+   Instrument Deck design tokens — single source of truth.
+   Import this file first in any React app or CSS bundle.
+   In dashboard.html these are duplicated in the :root block.
+   ============================================================ */
+:root {
+  /* ── Depth layers ──────────────────────────────────────── */
+  --void:   #0a0c14;
+  --hull:   #0f1320;
+  --panel:  #151a2b;
+  --panel-2:#1b2236;
+  --panel-hi:#232c45;
+
+  /* ── Grid lines ────────────────────────────────────────── */
+  --hairline:   #27304a;
+  --hairline-hi:#3a466b;
+
+  /* ── Brand accent ──────────────────────────────────────── */
+  --plasma:      #7F77DD;
+  --plasma-deep: #534AB7;
+  --plasma-glow: rgba(127,119,221,0.18);
+  --plasma-line: rgba(127,119,221,0.45);
+
+  /* ── Signal colors ─────────────────────────────────────── */
+  --nominal:    #1D9E75;
+  --nominal-bg: rgba(29,158,117,0.12);
+  --caution:    #EF9F27;
+  --caution-bg: rgba(239,159,39,0.12);
+  --critical:   #E24B4A;
+  --critical-bg:rgba(226,75,74,0.12);
+  --inert:      #5F5E5A;
+  --inert-bg:   rgba(95,94,90,0.10);
+
+  /* ── Typography ────────────────────────────────────────── */
+  --ink:  #e8ecf6;
+  --ink-2:#97a0bd;
+  --ink-3:#5f6884;
+
+  --sans-deck: 'Space Grotesk','Inter',system-ui,sans-serif;
+  --mono-deck: 'IBM Plex Mono','JetBrains Mono',monospace;
+
+  /* ── Semantic aliases (bridge to existing dashboard vars) ─ */
+  --success:     var(--nominal);
+  --success-dim: var(--nominal-bg);
+  --warning:     var(--caution);
+  --warning-dim: var(--caution-bg);
+  --error:       var(--critical);
+  --error-dim:   var(--critical-bg);
+  --text-dim:    var(--ink-3);
+  --text-muted:  var(--ink-2);
+  --text-bright: var(--ink);
+  --border:      var(--hairline);
+  --border-hot:  var(--hairline-hi);
+  --bg-card:     var(--panel);
+}

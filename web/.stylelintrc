@@ -1,0 +1,15 @@
+{
+  "rules": {
+    "color-no-hex": [true, {
+      "message": "Use Instrument Deck CSS tokens (e.g. var(--nominal)) instead of raw hex values."
+    }],
+    "color-no-invalid-hex": true,
+    "unit-disallowed-list": [],
+    "custom-property-empty-line-before": "never"
+  },
+  "ignoreFiles": [
+    "src/styles/tokens.css",
+    "**/*.snap",
+    "node_modules/**"
+  ]
+}
