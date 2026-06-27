@@ -7684,7 +7684,7 @@ function loadPageData(page, opts) {
     if(!el) return;
     if(!state){el.style.display='none';return;}
     const {vm,from,to,phase,progress,error}=state;
-    const col=phase==='failed'?'#E24B4A':phase==='done'?'#1D9E75':'#7F77DD';
+    const col=phase==='failed'?VMR_SIG.crit:phase==='done'?VMR_SIG.ok:VMR_SIG.plasma;
     const label={preflight:'Preflight',copying:'Pre-copy',done:'Complete',failed:'Failed'}[phase];
     el.style.display='block';
     el.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:8px 14px;background:${col}18;border:1px solid ${col}44;border-radius:8px;font-family:var(--mono-deck);font-size:11px">
@@ -7754,10 +7754,10 @@ function loadPageData(page, opts) {
     const isDrain=_drain===host.name;
     const isOver=_drag&&_drag._overHost===host.name;
     const dropsOk=isOver&&_drag&&fits(_drag.vm,host);
-    const border=isOver?(dropsOk?'#1D9E75':'#E24B4A'):(isDrain?'#EF9F27':'var(--hairline)');
+    const border=isOver?(dropsOk?VMR_SIG.ok:VMR_SIG.crit):(isDrain?VMR_SIG.warn:'var(--hairline)');
     const bg=isOver?(dropsOk?'rgba(29,158,117,.06)':'rgba(226,75,74,.06)'):(isDrain?'rgba(239,159,39,.04)':'var(--panel)');
-    const cpuCol=host.cpuUsed>90?'#E24B4A':host.cpuUsed>75?'#EF9F27':'#1D9E75';
-    const memCol=host.memUsed>90?'#E24B4A':host.memUsed>75?'#EF9F27':'#7F77DD';
+    const cpuCol=host.cpuUsed>90?VMR_SIG.crit:host.cpuUsed>75?VMR_SIG.warn:VMR_SIG.ok;
+    const memCol=host.memUsed>90?VMR_SIG.crit:host.memUsed>75?VMR_SIG.warn:VMR_SIG.plasma;
     return `<div
       data-host="${host.name}"
       ondragover="event.preventDefault();_tsDragOver(this,'${host.name}')"
@@ -7766,10 +7766,10 @@ function loadPageData(page, opts) {
     >
       <div style="padding-bottom:8px;border-bottom:1px solid var(--hairline)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-family:var(--sans-deck);font-size:12px;font-weight:600;color:${isDrain?'#EF9F27':'var(--ink)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px" title="${host.name}">${host.name.length>14?host.name.split('-').slice(-2).join('-'):host.name}</span>
+          <span style="font-family:var(--sans-deck);font-size:12px;font-weight:600;color:${isDrain?VMR_SIG.warn:'var(--ink)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px" title="${host.name}">${host.name.length>14?host.name.split('-').slice(-2).join('-'):host.name}</span>
           <div style="display:flex;gap:4px;align-items:center">
             <span style="font-family:var(--mono-deck);font-size:9px;color:var(--ink-3)">${host.vms.length} VMs</span>
-            <button onclick="_tsDrain('${host.name}')" title="${isDrain?'Cancel drain':'Simulate drain'}" style="font-family:var(--mono-deck);font-size:9px;background:${isDrain?'rgba(239,159,39,.15)':'none'};color:${isDrain?'#EF9F27':'var(--ink-3)'};border:1px solid ${isDrain?'#EF9F27':'var(--hairline)'};border-radius:4px;padding:1px 5px;cursor:pointer;transition:all .12s">${isDrain?'DRAINING':'DRAIN'}</button>
+            <button onclick="_tsDrain('${host.name}')" title="${isDrain?'Cancel drain':'Simulate drain'}" style="font-family:var(--mono-deck);font-size:9px;background:${isDrain?'rgba(239,159,39,.15)':'none'};color:${isDrain?VMR_SIG.warn:'var(--ink-3)'};border:1px solid ${isDrain?VMR_SIG.warn:'var(--hairline)'};border-radius:4px;padding:1px 5px;cursor:pointer;transition:all .12s">${isDrain?'DRAINING':'DRAIN'}</button>
           </div>
         </div>
         ${renderCapBar(host.cpuUsed,'CPU',cpuCol)}
@@ -7778,7 +7778,7 @@ function loadPageData(page, opts) {
       <div style="display:flex;flex-direction:column;gap:4px">
         ${host.vms.map(renderVmBlock).join('')}
       </div>
-      ${isOver?`<div style="text-align:center;font-family:var(--mono-deck);font-size:10px;color:${dropsOk?'#1D9E75':'#E24B4A'};padding:6px 0;border-radius:6px;background:${dropsOk?'rgba(29,158,117,.06)':'rgba(226,75,74,.06)'};border:1px dashed ${dropsOk?'#1D9E75':'#E24B4A'}">${dropsOk?'Drop to migrate':'Insufficient capacity'}</div>`:''}
+      ${isOver?`<div style="text-align:center;font-family:var(--mono-deck);font-size:10px;color:${dropsOk?VMR_SIG.ok:VMR_SIG.crit};padding:6px 0;border-radius:6px;background:${dropsOk?'rgba(29,158,117,.06)':'rgba(226,75,74,.06)'};border:1px dashed ${dropsOk?VMR_SIG.ok:VMR_SIG.crit}">${dropsOk?'Drop to migrate':'Insufficient capacity'}</div>`:''}
     </div>`;
   }
 
@@ -7866,10 +7866,10 @@ function loadPageData(page, opts) {
   const SVGNS = 'http://www.w3.org/2000/svg';
   const W = 680, H = 420, FOV = 520;
   const STATUS = {
-    healthy:  { c: '#1D9E75' },
-    warning:  { c: '#EF9F27' },
-    critical: { c: '#E24B4A' },
-    stopped:  { c: '#5F5E5A' }
+    healthy:  { c: VMR_SIG.ok },
+    warning:  { c: VMR_SIG.warn },
+    critical: { c: VMR_SIG.crit },
+    stopped:  { c: VMR_SIG.off }
   };
 
   let _nodes = [], _vms = [], _metric = 'load';
