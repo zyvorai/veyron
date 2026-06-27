@@ -4519,6 +4519,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <select class="form-select" id="vm-filter-status" style="display:none" onchange="syncChipsFromSelect();filterVMs()">
       <option value="">All status</option><option value="Running">Running</option><option value="Stopped">Stopped</option><option value="__issues__">Issues</option><option value="__retire__">Stale</option>
     </select>
+    <select id="vm-filter-drift" style="display:none" onchange="filterVMs()"><option value="">all</option><option value="drift">drift</option></select>
     <div class="vmr-view-switch">
       <button type="button" data-view="cards" class="active" onclick="setVmrFleetView('cards')">Cards</button>
       <button type="button" data-view="table" onclick="setVmrFleetView('table')">Table</button>
