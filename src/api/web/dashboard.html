@@ -69,15 +69,15 @@
   --primary-dim:rgba(245,158,11,.15);
   --primary-glow:rgba(245,158,11,.28);
   --success:#1D9E75;
-  --success-dim:rgba(34,197,94,.16);
+  --success-dim:rgba(29,158,117,.16);
   --warning:#EF9F27;
-  --warning-dim:rgba(234,179,8,.16);
+  --warning-dim:rgba(239,159,39,.16);
   --error:#E24B4A;
-  --error-dim:rgba(239,68,68,.16);
+  --error-dim:rgba(226,75,74,.16);
   --radius:1rem;
   --glow-molten:0 0 20px rgba(199,208,219,.16),0 0 48px rgba(110,122,138,.08);
   --glow-spark:0 0 16px rgba(214,221,230,.15),0 0 40px rgba(214,221,230,.06);
-  --glow-success:0 0 12px rgba(34,197,94,.2);
+  --glow-success:0 0 12px rgba(29,158,117,.2);
   --font-sans:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;
   --font-display:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -787,11 +787,11 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   border:1px solid transparent;
 }
 .vm-dot.running{
-  background:var(--success);
-  box-shadow:0 0 8px rgba(34,197,94,.35);
+  background:var(--nominal);
+  box-shadow:0 0 8px rgba(29,158,117,.35);
   animation:forge-pulse 2.5s infinite;
 }
-.vm-dot.running::after{border-color:rgba(34,197,94,.2)}
+.vm-dot.running::after{border-color:rgba(29,158,117,.2)}
 .vm-dot.stopped{background:var(--text-dim);box-shadow:none}
 .vm-dot.error{background:var(--error);box-shadow:0 0 8px rgba(255,34,68,.4)}
 .vm-dot.other{background:var(--spark);box-shadow:0 0 8px rgba(0,180,255,.3)}
@@ -806,7 +806,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   font-family:var(--font-sans);font-size:.72rem;font-weight:700;
   letter-spacing:.08em;text-transform:uppercase;
 }
-.vm-badge.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
+.vm-badge.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(29,158,117,.2)}
 .vm-badge.stopped{background:rgba(100,100,120,.15);color:var(--text-muted);border:1px solid rgba(100,100,120,.15)}
 .vm-badge.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(255,34,68,.15)}
 .vm-badge.other{background:rgba(0,180,255,.1);color:var(--spark);border:1px solid rgba(0,180,255,.15)}
@@ -926,7 +926,7 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .monitor-stack-sub{
   font-size:.72em;color:var(--text-muted);margin-top:10px;line-height:1.45;letter-spacing:.2px;
 }
-.badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.2)}
+.badge-green{background:var(--success-dim);color:var(--success);border:1px solid rgba(29,158,117,.2)}
 .badge-muted{color:var(--text-dim)}
 .monitor-stat-note{font-size:.76rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-mono);letter-spacing:.02em}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
@@ -999,8 +999,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
 .toast-icon{flex-shrink:0;width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700}
 .toast-success{
   background:rgba(6,40,24,.95);color:var(--success);
-  border:1px solid rgba(34,197,94,.22);
-  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(34,197,94,.08);
+  border:1px solid rgba(29,158,117,.22);
+  box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(29,158,117,.08);
 }
 .toast-error{
   background:rgba(40,5,5,.95);color:var(--error);
@@ -1013,8 +1013,8 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(0,180,255,.08);
 }
 .toast-info .toast-icon{background:rgba(56,189,248,.15);color:var(--spark)}
-.toast-success .toast-icon{background:rgba(34,197,94,.15);color:var(--success)}
-.toast-error .toast-icon{background:rgba(239,68,68,.15);color:var(--error)}
+.toast-success .toast-icon{background:rgba(29,158,117,.15);color:var(--success)}
+.toast-error .toast-icon{background:rgba(226,75,74,.15);color:var(--error)}
 .toast-warning{
   background:rgba(40,28,6,.92);color:var(--warning);
   border:1px solid rgba(251,191,36,.25);
@@ -1195,9 +1195,9 @@ body[data-section="ops"] .page.active .card-header{background:linear-gradient(90
   font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
   border:1px solid var(--glass-border);background:rgba(255,255,255,.04);
 }
-.glass-badge.running{background:var(--success-dim);color:var(--success);border-color:rgba(34,197,94,.28)}
+.glass-badge.running{background:var(--success-dim);color:var(--success);border-color:rgba(29,158,117,.28)}
 .glass-badge.stopped{background:rgba(100,116,139,.12);color:var(--text-muted);border-color:rgba(100,116,139,.2)}
-.glass-badge.error{background:var(--error-dim);color:var(--error);border-color:rgba(239,68,68,.28)}
+.glass-badge.error{background:var(--error-dim);color:var(--error);border-color:rgba(226,75,74,.28)}
 .glass-badge.other{background:var(--pw-accent-soft, rgba(59,130,246,.12));color:var(--pw-color-info, var(--primary-blue));border-color:var(--pw-accent-border, rgba(59,130,246,.25))}
 .glass-btn-primary{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
@@ -1331,10 +1331,10 @@ button.glass-stat-pill.clickable-stat:hover,
 .vd-title-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .vd-vm-name{font-family:var(--font-display);font-size:1.75rem;font-weight:700;color:var(--text-bright);line-height:1.12;letter-spacing:-.02em}
 .vd-status-pill{font-size:.72rem;padding:5px 12px;border-radius:999px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.vd-status-pill.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.3)}
+.vd-status-pill.running{background:var(--success-dim);color:var(--success);border:1px solid rgba(29,158,117,.3)}
 .vd-status-pill.stopped{background:rgba(148,163,184,.12);color:var(--text-muted);border:1px solid var(--border)}
-.vd-status-pill.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(239,68,68,.28)}
-.vd-status-pill.other{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(234,179,8,.25)}
+.vd-status-pill.error{background:var(--error-dim);color:var(--error);border:1px solid rgba(226,75,74,.28)}
+.vd-status-pill.other{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(239,159,39,.25)}
 .vd-meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:12px;font-size:.84rem;color:var(--text-muted)}
 .vd-meta-chip{padding:4px 10px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.2);font-family:var(--font-mono);font-size:.76rem;color:var(--text)}
 .vd-meta-chip strong{color:var(--text-bright);font-weight:600}
@@ -1396,9 +1396,9 @@ button.glass-stat-pill.clickable-stat:hover,
   font-family:var(--font-display);font-size:1.35rem;font-weight:800;
   border:3px solid var(--border);background:rgba(0,0,0,.25);
 }
-.vd-score-ring.ok{border-color:var(--success);color:var(--success);box-shadow:0 0 20px rgba(34,197,94,.15)}
-.vd-score-ring.warn{border-color:var(--warning);color:var(--warning);box-shadow:0 0 20px rgba(234,179,8,.12)}
-.vd-score-ring.bad{border-color:var(--error);color:var(--error);box-shadow:0 0 20px rgba(239,68,68,.12)}
+.vd-score-ring.ok{border-color:var(--success);color:var(--success);box-shadow:0 0 20px rgba(29,158,117,.15)}
+.vd-score-ring.warn{border-color:var(--warning);color:var(--warning);box-shadow:0 0 20px rgba(239,159,39,.12)}
+.vd-score-ring.bad{border-color:var(--error);color:var(--error);box-shadow:0 0 20px rgba(226,75,74,.12)}
 .vd-security-summary{flex:1;min-width:0}
 .vd-security-summary h4{margin:0 0 6px;font-size:.95rem;font-weight:700;color:var(--text-bright)}
 .vd-security-summary p{margin:0;font-size:.8rem;color:var(--text-muted);line-height:1.45}
@@ -1407,8 +1407,8 @@ button.glass-stat-pill.clickable-stat:hover,
   display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:start;
   padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.12);font-size:.8rem;
 }
-.vd-check.pass{border-color:rgba(34,197,94,.2)}
-.vd-check.fail{border-color:rgba(239,68,68,.22)}
+.vd-check.pass{border-color:rgba(29,158,117,.2)}
+.vd-check.fail{border-color:rgba(226,75,74,.22)}
 .vd-check-icon{font-size:1rem;line-height:1;font-weight:700}
 .vd-check.pass .vd-check-icon{color:var(--success)}
 .vd-check.fail .vd-check-icon{color:var(--error)}
@@ -1419,7 +1419,7 @@ button.glass-stat-pill.clickable-stat:hover,
   display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;margin-bottom:12px;
   font-size:.82rem;font-weight:600;
 }
-.rdp-status-banner.exposed{background:var(--success-dim);color:var(--success);border:1px solid rgba(34,197,94,.25)}
+.rdp-status-banner.exposed{background:var(--success-dim);color:var(--success);border:1px solid rgba(29,158,117,.25)}
 .rdp-status-banner.hidden{background:rgba(148,163,184,.1);color:var(--text-muted);border:1px solid var(--border)}
 .rdp-status-dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0}
 .vm-metrics-sparkline{margin-top:12px;height:48px;border-radius:8px;background:rgba(0,0,0,.25);border:1px solid var(--border);overflow:hidden}
@@ -1475,7 +1475,7 @@ body.classic-nav-open .cloudos-browse-rail{display:none!important}
 .vm-list-toolbar{padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
 .vmr-preset-chip{display:inline-flex;align-items:center;gap:0}
 .vmr-preset-del{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.75rem;padding:0 5px;line-height:1;border-radius:0 4px 4px 0;margin-left:-1px;height:22px;display:inline-flex;align-items:center}
-.vmr-preset-del:hover{color:#f87171;background:rgba(239,68,68,.12)}
+.vmr-preset-del:hover{color:#f87171;background:rgba(226,75,74,.12)}
 .vmr-card-pulse{animation:vmr-pulse-once 2.4s ease-out}
 @keyframes vmr-pulse-once{0%{box-shadow:0 0 0 0 rgba(245,158,11,.7),0 0 0 0 rgba(245,158,11,.4)}40%{box-shadow:0 0 0 8px rgba(245,158,11,.2),0 0 0 4px rgba(245,158,11,.1)}100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}}
 .vmr-vmgroup{margin-bottom:4px}
@@ -1712,8 +1712,8 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   flex-shrink:0;font-size:.7rem;font-family:var(--font-mono);padding:4px 10px;border-radius:999px;
   border:1px solid var(--glass-border);background:rgba(0,0,0,.2);color:var(--text-dim);
 }
-.mac-console-status.connected{color:var(--success);border-color:rgba(34,197,94,.3)}
-.mac-console-status.error{color:var(--error);border-color:rgba(239,68,68,.3)}
+.mac-console-status.connected{color:var(--success);border-color:rgba(29,158,117,.3)}
+.mac-console-status.error{color:var(--error);border-color:rgba(226,75,74,.3)}
 .mac-console-toolbar{
   display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 14px;
   border-bottom:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.15);flex-shrink:0;
@@ -1767,15 +1767,15 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
 }
 
 .drift-badge{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700;vertical-align:middle}
-.drift-badge.sync{background:rgba(34,197,94,.15);color:#15803d}
-.drift-badge.drift{background:rgba(234,179,8,.2);color:#92400e}
+.drift-badge.sync{background:rgba(29,158,117,.15);color:#15803d}
+.drift-badge.drift{background:rgba(239,159,39,.2);color:#92400e}
 .drift-badge.na{background:rgba(148,163,184,.15);color:#6b7280}
 .cluster-context-bar{display:none;padding:8px 20px;background:var(--bg-secondary);border-bottom:1px solid var(--border);font-size:.82rem}
 .cluster-context-bar.visible{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .cluster-context-meta{color:var(--text-muted)}
 .catalog-banner{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:.88rem;line-height:1.45}
-.catalog-banner.ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#166534}
-.catalog-banner.warn{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.28);color:#92400e}
+.catalog-banner.ok{background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.25);color:#166534}
+.catalog-banner.warn{background:rgba(239,159,39,.12);border:1px solid rgba(239,159,39,.28);color:#92400e}
 .detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
 .detail-section{
   background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
@@ -2053,9 +2053,9 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   font-family:inherit;
 }
 .dc-cc-chip.clickable:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,.2)}
-.dc-cc-chip.ok{border-color:rgba(34,197,94,.28);color:var(--success)}
+.dc-cc-chip.ok{border-color:rgba(29,158,117,.28);color:var(--success)}
 .dc-cc-chip.warn{border-color:rgba(251,191,36,.35);color:var(--warning)}
-.dc-cc-chip.error{border-color:rgba(239,68,68,.35);color:var(--error)}
+.dc-cc-chip.error{border-color:rgba(226,75,74,.35);color:var(--error)}
 .clickable-stat{cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s}
 .clickable-stat:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.22)}
 button.glass-stat-pill.clickable-stat{text-align:left;width:100%;font-family:inherit;color:inherit}
@@ -2100,7 +2100,7 @@ button.dc-stat-tile.clickable-stat{border:none;font-family:inherit;color:inherit
 .dc-briefing-item:hover{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.04)}
 .dc-briefing-item.info{border-color:rgba(245,158,11,.2)}
 .dc-briefing-item.warn{border-color:rgba(251,191,36,.35)}
-.dc-briefing-item.error{border-color:rgba(239,68,68,.35)}
+.dc-briefing-item.error{border-color:rgba(226,75,74,.35)}
 .dc-briefing-title{font-size:.86rem;font-weight:600}
 .dc-briefing-detail{font-size:.78rem;color:var(--text-dim);line-height:1.4}
 .dc-section-label{font-size:.78rem;font-weight:600;color:var(--text-dim);margin-bottom:10px}
@@ -2234,7 +2234,7 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-ctx-item{display:flex;align-items:center;gap:9px;padding:6px 14px;color:var(--text-primary);cursor:pointer;user-select:none;white-space:nowrap;border-radius:0;transition:background .1s}
 .vmr-ctx-item:hover{background:rgba(255,255,255,.08)}
 .vmr-ctx-item.danger{color:#f87171}
-.vmr-ctx-item.danger:hover{background:rgba(239,68,68,.13)}
+.vmr-ctx-item.danger:hover{background:rgba(226,75,74,.13)}
 .vmr-ctx-icon{width:18px;text-align:center;font-size:.85rem;flex-shrink:0;opacity:.8}
 .vmr-ctx-sep{height:1px;background:rgba(255,255,255,.08);margin:3px 0}
 .vmr-ctx-header{padding:5px 14px 3px;font-size:.68rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
@@ -2246,7 +2246,7 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-hover-card-val{color:var(--text-primary);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
 .vmr-ambient{position:fixed;inset:0;z-index:0;pointer-events:none;transition:box-shadow 2s ease;border-radius:0}
 .vmr-ambient.warn{box-shadow:inset 0 0 80px rgba(245,158,11,.08),inset 0 0 180px rgba(245,158,11,.04)}
-.vmr-ambient.critical{box-shadow:inset 0 0 80px rgba(239,68,68,.12),inset 0 0 180px rgba(239,68,68,.06);animation:vmr-ambient-pulse 3s ease-in-out infinite}
+.vmr-ambient.critical{box-shadow:inset 0 0 80px rgba(226,75,74,.12),inset 0 0 180px rgba(226,75,74,.06);animation:vmr-ambient-pulse 3s ease-in-out infinite}
 @keyframes vmr-ambient-pulse{0%,100%{opacity:.7}50%{opacity:1}}
 .vmr-cmd-ac{position:absolute;bottom:calc(100% + 6px);left:0;min-width:300px;max-height:260px;overflow-y:auto;background:rgba(10,12,18,.98);border:1px solid rgba(245,158,11,.25);border-radius:10px;box-shadow:0 -6px 28px rgba(0,0,0,.7);backdrop-filter:blur(20px);z-index:1100;scrollbar-width:thin}
 .vmr-cmd-ac-item{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;cursor:pointer;transition:background .1s;font-size:.8rem}
@@ -2281,7 +2281,7 @@ body.vmr-fleet-full .vm-focus-pane{display:none!important}
 .vmr-ns-name{font-size:.78rem;font-weight:600;color:var(--text-primary);max-width:110px;overflow:hidden;text-overflow:ellipsis}
 .vmr-ns-stat{font-size:.68rem;color:var(--text-muted);margin-left:2px}
 .vmr-event-ticker{position:fixed;bottom:92px;left:0;right:0;z-index:180;height:28px;display:flex;align-items:center;gap:8px;background:rgba(10,12,18,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid rgba(255,255,255,.07);padding:0 10px 0 8px}
-.vmr-ticker-label{flex-shrink:0;font-size:.6rem;font-weight:700;letter-spacing:.12em;color:var(--ember);background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:3px;padding:1px 5px;line-height:1.4;animation:vmr-live-blink 2s ease-in-out infinite}
+.vmr-ticker-label{flex-shrink:0;font-size:.6rem;font-weight:700;letter-spacing:.12em;color:var(--ember);background:rgba(226,75,74,.15);border:1px solid rgba(226,75,74,.3);border-radius:3px;padding:1px 5px;line-height:1.4;animation:vmr-live-blink 2s ease-in-out infinite}
 @keyframes vmr-live-blink{0%,100%{opacity:1}50%{opacity:.45}}
 .vmr-ticker-track-wrap{flex:1;overflow:hidden;height:100%;display:flex;align-items:center;position:relative}
 .vmr-ticker-track{display:flex;align-items:center;gap:12px;white-space:nowrap;animation:vmr-ticker-scroll 60s linear infinite;will-change:transform}
@@ -2520,9 +2520,9 @@ body.mac-desktop-root .cloudos-main{padding-bottom:120px}
   font-size:.68rem;border:1px solid var(--border);margin-left:6px;
   background:transparent;color:inherit;cursor:pointer;font-family:inherit;
 }
-.vm-health-pill.good{color:var(--success);border-color:rgba(34,197,94,.25)}
+.vm-health-pill.good{color:var(--success);border-color:rgba(29,158,117,.25)}
 .vm-health-pill.fair{color:var(--warning);border-color:rgba(251,191,36,.3)}
-.vm-health-pill.bad{color:var(--error);border-color:rgba(239,68,68,.3)}
+.vm-health-pill.bad{color:var(--error);border-color:rgba(226,75,74,.3)}
 @media(max-width:1100px){
   .refresh-text{display:none}
 }
@@ -2748,7 +2748,7 @@ body.vm-focus-active .mac-inspector-header{display:flex}
   width:26px;height:26px;border-radius:8px;border:1px solid var(--glass-border);
   background:rgba(255,255,255,.06);color:var(--text-muted);cursor:pointer;font-size:1.1rem;line-height:1;
 }
-.mac-inspector-close:hover{background:rgba(239,68,68,.15);color:var(--error);border-color:rgba(239,68,68,.3)}
+.mac-inspector-close:hover{background:rgba(226,75,74,.15);color:var(--error);border-color:rgba(226,75,74,.3)}
 .vm-focus-back.mac-console-back{
   display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;
   border:1px solid var(--glass-border);background:rgba(255,255,255,.06);
@@ -3137,7 +3137,7 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
   border:none;background:transparent;color:var(--text-dim);cursor:pointer;
   font-size:.95rem;line-height:1;border-radius:0 8px 0 0;font-family:inherit;
 }
-.mac-desktop-tab-close:hover{background:rgba(239,68,68,.15);color:var(--error)}
+.mac-desktop-tab-close:hover{background:rgba(226,75,74,.15);color:var(--error)}
 .mac-menubar-clock{
   font-size:.72rem;font-weight:500;color:var(--text-dim);white-space:nowrap;
   padding:0 8px;font-variant-numeric:tabular-nums;
@@ -3307,12 +3307,12 @@ body.mac-desktop-root[data-wallpaper="solar"]::before{
 body.mac-desktop-root[data-wallpaper="matrix"]::before{
   background:
     radial-gradient(ellipse 100% 80% at 50% 120%, rgba(0,40,20,.5), transparent 60%),
-    radial-gradient(ellipse 40% 35% at 50% 30%, rgba(34,197,94,.18), transparent 50%);
+    radial-gradient(ellipse 40% 35% at 50% 30%, rgba(29,158,117,.18), transparent 50%);
 }
 body.mac-desktop-root[data-wallpaper="matrix"] .container::before{
   background-image:
-    linear-gradient(rgba(34,197,94,.08) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(34,197,94,.06) 1px,transparent 1px);
+    linear-gradient(rgba(29,158,117,.08) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(29,158,117,.06) 1px,transparent 1px);
   background-size:24px 24px;opacity:.35;
 }
 body.mac-desktop-root[data-wallpaper="ember-glow"]::before{
@@ -3532,6 +3532,79 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .id-gauge .id-read{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
 .id-gauge .id-read .id-v{font-family:var(--sans-deck);font-size:30px;font-weight:700;letter-spacing:-1px}
 .id-gauge .id-read .id-l{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+
+/* ════════════════════════════════════════════════════════════════
+   INSTRUMENT DECK — Global bridge: align ALL existing component
+   classes to the signal token system. Zero HTML changes needed.
+   ════════════════════════════════════════════════════════════════ */
+
+/* — VM status dots — */
+.vm-dot.error{background:var(--critical);box-shadow:0 0 8px rgba(226,75,74,.4)}
+.vm-dot.other{background:var(--caution);box-shadow:0 0 8px rgba(239,159,39,.3)}
+.vm-dot.stopped{background:var(--inert);box-shadow:none}
+
+/* — glass-badge pills — */
+.glass-badge{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+.glass-badge.running{background:var(--nominal-bg);color:var(--nominal);border-color:rgba(29,158,117,.28)}
+.glass-badge.error{background:var(--critical-bg);color:var(--critical);border-color:rgba(226,75,74,.28)}
+.glass-badge.stopped{background:var(--inert-bg);color:var(--ink-2);border-color:var(--hairline)}
+
+/* — vm-badge — */
+.vm-badge{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+.vm-badge.running{background:var(--nominal-bg);color:var(--nominal);border-color:rgba(29,158,117,.22)}
+.vm-badge.error,.vm-badge.failed{background:var(--critical-bg);color:var(--critical);border-color:rgba(226,75,74,.22)}
+.vm-badge.stopped,.vm-badge.paused{background:var(--inert-bg);color:var(--ink-2);border-color:var(--hairline)}
+.vm-badge.pending{background:var(--caution-bg);color:var(--caution);border-color:rgba(239,159,39,.22)}
+
+/* — vd-status-pill — */
+.vd-status-pill{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:.5px;text-transform:uppercase}
+.vd-status-pill.running{background:var(--nominal-bg);color:var(--nominal);border-color:rgba(29,158,117,.3)}
+.vd-status-pill.error,.vd-status-pill.failed{background:var(--critical-bg);color:var(--critical);border-color:rgba(226,75,74,.28)}
+.vd-status-pill.stopped,.vd-status-pill.paused{background:var(--inert-bg);color:var(--ink-2);border-color:var(--hairline)}
+.vd-status-pill.other,.vd-status-pill.pending{background:var(--caution-bg);color:var(--caution);border-color:rgba(239,159,39,.28)}
+
+/* — vm-hero status block — */
+.vm-hero-status{font-family:'IBM Plex Mono',ui-monospace,monospace;letter-spacing:.5px;font-size:.72rem}
+.vm-hero-status.running{background:var(--nominal-bg);color:var(--nominal)}
+.vm-hero-status.error{background:var(--critical-bg);color:var(--critical)}
+.vm-hero-status.stopped{background:var(--inert-bg);color:var(--ink-2)}
+.vm-hero-status.other{background:var(--caution-bg);color:var(--caution)}
+
+/* — event dots — */
+.event-dot.warn{background:var(--caution);box-shadow:0 0 6px rgba(239,159,39,.3)}
+.event-dot.error{background:var(--critical);box-shadow:0 0 6px rgba(226,75,74,.3)}
+
+/* — badge-green / badge-red helpers — */
+.badge-green{background:var(--nominal-bg);color:var(--nominal);border:1px solid rgba(29,158,117,.22)}
+.badge-red,.badge-error{background:var(--critical-bg);color:var(--critical);border:1px solid rgba(226,75,74,.22)}
+.badge-warn{background:var(--caution-bg);color:var(--caution);border:1px solid rgba(239,159,39,.22)}
+
+/* — nav-dot — */
+.nav-dot.ok{background:var(--nominal);box-shadow:0 0 8px rgba(29,158,117,.35)}
+.nav-dot.warn{background:var(--caution);box-shadow:0 0 8px rgba(239,159,39,.35)}
+.nav-dot.error{background:var(--critical);box-shadow:0 0 8px rgba(226,75,74,.35)}
+
+/* — toast — */
+.toast-success .toast-icon{background:rgba(29,158,117,.15);color:var(--nominal)}
+.toast-error .toast-icon{background:rgba(226,75,74,.15);color:var(--critical)}
+.toast-warning .toast-icon{background:rgba(239,159,39,.15);color:var(--caution)}
+
+/* — glow-success — */
+--glow-success:0 0 12px rgba(29,158,117,.2);
+
+/* — vmr-chip-dot signals — */
+.vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
+
+/* — compliance / score bar colors — */
+.score-high{color:var(--nominal)} .score-med{color:var(--caution)} .score-low{color:var(--critical)}
+
+/* — Cards: ensure panel background + hairline border everywhere — */
+.zeus-glass,.glass-card,.card-panel{border-color:var(--hairline)}
+.glass-card,.card-panel{background:var(--panel)}
+
+/* — Metric / KPI typography — */
+.stat-value,.metric-value,.kpi-value{font-family:'IBM Plex Mono',ui-monospace,monospace;font-feature-settings:"tnum"}
+.stat-label,.metric-label,.kpi-label{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto">
@@ -9783,7 +9856,7 @@ function renderNsOverview() {
     ['all'].concat(nsNames).map(function(ns) {
       var d = ns === 'all' ? null : nsMap[ns];
       var isActive = ns === activeNs || (ns === 'all' && activeNs === 'all');
-      var dotColor = !d ? 'rgba(255,255,255,.3)' : (d.running === d.total && d.total > 0 ? VMR_SIG.ok : d.running > 0 ? '#f59e0b' : 'rgba(255,255,255,.25)');
+      var dotColor = !d ? 'rgba(255,255,255,.3)' : (d.running === d.total && d.total > 0 ? VMR_SIG.ok : d.running > 0 ? VMR_SIG.warn : 'rgba(255,255,255,.25)');
       var label = ns === 'all' ? 'All' : ns;
       var stat = d ? (d.running + '/' + d.total + ' running') : (vms.length + ' total');
       var nsAccent = (ns !== 'all') ? nsBadgeColor(ns) : 'rgba(255,255,255,.2)';
@@ -9973,7 +10046,7 @@ function renderStatusBoard() {
     failed:   { bg: 'rgba(127,29,29,.85)',  border: '#f87171', text: '#fca5a5' },
     error:    { bg: 'rgba(127,29,29,.85)',  border: '#f87171', text: '#fca5a5' },
     starting: { bg: 'rgba(6,78,59,.85)',    border: '#34d399', text: '#6ee7b7' },
-    stopping: { bg: 'rgba(69,26,3,.85)',    border: '#f59e0b', text: '#fde68a' },
+    stopping: { bg: 'rgba(69,26,3,.85)',    border: VMR_SIG.warn, text: '#fde68a' },
     pending:  { bg: 'rgba(49,46,129,.85)',  border: '#818cf8', text: '#c7d2fe' },
     paused:   { bg: 'rgba(76,29,149,.85)',  border: '#c084fc', text: '#e9d5ff' },
   };
@@ -10395,7 +10468,7 @@ function renderFleetSparkline() {
   var maxTotal = Math.max.apply(null, data.map(function(d) { return d.total; })) || 1;
   var pts = data.map(function(d, i) { return { x: (i / (data.length - 1 || 1)) * W, y: H - (d.running / maxTotal) * (H - 2) - 1 }; });
   var lastPct = data[data.length - 1].running / (data[data.length - 1].total || 1);
-  var color = lastPct >= 0.9 ? VMR_SIG.ok : lastPct >= 0.6 ? '#f59e0b' : VMR_SIG.crit;
+  var color = lastPct >= 0.9 ? VMR_SIG.ok : lastPct >= 0.6 ? VMR_SIG.warn : VMR_SIG.crit;
   ctx.beginPath();
   ctx.moveTo(0, H);
   pts.forEach(function(p) { ctx.lineTo(p.x, p.y); });
@@ -10674,7 +10747,7 @@ function updateFleetMoodEmoji(running, total, failed) {
   if (!mood) return;
   if (!total) { mood.innerHTML = ''; mood.title = 'Fleet health: no VMs'; return; }
   var score = computeFleetHealthScore(vmData || []);
-  var color = score >= 80 ? VMR_SIG.ok : score >= 55 ? '#f59e0b' : VMR_SIG.crit;
+  var color = score >= 80 ? VMR_SIG.ok : score >= 55 ? VMR_SIG.warn : VMR_SIG.crit;
   var emoji = score >= 80 ? '▲' : score >= 55 ? '▲' : '▼';
   var tip = 'Fleet health score: ' + score + '/100 — running ' + running + '/' + total + (failed ? ', ' + failed + ' failed' : '');
   mood.title = tip;
@@ -10881,7 +10954,7 @@ function renderFleetPinnedStrip() {
     pins.map(function(p) {
       var vm = (vmData || []).find(function(v) { return v.name === p.name && (v.namespace || 'default') === p.ns; });
       var s = vm ? (vm.status || 'unknown').toLowerCase() : 'unknown';
-      var dotColor = s === 'running' ? VMR_SIG.ok : s === 'stopped' ? '#94a3b8' : '#f59e0b';
+      var dotColor = s === 'running' ? VMR_SIG.ok : s === 'stopped' ? '#94a3b8' : VMR_SIG.warn;
       var label = p.ns !== 'default' ? (p.ns + '/' + p.name) : p.name;
       return '<span class="vmr-pin-chip" onclick="selectVm(' + jsArgs(p.ns, p.name) + ',{})" title="' + esc(p.ns + '/' + p.name) + '">' +
         '<span class="vmr-pin-dot" style="background:' + dotColor + '"></span>' +
@@ -11031,7 +11104,7 @@ function vmGenomeStrip(vm) {
   var mem = parseMemGiB(vm.memory) || 0;
   var memCol = mem >= 64 ? '#f87171' : mem >= 16 ? '#fb923c' : mem >= 8 ? '#60a5fa' : '#94a3b8';
   var st = (vm.status || '').toLowerCase();
-  var stCol = st === 'running' ? VMR_SIG.ok : st === 'stopped' ? '#64748b' : st === 'failed' || st === 'error' ? VMR_SIG.crit : '#f59e0b';
+  var stCol = st === 'running' ? VMR_SIG.ok : st === 'stopped' ? '#64748b' : st === 'failed' || st === 'error' ? VMR_SIG.crit : VMR_SIG.warn;
   return '<span class="vmr-genome" title="Genome: ' + guessOsFamily(vm) + ' · ' + (vm.cpu||'?') + ' · ' + (vm.memory||'?') + ' · ' + (vm.status||'?') + '">' +
     '<span style="background:' + osCol  + ';flex:1"></span>' +
     '<span style="background:' + cpuCol + ';flex:1"></span>' +
@@ -12765,7 +12838,7 @@ function drawHeadroomGauge(canvasId, labelId, usedFrac, usedLabel, totalLabel) {
   var cx = W / 2, cy = H - 8, r = 58;
   var startAngle = Math.PI, endAngle = 2 * Math.PI;
   var pct = Math.min(1, Math.max(0, usedFrac));
-  var color = pct < 0.7 ? VMR_SIG.ok : pct < 0.85 ? '#f59e0b' : VMR_SIG.crit;
+  var color = pct < 0.7 ? VMR_SIG.ok : pct < 0.85 ? VMR_SIG.warn : VMR_SIG.crit;
   // Background arc
   ctx.beginPath(); ctx.arc(cx, cy, r, startAngle, endAngle);
   ctx.strokeStyle = 'rgba(255,255,255,.08)'; ctx.lineWidth = 10; ctx.lineCap = 'round'; ctx.stroke();
@@ -15019,8 +15092,8 @@ async function fetchEvents(full, opts) {
         filterBar.innerHTML =
           '<div class="vmr-filter-chips" style="margin-bottom:4px">' +
           '<button type="button" class="vmr-chip vmr-chip-active" data-evfilter="all" onclick="filterEventsView(\'all\',this)">All</button>' +
-          '<button type="button" class="vmr-chip" data-evfilter="Warning" onclick="filterEventsView(\'Warning\',this)"><span class="vmr-chip-dot" style="background:#f59e0b"></span>Warnings</button>' +
-          '<button type="button" class="vmr-chip" data-evfilter="Normal" onclick="filterEventsView(\'Normal\',this)"><span class="vmr-chip-dot" style="background:#22c55e"></span>Normal</button>' +
+          '<button type="button" class="vmr-chip" data-evfilter="Warning" onclick="filterEventsView(\'Warning\',this)"><span class="vmr-chip-dot" style="background:'+VMR_SIG.warn+'"></span>Warnings</button>' +
+          '<button type="button" class="vmr-chip" data-evfilter="Normal" onclick="filterEventsView(\'Normal\',this)"><span class="vmr-chip-dot" style="background:'+VMR_SIG.ok+'"></span>Normal</button>' +
           '</div>';
       }
       if (typeof renderEventIntelligenceVmr === 'function') renderEventIntelligenceVmr();
@@ -17357,7 +17430,7 @@ function loadVmEventHistory(ns, name) {
     '<div style="font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Recent Events</div>' +
     events.map(function(ev) {
       var isWarn = ev.type === 'Warning';
-      var dotColor = isWarn ? '#f59e0b' : VMR_SIG.ok;
+      var dotColor = isWarn ? VMR_SIG.warn : VMR_SIG.ok;
       var msg = (ev.reason ? ev.reason + ': ' : '') + (ev.message || '').slice(0, 80);
       var ts = ev.timestamp ? timeAgo(ev.timestamp) : '';
       return '<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
@@ -18728,7 +18801,7 @@ function updateFleetCapacityBar() {
   var cpuPct = Math.min(100, Math.round(totalCpu / cap.cpu * 100));
   var memPct = Math.min(100, Math.round(totalMem / cap.mem * 100));
   function bar(pct, used, total, unit, id) {
-    var color = pct > 85 ? VMR_SIG.crit : pct > 65 ? '#f59e0b' : VMR_SIG.ok;
+    var color = pct > 85 ? VMR_SIG.crit : pct > 65 ? VMR_SIG.warn : VMR_SIG.ok;
     return '<div id="' + id + '" style="display:flex;align-items:center;gap:6px">' +
       '<span style="font-size:.65rem;color:var(--text-muted);width:28px;flex-shrink:0">' + unit + '</span>' +
       '<div style="flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden">' +
@@ -18882,7 +18955,7 @@ function renderGroupedVmList(vms) {
   result.groups.forEach(function(g) {
     var collapsed = !!_vmGroupCollapsed[g.prefix];
     var running = g.vms.filter(function(v) { return v.status === 'Running'; }).length;
-    var statusColor = running === g.vms.length ? VMR_SIG.ok : running > 0 ? '#f59e0b' : '#64748b';
+    var statusColor = running === g.vms.length ? VMR_SIG.ok : running > 0 ? VMR_SIG.warn : '#64748b';
     html += '<div class="vmr-vmgroup">' +
       '<div class="vmr-vmgroup-header" onclick="toggleVmGroup(' + JSON.stringify(g.prefix) + ')">' +
       '<span class="vmr-vmgroup-chevron">' + (collapsed ? '▸' : '▾') + '</span>' +
@@ -19244,7 +19317,7 @@ function renderFleetAnomalyRibbon() {
   if (!el) return;
   var anomalies = detectFleetAnomalies(vmData);
   if (!anomalies.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
-  var sevColor = { warn: '#f59e0b', critical: VMR_SIG.crit, info: '#38bdf8' };
+  var sevColor = { warn: VMR_SIG.warn, critical: VMR_SIG.crit, info: '#38bdf8' };
   var sevBg    = { warn: 'rgba(245,158,11,.1)', critical: 'rgba(239,68,68,.1)', info: 'rgba(56,189,248,.08)' };
   el.style.display = 'block';
   el.innerHTML = '<div style="padding:0 14px 6px;display:flex;flex-direction:column;gap:5px">' +
@@ -22483,7 +22556,7 @@ async function vfoLoad() {
     vm = unwrapData(vm) || vm;
     var status = vm.status || 'Unknown';
     var running = status === 'Running';
-    var dotColor = running ? VMR_SIG.ok : status === 'Stopped' ? '#94a3b8' : '#f59e0b';
+    var dotColor = running ? VMR_SIG.ok : status === 'Stopped' ? '#94a3b8' : VMR_SIG.warn;
     document.getElementById('vfo-status-dot').style.background = dotColor;
     document.getElementById('vfo-status').textContent = status;
     var startBtn = document.getElementById('vfo-start-btn'); if (startBtn) startBtn.style.display = running ? 'none' : '';
