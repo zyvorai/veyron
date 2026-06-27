@@ -3649,6 +3649,38 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .vm-view-toggle button:hover{border-color:var(--hairline-hi)!important;color:var(--ink)!important}
 .vm-view-toggle button.active{background:var(--plasma-glow)!important;color:var(--plasma)!important;border-color:var(--plasma-line)!important}
 
+/* ── vCentre design layer ─────────────────────────────────────── */
+:root{--vc-bg:#0a0a0a;--vc-cyan:#00f5ff;--vc-magenta:#ff00aa;--vc-glass:rgba(255,255,255,0.05);--vc-glass-border:rgba(255,255,255,0.10);--vc-run:#10b981;--vc-run-bg:rgba(16,185,129,0.10);--vc-run-border:rgba(16,185,129,0.30)}
+#page-vcentre{background:var(--vc-bg);min-height:100vh}
+.vc-card{background:var(--vc-glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--vc-glass-border);border-radius:24px;padding:24px;cursor:pointer;transition:transform .4s cubic-bezier(.4,0,.2,1),box-shadow .4s}
+.vc-card:hover{transform:translateY(-6px) scale(1.02);box-shadow:0 25px 50px -12px rgba(0,245,255,.15)}
+.vc-card.vc-running{border-color:var(--vc-run-border)}
+.vc-card.vc-crit{border-color:rgba(226,75,74,.35)}
+.vc-badge-run{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:var(--vc-run-bg);color:var(--vc-run);border:1px solid var(--vc-run-border);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
+.vc-badge-run .vc-dot{width:6px;height:6px;border-radius:50%;background:var(--vc-run);animation:vc-ping 2s cubic-bezier(0,0,.2,1) infinite}
+.vc-badge-stop{display:inline-flex;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(255,255,255,.08);color:rgba(255,255,255,.45);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
+.vc-badge-crit{display:inline-flex;align-items:center;gap:6px;padding:4px 14px;font-size:10px;font-family:'IBM Plex Mono',monospace;background:rgba(226,75,74,.10);color:#E24B4A;border:1px solid rgba(226,75,74,.30);border-radius:99px;text-transform:uppercase;letter-spacing:.5px}
+@keyframes vc-ping{75%,100%{transform:scale(2.2);opacity:0}}
+.vc-bar-track{height:6px;background:rgba(255,255,255,.10);border-radius:99px;overflow:hidden;margin-top:6px}
+.vc-bar-cpu{height:100%;background:linear-gradient(90deg,var(--vc-cyan),#22d3ee);border-radius:99px;transition:width .6s ease}
+.vc-bar-mem{height:100%;background:linear-gradient(90deg,var(--vc-magenta),#f472b6);border-radius:99px;transition:width .6s ease}
+.vc-btn-primary{background:linear-gradient(90deg,var(--vc-cyan),#22d3ee);color:#000;font-weight:700;padding:11px 22px;border-radius:16px;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.5px;transition:filter .15s}
+.vc-btn-primary:hover{filter:brightness(1.1)}
+.vc-btn-stop{background:rgba(239,68,68,.10);color:#f87171;border:1px solid rgba(239,68,68,.30);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:background .15s}
+.vc-btn-stop:hover{background:rgba(239,68,68,.20)}
+.vc-btn-start{background:var(--vc-run);color:#000;border:none;padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;font-weight:600;cursor:pointer;transition:filter .15s}
+.vc-btn-start:hover{filter:brightness(1.1)}
+.vc-btn-ghost{background:rgba(255,255,255,.05);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);padding:11px 18px;border-radius:16px;font-size:12px;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:border-color .15s}
+.vc-btn-ghost:hover{border-color:rgba(255,255,255,.35)}
+#vc-detail-panel{position:fixed;right:0;top:0;bottom:0;width:320px;background:rgba(0,0,0,.96);border-left:1px solid rgba(255,255,255,.10);padding:24px;overflow-y:auto;z-index:300;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+#vc-detail-panel.open{transform:translateX(0)}
+.vc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px}
+.vc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.vc-header h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:600;letter-spacing:-.3px;color:#fff;margin:0}
+.vc-header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.vc-stat{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 14px;border-radius:99px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.04);color:rgba(255,255,255,.55)}
+.vc-stat.ok{border-color:var(--vc-run-border);color:var(--vc-run)}
+
 /* — vmr-chip-dot signals — */
 .vmr-chip-dot{border-radius:50%;display:inline-block;width:7px;height:7px}
 .vmr-chip-dot.running{background:var(--nominal);box-shadow:0 0 5px var(--nominal)}
@@ -4158,6 +4190,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon"><i data-lucide="server"></i></span>Fleet Command</button>
       <button type="button" class="cloudos-finder-item" data-page="fleet-constellation" onclick="finderNavigate('fleet-constellation')"><span class="fi-icon"><i data-lucide="orbit"></i></span>Fleet Constellation</button>
       <button type="button" class="cloudos-finder-item" data-page="gallery-wall" onclick="finderNavigate('gallery-wall')"><span class="fi-icon"><i data-lucide="layout-grid"></i></span>Gallery Wall</button>
+      <button type="button" class="cloudos-finder-item" data-page="vcentre" onclick="finderNavigate('vcentre')"><span class="fi-icon"><i data-lucide="zap"></i></span>vCentre</button>
       <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon"><i data-lucide="package"></i></span>Template Foundry</button>
       <button type="button" class="cloudos-finder-item" data-page="console-hub" onclick="finderNavigate('console-hub')"><span class="fi-icon"><i data-lucide="monitor"></i></span>ConsoleHub</button>
       <button type="button" class="cloudos-finder-item" data-page="vm-capsule" onclick="finderNavigate('vm-capsule')"><span class="fi-icon"><i data-lucide="box"></i></span>VM Capsule</button>
@@ -4198,6 +4231,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon"><i data-lucide="layers"></i></span>Workloads</button>
       <button type="button" class="cloudos-finder-item" data-page="fleet-constellation" onclick="finderNavigate('fleet-constellation')"><span class="fi-icon"><i data-lucide="orbit"></i></span>Fleet Constellation</button>
       <button type="button" class="cloudos-finder-item" data-page="gallery-wall" onclick="finderNavigate('gallery-wall')"><span class="fi-icon"><i data-lucide="layout-grid"></i></span>Gallery Wall</button>
+      <button type="button" class="cloudos-finder-item" data-page="vcentre" onclick="finderNavigate('vcentre')"><span class="fi-icon"><i data-lucide="zap"></i></span>vCentre</button>
       <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon"><i data-lucide="camera"></i></span>Snapshots</button>
       <button type="button" class="cloudos-finder-item" data-page="storage" onclick="finderNavigate('storage')"><span class="fi-icon"><i data-lucide="hard-drive"></i></span>Storage</button>
     </div>
@@ -6669,6 +6703,34 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   </div>
 </div>
 
+<!-- vCentre page -->
+<div class="page section-shell" id="page-vcentre" data-section="compute">
+<div class="space-y animate-fade-in" style="padding:28px">
+  <div class="vc-header">
+    <div>
+      <h1>vCentre</h1>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:rgba(255,255,255,0.35);margin-top:4px">active workloads — live metrics</div>
+    </div>
+    <div class="vc-header-right">
+      <span class="vc-stat ok" id="vc-running-count"></span>
+      <span class="vc-stat" id="vc-stopped-count"></span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.25)" id="vc-last-updated"></span>
+      <button type="button" class="vc-btn-primary" onclick="navigate('create-vm')">&#9889; FORGE VM</button>
+    </div>
+  </div>
+  <div class="vc-grid" id="vc-grid"><!-- populated by JS --></div>
+</div>
+</div>
+
+<!-- vCentre right detail panel (global overlay) -->
+<div id="vc-detail-panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <h2 id="vc-dp-name" style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;word-break:break-all;color:#fff;margin:0"></h2>
+    <button type="button" onclick="vcCloseDetail()" style="background:none;border:none;color:rgba(255,255,255,0.4);font-size:18px;cursor:pointer;padding:4px">&#x2715;</button>
+  </div>
+  <div id="vc-dp-body"></div>
+</div>
+
 <!-- VNC — macOS Screen Sharing style -->
 <div class="console-drawer-overlay mac-console-overlay" id="vnc-modal" role="dialog" aria-modal="true" aria-label="Remote screen sharing">
   <div class="mac-console-window console-drawer-panel" id="vnc-window" onclick="event.stopPropagation()">
@@ -7502,6 +7564,7 @@ function navigate(page, opts) {
       }
     }
   }
+  if (currentPage === 'vcentre' && page !== 'vcentre' && window.vcCloseDetail) vcCloseDetail();
   currentPage = page;
   document.title = (page === 'dashboard' ? '' : navPageLabel(page) + ' — ') + 'Veyron';
   if (desktopTier === 'auto') applyDesktopTierUi(uiTierForPage(page));
@@ -8003,6 +8066,7 @@ function loadPageData(page, opts) {
   }
   if (page === 'fleet-constellation') initFleetConstellation();
   if (page === 'gallery-wall') initGalleryWall();
+  if (page === 'vcentre') { fetchVMs(opts); setTimeout(function(){ if(window.initVCentre) initVCentre(); }, 100); }
 }
 
 // ── Topology Surface (vCenter killer) ───────────────────────
@@ -8689,6 +8753,113 @@ function loadPageData(page, opts) {
     setInterval(fetchGalleryWall, 20000);
     fetchGalleryWall();
     requestAnimationFrame(loop);
+  };
+})();
+
+/* ── vCentre page ────────────────────────────────────────────── */
+(function() {
+  var _vcInited = false;
+  var _vcInterval = null;
+
+  function vcBadge(vm) {
+    var s = (vm.status || '').toLowerCase();
+    if (s === 'running') return '<span class="vc-badge-run"><span class="vc-dot"></span>RUNNING</span>';
+    if (s === 'failed' || s === 'error') return '<span class="vc-badge-crit">&#8855; ' + esc(vm.status.toUpperCase()) + '</span>';
+    return '<span class="vc-badge-stop">' + esc((vm.status || 'stopped').toUpperCase()) + '</span>';
+  }
+
+  function vcBar(cls, pct) {
+    return '<div class="vc-bar-track"><div class="' + cls + '" style="width:' + Math.max(0, Math.min(100, pct || 0)) + '%"></div></div>';
+  }
+
+  function vcCard(vm) {
+    var ns = vm.namespace || 'default';
+    var running = (vm.status || '').toLowerCase() === 'running';
+    var failed = (vm.status || '').toLowerCase() === 'failed';
+    var cpu = Math.round(vm.cpu_utilization || 0);
+    var mem = Math.round(vm.memory_utilization || 0);
+    var cardCls = 'vc-card' + (running ? ' vc-running' : failed ? ' vc-crit' : '');
+    var actionBtn = running
+      ? '<button type="button" class="vc-btn-stop" onclick="event.stopPropagation();vmAction(' + jsArgs(ns,vm.name,'stop') + ',event)">Stop</button>'
+      : '<button type="button" class="vc-btn-start" onclick="event.stopPropagation();vmAction(' + jsArgs(ns,vm.name,'start') + ',event)">Start</button>';
+    return '<div class="' + cardCls + '" onclick="vcOpenDetail(' + jsArgs(ns,vm.name) + ')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">' + vcBadge(vm) +
+      '<button type="button" class="vc-btn-ghost" style="padding:7px 14px;font-size:11px" onclick="event.stopPropagation();vcOpenDetail(' + jsArgs(ns,vm.name) + ')">Details</button></div>' +
+      '<div style="margin-bottom:4px;font-family:\'Space Grotesk\',sans-serif;font-size:16px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(vm.name) + '</div>' +
+      '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:20px">' + esc(vm.ip||'—') + ' · ' + esc(vm.cpu||'?') + ' · ' + esc(vm.memory||'?') + '</div>' +
+      (running ? '<div style="margin-bottom:14px">' +
+        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:4px"><span>CPU</span><span style="color:var(--vc-cyan)">' + cpu + '%</span></div>' + vcBar('vc-bar-cpu', cpu) +
+        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-top:10px;margin-bottom:4px"><span>Memory</span><span style="color:var(--vc-magenta)">' + mem + '%</span></div>' + vcBar('vc-bar-mem', mem) +
+      '</div>' : '<div style="height:60px"></div>') +
+      '<div style="display:flex;gap:10px">' + actionBtn +
+      '<button type="button" class="vc-btn-ghost" style="flex:1" onclick="event.stopPropagation();openConnectModal(' + jsArgs(ns,vm.name) + ')">Console</button></div></div>';
+  }
+
+  function vcRender() {
+    var grid = document.getElementById('vc-grid');
+    if (!grid || document.body.dataset.page !== 'vcentre') return;
+    var vms = window.vmData || [];
+    if (!vms.length) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 0;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:rgba(255,255,255,0.3)">No VMs found. Check namespace filter or API connectivity.</div>';
+    } else {
+      grid.innerHTML = vms.map(vcCard).join('');
+    }
+    var runN = vms.filter(function(v){ return (v.status||'').toLowerCase()==='running'; }).length;
+    var runEl = document.getElementById('vc-running-count');
+    var stopEl = document.getElementById('vc-stopped-count');
+    if (runEl) runEl.textContent = '● ' + runN + ' running';
+    if (stopEl) stopEl.textContent = '○ ' + (vms.length - runN) + ' stopped';
+    var upd = document.getElementById('vc-last-updated');
+    if (upd) upd.textContent = 'updated just now';
+  }
+  window.vcRender = vcRender;
+
+  window.vcOpenDetail = function(ns, name) {
+    var panel = document.getElementById('vc-detail-panel');
+    if (!panel) return;
+    var vm = (window.vmData || []).find(function(v){ return v.name === name && (v.namespace || 'default') === ns; });
+    if (!vm) return;
+    var running = (vm.status || '').toLowerCase() === 'running';
+    var cpu = Math.round(vm.cpu_utilization || 0);
+    var mem = Math.round(vm.memory_utilization || 0);
+    document.getElementById('vc-dp-name').textContent = vm.name;
+    document.getElementById('vc-dp-body').innerHTML =
+      '<div style="margin-bottom:20px">' + vcBadge(vm) + '</div>' +
+      '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:18px;margin-bottom:20px">' +
+        [['IP', vm.ip||'—'],['vCPU', vm.cpu||'—'],['Memory', vm.memory||'—'],['Node', vm.node||'—'],['Namespace', ns]].map(function(r){
+          return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:#fff">' +
+            '<span style="color:rgba(255,255,255,.45)">' + r[0] + '</span>' +
+            '<span style="font-family:\'IBM Plex Mono\',monospace">' + esc(String(r[1])) + '</span></div>';
+        }).join('') + '</div>' +
+      (running ? '<div style="margin-bottom:20px">' +
+        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:6px"><span>CPU</span><span style="color:var(--vc-cyan)">' + cpu + '%</span></div>' + vcBar('vc-bar-cpu', cpu) +
+        '<div style="display:flex;justify-content:space-between;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:rgba(255,255,255,0.5);margin-top:12px;margin-bottom:6px"><span>Memory</span><span style="color:var(--vc-magenta)">' + mem + '%</span></div>' + vcBar('vc-bar-mem', mem) +
+      '</div>' : '') +
+      '<div style="display:flex;flex-direction:column;gap:10px">' +
+        '<button type="button" class="vc-btn-primary" style="text-align:center" onclick="openConnectModal(' + jsArgs(ns,name) + ')">&#8984; Open Console</button>' +
+        (running ? '<button type="button" class="vc-btn-stop" onclick="vmAction(' + jsArgs(ns,name,'stop') + ',event)">&#9632; Stop VM</button>'
+                 : '<button type="button" class="vc-btn-start" onclick="vmAction(' + jsArgs(ns,name,'start') + ',event)">&#9654; Start VM</button>') +
+        '<button type="button" class="vc-btn-ghost" onclick="openSnapModalFor(' + jsArgs(ns,name) + ')">&#8863; Snapshot</button>' +
+        '<button type="button" class="vc-btn-ghost" onclick="navigateToVmCapsule(' + jsArgs(ns,name) + ')">&#8862; Full Capsule &rarr;</button>' +
+      '</div>';
+    panel.classList.add('open');
+  };
+
+  window.vcCloseDetail = function() {
+    var panel = document.getElementById('vc-detail-panel');
+    if (panel) panel.classList.remove('open');
+  };
+
+  window.initVCentre = function() {
+    if (document.body.dataset.page !== 'vcentre') { vcCloseDetail(); return; }
+    if (!_vcInited) {
+      _vcInited = true;
+      _vcInterval = setInterval(function() {
+        if (document.body.dataset.page !== 'vcentre') return;
+        fetchVMs();
+      }, 5000);
+    }
+    vcRender();
   };
 })();
 
@@ -15586,6 +15757,7 @@ async function fetchVMs(opts) {
     requestNotifPermission();
     vmData = list;
     window.lastVMs = list;
+    if (currentPage === 'vcentre' && window.vcRender) vcRender();
     const total = vmData.length;
     const running = vmData.filter(v => v.status === 'Running').length;
     const stopped = vmData.filter(v => v.status === 'Stopped').length;
