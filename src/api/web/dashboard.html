@@ -5066,7 +5066,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="page-header-right">
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSecurityFindingsCsv()" title="Export findings as CSV">&#8595; CSV</button>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus('Auto-fix all security findings')">Fix All Issues</button>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSecurity()">Refresh</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSecurityPage()">Refresh</button>
   </div>
 </div>
 
@@ -9905,7 +9905,7 @@ async function loadNotificationCenterPreview() {
       '</button>';
     }).join('');
   } catch (e) {
-    list.innerHTML = '<div style="padding:8px;color:var(--critical)">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px" onclick="refreshNotificationList()">&#8635; Retry</button></div>';
+    list.innerHTML = '<div style="padding:8px;color:var(--critical)">' + esc(e.message || String(e)) + '<br><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:6px" onclick="loadNotificationCenterPreview()">&#8635; Retry</button></div>';
   }
 }
 
@@ -14072,9 +14072,10 @@ function renderCiliumVmr() {
   hero.innerHTML = '<div class="vmr-section-hero"><div class="vmr-hero-icon">🌿</div>' +
     '<div class="vmr-hero-text"><h1 class="vmr-hero-title">Cilium</h1>' +
     '<p class="vmr-hero-sub">' + polCount + ' network polic' + (polCount !== 1 ? 'ies' : 'y') +
-    (flowData ? ' · ' + allowed + ' allowed / ' + (denied > 0 ? '<span style="color:var(--error)">' + denied + ' denied</span>' : '0 denied') : '') + '</p></div>' +
+    (flowData ? ' · ' + allowed + ' allowed / ' + (denied > 0 ? '<span style="color:var(--critical)">' + denied + ' denied</span>' : '0 denied') : '') + '</p></div>' +
     '<div class="vmr-hero-actions"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchCilium()">↺ Refresh</button>' +
-    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-policies\')">K8s NetPol</button></div></div>';
+    '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'network-policies\')">K8s NetPol</button>' +
+    '<button type="button" id="cilium-packetwolf-open-hero" class="glass-btn-secondary glass-btn-sm" style="display:none" onclick="openPacketWolfUi()">PacketWolf ↗</button></div></div>';
 }
 
 async function fetchNetworkIntelData(opts) {
@@ -18649,7 +18650,7 @@ async function openVmCompare() {
       '</div>';
     body.innerHTML = html;
   } catch (e) {
-    body.innerHTML = '<div style="padding:16px;text-align:center"><p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="renderVmCompare()">&#8635; Retry</button></div>';
+    body.innerHTML = '<div style="padding:16px;text-align:center"><p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:8px" onclick="_showVmCompareModal(_vmcmpA,_vmcmpB)">&#8635; Retry</button></div>';
   }
 }
 function closeVmCompare() {
@@ -21703,7 +21704,7 @@ async function blueprintStudioSelect(ns, name, quiet) {
 }
 
 function blueprintStudioNew() {
-  const ns = (document.getElementById('workspace-ns') && document.getElementById('workspace-ns').value) || 'default';
+  const ns = (document.getElementById('workspace-ns') && document.getElementById('workspace-ns').value) || (currentNamespace !== 'all' ? currentNamespace : 'default');
   openGlassPrompt({
     title: 'New Blueprint',
     submitLabel: 'Create',
@@ -23426,7 +23427,8 @@ function renderCiliumFlowsTable(flowSource) {
 function ciliumCopilotChip(query) {
   const inp = document.getElementById('cilium-copilot-input');
   if (inp) inp.value = query;
-  runCiliumCopilotAsk();
+  openCopilot(query || 'Cilium and network policy posture');
+  setTimeout(runCopilotAsk, 80);
 }
 
 function runCiliumCopilotAsk() {
@@ -23888,7 +23890,8 @@ function setLogsLevelFilter(level) {
 function tracesCopilotChip(query) {
   const inp = document.getElementById('traces-copilot-input');
   if (inp) inp.value = query;
-  runTracesCopilotAsk();
+  openCopilot(query || 'Recent error traces in the cluster');
+  setTimeout(runCopilotAsk, 80);
 }
 
 function runTracesCopilotAsk() {
@@ -23906,7 +23909,8 @@ function setTracesErrorFilter() {
 function monitoringCopilotChip(query) {
   const inp = document.getElementById('monitoring-copilot-input');
   if (inp) inp.value = query;
-  runMonitoringCopilotAsk();
+  openCopilot(query || 'Which VMs have high CPU or memory?');
+  setTimeout(runCopilotAsk, 80);
 }
 
 function runMonitoringCopilotAsk() {
@@ -23925,7 +23929,8 @@ function scrollToMonitoringAnomalies() {
 function costCopilotChip(query) {
   const inp = document.getElementById('cost-copilot-input');
   if (inp) inp.value = query;
-  runCostCopilotAsk();
+  openCopilot(query || 'Which VMs are most expensive?');
+  setTimeout(runCopilotAsk, 80);
 }
 
 function runCostCopilotAsk() {
