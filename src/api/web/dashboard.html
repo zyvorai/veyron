@@ -3681,6 +3681,108 @@ body.mac-desktop-root .glass-stat-pill .gsl,body.mac-desktop-root .tahoe-stat-pi
   background:linear-gradient(135deg,var(--plasma-deep),var(--plasma));
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
+
+/* ── Instrument Deck shell overrides ─────────────────────────────────────── */
+/* A1: Body ambient — subtle plasma/teal gradients replace macOS wallpaper   */
+body.mac-desktop-root{
+  background:
+    radial-gradient(120% 80% at 80% -10%,rgba(83,74,183,.12),transparent 55%),
+    radial-gradient(90% 70% at 0% 110%,rgba(29,158,117,.05),transparent 50%),
+    var(--hull);
+}
+body.mac-desktop-root::before,
+body.mac-desktop-root[data-wallpaper="tahoe"]::before{
+  background:none;
+}
+
+/* A2: Sidebar → Rail */
+body.mac-desktop-root .cloudos-finder{
+  background:linear-gradient(180deg,var(--void),var(--hull));
+  backdrop-filter:none;-webkit-backdrop-filter:none;
+  border-right:1px solid var(--hairline);
+  width:230px;padding:18px 14px;
+}
+.finder-toolbar{border-bottom:none;padding:6px 8px 18px}
+.finder-toolbar-title{display:none}
+.finder-section-label,.cloudos-finder-title{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:9.5px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--ink-3);padding:0 8px 8px;font-weight:500;margin-top:14px;
+  background:none;border:none;display:block;width:100%;text-align:left;
+}
+.finder-section-toggle{display:none}
+.finder-section.collapsed .finder-section-body{display:flex}
+.cloudos-finder-item{
+  display:flex;align-items:center;gap:11px;padding:8px 10px;
+  border-radius:8px;color:var(--ink-2);font-size:13.5px;font-weight:500;
+  transition:.16s;position:relative;border:1px solid transparent;
+  background:none;width:100%;text-align:left;cursor:pointer;
+}
+.cloudos-finder-item:hover{background:var(--panel);color:var(--ink)}
+.cloudos-finder-item.active{
+  background:linear-gradient(90deg,var(--plasma-glow),transparent);
+  color:var(--ink);border-color:var(--plasma-line);font-weight:500;
+  border-left:none;padding-left:10px;
+}
+.cloudos-finder-item.active::before{
+  content:'';position:absolute;left:-14px;top:8px;bottom:8px;
+  width:3px;background:var(--plasma);border-radius:0 3px 3px 0;
+  box-shadow:0 0 12px var(--plasma);
+}
+.cloudos-finder-item .fi-icon{color:var(--ink-3);font-size:14px;width:18px;text-align:center}
+.cloudos-finder-item.active .fi-icon{color:var(--plasma)}
+.finder-search-wrap{display:none}
+.finder-count-badge{display:none!important}
+
+/* A3: Top bar → Topbar */
+.mac-menubar.navbar{
+  min-height:48px;height:48px;padding:0 24px;
+  background:rgba(15,19,32,.7);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--hairline);
+  box-shadow:none;transition:none;
+}
+body.mac-desktop-root .mac-menubar.navbar{
+  flex-wrap:nowrap;overflow:hidden;align-items:center;
+  --cloudos-menubar-h:48px;min-height:var(--cloudos-menubar-h);height:var(--cloudos-menubar-h);
+}
+.mac-menubar-title{
+  font-family:'Space Grotesk','Inter',system-ui,sans-serif;
+  font-size:18px;font-weight:600;letter-spacing:.2px;color:var(--ink);
+}
+.mac-menubar-crumb{
+  font-family:'IBM Plex Mono',ui-monospace,monospace;
+  font-size:11px;color:var(--ink-3);margin-left:8px;
+}
+.vmr-header-search{
+  background:var(--panel);border:1px solid var(--hairline);
+  border-radius:9px;padding:7px 12px;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;color:var(--ink-3);
+}
+.vmr-header-search::placeholder{color:var(--ink-3)}
+
+/* A4: Hide dock */
+#cloudos-dock{display:none!important}
+body.mac-desktop-root,
+body.mac-desktop-root[data-desktop-tier],
+body.mac-desktop-root[data-desktop-tier="normal"]{padding-bottom:0!important}
+body.vmr-ticker-on .mac-dock{display:none!important}
+
+/* A5: Flatten page content — no glass card */
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window{
+  background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;
+  border:none;border-radius:0;box-shadow:none;
+  padding:26px;max-width:none;margin:0;overflow:visible;
+}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window::before{display:none}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > *{position:static}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > :not(.vm-workspace):not(.mac-vm-workspace){
+  padding-left:0;padding-right:0;
+}
+body.mac-desktop-root .page.section-shell > .space-y.mac-page-window > :first-child{padding-top:0}
+body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-window{
+  border:none;border-radius:0;background:transparent;
+}
+/* ── end Instrument Deck shell overrides ──────────────────────────────────── */
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto">
@@ -3742,7 +3844,7 @@ body.mac-desktop-root .glass-stat-pill .gsl,body.mac-desktop-root .tahoe-stat-pi
     </div>
     <button type="button" class="mac-menubar-icon-btn mac-menubar-sidebar-btn" id="mac-menubar-sidebar-btn" onclick="setFinderSidebarMode('expanded')" title="Show navigation (⌘\\)" aria-label="Show navigation">◧</button>
     <button type="button" class="btn-spotlight finder-toggle" onclick="toggleFinder()" aria-label="Hide sidebar" aria-expanded="true" title="Hide sidebar (⌘\)">☰</button>
-    <span class="mac-menubar-title" id="mac-menubar-title">Veyron · Kubernetes VM Command Center</span>
+    <span class="mac-menubar-title" id="mac-menubar-title">Veyron · Kubernetes VM Command Center</span><span class="mac-menubar-crumb" id="mac-menubar-crumb">veyron / dashboard</span>
   </div>
   <div class="mac-menubar-center">
     <div class="mac-menubar-center-inner">
@@ -8326,7 +8428,9 @@ function loadPageData(page, opts) {
       if(!_gwSeries.compute) {
         ['compute','mem','net','store'].forEach(k=>_gwSeed(k,40,{compute:18,mem:44,net:4,store:31}[k],6));
       }
-      _gwSetMode(_gwMode);
+      // Auto-detect incident mode from real fleet state
+      var _autoMode = _gwFleet.some(function(v){return v.failed;}) ? 'bad' : 'ok';
+      _gwSetMode(_autoMode);
     });
     // also fetch heatmap metrics for sparkline base values
     apiJson('/api/v1/heatmap/resources').catch(()=>({nodes:[]})).then(h=>{
@@ -8377,8 +8481,11 @@ function loadPageData(page, opts) {
       }
       if(_gwFrame%3===0){
         document.querySelectorAll('.gw-spk').forEach(c=>_gwSpark(c,c.dataset.gk,c.dataset.gc));
-        const vit=_gwMode==='ok'?96:74;
-        _gwRing(vit, _gwMode==='ok'?'61,220,143':'255,182,72');
+        var _gwScore = (typeof computeFleetHealthScore==='function' && (window.vmData||[]).length)
+          ? computeFleetHealthScore(window.vmData||[])
+          : (_gwMode==='ok'?96:74);
+        if(_gwScore===null) _gwScore=_gwMode==='ok'?96:74;
+        _gwRing(_gwScore, _gwScore>50?'61,220,143':'255,182,72');
       }
       document.querySelectorAll('[data-gcon]').forEach(c=>{
         const scale=_gwDensity==='dense'?.78:1;
@@ -13069,12 +13176,36 @@ function setVmViewMode(mode, writeStorage) {
 }
 
 // ── syncVeyronTopbar — update topbar page context label on navigate ──────────
+var _PAGE_CRUMBS = {
+  dashboard:            'veyron / dashboard / overview',
+  vms:                  'veyron / fleet / all-vms',
+  'vm-capsule':         'veyron / fleet / capsule',
+  'gallery-wall':       'veyron / fleet / gallery-wall',
+  'fleet-constellation':'veyron / fleet / constellation',
+  storage:              'veyron / platform / storage',
+  networking:           'veyron / platform / networking',
+  nodes:                'veyron / platform / nodes',
+  snapshots:            'veyron / storage / snapshots',
+  monitoring:           'veyron / observe / monitoring',
+  alerts:               'veyron / observe / alerts',
+  'stack-health':       'veyron / observe / stack-health',
+  soc:                  'veyron / security / soc',
+  compliance:           'veyron / security / compliance',
+  costs:                'veyron / finops / costs',
+  gitops:               'veyron / ops / gitops',
+  backup:               'veyron / ops / backup',
+  chaos:                'veyron / ops / chaos',
+  settings:             'veyron / platform / settings',
+};
 function syncVeyronTopbar() {
   const meta = document.getElementById('cluster-context-meta');
   const wrap = document.getElementById('topbar-location-wrap');
   if (wrap && desktopTier !== 'normal') wrap.style.display = '';
   const page = typeof currentPage !== 'undefined' ? currentPage : '';
   const label = page ? navPageLabel(page) : '';
+  // Instrument Deck breadcrumb
+  const crumbEl = document.getElementById('mac-menubar-crumb');
+  if (crumbEl) crumbEl.textContent = _PAGE_CRUMBS[page] || ('veyron / ' + (page || 'dashboard'));
   if (meta && meta.textContent && meta.textContent.startsWith('Location:')) {
     // Not yet fetched — leave the cluster context label untouched until fetchClusterContext updates it
     return;
