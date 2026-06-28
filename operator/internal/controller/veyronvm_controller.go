@@ -145,6 +145,12 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 		Namespace: vm.Namespace,
 	}, existing)
 
+	// Drift is computed against the existing KubeVirt VM below, but the status
+	// re-fetch before the single Status().Update() overwrites vm.Status — so
+	// capture the drift result here and re-apply it after the re-fetch.
+	driftDetected := false
+	driftMessage := ""
+
 	if errors.IsNotFound(err) {
 		// Create new KubeVirt VM
 		logger.Info("creating KubeVirt VirtualMachine", "name", vm.Name)
@@ -186,12 +192,9 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 		drift, driftMsg := catalog.CompareKubeVirtSpec(specHash, existing)
 		if drift {
-			vm.Status.DriftDetected = true
-			vm.Status.DriftMessage = driftMsg
+			driftDetected = true
+			driftMessage = driftMsg
 			_ = r.ensureDriftInsight(ctx, &vm, driftMsg)
-		} else {
-			vm.Status.DriftDetected = false
-			vm.Status.DriftMessage = ""
 		}
 	}
 
@@ -216,6 +219,8 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 	vm.Status.IPAddress = ipAddress
 	vm.Status.LastReconciled = &now
 	vm.Status.ObservedGeneration = vm.Generation
+	vm.Status.DriftDetected = driftDetected
+	vm.Status.DriftMessage = driftMessage
 	if specHash != "" {
 		vm.Status.ResolvedSpecHash = specHash
 	}
@@ -513,6 +518,13 @@ func setCondition(conditions *[]metav1.Condition, condition metav1.Condition) {
 	}
 	for i, existing := range *conditions {
 		if existing.Type == condition.Type {
+			// Per Kubernetes API conventions, LastTransitionTime must only change
+			// when the Status transitions. Reconcile runs every 15-60s, so blindly
+			// overwriting it would flap the timestamp on every tick. Preserve the
+			// existing timestamp unless the Status actually changed.
+			if existing.Status == condition.Status {
+				condition.LastTransitionTime = existing.LastTransitionTime
+			}
 			(*conditions)[i] = condition
 			return
 		}
