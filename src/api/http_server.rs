@@ -880,6 +880,13 @@ pub mod web {
                 .route("/api/v1/vms/:ns/:name/events", get(vm_events_handler))
                 // Snapshots
                 .route("/api/v1/snapshots", get(list_snapshots_handler))
+                // Registered directly here (not via the nested handlers router) because the
+                // static `/api/v1/snapshots` node above shadows nested `/snapshots/*` param
+                // routes under matchit — see export_snapshots in handlers::snapshots.
+                .route(
+                    "/api/v1/snapshots/export",
+                    get(crate::api::handlers::snapshots::export_snapshots),
+                )
                 .route("/api/v1/snapshots/:ns/:vm", get(list_vm_snapshots_handler))
                 .route(
                     "/api/v1/snapshots/:ns/:name/delete",

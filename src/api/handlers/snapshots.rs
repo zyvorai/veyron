@@ -236,7 +236,7 @@ async fn restore_snapshot(
 }
 
 #[cfg(feature = "web")]
-async fn export_snapshots(
+pub async fn export_snapshots(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Result<Json<serde_json::Value>, (StatusCode, Json<serde_json::Value>)> {
