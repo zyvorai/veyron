@@ -96,6 +96,7 @@ pub fn router(state: SharedState) -> Router {
         .route("/costs/summary", get(get_cost_summary))
         .route("/costs/forecast", get(get_cost_forecast))
         .route("/costs/budgets", get(list_budgets).post(create_budget))
+        .route("/costs/budgets/:name", axum::routing::delete(delete_budget))
         .with_state(state)
 }
 
@@ -453,6 +454,34 @@ async fn create_budget(
             Json(serde_json::json!({
                 "error": "BUDGET_CREATE_FAILED",
                 "message": format!("Failed to create budget ConfigMap: {}", e),
+            })),
+        ),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn delete_budget(
+    State(state): State<SharedState>,
+    axum::extract::Path(name): axum::extract::Path<String>,
+) -> (axum::http::StatusCode, Json<serde_json::Value>) {
+    use k8s_openapi::api::core::v1::ConfigMap;
+    use kube::api::{Api, DeleteParams};
+
+    let s = state.read().await;
+    let client = s.client().client();
+    let cms: Api<ConfigMap> = Api::namespaced(client, "veyron-system");
+    let cm_name = format!("veyron-budget-{}", name);
+
+    match cms.delete(&cm_name, &DeleteParams::default()).await {
+        Ok(_) => (
+            axum::http::StatusCode::OK,
+            Json(serde_json::json!({"status": "deleted", "name": name})),
+        ),
+        Err(e) => (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({
+                "error": "BUDGET_DELETE_FAILED",
+                "message": format!("Failed to delete budget: {}", e),
             })),
         ),
     }

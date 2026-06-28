@@ -76,8 +76,8 @@ async fn resolve_snapshot_op_namespace(
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/snapshots", get(list_snapshots).post(create_snapshot))
-        .route("/snapshots/{id}", delete(delete_snapshot))
-        .route("/snapshots/{id}/restore", post(restore_snapshot))
+        .route("/snapshots/:id", delete(delete_snapshot))
+        .route("/snapshots/:id/restore", post(restore_snapshot))
         .route("/snapshots/export", get(export_snapshots))
         .with_state(state)
 }

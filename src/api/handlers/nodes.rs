@@ -33,7 +33,7 @@ pub struct NodeResponse {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/nodes", get(list_nodes))
-        .route("/nodes/{name}", get(get_node))
+        .route("/nodes/:name", get(get_node))
         .with_state(state)
 }
 

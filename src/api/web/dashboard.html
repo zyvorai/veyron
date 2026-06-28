@@ -1910,10 +1910,10 @@ body.mac-console-open .mac-desktop-tabs{opacity:.4;pointer-events:none;transitio
   font-family:var(--font-sans);font-size:.72rem;font-weight:700;
   color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;
 }
-.table-row.node-row{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr}
-.table-header.node-header{grid-template-columns:1.5fr .6fr .8fr .8fr .8fr 1fr 1fr;display:grid}
-.table-row.pod-row{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr}
-.table-header.pod-header{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr;display:grid}
+.table-row.node-row{grid-template-columns:1.5fr .5fr .5fr .5fr .7fr .7fr .7fr .9fr .9fr}
+.table-header.node-header{grid-template-columns:1.5fr .5fr .5fr .5fr .7fr .7fr .7fr .9fr .9fr;display:grid}
+.table-row.pod-row{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr .5fr}
+.table-header.pod-header{grid-template-columns:1.5fr .6fr .8fr .8fr .5fr .5fr .5fr;display:grid}
 .cell-name{font-family:var(--font-mono);color:var(--text-bright);font-weight:500}
 .cell-mono{font-family:var(--font-mono);color:var(--text)}
 .cell-badge{
@@ -4127,6 +4127,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <button type="button" class="nav-link" data-page="gitops" onclick="navigate('gitops')">GitOps</button>
       <button type="button" class="nav-link" data-page="integrations" onclick="navigate('integrations')">Integrations</button>
       <button type="button" class="nav-link" data-page="webhooks" onclick="navigate('webhooks')">Webhooks</button>
+      <button type="button" class="nav-link" data-page="tenants" onclick="navigate('tenants')">Tenants</button>
     </div>
   </div>
   <div class="nav-group">
@@ -4843,6 +4844,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div id="vmr-snapshots-protection"></div>
   <div class="page-header"><div><h1>Veyron Snapshots &amp; Backups</h1><p>Protect, restore, and replicate virtual machines.</p></div><div class="page-header-right">
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchSnapshots()">&#8635; Refresh</button>
+    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsData()" title="Export snapshot list as JSON">&#8595; Export</button>
     <button type="button" class="glass-btn-primary glass-btn-sm" onclick="openSnapModalPick()">+ Create Snapshot</button>
     <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus('Create backup policy for all VMs')">+ Backup Policy</button>
   </div></div>
@@ -4873,8 +4875,16 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   </div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Cluster Nodes</span><span id="node-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="node-search" class="form-input" placeholder="Filter nodes…" oninput="filterNodesView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNodesCsv()" title="Export node list as CSV">↓ CSV</button></div>
-    <div class="table-header node-header"><span>Name</span><span>Status</span><span>CPU Cap</span><span>CPU Alloc</span><span>Memory</span><span>Kubelet</span><span>OS</span></div>
+    <div class="table-header node-header"><span>Name</span><span>Status</span><span>Roles</span><span>VMs</span><span>CPU Cap</span><span>CPU Alloc</span><span>Mem Cap / Alloc</span><span>Kubelet</span><span>OS</span></div>
     <div id="node-list"></div>
+  </div>
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">Platform Readiness</span><span id="platform-ready-badge" style="font-size:.8rem;padding:0 6px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformReadiness()">&#8635;</button></div>
+    <div id="platform-readiness-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
+  </div>
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">Cluster Locations</span><span id="cluster-locations-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchClusterLocations()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Name</th><th>Region</th><th>Health</th><th>VMs</th><th>Nodes</th><th>Active</th></tr></thead><tbody id="cluster-locations-body"><tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
   </div>
 </div>
 </div>
@@ -4887,8 +4897,12 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div id="pods-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Pods</span><div style="display:flex;gap:6px;align-items:center;margin-left:auto"><button type="button" class="vmr-chip vmr-chip-active" data-podphase="all" onclick="setPodPhaseFilter('all',this)">All</button><button type="button" class="vmr-chip" data-podphase="Running" onclick="setPodPhaseFilter('Running',this)"><span class="vmr-chip-dot" style="background:var(--nominal)"></span>Running</button><button type="button" class="vmr-chip" data-podphase="Pending" onclick="setPodPhaseFilter('Pending',this)"><span class="vmr-chip-dot" style="background:var(--caution)"></span>Pending</button><button type="button" class="vmr-chip" data-podphase="Failed" onclick="setPodPhaseFilter('Failed',this)"><span class="vmr-chip-dot" style="background:var(--critical)"></span>Failed</button><input type="search" id="pod-search" class="form-input" placeholder="Filter pods…" oninput="filterPodsView(this.value)" style="width:170px;font-size:.82rem"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPodsCsv()" title="Export pod list as CSV">&#8595; CSV</button></div></div>
-    <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span></div>
+    <div class="table-header pod-header"><span>Name</span><span>Phase</span><span>Node</span><span>IP</span><span>Restarts</span><span>Age</span><span>Containers</span></div>
     <div id="pod-list"></div>
+  </div>
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">VMI Runtime Instances</span><span id="vmis-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchVmis()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Phase</th><th>Node</th><th>IP</th><th>CPU</th><th>Memory</th></tr></thead><tbody id="vmis-body"><tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
   </div>
 </div>
 </div>
@@ -4908,6 +4922,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="grid-2">
     <div class="card glass-card"><div class="card-header"><span class="card-title">Persistent Volume Claims</span><span id="pvc-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="pvc-search" class="form-input" placeholder="Filter PVCs…" oninput="filterPvcsView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportPvcsCsv()" title="Export PVCs as CSV" style="margin-left:8px">&#8595; CSV</button></div><div id="pvc-list"></div></div>
     <div class="card glass-card"><div class="card-header"><span class="card-title">Storage Classes</span></div><div id="sc-list"></div></div>
+  </div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">Storage Pools</span><span id="storage-pools-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchStoragePools()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Name</th><th>Storage Class</th><th>Provisioner</th><th>Total</th><th>Used</th><th>Available</th><th>Volumes</th></tr></thead><tbody id="storage-pools-body"><tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
   </div>
 </div>
 </div>
@@ -5002,7 +5020,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="page-header"><div><h1>Actions</h1><p>VeyronAction autopilot proposals</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportActionsCsv()" title="Export actions as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchActions()">&#8635; Refresh</button></div></div>
     <div id="actions-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Action Queue</span><span id="actions-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="actions-search" class="form-input" placeholder="Filter actions…" oninput="filterActionsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th></tr></thead><tbody id="actions-body"></tbody></table>
+  <table class="table" id="actions-table"><thead><tr><th>Name</th><th>Action</th><th>VM</th><th>Approved</th><th>Phase</th><th>Message</th><th></th></tr></thead><tbody id="actions-body"></tbody></table>
   </div>
 </div>
 </div>
@@ -5028,7 +5046,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     </div>
   </div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VM Costs (Monthly)</span><span id="costs-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="costs-search" class="form-input" placeholder="Filter by VM or namespace…" oninput="filterCostsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportCostsCsv()" title="Export VM costs as CSV">↓ CSV</button></div>
-  <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Total</th><th>Trend</th><th>Recommendation</th></tr></thead><tbody id="costs-body"></tbody></table>
+  <table class="table" id="costs-table"><thead><tr><th>VM</th><th>Namespace</th><th>CPU Cost</th><th>Memory Cost</th><th>Storage Cost</th><th>Network Cost</th><th>Total</th><th>Trend</th><th>Recommendation</th></tr></thead><tbody id="costs-body"></tbody></table>
   </div>
 
   <!-- Optimization recommendations -->
@@ -5054,6 +5072,30 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- Budgets -->
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header">
+      <span class="card-title">Namespace Budgets</span>
+      <span id="budgets-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+      <button type="button" class="glass-btn-primary glass-btn-sm" style="margin-left:auto" onclick="createBudgetDialog()">+ Budget</button>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchBudgets()">&#8635;</button>
+    </div>
+    <div id="budgets-body" style="padding:8px 0">
+      <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Monthly Limit</th><th>Current Spend</th><th>Alert At</th><th>Status</th><th></th></tr></thead><tbody id="budgets-table-body"><tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- Disks -->
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header">
+      <span class="card-title">PVC Disk Inventory</span>
+      <span id="disks-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+      <input type="search" id="disks-search" class="form-input" placeholder="Filter disks…" oninput="filterDisksView(this.value)" style="width:180px;font-size:.82rem;margin-left:auto">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchDisks()">&#8635;</button>
+    </div>
+    <table class="table"><thead><tr><th>Disk</th><th>VM</th><th>Size</th><th>Class</th><th>Access</th><th>Status</th><th>Action</th></tr></thead><tbody id="disks-body"></tbody></table>
   </div>
 </div>
 </div>
@@ -5139,7 +5181,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <span id="anomaly-count-badge" class="glass-badge running anom-count-badge"></span>
       </div>
       <div class="table-scroll">
-      <table class="table"><thead><tr><th>VM</th><th>Metric</th><th>Value</th><th>Threshold</th><th>Deviation</th><th>Severity</th><th>Detected</th></tr></thead><tbody id="anomalies-body"></tbody></table>
+      <table class="table"><thead><tr><th>VM</th><th>Namespace</th><th>Metric</th><th>Value</th><th>Threshold</th><th>Deviation</th><th>Severity</th><th>Detected</th></tr></thead><tbody id="anomalies-body"></tbody></table>
       </div>
     </div>
   </div>
@@ -5167,7 +5209,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 
 <div class="page section-shell" id="page-alerts" data-section="observe">
 <div class="space-y animate-fade-in">
-<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAlertsCsv()" title="Export alerts as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAlerts()">&#8635; Refresh</button></div></div>
+<div class="page-header"><div><h1>Alerts</h1><p>Warning events and alert acknowledgements</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="id-btn-plasma glass-btn-sm" onclick="openCreateAlertModal()" title="Create a new alert rule">+ Create Alert</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAlertsCsv()" title="Export alerts as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAlerts()">&#8635; Refresh</button></div></div>
     
     <div id="alerts-summary" class="grid-4 page-glass-stats"></div>
 <div id="alert-advisor-card" class="card glass-card" style="display:none;margin-bottom:16px">
@@ -5186,7 +5228,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <button type="button" class="vmr-chip" data-alertfilter="critical" onclick="setAlertFilter(this,'critical')"><span class="vmr-chip-dot" style="background:var(--critical)"></span>Critical</button>
       <button type="button" class="vmr-chip" data-alertfilter="warning" onclick="setAlertFilter(this,'warning')"><span class="vmr-chip-dot" style="background:var(--caution)"></span>Warning</button>
     </div>
-  <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th></tr></thead><tbody id="alerts-body"></tbody></table>
+  <table class="table"><thead><tr><th>Name</th><th>Severity</th><th>Status</th><th>Source</th><th>Message</th><th>Fired</th><th>Action</th></tr></thead><tbody id="alerts-body"></tbody></table>
   </div>
 </div>
 </div>
@@ -5218,6 +5260,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div id="soc-detections-list" style="padding:12px 16px"></div>
   </div>
   <div class="card glass-card" style="margin-bottom:16px">
+    <div class="card-header"><span class="card-title">Saved Hunts</span><span id="saved-hunts-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchSavedHunts()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Name</th><th>Backend</th><th>Description</th><th></th></tr></thead><tbody id="saved-hunts-body"><tr><td colspan="4" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
+  <div class="card glass-card" style="margin-bottom:16px">
     <div class="card-header"><span class="card-title">Threat hunt</span></div>
     <div style="padding:12px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
       <label style="font-size:.78rem;color:var(--text-dim)">Backend<select class="form-select" id="soc-hunt-backend" style="margin-left:6px"><option value="elastic">Elastic</option><option value="splunk">Splunk</option></select></label>
@@ -5227,19 +5273,43 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <pre id="soc-hunt-results" style="margin:0 16px 16px;padding:12px;font-size:.76rem;max-height:240px;overflow:auto;background:rgba(0,0,0,.25);border-radius:8px"></pre>
   </div>
   <div class="card glass-card">
-    <div class="card-header"><span class="card-title">Security event stream</span><span id="soc-events-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocEventsCsv()" title="Export SOC events as CSV">&#8595; CSV</button></div>
-    <table class="table"><thead><tr><th>Time</th><th>Severity</th><th>Category</th><th>Source</th><th>Message</th><th>Resource</th></tr></thead><tbody id="soc-events-body"></tbody></table>
+    <div class="card-header"><span class="card-title">Security event stream</span><span id="soc-events-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="soc-events-search" class="form-input" placeholder="Filter events…" oninput="filterSocEventsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="syncSocEvents()" title="Collect security events from cluster">&#8635; Sync</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocEventsCsv()" title="Export SOC events as CSV">&#8595; CSV</button></div>
+    <table class="table"><thead><tr><th>Time</th><th>Severity</th><th>Category</th><th>Actor</th><th>Action</th><th>Message</th><th>Resource</th><th>Outcome</th></tr></thead><tbody id="soc-events-body"></tbody></table>
   </div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Attack surface</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSocAsmCsv()" title="Export attack surface as CSV" style="margin-left:auto">&#8595; CSV</button></div>
     <table class="table"><thead><tr><th>VM</th><th>Exposure</th><th>Risk</th><th>Detail</th></tr></thead><tbody id="soc-asm-body"></tbody></table>
+  </div>
+  <!-- Playbooks -->
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header">
+      <span class="card-title">Response Playbooks</span>
+      <span id="soc-playbooks-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchSocPlaybooks()">&#8635;</button>
+    </div>
+    <div id="soc-playbooks-list" style="padding:12px 16px">
+      <p style="color:var(--text-dim);font-size:.84rem">Loading playbooks…</p>
+    </div>
+  </div>
+  <!-- RDP-capable VMs -->
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header">
+      <span class="card-title">RDP-Capable VMs</span>
+      <span id="rdp-vms-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchRdpVms()">&#8635;</button>
+    </div>
+    <table class="table"><thead><tr><th>VM</th><th>Namespace</th><th>OS</th><th>IP</th><th>RDP Port</th><th>Reachable</th><th>Sessions</th></tr></thead><tbody id="rdp-vms-body"><tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">RDP Connection Defaults</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchRdpDefaults()">&#8635;</button></div>
+    <div id="rdp-defaults-body" style="padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
   </div>
 </div>
 </div>
 
 <div class="page section-shell" id="page-notifications" data-section="ops">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNotificationsCsv()" title="Export notifications as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
+  <div class="page-header"><div><h1>Notifications</h1><p>Unread cluster warnings and failures</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="sendTestNotification()" title="Send a test notification to configured channels">&#9654; Test</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportNotificationsCsv()" title="Export notifications as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchNotifications()">&#8635; Refresh</button></div></div>
   
   <div id="notifications-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Notifications</span><span id="notif-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="notif-search" class="form-input" placeholder="Filter notifications…" oninput="filterNotificationsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" id="notif-mark-read-btn" class="glass-btn-secondary glass-btn-sm" onclick="markAllNotificationsRead()" title="Mark all notifications as read" style="display:none">✓ Mark all read</button></div>
@@ -5306,7 +5376,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="page-header"><div><h1>Chaos</h1><p>Detected chaos experiments across installed chaos CRDs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportChaosCsv()" title="Export experiments as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchChaos()">&#8635; Refresh</button></div></div>
     <div id="chaos-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Chaos Experiments</span><span id="chaos-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="chaos-search" class="form-input" placeholder="Filter experiments…" oninput="filterChaosView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th></tr></thead><tbody id="chaos-body"></tbody></table>
+  <table class="table"><thead><tr><th>Name</th><th>Type</th><th>Namespace</th><th>Target</th><th>Status</th><th>Duration</th><th>Created</th></tr></thead><tbody id="chaos-body"></tbody></table>
   </div>
 </div>
 </div>
@@ -5344,7 +5414,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="page-header"><div><h1>Ingress</h1><p>Published ingress routes and TLS state</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportIngressCsv()" title="Export ingress as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchIngress()">&#8635; Refresh</button></div></div>
     <div id="ingress-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Ingress Resources</span><span id="ingress-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="ingress-search" class="form-input" placeholder="Filter by name, namespace, host…" oninput="filterIngressView(this.value)" style="width:230px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Class</th><th>Hosts</th><th>TLS</th><th>Rules</th><th>Created</th></tr></thead><tbody id="ingress-body"></tbody></table></div>
 </div>
 </div>
 
@@ -5367,7 +5437,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div id="backup-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">VM backups</span><span id="backups-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="backups-search" class="form-input" placeholder="Filter backups…" oninput="filterBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Created</th></tr></thead><tbody id="backups-body"></tbody></table></div>
+  <table class="table"><thead><tr><th>Name</th><th>VM</th><th>Namespace</th><th>Status</th><th>Type</th><th>Size</th><th>Flags</th><th>Completed</th><th>Action</th></tr></thead><tbody id="backups-body"></tbody></table></div>
   <div class="card glass-card" style="margin-top:16px">
     <div class="card-header"><span class="card-title">Velero (cluster)</span><span id="velero-backups-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="velero-backups-search" class="form-input" placeholder="Filter Velero backups…" oninput="filterVeleroBackupsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportVeleroBackupsCsv()" title="Export Velero backups as CSV" style="margin-left:8px">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVelero()" style="margin-left:4px">&#8635; Refresh</button></div>
     <div id="velero-cap-banner"></div>
@@ -5536,6 +5606,22 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 <div class="space-y animate-fade-in">
   <div id="vmr-network-intel-hero"></div>
   <div id="vmr-network-intel-metrics"></div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">VM Network Interfaces</span><span id="net-ifaces-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchNetworkInterfaces()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Interface</th><th>VM</th><th>Namespace</th><th>MAC</th><th>IP</th><th>Network</th><th>Type</th><th>Status</th></tr></thead><tbody id="net-ifaces-body"><tr><td colspan="8" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">Bandwidth (live)</span><span id="net-bw-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchBandwidth()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>VM</th><th>Namespace</th><th>Interface</th><th>RX B/s</th><th>TX B/s</th><th>RX Pkts/s</th><th>TX Pkts/s</th><th>Updated</th></tr></thead><tbody id="net-bw-body"><tr><td colspan="8" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">Network Attachment Definitions</span><span id="nads-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchNads()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Plugin</th><th>Scope</th><th>Config</th><th></th></tr></thead><tbody id="nads-body"><tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">RDP Sessions</span><span id="rdp-sessions-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchRdpSessions()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Session ID</th><th>VM</th><th>Namespace</th><th>Client IP</th><th>State</th><th>Node Port</th><th>Started</th></tr></thead><tbody id="rdp-sessions-body"><tr><td colspan="7" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
   <div id="vmr-network-intel-body"></div>
 </div>
 </div>
@@ -5617,10 +5703,19 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 <div class="page section-shell" id="page-mission-control" data-section="observe">
 <div class="space-y animate-fade-in">
   <div class="page-header"><div><h1>Mission Control</h1><p>Cluster relationships at a glance — hosts, VMs, networks, and storage</p></div>
-    <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMissionControl()">Refresh</button></div>
+    <div style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchMissionControl()">Refresh</button></div></div>
   <div id="mission-wall" class="mission-wall"></div>
   <div class="card glass-card zeus-glass"><div class="card-header"><span class="card-title">Topology</span></div>
   <div id="mission-topology-body" style="padding:12px;font-size:.84rem;color:var(--text-muted)">Loading…</div></div>
+  <!-- Live Migrations -->
+  <div class="card glass-card">
+    <div class="card-header">
+      <span class="card-title">Live Migrations</span>
+      <span id="migrations-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>
+      <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchMigrations()">&#8635;</button>
+    </div>
+    <table class="table"><thead><tr><th>ID</th><th>VM</th><th>Source</th><th>Target</th><th>Status</th><th>Progress</th><th>Started</th><th>Action</th></tr></thead><tbody id="migrations-body"><tr><td colspan="8" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
 </div>
 </div>
 
@@ -5651,7 +5746,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div class="page-header"><div><h1>Autoscaler</h1><p>Autoscaler policies inferred from HPAs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportAutoscalerCsv()" title="Export autoscaler policies as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchAutoscaler()">&#8635; Refresh</button></div></div>
     <div id="autoscaler-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Policies</span><span id="autoscaler-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="autoscaler-search" class="form-input" placeholder="Filter policies…" oninput="filterAutoscalerView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Target</th><th>Min</th><th>Current</th><th>Max</th><th>CPU%</th><th>Mem%</th><th>Enabled</th></tr></thead><tbody id="autoscaler-body"></tbody></table></div>
 </div>
 </div>
 
@@ -5665,7 +5760,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   </div>
   <div id="forecasting-cap-banner"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Predictions</span><span id="forecasting-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="forecasting-search" class="form-input" placeholder="Filter by metric or trend…" oninput="filterForecastingView(this.value)" style="width:210px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
+  <table class="table"><thead><tr><th>Metric</th><th>Current</th><th>Predicted</th><th>Window</th><th>Trend</th><th>Confidence</th><th>Alert Threshold</th><th>Breach</th></tr></thead><tbody id="forecasting-body"></tbody></table></div>
 </div>
 </div>
 
@@ -5714,6 +5809,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   </div>
   <div id="scheduling-summary" class="grid-4 page-glass-stats"></div>
   <div id="scheduling-detail-panel"></div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">Migration Policies</span><span id="migration-policies-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><span style="font-size:.75rem;color:var(--text-dim)">KubeVirt migrations.kubevirt.io/v1alpha1</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchMigrationPolicies()">&#8635;</button></div>
+    <table class="table"><thead><tr><th>Name</th><th>VM Selector (labels)</th><th>Bandwidth Limit</th><th></th></tr></thead><tbody id="migration-policies-body"><tr><td colspan="4" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
+  </div>
 </div>
 </div>
 
@@ -5758,6 +5857,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div id="observability-advisor-body" style="padding:12px 16px;font-size:.88rem"></div>
   </div>
   <div id="observability-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card" style="margin-top:16px">
+    <div class="card-header"><span class="card-title">Pipeline Detail</span></div>
+    <div id="observability-detail-body" style="padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px"></div>
+  </div>
 </div>
 </div>
 
@@ -5814,7 +5917,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div id="compliance-cap-banner"></div>
   <div id="compliance-stats" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Framework Status</span></div>
-  <table class="table"><thead><tr><th>Framework</th><th>Score</th><th>Passing</th><th>Failing</th><th>Compliant</th><th>Checked</th></tr></thead><tbody id="compliance-status-body"></tbody></table></div>
+  <table class="table"><thead><tr><th>Framework</th><th>Score</th><th>Total</th><th>Passing</th><th>Failing</th><th>Compliant</th><th>Checked</th></tr></thead><tbody id="compliance-status-body"></tbody></table></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Reports</span></div>
   <table class="table"><thead><tr><th>Report</th><th>Framework</th><th>Generated</th><th>Score</th><th>Findings</th></tr></thead><tbody id="compliance-reports-body"></tbody></table></div>
 </div>
@@ -5903,6 +6006,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span><span id="images-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="images-search" class="form-input" placeholder="Filter images…" oninput="filterImagesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
   <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th></tr></thead><tbody id="images-body"></tbody></table></div>
+  <div class="card glass-card">
+    <div class="card-header"><span class="card-title">Windows Setup Guide</span><span style="font-size:.78rem;color:var(--text-muted);padding:0 4px">Packer → CDI → KubeVirt runbook</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchWindowsSetupPlan()">&#8635; Load Plan</button></div>
+    <div id="windows-setup-body" style="padding:8px 0"><p style="color:var(--text-dim);padding:12px;font-size:.85rem">Click <strong>Load Plan</strong> to fetch the Windows golden-image setup steps.</p></div>
+  </div>
 </div>
 </div>
 
@@ -5932,7 +6039,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 <div class="space-y animate-fade-in">
   <div class="page-header">
     <div><h1>Log Explorer</h1><p>Virt-launcher pod logs (kubevirt.io/domain) — not a full cluster Loki/ELK view</p></div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <select id="logs-level-filter" class="toolbar-input" onchange="fetchLogs()">
         <option value="">All Levels</option>
         <option value="error">Error</option>
@@ -5940,7 +6047,11 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <option value="info">Info</option>
         <option value="debug">Debug</option>
       </select>
-      <input id="logs-search" class="toolbar-input" style="width:240px" placeholder="Search logs…" oninput="fetchLogs()">
+      <input id="logs-vm-filter" class="toolbar-input" style="width:140px" placeholder="VM name…">
+      <input id="logs-container-filter" class="toolbar-input" style="width:130px" placeholder="Container…">
+      <input id="logs-search" class="toolbar-input" style="width:200px" placeholder="Search logs…" oninput="fetchLogs()">
+      <input id="logs-tail-lines" class="toolbar-input" style="width:80px" placeholder="Lines" value="200">
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="queryLogs()">Query</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchLogs()">&#8635; Refresh</button>
     </div>
   </div>
@@ -8018,9 +8129,9 @@ function loadPageData(page, opts) {
     if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(opts);
   }
   if (page === 'events') fetchEvents(true, opts);
-  if (page === 'nodes') fetchNodes(opts);
-  if (page === 'pods') fetchPods(opts);
-  if (page === 'storage') fetchStorage(opts);
+  if (page === 'nodes') { fetchNodes(opts); fetchPlatformReadiness(); fetchClusterLocations(); }
+  if (page === 'pods') { fetchPods(opts); fetchVmis(); }
+  if (page === 'storage') { fetchStorage(opts); fetchStoragePools(); }
   if (page === 'crds') fetchCRDs();
   if (page === 'blueprint-studio') fetchBlueprintStudio();
   if (page === 'policies') fetchPolicies();
@@ -8029,6 +8140,8 @@ function loadPageData(page, opts) {
   if (page === 'costs') {
     fetchVMs(opts);
     fetchCosts(opts);
+    fetchBudgets();
+    fetchDisks();
     if (typeof renderCostsVmr === 'function') renderCostsVmr();
   }
   if (page === 'security') {
@@ -8059,7 +8172,7 @@ function loadPageData(page, opts) {
   if (page === 'catalog') fetchCatalog();
   if (page === 'integrations') fetchIntegrations();
   if (page === 'gitops') fetchGitOps();
-  if (page === 'scheduling') fetchScheduling();
+  if (page === 'scheduling') { fetchScheduling(); fetchMigrationPolicies(); }
   if (page === 'cilium') {
     if (typeof renderCiliumVmr === 'function') renderCiliumVmr();
     fetchCilium(opts);
@@ -8071,12 +8184,12 @@ function loadPageData(page, opts) {
   if (page === 'logs') fetchLogs();
   if (page === 'incidents') fetchIncidents();
   if (page === 'compliance') fetchCompliance();
-  if (page === 'soc') fetchSocPage(false);
+  if (page === 'soc') { fetchSocPage(false); fetchSocPlaybooks(); fetchRdpVms(); fetchSavedHunts(); fetchRdpDefaults(); }
   if (page === 'dr') { /* form-driven */ }
   if (page === 'heatmap') fetchHeatmap();
   if (page === 'custom-dashboards') fetchCustomDashboards();
   if (page === 'network-policies') fetchNetworkPolicies();
-  if (page === 'images') fetchImages();
+  if (page === 'images') { fetchImages(); fetchWindowsSetupPlan(); }
   if (page === 'app-store') {
     fetchAppStore(opts);
     if (typeof renderFoundryVmr === 'function') renderFoundryVmr();
@@ -8085,11 +8198,18 @@ function loadPageData(page, opts) {
     if (typeof fetchStackHealth === 'function') fetchStackHealth();
     else renderComingSoon('vmr-stack-hero', 'Stack Health', 'KubeVirt, CDI, and operator health diagnostics — rolling out soon.', '⬡');
   }
+  if (page === 'tenants') fetchTenants();
   if (page === 'ask-zeus') loadAskZeusPage();
   if (page === 'settings') {
     if (typeof renderSettingsVmr === 'function') renderSettingsVmr();
   }
-  if (page === 'network-intel' && typeof fetchNetworkIntelData === 'function') fetchNetworkIntelData(opts);
+  if (page === 'network-intel') {
+    if (typeof fetchNetworkIntelData === 'function') fetchNetworkIntelData(opts);
+    fetchNetworkInterfaces();
+    fetchBandwidth();
+    fetchNads();
+    fetchRdpSessions();
+  }
   if (page === 'console-hub') {
     fetchVMs(opts);
     if (typeof renderConsoleHubVmr === 'function') renderConsoleHubVmr();
@@ -13348,9 +13468,9 @@ function exportAlertsCsv() {
 }
 
 function exportSocEventsCsv() {
-  const rows = [['Timestamp', 'Severity', 'Category', 'Source', 'Message', 'Target']];
+  const rows = [['Timestamp', 'Severity', 'Category', 'Actor', 'Action', 'Message', 'Target', 'Outcome']];
   (window.lastSocEvents || []).forEach(function(e) {
-    rows.push([e.timestamp, e.severity, e.category, e.source, e.message, e.target || e.namespace || '']);
+    rows.push([e.timestamp, e.severity, e.category, e.actor || e.source || '', e.action || '', e.message, e.target || e.namespace || '', e.outcome || '']);
   });
   exportCsv(rows, 'soc-events.csv');
 }
@@ -15961,7 +16081,8 @@ async function fetchVMs(opts) {
 // Fetch Events
 async function fetchEvents(full, opts) {
   try {
-    const j = await apiJson('/api/v1/events' + nsParam(), opts);
+    const url = full ? '/api/v1/events' : '/api/v1/events/recent';
+    const j = await apiJson(url + nsParam(), opts);
     if (j == null) return;
     const events = asArray(j);
     lastEvents = window.lastEvents = events;
@@ -16146,7 +16267,8 @@ function renderSnapList(query) {
   }
   el.innerHTML = filtered.map(function(s) {
     const ready = s.ready;
-    return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy snapshot name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>'+esc(s.name)+'<span class="vmr-copy-hint">copy</span></div><div class="snap-vm">VM: '+esc(s.vm_name)+' &bull; Age: '+esc(s.age)+'</div></div><div class="snap-status">'+idSig(ready?'running':'stopped',ready?'Ready':esc(s.status)) +
+    const snapMeta = ['VM: ' + esc(s.vm_name), 'Age: ' + esc(s.age), s.size_bytes ? 'Size: ' + fmtBytes(s.size_bytes) : '', s.created_at ? fmtTime(s.created_at) : ''].filter(Boolean).join(' · ');
+    return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy snapshot name" ' + onStopHandler('copyToClipboard(' + jsArgs(s.name) + ')') + '>'+esc(s.name)+'<span class="vmr-copy-hint">copy</span></div><div class="snap-vm">' + snapMeta + '</div></div><div class="snap-status">'+idSig(ready?'running':'stopped',ready?'Ready':esc(s.status)) +
       (ready ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('restoreSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>Restore</button>' : '') +
       '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSnapshot(' + jsArgs(s.namespace || 'default', s.name) + ')') + '>&#10005;</button>' +
       '</div></div>';
@@ -16181,8 +16303,12 @@ function filterAlertsView() {
   const allAlerts = window.lastAlerts || [];
   if (alertsCountEl) alertsCountEl.textContent = alerts.length === allAlerts.length ? allAlerts.length + ' alerts' : alerts.length + ' of ' + allAlerts.length + ' alerts';
   tb.innerHTML = alerts.map(function(a) {
-    return '<tr class="clickable-row" onclick="pageCopilotChip(\'alerts-copilot-input\',' + JSON.stringify('Explain alert ' + (a.name || '')) + ',\'Active warning events in namespace\')" title="Ask Zeus"><td class="vmr-copy-tile" title="Copy alert name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + idSig(a.severity) + '</td><td>' + idSig(a.status) + '</td><td>' + esc(a.source) + '</td><td>' + esc(a.message) + '</td><td>' + fmtTime(a.fired_at) + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--success)">No matching alerts</td></tr>';
+    const isFiring = (a.status || '').toLowerCase() === 'firing';
+    const resolveBtn = isFiring
+      ? '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('resolveAlert(' + jsArgs(a.id) + ')') + '>Resolve</button>'
+      : '<span style="color:var(--text-dim);font-size:.76rem">' + (a.resolved_at ? 'Resolved ' + fmtTime(a.resolved_at) : 'Resolved') + '</span>';
+    return '<tr><td class="vmr-copy-tile" title="Copy alert name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + idSig(a.severity) + '</td><td>' + idSig(a.status) + '</td><td>' + esc(a.source) + '</td><td>' + esc(a.message) + '</td><td>' + fmtTime(a.fired_at) + '</td><td>' + resolveBtn + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--success)">No matching alerts</td></tr>';
 }
 
 function filterAuditView(query) {
@@ -16229,13 +16355,18 @@ function filterNodesView(query) {
     return;
   }
   el.innerHTML = filtered.map(function(n) {
-    const memGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1) + ' GB';
+    const memCapGb = (parseMemK8s(n.memory_capacity) / (1024*1024*1024)).toFixed(1);
+    const memAllocGb = n.memory_allocatable ? (parseMemK8s(n.memory_allocatable) / (1024*1024*1024)).toFixed(1) : null;
+    const memGb = memCapGb + (memAllocGb ? ' / ' + memAllocGb : '') + ' GB';
+    const roles = asArray(n.roles).length ? asArray(n.roles).join(', ') : (n.roles || 'worker');
     return '<div class="table-row node-row" style="cursor:pointer" ' + onHandler('toggleNodeDetail(' + jsArgs(n.name) + ')') + '>' +
       '<span class="cell-name vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(n.name) + ')') + '>' + esc(n.name) + '<span class="vmr-copy-hint">copy</span></span>' +
       idSig(n.status) +
+      '<span class="cell-mono" style="font-size:.76rem">' + esc(roles) + '</span>' +
+      '<span class="cell-mono">' + (n.vm_count != null ? n.vm_count : '—') + '</span>' +
       '<span class="cell-mono">' + esc(n.cpu_capacity) + '</span>' +
       '<span class="cell-mono">' + esc(n.cpu_allocatable) + '</span>' +
-      '<span class="cell-mono">' + memGb + '</span>' +
+      '<span class="cell-mono" style="font-size:.82rem">' + memGb + '</span>' +
       '<span class="cell-mono vmr-copy-tile" title="Copy version" ' + onStopHandler('copyToClipboard(' + jsArgs(n.kubelet_version) + ')') + '>' + esc(n.kubelet_version) + '<span class="vmr-copy-hint">copy</span></span>' +
       '<span class="cell-mono" style="font-size:.9rem">' + esc(n.os_image) + '</span>' +
       '</div>';
@@ -16257,15 +16388,18 @@ function filterSocEventsView(query) {
   const socCountEl = document.getElementById('soc-events-count');
   if (socCountEl) socCountEl.textContent = filtered.length === events.length ? events.length + ' events' : filtered.length + ' of ' + events.length + ' events';
   el.innerHTML = filtered.map(function(e) {
-    const srcVal = e.source || '';
+    const actorVal = e.actor || e.source || '';
     const tgtVal = e.target || e.namespace || '';
+    const outcomeCls = (e.outcome || '').toLowerCase() === 'success' ? 'color:var(--nominal)' : (e.outcome || '').toLowerCase() === 'failure' ? 'color:var(--critical)' : 'color:var(--ink-3)';
     return '<tr><td>' + fmtTime(e.timestamp) + '</td>' +
       '<td>' + idSig(e.severity) + '</td>' +
       '<td>' + esc(e.category) + '</td>' +
-      '<td class="vmr-copy-tile" title="Copy source" ' + onStopHandler('copyToClipboard(' + jsArgs(srcVal) + ')') + '>' + esc(srcVal) + '<span class="vmr-copy-hint">copy</span></td>' +
+      '<td class="vmr-copy-tile" title="Copy actor" ' + onStopHandler('copyToClipboard(' + jsArgs(actorVal) + ')') + '>' + esc(actorVal) + '<span class="vmr-copy-hint">copy</span></td>' +
+      '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(e.action || '—') + '</td>' +
       '<td>' + esc(e.message || String(e)) + '</td>' +
-      '<td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(tgtVal) + ')') + '>' + esc(tgtVal) + '<span class="vmr-copy-hint">copy</span></td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching events</td></tr>';
+      '<td class="vmr-copy-tile" title="Copy target" ' + onStopHandler('copyToClipboard(' + jsArgs(tgtVal) + ')') + '>' + esc(tgtVal) + '<span class="vmr-copy-hint">copy</span></td>' +
+      '<td style="' + outcomeCls + ';font-size:.82rem">' + esc(e.outcome || '—') + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching events</td></tr>';
 }
 
 function filterNotificationsView(query) {
@@ -16300,11 +16434,14 @@ function filterCostsView(query) {
     const cpu = Number(c.cpu_cost) || 0;
     const mem = Number(c.memory_cost) || 0;
     const stor = Number(c.storage_cost) || 0;
+    const net = Number(c.network_cost) || 0;
     const tot = Number(c.total_cost) || 0;
+    const cur = c.currency || 'USD';
+    const sym = cur === 'USD' ? '$' : cur + ' ';
     return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(c.namespace) + ',' + jsArgs(c.vm_name) + ')') + ' title="Open VM detail">' +
-      '<td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.vm_name) + ')') + '>' + esc(c.vm_name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.namespace) + '</td><td>$' + cpu.toFixed(2) + '</td><td>$' + mem.toFixed(2) + '</td><td>$' + stor.toFixed(2) + '</td><td><strong>$' + tot.toFixed(2) + '</strong></td>' +
+      '<td class="vmr-copy-tile" title="Copy VM name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.vm_name) + ')') + '>' + esc(c.vm_name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.namespace) + '</td><td>' + sym + cpu.toFixed(2) + '</td><td>' + sym + mem.toFixed(2) + '</td><td>' + sym + stor.toFixed(2) + '</td><td>' + sym + net.toFixed(2) + '</td><td><strong>' + sym + tot.toFixed(2) + '</strong></td>' +
       '<td style="color:var(--muted)">—</td><td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="event.stopPropagation();openAskZeus(' + jsArgs('Optimize cost for VM ' + c.vm_name) + ')">Analyze</button></td></tr>';
-  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-dim)">No matching VMs</td></tr>';
 }
 
 function filterWebhooksView(query) {
@@ -16380,8 +16517,11 @@ function filterActionsView(query) {
   const actionsCountEl = document.getElementById('actions-filter-count');
   if (actionsCountEl) actionsCountEl.textContent = filtered.length === items.length ? items.length + ' actions' : filtered.length + ' of ' + items.length + ' actions';
   tb.innerHTML = filtered.map(function(a) {
-    return '<tr><td class="vmr-copy-tile" title="Copy action name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?idSig('running','Yes'):idSig('stopped','No')) + '</td><td>' + idSig(a.phase||'Pending') + '</td><td>' + esc(a.message||'-') + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">' + (q ? 'No actions match &ldquo;' + esc(q) + '&rdquo;' : 'No actions') + '</td></tr>';
+    const approveBtn = !a.approved
+      ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="approveAction(' + jsArgs(a.namespace, a.name) + ')">Approve</button>'
+      : '';
+    return '<tr><td class="vmr-copy-tile" title="Copy action name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.action_type) + '</td><td>' + esc(a.vm_ref||'-') + '</td><td>' + (a.approved?idSig('running','Yes'):idSig('stopped','No')) + '</td><td>' + idSig(a.phase||'Pending') + '</td><td>' + esc(a.message||'-') + '</td><td>' + approveBtn + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">' + (q ? 'No actions match &ldquo;' + esc(q) + '&rdquo;' : 'No actions') + '</td></tr>';
 }
 
 function renderWorkloadsList(query) {
@@ -16466,8 +16606,10 @@ function filterForecastingView(query) {
   const forecastCountEl = document.getElementById('forecasting-filter-count');
   if (forecastCountEl) forecastCountEl.textContent = filtered.length === items.length ? items.length + ' predictions' : filtered.length + ' of ' + items.length + ' predictions';
   tb.innerHTML = filtered.map(function(f) {
-    return '<tr><td class="vmr-copy-tile" title="Copy metric" ' + onStopHandler('copyToClipboard(' + jsArgs(f.metric) + ')') + '>' + esc(f.metric) + '<span class="vmr-copy-hint">copy</span></td><td>' + f.current_value + '</td><td>' + f.predicted_value + '</td><td>' + esc(f.prediction_window) + '</td><td>' + esc(f.trend) + '</td><td>' + Math.round((f.confidence || 0) * 100) + '%</td><td>' + esc(f.estimated_breach || '-') + '</td></tr>';
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">' +
+    const alertThr = f.alert_threshold != null ? f.alert_threshold.toFixed(1) : '—';
+    const breaching = f.alert_threshold != null && f.predicted_value != null && f.predicted_value >= f.alert_threshold;
+    return '<tr><td class="vmr-copy-tile" title="Copy metric" ' + onStopHandler('copyToClipboard(' + jsArgs(f.metric) + ')') + '>' + esc(f.metric) + '<span class="vmr-copy-hint">copy</span></td><td>' + f.current_value + '</td><td>' + f.predicted_value + '</td><td>' + esc(f.prediction_window) + '</td><td>' + esc(f.trend) + '</td><td>' + Math.round((f.confidence || 0) * 100) + '%</td><td>' + alertThr + '</td><td>' + (breaching ? idSig('crit', f.estimated_breach || 'Soon') : esc(f.estimated_breach || '—')) + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">' +
     (q ? 'No predictions match &ldquo;' + esc(q) + '&rdquo;' : 'No predictions available') + '</td></tr>';
 }
 
@@ -16598,8 +16740,10 @@ function filterAutoscalerView(query) {
   const autoscalerCountEl = document.getElementById('autoscaler-filter-count');
   if (autoscalerCountEl) autoscalerCountEl.textContent = filtered.length === items.length ? items.length + ' policies' : filtered.length + ' of ' + items.length + ' policies';
   tb.innerHTML = filtered.map(function(a) {
-    return '<tr><td class="vmr-copy-tile" title="Copy autoscaler name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.namespace) + '</td><td>' + esc(a.target_kind) + '/' + esc(a.target_name) + '</td><td>' + a.min_replicas + '</td><td>' + a.current_replicas + '</td><td>' + a.max_replicas + '</td><td>' + (a.enabled ? 'Yes' : 'No') + '</td></tr>';
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
+    const cpuThr = a.cpu_threshold != null ? a.cpu_threshold + '%' : '—';
+    const memThr = a.memory_threshold != null ? a.memory_threshold + '%' : '—';
+    return '<tr><td class="vmr-copy-tile" title="Copy autoscaler name" ' + onStopHandler('copyToClipboard(' + jsArgs(a.name) + ')') + '>' + esc(a.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(a.namespace) + '</td><td>' + esc(a.target_kind) + '/' + esc(a.target_name) + '</td><td>' + a.min_replicas + '</td><td>' + a.current_replicas + '</td><td>' + a.max_replicas + '</td><td>' + cpuThr + '</td><td>' + memThr + '</td><td>' + (a.enabled ? idSig('running','Yes') : idSig('stopped','No')) + '</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-dim)">No matching policies</td></tr>';
 }
 
 function filterSloView(query) {
@@ -16638,8 +16782,8 @@ function filterChaosView(query) {
   const chaosCountEl = document.getElementById('chaos-filter-count');
   if (chaosCountEl) chaosCountEl.textContent = filtered.length === items.length ? items.length + ' experiments' : filtered.length + ' of ' + items.length + ' experiments';
   tb.innerHTML = filtered.map(function(c) {
-    return '<tr><td class="vmr-copy-tile" title="Copy experiment name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.name) + ')') + '>' + esc(c.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td>' + idSig(c.status) + '</td><td>' + esc(c.duration) + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy experiment name" ' + onStopHandler('copyToClipboard(' + jsArgs(c.name) + ')') + '>' + esc(c.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(c.experiment_type) + '</td><td>' + esc(c.namespace) + '</td><td>' + esc(c.target) + '</td><td>' + idSig(c.status) + '</td><td>' + esc(c.duration) + '</td><td>' + fmtTime(c.created_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching experiments</td></tr>';
 }
 
 function heatColor(score) {
@@ -16839,8 +16983,8 @@ function filterIngressView(query) {
     const hostsCell = ing.hosts && ing.hosts.length
       ? '<span class="vmr-copy-tile" title="Copy hosts" ' + onStopHandler('copyToClipboard(' + jsArgs(hostsStr) + ')') + '>' + esc(hostsStr) + '<span class="vmr-copy-hint">copy</span></span>'
       : '-';
-    return '<tr><td class="vmr-copy-tile" title="Copy ingress name" ' + onStopHandler('copyToClipboard(' + jsArgs(ing.name) + ')') + '>' + esc(ing.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + hostsCell + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching ingresses</td></tr>';
+    return '<tr><td class="vmr-copy-tile" title="Copy ingress name" ' + onStopHandler('copyToClipboard(' + jsArgs(ing.name) + ')') + '>' + esc(ing.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(ing.namespace) + '</td><td>' + esc(ing.class_name || '-') + '</td><td>' + hostsCell + '</td><td>' + (ing.tls ? 'Yes' : 'No') + '</td><td>' + esc((ing.rules || []).map(function(r) { return (r.host || '*') + r.path + ' -> ' + r.service_name; }).join(', ') || '-') + '</td><td style="font-size:.82rem">' + fmtTime(ing.created_at) + '</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching ingresses</td></tr>';
 }
 
 function filterNetpolView(query) {
@@ -16874,10 +17018,10 @@ function filterComplianceView(query) {
   if (complianceCountEl) complianceCountEl.textContent = fSt.length === statuses.length ? statuses.length + ' frameworks' : fSt.length + ' of ' + statuses.length + ' frameworks';
   if (stBody) stBody.innerHTML = fSt.map(function(s) {
     return '<tr class="clickable-row" ' + onHandler('complianceFrameworkAsk(' + jsArgs(s.framework) + ')') + ' title="Ask Zeus about ' + esc(s.framework) + '">' +
-      '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
+      '<td>' + esc(s.framework) + '</td><td>' + (s.score ?? 0) + '%</td><td>' + (s.total_controls ?? ((s.passing_controls ?? 0) + (s.failing_controls ?? 0))) + '</td><td>' + (s.passing_controls ?? 0) + '</td><td>' + (s.failing_controls ?? 0) + '</td>' +
       '<td>' + idSig(s.compliant ? 'running' : 'error', s.compliant ? 'yes' : 'no') + '</td>' +
       '<td>' + fmtTime(s.last_checked) + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching frameworks</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching frameworks</td></tr>';
   if (repBody) repBody.innerHTML = fRep.map(function(r) {
     return '<tr><td class="vmr-copy-tile" title="Copy report ID" ' + onStopHandler('copyToClipboard(' + jsArgs(r.id) + ')') + '>' + esc(r.id) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(r.framework) + '</td><td>' + fmtTime(r.generated_at) + '</td><td>' + (r.summary && r.summary.score != null ? r.summary.score : '-') + '%</td><td>' + (r.findings || []).length + '</td></tr>';
   }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No matching reports</td></tr>';
@@ -16953,8 +17097,17 @@ function filterBackupsView(query) {
   const backupsCountEl = document.getElementById('backups-filter-count');
   if (backupsCountEl) backupsCountEl.textContent = filtered.length === items.length ? items.length + ' backups' : filtered.length + ' of ' + items.length + ' backups';
   tb.innerHTML = filtered.map(function(b) {
-    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td>' + idSig(b.status) + '</td><td>' + esc(b.backup_type) + '</td><td>' + fmtTime(b.created_at) + '</td></tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No matching backups</td></tr>';
+    const isReady = ['ready','completed','readytouse'].includes((b.status || '').toLowerCase().replace(/ /g,''));
+    const restoreBtn = isReady
+      ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="restoreBackup(' + jsArgs(b.id || b.name) + ')">Restore</button>'
+      : '';
+    const sizeStr = b.size_bytes ? fmtBytes(b.size_bytes) : '—';
+    const flags = [b.compressed ? 'C' : '', b.encrypted ? 'E' : ''].filter(Boolean).join(' ');
+    const flagsCell = flags
+      ? '<span title="' + (b.compressed ? 'Compressed ' : '') + (b.encrypted ? 'Encrypted' : '') + '" style="font-size:.75rem;font-family:var(--font-mono);color:var(--ink-2)">' + flags + '</span>'
+      : '—';
+    return '<tr><td class="vmr-copy-tile" title="Copy backup name" ' + onStopHandler('copyToClipboard(' + jsArgs(b.name) + ')') + '>' + esc(b.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(b.vm_name) + '</td><td>' + esc(b.namespace) + '</td><td>' + idSig(b.status) + '</td><td>' + esc(b.backup_type) + '</td><td style="font-family:var(--font-mono)">' + sizeStr + '</td><td>' + flagsCell + '</td><td>' + fmtTime(b.completed_at || b.created_at) + '</td><td>' + restoreBtn + '</td></tr>';
+  }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--text-dim)">No matching backups</td></tr>';
 }
 
 function filterEventsFullList(query) {
@@ -17048,7 +17201,11 @@ async function fetchSchedules() {
       el.innerHTML = '<div class="empty-state"><p>No schedules — add one to automate snapshots.</p></div>';
       return;
     }
-    el.innerHTML = rows.map(s => '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm">'+esc(s.cron||'')+' &bull; max '+esc(String(s.max_snapshots||0))+'</div></div><div class="snap-status"><button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSchedule(' + jsArgs(s.namespace || 'default', s.name || '') + ')') + '>Delete</button></div></div>').join('');
+    el.innerHTML = rows.map(s => {
+      const enabledPill = s.enabled === false ? idSig('stopped', 'disabled') : idSig('running', 'enabled');
+      const lastRunStr = s.last_run ? '<span style="font-size:.78rem;color:var(--ink-3)">Last: ' + fmtTime(s.last_run) + '</span>' : '';
+      return '<div class="snap-row"><div class="snap-info"><div class="snap-name">'+esc(s.vm_name||'?')+'</div><div class="snap-vm" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+enabledPill+'<span>'+esc(s.cron||'')+'</span><span>max '+esc(String(s.max_snapshots||0))+'</span>'+lastRunStr+'</div></div><div class="snap-status"><button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('deleteSchedule(' + jsArgs(s.namespace || 'default', s.name || '') + ')') + '>Delete</button></div></div>';
+    }).join('');
   } catch(e) {
     el.innerHTML = '<div class="empty-state"><p style="color:var(--error)">' + esc(e.message || String(e)) + '</p><button class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchSchedules()">&#8635; Retry</button></div>';
   }
@@ -19085,23 +19242,45 @@ async function fetchMissionControl() {
   const topo = document.getElementById('mission-topology-body');
   if (!wall) return;
   try {
-    const [nodes, vms, map, netpol] = await Promise.all([
+    const [nodes, vms, map, netpol, migs] = await Promise.all([
       apiJson('/api/v1/nodes').catch(function() { return []; }),
       apiJson('/api/v1/vms' + nsParam()).catch(function() { return { vms: [] }; }),
       apiJson('/api/v1/topology/map' + nsParam()).catch(function() { return { nodes: [], edges: [] }; }),
       apiJson('/api/v1/network-policies' + nsParam()).catch(function() { return []; }),
+      apiJson('/api/v1/migrations').catch(function() { return []; }),
     ]);
     const nodeList = asArray(nodes);
     const vmList = vms.vms != null ? vms.vms : asArray(vms);
     const running = vmList.filter(function(v) { return v.status === 'Running'; }).length;
     const edges = (map && map.edges) ? map.edges : [];
     const policies = asArray(netpol);
+    const migList = asArray(migs);
+    const activeMig = migList.filter(function(m) { return (m.status || '').toLowerCase() === 'running'; }).length;
     wall.innerHTML =
       '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'nodes\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'nodes\')"><h3>Hosts</h3><div class="mt-val">' + nodeList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">Kubernetes nodes</p></div>' +
       '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'vms\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'vms\')"><h3>VMs</h3><div class="mt-val">' + vmList.length + '</div><p style="margin:8px 0 0;font-size:.78rem;color:var(--text-dim)">' + running + ' running</p></div>' +
       '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'network-policies\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'network-policies\')"><h3>Networks</h3><div class="mt-val">' + policies.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Network policies</p></div>' +
-      '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'storage\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'storage\')"><h3>Storage</h3><div class="mt-val">' + edges.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Topology edges</p></div>';
+      '<div class="mission-tile zeus-glass" role="button" tabindex="0" onclick="navigate(\'storage\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \')navigate(\'storage\')"><h3>Storage</h3><div class="mt-val">' + edges.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">Topology edges</p></div>' +
+      '<div class="mission-tile zeus-glass' + (activeMig ? ' warn' : '') + '" role="button" tabindex="0" onclick="fetchMigrations()" onkeydown="if(event.key===\'Enter\'||event.key===\' \')fetchMigrations()"><h3>Migrations</h3><div class="mt-val">' + migList.length + '</div><p style="margin:0;font-size:.78rem;color:var(--text-dim)">' + activeMig + ' active</p></div>';
     if (topo) topo.textContent = (map.nodes || []).length + ' nodes, ' + edges.length + ' edges in scope ' + currentNamespace;
+    window.lastMigrations = migList;
+    const migTb = document.getElementById('migrations-body');
+    if (migTb) {
+      const cnt = document.getElementById('migrations-count');
+      if (cnt) cnt.textContent = migList.length + ' migrations (' + activeMig + ' running)';
+      migTb.innerHTML = migList.length
+        ? migList.map(function(m) {
+            const cancelBtn = (m.status || '').toLowerCase() === 'running'
+              ? '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="cancelMigration(' + jsArgs(m.id) + ')">Cancel</button>'
+              : '';
+            const pct = m.progress_percent || 0;
+            const bar = '<div style="background:var(--hairline);border-radius:3px;height:6px;width:80px;display:inline-block"><div style="width:' + pct + '%;height:100%;background:var(--plasma);border-radius:3px"></div></div> ' + pct + '%';
+            return '<tr><td class="vmr-copy-tile" ' + onStopHandler('copyToClipboard(' + jsArgs(m.id) + ')') + '>' + esc(m.id) + '<span class="vmr-copy-hint">copy</span></td>' +
+              '<td>' + esc(m.vm_name) + '</td><td>' + esc(m.source_node || '—') + '</td><td>' + esc(m.target_node || '—') + '</td>' +
+              '<td>' + idSig(m.status) + '</td><td>' + bar + '</td><td>' + fmtTime(m.started_at) + '</td><td>' + cancelBtn + '</td></tr>';
+          }).join('')
+        : '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No active migrations</td></tr>';
+    }
   } catch (e) {
     if (wall) wall.innerHTML = '<div style="padding:24px;text-align:center"><p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-top:12px" onclick="fetchMissionControl()">&#8635; Retry</button></div>';
   }
@@ -19461,6 +19640,13 @@ function renderRdpPanel(container, ns, name, st, ctx) {
       inner += '<div style="margin-top:8px"><button type="button" class="glass-btn-secondary" ' + onStopHandler('copyToClipboard(' + jsArgs(String(st.rdp_via_nodeport_example)) + ')') + '>Copy RDP address</button></div>';
     }
     inner += detailRow('Service', esc(String(st.service_name || '')));
+    if (st.cluster_ip && st.cluster_ip !== 'None') {
+      inner += detailRow('Cluster IP', '<span class="vmr-copy-tile" title="Copy cluster IP" ' + onStopHandler('copyToClipboard(' + jsArgs(String(st.cluster_ip)) + ')') + '>' + esc(String(st.cluster_ip)) + '<span class="vmr-copy-hint">copy</span></span>');
+    }
+    const nodeList = asArray(st.nodes);
+    if (nodeList.length) {
+      inner += detailRow('Reachable via', nodeList.map(function(n) { return esc(n) + ':' + esc(String(st.node_port || '')); }).join(', '));
+    }
   }
   if (st && st.suggested_node_port != null) {
     inner += detailRow('Suggested', String(st.suggested_node_port) + ' (30100–30199)');
@@ -20710,12 +20896,14 @@ function filterPodsView(query) {
     const age = formatPodAge(p.created_at) || p.age || '—';
     const nodeSpan = p.node_name ? '<span class="cell-mono vmr-copy-tile" title="Copy node name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.node_name) + ')') + '>' + esc(p.node_name) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
     const ipSpan = p.ip ? '<span class="cell-mono vmr-copy-tile" title="Copy IP" ' + onStopHandler('copyToClipboard(' + jsArgs(p.ip) + ')') + '>' + esc(p.ip) + '<span class="vmr-copy-hint">copy</span></span>' : '<span class="cell-mono">—</span>';
+    const ctrCount = asArray(p.containers).length || (p.container_count != null ? p.container_count : null);
     return '<div class="table-row pod-row" style="cursor:pointer" data-pod-ns="' + esc(p.namespace) + '" data-pod-name="' + esc(p.name) + '" ' + onHandler('togglePodDetail(' + jsArgs(p.namespace, p.name) + ')') + '>' +
       '<span class="cell-name vmr-copy-tile" title="Copy pod name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span></span>' +
       idSig(p.phase) +
       nodeSpan + ipSpan +
       '<span class="cell-mono">' + restarts + '</span>' +
-      '<span class="cell-mono">' + esc(age) + '</span></div>';
+      '<span class="cell-mono">' + esc(age) + '</span>' +
+      '<span class="cell-mono">' + (ctrCount != null ? ctrCount : '—') + '</span></div>';
   }).join('');
 }
 
@@ -20748,6 +20936,7 @@ function filterPvcsView(query) {
       else if (u.capacity) parts.push(esc(u.capacity));
       if (u.usage_basis) parts.push(esc(u.usage_basis));
       if (u.csi_free_min_for_class) parts.push('CSI class free (min): ' + esc(u.csi_free_min_for_class));
+      if (u.bound_to_vm) parts.push('VM: ' + esc(u.bound_to_vm));
       if (parts.length) usageLine = '<div class="snap-vm" style="margin-top:4px;font-size:.82em;opacity:.9;line-height:1.35">' + parts.join(' · ') + '</div>';
     }
     return '<div class="snap-row"><div class="snap-info"><div class="snap-name vmr-copy-tile" title="Copy PVC name" ' + onStopHandler('copyToClipboard(' + jsArgs(p.name) + ')') + '>' + esc(p.name) + '<span class="vmr-copy-hint">copy</span>' +
@@ -21906,6 +22095,7 @@ async function fetchCosts(opts) {
         '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'vms\')" title="View VMs"><div class="gsl">VMs tracked</div><div class="gsv">' + (costs.length || 0) + '</div></button>' +
         '<div class="glass-stat-pill"><div class="gsl">CPU cost</div><div class="gsv">$' + (Number(byRt.cpu) || 0).toFixed(2) + '</div></div>' +
         '<div class="glass-stat-pill"><div class="gsl">Memory cost</div><div class="gsv">$' + (Number(byRt.memory) || 0).toFixed(2) + '</div></div>' +
+        (summary.pricing_model ? '<div class="glass-stat-pill"><div class="gsl">Pricing model</div><div class="gsv" style="font-size:.82rem">' + esc(summary.pricing_model) + '</div></div>' : '') +
         costNote;
     }
 
@@ -21927,7 +22117,12 @@ async function fetchCosts(opts) {
       try {
         const fc = apiObject(await apiJson('/api/v1/costs/forecast' + nsParam(), opts));
         const fcCap = fc.veyron_context && fc.veyron_context.limitations ? '<p style="font-size:.78rem;color:var(--text-dim);margin-top:10px;line-height:1.55">' + esc(fc.veyron_context.limitations) + '</p>' : '';
-        fcEl.innerHTML = '<div style="text-align:center"><div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (Number(fc.projected_monthly) || 0).toFixed(2) + '</div><div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div><div style="margin-top:12px">' + idSig(fc.trend === 'growing' ? 'error' : 'running', fc.trend || 'stable') + '</div>' + fcCap + '</div>';
+        const curM = fc.current_monthly != null ? '$' + Number(fc.current_monthly).toFixed(2) : null;
+        fcEl.innerHTML = '<div style="text-align:center">' +
+          (curM ? '<div style="font-size:.8rem;color:var(--ink-3);margin-bottom:4px">Current: ' + curM + '</div>' : '') +
+          '<div style="font-size:2rem;font-weight:700;color:var(--primary-blue)">$' + (Number(fc.projected_monthly) || 0).toFixed(2) + '</div>' +
+          '<div style="color:var(--text-dim);margin-top:6px;font-size:.9rem">Projected monthly</div>' +
+          '<div style="margin-top:12px">' + idSig(fc.trend === 'growing' ? 'error' : 'running', fc.trend || 'stable') + '</div>' + fcCap + '</div>';
         if (fc.projected_monthly != null) {
           window.lastCostForecast = '$' + Number(fc.projected_monthly).toFixed(2);
         }
@@ -21955,7 +22150,7 @@ async function fetchCosts(opts) {
     if (sumEl) sumEl.innerHTML = summaryErrorHtml(msg);
     if (nsEl) nsEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
     if (fcEl) fcEl.innerHTML = '<p style="color:var(--error)">' + esc(msg) + '</p>';
-    if (tb) tb.innerHTML = tbodyError(8, msg, 'fetchCosts');
+    if (tb) tb.innerHTML = tbodyError(9, msg, 'fetchCosts');
   }
 }
 
@@ -22326,11 +22521,11 @@ async function fetchMonitoring() {
             <li>Open a VM and use <strong>live charts</strong> for immediate utilization context.</li>
           </ul>
         </div></td></tr>`;
-      anTb.innerHTML = anoList.map(a => {
+      if (anTb) anTb.innerHTML = anoList.map(a => {
       const valShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.current_value : (a.current_value+'%');
       const thrShow = (a.metric && a.metric.indexOf('disk_write')>=0) ? a.threshold : (a.threshold+'%');
-      return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(a.namespace) + ',' + jsArgs(a.vm_name) + ')') + ' title="Open VM detail">' +
-        '<td>' + esc(a.vm_name) + '</td><td>' + esc(a.metric) + '</td><td>' + valShow + '</td><td>' + thrShow + '</td>' +
+      return '<tr class="clickable-row" ' + onHandler('openVmDetailDeep(' + jsArgs(a.namespace) + ',' + jsArgs(a.vm_name) + ')') + ' title="' + esc(a.description || 'Open VM detail') + '">' +
+        '<td>' + esc(a.vm_name) + '</td><td>' + esc(a.namespace || '—') + '</td><td title="' + esc(a.description || '') + '">' + esc(a.metric) + '</td><td>' + valShow + '</td><td>' + thrShow + '</td>' +
         '<td>' + a.deviation_percent + '%</td><td>' + idSig(a.severity) + '</td><td>' + fmtTime(a.detected_at) + '</td></tr>';
     }).join('') || anoEmpty;
     }
@@ -22338,7 +22533,7 @@ async function fetchMonitoring() {
     const msg = e.message || String(e);
     if (sum) sum.innerHTML = summaryErrorHtml(msg);
     if (recTb) recTb.innerHTML = tbodyError(5, msg, 'fetchMonitoring');
-    if (anTb) anTb.innerHTML = tbodyError(7, msg, 'fetchMonitoring');
+    if (anTb) anTb.innerHTML = tbodyError(8, msg, 'fetchMonitoring');
     if (badge) {
       badge.textContent = 'Error';
       badge.className = 'anom-count-badge';
@@ -22619,7 +22814,7 @@ async function fetchChaos() {
     window.lastChaosExperiments = filtered;
     filterChaosView((document.getElementById('chaos-search') || {}).value || '');
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchChaos');
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchChaos');
     console.error('Chaos fetch error:', e);
   }
 }
@@ -22745,7 +22940,7 @@ async function fetchBackups() {
     window.lastBackups = items;
     filterBackupsView((document.getElementById('backups-search') || {}).value || '');
   } catch (e) {
-    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchBackups');
+    if (tb) tb.innerHTML = tbodyError(9, e.message || String(e), 'fetchBackups');
     console.error('Backups fetch error:', e);
   }
   await fetchVelero();
@@ -23057,12 +23252,23 @@ async function fetchGitOps() {
     setCapBanner('gitops-cap-banner', status.veyron_context);
     const note = status.note ? '<p style="grid-column:1/-1;font-size:.72em;color:var(--text-dim);margin:8px 0 0;line-height:1.35">' + esc(status.note) + '</p>' : '';
     const syncOk = (status.sync_status || '').toLowerCase().indexOf('sync') >= 0 && (status.sync_status || '').toLowerCase().indexOf('out') < 0;
+    const argoCount = asArray(status.argo_applications).length;
+    const fluxCount = asArray(status.flux_kustomizations).length;
+    const controllersNote = argoCount || fluxCount
+      ? '<div style="grid-column:1/-1;font-size:.76rem;color:var(--ink-3);margin-top:4px">' +
+          (argoCount ? 'ArgoCD: ' + asArray(status.argo_applications).join(', ') : '') +
+          (argoCount && fluxCount ? ' · ' : '') +
+          (fluxCount ? 'Flux: ' + asArray(status.flux_kustomizations).join(', ') : '') +
+          '</div>'
+      : '';
     summary.innerHTML =
       '<div class="glass-stat-pill"><div class="gsl">Repo</div><div class="gsv" style="font-size:.95rem">' + esc(status.repo_url || 'Not configured') + '</div></div>' +
       '<div class="glass-stat-pill"><div class="gsl">Branch</div><div class="gsv">' + esc(status.branch || '-') + '</div></div>' +
+      (status.last_commit ? '<div class="glass-stat-pill"><div class="gsl">Last commit</div><div class="gsv" style="font-family:var(--font-mono);font-size:.82rem">' + esc(status.last_commit.slice(0, 10)) + '</div></div>' : '') +
+      (status.last_synced ? '<div class="glass-stat-pill"><div class="gsl">Last synced</div><div class="gsv" style="font-size:.82rem">' + fmtTime(status.last_synced) + '</div></div>' : '') +
       '<div class="glass-stat-pill' + (syncOk ? ' ok' : ' warn') + '"><div class="gsl">Sync</div><div class="gsv" style="font-size:1rem">' + esc(status.sync_status || 'unknown') + '</div></div>' +
       '<button type="button" class="glass-stat-pill' + (status.drift_detected ? ' bad' : ' ok') + ' clickable-stat" onclick="' + (status.drift_detected ? 'runGitOpsAdvisor()' : 'navigate(\'insights\')') + '" title="' + (status.drift_detected ? 'Run GitOps advisor' : 'View insights') + '"><div class="gsl">Drift</div><div class="gsv">' + (status.drift_detected ? 'Detected' : 'Clear') + '</div></button>' +
-      note;
+      controllersNote + note;
     renderGitopsDriftPanel();
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
@@ -23219,11 +23425,13 @@ async function fetchScheduling() {
   try {
     const status = await apiJson('/api/v1/scheduling/status' + nsParam());
     if (!summary) return;
+    const latencyMs = status.scheduling_latency_ms || 0;
     summary.innerHTML = renderGlassStatPills([
       { label: 'Pending pods', value: status.pending_pods || 0, cls: (status.pending_pods || 0) ? ' warn' : '', onclick: "navigate('pods')", title: 'View pods' },
       { label: 'Scheduled', value: status.scheduled_pods || 0, cls: ' ok' },
       { label: 'Unschedulable nodes', value: (status.unschedulable_nodes || []).length, cls: (status.unschedulable_nodes || []).length ? ' bad' : '' },
-      { label: 'Preemptions', value: status.preemptions || 0 }
+      { label: 'Preemptions', value: status.preemptions || 0 },
+      { label: 'Sched latency', value: latencyMs > 0 ? latencyMs.toFixed(1) + ' ms' : '—', cls: latencyMs > 500 ? ' warn' : '' }
     ]);
     renderSchedulingDetailPanel(status);
   } catch (e) {
@@ -24008,6 +24216,7 @@ function observabilityStatClass(status) {
 
 async function fetchObservability() {
   const summary = document.getElementById('observability-summary');
+  const detail = document.getElementById('observability-detail-body');
   try {
     const overview = await apiJson('/api/v1/observability/overview' + nsParam());
     if (!summary) return;
@@ -24016,6 +24225,14 @@ async function fetchObservability() {
       '<button type="button" class="glass-stat-pill' + observabilityStatClass(overview.logs_status) + ' clickable-stat" onclick="navigate(\'logs\')" title="Open logs"><div class="gsl">Logs</div><div class="gsv" style="font-size:1rem">' + esc(overview.logs_status || '-') + '</div></button>' +
       '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'logs\')" title="Open logs"><div class="gsl">Log entries</div><div class="gsv">' + (overview.total_log_entries || 0) + '</div></button>' +
       '<button type="button" class="glass-stat-pill clickable-stat" onclick="navigate(\'monitoring\')" title="Open monitoring"><div class="gsl">Metric series</div><div class="gsv">' + (overview.total_metric_series || 0) + '</div></button>';
+    if (detail) {
+      const traceSig = (overview.traces_status || 'unknown').toLowerCase().includes('active') ? 'ok' : 'inert';
+      detail.innerHTML =
+        '<div class="id-tile" style="min-width:0"><div class="id-eyebrow">Traces pipeline</div><div class="id-big">' + idSig(traceSig, esc(overview.traces_status || '—')) + '</div></div>' +
+        '<div class="id-tile" style="min-width:0"><div class="id-eyebrow">Trace spans</div><div class="id-big" style="font-size:1.5rem">' + ((overview.total_trace_spans || 0).toLocaleString()) + '</div></div>' +
+        '<div class="id-tile" style="min-width:0"><div class="id-eyebrow">Ingestion rate</div><div class="id-big" style="font-size:1.5rem">' + esc(overview.data_ingestion_rate || '—') + '</div></div>' +
+        '<div class="id-tile" style="min-width:0"><div class="id-eyebrow">Storage used</div><div class="id-big" style="font-size:1.5rem">' + esc(overview.storage_used || '—') + '</div></div>';
+    }
   } catch (e) {
     if (summary) summary.innerHTML = summaryErrorHtml(e.message || String(e));
     console.error('Observability fetch error:', e);
@@ -24234,14 +24451,19 @@ async function fetchSocPage(refresh) {
             const ackBtn = d.status === 'open'
               ? '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:8px" onclick="ackSocDetection(' + jsArgs(d.id) + ')">Ack</button>'
               : '';
+            const nsVm = [d.namespace, d.vm_name].filter(Boolean).join('/');
+            const ackedMeta = d.acked_by ? ' · Acked by ' + esc(d.acked_by) + (d.acked_at ? ' at ' + fmtTime(d.acked_at) : '') : '';
+            const firstSeen = d.first_seen && d.first_seen !== d.last_seen ? 'First: ' + fmtTime(d.first_seen) + ' · ' : '';
             return '<div class="soc-det-row" style="padding:10px 0;border-bottom:1px solid var(--border)">' +
               '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">' +
               idSig(d.severity) +
               idSig(d.status) +
-              '<strong>' + esc(d.title) + '</strong>' + ackBtn +
+              '<strong>' + esc(d.title) + '</strong>' +
+              (nsVm ? '<span class="id-chip" style="font-size:.75rem">' + esc(nsVm) + '</span>' : '') +
+              ackBtn +
               '</div>' +
               '<div style="font-size:.82rem;color:var(--text-muted);margin-top:6px">' + esc(d.message) + '</div>' +
-              '<div style="font-size:.76rem;color:var(--text-dim);margin-top:4px">' + esc(d.resource) + ' · ' + esc(d.rule_id) + ' · ' + fmtTime(d.last_seen) + '</div>' +
+              '<div style="font-size:.76rem;color:var(--text-dim);margin-top:4px">' + esc(d.resource) + ' · ' + esc(d.rule_id) + ' · ' + firstSeen + fmtTime(d.last_seen) + ackedMeta + '</div>' +
               '</div>';
           }).join('')
         : '<p style="color:var(--text-dim);margin:0">No detections — cluster looks clear for configured rules</p>';
@@ -24329,7 +24551,7 @@ async function fetchCompliance() {
   } catch (e) {
     const msg = e.message || String(e);
     if (stats) stats.innerHTML = summaryErrorHtml(msg);
-    if (stBody) stBody.innerHTML = tbodyError(6, msg, 'fetchCompliance');
+    if (stBody) stBody.innerHTML = tbodyError(7, msg, 'fetchCompliance');
     if (repBody) repBody.innerHTML = tbodyError(5, msg, 'fetchCompliance');
   }
 }
@@ -24916,6 +25138,809 @@ async function fetchIncidents() {
   setInterval(spineRefresh, 20000);
   window._idSpineRefresh = spineRefresh;
 })();
+
+// ── Alert resolve ────────────────────────────────────────────────────────────
+async function resolveAlert(id) {
+  if (!id) return;
+  try {
+    await apiJson('/api/v1/alerts/' + encodeURIComponent(id) + '/resolve', { method: 'PUT' });
+    toast('Alert resolved', 'success');
+    fetchAlerts();
+  } catch (e) {
+    toast('Resolve failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Backup restore ───────────────────────────────────────────────────────────
+async function restoreBackup(id) {
+  openGlassConfirm({
+    title: 'Restore backup',
+    body: 'Restore backup "' + id + '"? The VM will be reverted to this snapshot state.',
+    confirmLabel: 'Restore',
+    onConfirm: async function() {
+      try {
+        await apiJson('/api/v1/backups/' + encodeURIComponent(id) + '/restore', { method: 'POST' });
+        toast('Restore initiated for ' + id, 'success');
+      } catch (e) {
+        toast('Restore failed: ' + (e.message || String(e)), 'error');
+      }
+    }
+  });
+}
+
+// ── Cost budgets ─────────────────────────────────────────────────────────────
+async function fetchBudgets() {
+  const tb = document.getElementById('budgets-table-body');
+  const cnt = document.getElementById('budgets-count');
+  try {
+    const budgets = asArray(await apiJson('/api/v1/costs/budgets'));
+    window.lastBudgets = budgets;
+    if (cnt) cnt.textContent = budgets.length + ' budgets';
+    if (!tb) return;
+    tb.innerHTML = budgets.length
+      ? budgets.map(function(b) {
+          const pct = b.monthly_limit > 0 ? Math.round((b.current_spend / b.monthly_limit) * 100) : 0;
+          return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.namespace) + '</td>' +
+            '<td>$' + (b.monthly_limit || 0).toFixed(2) + '</td>' +
+            '<td>$' + (b.current_spend || 0).toFixed(2) + ' (' + pct + '%)</td>' +
+            '<td>' + (b.alert_threshold_percent || 80) + '%</td>' +
+            '<td>' + idSig(b.status) + '</td>' +
+            '<td><button type="button" class="glass-btn-destructive glass-btn-sm" onclick="deleteBudget(' + jsArgs(b.name) + ')">&#10005;</button></td></tr>';
+        }).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No budgets configured</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchBudgets');
+  }
+}
+
+function createBudgetDialog() {
+  const name = window.prompt('Budget name:');
+  if (!name || !name.trim()) return;
+  const ns = window.prompt('Namespace:', 'default');
+  if (!ns) return;
+  const limit = parseFloat(window.prompt('Monthly limit (USD):', '100'));
+  if (isNaN(limit) || limit <= 0) { toast('Invalid limit', 'error'); return; }
+  apiJson('/api/v1/costs/budgets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name.trim(), namespace: ns.trim(), monthly_limit: limit, alert_threshold_percent: 80 })
+  }).then(function() {
+    toast('Budget created', 'success');
+    fetchBudgets();
+  }).catch(function(e) { toast(e.message || String(e), 'error'); });
+}
+
+async function deleteBudget(name) {
+  if (!window.confirm('Delete budget "' + name + '"?')) return;
+  try {
+    await apiJson('/api/v1/costs/budgets/' + encodeURIComponent(name), { method: 'DELETE' });
+    toast('Budget deleted', 'success');
+    fetchBudgets();
+  } catch (e) {
+    toast('Delete failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Disks ─────────────────────────────────────────────────────────────────────
+async function fetchDisks() {
+  const tb = document.getElementById('disks-body');
+  const cnt = document.getElementById('disks-count');
+  try {
+    const disks = asArray(await apiJson('/api/v1/disks' + nsParam()));
+    window.lastDisks = disks;
+    if (cnt) cnt.textContent = disks.length + ' PVCs';
+    filterDisksView((document.getElementById('disks-search') || {}).value || '');
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchDisks');
+  }
+}
+
+function filterDisksView(query) {
+  const tb = document.getElementById('disks-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastDisks || [];
+  const filtered = q ? items.filter(function(d) {
+    return (d.name || '').toLowerCase().includes(q) || (d.vm_name || '').toLowerCase().includes(q);
+  }) : items;
+  const cnt = document.getElementById('disks-count');
+  if (cnt) cnt.textContent = filtered.length + (filtered.length !== items.length ? ' of ' + items.length : '') + ' PVCs';
+  tb.innerHTML = filtered.length
+    ? filtered.map(function(d) {
+        return '<tr><td class="vmr-copy-tile" ' + onStopHandler('copyToClipboard(' + jsArgs(d.name) + ')') + '>' + esc(d.name) + '<span class="vmr-copy-hint">copy</span></td>' +
+          '<td>' + esc(d.vm_name || '—') + '</td>' +
+          '<td>' + esc(d.size || '—') + '</td>' +
+          '<td>' + esc(d.storage_class || '—') + '</td>' +
+          '<td>' + esc(d.access_mode || '—') + '</td>' +
+          '<td>' + idSig(d.status) + '</td>' +
+          '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="expandDisk(' + jsArgs(d.name, d.size) + ')">Expand</button></td></tr>';
+      }).join('')
+    : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching disks</td></tr>';
+}
+
+async function expandDisk(diskName, currentSize) {
+  const newSize = window.prompt('Expand disk "' + diskName + '" (current: ' + (currentSize || '?') + ')\nEnter new size (e.g. 20Gi, 200Gi):', currentSize || '');
+  if (!newSize || newSize.trim() === (currentSize || '').trim()) return;
+  try {
+    await apiJson('/api/v1/disks/expand', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ disk_name: diskName, new_size: newSize.trim() })
+    });
+    toast('Disk "' + diskName + '" expanding → ' + newSize.trim(), 'success');
+    setTimeout(fetchDisks, 2000);
+  } catch (e) {
+    toast('Expand failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Logs query ───────────────────────────────────────────────────────────────
+async function queryLogs() {
+  const stats = document.getElementById('logs-stats');
+  const stream = document.getElementById('logs-stream');
+  const vm = (document.getElementById('logs-vm-filter') || {}).value || '';
+  const container = (document.getElementById('logs-container-filter') || {}).value || '';
+  const search = (document.getElementById('logs-search') || {}).value || '';
+  const level = (document.getElementById('logs-level-filter') || {}).value || '';
+  const tail = parseInt((document.getElementById('logs-tail-lines') || {}).value || '200', 10) || 200;
+  let params = nsParam();
+  if (vm) params += '&vm=' + encodeURIComponent(vm);
+  if (container) params += '&container=' + encodeURIComponent(container);
+  if (search) params += '&search=' + encodeURIComponent(search);
+  if (level) params += '&level=' + encodeURIComponent(level);
+  params += '&tail=' + tail;
+  if (stream) stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:24px">Querying logs…</div>';
+  try {
+    const data = await apiJson('/api/v1/logs/query' + params);
+    setCapBanner('logs-cap-banner', data.veyron_context);
+    const entries = data.entries || [];
+    const errC = entries.filter(function(e) { return e.level === 'ERROR'; }).length;
+    const warnC = entries.filter(function(e) { return e.level === 'WARN'; }).length;
+    if (stats) stats.innerHTML =
+      '<button type="button" class="glass-stat-pill bad clickable-stat" onclick="setLogsLevelFilter(\'error\')"><div class="gsl">Errors</div><div class="gsv">' + errC + '</div></button>' +
+      '<button type="button" class="glass-stat-pill warn clickable-stat" onclick="setLogsLevelFilter(\'warn\')"><div class="gsl">Warnings</div><div class="gsv">' + warnC + '</div></button>' +
+      '<button type="button" class="glass-stat-pill"><div class="gsl">Total</div><div class="gsv">' + entries.length + '</div></button>' +
+      '<button type="button" class="glass-stat-pill clickable-stat" onclick="setLogsLevelFilter(\'\')"><div class="gsl">All</div><div class="gsv">↺</div></button>';
+    if (!stream) return;
+    if (!entries.length) {
+      stream.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px">No log entries matching query</div>';
+      return;
+    }
+    const lvlColor = { ERROR: 'var(--error)', WARN: 'var(--warning)', INFO: 'var(--spark)', DEBUG: 'var(--text-dim)' };
+    stream.innerHTML = entries.map(function(e) {
+      const c = lvlColor[e.level] || 'var(--text)';
+      return '<div><span style="color:var(--text-dim)">' + esc(e.timestamp || '-') + '</span> <span style="color:' + c + ';font-weight:600">' + esc((e.level || 'INFO').padEnd(5,' ')) + '</span> <span style="color:var(--text-muted)">' + esc(e.source) + '</span> ' + esc(e.message) + '</div>';
+    }).join('');
+    stream.scrollTop = stream.scrollHeight;
+  } catch (e) {
+    if (stream) stream.innerHTML = '<div style="color:var(--error);text-align:center;padding:40px">' + esc(e.message || String(e)) + '</div>';
+  }
+}
+
+// ── Network interfaces + bandwidth ───────────────────────────────────────────
+async function fetchNetworkInterfaces() {
+  const tb = document.getElementById('net-ifaces-body');
+  const cnt = document.getElementById('net-ifaces-count');
+  try {
+    const ifaces = asArray(await apiJson('/api/v1/network/interfaces' + nsParam()));
+    window.lastNetIfaces = ifaces;
+    if (cnt) cnt.textContent = ifaces.length + ' interfaces';
+    if (!tb) return;
+    tb.innerHTML = ifaces.length
+      ? ifaces.map(function(i) {
+          return '<tr><td>' + esc(i.name || '—') + '</td>' +
+            '<td>' + esc(i.vm_name) + '</td>' +
+            '<td>' + esc(i.vm_namespace) + '</td>' +
+            '<td class="vmr-copy-tile" ' + onStopHandler('copyToClipboard(' + jsArgs(i.mac_address || '') + ')') + '>' + esc(i.mac_address || '—') + '<span class="vmr-copy-hint">copy</span></td>' +
+            '<td>' + esc(i.ip_address || '—') + '</td>' +
+            '<td>' + esc(i.network_name || '—') + '</td>' +
+            '<td style="font-size:.8rem;color:var(--ink-2)">' + esc(i.interface_type || '—') + '</td>' +
+            '<td>' + idSig(i.status) + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No interfaces found</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchNetworkInterfaces');
+  }
+}
+
+async function fetchBandwidth() {
+  const tb = document.getElementById('net-bw-body');
+  const cnt = document.getElementById('net-bw-count');
+  try {
+    const bw = asArray(await apiJson('/api/v1/network/bandwidth' + nsParam()));
+    window.lastNetBandwidth = bw;
+    if (cnt) cnt.textContent = bw.length + ' VMs';
+    if (!tb) return;
+    tb.innerHTML = bw.length
+      ? bw.map(function(b) {
+          return '<tr><td>' + esc(b.vm_name) + '</td>' +
+            '<td>' + esc(b.vm_namespace) + '</td>' +
+            '<td>' + esc(b.interface || '—') + '</td>' +
+            '<td>' + fmtBytes(b.rx_bytes_per_sec) + '/s</td>' +
+            '<td>' + fmtBytes(b.tx_bytes_per_sec) + '/s</td>' +
+            '<td>' + (b.rx_packets_per_sec || 0) + '</td>' +
+            '<td>' + (b.tx_packets_per_sec || 0) + '</td>' +
+            '<td style="font-size:.76rem;color:var(--ink-3)">' + (b.timestamp ? fmtTime(b.timestamp) : '—') + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No bandwidth data — requires running VMs</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchBandwidth');
+  }
+}
+
+// ── Migrations ───────────────────────────────────────────────────────────────
+async function fetchMigrations() {
+  const tb = document.getElementById('migrations-body');
+  const cnt = document.getElementById('migrations-count');
+  try {
+    const migs = asArray(await apiJson('/api/v1/migrations'));
+    window.lastMigrations = migs;
+    if (cnt) cnt.textContent = migs.length + ' migrations';
+    if (!tb) return;
+    const running = migs.filter(function(m) { return (m.status || '').toLowerCase() === 'running'; }).length;
+    if (cnt) cnt.textContent = migs.length + ' migrations (' + running + ' running)';
+    tb.innerHTML = migs.length
+      ? migs.map(function(m) {
+          const cancelBtn = (m.status || '').toLowerCase() === 'running'
+            ? '<button type="button" class="glass-btn-destructive glass-btn-sm" onclick="cancelMigration(' + jsArgs(m.id) + ')">Cancel</button>'
+            : '';
+          const pct = m.progress_percent || 0;
+          const bar = '<div style="background:var(--hairline);border-radius:3px;height:6px;width:80px;display:inline-block"><div style="width:' + pct + '%;height:100%;background:var(--plasma);border-radius:3px"></div></div> ' + pct + '%';
+          return '<tr><td class="vmr-copy-tile" ' + onStopHandler('copyToClipboard(' + jsArgs(m.id) + ')') + '>' + esc(m.id) + '<span class="vmr-copy-hint">copy</span></td>' +
+            '<td>' + esc(m.vm_name) + '</td>' +
+            '<td>' + esc(m.source_node || '—') + '</td>' +
+            '<td>' + esc(m.target_node || '—') + '</td>' +
+            '<td>' + idSig(m.status) + '</td>' +
+            '<td>' + bar + '</td>' +
+            '<td>' + fmtTime(m.started_at) + '</td>' +
+            '<td>' + cancelBtn + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No active migrations</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(8, e.message || String(e), 'fetchMigrations');
+  }
+}
+
+async function cancelMigration(id) {
+  if (!window.confirm('Cancel migration "' + id + '"?')) return;
+  try {
+    await apiJson('/api/v1/migrations/' + encodeURIComponent(id), { method: 'DELETE' });
+    toast('Migration cancelled', 'success');
+    fetchMigrations();
+  } catch (e) {
+    toast('Cancel failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Tenants ──────────────────────────────────────────────────────────────────
+async function fetchTenants() {
+  const tb = document.getElementById('tenants-body');
+  const sum = document.getElementById('tenants-summary');
+  const cnt = document.getElementById('tenants-count');
+  try {
+    const tenants = asArray(await apiJson('/api/v1/tenants'));
+    window.lastTenants = tenants;
+    if (sum) {
+      const active = tenants.filter(function(t) { return t.status === 'active'; }).length;
+      sum.innerHTML = renderGlassStatPills([
+        { label: 'Tenants', value: tenants.length },
+        { label: 'Active', value: active, cls: ' ok' },
+        { label: 'Namespaces', value: tenants.reduce(function(n, t) { return n + (t.namespaces || []).length; }, 0) },
+        { label: 'Max VMs', value: tenants.reduce(function(n, t) { return n + (t.max_vms || 0); }, 0) }
+      ]);
+    }
+    if (cnt) cnt.textContent = tenants.length + ' tenants';
+    filterTenantsView((document.getElementById('tenants-search') || {}).value || '');
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(11, e.message || String(e), 'fetchTenants');
+    if (sum) sum.innerHTML = summaryErrorHtml(e.message || String(e));
+  }
+}
+
+function filterTenantsView(query) {
+  const tb = document.getElementById('tenants-body');
+  if (!tb) return;
+  const q = (query || '').toLowerCase().trim();
+  const items = window.lastTenants || [];
+  const filtered = q ? items.filter(function(t) {
+    return (t.id || '').toLowerCase().includes(q) || (t.display_name || '').toLowerCase().includes(q) || (t.owner_email || '').toLowerCase().includes(q);
+  }) : items;
+  const cnt = document.getElementById('tenants-count');
+  if (cnt) cnt.textContent = filtered.length + (filtered.length !== items.length ? ' of ' + items.length : '') + ' tenants';
+  tb.innerHTML = filtered.length
+    ? filtered.map(function(t) {
+        return '<tr><td class="vmr-copy-tile" ' + onStopHandler('copyToClipboard(' + jsArgs(t.id) + ')') + '>' + esc(t.id) + '<span class="vmr-copy-hint">copy</span></td>' +
+          '<td>' + esc(t.display_name) + '</td>' +
+          '<td>' + esc(t.owner_email) + '</td>' +
+          '<td>' + idSig(t.status) + '</td>' +
+          '<td>' + (t.namespaces || []).map(function(n) { return '<code style="font-size:.76rem">' + esc(n) + '</code>'; }).join(' ') + '</td>' +
+          '<td>' + esc(t.cpu_quota || '—') + '</td>' +
+          '<td>' + esc(t.memory_quota || '—') + '</td>' +
+          '<td>' + (t.max_vms || 0) + '</td>' +
+          '<td style="font-size:.76rem;color:var(--ink-2)">' + (t.billing_tags && Object.keys(t.billing_tags).length ? Object.entries(t.billing_tags).map(function(e) { return esc(e[0]) + '=' + esc(e[1]); }).join(', ') : '—') + '</td>' +
+          '<td>' + fmtTime(t.created_at) + '</td>' +
+          '<td><button type="button" class="glass-btn-destructive glass-btn-sm" onclick="deleteTenant(' + jsArgs(t.id) + ')">&#10005;</button></td></tr>';
+      }).join('')
+    : '<tr><td colspan="11" style="text-align:center;color:var(--text-dim)">No matching tenants</td></tr>';
+}
+
+function createTenantDialog() {
+  const id = window.prompt('Tenant ID (alphanumeric + dashes):');
+  if (!id || !id.trim()) return;
+  if (!/^[a-zA-Z0-9-]+$/.test(id.trim())) { toast('ID must be alphanumeric with dashes only', 'error'); return; }
+  const name = window.prompt('Display name:');
+  if (!name) return;
+  const email = window.prompt('Owner email:');
+  if (!email) return;
+  const cpuQ = window.prompt('CPU quota (cores):', '20') || '20';
+  const memQ = window.prompt('Memory quota:', '64Gi') || '64Gi';
+  const maxVms = parseInt(window.prompt('Max VMs:', '50') || '50', 10) || 50;
+  apiJson('/api/v1/tenants', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: id.trim(), display_name: name, owner_email: email, cpu_quota: cpuQ, memory_quota: memQ, max_vms: maxVms, bootstrap_namespace: true })
+  }).then(function() {
+    toast('Tenant "' + id.trim() + '" created', 'success');
+    fetchTenants();
+  }).catch(function(e) { toast(e.message || String(e), 'error'); });
+}
+
+async function deleteTenant(id) {
+  if (!window.confirm('Delete tenant "' + id + '" and its ConfigMap? (Namespace is NOT deleted)')) return;
+  try {
+    await apiJson('/api/v1/tenants/' + encodeURIComponent(id), { method: 'DELETE' });
+    toast('Tenant deleted', 'success');
+    fetchTenants();
+  } catch (e) {
+    toast('Delete failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Snapshots export ─────────────────────────────────────────────────────────
+async function exportSnapshotsData() {
+  try {
+    const data = await apiJson('/api/v1/snapshots/export' + nsParam());
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'veyron-snapshots-export.json';
+    a.click();
+    toast('Exported ' + (data.count || 0) + ' snapshots', 'success');
+  } catch (e) {
+    toast('Export failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── SOC Playbooks ────────────────────────────────────────────────────────────
+async function fetchSocPlaybooks() {
+  const el = document.getElementById('soc-playbooks-list');
+  const cnt = document.getElementById('soc-playbooks-count');
+  try {
+    const pbs = asArray(await apiJson('/api/v1/soc/playbooks' + nsParam()));
+    window.lastSocPlaybooks = pbs;
+    if (cnt) cnt.textContent = pbs.length + ' playbooks';
+    if (!el) return;
+    el.innerHTML = pbs.length
+      ? pbs.map(function(p) {
+          return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--hairline)">' +
+            '<div style="flex:1"><strong style="font-size:.84rem">' + esc(p.name || p.id) + '</strong>' +
+            '<div style="font-size:.76rem;color:var(--ink-3);margin-top:3px">' + esc(p.description || '') + '</div></div>' +
+            '<span style="font-size:.76rem;color:var(--ink-3)">' + esc(p.trigger_type || '') + '</span>' +
+            '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="triggerSocPlaybook(' + jsArgs(p.id || p.name) + ')">Run</button>' +
+            '</div>';
+        }).join('')
+      : '<p style="color:var(--ink-3);font-size:.84rem;margin:0">No playbooks configured — add SOAR webhooks to enable automatic response.</p>';
+  } catch (e) {
+    if (el) el.innerHTML = '<p style="color:var(--critical)">' + esc(e.message || String(e)) + '</p>';
+  }
+}
+
+async function triggerSocPlaybook(id) {
+  if (!window.confirm('Run playbook "' + id + '"?')) return;
+  try {
+    const res = await apiJson('/api/v1/soc/playbooks/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ playbook_id: id })
+    });
+    toast('Playbook "' + id + '" triggered' + (res.message ? ': ' + res.message : ''), 'success');
+  } catch (e) {
+    toast('Trigger failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── RDP-capable VMs ──────────────────────────────────────────────────────────
+async function fetchRdpVms() {
+  const tb = document.getElementById('rdp-vms-body');
+  const cnt = document.getElementById('rdp-vms-count');
+  try {
+    const vms = asArray(await apiJson('/api/v1/rdp/vms' + nsParam()));
+    window.lastRdpVms = vms;
+    if (cnt) cnt.textContent = vms.length + ' VMs';
+    if (!tb) return;
+    tb.innerHTML = vms.length
+      ? vms.map(function(v) {
+          return '<tr><td>' + esc(v.name) + '</td>' +
+            '<td>' + esc(v.namespace || '—') + '</td>' +
+            '<td>' + esc(v.os_type || '—') + '</td>' +
+            '<td>' + esc(v.ip_address || '—') + '</td>' +
+            '<td>' + (v.rdp_port || 3389) + '</td>' +
+            '<td>' + idSig(v.reachable ? 'running' : 'stopped', v.reachable ? 'Yes' : 'No') + '</td>' +
+            '<td>' + (v.active_sessions || 0) + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No Windows VMs with RDP exposure found</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchRdpVms');
+  }
+}
+
+// ── KubeVirt MigrationPolicies ───────────────────────────────────
+async function fetchMigrationPolicies() {
+  const tb = document.getElementById('migration-policies-body');
+  const cnt = document.getElementById('migration-policies-count');
+  try {
+    const items = asArray(await apiJson('/api/v1/kubevirt/migration-policies'));
+    if (cnt) cnt.textContent = items.length + ' policies';
+    if (!tb) return;
+    tb.innerHTML = items.length
+      ? items.map(function(p) {
+          const spec = p.spec || {};
+          const bw = spec.bandwidthPerMigration || (spec.migrationConfiguration && spec.migrationConfiguration.bandwidthPerMigration) || '—';
+          const selector = p.labels && Object.keys(p.labels).length
+            ? Object.entries(p.labels).map(function(e) { return e[0] + '=' + e[1]; }).join(', ')
+            : '(any)';
+          return '<tr><td>' + esc(p.name) + '</td>' +
+            '<td style="font-size:.76rem">' + esc(selector) + '</td>' +
+            '<td>' + esc(bw) + '</td>' +
+            '<td><button type="button" class="glass-btn-destructive glass-btn-sm" onclick="deleteMigrationPolicy(' + jsArgs(p.name) + ')">&#10005;</button></td></tr>';
+        }).join('')
+      : '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No MigrationPolicies — all VMs use default migration settings</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(4, e.message || String(e), 'fetchMigrationPolicies');
+  }
+}
+async function deleteMigrationPolicy(name) {
+  if (!await openGlassConfirm('Delete MigrationPolicy "' + name + '"?', 'This removes the KubeVirt migration constraint for this VM group.')) return;
+  try {
+    await apiJson('/api/v1/kubevirt/migration-policies/' + encodeURIComponent(name), { method: 'DELETE' });
+    showToast('MigrationPolicy "' + name + '" deleted', 'ok');
+    fetchMigrationPolicies();
+  } catch (e) {
+    showToast('Delete failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── CRD Action approve ───────────────────────────────────────────
+async function approveAction(ns, name) {
+  if (!await openGlassConfirm('Approve action "' + name + '"?', 'This will set approved=true on the VeyronAction, allowing the operator to execute it.')) return;
+  try {
+    await apiJson('/api/v1/crds/actions/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/approve', { method: 'POST' });
+    showToast('Action "' + name + '" approved', 'ok');
+    fetchActions();
+  } catch (e) {
+    showToast('Approve failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Storage Pools ────────────────────────────────────────────────
+async function fetchStoragePools() {
+  const tb = document.getElementById('storage-pools-body');
+  const cnt = document.getElementById('storage-pools-count');
+  try {
+    const data = await apiJson('/api/v1/storage/pools');
+    const pools = asArray((data && data.pools) ? data.pools : data);
+    if (cnt) cnt.textContent = pools.length + ' pools';
+    if (!tb) return;
+    tb.innerHTML = pools.length
+      ? pools.map(function(p) {
+          return '<tr><td>' + esc(p.name) + '</td>' +
+            '<td><code>' + esc(p.storage_class) + '</code></td>' +
+            '<td>' + esc(p.provisioner || '—') + '</td>' +
+            '<td>' + esc(p.total_capacity || '—') + '</td>' +
+            '<td>' + esc(p.used_capacity || '—') + '</td>' +
+            '<td>' + esc(p.available_capacity || '—') + '</td>' +
+            '<td>' + (p.volume_count || 0) + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No storage pools found</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchStoragePools');
+  }
+}
+
+// ── Network Attachment Definitions ───────────────────────────────
+function _nadPlugin(config) {
+  try { var c = JSON.parse(config); return c.type || c.plugin || '—'; } catch (_) { return '—'; }
+}
+async function fetchNads() {
+  const tb = document.getElementById('nads-body');
+  const cnt = document.getElementById('nads-count');
+  try {
+    const nads = asArray(await apiJson('/api/v1/network/nads' + nsParam()));
+    if (cnt) cnt.textContent = nads.length + ' NADs';
+    if (!tb) return;
+    tb.innerHTML = nads.length
+      ? nads.map(function(n) {
+          const plugin = _nadPlugin(n.config);
+          const configShort = (n.config || '').substring(0, 60) + ((n.config || '').length > 60 ? '…' : '');
+          return '<tr><td>' + esc(n.name) + '</td>' +
+            '<td>' + esc(n.namespace || '—') + '</td>' +
+            '<td>' + esc(plugin) + '</td>' +
+            '<td>' + esc(n.scope || '—') + '</td>' +
+            '<td><code style="font-size:.75rem">' + esc(configShort) + '</code></td>' +
+            '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAttachNadDialog(' + jsArgs(n.namespace, n.name) + ')">Attach</button></td></tr>';
+        }).join('')
+      : '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No Network Attachment Definitions found (Multus CRD required)</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(6, e.message || String(e), 'fetchNads');
+  }
+}
+async function openAttachNadDialog(nadNs, nadName) {
+  const vmNs = window.prompt('VM Namespace:', nadNs || 'default');
+  if (!vmNs) return;
+  const vmName = window.prompt('VM Name:');
+  if (!vmName) return;
+  const iface = window.prompt('Interface name (leave blank for auto):') || '';
+  try {
+    const body = { nad_namespace: nadNs, nad_name: nadName };
+    if (iface) body.interface_name = iface;
+    const result = await apiJson('/api/v1/vms/' + encodeURIComponent(vmNs) + '/' + encodeURIComponent(vmName) + '/network/multus', { method: 'POST', body: JSON.stringify(body) });
+    showToast((result && result.message) ? result.message : 'NAD attached — restart VM to apply', 'ok');
+  } catch (e) {
+    showToast('Attach failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── RDP Sessions ─────────────────────────────────────────────────
+async function fetchRdpSessions() {
+  const tb = document.getElementById('rdp-sessions-body');
+  const cnt = document.getElementById('rdp-sessions-count');
+  try {
+    const sessions = asArray(await apiJson('/api/v1/rdp/sessions' + nsParam()));
+    if (cnt) cnt.textContent = sessions.length + ' sessions';
+    if (!tb) return;
+    tb.innerHTML = sessions.length
+      ? sessions.map(function(s) {
+          return '<tr><td>' + esc(s.session_id || s.id || '—') + '</td>' +
+            '<td>' + esc(s.vm_name || '—') + '</td>' +
+            '<td>' + esc(s.namespace || '—') + '</td>' +
+            '<td>' + esc(s.client_ip || '—') + '</td>' +
+            '<td>' + idSig(String(s.state || 'unknown').toLowerCase().includes('active') ? 'running' : 'stopped', s.state || 'unknown') + '</td>' +
+            '<td>' + esc(s.node_port ? String(s.node_port) : '—') + '</td>' +
+            '<td>' + esc(s.started_at || s.connected_at || '—') + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No active RDP sessions</td></tr>';
+  } catch (e) {
+    if (tb) tb.innerHTML = tbodyError(7, e.message || String(e), 'fetchRdpSessions');
+  }
+}
+
+// ── Notifications test ────────────────────────────────────────────
+async function sendTestNotification() {
+  try {
+    const data = await apiJson('/api/v1/notifications/test', { method: 'POST' });
+    const msg = (data && data.message) ? data.message : JSON.stringify(data);
+    showToast('Test notification sent: ' + msg, 'ok');
+  } catch (e) {
+    showToast('Test notification failed: ' + (e.message || String(e)), 'error');
+  }
+}
+
+// ── Windows Setup Plan ───────────────────────────────────────────
+async function fetchWindowsSetupPlan() {
+  const body = document.getElementById('windows-setup-body');
+  if (!body) return;
+  try {
+    const plan = await apiJson('/api/v1/windows/setup-plan');
+    if (!plan || !plan.steps) { body.innerHTML = '<p style="color:var(--text-dim);padding:12px">No plan returned</p>'; return; }
+    body.innerHTML =
+      '<ol style="margin:0;padding:12px 16px 12px 28px;list-style:decimal;display:flex;flex-direction:column;gap:8px">' +
+      plan.steps.map(function(step) {
+        return '<li style="font-size:.88rem"><strong>' + esc(step.title) + '</strong>' +
+          '<div style="color:var(--text-muted);margin-top:2px">' + esc(step.description) + '</div>' +
+          (step.doc_anchor ? '<a href="https://github.com/veyron" target="_blank" rel="noopener" style="font-size:.78rem;color:var(--plasma)">docs → ' + esc(step.doc_anchor) + '</a>' : '') +
+          '</li>';
+      }).join('') +
+      '</ol>' +
+      '<details style="margin:0 16px 12px"><summary style="font-size:.82rem;cursor:pointer;color:var(--text-muted)">Sample VeyronVM YAML</summary>' +
+      '<pre style="font-size:.76rem;overflow-x:auto;margin:6px 0 0;background:var(--panel);border-radius:6px;padding:10px">' + esc(plan.sample_veyronvm_yaml || '') + '</pre></details>';
+  } catch (e) {
+    if (body) body.innerHTML = '<p style="color:var(--critical);padding:12px">' + esc(e.message || String(e)) + '</p>';
+  }
+}
+
+// ── VMI Runtime Instances ──
+async function fetchVmis() {
+  const tbody = document.getElementById('vmis-body');
+  const countEl = document.getElementById('vmis-count');
+  try {
+    const vmis = await apiJson('/api/v1/vmis' + nsParam());
+    const items = asArray(vmis);
+    if (countEl) countEl.textContent = items.length + ' instance' + (items.length !== 1 ? 's' : '');
+    if (!tbody) return;
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No VMI instances found</td></tr>'; return; }
+    const phaseSig = p => p === 'Running' ? 'ok' : p === 'Pending' || p === 'Scheduling' ? 'warn' : p === 'Failed' ? 'crit' : 'inert';
+    tbody.innerHTML = items.map(v =>
+      '<tr><td style="font-family:var(--font-mono)">' + esc(v.name) + '</td>' +
+      '<td>' + esc(v.namespace) + '</td>' +
+      '<td>' + idSig(phaseSig(v.phase), esc(v.phase || '—')) + '</td>' +
+      '<td style="font-family:var(--font-mono)">' + esc(v.node_name || '—') + '</td>' +
+      '<td style="font-family:var(--font-mono)">' + esc(v.ip_address || '—') + '</td>' +
+      '<td>' + (v.cpu_cores || '—') + '</td>' +
+      '<td style="font-family:var(--font-mono)">' + esc(v.memory || '—') + '</td></tr>'
+    ).join('');
+  } catch (e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="color:var(--error)">' + esc(e.message || String(e)) + '</td></tr>';
+  }
+}
+
+// ── Platform Readiness ──
+async function fetchPlatformReadiness() {
+  const body = document.getElementById('platform-readiness-body');
+  const badge = document.getElementById('platform-ready-badge');
+  try {
+    const resp = await apiJson('/api/v1/health/ready');
+    if (!body) return;
+    const ready = resp.ready !== false;
+    if (badge) badge.innerHTML = idSig(ready ? 'ok' : 'crit', ready ? 'Ready' : 'Not Ready');
+    const checks = asArray(resp.checks);
+    if (!checks.length) { body.innerHTML = '<p style="color:var(--text-dim);font-size:.84rem">No component checks returned.</p>'; return; }
+    body.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">' +
+      checks.map(c => {
+        const ok = (c.status || '').toLowerCase() === 'ok' || (c.status || '').toLowerCase() === 'healthy';
+        const sig = ok ? 'ok' : (c.status || '').toLowerCase() === 'warn' ? 'warn' : 'crit';
+        return '<div class="id-tile" style="min-width:0;padding:10px 14px">' +
+          '<div class="id-eyebrow">' + esc(c.name) + '</div>' +
+          '<div>' + idSig(sig, esc(c.status || '—')) + '</div>' +
+          (c.message ? '<div style="font-size:.78rem;color:var(--ink-3);margin-top:4px">' + esc(c.message) + '</div>' : '') +
+          '</div>';
+      }).join('') + '</div>';
+  } catch (e) {
+    if (body) body.innerHTML = '<p style="color:var(--error);font-size:.84rem">' + esc(e.message || String(e)) + '</p>';
+  }
+}
+
+// ── Cluster Locations ──
+async function fetchClusterLocations() {
+  const tbody = document.getElementById('cluster-locations-body');
+  const countEl = document.getElementById('cluster-locations-count');
+  try {
+    const resp = await apiJson('/api/v1/experience/locations');
+    const items = asArray(resp.locations || resp);
+    if (countEl) countEl.textContent = items.length + ' cluster' + (items.length !== 1 ? 's' : '');
+    if (!tbody) return;
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim)">No cluster locations discovered</td></tr>'; return; }
+    const hSig = h => h === 'healthy' ? 'ok' : h === 'degraded' ? 'warn' : h === 'unhealthy' ? 'crit' : 'inert';
+    tbody.innerHTML = items.map(l =>
+      '<tr><td style="font-family:var(--font-mono)">' + esc(l.name) + (l.active ? ' <span style="font-size:.7rem;color:var(--plasma)">active</span>' : '') + '</td>' +
+      '<td>' + esc(l.region || '—') + '</td>' +
+      '<td>' + idSig(hSig(l.health), esc(l.health || '—')) + '</td>' +
+      '<td>' + (l.vm_count || 0) + '</td>' +
+      '<td>' + (l.node_count || 0) + '</td>' +
+      '<td>' + (l.active ? idSig('ok', 'Yes') : idSig('inert', 'No')) + '</td></tr>'
+    ).join('');
+  } catch (e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="color:var(--error)">' + esc(e.message || String(e)) + '</td></tr>';
+  }
+}
+
+// ── Saved SOC Hunts ──
+async function fetchSavedHunts() {
+  const tbody = document.getElementById('saved-hunts-body');
+  const countEl = document.getElementById('saved-hunts-count');
+  try {
+    const hunts = await apiJson('/api/v1/soc/hunts' + nsParam());
+    const items = asArray(hunts);
+    if (countEl) countEl.textContent = items.length + ' saved';
+    if (!tbody) return;
+    if (!items.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-dim)">No saved hunts. Run a hunt to save it.</td></tr>'; return; }
+    tbody.innerHTML = items.map(h =>
+      '<tr><td style="font-family:var(--font-mono)">' + esc(h.name || h.id) + '</td>' +
+      '<td><span class="id-chip">' + esc(h.backend || '—') + '</span></td>' +
+      '<td style="color:var(--ink-2);font-size:.84rem">' + esc(h.description || '—') + '</td>' +
+      '<td><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="loadSavedHunt(' + jsArgs(h.backend, h.query) + ')">Load</button></td></tr>'
+    ).join('');
+  } catch (e) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="4" style="color:var(--error)">' + esc(e.message || String(e)) + '</td></tr>';
+  }
+}
+
+function loadSavedHunt(backend, query) {
+  const backendEl = document.getElementById('soc-hunt-backend');
+  const queryEl = document.getElementById('soc-hunt-query');
+  if (backendEl) backendEl.value = backend || 'elastic';
+  if (queryEl) queryEl.value = query || '';
+  queryEl && queryEl.focus();
+}
+
+// ── RDP Connection Defaults ──
+async function fetchRdpDefaults() {
+  const body = document.getElementById('rdp-defaults-body');
+  try {
+    const cfg = await apiJson('/api/v1/rdp/config/defaults');
+    if (!body) return;
+    const items = [
+      { label: 'Default port', value: cfg.default_port || 3389 },
+      { label: 'Resolution', value: (cfg.default_width || 1920) + '×' + (cfg.default_height || 1080) },
+      { label: 'Color depth', value: (cfg.default_color_depth || 32) + '-bit' },
+      { label: 'Security', value: cfg.default_security || 'auto' },
+      { label: 'Clipboard', value: cfg.clipboard_enabled ? idSig('ok', 'Enabled') : idSig('inert', 'Disabled') },
+      { label: 'Audio', value: cfg.audio_enabled ? idSig('ok', 'Enabled') : idSig('inert', 'Disabled') },
+      { label: 'Drive redirect', value: cfg.drive_redirection ? idSig('ok', 'Enabled') : idSig('inert', 'Disabled') },
+      { label: 'Gateway', value: cfg.gateway_configured ? idSig('ok', 'Configured') : idSig('warn', 'Not configured') },
+    ];
+    body.innerHTML = items.map(item =>
+      '<div class="id-tile" style="min-width:0;padding:10px 14px">' +
+      '<div class="id-eyebrow">' + esc(item.label) + '</div>' +
+      '<div style="font-size:.95rem;margin-top:2px">' + item.value + '</div>' +
+      '</div>'
+    ).join('') +
+    (cfg.note ? '<p style="grid-column:1/-1;font-size:.78rem;color:var(--ink-3);margin:6px 0 0">' + esc(cfg.note) + '</p>' : '');
+  } catch (e) {
+    if (body) body.innerHTML = '<p style="color:var(--error);font-size:.84rem">' + esc(e.message || String(e)) + '</p>';
+  }
+}
+
+async function syncSocEvents() {
+  const btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
+  try {
+    const j = await apiJson('/api/v1/soc/events' + nsParam(), { method: 'POST' });
+    if (j == null) return;
+    const total = (j.events || j.total || 0);
+    toast('SOC sync complete — ' + (typeof total === 'number' ? total : asArray(j.events).length) + ' events collected', 'success');
+    fetchSocPage(true);
+  } catch(e) {
+    toast('Sync failed: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⟳ Sync'; }
+  }
+}
+
+function openCreateAlertModal() {
+  const existing = document.getElementById('create-alert-modal');
+  if (existing) { existing.classList.add('open'); return; }
+  const html = '<div class="modal-overlay open" id="create-alert-modal" role="dialog" aria-modal="true" aria-label="Create Alert" style="z-index:300" onclick="if(event.target===this)closeCreateAlertModal()">' +
+    '<div class="modal glass-modal" onclick="event.stopPropagation()" style="width:min(480px,94vw);padding:24px 28px;border-radius:14px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h2 style="margin:0;font-size:1.1rem">Create Alert Rule</h2><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeCreateAlertModal()">✕</button></div>' +
+    '<form id="create-alert-form" onsubmit="submitCreateAlert(event)" style="display:flex;flex-direction:column;gap:12px">' +
+    '<label style="font-size:.82rem;color:var(--ink-2)">Name<input name="name" class="form-input" required placeholder="e.g. high-cpu-vm" style="margin-top:4px;width:100%"></label>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+    '<label style="font-size:.82rem;color:var(--ink-2)">Severity<select name="severity" class="form-input" style="margin-top:4px;width:100%"><option value="warning">warning</option><option value="critical">critical</option><option value="info">info</option></select></label>' +
+    '<label style="font-size:.82rem;color:var(--ink-2)">Metric<input name="metric" class="form-input" required placeholder="e.g. cpu_usage" style="margin-top:4px;width:100%"></label>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">' +
+    '<label style="font-size:.82rem;color:var(--ink-2)">Operator<select name="operator" class="form-input" style="margin-top:4px;width:100%"><option value="gt">&gt;</option><option value="lt">&lt;</option><option value="gte">&ge;</option><option value="lte">&le;</option><option value="eq">=</option></select></label>' +
+    '<label style="font-size:.82rem;color:var(--ink-2)">Threshold<input name="threshold" type="number" step="any" class="form-input" required placeholder="e.g. 90" style="margin-top:4px;width:100%"></label>' +
+    '<label style="font-size:.82rem;color:var(--ink-2)">Duration<input name="duration" class="form-input" placeholder="e.g. 5m" style="margin-top:4px;width:100%"></label>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="closeCreateAlertModal()">Cancel</button><button type="submit" class="id-btn-plasma glass-btn-sm">Create Alert</button></div>' +
+    '</form></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function closeCreateAlertModal() {
+  const m = document.getElementById('create-alert-modal');
+  if (m) m.remove();
+}
+
+async function submitCreateAlert(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = { name: form.name.value.trim(), severity: form.severity.value, metric: form.metric.value.trim(), operator: form.operator.value, threshold: Number(form.threshold.value), duration: form.duration.value.trim() || null };
+  const btn = form.querySelector('[type=submit]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+  try {
+    const j = await apiJson('/api/v1/alerts' + nsParam(), { method: 'POST', body: JSON.stringify(data) });
+    if (j == null) return;
+    closeCreateAlertModal();
+    toast('Alert rule "' + data.name + '" created', 'success');
+    fetchAlerts();
+  } catch(err) {
+    toast('Failed: ' + (err.message || String(err)), 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Alert'; }
+  }
+}
+
 /*__VMR_JS__*/
 </script>
 <div class="modal-overlay mac-console-overlay" id="rdp-sheet-modal" role="dialog" aria-modal="true" aria-label="Remote Desktop" style="z-index:276">
@@ -25092,6 +26117,31 @@ async function fetchIncidents() {
       <button type="button" class="glass-btn-primary" onclick="dockEditorSave()">Save</button>
     </div>
   </div>
+</div>
+
+<!-- TENANTS PAGE -->
+<div class="page section-shell" id="page-tenants" data-section="platform">
+<div class="space-y animate-fade-in">
+  <div class="page-header">
+    <div><h1>Tenants</h1><p>Multi-tenant workspace management — namespaces, quotas, and billing tags</p></div>
+    <div class="page-header-right" style="display:flex;gap:8px">
+      <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTenants()">&#8635; Refresh</button>
+      <button type="button" class="glass-btn-primary glass-btn-sm" onclick="createTenantDialog()">+ New Tenant</button>
+    </div>
+  </div>
+  <div id="tenants-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card">
+    <div class="card-header">
+      <span class="card-title">Tenants</span>
+      <span id="tenants-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span>
+      <input type="search" id="tenants-search" class="form-input" placeholder="Filter tenants…" oninput="filterTenantsView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto">
+    </div>
+    <table class="table">
+      <thead><tr><th>ID</th><th>Name</th><th>Owner</th><th>Status</th><th>Namespaces</th><th>CPU Quota</th><th>Memory</th><th>Max VMs</th><th>Billing Tags</th><th>Created</th><th></th></tr></thead>
+      <tbody id="tenants-body"><tr><td colspan="11" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
 </div>
 
 </body>

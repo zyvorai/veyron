@@ -50,7 +50,7 @@ pub struct AlertQuery {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/alerts", get(list_alerts).post(create_alert))
-        .route("/alerts/{id}/resolve", put(resolve_alert))
+        .route("/alerts/:id/resolve", put(resolve_alert))
         .with_state(state)
 }
 

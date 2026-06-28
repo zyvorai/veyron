@@ -51,7 +51,7 @@ pub struct CreateMigrationRequest {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/migrations", get(list_migrations).post(create_migration))
-        .route("/migrations/{id}", delete(cancel_migration))
+        .route("/migrations/:id", delete(cancel_migration))
         .with_state(state)
 }
 

@@ -368,7 +368,7 @@ pub struct RdpGatewayConfig {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/rdp/sessions", get(list_rdp_sessions))
-        .route("/rdp/sessions/{id}", get(get_rdp_session))
+        .route("/rdp/sessions/:id", get(get_rdp_session))
         .route("/rdp/vms", get(list_rdp_capable_vms))
         .route("/rdp/config/defaults", get(get_default_config))
         .with_state(state)

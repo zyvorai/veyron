@@ -69,7 +69,7 @@ fn default_true() -> bool {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/tenants", get(list_tenants).post(create_tenant))
-        .route("/tenants/{id}", get(get_tenant).delete(delete_tenant))
+        .route("/tenants/:id", get(get_tenant).delete(delete_tenant))
         .with_state(state)
 }
 

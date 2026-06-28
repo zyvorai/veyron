@@ -184,7 +184,7 @@ pub fn router(state: SharedState) -> Router {
             "/crds/actions/{ns}/{name}",
             get(get_action).delete(delete_action),
         )
-        .route("/crds/actions/{ns}/{name}/approve", post(approve_action))
+        .route("/crds/actions/:ns/:name/approve", post(approve_action))
         .route(
             "/crds/templates",
             get(list_catalog_templates).post(create_catalog_template),

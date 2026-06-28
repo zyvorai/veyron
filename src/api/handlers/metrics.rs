@@ -45,7 +45,7 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/metrics", get(get_cluster_metrics))
         .route("/metrics/timeline", get(get_metrics_timeline))
-        .route("/metrics/{vm}", get(get_vm_metrics))
+        .route("/metrics/:vm", get(get_vm_metrics))
         .with_state(state)
 }
 

@@ -41,8 +41,8 @@ pub struct PodLogEntry {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/pods", get(list_pods))
-        .route("/pods/{name}", get(get_pod))
-        .route("/pods/{name}/logs", get(get_pod_logs))
+        .route("/pods/:name", get(get_pod))
+        .route("/pods/:name/logs", get(get_pod_logs))
         .with_state(state)
 }
 
