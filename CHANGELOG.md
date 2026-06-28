@@ -16,15 +16,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitOps Sync button** — `POST /api/v1/gitops/sync` with toast feedback in the GitOps dashboard page.
 - **Helm PodDisruptionBudget** — `charts/veyron/templates/pdb.yaml` with `maxUnavailable: 1`; enabled by default in `charts/veyron/values.yaml`.
 - **Auto-install build prerequisites** — `deploy-all-remote.sh` installs `build-essential`, `pkg-config`, `libssl-dev`, Node.js ≥18 (via NodeSource 22.x), and Rust/cargo on first deploy; idempotent on re-runs.
+- **Dashboard live-data wiring** — ~50 previously-static dashboard pages/actions wired to real API endpoints in `src/api/web/dashboard.html`: cost budgets (CRUD), disks (list/expand), logs query, network interfaces + bandwidth, live migrations (list/cancel), **Tenants** (new page + CRUD), SOC playbooks, RDP sessions/defaults/VMs, KubeVirt migration policies, CRD action approval, storage pools, network-attachment-definitions, notifications test, Windows setup plan, VMIs, platform readiness, cluster locations, saved SOC hunts, and a create-alert modal. `loadPageData()` now triggers each page's full fetcher set.
+- **`DELETE /api/v1/costs/budgets/:name`** — delete a cost budget (removes the `veyron-budget-<name>` ConfigMap); wired to a delete button on the budgets table (`src/api/handlers/costs.rs`).
+- **`GET /api/v1/snapshots/export`** — registered directly in `http_server.rs` (cluster-wide snapshot export, `namespace=all` aware); wired to the snapshots Export button.
 
 ### Changed
 
+- **Operator build toolchain → Go 1.26** — `operator/go.mod` (`go 1.26.0`) and `operator/Dockerfile` (`golang:1.26`) raised from Go 1.23 to match the development toolchain and unblock the operator image build (`GOTOOLCHAIN=local`).
 - **Helm charts version** — `charts/veyron` and `charts/veyron-operator` bumped from 0.2.0 to 0.3.0.
 - **Dashboard app store** — "Get" label on Forge VM cards replaced with "Forge VM".
 - **About modal** — Veyron app icon + Zyvor branding header.
 
 ### Fixed
 
+- **Path-param routes under axum 0.7 / matchit 0.7.3** — 18 route definitions used axum-0.8 brace syntax (`/alerts/{id}/resolve`), which matchit 0.7.3 treats as a **literal** segment, so they 404'd on real IDs. Converted to colon syntax (`:id`/`:name`) across `alerts`, `backups`, `clusters`, `crds`, `metrics`, `migrations`, `rdp`, `snapshots`, `soc`, `tenants`, `vmis`, and others — restoring resolve/restore/cancel/approve/delete actions wired in the dashboard.
+- **`/api/v1/snapshots/export` unreachable** — the `snapshots` handler router is intentionally excluded from `handlers::all_routes()`, so the export route was never merged; registered it directly in `http_server.rs` alongside the other snapshot routes.
+- **`prepare-guestkit-docker.sh` git mode** — tracked as `100644`, so `deploy-all-remote.sh`'s `[ -x … ]` guard skipped GuestKit build-context prep on fresh checkouts (shipping an incomplete `guestkit/` and failing the API image build); marked executable (`100755`).
+- **Green CI** — `cargo fmt` drift across 10 files; `tui::colors::gradient::test_gradient_text` expectation (a `VMRogue`→`Veyron` rename leftover: 7 chars → 6); operator `go vet` (resolved by the Go 1.26 toolchain bump).
 - **Dockerfiles for podman** — `FROM rust:…`, `FROM alpine:…`, `FROM golang:…` rewritten to fully-qualified `docker.io/library/…` names; podman clusters without unqualified-search registries configured in `/etc/containers/registries.conf` no longer fail image builds.
 - **Deploy node version check** — hardened `_cur` assignment in `deploy-all-remote.sh` prereqs block against empty `sed` output to prevent `[ "" -lt 18 ]` arithmetic error under `set -euo pipefail`.
 - **Deploy rollout fallback** — `deploy-all-remote.sh` patches pod template annotation (not the Deployment itself) to force a rollout when the same image tag is reused and `imagePullPolicy: Never` would otherwise leave stale pods.
@@ -53,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refreshed `docs/README.md` as the canonical index (branch note: `main` vs `main-go`, monitoring chart, CONTRIBUTING/SECURITY links).
 - Cross-linked guides (TUI, snapshots, disk, network, Windows, feature matrix) and normalized deploy examples to `HOST USER` placeholders in README, QUICK_REFERENCE, and `CLAUDE.md`.
 - CONTRIBUTING clone path uses `Veyron` directory name.
+- CHANGELOG updated for the dashboard live-data wiring, matchit path-param route fixes, `/api/v1/snapshots/export` and `DELETE /api/v1/costs/budgets/:name`, the Go 1.26 operator toolchain, and the `prepare-guestkit-docker.sh` exec-bit fix. Operator build now requires **Go 1.26** (`operator/go.mod`, `operator/Dockerfile`).
 
 ### Added
 
