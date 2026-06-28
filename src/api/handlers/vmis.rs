@@ -41,7 +41,7 @@ async fn list_vmis_resolved(
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/vmis", get(list_vmis))
-        .route("/vmis/{name}", get(get_vmi))
+        .route("/vmis/:name", get(get_vmi))
         .with_state(state)
 }
 

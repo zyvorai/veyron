@@ -53,8 +53,8 @@ pub struct ActivateClusterResponse {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/clusters", get(list_clusters))
-        .route("/clusters/{name}/sync", get(sync_cluster))
-        .route("/clusters/{name}/activate", post(activate_cluster))
+        .route("/clusters/:name/sync", get(sync_cluster))
+        .route("/clusters/:name/activate", post(activate_cluster))
         .with_state(state)
 }
 

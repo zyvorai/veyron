@@ -25,7 +25,7 @@ pub struct TemplateResponse {
 pub fn router() -> Router {
     Router::new()
         .route("/templates", get(list_templates))
-        .route("/templates/{name}", get(get_template))
+        .route("/templates/:name", get(get_template))
 }
 
 #[cfg(feature = "web")]

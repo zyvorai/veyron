@@ -49,7 +49,7 @@ pub struct BackupQuery {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/backups", get(list_backups).post(create_backup))
-        .route("/backups/{id}/restore", post(restore_backup))
+        .route("/backups/:id/restore", post(restore_backup))
         .with_state(state)
 }
 
