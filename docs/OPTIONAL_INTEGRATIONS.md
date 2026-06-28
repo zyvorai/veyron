@@ -6,7 +6,7 @@ Veyron API handlers work without external services using Kubernetes data and heu
 
 ## Quick apply
 
-**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability, Argo CD, or PacketWolf services exist. It can set Prometheus/Grafana/Alertmanager URLs, `VEYRON_ARGOCD_URL` (+ session token from `argocd-initial-admin-secret`), and **`VEYRON_PACKETWOLF_URL`** when `packetwolf-api` is found in `cilium-system` or `packetwolf` (optional `VEYRON_PACKETWOLF_EXTERNAL_URL` from `packetwolf-ui` NodePort). Set `VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for Argo URL-only.
+**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability, Argo CD, or PacketWolf services exist. It can set Prometheus/Grafana/Alertmanager URLs, `VEYRON_ARGOCD_URL` (+ session token from `argocd-initial-admin-secret`), and **`VEYRON_PACKETWOLF_URL`** when `packetwolf-api` is found in `packetwolf` or `cilium-system` (optional `VEYRON_PACKETWOLF_EXTERNAL_URL` from `packetwolf-ui` NodePort). Set `VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for Argo URL-only.
 
 **Manual:**
 
@@ -58,7 +58,7 @@ With Helm, set `integrations.*` in [charts/veyron/values.yaml](../charts/veyron/
 | `VEYRON_QRADAR_HOST` | QRadar LEEF UDP | `qradar.example` |
 | `VEYRON_QRADAR_PORT` | QRadar UDP port | `514` |
 | `VEYRON_SOAR_WEBHOOK_URL` | SOAR on new SOC detections | HTTPS webhook |
-| `VEYRON_PACKETWOLF_URL` | PacketWolf Network Brain health (`GET /api/v1/packetwolf/status`), Cilium page banner | `http://packetwolf-api.cilium-system.svc:9191` |
+| `VEYRON_PACKETWOLF_URL` | PacketWolf Network Brain health (`GET /api/v1/packetwolf/status`), Cilium page banner | `http://packetwolf-api.packetwolf.svc:9191` |
 | `VEYRON_PACKETWOLF_EXTERNAL_URL` | Integrations **Open PacketWolf UI** (browser) | `http://YOUR_NODE_IP:30808` |
 | `VEYRON_PACKETWOLF_API_KEY` | PacketWolf API auth (optional when in-cluster trust is enabled) | (secret) |
 
@@ -103,7 +103,7 @@ curl -sk -H "X-API-Key: $VEYRON_API_KEY" https://HOST:30151/api/v1/soc/export/st
 
 ## PacketWolf (Network Brain)
 
-When [PacketWolf](https://zyvor.dev) runs in the same cluster (typical Helm release: `packetwolf-api` in `cilium-system`), Veyron can probe its health and surface status on the **Integrations** and **Cilium** dashboard pages.
+When [PacketWolf](https://zyvor.dev) runs in the same cluster (typical Helm release: `packetwolf-api` in `packetwolf`, with `cilium-system` as a legacy fallback), Veyron can probe its health and surface status on the **Integrations** and **Cilium** dashboard pages.
 
 **Automatic wiring:** `bootstrap-integrations.sh` sets `VEYRON_PACKETWOLF_URL` to `http://packetwolf-api.<ns>.svc:9191` when the Service exists. Restart `veyron-api` after the Secret is applied (deploy script does this on rollout).
 
