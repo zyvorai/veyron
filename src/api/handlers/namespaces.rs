@@ -28,7 +28,10 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn list_namespaces(State(state): State<SharedState>) -> Json<Vec<NamespaceResponse>> {
-    let kube_client = { let s = state.read().await; s.kube_client.clone() };
+    let kube_client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
     let namespaces = kube_client.list_namespaces().await.unwrap_or_default();
 
     // Count VMs per namespace with a single cluster-wide API call

@@ -64,9 +64,8 @@ pub async fn alert_advisor(client: &KubeClient, scope: &str) -> CopilotResponse 
             .push("Group events by reason and open Veyron Doctor on affected VMs.".into());
     }
     if !prom {
-        r.recommendations.push(
-            "Set VEYRON_ALERTMANAGER_URL to merge Prometheus Alertmanager timelines.".into(),
-        );
+        r.recommendations
+            .push("Set VEYRON_ALERTMANAGER_URL to merge Prometheus Alertmanager timelines.".into());
     }
 
     r.actions = vec![

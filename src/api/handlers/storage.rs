@@ -79,7 +79,10 @@ pub fn router(state: SharedState) -> Router {
 
 #[cfg(feature = "web")]
 async fn list_storage_pools(State(state): State<SharedState>) -> Json<StoragePoolsResponse> {
-    let kube_client = { let s = state.read().await; s.kube_client.clone() };
+    let kube_client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
     let storage_classes = kube_client.list_storage_classes().await.unwrap_or_default();
 
     // Aggregate PVC capacities per StorageClass across all namespaces
@@ -304,7 +307,10 @@ async fn resize_pvc(
             Json(serde_json::json!({ "error": "new_size is required" })),
         );
     }
-    let client = { let s = state.read().await; s.kube_client.client() };
+    let client = {
+        let s = state.read().await;
+        s.kube_client.client()
+    };
     let api: Api<PersistentVolumeClaim> = Api::namespaced(client, &ns);
     let patch = serde_json::json!({
         "spec": { "resources": { "requests": { "storage": req.new_size } } }
@@ -315,7 +321,9 @@ async fn resize_pvc(
     {
         Ok(_) => (
             StatusCode::OK,
-            Json(serde_json::json!({ "status": "resized", "pvc": name, "namespace": ns, "new_size": req.new_size })),
+            Json(
+                serde_json::json!({ "status": "resized", "pvc": name, "namespace": ns, "new_size": req.new_size }),
+            ),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,

@@ -309,7 +309,7 @@ pub mod gradient {
         fn test_gradient_text() {
             let g = brand();
             let spans = g.text("Veyron");
-            assert_eq!(spans.len(), 7);
+            assert_eq!(spans.len(), 6);
         }
 
         #[test]

@@ -42,12 +42,16 @@ pub fn router(state: SharedState) -> Router {
 async fn get_resource_heatmap(State(state): State<SharedState>) -> Json<ResourceHeatmap> {
     use crate::kube::types::VirtualMachineInstance;
 
-    let kube_client = { let s = state.read().await; s.kube_client.clone() };
+    let kube_client = {
+        let s = state.read().await;
+        s.kube_client.clone()
+    };
     let nodes = kube_client.list_nodes().await.unwrap_or_default();
 
     // Count VMIs per node
     let mut vmi_per_node: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
-    let vmis_api: kube::api::Api<VirtualMachineInstance> = kube::api::Api::all(kube_client.client());
+    let vmis_api: kube::api::Api<VirtualMachineInstance> =
+        kube::api::Api::all(kube_client.client());
     if let Ok(vmi_list) = vmis_api.list(&kube::api::ListParams::default()).await {
         for vmi in &vmi_list.items {
             if let Some(ref status) = vmi.status {

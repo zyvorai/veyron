@@ -191,8 +191,7 @@ async fn resolve_alert(
         ..Default::default()
     };
 
-    let api: kube::api::Api<ConfigMap> =
-        kube::api::Api::namespaced(raw_client, &default_ns);
+    let api: kube::api::Api<ConfigMap> = kube::api::Api::namespaced(raw_client, &default_ns);
     let _ = api.create(&kube::api::PostParams::default(), &cm).await;
 
     log::info!("Alert resolved: id={}", id);

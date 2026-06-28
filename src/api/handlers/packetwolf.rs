@@ -52,7 +52,14 @@ fn validate_proxy_url(url: &str) -> Result<(), String> {
         .split(':')
         .next()
         .unwrap_or("");
-    let blocked = ["localhost", "127.", "169.254.", "::1", "0.0.0.0", "metadata."];
+    let blocked = [
+        "localhost",
+        "127.",
+        "169.254.",
+        "::1",
+        "0.0.0.0",
+        "metadata.",
+    ];
     for prefix in &blocked {
         if host_part == *prefix || host_part.starts_with(prefix) {
             return Err(format!("proxy target host is blocked: {host_part}"));
