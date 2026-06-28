@@ -8,6 +8,14 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Parse a Kubernetes CPU quantity (e.g. `"12"`, `"11800m"`) into whole cores.
+fn parse_cpu_cores(s: &str) -> f64 {
+    match s.strip_suffix('m') {
+        Some(milli) => milli.parse::<f64>().unwrap_or(0.0) / 1000.0,
+        None => s.parse::<f64>().unwrap_or(0.0),
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MultiClusterManager {
     pub clusters: Vec<ClusterInfo>,
@@ -136,6 +144,8 @@ impl MultiClusterManager {
             .collect()
     }
 
+    /// Recompute fleet-wide rollups, including per-region average CPU/memory
+    /// utilization across that region's clusters.
     fn update_aggregated_metrics(&mut self) {
         self.aggregated_metrics.total_clusters = self.clusters.len();
         self.aggregated_metrics.total_vms = self.clusters.iter().map(|c| c.vm_count).sum();
@@ -173,6 +183,16 @@ impl MultiClusterManager {
                 });
             region.cluster_count += 1;
             region.vm_count += cluster.vm_count;
+            // Accumulate sums here; divided into averages below.
+            region.avg_cpu_usage += cluster.cpu_usage_percent;
+            region.avg_memory_usage += cluster.memory_usage_percent;
+        }
+
+        for region in self.aggregated_metrics.by_region.values_mut() {
+            if region.cluster_count > 0 {
+                region.avg_cpu_usage /= region.cluster_count as f64;
+                region.avg_memory_usage /= region.cluster_count as f64;
+            }
         }
     }
 
@@ -275,23 +295,73 @@ impl MultiClusterManager {
         let config = kube::Config::from_custom_kubeconfig(kubeconfig, &opts).await?;
         let client = kube::Client::try_from(config)?;
 
-        // Count nodes
+        // Count nodes and sum allocatable cpu/memory
         let nodes: kube::Api<k8s_openapi::api::core::v1::Node> = kube::Api::all(client.clone());
         let node_list = nodes.list(&kube::api::ListParams::default()).await?;
         let node_count = node_list.items.len();
+        let mut alloc_cpu: f64 = 0.0;
+        let mut alloc_mem: f64 = 0.0;
+        for node in &node_list.items {
+            if let Some(alloc) = node.status.as_ref().and_then(|s| s.allocatable.as_ref()) {
+                if let Some(cpu) = alloc.get("cpu") {
+                    alloc_cpu += parse_cpu_cores(&cpu.0);
+                }
+                if let Some(mem) = alloc.get("memory") {
+                    alloc_mem += crate::utils::parse_memory_bytes(&mem.0) as f64;
+                }
+            }
+        }
 
-        // Count VMs
+        // List VMs and sum requested cpu/memory of running VMs
         let vms: kube::Api<crate::kube::types::VirtualMachine> = kube::Api::all(client);
-        let vm_count = vms
-            .list(&kube::api::ListParams::default())
-            .await
-            .map(|l| l.items.len())
-            .unwrap_or(0);
+        let vm_list = vms.list(&kube::api::ListParams::default()).await?;
+        let vm_count = vm_list.items.len();
+        let mut req_cpu: f64 = 0.0;
+        let mut req_mem: f64 = 0.0;
+        for vm in &vm_list.items {
+            let running = vm
+                .status
+                .as_ref()
+                .and_then(|s| s.printable_status.as_deref())
+                .map(|s| s == "Running")
+                .unwrap_or(false);
+            if !running {
+                continue;
+            }
+            let domain = &vm.spec.template.spec.domain;
+            if let Some(cores) = domain.cpu.as_ref().and_then(|c| c.cores) {
+                req_cpu += cores as f64;
+            }
+            if let Some(mem) = domain
+                .resources
+                .requests
+                .as_ref()
+                .and_then(|r| r.get("memory"))
+            {
+                req_mem += crate::utils::parse_memory_bytes(mem) as f64;
+            }
+        }
+
+        // Derived utilization estimate: requested (running VMs) / allocatable.
+        // Real per-node usage needs metrics-server; this is the committed-resource
+        // ratio the rest of Veyron uses, not a fabricated constant.
+        let cpu_pct = if alloc_cpu > 0.0 {
+            (req_cpu / alloc_cpu * 100.0).clamp(0.0, 100.0)
+        } else {
+            0.0
+        };
+        let mem_pct = if alloc_mem > 0.0 {
+            (req_mem / alloc_mem * 100.0).clamp(0.0, 100.0)
+        } else {
+            0.0
+        };
 
         // Update cluster info
         if let Some(cluster) = self.clusters.iter_mut().find(|c| c.name == cluster_name) {
             cluster.node_count = node_count;
             cluster.vm_count = vm_count;
+            cluster.cpu_usage_percent = cpu_pct;
+            cluster.memory_usage_percent = mem_pct;
             cluster.health = if node_count > 0 {
                 ClusterHealth::Healthy
             } else {

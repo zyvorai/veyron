@@ -39,14 +39,19 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn get_resource_heatmap(State(state): State<SharedState>) -> Json<ResourceHeatmap> {
+async fn get_resource_heatmap(
+    State(state): State<SharedState>,
+) -> Result<Json<ResourceHeatmap>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     use crate::kube::types::VirtualMachineInstance;
 
     let kube_client = {
         let s = state.read().await;
         s.kube_client.clone()
     };
-    let nodes = kube_client.list_nodes().await.unwrap_or_default();
+    let nodes = kube_client
+        .list_nodes()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("nodes"))?;
 
     // Count VMIs per node
     let mut vmi_per_node: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
@@ -126,9 +131,9 @@ async fn get_resource_heatmap(State(state): State<SharedState>) -> Json<Resource
         })
         .collect();
 
-    Json(ResourceHeatmap {
+    Ok(Json(ResourceHeatmap {
         veyron_context: VmrogueFeatureContext::heatmap(),
         nodes: entries,
         timestamp: chrono::Utc::now().to_rfc3339(),
-    })
+    }))
 }

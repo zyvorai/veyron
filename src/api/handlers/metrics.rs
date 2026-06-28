@@ -84,12 +84,20 @@ fn default_hours() -> u32 {
 }
 
 #[cfg(feature = "web")]
-async fn get_cluster_metrics(State(state): State<SharedState>) -> Json<ClusterMetrics> {
+async fn get_cluster_metrics(
+    State(state): State<SharedState>,
+) -> Result<Json<ClusterMetrics>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let client = s.client();
 
-    let vms = client.list_all_vms().await.unwrap_or_default();
-    let nodes = client.list_nodes().await.unwrap_or_default();
+    let vms = client
+        .list_all_vms()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("VMs"))?;
+    let nodes = client
+        .list_nodes()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("nodes"))?;
 
     let total_vms = vms.len() as u32;
     let running_vms = vms
@@ -159,14 +167,14 @@ async fn get_cluster_metrics(State(state): State<SharedState>) -> Json<ClusterMe
         })
         .sum();
 
-    Json(ClusterMetrics {
+    Ok(Json(ClusterMetrics {
         total_vms,
         running_vms,
         total_cpu_cores: total_cpu,
         used_cpu_cores,
         total_memory_bytes: total_mem,
         used_memory_bytes,
-    })
+    }))
 }
 
 #[cfg(feature = "web")]
