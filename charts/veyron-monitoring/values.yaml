@@ -28,7 +28,11 @@ kps:
   grafana:
     enabled: true
     defaultDashboardsEnabled: true
-    adminPassword: changeme
+    # No default password — scripts/install-veyron-monitoring.sh always overrides
+    # this with a provided or generated value. When empty, the kube-prometheus-stack
+    # Grafana subchart generates a random admin password into a Secret. Override with
+    # `--set kps.grafana.adminPassword='...'` for direct helm installs.
+    adminPassword: ""
     # Optional browser access via NodePort (bootstrap sets VEYRON_GRAFANA_EXTERNAL_URL).
     service:
       type: NodePort

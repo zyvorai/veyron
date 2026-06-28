@@ -113,7 +113,7 @@ pub type SharedState = Arc<RwLock<WebState>>;
 
 Each handler module exports `pub fn router(state: SharedState) -> Router` and is merged in `src/api/handlers/mod.rs`.
 
-**Auth**: `X-API-Key` header, `Authorization: Bearer <jwt>` (HMAC-SHA256 or OIDC), or `?token=` query param. Multi-key RBAC via `VEYRON_API_KEYS="admin:key1,write:key2,readonly:key3"`. Route-level minimum roles in `src/api/auth_context.rs`. VNC/serial WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`).
+**Auth**: `X-API-Key` header, `Authorization: Bearer <jwt>` (HMAC-SHA256 or OIDC), or `?token=` query param. Multi-key RBAC via `VEYRON_API_KEYS="name:key:role,..."` — the format is **`name:key:role`** (e.g. `"admin-user:k1:admin,ci:k2:write,viewer:k3:readonly"`); a missing 3rd field defaults to `readonly`, and the single `VEYRON_API_KEY` is always `admin`. Route-level minimum roles in `src/api/auth_context.rs`. VNC/serial WebSocket upgrades accept `POST /api/v1/ws/ticket` one-time tickets (`src/api/ws_ticket.rs`).
 
 **PacketWolf**: when `VEYRON_PACKETWOLF_URL` is set (or auto-wired by `bootstrap-integrations.sh`), `GET /api/v1/packetwolf/status` probes Network Brain health; dashboard **Cilium** page shows connection banner. In-cluster PacketWolf with `trustClusterNetworks=true` typically needs no API key. See `docs/OPTIONAL_INTEGRATIONS.md`.
 
@@ -166,7 +166,7 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | Variable | Purpose |
 |---|---|
 | `VEYRON_API_KEY` | Single API key for the web server |
-| `VEYRON_API_KEYS` | Multi-key RBAC: `"admin:key1,write:key2,readonly:key3"` |
+| `VEYRON_API_KEYS` | Multi-key RBAC, format `name:key:role`: `"admin-user:key1:admin,ci:key2:write,viewer:key3:readonly"` (missing role ⇒ readonly) |
 | `VEYRON_NAMESPACE` | Default namespace |
 | `VEYRON_PROMETHEUS_URL` | Optional. Base URL for Prometheus instant queries, e.g. `http://prometheus:9090/api/v1/query`. When set, `GET /api/v1/storage/usage` joins `kubelet_volume_stats_used_bytes` by namespace + PVC. |
 | `VEYRON_SCHEDULER_LEASE_NAMESPACE` | Namespace for the snapshot-scheduler **Lease** (`coordination.k8s.io`); defaults to `VEYRON_NAMESPACE` / API default namespace |
