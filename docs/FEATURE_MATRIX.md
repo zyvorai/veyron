@@ -16,7 +16,7 @@ Status legend:
 |---|---|---|---|---|---|
 | Dashboard | `page-dashboard` | `/api/v1/vms`, `/api/v1/events`, `/api/v1/dashboard/overview`, `/api/v1/experience/home` | `http_server.rs`, `handlers/experience.rs` | Working | Datacenter Home, control center, overview cards |
 | VMs | `page-vms` | `/api/v1/vms`, `/api/v1/vms/:ns/:name`, `/drift`, VM actions, `/rdp-expose`, `/guest/*`, `/guest-agent/*-rdp` | `http_server.rs` | Working | GuestKit status/evidence/doctor on Linux; RDP guest-agent on Windows |
-| Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes | `http_server.rs` | Working | Uses direct handlers in `http_server.rs` |
+| Snapshots | `page-snapshots` | `/api/v1/snapshots`, create/delete/restore routes, `/api/v1/snapshots/export` | `http_server.rs` | Working | Uses direct handlers in `http_server.rs`; export registered directly (handler router not merged) |
 | Nodes | `page-nodes` | `/api/v1/nodes` | `http_server.rs`, `handlers/nodes.rs` | Working | Real allocatable/capacity data |
 | Pods | `page-pods` | `/api/v1/pods` | `http_server.rs`, `handlers/pods.rs` | Working | Real pod listing |
 | Storage | `page-storage` | `/api/v1/storage/pvcs`, `/api/v1/storage/classes` | `http_server.rs` | Working | Separate richer storage routes also exist |
@@ -27,7 +27,7 @@ Status legend:
 | Policies | `page-policies` | `/api/v1/crds/policies` | `handlers/crds.rs` | Working | Uses operator CRDs |
 | Insights | `page-insights` | `/api/v1/crds/insights` | `handlers/crds.rs` | Working | Includes operator-emitted **Drift** insights |
 | Actions | `page-actions` | `/api/v1/crds/actions` | `handlers/crds.rs` | Working | Uses operator CRDs |
-| Costs | `page-costs` | `/api/v1/costs`, `/summary`, `/forecast` | `handlers/costs.rs` | Partial | Summary JSON includes `pricing_model`, `disclaimer`; not billing-integrated |
+| Costs | `page-costs` | `/api/v1/costs`, `/summary`, `/forecast`, `/budgets` (GET/POST/`DELETE :name`), `/api/v1/disks` | `handlers/costs.rs`, `handlers/disks.rs` | Partial | Summary JSON includes `pricing_model`, `disclaimer`; not billing-integrated. Budgets (CRUD) + disk list/expand wired |
 | Security | `page-security` | `/api/v1/security/posture`, `/findings` | `handlers/security.rs` | Partial | Rule set is basic VM config analysis |
 | Monitoring | `page-monitoring` | `/api/v1/monitoring/status`, `/api/v1/recommendations` | `handlers/monitoring.rs`, `handlers/recommendations.rs` | Partial | Stack detection is heuristic, alert count now real |
 | Workloads | `page-workloads` | `/api/v1/workloads` | `handlers/workloads.rs` | Working | CPU/memory request aggregation now populated |
@@ -56,6 +56,7 @@ Status legend:
 | Observability | `page-observability` | `/api/v1/observability/overview` | `handlers/observability.rs` | Partial | Stack detection and counts are heuristic |
 | Performance | `page-performance` | `/api/v1/performance/profiles` | `handlers/performance.rs` | Partial | Percentiles are single-sample proxies |
 | Webhooks | `page-webhooks` | `/api/v1/webhooks` | `handlers/webhooks.rs` | Working | Namespace-aware |
+| Tenants | `page-tenants` | `/api/v1/tenants`, `/api/v1/tenants/:id` | `handlers/tenants.rs` | Working | Multi-tenant workspaces — namespaces, quotas, billing tags; create/delete |
 
 ## Implemented Backend Routes Surfaced In Dashboard
 
@@ -102,6 +103,15 @@ These route groups now have first-class dashboard pages:
 | Multus attach | `POST /api/v1/vms/:ns/:name/network/multus` | Dashboard VM network actions |
 | VM drift | `/api/v1/vms` (list fields), `/api/v1/vms/:ns/:name/drift` | Surfaced (VM list badges, filter, detail panel) |
 | CloudOS experience | `/api/v1/experience/*` | Datacenter Home, Spotlight, Fix-it, App Store, fleet health, locations, session, **desktop** (dock shell) |
+| Tenants | `/api/v1/tenants`, `/api/v1/tenants/:id` | Surfaced (classic **Tenants** page) |
+| Cost budgets | `/api/v1/costs/budgets` (GET/POST/`DELETE :name`) | Surfaced (Costs page budgets table) |
+| Disks | `/api/v1/disks`, `/api/v1/disks/expand` | Surfaced (Costs page PVC list + expand) |
+| Live migrations | `/api/v1/migrations`, `/api/v1/migrations/:id` | Surfaced (Network Intelligence / scheduling) |
+| Migration policies | `/api/v1/kubevirt/migration-policies`, `:name` | Surfaced (Scheduling page) |
+| Network interfaces | `/api/v1/network/interfaces`, `/api/v1/network/bandwidth`, `/api/v1/network/nads` | Surfaced (Network Intelligence page) |
+| Storage pools | `/api/v1/storage/pools` | Surfaced (Storage page) |
+| SOC playbooks/hunts | `/api/v1/soc/playbooks`, `/soc/playbooks/trigger`, `/soc/hunts` | Surfaced (SOC page) |
+| Logs query | `/api/v1/logs/query` | Surfaced (Logs page) |
 
 ## Known Partial Areas
 
