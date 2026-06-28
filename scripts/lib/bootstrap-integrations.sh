@@ -184,7 +184,7 @@ bootstrap_veyron_integrations() {
         echo "Velero CRDs detected — cluster backups available in dashboard Backups page"
     fi
 
-    for pw_ns in cilium-system packetwolf; do
+    for pw_ns in packetwolf cilium-system; do
         if ${k8s} get svc packetwolf-api -n "${pw_ns}" &>/dev/null; then
             packetwolf_url="http://packetwolf-api.${pw_ns}.svc:9191"
             packetwolf_ext=$(bootstrap_nodeport_external_url "${k8s}" "${pw_ns}" packetwolf-ui http || true)

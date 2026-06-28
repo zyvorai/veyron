@@ -344,7 +344,7 @@ async fn resolve_external_open(
         }
         "jaeger" => ("monitoring", "jaeger"),
         "packetwolf" => {
-            for ns in ["cilium-system", "packetwolf"] {
+            for ns in ["packetwolf", "cilium-system"] {
                 if let Some(u) = discover_nodeport_url(client, ns, "packetwolf-ui").await {
                     return Some(external_open("Open PacketWolf UI", u));
                 }
