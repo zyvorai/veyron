@@ -18,7 +18,16 @@ CHART="${ROOT}/charts/veyron-monitoring"
 
 NS="${1:-monitoring}"
 REL="${2:-veyron-monitoring}"
-GRAFANA_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-changeme}"
+# Never ship a guessable default. Use the provided password, or generate a random
+# one and print it once (so a forgotten override can't silently install "changeme").
+if [ -n "${GRAFANA_ADMIN_PASSWORD:-}" ]; then
+  GRAFANA_PASSWORD="${GRAFANA_ADMIN_PASSWORD}"
+else
+  GRAFANA_PASSWORD="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
+  echo "⚠️  GRAFANA_ADMIN_PASSWORD not set — generated a random Grafana admin password:"
+  echo "    ${GRAFANA_PASSWORD}"
+  echo "    (set GRAFANA_ADMIN_PASSWORD to choose your own; store this somewhere safe)"
+fi
 
 if ! command -v helm >/dev/null 2>&1; then
   echo "helm is required (https://helm.sh)" >&2
