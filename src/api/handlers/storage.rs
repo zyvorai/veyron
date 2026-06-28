@@ -78,15 +78,23 @@ pub fn router(state: SharedState) -> Router {
 }
 
 #[cfg(feature = "web")]
-async fn list_storage_pools(State(state): State<SharedState>) -> Json<StoragePoolsResponse> {
+async fn list_storage_pools(
+    State(state): State<SharedState>,
+) -> Result<Json<StoragePoolsResponse>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let kube_client = {
         let s = state.read().await;
         s.kube_client.clone()
     };
-    let storage_classes = kube_client.list_storage_classes().await.unwrap_or_default();
+    let storage_classes = kube_client
+        .list_storage_classes()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("storage classes"))?;
 
     // Aggregate PVC capacities per StorageClass across all namespaces
-    let all_pvcs = kube_client.list_all_pvcs().await.unwrap_or_default();
+    let all_pvcs = kube_client
+        .list_all_pvcs()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("PVCs"))?;
 
     // Build map: storage_class_name → (total_bytes, volume_count)
     let mut sc_stats: std::collections::HashMap<String, (u64, u32)> =
@@ -129,10 +137,10 @@ async fn list_storage_pools(State(state): State<SharedState>) -> Json<StoragePoo
         })
         .collect();
 
-    Json(StoragePoolsResponse {
+    Ok(Json(StoragePoolsResponse {
         veyron_context: VmrogueFeatureContext::storage_pools(),
         pools: results,
-    })
+    }))
 }
 
 fn format_bytes(bytes: u64) -> String {

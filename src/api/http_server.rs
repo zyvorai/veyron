@@ -568,7 +568,7 @@ pub mod web {
     ) -> impl IntoResponse {
         // Allow health, dashboard, and internal dashboard API calls without rate limiting
         let path = request.uri().path();
-        if dashboard_paths::is_rate_limit_exempt_path(path) {
+        if dashboard_paths::is_rate_limit_exempt_path(path, request.method().as_str()) {
             return next.run(request).await.into_response();
         }
 

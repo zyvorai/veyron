@@ -65,13 +65,21 @@ pub fn is_operator_api_path(path: &str) -> bool {
         .any(|prefix| path.starts_with(prefix))
 }
 
-pub fn is_rate_limit_exempt_path(path: &str) -> bool {
-    path == "/api/v1/health"
+pub fn is_rate_limit_exempt_path(path: &str, method: &str) -> bool {
+    // Fixed low-risk endpoints (health, OIDC, shell) are exempt regardless of method.
+    if path == "/api/v1/health"
         || path == "/api/v1/auth/oidc/config"
         || path == "/api/v1/auth/oidc/token"
         || path == "/"
         || path == "/dashboard"
-        || is_operator_api_path(path)
+    {
+        return true;
+    }
+    // The broad dashboard-API prefix exemption is for high-frequency *polling*.
+    // Never exempt mutating methods — many exempt prefixes (/vms, /backups, /dr,
+    // /clusters, /snapshots) have expensive write sub-routes that must stay
+    // rate-limited (create VM, DR failover, restore, …).
+    matches!(method, "GET" | "HEAD" | "OPTIONS") && is_operator_api_path(path)
 }
 
 /// POST routes that invoke the optional LLM backend (separate rate bucket).
@@ -146,9 +154,17 @@ mod tests {
 
     #[test]
     fn rate_limit_exempt_includes_dashboard_api_and_shell() {
-        assert!(is_rate_limit_exempt_path("/dashboard"));
-        assert!(is_rate_limit_exempt_path("/api/v1/alerts"));
-        assert!(is_rate_limit_exempt_path("/api/v1/costs/summary"));
+        // Shell + fixed endpoints exempt regardless of method.
+        assert!(is_rate_limit_exempt_path("/dashboard", "GET"));
+        // Dashboard-API polling (GET) exempt; mutations are NOT.
+        assert!(is_rate_limit_exempt_path("/api/v1/alerts", "GET"));
+        assert!(is_rate_limit_exempt_path("/api/v1/costs/summary", "GET"));
+        assert!(!is_rate_limit_exempt_path("/api/v1/vms", "POST"));
+        assert!(!is_rate_limit_exempt_path(
+            "/api/v1/backups/x/restore",
+            "POST"
+        ));
+        assert!(!is_rate_limit_exempt_path("/api/v1/dr/failover", "POST"));
     }
 
     #[test]
