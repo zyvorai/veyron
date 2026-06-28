@@ -58,10 +58,39 @@ fn validate_webhook_url(url: &str) -> anyhow::Result<()> {
         anyhow::bail!("Webhook URL must not point to internal addresses");
     }
 
-    // If host parses as an IP, check if it's private
+    // If host is an IP literal, check it directly.
     if let Ok(ip) = host.parse::<std::net::IpAddr>() {
         if is_private_ip(&ip) {
             anyhow::bail!("Webhook URL must not point to private/internal IP addresses");
+        }
+        return Ok(());
+    }
+
+    // Hostname: reject cluster-internal suffixes outright, then resolve and reject
+    // if ANY resolved address is private/internal. This closes the SSRF gap where a
+    // hostname (e.g. *.svc.cluster.local, or an attacker domain whose A-record is
+    // 169.254.169.254) would otherwise bypass the IP-literal check above.
+    // NOTE: this does not fully defeat DNS-rebinding (TOCTOU between validate and
+    // deliver) — for that, delivery should pin the validated IP.
+    if lower.ends_with(".cluster.local")
+        || lower.ends_with(".svc")
+        || lower.ends_with(".internal")
+        || lower.ends_with(".local")
+    {
+        anyhow::bail!("Webhook URL must not point to cluster-internal addresses");
+    }
+
+    use std::net::ToSocketAddrs;
+    let resolved: Vec<std::net::SocketAddr> = (host, 443u16)
+        .to_socket_addrs()
+        .map_err(|e| anyhow::anyhow!("Webhook host '{host}' did not resolve: {e}"))?
+        .collect();
+    if resolved.is_empty() {
+        anyhow::bail!("Webhook host '{host}' did not resolve to any address");
+    }
+    for addr in &resolved {
+        if is_private_ip(&addr.ip()) {
+            anyhow::bail!("Webhook URL resolves to a private/internal IP address");
         }
     }
 
