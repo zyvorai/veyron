@@ -294,7 +294,8 @@ impl KubeClient {
                 || windows_rdp::is_windows_vm(&v);
             if is_windows {
                 windows_rdp::merge_windows_rdp_defaults(&mut v);
-                self.ensure_virtio_cd_for_windows(&config.namespace, &mut v).await;
+                self.ensure_virtio_cd_for_windows(&config.namespace, &mut v)
+                    .await;
                 if let Ok(parsed) = serde_json::from_value(v) {
                     vm = parsed;
                 }
@@ -1734,7 +1735,10 @@ impl KubeClient {
             .unwrap_or_else(|_| Self::VIRTIO_WIN_CONTAINER_DISK.to_string());
         let image = resolve_container_disk_image(&image);
         inject_virtio_container_disk(vm_json, &image);
-        log::info!("Injected VirtIO container disk '{}' into Windows VM spec", image);
+        log::info!(
+            "Injected VirtIO container disk '{}' into Windows VM spec",
+            image
+        );
     }
 
     // ── RDP masquerade port auto-patch ────────────────────────────────────────
@@ -1779,15 +1783,18 @@ impl KubeClient {
         // Delete the VMI so KubeVirt recreates it with the new masquerade rules.
         // runStrategy:Always will restart automatically; for running:true VMs the VM
         // controller also brings it back up.
-        let vmis: Api<VirtualMachineInstance> =
-            Api::namespaced(self.client.clone(), namespace);
+        let vmis: Api<VirtualMachineInstance> = Api::namespaced(self.client.clone(), namespace);
         match vmis.delete(name, &DeleteParams::default()).await {
             Ok(_) => {}
             Err(kube::Error::Api(ref ae)) if ae.code == 404 => {}
             Err(e) => log::warn!("VMI delete after masquerade patch: {}", e),
         }
 
-        log::info!("Patched masquerade port 3389 on VM '{}/{}' and restarted VMI", namespace, name);
+        log::info!(
+            "Patched masquerade port 3389 on VM '{}/{}' and restarted VMI",
+            namespace,
+            name
+        );
         Ok(true)
     }
 }
@@ -1810,9 +1817,8 @@ fn virtio_cd_already_in_vm(vm_json: &serde_json::Value) -> bool {
         .pointer("/spec/template/spec/volumes")
         .and_then(|v| v.as_array())
         .map(|arr| {
-            arr.iter().any(|v| {
-                v.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd")
-            })
+            arr.iter()
+                .any(|v| v.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd"))
         })
         .unwrap_or(false)
 }
@@ -1832,7 +1838,10 @@ fn inject_virtio_container_disk(vm_json: &mut serde_json::Value, image: &str) {
         .pointer_mut("/spec/template/spec/domain/devices/disks")
         .and_then(|v| v.as_array_mut())
     {
-        if !disks.iter().any(|d| d.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd")) {
+        if !disks
+            .iter()
+            .any(|d| d.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd"))
+        {
             disks.push(disk_entry);
         }
     }
@@ -1841,7 +1850,10 @@ fn inject_virtio_container_disk(vm_json: &mut serde_json::Value, image: &str) {
         .pointer_mut("/spec/template/spec/volumes")
         .and_then(|v| v.as_array_mut())
     {
-        if !vols.iter().any(|v| v.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd")) {
+        if !vols
+            .iter()
+            .any(|v| v.get("name").and_then(|n| n.as_str()) == Some("virtio-win-cd"))
+        {
             vols.push(vol_entry);
         }
     }

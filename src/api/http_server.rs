@@ -1954,9 +1954,18 @@ pub mod web {
             // Auto-patch masquerade port 3389 if missing, then restart VMI.
             // Warn-only: service creation still proceeds even if the patch fails.
             match kube.ensure_rdp_masquerade_port(&ns, &name).await {
-                Ok(true) => log::info!("RDP expose: patched masquerade port 3389 on {}/{} and restarted VMI", ns, name),
+                Ok(true) => log::info!(
+                    "RDP expose: patched masquerade port 3389 on {}/{} and restarted VMI",
+                    ns,
+                    name
+                ),
                 Ok(false) => {}
-                Err(e) => log::warn!("RDP expose: could not patch masquerade port on {}/{}: {}", ns, name, e),
+                Err(e) => log::warn!(
+                    "RDP expose: could not patch masquerade port on {}/{}: {}",
+                    ns,
+                    name,
+                    e
+                ),
             }
 
             let svc_type = req.service_type.as_deref().unwrap_or("NodePort");
@@ -2508,9 +2517,11 @@ pub mod web {
                     .body(())
                     .unwrap_or_else(|_| {
                         // ws_url is malformed; build a safe no-op request so we fail at connect
-                        tokio_tungstenite::tungstenite::handshake::client::Request::get("ws://localhost/")
-                            .body(())
-                            .expect("localhost ws request is always valid")
+                        tokio_tungstenite::tungstenite::handshake::client::Request::get(
+                            "ws://localhost/",
+                        )
+                        .body(())
+                        .expect("localhost ws request is always valid")
                     })
             });
 

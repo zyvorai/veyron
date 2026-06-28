@@ -412,7 +412,12 @@ fn dock_catalog() -> Vec<DockCatalogItem> {
         dock_cat("events", "Events", "clock", "power"),
         dock_cat("backups", "Backups", "archive", "power"),
         dock_cat("nodes", "Nodes", "cpu", "power"),
-        dock_cat("mission-control", "Mission Control", "layout-dashboard", "advanced"),
+        dock_cat(
+            "mission-control",
+            "Mission Control",
+            "layout-dashboard",
+            "advanced",
+        ),
         dock_cat("storage", "Storage", "hard-drive", "advanced"),
         dock_cat("security", "Security", "shield", "advanced"),
         dock_cat("ingress", "Ingress", "arrow-right-left", "advanced"),
