@@ -106,14 +106,14 @@
   --panel-hi:    #232c45;
   --hairline:    #27304a;
   --hairline-hi: #3a466b;
-  --plasma:      #7F77DD;
-  --plasma-deep: #534AB7;
-  --plasma-glow: rgba(127,119,221,0.18);
-  --plasma-line: rgba(127,119,221,0.45);
+  --plasma:      #f59e0b;
+  --plasma-deep: #b45309;
+  --plasma-glow: rgba(245,158,11,0.18);
+  --plasma-line: rgba(245,158,11,0.45);
   /* Reactive ambient layer — JS overwrites these on every VM fetch tick */
   --fleet-health:   100;
-  --deck-temp:      #7F77DD;
-  --deck-temp-glow: rgba(127,119,221,.18);
+  --deck-temp:      #f59e0b;
+  --deck-temp-glow: rgba(245,158,11,.18);
   --nominal:     #1D9E75;  --nominal-bg: rgba(29,158,117,0.12);
   --caution:     #EF9F27;  --caution-bg: rgba(239,159,39,0.12);
   --critical:    #E24B4A;  --critical-bg: rgba(226,75,74,0.12);
@@ -3571,7 +3571,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .id-tpl .id-specs span{background:var(--panel-2);border:1px solid var(--hairline);padding:2px 8px;border-radius:6px;color:var(--ink-2)}
 
 /* Ask Zeus panel */
-.id-zeus{background:linear-gradient(135deg,rgba(127,119,221,.10),rgba(83,74,183,.04));border:1px solid var(--plasma-line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
+.id-zeus{background:linear-gradient(135deg,rgba(245,158,11,.10),rgba(180,83,9,.04));border:1px solid var(--plasma-line);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden}
 .id-zeus::before{content:"";position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:var(--plasma-glow);filter:blur(40px);pointer-events:none}
 .id-zeus .id-zh{display:flex;align-items:center;gap:9px;margin-bottom:12px}
 .id-zeus .id-zh .id-orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,var(--plasma),var(--plasma-deep));box-shadow:0 0 18px var(--plasma-glow);animation:id-float 4s ease-in-out infinite}
@@ -3753,7 +3753,7 @@ body.mac-desktop-root .glass-stat-pill .gsl,body.mac-desktop-root .tahoe-stat-pi
 /* A1: Body ambient — subtle plasma/teal gradients replace macOS wallpaper   */
 body.mac-desktop-root{
   background:
-    radial-gradient(120% 80% at 80% -10%,rgba(83,74,183,.12),transparent 55%),
+    radial-gradient(120% 80% at 80% -10%,rgba(180,83,9,.12),transparent 55%),
     radial-gradient(90% 70% at 0% 110%,rgba(29,158,117,.05),transparent 50%),
     var(--hull);
 }
@@ -6120,7 +6120,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       </div>
     </div>
 
-    <div style="position:relative;border:.5px solid var(--border);border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 50% 18%,rgba(83,74,183,.10),transparent 60%)">
+    <div style="position:relative;border:.5px solid var(--border);border-radius:14px;overflow:hidden;background:radial-gradient(120% 90% at 50% 18%,rgba(180,83,9,.10),transparent 60%)">
       <svg id="fc-stage" viewBox="0 0 680 420" width="100%" style="display:block;cursor:grab;touch-action:none" role="img" aria-label="3D fleet of virtual machines grouped by cluster node"></svg>
 
       <div style="position:absolute;left:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap;pointer-events:none">
@@ -7097,7 +7097,7 @@ command -v virtctl >/dev/null 2>&1 && virtctl version --client || true
 // Bump when dashboard JS changes — forces reload after deploy.
 window.__VEYRON_DASH_REV = '20260619d';
 // ── Instrument Deck signal color constants (use these in JS, not raw hex) ──
-var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#7F77DD' };
+var VMR_SIG = { ok:'#1D9E75', warn:'#EF9F27', crit:'#E24B4A', off:'#5F5E5A', info:'#378ADD', plasma:'#f59e0b' };
 (function () {
   try {
     const k = 'veyron_dashboard_rev';
@@ -8073,7 +8073,7 @@ function renderVmWaveSection(ns, name, vm) {
     '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">' +
     '<span style="font-family:var(--mono-deck);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-3)">memory</span>' +
     '<span style="font-family:var(--sans-deck);font-size:22px;font-weight:700;font-feature-settings:\'tnum\'">' + (memHist ? memLast + '%' : '—') + '</span></div>' +
-    (memHist ? vmrWave(memHist, '#7F77DD', 300, 48) : '') + '</div></div>';
+    (memHist ? vmrWave(memHist, '#f59e0b', 300, 48) : '') + '</div></div>';
 }
 
 function navigateToVmsFilter(status) {
@@ -8336,7 +8336,7 @@ function loadPageData(page, opts) {
       <div style="font-family:var(--sans-deck);font-size:${Math.max(9,Math.min(12,h/10))}px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.name}</div>
       ${h>54?`<div style="font-family:var(--mono-deck);font-size:9px;color:${s.hex};font-feature-settings:'tnum';letter-spacing:.04em">${Math.round(v.cpu_utilization||0)}%c · ${Math.round(v.memory_utilization||0)}%m</div>`:''}
       <div style="height:3px;background:var(--hairline);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:${load}%;background:${s.hex};border-radius:2px;transition:width .4s ease"></div></div>
-      ${isMig?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(127,119,221,.15);border-radius:7px"><span style="font-family:var(--mono-deck);font-size:9px;color:#7F77DD;letter-spacing:.06em">MIGRATING</span></div>`:''}
+      ${isMig?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(245,158,11,.15);border-radius:7px"><span style="font-family:var(--mono-deck);font-size:9px;color:#f59e0b;letter-spacing:.06em">MIGRATING</span></div>`:''}
     </div>`;
   }
 
@@ -8614,7 +8614,7 @@ function loadPageData(page, opts) {
     _nodes.forEach(n => {
       const p = _proj(n.x, 75, 0);
       items.push({ z: p.depth-1000, draw: () => {
-        svg.appendChild(_el('ellipse', { cx:p.sx, cy:p.sy, rx:62*p.s, ry:20*p.s, fill:'rgba(127,119,221,.08)', stroke:'rgba(127,119,221,.35)', 'stroke-width':1 }));
+        svg.appendChild(_el('ellipse', { cx:p.sx, cy:p.sy, rx:62*p.s, ry:20*p.s, fill:'rgba(245,158,11,.08)', stroke:'rgba(245,158,11,.35)', 'stroke-width':1 }));
         const lbl = _el('text', { x:p.sx, y:p.sy+30*p.s, 'text-anchor':'middle', 'font-size':11*Math.max(p.s,.7), fill:'var(--text-dim)', 'font-family':'var(--font-sans)' });
         lbl.textContent = n.label;
         svg.appendChild(lbl);
@@ -11702,9 +11702,9 @@ document.addEventListener('keydown', function(e) {
 
 // ── Ambient Cluster Status Glow ──
 function applyDeckTemp(health) {
-  // Three-stop ambient interpolation: plasma-violet@100 → caution-amber@50 → critical-red@0
+  // Three-stop ambient interpolation: plasma-amber@100 → caution-amber@50 → critical-red@0
   // Uses same channel values as VMR_SIG so the ambient layer is perceptually tied to the signal system
-  var P = [127,119,221],   // #7F77DD  VMR_SIG.plasma
+  var P = [245,158, 11],   // #f59e0b  VMR_SIG.plasma (amber brand accent)
       A = [239,159, 39],   // #EF9F27  VMR_SIG.warn
       C = [226, 75, 74];   // #E24B4A  VMR_SIG.crit
   var from, to, t;

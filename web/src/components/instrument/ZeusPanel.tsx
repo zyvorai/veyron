@@ -61,7 +61,7 @@ export function ZeusPanel({ context, onSend, placeholder, className }: ZeusPanel
             position: 'absolute',
             inset: 0,
             borderRadius: '50%',
-            background: 'radial-gradient(circle at 38% 38%, #b9b2f5, var(--plasma) 55%, var(--plasma-deep))',
+            background: 'radial-gradient(circle at 38% 38%, #fcd9a0, var(--plasma) 55%, var(--plasma-deep))',
             boxShadow: '0 0 12px var(--plasma-glow)',
             animation: 'id-orb-breathe 3s ease-in-out infinite',
           }} aria-hidden="true" />

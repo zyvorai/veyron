@@ -259,7 +259,7 @@ export function TopologySurface({ vms, onInspect, apiKey, className }: TopologyS
     if (!mig) return null;
     const { vm, from, to, phase, progress, error } = mig;
     const phaseLabel = { preflight: 'Preflight', copying: 'Pre-copy', done: 'Complete', failed: 'Failed' }[phase];
-    const color = phase === 'failed' ? '#E24B4A' : phase === 'done' ? '#1D9E75' : '#7F77DD';
+    const color = phase === 'failed' ? '#E24B4A' : phase === 'done' ? '#1D9E75' : '#f59e0b';
     return (
       <div style={{
         position: 'sticky', top: 0, zIndex: 20,
@@ -363,7 +363,7 @@ export function TopologySurface({ vms, onInspect, apiKey, className }: TopologyS
           </div>
           {capacityBar(cpuUsed, 'CPU', cpuUsed > 90 ? '#E24B4A' : cpuUsed > 75 ? '#EF9F27' : '#1D9E75')}
           <div style={{ marginTop: 4 }} />
-          {capacityBar(memUsed, 'MEM', memUsed > 90 ? '#E24B4A' : memUsed > 75 ? '#EF9F27' : '#7F77DD')}
+          {capacityBar(memUsed, 'MEM', memUsed > 90 ? '#E24B4A' : memUsed > 75 ? '#EF9F27' : '#f59e0b')}
         </div>
 
         {/* VM blocks */}
@@ -560,9 +560,9 @@ function VmBlock({
         position: 'relative',
         height: h,
         background: migrating
-          ? 'rgba(127,119,221,0.12)'
+          ? 'rgba(245,158,11,0.12)'
           : drain ? 'rgba(239,159,39,0.07)' : sigBg,
-        border: `1px solid ${selected ? sigColor : migrating ? '#7F77DD' : drain ? '#EF9F2766' : `${sigColor}44`}`,
+        border: `1px solid ${selected ? sigColor : migrating ? '#f59e0b' : drain ? '#EF9F2766' : `${sigColor}44`}`,
         borderLeft: `3px solid ${drain ? '#EF9F27' : sigColor}`,
         borderRadius: 8,
         cursor: 'grab',
@@ -629,13 +629,13 @@ function VmBlock({
         <div style={{
           position: 'absolute', inset: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(127,119,221,0.15)',
+          background: 'rgba(245,158,11,0.15)',
           backdropFilter: 'blur(1px)',
           borderRadius: 7,
         }}>
           <span style={{
             fontFamily: 'var(--mono-deck)', fontSize: 9,
-            color: '#7F77DD', letterSpacing: '0.06em',
+            color: '#f59e0b', letterSpacing: '0.06em',
           }}>
             MIGRATING
           </span>

@@ -17,15 +17,15 @@
   --hairline-hi:#3a466b;
 
   /* ── Brand accent ──────────────────────────────────────── */
-  --plasma:      #7F77DD;
-  --plasma-deep: #534AB7;
-  --plasma-glow: rgba(127,119,221,0.18);
-  --plasma-line: rgba(127,119,221,0.45);
+  --plasma:      #f59e0b;
+  --plasma-deep: #b45309;
+  --plasma-glow: rgba(245,158,11,0.18);
+  --plasma-line: rgba(245,158,11,0.45);
 
   /* ── Reactive ambient layer (JS-driven) ─────────────────── */
   --fleet-health:   100;
-  --deck-temp:      #7F77DD;           /* initial = plasma; JS overwrites per tick */
-  --deck-temp-glow: rgba(127,119,221,.18);
+  --deck-temp:      #f59e0b;           /* initial = plasma; JS overwrites per tick */
+  --deck-temp-glow: rgba(245,158,11,.18);
 
   /* ── Signal colors ─────────────────────────────────────── */
   --nominal:    #1D9E75;
