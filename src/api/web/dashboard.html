@@ -4410,6 +4410,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <button type="button" class="cloudos-finder-item active" data-page="dashboard" onclick="finderNavigate('dashboard')"><span class="fi-icon"><i data-lucide="layout-dashboard"></i></span>Mission Control</button>
       <button type="button" class="cloudos-finder-item" data-page="vms" onclick="finderNavigate('vms')"><span class="fi-icon"><i data-lucide="server"></i></span>Fleet Command</button>
       <button type="button" class="cloudos-finder-item" data-page="fleet-constellation" onclick="finderNavigate('fleet-constellation')"><span class="fi-icon"><i data-lucide="orbit"></i></span>Fleet Constellation</button>
+      <button type="button" class="cloudos-finder-item" data-page="reactor" onclick="finderNavigate('reactor')"><span class="fi-icon"><i data-lucide="atom"></i></span>Reactor Core</button>
       <button type="button" class="cloudos-finder-item" data-page="gallery-wall" onclick="finderNavigate('gallery-wall')"><span class="fi-icon"><i data-lucide="layout-grid"></i></span>Gallery Wall</button>
       <button type="button" class="cloudos-finder-item" data-page="vcentre" onclick="finderNavigate('vcentre')"><span class="fi-icon"><i data-lucide="zap"></i></span>vCentre</button>
       <button type="button" class="cloudos-finder-item" data-page="app-store" onclick="finderNavigate('app-store')"><span class="fi-icon"><i data-lucide="package"></i></span>Template Foundry</button>
@@ -4451,6 +4452,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <button type="button" class="cloudos-finder-item" data-page="pods" onclick="finderNavigate('pods')"><span class="fi-icon"><i data-lucide="container"></i></span>Pods</button>
       <button type="button" class="cloudos-finder-item" data-page="workloads" onclick="finderNavigate('workloads')"><span class="fi-icon"><i data-lucide="layers"></i></span>Workloads</button>
       <button type="button" class="cloudos-finder-item" data-page="fleet-constellation" onclick="finderNavigate('fleet-constellation')"><span class="fi-icon"><i data-lucide="orbit"></i></span>Fleet Constellation</button>
+      <button type="button" class="cloudos-finder-item" data-page="reactor" onclick="finderNavigate('reactor')"><span class="fi-icon"><i data-lucide="atom"></i></span>Reactor Core</button>
       <button type="button" class="cloudos-finder-item" data-page="gallery-wall" onclick="finderNavigate('gallery-wall')"><span class="fi-icon"><i data-lucide="layout-grid"></i></span>Gallery Wall</button>
       <button type="button" class="cloudos-finder-item" data-page="vcentre" onclick="finderNavigate('vcentre')"><span class="fi-icon"><i data-lucide="zap"></i></span>vCentre</button>
       <button type="button" class="cloudos-finder-item" data-page="snapshots" onclick="finderNavigate('snapshots')"><span class="fi-icon"><i data-lucide="camera"></i></span>Snapshots</button>
@@ -6295,6 +6297,27 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 </div>
 
 
+<div class="page section-shell" id="page-reactor" data-section="compute">
+<div class="space-y animate-fade-in">
+  <h2 class="sr-only">Reactor Core — the fleet as one living instrument: orbital rings per node, VM particles by status, a core that breathes with fleet health.</h2>
+  <div style="font-family:var(--font-sans);color:var(--text);padding:.5rem 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px;font-weight:500;letter-spacing:.2px">Reactor Core</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:999px;background:var(--nominal-bg);color:var(--nominal)"><span style="width:6px;height:6px;border-radius:50%;background:var(--nominal);display:inline-block"></span>LIVE</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <span class="id-eyebrow" style="color:var(--ink-3);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase">Rings = nodes · dots = VMs · core = fleet health</span>
+        <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchVMs()">&#8635; Refresh</button>
+      </div>
+    </div>
+    <div id="reactor-wrap" style="position:relative;border:.5px solid var(--border);border-radius:18px;overflow:hidden;background:radial-gradient(120% 100% at 50% 30%,var(--plasma-glow),var(--void))">
+      <canvas id="reactor-canvas" style="display:block;width:100%" role="img" aria-label="Reactor core fleet visualization"></canvas>
+    </div>
+  </div>
+</div>
+</div>
+
 <div class="page section-shell" id="page-fleet-constellation" data-section="compute">
 <div class="space-y animate-fade-in">
   <h2 class="sr-only">Spatial fleet view showing virtual machines as objects positioned by node, sized by load, with live telemetry.</h2>
@@ -7384,6 +7407,7 @@ const NAV_PAGE_LABELS = {
   dashboard: 'Mission Control',
   vms: 'Fleet Command',
   'fleet-constellation': 'Fleet Constellation',
+  'reactor': 'Reactor Core',
   'gallery-wall': 'Gallery Wall',
   'app-store': 'Template Foundry',
   'console-hub': 'ConsoleHub',
@@ -7959,6 +7983,7 @@ function navigate(page, opts) {
   if (currentPage === 'vcentre' && page !== 'vcentre' && window.vcCloseDetail) vcCloseDetail();
   // Clear page-specific polling intervals when leaving those pages
   if (currentPage === 'fleet-constellation' && page !== 'fleet-constellation' && window.destroyFleetConstellation) destroyFleetConstellation();
+  if (currentPage === 'reactor' && page !== 'reactor') stopReactorCore();
   if (currentPage === 'topology' && page !== 'topology' && window.destroyTopologySurface) destroyTopologySurface();
   if (currentPage === 'gallery-wall' && page !== 'gallery-wall' && window.destroyGalleryWall) destroyGalleryWall();
   currentPage = page;
@@ -8470,6 +8495,7 @@ function loadPageData(page, opts) {
     renderVmCapsuleVmr();
   }
   if (page === 'fleet-constellation') initFleetConstellation();
+  if (page === 'reactor') { if (typeof vmData === 'undefined' || !vmData.length) fetchVMs(opts); setTimeout(initReactorCore, 60); }
   if (page === 'gallery-wall') initGalleryWall();
   if (page === 'vcentre') { fetchVMs(opts); setTimeout(function(){ if(window.initVCentre) initVCentre(); }, 100); }
 }
@@ -14038,6 +14064,7 @@ var _PAGE_CRUMBS = {
   'vm-capsule':         'veyron / fleet / capsule',
   'gallery-wall':       'veyron / fleet / gallery-wall',
   'fleet-constellation':'veyron / fleet / constellation',
+  'reactor':'veyron / fleet / reactor',
   storage:              'veyron / platform / storage',
   networking:           'veyron / platform / networking',
   nodes:                'veyron / platform / nodes',
@@ -15406,6 +15433,78 @@ function closeCopilot() {
   }
   copilotReturnFocus = null;
 }
+
+// ── Reactor Core: the fleet as one living instrument (vanilla canvas port) ──
+let _reactorRaf = 0, _reactorState = null, _reactorRO = null;
+function _reactorSignal(v) { const s = v.status; if (s === 'Running') return 'ok'; if (s === 'Failed' || s === 'Error') return 'crit'; if (s === 'Stopped') return 'off'; return 'warn'; }
+function _reactorVms() { return (typeof vmData !== 'undefined' && vmData) ? vmData : (window.lastVMs || []); }
+function _reactorPal() {
+  const cs = getComputedStyle(document.documentElement);
+  const g = (n, f) => (cs.getPropertyValue(n) || '').trim() || f;
+  return { ok: g('--nominal', '#1D9E75'), warn: g('--caution', '#EF9F27'), crit: g('--critical', '#E24B4A'), off: g('--inert', '#5F5E5A'),
+    plasma: g('--plasma', '#3b82f6'), deep: g('--plasma-deep', '#2563eb'), ink: g('--ink-3', '#5f6884'), voidc: g('--void', '#0a0f1a') };
+}
+function _reactorHealth() { const vms = _reactorVms(); if (!vms.length) return 1; const bad = vms.filter(v => { const s = _reactorSignal(v); return s === 'crit' || s === 'warn'; }).length; return Math.max(0, 1 - bad / vms.length); }
+function _reactorBuild() {
+  const vms = _reactorVms(), ringRadii = [95, 140, 185, 225], byNode = {}, order = [];
+  vms.forEach(v => { const n = v.node || 'unscheduled'; if (!byNode[n]) { byNode[n] = []; order.push(n); } byNode[n].push(v); });
+  const rings = order.map((n, i) => ({ node: n, r: ringRadii[Math.min(i, ringRadii.length - 1)], speed: (i % 2 ? -1 : 1) * (0.45 - i * 0.07), tilt: 0.34, dead: false }));
+  const prev = (_reactorState && _reactorState.parts) || [], parts = [];
+  order.forEach((n, ri) => byNode[n].forEach((v, i) => {
+    const key = (v.namespace || '') + '/' + v.name;
+    const p = prev.find(x => x.key === key);
+    let h = 0; const nm = v.name || ''; for (let c = 0; c < nm.length; c++) h = (h + nm.charCodeAt(c)) % 100;
+    const load = (v.cpu_percent != null ? v.cpu_percent : (v.cpuPct != null ? v.cpuPct : h)) / 100;
+    parts.push({ key, vm: v, ring: ri, ang: p ? p.ang : (i / Math.max(byNode[n].length, 1)) * Math.PI * 2, phase: p ? p.phase : (h / 100) * 6.28, load, sig: _reactorSignal(v) });
+  }));
+  return { rings: parts.length ? rings : [], parts, t: _reactorState ? _reactorState.t : 0 };
+}
+function initReactorCore() {
+  const canvas = document.getElementById('reactor-canvas'), wrap = document.getElementById('reactor-wrap');
+  if (!canvas || !wrap) return;
+  const ctx = canvas.getContext('2d');
+  const VW = 680, VH = 460, CX = 340, CY = 215;
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const resize = () => { const w = wrap.clientWidth || 680, hh = w / VW * VH; dpr = Math.min(window.devicePixelRatio || 1, 2); canvas.width = w * dpr; canvas.height = hh * dpr; canvas.style.width = w + 'px'; canvas.style.height = hh + 'px'; };
+  resize();
+  _reactorState = _reactorBuild();
+  if (_reactorRO) _reactorRO.disconnect();
+  _reactorRO = new ResizeObserver(resize); _reactorRO.observe(wrap);
+  cancelAnimationFrame(_reactorRaf);
+  const hexToRgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  function draw() {
+    const st = _reactorState; if (!st) return;
+    st.t += 0.016; const t = st.t, PAL = _reactorPal(), SIG = { ok: PAL.ok, warn: PAL.warn, crit: PAL.crit, off: PAL.off };
+    const pr = hexToRgb(PAL.plasma), scale = (canvas.width / dpr) / VW;
+    ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
+    ctx.clearRect(0, 0, VW, VH);
+    const health = _reactorHealth(), coreR = 46 * (1 + Math.sin(t * 2.2) * 0.04);
+    st.rings.forEach(ring => { ctx.beginPath(); for (let a = 0; a <= 360; a += 6) { const rad = a * Math.PI / 180, x = CX + Math.cos(rad) * ring.r, y = CY + Math.sin(rad) * ring.r * ring.tilt * 1.6; a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); } ctx.strokeStyle = ring.dead ? 'rgba(226,75,74,.4)' : 'rgba(' + pr[0] + ',' + pr[1] + ',' + pr[2] + ',.22)'; ctx.lineWidth = 1; ctx.stroke(); });
+    const halo = ctx.createRadialGradient(CX, CY, 0, CX, CY, 150);
+    halo.addColorStop(0, 'rgba(' + pr[0] + ',' + pr[1] + ',' + pr[2] + ',0.30)'); halo.addColorStop(1, 'rgba(' + pr[0] + ',' + pr[1] + ',' + pr[2] + ',0)');
+    ctx.fillStyle = halo; ctx.globalAlpha = 0.5 + Math.sin(t * 2.2) * 0.12; ctx.beginPath(); ctx.arc(CX, CY, 150, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    const ord = [];
+    st.parts.forEach(p => { const ring = st.rings[p.ring]; if (!ring) return; const dead = p.sig === 'off'; p.ang += ring.speed * 0.01 * (dead ? 0 : 1) * (1 + p.load * 0.6); const x = CX + Math.cos(p.ang) * ring.r, y = CY + Math.sin(p.ang) * ring.r * ring.tilt * 1.6, depth = (Math.sin(p.ang) + 1) / 2; ord.push({ p, x, y, depth, col: dead ? SIG.off : (SIG[p.sig] || SIG.warn), dead }); });
+    ord.sort((a, b) => a.depth - b.depth);
+    ord.forEach(o => { const p = o.p, x = o.x, y = o.y, depth = o.depth, col = o.col, dead = o.dead;
+      if (!dead) { ctx.beginPath(); ctx.moveTo(CX, CY); ctx.lineTo(x, y); ctx.strokeStyle = col; ctx.globalAlpha = 0.08 + p.load * 0.12; ctx.lineWidth = 0.6; ctx.stroke(); ctx.globalAlpha = 1; }
+      const baseR = (4 + p.load * 4) * (0.6 + depth * 0.6);
+      if (!dead) { ctx.beginPath(); ctx.arc(x, y, baseR + 4 + Math.sin(t * 3 + p.phase) * 2, 0, Math.PI * 2); ctx.fillStyle = col; ctx.globalAlpha = 0.15; ctx.fill(); ctx.globalAlpha = 1; }
+      ctx.beginPath(); ctx.arc(x, y, baseR, 0, Math.PI * 2); ctx.fillStyle = col; ctx.globalAlpha = dead ? 0.4 : 0.95; ctx.fill(); ctx.globalAlpha = 1; ctx.lineWidth = 1.2; ctx.strokeStyle = PAL.voidc; ctx.stroke(); });
+    const coreCol = health > 0.7 ? null : (health > 0.45 ? PAL.warn : PAL.crit);
+    ctx.beginPath(); ctx.arc(CX, CY, coreR, 0, Math.PI * 2);
+    if (coreCol) { ctx.fillStyle = coreCol; } else { const g = ctx.createRadialGradient(CX, CY - 10, 4, CX, CY, coreR); g.addColorStop(0, '#ffffff'); g.addColorStop(0.4, PAL.plasma); g.addColorStop(1, PAL.deep); ctx.fillStyle = g; }
+    ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.stroke();
+    for (let i = 0; i < 8; i++) { const sa = t * 1.3 + i * 0.785; ctx.beginPath(); ctx.moveTo(CX + Math.cos(sa) * coreR * 0.4, CY + Math.sin(sa) * coreR * 0.4); ctx.lineTo(CX + Math.cos(sa) * coreR * 0.85, CY + Math.sin(sa) * coreR * 0.85); ctx.strokeStyle = '#fff'; ctx.globalAlpha = 0.1 + Math.sin(t * 3 + i) * 0.08; ctx.lineWidth = 1; ctx.stroke(); ctx.globalAlpha = 1; }
+    ctx.fillStyle = '#fff'; ctx.font = "700 28px -apple-system,'SF Pro Display',sans-serif"; ctx.textAlign = 'center'; ctx.fillText(Math.round(health * 100) + '%', CX, CY + 4);
+    ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.font = "9px 'IBM Plex Mono',monospace"; ctx.fillText('CORE', CX, CY + 18);
+    ctx.textAlign = 'start';
+    st.rings.forEach(ring => { ctx.fillStyle = ring.dead ? SIG.crit : PAL.ink; ctx.fillText(ring.node, CX + ring.r - 6, CY + 4); });
+    _reactorRaf = requestAnimationFrame(draw);
+  }
+  _reactorRaf = requestAnimationFrame(draw);
+}
+function stopReactorCore() { cancelAnimationFrame(_reactorRaf); _reactorRaf = 0; if (_reactorRO) { _reactorRO.disconnect(); _reactorRO = null; } }
 
 // ── Natural-language Forge: "spin up 3 ubuntu web servers, 4 cores, 8Gi" ──
 const _FORGE_OS_WORDS = ['ubuntu','debian','fedora','centos','rocky','almalinux','alma','rhel','redhat','arch','opensuse','suse','freebsd','openbsd','talos','windows','win11','win10','win','flatcar','coreos','alpine','mint','kali','oracle'];
