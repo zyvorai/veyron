@@ -237,14 +237,14 @@ Never use a flat colored badge, colored background div, or colored text alone to
 
 ### Typography
 
-- **Display / headings**: `font-family: var(--sans-deck)` (Space Grotesk)
+- **Display / headings**: `font-family: var(--sans-deck)` (SF Pro Display — Machina-aligned shell)
 - **All data, IPs, specs, eyebrow labels**: `font-family: 'IBM Plex Mono', ui-monospace, monospace`
 - **Numbers**: always `font-feature-settings: "tnum"` so they don't jitter on live updates
 - **Eyebrow labels**: monospace, 10px, `letter-spacing: 2px`, `text-transform: uppercase`, color `--ink-3`
 
 ### Page structure — every page must have
 
-1. **Telemetry spine** — already rendered globally via `#id-spine`; do not add a second one per page
+1. **Telemetry spine** — `#id-spine` exists globally but is hidden (`display:none`) to match Machina's chrome-free shell; set `.id-spine{display:flex}` to restore. Do not add a per-page spine.
 2. **KPI tile row** — use `.id-tile` cards with `.id-eyebrow` + `.id-big` metric + `.id-spark` sparkline
 3. **Section headings** — `.id-sec-h` with `<h2>` + `.id-line` fade line
 
