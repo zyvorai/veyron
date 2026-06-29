@@ -3295,6 +3295,7 @@
 
   window.initVeyronModule = function initVeyronModule() {
     applyVeyronSettings(loadVeyronSettings());
+    if (typeof initAutoTheme === 'function') initAutoTheme();
     initVeyronShell();
     patchRenderVmFullList();
     patchFilterVMs();

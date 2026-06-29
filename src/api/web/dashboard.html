@@ -18,7 +18,7 @@
     return;
   }
   function parseStoredThemeEarly(raw) {
-    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave'];
+    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
     if (raw && valid.indexOf(raw) >= 0) return raw;
     if (raw === 'frost') return 'tahoe-light';
     if (raw === 'aurora') return 'sonoma';
@@ -266,6 +266,84 @@ html[data-theme="synthwave"] body.mac-desktop-root{
     var(--hull) !important;
 }
 html[data-theme="synthwave"] body.mac-desktop-root::before{ opacity:.08 !important; }
+
+/* ── Aurora: polar night with shifting green-teal-violet curtains ── */
+html[data-theme="aurora"]{
+  --void:#06090f; --hull:#0a1018; --panel:#101a24; --panel-2:#16242f; --panel-hi:#1f3340;
+  --hairline:#253b48; --hairline-hi:#3a5a68;
+  --plasma:#34e3b0; --plasma-deep:#16a884; --plasma-glow:rgba(52,227,176,.20); --plasma-line:rgba(52,227,176,.46);
+  --deck-temp:#34e3b0; --deck-temp-glow:rgba(52,227,176,.20);
+  --ink:#eaf4f0; --ink-2:#a9c6c0; --ink-3:#6f8a86;
+  --primary:#34e3b0; --primary-dim:rgba(52,227,176,.16); --primary-glow:rgba(52,227,176,.30);
+  --bg-0:#0a1018; --blue:#34e3b0; --cyan:#5ff0d0; --primary-blue:#5aa8ff; --primary-purple:#9a7bff; --accent:#34e3b0;
+  --section-compute:#7fe9d9; --section-platform:#b9a6ff;
+}
+html[data-theme="aurora"] body.mac-desktop-root{
+  background:
+    radial-gradient(120% 60% at 20% -10%, rgba(52,227,176,.16), transparent 55%),
+    radial-gradient(120% 55% at 80% -12%, rgba(122,160,255,.13), transparent 55%),
+    radial-gradient(140% 65% at 50% -8%, rgba(154,123,255,.10), transparent 60%),
+    var(--hull) !important;
+}
+html[data-theme="aurora"] body.mac-desktop-root::before{ opacity:.10 !important; }
+
+/* ── Nord: arctic polar-night slate with frost accent ── */
+html[data-theme="nord"]{
+  --void:#232831; --hull:#2e3440; --panel:#353c4a; --panel-2:#3b4252; --panel-hi:#434c5e;
+  --hairline:#4c566a; --hairline-hi:#5e6a82;
+  --plasma:#88c0d0; --plasma-deep:#5e81ac; --plasma-glow:rgba(136,192,208,.20); --plasma-line:rgba(136,192,208,.46);
+  --deck-temp:#88c0d0; --deck-temp-glow:rgba(136,192,208,.20);
+  --ink:#eceff4; --ink-2:#d8dee9; --ink-3:#9aa5b8;
+  --primary:#88c0d0; --primary-dim:rgba(136,192,208,.18); --primary-glow:rgba(136,192,208,.30);
+  --bg-0:#2e3440; --blue:#88c0d0; --cyan:#8fbcbb; --primary-blue:#5e81ac; --primary-purple:#b48ead; --accent:#88c0d0;
+  --section-compute:#81a1c1; --section-platform:#b48ead;
+}
+html[data-theme="nord"] body.mac-desktop-root{
+  background:
+    radial-gradient(120% 70% at 80% -10%, rgba(136,192,208,.10), transparent 55%),
+    radial-gradient(90% 60% at 0% 110%, rgba(94,129,172,.10), transparent 52%),
+    var(--hull) !important;
+}
+html[data-theme="nord"] body.mac-desktop-root::before{ opacity:.06 !important; }
+
+/* ── Royal Gold: obsidian black + luxe gold ── */
+html[data-theme="royal-gold"]{
+  --void:#050505; --hull:#0c0b08; --panel:#14110b; --panel-2:#1c1810; --panel-hi:#2a2415;
+  --hairline:#332b18; --hairline-hi:#5a4d2c;
+  --plasma:#e8b84b; --plasma-deep:#b8881f; --plasma-glow:rgba(232,184,75,.20); --plasma-line:rgba(232,184,75,.46);
+  --deck-temp:#e8b84b; --deck-temp-glow:rgba(232,184,75,.20);
+  --ink:#f5efe0; --ink-2:#cbbf9e; --ink-3:#8a7f62;
+  --primary:#e8b84b; --primary-dim:rgba(232,184,75,.16); --primary-glow:rgba(232,184,75,.30);
+  --bg-0:#0c0b08; --blue:#e8b84b; --cyan:#f0d27a; --primary-blue:#caa53a; --primary-purple:#c9a24a; --accent:#e8b84b;
+  --section-compute:#f0d27a; --section-platform:#d9b85a;
+}
+html[data-theme="royal-gold"] body.mac-desktop-root{
+  background:
+    radial-gradient(120% 80% at 50% -12%, rgba(232,184,75,.12), transparent 58%),
+    radial-gradient(90% 60% at 50% 120%, rgba(184,136,31,.10), transparent 60%),
+    var(--hull) !important;
+}
+html[data-theme="royal-gold"] body.mac-desktop-root::before{ opacity:.08 !important; }
+
+/* ── Matrix: phosphor green on black, faux glyph-rain streaks ── */
+html[data-theme="matrix"]{
+  --void:#000400; --hull:#020a05; --panel:#04140b; --panel-2:#071e10; --panel-hi:#0b2c18;
+  --hairline:#123a22; --hairline-hi:#1d5a36;
+  --plasma:#2bff77; --plasma-deep:#15b34d; --plasma-glow:rgba(43,255,119,.20); --plasma-line:rgba(43,255,119,.46);
+  --deck-temp:#2bff77; --deck-temp-glow:rgba(43,255,119,.20);
+  --ink:#d6ffe6; --ink-2:#6fd99a; --ink-3:#3f8a5e;
+  --primary:#2bff77; --primary-dim:rgba(43,255,119,.16); --primary-glow:rgba(43,255,119,.30);
+  --bg-0:#020a05; --blue:#2bff77; --cyan:#5fffae; --primary-blue:#19c95a; --primary-purple:#39d27a; --accent:#2bff77;
+  --section-compute:#5fffae; --section-platform:#39d27a;
+}
+html[data-theme="matrix"] body.mac-desktop-root{
+  background:
+    repeating-linear-gradient(90deg, rgba(43,255,119,.05) 0 1px, transparent 1px 22px),
+    linear-gradient(180deg, rgba(43,255,119,.07), transparent 30%),
+    radial-gradient(100% 60% at 50% -10%, rgba(43,255,119,.10), transparent 55%),
+    var(--hull) !important;
+}
+html[data-theme="matrix"] body.mac-desktop-root::before{ opacity:.05 !important; }
 
 /* ── Light mode: tahoe-light / light themes ──────────────────── */
 html[data-theme="tahoe-light"],
@@ -3551,6 +3629,11 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.light{background:linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)}
 .theme-swatch-preview.carbon{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)}
 .theme-swatch-preview.synthwave{background:linear-gradient(135deg,rgb(18,10,36) 0%,rgb(120,30,110) 45%,rgb(255,61,154) 78%,rgb(255,170,90) 100%)}
+.theme-swatch-preview.aurora{background:linear-gradient(135deg,rgb(10,16,24) 0%,rgb(52,227,176) 45%,rgb(122,160,255) 75%,rgb(154,123,255) 100%)}
+.theme-swatch-preview.nord{background:linear-gradient(135deg,rgb(46,52,64) 0%,rgb(94,129,172) 50%,rgb(136,192,208) 100%)}
+.theme-swatch-preview.royal-gold{background:linear-gradient(135deg,rgb(8,7,5) 0%,rgb(58,49,28) 45%,rgb(232,184,75) 100%)}
+.theme-swatch-preview.matrix{background:repeating-linear-gradient(90deg,rgba(43,255,119,.18) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(2,8,4) 0%,rgb(7,40,22) 50%,rgb(43,255,119) 100%)}
+.theme-swatch-preview.auto{background:linear-gradient(135deg,rgb(240,244,250) 0%,rgb(100,210,255) 48%,rgb(8,12,22) 52%,rgb(0,122,255) 100%)}
 .cloudos-mobile-bar{
   display:none;position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 6px);z-index:165;
@@ -4061,6 +4144,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <button type="button" class="btn-spotlight" id="vmr-action-log-btn" onclick="toggleActionLog()" title="Session action log" style="position:relative" aria-label="Action log">◎<span id="vmr-action-log-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:var(--caution);color:#000;border-radius:8px;font-size:.55rem;font-weight:700;min-width:14px;height:14px;line-height:14px;padding:0 3px;text-align:center"></span></button>
     <button type="button" class="btn-spotlight" onclick="openSpotlight()" title="Spotlight search (⌘K)">⌘K</button>
     <select class="theme-select menubar-tier-collapsible" id="theme-selector" onchange="setTheme(this.value)" title="UI theme">
+      <option value="auto">Auto · Day/Night</option>
       <optgroup label="macOS">
         <option value="tahoe">Tahoe</option>
         <option value="tahoe-light">Tahoe Light</option>
@@ -4074,6 +4158,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <option value="light">Light</option>
         <option value="carbon">Carbon</option>
         <option value="synthwave">Synthwave</option>
+        <option value="aurora">Aurora</option>
+        <option value="nord">Nord</option>
+        <option value="royal-gold">Royal Gold</option>
+        <option value="matrix">Matrix</option>
       </optgroup>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
@@ -4113,10 +4201,15 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
         <button type="button" class="theme-swatch" data-theme="carbon" role="radio" onclick="setTheme('carbon')"><span class="theme-swatch-preview carbon"></span><span class="theme-swatch-label">Carbon</span></button>
         <button type="button" class="theme-swatch" data-theme="synthwave" role="radio" onclick="setTheme('synthwave')"><span class="theme-swatch-preview synthwave"></span><span class="theme-swatch-label">Synthwave</span></button>
+        <button type="button" class="theme-swatch" data-theme="aurora" role="radio" onclick="setTheme('aurora')"><span class="theme-swatch-preview aurora"></span><span class="theme-swatch-label">Aurora</span></button>
+        <button type="button" class="theme-swatch" data-theme="nord" role="radio" onclick="setTheme('nord')"><span class="theme-swatch-preview nord"></span><span class="theme-swatch-label">Nord</span></button>
+        <button type="button" class="theme-swatch" data-theme="royal-gold" role="radio" onclick="setTheme('royal-gold')"><span class="theme-swatch-preview royal-gold"></span><span class="theme-swatch-label">Royal Gold</span></button>
+        <button type="button" class="theme-swatch" data-theme="matrix" role="radio" onclick="setTheme('matrix')"><span class="theme-swatch-preview matrix"></span><span class="theme-swatch-label">Matrix</span></button>
+        <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, dark by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
         <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
-        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option>
+        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option><option value="aurora">Aurora</option><option value="nord">Nord</option><option value="royal-gold">Royal Gold</option><option value="matrix">Matrix</option><option value="auto">Auto · Day/Night</option>
       </select>
     </div>
     <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
@@ -6941,6 +7034,11 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <button type="button" class="theme-swatch" data-theme="light"       role="radio" onclick="setTheme('light')">      <span class="theme-swatch-preview light"></span>      <span class="theme-swatch-label">Day</span></button>
             <button type="button" class="theme-swatch" data-theme="carbon"      role="radio" onclick="setTheme('carbon')">     <span class="theme-swatch-preview carbon"></span>     <span class="theme-swatch-label">Carbon</span></button>
             <button type="button" class="theme-swatch" data-theme="synthwave"   role="radio" onclick="setTheme('synthwave')">  <span class="theme-swatch-preview synthwave"></span>  <span class="theme-swatch-label">Synthwave</span></button>
+            <button type="button" class="theme-swatch" data-theme="aurora"      role="radio" onclick="setTheme('aurora')">     <span class="theme-swatch-preview aurora"></span>     <span class="theme-swatch-label">Aurora</span></button>
+            <button type="button" class="theme-swatch" data-theme="nord"        role="radio" onclick="setTheme('nord')">       <span class="theme-swatch-preview nord"></span>       <span class="theme-swatch-label">Nord</span></button>
+            <button type="button" class="theme-swatch" data-theme="royal-gold"  role="radio" onclick="setTheme('royal-gold')"> <span class="theme-swatch-preview royal-gold"></span> <span class="theme-swatch-label">Royal Gold</span></button>
+            <button type="button" class="theme-swatch" data-theme="matrix"      role="radio" onclick="setTheme('matrix')">     <span class="theme-swatch-preview matrix"></span>     <span class="theme-swatch-label">Matrix</span></button>
+            <button type="button" class="theme-swatch" data-theme="auto"        role="radio" onclick="setTheme('auto')" title="Light by day, dark by night"><span class="theme-swatch-preview auto"></span> <span class="theme-swatch-label">Auto</span></button>
           </div>
         </div>
       </div>
@@ -7259,7 +7357,11 @@ const THEME_PRESETS = [
   { id: 'ember', label: 'Ember', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)' },
   { id: 'light', label: 'Light', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)' },
   { id: 'carbon', label: 'Carbon', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)' },
-  { id: 'synthwave', label: 'Synthwave', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(18,10,36) 0%,rgb(120,30,110) 45%,rgb(255,61,154) 78%,rgb(255,170,90) 100%)' }
+  { id: 'synthwave', label: 'Synthwave', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(18,10,36) 0%,rgb(120,30,110) 45%,rgb(255,61,154) 78%,rgb(255,170,90) 100%)' },
+  { id: 'aurora', label: 'Aurora', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(10,16,24) 0%,rgb(52,227,176) 45%,rgb(122,160,255) 75%,rgb(154,123,255) 100%)' },
+  { id: 'nord', label: 'Nord', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(46,52,64) 0%,rgb(94,129,172) 50%,rgb(136,192,208) 100%)' },
+  { id: 'royal-gold', label: 'Royal Gold', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(8,7,5) 0%,rgb(58,49,28) 45%,rgb(232,184,75) 100%)' },
+  { id: 'matrix', label: 'Matrix', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'repeating-linear-gradient(90deg,rgba(43,255,119,.18) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(2,8,4) 0%,rgb(7,40,22) 50%,rgb(43,255,119) 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
@@ -7269,7 +7371,8 @@ const LEGACY_THEME_ALIASES = {
 };
 const THEME_WALLPAPER_PAIRING = {
   tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
-  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite', synthwave: 'graphite'
+  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite', synthwave: 'graphite',
+  aurora: 'graphite', nord: 'graphite', 'royal-gold': 'graphite', matrix: 'graphite'
 };
 
 function parseStoredTheme(raw) {
@@ -7521,6 +7624,22 @@ function applyTheme(theme, writeStorage) {
 }
 
 function setTheme(theme) {
+  // "auto" = day/night: light theme during the day, last dark theme at night.
+  if (theme === 'auto') {
+    try { localStorage.setItem('veyron_theme_auto', '1'); } catch (e) {}
+    _startAutoTheme();
+    const pa = document.getElementById('pref-theme-select'); if (pa) pa.value = 'auto';
+    const ca = document.getElementById('cc-theme-select'); if (ca) ca.value = 'auto';
+    const ta = document.getElementById('theme-selector'); if (ta) ta.value = 'auto';
+    syncThemeSwatches('auto');
+    return;
+  }
+  // explicit pick disables auto and remembers the dark choice for night use
+  try { localStorage.setItem('veyron_theme_auto', '0'); } catch (e) {}
+  _stopAutoTheme();
+  if (theme !== 'tahoe-light' && theme !== 'light') {
+    try { localStorage.setItem('veyron_theme_dark', theme); } catch (e) {}
+  }
   applyTheme(theme, true);
   const pref = document.getElementById('pref-theme-select');
   const cc = document.getElementById('cc-theme-select');
@@ -7534,6 +7653,26 @@ function setTheme(theme) {
       }
     } catch (e) {}
   }
+}
+
+// ── Auto day/night theme ──
+let _autoThemeTimer = null;
+function _autoThemeTarget() {
+  const h = new Date().getHours();
+  const day = h >= 7 && h < 19;
+  if (day) return 'tahoe-light';
+  try { return localStorage.getItem('veyron_theme_dark') || 'tahoe'; } catch (e) { return 'tahoe'; }
+}
+function _applyAutoNow() {
+  const t = _autoThemeTarget();
+  applyTheme(t, false); // keep veyron_theme_auto as the source of truth; don't overwrite
+  const pair = THEME_WALLPAPER_PAIRING[t];
+  if (pair) { try { if (localStorage.getItem('veyron_wallpaper_manual') !== '1') setDesktopWallpaper(pair); } catch (e) {} }
+}
+function _startAutoTheme() { _applyAutoNow(); _stopAutoTheme(); _autoThemeTimer = setInterval(_applyAutoNow, 600000); }
+function _stopAutoTheme() { if (_autoThemeTimer) { clearInterval(_autoThemeTimer); _autoThemeTimer = null; } }
+function initAutoTheme() {
+  try { if (localStorage.getItem('veyron_theme_auto') === '1') _startAutoTheme(); } catch (e) {}
 }
 
 function updatePageContext(page) {
@@ -26254,10 +26393,15 @@ async function submitCreateAlert(e) {
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
             <button type="button" class="theme-swatch" data-theme="carbon" role="radio" onclick="setTheme('carbon')"><span class="theme-swatch-preview carbon"></span><span class="theme-swatch-label">Carbon</span></button>
             <button type="button" class="theme-swatch" data-theme="synthwave" role="radio" onclick="setTheme('synthwave')"><span class="theme-swatch-preview synthwave"></span><span class="theme-swatch-label">Synthwave</span></button>
+            <button type="button" class="theme-swatch" data-theme="aurora" role="radio" onclick="setTheme('aurora')"><span class="theme-swatch-preview aurora"></span><span class="theme-swatch-label">Aurora</span></button>
+            <button type="button" class="theme-swatch" data-theme="nord" role="radio" onclick="setTheme('nord')"><span class="theme-swatch-preview nord"></span><span class="theme-swatch-label">Nord</span></button>
+            <button type="button" class="theme-swatch" data-theme="royal-gold" role="radio" onclick="setTheme('royal-gold')"><span class="theme-swatch-preview royal-gold"></span><span class="theme-swatch-label">Royal Gold</span></button>
+            <button type="button" class="theme-swatch" data-theme="matrix" role="radio" onclick="setTheme('matrix')"><span class="theme-swatch-preview matrix"></span><span class="theme-swatch-label">Matrix</span></button>
+        <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, dark by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
             <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
-            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option>
+            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option><option value="aurora">Aurora</option><option value="nord">Nord</option><option value="royal-gold">Royal Gold</option><option value="matrix">Matrix</option><option value="auto">Auto · Day/Night</option>
           </select>
         </div>
         <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
