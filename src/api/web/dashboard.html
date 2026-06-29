@@ -9557,6 +9557,8 @@ window.vmStatusBadgeClass = vmStatusBadgeClass;
 function fmtTime(ts) {
   try { const d=new Date(ts),n=new Date(),m=Math.floor((n-d)/60000); if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.floor(m/60)+'h ago';return Math.floor(m/1440)+'d ago'; } catch{return ts;}
 }
+// Alias: several render paths (VM Capsule, events, snapshots) call timeAgo().
+function timeAgo(ts) { return fmtTime(ts); }
 
 // ── Zyvor CloudOS experience layer ──
 let lastExperienceHome = null;
