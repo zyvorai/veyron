@@ -4524,7 +4524,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div class="copilot-drawer-body">
     <div id="copilot-context-banner" class="copilot-context-banner"></div>
     <div id="copilot-thread" class="copilot-thread" aria-live="polite"></div>
-    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Zeus… fleet health, VMs, storage, security" aria-label="Ask Zeus" style="width:100%;font-size:.9rem"></textarea>
+    <textarea class="form-input" id="copilot-input" rows="2" placeholder="Ask Zeus… fleet health, storage, security — or &quot;spin up 3 ubuntu web servers, 4 cores, 8Gi&quot;" aria-label="Ask Zeus" style="width:100%;font-size:.9rem"></textarea>
     <div class="copilot-chip-group"><div class="copilot-chip-label">Fleet</div><div class="copilot-chips" style="display:flex;flex-wrap:wrap;gap:6px">
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Show all unhealthy VMs')">Unhealthy</button>
       <button type="button" class="glass-btn-secondary glass-btn-sm copilot-chip-btn" onclick="copilotChip('Which VMs have no backups?')">Backups</button>
@@ -15407,10 +15407,69 @@ function closeCopilot() {
   copilotReturnFocus = null;
 }
 
+// ── Natural-language Forge: "spin up 3 ubuntu web servers, 4 cores, 8Gi" ──
+const _FORGE_OS_WORDS = ['ubuntu','debian','fedora','centos','rocky','almalinux','alma','rhel','redhat','arch','opensuse','suse','freebsd','openbsd','talos','windows','win11','win10','win','flatcar','coreos','alpine','mint','kali','oracle'];
+function parseForgeIntent(q) {
+  const s = (q || '').toLowerCase();
+  if (!/\b(create|forge|spin\s*up|launch|provision|deploy|new)\b/.test(s)) return null;
+  // don't hijack non-VM copilot asks
+  if (/\b(policy|schedule|backup|snapshot|report|find|list|show|analy[sz]e|suggest|enable|restrict|summari[sz]e|fix|audit|explain|cost|budget|alert|namespace|pvc|network)\b/.test(s)) return null;
+  const hasVmWord = /\b(vm|vms|server|servers|machine|machines|instance|instances|box|boxes|guest|guests)\b/.test(s);
+  const os = _FORGE_OS_WORDS.find(w => new RegExp('\\b' + w + '\\b').test(s));
+  if (!os && !hasVmWord) return null;
+  let count = 1;
+  const cm = (os && s.match(new RegExp('\\b(\\d{1,2})\\s+(?:[a-z-]+\\s+){0,2}' + os))) ||
+             s.match(/\b(\d{1,2})\s+(?:[a-z-]+\s+){0,2}(?:vm|vms|server|servers|machine|machines|instance|instances|box|boxes)/);
+  if (cm) count = Math.min(20, Math.max(1, parseInt(cm[1], 10)));
+  let cpu = null; const cpum = s.match(/(\d{1,3})\s*(?:v?cpus?|cores?|c\b)/); if (cpum) cpu = parseInt(cpum[1], 10);
+  let memory = null; const memm = s.match(/(\d{1,4})\s*(g|gi|gb|gigs?|m|mi|mb)\b/);
+  if (memm) memory = parseInt(memm[1], 10) + (memm[2][0] === 'm' ? 'Mi' : 'Gi');
+  let disk = null;
+  const dm = s.match(/(\d{1,4})\s*(g|gi|gb|t|ti|tb)\b\s*(?:disk|storage|ssd|volume|drive)/) || s.match(/(?:disk|storage)\D{0,6}(\d{1,4})\s*(g|gi|gb|t|ti|tb)/);
+  if (dm) disk = parseInt(dm[1], 10) + (dm[2][0] === 't' ? 'Ti' : 'Gi');
+  const role = ['web','db','database','api','cache','proxy','worker','k8s','gpu','build','ci','test','dev','staging','prod','app'].find(r => new RegExp('\\b' + r + '\\b').test(s));
+  return { count, os: os || null, cpu, memory, disk, nameHint: role || '' };
+}
+function _forgeTemplateFor(os) {
+  if (!os) return '';
+  const want = /^win/.test(os) || os === 'windows' || os === 'server2022' ? 'windows' : os;
+  const t = (templateCache || []).find(x => (x.name || '').toLowerCase().includes(want));
+  return t ? t.name : '';
+}
+async function applyForgeIntent(intent) {
+  await openCreateModal();
+  const tpl = _forgeTemplateFor(intent.os);
+  const sel = document.getElementById('vm-template');
+  if (sel && tpl) {
+    if (!Array.from(sel.options).some(o => o.value === tpl)) { const o = document.createElement('option'); o.value = tpl; o.textContent = tpl; sel.appendChild(o); }
+    sel.value = tpl;
+  }
+  if (intent.cpu) { const e = document.getElementById('vm-cpus'); if (e) e.value = intent.cpu; }
+  if (intent.memory) { const e = document.getElementById('vm-memory'); if (e) e.value = intent.memory; }
+  if (intent.disk) { const e = document.getElementById('vm-disk'); if (e) e.value = intent.disk; }
+  const nm = document.getElementById('vm-name');
+  if (nm && !nm.value) { nm.value = ((intent.nameHint || intent.os || 'vm').replace(/[^a-z0-9-]/g, '') || 'vm') + '-01'; nm.focus(); if (nm.select) nm.select(); }
+  const parts = [];
+  if (intent.count > 1) parts.push(intent.count + '×');
+  if (intent.os) parts.push(intent.os);
+  if (intent.cpu) parts.push(intent.cpu + ' vCPU');
+  if (intent.memory) parts.push(intent.memory);
+  if (intent.disk) parts.push(intent.disk + ' disk');
+  toast('Forge prefilled: ' + (parts.join(' · ') || 'VM') + (intent.count > 1 ? ' — review & forge (one at a time)' : ' — review & forge'), 'success');
+}
+
 async function runCopilotAsk() {
   const input = document.getElementById('copilot-input');
   const q = (input || {}).value || '';
   if (!q.trim()) { toast('Enter a question', 'error'); return; }
+  // Natural-language Forge: route VM-creation phrasing to the Forge modal.
+  const _forgeIntent = parseForgeIntent(q.trim());
+  if (_forgeIntent) {
+    if (typeof closeCopilot === 'function') closeCopilot();
+    if (input) input.value = '';
+    applyForgeIntent(_forgeIntent);
+    return;
+  }
   const ns = input && input.dataset.vmNs;
   const vmName = input && input.dataset.vmName;
   const msgs = copilotMessages();
