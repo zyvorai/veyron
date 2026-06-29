@@ -6539,7 +6539,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Service type</label>
-              <select class="form-select" id="vm-expose-type">
+              <select class="form-select" id="vm-expose-type" onchange="_createExposeToggleNodePort()">
                 <option value="ClusterIP">ClusterIP</option>
                 <option value="NodePort">NodePort</option>
                 <option value="LoadBalancer">LoadBalancer</option>
@@ -6552,6 +6552,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <div class="form-group">
               <label class="form-label">Target (guest) port</label>
               <input type="number" class="form-input" id="vm-expose-target" min="1" max="65535" value="22">
+            </div>
+            <div class="form-group" id="vm-expose-np-wrap" style="display:none">
+              <label class="form-label">NodePort (30000–32767)</label>
+              <input type="number" class="form-input" id="vm-expose-np" min="30000" max="32767" value="30100">
             </div>
           </div>
         </div>
@@ -17704,11 +17708,15 @@ async function forgeVM() {
     const st = document.getElementById('vm-expose-type').value;
     const port = parseInt(document.getElementById('vm-expose-port').value, 10) || 22;
     const target = parseInt(document.getElementById('vm-expose-target').value, 10) || port;
-    body.expose = {
-      enabled: true,
-      service_type: st,
-      ports: [{ name: 'ssh', port: port, target_port: target, protocol: 'TCP' }]
-    };
+    const port0 = { name: 'ssh', port: port, target_port: target, protocol: 'TCP' };
+    if (st === 'NodePort' || st === 'LoadBalancer') {
+      const np = parseInt((document.getElementById('vm-expose-np') || {}).value, 10);
+      if (np) {
+        if (np < 30000 || np > 32767) { toast('NodePort must be in 30000–32767 (suggested 30100–30199)', 'error'); return; }
+        port0.node_port = np;
+      }
+    }
+    body.expose = { enabled: true, service_type: st, ports: [port0] };
   }
 
   try {
@@ -19412,10 +19420,11 @@ function renderExposePanel(container, ns, name, ex) {
     inner += '<div class="rdp-status-banner hidden" style="margin-bottom:10px"><span class="rdp-status-dot"></span>No expose Service — forward a port to the guest via virt-launcher</div>';
   }
   inner += '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">';
-  inner += '<label class="form-label tiny-label">Type<br><select id="' + tid + '-type" class="form-select compact-field" style="min-width:130px">';
+  inner += '<label class="form-label tiny-label">Type<br><select id="' + tid + '-type" class="form-select compact-field" style="min-width:130px" onchange="_exposeToggleNodePort(' + jsArgs(tid) + ')">';
   inner += '<option value="ClusterIP">ClusterIP</option><option value="NodePort">NodePort</option><option value="LoadBalancer">LoadBalancer</option></select></label>';
   inner += '<label class="form-label tiny-label">Service port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-port" min="1" max="65535" value="22"></label>';
   inner += '<label class="form-label tiny-label">Target port<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-target" min="1" max="65535" value="22"></label>';
+  inner += '<label class="form-label tiny-label" id="' + tid + '-np-wrap" style="display:none">NodePort (30000–32767)<br><input type="number" class="form-input compact-field compact-number-input" id="' + tid + '-np" min="30000" max="32767" value="30100"></label>';
   inner += '<button type="button" class="glass-btn-primary" ' + onStopHandler('applyVmExpose(' + jsArgs(ns, name, tid) + ')') + '>Apply</button>';
   inner += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('removeVmExpose(' + jsArgs(ns, name) + ')') + '>Remove</button>';
   inner += '</div>';
@@ -19429,9 +19438,26 @@ function renderExposePanel(container, ns, name, ex) {
     const pp = (ex.ports && ex.ports[0]) || {};
     const pEl = document.getElementById(tid + '-port');
     const tEl = document.getElementById(tid + '-target');
+    const npEl = document.getElementById(tid + '-np');
     if (pEl && pp.port != null) pEl.value = pp.port;
     if (tEl && pp.target_port != null) tEl.value = pp.target_port;
+    if (npEl && pp.node_port != null) npEl.value = pp.node_port;
   }
+  _exposeToggleNodePort(tid);
+}
+
+// Show the NodePort field only for NodePort/LoadBalancer service types.
+function _exposeToggleNodePort(tid) {
+  const t = document.getElementById(tid + '-type');
+  const w = document.getElementById(tid + '-np-wrap');
+  if (t && w) w.style.display = (t.value === 'NodePort' || t.value === 'LoadBalancer') ? '' : 'none';
+}
+
+// Same toggle for the create-VM modal's expose section.
+function _createExposeToggleNodePort() {
+  const t = document.getElementById('vm-expose-type');
+  const w = document.getElementById('vm-expose-np-wrap');
+  if (t && w) w.style.display = (t.value === 'NodePort' || t.value === 'LoadBalancer') ? '' : 'none';
 }
 
 async function loadInternetPanel(ns, name) {
@@ -19491,11 +19517,16 @@ async function applyVmExpose(ns, name, tid) {
   const type = typeEl.value;
   const port = parseInt(portEl.value, 10) || 22;
   const target = parseInt(tgtEl.value, 10) || port;
-  const body = {
-    enabled: true,
-    service_type: type,
-    ports: [{ name: 'app', port: port, target_port: target, protocol: 'TCP' }]
-  };
+  const port0 = { name: 'app', port: port, target_port: target, protocol: 'TCP' };
+  if (type === 'NodePort' || type === 'LoadBalancer') {
+    const npEl = document.getElementById(tid + '-np');
+    const np = parseInt(npEl && npEl.value, 10);
+    if (np) {
+      if (np < 30000 || np > 32767) { toast('NodePort must be in 30000–32767 (suggested 30100–30199)', 'error'); return; }
+      port0.node_port = np;
+    }
+  }
+  const body = { enabled: true, service_type: type, ports: [port0] };
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/expose', {
       method: 'PUT',
