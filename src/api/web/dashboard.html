@@ -18,7 +18,7 @@
     return;
   }
   function parseStoredThemeEarly(raw) {
-    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light'];
+    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon'];
     if (raw && valid.indexOf(raw) >= 0) return raw;
     if (raw === 'frost') return 'tahoe-light';
     if (raw === 'aurora') return 'sonoma';
@@ -172,6 +172,54 @@
   --border-hot:   var(--hairline-hi);
   --bg-card:      var(--panel);
 }
+
+/* ── Carbon: forged carbon-fiber composite, titanium hairlines, ion-teal accent ──
+   The only dark theme that fully reskins surface tokens (others swap wallpaper only).
+   Attribute selector outweighs the :root layers above, so these win cleanly. */
+html[data-theme="carbon"]{
+  /* Instrument Deck surfaces — neutral anthracite graphite, near-zero blue cast */
+  --void:#050607;
+  --hull:#0a0b0d;
+  --panel:#101216;
+  --panel-2:#15181d;
+  --panel-hi:#1e222a;
+  --hairline:#282c33;
+  --hairline-hi:#3b414c;
+  /* Ion-teal accent — the theme reskins the brand plasma to a heated-edge teal */
+  --plasma:#2de0c8;
+  --plasma-deep:#0f9e8d;
+  --plasma-glow:rgba(45,224,200,.18);
+  --plasma-line:rgba(45,224,200,.42);
+  --deck-temp:#2de0c8;
+  --deck-temp-glow:rgba(45,224,200,.18);
+  /* Cool titanium ink */
+  --ink:#eef1f4;
+  --ink-2:#9aa2ac;
+  --ink-3:#5c636d;
+  /* Bridge the legacy CloudOS + amber-brand tokens so older components match */
+  --primary:#2de0c8;
+  --primary-dim:rgba(45,224,200,.15);
+  --primary-glow:rgba(45,224,200,.28);
+  --bg-0:#0a0b0d;
+  --blue:#2de0c8;
+  --cyan:#5ff0e0;
+  --primary-blue:#1ea7df;
+  --primary-purple:#6b7686;     /* desaturate stray purples to graphite */
+  --accent:#2de0c8;
+  /* Nav section identity — cool-shift so the whole shell reads carbon */
+  --section-compute:#7fe9ff;
+  --section-platform:#bfeae3;
+}
+/* Carbon-fiber 2x2 twill weave on the desktop + ion vignette; dim the photo wallpaper */
+html[data-theme="carbon"] body.mac-desktop-root{
+  background:
+    repeating-linear-gradient(45deg,  rgba(255,255,255,.020) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(-45deg, rgba(0,0,0,.34) 0 1px, transparent 1px 5px),
+    radial-gradient(120% 85% at 82% -12%, rgba(45,224,200,.07), transparent 55%),
+    radial-gradient(90% 70% at 0% 110%,   rgba(30,167,223,.05), transparent 52%),
+    var(--hull) !important;
+}
+html[data-theme="carbon"] body.mac-desktop-root::before{ opacity:.10 !important; }
 
 /* ── Light mode: tahoe-light / light themes ──────────────────── */
 html[data-theme="tahoe-light"],
@@ -3451,6 +3499,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.forge{background:linear-gradient(135deg,rgb(12,6,6) 0%,rgb(239,68,68) 55%,rgb(248,113,113) 100%)}
 .theme-swatch-preview.ember{background:linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)}
 .theme-swatch-preview.light{background:linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)}
+.theme-swatch-preview.carbon{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)}
 .cloudos-mobile-bar{
   display:none;position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 6px);z-index:165;
@@ -3972,6 +4021,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <option value="forge">Forge</option>
         <option value="ember">Ember</option>
         <option value="light">Light</option>
+        <option value="carbon">Carbon</option>
       </optgroup>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
@@ -4009,10 +4059,11 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <button type="button" class="theme-swatch" data-theme="forge" role="radio" onclick="setTheme('forge')"><span class="theme-swatch-preview forge"></span><span class="theme-swatch-label">Forge</span></button>
         <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
         <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
+        <button type="button" class="theme-swatch" data-theme="carbon" role="radio" onclick="setTheme('carbon')"><span class="theme-swatch-preview carbon"></span><span class="theme-swatch-label">Carbon</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
         <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
-        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option>
+        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option>
       </select>
     </div>
     <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
@@ -6831,6 +6882,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <button type="button" class="theme-swatch" data-theme="forge"       role="radio" onclick="setTheme('forge')">      <span class="theme-swatch-preview forge"></span>      <span class="theme-swatch-label">Forge</span></button>
             <button type="button" class="theme-swatch" data-theme="ember"       role="radio" onclick="setTheme('ember')">      <span class="theme-swatch-preview ember"></span>      <span class="theme-swatch-label">Ember</span></button>
             <button type="button" class="theme-swatch" data-theme="light"       role="radio" onclick="setTheme('light')">      <span class="theme-swatch-preview light"></span>      <span class="theme-swatch-label">Day</span></button>
+            <button type="button" class="theme-swatch" data-theme="carbon"      role="radio" onclick="setTheme('carbon')">     <span class="theme-swatch-preview carbon"></span>     <span class="theme-swatch-label">Carbon</span></button>
           </div>
         </div>
       </div>
@@ -7147,7 +7199,8 @@ const THEME_PRESETS = [
   { id: 'wolf', label: 'Wolf', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(9,9,11) 0%,rgb(245,158,11) 55%,rgb(251,191,36) 100%)' },
   { id: 'forge', label: 'Forge', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(12,6,6) 0%,rgb(239,68,68) 55%,rgb(248,113,113) 100%)' },
   { id: 'ember', label: 'Ember', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)' },
-  { id: 'light', label: 'Light', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)' }
+  { id: 'light', label: 'Light', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)' },
+  { id: 'carbon', label: 'Carbon', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
@@ -7157,7 +7210,7 @@ const LEGACY_THEME_ALIASES = {
 };
 const THEME_WALLPAPER_PAIRING = {
   tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
-  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora'
+  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite'
 };
 
 function parseStoredTheme(raw) {
@@ -26071,10 +26124,11 @@ async function submitCreateAlert(e) {
             <button type="button" class="theme-swatch" data-theme="forge" role="radio" onclick="setTheme('forge')"><span class="theme-swatch-preview forge"></span><span class="theme-swatch-label">Forge</span></button>
             <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
+            <button type="button" class="theme-swatch" data-theme="carbon" role="radio" onclick="setTheme('carbon')"><span class="theme-swatch-preview carbon"></span><span class="theme-swatch-label">Carbon</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
             <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
-            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option>
+            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option>
           </select>
         </div>
         <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
