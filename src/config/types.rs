@@ -354,6 +354,11 @@ pub struct VmExposePort {
     pub target_port: i32,
     #[serde(default = "default_tcp_protocol")]
     pub protocol: String,
+    /// External port on each node for `NodePort`/`LoadBalancer` services.
+    /// Must be within the cluster NodePort range (30000–32767); `None` lets
+    /// Kubernetes auto-assign one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub node_port: Option<i32>,
 }
 
 fn default_tcp_protocol() -> String {

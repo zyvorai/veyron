@@ -1679,6 +1679,25 @@ pub mod web {
                     "enabled=true requires a valid expose configuration",
                 );
             };
+            // NodePort/LoadBalancer node ports must fall within the cluster
+            // NodePort range; reject anything outside 30000–32767 up front.
+            if matches!(cfg.service_type.to_ascii_lowercase().as_str(), "nodeport" | "loadbalancer")
+            {
+                for p in &cfg.ports {
+                    if let Some(np) = p.node_port {
+                        if !(30000..=32767).contains(&np) {
+                            return err_json(
+                                400,
+                                "INVALID_NODE_PORT",
+                                &format!(
+                                    "node_port {} is out of range — NodePort services must use 30000–32767 (suggested 30100–30199 per VM)",
+                                    np
+                                ),
+                            );
+                        }
+                    }
+                }
+            }
             match client.upsert_vm_expose_service(&ns, &name, &cfg).await {
                 Ok(()) => match client.get_vm_expose_service(&ns, &name).await {
                     Ok(svc) => {
@@ -3434,6 +3453,8 @@ pub mod web {
         port: i32,
         target_port: Option<i32>,
         protocol: Option<String>,
+        /// External node port for NodePort/LoadBalancer (must be 30000–32767).
+        node_port: Option<i32>,
     }
 
     /// Maps dashboard/API expose payload to `VmExposeConfig` when enabled.
@@ -3449,6 +3470,7 @@ pub mod web {
                 port: p.port,
                 target_port: p.target_port.unwrap_or(p.port),
                 protocol: p.protocol.unwrap_or_else(|| "TCP".to_string()),
+                node_port: p.node_port,
             })
             .collect();
         if ports.is_empty() {
@@ -3457,6 +3479,7 @@ pub mod web {
                 port: 22,
                 target_port: 22,
                 protocol: "TCP".to_string(),
+                node_port: None,
             });
         }
         Some(VmExposeConfig {

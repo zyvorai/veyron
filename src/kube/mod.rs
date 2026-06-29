@@ -461,6 +461,7 @@ impl KubeClient {
                 port: 22,
                 target_port: 22,
                 protocol: "TCP".to_string(),
+                node_port: None,
             }]
         } else {
             expose.ports.clone()
@@ -475,6 +476,10 @@ impl KubeClient {
                 port.port = p.port;
                 port.protocol = Some(p.protocol.clone());
                 port.target_port = Some(IntOrString::Int(p.target_port));
+                // nodePort only applies to NodePort/LoadBalancer; None lets k8s auto-assign.
+                if matches!(type_str, "NodePort" | "LoadBalancer") {
+                    port.node_port = p.node_port;
+                }
                 port
             })
             .collect();
