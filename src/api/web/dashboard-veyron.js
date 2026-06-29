@@ -1214,7 +1214,16 @@
     if (modal) modal.classList.add('open');
     document.body.classList.add('forge-wizard-open');
     if (typeof fetchTemplates === 'function') fetchTemplates();
-    if (typeof fetchProfiles === 'function') fetchProfiles();
+    if (typeof fetchProfiles === 'function') {
+      // fetchProfiles() only repaints the legacy picker, so repaint the wizard
+      // grid when it resolves — otherwise the profile step stays on "Loading…".
+      var _profPromise = fetchProfiles();
+      if (_profPromise && typeof _profPromise.then === 'function') {
+        _profPromise.then(function () { window._forgeProfilesLoaded = true; renderForgeWizardProfiles(); });
+      } else {
+        window._forgeProfilesLoaded = true;
+      }
+    }
     syncForgeWizardFromLegacy();
     var tpl = document.getElementById('forge-wiz-template');
     var legacyTpl = document.getElementById('vm-template');
@@ -1301,7 +1310,9 @@
     var cache = typeof profileCache !== 'undefined' ? profileCache : [];
     var sel = typeof selectedProfile !== 'undefined' ? selectedProfile : '';
     if (!cache.length) {
-      el.innerHTML = '<p style="font-size:.84rem;color:var(--muted)">Loading profiles…</p>';
+      el.innerHTML = window._forgeProfilesLoaded
+        ? '<p style="font-size:.84rem;color:var(--muted)">No profiles found. You can skip this step.</p>'
+        : '<p style="font-size:.84rem;color:var(--muted)">Loading profiles…</p>';
       return;
     }
     el.innerHTML = cache.map(function (p) {
