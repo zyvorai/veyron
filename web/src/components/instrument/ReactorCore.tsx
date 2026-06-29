@@ -17,8 +17,8 @@ const PAL: Record<Signal | 'plasma' | 'deep' | 'ink', string> = {
   warn:   '#EF9F27',  // --caution
   crit:   '#E24B4A',  // --critical
   off:    '#5F5E5A',  // --inert
-  plasma: '#7F77DD',
-  deep:   '#534AB7',
+  plasma: '#f59e0b',
+  deep:   '#b45309',
   ink:    '#5f6884',
 };
 
@@ -134,7 +134,7 @@ export function ReactorCore({
           const y = CY + Math.sin(rad) * ring.r * ring.tilt * 1.6;
           a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
-        ctx.strokeStyle = ring.dead ? 'rgba(226,75,74,.4)' : 'rgba(127,119,221,.22)';
+        ctx.strokeStyle = ring.dead ? 'rgba(226,75,74,.4)' : 'rgba(245,158,11,.22)';
         ctx.lineWidth = 1;
         ctx.setLineDash(ring.dead ? [4, 4] : []);
         ctx.stroke();
@@ -143,8 +143,8 @@ export function ReactorCore({
 
       // Core halo
       const halo = ctx.createRadialGradient(CX, CY, 0, CX, CY, 150);
-      halo.addColorStop(0, 'rgba(127,119,221,0.30)');
-      halo.addColorStop(1, 'rgba(127,119,221,0)');
+      halo.addColorStop(0, 'rgba(245,158,11,0.30)');
+      halo.addColorStop(1, 'rgba(245,158,11,0)');
       ctx.fillStyle = halo;
       ctx.globalAlpha = 0.5 + Math.sin(t * 2.2) * 0.12;
       ctx.beginPath();
@@ -216,14 +216,14 @@ export function ReactorCore({
         ctx.fillStyle = coreCol;
       } else {
         const g = ctx.createRadialGradient(CX, CY - 10, 4, CX, CY, coreR);
-        g.addColorStop(0, '#b9b2f5');
+        g.addColorStop(0, '#fcd9a0');
         g.addColorStop(0.4, PAL.plasma);
         g.addColorStop(1, PAL.deep);
         ctx.fillStyle = g;
       }
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = '#b9b2f5';
+      ctx.strokeStyle = '#fcd9a0';
       ctx.stroke();
 
       // Internal flares
@@ -296,7 +296,7 @@ export function ReactorCore({
       className={className}
       style={{
         position: 'relative',
-        background: 'radial-gradient(120% 100% at 50% 30%, rgba(127,119,221,0.06), #0a0c14)',
+        background: 'radial-gradient(120% 100% at 50% 30%, rgba(245,158,11,0.06), #0a0c14)',
         border: '1px solid var(--hairline, #27304a)',
         borderRadius: 18,
         overflow: 'hidden',

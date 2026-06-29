@@ -202,7 +202,7 @@ The dashboard (`src/api/web/dashboard.html`) uses the **Instrument Deck** design
 
 ### Color — token-only, zero raw hex
 
-**All colors must use CSS custom properties.** No hex literals (`#7F77DD`), no `rgb()`/`rgba()` values outside the `:root` token block at the top of `<style>`. A raw color value anywhere in component HTML or CSS is a bug.
+**All colors must use CSS custom properties.** No hex literals (`#f59e0b`), no `rgb()`/`rgba()` values outside the `:root` token block at the top of `<style>`. A raw color value anywhere in component HTML or CSS is a bug.
 
 | Purpose | Token |
 |---|---|
@@ -213,7 +213,7 @@ The dashboard (`src/api/web/dashboard.html`) uses the **Instrument Deck** design
 | Hover/active surface | `--panel-hi` |
 | Default border | `--hairline` |
 | Emphasis border | `--hairline-hi` |
-| Brand accent | `--plasma` (violet — the ONLY brand color) |
+| Brand accent | `--plasma` (amber `#f59e0b` — the ONLY brand color) |
 | Plasma variants | `--plasma-deep` `--plasma-glow` `--plasma-line` |
 | Status: healthy/running | `--nominal` + `--nominal-bg` |
 | Status: warning | `--caution` + `--caution-bg` |
@@ -223,7 +223,7 @@ The dashboard (`src/api/web/dashboard.html`) uses the **Instrument Deck** design
 | Secondary text | `--ink-2` |
 | Muted/caption text | `--ink-3` |
 
-**Do not introduce a second brand color.** `--plasma` is the only accent. Status must always use the four signal colors above — never invent a new color for a new state.
+**Do not introduce a second brand color.** `--plasma` (amber `#f59e0b`) is the only accent. Status must always use the four signal colors above — never invent a new color for a new state.
 
 ### Status rendering — signal dots, never flat rectangles
 
