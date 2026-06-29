@@ -9101,6 +9101,11 @@ function loadPageData(page, opts) {
 // Toast notifications (Notification Center style)
 const _toastActive = new Set();
 const TOAST_DURATIONS = { error: 8000, warning: 6000, info: 4000, success: 3000 };
+// Alias: several handlers (migration-policy delete, action approve, NAD
+// attach, test notification) call showToast() with a legacy 'ok' type.
+function showToast(msg, type, duration) {
+  return toast(msg, type === 'ok' ? 'success' : type, duration);
+}
 function toast(msg, type, duration) {
   type = type || 'info';
   const key = type + ':' + msg;
