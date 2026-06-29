@@ -18,7 +18,7 @@
     return;
   }
   function parseStoredThemeEarly(raw) {
-    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon'];
+    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave'];
     if (raw && valid.indexOf(raw) >= 0) return raw;
     if (raw === 'frost') return 'tahoe-light';
     if (raw === 'aurora') return 'sonoma';
@@ -220,6 +220,52 @@ html[data-theme="carbon"] body.mac-desktop-root{
     var(--hull) !important;
 }
 html[data-theme="carbon"] body.mac-desktop-root::before{ opacity:.10 !important; }
+
+/* ── Synthwave: Outrun night — deep indigo, neon-magenta accent, sunset horizon + retro grid ── */
+html[data-theme="synthwave"]{
+  /* Deep indigo-violet night surfaces */
+  --void:#0a0612;
+  --hull:#120a24;
+  --panel:#1a1033;
+  --panel-2:#221542;
+  --panel-hi:#2e1d57;
+  --hairline:#3a2a63;
+  --hairline-hi:#574099;
+  /* Neon magenta accent (reskins the brand plasma) */
+  --plasma:#ff3d9a;
+  --plasma-deep:#b81e74;
+  --plasma-glow:rgba(255,61,154,.20);
+  --plasma-line:rgba(255,61,154,.48);
+  --deck-temp:#ff3d9a;
+  --deck-temp-glow:rgba(255,61,154,.20);
+  /* Lavender-white ink */
+  --ink:#f4ecff;
+  --ink-2:#bda9e6;
+  --ink-3:#7d6aa8;
+  /* Legacy + CloudOS bridges → neon magenta / cyan duo */
+  --primary:#ff3d9a;
+  --primary-dim:rgba(255,61,154,.16);
+  --primary-glow:rgba(255,61,154,.30);
+  --bg-0:#120a24;
+  --blue:#ff3d9a;
+  --cyan:#36e6ff;
+  --primary-blue:#36e6ff;
+  --primary-purple:#a06bff;
+  --accent:#ff3d9a;
+  --section-compute:#36e6ff;
+  --section-platform:#ff8ad1;
+}
+/* Sunset horizon glow + faint perspective grid over the night */
+html[data-theme="synthwave"] body.mac-desktop-root{
+  background:
+    repeating-linear-gradient(0deg,  rgba(255,61,154,.05) 0 1px, transparent 1px 46px),
+    repeating-linear-gradient(90deg, rgba(54,230,255,.04) 0 1px, transparent 1px 46px),
+    radial-gradient(120% 70% at 50% 118%, rgba(255,138,90,.16), transparent 60%),
+    radial-gradient(120% 80% at 50% 120%, rgba(255,61,154,.18), transparent 64%),
+    radial-gradient(90% 60% at 12% -10%, rgba(160,107,255,.14), transparent 55%),
+    var(--hull) !important;
+}
+html[data-theme="synthwave"] body.mac-desktop-root::before{ opacity:.08 !important; }
 
 /* ── Light mode: tahoe-light / light themes ──────────────────── */
 html[data-theme="tahoe-light"],
@@ -3504,6 +3550,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.ember{background:linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)}
 .theme-swatch-preview.light{background:linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)}
 .theme-swatch-preview.carbon{background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)}
+.theme-swatch-preview.synthwave{background:linear-gradient(135deg,rgb(18,10,36) 0%,rgb(120,30,110) 45%,rgb(255,61,154) 78%,rgb(255,170,90) 100%)}
 .cloudos-mobile-bar{
   display:none;position:fixed;left:50%;transform:translateX(-50%);
   bottom:calc(var(--bottom-safe-area, var(--vmr-dock-safe, 88px)) + 6px);z-index:165;
@@ -4026,6 +4073,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <option value="ember">Ember</option>
         <option value="light">Light</option>
         <option value="carbon">Carbon</option>
+        <option value="synthwave">Synthwave</option>
       </optgroup>
     </select>
     <select class="ns-select" id="ns-selector" onchange="setNamespace(this.value)" title="Workspace">
@@ -4064,10 +4112,11 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
         <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
         <button type="button" class="theme-swatch" data-theme="carbon" role="radio" onclick="setTheme('carbon')"><span class="theme-swatch-preview carbon"></span><span class="theme-swatch-label">Carbon</span></button>
+        <button type="button" class="theme-swatch" data-theme="synthwave" role="radio" onclick="setTheme('synthwave')"><span class="theme-swatch-preview synthwave"></span><span class="theme-swatch-label">Synthwave</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
         <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
-        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option>
+        <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option>
       </select>
     </div>
     <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="cc-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
@@ -6891,6 +6940,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <button type="button" class="theme-swatch" data-theme="ember"       role="radio" onclick="setTheme('ember')">      <span class="theme-swatch-preview ember"></span>      <span class="theme-swatch-label">Ember</span></button>
             <button type="button" class="theme-swatch" data-theme="light"       role="radio" onclick="setTheme('light')">      <span class="theme-swatch-preview light"></span>      <span class="theme-swatch-label">Day</span></button>
             <button type="button" class="theme-swatch" data-theme="carbon"      role="radio" onclick="setTheme('carbon')">     <span class="theme-swatch-preview carbon"></span>     <span class="theme-swatch-label">Carbon</span></button>
+            <button type="button" class="theme-swatch" data-theme="synthwave"   role="radio" onclick="setTheme('synthwave')">  <span class="theme-swatch-preview synthwave"></span>  <span class="theme-swatch-label">Synthwave</span></button>
           </div>
         </div>
       </div>
@@ -7208,7 +7258,8 @@ const THEME_PRESETS = [
   { id: 'forge', label: 'Forge', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(12,6,6) 0%,rgb(239,68,68) 55%,rgb(248,113,113) 100%)' },
   { id: 'ember', label: 'Ember', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(6,0,0) 0%,rgb(220,38,38) 55%,rgb(127,29,29) 100%)' },
   { id: 'light', label: 'Light', category: 'classic', defaultWallpaper: 'aurora', previewGradient: 'linear-gradient(135deg,rgb(250,250,249) 0%,rgb(37,99,235) 50%,rgb(59,130,246) 100%)' },
-  { id: 'carbon', label: 'Carbon', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)' }
+  { id: 'carbon', label: 'Carbon', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px),linear-gradient(135deg,rgb(8,9,11) 0%,rgb(30,34,42) 42%,rgb(45,224,200) 100%)' },
+  { id: 'synthwave', label: 'Synthwave', category: 'classic', defaultWallpaper: 'graphite', previewGradient: 'linear-gradient(135deg,rgb(18,10,36) 0%,rgb(120,30,110) 45%,rgb(255,61,154) 78%,rgb(255,170,90) 100%)' }
 ];
 const VALID_THEMES = THEME_PRESETS.map(function(p) { return p.id; });
 const LEGACY_THEME_ALIASES = {
@@ -7218,7 +7269,7 @@ const LEGACY_THEME_ALIASES = {
 };
 const THEME_WALLPAPER_PAIRING = {
   tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
-  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite'
+  wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite', synthwave: 'graphite'
 };
 
 function parseStoredTheme(raw) {
@@ -26202,10 +26253,11 @@ async function submitCreateAlert(e) {
             <button type="button" class="theme-swatch" data-theme="ember" role="radio" onclick="setTheme('ember')"><span class="theme-swatch-preview ember"></span><span class="theme-swatch-label">Ember</span></button>
             <button type="button" class="theme-swatch" data-theme="light" role="radio" onclick="setTheme('light')"><span class="theme-swatch-preview light"></span><span class="theme-swatch-label">Light</span></button>
             <button type="button" class="theme-swatch" data-theme="carbon" role="radio" onclick="setTheme('carbon')"><span class="theme-swatch-preview carbon"></span><span class="theme-swatch-label">Carbon</span></button>
+            <button type="button" class="theme-swatch" data-theme="synthwave" role="radio" onclick="setTheme('synthwave')"><span class="theme-swatch-preview synthwave"></span><span class="theme-swatch-label">Synthwave</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
             <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
-            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option>
+            <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option>
           </select>
         </div>
         <div class="mac-cc-row"><span>Wallpaper</span><select class="form-select" id="pref-wallpaper-select" onchange="setDesktopWallpaper(this.value)"><option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option><option value="aurora">Aurora</option></select></div>
