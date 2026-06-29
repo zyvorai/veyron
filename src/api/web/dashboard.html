@@ -9449,7 +9449,21 @@ async function apiFetch(url, opts) {
   } else if (cred) {
     opts.headers['X-API-Key'] = cred.token;
   }
-  const resp = await fetch(url, opts);
+  const method = (opts.method || 'GET').toUpperCase();
+  let resp;
+  try {
+    resp = await fetch(url, opts);
+  } catch (e) {
+    // Transient network drop (WebKit "Load failed" TypeError) when a stream is
+    // dropped during the initial burst of concurrent requests. Retry idempotent
+    // GETs once; never auto-retry mutations (avoid double side effects).
+    if (method === 'GET' && e && e.name === 'TypeError' && !(opts.signal && opts.signal.aborted)) {
+      await new Promise(function (r) { setTimeout(r, 600); });
+      resp = await fetch(url, opts);
+    } else {
+      throw e;
+    }
+  }
   if (resp.status === 401) {
     sessionStorage.removeItem(OIDC_TOKEN_KEY);
     localStorage.removeItem('veyron_api_key');
