@@ -1998,7 +1998,8 @@
       '</div></div>';
   };
 
-  window.fetchVeyronAlerts = async function fetchVeyronAlerts() {
+  window.fetchVeyronAlerts = async function fetchVeyronAlerts(_attempt) {
+    _attempt = _attempt || 0;
     try {
       var j = await apiJson('/api/v1/alerts' + (typeof nsParam === 'function' ? nsParam() : ''));
       window.lastVeyronAlerts = typeof asArray === 'function' ? asArray(j) : (j.data || j || []);
@@ -2011,10 +2012,18 @@
       }
       if (typeof syncVeyronTopbar === 'function') syncVeyronTopbar();
     } catch (e) {
+      // Transient fetch rejections ("Load failed") happen when one stream is
+      // dropped during the initial burst of concurrent requests. Retry once
+      // quietly, then surface the error with a manual Retry affordance.
+      if (_attempt < 1) {
+        setTimeout(function () { fetchVeyronAlerts(_attempt + 1); }, 800);
+        return;
+      }
       var alertEl = document.getElementById('vmr-active-alerts');
       if (alertEl) {
         alertEl.innerHTML = '<div class="vmr-panel" style="padding:16px;color:var(--orange);font-size:.84rem">' +
-          esc((e && e.message) || 'Alerts unavailable') + '</div>';
+          esc((e && e.message) || 'Alerts unavailable') +
+          ' <button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:8px" onclick="fetchVeyronAlerts()">Retry</button></div>';
       }
     }
   };
