@@ -18,7 +18,7 @@
     return;
   }
   function parseStoredThemeEarly(raw) {
-    var valid = ['holo', 'nebula', 'solaris', 'biolume', 'sakura', 'mono', 'inferno', 'tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
+    var valid = ['holo', 'nebula', 'solaris', 'biolume', 'sakura', 'mono', 'inferno', 'voltage', 'tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
     if (raw && valid.indexOf(raw) >= 0) return raw;
     if (raw === 'frost') return 'tahoe-light';
     if (raw === 'slate' || raw === '' || !raw) return 'holo';
@@ -31,7 +31,7 @@
     var savedTheme = parseStoredThemeEarly(localStorage.getItem('veyron_theme'));
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.documentElement.classList.add('theme-' + savedTheme);
-    if (['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(savedTheme) >= 0) document.documentElement.classList.add('glass-deck');
+    if (['holo','nebula','solaris','biolume','sakura','mono','inferno','voltage'].indexOf(savedTheme) >= 0) document.documentElement.classList.add('glass-deck');
   } catch (e) {}
 })();
 </script>
@@ -784,6 +784,71 @@ html[data-theme="inferno"].glass-deck .table tbody tr:hover td{background:rgba(2
 html[data-theme="inferno"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ff6b3d,#ffb03a)}
 html[data-theme="inferno"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(62,26,14,.5), rgba(20,8,4,.32) 70%, transparent);border-color:rgba(255,160,120,.14)}
 
+/* ◈ VOLTAGE — electric lime cyberglass (glass-deck family) */
+html[data-theme="voltage"]{
+  --void:#0a0f04; --hull:#0e1508; --bg-deep:#0a0f04; --bg:#0e1508; --bg-secondary:#0e1508;
+  --bg-card:rgba(36,52,18,.52); --bg-card-solid:#141c0a; --bg-elevated:rgba(48,68,26,.58);
+  --bg-tertiary:rgba(56,78,30,.42);
+  --steel:rgba(34,50,16,.55); --steel-light:rgba(50,70,26,.60); --steel-bright:rgba(66,92,34,.66);
+  --panel:rgba(36,52,18,.52); --panel-2:rgba(46,66,24,.58); --panel-hi:rgba(60,84,32,.66);
+  --hairline:rgba(184,240,30,.16); --hairline-hi:rgba(198,255,80,.46);
+  --border:rgba(184,240,30,.16); --border-hot:rgba(198,255,80,.46); --border-cold:rgba(184,240,30,.13);
+  --plasma:#b8f01e; --plasma-deep:#5a7a00; --plasma-glow:rgba(184,240,30,.28); --plasma-line:rgba(198,255,90,.5);
+  --primary:#b8f01e; --primary-blue:#b8f01e; --primary-purple:#2de0ff;
+  --primary-dim:rgba(184,240,30,.16); --primary-glow:rgba(184,240,30,.34);
+  --accent:#b8f01e; --molten:#2de0ff; --spark:#e4ffa0;
+  --ink:#eefce0; --ink-2:#c4d6ac; --ink-3:#8ca878;
+  --text:#eefce0; --text-bright:#ffffff; --text-muted:#c4d6ac; --text-dim:#8ca878;
+  --glass-bg:rgba(30,44,14,.46); --glass-bg-elevated:rgba(48,68,26,.58);
+  --glass-border:rgba(184,240,30,.16); --glass-border-strong:rgba(206,255,110,.30);
+  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
+  --glass-shadow:0 24px 64px rgba(4,8,1,.62),0 6px 18px rgba(4,8,1,.42);
+  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
+  --aurora-1:rgba(184,240,30,.28); --aurora-2:rgba(45,224,255,.24); --aurora-3:rgba(120,220,40,.22); --aurora-4:rgba(60,180,30,.20);
+  --deck-temp:#b8f01e; --deck-temp-glow:rgba(184,240,30,.18);
+  color-scheme:dark;
+}
+/* Voltage colour skin */
+html[data-theme="voltage"].glass-deck .card,
+html[data-theme="voltage"].glass-deck .glass-card,
+html[data-theme="voltage"].glass-deck .id-tile,
+html[data-theme="voltage"].glass-deck .id-vmcard,
+html[data-theme="voltage"].glass-deck .id-tpl,
+html[data-theme="voltage"].glass-deck .tile,
+html[data-theme="voltage"].glass-deck .panel{
+  background:linear-gradient(152deg, rgba(44,62,22,.48), rgba(14,22,6,.46)) !important;
+  border-color:rgba(184,240,30,.16) !important;
+  box-shadow:0 22px 58px rgba(4,8,1,.58),0 5px 16px rgba(4,8,1,.42),inset 0 1px 0 rgba(230,255,200,.20),inset 0 0 0 1px rgba(184,240,30,.05) !important;
+}
+html[data-theme="voltage"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(36,52,18,.40), rgba(10,16,4,.44)) !important;border-color:rgba(184,240,30,.16) !important}
+html[data-theme="voltage"].glass-deck .card:hover,
+html[data-theme="voltage"].glass-deck .glass-card:hover,
+html[data-theme="voltage"].glass-deck .id-tile:hover,
+html[data-theme="voltage"].glass-deck .id-vmcard:hover,
+html[data-theme="voltage"].glass-deck .id-tpl:hover,
+html[data-theme="voltage"].glass-deck .vm-card:hover{
+  border-color:rgba(198,255,80,.46) !important;
+  box-shadow:0 34px 82px rgba(4,8,1,.64),0 0 0 1px rgba(198,255,80,.46),0 0 44px rgba(184,240,30,.32),inset 0 1px 0 rgba(235,255,210,.26) !important;
+}
+html[data-theme="voltage"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(42,60,22,.42), rgba(12,18,5,.46))}
+html[data-theme="voltage"].glass-deck .vmr-panel:hover{border-color:rgba(198,255,80,.46);box-shadow:0 30px 72px rgba(4,8,1,.58),0 0 36px rgba(184,240,30,.32),inset 0 1px 0 rgba(235,255,210,.26)}
+html[data-theme="voltage"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(184,240,30,.22), rgba(45,224,255,.12) 46%, rgba(12,18,5,.5));border-color:rgba(198,255,90,.22)}
+html[data-theme="voltage"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(184,240,30,.42), transparent 66%)}
+html[data-theme="voltage"].glass-deck .mission-control-header-row h1,
+html[data-theme="voltage"].glass-deck .id-tile .id-big,
+html[data-theme="voltage"].glass-deck .id-metric,
+html[data-theme="voltage"].glass-deck .id-gauge .id-v,
+html[data-theme="voltage"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#e0ffa0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+html[data-theme="voltage"].glass-deck .glass-btn-primary,
+html[data-theme="voltage"].glass-deck .btn-create{background:linear-gradient(135deg,#b8f01e 0%,#5a7a00 100%) !important;border:1px solid rgba(206,255,110,.30) !important;box-shadow:0 6px 26px rgba(184,240,30,.34),inset 0 1px 0 rgba(255,255,255,.28) !important}
+html[data-theme="voltage"].glass-deck .form-input:focus,
+html[data-theme="voltage"].glass-deck .form-select:focus,
+html[data-theme="voltage"].glass-deck .zeus-ai-input:focus{border-color:rgba(198,255,80,.46) !important;box-shadow:0 0 0 3px rgba(184,240,30,.28),0 0 18px rgba(184,240,30,.18) !important}
+html[data-theme="voltage"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(184,240,30,.10), transparent);border-bottom-color:rgba(184,240,30,.16)}
+html[data-theme="voltage"].glass-deck .table tbody tr:hover td{background:rgba(184,240,30,.10);box-shadow:inset 2px 0 0 var(--plasma)}
+html[data-theme="voltage"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#b8f01e,#2de0ff)}
+html[data-theme="voltage"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(30,44,14,.5), rgba(8,12,3,.32) 70%, transparent);border-color:rgba(184,240,30,.13)}
+
 /* Deep-space hull */
 html.glass-deck body,
 html.glass-deck body.mac-desktop-root{
@@ -1058,11 +1123,21 @@ html.glass-deck .vmr-mission-grid > .vmr-panel:nth-child(4){animation-delay:.18s
 .holo-orb-mini{height:210px;margin:0 0 14px}
 .holo-orb-mini .holo-orb-pct{font-size:30px}
 .holo-orb-mini .holo-orb-cap{font-size:9px}
-.holo-orb-tip{position:absolute;pointer-events:none;transform:translate(-50%,-135%);
-  background:rgba(11,16,36,.94);border:1px solid rgba(160,188,255,.32);border-radius:8px;padding:5px 10px;
-  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:#eaf0ff;white-space:nowrap;
-  opacity:0;transition:opacity .12s;box-shadow:0 10px 28px rgba(2,4,16,.55);z-index:5}
+.holo-orb-tip{position:absolute;pointer-events:none;transform:translate(-50%,-128%);
+  background:linear-gradient(160deg,rgba(20,28,52,.96),rgba(10,14,30,.96));border:1px solid var(--plasma-line,rgba(160,188,255,.32));border-radius:10px;padding:8px 11px;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;white-space:nowrap;min-width:120px;
+  opacity:0;transition:opacity .12s;box-shadow:0 14px 34px rgba(2,4,16,.6),0 0 0 1px var(--plasma-line,rgba(160,188,255,.18));z-index:5;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .holo-orb-tip.on{opacity:1}
+.holo-orb-tip .ot-row{display:flex;align-items:center;gap:7px}
+.holo-orb-tip .ot-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.holo-orb-tip .ot-dot.ot-ok{background:var(--nominal);color:var(--nominal)}
+.holo-orb-tip .ot-dot.ot-warn{background:var(--caution);color:var(--caution)}
+.holo-orb-tip .ot-dot.ot-crit{background:var(--critical);color:var(--critical)}
+.holo-orb-tip .ot-dot.ot-off{background:var(--inert);color:var(--inert)}
+.holo-orb-tip b{font-size:12px;font-weight:600;color:#fff}
+.holo-orb-tip .ot-meta{font-size:10px;color:#aebbe0;margin-top:4px;letter-spacing:.4px;text-transform:capitalize}
+.holo-orb-tip .ot-hint{font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--plasma);margin-top:5px;opacity:.8}
 
 /* ── Depth tiers — spatial layering on the dashboard ──
    Foreground (orb) tilts toward the cursor and floats above; the primary
@@ -4364,6 +4439,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.sakura{background:radial-gradient(120% 100% at 32% 0%,rgb(255,143,179) 0%,rgb(255,160,120) 40%,rgb(40,16,24) 78%,rgb(21,10,15) 100%)}
 .theme-swatch-preview.mono{background:radial-gradient(120% 100% at 32% 0%,rgb(205,214,230) 0%,rgb(120,134,160) 42%,rgb(24,28,36) 80%,rgb(10,12,16) 100%)}
 .theme-swatch-preview.inferno{background:radial-gradient(120% 100% at 32% 0%,rgb(255,107,61) 0%,rgb(255,176,58) 40%,rgb(40,16,8) 78%,rgb(18,6,4) 100%)}
+.theme-swatch-preview.voltage{background:radial-gradient(120% 100% at 32% 0%,rgb(184,240,30) 0%,rgb(45,224,255) 44%,rgb(20,30,8) 80%,rgb(10,15,4) 100%)}
 .theme-swatch-preview.cycle{background:conic-gradient(from 200deg,#5b8cff,#c264ff,#ff8fb3,#ff6b3d,#ffab38,#19e3c4,#5b8cff)}
 .theme-swatch-preview.tahoe{background:linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)}
 .theme-swatch-preview.tahoe-light{background:linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)}
@@ -4941,6 +5017,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <button type="button" class="theme-swatch" data-theme="sakura" role="radio" onclick="setTheme('sakura')"><span class="theme-swatch-preview sakura"></span><span class="theme-swatch-label">Sakura</span></button>
         <button type="button" class="theme-swatch" data-theme="mono" role="radio" onclick="setTheme('mono')"><span class="theme-swatch-preview mono"></span><span class="theme-swatch-label">Mono</span></button>
         <button type="button" class="theme-swatch" data-theme="inferno" role="radio" onclick="setTheme('inferno')"><span class="theme-swatch-preview inferno"></span><span class="theme-swatch-label">Inferno</span></button>
+        <button type="button" class="theme-swatch" data-theme="voltage" role="radio" onclick="setTheme('voltage')"><span class="theme-swatch-preview voltage"></span><span class="theme-swatch-label">Voltage</span></button>
         <button type="button" class="theme-swatch" data-theme="cycle" role="radio" onclick="setTheme('cycle')" title="Slowly drift through all glass decks"><span class="theme-swatch-preview cycle"></span><span class="theme-swatch-label">Cycle</span></button>
         <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
         <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Tahoe Light</span></button>
@@ -7823,6 +7900,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <button type="button" class="theme-swatch" data-theme="sakura"     role="radio" onclick="setTheme('sakura')">    <span class="theme-swatch-preview sakura"></span>    <span class="theme-swatch-label">Sakura</span></button>
             <button type="button" class="theme-swatch" data-theme="mono"     role="radio" onclick="setTheme('mono')">    <span class="theme-swatch-preview mono"></span>    <span class="theme-swatch-label">Mono</span></button>
             <button type="button" class="theme-swatch" data-theme="inferno"     role="radio" onclick="setTheme('inferno')">    <span class="theme-swatch-preview inferno"></span>    <span class="theme-swatch-label">Inferno</span></button>
+            <button type="button" class="theme-swatch" data-theme="voltage"     role="radio" onclick="setTheme('voltage')">    <span class="theme-swatch-preview voltage"></span>    <span class="theme-swatch-label">Voltage</span></button>
             <button type="button" class="theme-swatch" data-theme="cycle"       role="radio" onclick="setTheme('cycle')" title="Slowly drift through all glass decks"><span class="theme-swatch-preview cycle"></span>       <span class="theme-swatch-label">Cycle</span></button>
             <button type="button" class="theme-swatch" data-theme="tahoe"       role="radio" onclick="setTheme('tahoe')">      <span class="theme-swatch-preview tahoe"></span>      <span class="theme-swatch-label">Tahoe</span></button>
             <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Light</span></button>
@@ -8155,6 +8233,7 @@ const THEME_PRESETS = [
   { id: 'sakura', label: 'Sakura', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(255,143,179) 0%,rgb(255,160,120) 40%,rgb(40,16,24) 78%,rgb(21,10,15) 100%)' },
   { id: 'mono', label: 'Mono', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(205,214,230) 0%,rgb(120,134,160) 42%,rgb(24,28,36) 80%,rgb(10,12,16) 100%)' },
   { id: 'inferno', label: 'Inferno', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(255,107,61) 0%,rgb(255,176,58) 40%,rgb(40,16,8) 78%,rgb(18,6,4) 100%)' },
+  { id: 'voltage', label: 'Voltage', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(184,240,30) 0%,rgb(45,224,255) 44%,rgb(20,30,8) 80%,rgb(10,15,4) 100%)' },
   { id: 'tahoe', label: 'Tahoe', category: 'macos', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)' },
   { id: 'tahoe-light', label: 'Tahoe Light', category: 'macos', defaultWallpaper: 'tahoe-light', previewGradient: 'linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)' },
   { id: 'sonoma', label: 'Sonoma', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)' },
@@ -8177,7 +8256,7 @@ const LEGACY_THEME_ALIASES = {
   neon: 'wolf', ember: 'ember'
 };
 const THEME_WALLPAPER_PAIRING = {
-  holo: 'sonoma', nebula: 'sonoma', solaris: 'sonoma', biolume: 'sonoma', sakura: 'sonoma', mono: 'sonoma', inferno: 'sonoma',
+  holo: 'sonoma', nebula: 'sonoma', solaris: 'sonoma', biolume: 'sonoma', sakura: 'sonoma', mono: 'sonoma', inferno: 'sonoma', voltage: 'sonoma',
   tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
   wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite', synthwave: 'graphite',
   aurora: 'graphite', nord: 'graphite', 'royal-gold': 'graphite', matrix: 'graphite'
@@ -8414,7 +8493,7 @@ function applyTheme(theme, writeStorage) {
   VALID_THEMES.forEach(function(id) {
     html.classList.toggle('theme-' + id, id === t);
   });
-  html.classList.toggle('glass-deck', ['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(t) >= 0);
+  html.classList.toggle('glass-deck', ['holo','nebula','solaris','biolume','sakura','mono','inferno','voltage'].indexOf(t) >= 0);
   // Remove transition class after animation completes
   clearTimeout(applyTheme._tid);
   applyTheme._tid = setTimeout(function() { html.classList.remove('theme-switching'); }, 350);
@@ -8434,7 +8513,7 @@ function applyTheme(theme, writeStorage) {
 }
 
 // ── Deck-cycle mode: slowly drift through the glass-deck family ──
-var DECK_CYCLE = ['holo','nebula','solaris','biolume','sakura','mono','inferno'];
+var DECK_CYCLE = ['holo','nebula','solaris','biolume','sakura','mono','inferno','voltage'];
 var _deckCycleTimer = null;
 function startDeckCycle() {
   if (_deckCycleTimer) { clearInterval(_deckCycleTimer); _deckCycleTimer = null; }
@@ -27451,7 +27530,7 @@ async function submitCreateAlert(e) {
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
-  function holoOn(){ return ['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(root.getAttribute('data-theme')) >= 0; }
+  function holoOn(){ return ['holo','nebula','solaris','biolume','sakura','mono','inferno','voltage'].indexOf(root.getAttribute('data-theme')) >= 0; }
   // Holographic cursor spotlight — a soft plasma light that follows the pointer
   var glow = document.createElement('div'); glow.id = 'holo-cursor-glow';
   // Twinkling starfield — ambient depth for the glass decks (CSS gates by theme)
@@ -27501,6 +27580,9 @@ async function submitCreateAlert(e) {
     return /^#[0-9a-fA-F]{6}$/.test(a) ? a : '#5b8cff';
   }
   function hexA(h, f){ var v = Math.round(Math.max(0, Math.min(1, f)) * 255).toString(16); if (v.length < 2) v = '0' + v; return h + v; }
+  function nsHue(ns){ ns = String(ns || 'default'); var h = 0; for (var i = 0; i < ns.length; i++) h = (h * 31 + ns.charCodeAt(i)) % 360; return h; }
+  function nsColor(ns, a){ return 'hsla(' + nsHue(ns) + ',70%,62%,' + a + ')'; }
+  function escTip(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   // The orb renders into whichever orb-wrap lives on the currently active page,
   // so it appears on the dashboard AND any page header that hosts one.
   function curWrap(){
@@ -27514,7 +27596,7 @@ async function submitCreateAlert(e) {
   function curCanvas(){ var w = curWrap(); return w ? w.querySelector('canvas') : null; }
   function active(){
     var dt = document.documentElement.getAttribute('data-theme');
-    return ['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(dt) >= 0 && !document.hidden && !!curWrap();
+    return ['holo','nebula','solaris','biolume','sakura','mono','inferno','voltage'].indexOf(dt) >= 0 && !document.hidden && !!curWrap();
   }
   function resize(cv){
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -27567,10 +27649,10 @@ async function submitCreateAlert(e) {
     for (var q = 0; q < layout.length; q++){ var nq = layout[q]; if (nq.x == null) continue;
       var gns = nq.v.namespace || nq.v.ns || 'default'; (groups[gns] = groups[gns] || []).push(nq); }
     ctx.lineWidth = 1;
-    for (var gk in groups){ var arr = groups[gk];
+    for (var gk in groups){ var arr = groups[gk]; var gc = nsColor(gk, 0.10 * ease);
       for (var z = 0; z < arr.length - 1; z++){
         ctx.beginPath(); ctx.moveTo(arr[z].x, arr[z].y); ctx.lineTo(arr[z+1].x, arr[z+1].y);
-        ctx.strokeStyle = hexA(accent, 0.05 * ease); ctx.stroke(); } }
+        ctx.strokeStyle = gc; ctx.stroke(); } }
     // core bloom
     var pulse = 1 + 0.06 * Math.sin(t*4);
     var coreR = maxR * 0.42 * pulse;
@@ -27646,7 +27728,9 @@ async function submitCreateAlert(e) {
     hoverIdx = h;
     var cv = curCanvas(), tip = wr && wr.querySelector('.holo-orb-tip');
     if (h >= 0 && tip){ var nd = layout[h];
-      tip.textContent = nd.v.name + ' · ' + (nd.v.status || '—');
+      tip.innerHTML = '<div class="ot-row"><span class="ot-dot ot-' + nd.tone + '"></span><b>' + escTip(nd.v.name) + '</b></div>' +
+        '<div class="ot-meta">' + escTip(nd.v.namespace || nd.v.ns || 'default') + ' · ' + escTip(nd.v.status || '—') + '</div>' +
+        '<div class="ot-hint">click → open</div>';
       tip.style.left = nd.x + 'px'; tip.style.top = nd.y + 'px'; tip.classList.add('on'); if (cv) cv.style.cursor = 'pointer';
     } else if (tip){ tip.classList.remove('on'); if (cv) cv.style.cursor = 'default'; }
   }, { passive: true });
