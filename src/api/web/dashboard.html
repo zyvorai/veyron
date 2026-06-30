@@ -18,7 +18,7 @@
     return;
   }
   function parseStoredThemeEarly(raw) {
-    var valid = ['holo', 'nebula', 'solaris', 'biolume', 'tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
+    var valid = ['holo', 'nebula', 'solaris', 'biolume', 'sakura', 'mono', 'inferno', 'tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
     if (raw && valid.indexOf(raw) >= 0) return raw;
     if (raw === 'frost') return 'tahoe-light';
     if (raw === 'slate' || raw === '' || !raw) return 'holo';
@@ -31,7 +31,7 @@
     var savedTheme = parseStoredThemeEarly(localStorage.getItem('veyron_theme'));
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.documentElement.classList.add('theme-' + savedTheme);
-    if (['holo','nebula','solaris','biolume'].indexOf(savedTheme) >= 0) document.documentElement.classList.add('glass-deck');
+    if (['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(savedTheme) >= 0) document.documentElement.classList.add('glass-deck');
   } catch (e) {}
 })();
 </script>
@@ -591,6 +591,199 @@ html[data-theme="biolume"].glass-deck .table tbody tr:hover td{background:rgba(2
 html[data-theme="biolume"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#19e3c4,#38c8ff)}
 html[data-theme="biolume"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(12,44,52,.5), rgba(4,14,20,.32) 70%, transparent);border-color:rgba(120,230,220,.14)}
 
+/* ◈ SAKURA — rose champagne glass (glass-deck family) */
+html[data-theme="sakura"]{
+  --void:#150a0f; --hull:#1f0e16; --bg-deep:#150a0f; --bg:#1f0e16; --bg-secondary:#1f0e16;
+  --bg-card:rgba(70,30,46,.52); --bg-card-solid:#2a141c; --bg-elevated:rgba(90,44,62,.58);
+  --bg-tertiary:rgba(104,52,72,.42);
+  --steel:rgba(68,30,44,.55); --steel-light:rgba(94,44,62,.60); --steel-bright:rgba(118,58,80,.66);
+  --panel:rgba(70,30,46,.52); --panel-2:rgba(86,40,58,.58); --panel-hi:rgba(108,54,76,.66);
+  --hairline:rgba(255,180,205,.18); --hairline-hi:rgba(255,160,190,.5);
+  --border:rgba(255,180,205,.18); --border-hot:rgba(255,160,190,.5); --border-cold:rgba(255,180,205,.14);
+  --plasma:#ff8fb3; --plasma-deep:#d96a92; --plasma-glow:rgba(255,143,179,.30); --plasma-line:rgba(255,180,205,.52);
+  --primary:#ff8fb3; --primary-blue:#ff8fb3; --primary-purple:#ffc4d6;
+  --primary-dim:rgba(255,143,179,.16); --primary-glow:rgba(255,143,179,.36);
+  --accent:#ff8fb3; --molten:#ffc4d6; --spark:#ffd9e6;
+  --ink:#fff0f4; --ink-2:#e6c6d2; --ink-3:#b58c9c;
+  --text:#fff0f4; --text-bright:#ffffff; --text-muted:#e6c6d2; --text-dim:#b58c9c;
+  --glass-bg:rgba(60,26,40,.46); --glass-bg-elevated:rgba(90,44,62,.58);
+  --glass-border:rgba(255,180,205,.18); --glass-border-strong:rgba(255,200,218,.32);
+  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
+  --glass-shadow:0 24px 64px rgba(20,6,12,.62),0 6px 18px rgba(20,6,12,.42);
+  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
+  --aurora-1:rgba(255,120,160,.30); --aurora-2:rgba(255,160,120,.24); --aurora-3:rgba(220,130,255,.22); --aurora-4:rgba(255,90,140,.20);
+  --deck-temp:#ff8fb3; --deck-temp-glow:rgba(255,143,179,.18);
+  color-scheme:dark;
+}
+/* Sakura colour skin */
+html[data-theme="sakura"].glass-deck .card,
+html[data-theme="sakura"].glass-deck .glass-card,
+html[data-theme="sakura"].glass-deck .id-tile,
+html[data-theme="sakura"].glass-deck .id-vmcard,
+html[data-theme="sakura"].glass-deck .id-tpl,
+html[data-theme="sakura"].glass-deck .tile,
+html[data-theme="sakura"].glass-deck .panel{
+  background:linear-gradient(152deg, rgba(82,36,52,.48), rgba(32,14,22,.46)) !important;
+  border-color:rgba(255,180,205,.18) !important;
+  box-shadow:0 22px 58px rgba(20,6,12,.58),0 5px 16px rgba(20,6,12,.42),inset 0 1px 0 rgba(255,225,235,.20),inset 0 0 0 1px rgba(255,150,185,.05) !important;
+}
+html[data-theme="sakura"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(68,30,44,.40), rgba(24,10,16,.44)) !important;border-color:rgba(255,180,205,.18) !important}
+html[data-theme="sakura"].glass-deck .card:hover,
+html[data-theme="sakura"].glass-deck .glass-card:hover,
+html[data-theme="sakura"].glass-deck .id-tile:hover,
+html[data-theme="sakura"].glass-deck .id-vmcard:hover,
+html[data-theme="sakura"].glass-deck .id-tpl:hover,
+html[data-theme="sakura"].glass-deck .vm-card:hover{
+  border-color:rgba(255,160,190,.5) !important;
+  box-shadow:0 34px 82px rgba(20,6,12,.64),0 0 0 1px rgba(255,160,190,.5),0 0 44px rgba(255,143,179,.34),inset 0 1px 0 rgba(255,230,240,.26) !important;
+}
+html[data-theme="sakura"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(78,34,50,.42), rgba(26,12,18,.46))}
+html[data-theme="sakura"].glass-deck .vmr-panel:hover{border-color:rgba(255,160,190,.5);box-shadow:0 30px 72px rgba(20,6,12,.58),0 0 36px rgba(255,143,179,.34),inset 0 1px 0 rgba(255,230,240,.26)}
+html[data-theme="sakura"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(255,143,179,.22), rgba(255,160,120,.14) 46%, rgba(26,12,18,.5));border-color:rgba(255,185,205,.22)}
+html[data-theme="sakura"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(255,143,179,.42), transparent 66%)}
+html[data-theme="sakura"].glass-deck .mission-control-header-row h1,
+html[data-theme="sakura"].glass-deck .id-tile .id-big,
+html[data-theme="sakura"].glass-deck .id-metric,
+html[data-theme="sakura"].glass-deck .id-gauge .id-v,
+html[data-theme="sakura"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#ffd0e0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+html[data-theme="sakura"].glass-deck .glass-btn-primary,
+html[data-theme="sakura"].glass-deck .btn-create{background:linear-gradient(135deg,#ff8fb3 0%,#d96a92 100%) !important;border:1px solid rgba(255,200,218,.32) !important;box-shadow:0 6px 26px rgba(255,143,179,.36),inset 0 1px 0 rgba(255,255,255,.28) !important}
+html[data-theme="sakura"].glass-deck .form-input:focus,
+html[data-theme="sakura"].glass-deck .form-select:focus,
+html[data-theme="sakura"].glass-deck .zeus-ai-input:focus{border-color:rgba(255,160,190,.5) !important;box-shadow:0 0 0 3px rgba(255,143,179,.30),0 0 18px rgba(255,143,179,.18) !important}
+html[data-theme="sakura"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(255,143,179,.10), transparent);border-bottom-color:rgba(255,180,205,.18)}
+html[data-theme="sakura"].glass-deck .table tbody tr:hover td{background:rgba(255,143,179,.10);box-shadow:inset 2px 0 0 var(--plasma)}
+html[data-theme="sakura"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ff8fb3,#ffc4d6)}
+html[data-theme="sakura"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(60,26,40,.5), rgba(20,8,14,.32) 70%, transparent);border-color:rgba(255,180,205,.14)}
+/* ◈ MONO — platinum monochrome glass (glass-deck family) */
+html[data-theme="mono"]{
+  --void:#0a0c10; --hull:#12151c; --bg-deep:#0a0c10; --bg:#12151c; --bg-secondary:#12151c;
+  --bg-card:rgba(40,46,58,.52); --bg-card-solid:#1a1e26; --bg-elevated:rgba(54,62,78,.58);
+  --bg-tertiary:rgba(64,72,88,.42);
+  --steel:rgba(38,44,56,.55); --steel-light:rgba(56,64,80,.60); --steel-bright:rgba(74,84,104,.66);
+  --panel:rgba(40,46,58,.52); --panel-2:rgba(52,60,74,.58); --panel-hi:rgba(68,78,96,.66);
+  --hairline:rgba(190,200,220,.16); --hairline-hi:rgba(200,210,230,.42);
+  --border:rgba(190,200,220,.16); --border-hot:rgba(200,210,230,.42); --border-cold:rgba(190,200,220,.12);
+  --plasma:#9aa6bd; --plasma-deep:#5f6a7e; --plasma-glow:rgba(154,166,189,.26); --plasma-line:rgba(190,202,224,.5);
+  --primary:#9aa6bd; --primary-blue:#9aa6bd; --primary-purple:#cdd6e6;
+  --primary-dim:rgba(154,166,189,.14); --primary-glow:rgba(154,166,189,.32);
+  --accent:#9aa6bd; --molten:#cdd6e6; --spark:#e8edf5;
+  --ink:#eef1f6; --ink-2:#c2cad6; --ink-3:#828c9c;
+  --text:#eef1f6; --text-bright:#ffffff; --text-muted:#c2cad6; --text-dim:#828c9c;
+  --glass-bg:rgba(34,40,52,.46); --glass-bg-elevated:rgba(54,62,78,.58);
+  --glass-border:rgba(190,200,220,.16); --glass-border-strong:rgba(210,220,238,.30);
+  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
+  --glass-shadow:0 24px 64px rgba(4,6,10,.62),0 6px 18px rgba(4,6,10,.42);
+  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
+  --aurora-1:rgba(150,165,195,.22); --aurora-2:rgba(120,140,180,.18); --aurora-3:rgba(180,190,210,.16); --aurora-4:rgba(100,115,150,.16);
+  --deck-temp:#9aa6bd; --deck-temp-glow:rgba(154,166,189,.16);
+  color-scheme:dark;
+}
+/* Mono colour skin */
+html[data-theme="mono"].glass-deck .card,
+html[data-theme="mono"].glass-deck .glass-card,
+html[data-theme="mono"].glass-deck .id-tile,
+html[data-theme="mono"].glass-deck .id-vmcard,
+html[data-theme="mono"].glass-deck .id-tpl,
+html[data-theme="mono"].glass-deck .tile,
+html[data-theme="mono"].glass-deck .panel{
+  background:linear-gradient(152deg, rgba(48,56,70,.46), rgba(18,22,30,.46)) !important;
+  border-color:rgba(190,200,220,.16) !important;
+  box-shadow:0 22px 58px rgba(4,6,10,.58),0 5px 16px rgba(4,6,10,.42),inset 0 1px 0 rgba(230,236,245,.18),inset 0 0 0 1px rgba(180,195,225,.05) !important;
+}
+html[data-theme="mono"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(40,48,62,.40), rgba(14,17,24,.44)) !important;border-color:rgba(190,200,220,.16) !important}
+html[data-theme="mono"].glass-deck .card:hover,
+html[data-theme="mono"].glass-deck .glass-card:hover,
+html[data-theme="mono"].glass-deck .id-tile:hover,
+html[data-theme="mono"].glass-deck .id-vmcard:hover,
+html[data-theme="mono"].glass-deck .id-tpl:hover,
+html[data-theme="mono"].glass-deck .vm-card:hover{
+  border-color:rgba(200,210,230,.42) !important;
+  box-shadow:0 34px 82px rgba(4,6,10,.64),0 0 0 1px rgba(200,210,230,.42),0 0 44px rgba(154,166,189,.28),inset 0 1px 0 rgba(235,240,248,.24) !important;
+}
+html[data-theme="mono"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(46,54,68,.42), rgba(16,20,28,.46))}
+html[data-theme="mono"].glass-deck .vmr-panel:hover{border-color:rgba(200,210,230,.42);box-shadow:0 30px 72px rgba(4,6,10,.58),0 0 36px rgba(154,166,189,.28),inset 0 1px 0 rgba(235,240,248,.24)}
+html[data-theme="mono"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(150,166,195,.18), rgba(120,140,175,.10) 46%, rgba(16,20,28,.5));border-color:rgba(190,202,224,.20)}
+html[data-theme="mono"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(160,175,200,.34), transparent 66%)}
+html[data-theme="mono"].glass-deck .mission-control-header-row h1,
+html[data-theme="mono"].glass-deck .id-tile .id-big,
+html[data-theme="mono"].glass-deck .id-metric,
+html[data-theme="mono"].glass-deck .id-gauge .id-v,
+html[data-theme="mono"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#cdd6e6);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+html[data-theme="mono"].glass-deck .glass-btn-primary,
+html[data-theme="mono"].glass-deck .btn-create{background:linear-gradient(135deg,#9aa6bd 0%,#5f6a7e 100%) !important;border:1px solid rgba(210,220,238,.30) !important;box-shadow:0 6px 26px rgba(154,166,189,.32),inset 0 1px 0 rgba(255,255,255,.28) !important}
+html[data-theme="mono"].glass-deck .form-input:focus,
+html[data-theme="mono"].glass-deck .form-select:focus,
+html[data-theme="mono"].glass-deck .zeus-ai-input:focus{border-color:rgba(200,210,230,.42) !important;box-shadow:0 0 0 3px rgba(154,166,189,.26),0 0 18px rgba(154,166,189,.16) !important}
+html[data-theme="mono"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(154,166,189,.08), transparent);border-bottom-color:rgba(190,200,220,.16)}
+html[data-theme="mono"].glass-deck .table tbody tr:hover td{background:rgba(154,166,189,.08);box-shadow:inset 2px 0 0 var(--plasma)}
+html[data-theme="mono"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#9aa6bd,#cdd6e6)}
+html[data-theme="mono"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(34,40,52,.5), rgba(12,15,20,.32) 70%, transparent);border-color:rgba(190,200,220,.12)}
+/* ◈ INFERNO — ember reactor glass (glass-deck family) */
+html[data-theme="inferno"]{
+  --void:#120604; --hull:#1d0a06; --bg-deep:#120604; --bg:#1d0a06; --bg-secondary:#1d0a06;
+  --bg-card:rgba(72,30,18,.52); --bg-card-solid:#2a1008; --bg-elevated:rgba(94,42,24,.58);
+  --bg-tertiary:rgba(108,48,28,.42);
+  --steel:rgba(70,28,16,.55); --steel-light:rgba(96,42,24,.60); --steel-bright:rgba(120,56,32,.66);
+  --panel:rgba(72,30,18,.52); --panel-2:rgba(90,40,22,.58); --panel-hi:rgba(112,52,28,.66);
+  --hairline:rgba(255,160,120,.18); --hairline-hi:rgba(255,140,90,.5);
+  --border:rgba(255,160,120,.18); --border-hot:rgba(255,140,90,.5); --border-cold:rgba(255,160,120,.14);
+  --plasma:#ff6b3d; --plasma-deep:#d1361a; --plasma-glow:rgba(255,107,61,.30); --plasma-line:rgba(255,150,100,.52);
+  --primary:#ff6b3d; --primary-blue:#ff6b3d; --primary-purple:#ffb03a;
+  --primary-dim:rgba(255,107,61,.16); --primary-glow:rgba(255,107,61,.36);
+  --accent:#ff6b3d; --molten:#ffb03a; --spark:#ffd0a0;
+  --ink:#fff0e8; --ink-2:#e6c4b0; --ink-3:#b58c78;
+  --text:#fff0e8; --text-bright:#ffffff; --text-muted:#e6c4b0; --text-dim:#b58c78;
+  --glass-bg:rgba(62,26,14,.46); --glass-bg-elevated:rgba(94,42,24,.58);
+  --glass-border:rgba(255,160,120,.18); --glass-border-strong:rgba(255,180,140,.32);
+  --glass-blur:blur(26px) saturate(1.7); --glass-radius:20px;
+  --glass-shadow:0 24px 64px rgba(18,5,2,.62),0 6px 18px rgba(18,5,2,.42);
+  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
+  --aurora-1:rgba(255,90,40,.30); --aurora-2:rgba(255,150,40,.26); --aurora-3:rgba(255,60,60,.22); --aurora-4:rgba(200,50,20,.22);
+  --deck-temp:#ff6b3d; --deck-temp-glow:rgba(255,107,61,.18);
+  color-scheme:dark;
+}
+/* Inferno colour skin */
+html[data-theme="inferno"].glass-deck .card,
+html[data-theme="inferno"].glass-deck .glass-card,
+html[data-theme="inferno"].glass-deck .id-tile,
+html[data-theme="inferno"].glass-deck .id-vmcard,
+html[data-theme="inferno"].glass-deck .id-tpl,
+html[data-theme="inferno"].glass-deck .tile,
+html[data-theme="inferno"].glass-deck .panel{
+  background:linear-gradient(152deg, rgba(84,36,20,.48), rgba(34,14,8,.46)) !important;
+  border-color:rgba(255,160,120,.18) !important;
+  box-shadow:0 22px 58px rgba(18,5,2,.58),0 5px 16px rgba(18,5,2,.42),inset 0 1px 0 rgba(255,225,205,.20),inset 0 0 0 1px rgba(255,150,100,.05) !important;
+}
+html[data-theme="inferno"].glass-deck .mac-page-window{background:linear-gradient(160deg, rgba(70,30,18,.40), rgba(24,10,6,.44)) !important;border-color:rgba(255,160,120,.18) !important}
+html[data-theme="inferno"].glass-deck .card:hover,
+html[data-theme="inferno"].glass-deck .glass-card:hover,
+html[data-theme="inferno"].glass-deck .id-tile:hover,
+html[data-theme="inferno"].glass-deck .id-vmcard:hover,
+html[data-theme="inferno"].glass-deck .id-tpl:hover,
+html[data-theme="inferno"].glass-deck .vm-card:hover{
+  border-color:rgba(255,140,90,.5) !important;
+  box-shadow:0 34px 82px rgba(18,5,2,.64),0 0 0 1px rgba(255,140,90,.5),0 0 44px rgba(255,107,61,.34),inset 0 1px 0 rgba(255,230,212,.26) !important;
+}
+html[data-theme="inferno"].glass-deck .vmr-panel{background:linear-gradient(152deg, rgba(80,34,20,.42), rgba(26,12,6,.46))}
+html[data-theme="inferno"].glass-deck .vmr-panel:hover{border-color:rgba(255,140,90,.5);box-shadow:0 30px 72px rgba(18,5,2,.58),0 0 36px rgba(255,107,61,.34),inset 0 1px 0 rgba(255,230,212,.26)}
+html[data-theme="inferno"].glass-deck .mission-control-header-row{background:linear-gradient(120deg, rgba(255,107,61,.22), rgba(255,150,40,.14) 46%, rgba(24,10,6,.5));border-color:rgba(255,165,120,.22)}
+html[data-theme="inferno"].glass-deck .mission-control-header-row::after{background:radial-gradient(circle, rgba(255,107,61,.42), transparent 66%)}
+html[data-theme="inferno"].glass-deck .mission-control-header-row h1,
+html[data-theme="inferno"].glass-deck .id-tile .id-big,
+html[data-theme="inferno"].glass-deck .id-metric,
+html[data-theme="inferno"].glass-deck .id-gauge .id-v,
+html[data-theme="inferno"].glass-deck .holo-orb-pct{background:linear-gradient(180deg,#ffffff,#ffcaa0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+html[data-theme="inferno"].glass-deck .glass-btn-primary,
+html[data-theme="inferno"].glass-deck .btn-create{background:linear-gradient(135deg,#ff6b3d 0%,#d1361a 100%) !important;border:1px solid rgba(255,180,140,.32) !important;box-shadow:0 6px 26px rgba(255,107,61,.36),inset 0 1px 0 rgba(255,255,255,.28) !important}
+html[data-theme="inferno"].glass-deck .form-input:focus,
+html[data-theme="inferno"].glass-deck .form-select:focus,
+html[data-theme="inferno"].glass-deck .zeus-ai-input:focus{border-color:rgba(255,140,90,.5) !important;box-shadow:0 0 0 3px rgba(255,107,61,.30),0 0 18px rgba(255,107,61,.18) !important}
+html[data-theme="inferno"].glass-deck .table thead th{background:linear-gradient(180deg, rgba(255,107,61,.10), transparent);border-bottom-color:rgba(255,160,120,.18)}
+html[data-theme="inferno"].glass-deck .table tbody tr:hover td{background:rgba(255,107,61,.10);box-shadow:inset 2px 0 0 var(--plasma)}
+html[data-theme="inferno"].glass-deck ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ff6b3d,#ffb03a)}
+html[data-theme="inferno"].glass-deck .holo-orb-wrap{background:radial-gradient(60% 70% at 50% 48%, rgba(62,26,14,.5), rgba(20,8,4,.32) 70%, transparent);border-color:rgba(255,160,120,.14)}
+
 /* Deep-space hull */
 html.glass-deck body,
 html.glass-deck body.mac-desktop-root{
@@ -860,6 +1053,11 @@ html.glass-deck .vmr-mission-grid > .vmr-panel:nth-child(4){animation-delay:.18s
   background:linear-gradient(180deg,#ffffff,#bcd0ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 0 18px rgba(91,140,255,.35))}
 .holo-orb-cap{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8ea0cc;margin-top:5px}
+.holo-orb-cap.boot-flash{color:var(--plasma);letter-spacing:4px;text-shadow:0 0 14px var(--plasma),0 0 30px var(--plasma);animation:orb-flash .45s ease}
+@keyframes orb-flash{from{opacity:.15;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.holo-orb-mini{height:210px;margin:0 0 14px}
+.holo-orb-mini .holo-orb-pct{font-size:30px}
+.holo-orb-mini .holo-orb-cap{font-size:9px}
 .holo-orb-tip{position:absolute;pointer-events:none;transform:translate(-50%,-135%);
   background:rgba(11,16,36,.94);border:1px solid rgba(160,188,255,.32);border-radius:8px;padding:5px 10px;
   font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:#eaf0ff;white-space:nowrap;
@@ -4163,6 +4361,10 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch-preview.nebula{background:radial-gradient(120% 100% at 32% 0%,rgb(236,72,180) 0%,rgb(194,100,255) 34%,rgb(56,212,255) 60%,rgb(11,8,32) 82%,rgb(6,4,20) 100%)}
 .theme-swatch-preview.solaris{background:radial-gradient(120% 100% at 32% 0%,rgb(255,171,56) 0%,rgb(255,138,92) 38%,rgb(40,22,8) 78%,rgb(19,11,4) 100%)}
 .theme-swatch-preview.biolume{background:radial-gradient(120% 100% at 32% 0%,rgb(25,227,196) 0%,rgb(56,200,255) 42%,rgb(6,28,34) 78%,rgb(2,9,12) 100%)}
+.theme-swatch-preview.sakura{background:radial-gradient(120% 100% at 32% 0%,rgb(255,143,179) 0%,rgb(255,160,120) 40%,rgb(40,16,24) 78%,rgb(21,10,15) 100%)}
+.theme-swatch-preview.mono{background:radial-gradient(120% 100% at 32% 0%,rgb(205,214,230) 0%,rgb(120,134,160) 42%,rgb(24,28,36) 80%,rgb(10,12,16) 100%)}
+.theme-swatch-preview.inferno{background:radial-gradient(120% 100% at 32% 0%,rgb(255,107,61) 0%,rgb(255,176,58) 40%,rgb(40,16,8) 78%,rgb(18,6,4) 100%)}
+.theme-swatch-preview.cycle{background:conic-gradient(from 200deg,#5b8cff,#c264ff,#ff8fb3,#ff6b3d,#ffab38,#19e3c4,#5b8cff)}
 .theme-swatch-preview.tahoe{background:linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)}
 .theme-swatch-preview.tahoe-light{background:linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)}
 .theme-swatch-preview.sonoma{background:linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)}
@@ -4736,6 +4938,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <button type="button" class="theme-swatch" data-theme="nebula" role="radio" onclick="setTheme('nebula')"><span class="theme-swatch-preview nebula"></span><span class="theme-swatch-label">Nebula</span></button>
         <button type="button" class="theme-swatch" data-theme="solaris" role="radio" onclick="setTheme('solaris')"><span class="theme-swatch-preview solaris"></span><span class="theme-swatch-label">Solaris</span></button>
         <button type="button" class="theme-swatch" data-theme="biolume" role="radio" onclick="setTheme('biolume')"><span class="theme-swatch-preview biolume"></span><span class="theme-swatch-label">Biolume</span></button>
+        <button type="button" class="theme-swatch" data-theme="sakura" role="radio" onclick="setTheme('sakura')"><span class="theme-swatch-preview sakura"></span><span class="theme-swatch-label">Sakura</span></button>
+        <button type="button" class="theme-swatch" data-theme="mono" role="radio" onclick="setTheme('mono')"><span class="theme-swatch-preview mono"></span><span class="theme-swatch-label">Mono</span></button>
+        <button type="button" class="theme-swatch" data-theme="inferno" role="radio" onclick="setTheme('inferno')"><span class="theme-swatch-preview inferno"></span><span class="theme-swatch-label">Inferno</span></button>
+        <button type="button" class="theme-swatch" data-theme="cycle" role="radio" onclick="setTheme('cycle')" title="Slowly drift through all glass decks"><span class="theme-swatch-preview cycle"></span><span class="theme-swatch-label">Cycle</span></button>
         <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
         <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Tahoe Light</span></button>
         <button type="button" class="theme-swatch" data-theme="sonoma" role="radio" onclick="setTheme('sonoma')"><span class="theme-swatch-preview sonoma"></span><span class="theme-swatch-label">Sonoma</span></button>
@@ -6476,6 +6682,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 
 <div class="page section-shell" id="page-topology" data-section="network">
 <div class="space-y animate-fade-in">
+  <div class="holo-orb-wrap holo-orb-mini" title="Fleet health"><canvas></canvas><div class="holo-orb-center"><div class="holo-orb-pct">—</div><div class="holo-orb-cap">FLEET</div></div><div class="holo-orb-tip"></div></div>
   <div class="page-header"><div><h1>Topology Surface</h1><p>Capacity map — hosts as columns, VMs as blocks sized by resource footprint · drag to migrate</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportTopologyCsv()" title="Export topology as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchTopology();fetchTopologySurface()">&#8635; Refresh</button></div></div>
     <div id="topology-summary" class="grid-4 page-glass-stats" style="margin-bottom:16px"></div>
   <!-- vCenter killer: host-capacity surface -->
@@ -6877,6 +7084,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
 <div class="page section-shell" id="page-fleet-constellation" data-section="compute">
 <div class="space-y animate-fade-in">
   <h2 class="sr-only">Spatial fleet view showing virtual machines as objects positioned by node, sized by load, with live telemetry.</h2>
+  <div class="holo-orb-wrap holo-orb-mini" title="Fleet health"><canvas></canvas><div class="holo-orb-center"><div class="holo-orb-pct">—</div><div class="holo-orb-cap">FLEET</div></div><div class="holo-orb-tip"></div></div>
   <div style="font-family:var(--font-sans);color:var(--text);padding:.5rem 0">
 
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
@@ -7612,6 +7820,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
             <button type="button" class="theme-swatch" data-theme="nebula"      role="radio" onclick="setTheme('nebula')">     <span class="theme-swatch-preview nebula"></span>     <span class="theme-swatch-label">Nebula</span></button>
             <button type="button" class="theme-swatch" data-theme="solaris"     role="radio" onclick="setTheme('solaris')">    <span class="theme-swatch-preview solaris"></span>    <span class="theme-swatch-label">Solaris</span></button>
             <button type="button" class="theme-swatch" data-theme="biolume"     role="radio" onclick="setTheme('biolume')">    <span class="theme-swatch-preview biolume"></span>    <span class="theme-swatch-label">Biolume</span></button>
+            <button type="button" class="theme-swatch" data-theme="sakura"     role="radio" onclick="setTheme('sakura')">    <span class="theme-swatch-preview sakura"></span>    <span class="theme-swatch-label">Sakura</span></button>
+            <button type="button" class="theme-swatch" data-theme="mono"     role="radio" onclick="setTheme('mono')">    <span class="theme-swatch-preview mono"></span>    <span class="theme-swatch-label">Mono</span></button>
+            <button type="button" class="theme-swatch" data-theme="inferno"     role="radio" onclick="setTheme('inferno')">    <span class="theme-swatch-preview inferno"></span>    <span class="theme-swatch-label">Inferno</span></button>
+            <button type="button" class="theme-swatch" data-theme="cycle"       role="radio" onclick="setTheme('cycle')" title="Slowly drift through all glass decks"><span class="theme-swatch-preview cycle"></span>       <span class="theme-swatch-label">Cycle</span></button>
             <button type="button" class="theme-swatch" data-theme="tahoe"       role="radio" onclick="setTheme('tahoe')">      <span class="theme-swatch-preview tahoe"></span>      <span class="theme-swatch-label">Tahoe</span></button>
             <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Light</span></button>
             <button type="button" class="theme-swatch" data-theme="sonoma"      role="radio" onclick="setTheme('sonoma')">     <span class="theme-swatch-preview sonoma"></span>     <span class="theme-swatch-label">Sonoma</span></button>
@@ -7940,6 +8152,9 @@ const THEME_PRESETS = [
   { id: 'nebula', label: 'Nebula', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(236,72,180) 0%,rgb(194,100,255) 34%,rgb(56,212,255) 60%,rgb(11,8,32) 82%,rgb(6,4,20) 100%)' },
   { id: 'solaris', label: 'Solaris', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(255,171,56) 0%,rgb(255,138,92) 38%,rgb(40,22,8) 78%,rgb(19,11,4) 100%)' },
   { id: 'biolume', label: 'Biolume', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(25,227,196) 0%,rgb(56,200,255) 42%,rgb(6,28,34) 78%,rgb(2,9,12) 100%)' },
+  { id: 'sakura', label: 'Sakura', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(255,143,179) 0%,rgb(255,160,120) 40%,rgb(40,16,24) 78%,rgb(21,10,15) 100%)' },
+  { id: 'mono', label: 'Mono', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(205,214,230) 0%,rgb(120,134,160) 42%,rgb(24,28,36) 80%,rgb(10,12,16) 100%)' },
+  { id: 'inferno', label: 'Inferno', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 32% 0%,rgb(255,107,61) 0%,rgb(255,176,58) 40%,rgb(40,16,8) 78%,rgb(18,6,4) 100%)' },
   { id: 'tahoe', label: 'Tahoe', category: 'macos', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)' },
   { id: 'tahoe-light', label: 'Tahoe Light', category: 'macos', defaultWallpaper: 'tahoe-light', previewGradient: 'linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)' },
   { id: 'sonoma', label: 'Sonoma', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)' },
@@ -7962,7 +8177,7 @@ const LEGACY_THEME_ALIASES = {
   neon: 'wolf', ember: 'ember'
 };
 const THEME_WALLPAPER_PAIRING = {
-  holo: 'sonoma', nebula: 'sonoma', solaris: 'sonoma', biolume: 'sonoma',
+  holo: 'sonoma', nebula: 'sonoma', solaris: 'sonoma', biolume: 'sonoma', sakura: 'sonoma', mono: 'sonoma', inferno: 'sonoma',
   tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
   wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite', synthwave: 'graphite',
   aurora: 'graphite', nord: 'graphite', 'royal-gold': 'graphite', matrix: 'graphite'
@@ -8199,7 +8414,7 @@ function applyTheme(theme, writeStorage) {
   VALID_THEMES.forEach(function(id) {
     html.classList.toggle('theme-' + id, id === t);
   });
-  html.classList.toggle('glass-deck', ['holo','nebula','solaris','biolume'].indexOf(t) >= 0);
+  html.classList.toggle('glass-deck', ['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(t) >= 0);
   // Remove transition class after animation completes
   clearTimeout(applyTheme._tid);
   applyTheme._tid = setTimeout(function() { html.classList.remove('theme-switching'); }, 350);
@@ -8218,7 +8433,33 @@ function applyTheme(theme, writeStorage) {
   redrawChartsFromTheme();
 }
 
+// ── Deck-cycle mode: slowly drift through the glass-deck family ──
+var DECK_CYCLE = ['holo','nebula','solaris','biolume','sakura','mono','inferno'];
+var _deckCycleTimer = null;
+function startDeckCycle() {
+  if (_deckCycleTimer) { clearInterval(_deckCycleTimer); _deckCycleTimer = null; }
+  try { localStorage.setItem('veyron_deck_cycle', '1'); localStorage.setItem('veyron_theme_auto', '0'); } catch (e) {}
+  if (typeof _stopAutoTheme === 'function') _stopAutoTheme();
+  var cur = document.documentElement.getAttribute('data-theme');
+  var i = DECK_CYCLE.indexOf(cur);
+  if (i < 0) { i = 0; applyTheme(DECK_CYCLE[0], false); }
+  _deckCycleTimer = setInterval(function () {
+    i = (i + 1) % DECK_CYCLE.length;
+    applyTheme(DECK_CYCLE[i], false);     // don't persist the rotating pick
+  }, 12000);
+  try { syncThemeSwatches('cycle'); } catch (e) {}
+  var sels = ['theme-selector','cc-theme-select','pref-theme-select'];
+  sels.forEach(function (id){ var el = document.getElementById(id); if (el) el.value = 'cycle'; });
+}
+function stopDeckCycle() {
+  if (_deckCycleTimer) { clearInterval(_deckCycleTimer); _deckCycleTimer = null; }
+  try { localStorage.setItem('veyron_deck_cycle', '0'); } catch (e) {}
+}
+function initDeckCycle() { try { if (localStorage.getItem('veyron_deck_cycle') === '1') startDeckCycle(); } catch (e) {} }
+
 function setTheme(theme) {
+  if (theme === 'cycle') { startDeckCycle(); return; }
+  stopDeckCycle();   // any explicit pick ends cycling
   // "auto" = day/night: light theme during the day, last dark theme at night.
   if (theme === 'auto') {
     try { localStorage.setItem('veyron_theme_auto', '1'); } catch (e) {}
@@ -23387,6 +23628,7 @@ function refresh() {
 window.addEventListener('load', async () => {
   _refreshLucide();
   initTheme();
+  initDeckCycle();
   initMacPageWindows();
   updatePageContext(currentPage);
   document.body.dataset.page = currentPage;
@@ -27209,7 +27451,7 @@ async function submitCreateAlert(e) {
   var reduce = false;
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
-  function holoOn(){ return ['holo','nebula','solaris','biolume'].indexOf(root.getAttribute('data-theme')) >= 0; }
+  function holoOn(){ return ['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(root.getAttribute('data-theme')) >= 0; }
   // Holographic cursor spotlight — a soft plasma light that follows the pointer
   var glow = document.createElement('div'); glow.id = 'holo-cursor-glow';
   // Twinkling starfield — ambient depth for the glass decks (CSS gates by theme)
@@ -27243,7 +27485,7 @@ async function submitCreateAlert(e) {
    Self-throttling: the rAF loop only runs on the dashboard under the holo
    theme and when the tab is visible. A light watchdog keeps it in sync. */
 (function(){
-  var raf = 0, hoverIdx = -1, t = 0, layout = [], lastN = -1, cssW = 0, cssH = 0, dpr = 1, boot = 0, wasActive = false;
+  var raf = 0, hoverIdx = -1, t = 0, layout = [], lastN = -1, cssW = 0, cssH = 0, dpr = 1, boot = 0, wasActive = false, flash = 0, flashed = false;
   function getVms(){ try { if (typeof vmData !== 'undefined' && vmData && vmData.length) return vmData; } catch(e){}
     return (window.lastVMs || []); }
   function toneOf(v){ var s = v && v.status;
@@ -27259,10 +27501,20 @@ async function submitCreateAlert(e) {
     return /^#[0-9a-fA-F]{6}$/.test(a) ? a : '#5b8cff';
   }
   function hexA(h, f){ var v = Math.round(Math.max(0, Math.min(1, f)) * 255).toString(16); if (v.length < 2) v = '0' + v; return h + v; }
+  // The orb renders into whichever orb-wrap lives on the currently active page,
+  // so it appears on the dashboard AND any page header that hosts one.
+  function curWrap(){
+    var ws = document.querySelectorAll('.holo-orb-wrap');
+    for (var i = 0; i < ws.length; i++){
+      var pg = ws[i].closest('.page');
+      if (pg && pg.classList.contains('active') && pg.offsetParent !== null) return ws[i];
+    }
+    return null;
+  }
+  function curCanvas(){ var w = curWrap(); return w ? w.querySelector('canvas') : null; }
   function active(){
-    var onDash = (typeof currentPage === 'undefined') || currentPage === 'dashboard';
     var dt = document.documentElement.getAttribute('data-theme');
-    return onDash && ['holo','nebula','solaris','biolume'].indexOf(dt) >= 0 && !document.hidden;
+    return ['holo','nebula','solaris','biolume','sakura','mono','inferno'].indexOf(dt) >= 0 && !document.hidden && !!curWrap();
   }
   function resize(cv){
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -27285,12 +27537,13 @@ async function submitCreateAlert(e) {
   }
   function loop(){
     raf = 0;
-    var cv = document.getElementById('holo-fleet-canvas'), wrap = document.getElementById('holo-fleet-orb');
-    if (!cv || !wrap) return;
-    if (!active()){ wrap.style.display = 'none'; wasActive = false; return; }
+    var wrap = curWrap(), cv = wrap ? wrap.querySelector('canvas') : null;
+    if (!cv || !wrap || !active()){ if (wrap) wrap.style.display = 'none'; wasActive = false; return; }
     wrap.style.display = 'block';
-    if (!wasActive){ boot = 0; wasActive = true; }            // replay boot on (re)entry
+    if (!wasActive){ boot = 0; flashed = false; wasActive = true; }   // replay boot on (re)entry
     boot = Math.min(1, boot + 0.018);
+    if (boot >= 1 && !flashed){ flashed = true; flash = 90; }         // SYSTEM ONLINE flash
+    if (flash > 0) flash--;
     var ease = 1 - Math.pow(1 - boot, 3);                     // easeOutCubic
     var vms = getVms();
     if (vms.length !== lastN) build();
@@ -27363,8 +27616,12 @@ async function submitCreateAlert(e) {
       if (i === hoverIdx){ ctx.beginPath(); ctx.arc(nd.x, nd.y, pr+3, 0, Math.PI*2);
         ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1; ctx.stroke(); }
     }
-    var pe = document.getElementById('holo-orb-pct'); if (pe) pe.textContent = vms.length ? Math.round(pct * ease) + '%' : '—';
-    var cap = document.getElementById('holo-orb-cap'); if (cap) cap.textContent = vms.length ? (run + ' / ' + vms.length + ' ONLINE') : 'NO VMS';
+    var pe = wrap.querySelector('.holo-orb-pct'); if (pe) pe.textContent = vms.length ? Math.round(pct * ease) + '%' : '—';
+    var cap = wrap.querySelector('.holo-orb-cap');
+    if (cap){
+      if (flash > 0){ cap.textContent = '◈ SYSTEM ONLINE'; cap.classList.add('boot-flash'); }
+      else { cap.classList.remove('boot-flash'); cap.textContent = vms.length ? (run + ' / ' + vms.length + ' ONLINE') : 'NO VMS'; }
+    }
     raf = requestAnimationFrame(loop);
   }
   window.renderHoloFleetOrb = function(){
@@ -27374,7 +27631,7 @@ async function submitCreateAlert(e) {
     if (!raf) raf = requestAnimationFrame(loop);
   };
   function hit(e){
-    var cv = document.getElementById('holo-fleet-canvas'); if (!cv) return null;
+    var cv = curCanvas(); if (!cv) return null;
     var r = cv.getBoundingClientRect();
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return -2;
     var mx = e.clientX - r.left, my = e.clientY - r.top, best = -1, bd = 9;
@@ -27384,9 +27641,10 @@ async function submitCreateAlert(e) {
   }
   document.addEventListener('mousemove', function(e){
     if (!active() || !layout.length) return;
-    var h = hit(e); if (h === -2){ if (hoverIdx !== -1){ hoverIdx = -1; var tp=document.getElementById('holo-orb-tip'); if(tp) tp.classList.remove('on'); } return; }
+    var wr = curWrap();
+    var h = hit(e); if (h === -2){ if (hoverIdx !== -1){ hoverIdx = -1; var tp=wr&&wr.querySelector('.holo-orb-tip'); if(tp) tp.classList.remove('on'); } return; }
     hoverIdx = h;
-    var cv = document.getElementById('holo-fleet-canvas'), tip = document.getElementById('holo-orb-tip');
+    var cv = curCanvas(), tip = wr && wr.querySelector('.holo-orb-tip');
     if (h >= 0 && tip){ var nd = layout[h];
       tip.textContent = nd.v.name + ' · ' + (nd.v.status || '—');
       tip.style.left = nd.x + 'px'; tip.style.top = nd.y + 'px'; tip.classList.add('on'); if (cv) cv.style.cursor = 'pointer';
