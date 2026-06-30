@@ -1209,6 +1209,12 @@ html[data-theme="daylight"] {
   --panel:      #FFFFFF;
   --panel-2:    #F0F2F7;
   --panel-hi:   #E6E9F0;
+  /* steel/card surfaces flip light too (fixes ns-select & other dark pills) */
+  --steel:      #EDF0F6;
+  --steel-light:#E2E6EE;
+  --steel-bright:#D6DBE6;
+  --bg-card-solid:#FFFFFF;
+  --bg-elevated: #F0F2F7;
   --hairline:   rgba(0,0,0,.09);
   --hairline-hi:rgba(0,0,0,.18);
   /* Ink flips to dark */
@@ -1255,6 +1261,21 @@ html[data-theme="daylight"].glass-deck .mac-dock-inner{
 html[data-theme="daylight"].glass-deck .id-sec-h .id-line{background:linear-gradient(90deg, rgba(10,132,255,.40), transparent) !important}
 html[data-theme="daylight"] #holo-starfield{display:none !important}
 html[data-theme="daylight"] #holo-cursor-glow.on{opacity:.12; mix-blend-mode:normal; background:radial-gradient(circle, rgba(10,132,255,.16) 0%, transparent 62%)}
+/* Light-theme menubar pill polish — fixes the dark ⌘K/⌘N spotlight pills */
+html[data-theme="tahoe-light"] .btn-spotlight,
+html[data-theme="light"] .btn-spotlight,
+html[data-theme="daylight"] .btn-spotlight{
+  background:rgba(10,30,70,.05) !important; color:var(--ink-2) !important; border-color:var(--hairline) !important;
+}
+html[data-theme="tahoe-light"] .btn-spotlight:hover,
+html[data-theme="light"] .btn-spotlight:hover,
+html[data-theme="daylight"] .btn-spotlight:hover{ background:rgba(10,132,255,.10) !important; color:var(--ink) !important; }
+/* ── Deck-switch transition: a quick accent ripple on theme change ── */
+#deck-flash{position:fixed;inset:0;z-index:9998;pointer-events:none;opacity:0;
+  background:radial-gradient(circle at 50% 42%, var(--deck-flash-color,rgba(91,140,255,.5)) 0%, transparent 55%)}
+#deck-flash.go{animation:deck-flash-anim .55s cubic-bezier(.22,1,.36,1)}
+@keyframes deck-flash-anim{0%{opacity:0;transform:scale(.6)}30%{opacity:.5}100%{opacity:0;transform:scale(1.25)}}
+@media (prefers-reduced-motion: reduce){ #deck-flash.go{animation:none} }
 html[data-theme="tahoe-light"] .mac-menubar.navbar,
 html[data-theme="light"] .mac-menubar.navbar {
   background: rgba(247,248,252,0.88);
@@ -8552,6 +8573,17 @@ const PAGE_TOOLBAR_ACTIONS = {
   monitoring: [{ label: 'Refresh', onclick: 'fetchMonitoring()', className: 'glass-btn-secondary glass-btn-sm' }]
 };
 
+// Cinematic deck-switch ripple — an accent bloom in the new theme's colour
+function triggerDeckFlash() {
+  try {
+    var el = document.getElementById('deck-flash');
+    if (!el) { el = document.createElement('div'); el.id = 'deck-flash'; document.body.appendChild(el); }
+    var accent = (getComputedStyle(document.documentElement).getPropertyValue('--plasma') || '#5b8cff').trim();
+    el.style.setProperty('--deck-flash-color', accent);
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');   // restart animation
+  } catch (e) {}
+}
+
 function applyTheme(theme, writeStorage) {
   const t = parseStoredTheme(theme);
   // Start crossfade transition
@@ -8565,6 +8597,8 @@ function applyTheme(theme, writeStorage) {
   // Remove transition class after animation completes
   clearTimeout(applyTheme._tid);
   applyTheme._tid = setTimeout(function() { html.classList.remove('theme-switching'); }, 350);
+  applyTheme._n = (applyTheme._n || 0) + 1;
+  if (applyTheme._n > 1) triggerDeckFlash();   // skip the initial page-load apply
   if (writeStorage !== false) {
     try {
       localStorage.setItem(THEME_KEY, t);
