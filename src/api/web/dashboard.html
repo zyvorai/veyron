@@ -369,7 +369,11 @@ html[data-theme="holo"]{
   --glass-blur:blur(26px) saturate(1.6); --glass-radius:20px;
   --glass-shadow:0 24px 64px rgba(2,4,16,.62),0 6px 18px rgba(2,4,16,.42);
   --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
-  --aurora-1:rgba(91,140,255,.34); --aurora-2:rgba(167,139,250,.26);
+  /* aurora-1 is reactive: it borrows the live deck temperature (applyDeckTemp
+     drives --deck-temp blue→amber→red by fleet health), so the whole field
+     warms as the fleet degrades. The others stay for chromatic richness. */
+  --aurora-1:color-mix(in srgb, var(--deck-temp, #3b82f6) 40%, transparent);
+  --aurora-2:rgba(167,139,250,.26);
   --aurora-3:rgba(56,212,255,.22); --aurora-4:rgba(99,102,241,.20);
   color-scheme:dark;
 }
@@ -478,6 +482,13 @@ html[data-theme="holo"] .mac-dock-inner{
 }
 html[data-theme="holo"] .id-sec-h .id-line{background:linear-gradient(90deg, rgba(124,162,255,.5), transparent) !important}
 html[data-theme="holo"] .id-zeus .id-orb{box-shadow:0 0 24px rgba(91,140,255,.6),0 0 48px rgba(167,139,250,.3) !important}
+/* Holographic cursor spotlight — only visible under holo */
+#holo-cursor-glow{position:fixed;left:0;top:0;width:560px;height:560px;border-radius:50%;
+  transform:translate(-50%,-50%);pointer-events:none;z-index:0;opacity:0;transition:opacity .5s ease;
+  background:radial-gradient(circle, color-mix(in srgb, var(--deck-temp,#5b8cff) 60%, transparent) 0%, transparent 62%);
+  mix-blend-mode:screen;will-change:left,top}
+html[data-theme="holo"] #holo-cursor-glow.on{opacity:.14}
+html:not([data-theme="holo"]) #holo-cursor-glow{display:none}
 
 /* ── Holographic hero: Mission Control header + dashboard panels ──
    .vmr-panel ships with NO base CSS — holo gives those 44 dashboard
@@ -26956,6 +26967,10 @@ async function submitCreateAlert(e) {
   try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
   function holoOn(){ return root.getAttribute('data-theme') === 'holo'; }
+  // Holographic cursor spotlight — a soft plasma light that follows the pointer
+  var glow = document.createElement('div'); glow.id = 'holo-cursor-glow';
+  (function attach(){ if (document.body) document.body.appendChild(glow);
+    else document.addEventListener('DOMContentLoaded', attach); })();
   function tick(){
     raf = 0;
     cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
@@ -26967,11 +26982,14 @@ async function submitCreateAlert(e) {
     if (Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1) raf = requestAnimationFrame(tick);
   }
   window.addEventListener('pointermove', function(e){
+    if (holoOn()){ glow.style.left = e.clientX + 'px'; glow.style.top = e.clientY + 'px'; glow.classList.add('on'); }
+    else glow.classList.remove('on');
     if (reduce || !holoOn()) return;
     tx = (e.clientX / window.innerWidth - 0.5) * 36;
     ty = (e.clientY / window.innerHeight - 0.5) * 36;
     if (!raf) raf = requestAnimationFrame(tick);
   }, { passive: true });
+  window.addEventListener('pointerleave', function(){ glow.classList.remove('on'); }, { passive: true });
 })();
 </script>
 <script>
@@ -27043,13 +27061,20 @@ async function submitCreateAlert(e) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI*2); ctx.fill();
     // health arc
     var coreCol = fail ? (fail/Math.max(1,vms.length) > 0.25 ? '#E24B4A' : '#EF9F27') : '#5b8cff';
-    var hr = maxR * 0.2;
+    var hr = maxR * 0.34;
     ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(124,162,255,.16)'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.strokeStyle = 'rgba(124,162,255,.16)'; ctx.lineWidth = 4; ctx.stroke();
     ctx.beginPath(); ctx.arc(cx, cy, hr, -Math.PI/2, -Math.PI/2 + Math.PI*2 * Math.max(0.02, pct/100));
-    ctx.strokeStyle = coreCol; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.shadowColor = coreCol; ctx.shadowBlur = 18; ctx.stroke(); ctx.shadowBlur = 0;
-    // nodes
+    ctx.strokeStyle = coreCol; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.shadowColor = coreCol; ctx.shadowBlur = 20; ctx.stroke(); ctx.shadowBlur = 0;
+    // alert tethers — pulsing lines from the core to each failed VM
+    for (var c = 0; c < layout.length; c++){
+      var cd = layout[c]; if (cd.tone !== 'crit' || cd.x == null) continue;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cd.x, cd.y);
+      ctx.strokeStyle = 'rgba(226,75,74,' + (0.10 + 0.12*Math.abs(Math.sin(t*6 + c))).toFixed(3) + ')';
+      ctx.lineWidth = 1; ctx.stroke();
+    }
+    // nodes — each with a comet trail along its orbit
     for (var i = 0; i < layout.length; i++){
       var nd = layout[i];
       var nr = maxR * (0.42 + 0.58 * (nd.ring+1)/nd.rings);
@@ -27057,6 +27082,11 @@ async function submitCreateAlert(e) {
       var a = nd.baseAng + t * speed;
       nd.x = cx + nr * Math.cos(a); nd.y = cy + nr * Math.sin(a);
       var col = sig(nd.tone);
+      // comet trail (faint arc behind the node)
+      if (nd.tone !== 'off'){
+        ctx.globalAlpha = 0.22; ctx.beginPath(); ctx.arc(cx, cy, nr, a - 0.26, a);
+        ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke(); ctx.globalAlpha = 1;
+      }
       var pr = nd.tone === 'ok' ? 3.3 + 0.7*Math.sin(t*5 + i)
              : nd.tone === 'crit' ? 3.6 + 1.0*Math.sin(t*9 + i) : 3.1;
       if (i === hoverIdx) pr += 2.2;
