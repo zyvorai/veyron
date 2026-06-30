@@ -353,6 +353,8 @@ html[data-theme="matrix"] body.mac-desktop-root::before{ opacity:.05 !important;
 html[data-theme="holo"]{
   --void:#04050e; --hull:#070a1a; --bg-deep:#04050e; --bg:#070a1a; --bg-secondary:#070a1a;
   --bg-card:rgba(22,30,58,.52); --bg-card-solid:#101630; --bg-elevated:rgba(34,46,86,.58);
+  --bg-tertiary:rgba(40,54,96,.42);
+  --steel:rgba(26,36,68,.55); --steel-light:rgba(40,54,96,.60); --steel-bright:rgba(54,72,120,.66);
   --panel:rgba(22,30,58,.52); --panel-2:rgba(32,44,82,.58); --panel-hi:rgba(46,62,108,.66);
   --hairline:rgba(150,178,255,.16); --hairline-hi:rgba(160,188,255,.34);
   --border:rgba(150,178,255,.16); --border-hot:rgba(160,188,255,.34); --border-cold:rgba(150,178,255,.14);
@@ -601,6 +603,45 @@ html[data-theme="holo"] .vmr-mission-grid > .vmr-panel:nth-child(4){animation-de
 @media (prefers-reduced-motion: reduce){
   html[data-theme="holo"] .vmr-mission-grid > .vmr-panel{animation:none}
   html[data-theme="holo"] body::before,html[data-theme="holo"] body.mac-desktop-root::before{animation:none !important}
+}
+
+/* ── Fleet Orb — the holographic centerpiece (dashboard hero) ──
+   Concentric orbital rings, one luminous node per VM coloured by status,
+   slow rotation, pulsing core showing fleet health %. Hidden unless holo. */
+.holo-orb-wrap{position:relative;width:100%;height:300px;margin:10px 0 16px;display:none;
+  border-radius:24px;overflow:hidden;
+  background:radial-gradient(60% 70% at 50% 48%, rgba(20,30,64,.5), rgba(8,12,30,.32) 70%, transparent);
+  border:1px solid rgba(160,188,255,.12);
+  box-shadow:inset 0 1px 0 rgba(190,212,255,.14),0 22px 56px rgba(2,4,16,.4)}
+.holo-orb-wrap canvas{width:100%;height:100%;display:block}
+.holo-orb-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.holo-orb-pct{font-family:var(--sans-deck);font-weight:800;font-size:38px;line-height:1;letter-spacing:-1.5px;font-feature-settings:"tnum";
+  background:linear-gradient(180deg,#ffffff,#bcd0ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 18px rgba(91,140,255,.35))}
+.holo-orb-cap{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8ea0cc;margin-top:5px}
+.holo-orb-tip{position:absolute;pointer-events:none;transform:translate(-50%,-135%);
+  background:rgba(11,16,36,.94);border:1px solid rgba(160,188,255,.32);border-radius:8px;padding:5px 10px;
+  font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;color:#eaf0ff;white-space:nowrap;
+  opacity:0;transition:opacity .12s;box-shadow:0 10px 28px rgba(2,4,16,.55);z-index:5}
+.holo-orb-tip.on{opacity:1}
+
+/* ── Depth tiers — spatial layering on the dashboard ──
+   Foreground (orb) tilts toward the cursor and floats above; the primary
+   KPI grid sits mid; secondary panels recede until hovered. */
+html[data-theme="holo"] #page-dashboard .space-y{perspective:1500px;perspective-origin:50% 30%}
+html[data-theme="holo"] #holo-fleet-orb{
+  transform:rotateX(var(--holo-tilt-y,0deg)) rotateY(var(--holo-tilt-x,0deg));
+  transform-style:preserve-3d;transition:transform .25s ease-out;will-change:transform;z-index:3}
+html[data-theme="holo"] .vmr-mission-grid{position:relative;z-index:2}
+/* Secondary tier recedes slightly, then comes forward on hover */
+html[data-theme="holo"] #vmr-mission-bottom,
+html[data-theme="holo"] #operator-details,
+html[data-theme="holo"] .dc-pinned-section{filter:saturate(.92) brightness(.97);transition:filter .3s}
+html[data-theme="holo"] #vmr-mission-bottom:hover,
+html[data-theme="holo"] #operator-details:hover,
+html[data-theme="holo"] .dc-pinned-section:hover{filter:none}
+@media (prefers-reduced-motion: reduce){
+  html[data-theme="holo"] #holo-fleet-orb{transform:none !important}
 }
 
 /* ── Light mode: tahoe-light / light themes ──────────────────── */
@@ -4907,6 +4948,14 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <span class="mission-live-badge">Live</span>
       <span id="mission-last-refresh">Last refresh: —</span>
     </div>
+  </div>
+  <div id="holo-fleet-orb" class="holo-orb-wrap" title="Click a node to open that VM">
+    <canvas id="holo-fleet-canvas"></canvas>
+    <div class="holo-orb-center">
+      <div class="holo-orb-pct" id="holo-orb-pct">—</div>
+      <div class="holo-orb-cap" id="holo-orb-cap">FLEET</div>
+    </div>
+    <div class="holo-orb-tip" id="holo-orb-tip"></div>
   </div>
   <div id="vmr-mission-hero"></div>
   <div id="vmr-mission-metrics"></div>
@@ -26912,6 +26961,9 @@ async function submitCreateAlert(e) {
     cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
     root.style.setProperty('--holo-px', cx.toFixed(2) + 'px');
     root.style.setProperty('--holo-py', cy.toFixed(2) + 'px');
+    // Depth tier: foreground centerpiece tilts toward the cursor (deg vars)
+    root.style.setProperty('--holo-tilt-x', (cx / 36 * 4).toFixed(2) + 'deg');
+    root.style.setProperty('--holo-tilt-y', (-cy / 36 * 4).toFixed(2) + 'deg');
     if (Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1) raf = requestAnimationFrame(tick);
   }
   window.addEventListener('pointermove', function(e){
@@ -26920,6 +26972,140 @@ async function submitCreateAlert(e) {
     ty = (e.clientY / window.innerHeight - 0.5) * 36;
     if (!raf) raf = requestAnimationFrame(tick);
   }, { passive: true });
+})();
+</script>
+<script>
+/* Holographic Ops — Fleet Orb. One luminous node per VM orbiting a pulsing
+   core; status-coloured; rotates slowly; hover for VM name, click to open.
+   Self-throttling: the rAF loop only runs on the dashboard under the holo
+   theme and when the tab is visible. A light watchdog keeps it in sync. */
+(function(){
+  var raf = 0, hoverIdx = -1, t = 0, layout = [], lastN = -1, cssW = 0, cssH = 0, dpr = 1;
+  function getVms(){ try { if (typeof vmData !== 'undefined' && vmData && vmData.length) return vmData; } catch(e){}
+    return (window.lastVMs || []); }
+  function toneOf(v){ var s = v && v.status;
+    if (s === 'Running') return 'ok';
+    if (s === 'Failed' || s === 'Error') return 'crit';
+    if (s === 'Paused' || s === 'Pausing' || s === 'Starting' || s === 'Stopping' || s === 'Provisioning') return 'warn';
+    return 'off'; }
+  function sig(tone){ var S = window.VMR_SIG || {};
+    return ({ ok:S.ok||'#1D9E75', warn:S.warn||'#EF9F27', crit:S.crit||'#E24B4A', off:S.off||'#5F5E5A' })[tone]; }
+  function active(){
+    var onDash = (typeof currentPage === 'undefined') || currentPage === 'dashboard';
+    return onDash && document.documentElement.getAttribute('data-theme') === 'holo' && !document.hidden;
+  }
+  function resize(cv){
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var r = cv.getBoundingClientRect(); cssW = r.width; cssH = r.height;
+    cv.width = Math.max(1, Math.round(cssW * dpr)); cv.height = Math.max(1, Math.round(cssH * dpr));
+  }
+  function build(){
+    var vms = getVms(), n = vms.length;
+    var rings = Math.max(2, Math.min(5, Math.ceil(n / 12)));
+    var perRing = Math.max(1, Math.ceil(n / rings));
+    layout = [];
+    for (var i = 0; i < n; i++){
+      var ring = Math.floor(i / perRing);
+      var idx = i % perRing;
+      var count = Math.min(perRing, n - ring * perRing);
+      layout.push({ v: vms[i], ring: ring, rings: rings,
+        baseAng: (idx / count) * Math.PI * 2 + ring * 0.7, tone: toneOf(vms[i]), x: null, y: null });
+    }
+    lastN = n;
+  }
+  function loop(){
+    raf = 0;
+    var cv = document.getElementById('holo-fleet-canvas'), wrap = document.getElementById('holo-fleet-orb');
+    if (!cv || !wrap) return;
+    if (!active()){ wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    var vms = getVms();
+    if (vms.length !== lastN) build();
+    if (cssW === 0 || Math.abs(cv.getBoundingClientRect().width - cssW) > 1) resize(cv);
+    var ctx = cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,cssW,cssH);
+    var cx = cssW/2, cy = cssH/2, maxR = Math.min(cssW, cssH)/2 - 26;
+    t += 0.005;
+    var run = 0, fail = 0;
+    for (var k = 0; k < vms.length; k++){ var to = toneOf(vms[k]); if (to==='ok') run++; if (to==='crit') fail++; }
+    var pct = vms.length ? Math.round(run / vms.length * 100) : 0;
+    var rings = layout.length ? layout[layout.length-1].rings : 3;
+    // orbital rings
+    for (var r = 0; r < rings; r++){
+      var rr = maxR * (0.42 + 0.58 * (r+1)/rings);
+      ctx.beginPath(); ctx.arc(cx, cy, rr, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(124,162,255,' + (0.06 + 0.05 * (rings-r)/rings) + ')'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // core bloom
+    var pulse = 1 + 0.06 * Math.sin(t*4);
+    var coreR = maxR * 0.42 * pulse;
+    var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreR);
+    g.addColorStop(0, 'rgba(91,140,255,.45)'); g.addColorStop(0.5, 'rgba(91,140,255,.12)'); g.addColorStop(1, 'rgba(91,140,255,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, coreR, 0, Math.PI*2); ctx.fill();
+    // health arc
+    var coreCol = fail ? (fail/Math.max(1,vms.length) > 0.25 ? '#E24B4A' : '#EF9F27') : '#5b8cff';
+    var hr = maxR * 0.2;
+    ctx.beginPath(); ctx.arc(cx, cy, hr, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(124,162,255,.16)'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, hr, -Math.PI/2, -Math.PI/2 + Math.PI*2 * Math.max(0.02, pct/100));
+    ctx.strokeStyle = coreCol; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.shadowColor = coreCol; ctx.shadowBlur = 18; ctx.stroke(); ctx.shadowBlur = 0;
+    // nodes
+    for (var i = 0; i < layout.length; i++){
+      var nd = layout[i];
+      var nr = maxR * (0.42 + 0.58 * (nd.ring+1)/nd.rings);
+      var speed = 0.26 - nd.ring * 0.035;
+      var a = nd.baseAng + t * speed;
+      nd.x = cx + nr * Math.cos(a); nd.y = cy + nr * Math.sin(a);
+      var col = sig(nd.tone);
+      var pr = nd.tone === 'ok' ? 3.3 + 0.7*Math.sin(t*5 + i)
+             : nd.tone === 'crit' ? 3.6 + 1.0*Math.sin(t*9 + i) : 3.1;
+      if (i === hoverIdx) pr += 2.2;
+      ctx.beginPath(); ctx.arc(nd.x, nd.y, pr, 0, Math.PI*2);
+      ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = nd.tone === 'off' ? 4 : 12; ctx.fill(); ctx.shadowBlur = 0;
+      if (i === hoverIdx){ ctx.beginPath(); ctx.arc(nd.x, nd.y, pr+3, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+    var pe = document.getElementById('holo-orb-pct'); if (pe) pe.textContent = vms.length ? pct + '%' : '—';
+    var cap = document.getElementById('holo-orb-cap'); if (cap) cap.textContent = vms.length ? (run + ' / ' + vms.length + ' ONLINE') : 'NO VMS';
+    raf = requestAnimationFrame(loop);
+  }
+  window.renderHoloFleetOrb = function(){
+    var wrap = document.getElementById('holo-fleet-orb');
+    if (!active()){ if (wrap) wrap.style.display = 'none'; if (raf){ cancelAnimationFrame(raf); raf = 0; } return; }
+    if (lastN < 0) build();
+    if (!raf) raf = requestAnimationFrame(loop);
+  };
+  function hit(e){
+    var cv = document.getElementById('holo-fleet-canvas'); if (!cv) return null;
+    var r = cv.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return -2;
+    var mx = e.clientX - r.left, my = e.clientY - r.top, best = -1, bd = 9;
+    for (var i = 0; i < layout.length; i++){ var nd = layout[i]; if (nd.x == null) continue;
+      var d = Math.hypot(nd.x - mx, nd.y - my); if (d < bd){ bd = d; best = i; } }
+    return best;
+  }
+  document.addEventListener('mousemove', function(e){
+    if (!active() || !layout.length) return;
+    var h = hit(e); if (h === -2){ if (hoverIdx !== -1){ hoverIdx = -1; var tp=document.getElementById('holo-orb-tip'); if(tp) tp.classList.remove('on'); } return; }
+    hoverIdx = h;
+    var cv = document.getElementById('holo-fleet-canvas'), tip = document.getElementById('holo-orb-tip');
+    if (h >= 0 && tip){ var nd = layout[h];
+      tip.textContent = nd.v.name + ' · ' + (nd.v.status || '—');
+      tip.style.left = nd.x + 'px'; tip.style.top = nd.y + 'px'; tip.classList.add('on'); if (cv) cv.style.cursor = 'pointer';
+    } else if (tip){ tip.classList.remove('on'); if (cv) cv.style.cursor = 'default'; }
+  }, { passive: true });
+  document.addEventListener('click', function(e){
+    if (!active()) return;
+    var h = hit(e); if (h === -2) return;
+    if (h >= 0 && layout[h]){ var nd = layout[h], ns = nd.v.namespace || nd.v.ns || 'default';
+      if (typeof openCopilotWithVm === 'function') openCopilotWithVm(ns, nd.v.name);
+      else if (typeof navigate === 'function') navigate('vms');
+    } else if (typeof navigate === 'function') navigate('vms');
+  });
+  window.addEventListener('resize', function(){ cssW = 0; });
+  setInterval(function(){ try { window.renderHoloFleetOrb(); } catch(e){} }, 1500);
+  if (document.readyState !== 'loading') setTimeout(function(){ try{ window.renderHoloFleetOrb(); }catch(e){} }, 600);
+  else document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ try{ window.renderHoloFleetOrb(); }catch(e){} }, 600); });
 })();
 </script>
 </body>
