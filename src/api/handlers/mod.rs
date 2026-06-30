@@ -73,6 +73,27 @@ pub mod workloads;
 /// Veyron CRD management handlers (veyron.io/v1alpha1).
 pub mod crds;
 
+/// Map a failed upstream Kubernetes list/query into a `500` JSON error.
+///
+/// Convention (CLAUDE.md): handlers must never silently return `0`/empty where
+/// real data is expected. Use `list.await.map_err(kube_list_error("VMs"))?`
+/// instead of `unwrap_or_default()` so an apiserver outage / RBAC denial surfaces
+/// as a 5xx rather than a healthy-looking empty result.
+#[cfg(feature = "web")]
+pub fn kube_list_error<E: std::fmt::Display>(
+    resource: &'static str,
+) -> impl FnOnce(E) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    move |e| {
+        (
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            axum::Json(serde_json::json!({
+                "error": "UPSTREAM_QUERY_FAILED",
+                "message": format!("failed to list {resource}: {e}"),
+            })),
+        )
+    }
+}
+
 /// Build the combined API router from all handler sub-routers.
 ///
 /// Handlers receive SharedState and call into `KubeClient`. Some domains return

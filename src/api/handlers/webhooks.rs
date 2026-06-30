@@ -81,7 +81,10 @@ async fn list_webhooks(
                     .map(|e| e.split(',').map(|s| s.trim().to_string()).collect())
                     .unwrap_or_default(),
                 active: data.get("active").map(|v| v == "true").unwrap_or(true),
-                secret_configured: data.get("secret").is_some(),
+                secret_configured: data
+                    .get("secret_configured")
+                    .map(|v| v == "true")
+                    .unwrap_or_else(|| data.get("secret").is_some()),
                 last_triggered: data.get("last_triggered").cloned(),
                 failure_count: data
                     .get("failure_count")
@@ -124,16 +127,59 @@ async fn create_webhook(
     let api: kube::api::Api<ConfigMap> =
         kube::api::Api::namespaced(s.client().client(), &namespace);
 
+    let cm_name = format!("webhook-{}", req.name.to_lowercase().replace(' ', "-"));
+
     let mut data = std::collections::BTreeMap::new();
     data.insert("name".to_string(), req.name.clone());
     data.insert("url".to_string(), req.url.clone());
     data.insert("events".to_string(), req.events.join(","));
     data.insert("active".to_string(), "true".to_string());
-    if let Some(ref secret) = req.secret {
-        data.insert("secret".to_string(), secret.clone());
-    }
 
-    let cm_name = format!("webhook-{}", req.name.to_lowercase().replace(' ', "-"));
+    // Store the HMAC signing secret in a Secret (not the ConfigMap, which is
+    // unencrypted at rest and visible to a wider RBAC audience). The ConfigMap
+    // only records that a secret is configured and the Secret's name.
+    if let Some(ref secret) = req.secret {
+        use k8s_openapi::ByteString;
+        use k8s_openapi::api::core::v1::Secret;
+        let secret_name = format!("{cm_name}-hmac");
+        let secret_api: kube::api::Api<Secret> =
+            kube::api::Api::namespaced(s.client().client(), &namespace);
+        let secret_obj = Secret {
+            metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {
+                name: Some(secret_name.clone()),
+                namespace: Some(namespace.clone()),
+                labels: Some(
+                    [("veyron.io/type".to_string(), "webhook-secret".to_string())]
+                        .into_iter()
+                        .collect(),
+                ),
+                ..Default::default()
+            },
+            data: Some(
+                [(
+                    "secret".to_string(),
+                    ByteString(secret.clone().into_bytes()),
+                )]
+                .into_iter()
+                .collect(),
+            ),
+            ..Default::default()
+        };
+        if let Err(e) = secret_api
+            .create(&kube::api::PostParams::default(), &secret_obj)
+            .await
+        {
+            return (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({
+                    "error": "WEBHOOK_SECRET_FAILED",
+                    "message": format!("Failed to store webhook secret: {e}"),
+                })),
+            );
+        }
+        data.insert("secret_configured".to_string(), "true".to_string());
+        data.insert("secret_ref".to_string(), secret_name);
+    }
 
     let cm = ConfigMap {
         metadata: k8s_openapi::apimachinery::pkg::apis::meta::v1::ObjectMeta {

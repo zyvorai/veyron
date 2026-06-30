@@ -51,15 +51,20 @@ pub fn router(state: SharedState) -> Router {
 async fn list_predictions(
     State(state): State<SharedState>,
     Query(query): Query<ForecastQuery>,
-) -> Json<ForecastPredictionsResponse> {
+) -> Result<Json<ForecastPredictionsResponse>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
+        s.client().list_all_vms().await
     } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
-    let nodes = s.client().list_nodes().await.unwrap_or_default();
+        s.client().list_vms(&namespace).await
+    }
+    .map_err(crate::api::handlers::kube_list_error("VMs"))?;
+    let nodes = s
+        .client()
+        .list_nodes()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("nodes"))?;
 
     let total_vms = vms.len() as f64;
     let running_vms = vms
@@ -215,10 +220,10 @@ async fn list_predictions(
         });
     }
 
-    Json(ForecastPredictionsResponse {
+    Ok(Json(ForecastPredictionsResponse {
         veyron_context: ctx,
         predictions,
-    })
+    }))
 }
 
 #[cfg(feature = "web")]

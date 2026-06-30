@@ -34,6 +34,17 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
         return ApiRole::ReadOnly;
     }
 
+    // The `/api/v1/veyron/*` product alias (`http_server.rs`) re-mounts the entire
+    // handler set under a second prefix. Canonicalize it back to `/api/v1/*` before
+    // evaluating the admin gates below — otherwise a Write-scoped key could reach
+    // admin-only mutations (tenants, dr, gitops/catalog sync, cluster activate) via
+    // the alias, which the canonical-prefix checks would not catch.
+    let canonical: std::borrow::Cow<'_, str> = match path.strip_prefix("/api/v1/veyron/") {
+        Some(rest) => std::borrow::Cow::Owned(format!("/api/v1/{rest}")),
+        None => std::borrow::Cow::Borrowed(path),
+    };
+    let path: &str = &canonical;
+
     if path.starts_with("/api/v1/clusters/") && path.ends_with("/activate") {
         return ApiRole::Admin;
     }
@@ -104,6 +115,32 @@ mod tests {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/tenants"),
             ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn admin_gates_apply_through_veyron_alias() {
+        // The /api/v1/veyron/* alias must not bypass admin-only gates.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/tenants"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/dr/failover"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/gitops/sync"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/clusters/prod/activate"),
+            ApiRole::Admin
+        );
+        // Non-admin alias routes still resolve to their normal role.
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/veyron/vms"),
+            ApiRole::Write
         );
     }
 

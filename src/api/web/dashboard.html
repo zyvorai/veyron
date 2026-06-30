@@ -7043,7 +7043,12 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <h3>Configure network</h3>
         <label style="display:flex;gap:8px;margin-top:12px;font-size:.88rem"><input type="checkbox" id="forge-wiz-expose" onchange="document.getElementById('forge-wiz-expose-opts').style.display=this.checked?'block':'none'"> Expose guest port via Service</label>
         <div id="forge-wiz-expose-opts" style="display:none;margin-top:8px">
-          <div class="form-row"><div class="form-group"><label class="form-label">Service port</label><input type="number" class="form-input" id="forge-wiz-expose-port" value="22"></div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Service port</label>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="number" class="form-input" id="forge-wiz-expose-port" min="1" max="65535" value="22" style="flex:1">
+              <button type="button" class="glass-btn-secondary glass-btn-sm" onclick="forgeWizRandomServicePort()" title="Fill a random Kubernetes-allowed NodePort (30000–32767)" style="white-space:nowrap;flex-shrink:0">🎲 Random</button>
+            </div>
+          </div></div>
         </div>
         <label style="display:flex;gap:8px;margin-top:12px;font-size:.88rem"><input type="checkbox" id="forge-wiz-internet" checked> Allow internet egress</label>
       </div>

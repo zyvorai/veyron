@@ -64,7 +64,7 @@ pub fn router(state: SharedState) -> Router {
 async fn get_monitoring_status(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
-) -> Json<MonitoringStatus> {
+) -> Result<Json<MonitoringStatus>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     use k8s_openapi::api::core::v1::Service;
 
     let (kube, default_ns) = {
@@ -120,7 +120,10 @@ async fn get_monitoring_status(
         }
     }
 
-    let nodes = kube.list_nodes().await.unwrap_or_default();
+    let nodes = kube
+        .list_nodes()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("nodes"))?;
     let total_targets = nodes.len() as u32;
     let healthy_targets = nodes
         .iter()
@@ -180,7 +183,7 @@ async fn get_monitoring_status(
         alertmanager = true;
     }
 
-    Json(MonitoringStatus {
+    Ok(Json(MonitoringStatus {
         veyron_context: super::feature_context::VmrogueFeatureContext::monitoring_status(),
         prometheus_available: prometheus,
         grafana_available: grafana,
@@ -190,7 +193,7 @@ async fn get_monitoring_status(
         active_alerts,
         total_targets,
         healthy_targets,
-    })
+    }))
 }
 
 /// Detect metric anomalies for all VMs in the namespace.
