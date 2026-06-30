@@ -196,70 +196,77 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 - **KubeVirt virtio video (optional):** set `kubevirt_video_type` on `VMConfig` (builder: `.kubevirt_video_type("virtio")`) to emit `domain.devices.video`. This requires the cluster KubeVirt **`VideoConfig` alpha feature gate**; without it the API may reject or ignore the field depending on version.
 - **Windows day-to-day remoting:** prefer **RDP** for interactive work; KubeVirt VNC through the dashboard is best-effort over WebSockets. See `docs/WINDOWS_KUBEVIRT_PRODUCTION.md`.
 
-## Design system — Instrument Deck (non-negotiable)
+## Design system — Holographic Ops (the design law)
 
-The dashboard (`src/api/web/dashboard.html`) uses the **Instrument Deck** design language. Every future edit to the dashboard must follow these rules without exception.
+The dashboard (`src/api/web/dashboard.html`) uses the **Holographic Ops** design language: volumetric glass, aurora depth, floating panels, pointer parallax, luminous multi-hue gradients. This **replaces** the retired *Instrument Deck* look (flat cockpit, single blue accent, hairline borders). Every dashboard edit must keep this language.
 
-### Color — token-only, zero raw hex
+**It lives in a theme layer.** Holographic Ops is the `holo` theme — the default. It is defined **once** under `html[data-theme="holo"]` in the `<style>` block (search `◜ HOLOGRAPHIC OPS`) and cascades to all 67 pages by overriding the shared surface classes (`.card .glass-card .chart-card .vm-card .tile .panel .vmr-panel .id-*`). The token-consuming surfaces (`.card`, `.chart-card`, `.vm-card`) restyle automatically because holo redefines the glass tokens. **To restyle every page, edit the holo block — do not touch 67 pages.**
 
-**All colors must use CSS custom properties.** No hex literals (`#3b82f6`), no `rgb()`/`rgba()` values outside the `:root` token block at the top of `<style>`. A raw color value anywhere in component HTML or CSS is a bug.
+### Color — tokens + intentional aurora gradients
 
-| Purpose | Token |
+Prefer CSS custom properties for surfaces, text, and status. The token table below is the contract. **Unlike the old Instrument Deck, gradients and a multi-hue aurora are wanted, not bugs** — the design is deliberately gradient-rich. Use the aurora hues for ambient glow, sheen, and accent blooms.
+
+| Purpose | Token / value |
 |---|---|
 | Deepest background | `--void` |
-| Page background | `--hull` |
-| Card surface | `--panel` |
-| Raised surface | `--panel-2` |
-| Hover/active surface | `--panel-hi` |
-| Default border | `--hairline` |
-| Emphasis border | `--hairline-hi` |
-| Brand accent | `--plasma` (Machina blue `#3b82f6` — the ONLY brand color) |
+| Page background | `--hull` (holo: deep-space radial) |
+| Glass surface | `--glass-bg` + `--glass-blur` (`.card`, `.chart-card`, `.vm-card` consume these) |
+| Card surface (id-*) | `--panel` `--panel-2` `--panel-hi` |
+| Default / emphasis border | `--hairline` / `--hairline-hi` |
+| Primary accent | `--plasma` (holo: luminous blue `#5b8cff`) |
 | Plasma variants | `--plasma-deep` `--plasma-glow` `--plasma-line` |
+| Aurora accent hues | `--aurora-1` blue · `--aurora-2` violet `#a78bfa` · `--aurora-3` cyan · `--aurora-4` indigo |
 | Status: healthy/running | `--nominal` + `--nominal-bg` |
 | Status: warning | `--caution` + `--caution-bg` |
 | Status: error/critical | `--critical` + `--critical-bg` |
 | Status: stopped/off | `--inert` + `--inert-bg` |
-| Primary text | `--ink` |
-| Secondary text | `--ink-2` |
-| Muted/caption text | `--ink-3` |
+| Text | `--ink` / `--ink-2` / `--ink-3` |
 
-**Do not introduce a second brand color.** `--plasma` (Machina blue `#3b82f6`) is the only accent. Status must always use the four signal colors above — never invent a new color for a new state.
+Status must always use the four signal colors above — never invent a new color for a state. Brand accent stays in the blue→violet→cyan aurora family; don't add an unrelated brand hue (e.g. orange/green) outside status.
 
-### Status rendering — signal dots, never flat rectangles
+### Surfaces — floating glass
 
-Status is always rendered as a pulsing `.id-sig` pill with a `.id-pulse` dot inside it:
+Every panel is translucent frosted glass: `backdrop-filter: blur(~26px) saturate(1.6)`, ~20px radius, a layered depth shadow (`0 22px 58px …`) plus an **inset top specular highlight** (`inset 0 1px 0 rgba(190,212,255,.20)`). On hover they **float**: `translateY(-4px)` with a plasma bloom (`0 0 44px var(--plasma-glow)`) and brightening border. This is built into the holo overrides for the shared surface classes — reuse those classes rather than re-styling.
+
+### Depth & motion
+
+- **Aurora field**: animated multi-hue radial-gradient mesh behind the UI (`body::before` under holo), drifting on `holo-drift`.
+- **Pointer parallax**: the aurora shifts with the cursor via `--holo-px/--holo-py` (set by the rAF-throttled script at end of `<body>`; respects `prefers-reduced-motion`). Keep new ambient layers reading those vars for cohesion.
+- **Holographic grid veil**: faint masked scan-grid (`body::after` under holo).
+
+### Status rendering — luminous signal orbs, never flat rectangles
+
+Status is a pulsing `.id-sig` pill with an `.id-pulse` dot (holo gives it a glow halo):
 - Running → `<span class="id-sig id-sig-ok"><span class="id-pulse"></span>running</span>`
-- Warning → `id-sig-warn`
-- Critical/Error → `id-sig-crit` (blinks fast)
-- Stopped → `id-sig-inert`
+- Warning → `id-sig-warn` · Critical → `id-sig-crit` (blinks fast) · Stopped → `id-sig-inert`
 
-Never use a flat colored badge, colored background div, or colored text alone to convey VM/resource status.
+Never use a flat colored badge, colored background div, or colored text alone to convey status.
 
 ### Typography
 
-- **Display / headings**: `font-family: var(--sans-deck)` (SF Pro Display — Machina-aligned shell)
+- **Display / headings**: `font-family: var(--sans-deck)` (SF Pro Display). KPI numerals get an aurora-lit gradient text fill under holo.
 - **All data, IPs, specs, eyebrow labels**: `font-family: 'IBM Plex Mono', ui-monospace, monospace`
 - **Numbers**: always `font-feature-settings: "tnum"` so they don't jitter on live updates
 - **Eyebrow labels**: monospace, 10px, `letter-spacing: 2px`, `text-transform: uppercase`, color `--ink-3`
 
-### Page structure — every page must have
+### Page structure — every page should have
 
-1. **Telemetry spine** — `#id-spine` exists globally but is hidden (`display:none`) to match Machina's chrome-free shell; set `.id-spine{display:flex}` to restore. Do not add a per-page spine.
-2. **KPI tile row** — use `.id-tile` cards with `.id-eyebrow` + `.id-big` metric + `.id-spark` sparkline
-3. **Section headings** — `.id-sec-h` with `<h2>` + `.id-line` fade line
+1. **KPI tile row** — `.id-tile` cards with `.id-eyebrow` + `.id-big` metric + `.id-spark` sparkline
+2. **Section headings** — `.id-sec-h` with `<h2>` + `.id-line` (holo: plasma-fade line)
+3. **Hero pages** (`#page-dashboard`, `#page-vms`, `#page-reactor`, `#page-topology`): luminous command-banner header + floating-glass panels (`.vmr-panel`, `.vm-card`).
 
 ### Component classes (use these, don't reinvent)
 
-All Instrument Deck components are in `src/api/web/dashboard.html` under the `id-` prefix:
-
-`.id-tile` · `.id-vmcard` · `.id-gauge` · `.id-sig-ok/warn/crit/inert` · `.id-alert` · `.id-zeus` · `.id-btn-plasma` · `.id-btn-ghost` · `.id-chip` · `.id-card-h` · `.id-readout` · `.id-bars` · `.id-tpl` · `.id-eyebrow` · `.id-metric` · `.id-sec-h`
+`.id-tile` · `.id-vmcard` · `.id-gauge` · `.id-sig-ok/warn/crit/inert` · `.id-alert` · `.id-zeus` · `.id-btn-plasma` · `.id-btn-ghost` · `.id-chip` · `.id-card-h` · `.id-readout` · `.id-bars` · `.id-tpl` · `.id-eyebrow` · `.id-metric` · `.id-sec-h` · `.vmr-panel` (dashboard panel)
 
 ### Signature interactions (apply to every interactive element)
 
-- **Cards**: `transform: translateY(-2px)` + plasma border on hover — use `.id-vmcard`'s built-in hover, or add `transition:.18s` + `:hover{border-color:var(--plasma-line);box-shadow:0 0 0 1px var(--plasma-line)}`
-- **Running VMs**: pulse animation on status dot (built into `.id-sig-ok`)
-- **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in)
-- **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zeus integration
+- **Cards/panels**: float on hover (`translateY(-4px)` + plasma bloom) — built into the holo surface overrides; reuse `.card`/`.id-tile`/`.id-vmcard`/`.vmr-panel`.
+- **Running VMs**: glowing pulse on the status orb (built into `.id-sig-ok`).
+- **KPI tiles**: soft plasma bloom via `.id-tile::after` (built in).
+- **New pages**: always wire `openCopilotWithVm()` on VM-level click actions for Ask Zeus integration.
+
+> Other themes (`tahoe`, `sonoma`, `graphite`, etc.) remain available via the theme picker; `holo` is the default and the canonical look. When in doubt, design for holo first.
 
 ### Component library — `web/src/components/instrument/`
 
@@ -286,7 +293,7 @@ Stylelint guardrail: `web/.stylelintrc` — `color-no-hex: true` (ignores `token
 
 ### Per-page sweep procedure
 
-When applying Instrument Deck to any page section in `dashboard.html`:
+Holographic Ops applies globally via the `holo` theme block, so most pages need no per-page work. When a specific page section in `dashboard.html` still needs hand-tuning:
 
 1. **Read** the page's `<div class="page section-shell" id="page-…">` block
 2. **Identify violations**: raw hex colors, flat status badges, non-Signal-Dot status indicators, missing KPI tiles, non-`--ink/ink-2/ink-3` text colors

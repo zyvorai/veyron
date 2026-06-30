@@ -18,15 +18,14 @@
     return;
   }
   function parseStoredThemeEarly(raw) {
-    var valid = ['tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
+    var valid = ['holo', 'tahoe', 'tahoe-light', 'sonoma', 'graphite', 'wolf', 'forge', 'ember', 'light', 'carbon', 'synthwave', 'aurora', 'nord', 'royal-gold', 'matrix'];
     if (raw && valid.indexOf(raw) >= 0) return raw;
     if (raw === 'frost') return 'tahoe-light';
-    if (raw === 'aurora') return 'sonoma';
-    if (raw === 'slate' || raw === '' || !raw) return 'tahoe';
+    if (raw === 'slate' || raw === '' || !raw) return 'holo';
     if (raw === 'steel' || raw === 'zinc' || raw === 'obsidian') return 'graphite';
     if (raw === 'ember') return 'ember';
     if (raw === 'neon') return 'wolf';
-    return 'tahoe';
+    return 'holo';
   }
   try {
     var savedTheme = parseStoredThemeEarly(localStorage.getItem('veyron_theme'));
@@ -344,6 +343,265 @@ html[data-theme="matrix"] body.mac-desktop-root{
     var(--hull) !important;
 }
 html[data-theme="matrix"] body.mac-desktop-root::before{ opacity:.05 !important; }
+
+/* ════════════════════════════════════════════════════════════════════════
+   ◜ HOLOGRAPHIC OPS — the redesign
+   Volumetric glass · aurora depth · floating panels · parallax · luminous.
+   Defined once here; cascades across all 67 pages via shared surface classes
+   (.card .glass-card .tile .panel .id-*). Higher specificity wins by design.
+   ════════════════════════════════════════════════════════════════════════ */
+html[data-theme="holo"]{
+  --void:#04050e; --hull:#070a1a; --bg-deep:#04050e; --bg:#070a1a; --bg-secondary:#070a1a;
+  --bg-card:rgba(22,30,58,.52); --bg-card-solid:#101630; --bg-elevated:rgba(34,46,86,.58);
+  --panel:rgba(22,30,58,.52); --panel-2:rgba(32,44,82,.58); --panel-hi:rgba(46,62,108,.66);
+  --hairline:rgba(150,178,255,.16); --hairline-hi:rgba(160,188,255,.34);
+  --border:rgba(150,178,255,.16); --border-hot:rgba(160,188,255,.34); --border-cold:rgba(150,178,255,.14);
+  --plasma:#5b8cff; --plasma-deep:#3a5bd9; --plasma-glow:rgba(91,140,255,.30); --plasma-line:rgba(124,162,255,.52);
+  --primary:#5b8cff; --primary-blue:#5b8cff; --primary-purple:#a78bfa;
+  --primary-dim:rgba(91,140,255,.16); --primary-glow:rgba(91,140,255,.34);
+  --accent:#5b8cff; --molten:#7ca2ff; --spark:#bcd0ff; --plasma:#5b8cff;
+  --ink:#eaf0ff; --ink-2:#aebbe0; --ink-3:#7585b0;
+  --text:#eaf0ff; --text-bright:#ffffff; --text-muted:#aebbe0; --text-dim:#7585b0;
+  --glass-bg:rgba(20,28,56,.46); --glass-bg-elevated:rgba(34,46,86,.58);
+  --glass-border:rgba(160,188,255,.16); --glass-border-strong:rgba(170,196,255,.30);
+  --glass-blur:blur(26px) saturate(1.6); --glass-radius:20px;
+  --glass-shadow:0 24px 64px rgba(2,4,16,.62),0 6px 18px rgba(2,4,16,.42);
+  --radius:20px; --radius-liquid:20px; --radius-liquid-lg:26px;
+  --aurora-1:rgba(91,140,255,.34); --aurora-2:rgba(167,139,250,.26);
+  --aurora-3:rgba(56,212,255,.22); --aurora-4:rgba(99,102,241,.20);
+  color-scheme:dark;
+}
+/* Deep-space hull */
+html[data-theme="holo"] body,
+html[data-theme="holo"] body.mac-desktop-root{
+  background:radial-gradient(125% 95% at 50% -12%, #0b1234 0%, #070a1a 44%, #04050e 100%) !important;
+}
+/* Living aurora field — multi-hue, drifting, parallax-reactive (--holo-px/py set by JS) */
+html[data-theme="holo"] body::before,
+html[data-theme="holo"] body.mac-desktop-root::before{
+  content:'';position:fixed;inset:-25%;z-index:0;pointer-events:none;opacity:1 !important;
+  background:
+    radial-gradient(38% 34% at calc(22% + var(--holo-px,0px)) calc(14% + var(--holo-py,0px)), var(--aurora-1), transparent 60%),
+    radial-gradient(34% 30% at calc(82% - var(--holo-px,0px)) calc(20% + var(--holo-py,0px)), var(--aurora-2), transparent 58%),
+    radial-gradient(46% 42% at calc(72% + var(--holo-px,0px)) calc(86% - var(--holo-py,0px)), var(--aurora-3), transparent 60%),
+    radial-gradient(30% 28% at calc(12% - var(--holo-px,0px)) calc(72% - var(--holo-py,0px)), var(--aurora-4), transparent 56%) !important;
+  filter:blur(32px) !important;
+  animation:holo-drift 28s ease-in-out infinite alternate !important;
+  will-change:transform,filter;
+}
+@keyframes holo-drift{
+  0%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(2.4%,-1.6%,0) scale(1.07)}
+  100%{transform:translate3d(-2.4%,1.6%,0) scale(1.04)}
+}
+/* Holographic grid veil */
+html[data-theme="holo"] body::after,
+html[data-theme="holo"] body.mac-desktop-root::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55 !important;
+  background:
+    linear-gradient(rgba(120,150,255,.05) 1px,transparent 1px) 0 0/100% 3px,
+    linear-gradient(90deg, rgba(120,150,255,.022) 1px,transparent 1px) 0 0/66px 100% !important;
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 28%, #000 28%, transparent 82%);
+  mask-image:radial-gradient(120% 90% at 50% 28%, #000 28%, transparent 82%);
+}
+/* ── Floating glass surfaces — inherited by every page ── */
+html[data-theme="holo"] .card,
+html[data-theme="holo"] .glass-card,
+html[data-theme="holo"] .id-tile,
+html[data-theme="holo"] .id-vmcard,
+html[data-theme="holo"] .id-tpl,
+html[data-theme="holo"] .tile,
+html[data-theme="holo"] .panel{
+  background:linear-gradient(152deg, rgba(40,54,98,.46), rgba(13,19,42,.44)) !important;
+  -webkit-backdrop-filter:blur(26px) saturate(1.6); backdrop-filter:blur(26px) saturate(1.6);
+  border:1px solid rgba(160,188,255,.16) !important; border-radius:20px;
+  box-shadow:0 22px 58px rgba(2,4,16,.58),0 5px 16px rgba(2,4,16,.4),
+    inset 0 1px 0 rgba(190,212,255,.20),inset 0 0 0 1px rgba(120,150,255,.04) !important;
+  transition:transform .26s cubic-bezier(.22,1,.36,1),box-shadow .26s,border-color .26s;
+}
+html[data-theme="holo"] .mac-page-window{
+  background:linear-gradient(160deg, rgba(28,38,72,.40), rgba(11,16,36,.42)) !important;
+  -webkit-backdrop-filter:blur(28px) saturate(1.55); backdrop-filter:blur(28px) saturate(1.55);
+  border:1px solid rgba(160,188,255,.14) !important; border-radius:22px;
+  box-shadow:0 30px 70px rgba(2,4,16,.5),inset 0 1px 0 rgba(190,212,255,.16) !important;
+}
+/* Top-edge specular sheen */
+html[data-theme="holo"] .id-tile::before,
+html[data-theme="holo"] .id-vmcard::before,
+html[data-theme="holo"] .id-tpl::before{
+  content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0;
+  background:linear-gradient(158deg, rgba(255,255,255,.12), transparent 34%);
+  mix-blend-mode:screen;opacity:.8;
+}
+html[data-theme="holo"] .id-tile > *,
+html[data-theme="holo"] .id-vmcard > *,
+html[data-theme="holo"] .id-tpl > *{position:relative;z-index:1}
+/* The holographic float — lift + plasma bloom on hover */
+html[data-theme="holo"] .card:hover,
+html[data-theme="holo"] .glass-card:hover,
+html[data-theme="holo"] .id-tile:hover,
+html[data-theme="holo"] .id-vmcard:hover,
+html[data-theme="holo"] .id-tpl:hover{
+  transform:translateY(-4px) !important;
+  border-color:rgba(124,162,255,.5) !important;
+  box-shadow:0 34px 82px rgba(2,4,16,.64),0 0 0 1px rgba(124,162,255,.42),
+    0 0 44px rgba(91,140,255,.30),inset 0 1px 0 rgba(200,220,255,.26) !important;
+}
+/* Luminous signal orbs */
+html[data-theme="holo"] .id-pulse{width:7px;height:7px;box-shadow:0 0 10px currentColor,0 0 22px currentColor !important}
+html[data-theme="holo"] .id-sig{-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+/* Aurora-lit KPI numerals */
+html[data-theme="holo"] .id-tile .id-big,
+html[data-theme="holo"] .id-metric,
+html[data-theme="holo"] .id-gauge .id-v{
+  background:linear-gradient(180deg,#ffffff,#b9cdff);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+/* Plasma action buttons → glowing glass pills */
+html[data-theme="holo"] .id-btn-plasma,
+html[data-theme="holo"] .btn-primary{
+  background:linear-gradient(180deg, rgba(91,140,255,.96), rgba(58,91,217,.96)) !important;
+  border:1px solid rgba(170,196,255,.5) !important;color:#fff !important;
+  box-shadow:0 8px 24px rgba(58,91,217,.5),inset 0 1px 0 rgba(255,255,255,.4) !important;
+}
+/* Frosted floating chrome */
+html[data-theme="holo"] .mac-menubar.navbar{
+  background:rgba(9,13,30,.55) !important;-webkit-backdrop-filter:blur(30px) saturate(1.6);backdrop-filter:blur(30px) saturate(1.6);
+  border-bottom:1px solid rgba(160,188,255,.14) !important;
+}
+html[data-theme="holo"] .mac-dock-inner{
+  background:rgba(15,21,44,.5) !important;-webkit-backdrop-filter:blur(34px) saturate(1.7);backdrop-filter:blur(34px) saturate(1.7);
+  border:1px solid rgba(170,196,255,.16) !important;
+  box-shadow:0 22px 54px rgba(2,4,16,.6),inset 0 1px 0 rgba(200,220,255,.2) !important;
+}
+html[data-theme="holo"] .id-sec-h .id-line{background:linear-gradient(90deg, rgba(124,162,255,.5), transparent) !important}
+html[data-theme="holo"] .id-zeus .id-orb{box-shadow:0 0 24px rgba(91,140,255,.6),0 0 48px rgba(167,139,250,.3) !important}
+
+/* ── Holographic hero: Mission Control header + dashboard panels ──
+   .vmr-panel ships with NO base CSS — holo gives those 44 dashboard
+   panels real floating-glass chrome. Restructures the hero layout. */
+html[data-theme="holo"] .vmr-panel{
+  background:linear-gradient(152deg, rgba(38,52,96,.42), rgba(12,18,40,.44));
+  -webkit-backdrop-filter:blur(24px) saturate(1.55); backdrop-filter:blur(24px) saturate(1.55);
+  border:1px solid rgba(160,188,255,.15); border-radius:20px; padding:18px 20px;
+  box-shadow:0 20px 52px rgba(2,4,16,.5),inset 0 1px 0 rgba(190,212,255,.16);
+  position:relative; overflow:hidden;
+  transition:transform .26s cubic-bezier(.22,1,.36,1),box-shadow .26s,border-color .26s;
+}
+html[data-theme="holo"] .vmr-panel:hover{
+  transform:translateY(-3px); border-color:rgba(124,162,255,.42);
+  box-shadow:0 30px 72px rgba(2,4,16,.58),0 0 36px rgba(91,140,255,.22),inset 0 1px 0 rgba(200,220,255,.22);
+}
+html[data-theme="holo"] .vmr-panel-title{
+  font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px; font-weight:600; letter-spacing:2px;
+  text-transform:uppercase; color:#8ea0cc; margin-bottom:12px;
+}
+/* Mission Control header → luminous command banner */
+html[data-theme="holo"] .mission-control-header-row{
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+  position:relative; padding:22px 26px; margin-bottom:8px; border-radius:24px; overflow:hidden;
+  background:linear-gradient(120deg, rgba(91,140,255,.20), rgba(167,139,250,.12) 46%, rgba(12,18,42,.5));
+  border:1px solid rgba(160,188,255,.20);
+  box-shadow:0 24px 60px rgba(2,4,16,.5),inset 0 1px 0 rgba(200,220,255,.22);
+}
+html[data-theme="holo"] .mission-control-header-row::after{
+  content:''; position:absolute; top:-60%; right:-8%; width:340px; height:340px; border-radius:50%;
+  background:radial-gradient(circle, rgba(91,140,255,.42), transparent 66%); filter:blur(22px); pointer-events:none;
+}
+html[data-theme="holo"] .mission-control-header-row h1{
+  margin:0; font-size:1.7rem; font-weight:800; letter-spacing:-.6px; position:relative; z-index:1;
+  background:linear-gradient(180deg,#ffffff,#bcd0ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+html[data-theme="holo"] .mission-control-header-meta{position:relative; z-index:1; display:flex; align-items:center; gap:12px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:11px; color:#aebbe0}
+html[data-theme="holo"] .mission-live-badge{
+  background:rgba(29,158,117,.16); border:1px solid rgba(29,158,117,.4); color:#36d39a;
+  padding:3px 11px; border-radius:99px; font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:10.5px;
+  letter-spacing:1px; text-transform:uppercase; box-shadow:0 0 16px rgba(29,158,117,.3);
+}
+/* Floating VM cards consistent with the deck */
+html[data-theme="holo"] .vm-card:hover{
+  border-color:rgba(124,162,255,.5) !important; transform:translateY(-4px) !important;
+  box-shadow:0 30px 72px rgba(2,4,16,.6),0 0 40px rgba(91,140,255,.26),inset 0 1px 0 rgba(200,220,255,.22) !important;
+}
+/* Animated shimmer bar already on chart-card picks up aurora hues via tokens */
+
+/* ── Holographic Ops — primitives polish (buttons, fields, tables, modals) ──
+   Keeps the glass illusion intact on the controls that live on every page. */
+/* Primary action → luminous plasma pill */
+html[data-theme="holo"] .glass-btn-primary,
+html[data-theme="holo"] .btn-create{
+  background:linear-gradient(135deg,#5b8cff 0%,#3a5bd9 100%);
+  border:1px solid rgba(170,196,255,.5);
+  box-shadow:0 6px 26px rgba(91,140,255,.42),inset 0 1px 0 rgba(255,255,255,.28);
+}
+html[data-theme="holo"] .glass-btn-primary:hover,
+html[data-theme="holo"] .btn-create:hover{
+  transform:translateY(-2px);
+  box-shadow:0 12px 38px rgba(91,140,255,.5),0 0 28px rgba(91,140,255,.3),inset 0 1px 0 rgba(255,255,255,.34);
+}
+/* Secondary / ghost buttons → frosted glass with plasma hover */
+html[data-theme="holo"] .glass-btn-secondary,
+html[data-theme="holo"] .btn{
+  background:linear-gradient(180deg, rgba(46,62,108,.42), rgba(20,28,56,.40));
+  border:1px solid rgba(160,188,255,.16);
+  -webkit-backdrop-filter:blur(10px) saturate(1.4); backdrop-filter:blur(10px) saturate(1.4);
+  transition:transform .18s,background .2s,border-color .2s,box-shadow .2s;
+}
+html[data-theme="holo"] .glass-btn-secondary:hover,
+html[data-theme="holo"] .btn:hover{
+  transform:translateY(-1px);
+  border-color:rgba(124,162,255,.5);
+  background:linear-gradient(180deg, rgba(58,78,132,.5), rgba(26,36,72,.46));
+  box-shadow:0 8px 22px rgba(2,4,16,.4),0 0 20px rgba(91,140,255,.18);
+}
+/* Form fields → translucent glass with plasma focus ring */
+html[data-theme="holo"] .form-input,
+html[data-theme="holo"] .form-select,
+html[data-theme="holo"] textarea.form-input,
+html[data-theme="holo"] .zeus-ai-input{
+  background:rgba(18,26,52,.55) !important;
+  border:1px solid rgba(160,188,255,.16) !important;
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  color:#eaf0ff;
+}
+html[data-theme="holo"] .form-input:focus,
+html[data-theme="holo"] .form-select:focus,
+html[data-theme="holo"] .zeus-ai-input:focus{
+  border-color:rgba(124,162,255,.6) !important;
+  box-shadow:0 0 0 3px rgba(91,140,255,.22),0 0 18px rgba(91,140,255,.16) !important;
+}
+html[data-theme="holo"] .form-select option{background:#101630;color:#eaf0ff}
+/* Tables → glassy header, plasma row highlight */
+html[data-theme="holo"] .table thead th{
+  background:linear-gradient(180deg, rgba(91,140,255,.10), transparent);
+  color:#8ea0cc; border-bottom-color:rgba(160,188,255,.18);
+}
+html[data-theme="holo"] .table tbody tr:hover td{
+  background:rgba(91,140,255,.08);
+  box-shadow:inset 2px 0 0 var(--plasma);
+}
+/* Non-glass modals → match the deck */
+html[data-theme="holo"] .modal{
+  background:linear-gradient(160deg, rgba(28,38,72,.78), rgba(11,16,36,.82)) !important;
+  border:1px solid rgba(160,188,255,.2) !important;
+  -webkit-backdrop-filter:blur(40px) saturate(1.6); backdrop-filter:blur(40px) saturate(1.6);
+  box-shadow:0 40px 100px rgba(2,4,16,.7),0 0 60px rgba(91,140,255,.14),inset 0 1px 0 rgba(200,220,255,.18) !important;
+}
+/* Plasma scrollbar */
+html[data-theme="holo"] ::-webkit-scrollbar-thumb{
+  background:linear-gradient(180deg,#5b8cff,#7c5cff); border-radius:3px;
+}
+html[data-theme="holo"] ::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#6e9bff,#8b6cff)}
+/* Boot-up reveal — hero panels rise into place */
+html[data-theme="holo"] .vmr-mission-grid > .vmr-panel{animation:holo-rise .5s cubic-bezier(.22,1,.36,1) both}
+html[data-theme="holo"] .vmr-mission-grid > .vmr-panel:nth-child(2){animation-delay:.06s}
+html[data-theme="holo"] .vmr-mission-grid > .vmr-panel:nth-child(3){animation-delay:.12s}
+html[data-theme="holo"] .vmr-mission-grid > .vmr-panel:nth-child(4){animation-delay:.18s}
+@keyframes holo-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){
+  html[data-theme="holo"] .vmr-mission-grid > .vmr-panel{animation:none}
+  html[data-theme="holo"] body::before,html[data-theme="holo"] body.mac-desktop-root::before{animation:none !important}
+}
 
 /* ── Light mode: tahoe-light / light themes ──────────────────── */
 html[data-theme="tahoe-light"],
@@ -3619,6 +3877,7 @@ body[data-section="finops"] .mac-page-toolbar-wrap::before{background:var(--gree
 .theme-swatch.active{border-color:var(--cyan);box-shadow:0 0 16px rgba(39,215,255,.25)}
 .theme-swatch-preview{height:36px;border-radius:10px 10px 0 0}
 .theme-swatch-label{display:block;padding:6px 8px;font-size:.72rem;font-weight:600;color:var(--text-muted);text-align:center}
+.theme-swatch-preview.holo{background:radial-gradient(120% 100% at 30% 0%,rgb(91,140,255) 0%,rgb(167,139,250) 38%,rgb(11,18,52) 72%,rgb(4,5,14) 100%)}
 .theme-swatch-preview.tahoe{background:linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)}
 .theme-swatch-preview.tahoe-light{background:linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)}
 .theme-swatch-preview.sonoma{background:linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)}
@@ -4188,6 +4447,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
       <span>Theme</span>
       <div class="theme-swatch-group-label">macOS</div>
       <div class="theme-swatch-grid theme-swatch-grid-macos" id="cc-theme-swatch-grid-macos" role="radiogroup" aria-label="macOS themes">
+        <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Holographic</span></button>
         <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
         <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Tahoe Light</span></button>
         <button type="button" class="theme-swatch" data-theme="sonoma" role="radio" onclick="setTheme('sonoma')"><span class="theme-swatch-preview sonoma"></span><span class="theme-swatch-label">Sonoma</span></button>
@@ -7047,6 +7307,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <div class="signin-theme-picker">
           <div class="signin-theme-label">Appearance</div>
           <div class="theme-swatch-grid signin-theme-grid" id="signin-theme-swatch-grid" role="radiogroup" aria-label="Theme">
+            <button type="button" class="theme-swatch" data-theme="holo"        role="radio" onclick="setTheme('holo')">       <span class="theme-swatch-preview holo"></span>       <span class="theme-swatch-label">Holographic</span></button>
             <button type="button" class="theme-swatch" data-theme="tahoe"       role="radio" onclick="setTheme('tahoe')">      <span class="theme-swatch-preview tahoe"></span>      <span class="theme-swatch-label">Tahoe</span></button>
             <button type="button" class="theme-swatch" data-theme="tahoe-light" role="radio" onclick="setTheme('tahoe-light')"><span class="theme-swatch-preview tahoe-light"></span><span class="theme-swatch-label">Light</span></button>
             <button type="button" class="theme-swatch" data-theme="sonoma"      role="radio" onclick="setTheme('sonoma')">     <span class="theme-swatch-preview sonoma"></span>     <span class="theme-swatch-label">Sonoma</span></button>
@@ -7371,6 +7632,7 @@ const cpuHistory = [], memHistory = [];
 const MAX_PTS = 30;
 const THEME_KEY = 'veyron_theme';
 const THEME_PRESETS = [
+  { id: 'holo', label: 'Holographic', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'radial-gradient(120% 100% at 30% 0%,rgb(91,140,255) 0%,rgb(167,139,250) 38%,rgb(11,18,52) 72%,rgb(4,5,14) 100%)' },
   { id: 'tahoe', label: 'Tahoe', category: 'macos', defaultWallpaper: 'tahoe', previewGradient: 'linear-gradient(135deg,rgb(8,12,22) 0%,rgb(0,122,255) 45%,rgb(90,200,250) 100%)' },
   { id: 'tahoe-light', label: 'Tahoe Light', category: 'macos', defaultWallpaper: 'tahoe-light', previewGradient: 'linear-gradient(135deg,rgb(240,244,250) 0%,rgb(10,132,255) 50%,rgb(100,210,255) 100%)' },
   { id: 'sonoma', label: 'Sonoma', category: 'macos', defaultWallpaper: 'sonoma', previewGradient: 'linear-gradient(135deg,rgb(10,8,20) 0%,rgb(139,92,246) 50%,rgb(99,102,241) 100%)' },
@@ -7393,6 +7655,7 @@ const LEGACY_THEME_ALIASES = {
   neon: 'wolf', ember: 'ember'
 };
 const THEME_WALLPAPER_PAIRING = {
+  holo: 'sonoma',
   tahoe: 'tahoe', 'tahoe-light': 'tahoe-light', sonoma: 'sonoma', graphite: 'graphite',
   wolf: 'aurora', forge: 'aurora', ember: 'aurora', light: 'aurora', carbon: 'graphite', synthwave: 'graphite',
   aurora: 'graphite', nord: 'graphite', 'royal-gold': 'graphite', matrix: 'graphite'
@@ -7401,7 +7664,7 @@ const THEME_WALLPAPER_PAIRING = {
 function parseStoredTheme(raw) {
   if (raw && VALID_THEMES.includes(raw)) return raw;
   if (raw && LEGACY_THEME_ALIASES[raw]) return LEGACY_THEME_ALIASES[raw];
-  return 'tahoe';
+  return 'holo';
 }
 const NAV_PAGE_LABELS = {
   dashboard: 'Mission Control',
@@ -26629,5 +26892,30 @@ async function submitCreateAlert(e) {
 </div>
 </div>
 
+<script>
+/* Holographic Ops — pointer-reactive aurora parallax.
+   Shifts the --holo-px/--holo-py vars the aurora field reads, giving depth.
+   Only active under the holo theme; respects reduced-motion; rAF-throttled. */
+(function(){
+  var root = document.documentElement;
+  var reduce = false;
+  try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
+  function holoOn(){ return root.getAttribute('data-theme') === 'holo'; }
+  function tick(){
+    raf = 0;
+    cx += (tx - cx) * 0.06; cy += (ty - cy) * 0.06;
+    root.style.setProperty('--holo-px', cx.toFixed(2) + 'px');
+    root.style.setProperty('--holo-py', cy.toFixed(2) + 'px');
+    if (Math.abs(tx - cx) > 0.1 || Math.abs(ty - cy) > 0.1) raf = requestAnimationFrame(tick);
+  }
+  window.addEventListener('pointermove', function(e){
+    if (reduce || !holoOn()) return;
+    tx = (e.clientX / window.innerWidth - 0.5) * 36;
+    ty = (e.clientY / window.innerHeight - 0.5) * 36;
+    if (!raf) raf = requestAnimationFrame(tick);
+  }, { passive: true });
+})();
+</script>
 </body>
 </html>
