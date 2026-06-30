@@ -93,6 +93,22 @@ NAMESPACE="${VEYRON_NAMESPACE:-veyron-system}"
 
 [ -f "$REPO_DIR/Cargo.toml" ] || { pkg_fail "Not in veyron repo (missing Cargo.toml)"; exit 1; }
 
+# ── Preflight: operator Go toolchain consistency ──
+# The operator image builds with GOTOOLCHAIN=local, so the Dockerfile's golang
+# base must be >= operator/go.mod's `go` directive — otherwise `go mod download`
+# fails deep in the build with "go.mod requires go >= X (running Y)".
+if [[ -f "$REPO_DIR/operator/go.mod" && -f "$REPO_DIR/operator/Dockerfile" ]]; then
+    _gomod_go="$(grep -m1 -E '^go [0-9]' "$REPO_DIR/operator/go.mod" | awk '{print $2}' | cut -d. -f1-2)"
+    _docker_go="$(grep -m1 -oE 'golang:[0-9]+\.[0-9]+' "$REPO_DIR/operator/Dockerfile" | cut -d: -f2)"
+    if [[ -n "$_gomod_go" && -n "$_docker_go" ]]; then
+        _older="$(printf '%s\n%s\n' "$_gomod_go" "$_docker_go" | sort -V | head -1)"
+        if [[ "$_older" == "$_docker_go" && "$_docker_go" != "$_gomod_go" ]]; then
+            pkg_fail "Operator Go mismatch: operator/go.mod requires go ${_gomod_go} but operator/Dockerfile pins golang:${_docker_go}. Bump the Dockerfile base image (GOTOOLCHAIN=local can't auto-upgrade)."
+            exit 1
+        fi
+    fi
+fi
+
 # ── Resolve remote paths and tools ──
 REMOTE_HOME=$(deploy_ssh "${REMOTE}" "echo \$HOME")
 DEPLOY_DIR="${REMOTE_HOME}/.deployment/veyron"
@@ -195,10 +211,22 @@ fi
 
 # ── Step 1: Rsync source ──
 deploy_phase_start "📦 [1/7] Syncing source to ${HOST}:${DEPLOY_DIR}"
-if [[ "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "1" && "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "true" ]] \
-    && [ -x "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]; then
+# GuestKit build context: guestkit/Cargo.toml + src/ are gitignored and populated
+# from the sibling ../guestkit by prepare-guestkit-docker.sh. Invoke it via `bash`
+# (NOT gated on the exec bit — a missing +x silently skipped prep and shipped an
+# empty guestkit/, failing the build with an opaque "could not find Cargo.toml in
+# /build/guestkit").
+if [[ "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "1" && "${VEYRON_SKIP_GUESTKIT_PREP:-}" != "true" \
+      && -f "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" ]]; then
     deploy_substep "Preparing GuestKit build context (guestkit/ → Veyron)"
-    bash "${REPO_DIR}/scripts/prepare-guestkit-docker.sh"
+    bash "${REPO_DIR}/scripts/prepare-guestkit-docker.sh" \
+        || pkg_warn "GuestKit prep step failed (will use existing guestkit/ if already populated)"
+fi
+# Fail fast if the GuestKit build context is still incomplete — the remote image
+# build would otherwise fail deep in the Dockerfile with an opaque cargo error.
+if [[ ! -f "${REPO_DIR}/guestkit/Cargo.toml" ]]; then
+    pkg_fail "guestkit/Cargo.toml missing — GuestKit build context is incomplete. Place the sibling repo at ../guestkit (or set GUESTKIT_SRC), then re-run; scripts/prepare-guestkit-docker.sh populates guestkit/. Use VEYRON_SKIP_GUESTKIT_PREP=1 only when guestkit/ is already populated."
+    exit 1
 fi
 deploy_ssh "${REMOTE}" "mkdir -p ${DEPLOY_DIR}"
 rsync -az --delete \

@@ -278,7 +278,9 @@ async fn get_cost_forecast(State(state): State<SharedState>) -> Json<CostForecas
 }
 
 #[cfg(feature = "web")]
-async fn list_budgets(State(state): State<SharedState>) -> Json<Vec<Budget>> {
+async fn list_budgets(
+    State(state): State<SharedState>,
+) -> Result<Json<Vec<Budget>>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     use k8s_openapi::api::core::v1::ConfigMap;
     use kube::api::{Api, ListParams};
 
@@ -288,13 +290,17 @@ async fn list_budgets(State(state): State<SharedState>) -> Json<Vec<Budget>> {
     // List ConfigMaps with label veyron.io/type=budget in veyron-system namespace
     let cms: Api<ConfigMap> = Api::namespaced(client.clone(), "veyron-system");
     let lp = ListParams::default().labels("veyron.io/type=budget");
-    let cm_list = match cms.list(&lp).await {
-        Ok(list) => list,
-        Err(_) => return Json(vec![]),
-    };
+    let cm_list = cms
+        .list(&lp)
+        .await
+        .map_err(crate::api::handlers::kube_list_error("budgets"))?;
 
     // Get current costs for comparison
-    let vms = s.client().list_all_vms().await.unwrap_or_default();
+    let vms = s
+        .client()
+        .list_all_vms()
+        .await
+        .map_err(crate::api::handlers::kube_list_error("VMs"))?;
 
     // Build namespace -> total cost mapping
     let mut namespace_costs: std::collections::HashMap<String, f64> =
@@ -372,7 +378,7 @@ async fn list_budgets(State(state): State<SharedState>) -> Json<Vec<Budget>> {
         })
         .collect();
 
-    Json(budgets)
+    Ok(Json(budgets))
 }
 
 #[cfg(feature = "web")]

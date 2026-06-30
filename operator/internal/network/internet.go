@@ -11,6 +11,7 @@ import (
 
 	veyronv1alpha1 "github.com/ssahani/Veyron/operator/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -121,6 +122,12 @@ func EnsureVmInternetEgress(ctx context.Context, c client.Client, namespace, vmN
 	ciliumErr := createOrUpdate(ctx, c, cnp)
 	if ciliumErr == nil {
 		return "cilium", nil
+	}
+	// Only fall back to a Kubernetes NetworkPolicy when the CiliumNetworkPolicy CRD
+	// is genuinely absent. Falling back on ANY error (conflict, timeout, RBAC) would
+	// leave BOTH a CNP and an NP for the same VM once Cilium recovers.
+	if !meta.IsNoMatchError(ciliumErr) {
+		return "", fmt.Errorf("internet egress policy (cilium): %w", ciliumErr)
 	}
 	np := kubernetesNetworkPolicy(namespace, vmName, polName)
 	if err := createOrUpdate(ctx, c, np); err != nil {

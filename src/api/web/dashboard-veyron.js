@@ -1213,23 +1213,27 @@
     var modal = document.getElementById('forge-wizard-modal');
     if (modal) modal.classList.add('open');
     document.body.classList.add('forge-wizard-open');
-    if (typeof fetchTemplates === 'function') fetchTemplates();
-    if (typeof fetchProfiles === 'function') {
-      // fetchProfiles() only repaints the legacy picker, so repaint the wizard
-      // grid when it resolves — otherwise the profile step stays on "Loading…".
-      var _profPromise = fetchProfiles();
-      if (_profPromise && typeof _profPromise.then === 'function') {
-        _profPromise.then(function () { window._forgeProfilesLoaded = true; renderForgeWizardProfiles(); });
-      } else {
-        window._forgeProfilesLoaded = true;
+    var copyTemplates = function () {
+      var tpl = document.getElementById('forge-wiz-template');
+      var legacyTpl = document.getElementById('vm-template');
+      if (tpl && legacyTpl && legacyTpl.options.length > 1 && tpl.options.length <= 1) {
+        tpl.innerHTML = legacyTpl.innerHTML;
       }
+    };
+    // fetch* are async; chain the render so the profile cards and template
+    // options appear once the data loads (otherwise the panel is stuck on the
+    // "Loading profiles…" placeholder because the cache is still empty here).
+    if (typeof fetchTemplates === 'function') {
+      var ft = fetchTemplates();
+      if (ft && typeof ft.then === 'function') ft.then(copyTemplates); else copyTemplates();
+    } else { copyTemplates(); }
+    if (typeof fetchProfiles === 'function') {
+      var fp = fetchProfiles();
+      if (fp && typeof fp.then === 'function') {
+        fp.then(function () { window._forgeProfilesLoaded = true; renderForgeWizardProfiles(); });
+      } else { window._forgeProfilesLoaded = true; }
     }
     syncForgeWizardFromLegacy();
-    var tpl = document.getElementById('forge-wiz-template');
-    var legacyTpl = document.getElementById('vm-template');
-    if (tpl && legacyTpl && legacyTpl.options.length > 1 && tpl.options.length <= 1) {
-      tpl.innerHTML = legacyTpl.innerHTML;
-    }
     renderForgeWizardProfiles();
   };
   window.closeForgeWizard = function closeForgeWizard() {
@@ -1311,7 +1315,7 @@
     var sel = typeof selectedProfile !== 'undefined' ? selectedProfile : '';
     if (!cache.length) {
       el.innerHTML = window._forgeProfilesLoaded
-        ? '<p style="font-size:.84rem;color:var(--muted)">No profiles found. You can skip this step.</p>'
+        ? '<p style="font-size:.84rem;color:var(--muted)">No profiles found — you can skip this step.</p>'
         : '<p style="font-size:.84rem;color:var(--muted)">Loading profiles…</p>';
       return;
     }
@@ -1320,6 +1324,15 @@
         '<div class="pc-name">' + esc(p.name) + '</div>' +
         '<div class="pc-spec">' + p.cpu_cores + 'C / ' + esc(p.memory) + '</div></div>';
     }).join('');
+  };
+  // Fill the Service port with a random value in the Kubernetes NodePort range
+  // (30000–32767 — "what Kubernetes allows" for node-exposed services).
+  window.forgeWizRandomServicePort = function forgeWizRandomServicePort() {
+    var el = document.getElementById('forge-wiz-expose-port');
+    if (!el) return;
+    var min = 30000, max = 32767;
+    el.value = String(min + Math.floor(Math.random() * (max - min + 1)));
+    if (typeof syncForgeWizardFromLegacy === 'function') syncForgeWizardFromLegacy();
   };
   window.syncForgeWizardHardware = function syncForgeWizardHardware() {
     var map = [['vm-cpus', 'forge-wiz-cpus'], ['vm-memory', 'forge-wiz-memory'], ['vm-disk', 'forge-wiz-disk']];

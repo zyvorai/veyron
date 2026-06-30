@@ -86,14 +86,15 @@ pub fn router(state: SharedState) -> Router {
 async fn list_performance_profiles(
     State(state): State<SharedState>,
     Query(query): Query<PerformanceQuery>,
-) -> Json<PerformanceProfilesResponse> {
+) -> Result<Json<PerformanceProfilesResponse>, (axum::http::StatusCode, Json<serde_json::Value>)> {
     let s = state.read().await;
     let namespace = query.namespace.unwrap_or_else(|| s.namespace.clone());
     let vms = if namespace == "all" {
-        s.client().list_all_vms().await.unwrap_or_default()
+        s.client().list_all_vms().await
     } else {
-        s.client().list_vms(&namespace).await.unwrap_or_default()
-    };
+        s.client().list_vms(&namespace).await
+    }
+    .map_err(crate::api::handlers::kube_list_error("VMs"))?;
     let now = chrono::Utc::now().to_rfc3339();
 
     let mut profiles = Vec::new();
@@ -163,14 +164,14 @@ async fn list_performance_profiles(
         }
     }
 
-    Json(PerformanceProfilesResponse {
+    Ok(Json(PerformanceProfilesResponse {
         veyron_context: if used_prometheus {
             VmrogueFeatureContext::performance_prometheus()
         } else {
             VmrogueFeatureContext::performance_profiles()
         },
         profiles,
-    })
+    }))
 }
 
 #[cfg(feature = "web")]
