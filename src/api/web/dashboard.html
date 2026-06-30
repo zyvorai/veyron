@@ -893,7 +893,12 @@ html[data-theme="daylight"].glass-deck .holo-orb-wrap{background:radial-gradient
 /* Deep-space hull */
 html.glass-deck body,
 html.glass-deck body.mac-desktop-root{
-  background:radial-gradient(125% 95% at 50% -12%, #0b1234 0%, #070a1a 44%, #04050e 100%) !important;
+  /* Per-deck base: each deck's own --hull/--void, lightly tinted by its accent,
+     so Solaris reads warm, Biolume teal, Nebula violet — not all the same navy. */
+  background:radial-gradient(125% 95% at 50% -12%,
+    color-mix(in srgb, var(--hull, #070a1a) 84%, var(--plasma, #3b82f6) 12%) 0%,
+    var(--hull, #070a1a) 42%,
+    var(--void, #04050e) 100%) !important;
 }
 /* Living aurora field — multi-hue, drifting, parallax-reactive (--holo-px/py set by JS) */
 html.glass-deck body::before,
@@ -27839,8 +27844,10 @@ async function submitCreateAlert(e) {
   document.addEventListener('click', function(e){
     if (!active()) return;
     var h = hit(e); if (h === -2) return;
-    if (h >= 0 && layout[h]){ var nd = layout[h], ns = nd.v.namespace || nd.v.ns || 'default';
-      if (typeof openCopilotWithVm === 'function') openCopilotWithVm(ns, nd.v.name);
+    if (h >= 0 && layout[h]){ var nd = layout[h], ns = nd.v.namespace || nd.v.ns || 'default', nm = nd.v.name;
+      // fly to the VM's detail view
+      if (typeof navigateToVmCapsule === 'function') navigateToVmCapsule(ns, nm);
+      else if (typeof openVmDetailDeep === 'function') openVmDetailDeep(ns, nm);
       else if (typeof navigate === 'function') navigate('vms');
     } else if (typeof navigate === 'function') navigate('vms');
   });
