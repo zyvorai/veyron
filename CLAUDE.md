@@ -268,6 +268,15 @@ Never use a flat colored badge, colored background div, or colored text alone to
 
 > Other themes (`tahoe`, `sonoma`, `graphite`, etc.) remain available via the theme picker; `holo` is the default and the canonical look. When in doubt, design for holo first.
 
+### The `glass-deck` family
+
+Holographic Ops is one of a **family** of glass themes. The full engine — floating-glass surfaces, aurora field, pointer parallax, fleet orb, cursor spotlight, twinkling starfield, depth tiers — is keyed to the `html.glass-deck` class (toggled in `applyTheme` + the early bootstrap for any family member), **not** to a single theme id. Structural rules use `html.glass-deck …`; only the **colour skin** is per-theme.
+
+- **`holo`** (default) — luminous Machina blue.
+- **`nebula`** — cosmic deep-violet void, magenta + cyan nebula clouds, brighter starfield. Its colour overrides use `html[data-theme="nebula"].glass-deck …` (specificity `(0,3,1)`) to beat the shared blue structural rules regardless of source order.
+
+To add another glass theme: (1) add a token block + a colour-skin override block (mirror nebula's specificity trick), (2) register it in the early valid-list, `THEME_PRESETS`, `THEME_WALLPAPER_PAIRING`, both swatch grids, and a `.theme-swatch-preview.<id>` rule, (3) add its id to the two `glass-deck` class toggles and the `holo|nebula` checks in the orb/parallax JS. The fleet orb reads `--plasma` at runtime (`accentHex()`), so it themes automatically.
+
 ### Component library — `web/src/components/instrument/`
 
 All reusable UI is in this directory. **Never hand-roll equivalent components in page HTML** — compose pages from these:
