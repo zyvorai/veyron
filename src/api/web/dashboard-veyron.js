@@ -10,6 +10,13 @@
     };
   }
 
+  // Make a clickable non-<button> element keyboard-operable: focusable + Enter/Space
+  // activate the same expression as its click handler.
+  function kbdActivate(expr) {
+    return 'role="button" tabindex="0" ' + (typeof onHandler === 'function' ? onHandler(expr) : 'onclick=\'' + expr + '\'') +
+      ' onkeydown=\'if(event.key==="Enter"||event.key===" "){event.preventDefault();' + expr + '}\'';
+  }
+
   var VEYRON_NAV = [
     { page: 'dashboard', label: 'Mission Control', icon: '◫' },
     { page: 'vms', label: 'Fleet Command', icon: '▣' },
@@ -85,10 +92,8 @@
   };
 
   window.syncVeyronTopbar = function syncVeyronTopbar() {
-    var n = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-    if (!n && typeof lastEvents !== 'undefined' && lastEvents.length) {
-      n = lastEvents.filter(function (e) { return e.type === 'Warning'; }).length;
-    }
+    var n = typeof islandAlertCount !== 'undefined' ? islandAlertCount
+      : (typeof lastEvents !== 'undefined' ? lastEvents.filter(function (e) { return e.type === 'Warning'; }).length : 0);
     var pill = document.getElementById('mac-alert-pill');
     if (pill) {
       pill.textContent = n ? (n + ' alert' + (n === 1 ? '' : 's')) : 'No alerts';
@@ -245,14 +250,12 @@
     var ns = typeof currentNamespace !== 'undefined' ? currentNamespace : 'all';
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
-    var stopped = vms.filter(function (v) { return v.status === 'Running' ? false : v.status !== 'Failed'; }).length;
     var failed = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
+    var stopped = vms.filter(function (v) { return v.status !== 'Running' && v.status !== 'Failed' && v.status !== 'Error'; }).length;
     var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
     var nodes = ov.nodes || {};
-    var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-    if (!warnings && typeof lastEvents !== 'undefined') {
-      warnings = lastEvents.filter(function (e) { return e.type === 'Warning'; }).length;
-    }
+    var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount
+      : (typeof lastEvents !== 'undefined' ? lastEvents.filter(function (e) { return e.type === 'Warning'; }).length : 0);
     var uiTier = typeof uiTierForPage === 'function' ? uiTierForPage('dashboard') : 'power';
     var showAdvancedHome = uiTier === 'advanced';
 
@@ -323,12 +326,10 @@
     var score = home && home.health_score != null ? home.health_score : (
       c.total_vms > 0 ? Math.round((c.running_vms / c.total_vms) * 100) : 96
     );
-    var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-    if (!warnings && typeof lastEvents !== 'undefined') {
-      warnings = lastEvents.filter(function (e) { return e.type === 'Warning'; }).length;
-    }
-    var cpuPct = n.total_cpu_allocatable > 0 ? Math.round((c.total_vcpus_allocated / n.total_cpu_allocatable) * 100) : 0;
-    var memPct = n.total_memory_allocatable_gb > 0 ? Math.round((c.total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) : 0;
+    var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount
+      : (typeof lastEvents !== 'undefined' ? lastEvents.filter(function (e) { return e.type === 'Warning'; }).length : 0);
+    var cpuPct = n.total_cpu_allocatable > 0 ? Math.min(100, Math.max(0, Math.round(((c.total_vcpus_allocated || 0) / n.total_cpu_allocatable) * 100))) : 0;
+    var memPct = n.total_memory_allocatable_gb > 0 ? Math.min(100, Math.max(0, Math.round(((c.total_memory_allocated_gb || 0) / n.total_memory_allocatable_gb) * 100))) : 0;
     function row(label, ok, detail) {
       return '<div class="vmr-health-row"><span>' + esc(label) + '</span><span class="' + (ok ? 'ok' : 'warn') + '">' + esc(detail) + '</span></div>';
     }
@@ -361,7 +362,7 @@
       var _vms = typeof vmData !== 'undefined' ? vmData : [];
       var _stopped = _vms.filter(function(v){ return v.status !== 'Running'; }).length;
       var _snaps = typeof window.lastSnapshots !== 'undefined' ? window.lastSnapshots : null;
-      var _unprotected = _snaps ? _vms.filter(function(v){ return !_snaps.some(function(s){ return s.vm_name === v.name; }); }).length : null;
+      var _unprotected = _snaps ? _vms.filter(function(v){ return !_snaps.some(function(s){ return s.vm_name === v.name && (s.namespace || 'default') === (v.namespace || 'default'); }); }).length : null;
       var _warns = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
       items = [];
       if (_stopped > 0) items.push({ title: _stopped + ' VM' + (_stopped > 1 ? 's' : '') + ' not running', detail: 'Start stopped VMs or verify they are intentionally off.', severity: 'warning', action: 'copilot:unhealthy' });
@@ -473,8 +474,8 @@
     var vms = typeof vmData !== 'undefined' ? vmData : [];
     var cost = typeof lastCostSummary !== 'undefined' ? lastCostSummary : '—';
     var forecast = typeof lastCostForecast !== 'undefined' ? lastCostForecast : '—';
-    var cpuPct = n.total_cpu_allocatable > 0 ? Math.round((c.total_vcpus_allocated / n.total_cpu_allocatable) * 100) : 0;
-    var memPct = n.total_memory_allocatable_gb > 0 ? Math.round((c.total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) : 0;
+    var cpuPct = n.total_cpu_allocatable > 0 ? Math.min(100, Math.max(0, Math.round(((c.total_vcpus_allocated || 0) / n.total_cpu_allocatable) * 100))) : 0;
+    var memPct = n.total_memory_allocatable_gb > 0 ? Math.min(100, Math.max(0, Math.round(((c.total_memory_allocated_gb || 0) / n.total_memory_allocatable_gb) * 100))) : 0;
     el.innerHTML =
       '<div class="vmr-bottom-card"><div class="vmr-panel-title">Cost Overview</div>' +
       '<div class="vmr-bottom-stat">' + esc(cost) + '</div><div class="vmr-bottom-sub">Est. monthly · Forecast ' + esc(forecast) + '</div>' +
@@ -576,7 +577,7 @@
     var spark = isRunning
       ? '<div class="vmr-fleet-spark" aria-hidden="true"><span style="height:60%"></span><span style="height:45%"></span><span style="height:70%"></span><span style="height:55%"></span><span style="height:65%"></span></div>'
       : '';
-    return '<div class="' + cardCls + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+    return '<div class="' + cardCls + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" ' + kbdActivate('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
       '<div class="vmr-fleet-card-head"><div><span style="font-size:1.2rem;margin-right:8px">' + icon + '</span>' +
       '<span class="vmr-fleet-card-name">' + esc(vm.name) + '</span></div>' +
       '<span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></div>' +
@@ -589,7 +590,7 @@
       var ns = vm.namespace || 'default';
       var isRunning = vm.status === 'Running';
       var osIcon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
-      return '<tr class="clickable-row" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+      return '<tr class="clickable-row" ' + kbdActivate('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
         '<td>' + esc(vm.name) + '</td>' +
         '<td><span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span></td>' +
         '<td>' + esc(ns) + '</td>' +
@@ -651,10 +652,10 @@
           var isRunning = vm.status === 'Running';
           var osIcon = typeof osFamilyIcon === 'function' ? osFamilyIcon(typeof guessOsFamily === 'function' ? guessOsFamily(vm) : 'linux') : '◫';
           return '<div class="vmr-topology-vm-chip ' + (isRunning ? 'running' : 'stopped') + '" ' +
-            onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + ' title="' + esc(ns + '/' + vm.name) + '">' +
+            kbdActivate('selectVm(' + jsArgs(ns, vm.name) + ')') + ' title="' + esc(ns + '/' + vm.name + ' · ' + (vm.status || (isRunning ? 'Running' : 'Stopped'))) + '">' +
             '<span style="font-size:.9rem">' + osIcon + '</span>' +
             '<span>' + esc(vm.name) + '</span>' +
-            '<span class="vmr-topology-vm-status ' + (isRunning ? 'running' : 'stopped') + '"></span>' +
+            '<span class="vmr-topology-vm-status ' + (isRunning ? 'running' : 'stopped') + '" aria-label="' + esc(vm.status || (isRunning ? 'Running' : 'Stopped')) + '"></span>' +
           '</div>';
         }).join('') +
         '</div></div>';
@@ -919,6 +920,7 @@
 
   window.consoleHubRfb = null;
   window.consoleHubVm = null;
+  window._consoleHubConnectSeq = 0;
 
   window.disconnectConsoleHubVnc = function disconnectConsoleHubVnc() {
     if (window.consoleHubRfb) {
@@ -1002,6 +1004,7 @@
 
   window.connectConsoleHubInline = async function connectConsoleHubInline(ns, name) {
     disconnectConsoleHubVnc();
+    var _seq = ++window._consoleHubConnectSeq;
     var embed = document.getElementById('vmr-console-embed');
     var container = document.getElementById('vmr-console-vnc-container');
     var placeholder = document.getElementById('vmr-console-vnc-placeholder');
@@ -1033,6 +1036,7 @@
         return;
       }
     }
+    if (_seq !== window._consoleHubConnectSeq) return; // a newer VM was selected mid-load
 
     var url;
     try {
@@ -1042,6 +1046,7 @@
       setConsoleHubVncStatus('Ticket error', 'bad');
       return;
     }
+    if (_seq !== window._consoleHubConnectSeq) return; // a newer VM was selected mid-ticket
 
     placeholder.style.display = 'none';
     var presets = typeof VNC_ENCODE_PRESETS !== 'undefined' ? VNC_ENCODE_PRESETS : {
@@ -1320,7 +1325,7 @@
       return;
     }
     el.innerHTML = cache.map(function (p) {
-      return '<div class="profile-card' + (sel === p.name ? ' selected' : '') + '" ' + onHandler('selectProfile(' + jsArgs(p.name) + ');syncForgeWizardHardware();renderForgeWizardProfiles()') + '>' +
+      return '<div class="profile-card' + (sel === p.name ? ' selected' : '') + '" ' + kbdActivate('selectProfile(' + jsArgs(p.name) + ');syncForgeWizardHardware();renderForgeWizardProfiles()') + '>' +
         '<div class="pc-name">' + esc(p.name) + '</div>' +
         '<div class="pc-spec">' + p.cpu_cores + 'C / ' + esc(p.memory) + '</div></div>';
     }).join('');
@@ -1361,9 +1366,10 @@
     var autostart = (document.getElementById('forge-wiz-autostart') || {}).checked;
     var costPerCore = 4.5;
     var costPerGiMem = 0.6;
-    var diskGi = parseFloat(String(disk).replace(/[^0-9.]/g, '')) || 20;
-    var memGi = parseFloat(String(mem).replace(/[^0-9.]/g, '')) || 4;
-    var est = ((Number(cpus) * costPerCore) + (memGi * costPerGiMem) + (diskGi * 0.05)).toFixed(2);
+    var diskGi = (typeof parseMemGiB === 'function' ? parseMemGiB(disk) : parseFloat(String(disk).replace(/[^0-9.]/g, ''))) || 20;
+    var memGi = (typeof parseMemGiB === 'function' ? parseMemGiB(mem) : parseFloat(String(mem).replace(/[^0-9.]/g, ''))) || 4;
+    var cpuN = (typeof parseCpuCount === 'function' ? parseCpuCount(cpus) : Number(cpus)) || 1;
+    var est = ((cpuN * costPerCore) + (memGi * costPerGiMem) + (diskGi * 0.05)).toFixed(2);
     var secScore = [tpm, sb, gt].filter(Boolean).length;
     var secLabel = secScore === 3 ? 'Hardened (TPM + Secure Boot + Guest Tools)' : secScore === 2 ? 'Moderate' : secScore === 1 ? 'Basic' : 'Minimal';
     var secColor = secScore >= 2 ? 'var(--green)' : 'var(--orange)';
@@ -1519,8 +1525,8 @@
       { label: 'Nodes Ready', value: ready + '/' + total, tone: ready === total ? 'ok' : 'warn' },
       { label: 'VMs Placed', value: vms.filter(function (v) { return !!vmNodeName(v); }).length },
       { label: 'Unscheduled VMs', value: unscheduled, tone: unscheduled ? 'warn' : '' },
-      { label: 'CPU Alloc %', value: n.total_cpu_allocatable > 0 ? Math.round(((ov.cluster || {}).total_vcpus_allocated / n.total_cpu_allocatable) * 100) + '%' : '—' },
-      { label: 'Memory Alloc %', value: n.total_memory_allocatable_gb > 0 ? Math.round(((ov.cluster || {}).total_memory_allocated_gb / n.total_memory_allocatable_gb) * 100) + '%' : '—' },
+      { label: 'CPU Alloc %', value: n.total_cpu_allocatable > 0 ? Math.min(100, Math.max(0, Math.round((((ov.cluster || {}).total_vcpus_allocated || 0) / n.total_cpu_allocatable) * 100))) + '%' : '—' },
+      { label: 'Memory Alloc %', value: n.total_memory_allocatable_gb > 0 ? Math.min(100, Math.max(0, Math.round((((ov.cluster || {}).total_memory_allocated_gb || 0) / n.total_memory_allocatable_gb) * 100))) + '%' : '—' },
       (function(){ var sh = typeof lastStackHealth !== 'undefined' ? lastStackHealth : null; var kvOk = sh ? (sh.kubevirt_api_ok !== false) : null; return { label: 'KubeVirt', value: kvOk === null ? '—' : kvOk ? 'Running' : 'Degraded', tone: kvOk === false ? 'bad' : kvOk ? 'ok' : '' }; })()
     ]);
     /* build per-node VM placement table */
@@ -1688,7 +1694,7 @@
       var ns = vm.namespace || 'default';
       var isRunning = vm.status === 'Running';
       var badge = typeof vmStatusBadgeClass === 'function' ? vmStatusBadgeClass(vm.status) : (isRunning ? 'running' : 'stopped');
-      return '<tr class="vmr-workloads-row" ' + onHandler('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
+      return '<tr class="vmr-workloads-row" ' + kbdActivate('selectVm(' + jsArgs(ns, vm.name) + ')') + '>' +
         '<td><span class="vmr-wl-name">' + esc(vm.name) + '</span></td>' +
         '<td><span class="glass-badge other">VirtualMachine</span></td>' +
         '<td><span class="ns-chip">' + esc(ns) + '</span></td>' +
@@ -1742,7 +1748,7 @@
         var ns = v.namespace || 'default';
         var text = [v.name, ns, vmNodeName(v), 'VMI'].join(' ');
         if (!matchesSearch(text)) return;
-        rows.push('<tr class="vmr-workloads-row" ' + onHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>' +
+        rows.push('<tr class="vmr-workloads-row" ' + kbdActivate('selectVm(' + jsArgs(ns, v.name) + ')') + '>' +
           '<td><span class="vmr-wl-name">' + esc(v.name) + '</span></td>' +
           '<td><span class="glass-badge other">VMI</span></td>' +
           '<td><span class="ns-chip">' + esc(ns) + '</span></td>' +
@@ -2141,7 +2147,9 @@
     var ns = vm.namespace || 'default';
     var isRunning = vm.status === 'Running';
     var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount : 0;
-    var score = Math.max(0, 100 - (warnings * 10) - (isRunning ? 0 : 5));
+    // Per-VM posture from this VM's own signals (not cluster-wide alert count).
+    var vmFailed = vm.status === 'Failed' || vm.status === 'Error';
+    var score = Math.max(0, 100 - (vmFailed ? 30 : 0) - (!isRunning && !vmFailed ? 8 : 0) - (vm.drift_detected ? 15 : 0));
     var isPaused = vm.status === 'Paused';
     var heroActions = isRunning
       ? '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openConnectModal(' + jsArgs(ns, vm.name) + ')') + '>Console</button>' +
@@ -2228,7 +2236,7 @@
                 var secTone = score >= 75 ? 'ok' : score >= 50 ? 'warn' : 'bad';
                 return '<div class="vmr-health-row"><span>Security</span><span class="' + secTone + '">' + score + '%</span></div>' +
                   '<div class="vmr-health-row"><span>Backup</span><span class="' + backupCls + '">' + backupLabel + '</span></div>' +
-                  '<div class="vmr-health-row"><span>Snapshots</span><span' + (_vmSnaps && _vmSnaps.length ? ' class="ok">' + _vmSnaps.length : ' class="warn">0') + '</span></div>' +
+                  '<div class="vmr-health-row"><span>Snapshots</span><span class="' + (_vmSnaps == null ? '' : (_vmSnaps.length ? 'ok' : 'warn')) + '">' + (_vmSnaps == null ? '—' : _vmSnaps.length) + '</span></div>' +
                   '<div class="vmr-health-row"><span>Hardening</span><span class="' + (hardeningPct >= 80 ? 'ok' : 'warn') + '">' + hardeningPct + '%</span></div>' +
                   '<ul style="list-style:none;padding:8px 0 0;font-size:.78rem;color:var(--muted)">' +
                     (warnings ? '<li style="color:var(--orange)">⚠ ' + warnings + ' active warnings</li>' : '') +
@@ -2236,15 +2244,15 @@
                   '</ul>';
               })() +
               '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">' +
-                '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openAskZeus(\'Auto-fix security issues for VM ' + vm.name + '\')">Fix Automatically</button>' +
-                '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openAskZeus(\'Explain security risks for VM ' + vm.name + '\')">Explain Risk</button>' +
+                '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Auto-fix security issues for VM ' + vm.name) + ')') + '>Fix Automatically</button>' +
+                '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onHandler('openAskZeus(' + jsArgs('Explain security risks for VM ' + vm.name) + ')') + '>Explain Risk</button>' +
               '</div>' +
             '</div>' +
           '</div>' +
         '</div>' +
         (function() {
           var vmEvents = (typeof lastEvents !== 'undefined' && Array.isArray(lastEvents))
-            ? lastEvents.filter(function(e) { return (e.involved_object || '').toLowerCase().includes(vm.name.toLowerCase()) || (e.namespace || '') === ns; }).slice(0, 20)
+            ? lastEvents.filter(function(e) { return (e.namespace || '') === ns && (e.involved_object || '').toLowerCase().includes(vm.name.toLowerCase()); }).slice(0, 20)
             : [];
           var evRows = vmEvents.length
             ? vmEvents.map(function(e) {
@@ -2405,7 +2413,7 @@
       var ns = v.namespace || 'default';
       var badge = v.status === 'Running' ? 'running' : 'stopped';
       return '<button type="button" class="vm-focus-quick-pick glass-btn-secondary glass-btn-sm" ' +
-        onHandler('selectVm(' + jsArgs(ns, v.name) + ')') + '>' +
+        kbdActivate('selectVm(' + jsArgs(ns, v.name) + ')') + '>' +
         '<span class="vm-badge ' + badge + '" style="margin-right:6px;font-size:.65rem">' + esc(v.status) + '</span>' +
         esc(v.name) + '</button>';
     }).join('');
@@ -2555,12 +2563,13 @@
       var overviewRaw = await apiJson('/api/v1/packetwolf/network/overview' + nsQ, opts);
       var overview = typeof unwrapData === 'function' ? unwrapData(overviewRaw) : overviewRaw;
       var meta = (overview && overview.meta && overview.meta.stats) || overview || {};
-      var live = overview && overview.live_connections != null ? overview.live_connections : (meta.live_connections || '—');
+      var live = overview && overview.live_connections != null ? overview.live_connections : (meta.live_connections != null ? meta.live_connections : '—');
       var blocked = overview && overview.blocked_flows != null ? overview.blocked_flows : (meta.blocked_flows || 0);
       var suspicious = overview && overview.suspicious_flows != null ? overview.suspicious_flows : (meta.suspicious_flows || 0);
       var gaps = overview && overview.policy_gaps != null ? overview.policy_gaps : (meta.policy_gaps || 0);
       var external = overview && overview.external_calls != null ? overview.external_calls : (meta.external_calls || 0);
-      var allowed = Math.max(0, Number(live) - Number(blocked) - Number(suspicious));
+      var liveN = Number(live);
+      var allowed = Number.isFinite(liveN) ? Math.max(0, liveN - Number(blocked) - Number(suspicious)) : '—';
       renderVmrMetricsStrip('vmr-network-intel-metrics', [
         { label: 'Live Flows', value: live },
         { label: 'Allowed', value: allowed, tone: 'ok' },
@@ -2635,7 +2644,7 @@
     if (saved['set-vnc-quality']) {
       var q = String(saved['set-vnc-quality']);
       var preset = q.startsWith('LAN') ? 'lan' : q.startsWith('Low') ? 'low' : 'balanced';
-      localStorage.setItem('veyron_vnc_preset', preset);
+      try { localStorage.setItem('veyron_vnc_preset', preset); } catch (e) { /* private mode / quota — non-fatal */ }
     }
     if (saved['set-font-size']) {
       var szMatch = String(saved['set-font-size']).match(/(\d+)/);
@@ -3107,8 +3116,12 @@
     var totalSnaps = snaps ? snaps.length : null;
     var readySnaps = snaps ? snaps.filter(function(s) { return s.ready; }).length : null;
     var vmsWithSnap = snaps ? Object.keys(snapsByVm).length : null;
-    var prot = snaps ? vmsWithSnap : vms.filter(function (v) { return v.status === 'Running'; }).length;
-    var unprot = vms.length - prot;
+    // Count only CURRENT VMs that have a snapshot, so protected can't exceed the fleet
+    // size (snapshots may reference deleted or out-of-scope VMs).
+    var prot = snaps
+      ? vms.filter(function (v) { return snapsByVm[(v.namespace || 'default') + '/' + v.name]; }).length
+      : vms.filter(function (v) { return v.status === 'Running'; }).length;
+    var unprot = Math.max(0, vms.length - prot);
     renderVmrMetricsStrip('vmr-snapshots-metrics', [
       { label: 'Total Snapshots',  value: totalSnaps != null ? totalSnaps : '—' },
       { label: 'Ready',            value: readySnaps != null ? readySnaps : '—', tone: readySnaps != null && readySnaps === totalSnaps && totalSnaps > 0 ? 'ok' : readySnaps != null && readySnaps < totalSnaps ? 'warn' : '' },

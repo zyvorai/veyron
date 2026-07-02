@@ -825,6 +825,9 @@ html[data-theme='frost'] body.mac-desktop-root .mac-control-center {
   body.mac-desktop-root .mac-dynamic-island:hover {
     transform: none;
   }
+  .vm-transitioning .vm-badge {
+    animation: none;
+  }
 }
 
 /* ═══════════════════════════════════════════════════
