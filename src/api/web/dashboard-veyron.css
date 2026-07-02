@@ -2073,7 +2073,7 @@ html[data-theme="frost"] .vmr-network-flow-wrap {
 
 /* ── Veyron VM Inspector drawer ── */
 .veyron-shell .mac-inspector-pane {
-  width: 480px;
+  width: min(480px, 92vw);
   min-width: 260px;
   background: rgba(10,15,26,.97);
   border-left: 1px solid var(--line);
@@ -2175,7 +2175,7 @@ html[data-theme="frost"] .vmr-network-flow-wrap {
   position: fixed;
   top: calc(var(--cloudos-menubar-h, 40px) + var(--cloudos-tabs-h, 0px));
   right: 0;
-  width: 420px;
+  width: min(420px, 92vw);
   bottom: 0;
   background: rgba(10,15,26,.97);
   border-left: 1px solid var(--line);
@@ -2352,9 +2352,9 @@ html[data-theme="frost"] .vmr-copilot-panel-main {
 }
 
 .vmr-console-status-pill.offline {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.1);
-  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: var(--inert);
+  background: var(--inert-bg);
+  border: 1px solid var(--inert);
 }
 
 .vmr-console-status-meta {
@@ -2565,6 +2565,20 @@ html[data-theme="light"] .vmr-foundry-drawer,
 html[data-theme="frost"] .vmr-foundry-drawer {
   background: rgba(255, 255, 255, 0.96);
 }
+/* Daylight (the only light deck) parity — flip opaque dark drawers/overlays/chrome to
+   light glass so they don't render dark-on-light. Scoped to daylight; no effect on dark decks. */
+html[data-theme="daylight"] .vmr-foundry-drawer,
+html[data-theme="daylight"] .veyron-shell .mac-inspector-pane,
+html[data-theme="daylight"] .vmr-pod-logs-overlay,
+html[data-theme="daylight"] .finder-item-tooltip,
+html[data-theme="daylight"] .vmr-primary-tabs,
+html[data-theme="daylight"] .veyron-topbar,
+html[data-theme="daylight"] .veyron-sidebar,
+html[data-theme="daylight"] .veyron-user-block {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: var(--ink);
+  border-color: rgba(20, 45, 95, 0.12);
+}
 /* Veyron mock alignment — menubar, finder, mission home, status bar, dock */
 
 body.mac-desktop-root {
@@ -2774,6 +2788,10 @@ body:not([data-desktop-tier="advanced"]) .mac-dynamic-island-wrap {
 @keyframes mission-live-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mission-live-badge::before { animation: none; }
 }
 
 body.mission-control-home #vmr-mission-hero,

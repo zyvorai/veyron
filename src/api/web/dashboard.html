@@ -123,6 +123,7 @@
   --ink-2:       #94a3b8;
   --ink-3:       #8898aa;
   --sans-deck:   -apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif;
+  --mono-deck:   'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   --r-sm:6px; --r-deck:10px; --r-lg-deck:14px;
   --gap-deck:16px;
   --shadow-deck:0 1px 0 rgba(255,255,255,0.03) inset,0 8px 24px rgba(0,0,0,0.4);
@@ -5198,6 +5199,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
         <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, dark by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
       </div>
       <select class="form-select sr-only" id="cc-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
+        <option value="holo">Holographic</option><option value="nebula">Nebula</option><option value="solaris">Solaris</option><option value="biolume">Biolume</option><option value="sakura">Sakura</option><option value="mono">Mono</option><option value="inferno">Inferno</option><option value="voltage">Voltage</option><option value="daylight">Daylight</option><option value="prism">Prism</option><option value="cycle">Cycle · All decks</option>
         <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
         <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option><option value="aurora">Aurora</option><option value="nord">Nord</option><option value="royal-gold">Royal Gold</option><option value="matrix">Matrix</option><option value="auto">Auto · Day/Night</option>
       </select>
@@ -9669,18 +9671,18 @@ function loadPageData(page, opts) {
     const isDrain=_drain===v.node;
     return `<div
       draggable="true"
-      data-vm-ns="${v.namespace||'default'}" data-vm-name="${v.name}" data-vm-node="${v.node||''}"
+      data-vm-ns="${esc(v.namespace||'default')}" data-vm-name="${esc(v.name)}" data-vm-node="${esc(v.node||'')}"
       data-vm-cpu="${v.cpu_utilization||0}" data-vm-mem="${v.memory_utilization||0}"
-      onclick="openCopilotWithVm&&openCopilotWithVm('Show health detail for VM ${v.name}','${v.namespace||'default'}','${v.name}')"
-      title="${v.name} · ${v.status||'?'} · cpu ${Math.round(v.cpu_utilization||0)}% mem ${Math.round(v.memory_utilization||0)}%"
+      onclick='openCopilotWithVm&&openCopilotWithVm(${jsArgs('Show health detail for VM '+(v.name||''), v.namespace||'default', v.name||'')})'
+      title="${esc(v.name)} · ${esc(v.status||'?')} · cpu ${Math.round(v.cpu_utilization||0)}% mem ${Math.round(v.memory_utilization||0)}%"
       style="position:relative;height:${h}px;background:${s.bg};border:1px solid ${s.hex}44;border-left:3px solid ${s.hex};border-radius:8px;cursor:grab;display:flex;flex-direction:column;justify-content:space-between;padding:6px 8px 4px;overflow:hidden;opacity:${(isDrain||isMig)?0.6:1};transition:height .35s ease,opacity .3s,border-color .15s;user-select:none"
       onmouseenter="this.style.outline='2px solid ${s.hex}';this.style.outlineOffset='1px'"
       onmouseleave="this.style.outline='none'"
     >
-      <div style="font-family:var(--sans-deck);font-size:${Math.max(9,Math.min(12,h/10))}px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${v.name}</div>
+      <div style="font-family:var(--sans-deck);font-size:${Math.max(9,Math.min(12,h/10))}px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(v.name)}</div>
       ${h>54?`<div style="font-family:var(--mono-deck);font-size:9px;color:${s.hex};font-feature-settings:'tnum';letter-spacing:.04em">${Math.round(v.cpu_utilization||0)}%c · ${Math.round(v.memory_utilization||0)}%m</div>`:''}
       <div style="height:3px;background:var(--hairline);border-radius:2px;overflow:hidden;margin-top:4px"><div style="height:100%;width:${load}%;background:${s.hex};border-radius:2px;transition:width .4s ease"></div></div>
-      ${isMig?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(59,130,246,.15);border-radius:7px"><span style="font-family:var(--mono-deck);font-size:9px;color:#3b82f6;letter-spacing:.06em">MIGRATING</span></div>`:''}
+      ${isMig?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--plasma-glow);border-radius:7px"><span style="font-family:var(--mono-deck);font-size:9px;color:var(--plasma);letter-spacing:.06em">MIGRATING</span></div>`:''}
     </div>`;
   }
 
@@ -9693,17 +9695,17 @@ function loadPageData(page, opts) {
     const cpuCol=host.cpuUsed>90?VMR_SIG.crit:host.cpuUsed>75?VMR_SIG.warn:VMR_SIG.ok;
     const memCol=host.memUsed>90?VMR_SIG.crit:host.memUsed>75?VMR_SIG.warn:VMR_SIG.plasma;
     return `<div
-      data-host="${host.name}"
-      ondragover="event.preventDefault();_tsDragOver(this,'${host.name}')"
-      ondrop="_tsDrop(this,'${host.name}')"
+      data-host="${esc(host.name)}"
+      ondragover='event.preventDefault();_tsDragOver(this,${jsArgs(host.name)})'
+      ondrop='_tsDrop(this,${jsArgs(host.name)})'
       style="width:${COL_W}px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;padding:8px;background:${bg};border:1px solid ${border};border-radius:12px;transition:background .15s,border-color .15s"
     >
       <div style="padding-bottom:8px;border-bottom:1px solid var(--hairline)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-family:var(--sans-deck);font-size:12px;font-weight:600;color:${isDrain?VMR_SIG.warn:'var(--ink)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px" title="${host.name}">${host.name.length>14?host.name.split('-').slice(-2).join('-'):host.name}</span>
+          <span style="font-family:var(--sans-deck);font-size:12px;font-weight:600;color:${isDrain?VMR_SIG.warn:'var(--ink)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px" title="${esc(host.name)}">${esc(host.name.length>14?host.name.split('-').slice(-2).join('-'):host.name)}</span>
           <div style="display:flex;gap:4px;align-items:center">
             <span style="font-family:var(--mono-deck);font-size:9px;color:var(--ink-3)">${host.vms.length} VMs</span>
-            <button onclick="_tsDrain('${host.name}')" title="${isDrain?'Cancel drain':'Simulate drain'}" style="font-family:var(--mono-deck);font-size:9px;background:${isDrain?'rgba(239,159,39,.15)':'none'};color:${isDrain?VMR_SIG.warn:'var(--ink-3)'};border:1px solid ${isDrain?VMR_SIG.warn:'var(--hairline)'};border-radius:4px;padding:1px 5px;cursor:pointer;transition:all .12s">${isDrain?'DRAINING':'DRAIN'}</button>
+            <button onclick='_tsDrain(${jsArgs(host.name)})' title="${isDrain?'Cancel drain':'Simulate drain'}" style="font-family:var(--mono-deck);font-size:9px;background:${isDrain?'rgba(239,159,39,.15)':'none'};color:${isDrain?VMR_SIG.warn:'var(--ink-3)'};border:1px solid ${isDrain?VMR_SIG.warn:'var(--hairline)'};border-radius:4px;padding:1px 5px;cursor:pointer;transition:all .12s">${isDrain?'DRAINING':'DRAIN'}</button>
           </div>
         </div>
         ${renderCapBar(host.cpuUsed,'CPU',cpuCol)}
@@ -10857,7 +10859,15 @@ function sc(status) { return status==='Running'?'running':status==='Stopped'?'st
 function vmStatusBadgeClass(status) { return sc(status); }
 window.vmStatusBadgeClass = vmStatusBadgeClass;
 function fmtTime(ts) {
-  try { const d=new Date(ts),n=new Date(),m=Math.floor((n-d)/60000); if(m<1)return'just now';if(m<60)return m+'m ago';if(m<1440)return Math.floor(m/60)+'h ago';return Math.floor(m/1440)+'d ago'; } catch{return ts;}
+  if (ts == null || ts === '') return '—';
+  const d = new Date(ts);
+  if (!Number.isFinite(d.getTime())) return '—';
+  const m = Math.floor((new Date() - d) / 60000);
+  if (m < 0) return 'just now';
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  if (m < 1440) return Math.floor(m / 60) + 'h ago';
+  return Math.floor(m / 1440) + 'd ago';
 }
 // Alias: several render paths (VM Capsule, events, snapshots) call timeAgo().
 function timeAgo(ts) { return fmtTime(ts); }
@@ -12757,7 +12767,7 @@ function renderClusterMap(vms) {
   ctx.scale(dpr, dpr);
   ctx.clearRect(0, 0, W, H);
   _cmapHit = [];
-  var STATUS_COLOR = { Running: VMR_SIG.ok, Stopped: VMR_SIG.off, Failed: VMR_SIG.crit, Error: VMR_SIG.crit, Pending: VMR_SIG.warn };
+  var STATUS_COLOR = { Running: VMR_SIG.ok, Stopped: VMR_SIG.off, Failed: VMR_SIG.crit, Error: VMR_SIG.crit, Pending: VMR_SIG.warn, Paused: VMR_SIG.plasma };
   nodes.forEach(function(node, i) {
     var col = i % cols, row = Math.floor(i / cols);
     var cellW = W / cols, cellH = maxR * 2 + 60;
@@ -13478,8 +13488,8 @@ function vmMomentum(ns, name) {
   var cpuHead = hist.slice(0,3).map(function(h){return h.cpu;});
   var cpuTailAvg = cpuTail.reduce(function(a,b){return a+b;},0)/cpuTail.length;
   var cpuHeadAvg = cpuHead.reduce(function(a,b){return a+b;},0)/cpuHead.length;
-  if (cpuTailAvg > cpuHeadAvg + 1) return '<span class="vmr-momentum" style="color:#fb923c" title="CPU climbing">⬆</span>';
-  if (cpuHeadAvg > cpuTailAvg + 1) return '<span class="vmr-momentum" style="color:#60a5fa" title="CPU dropping">⬇</span>';
+  if (cpuTailAvg > cpuHeadAvg + 1) return '<span class="vmr-momentum" style="color:var(--caution)" title="CPU climbing">⬆</span>';
+  if (cpuHeadAvg > cpuTailAvg + 1) return '<span class="vmr-momentum" style="color:var(--plasma)" title="CPU dropping">⬇</span>';
   return '';
 }
 
@@ -13557,6 +13567,15 @@ function parseMemGiB(memStr) {
   if (l.includes('g')) return n;
   if (l.includes('m')) return n / 1024;
   return n; // assume GiB
+}
+// VM payload serializes cpu as e.g. "4 cores" and memory as "4Gi" (no numeric
+// fields), so Number(v.cpu) is NaN. Parse them properly instead.
+function vmCpuCount(v) { return parseCpuCount(v && v.cpu) || 0; }
+function vmMemBytes(v) {
+  if (!v) return 0;
+  if (v.memory_bytes != null && Number.isFinite(Number(v.memory_bytes))) return Number(v.memory_bytes);
+  var g = parseMemGiB(v.memory);
+  return g == null ? 0 : g * 1073741824;
 }
 function parseNumericToken(q, v) {
   // Returns true if the VM passes, false if it fails, null if token not recognized
@@ -15273,8 +15292,8 @@ function drawHeadroomGauge(canvasId, labelId, usedFrac, usedLabel, totalLabel) {
 function updateHeadroomGauges() {
   var vms = window.lastVMs || vmData || [];
   var nodes = window.lastNodes || [];
-  var allocCpu = vms.reduce(function(s, v) { return s + (Number(v.cpu) || 0); }, 0);
-  var allocMem = vms.reduce(function(s, v) { return s + (Number(v.memory_bytes || v.memory) || 0); }, 0);
+  var allocCpu = vms.reduce(function(s, v) { return s + vmCpuCount(v); }, 0);
+  var allocMem = vms.reduce(function(s, v) { return s + vmMemBytes(v); }, 0);
   var capCpu = 0, capMem = 0;
   if (nodes.length) {
     nodes.forEach(function(n) {
@@ -15643,7 +15662,7 @@ async function fetchNetworkIntelData(opts) {
               '<td><code style="font-size:.82rem">' + esc(f.destination || f.dst || '—') + '</code></td>' +
               '<td>' + esc(f.protocol || '—') + '</td>' +
               '<td>' + idSig(f.verdict || '—') + '</td>' +
-              '<td>' + (f.bytes != null ? f.bytes : '—') + '</td></tr>';
+              '<td>' + (f.bytes != null ? fmtBytes(f.bytes) : '—') + '</td></tr>';
           }).join('') +
           '</tbody></table></div>';
       }
@@ -17772,7 +17791,7 @@ function renderSnapList(query) {
   }) : snaps.slice();
   filtered.sort(function(a, b) {
     if (sortMode === 'ready') return (b.ready ? 1 : 0) - (a.ready ? 1 : 0);
-    if (sortMode === 'age') return (a.age || '').localeCompare(b.age || '');
+    if (sortMode === 'age') return (parseAgeToHours(b.age) || 0) - (parseAgeToHours(a.age) || 0);
     return (a.name || '').localeCompare(b.name || '');
   });
   const snapCountEl = document.getElementById('snap-filter-count');
@@ -19148,7 +19167,7 @@ async function forgeVM() {
     if (st === 'NodePort' || st === 'LoadBalancer') {
       const np = parseInt((document.getElementById('vm-expose-np') || {}).value, 10);
       if (np) {
-        if (np < 30000 || np > 32767) { toast('NodePort must be in 30000–32767 (suggested 30100–30199)', 'error'); return; }
+        if (np < 30000 || np > 32767) { toast('NodePort must be in 30000–32767 (suggested 30100–30199)', 'error'); btn.disabled = false; btn.textContent = 'Forge VM'; return; }
         port0.node_port = np;
       }
     }
@@ -20929,19 +20948,25 @@ function renderInternetPanel(container, ns, name, st) {
 }
 
 async function enableVmInternet(ns, name) {
+  var _k = 'internet:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/network/internet', { method: 'PUT' });
     toast('Internet egress enabled', 'success');
     await loadInternetPanel(ns, name);
   } catch (e) { toast('Internet: ' + (e.message || String(e)), 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function disableVmInternet(ns, name) {
+  var _k = 'internet:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/network/internet', { method: 'DELETE' });
     toast('Internet policy removed', 'success');
     await loadInternetPanel(ns, name);
   } catch (e) { toast('Internet: ' + (e.message || String(e)), 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function applyVmExpose(ns, name, tid) {
@@ -20963,6 +20988,8 @@ async function applyVmExpose(ns, name, tid) {
     }
   }
   const body = { enabled: true, service_type: type, ports: [port0] };
+  var _k = 'expose:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/expose', {
       method: 'PUT',
@@ -20972,9 +20999,12 @@ async function applyVmExpose(ns, name, tid) {
     toast('Expose service updated', 'success');
     await loadExposePanel(ns, name);
   } catch (e) { toast('Expose: ' + (e.message || String(e)), 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function removeVmExpose(ns, name) {
+  var _k = 'expose:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/expose', {
       method: 'PUT',
@@ -20984,6 +21014,7 @@ async function removeVmExpose(ns, name) {
     toast('Expose service removed', 'success');
     await loadExposePanel(ns, name);
   } catch (e) { toast('Expose: ' + (e.message || String(e)), 'error'); }
+  finally { actionRelease(_k); }
 }
 
 function vmiGuestAgentConnected(vmi) {
@@ -21287,6 +21318,15 @@ function sortVMs(list) {
     if (vmSortKey === 'status') {
       const rd = vmStatusRank(a.status) - vmStatusRank(b.status);
       if (rd !== 0) return vmSortDir === 'asc' ? rd : -rd;
+    }
+    // CPU/Memory are strings like "4 cores" / "4Gi" — compare numerically, not lexically.
+    if (vmSortKey === 'cpu') {
+      const d = (vmCpuCount(a) - vmCpuCount(b));
+      return vmSortDir === 'asc' ? d : -d;
+    }
+    if (vmSortKey === 'memory') {
+      const d = ((parseMemGiB(a.memory) || 0) - (parseMemGiB(b.memory) || 0));
+      return vmSortDir === 'asc' ? d : -d;
     }
     const va = String(a[vmSortKey] || ''), vb = String(b[vmSortKey] || '');
     return vmSortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
@@ -23188,7 +23228,19 @@ async function submitResize() {
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
+// Prevent rapid double-submit of keyboard/menu-triggered mutating actions that
+// don't carry a button to disable. Keyed by action + VM; released when settled.
+var _inflightActions = {};
+function actionGuard(key) {
+  if (_inflightActions[key]) return false;
+  _inflightActions[key] = true;
+  return true;
+}
+function actionRelease(key) { delete _inflightActions[key]; }
+
 async function vmSnapshot(ns, name) {
+  var _k = 'snapshot:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   var snapName = name + '-snap-' + Date.now().toString(36).slice(-6);
   try {
     await apiJson('/api/v1/snapshots/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/create', {
@@ -23200,22 +23252,29 @@ async function vmSnapshot(ns, name) {
     toast('Snapshot queued for ' + name, 'success');
     if (currentPage === 'snapshots') setTimeout(fetchSnapshots, 2000);
   } catch(e) { toast('Snapshot failed: ' + (e.message || e), 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function pauseVM(ns, name) {
+  var _k = 'pause:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/pause', {method:'POST'});
     toast(name + ' paused', 'success');
     setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function unpauseVM(ns, name) {
+  var _k = 'unpause:' + ns + '/' + name;
+  if (!actionGuard(_k)) return;
   try {
     await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/unpause', {method:'POST'});
     toast(name + ' unpaused', 'success');
     setTimeout(refresh, 1500);
   } catch(e) { toast('Error: ' + e.message, 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function migrateVM(ns, name) {
@@ -24531,8 +24590,8 @@ function renderMetricsVmBreakdown() {
     return;
   }
 
-  var maxCpu = Math.max(1, Math.max.apply(null, vms.map(function(v) { return Number(v.cpu) || 0; })));
-  var maxMem = Math.max(1, Math.max.apply(null, vms.map(function(v) { return Number(v.memory_bytes || v.memory) || 0; })));
+  var maxCpu = Math.max(1, Math.max.apply(null, vms.map(function(v) { return vmCpuCount(v); })));
+  var maxMem = Math.max(1, Math.max.apply(null, vms.map(function(v) { return vmMemBytes(v); })));
 
   function barRow(label, val, maxVal, fmtFn, status) {
     var pct = Math.min(100, Math.round((val / maxVal) * 100));
@@ -24546,15 +24605,15 @@ function renderMetricsVmBreakdown() {
     '</div>';
   }
 
-  var sortedByCpu = vms.slice().sort(function(a,b){ return (Number(b.cpu)||0)-(Number(a.cpu)||0); }).slice(0, 12);
-  var sortedByMem = vms.slice().sort(function(a,b){ return (Number(b.memory_bytes||b.memory)||0)-(Number(a.memory_bytes||a.memory)||0); }).slice(0, 12);
+  var sortedByCpu = vms.slice().sort(function(a,b){ return vmCpuCount(b)-vmCpuCount(a); }).slice(0, 12);
+  var sortedByMem = vms.slice().sort(function(a,b){ return vmMemBytes(b)-vmMemBytes(a); }).slice(0, 12);
 
   if (cpuEl) cpuEl.innerHTML = sortedByCpu.map(function(v) {
-    return barRow(v.name, Number(v.cpu)||0, maxCpu, function(n){ return n + ' vCPU'; }, v.status);
+    return barRow(v.name, vmCpuCount(v), maxCpu, function(n){ return n + ' vCPU'; }, v.status);
   }).join('');
 
   if (memEl) memEl.innerHTML = sortedByMem.map(function(v) {
-    return barRow(v.name, Number(v.memory_bytes||v.memory)||0, maxMem, fmtBytes, v.status);
+    return barRow(v.name, vmMemBytes(v), maxMem, fmtBytes, v.status);
   }).join('');
 
   renderMetricsDonut(vms);
@@ -24565,10 +24624,10 @@ function renderMetricsVmBreakdown() {
     tbody.innerHTML = rows.map(function(v) {
       var status = v.status || 'Unknown';
       var ns = v.namespace || 'default';
-      var cpu = Number(v.cpu) || 0;
-      var mem = fmtBytes(Number(v.memory_bytes || v.memory) || 0);
+      var cpu = vmCpuCount(v);
+      var mem = fmtBytes(vmMemBytes(v));
       var node = v.node || v.nodeName || '—';
-      var age = v.creation_timestamp ? timeAgo(v.creation_timestamp) : '—';
+      var age = v.age || '—';
       return '<tr style="cursor:pointer" onclick="navigate(\'vms\');setTimeout(function(){openVmWorkspace(' + jsArgs(ns, v.name) + ')},400)">' +
         '<td><span class="font-mono" style="font-size:.82rem">' + esc(v.name) + '</span></td>' +
         '<td><span class="ns-badge">' + esc(ns) + '</span></td>' +
@@ -24690,7 +24749,7 @@ function renderMetricsDonut(vms) {
   drawDonut('metrics-os-donut', 'metrics-os-legend', osData);
   var statusMap = {};
   vms.forEach(function(v) { var s = v.status || 'Unknown'; statusMap[s] = (statusMap[s] || 0) + 1; });
-  var STATUS_COLORS = { Running: VMR_SIG.ok, Stopped: VMR_SIG.off, Failed: VMR_SIG.crit, Error: VMR_SIG.crit, Pending: VMR_SIG.warn };
+  var STATUS_COLORS = { Running: VMR_SIG.ok, Stopped: VMR_SIG.off, Failed: VMR_SIG.crit, Error: VMR_SIG.crit, Pending: VMR_SIG.warn, Paused: VMR_SIG.plasma };
   var statusData = Object.keys(statusMap).sort().map(function(s) { return { label: s, count: statusMap[s], color: STATUS_COLORS[s] || VMR_SIG.off }; });
   drawDonut('metrics-status-donut', 'metrics-status-legend', statusData);
 }
@@ -25239,6 +25298,7 @@ function openVmFocusOverlay(ns, name) {
   document.getElementById('vfo-snaps').innerHTML = 'Loading…';
   modal.classList.add('open');
   vfoLoad();
+  if (_vfoTimer) clearInterval(_vfoTimer);
   _vfoTimer = setInterval(vfoLoad, 5000);
 }
 function closeVmFocusOverlay() {
@@ -25271,7 +25331,7 @@ async function vfoLoad() {
       ['Memory', vm.memory || fmtBytes(vm.memory_bytes || 0)],
       ['Node', vm.node || '—'],
       ['IP', ip || '—'],
-      ['Age', vm.age || vm.creation_timestamp ? timeAgo(vm.creation_timestamp) : '—'],
+      ['Age', vm.age || '—'],
     ];
     document.getElementById('vfo-kv').innerHTML = '<div class="vd-kv-grid">' +
       kv.map(function(r) { return '<div class="vd-kv"><div class="vd-kv-label">' + esc(r[0]) + '</div><div class="vd-kv-value">' + esc(r[1]) + '</div></div>'; }).join('') +
@@ -25553,8 +25613,8 @@ function idSig(status, label) {
   var cls = s === 'running' ? 'id-sig-ok' :
             (s === 'failed' || s === 'error') ? 'id-sig-crit' :
             (s === 'stopped' || s === 'paused' || s === 'disabled' || s === 'clear') ? 'id-sig-inert' :
-            (s === 'ready' || s === 'success' || s === 'ok' || s === 'good' || s === 'healthy') ? 'id-sig-ok' :
-            (s === 'warning' || s === 'warn' || s === 'starting' || s === 'stopping' || s === 'pending' || s === 'degraded') ? 'id-sig-warn' :
+            (s === 'ready' || s === 'success' || s === 'succeeded' || s === 'completed' || s === 'ok' || s === 'good' || s === 'healthy') ? 'id-sig-ok' :
+            (s === 'warning' || s === 'warn' || s === 'starting' || s === 'stopping' || s === 'pending' || s === 'provisioning' || s === 'degraded') ? 'id-sig-warn' :
             'id-sig-inert';
   return '<span class="id-sig ' + cls + '"><span class="id-pulse"></span>' + esc(label !== undefined ? label : (status || '?')) + '</span>';
 }
@@ -26224,22 +26284,53 @@ async function drExport() {
 }
 
 async function drFailover(dryRun) {
-  const out = document.getElementById('dr-output');
   const { ns, vm, target } = drFields();
   if (!vm) { toast('VM name required', 'error'); return; }
+  if (!dryRun) {
+    openGlassConfirm({
+      title: 'Fail over ' + vm + '?',
+      body: 'This performs a REAL cross-cluster failover of "' + vm + '" (namespace ' + ns + ')' + (target ? ' to context "' + target + '"' : '') + '. It is disruptive and hard to undo. Run a dry run first if unsure.',
+      confirmLabel: 'Fail over',
+      destructive: true,
+      onConfirm: function() { _drFailoverRun(ns, vm, target, false); }
+    });
+    return;
+  }
+  _drFailoverRun(ns, vm, target, true);
+}
+async function _drFailoverRun(ns, vm, target, dryRun) {
+  const out = document.getElementById('dr-output');
+  const _k = 'dr-failover';
+  if (!actionGuard(_k)) return;
   try {
     const body = { namespace: ns, vm_name: vm, dry_run: dryRun, target_kubeconfig_context: target || null };
     const data = await apiJson('/api/v1/dr/failover', { method: 'POST', body: JSON.stringify(body) });
     if (out) out.textContent = JSON.stringify(data, null, 2);
     toast(data.status || 'failover', data.status === 'restored' ? 'success' : 'info');
   } catch (e) { if (out) out.textContent = e.message; toast(e.message, 'error'); }
+  finally { actionRelease(_k); }
 }
 
 async function drApply(dryRun) {
-  const out = document.getElementById('dr-output');
   const { ns, vm, target } = drFields();
   if (!vm) { toast('VM name required', 'error'); return; }
+  if (!dryRun) {
+    openGlassConfirm({
+      title: 'Apply DR restore for ' + vm + '?',
+      body: 'This recreates "' + vm + '" (namespace ' + ns + ')' + (target ? ' on "' + target + '"' : '') + ' from the exported manifest. It can overwrite existing state. Run a dry run first if unsure.',
+      confirmLabel: 'Apply',
+      destructive: true,
+      onConfirm: function() { _drApplyRun(ns, vm, target, false); }
+    });
+    return;
+  }
+  _drApplyRun(ns, vm, target, true);
+}
+async function _drApplyRun(ns, vm, target, dryRun) {
+  const out = document.getElementById('dr-output');
   const restore = document.getElementById('dr-restore-snap')?.checked;
+  const _k = 'dr-apply';
+  if (!actionGuard(_k)) return;
   try {
     const body = {
       namespace: ns, vm_name: vm, dry_run: dryRun,
@@ -26251,6 +26342,7 @@ async function drApply(dryRun) {
     if (out) out.textContent = JSON.stringify(data, null, 2);
     toast(data.message || 'applied', 'success');
   } catch (e) { if (out) out.textContent = e.message; toast(e.message, 'error'); }
+  finally { actionRelease(_k); }
 }
 
 function openImageImportModal() {
@@ -27604,6 +27696,20 @@ async function submitCreateAlert(e) {
         <div class="mac-pref-section-title">Appearance</div>
         <div class="mac-cc-row" style="flex-direction:column;align-items:stretch;gap:6px">
           <span>Theme</span>
+          <div class="theme-swatch-group-label">Glass Decks</div>
+          <div class="theme-swatch-grid theme-swatch-grid-macos" id="pref-theme-swatch-grid-decks" role="radiogroup" aria-label="Glass deck themes">
+            <button type="button" class="theme-swatch" data-theme="holo" role="radio" onclick="setTheme('holo')"><span class="theme-swatch-preview holo"></span><span class="theme-swatch-label">Holographic</span></button>
+            <button type="button" class="theme-swatch" data-theme="nebula" role="radio" onclick="setTheme('nebula')"><span class="theme-swatch-preview nebula"></span><span class="theme-swatch-label">Nebula</span></button>
+            <button type="button" class="theme-swatch" data-theme="solaris" role="radio" onclick="setTheme('solaris')"><span class="theme-swatch-preview solaris"></span><span class="theme-swatch-label">Solaris</span></button>
+            <button type="button" class="theme-swatch" data-theme="biolume" role="radio" onclick="setTheme('biolume')"><span class="theme-swatch-preview biolume"></span><span class="theme-swatch-label">Biolume</span></button>
+            <button type="button" class="theme-swatch" data-theme="sakura" role="radio" onclick="setTheme('sakura')"><span class="theme-swatch-preview sakura"></span><span class="theme-swatch-label">Sakura</span></button>
+            <button type="button" class="theme-swatch" data-theme="mono" role="radio" onclick="setTheme('mono')"><span class="theme-swatch-preview mono"></span><span class="theme-swatch-label">Mono</span></button>
+            <button type="button" class="theme-swatch" data-theme="inferno" role="radio" onclick="setTheme('inferno')"><span class="theme-swatch-preview inferno"></span><span class="theme-swatch-label">Inferno</span></button>
+            <button type="button" class="theme-swatch" data-theme="voltage" role="radio" onclick="setTheme('voltage')"><span class="theme-swatch-preview voltage"></span><span class="theme-swatch-label">Voltage</span></button>
+            <button type="button" class="theme-swatch" data-theme="daylight" role="radio" onclick="setTheme('daylight')"><span class="theme-swatch-preview daylight"></span><span class="theme-swatch-label">Daylight</span></button>
+            <button type="button" class="theme-swatch" data-theme="prism" role="radio" onclick="setTheme('prism')"><span class="theme-swatch-preview prism"></span><span class="theme-swatch-label">Prism</span></button>
+            <button type="button" class="theme-swatch" data-theme="cycle" role="radio" onclick="setTheme('cycle')" title="Slowly drift through all glass decks"><span class="theme-swatch-preview cycle"></span><span class="theme-swatch-label">Cycle</span></button>
+          </div>
           <div class="theme-swatch-group-label">macOS</div>
           <div class="theme-swatch-grid theme-swatch-grid-macos" id="pref-theme-swatch-grid-macos" role="radiogroup" aria-label="macOS themes">
             <button type="button" class="theme-swatch" data-theme="tahoe" role="radio" onclick="setTheme('tahoe')"><span class="theme-swatch-preview tahoe"></span><span class="theme-swatch-label">Tahoe</span></button>
@@ -27626,6 +27732,7 @@ async function submitCreateAlert(e) {
         <button type="button" class="theme-swatch" data-theme="auto" role="radio" onclick="setTheme('auto')" title="Light by day, dark by night"><span class="theme-swatch-preview auto"></span><span class="theme-swatch-label">Auto</span></button>
           </div>
           <select class="form-select sr-only" id="pref-theme-select" onchange="setTheme(this.value)" aria-hidden="true" tabindex="-1">
+            <option value="holo">Holographic</option><option value="nebula">Nebula</option><option value="solaris">Solaris</option><option value="biolume">Biolume</option><option value="sakura">Sakura</option><option value="mono">Mono</option><option value="inferno">Inferno</option><option value="voltage">Voltage</option><option value="daylight">Daylight</option><option value="prism">Prism</option><option value="cycle">Cycle · All decks</option>
             <option value="tahoe">Tahoe</option><option value="tahoe-light">Tahoe Light</option><option value="sonoma">Sonoma</option><option value="graphite">Graphite</option>
             <option value="wolf">Wolf</option><option value="forge">Forge</option><option value="ember">Ember</option><option value="light">Light</option><option value="carbon">Carbon</option><option value="synthwave">Synthwave</option><option value="aurora">Aurora</option><option value="nord">Nord</option><option value="royal-gold">Royal Gold</option><option value="matrix">Matrix</option><option value="auto">Auto · Day/Night</option>
           </select>
