@@ -17,6 +17,40 @@
       ' onkeydown=\'if(event.key==="Enter"||event.key===" "){event.preventDefault();' + expr + '}\'';
   }
 
+  // Dialog a11y: move focus into an opened modal, close it on Escape, and trap Tab
+  // within it. Register on open, release on close. Keyed so re-opens don't stack.
+  var _modalDismiss = {};
+  var _modalReturnFocus = {};
+  function _modalFocusables(modalEl) {
+    var sel = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    return Array.prototype.slice.call(modalEl.querySelectorAll(sel)).filter(function (el) { return el.offsetParent !== null; });
+  }
+  function bindModalDismiss(modalEl, closeFn, key) {
+    if (!modalEl) return;
+    if (!modalEl.getAttribute('role')) modalEl.setAttribute('role', 'dialog');
+    modalEl.setAttribute('aria-modal', 'true');
+    if (!modalEl.hasAttribute('tabindex')) modalEl.setAttribute('tabindex', '-1');
+    _modalReturnFocus[key] = document.activeElement;
+    setTimeout(function () { var f = _modalFocusables(modalEl); (f[0] || modalEl).focus(); }, 30);
+    if (_modalDismiss[key]) document.removeEventListener('keydown', _modalDismiss[key], true);
+    var handler = function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeFn(); return; }
+      if (e.key === 'Tab') {
+        var f = _modalFocusables(modalEl); if (!f.length) return;
+        var first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    _modalDismiss[key] = handler;
+    document.addEventListener('keydown', handler, true);
+  }
+  function unbindModalDismiss(key) {
+    if (_modalDismiss[key]) { document.removeEventListener('keydown', _modalDismiss[key], true); delete _modalDismiss[key]; }
+    try { var r = _modalReturnFocus[key]; if (r && r.focus) r.focus(); } catch (e) { /* element gone */ }
+    _modalReturnFocus[key] = null;
+  }
+
   var VEYRON_NAV = [
     { page: 'dashboard', label: 'Mission Control', icon: '◫' },
     { page: 'vms', label: 'Fleet Command', icon: '▣' },
@@ -179,6 +213,7 @@
     var el = document.getElementById(elId);
     if (!el) return;
     el.className = 'vmr-metrics-strip';
+    if (!el.hasAttribute('aria-live')) { el.setAttribute('aria-live', 'polite'); el.setAttribute('role', 'status'); }
     var toneMap = { ok: 'emerald', warn: 'amber', bad: 'red' };
     var toneCycle = ['sky', 'violet', 'emerald', 'amber'];
     el.innerHTML = metrics.map(function (m, i) {
@@ -1216,7 +1251,7 @@
     window.forgeWizardStep = 1;
     updateForgeWizardUi();
     var modal = document.getElementById('forge-wizard-modal');
-    if (modal) modal.classList.add('open');
+    if (modal) { modal.classList.add('open'); bindModalDismiss(modal, window.closeForgeWizard, 'forge-wizard'); }
     document.body.classList.add('forge-wizard-open');
     var copyTemplates = function () {
       var tpl = document.getElementById('forge-wiz-template');
@@ -1245,6 +1280,7 @@
     var modal = document.getElementById('forge-wizard-modal');
     if (modal) modal.classList.remove('open');
     document.body.classList.remove('forge-wizard-open');
+    unbindModalDismiss('forge-wizard');
   };
   function syncForgeWizardFromLegacy() {
     var map = [['vm-name', 'forge-wiz-name'], ['vm-namespace', 'forge-wiz-namespace'], ['vm-cpus', 'forge-wiz-cpus'],
@@ -1825,6 +1861,7 @@
     var copyBtn = document.getElementById('vmr-pod-logs-copy');
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
+    bindModalDismiss(modal, window.closePodLogsVmr, 'pod-logs');
     if (titleEl) titleEl.textContent = 'Pod logs';
     var podNs = ns && ns !== 'all' ? ns : '';
     if (!podNs && typeof podsCache !== 'undefined' && Array.isArray(podsCache)) {
@@ -1879,6 +1916,7 @@
     var modal = document.getElementById('vmr-pod-logs-modal');
     if (modal) modal.classList.remove('open');
     document.body.style.overflow = '';
+    unbindModalDismiss('pod-logs');
   };
 
   window._vmrEventFilter = window._vmrEventFilter || 'all';
@@ -3010,11 +3048,13 @@
       '</div>';
     drawer.style.display = 'flex';
     drawer.removeAttribute('aria-hidden');
+    bindModalDismiss(drawer, window.closeFoundryPreview, 'foundry-preview');
   };
 
   window.closeFoundryPreview = function closeFoundryPreview() {
     var drawer = document.getElementById('vmr-foundry-drawer');
     if (drawer) { drawer.style.display = 'none'; drawer.setAttribute('aria-hidden', 'true'); }
+    unbindModalDismiss('foundry-preview');
   };
 
   window.patchSelectVm = function patchSelectVm() {
