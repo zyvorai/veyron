@@ -21217,7 +21217,8 @@ function renderRdpPanel(container, ns, name, st, ctx) {
     }
     inner += detailRow('Service', esc(String(st.service_name || '')));
     if (st.cluster_ip && st.cluster_ip !== 'None') {
-      inner += detailRow('Cluster IP', '<span class="vmr-copy-tile" title="Copy cluster IP" ' + onStopHandler('copyToClipboard(' + jsArgs(String(st.cluster_ip)) + ')') + '>' + esc(String(st.cluster_ip)) + '<span class="vmr-copy-hint">copy</span></span>');
+      // Build inline (not via detailRow, which esc()s its value and would print this markup as text).
+      inner += '<div class="detail-row"><span class="lbl">Cluster IP</span><span class="val"><span class="vmr-copy-tile" title="Copy cluster IP" ' + onStopHandler('copyToClipboard(' + jsArgs(String(st.cluster_ip)) + ')') + '>' + esc(String(st.cluster_ip)) + '<span class="vmr-copy-hint">copy</span></span></span></div>';
     }
     const nodeList = asArray(st.nodes);
     if (nodeList.length) {
