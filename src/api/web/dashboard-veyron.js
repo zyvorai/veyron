@@ -3360,17 +3360,88 @@
     while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
     return (n >= 10 ? Math.round(n) : n.toFixed(1)) + ' ' + u[i];
   }
-  function atlasJobToast(job, verb) {
-    if (!job) { toast('Atlas ' + verb + ' failed', 'error'); return; }
-    if (Array.isArray(job)) {
-      var okc = job.filter(function(r){ return r && r.ok; }).length;
-      var bad = job.filter(function(r){ return r && !r.ok; });
-      if (bad.length) toast('Atlas ' + verb + ': ' + okc + ' ok, ' + bad.length + ' failed — ' + esc(bad[0].error || ''), 'warn', 6000);
-      else toast('Atlas ' + verb + ' queued (' + okc + ' disk' + (okc === 1 ? '' : 's') + ')', 'success');
+  /* ── Live Atlas job progress ──────────────────────────────────────────────
+     After a snapshot/backup/restore/clone is queued, poll GET /atlas/jobs/:id
+     and render an on-brand progress strip (#atlas-ceph-jobs) until each job
+     reaches a terminal state, then toast the result and refresh the section.
+     A single shared 1.5s poller drives all in-flight jobs. */
+  window._atlasJobs = {};      // jobId -> { verb, state, pct, done }
+  window._atlasPoller = null;
+
+  function renderAtlasJobs() {
+    var el = document.getElementById('atlas-ceph-jobs');
+    if (!el) return;
+    var ids = Object.keys(window._atlasJobs);
+    if (!ids.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'block';
+    el.className = 'card glass-card';
+    el.innerHTML = '<div class="card-header"><span class="card-title">Active Ceph Jobs</span>' +
+      '<span style="font-size:.78rem;color:var(--text-muted);padding:0 4px">' + ids.length + '</span></div>' +
+      '<div style="padding:6px 4px">' + ids.map(function(id) {
+        var j = window._atlasJobs[id];
+        var pct = Math.max(0, Math.min(100, Number(j.pct) || 0));
+        var tone = j.state === 'failed' ? 'var(--critical, #ef4444)'
+                 : j.state === 'succeeded' ? 'var(--green, #22c55e)'
+                 : 'var(--plasma, #5b8cff)';
+        var dotState = j.state === 'succeeded' ? 'ok' : j.state === 'failed' ? 'failed' : 'running';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:6px 12px;font-size:.8rem">' +
+          atlasDot(dotState) +
+          '<span style="min-width:130px">' + esc(j.verb) + '</span>' +
+          '<div style="flex:1;height:6px;border-radius:4px;background:rgba(140,160,200,.14);overflow:hidden">' +
+            '<div style="height:100%;width:' + pct + '%;background:' + tone + ';box-shadow:0 0 10px ' + tone + ';transition:width .4s ease"></div></div>' +
+          '<span style="font-family:var(--font-mono);min-width:96px;text-align:right;color:var(--text-dim)">' + esc(j.state) + ' · ' + pct + '%</span>' +
+        '</div>';
+      }).join('') + '</div>';
+  }
+
+  window.atlasWatchJob = function atlasWatchJob(jobId, verb) {
+    if (!jobId) return;
+    window._atlasJobs[jobId] = { verb: verb || 'job', state: 'queued', pct: 5, done: false };
+    renderAtlasJobs();
+    if (!window._atlasPoller) window._atlasPoller = setInterval(atlasPollJobs, 1500);
+  };
+
+  async function atlasPollJobs() {
+    var ids = Object.keys(window._atlasJobs).filter(function(id) { return !window._atlasJobs[id].done; });
+    if (!ids.length) { clearInterval(window._atlasPoller); window._atlasPoller = null; return; }
+    for (var k = 0; k < ids.length; k++) {
+      var id = ids[k], rec = window._atlasJobs[id];
+      try {
+        var raw = await apiJson('/api/v1/atlas/jobs/' + encodeURIComponent(id));
+        var j = typeof unwrapData === 'function' ? unwrapData(raw) : raw;
+        if (j) {
+          if (j.state) rec.state = j.state;
+          if (j.progress_percent != null) rec.pct = j.progress_percent;
+        }
+        if (rec.state === 'succeeded' || rec.state === 'failed') {
+          rec.done = true;
+          rec.pct = rec.state === 'succeeded' ? 100 : rec.pct;
+          if (rec.state === 'succeeded') toast(rec.verb + ' complete', 'success');
+          else toast(rec.verb + ' failed — ' + esc((j && j.error) || 'see Atlas'), 'error', 7000);
+          (function(jid) { setTimeout(function() { delete window._atlasJobs[jid]; renderAtlasJobs(); }, 4000); })(id);
+          if (typeof fetchAtlasCeph === 'function') setTimeout(fetchAtlasCeph, 700);
+        }
+      } catch (e) { /* transient — keep polling */ }
+    }
+    renderAtlasJobs();
+  }
+
+  /* Extract job id(s) from an Atlas ack and start watching them.
+     Handles a single AtlasJobAck (snapshot/backup/restore/clone) and the
+     per-VM array of DiskJobResult { ok, job, disk, error }. */
+  function atlasTrackAck(resp, verb) {
+    if (Array.isArray(resp)) {
+      var watched = 0;
+      resp.forEach(function(r) {
+        if (r && r.ok && r.job && r.job.job_id) { atlasWatchJob(r.job.job_id, verb + ' · ' + (r.disk || 'disk')); watched++; }
+        else if (r && !r.ok) toast(verb + ' failed on ' + (r.disk || 'disk') + ' — ' + esc(r.error || ''), 'error', 7000);
+      });
+      if (!watched && !resp.length) toast('No Ceph-backed disks matched', 'warn');
       return;
     }
-    var jid = job.job_id || (job.job && job.job.job_id) || '';
-    toast('Atlas ' + verb + ' queued' + (jid ? ' · ' + esc(jid) : ''), 'success');
+    var jid = resp && resp.job_id;
+    if (jid) atlasWatchJob(jid, verb);
+    else toast(verb + ' failed', 'error');
   }
 
   window._atlasBuckets = [];
@@ -3408,6 +3479,7 @@
       '</div>';
 
     host.innerHTML = banner +
+      '<div id="atlas-ceph-jobs" style="display:none;margin-bottom:8px"></div>' +
       '<div class="card glass-card" id="atlas-ceph-vols-card"><div class="card-header">' +
         '<span class="card-title">Atlas · Ceph-backed VM Disks</span>' +
         '<span id="atlas-ceph-vols-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>' +
@@ -3416,6 +3488,7 @@
         '<span class="card-title">Atlas Ceph Snapshots</span>' +
         '<span id="atlas-ceph-snaps-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>' +
       '</div><div id="atlas-ceph-snaps-body"><p style="padding:12px 16px;color:var(--text-dim);font-size:.84rem">Loading snapshots…</p></div></div>';
+    renderAtlasJobs(); // repaint any in-flight job progress after the section rebuild
 
     if (!connOk) {
       var vb = document.getElementById('atlas-ceph-vols-body');
@@ -3507,7 +3580,7 @@
     try {
       var job = await apiJson('/api/v1/atlas/volumes/' + encodeURIComponent(volId) + '/snapshot',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name || null }) });
-      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'snapshot');
+      atlasTrackAck(typeof unwrapData === 'function' ? unwrapData(job) : job, 'Snapshot');
     } catch (e) { toast('Ceph snapshot failed — ' + (e.message || e), 'error', 6000); }
     setTimeout(function(){ fetchAtlasCeph(); }, 800);
   };
@@ -3520,7 +3593,7 @@
     try {
       var job = await apiJson('/api/v1/atlas/volumes/' + encodeURIComponent(volId) + '/backup',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bucket_id: bucket.trim(), mode: 'data' }) });
-      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'backup');
+      atlasTrackAck(typeof unwrapData === 'function' ? unwrapData(job) : job, 'Backup → S3');
     } catch (e) { toast('Ceph backup failed — ' + (e.message || e), 'error', 6000); }
   };
 
@@ -3530,7 +3603,7 @@
     try {
       var job = await apiJson('/api/v1/atlas/snapshots/' + encodeURIComponent(snapId) + '/restore',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name || null }) });
-      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'restore');
+      atlasTrackAck(typeof unwrapData === 'function' ? unwrapData(job) : job, 'Restore');
     } catch (e) { toast('Restore failed — ' + (e.message || e), 'error', 6000); }
     setTimeout(function(){ fetchAtlasCeph(); }, 800);
   };
@@ -3541,7 +3614,7 @@
     try {
       var job = await apiJson('/api/v1/atlas/snapshots/' + encodeURIComponent(snapId) + '/clone',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim() }) });
-      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'clone');
+      atlasTrackAck(typeof unwrapData === 'function' ? unwrapData(job) : job, 'Clone');
     } catch (e) { toast('Clone failed — ' + (e.message || e), 'error', 6000); }
     setTimeout(function(){ fetchAtlasCeph(); }, 800);
   };
@@ -3555,7 +3628,7 @@
     try {
       var res = await apiJson('/api/v1/atlas/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/ceph-snapshot',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: snapName || null }) });
-      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(res) : res, 'Ceph snapshot');
+      atlasTrackAck(typeof unwrapData === 'function' ? unwrapData(res) : res, 'Ceph snapshot');
     } catch (e) {
       var m = String((e && e.message) || e);
       if (/not configured/i.test(m)) toast('Atlas not configured — set VEYRON_ATLAS_URL to snapshot Ceph disks', 'warn', 6000);
