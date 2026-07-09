@@ -935,6 +935,17 @@ pub mod web {
                 )
                 // Health + public OIDC discovery
                 .route("/api/v1/health", get(health_handler))
+                // K8s-style readiness/liveness with component checks (dashboard
+                // Nodes → Platform Readiness card). The handlers::health router that
+                // defines these was never merged, so mount them here explicitly.
+                .route(
+                    "/api/v1/health/ready",
+                    get(crate::api::handlers::health::readiness_check),
+                )
+                .route(
+                    "/api/v1/health/live",
+                    get(crate::api::handlers::health::liveness_check),
+                )
                 .route("/api/v1/ws/ticket", post(ws_ticket_handler))
                 .route(
                     "/api/v1/auth/oidc/config",

@@ -71,7 +71,7 @@ async fn health_check(State(state): State<SharedState>) -> Json<HealthResponse> 
 }
 
 #[cfg(feature = "web")]
-async fn readiness_check(
+pub async fn readiness_check(
     State(state): State<SharedState>,
     Query(q): Query<DashboardNamespaceQuery>,
 ) -> Json<ProbeResponse> {
@@ -130,7 +130,7 @@ async fn readiness_check(
 }
 
 #[cfg(feature = "web")]
-async fn liveness_check(State(_state): State<SharedState>) -> Json<ProbeResponse> {
+pub async fn liveness_check(State(_state): State<SharedState>) -> Json<ProbeResponse> {
     // Basic liveness: process is alive and can respond
     let process_check = HealthCheck {
         name: "process".into(),
