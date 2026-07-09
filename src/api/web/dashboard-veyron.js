@@ -287,7 +287,7 @@
     var running = vms.filter(function (v) { return v.status === 'Running'; }).length;
     var failed = vms.filter(function (v) { return v.status === 'Failed' || v.status === 'Error'; }).length;
     var stopped = vms.filter(function (v) { return v.status !== 'Running' && v.status !== 'Failed' && v.status !== 'Error'; }).length;
-    var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
+    var ov = (typeof lastOverview !== 'undefined' && lastOverview) ? lastOverview : {};
     var nodes = ov.nodes || {};
     var warnings = typeof islandAlertCount !== 'undefined' ? islandAlertCount
       : (typeof lastEvents !== 'undefined' ? lastEvents.filter(function (e) { return e.type === 'Warning'; }).length : 0);
@@ -354,7 +354,7 @@
   window.renderVeyronFleetHealth = function renderVeyronFleetHealth() {
     var el = document.getElementById('vmr-fleet-health');
     if (!el) return;
-    var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
+    var ov = (typeof lastOverview !== 'undefined' && lastOverview) ? lastOverview : {};
     var c = ov.cluster || {};
     var n = ov.nodes || {};
     var home = typeof lastExperienceHome !== 'undefined' ? lastExperienceHome : null;
@@ -503,7 +503,7 @@
   window.renderVeyronMissionBottom = function renderVeyronMissionBottom() {
     var el = document.getElementById('vmr-mission-bottom');
     if (!el) return;
-    var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
+    var ov = (typeof lastOverview !== 'undefined' && lastOverview) ? lastOverview : {};
     var n = ov.nodes || {};
     var c = ov.cluster || {};
     var vms = typeof vmData !== 'undefined' ? vmData : [];
@@ -1543,7 +1543,7 @@
     var placementEl = document.getElementById('vmr-nodes-placement');
     if (!placementEl) return;
     var vms = typeof vmData !== 'undefined' ? vmData : [];
-    var ov = typeof lastOverview !== 'undefined' ? lastOverview : {};
+    var ov = (typeof lastOverview !== 'undefined' && lastOverview) ? lastOverview : {};
     var n = ov.nodes || {};
     // Prefer live lastNodes data for ready/total counts (updated by patchFetchNodes)
     var liveNodes = typeof lastNodes !== 'undefined' ? lastNodes : null;
