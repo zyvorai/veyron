@@ -1391,7 +1391,47 @@ body[data-shell="orbit"] .mac-cc-row:has(#cc-tier-select){display:none}
 /* Don't float orbit chrome over the sign-in overlay (pre-auth) */
 body:has(#apikey-modal.open) #orbit-stage,
 body:has(#apikey-modal.open) #orbit-hud,
+body:has(#apikey-modal.open) #orbit-fx,
+body:has(#apikey-modal.open) #orbit-warp,
 body:has(#apikey-modal.open) #orbit-panel-close{display:none!important}
+
+/* ── Orbit Surprise Pack — warp, sonar, heartbeat, deep-scan, HUD verbs ── */
+/* FX ring layer (home only; behind the panel) */
+#orbit-fx{position:fixed;inset:0;z-index:45;pointer-events:none;overflow:hidden;display:none}
+body[data-shell="orbit"] #orbit-fx{display:block}
+body[data-shell="orbit"]:not(.orbit-home) #orbit-fx{display:none}
+.orbit-ring{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;
+  border:1.5px solid var(--plasma,#5b8cff);opacity:0;pointer-events:none;box-shadow:0 0 20px var(--plasma-glow,rgba(91,140,255,.4))}
+.orbit-ring.pulse{animation:orbit-ring-pulse 1.8s cubic-bezier(.2,.7,.3,1) forwards}
+.orbit-ring.scan{border-color:var(--aurora-2,rgba(167,139,250,.6));border-width:1px;animation:orbit-ring-scan 3.8s ease-out forwards}
+.orbit-ring.sonar{width:44px;height:44px;margin:-22px 0 0 -22px;animation:orbit-ring-sonar 1.1s ease-out forwards}
+@keyframes orbit-ring-pulse{0%{transform:scale(.2);opacity:.5}100%{transform:scale(7);opacity:0}}
+@keyframes orbit-ring-scan{0%{transform:scale(.3);opacity:.35}100%{transform:scale(12);opacity:0}}
+@keyframes orbit-ring-sonar{0%{transform:scale(.3);opacity:.75}100%{transform:scale(5);opacity:0}}
+/* Warp-to-VM cinematic */
+#orbit-warp{position:fixed;inset:0;z-index:80;pointer-events:none;display:none;opacity:0;
+  background:radial-gradient(circle at 50% 50%, transparent 24%, color-mix(in srgb,var(--plasma,#5b8cff) 24%, transparent) 82%)}
+body[data-shell="orbit"] #orbit-warp{display:block}
+#orbit-warp.on{animation:orbit-warp .55s ease-in forwards}
+#orbit-warp-core{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;
+  background:#fff;box-shadow:0 0 40px 18px var(--plasma,#5b8cff);opacity:0}
+#orbit-warp.on #orbit-warp-core{animation:orbit-warp-core .55s ease-in forwards}
+#orbit-warp-label{position:absolute;left:0;right:0;top:53%;text-align:center;font-family:var(--sans-deck);font-weight:800;
+  font-size:26px;letter-spacing:.5px;color:#fff;text-shadow:0 0 24px var(--plasma,#5b8cff);opacity:0}
+#orbit-warp.on #orbit-warp-label{animation:orbit-warp-label .55s ease-out forwards}
+@keyframes orbit-warp{0%{opacity:0}42%{opacity:1}100%{opacity:0}}
+@keyframes orbit-warp-core{0%{opacity:0;transform:scale(.3)}55%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(34)}}
+@keyframes orbit-warp-label{0%{opacity:0;transform:translateY(8px) scale(.9)}50%{opacity:1;transform:none}100%{opacity:0;transform:scale(1.12)}}
+/* HUD micro-stat + Forge verb */
+.orbit-hud-stat{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.78rem;font-weight:700;font-feature-settings:"tnum";display:flex;gap:8px;align-items:center}
+.orbit-hud-stat .os-run{color:var(--nominal,#1D9E75)}
+.orbit-hud-stat .os-fail{color:var(--critical,#E24B4A)}
+.orbit-hud-forge{color:var(--plasma,#eaf0ff)!important;border-color:color-mix(in srgb,var(--plasma,#5b8cff) 45%,transparent)!important}
+.orbit-hud-forge:hover{background:var(--plasma,#5b8cff)!important;color:#fff!important;border-color:var(--plasma,#5b8cff)!important}
+/* HUD entrance */
+body[data-shell="orbit"] #orbit-hud-bar{animation:orbit-hud-in .5s cubic-bezier(.2,1,.3,1) both}
+@keyframes orbit-hud-in{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){ #orbit-hud-bar,.orbit-ring,#orbit-warp,#orbit-warp-core,#orbit-warp-label{animation:none!important} }
 
 /* ── Depth tiers — spatial layering on the dashboard ──
    Foreground (orb) tilts toward the cursor and floats above; the primary
@@ -5822,12 +5862,17 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <button type="button" class="orbit-hud-btn" onclick="openSpotlight()" title="Search · ⌘K"><span class="orbit-hud-key">⌘K</span> Search</button>
     <div id="orbit-breadcrumb" class="orbit-breadcrumb"><span class="orbit-crumb cur">Cluster</span></div>
     <button type="button" class="orbit-hud-btn" onclick="openAskZeus('')" title="Ask Zeus · ⌘J">Ask Zeus <span class="orbit-hud-key">⌘J</span></button>
+    <button type="button" class="orbit-hud-btn orbit-hud-forge" onclick="if(typeof openQuickForge==='function'){openQuickForge()}else if(typeof openCreateModal==='function'){openCreateModal()}" title="Forge a new VM · ⌘N">＋ Forge</button>
+    <div class="orbit-hud-stat" id="orbit-hud-stat"></div>
     <div class="orbit-hud-health" id="orbit-hud-health" title="Fleet health">—</div>
     <button type="button" class="orbit-hud-btn" onclick="setShell('desktop')" title="Switch to Desktop shell · ⌘⇧O">Desktop</button>
   </div>
   <div id="orbit-ns-chips" class="orbit-ns-chips"></div>
 </div>
 <button type="button" id="orbit-panel-close" onclick="navigate('dashboard')" title="Back to orbit (Esc)" aria-label="Back to orbit">✕</button>
+<!-- Orbit FX layer (heartbeat/sonar/scan rings) + warp-to-VM cinematic -->
+<div id="orbit-fx" aria-hidden="true"></div>
+<div id="orbit-warp" aria-hidden="true"><div id="orbit-warp-core"></div><div id="orbit-warp-label"></div></div>
 
 <div class="container">
 
@@ -11193,6 +11238,13 @@ window.orbitSync = function () {
     h.textContent = (s == null ? '—' : s + '%');
     h.className = 'orbit-hud-health' + (s == null ? '' : (s >= 70 ? ' ok' : s >= 45 ? ' warn' : ' crit'));
   }
+  // Live running/failed micro-stat in the HUD.
+  const stat = document.getElementById('orbit-hud-stat');
+  if (stat) {
+    let run = 0, fail = 0;
+    all.forEach(function (v) { if (v.status === 'Running') run++; else if (v.status === 'Failed' || v.status === 'Error') fail++; });
+    stat.innerHTML = '<span class="os-run">▲' + run + '</span>' + (fail ? '<span class="os-fail">▼' + fail + '</span>' : '');
+  }
   // Keep the zoom filter tracking live data (added/removed VMs) without resetting the boot anim.
   if (orbitZoom.level === 'namespace' && orbitZoom.ns) {
     window.orbitFleetVms = all.filter(function (v) { return (v.namespace || v.ns || 'default') === orbitZoom.ns; });
@@ -11200,6 +11252,8 @@ window.orbitSync = function () {
     window.orbitFleetVms = all.filter(function (v) { return v.node === orbitZoom.node && (!orbitZoom.ns || (v.namespace || v.ns || 'default') === orbitZoom.ns); });
   }
   renderOrbitNsChips();
+  // Heartbeat pulse when fresh fleet data lands (home only, throttled).
+  if (document.body.classList.contains('orbit-home') && typeof orbitHeartbeat === 'function') orbitHeartbeat();
 };
 function orbitAllVms() { return (typeof vmData !== 'undefined' && vmData && vmData.length) ? vmData : (window.lastVMs || []); }
 function orbitNsHue(ns) { ns = String(ns || 'default'); let hh = 0; for (let i = 0; i < ns.length; i++) hh = (hh * 31 + ns.charCodeAt(i)) % 360; return hh; }
@@ -11283,6 +11337,47 @@ function _setOrbitHash() {
   _dashHashLock = true;
   try { history.replaceState(null, '', location.pathname + location.search + h); } finally { _dashHashLock = false; }
 }
+
+// ── Orbit Surprise Pack — warp-to-VM, sonar, heartbeat, idle deep-scan ──
+function _orbitReduced() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+function orbitRing(cls, x, y) {
+  const fx = document.getElementById('orbit-fx'); if (!fx || _orbitReduced()) return;
+  const r = document.createElement('div'); r.className = 'orbit-ring ' + cls;
+  if (x != null && y != null) { r.style.left = x + 'px'; r.style.top = y + 'px'; }
+  fx.appendChild(r);
+  setTimeout(function () { if (r.parentNode) r.parentNode.removeChild(r); }, 4200);
+}
+window.orbitSonar = function (x, y) { orbitRing('sonar', x, y); };
+window.orbitWarpTo = function (ns, name) {
+  const go = function () {
+    if (typeof navigateToVmCapsule === 'function') navigateToVmCapsule(ns, name);
+    else if (typeof openVmDetailDeep === 'function') openVmDetailDeep(ns, name);
+    else if (typeof navigate === 'function') navigate('vms');
+  };
+  const w = document.getElementById('orbit-warp');
+  if (!w || _orbitReduced()) { go(); return; }
+  const lbl = document.getElementById('orbit-warp-label'); if (lbl) lbl.textContent = name || '';
+  w.classList.remove('on'); void w.offsetWidth; w.classList.add('on');
+  setTimeout(go, 500);
+  setTimeout(function () { w.classList.remove('on'); }, 950);
+};
+let _orbitLastPulse = 0;
+function orbitHeartbeat() {
+  const now = (window.performance && performance.now) ? performance.now() : 0;
+  if (now && now - _orbitLastPulse < 4000) return;
+  _orbitLastPulse = now;
+  orbitRing('pulse');
+}
+let _orbitIdleAt = 0;
+function orbitMarkActive() { _orbitIdleAt = (window.performance && performance.now) ? performance.now() : 0; }
+function _orbitScanTick() {
+  if (document.body.dataset.shell !== 'orbit' || !document.body.classList.contains('orbit-home') || document.hidden) return;
+  const now = (window.performance && performance.now) ? performance.now() : 0;
+  if (now - _orbitIdleAt > 16000) orbitRing('scan');   // ambient deep-scan sweep while idle
+}
+setInterval(_orbitScanTick, 4200);
+['pointermove', 'keydown', 'click', 'wheel'].forEach(function (ev) { document.addEventListener(ev, orbitMarkActive, { passive: true }); });
+orbitMarkActive();
 
 const TIER_RANK = { normal: 0, power: 1, advanced: 2 };
 
@@ -28429,12 +28524,15 @@ async function submitCreateAlert(e) {
   document.addEventListener('click', function(e){
     if (!active()) return;
     var h = hit(e); if (h === -2) return;
+    var orbit = document.body.dataset.shell === 'orbit';
     if (h >= 0 && layout[h]){ var nd = layout[h], ns = nd.v.namespace || nd.v.ns || 'default', nm = nd.v.name;
-      // fly to the VM's detail view
+      // Orbit: cinematic warp-to-VM; otherwise fly straight to the detail view.
+      if (orbit && window.orbitWarpTo){ window.orbitWarpTo(ns, nm); return; }
       if (typeof navigateToVmCapsule === 'function') navigateToVmCapsule(ns, nm);
       else if (typeof openVmDetailDeep === 'function') openVmDetailDeep(ns, nm);
       else if (typeof navigate === 'function') navigate('vms');
-    } else if (typeof navigate === 'function') navigate('vms');
+    } else if (orbit){ if (window.orbitSonar) window.orbitSonar(e.clientX, e.clientY); }
+    else if (typeof navigate === 'function') navigate('vms');
   });
   window.addEventListener('resize', function(){ cssW = 0; });
   setInterval(function(){ try { window.renderHoloFleetOrb(); } catch(e){} }, 1500);
