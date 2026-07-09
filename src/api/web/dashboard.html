@@ -6331,6 +6331,7 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div class="vmr-metric"><div class="vmr-metric-label">Failed Backups</div><div class="vmr-metric-value" id="snap-failed-count">—</div></div>
   </div>
     <div id="snap-cap-banner"></div>
+  <div id="atlas-ceph-section"></div>
   <div id="snap-summary" class="grid-4 page-glass-stats"></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Scheduled Snapshots</span><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openScheduleModal()">+ Add Schedule</button></div><div id="snap-schedule-list"></div></div>
   <div class="card glass-card"><div class="card-header" style="flex-wrap:wrap;gap:8px"><span class="card-title">All Snapshots</span><span id="snap-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><div style="display:flex;gap:6px;margin-left:auto;align-items:center"><input type="search" id="snap-search" class="form-input" placeholder="Filter snapshots…" oninput="filterSnapshots(this.value)" style="width:190px;font-size:.82rem"><select class="form-select" id="snap-sort" onchange="filterSnapshots(document.getElementById('snap-search').value)" style="font-size:.82rem;width:auto"><option value="name">Sort: Name</option><option value="age">Sort: Age</option><option value="ready">Sort: Ready</option></select><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportSnapshotsCsv()" title="Export snapshots as CSV">&#8595; CSV</button></div></div><div id="snap-list"></div></div>
@@ -20502,6 +20503,7 @@ function renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) {
       '<div class="vm-inspector-panel zeus-glass' + (window._vmInspectorTab === 'backups' ? ' active' : '') + '" data-panel="backups"><div class="zeus-inspector-body">' +
         '<div class="vm-inspector-backup-actions">' +
           '<button type="button" class="glass-btn-primary glass-btn-sm" ' + onStopHandler('openSnapModalFor(' + jsArgs(ns, name) + ')') + '>+ Snapshot</button>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" ' + onStopHandler('typeof vmCephSnapshot===\'function\'?vmCephSnapshot(' + jsArgs(ns, name) + '):navigate(\'snapshots\')') + ' title="Snapshot Ceph-backed disks via Atlas">&#9673; Ceph Snapshot</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'snapshots\')">All snapshots</button>' +
           '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="navigate(\'backups\')">Velero</button>' +
         '</div>' +

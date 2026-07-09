@@ -3337,7 +3337,240 @@
     window.fetchSnapshots = async function() {
       await orig.apply(this, arguments);
       if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr.apply(this, arguments);
+      if (typeof fetchAtlasCeph === 'function') fetchAtlasCeph();
     };
+  };
+
+  /* ── Atlas · Ceph-backed VM disk protection ──────────────────────────────
+     Drives the /api/v1/atlas/* surface: connection banner, Ceph block volumes
+     with per-volume Snapshot/Backup actions, and Ceph snapshots with
+     Restore/Clone/Delete. Renders into #atlas-ceph-section on the Snapshots page.
+     Degrades gracefully when Atlas is unconfigured. */
+  function atlasDot(state) {
+    var s = String(state || '').toLowerCase();
+    var c = (s === 'available' || s === 'ok' || s === 'bound' || s === 'ready') ? 'var(--green)'
+          : (s === 'failed' || s === 'error') ? 'var(--critical, var(--red))'
+          : 'var(--orange)';
+    return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + c +
+           ';box-shadow:0 0 8px ' + c + ';margin-right:6px;vertical-align:middle"></span>';
+  }
+  function atlasFmtBytes(n) {
+    n = Number(n); if (!Number.isFinite(n) || n <= 0) return '—';
+    var u = ['B','KB','MB','GB','TB','PB']; var i = 0;
+    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
+    return (n >= 10 ? Math.round(n) : n.toFixed(1)) + ' ' + u[i];
+  }
+  function atlasJobToast(job, verb) {
+    if (!job) { toast('Atlas ' + verb + ' failed', 'error'); return; }
+    if (Array.isArray(job)) {
+      var okc = job.filter(function(r){ return r && r.ok; }).length;
+      var bad = job.filter(function(r){ return r && !r.ok; });
+      if (bad.length) toast('Atlas ' + verb + ': ' + okc + ' ok, ' + bad.length + ' failed — ' + esc(bad[0].error || ''), 'warn', 6000);
+      else toast('Atlas ' + verb + ' queued (' + okc + ' disk' + (okc === 1 ? '' : 's') + ')', 'success');
+      return;
+    }
+    var jid = job.job_id || (job.job && job.job.job_id) || '';
+    toast('Atlas ' + verb + ' queued' + (jid ? ' · ' + esc(jid) : ''), 'success');
+  }
+
+  window._atlasBuckets = [];
+
+  window.fetchAtlasCeph = async function fetchAtlasCeph(opts) {
+    var host = document.getElementById('atlas-ceph-section');
+    if (!host) return;
+    var status;
+    try {
+      status = await apiJson('/api/v1/atlas/status', opts);
+    } catch (e) { status = null; }
+    status = (typeof unwrapData === 'function' ? unwrapData(status) : status) || {};
+    if (!status.configured) {
+      // Stay quiet but discoverable — a slim hint, not a wall of red.
+      host.innerHTML =
+        '<div class="glass-banner" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">' +
+          '<span style="color:var(--text-dim);font-size:.84rem">' + atlasDot('') +
+          'Ceph-backed disk protection (Atlas) not configured. Set <code>VEYRON_ATLAS_URL</code> to snapshot/back up VM disks on Ceph.</span>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="navigate(\'settings\')">Configure</button>' +
+        '</div>';
+      return;
+    }
+
+    var connOk = !!status.reachable;
+    var backendTxt = connOk
+      ? '◉ Atlas connected · ' + (status.ceph_backends || 0) + ' Ceph backend' + ((status.ceph_backends === 1) ? '' : 's') +
+        (status.snapshots_supported ? ' · snapshots ✓' : '')
+      : 'Atlas configured but unreachable — ' + esc(status.message || 'health probe failed');
+    var banner =
+      '<div class="glass-banner" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;border-color:color-mix(in srgb, ' +
+        (connOk ? 'var(--green)' : 'var(--orange)') + ' 30%, transparent)">' +
+        '<span style="color:' + (connOk ? 'var(--green)' : 'var(--orange)') + ';font-size:.84rem">' + esc(backendTxt) + '</span>' +
+        '<span style="color:var(--text-dim);font-size:.76rem;font-family:var(--font-mono)">' + esc(status.base_url || '') + '</span>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchAtlasCeph()">&#8635; Refresh</button>' +
+      '</div>';
+
+    host.innerHTML = banner +
+      '<div class="card glass-card" id="atlas-ceph-vols-card"><div class="card-header">' +
+        '<span class="card-title">Atlas · Ceph-backed VM Disks</span>' +
+        '<span id="atlas-ceph-vols-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>' +
+      '</div><div id="atlas-ceph-vols-body"><p style="padding:12px 16px;color:var(--text-dim);font-size:.84rem">Loading Ceph volumes…</p></div></div>' +
+      '<div class="card glass-card" id="atlas-ceph-snaps-card" style="margin-top:16px"><div class="card-header">' +
+        '<span class="card-title">Atlas Ceph Snapshots</span>' +
+        '<span id="atlas-ceph-snaps-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span>' +
+      '</div><div id="atlas-ceph-snaps-body"><p style="padding:12px 16px;color:var(--text-dim);font-size:.84rem">Loading snapshots…</p></div></div>';
+
+    if (!connOk) {
+      var vb = document.getElementById('atlas-ceph-vols-body');
+      if (vb) vb.innerHTML = '<p style="padding:12px 16px;color:var(--text-dim);font-size:.84rem">Reconnect Atlas to list Ceph volumes.</p>';
+      var sb = document.getElementById('atlas-ceph-snaps-body');
+      if (sb) sb.innerHTML = '';
+      return;
+    }
+
+    // Buckets (backup targets) — best-effort.
+    try {
+      var bk = await apiJson('/api/v1/atlas/buckets', opts);
+      window._atlasBuckets = (typeof asArray === 'function' ? asArray(bk) : (Array.isArray(bk) ? bk : [])) || [];
+    } catch (e) { window._atlasBuckets = []; }
+
+    renderAtlasVolumes(opts);
+    renderAtlasSnapshots(opts);
+  };
+
+  async function renderAtlasVolumes(opts) {
+    var body = document.getElementById('atlas-ceph-vols-body');
+    if (!body) return;
+    var ns = (typeof currentNamespace !== 'undefined' && currentNamespace && currentNamespace !== 'all')
+      ? '&namespace=' + encodeURIComponent(currentNamespace) : '';
+    var vols;
+    try { vols = await apiJson('/api/v1/atlas/volumes?kind=block' + ns, opts); }
+    catch (e) { body.innerHTML = '<p style="padding:12px 16px;color:var(--orange);font-size:.84rem">' + esc(e.message || 'failed to list volumes') + '</p>'; return; }
+    vols = (typeof asArray === 'function' ? asArray(vols) : (Array.isArray(vols) ? vols : [])) || [];
+    var cnt = document.getElementById('atlas-ceph-vols-count');
+    if (cnt) cnt.textContent = vols.length + ' volume' + (vols.length === 1 ? '' : 's');
+    if (!vols.length) {
+      body.innerHTML = '<p style="padding:12px 16px;color:var(--text-dim);font-size:.84rem">No Ceph block volumes in Atlas inventory' +
+        (ns ? ' for this namespace.' : '. Run discovery in Atlas, or ensure VM disks use a Ceph StorageClass.') + '</p>';
+      return;
+    }
+    var rows = vols.map(function(v) {
+      var vid = esc(v.id);
+      var name = esc(v.name || v.pvc_name || v.id);
+      return '<tr>' +
+        '<td>' + atlasDot(v.state) + name + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(v.kubernetes_namespace || '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(v.pvc_name || '—') + '</td>' +
+        '<td style="font-family:var(--font-mono)">' + atlasFmtBytes(v.size_bytes) + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(v.storage_class_name || '—') + '</td>' +
+        '<td style="text-align:right;white-space:nowrap">' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasVolSnapshot(\'' + vid + '\',\'' + name.replace(/'/g, "\\'") + '\')">Snapshot</button> ' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasVolBackup(\'' + vid + '\',\'' + name.replace(/'/g, "\\'") + '\')">Backup → S3</button>' +
+        '</td></tr>';
+    }).join('');
+    body.innerHTML =
+      '<table class="table"><thead><tr><th>Volume</th><th>Namespace</th><th>PVC</th><th>Size</th><th>StorageClass</th><th style="text-align:right">Ceph Actions</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>';
+  }
+
+  async function renderAtlasSnapshots(opts) {
+    var body = document.getElementById('atlas-ceph-snaps-body');
+    if (!body) return;
+    var snaps;
+    try { snaps = await apiJson('/api/v1/atlas/snapshots', opts); }
+    catch (e) { body.innerHTML = '<p style="padding:12px 16px;color:var(--orange);font-size:.84rem">' + esc(e.message || 'failed to list snapshots') + '</p>'; return; }
+    snaps = (typeof asArray === 'function' ? asArray(snaps) : (Array.isArray(snaps) ? snaps : [])) || [];
+    var cnt = document.getElementById('atlas-ceph-snaps-count');
+    if (cnt) cnt.textContent = snaps.length + ' snapshot' + (snaps.length === 1 ? '' : 's');
+    if (!snaps.length) {
+      body.innerHTML = '<p style="padding:12px 16px;color:var(--text-dim);font-size:.84rem">No Ceph snapshots yet. Use <em>Snapshot</em> on a volume above.</p>';
+      return;
+    }
+    var rows = snaps.map(function(s) {
+      var sid = esc(s.id || s.snapshot_id || '');
+      return '<tr>' +
+        '<td>' + atlasDot(s.state || s.status) + esc(s.name || sid) + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(s.volume_id || s.source_volume_id || '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(s.state || s.status || '—') + '</td>' +
+        '<td style="font-family:var(--font-mono);font-size:.78rem">' + esc((s.created_at || '').slice(0, 19).replace('T', ' ')) + '</td>' +
+        '<td style="text-align:right;white-space:nowrap">' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasSnapRestore(\'' + sid + '\')">Restore</button> ' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasSnapClone(\'' + sid + '\')">Clone</button> ' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasSnapDelete(\'' + sid + '\')">Delete</button>' +
+        '</td></tr>';
+    }).join('');
+    body.innerHTML =
+      '<table class="table"><thead><tr><th>Snapshot</th><th>Volume</th><th>State</th><th>Created</th><th style="text-align:right">Actions</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table>';
+  }
+
+  window.atlasVolSnapshot = async function atlasVolSnapshot(volId, volName) {
+    var name = prompt('Snapshot name for ' + volName + ' (optional):', '');
+    if (name === null) return;
+    try {
+      var job = await apiJson('/api/v1/atlas/volumes/' + encodeURIComponent(volId) + '/snapshot',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name || null }) });
+      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'snapshot');
+    } catch (e) { toast('Ceph snapshot failed — ' + (e.message || e), 'error', 6000); }
+    setTimeout(function(){ fetchAtlasCeph(); }, 800);
+  };
+
+  window.atlasVolBackup = async function atlasVolBackup(volId, volName) {
+    var suggest = (window._atlasBuckets && window._atlasBuckets[0] && (window._atlasBuckets[0].id || window._atlasBuckets[0].bucket_id)) || '';
+    var bucket = prompt('Back up ' + volName + ' to Atlas RGW bucket id (RBD export-diff → S3):', suggest);
+    if (bucket === null) return;
+    if (!bucket.trim()) { toast('A bucket id is required for backup', 'warn'); return; }
+    try {
+      var job = await apiJson('/api/v1/atlas/volumes/' + encodeURIComponent(volId) + '/backup',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bucket_id: bucket.trim(), mode: 'data' }) });
+      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'backup');
+    } catch (e) { toast('Ceph backup failed — ' + (e.message || e), 'error', 6000); }
+  };
+
+  window.atlasSnapRestore = async function atlasSnapRestore(snapId) {
+    var name = prompt('Restore snapshot to a new volume named (blank = auto):', '');
+    if (name === null) return;
+    try {
+      var job = await apiJson('/api/v1/atlas/snapshots/' + encodeURIComponent(snapId) + '/restore',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name || null }) });
+      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'restore');
+    } catch (e) { toast('Restore failed — ' + (e.message || e), 'error', 6000); }
+    setTimeout(function(){ fetchAtlasCeph(); }, 800);
+  };
+
+  window.atlasSnapClone = async function atlasSnapClone(snapId) {
+    var name = prompt('Clone snapshot into a new independent volume named:', 'clone-' + snapId.slice(-6));
+    if (name === null || !name.trim()) return;
+    try {
+      var job = await apiJson('/api/v1/atlas/snapshots/' + encodeURIComponent(snapId) + '/clone',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim() }) });
+      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(job) : job, 'clone');
+    } catch (e) { toast('Clone failed — ' + (e.message || e), 'error', 6000); }
+    setTimeout(function(){ fetchAtlasCeph(); }, 800);
+  };
+
+  /* VM-level Ceph snapshot — snapshots all Ceph-backed disks of a VM via Atlas.
+     Wired from the VM inspector's Backups panel. Degrades to a toast when Atlas
+     is unconfigured or the VM has no Ceph-backed disks. */
+  window.vmCephSnapshot = async function vmCephSnapshot(ns, name) {
+    var snapName = prompt('Ceph snapshot name for VM ' + name + ' (blank = auto):', '');
+    if (snapName === null) return;
+    try {
+      var res = await apiJson('/api/v1/atlas/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/ceph-snapshot',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: snapName || null }) });
+      atlasJobToast(typeof unwrapData === 'function' ? unwrapData(res) : res, 'Ceph snapshot');
+    } catch (e) {
+      var m = String((e && e.message) || e);
+      if (/not configured/i.test(m)) toast('Atlas not configured — set VEYRON_ATLAS_URL to snapshot Ceph disks', 'warn', 6000);
+      else if (/no Ceph-backed disks/i.test(m)) toast('No Ceph-backed disks for ' + name + ' in Atlas inventory', 'warn', 6000);
+      else toast('Ceph snapshot failed — ' + m, 'error', 6000);
+    }
+  };
+
+  window.atlasSnapDelete = async function atlasSnapDelete(snapId) {
+    if (!confirm('Delete Ceph snapshot ' + snapId + '? Blocked if volumes were cloned/restored from it.')) return;
+    try {
+      await apiJson('/api/v1/atlas/snapshots/' + encodeURIComponent(snapId), { method: 'DELETE' });
+      toast('Snapshot delete queued', 'success');
+    } catch (e) { toast('Delete failed — ' + (e.message || e), 'error', 6000); }
+    setTimeout(function(){ fetchAtlasCeph(); }, 800);
   };
 
   window.patchFetchEvents = function patchFetchEvents() {
