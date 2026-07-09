@@ -1331,10 +1331,15 @@ body[data-shell="orbit"] #orbit-stage{display:block;position:fixed;inset:0;z-ind
 body[data-shell="orbit"] #orbit-stage-wrap{display:block;position:absolute;inset:0;width:100%;height:100dvh;margin:0;
   border:none;border-radius:0;box-shadow:none;background:transparent;pointer-events:auto}
 body[data-shell="orbit"] #orbit-stage-wrap canvas{width:100%;height:100%}
-/* Hide the macOS desktop chrome while flying in orbit */
+/* Hide the macOS desktop chrome while flying in orbit.
+   NOTE: the Finder + browse-rail are targeted by ID (not class) on purpose — a
+   desktop-tier rule (body.mac-desktop-root[data-desktop-tier="power"]:not(.finder-collapsed)
+   .cloudos-finder) force-shows them with !important at specificity (0,4,1); an id
+   selector's (1,x,x) trumps it since orbit keeps the underlying tier. */
 body[data-shell="orbit"] .mac-menubar,
 body[data-shell="orbit"] #cloudos-dock,
-body[data-shell="orbit"] .cloudos-finder,
+body[data-shell="orbit"] #cloudos-finder,
+body[data-shell="orbit"] #cloudos-browse-rail,
 body[data-shell="orbit"] #mac-desktop-tabs,
 body[data-shell="orbit"] .vmr-primary-tabs,
 body[data-shell="orbit"] #cloudos-mobile-bar,
