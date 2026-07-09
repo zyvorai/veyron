@@ -2210,7 +2210,7 @@
         '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openCreateModal()">Edit Hardware</button>' +
         '<button type="button" class="glass-btn-destructive glass-btn-sm" ' + onHandler('vmDelete&&vmDelete(' + jsArgs(ns, vm.name) + ')') + '>Delete</button>';
     el.innerHTML =
-      '<div class="vmr-capsule-hero">' +
+      '<div class="vmr-capsule-hero" data-vm-status="' + esc(String(vm.status || '').toLowerCase()) + '">' +
         '<div class="vmr-capsule-hero-info">' +
           '<div class="vmr-capsule-name">' + esc(vm.name) + '</div>' +
           '<span class="vm-badge ' + (isRunning ? 'running' : 'stopped') + '">' + esc(vm.status) + '</span>' +

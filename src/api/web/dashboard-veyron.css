@@ -1847,6 +1847,32 @@ body[data-tier-mode="manual"] .cloudos-finder-item.tier-locked {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
 }
+/* VM Centre — the capsule hero radiates the VM's live status (bold, robust).
+   Keyed on data-vm-status set in renderVmCapsuleVmr; specificity matches the
+   body.mac-desktop-root override so the status border/glow wins. */
+.vmr-capsule-hero[data-vm-status] { position: relative; transition: box-shadow .35s, border-color .35s; }
+.vmr-capsule-hero[data-vm-status]::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0; }
+.vmr-capsule-hero[data-vm-status] > * { position: relative; z-index: 1; }
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="running"] { border-color: color-mix(in srgb, var(--nominal, #1D9E75) 60%, transparent) !important; box-shadow: inset 0 3px 0 var(--nominal, #1D9E75), 0 0 0 1px color-mix(in srgb, var(--nominal, #1D9E75) 34%, transparent), 0 22px 66px color-mix(in srgb, var(--nominal, #1D9E75) 18%, transparent); }
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="running"]::after { background: radial-gradient(130% 90% at 50% -14%, color-mix(in srgb, var(--nominal, #1D9E75) 34%, transparent), transparent 60%); animation: vm-hero-wash 3.6s ease-in-out infinite; }
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="failed"],
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="error"] { border-color: color-mix(in srgb, var(--critical, #E24B4A) 62%, transparent) !important; box-shadow: inset 0 3px 0 var(--critical, #E24B4A), 0 0 0 1px color-mix(in srgb, var(--critical, #E24B4A) 38%, transparent), 0 22px 66px color-mix(in srgb, var(--critical, #E24B4A) 22%, transparent); }
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="failed"]::after,
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="error"]::after { background: radial-gradient(130% 90% at 50% -14%, color-mix(in srgb, var(--critical, #E24B4A) 36%, transparent), transparent 60%); }
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="paused"],
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pausing"],
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="starting"],
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="stopping"],
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="provisioning"],
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pending"] { border-color: color-mix(in srgb, var(--caution, #EF9F27) 58%, transparent) !important; box-shadow: inset 0 3px 0 var(--caution, #EF9F27), 0 0 0 1px color-mix(in srgb, var(--caution, #EF9F27) 32%, transparent), 0 22px 66px color-mix(in srgb, var(--caution, #EF9F27) 16%, transparent); }
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="paused"]::after,
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pausing"]::after,
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="starting"]::after,
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="stopping"]::after,
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="provisioning"]::after,
+body.mac-desktop-root .vmr-capsule-hero[data-vm-status="pending"]::after { background: radial-gradient(130% 90% at 50% -14%, color-mix(in srgb, var(--caution, #EF9F27) 32%, transparent), transparent 60%); }
+@keyframes vm-hero-wash { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .vmr-capsule-hero[data-vm-status="running"]::after { animation: none; } }
 
 .vmr-capsule-name {
   font-family: var(--font-display, inherit);
