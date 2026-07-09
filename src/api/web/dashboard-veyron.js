@@ -3517,6 +3517,8 @@
     try { vols = await apiJson('/api/v1/atlas/volumes?kind=block' + ns, opts); }
     catch (e) { body.innerHTML = '<p style="padding:12px 16px;color:var(--orange);font-size:.84rem">' + esc(e.message || 'failed to list volumes') + '</p>'; return; }
     vols = (typeof asArray === 'function' ? asArray(vols) : (Array.isArray(vols) ? vols : [])) || [];
+    // csi-snap-* RBD images back VolumeSnapshotContents, not VM disks — don't list them here.
+    vols = vols.filter(function(v) { return !/^csi-snap-/.test(String(v.name || '')); });
     var cnt = document.getElementById('atlas-ceph-vols-count');
     if (cnt) cnt.textContent = vols.length + ' volume' + (vols.length === 1 ? '' : 's');
     if (!vols.length) {
@@ -3527,16 +3529,22 @@
     var rows = vols.map(function(v) {
       var vid = esc(v.id);
       var name = esc(v.name || v.pvc_name || v.id);
-      return '<tr>' +
+      var esn = name.replace(/'/g, "\\'");
+      // Atlas can only snapshot/back up volumes bound to a K8s PVC (it creates a
+      // VolumeSnapshot). Raw RBD images with no namespace would 422, so disable
+      // their actions rather than offering a click that fails.
+      var linked = !!(v.kubernetes_namespace && v.pvc_name);
+      var actions = linked
+        ? '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasVolSnapshot(\'' + vid + '\',\'' + esn + '\')">Snapshot</button> ' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasVolBackup(\'' + vid + '\',\'' + esn + '\')">Backup → S3</button>'
+        : '<span title="Not bound to a Kubernetes PVC — Atlas snapshot/backup needs a namespace" style="font-size:.74rem;color:var(--text-dim);font-family:var(--font-mono)">unlinked</span>';
+      return '<tr' + (linked ? '' : ' style="opacity:.66"') + '>' +
         '<td>' + atlasDot(v.state) + name + '</td>' +
         '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(v.kubernetes_namespace || '—') + '</td>' +
         '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(v.pvc_name || '—') + '</td>' +
         '<td style="font-family:var(--font-mono)">' + atlasFmtBytes(v.size_bytes) + '</td>' +
         '<td style="font-family:var(--font-mono);font-size:.8rem">' + esc(v.storage_class_name || '—') + '</td>' +
-        '<td style="text-align:right;white-space:nowrap">' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasVolSnapshot(\'' + vid + '\',\'' + name.replace(/'/g, "\\'") + '\')">Snapshot</button> ' +
-          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="atlasVolBackup(\'' + vid + '\',\'' + name.replace(/'/g, "\\'") + '\')">Backup → S3</button>' +
-        '</td></tr>';
+        '<td style="text-align:right;white-space:nowrap">' + actions + '</td></tr>';
     }).join('');
     body.innerHTML =
       '<table class="table"><thead><tr><th>Volume</th><th>Namespace</th><th>PVC</th><th>Size</th><th>StorageClass</th><th style="text-align:right">Ceph Actions</th></tr></thead>' +
