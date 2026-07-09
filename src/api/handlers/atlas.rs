@@ -522,7 +522,7 @@ pub struct SnapshotProvisionRequest {
 }
 
 #[cfg(feature = "web")]
-fn provision_body(req: &SnapshotProvisionRequest) -> serde_json::Value {
+fn provision_body(req: &SnapshotProvisionRequest, role: &str) -> serde_json::Value {
     let mut m = serde_json::Map::new();
     if let Some(n) = req.name.as_ref().filter(|s| !s.trim().is_empty()) {
         m.insert("name".into(), n.clone().into());
@@ -536,10 +536,23 @@ fn provision_body(req: &SnapshotProvisionRequest) -> serde_json::Value {
     if let Some(sz) = req.size_bytes {
         m.insert("size_bytes".into(), sz.into());
     }
-    // Record Veyron as the owning product on the provisioned volume.
+    // Record Veyron as the owning product on the provisioned volume. Atlas's Owner
+    // struct requires `resource_id` and `role` — a partial owner is rejected with 422,
+    // so send a complete binding (resource_id derived from the new volume name).
+    let resource_id = req
+        .name
+        .as_ref()
+        .filter(|s| !s.trim().is_empty())
+        .cloned()
+        .unwrap_or_else(|| "veyron-managed".to_string());
     m.insert(
         "owner".into(),
-        serde_json::json!({ "product": ATLAS_PRODUCT, "resource_type": "virtual_machine" }),
+        serde_json::json!({
+            "product": ATLAS_PRODUCT,
+            "resource_type": "virtual_machine",
+            "resource_id": resource_id,
+            "role": role,
+        }),
     );
     m.insert("tenant_id".into(), atlas_tenant().into());
     serde_json::Value::Object(m)
@@ -555,7 +568,10 @@ async fn restore_snapshot(
         Ok(c) => c,
         Err(e) => return e.into_response(),
     };
-    match client.restore_snapshot(&id, &provision_body(&req)).await {
+    match client
+        .restore_snapshot(&id, &provision_body(&req, "restored-disk"))
+        .await
+    {
         Ok(job) => (StatusCode::ACCEPTED, Json(job)).into_response(),
         Err(e) => (StatusCode::BAD_GATEWAY, e).into_response(),
     }
@@ -571,7 +587,10 @@ async fn clone_snapshot(
         Ok(c) => c,
         Err(e) => return e.into_response(),
     };
-    match client.clone_snapshot(&id, &provision_body(&req)).await {
+    match client
+        .clone_snapshot(&id, &provision_body(&req, "cloned-disk"))
+        .await
+    {
         Ok(job) => (StatusCode::ACCEPTED, Json(job)).into_response(),
         Err(e) => (StatusCode::BAD_GATEWAY, e).into_response(),
     }

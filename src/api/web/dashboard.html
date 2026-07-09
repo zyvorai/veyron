@@ -4680,6 +4680,21 @@ button.tahoe-stat-pill.clickable-stat:hover{border-color:var(--pw-accent-border,
   display:none;
 }
 .mac-context-menu.open{display:block}
+/* Floating menus/dropdowns must FULLY occlude the page content behind them.
+   The elevated-glass token is only ~.58 alpha on the glass decks, so with just a
+   blur the sharp text under a dropdown (e.g. the Recent row) bled through and read
+   as overlapping. Stack the glass tint over the opaque, theme-aware --panel base
+   (dark themes → dark, daylight → white) so text can never show through, while
+   keeping the glass hue + blur. Applies to every menubar/toolbar/nav popover. */
+.mac-menu-panel,
+.mac-context-menu,
+.mac-toolbar-overflow-menu,
+.browse-mega-menu,
+.nav-dropdown{
+  background:
+    linear-gradient(var(--glass-bg-elevated), var(--glass-bg-elevated)),
+    var(--panel, #12151d) !important;
+}
 .mac-context-item{
   display:block;width:100%;text-align:left;padding:8px 12px;border:none;border-radius:8px;
   background:transparent;color:var(--text);font-size:.8rem;cursor:pointer;font-family:inherit;
