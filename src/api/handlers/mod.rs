@@ -3,6 +3,7 @@
 // https://zyvor.dev · info@zyvor.dev
 
 pub mod alerts;
+pub mod atlas;
 pub mod audit;
 pub mod auth;
 pub mod autoscaler;
@@ -131,6 +132,7 @@ pub fn all_routes(
         .merge(ingress::router(state.clone()))
         .merge(hpa::router(state.clone()))
         .merge(backups::router(state.clone()))
+        .merge(atlas::router(state.clone()))
         .merge(catalog::router(state.clone()))
         .merge(experience::router(state.clone()))
         .merge(copilot::router(state.clone()))

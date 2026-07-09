@@ -117,6 +117,8 @@ Each handler module exports `pub fn router(state: SharedState) -> Router` and is
 
 **PacketWolf**: when `VEYRON_PACKETWOLF_URL` is set (or auto-wired by `bootstrap-integrations.sh`), `GET /api/v1/packetwolf/status` probes Network Brain health; dashboard **Cilium** page shows connection banner. In-cluster PacketWolf with `trustClusterNetworks=true` typically needs no API key. See `docs/OPTIONAL_INTEGRATIONS.md`.
 
+**Atlas (Ceph-backed VM disk protection)**: Atlas (`../atlas`) is the Zyvor **storage control plane** — it fronts Ceph (RBD/CephFS/RGW), NFS, and ZFS behind a stable REST/gRPC API. When `VEYRON_ATLAS_URL` is set, Veyron drives **Ceph-backed** VM disk snapshot / clone / restore and off-cluster backups (RBD `export-diff` → RGW/S3) through Atlas jobs instead of re-implementing Ceph. This is **additive** — it never replaces the native KubeVirt `VolumeSnapshot` flow under `/api/v1/snapshots`. Client: `src/api/atlas.rs` (`AtlasClient`, HTTP REST v1, PacketWolf-style env config). Handlers: `src/api/handlers/atlas.rs` — `GET /api/v1/atlas/status` (probe + ceph capability summary), `GET …/atlas/volumes`, `GET …/atlas/vms/:ns/:name/volumes` (maps each VM PVC/DataVolume → its Atlas RBD volume by `(namespace, pvc_name)`), `POST …/atlas/vms/:ns/:name/ceph-snapshot`, `POST …/atlas/vms/:ns/:name/ceph-backup` (needs a bound Atlas RGW `bucket_id`), `POST …/atlas/snapshots/:id/{restore,clone}`, `DELETE …/atlas/snapshots/:id`, `GET …/atlas/{snapshots,backups,jobs/:id}`. Write routes return `202` with Atlas `job_id`s to poll. Provisioned volumes carry an `owner:{product:"veyron",resource_type:"virtual_machine"}` binding. Route roles follow the usual gates (GET⇒readonly, `/restore`⇒admin, other writes⇒write). Live contract test: `VEYRON_ATLAS_URL=http://127.0.0.1:5110 cargo test --features web atlas_live` against a fake gateway (`ATLAS_CEPH_DRIVER_MODE=fake cargo run -p atlas-gateway` in `../atlas`).
+
 ### Kubernetes integration
 
 - `src/kube/mod.rs` — `KubeClient` wrapper; kubeconfig resolved once into `static CACHED_CONFIG: OnceCell<Config>`, fresh `kube::Client` created per call (cheap)
@@ -182,6 +184,9 @@ All web-only code is gated with `#[cfg(feature = "web")]`.
 | `VEYRON_API_NODE_PORT` | NodePort for GuestKit binary download (default `30151`) |
 | `VEYRON_CLUSTER_DNS` | Cluster DNS IP injected into Linux cloud-init resolv.conf (default `10.43.0.10`) |
 | `VEYRON_GUEST_RUNTIME` | Guest runtime mode: `auto` (default), `guestkit`, or `qga` |
+| `VEYRON_ATLAS_URL` | Optional. Atlas storage control-plane gateway base URL (e.g. `http://atlas-gateway.zyvor:5110`). When set, the **Atlas** integration enables Ceph-backed VM disk snapshot/backup/restore. Unset ⇒ routes report `configured:false`. |
+| `VEYRON_ATLAS_TOKEN` | Optional HS256 JWT bearer for Atlas (required when Atlas runs with `ATLAS_AUTH_REQUIRED=1`) |
+| `VEYRON_ATLAS_TENANT` | Optional tenant id recorded on Atlas-provisioned volumes/backups (default `global`) |
 
 ### GuestKit (Linux guest runtime)
 

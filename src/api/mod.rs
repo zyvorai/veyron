@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[cfg(feature = "web")]
+pub mod atlas;
+#[cfg(feature = "web")]
 pub mod auth_context;
 #[cfg(feature = "web")]
 pub mod dashboard_paths;
