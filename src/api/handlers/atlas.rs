@@ -650,3 +650,55 @@ async fn get_job(State(_state): State<SharedState>, Path(id): Path<String>) -> i
         Err(e) => (StatusCode::BAD_GATEWAY, e).into_response(),
     }
 }
+
+/// Unit tests — pure, no gateway needed.
+#[cfg(all(test, feature = "web"))]
+mod tests {
+    use super::*;
+
+    // Regression guard: Atlas's Owner struct requires `resource_id` + `role`; a
+    // partial owner was rejected with HTTP 422 on restore/clone (fixed).
+    #[test]
+    fn provision_body_owner_is_complete() {
+        let req = SnapshotProvisionRequest {
+            name: Some("restore-42".into()),
+            namespace: None,
+            storage_class: None,
+            size_bytes: None,
+        };
+        let body = provision_body(&req, "restored-disk");
+        let owner = body.get("owner").expect("owner present");
+        assert_eq!(
+            owner.get("product").and_then(|v| v.as_str()),
+            Some(ATLAS_PRODUCT)
+        );
+        assert_eq!(
+            owner.get("resource_type").and_then(|v| v.as_str()),
+            Some("virtual_machine")
+        );
+        assert_eq!(
+            owner.get("resource_id").and_then(|v| v.as_str()),
+            Some("restore-42")
+        );
+        assert_eq!(
+            owner.get("role").and_then(|v| v.as_str()),
+            Some("restored-disk")
+        );
+        assert!(body.get("tenant_id").is_some());
+    }
+
+    #[test]
+    fn provision_body_resource_id_falls_back_without_name() {
+        let req = SnapshotProvisionRequest {
+            name: None,
+            namespace: None,
+            storage_class: None,
+            size_bytes: None,
+        };
+        let body = provision_body(&req, "cloned-disk");
+        assert_eq!(
+            body["owner"].get("resource_id").and_then(|v| v.as_str()),
+            Some("veyron-managed")
+        );
+    }
+}

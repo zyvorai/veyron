@@ -139,6 +139,12 @@ const DEFINITIONS: &[IntegrationDef] = &[
         env_var: "VEYRON_PACKETWOLF_URL",
         feeds: "Network Brain health, Cilium/Hubble intelligence (GET /api/v1/packetwolf/status)",
     },
+    IntegrationDef {
+        id: "atlas",
+        name: "Atlas",
+        env_var: "VEYRON_ATLAS_URL",
+        feeds: "Ceph-backed VM disk snapshot/backup/restore (GET /api/v1/atlas/status)",
+    },
 ];
 
 #[cfg(feature = "web")]
@@ -197,6 +203,7 @@ fn in_app_open(id: &str) -> Option<IntegrationOpenLink> {
         "jaeger" => ("traces", "Open traces"),
         "elastic" | "splunk" | "sentinel" | "qradar" | "soar" => ("soc", "Open SOC"),
         "packetwolf" => ("cilium", "Open Cilium"),
+        "atlas" => ("snapshots", "Open snapshots"),
         _ => return None,
     };
     Some(IntegrationOpenLink {
@@ -410,7 +417,7 @@ async fn get_integrations_status(
                 } else {
                     probe_futures.push((def.id, url.to_string(), None));
                 }
-            } else if def.id == "packetwolf" {
+            } else if def.id == "packetwolf" || def.id == "atlas" {
                 let health = if url.trim_end_matches('/').ends_with("/health") {
                     url.to_string()
                 } else {
