@@ -424,6 +424,40 @@ impl AtlasClient {
     }
 }
 
+/// Pure unit tests — no gateway needed, always run in CI.
+#[cfg(all(test, feature = "web"))]
+mod unit_tests {
+    use super::*;
+
+    #[test]
+    fn validate_accepts_http_and_https() {
+        assert!(validate_atlas_url("http://atlas-gateway-ceph.rook-ceph.svc:5110").is_ok());
+        assert!(validate_atlas_url("https://atlas.example.com").is_ok());
+        // Atlas is an admin-configured backend — loopback (dev) is allowed.
+        assert!(validate_atlas_url("http://127.0.0.1:5110").is_ok());
+    }
+
+    #[test]
+    fn validate_rejects_bad_scheme_and_metadata() {
+        assert!(validate_atlas_url("ftp://atlas").is_err());
+        assert!(validate_atlas_url("atlas-gateway:5110").is_err());
+        assert!(validate_atlas_url("http://169.254.169.254/latest/meta-data").is_err());
+        assert!(validate_atlas_url("http://metadata.google.internal/").is_err());
+    }
+
+    #[test]
+    fn job_deserializes_atlas_field_aliases() {
+        // Atlas job GET returns `job_type`/`result`, aliased to kind/resource.
+        let j: AtlasJob = serde_json::from_value(serde_json::json!({
+            "id": "job_1", "state": "succeeded", "progress_percent": 100,
+            "job_type": "snapshot.create", "result": { "ready": true }
+        }))
+        .unwrap();
+        assert_eq!(j.kind.as_deref(), Some("snapshot.create"));
+        assert!(j.resource.is_some());
+    }
+}
+
 /// Live integration checks against a running Atlas gateway. These are **skipped**
 /// unless `VEYRON_ATLAS_URL` is set (e.g. the fake gateway on `127.0.0.1:5110`),
 /// so `cargo test` in CI without Atlas is a no-op. Run locally with:

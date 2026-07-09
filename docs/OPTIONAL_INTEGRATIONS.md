@@ -6,7 +6,7 @@ Veyron API handlers work without external services using Kubernetes data and heu
 
 ## Quick apply
 
-**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability, Argo CD, or PacketWolf services exist. It can set Prometheus/Grafana/Alertmanager URLs, `VEYRON_ARGOCD_URL` (+ session token from `argocd-initial-admin-secret`), and **`VEYRON_PACKETWOLF_URL`** when `packetwolf-api` is found in `packetwolf` or `cilium-system` (optional `VEYRON_PACKETWOLF_EXTERNAL_URL` from `packetwolf-ui` NodePort). Set `VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for Argo URL-only.
+**Automatic (remote deploy):** [`scripts/lib/bootstrap-integrations.sh`](../scripts/lib/bootstrap-integrations.sh) runs from [`scripts/deploy-all-remote.sh`](../scripts/deploy-all-remote.sh) when observability, Argo CD, PacketWolf, or Atlas services exist. It can set Prometheus/Grafana/Alertmanager URLs, `VEYRON_ARGOCD_URL` (+ session token from `argocd-initial-admin-secret`), **`VEYRON_PACKETWOLF_URL`** when `packetwolf-api` is found in `packetwolf` or `cilium-system` (optional `VEYRON_PACKETWOLF_EXTERNAL_URL` from `packetwolf-ui` NodePort), and **`VEYRON_ATLAS_URL`** when an Atlas gateway Service is found (prefers `atlas-gateway-ceph` in `rook-ceph`, then `atlas-gateway` in `zyvor-system`/`atlas`). Set `VEYRON_SKIP_INTEGRATIONS_BOOTSTRAP=1` to skip all wiring, or `VEYRON_SKIP_ARGOCD_TOKEN_BOOTSTRAP=1` for Argo URL-only.
 
 **Manual:**
 
@@ -61,6 +61,9 @@ With Helm, set `integrations.*` in [charts/veyron/values.yaml](../charts/veyron/
 | `VEYRON_PACKETWOLF_URL` | PacketWolf Network Brain health (`GET /api/v1/packetwolf/status`), Cilium page banner | `http://packetwolf-api.packetwolf.svc:9191` |
 | `VEYRON_PACKETWOLF_EXTERNAL_URL` | Integrations **Open PacketWolf UI** (browser) | `http://YOUR_NODE_IP:30808` |
 | `VEYRON_PACKETWOLF_API_KEY` | PacketWolf API auth (optional when in-cluster trust is enabled) | (secret) |
+| `VEYRON_ATLAS_URL` | Atlas storage control plane — Ceph-backed VM disk snapshot/backup/restore (`GET /api/v1/atlas/status`) | `http://atlas-gateway-ceph.rook-ceph.svc:5110` |
+| `VEYRON_ATLAS_TOKEN` | Atlas HS256 JWT bearer (only when `ATLAS_AUTH_REQUIRED=1`) | (secret) |
+| `VEYRON_ATLAS_TENANT` | Tenant id tagged on Atlas-provisioned volumes/backups | `global` |
 
 Responses include `veyron_context` describing the active data source when integrations are used or skipped.
 
@@ -119,6 +122,25 @@ curl -sk -H "X-API-Key: $VEYRON_API_KEY" \
 **In-cluster trust:** when PacketWolf is deployed with `PACKETWOLF_TRUST_CLUSTER_NETWORKS=true` (default), the API pod can reach PacketWolf without `VEYRON_PACKETWOLF_API_KEY`. Set the key only for external or authenticated endpoints.
 
 Veyron does not proxy the full PacketWolf UI/API (unlike v9s Zeus OS); use **Open PacketWolf** on the Cilium page or the external URL for the Network Brain console. Live Hubble flows in the Cilium page remain policy-derived; PacketWolf provides the production Network Brain layer.
+
+## Atlas (Ceph-backed VM disk protection)
+
+[Atlas](https://zyvor.dev) is the Zyvor **storage control plane** — it fronts Ceph (RBD/CephFS/RGW), NFS, and ZFS behind a stable REST/gRPC API. When `VEYRON_ATLAS_URL` is set, Veyron drives **Ceph-backed** VM disk snapshot / clone / restore and off-cluster backups (RBD `export-diff` → RGW/S3) through Atlas jobs — additive to the native KubeVirt `VolumeSnapshot` flow, never replacing it. Status and actions surface on the **Snapshots & Backups** and **Integrations** pages.
+
+**Automatic wiring:** `bootstrap-integrations.sh` sets `VEYRON_ATLAS_URL` to `http://<svc>.<ns>.svc:5110` when an Atlas gateway Service is found — preferring the real-Ceph gateway (`atlas-gateway-ceph` in `rook-ceph`), then `atlas-gateway` in `zyvor-system` / `atlas`. Restart `veyron-api` after the Secret is applied (deploy script does this on rollout).
+
+**Manual verify:**
+
+```bash
+curl -sk -H "X-API-Key: $VEYRON_API_KEY" \
+  https://HOST:30151/api/v1/atlas/status
+curl -sk -H "X-API-Key: $VEYRON_API_KEY" \
+  https://HOST:30151/api/v1/atlas/volumes?kind=block
+curl -sk -H "X-API-Key: $VEYRON_API_KEY" \
+  https://HOST:30151/api/v1/integrations/status | grep atlas
+```
+
+`VEYRON_ATLAS_TOKEN` (HS256 JWT) is required only when Atlas runs with `ATLAS_AUTH_REQUIRED=1`; `VEYRON_ATLAS_TENANT` (default `global`) tags Atlas-provisioned volumes/backups. A VM disk maps to an Atlas volume by `(namespace, pvc_name)`, so only Ceph-RBD-backed disks in Atlas inventory are actionable; other disks stay on the native path. See `docs/../CLAUDE.md` § Atlas.
 
 ## OIDC / SSO
 
