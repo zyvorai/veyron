@@ -1438,6 +1438,16 @@ body[data-shell="orbit"] #orbit-warp{display:block}
 .vm-card[data-status="paused"]::after,.vm-card[data-status="pausing"]::after,.vm-card[data-status="starting"]::after,.vm-card[data-status="stopping"]::after,.vm-card[data-status="provisioning"]::after,.vm-card[data-status="pending"]::after{background:var(--caution,#EF9F27);opacity:.85;box-shadow:0 0 12px var(--caution,#EF9F27)}
 @keyframes vm-spine-breathe{0%,100%{opacity:.6;box-shadow:0 0 8px var(--nominal,#1D9E75)}50%{opacity:1;box-shadow:0 0 18px var(--nominal,#1D9E75)}}
 @media (prefers-reduced-motion: reduce){ .vm-card[data-status="running"]::after,#orbit-warp.ignite.on{animation:none} }
+/* VM Centre — the capsule panel radiates the VM's live status (ties to the fleet spines) */
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="running"] .space-y.mac-page-window{box-shadow:0 40px 120px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--nominal,#1D9E75) 42%,transparent),0 0 70px color-mix(in srgb,var(--nominal,#1D9E75) 16%,transparent),inset 0 2px 0 var(--nominal,#1D9E75)}
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="failed"] .space-y.mac-page-window,
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="error"] .space-y.mac-page-window{box-shadow:0 40px 120px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--critical,#E24B4A) 46%,transparent),0 0 70px color-mix(in srgb,var(--critical,#E24B4A) 20%,transparent),inset 0 2px 0 var(--critical,#E24B4A)}
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="paused"] .space-y.mac-page-window,
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="pausing"] .space-y.mac-page-window,
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="starting"] .space-y.mac-page-window,
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="stopping"] .space-y.mac-page-window,
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="provisioning"] .space-y.mac-page-window,
+body[data-shell="orbit"] #page-vm-capsule[data-vm-status="pending"] .space-y.mac-page-window{box-shadow:0 40px 120px rgba(0,0,0,.55),0 0 0 1px color-mix(in srgb,var(--caution,#EF9F27) 42%,transparent),0 0 70px color-mix(in srgb,var(--caution,#EF9F27) 16%,transparent),inset 0 2px 0 var(--caution,#EF9F27)}
 /* HUD micro-stat + Forge verb */
 .orbit-hud-stat{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.78rem;font-weight:700;font-feature-settings:"tnum";display:flex;gap:8px;align-items:center}
 .orbit-hud-stat .os-run{color:var(--nominal,#1D9E75)}
@@ -9493,6 +9503,8 @@ function renderVmCapsuleVmr() {
     body.innerHTML = '<div class="vmr-panel"><p style="color:var(--muted)">Select a VM from Fleet Command to open its capsule.</p>' +
       '<button type="button" class="glass-btn-primary glass-btn-sm" style="margin-top:12px" onclick="navigate(\'vms\')">Open Fleet Command</button></div>';
     if (heroSlot) heroSlot.innerHTML = '';
+    const _capPageEmpty = document.getElementById('page-vm-capsule');
+    if (_capPageEmpty) _capPageEmpty.dataset.vmStatus = '';
     return;
   }
   body.innerHTML = '<div class="detail-loading" style="padding:24px;color:var(--text-muted)">Loading VM capsule…</div>';
@@ -9506,6 +9518,9 @@ function renderVmCapsuleVmr() {
     const guestOS = vmi.guest_os_info;
     body.innerHTML = renderVmHero(vm, ns, name, vmi, {}) + renderVmWaveSection(ns, name, vm) + renderVmInspectorAccordion(vm, ns, name, vmi, ifaces, guestOS) + renderEditHardwareAccordion(name);
     if (heroSlot) heroSlot.innerHTML = '';
+    // VM Centre: the capsule panel radiates the VM's live status (living-status language).
+    const _capPage = document.getElementById('page-vm-capsule');
+    if (_capPage) _capPage.dataset.vmStatus = String(vm.status || '').toLowerCase();
     fetchSecurity(ns, name).then(function(secHtml) {
       const el = document.getElementById('security-' + name);
       if (el && secHtml) el.innerHTML = secHtml;
