@@ -1422,6 +1422,22 @@ body[data-shell="orbit"] #orbit-warp{display:block}
 @keyframes orbit-warp{0%{opacity:0}42%{opacity:1}100%{opacity:0}}
 @keyframes orbit-warp-core{0%{opacity:0;transform:scale(.3)}55%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(34)}}
 @keyframes orbit-warp-label{0%{opacity:0;transform:translateY(8px) scale(.9)}50%{opacity:1;transform:none}100%{opacity:0;transform:scale(1.12)}}
+/* Forge Launch ignite variant — green "materialization" tint, lingers a touch longer */
+#orbit-warp.ignite{background:radial-gradient(circle at 50% 50%, transparent 18%, color-mix(in srgb,var(--nominal,#1D9E75) 30%, transparent) 82%)}
+#orbit-warp.ignite.on{animation:orbit-ignite 1.2s ease-out forwards}
+#orbit-warp.ignite #orbit-warp-core{box-shadow:0 0 44px 20px var(--nominal,#1D9E75)}
+#orbit-warp.ignite #orbit-warp-label{color:#eafff6;text-shadow:0 0 26px var(--nominal,#1D9E75)}
+#orbit-warp.ignite.on #orbit-warp-label{animation:orbit-ignite-label 1.2s ease-out forwards}
+@keyframes orbit-ignite{0%{opacity:0}18%{opacity:1}72%{opacity:.92}100%{opacity:0}}
+@keyframes orbit-ignite-label{0%{opacity:0;transform:translateY(10px) scale(.85)}22%{opacity:1;transform:none}76%{opacity:1;transform:scale(1.03)}100%{opacity:0;transform:scale(1.12)}}
+/* Living VM cards — status-accent spine + running breathe (both shells) */
+.vm-card{position:relative}
+.vm-card::after{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--inert,#5F5E5A);opacity:.5;pointer-events:none;transition:.2s}
+.vm-card[data-status="running"]::after{background:var(--nominal,#1D9E75);opacity:.85;box-shadow:0 0 12px var(--nominal,#1D9E75);animation:vm-spine-breathe 3.6s ease-in-out infinite}
+.vm-card[data-status="failed"]::after,.vm-card[data-status="error"]::after{background:var(--critical,#E24B4A);opacity:.9;box-shadow:0 0 12px var(--critical,#E24B4A)}
+.vm-card[data-status="paused"]::after,.vm-card[data-status="pausing"]::after,.vm-card[data-status="starting"]::after,.vm-card[data-status="stopping"]::after,.vm-card[data-status="provisioning"]::after,.vm-card[data-status="pending"]::after{background:var(--caution,#EF9F27);opacity:.85;box-shadow:0 0 12px var(--caution,#EF9F27)}
+@keyframes vm-spine-breathe{0%,100%{opacity:.6;box-shadow:0 0 8px var(--nominal,#1D9E75)}50%{opacity:1;box-shadow:0 0 18px var(--nominal,#1D9E75)}}
+@media (prefers-reduced-motion: reduce){ .vm-card[data-status="running"]::after,#orbit-warp.ignite.on{animation:none} }
 /* HUD micro-stat + Forge verb */
 .orbit-hud-stat{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:.78rem;font-weight:700;font-feature-settings:"tnum";display:flex;gap:8px;align-items:center}
 .orbit-hud-stat .os-run{color:var(--nominal,#1D9E75)}
@@ -11361,6 +11377,15 @@ window.orbitWarpTo = function (ns, name) {
   setTimeout(go, 500);
   setTimeout(function () { w.classList.remove('on'); }, 950);
 };
+// Forge Launch — a VM ignites into existence (create success, orbit shell).
+window.orbitIgnite = function (name) {
+  const w = document.getElementById('orbit-warp');
+  if (!w || _orbitReduced()) return;
+  const lbl = document.getElementById('orbit-warp-label'); if (lbl) lbl.textContent = '◈ FORGED · ' + (name || '');
+  w.classList.remove('on'); void w.offsetWidth; w.classList.add('ignite'); w.classList.add('on');
+  orbitRing('pulse'); setTimeout(function () { orbitRing('pulse'); }, 150); setTimeout(function () { orbitRing('pulse'); }, 300);
+  setTimeout(function () { w.classList.remove('on'); w.classList.remove('ignite'); }, 1200);
+};
 let _orbitLastPulse = 0;
 function orbitHeartbeat() {
   const now = (window.performance && performance.now) ? performance.now() : 0;
@@ -14829,7 +14854,7 @@ function vmCard(vm, showActions) {
   const sel = selectedVmKey === (ns + '/' + vm.name) ? ' selected' : '';
   const tint = window._vmAgeHeatEnabled ? vmAgeTint(vm) : osFamilyTint(family);
   const retireBadge = isRetireCandidate(vm) ? '<span class="vmr-retire-badge" title="Stale VM — consider retiring. Right-click → Mark as Keeper to suppress.">♻ stale?</span>' : '';
-  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" draggable="true" ' +
+  return '<div class="vm-card' + sel + '" data-vm-ns="' + esc(ns) + '" data-vm-name="' + esc(vm.name) + '" data-status="' + esc((vm.status || '').toLowerCase()) + '" draggable="true" ' +
     'ondragstart="vmCardDragStart(event,' + jsArgs(ns, vm.name) + ')" ' +
     'ondragover="vmCardDragOver(event)" ondragleave="vmCardDragLeave(event)" ondrop="vmCardDrop(event,' + jsArgs(ns, vm.name) + ')" ' +
     'style="' + (tint ? 'background-image:linear-gradient(' + tint + ',' + tint + ')' : '') + '" ' +
@@ -16321,6 +16346,7 @@ async function submitForgeWizard(andStart) {
   try {
     await apiJson('/api/v1/vms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     toast('VM "' + name + '" forged' + (andStart ? ' and starting' : ''), 'success');
+    if (document.body.dataset.shell === 'orbit' && window.orbitIgnite) window.orbitIgnite(name);
     closeForgeWizard();
     if (currentPage !== 'vms') navigate('vms');
     setTimeout(function() { fetchVMs().then(function() { selectVm(body.namespace, name, {}); }); }, 1200);
@@ -19663,6 +19689,7 @@ async function forgeVM() {
     }
     const _forgedNs = body.namespace || 'default';
     const _forgedName = name;
+    if (document.body.dataset.shell === 'orbit' && window.orbitIgnite) window.orbitIgnite(name);
     closeCreateModal();
     if (currentPage !== 'vms') navigate('vms');
     fetchVMs().then(function() {
@@ -25970,6 +25997,7 @@ async function submitQuickForge() {
     await apiJson('/api/v1/vms', { method: 'POST', body: JSON.stringify({ name, namespace: ns, template, cpu, memory }) });
     closeQuickForge();
     toast('VM "' + name + '" created — launching…', 'success');
+    if (document.body.dataset.shell === 'orbit' && window.orbitIgnite) window.orbitIgnite(name);
     if (currentPage === 'vms') { setTimeout(function() { refresh(); }, 800); }
     else { navigate('vms'); setTimeout(function() { refresh(); }, 1200); }
   } catch (err) {
