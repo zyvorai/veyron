@@ -109,6 +109,7 @@ bootstrap_veyron_integrations() {
 
     local prom_url="" am_url="" loki_url="" opencost_url="" trivy_url="" jaeger_url="" grafana_url=""
     local grafana_ext="" prom_ext="" am_ext="" jaeger_ext="" packetwolf_url="" packetwolf_ext=""
+    local atlas_url="" atlas_ns="" atlas_svc="" atlas_entry=""
     local argocd_url="" argocd_token="" argocd_default_app=""
     local prom_svc="" am_svc="" loki_svc="" opencost_svc="" trivy_svc="" jaeger_svc="" grafana_svc=""
 
@@ -193,6 +194,17 @@ bootstrap_veyron_integrations() {
         fi
     done
 
+    # Atlas storage control plane — enables Ceph-backed VM disk snapshot/backup/
+    # restore. Prefer the real-Ceph gateway (rook-ceph) over the fake/zyvor-system one.
+    for atlas_entry in "rook-ceph:atlas-gateway-ceph" "zyvor-system:atlas-gateway" "atlas:atlas-gateway"; do
+        atlas_ns="${atlas_entry%%:*}"; atlas_svc="${atlas_entry##*:}"
+        if ${k8s} get svc "${atlas_svc}" -n "${atlas_ns}" &>/dev/null; then
+            atlas_url="http://${atlas_svc}.${atlas_ns}.svc:5110"
+            echo "Atlas storage control plane detected in ${atlas_ns}: ${atlas_url}"
+            break
+        fi
+    done
+
     local argo_lines argo_ns_discovered=""
     argo_lines=$(bootstrap_argocd_credentials "${k8s}" || true)
     if [[ -n "${argo_lines}" ]]; then
@@ -205,7 +217,7 @@ bootstrap_veyron_integrations() {
         fi
     fi
 
-    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${packetwolf_url}" ]]; then
+    if [[ -z "${prom_url}" && -z "${am_url}" && -z "${loki_url}" && -z "${opencost_url}" && -z "${trivy_url}" && -z "${jaeger_url}" && -z "${grafana_url}" && -z "${argocd_url}" && -z "${packetwolf_url}" && -z "${atlas_url}" ]]; then
         echo "No integration services detected — skip veyron-integrations Secret"
         return 0
     fi
@@ -238,6 +250,7 @@ EOF
     [[ -n "${prom_ext}" ]] && echo "  VEYRON_PROMETHEUS_EXTERNAL_URL: \"${prom_ext}\"" >>"${tmp}"
     [[ -n "${am_ext}" ]] && echo "  VEYRON_ALERTMANAGER_EXTERNAL_URL: \"${am_ext}\"" >>"${tmp}"
     [[ -n "${jaeger_ext}" ]] && echo "  VEYRON_JAEGER_EXTERNAL_URL: \"${jaeger_ext}\"" >>"${tmp}"
+    [[ -n "${atlas_url}" ]] && echo "  VEYRON_ATLAS_URL: \"${atlas_url}\"" >>"${tmp}"
     [[ -n "${packetwolf_url}" ]] && echo "  VEYRON_PACKETWOLF_URL: \"${packetwolf_url}\"" >>"${tmp}"
     [[ -n "${packetwolf_ext}" ]] && echo "  VEYRON_PACKETWOLF_EXTERNAL_URL: \"${packetwolf_ext}\"" >>"${tmp}"
     [[ -n "${argocd_url}" ]] && echo "  VEYRON_ARGOCD_URL: \"${argocd_url}\"" >>"${tmp}"
