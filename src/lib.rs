@@ -275,6 +275,22 @@ pub async fn run(mut cli: Cli) -> Result<()> {
         Commands::Resize { name, cpus, memory } => {
             handlers::vm::handle_resize(name, cpus, memory, &cli.namespace).await?;
         }
+        Commands::Hotplug {
+            name,
+            sockets,
+            memory,
+        } => {
+            handlers::vm::handle_hotplug(name, sockets, memory, &cli.namespace).await?;
+        }
+        Commands::RunStrategy { name, strategy } => {
+            handlers::vm::handle_run_strategy(name, strategy, &cli.namespace).await?;
+        }
+        Commands::Cordon { node } => {
+            handlers::vm::handle_cordon(node, false).await?;
+        }
+        Commands::Uncordon { node } => {
+            handlers::vm::handle_cordon(node, true).await?;
+        }
 
         Commands::Console { name } => {
             handlers::vm::handle_console(name, &cli.namespace).await?;
