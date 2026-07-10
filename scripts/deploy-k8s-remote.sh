@@ -255,6 +255,9 @@ rules:
   - apiGroups: ['kubevirt.io']
     resources: ['virtualmachineinstancemigrations']
     verbs: ['get', 'list', 'watch', 'create', 'delete']
+  - apiGroups: ['kubevirt.io']
+    resources: ['kubevirts']
+    verbs: ['get', 'list', 'watch', 'patch', 'update']
   - apiGroups: ['subresources.kubevirt.io']
     resources:
       - 'virtualmachineinstances/vnc'
