@@ -413,6 +413,38 @@ pub enum Commands {
         memory: Option<String>,
     },
 
+    /// Live-hotplug CPU sockets and/or memory on a running VM (Day-2)
+    Hotplug {
+        /// VM name
+        name: String,
+        /// New CPU socket count
+        #[arg(long)]
+        sockets: Option<u32>,
+        /// New guest memory (e.g., 4Gi)
+        #[arg(long)]
+        memory: Option<String>,
+    },
+
+    /// Set a VM's run strategy (Always | Manual | Halted | RerunOnFailure)
+    RunStrategy {
+        /// VM name
+        name: String,
+        /// Run strategy
+        strategy: String,
+    },
+
+    /// Cordon a node — mark unschedulable (Day-2 maintenance)
+    Cordon {
+        /// Node name
+        node: String,
+    },
+
+    /// Uncordon a node — mark schedulable again
+    Uncordon {
+        /// Node name
+        node: String,
+    },
+
     /// Attach to a VM's serial console
     Console {
         /// VM name

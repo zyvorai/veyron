@@ -902,6 +902,54 @@ pub async fn handle_volume_remove(
     Ok(())
 }
 
+/// Cordon / uncordon a node (Day-2 maintenance).
+pub async fn handle_cordon(node: String, schedulable: bool) -> Result<()> {
+    let client = crate::kube::KubeClient::new().await?;
+    client.set_node_schedulable(&node, schedulable).await?;
+    println!(
+        "Node '{}' {}",
+        node,
+        if schedulable {
+            "uncordoned (schedulable)"
+        } else {
+            "cordoned (unschedulable)"
+        }
+    );
+    Ok(())
+}
+
+/// Live-hotplug CPU sockets / memory on a VM.
+pub async fn handle_hotplug(
+    name: String,
+    sockets: Option<u32>,
+    memory: Option<String>,
+    namespace: &str,
+) -> Result<()> {
+    if sockets.is_none() && memory.is_none() {
+        anyhow::bail!("At least one of --sockets or --memory must be specified");
+    }
+    let client = crate::kube::KubeClient::new().await?;
+    client
+        .hotplug_vm_resources(namespace, &name, sockets, memory.as_deref())
+        .await?;
+    println!(
+        "Hotplug requested for VM '{name}' (applies live under KubeVirt LiveUpdate, else on next restart)"
+    );
+    Ok(())
+}
+
+/// Set a VM's run strategy (Always | Manual | Halted | RerunOnFailure).
+pub async fn handle_run_strategy(name: String, strategy: String, namespace: &str) -> Result<()> {
+    const VALID: [&str; 4] = ["Always", "Manual", "Halted", "RerunOnFailure"];
+    if !VALID.contains(&strategy.as_str()) {
+        anyhow::bail!("Invalid run strategy '{strategy}' — must be one of {VALID:?}");
+    }
+    let client = crate::kube::KubeClient::new().await?;
+    client.set_run_strategy(namespace, &name, &strategy).await?;
+    println!("VM '{name}' run strategy set to {strategy}");
+    Ok(())
+}
+
 pub async fn handle_resize(
     name: String,
     cpus: Option<u32>,
