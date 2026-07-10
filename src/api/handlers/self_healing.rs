@@ -15,7 +15,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
-use super::namespace_scope::{self, DashboardNamespaceQuery};
+use super::namespace_scope;
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
 
