@@ -41,8 +41,10 @@ pub fn router(state: SharedState) -> Router {
         .with_state(state)
 }
 
+// Mounted directly in http_server.rs next to the live `/api/v1/nodes` route
+// (nodes::router below is not merged, so these must be pub and wired there).
 #[cfg(feature = "web")]
-async fn cordon_node(
+pub async fn cordon_node(
     State(state): State<SharedState>,
     Path(name): Path<String>,
 ) -> impl IntoResponse {
@@ -50,7 +52,7 @@ async fn cordon_node(
 }
 
 #[cfg(feature = "web")]
-async fn uncordon_node(
+pub async fn uncordon_node(
     State(state): State<SharedState>,
     Path(name): Path<String>,
 ) -> impl IntoResponse {
