@@ -55,7 +55,46 @@ pub fn router(state: SharedState) -> Router {
         .route("/disks", get(list_disks))
         .route("/disks/expand", post(expand_disk))
         .route("/vms/:ns/:name/disks/:volume/migrate", post(migrate_disk))
+        .route(
+            "/disks/conversion/capabilities",
+            get(conversion_capabilities),
+        )
         .with_state(state)
+}
+
+/// Supported disk-image formats and the valid conversion pairs, from the
+/// DiskConverter model. Execution (qemu-img) runs out-of-band as a CDI/import
+/// Job — this reports what the platform can convert between.
+#[cfg(feature = "web")]
+async fn conversion_capabilities() -> Json<serde_json::Value> {
+    use crate::disk_conversion::{DiskConverter, DiskFormat};
+    let dc = DiskConverter::new();
+    let formats: Vec<serde_json::Value> = dc
+        .supported_formats
+        .iter()
+        .map(|f| serde_json::json!({ "format": format!("{f:?}").to_lowercase(), "extension": f.extension() }))
+        .collect();
+    let all = [
+        DiskFormat::Raw,
+        DiskFormat::Qcow2,
+        DiskFormat::Vmdk,
+        DiskFormat::Vdi,
+        DiskFormat::Vhd,
+    ];
+    let mut matrix = Vec::new();
+    for from in &all {
+        let to: Vec<String> = all
+            .iter()
+            .filter(|t| dc.can_convert(from, t))
+            .map(|t| format!("{t:?}").to_lowercase())
+            .collect();
+        matrix.push(serde_json::json!({ "from": format!("{from:?}").to_lowercase(), "to": to }));
+    }
+    Json(serde_json::json!({
+        "supported_formats": formats,
+        "conversions": matrix,
+        "note": "execution runs as an out-of-band qemu-img/CDI import Job; this endpoint reports supported format pairs"
+    }))
 }
 
 #[derive(Debug, Deserialize)]
