@@ -1076,6 +1076,13 @@ pub mod web {
                 {
                     log::warn!("snapshot schedule tick: {}", e);
                 }
+                // Self-healing reconciler (leader-only, gated by its policy CM).
+                let kube_for_heal = { schedule_state.read().await.kube_client.clone() };
+                if let Err(e) =
+                    crate::api::handlers::self_healing::self_healing_tick(kube_for_heal).await
+                {
+                    log::warn!("self-healing tick: {}", e);
+                }
             }
         });
         let app = build_router(state);
