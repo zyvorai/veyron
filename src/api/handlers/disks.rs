@@ -5,8 +5,9 @@
 #[cfg(feature = "web")]
 use axum::{
     Json, Router,
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::StatusCode,
+    response::IntoResponse,
     routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
@@ -53,7 +54,153 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/disks", get(list_disks))
         .route("/disks/expand", post(expand_disk))
+        .route("/vms/:ns/:name/disks/:volume/migrate", post(migrate_disk))
         .with_state(state)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MigrateDiskRequest {
+    /// Destination StorageClass for the disk.
+    pub target_storage_class: String,
+    /// Dry run unless explicitly false — reports the plan without changing anything.
+    #[serde(default = "default_true")]
+    pub dry_run: bool,
+}
+
+#[cfg(feature = "web")]
+fn default_true() -> bool {
+    true
+}
+
+/// Migrate a VM disk to a different StorageClass via KubeVirt volume migration:
+/// provision a destination PVC on the target class, then patch the VM to point
+/// the volume at it with `spec.updateVolumesStrategy: Migration` so KubeVirt
+/// copies the data live. Requires the cluster's KubeVirt VolumesUpdateStrategy
+/// feature; without it the patch is rejected (surfaced). Dry run by default.
+#[cfg(feature = "web")]
+async fn migrate_disk(
+    State(state): State<SharedState>,
+    Path((ns, name, volume)): Path<(String, String, String)>,
+    Json(req): Json<MigrateDiskRequest>,
+) -> impl IntoResponse {
+    use crate::kube::types::VirtualMachine;
+
+    if req.target_storage_class.trim().is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            "target_storage_class is required".to_string(),
+        )
+            .into_response();
+    }
+    let kube = { state.read().await.kube_client.clone() };
+    let vm = match kube.get_vm(&ns, &name).await {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::NOT_FOUND,
+                format!("VM {ns}/{name} not found: {e}"),
+            )
+                .into_response();
+        }
+    };
+    let mut volumes = vm.spec.template.spec.volumes.clone().unwrap_or_default();
+    let Some(idx) = volumes.iter().position(|v| v.name == volume) else {
+        return (
+            StatusCode::NOT_FOUND,
+            format!("volume '{volume}' not found on VM"),
+        )
+            .into_response();
+    };
+    let Some(src_claim) = volumes[idx]
+        .persistent_volume_claim
+        .as_ref()
+        .map(|p| p.claim_name.clone())
+    else {
+        return (
+            StatusCode::BAD_REQUEST,
+            format!("volume '{volume}' is not PVC-backed (only PVC volumes can be storage-class migrated)"),
+        )
+            .into_response();
+    };
+
+    // Size the destination PVC to the source PVC's request.
+    let src_api: Api<PersistentVolumeClaim> = Api::namespaced(kube.client(), &ns);
+    let size = match src_api.get(&src_claim).await {
+        Ok(p) => p
+            .spec
+            .and_then(|s| s.resources)
+            .and_then(|r| r.requests)
+            .and_then(|m| m.get("storage").map(|q| q.0.clone()))
+            .unwrap_or_else(|| "10Gi".to_string()),
+        Err(e) => {
+            return (
+                StatusCode::BAD_GATEWAY,
+                format!("read source PVC {src_claim}: {e}"),
+            )
+                .into_response();
+        }
+    };
+    let dest_claim = format!(
+        "{src_claim}-mig-{}",
+        req.target_storage_class.replace([':', '/'], "-")
+    );
+
+    if req.dry_run {
+        return Json(serde_json::json!({
+            "dry_run": true, "vm": name, "volume": volume,
+            "source_pvc": src_claim, "size": size,
+            "target_storage_class": req.target_storage_class, "destination_pvc": dest_claim,
+            "note": "pass dry_run=false to provision the destination PVC and start KubeVirt volume migration"
+        }))
+        .into_response();
+    }
+
+    // 1) Provision the destination PVC on the target class.
+    if let Err(e) = kube
+        .create_pvc(&ns, &dest_claim, &size, Some(&req.target_storage_class))
+        .await
+    {
+        return (
+            StatusCode::BAD_GATEWAY,
+            format!("create destination PVC: {e}"),
+        )
+            .into_response();
+    }
+    // 2) Point the volume at the new PVC and request a live volume migration.
+    if let Some(pvc) = volumes[idx].persistent_volume_claim.as_mut() {
+        pvc.claim_name = dest_claim.clone();
+    }
+    let volumes_json = match serde_json::to_value(&volumes) {
+        Ok(v) => v,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("serialize volumes: {e}"),
+            )
+                .into_response();
+        }
+    };
+    let patch = serde_json::json!({
+        "spec": { "updateVolumesStrategy": "Migration", "template": { "spec": { "volumes": volumes_json } } }
+    });
+    let vms: Api<VirtualMachine> = Api::namespaced(kube.client(), &ns);
+    match vms
+        .patch(&name, &PatchParams::default(), &Patch::Merge(&patch))
+        .await
+    {
+        Ok(_) => Json(serde_json::json!({
+            "ok": true, "vm": name, "volume": volume,
+            "from_pvc": src_claim, "to_pvc": dest_claim,
+            "target_storage_class": req.target_storage_class,
+            "note": "destination PVC created; KubeVirt is migrating the volume live"
+        }))
+        .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            format!("volume migration patch failed (needs KubeVirt VolumesUpdateStrategy): {e}"),
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "web")]
