@@ -60,6 +60,7 @@ pub mod rdp;
 pub mod recommendations;
 pub mod scheduling;
 pub mod security;
+pub mod self_healing;
 pub mod slo;
 pub mod snapshots;
 pub mod soc;
@@ -139,6 +140,7 @@ pub fn all_routes(
         .merge(compute::router(state.clone()))
         .merge(guest_ops::router(state.clone()))
         .merge(capacity::router(state.clone()))
+        .merge(self_healing::router(state.clone()))
         .merge(catalog::router(state.clone()))
         .merge(experience::router(state.clone()))
         .merge(copilot::router(state.clone()))
