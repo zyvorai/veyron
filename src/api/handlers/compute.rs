@@ -57,8 +57,56 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/vms/:ns/:name/hotplug", post(hotplug_vm))
         .route("/vms/:ns/:name/run-strategy", put(set_run_strategy))
+        .route("/vms/:ns/:name/drift/remediate", post(remediate_drift))
         .route("/vms/bulk", post(bulk_action))
         .with_state(state)
+}
+
+/// Force the operator to re-reconcile a VeyronVM (desired → actual), which
+/// re-applies the declared spec and clears drift. Bumping a well-known
+/// annotation is the standard "kick the reconciler" pattern; the operator's
+/// converter then repairs the KubeVirt VM. Complements the detect-only
+/// `GET /api/v1/vms/:ns/:name/drift`.
+#[cfg(feature = "web")]
+async fn remediate_drift(
+    State(state): State<SharedState>,
+    Path((ns, name)): Path<(String, String)>,
+) -> impl IntoResponse {
+    use kube::Api;
+    use kube::api::{Patch, PatchParams};
+
+    let client = { state.read().await.kube_client.client().clone() };
+    let api: Api<crate::operator_crds::VeyronVM> = Api::namespaced(client, &ns);
+    if api.get(&name).await.is_err() {
+        return (
+            StatusCode::NOT_FOUND,
+            format!("VeyronVM {ns}/{name} not found"),
+        )
+            .into_response();
+    }
+    let ts = chrono::Utc::now().to_rfc3339();
+    let patch = serde_json::json!({
+        "metadata": { "annotations": { "veyron.io/reconcile-requested": ts } }
+    });
+    match api
+        .patch(&name, &PatchParams::default(), &Patch::Merge(&patch))
+        .await
+    {
+        Ok(_) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "ok": true, "vm": name, "namespace": ns,
+                "requested_at": ts,
+                "note": "operator will re-reconcile desired→actual and clear drift"
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            format!("drift remediation failed: {e}"),
+        )
+            .into_response(),
+    }
 }
 
 const VALID_RUN_STRATEGIES: [&str; 4] = ["Always", "Manual", "Halted", "RerunOnFailure"];
