@@ -77,6 +77,7 @@ pub struct DrApplyResponse {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/dr/failover", post(dr_failover))
+        .route("/dr/failback", post(dr_failback))
         .route("/dr/export", get(dr_export_manifests))
         .route("/dr/apply", post(dr_apply))
         .with_state(state)
@@ -86,6 +87,25 @@ pub fn router(state: SharedState) -> Router {
 async fn dr_failover(
     State(_state): State<SharedState>,
     Json(req): Json<DrFailoverRequest>,
+) -> Result<Json<DrFailoverResponse>, (StatusCode, Json<serde_json::Value>)> {
+    perform_dr_restore(req, "failover").await
+}
+
+/// Failback: restore the VM from its latest ready snapshot when returning the
+/// workload to its primary site after a failover. Same snapshot-restore path as
+/// failover, direction-labelled — pair with `GET /dr/export` for cross-cluster.
+#[cfg(feature = "web")]
+async fn dr_failback(
+    State(_state): State<SharedState>,
+    Json(req): Json<DrFailoverRequest>,
+) -> Result<Json<DrFailoverResponse>, (StatusCode, Json<serde_json::Value>)> {
+    perform_dr_restore(req, "failback").await
+}
+
+#[cfg(feature = "web")]
+async fn perform_dr_restore(
+    req: DrFailoverRequest,
+    direction: &str,
 ) -> Result<Json<DrFailoverResponse>, (StatusCode, Json<serde_json::Value>)> {
     if req.namespace.is_empty() || req.vm_name.is_empty() {
         return Err((
@@ -140,7 +160,7 @@ async fn dr_failover(
             status: "dry_run".to_string(),
             snapshot_name: Some(latest.name.clone()),
             message: format!(
-                "Would restore VM {} from snapshot {}{}",
+                "[{direction}] Would restore VM {} from snapshot {}{}",
                 req.vm_name,
                 latest.name,
                 req.target_kubeconfig_context
@@ -175,7 +195,7 @@ async fn dr_failover(
         status: "restored".to_string(),
         snapshot_name: Some(latest.name.clone()),
         message: format!(
-            "Restored VM {} from snapshot {}{}",
+            "[{direction}] Restored VM {} from snapshot {}{}",
             req.vm_name,
             latest.name,
             req.target_kubeconfig_context
