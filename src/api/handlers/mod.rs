@@ -14,6 +14,7 @@ pub mod cilium;
 pub mod clones;
 pub mod clusters;
 pub mod compliance;
+pub mod compute;
 pub mod copilot;
 pub mod costs;
 pub mod custom_dashboards;
@@ -133,6 +134,7 @@ pub fn all_routes(
         .merge(hpa::router(state.clone()))
         .merge(backups::router(state.clone()))
         .merge(atlas::router(state.clone()))
+        .merge(compute::router(state.clone()))
         .merge(catalog::router(state.clone()))
         .merge(experience::router(state.clone()))
         .merge(copilot::router(state.clone()))

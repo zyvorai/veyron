@@ -1602,6 +1602,64 @@ impl KubeClient {
         Ok(patched)
     }
 
+    /// Live-hotplug CPU sockets and/or guest memory on a VM. Sets the required
+    /// `maxSockets` / `maxGuest` ceilings alongside the new `sockets` / `guest`
+    /// values. When the cluster runs KubeVirt with the `LiveUpdate` VM rollout
+    /// strategy the change applies to the running VMI immediately; otherwise it
+    /// takes effect on the next restart. Merge-patch — same pattern as
+    /// `update_vm_resources`.
+    pub async fn hotplug_vm_resources(
+        &self,
+        namespace: &str,
+        name: &str,
+        sockets: Option<u32>,
+        memory: Option<&str>,
+    ) -> Result<VirtualMachine> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+        let mut patch = json!({});
+        if let Some(s) = sockets {
+            patch["spec"]["template"]["spec"]["domain"]["cpu"]["maxSockets"] = json!(s);
+            patch["spec"]["template"]["spec"]["domain"]["cpu"]["sockets"] = json!(s);
+        }
+        if let Some(mem) = memory {
+            patch["spec"]["template"]["spec"]["domain"]["memory"]["maxGuest"] = json!(mem);
+            patch["spec"]["template"]["spec"]["domain"]["memory"]["guest"] = json!(mem);
+        }
+        let patched = vms
+            .patch(name, &PatchParams::default(), &Patch::Merge(patch))
+            .await?;
+        Ok(patched)
+    }
+
+    /// Cordon (`schedulable=false`) or uncordon a node by patching
+    /// `spec.unschedulable`. Cordon is the first step of node evacuation so new
+    /// VMs don't land on a node being drained.
+    pub async fn set_node_schedulable(&self, node: &str, schedulable: bool) -> Result<()> {
+        let nodes: Api<k8s_openapi::api::core::v1::Node> = Api::all(self.client.clone());
+        let patch = json!({ "spec": { "unschedulable": !schedulable } });
+        nodes
+            .patch(node, &PatchParams::default(), &Patch::Merge(&patch))
+            .await?;
+        Ok(())
+    }
+
+    /// Set a VM's `runStrategy` (Always|Manual|Halted|RerunOnFailure). `running`
+    /// and `runStrategy` are mutually exclusive in KubeVirt, so the legacy
+    /// `running` field is cleared in the same patch.
+    pub async fn set_run_strategy(
+        &self,
+        namespace: &str,
+        name: &str,
+        strategy: &str,
+    ) -> Result<VirtualMachine> {
+        let vms: Api<VirtualMachine> = self.vm_api(namespace);
+        let patch = json!({ "spec": { "runStrategy": strategy, "running": null } });
+        let patched = vms
+            .patch(name, &PatchParams::default(), &Patch::Merge(&patch))
+            .await?;
+        Ok(patched)
+    }
+
     /// List PVCs in a namespace
     pub async fn list_pvcs(&self, namespace: &str) -> Result<Vec<PersistentVolumeClaim>> {
         let pvcs: Api<PersistentVolumeClaim> = Api::namespaced(self.client.clone(), namespace);

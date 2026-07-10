@@ -86,6 +86,10 @@ rules:
       - "configmaps"
       - "resourcequotas"
     verbs: ["get", "list", "watch"]
+  # Node maintenance — cordon/uncordon (patch spec.unschedulable)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["patch", "update"]
   - apiGroups: [""]
     resources: ["pods/exec", "pods/attach", "pods/portforward"]
     verbs: ["create", "get"]

@@ -6,7 +6,9 @@
 use axum::{
     Json, Router,
     extract::{Path, State},
-    routing::get,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +36,49 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/nodes", get(list_nodes))
         .route("/nodes/:name", get(get_node))
+        .route("/nodes/:name/cordon", post(cordon_node))
+        .route("/nodes/:name/uncordon", post(uncordon_node))
         .with_state(state)
+}
+
+#[cfg(feature = "web")]
+async fn cordon_node(
+    State(state): State<SharedState>,
+    Path(name): Path<String>,
+) -> impl IntoResponse {
+    set_schedulable(state, name, false).await
+}
+
+#[cfg(feature = "web")]
+async fn uncordon_node(
+    State(state): State<SharedState>,
+    Path(name): Path<String>,
+) -> impl IntoResponse {
+    set_schedulable(state, name, true).await
+}
+
+#[cfg(feature = "web")]
+async fn set_schedulable(state: SharedState, name: String, schedulable: bool) -> impl IntoResponse {
+    let kube = { state.read().await.kube_client.clone() };
+    match kube.set_node_schedulable(&name, schedulable).await {
+        Ok(()) => (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "ok": true, "node": name,
+                "schedulable": schedulable,
+                "action": if schedulable { "uncordon" } else { "cordon" }
+            })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            format!(
+                "{} failed: {e}",
+                if schedulable { "uncordon" } else { "cordon" }
+            ),
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "web")]
