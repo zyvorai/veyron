@@ -3444,6 +3444,52 @@
     else toast(verb + ' failed', 'error');
   }
 
+  /* ── VM compute/guest Day-2 actions (VM inspector "More") ── */
+  window.vmHotplug = async function vmHotplug(ns, name) {
+    var sockets = prompt('New CPU socket count (blank = leave):', '');
+    if (sockets === null) return;
+    var memory = prompt('New guest memory, e.g. 4Gi (blank = leave):', '');
+    if (memory === null) return;
+    var body = {};
+    if (sockets.trim()) body.sockets = parseInt(sockets, 10);
+    if (memory.trim()) body.memory = memory.trim();
+    if (body.sockets == null && body.memory == null) { toast('Nothing to hotplug', 'warn'); return; }
+    try {
+      await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/hotplug',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      toast('Hotplug requested (live under KubeVirt LiveUpdate, else on next restart)', 'success', 6000);
+    } catch (e) { toast('Hotplug failed — ' + (e.message || e), 'error', 6000); }
+  };
+
+  window.vmRunStrategy = async function vmRunStrategy(ns, name) {
+    var s = prompt('Run strategy (Always | Manual | Halted | RerunOnFailure):', 'Always');
+    if (s === null || !s.trim()) return;
+    try {
+      await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/run-strategy',
+        { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strategy: s.trim() }) });
+      toast('Run strategy set to ' + s.trim(), 'success');
+      if (typeof fetchVMs === 'function') fetchVMs();
+    } catch (e) { toast('Set run strategy failed — ' + (e.message || e), 'error', 6000); }
+  };
+
+  window.vmGuestPatch = async function vmGuestPatch(ns, name) {
+    if (!confirm('Update guest OS packages on ' + name + '? Takes a pre-patch snapshot first.')) return;
+    toast('Patching ' + name + ' (this can take a while)…', 'info', 6000);
+    try {
+      var r = await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/guest/patch',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ snapshot_first: true }) });
+      var u = typeof unwrapData === 'function' ? unwrapData(r) : r;
+      toast('Guest patch complete' + (u && u.snapshot ? ' (snapshot ' + u.snapshot + ')' : ''), 'success', 6000);
+    } catch (e) { toast('Guest patch failed — ' + (e.message || e), 'error', 7000); }
+  };
+
+  window.vmReclaim = async function vmReclaim(ns, name) {
+    try {
+      await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/disks/reclaim', { method: 'POST' });
+      toast('fstrim run on ' + name + ' — thin space reclaimed', 'success');
+    } catch (e) { toast('Reclaim failed — ' + (e.message || e), 'error', 6000); }
+  };
+
   window._atlasBuckets = [];
 
   window.fetchAtlasCeph = async function fetchAtlasCeph(opts) {

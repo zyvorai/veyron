@@ -20420,9 +20420,13 @@ function renderVmHero(vm, ns, name, vmi, extras) {
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openSerialConsole(' + jsArgs(ns, name) + ')') + '>Serial</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('pauseVM(' + jsArgs(ns, name) + ')') + '>Pause</button>';
     rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('migrateVM(' + jsArgs(ns, name) + ')') + '>Migrate</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmHotplug(' + jsArgs(ns, name) + ')') + ' title="Live-hotplug CPU/memory">Hotplug</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmGuestPatch(' + jsArgs(ns, name) + ')') + ' title="Update guest OS packages">Patch OS</button>';
+    rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmReclaim(' + jsArgs(ns, name) + ')') + ' title="fstrim — reclaim thin storage">Reclaim</button>';
   }
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmRunStrategy(' + jsArgs(ns, name) + ')') + ' title="Set Always/Manual/Halted/RerunOnFailure">Run Strategy</button>';
   rail += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
   rail += '</div></details>';
   const links = '<div class="vm-hero-links">' +
