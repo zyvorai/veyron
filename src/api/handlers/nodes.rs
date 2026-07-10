@@ -200,8 +200,9 @@ async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>>
     Json(results)
 }
 
+// Mounted directly in http_server.rs next to /api/v1/nodes (nodes::router isn't merged).
 #[cfg(feature = "web")]
-async fn get_node(
+pub async fn get_node(
     State(state): State<SharedState>,
     Path(name): Path<String>,
 ) -> Json<Option<NodeResponse>> {

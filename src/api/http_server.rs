@@ -919,6 +919,10 @@ pub mod web {
                 // Cluster resources
                 .route("/api/v1/nodes", get(list_nodes_handler))
                 .route(
+                    "/api/v1/nodes/:name",
+                    get(crate::api::handlers::nodes::get_node),
+                )
+                .route(
                     "/api/v1/nodes/:name/cordon",
                     post(crate::api::handlers::nodes::cordon_node),
                 )
