@@ -2097,12 +2097,21 @@ pub mod web {
             let s = state.read().await;
             s.kube_client.clone()
         };
+        let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest-filesystem");
         match kube.guest_filesystem_metrics(&ns, &name).await {
-            Ok(resp) => {
-                let ctx = req_ctx(HttpMethod::GET, "/api/v1/vms/:ns/:name/guest-filesystem");
-                ok_json(&ApiResponse::success(&resp, &ctx.request_id))
-            }
-            Err(e) => err_json(500, "GUEST_FILESYSTEM_FAILED", &sanitize_error(&e)),
+            Ok(resp) => ok_json(&ApiResponse::success(&resp, &ctx.request_id)),
+            // Guest filesystem data needs a connected guest runtime; when it's
+            // unavailable (no/disconnected agent) that's expected, not a 5xx —
+            // degrade to a 200 "unavailable" so the dashboard shows a placeholder
+            // instead of a console error.
+            Err(e) => ok_json(&ApiResponse::success(
+                &serde_json::json!({
+                    "available": false,
+                    "filesystems": [],
+                    "reason": sanitize_error(&e),
+                }),
+                &ctx.request_id,
+            )),
         }
     }
 
