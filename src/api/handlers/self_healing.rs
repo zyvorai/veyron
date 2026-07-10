@@ -43,7 +43,170 @@ pub struct HealAction {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/self-healing/run", post(run_self_healing))
+        .route(
+            "/self-healing/policy",
+            axum::routing::get(get_policy).post(set_policy),
+        )
         .with_state(state)
+}
+
+// ── Policy (ConfigMap-persisted; drives the background reconciler) ──────────
+
+const POLICY_NS: &str = "veyron-system";
+const POLICY_NAME: &str = "veyron-self-healing-policy";
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SelfHealingPolicy {
+    /// When true, the background reconciler restarts unhealthy VMs each tick.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Comma-separated namespaces, or `all` / empty for cluster-wide.
+    #[serde(default)]
+    pub namespaces: Option<String>,
+    /// Minimum seconds between heals of the same VM (loop guard). Default 600.
+    #[serde(default)]
+    pub cooldown_secs: u64,
+}
+
+#[cfg(feature = "web")]
+pub async fn read_policy(client: &kube::Client) -> SelfHealingPolicy {
+    use k8s_openapi::api::core::v1::ConfigMap;
+    use kube::Api;
+    let api: Api<ConfigMap> = Api::namespaced(client.clone(), POLICY_NS);
+    match api.get_opt(POLICY_NAME).await {
+        Ok(Some(cm)) => {
+            let d = cm.data.unwrap_or_default();
+            SelfHealingPolicy {
+                enabled: d.get("enabled").map(|v| v == "true").unwrap_or(false),
+                namespaces: d.get("namespaces").cloned(),
+                cooldown_secs: d
+                    .get("cooldown_secs")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(600),
+            }
+        }
+        _ => SelfHealingPolicy::default(),
+    }
+}
+
+#[cfg(feature = "web")]
+async fn write_policy(client: &kube::Client, p: &SelfHealingPolicy) -> anyhow::Result<()> {
+    use k8s_openapi::api::core::v1::ConfigMap;
+    use kube::api::{Api, ObjectMeta, Patch, PatchParams};
+    use std::collections::BTreeMap;
+
+    let mut data = BTreeMap::new();
+    data.insert("enabled".to_string(), p.enabled.to_string());
+    if let Some(ns) = p.namespaces.as_ref().filter(|s| !s.trim().is_empty()) {
+        data.insert("namespaces".to_string(), ns.clone());
+    }
+    data.insert(
+        "cooldown_secs".to_string(),
+        if p.cooldown_secs == 0 {
+            600
+        } else {
+            p.cooldown_secs
+        }
+        .to_string(),
+    );
+    let cm = ConfigMap {
+        metadata: ObjectMeta {
+            name: Some(POLICY_NAME.to_string()),
+            namespace: Some(POLICY_NS.to_string()),
+            labels: Some(BTreeMap::from([(
+                "veyron.io/type".to_string(),
+                "self-healing".to_string(),
+            )])),
+            ..Default::default()
+        },
+        data: Some(data),
+        ..Default::default()
+    };
+    let api: Api<ConfigMap> = Api::namespaced(client.clone(), POLICY_NS);
+    api.patch(
+        POLICY_NAME,
+        &PatchParams::apply("veyron-selfheal").force(),
+        &Patch::Apply(&cm),
+    )
+    .await?;
+    Ok(())
+}
+
+#[cfg(feature = "web")]
+async fn get_policy(State(state): State<SharedState>) -> Json<SelfHealingPolicy> {
+    let client = { state.read().await.kube_client.client().clone() };
+    Json(read_policy(&client).await)
+}
+
+#[cfg(feature = "web")]
+async fn set_policy(
+    State(state): State<SharedState>,
+    Json(policy): Json<SelfHealingPolicy>,
+) -> Json<serde_json::Value> {
+    let client = { state.read().await.kube_client.client().clone() };
+    match write_policy(&client, &policy).await {
+        Ok(()) => Json(serde_json::json!({ "ok": true, "policy": policy })),
+        Err(e) => Json(serde_json::json!({ "ok": false, "error": e.to_string() })),
+    }
+}
+
+/// Background reconciler tick: when the policy is enabled, restart unhealthy
+/// VMs, respecting a per-VM cooldown (in-process loop guard). Called from the
+/// lease-guarded scheduler loop so only the leader replica heals.
+#[cfg(feature = "web")]
+pub async fn self_healing_tick(kube: crate::kube::KubeClient) -> anyhow::Result<()> {
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+    use std::time::{Duration, Instant};
+
+    static LAST_HEAL: std::sync::OnceLock<Mutex<HashMap<String, Instant>>> =
+        std::sync::OnceLock::new();
+    let last_heal = LAST_HEAL.get_or_init(|| Mutex::new(HashMap::new()));
+
+    let policy = read_policy(&kube.client()).await;
+    if !policy.enabled {
+        return Ok(());
+    }
+    let cooldown = Duration::from_secs(policy.cooldown_secs.max(60));
+    let scope = policy.namespaces.clone().unwrap_or_default();
+
+    let vmis = if scope.is_empty() || scope == "all" {
+        kube.list_all_vmis().await.unwrap_or_default()
+    } else {
+        let mut all = Vec::new();
+        for ns in scope.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            all.extend(kube.list_vmis(ns).await.unwrap_or_default());
+        }
+        all
+    };
+
+    for vmi in &vmis {
+        let phase = vmi
+            .status
+            .as_ref()
+            .and_then(|s| s.phase.clone())
+            .unwrap_or_default();
+        if !is_unhealthy(&phase) {
+            continue;
+        }
+        let ns = vmi.metadata.namespace.clone().unwrap_or_default();
+        let name = vmi.metadata.name.clone().unwrap_or_default();
+        let key = format!("{ns}/{name}");
+        {
+            let mut m = last_heal.lock().unwrap();
+            if let Some(t) = m.get(&key) {
+                if t.elapsed() < cooldown {
+                    continue;
+                }
+            }
+            m.insert(key.clone(), Instant::now());
+        }
+        match kube.restart_vm(&ns, &name).await {
+            Ok(_) => log::info!("self-heal restarted {key} (phase {phase})"),
+            Err(e) => log::warn!("self-heal restart {key} failed: {e}"),
+        }
+    }
+    Ok(())
 }
 
 /// Phases that indicate an unhealthy, restartable VMI.
