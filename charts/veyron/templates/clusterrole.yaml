@@ -49,6 +49,10 @@ rules:
   - apiGroups: [""]
     resources: ["namespaces", "nodes", "pods", "pods/log", "events", "persistentvolumeclaims", "configmaps", "resourcequotas"]
     verbs: ["get", "list", "watch"]
+  # Node maintenance — cordon/uncordon (patch spec.unschedulable)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["patch", "update"]
   - apiGroups: [""]
     resources: ["pods/exec", "pods/attach", "pods/portforward"]
     verbs: ["create", "get"]

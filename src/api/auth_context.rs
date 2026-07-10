@@ -60,6 +60,12 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     if path.starts_with("/api/v1/dr/") {
         return ApiRole::Admin;
     }
+    // Node maintenance (cordon/uncordon/drain) affects cluster-wide scheduling.
+    if path.starts_with("/api/v1/nodes/")
+        && (path.ends_with("/cordon") || path.ends_with("/uncordon"))
+    {
+        return ApiRole::Admin;
+    }
     if path.starts_with("/api/v1/soc/playbooks/") {
         return ApiRole::Admin;
     }
@@ -107,6 +113,30 @@ mod tests {
         assert_eq!(
             min_role_for_route(&Method::POST, "/api/v1/snapshots/default/my-snap/restore"),
             ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn admin_required_for_node_cordon() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/nodes/node01/cordon"),
+            ApiRole::Admin
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/nodes/node01/uncordon"),
+            ApiRole::Admin
+        );
+    }
+
+    #[test]
+    fn write_required_for_hotplug_and_bulk() {
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/default/web/hotplug"),
+            ApiRole::Write
+        );
+        assert_eq!(
+            min_role_for_route(&Method::POST, "/api/v1/vms/bulk"),
+            ApiRole::Write
         );
     }
 
