@@ -37,8 +37,88 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/operators", get(list_operators))
         .route("/platform/versions", get(platform_versions))
+        .route("/platform/capabilities", get(platform_capabilities))
         .route("/platform/upgrade", axum::routing::post(platform_upgrade))
         .with_state(state)
+}
+
+/// Report which Day-2 operations the **target cluster** actually supports, based
+/// on KubeVirt feature gates and installed components. Prevents version-gated ops
+/// (live hotplug, storage-class migration) from silently failing at a customer
+/// site — the dashboard/CLI/preflight can gate on this.
+#[cfg(feature = "web")]
+async fn platform_capabilities(State(state): State<SharedState>) -> Json<serde_json::Value> {
+    use kube::api::{Api, ApiResource, DynamicObject};
+    use kube::core::GroupVersionKind;
+
+    let client = { state.read().await.kube_client.client().clone() };
+
+    // KubeVirt CR → feature gates.
+    let kv_ar = ApiResource::from_gvk(&GroupVersionKind::gvk("kubevirt.io", "v1", "KubeVirt"));
+    let kv: Api<DynamicObject> = Api::namespaced_with(client.clone(), "kubevirt", &kv_ar);
+    let kv_obj = kv.get_opt("kubevirt").await.ok().flatten();
+    let gates: Vec<String> = kv_obj
+        .as_ref()
+        .and_then(|o| o.data.get("spec"))
+        .and_then(|s| s.get("configuration"))
+        .and_then(|c| c.get("developerConfiguration"))
+        .and_then(|d| d.get("featureGates"))
+        .and_then(|g| g.as_array())
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect()
+        })
+        .unwrap_or_default();
+    let has = |g: &str| gates.iter().any(|x| x == g);
+    let kv_version = kv_obj
+        .as_ref()
+        .and_then(|o| o.data.get("status"))
+        .and_then(|s| {
+            s.get("observedKubeVirtVersion")
+                .or_else(|| s.get("operatorVersion"))
+        })
+        .and_then(|v| v.as_str())
+        .map(String::from);
+
+    // Component presence (best-effort; missing CRD → not present).
+    let crd_exists = |group: &str, version: &str, kind: &str| {
+        let ar = ApiResource::from_gvk(&GroupVersionKind::gvk(group, version, kind));
+        let cl = client.clone();
+        async move {
+            let api: Api<DynamicObject> = Api::all_with(cl, &ar);
+            api.list(&kube::api::ListParams::default().limit(1))
+                .await
+                .is_ok()
+        }
+    };
+    let cdi_present = crd_exists("cdi.kubevirt.io", "v1beta1", "CDI").await;
+    let velero_present = crd_exists("velero.io", "v1", "Backup").await;
+    let snapshot_class_present =
+        crd_exists("snapshot.storage.k8s.io", "v1", "VolumeSnapshotClass").await;
+
+    Json(serde_json::json!({
+        "kubevirt_version": kv_version,
+        "feature_gates": gates,
+        "day2_ops": {
+            // Live CPU/memory hotplug needs the VM live-update rollout feature.
+            "cpu_memory_live_hotplug": has("VMLiveUpdateFeatures"),
+            // Storage-class disk migration needs the volumes update strategy.
+            "storage_class_migration": has("VolumesUpdateStrategy") || has("VolumeMigration"),
+            // Snapshots/backups need a VolumeSnapshotClass.
+            "snapshots": snapshot_class_present,
+            "velero_backups": velero_present,
+            "cdi_import_convert": cdi_present,
+            // These are unconditional (plain API/subresource calls).
+            "node_cordon": true, "run_strategy": true, "bulk_actions": true,
+            "drift_remediation": true, "self_healing": true, "guest_ops_if_agent": true
+        },
+        "components": {
+            "cdi": cdi_present, "velero": velero_present,
+            "volume_snapshot_class": snapshot_class_present
+        },
+        "note": "guest ops (patch/reclaim/app-consistent) additionally require a guest agent (GuestKit/QGA) in the VM image"
+    }))
 }
 
 #[derive(Debug, Clone, Deserialize)]
