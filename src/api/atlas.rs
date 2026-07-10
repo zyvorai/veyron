@@ -38,11 +38,6 @@ pub fn atlas_tenant() -> String {
     crate::api::integrations::env_var("VEYRON_ATLAS_TENANT").unwrap_or_else(|| "global".to_string())
 }
 
-#[cfg(feature = "web")]
-pub fn atlas_configured() -> bool {
-    atlas_base_url().is_some()
-}
-
 /// Reject obviously-unsafe base URLs. Atlas is an **admin-configured** in-cluster backend
 /// (typically a ClusterIP service, or `127.0.0.1:5110` in dev), not an attacker-controlled
 /// proxy target, so — unlike the PacketWolf proxy validator — loopback is allowed. We still
