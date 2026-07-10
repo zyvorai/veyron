@@ -46,6 +46,10 @@ make ci
 VEYRON_API_KEY='...' ./scripts/test-vm-daily-ops-remote.sh HOST [30151]
 # Optional: VEYRON_E2E_RESTORE=1 for destructive snapshot restore; VEYRON_E2E_SKIP_TIER_B=1 for contract checks only
 
+# Headless dashboard console-error sweep — drives real Chrome over each SPA page, fails on any
+# console/page error or failed request (catches CSP/null-crash/404 regressions). Needs node + Chrome.
+VEYRON_API_KEY='...' ./scripts/dashboard-console-check.sh --host HOST [--screenshot ./out] [--page snapshots]
+
 # Client deliverable: static linux/amd64 tarball (remote podman build, no cluster deploy)
 ./scripts/package-binary-remote.sh HOST USER --fetch   # → dist/veyron-<ver>-linux-amd64.tar.gz
 # See docs/PACKAGE_BINARY_REMOTE.md
