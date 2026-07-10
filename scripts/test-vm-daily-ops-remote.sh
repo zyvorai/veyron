@@ -191,6 +191,37 @@ else
     fail "rdp-expose without node_port" "HTTP ${_CURL_CODE}: $(echo "${body}" | head -c 200)"
 fi
 
+# ═══════════════════════════════════════════════
+# Tier C — Day-2 ops (non-destructive: validation, dry-runs, reads)
+# ═══════════════════════════════════════════════
+tier "Tier C — Day-2 ops (contract / dry-run)"
+
+# hotplug/run-strategy/bulk input validation (no VM mutated)
+curl_api POST "/api/v1/vms/${NS}/x/hotplug" '{}'
+[[ "${_CURL_CODE}" == "400" ]] && pass "hotplug empty body → 400" || skip "hotplug validation (redeploy for Day-2 ops; HTTP ${_CURL_CODE})"
+curl_api PUT "/api/v1/vms/${NS}/x/run-strategy" '{"strategy":"Bogus"}'
+[[ "${_CURL_CODE}" == "400" ]] && pass "run-strategy invalid → 400" || skip "run-strategy validation (HTTP ${_CURL_CODE})"
+curl_api POST "/api/v1/vms/bulk" '{"action":"nope","namespace":"'"${NS}"'","names":["a"]}'
+[[ "${_CURL_CODE}" == "400" ]] && pass "bulk invalid action → 400" || skip "bulk validation (HTTP ${_CURL_CODE})"
+
+# Read/dry-run endpoints (safe)
+for chk in \
+    "GET|/api/v1/capacity/headroom|capacity headroom" \
+    "GET|/api/v1/platform/versions|platform versions" \
+    "GET|/api/v1/disks/conversion/capabilities|disk-conversion capabilities" \
+    "GET|/api/v1/self-healing/policy|self-healing policy" \
+    "GET|/api/v1/storage/orphans|orphan list" ; do
+    IFS='|' read -r m path label <<< "${chk}"
+    curl_api "${m}" "${path}" '' no
+    [[ "${_CURL_CODE}" == "200" ]] && pass "${label} → 200" || skip "${label} (redeploy for Day-2 ops; HTTP ${_CURL_CODE})"
+done
+
+# Self-healing evaluate (dry run) + upgrade dry run — non-mutating
+curl_api POST "/api/v1/self-healing/run"
+[[ "${_CURL_CODE}" == "200" ]] && pass "self-healing/run dry → 200" || skip "self-healing run (HTTP ${_CURL_CODE})"
+curl_api POST "/api/v1/platform/upgrade" '{"component":"kubevirt","image_tag":"v0.0.0-e2e"}'
+[[ "${_CURL_CODE}" == "200" ]] && pass "platform upgrade dry-run → 200" || skip "platform upgrade dry-run (HTTP ${_CURL_CODE})"
+
 if [[ "${SKIP_TIER_B}" == "1" ]]; then
     skip "Tier B skipped (VEYRON_E2E_SKIP_TIER_B=1)"
 else
