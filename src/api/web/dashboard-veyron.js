@@ -3483,6 +3483,13 @@
     } catch (e) { toast('Guest patch failed — ' + (e.message || e), 'error', 7000); }
   };
 
+  window.vmDriftRemediate = async function vmDriftRemediate(ns, name) {
+    try {
+      await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/drift/remediate', { method: 'POST' });
+      toast('Drift remediation requested — operator will re-reconcile ' + name, 'success', 6000);
+    } catch (e) { toast('Drift remediate failed — ' + (e.message || e), 'error', 6000); }
+  };
+
   window.vmReclaim = async function vmReclaim(ns, name) {
     try {
       await apiJson('/api/v1/vms/' + encodeURIComponent(ns) + '/' + encodeURIComponent(name) + '/disks/reclaim', { method: 'POST' });
