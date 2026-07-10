@@ -36,7 +36,51 @@ pub struct OperatorResponse {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/operators", get(list_operators))
+        .route("/platform/versions", get(platform_versions))
         .with_state(state)
+}
+
+/// Read the installed KubeVirt and CDI versions from their operator CRs so an
+/// operator can see what platform layer is running (basis for upgrade decisions).
+/// Read-only — actual version rollout is a deliberately separate, guarded action.
+#[cfg(feature = "web")]
+async fn platform_versions(State(state): State<SharedState>) -> Json<serde_json::Value> {
+    use kube::api::{Api, ApiResource, DynamicObject};
+    use kube::core::GroupVersionKind;
+
+    let client = { state.read().await.kube_client.client().clone() };
+
+    // KubeVirt CR: kubevirt.io/v1 KubeVirt "kubevirt" in ns "kubevirt".
+    let kv_ar = ApiResource::from_gvk(&GroupVersionKind::gvk("kubevirt.io", "v1", "KubeVirt"));
+    let kv: Api<DynamicObject> = Api::namespaced_with(client.clone(), "kubevirt", &kv_ar);
+    let kubevirt = kv.get_opt("kubevirt").await.ok().flatten().map(|o| {
+        let st = o.data.get("status").cloned().unwrap_or_default();
+        serde_json::json!({
+            "operatorVersion": st.get("operatorVersion"),
+            "observedVersion": st.get("observedKubeVirtVersion"),
+            "targetVersion": st.get("targetKubeVirtVersion"),
+            "phase": st.get("phase"),
+        })
+    });
+
+    // CDI CR: cdi.kubevirt.io/v1beta1 CDI "cdi" (cluster-scoped).
+    let cdi_ar = ApiResource::from_gvk(&GroupVersionKind::gvk("cdi.kubevirt.io", "v1beta1", "CDI"));
+    let cdi_api: Api<DynamicObject> = Api::all_with(client, &cdi_ar);
+    let cdi = cdi_api.get_opt("cdi").await.ok().flatten().map(|o| {
+        let st = o.data.get("status").cloned().unwrap_or_default();
+        serde_json::json!({
+            "operatorVersion": st.get("operatorVersion"),
+            "observedVersion": st.get("observedVersion"),
+            "targetVersion": st.get("targetVersion"),
+            "phase": st.get("phase"),
+        })
+    });
+
+    Json(serde_json::json!({
+        "kubevirt": kubevirt,
+        "cdi": cdi,
+        "note": "installed platform versions; upgrade rollout is a separate guarded operation"
+    }))
 }
 
 /// Discover operators by listing Deployments with common operator name patterns.
