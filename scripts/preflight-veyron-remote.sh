@@ -8,15 +8,30 @@
 # smoke test. Run this as the go-live acceptance gate at a customer site.
 #
 # Usage:
-#   VEYRON_API_KEY='...' ./scripts/preflight-veyron-remote.sh <host> [https_node_port]
+#   VEYRON_API_KEY='...' ./scripts/preflight-veyron-remote.sh <host> [https_node_port] [--smoke]
 #
-# Exits non-zero if the API is unreachable or the smoke test fails.
+# Fast by default (reachability + security posture + Day-2 capabilities, seconds).
+# Pass --smoke (or PREFLIGHT_SMOKE=1) to also run the full verify-veyron-remote.sh
+# functional smoke test (~2-3 min).
+#
+# Exits non-zero if the API is unreachable or (when requested) the smoke test fails.
 set -euo pipefail
+
+RUN_SMOKE="${PREFLIGHT_SMOKE:-0}"
+POSARGS=()
+for a in "$@"; do
+  case "$a" in
+    --smoke) RUN_SMOKE=1 ;;
+    --no-smoke) RUN_SMOKE=0 ;;
+    *) POSARGS+=("$a") ;;
+  esac
+done
+set -- "${POSARGS[@]:-}"
 
 HOST="${1:-${DEPLOY_HOST:-}}"
 PORT="${2:-30151}"
 KEY="${VEYRON_API_KEY:-CHANGE_ME}"
-[[ -z "${HOST}" ]] && { echo "usage: VEYRON_API_KEY=... $0 <host> [port]" >&2; exit 2; }
+[[ -z "${HOST}" ]] && { echo "usage: VEYRON_API_KEY=... $0 <host> [port] [--smoke]" >&2; exit 2; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE="https://${HOST}:${PORT}"
 
@@ -48,9 +63,9 @@ caps="$(c "${BASE}/api/v1/platform/capabilities" 2>/dev/null || true)"
 if [[ -z "${caps}" || "${caps}" == *'"error"'* ]]; then
   warn "capabilities endpoint unavailable (redeploy API to enable /platform/capabilities)"
 else
-  echo "${caps}" | python3 - "${caps}" <<'PY' 2>/dev/null || echo "${caps}" | head -c 400
+  python3 - "${caps}" <<'PY' 2>/dev/null || { echo "${caps}" | head -c 400; echo; }
 import sys, json
-d = json.loads(sys.stdin.read())
+d = json.loads(sys.argv[1])
 print("  kubevirt_version:", d.get("kubevirt_version"))
 ops = d.get("day2_ops", {})
 for k, v in ops.items():
@@ -66,14 +81,20 @@ if gated:
 PY
 fi
 
-# 4) Functional smoke test
-echo; echo "HTTPS API smoke test:"; hr
-if [[ -x "${SCRIPT_DIR}/verify-veyron-remote.sh" ]]; then
-  VEYRON_API_KEY="${KEY}" "${SCRIPT_DIR}/verify-veyron-remote.sh" "${HOST}" "${PORT}" || { bad "smoke test failed"; exit 1; }
+# 4) Functional smoke test (opt-in — it takes ~2-3 min)
+if [[ "${RUN_SMOKE}" == "1" ]]; then
+  echo; echo "HTTPS API smoke test:"; hr
+  if [[ -x "${SCRIPT_DIR}/verify-veyron-remote.sh" ]]; then
+    VEYRON_API_KEY="${KEY}" "${SCRIPT_DIR}/verify-veyron-remote.sh" "${HOST}" "${PORT}" || { bad "smoke test failed"; exit 1; }
+  else
+    warn "verify-veyron-remote.sh not found; skipping smoke test"
+  fi
 else
-  warn "verify-veyron-remote.sh not found; skipping smoke test"
+  echo; warn "Skipped functional smoke test (pass --smoke to run verify-veyron-remote.sh, ~2-3 min)"
 fi
 
 hr
-ok "Preflight complete. Also run: VEYRON_API_KEY=... ./scripts/test-vm-daily-ops-remote.sh ${HOST} ${PORT}"
-ok "and: VEYRON_API_KEY=... ./scripts/dashboard-console-check.sh --host ${HOST}"
+ok "Preflight complete."
+ok "Full smoke test:  VEYRON_API_KEY=... $0 ${HOST} ${PORT} --smoke"
+ok "Daily-ops E2E:    VEYRON_API_KEY=... ./scripts/test-vm-daily-ops-remote.sh ${HOST} ${PORT}"
+ok "Console sweep:    VEYRON_API_KEY=... ./scripts/dashboard-console-check.sh --host ${HOST}"
