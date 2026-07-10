@@ -63,8 +63,9 @@ RBAC lives in three synced places — see CLAUDE.md § "API service account and 
 ## 4. Acceptance gate (must pass — run against the customer cluster)
 
 ```bash
-# 1) Readiness + capabilities + smoke test (one command)
-VEYRON_API_KEY='<key>' ./scripts/preflight-veyron-remote.sh <host> 30151
+# 1) Readiness + security posture + Day-2 capabilities (fast, seconds).
+#    Add --smoke to also run the full functional smoke test (~2-3 min).
+VEYRON_API_KEY='<key>' ./scripts/preflight-veyron-remote.sh <host> 30151 --smoke
 
 # 2) Full VM daily-ops E2E (create/start/stop/pause/expose/snapshot + Day-2 Tier C)
 VEYRON_API_KEY='<key>' ./scripts/test-vm-daily-ops-remote.sh <host> 30151
