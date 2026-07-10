@@ -6377,6 +6377,10 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
     <div class="card-header"><span class="card-title">Cluster Locations</span><span id="cluster-locations-count" style="font-size:.78rem;color:var(--text-muted);padding:0 4px"></span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchClusterLocations()">&#8635;</button></div>
     <table class="table"><thead><tr><th>Name</th><th>Region</th><th>Health</th><th>VMs</th><th>Nodes</th><th>Active</th></tr></thead><tbody id="cluster-locations-body"><tr><td colspan="6" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table>
   </div>
+  <div class="card glass-card" style="margin-top:16px" id="platform-ops-card">
+    <div class="card-header"><span class="card-title">Platform &amp; Capacity</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchPlatformOps()">&#8635;</button></div>
+    <div id="platform-ops-body" style="padding:12px 16px"><p style="color:var(--text-dim);font-size:.84rem">Loading…</p></div>
+  </div>
 </div>
 </div>
 
@@ -9790,7 +9794,7 @@ function loadPageData(page, opts) {
     if (typeof fetchSnapshotsVmr === 'function') fetchSnapshotsVmr(opts);
   }
   if (page === 'events') fetchEvents(true, opts);
-  if (page === 'nodes') { fetchNodes(opts); fetchPlatformReadiness(); fetchClusterLocations(); }
+  if (page === 'nodes') { fetchNodes(opts); fetchPlatformReadiness(); fetchClusterLocations(); fetchPlatformOps(); }
   if (page === 'pods') { fetchPods(opts); fetchVmis(); }
   if (page === 'storage') { fetchStorage(opts); fetchStoragePools(); }
   if (page === 'crds') fetchCRDs();
@@ -20427,6 +20431,7 @@ function renderVmHero(vm, ns, name, vmi, extras) {
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('cloneVM(' + jsArgs(ns, name) + ')') + '>Clone</button>';
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('openResizeModal(' + jsArgs(ns, name, vm.cpu, vm.memory) + ')') + '>Resize</button>';
   rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmRunStrategy(' + jsArgs(ns, name) + ')') + ' title="Set Always/Manual/Halted/RerunOnFailure">Run Strategy</button>';
+  rail += '<button type="button" class="glass-btn-secondary" ' + onStopHandler('vmDriftRemediate(' + jsArgs(ns, name) + ')') + ' title="Re-apply desired spec (clear drift)">Remediate Drift</button>';
   rail += '<button type="button" class="glass-btn-destructive" ' + onStopHandler('vmDelete(' + jsArgs(ns, name) + ')') + '>Delete</button>';
   rail += '</div></details>';
   const links = '<div class="vm-hero-links">' +
@@ -24402,6 +24407,49 @@ async function submitCrdCreate() {
 }
 
 // ── Node Detail ──
+async function fetchPlatformOps() {
+  const el = document.getElementById('platform-ops-body');
+  if (!el) return;
+  try {
+    const [capR, verR, polR] = await Promise.all([
+      apiJson('/api/v1/capacity/headroom').catch(() => null),
+      apiJson('/api/v1/platform/versions').catch(() => null),
+      apiJson('/api/v1/self-healing/policy').catch(() => null),
+    ]);
+    const cap = (typeof unwrapData === 'function' ? unwrapData(capR) : capR) || {};
+    const ver = (typeof unwrapData === 'function' ? unwrapData(verR) : verR) || {};
+    const pol = (typeof unwrapData === 'function' ? unwrapData(polR) : polR) || {};
+    const bar = (r, label) => r ? '<div style="margin:4px 0"><div style="display:flex;justify-content:space-between;font-size:.78rem"><span>' + label + '</span><span class="cell-mono">' + r.allocated + ' / ' + r.total + ' ' + r.unit + ' (' + r.utilization_percent + '%)</span></div><div style="height:6px;border-radius:4px;background:rgba(140,160,200,.14);overflow:hidden"><div style="height:100%;width:' + Math.min(100, r.utilization_percent) + '%;background:var(--plasma,#5b8cff)"></div></div></div>' : '';
+    const kv = ver.kubevirt || {}, cdi = ver.cdi || {};
+    const on = !!pol.enabled;
+    el.innerHTML =
+      '<div class="id-eyebrow">Capacity headroom</div>' + bar(cap.cpu, 'CPU') + bar(cap.memory, 'Memory') +
+      (cap.additional_avg_vms != null ? '<div style="font-size:.78rem;color:var(--text-dim);margin-top:4px">Room for ~' + cap.additional_avg_vms + ' more average VMs</div>' : '') +
+      '<div class="id-eyebrow" style="margin-top:12px">Platform versions</div>' +
+      '<div class="cell-mono" style="font-size:.82rem">KubeVirt ' + esc(kv.observedVersion || kv.operatorVersion || '—') + ' · CDI ' + esc(cdi.observedVersion || cdi.operatorVersion || '—') + '</div>' +
+      '<div class="id-eyebrow" style="margin-top:12px">Self-healing</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+        (on ? '<span class="id-sig id-sig-ok"><span class="id-pulse"></span>enabled</span>' : '<span class="id-sig id-sig-inert">disabled</span>') +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="toggleSelfHealing(' + (!on) + ')">' + (on ? 'Disable' : 'Enable') + '</button>' +
+        '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="runSelfHealing()">Run now</button>' +
+      '</div>';
+  } catch (e) { el.innerHTML = '<p style="color:var(--orange);font-size:.84rem">' + esc(e.message || e) + '</p>'; }
+}
+async function toggleSelfHealing(enable) {
+  try {
+    await apiJson('/api/v1/self-healing/policy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: enable }) });
+    toast('Self-healing ' + (enable ? 'enabled' : 'disabled'), 'success');
+    fetchPlatformOps();
+  } catch (e) { toast('Failed — ' + (e.message || e), 'error', 6000); }
+}
+async function runSelfHealing() {
+  try {
+    const r = await apiJson('/api/v1/self-healing/run?heal=true', { method: 'POST' });
+    const u = (typeof unwrapData === 'function' ? unwrapData(r) : r) || {};
+    toast('Self-healing: ' + (u.healed || 0) + ' healed of ' + (u.unhealthy || 0) + ' unhealthy', 'success', 6000);
+  } catch (e) { toast('Failed — ' + (e.message || e), 'error', 6000); }
+}
+
 async function nodeCordon(nodeName, cordon) {
   const verb = cordon ? 'cordon' : 'uncordon';
   try {
