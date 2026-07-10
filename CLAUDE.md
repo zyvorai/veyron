@@ -106,6 +106,15 @@ A separate **Go** service (controller-runtime) runs **inside the cluster**. It w
 
 - `src/api/http_server.rs` — Axum server, TLS, auth middleware, rate limiting, WebSocket upgrade, VNC proxy. VM routes: **`/network/internet`** (per-VM egress), **`/expose`** (SSH via `kubevirt.io/domain`), **`/rdp-expose`** (RDP via `kubevirt.io/vm` + NodePort).
 - `src/api/handlers/` — handler modules per API domain (`vmis`, `pods`, `metrics`, `costs`, `snapshots`, `compliance`, `soc`, etc.)
+
+**Day-2 operations** (ongoing fleet maintenance; mutations ⇒ Write, cluster-wide/destructive ⇒ Admin in `auth_context.rs`; several are **dry-run by default**):
+  - **Compute** (`handlers/compute.rs`): `POST /vms/:ns/:name/hotplug` (live CPU/mem via KubeVirt `maxSockets`/`maxGuest`), `PUT /vms/:ns/:name/run-strategy` (Always|Manual|Halted|RerunOnFailure), `POST /vms/bulk` (start|stop|restart|migrate|delete over many), `POST /vms/:ns/:name/drift/remediate` (kick operator re-reconcile).
+  - **Node maintenance** (`handlers/nodes.rs`, mounted in `http_server.rs`): `POST /nodes/:name/{cordon,uncordon}` — patches `spec.unschedulable` (needs `nodes: patch` RBAC).
+  - **Guest** (`handlers/guest_ops.rs`, via GuestKit `guest-exec`): `POST /vms/:ns/:name/guest/patch` (distro-detecting OS update + optional pre-snapshot), `POST /vms/:ns/:name/disks/reclaim` (`fstrim`).
+  - **Self-healing** (`handlers/self_healing.rs`): `POST /self-healing/run` (dry-run unless `?heal=true`), `GET/POST /self-healing/policy` (ConfigMap `veyron.io/type=self-healing`); a lease-guarded `self_healing_tick` in the scheduler loop restarts Failed/Unknown VMIs when enabled (per-VM cooldown).
+  - **Data/DR**: `POST /dr/failback` (`handlers/dr.rs`); `app_consistent` flag on `POST /snapshots`; `GET`/`DELETE /storage/orphans` (reclaim, dry-run unless `?confirm=true`); `POST /velero/{backups,restores}` (`handlers/velero.rs`, `VELERO_NAMESPACE`); `POST /vms/:ns/:name/disks/:volume/migrate` (storage-class migration via KubeVirt `updateVolumesStrategy: Migration`, dry-run default).
+  - **Platform** (`handlers/operators.rs`): `GET /platform/versions` (KubeVirt/CDI installed versions), `POST /platform/upgrade` (patch CR `imageTag`, dry-run default, needs `kubevirts: patch` RBAC); `GET /capacity/headroom` (`handlers/capacity.rs`), `GET /disks/conversion/capabilities`.
+  - Regression gate: **`./scripts/dashboard-console-check.sh --host HOST`** (headless Chrome console-error sweep) caught the routing/500 bugs in these — run after dashboard edits.
 - `src/api/web/dashboard.html` — single-file SPA dashboard (embedded into the binary via `include_str!`). **CloudOS / ZeusOS shell**: macOS 26 Tahoe density (`body.mac-desktop-root`), SF system typography, 40px menubar, glass **dock**, **mac-page-toolbar** (Normal/Power hide `.page-header`), `.mac-page-window` content panes, desktop tiers Normal/Power/Advanced, Finder sidebar, **Ask Zeus** assistant (⌘J). VNC modal: **Link quality** (`LAN` / `Balanced` / `Low bandwidth`) persists in `localStorage` under `veyron_vnc_preset`. See [docs/CLOUDOS_VISION.md](docs/CLOUDOS_VISION.md).
 
 **SharedState pattern** used by every handler:
