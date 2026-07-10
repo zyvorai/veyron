@@ -918,6 +918,14 @@ pub mod web {
                 .route("/api/v1/events/recent", get(recent_events_handler))
                 // Cluster resources
                 .route("/api/v1/nodes", get(list_nodes_handler))
+                .route(
+                    "/api/v1/nodes/:name/cordon",
+                    post(crate::api::handlers::nodes::cordon_node),
+                )
+                .route(
+                    "/api/v1/nodes/:name/uncordon",
+                    post(crate::api::handlers::nodes::uncordon_node),
+                )
                 .route("/api/v1/pods", get(list_pods_handler))
                 .route("/api/v1/pods/:name/logs", get(get_pod_logs_handler))
                 .route("/api/v1/profiles", get(list_profiles_handler))
@@ -1692,8 +1700,10 @@ pub mod web {
             };
             // NodePort/LoadBalancer node ports must fall within the cluster
             // NodePort range; reject anything outside 30000–32767 up front.
-            if matches!(cfg.service_type.to_ascii_lowercase().as_str(), "nodeport" | "loadbalancer")
-            {
+            if matches!(
+                cfg.service_type.to_ascii_lowercase().as_str(),
+                "nodeport" | "loadbalancer"
+            ) {
                 for p in &cfg.ports {
                     if let Some(np) = p.node_port {
                         if !(30000..=32767).contains(&np) {
