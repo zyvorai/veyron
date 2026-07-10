@@ -29,6 +29,9 @@ pub struct NodeResponse {
     pub os_image: String,
     pub kernel_version: String,
     pub vm_count: u32,
+    /// True when the node is cordoned (`spec.unschedulable`).
+    #[serde(default)]
+    pub unschedulable: bool,
 }
 
 #[cfg(feature = "web")]
@@ -171,6 +174,11 @@ async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>>
                 .unwrap_or_default();
 
             let vm_count = vmi_per_node.get(name.as_str()).copied().unwrap_or(0);
+            let unschedulable = node
+                .spec
+                .as_ref()
+                .and_then(|s| s.unschedulable)
+                .unwrap_or(false);
 
             NodeResponse {
                 name,
@@ -184,6 +192,7 @@ async fn list_nodes(State(state): State<SharedState>) -> Json<Vec<NodeResponse>>
                 os_image,
                 kernel_version,
                 vm_count,
+                unschedulable,
             }
         })
         .collect();

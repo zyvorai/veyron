@@ -22835,6 +22835,14 @@ async function fetchNodeDetail(nodeName) {
     }
     const pods = asArray(podsResp).filter(p => p.node_name === nodeName);
     let inner = renderNodeDetailHeader(node);
+    // Node maintenance — cordon/uncordon (admin).
+    inner += '<div style="display:flex;gap:8px;align-items:center;padding:8px 14px;flex-wrap:wrap">' +
+      (node.unschedulable
+        ? '<span class="id-sig id-sig-warn"><span class="id-pulse"></span>cordoned</span>' +
+          '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="nodeCordon(' + jsArgs(nodeName) + ',false)">Uncordon</button>'
+        : '<span class="id-sig id-sig-ok"><span class="id-pulse"></span>schedulable</span>' +
+          '<button type="button" class="glass-btn-secondary glass-btn-sm" onclick="nodeCordon(' + jsArgs(nodeName) + ',true)">Cordon</button>') +
+      '</div>';
     inner += '<div class="vm-detail-columns">';
     inner += renderNodeCapacityColumn(node);
     inner += renderNodeWorkloadsColumn(nodeName, pods);
@@ -24390,6 +24398,18 @@ async function submitCrdCreate() {
 }
 
 // ── Node Detail ──
+async function nodeCordon(nodeName, cordon) {
+  const verb = cordon ? 'cordon' : 'uncordon';
+  try {
+    await apiJson('/api/v1/nodes/' + encodeURIComponent(nodeName) + '/' + verb, { method: 'POST' });
+    toast('Node ' + nodeName + ' ' + verb + 'ed', 'success');
+    if (typeof fetchNodes === 'function') fetchNodes();
+    if (typeof fetchNodeDetail === 'function') fetchNodeDetail(nodeName);
+  } catch (e) {
+    toast(verb + ' failed — ' + (e.message || e), 'error', 6000);
+  }
+}
+
 function toggleNodeDetail(nodeName, opts) {
   const existing = document.getElementById('node-detail-' + nodeName);
   if (existing) {
