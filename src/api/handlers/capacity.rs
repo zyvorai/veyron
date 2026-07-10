@@ -56,10 +56,28 @@ async fn capacity_headroom(State(state): State<SharedState>) -> Json<serde_json:
         if let Some(cpu) = vm.spec.template.spec.domain.cpu.as_ref() {
             vm_cpu += cpu.cores.unwrap_or(0) as f64;
         }
-        if let Some(mem) = vm.spec.template.spec.domain.memory.as_ref() {
-            if let Some(guest) = mem.guest.as_ref() {
-                vm_mem_gi += crate::utils::parse_memory_gib(guest);
-            }
+        // Prefer domain.memory.guest; fall back to resources.requests.memory
+        // (how most VMs actually declare memory).
+        let mem_str = vm
+            .spec
+            .template
+            .spec
+            .domain
+            .memory
+            .as_ref()
+            .and_then(|m| m.guest.clone())
+            .or_else(|| {
+                vm.spec
+                    .template
+                    .spec
+                    .domain
+                    .resources
+                    .requests
+                    .as_ref()
+                    .and_then(|r| r.get("memory").cloned())
+            });
+        if let Some(m) = mem_str {
+            vm_mem_gi += crate::utils::parse_memory_gib(&m);
         }
     }
 
