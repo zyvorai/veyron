@@ -8,6 +8,7 @@ pub mod audit;
 pub mod auth;
 pub mod autoscaler;
 pub mod backups;
+pub mod capacity;
 pub mod catalog;
 pub mod chaos_engineering;
 pub mod cilium;
@@ -137,6 +138,7 @@ pub fn all_routes(
         .merge(atlas::router(state.clone()))
         .merge(compute::router(state.clone()))
         .merge(guest_ops::router(state.clone()))
+        .merge(capacity::router(state.clone()))
         .merge(catalog::router(state.clone()))
         .merge(experience::router(state.clone()))
         .merge(copilot::router(state.clone()))
