@@ -7,7 +7,8 @@ use axum::{
     Json, Router,
     extract::{Path, Query, State},
     http::StatusCode,
-    routing::{get, patch},
+    response::IntoResponse,
+    routing::{delete, get, patch},
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,7 +75,152 @@ pub fn router(state: SharedState) -> Router {
         .route("/storage/pools", get(list_storage_pools))
         .route("/storage/usage", get(get_storage_usage))
         .route("/storage/pvcs/:ns/:name", patch(resize_pvc))
+        .route(
+            "/storage/orphans",
+            get(list_orphan_pvcs).delete(reclaim_orphan_pvcs),
+        )
         .with_state(state)
+}
+
+#[cfg(feature = "web")]
+#[derive(Debug, Deserialize)]
+pub struct OrphanQuery {
+    #[serde(default)]
+    pub namespace: Option<String>,
+    /// Must be `true` for DELETE to actually delete; otherwise it's a dry run.
+    #[serde(default)]
+    pub confirm: bool,
+}
+
+#[cfg(feature = "web")]
+#[derive(Debug, Serialize)]
+pub struct OrphanPvc {
+    pub namespace: String,
+    pub name: String,
+    pub storage_class: Option<String>,
+    pub capacity: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deleted: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+/// Orphan = a Bound PVC that no VM references AND that has no ownerReferences
+/// (so CDI/operator/snapshot-managed PVCs are never touched). Returns the
+/// candidate list without deleting.
+#[cfg(feature = "web")]
+async fn find_orphan_pvcs(
+    kube: &crate::kube::KubeClient,
+    scope: &str,
+) -> Vec<k8s_openapi::api::core::v1::PersistentVolumeClaim> {
+    use std::collections::HashSet;
+    let vms = kube.list_vms_for_scope(scope).await;
+    let mut in_use: HashSet<String> = HashSet::new();
+    for vm in &vms {
+        let ns = vm.metadata.namespace.clone().unwrap_or_default();
+        if let Some(vols) = vm.spec.template.spec.volumes.as_ref() {
+            for v in vols {
+                if let Some(pvc) = v.persistent_volume_claim.as_ref() {
+                    in_use.insert(format!("{ns}/{}", pvc.claim_name));
+                } else if let Some(dv) = v.data_volume.as_ref() {
+                    in_use.insert(format!("{ns}/{}", dv.name));
+                }
+            }
+        }
+    }
+    kube.list_pvcs_for_scope(scope)
+        .await
+        .into_iter()
+        .filter(|p| {
+            let ns = p.metadata.namespace.clone().unwrap_or_default();
+            let name = p.metadata.name.clone().unwrap_or_default();
+            let bound = p
+                .status
+                .as_ref()
+                .and_then(|s| s.phase.as_deref())
+                .map(|ph| ph == "Bound")
+                .unwrap_or(false);
+            let owned = p
+                .metadata
+                .owner_references
+                .as_ref()
+                .map(|o| !o.is_empty())
+                .unwrap_or(false);
+            bound && !owned && !in_use.contains(&format!("{ns}/{name}"))
+        })
+        .collect()
+}
+
+#[cfg(feature = "web")]
+fn orphan_to_dto(p: &k8s_openapi::api::core::v1::PersistentVolumeClaim) -> OrphanPvc {
+    OrphanPvc {
+        namespace: p.metadata.namespace.clone().unwrap_or_default(),
+        name: p.metadata.name.clone().unwrap_or_default(),
+        storage_class: p.spec.as_ref().and_then(|s| s.storage_class_name.clone()),
+        capacity: p
+            .status
+            .as_ref()
+            .and_then(|s| s.capacity.as_ref())
+            .and_then(|c| c.get("storage"))
+            .map(|q| q.0.clone()),
+        deleted: None,
+        error: None,
+    }
+}
+
+#[cfg(feature = "web")]
+async fn list_orphan_pvcs(
+    State(state): State<SharedState>,
+    Query(q): Query<OrphanQuery>,
+) -> impl IntoResponse {
+    let (kube, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let orphans: Vec<OrphanPvc> = find_orphan_pvcs(&kube, &scope)
+        .await
+        .iter()
+        .map(orphan_to_dto)
+        .collect();
+    Json(serde_json::json!({ "count": orphans.len(), "orphans": orphans }))
+}
+
+/// Reclaim orphan PVCs. Dry run unless `?confirm=true`.
+#[cfg(feature = "web")]
+async fn reclaim_orphan_pvcs(
+    State(state): State<SharedState>,
+    Query(q): Query<OrphanQuery>,
+) -> impl IntoResponse {
+    let (kube, default_ns) = {
+        let s = state.read().await;
+        (s.kube_client.clone(), s.namespace.clone())
+    };
+    let scope = namespace_scope::resolve_opt(q.namespace.clone(), &default_ns);
+    let candidates = find_orphan_pvcs(&kube, &scope).await;
+    if !q.confirm {
+        let dto: Vec<OrphanPvc> = candidates.iter().map(orphan_to_dto).collect();
+        return Json(serde_json::json!({
+            "dry_run": true, "count": dto.len(), "orphans": dto,
+            "note": "pass ?confirm=true to delete"
+        }));
+    }
+    let mut results = Vec::with_capacity(candidates.len());
+    for p in &candidates {
+        let mut dto = orphan_to_dto(p);
+        match kube.delete_pvc(&dto.namespace, &dto.name).await {
+            Ok(()) => dto.deleted = Some(true),
+            Err(e) => {
+                dto.deleted = Some(false);
+                dto.error = Some(e.to_string());
+            }
+        }
+        results.push(dto);
+    }
+    let deleted = results.iter().filter(|r| r.deleted == Some(true)).count();
+    Json(serde_json::json!({
+        "dry_run": false, "count": results.len(), "deleted": deleted, "orphans": results
+    }))
 }
 
 #[cfg(feature = "web")]

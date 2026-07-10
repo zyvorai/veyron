@@ -66,6 +66,10 @@ pub fn min_role_for_route(method: &Method, path: &str) -> ApiRole {
     {
         return ApiRole::Admin;
     }
+    // Destructive orphan-volume reclaim (DELETE deletes PVCs).
+    if path == "/api/v1/storage/orphans" {
+        return ApiRole::Admin;
+    }
     if path.starts_with("/api/v1/soc/playbooks/") {
         return ApiRole::Admin;
     }

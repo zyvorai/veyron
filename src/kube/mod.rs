@@ -1701,6 +1701,13 @@ impl KubeClient {
         }
     }
 
+    /// Delete a PersistentVolumeClaim (used by orphan-volume reclaim).
+    pub async fn delete_pvc(&self, namespace: &str, name: &str) -> Result<()> {
+        let pvcs: Api<PersistentVolumeClaim> = self.pvc_api(namespace);
+        pvcs.delete(name, &DeleteParams::default()).await?;
+        Ok(())
+    }
+
     /// List storage classes
     pub async fn list_storage_classes(
         &self,
