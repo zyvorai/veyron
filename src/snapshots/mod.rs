@@ -48,6 +48,11 @@ pub struct SnapshotConfig {
     pub description: Option<String>,
     pub labels: HashMap<String, String>,
     pub retention: RetentionPolicy,
+    /// Request an application-consistent (quiesced) snapshot. For a running VM
+    /// with the guest agent connected, KubeVirt's snapshot controller freezes
+    /// the guest filesystems around the online snapshot; this flag records the
+    /// intent and tags the snapshot's consistency level.
+    pub app_consistent: bool,
 }
 
 impl SnapshotConfig {
@@ -58,7 +63,14 @@ impl SnapshotConfig {
             description: None,
             labels: HashMap::new(),
             retention: RetentionPolicy::default(),
+            app_consistent: false,
         }
+    }
+
+    /// Request an application-consistent (guest-quiesced) snapshot.
+    pub fn with_app_consistent(mut self, app_consistent: bool) -> Self {
+        self.app_consistent = app_consistent;
+        self
     }
 
     pub fn with_description(mut self, description: impl Into<String>) -> Self {

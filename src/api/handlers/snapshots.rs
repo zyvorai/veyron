@@ -46,6 +46,9 @@ pub struct CreateSnapshotRequest {
     pub vm_name: String,
     pub name: Option<String>,
     pub description: Option<String>,
+    /// Request an application-consistent (guest-quiesced) snapshot.
+    #[serde(default)]
+    pub app_consistent: bool,
 }
 
 /// Restore snapshot request
@@ -157,7 +160,8 @@ async fn create_snapshot(
     });
 
     let config = SnapshotConfig::new(&req.vm_name, &snapshot_name)
-        .with_description(req.description.unwrap_or_default());
+        .with_description(req.description.unwrap_or_default())
+        .with_app_consistent(req.app_consistent);
 
     match manager.create_snapshot(&config).await {
         Ok(snap) => {

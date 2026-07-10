@@ -61,6 +61,17 @@ impl SnapshotManager {
         if let Some(desc) = &config.description {
             annotations.insert("veyron.io/description".to_string(), desc.clone());
         }
+        // Record the requested consistency level. For a running VM with the guest
+        // agent connected, KubeVirt freezes guest filesystems around the online
+        // snapshot, making it application-consistent.
+        annotations.insert(
+            "veyron.io/consistency".to_string(),
+            if config.app_consistent {
+                "application".to_string()
+            } else {
+                "crash".to_string()
+            },
+        );
 
         // Create the snapshot CRD
         let snapshot = VirtualMachineSnapshot {
