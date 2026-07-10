@@ -8,12 +8,46 @@
 use axum::{
     Json, Router,
     extract::{Query, State},
-    routing::get,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
 };
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "web")]
 use crate::api::http_server::web::SharedState;
+
+/// Velero install namespace (CRs live here). `VELERO_NAMESPACE` overrides.
+#[cfg(feature = "web")]
+fn velero_namespace() -> String {
+    crate::api::integrations::env_var("VELERO_NAMESPACE").unwrap_or_else(|| "velero".to_string())
+}
+
+#[cfg(feature = "web")]
+fn velero_ar(kind: &str) -> kube::api::ApiResource {
+    kube::api::ApiResource::from_gvk(&kube::core::GroupVersionKind::gvk("velero.io", "v1", kind))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateVeleroBackupRequest {
+    /// Namespaces to back up (defaults to all).
+    #[serde(default)]
+    pub included_namespaces: Vec<String>,
+    /// Backup name (defaults to `veyron-<ts>`).
+    #[serde(default)]
+    pub name: Option<String>,
+    /// TTL, e.g. `"720h0m0s"` (Velero default when omitted).
+    #[serde(default)]
+    pub ttl: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct CreateVeleroRestoreRequest {
+    /// Source backup name (required).
+    pub backup_name: String,
+    #[serde(default)]
+    pub name: Option<String>,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VeleroBackupRecord {
@@ -51,7 +85,108 @@ pub struct VeleroQuery {
 pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/velero/status", get(velero_status))
+        .route("/velero/backups", post(create_velero_backup))
+        .route("/velero/restores", post(create_velero_restore))
         .with_state(state)
+}
+
+#[cfg(feature = "web")]
+fn ts_suffix() -> String {
+    chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
+}
+
+/// Trigger a Velero backup by creating a `velero.io/v1 Backup` CR.
+#[cfg(feature = "web")]
+async fn create_velero_backup(
+    State(state): State<SharedState>,
+    Json(req): Json<CreateVeleroBackupRequest>,
+) -> impl IntoResponse {
+    use kube::api::{Api, DynamicObject, ObjectMeta, PostParams, TypeMeta};
+
+    let client = { state.read().await.kube_client.client().clone() };
+    let ns = velero_namespace();
+    let name = req
+        .name
+        .unwrap_or_else(|| format!("veyron-{}", ts_suffix()));
+    let mut spec = serde_json::Map::new();
+    if !req.included_namespaces.is_empty() {
+        spec.insert("includedNamespaces".into(), req.included_namespaces.into());
+    }
+    if let Some(ttl) = req.ttl.filter(|t| !t.trim().is_empty()) {
+        spec.insert("ttl".into(), ttl.into());
+    }
+    let obj = DynamicObject {
+        types: Some(TypeMeta {
+            api_version: "velero.io/v1".into(),
+            kind: "Backup".into(),
+        }),
+        metadata: ObjectMeta {
+            name: Some(name.clone()),
+            namespace: Some(ns.clone()),
+            ..Default::default()
+        },
+        data: serde_json::json!({ "spec": serde_json::Value::Object(spec) }),
+    };
+    let api: Api<DynamicObject> = Api::namespaced_with(client, &ns, &velero_ar("Backup"));
+    match api.create(&PostParams::default(), &obj).await {
+        Ok(_) => (
+            StatusCode::ACCEPTED,
+            Json(serde_json::json!({ "ok": true, "backup": name, "namespace": ns })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            format!("velero backup create failed: {e}"),
+        )
+            .into_response(),
+    }
+}
+
+/// Trigger a Velero restore from a backup by creating a `velero.io/v1 Restore` CR.
+#[cfg(feature = "web")]
+async fn create_velero_restore(
+    State(state): State<SharedState>,
+    Json(req): Json<CreateVeleroRestoreRequest>,
+) -> impl IntoResponse {
+    use kube::api::{Api, DynamicObject, ObjectMeta, PostParams, TypeMeta};
+
+    if req.backup_name.trim().is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            "backup_name is required".to_string(),
+        )
+            .into_response();
+    }
+    let client = { state.read().await.kube_client.client().clone() };
+    let ns = velero_namespace();
+    let name = req
+        .name
+        .unwrap_or_else(|| format!("{}-restore-{}", req.backup_name, ts_suffix()));
+    let obj = DynamicObject {
+        types: Some(TypeMeta {
+            api_version: "velero.io/v1".into(),
+            kind: "Restore".into(),
+        }),
+        metadata: ObjectMeta {
+            name: Some(name.clone()),
+            namespace: Some(ns.clone()),
+            ..Default::default()
+        },
+        data: serde_json::json!({ "spec": { "backupName": req.backup_name } }),
+    };
+    let api: Api<DynamicObject> = Api::namespaced_with(client, &ns, &velero_ar("Restore"));
+    match api.create(&PostParams::default(), &obj).await {
+        Ok(_) => (
+            StatusCode::ACCEPTED,
+            Json(serde_json::json!({ "ok": true, "restore": name, "namespace": ns })),
+        )
+            .into_response(),
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            format!("velero restore create failed: {e}"),
+        )
+            .into_response(),
+    }
 }
 
 #[cfg(feature = "web")]

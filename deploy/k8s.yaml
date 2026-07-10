@@ -113,6 +113,13 @@ rules:
   - apiGroups: ["snapshot.storage.k8s.io"]
     resources: ["volumesnapshots", "volumesnapshotcontents", "volumesnapshotclasses"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Velero — list status + trigger backups/restores
+  - apiGroups: ["velero.io"]
+    resources: ["backups", "restores"]
+    verbs: ["get", "list", "watch", "create"]
+  - apiGroups: ["velero.io"]
+    resources: ["backupstoragelocations", "schedules", "volumesnapshotlocations"]
+    verbs: ["get", "list", "watch"]
   # CDI (DataVolume / import / upload — full verbs for GitOps-style API use)
   - apiGroups: ["cdi.kubevirt.io"]
     resources: ["*"]
