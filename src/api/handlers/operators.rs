@@ -37,7 +37,106 @@ pub fn router(state: SharedState) -> Router {
     Router::new()
         .route("/operators", get(list_operators))
         .route("/platform/versions", get(platform_versions))
+        .route("/platform/upgrade", axum::routing::post(platform_upgrade))
         .with_state(state)
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct PlatformUpgradeRequest {
+    /// `kubevirt` or `cdi`.
+    pub component: String,
+    /// Target image tag, e.g. `"v1.9.0"`.
+    pub image_tag: String,
+    /// Dry run unless explicitly false — reports the planned change without patching.
+    #[serde(default = "default_true")]
+    pub dry_run: bool,
+}
+
+#[cfg(feature = "web")]
+fn default_true() -> bool {
+    true
+}
+
+/// Trigger a KubeVirt or CDI upgrade by patching the operator CR's `spec.imageTag`.
+/// Admin-gated (/platform/* is admin) and **dry run by default** — the operator
+/// then performs the rollout. This is the guarded execution counterpart to
+/// `GET /platform/versions`.
+#[cfg(feature = "web")]
+async fn platform_upgrade(
+    State(state): State<SharedState>,
+    Json(req): Json<PlatformUpgradeRequest>,
+) -> axum::response::Response {
+    use axum::response::IntoResponse;
+    use kube::api::{Api, ApiResource, DynamicObject, Patch, PatchParams};
+    use kube::core::GroupVersionKind;
+
+    let (gvk, ns, name): (GroupVersionKind, Option<&str>, &str) = match req.component.as_str() {
+        "kubevirt" => (
+            GroupVersionKind::gvk("kubevirt.io", "v1", "KubeVirt"),
+            Some("kubevirt"),
+            "kubevirt",
+        ),
+        "cdi" => (
+            GroupVersionKind::gvk("cdi.kubevirt.io", "v1beta1", "CDI"),
+            None,
+            "cdi",
+        ),
+        other => {
+            return (
+                axum::http::StatusCode::BAD_REQUEST,
+                format!("unknown component '{other}' (expected kubevirt|cdi)"),
+            )
+                .into_response();
+        }
+    };
+    if req.image_tag.trim().is_empty() {
+        return (
+            axum::http::StatusCode::BAD_REQUEST,
+            "image_tag is required".to_string(),
+        )
+            .into_response();
+    }
+
+    let client = { state.read().await.kube_client.client().clone() };
+    let ar = ApiResource::from_gvk(&gvk);
+    let api: Api<DynamicObject> = match ns {
+        Some(n) => Api::namespaced_with(client, n, &ar),
+        None => Api::all_with(client, &ar),
+    };
+    let current = api.get_opt(name).await.ok().flatten();
+    let current_tag = current
+        .as_ref()
+        .and_then(|o| o.data.get("spec"))
+        .and_then(|s| s.get("imageTag"))
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    if req.dry_run {
+        return Json(serde_json::json!({
+            "dry_run": true, "component": req.component,
+            "current_image_tag": current_tag, "target_image_tag": req.image_tag,
+            "note": "pass dry_run=false to apply — the operator then rolls out the upgrade"
+        }))
+        .into_response();
+    }
+
+    let patch = serde_json::json!({ "spec": { "imageTag": req.image_tag } });
+    match api
+        .patch(name, &PatchParams::default(), &Patch::Merge(&patch))
+        .await
+    {
+        Ok(_) => Json(serde_json::json!({
+            "ok": true, "component": req.component,
+            "from": current_tag, "to": req.image_tag,
+            "note": "imageTag patched — operator is rolling out the upgrade"
+        }))
+        .into_response(),
+        Err(e) => (
+            axum::http::StatusCode::BAD_GATEWAY,
+            format!("upgrade patch failed: {e}"),
+        )
+            .into_response(),
+    }
 }
 
 /// Read the installed KubeVirt and CDI versions from their operator CRs so an
