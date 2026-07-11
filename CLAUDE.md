@@ -242,9 +242,14 @@ Prefer CSS custom properties for surfaces, text, and status. The token table bel
 
 Status must always use the four signal colors above — never invent a new color for a state. Brand accent stays in the blue→violet→cyan aurora family; don't add an unrelated brand hue (e.g. orange/green) outside status.
 
-### Surfaces — floating glass
+### Surfaces — flat web-page content (NOT floating boxes)
 
-Every panel is translucent frosted glass: `backdrop-filter: blur(~26px) saturate(1.6)`, ~20px radius, a layered depth shadow (`0 22px 58px …`) plus an **inset top specular highlight** (`inset 0 1px 0 rgba(190,212,255,.20)`). On hover they **float**: `translateY(-4px)` with a plasma bloom (`0 0 44px var(--plasma-glow)`) and brightening border. This is built into the holo overrides for the shared surface classes — reuse those classes rather than re-styling.
+**Design update (de-box):** content surfaces are **flat and borderless** — the UI reads as a normal flowing web page, not a boxed desktop app. The glass tokens still exist, but a late override layer neutralizes the box treatment. **Do not re-introduce card borders, radius, drop-shadows, backdrop-blur, or hover-float on content surfaces.**
+
+- The flatten layer is one block, **`FLAT WEB CONTENT`**, appended at the end of the first `<style>` in `dashboard.html` (search `FLAT WEB CONTENT`). It targets `html.glass-deck .card/.glass-card/.chart-card/.vm-card/.vmr-panel/.tile/.panel/.id-tile/.id-vmcard/.id-tpl/.mac-page-window` with `background:transparent; border:none; border-radius:0; box-shadow:none; backdrop-filter:none` (all `!important`, placed last so it beats the glass-deck box rules). **To change surface framing globally, edit this block — do not touch 67 pages or the per-theme variants.**
+- **Sections, not cards:** top-level groups (`.space-y > .card/.glass-card/.chart-card/.vmr-panel`) get a **top hairline divider** (`border-top:1px solid var(--hairline)`) + gutter-aligned padding; the first child stays flush. Card headers (`.card-header`, `.id-card-h`) render as flat **section headings** with a bottom hairline, no fill.
+- **No fake window chrome:** the per-page `.mac-page-window` frame is stripped and the `.mac-page-toolbar` fake title bar (traffic-light dots `.mac-page-toolbar-traffic`) is hidden. **Nav stays:** menubar, left Finder sidebar, and dock are the navigation and are unchanged.
+- **Ambience is RETAINED:** aurora field (`body::before`), grid veil (`body::after`), deck tint, palette/tokens, pointer parallax, fleet orb, and the luminous status orbs all stay. Keep the atmospheric background; only content surfaces are flat.
 
 ### Depth & motion
 
