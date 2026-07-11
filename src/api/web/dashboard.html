@@ -5268,6 +5268,146 @@ body[data-desktop-tier="advanced"] .page.section-shell > .space-y.mac-page-windo
   border:none;border-radius:0;background:transparent;
 }
 /* ── end Instrument Deck shell overrides ──────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FLAT WEB CONTENT — "de-box" (owner: web-page UX)
+   Keep the aurora/glass AMBIENCE (background, glow, palette, parallax, orb) and
+   all nav (menubar / sidebar / dock) + status semantics. Strip the "box feel":
+   no per-page window frame, no fake title-bar traffic lights, and content
+   surfaces flatten to borderless sections separated by whitespace + hairlines.
+   One late, high-priority layer so it wins over the glass-deck !important rules.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1 — flatten every content surface (strip box paint) */
+html.glass-deck .card,
+html.glass-deck .glass-card,
+html.glass-deck .chart-card,
+html.glass-deck .vm-card,
+html.glass-deck .vmr-panel,
+html.glass-deck .vmr-surface-card,
+html.glass-deck .vmr-fleet-card,
+html.glass-deck .vmr-fleet-toolbar,
+html.glass-deck .vmr-copy-tile,
+html.glass-deck .vmr-heat-tile,
+html.glass-deck .vmr-alog-panel,
+html.glass-deck .vmr-ns-card,
+html.glass-deck .vmr-incident-card,
+html.glass-deck .vmr-table-wrap,
+html.glass-deck .zeus-glass,
+html.glass-deck .vm-inspector-panel,
+html.glass-deck .vm-hero,
+html.glass-deck .vm-hero-metric,
+html.glass-deck .mission-tile,
+html.glass-deck .security-finding-card,
+html.glass-deck .vd-kv,
+html.glass-deck .glass-details,
+html.glass-deck .operator-details,
+html.glass-deck .tile,
+html.glass-deck .panel,
+html.glass-deck .id-tile,
+html.glass-deck .id-vmcard,
+html.glass-deck .id-tpl,
+html.glass-deck .mac-page-window{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+
+/* 1a — notice banners: flatten the box but keep a left accent so callouts read */
+html.glass-deck .glass-banner,
+html.glass-deck .veyron-cap-banner{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  box-shadow:none!important;
+  border:none!important;
+  border-left:2px solid var(--hairline-hi,var(--hairline))!important;
+  border-radius:0!important;
+}
+
+/* 1b — inline-styled inner stat tiles (inspector / capsule / fleet cards).
+        !important is the one case that beats an inline style= border. */
+html.glass-deck .vm-inspector-panel div[style*="border"],
+html.glass-deck .vmr-fleet-card div[style*="border"],
+html.glass-deck .vmr-capsule-pane div[style*="border"],
+html.glass-deck .vmr-capsule-hero div[style*="border"]{
+  background:transparent!important;
+  border-color:transparent!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+
+/* 2 — no hover-float on flattened sections */
+html.glass-deck .card:hover,
+html.glass-deck .glass-card:hover,
+html.glass-deck .chart-card:hover,
+html.glass-deck .vmr-panel:hover,
+html.glass-deck .tile:hover,
+html.glass-deck .panel:hover,
+html.glass-deck .id-tile:hover,
+html.glass-deck .mac-page-window:hover{
+  transform:none!important;
+  box-shadow:none!important;
+  border-color:transparent!important;
+}
+/* keep a faint tint on genuinely clickable items */
+html.glass-deck .vm-card:hover,
+html.glass-deck .id-vmcard:hover,
+html.glass-deck .id-tpl:hover,
+html.glass-deck .vmr-fleet-card:hover,
+html.glass-deck .vmr-incident-card:hover,
+html.glass-deck .mission-tile:hover,
+html.glass-deck .vmr-ns-card:hover{
+  transform:none!important;
+  box-shadow:none!important;
+  border-color:transparent!important;
+  background:rgba(140,170,255,.06)!important;
+}
+
+/* 3 — drop box-edge adornments (accent bar / shimmer top-rule / tile bloom) */
+html.glass-deck .card::before,
+html.glass-deck .chart-card::before,
+html.glass-deck .vmr-panel::before,
+html.glass-deck .id-tile::after{ display:none!important; }
+
+/* 4 — section separation: top-level groups become web sections
+        (top hairline + gutter-aligned); the first child stays flush */
+html.glass-deck .space-y>.card,
+html.glass-deck .space-y>.glass-card,
+html.glass-deck .space-y>.chart-card,
+html.glass-deck .space-y>.vmr-panel{
+  border-top:1px solid var(--hairline)!important;
+  border-radius:0!important;
+  padding:22px 0 4px!important;
+}
+html.glass-deck .space-y>:first-child{
+  border-top:none!important;
+  padding-top:0!important;
+}
+
+/* 5 — card headers become flat section headings (underline, no fill) */
+html.glass-deck .card-header,
+html.glass-deck .id-card-h{
+  background:transparent!important;
+  border-bottom:1px solid var(--hairline)!important;
+  padding-left:0!important;
+  padding-right:0!important;
+}
+
+/* 6 — remove the fake macOS window title bar (traffic lights + frame) */
+.mac-page-toolbar-traffic{ display:none!important; }
+html.glass-deck .mac-page-toolbar{
+  background:transparent!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  border:none!important;
+  border-radius:0!important;
+  box-shadow:none!important;
+}
+.mac-page-toolbar-wrap::before{ display:none!important; }
 </style>
 </head>
 <body class="mac-desktop-root mission-control-home finder-tier-compact" data-desktop-tier="power" data-tier-mode="auto" data-shell="orbit">
