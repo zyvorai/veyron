@@ -1,31 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <unattend xmlns="urn:schemas-microsoft-com:unattend">
 
-  <!-- ================= windowsPE: driver injection + disk layout ============ -->
+  <!-- ================= windowsPE: disk layout ================================ -->
+  <!-- NOTE: no windowsPE driver injection. The builder root disk is SATA, which WinPE
+       sees natively, so viostor is not needed during Setup — and a
+       PnpCustomizationsWinPE DriverPaths block pointing at CD-ROM roots makes 24H2
+       Setup fail 0xD000A000 in ExecuteUnattendDriverInstall (confirmed from
+       X:\$WINDOWS.~BT\Sources\Panther\setuperr.log). The full VirtIO driver set is
+       installed at first logon instead (FirstLogonCommands), so the sealed image
+       still boots on virtio afterward. -->
   <settings pass="windowsPE">
-
-    <component name="Microsoft-Windows-PnpCustomizationsWinPE"
-               processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
-               language="neutral" versionScope="nonSxS"
-               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
-      <!-- Without viostor, Setup shows "no drives found": the root disk is virtio.
-           WinPE drive letters are not stable, so offer every plausible CD-ROM root.
-           Setup recurses into subfolders and ignores paths that do not exist. -->
-      <DriverPaths>
-        <PathAndCredentials wcm:action="add" wcm:keyValue="1">
-          <Path>D:\</Path>
-        </PathAndCredentials>
-        <PathAndCredentials wcm:action="add" wcm:keyValue="2">
-          <Path>E:\</Path>
-        </PathAndCredentials>
-        <PathAndCredentials wcm:action="add" wcm:keyValue="3">
-          <Path>F:\</Path>
-        </PathAndCredentials>
-        <PathAndCredentials wcm:action="add" wcm:keyValue="4">
-          <Path>G:\</Path>
-        </PathAndCredentials>
-      </DriverPaths>
-    </component>
 
     <component name="Microsoft-Windows-Setup"
                processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
@@ -126,8 +110,13 @@
         <AcceptEula>true</AcceptEula>
         <FullName>Veyron</FullName>
         <Organization>Zyvor</Organization>
-        <!-- No ProductKey: LTSC installs keyless (activate later). A key that does not
-             exactly match the media edition makes Setup fail 0xD000A000. -->
+        <!-- Public KMS client setup key for Win11 Enterprise LTSC 2024. Only lets
+             Setup pick the edition and skip the product-key/edition screens; it
+             activates nothing. (The earlier 0xD000A000 was the driver injection, not
+             this key.) -->
+        <ProductKey>
+          <Key>M7XTQ-FN8P6-TTKYV-9D4CC-J462D</Key>
+        </ProductKey>
       </UserData>
     </component>
   </settings>
