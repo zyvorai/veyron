@@ -388,6 +388,10 @@ EOF
                 RDP_PUT_OK=1
             elif echo "${body}" | grep -q 'NodePort.*already used'; then
                 skip "PUT RDP expose (node_port ${np} in use — ${body:0:120})"
+            elif echo "${body}" | grep -qE 'PUBLIC_RDP_FORBIDDEN|VEYRON_ALLOW_PUBLIC_RDP'; then
+                # Secure-by-default: a bare NodePort/LoadBalancer RDP is refused unless
+                # VEYRON_ALLOW_PUBLIC_RDP=1. This is the correct hardened behavior.
+                pass "PUT RDP expose refused by policy (secure default — set VEYRON_ALLOW_PUBLIC_RDP=1 to allow)"
             else
                 fail "PUT RDP expose" "$(echo "${body}" | head -c 300)"
             fi
