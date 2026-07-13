@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+
+  <!-- ================= windowsPE: driver injection + disk layout ============ -->
+  <settings pass="windowsPE">
+
+    <component name="Microsoft-Windows-PnpCustomizationsWinPE"
+               processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <!-- Without viostor, Setup shows "no drives found": the root disk is virtio.
+           WinPE drive letters are not stable, so offer every plausible CD-ROM root.
+           Setup recurses into subfolders and ignores paths that do not exist. -->
+      <DriverPaths>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="1">
+          <Path>D:\</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="2">
+          <Path>E:\</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="3">
+          <Path>F:\</Path>
+        </PathAndCredentials>
+        <PathAndCredentials wcm:action="add" wcm:keyValue="4">
+          <Path>G:\</Path>
+        </PathAndCredentials>
+      </DriverPaths>
+    </component>
+
+    <component name="Microsoft-Windows-Setup"
+               processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+      <!-- Windows 11 refuses to install if it dislikes the virtual CPU model, even
+           though KubeVirt gives it a real vTPM 2.0 and Secure Boot. These LabConfig
+           keys are the documented Setup escape hatch. -->
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassTPMCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassSecureBootCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>3</Order>
+          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassCPUCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>4</Order>
+          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassRAMCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Order>5</Order>
+          <Path>reg add HKLM\SYSTEM\Setup\LabConfig /v BypassStorageCheck /t REG_DWORD /d 1 /f</Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+
+      <DiskConfiguration>
+        <!-- Setup must never stop to ask about partitioning. -->
+        <WillShowUI>OnError</WillShowUI>
+        <Disk wcm:action="add">
+          <DiskID>0</DiskID>
+          <WillWipeDisk>true</WillWipeDisk>
+          <CreatePartitions>
+            <!-- UEFI layout: ESP + MSR + OS. -->
+            <CreatePartition wcm:action="add">
+              <Order>1</Order>
+              <Type>EFI</Type>
+              <Size>300</Size>
+            </CreatePartition>
+            <CreatePartition wcm:action="add">
+              <Order>2</Order>
+              <Type>MSR</Type>
+              <Size>16</Size>
+            </CreatePartition>
+            <CreatePartition wcm:action="add">
+              <Order>3</Order>
+              <Type>Primary</Type>
+              <Extend>true</Extend>
+            </CreatePartition>
+          </CreatePartitions>
+          <ModifyPartitions>
+            <ModifyPartition wcm:action="add">
+              <Order>1</Order>
+              <PartitionID>1</PartitionID>
+              <Label>System</Label>
+              <Format>FAT32</Format>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add">
+              <Order>2</Order>
+              <PartitionID>2</PartitionID>
+            </ModifyPartition>
+            <ModifyPartition wcm:action="add">
+              <Order>3</Order>
+              <PartitionID>3</PartitionID>
+              <Label>Windows</Label>
+              <Letter>C</Letter>
+              <Format>NTFS</Format>
+            </ModifyPartition>
+          </ModifyPartitions>
+        </Disk>
+      </DiskConfiguration>
+
+      <ImageInstall>
+        <OSImage>
+          <InstallFrom>
+            <!-- LTSC media carries a single edition; index 1 avoids depending on the
+                 exact edition string, which differs between LTSC releases. -->
+            <MetaData wcm:action="add">
+              <Key>/IMAGE/INDEX</Key>
+              <Value>1</Value>
+            </MetaData>
+          </InstallFrom>
+          <InstallTo>
+            <DiskID>0</DiskID>
+            <PartitionID>3</PartitionID>
+          </InstallTo>
+          <WillShowUI>OnError</WillShowUI>
+        </OSImage>
+      </ImageInstall>
+
+      <UserData>
+        <AcceptEula>true</AcceptEula>
+        <FullName>Veyron</FullName>
+        <Organization>Zyvor</Organization>
+        <!-- Public Microsoft KMS client setup key for Win11 Enterprise LTSC 2024.
+             It only stops Setup asking for a key; it does not activate anything. -->
+        <ProductKey>
+          <Key>M7XTQ-FN8P6-TTKYV-9D4CC-J462D</Key>
+          <WillShowUI>Never</WillShowUI>
+        </ProductKey>
+      </UserData>
+    </component>
+  </settings>
+
+  <!-- ================= specialize ========================================== -->
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <ComputerName>WIN11-BUILDER</ComputerName>
+      <TimeZone>UTC</TimeZone>
+    </component>
+
+    <component name="Microsoft-Windows-TerminalServices-LocalSessionManager"
+               processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+      <fDenyTSConnections>false</fDenyTSConnections>
+    </component>
+  </settings>
+
+  <!-- ================= oobeSystem: skip OOBE, then seal =================== -->
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-Shell-Setup"
+               processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
+               language="neutral" versionScope="nonSxS"
+               xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State">
+
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideOEMRegistrationScreen>true</HideOEMRegistrationScreen>
+        <HideOnlineAccountScreens>true</HideOnlineAccountScreens>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+        <ProtectYourPC>3</ProtectYourPC>
+      </OOBE>
+
+      <UserAccounts>
+        <AdministratorPassword>
+          <Value>V3yron-Build!</Value>
+          <PlainText>true</PlainText>
+        </AdministratorPassword>
+      </UserAccounts>
+
+      <!-- One auto-logon so FirstLogonCommands can run, then the box seals itself. -->
+      <AutoLogon>
+        <Enabled>true</Enabled>
+        <LogonCount>1</LogonCount>
+        <Username>Administrator</Username>
+        <Password>
+          <Value>V3yron-Build!</Value>
+          <PlainText>true</PlainText>
+        </Password>
+      </AutoLogon>
+
+      <FirstLogonCommands>
+        <!-- Install every VirtIO driver + the QEMU guest agent off whichever CD-ROM
+             carries them, then sysprep. The drive letter is discovered at runtime;
+             hardcoding E: is the classic way this breaks. -->
+        <SynchronousCommand wcm:action="add">
+          <Order>1</Order>
+          <Description>Install VirtIO drivers and QEMU guest agent</Description>
+          <CommandLine>powershell -NoProfile -ExecutionPolicy Bypass -Command "$cd = Get-Volume | Where-Object {$_.DriveType -eq 'CD-ROM' -and $_.DriveLetter} | ForEach-Object { $_.DriveLetter + ':' } ; foreach ($d in $cd) { if (Test-Path \"$d\\viostor\") { pnputil /add-driver \"$d\\*.inf\" /subdirs /install ; $ga = Get-ChildItem -Path $d -Recurse -Filter 'qemu-ga-x86_64.msi' -ErrorAction SilentlyContinue | Select-Object -First 1 ; if ($ga) { Start-Process msiexec.exe -Wait -ArgumentList ('/i \"' + $ga.FullName + '\" /qn /norestart') } } } " &gt; C:\Windows\Temp\veyron-drivers.log 2&gt;&amp;1</CommandLine>
+        </SynchronousCommand>
+
+        <!-- Generalize + shut down. The builder runs with runStrategy RerunOnFailure
+             so a clean sysprep shutdown does NOT get restarted (KubeVirt would
+             otherwise boot the generalized image straight back into OOBE). -->
+        <SynchronousCommand wcm:action="add">
+          <Order>2</Order>
+          <Description>Sysprep generalize and shut down</Description>
+          <CommandLine>cmd /c C:\Windows\System32\Sysprep\Sysprep.exe /generalize /oobe /shutdown /mode:vm</CommandLine>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+    </component>
+  </settings>
+
+</unattend>
