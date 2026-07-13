@@ -103,6 +103,27 @@ curl -sk -X POST "https://$HOST:30151/api/v1/vms" \
   The operator now **fails the reconcile** if the Secret is missing that key, rather
   than booting a VM to an interactive prompt.
 
+### Auto-sizing (instance-type inference)
+
+The shipped `windows-*` templates set the **hardware shape** (Hyper-V features, UEFI,
+TPM, virtio buses) but boot a **blank** root disk — that is correct: the same template
+serves both an ISO install and a golden-image clone. The size comes from the image.
+
+`publish` stamps `instancetype.kubevirt.io/default-instancetype` and
+`default-preference` labels on the golden PVC + DataSource (Windows →
+`windows-medium` / `windows-server` by default; override with `instancetype` /
+`preference` / `os` on the publish call). A VM created with `image` and no explicit
+`profile`/`cpus`/`memory` sets `inferFromVolume` on its root disk, so KubeVirt reads
+those labels and auto-sizes it. Apply the CRs once per cluster:
+
+```bash
+kubectl apply -f deploy/k8s/bootstrap/windows-instancetypes.yaml
+```
+
+Inference uses `failurePolicy: Ignore`, so a VM off an unlabeled image still boots
+(with KubeVirt defaults) rather than failing. Passing `profile`, `cpus`, or `memory`
+disables inference for that VM.
+
 Per-VM unattend Secret:
 
 ```bash

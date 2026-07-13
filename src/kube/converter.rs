@@ -501,14 +501,28 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
         Some(config.access_credentials.clone())
     };
 
-    let instancetype = config.instancetype.as_ref().map(|i| InstancetypeMatcher {
-        name: i.name.clone(),
-        kind: i.kind.clone(),
-    });
-    let preference = config.preference.as_ref().map(|i| InstancetypeMatcher {
-        name: i.name.clone(),
-        kind: i.kind.clone(),
-    });
+    // inferFromVolume wins over an explicit name: the whole point of inference is to
+    // let the golden image decide the size/shape. Ignore-on-missing so a VM created
+    // from an unlabeled image still boots (with KubeVirt defaults) rather than failing.
+    let to_matcher = |m: &crate::config::VmMatcherRef| {
+        if let Some(vol) = m.infer_from_volume.as_ref().filter(|v| !v.is_empty()) {
+            InstancetypeMatcher {
+                name: String::new(),
+                kind: None,
+                infer_from_volume: Some(vol.clone()),
+                infer_from_volume_failure_policy: Some("Ignore".to_string()),
+            }
+        } else {
+            InstancetypeMatcher {
+                name: m.name.clone(),
+                kind: m.kind.clone(),
+                infer_from_volume: None,
+                infer_from_volume_failure_policy: None,
+            }
+        }
+    };
+    let instancetype = config.instancetype.as_ref().map(to_matcher);
+    let preference = config.preference.as_ref().map(to_matcher);
 
     let (running_field, run_strategy_field) = match &config.run_strategy {
         Some(rs) => (None, Some(rs.clone())),
@@ -1012,6 +1026,67 @@ mod tests {
             .expect("sysprep disk must be attached");
         assert!(disk.cdrom.is_some(), "sysprep must be a CD-ROM, not a disk");
         assert!(disk.disk.is_none());
+    }
+
+    /// inferFromVolume must emit as inference (no name), with Ignore failure policy so
+    /// a VM off an unlabeled image still boots.
+    #[test]
+    fn instancetype_infers_from_volume() {
+        let mut config = VMConfigBuilder::new("win01")
+            .namespace("customer-a")
+            .cpu(1, 1, 1)
+            .memory("1Gi")
+            .add_blank_disk("rootdisk", "50Gi", 1)
+            .add_pod_network("default")
+            .build();
+        config.instancetype = Some(crate::config::VmMatcherRef {
+            name: String::new(),
+            kind: None,
+            infer_from_volume: Some("rootdisk".to_string()),
+        });
+        config.preference = Some(crate::config::VmMatcherRef {
+            name: String::new(),
+            kind: None,
+            infer_from_volume: Some("rootdisk".to_string()),
+        });
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+
+        let it = vm.spec.instancetype.as_ref().unwrap();
+        assert_eq!(it.infer_from_volume.as_deref(), Some("rootdisk"));
+        assert!(it.name.is_empty(), "inference must not also set a name");
+        assert_eq!(
+            it.infer_from_volume_failure_policy.as_deref(),
+            Some("Ignore")
+        );
+
+        // Serialized JSON must carry inferFromVolume and omit an empty name.
+        let json = serde_json::to_value(&vm.spec).unwrap();
+        let itj = &json["instancetype"];
+        assert_eq!(itj["inferFromVolume"], "rootdisk");
+        assert!(itj.get("name").is_none(), "empty name must be skipped");
+    }
+
+    /// A named instancetype still emits by name, no inference.
+    #[test]
+    fn instancetype_by_name_when_not_inferring() {
+        let mut config = VMConfigBuilder::new("vm")
+            .namespace("default")
+            .cpu(1, 1, 1)
+            .memory("1Gi")
+            .add_blank_disk("rootdisk", "10Gi", 1)
+            .add_pod_network("default")
+            .build();
+        config.instancetype = Some(crate::config::VmMatcherRef {
+            name: "windows-medium".to_string(),
+            kind: Some("VirtualMachineClusterInstancetype".to_string()),
+            infer_from_volume: None,
+        });
+
+        let vm = vm_config_to_kubevirt(&config).unwrap();
+        let it = vm.spec.instancetype.as_ref().unwrap();
+        assert_eq!(it.name, "windows-medium");
+        assert!(it.infer_from_volume.is_none());
     }
 
     /// No golden image => no dataVolumeTemplates at all (must not emit an empty list).

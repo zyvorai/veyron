@@ -3509,6 +3509,10 @@ pub mod web {
         /// Storage class for the clone; defaults to the cluster default class.
         #[serde(default)]
         storage_class: Option<String>,
+        /// Auto-size the VM from the image's instancetype/preference labels
+        /// (`inferFromVolume`). Default true; ignored if `profile`/`cpus` are given.
+        #[serde(default = "default_true")]
+        infer: bool,
     }
 
     /// Namespace holding the golden-image catalog when the caller doesn't say.
@@ -3706,6 +3710,26 @@ pub mod web {
             // A cloned disk boots on its own; an install-media CD-ROM must not
             // out-rank it or the VM reruns Setup on every boot.
             root.boot_order = 1;
+
+            // Auto-size from the image's labels unless the caller pinned a size.
+            // The published DataSource carries default-instancetype/preference; a VM
+            // that infers from its root volume picks them up, so one image serves any
+            // consumer without restating CPU/mem. Explicit profile/cpus/memory win.
+            let root_name = root.name.clone();
+            let sized_explicitly =
+                req.profile.is_some() || req.cpus.is_some() || req.memory.is_some();
+            if img.infer && !sized_explicitly {
+                config.instancetype = Some(crate::config::VmMatcherRef {
+                    name: String::new(),
+                    kind: None,
+                    infer_from_volume: Some(root_name.clone()),
+                });
+                config.preference = Some(crate::config::VmMatcherRef {
+                    name: String::new(),
+                    kind: None,
+                    infer_from_volume: Some(root_name),
+                });
+            }
         }
 
         // Windows unattended setup media.
