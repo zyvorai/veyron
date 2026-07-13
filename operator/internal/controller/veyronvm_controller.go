@@ -29,8 +29,8 @@ import (
 	"github.com/ssahani/Veyron/operator/internal/catalog"
 	"github.com/ssahani/Veyron/operator/internal/converter"
 	"github.com/ssahani/Veyron/operator/internal/eventbus"
-	"github.com/ssahani/Veyron/operator/internal/network"
 	vmmetrics "github.com/ssahani/Veyron/operator/internal/metrics"
+	"github.com/ssahani/Veyron/operator/internal/network"
 )
 
 const (
@@ -117,6 +117,14 @@ func (r *VeyronVMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 				return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 			}
 		}
+	}
+
+	// Windows domain join -> sysprep answer file. Must run before the VM is created:
+	// the converter mounts this Secret, and a missing one strands Setup at a prompt.
+	if err := r.ensureSysprepSecret(ctx, workVM); err != nil {
+		logger.Error(err, "failed to reconcile sysprep Secret")
+		r.updateStatus(ctx, &vm, veyronv1alpha1.VMPhaseFailed, fmt.Sprintf("sysprep secret: %v", err))
+		return ctrl.Result{RequeueAfter: 30 * time.Second}, nil
 	}
 
 	specHash, err := catalog.SpecHash(resolvedSpec)
@@ -314,6 +322,64 @@ func (r *VeyronVMReconciler) ensureConfigDriveSecret(ctx context.Context, vm *ve
 	return err
 }
 
+// ensureSysprepSecret materializes the answer file mounted as sysprep media when a
+// domain join is requested.
+//
+// The join credential goes into a Windows unattend <Identification> element rather
+// than a PowerShell block in cloud-init: userdata is echoed into the Cloudbase-Init
+// log inside the guest, so the old path left domain credentials in plaintext on disk.
+//
+// When the caller also supplied their own sysprepSecretRef, their answer file is read
+// and the join is injected into it — so both survive.
+func (r *VeyronVMReconciler) ensureSysprepSecret(ctx context.Context, vm *veyronv1alpha1.VeyronVM) error {
+	if vm.Spec.Windows == nil || vm.Spec.Windows.DomainJoinSecretRef == nil {
+		return nil
+	}
+
+	creds, err := catalog.ResolveDomainJoinCredentials(
+		ctx, r.Client, vm.Namespace, vm.Spec.Windows.DomainJoinSecretRef)
+	if err != nil {
+		return fmt.Errorf("windows domainJoinSecretRef: %w", err)
+	}
+
+	answerFile := catalog.BuildDomainJoinUnattend(creds)
+
+	// Caller brought their own answer file — merge, never discard.
+	if ref := vm.Spec.Windows.SysprepSecretRef; ref != nil {
+		userXML, err := catalog.ReadSysprepAnswerFile(ctx, r.Client, vm.Namespace, ref)
+		if err != nil {
+			return fmt.Errorf("windows sysprepSecretRef: %w", err)
+		}
+		merged, err := catalog.MergeDomainJoinIntoUnattend(userXML, creds)
+		if err != nil {
+			return fmt.Errorf("merging domain join into sysprep answer file: %w", err)
+		}
+		answerFile = merged
+	}
+
+	sec := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      converter.SysprepSecretName(vm.Name),
+			Namespace: vm.Namespace,
+		},
+	}
+	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, sec, func() error {
+		if sec.StringData == nil {
+			sec.StringData = make(map[string]string)
+		}
+		// KubeVirt mounts this key as the sysprep answer file.
+		sec.StringData[catalog.SysprepAnswerFileKey] = answerFile
+		sec.Type = corev1.SecretTypeOpaque
+		if sec.Labels == nil {
+			sec.Labels = map[string]string{}
+		}
+		sec.Labels["veyron.io/managed-by"] = "veyron-operator"
+		sec.Labels["veyron.io/sysprep-unattend"] = "true"
+		return controllerutil.SetControllerReference(vm, sec, r.Scheme)
+	})
+	return err
+}
+
 func (r *VeyronVMReconciler) handleDeletion(ctx context.Context, vm *veyronv1alpha1.VeyronVM) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -429,8 +495,8 @@ func (r *VeyronVMReconciler) ensureDriftInsight(ctx context.Context, vm *veyronv
 			Name:      name,
 			Namespace: vm.Namespace,
 			Labels: map[string]string{
-				"veyron.io/vm":    vm.Name,
-				"veyron.io/type":  "drift",
+				"veyron.io/vm":         vm.Name,
+				"veyron.io/type":       "drift",
 				"veyron.io/managed-by": "veyron-operator",
 			},
 		},

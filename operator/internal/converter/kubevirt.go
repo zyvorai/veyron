@@ -44,7 +44,7 @@ func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured
 	dataVolumeTemplates := buildDataVolumeTemplates(vm.Name, spec)
 
 	// Build disks
-	disks := buildDisks(spec)
+	disks := buildDisks(vm.Name, spec)
 
 	// Build interfaces
 	interfaces := buildInterfaces(spec)
@@ -192,6 +192,33 @@ func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured
 // Must match the Rust converter (src/kube/converter.rs).
 const SysprepVolumeName = "sysprep"
 
+// SysprepSecretName is the operator-managed answer-file Secret, created when a
+// domain join is requested (and merged with the caller's answer file if they
+// supplied one). Kept distinct from the user's own sysprepSecretRef so the operator
+// never writes into a Secret it does not own.
+func SysprepSecretName(vmName string) string {
+	return vmName + "-veyron-sysprep"
+}
+
+// EffectiveSysprepSecret is the Secret actually mounted as sysprep media, and "" when
+// the VM needs none.
+//
+// A domain join wins the mount, because the operator-managed Secret *contains* the
+// caller's answer file with the join injected into it — mounting the caller's
+// original instead would silently drop the join.
+func EffectiveSysprepSecret(vmName string, spec *veyronv1alpha1.VeyronVMSpec) string {
+	if spec == nil || spec.Windows == nil {
+		return ""
+	}
+	if spec.Windows.DomainJoinSecretRef != nil {
+		return SysprepSecretName(vmName)
+	}
+	if spec.Windows.SysprepSecretRef != nil {
+		return spec.Windows.SysprepSecretRef.Name
+	}
+	return ""
+}
+
 // goldenDataVolumeName names the per-VM clone of a golden image. Keyed by VM +
 // disk so two VMs built from the same image never target the same DataVolume.
 func goldenDataVolumeName(vmName, diskName string) string {
@@ -292,12 +319,12 @@ func buildVolumes(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{
 	}
 
 	// Windows unattended setup: autounattend.xml as sysprep CD-ROM media.
-	if spec.Windows != nil && spec.Windows.SysprepSecretRef != nil {
+	if sysprepSecret := EffectiveSysprepSecret(vmName, spec); sysprepSecret != "" {
 		volumes = append(volumes, map[string]interface{}{
 			"name": SysprepVolumeName,
 			"sysprep": map[string]interface{}{
 				"secret": map[string]interface{}{
-					"name": spec.Windows.SysprepSecretRef.Name,
+					"name": sysprepSecret,
 				},
 			},
 		})
@@ -344,7 +371,7 @@ func ConfigDriveSecretName(vmName string) string {
 	return string(runes[:maxKubeName])
 }
 
-func buildDisks(spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
+func buildDisks(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 	var disks []interface{}
 
 	for _, d := range spec.Disks {
@@ -414,7 +441,7 @@ func buildDisks(spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 
 	// Sysprep media must be a CD-ROM: Windows Setup only reads autounattend.xml
 	// from removable/optical media.
-	if spec.Windows != nil && spec.Windows.SysprepSecretRef != nil {
+	if EffectiveSysprepSecret(vmName, spec) != "" {
 		disks = append(disks, map[string]interface{}{
 			"name": SysprepVolumeName,
 			"cdrom": map[string]interface{}{
