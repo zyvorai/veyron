@@ -126,12 +126,8 @@
         <AcceptEula>true</AcceptEula>
         <FullName>Veyron</FullName>
         <Organization>Zyvor</Organization>
-        <!-- Public Microsoft KMS client setup key for Win11 Enterprise LTSC 2024.
-             It only stops Setup asking for a key; it does not activate anything. -->
-        <ProductKey>
-          <Key>M7XTQ-FN8P6-TTKYV-9D4CC-J462D</Key>
-          <WillShowUI>Never</WillShowUI>
-        </ProductKey>
+        <!-- No ProductKey: LTSC installs keyless (activate later). A key that does not
+             exactly match the media edition makes Setup fail 0xD000A000. -->
       </UserData>
     </component>
   </settings>
