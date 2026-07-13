@@ -11,7 +11,9 @@ pub mod web {
     use crate::api::auth_context::{self, AuthContext};
     use crate::api::dashboard_paths;
     use crate::api::{ApiResponse, HttpMethod, RequestContext};
-    use crate::config::{CloudInitDelivery, VMConfigBuilder, VmExposeConfig, VmExposePort};
+    use crate::config::{
+        CloudInitDelivery, DiskSource, VMConfigBuilder, VmExposeConfig, VmExposePort,
+    };
     use crate::copilot::{self, AiMode};
     use crate::kube::{
         KubeClient, MigrateVmOptions, vm_expose_service_name, vm_internet, vm_rdp, windows_rdp,
@@ -2035,7 +2037,14 @@ pub mod web {
                     }
                     Err(msg) => err_json(500, "INTERNAL_ERROR", &msg),
                 },
-                Err(e) => err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &sanitize_error(&e)),
+                Err(e) => {
+                    let msg = sanitize_error(&e);
+                    // Publishing bare RDP is refused by policy, not broken — say so.
+                    if msg.contains("VEYRON_ALLOW_PUBLIC_RDP") {
+                        return err_json(403, "PUBLIC_RDP_FORBIDDEN", &msg);
+                    }
+                    err_json(500, "RDP_EXPOSE_UPSERT_FAILED", &msg)
+                }
             }
         }
     }
@@ -3473,7 +3482,37 @@ pub mod web {
         cloud_init_delivery: Option<String>,
         #[serde(default)]
         expose: Option<CreateVmExposeReq>,
+        /// Boot this VM from a golden image: the root disk is cloned from the
+        /// catalog rather than created blank. Without it, a Windows template
+        /// boots an empty disk and there is nothing to install from.
+        #[serde(default)]
+        image: Option<CreateVmImageReq>,
+        /// Windows unattended setup: Secret (preferred) or ConfigMap holding
+        /// `autounattend.xml`. Mounted as sysprep CD-ROM media.
+        #[serde(default)]
+        sysprep_secret: Option<String>,
+        #[serde(default)]
+        sysprep_config_map: Option<String>,
     }
+
+    /// Golden-image source for a new VM's root disk.
+    #[derive(Deserialize)]
+    struct CreateVmImageReq {
+        /// CDI `DataSource` name (default), or a source PVC name when `from_pvc`.
+        name: String,
+        /// Namespace holding the catalog (default: `vm-images`).
+        #[serde(default)]
+        namespace: Option<String>,
+        /// Clone directly from a PVC instead of resolving a `DataSource`.
+        #[serde(default)]
+        from_pvc: bool,
+        /// Storage class for the clone; defaults to the cluster default class.
+        #[serde(default)]
+        storage_class: Option<String>,
+    }
+
+    /// Namespace holding the golden-image catalog when the caller doesn't say.
+    const DEFAULT_IMAGE_NAMESPACE: &str = "vm-images";
 
     fn default_allow_internet() -> bool {
         true
@@ -3639,6 +3678,42 @@ pub mod web {
                     }
                 }
             }
+        }
+
+        // Golden image: repoint the root disk at the catalog so the VM boots a clone
+        // of an installed OS instead of an empty disk. Applied after sizing, since the
+        // clone must be at least as large as the source.
+        if let Some(ref img) = req.image {
+            if img.name.is_empty() {
+                return err_json(400, "INVALID_IMAGE", "image.name cannot be empty");
+            }
+            let Some(root) = config.disks.first_mut() else {
+                return err_json(
+                    400,
+                    "INVALID_IMAGE",
+                    "template has no disks to apply a golden image to",
+                );
+            };
+            root.source = DiskSource::GoldenImage {
+                name: img.name.clone(),
+                namespace: img
+                    .namespace
+                    .clone()
+                    .unwrap_or_else(|| DEFAULT_IMAGE_NAMESPACE.to_string()),
+                from_pvc: img.from_pvc,
+                storage_class: img.storage_class.clone(),
+            };
+            // A cloned disk boots on its own; an install-media CD-ROM must not
+            // out-rank it or the VM reruns Setup on every boot.
+            root.boot_order = 1;
+        }
+
+        // Windows unattended setup media.
+        if req.sysprep_secret.is_some() || req.sysprep_config_map.is_some() {
+            config.sysprep = Some(crate::config::SysprepConfig {
+                secret: req.sysprep_secret.clone(),
+                config_map: req.sysprep_config_map.clone(),
+            });
         }
 
         if let Some(ref d) = req.cloud_init_delivery {

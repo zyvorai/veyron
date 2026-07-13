@@ -195,6 +195,8 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VeyronVMSpe
                 source_type: "containerDisk".to_string(),
                 name: None,
                 image: Some(image.clone()),
+                namespace: None,
+                from_pvc: false,
             },
             device_type: "cdrom".to_string(),
             bus: Some("sata".to_string()),
@@ -211,17 +213,39 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VeyronVMSpe
                     .disks
                     .iter()
                     .map(|d| {
-                        let (source_type, src_name, image) = match &d.source {
-                            crate::config::DiskSource::Blank => ("blank".to_string(), None, None),
+                        let (source_type, src_name, image, src_ns, src_from_pvc) = match &d.source {
+                            crate::config::DiskSource::Blank => {
+                                ("blank".to_string(), None, None, None, false)
+                            }
                             crate::config::DiskSource::PVC { name } => {
-                                ("pvc".to_string(), Some(name.clone()), None)
+                                ("pvc".to_string(), Some(name.clone()), None, None, false)
                             }
-                            crate::config::DiskSource::ContainerDisk { image } => {
-                                ("containerDisk".to_string(), None, Some(image.clone()))
-                            }
-                            crate::config::DiskSource::DataVolume { name } => {
-                                ("dataVolume".to_string(), Some(name.clone()), None)
-                            }
+                            crate::config::DiskSource::ContainerDisk { image } => (
+                                "containerDisk".to_string(),
+                                None,
+                                Some(image.clone()),
+                                None,
+                                false,
+                            ),
+                            crate::config::DiskSource::DataVolume { name } => (
+                                "dataVolume".to_string(),
+                                Some(name.clone()),
+                                None,
+                                None,
+                                false,
+                            ),
+                            crate::config::DiskSource::GoldenImage {
+                                name,
+                                namespace,
+                                from_pvc,
+                                ..
+                            } => (
+                                "dataSource".to_string(),
+                                Some(name.clone()),
+                                None,
+                                Some(namespace.clone()),
+                                *from_pvc,
+                            ),
                         };
                         let dt = match d.device_type {
                             crate::config::DiskDeviceType::Disk => "disk",
@@ -237,6 +261,8 @@ fn build_spec_from_args(name: &str, args: &VrvmCreateArgs) -> Result<VeyronVMSpe
                                 source_type,
                                 name: src_name,
                                 image,
+                                namespace: src_ns,
+                                from_pvc: src_from_pvc,
                             },
                             device_type: dt.to_string(),
                             bus: d.bus.clone(),
@@ -397,6 +423,8 @@ fn parse_disk_spec(spec: &str) -> Result<CRDDiskSpec> {
             source_type,
             name: pvc_name,
             image,
+            namespace: None,
+            from_pvc: false,
         },
         device_type,
         bus,

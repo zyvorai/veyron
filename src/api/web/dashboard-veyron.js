@@ -864,7 +864,7 @@
         problem: 'KubeVirt API not reachable',
         impact: 'Cannot create, list, or manage VMs.',
         rootCause: 'KubeVirt operator not running or CRDs not installed.',
-        fix: 'Install KubeVirt: kubectl apply -f https://github.com/kubevirt/kubevirt/releases/latest/download/kubevirt-operator.yaml',
+        fix: 'Install KubeVirt: kubectl apply -f https://github.com/kubevirt/kubevirt/releases/download/v1.8.4/kubevirt-operator.yaml',
         cmd: 'kubectl get kubevirt -n kubevirt'
       },
       {
@@ -884,7 +884,7 @@
         problem: 'CDI Operator not detected',
         impact: 'Cannot import QCOW2/VMDK images via DataVolume. Template import will fail.',
         rootCause: 'CDI not installed or cdi.kubevirt.io CRD missing.',
-        fix: 'Install CDI: kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/latest/download/cdi-operator.yaml',
+        fix: 'Install CDI: kubectl apply -f https://github.com/kubevirt/containerized-data-importer/releases/download/v1.65.0/cdi-operator.yaml',
         cmd: 'kubectl get cdi -n cdi'
       },
       {

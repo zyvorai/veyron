@@ -8658,7 +8658,8 @@ echo "[1/6] Checking Kubernetes access..."
 kubectl cluster-info >/dev/null
 
 echo "[2/6] Detecting latest KubeVirt release..."
-KV_VERSION="${KV_VERSION:-$(curl -fsSL https://api.github.com/repos/kubevirt/kubevirt/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')}"
+# Pinned to the Veyron-tested baseline (scripts/cluster/versions.env). Override with KV_VERSION=.
+KV_VERSION="${KV_VERSION:-v1.8.4}"
 echo "KubeVirt: ${KV_VERSION}"
 
 echo "[3/6] Installing KubeVirt operator + CR..."
@@ -8685,7 +8686,8 @@ else
 fi
 
 echo "[6/6] Installing CDI (Containerized Data Importer)..."
-CDI_VERSION="${CDI_VERSION:-$(curl -fsSL https://api.github.com/repos/kubevirt/containerized-data-importer/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')}"
+# Pinned to the Veyron-tested baseline (scripts/cluster/versions.env). Override with CDI_VERSION=.
+CDI_VERSION="${CDI_VERSION:-v1.65.0}"
 echo "CDI: ${CDI_VERSION}"
 kubectl apply -f "https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-operator.yaml"
 kubectl apply -f "https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_VERSION}/cdi-cr.yaml"

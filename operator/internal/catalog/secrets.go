@@ -54,18 +54,57 @@ func ResolveCloudInitUserData(ctx context.Context, c client.Client, ns string, s
 		}
 	}
 
+	// sysprepSecretRef is NOT cloud-init material: the converter mounts it as a
+	// KubeVirt `sysprep` CD-ROM volume (see converter.buildVolumes). All we do here
+	// is fail fast if the Secret is unusable, so a bad ref surfaces as a reconcile
+	// error instead of a VM that silently boots without its answer file.
 	if spec.Windows != nil && spec.Windows.SysprepSecretRef != nil {
-		_, err := readSecretKey(ctx, c, ns, spec.Windows.SysprepSecretRef)
-		if err != nil {
+		if err := validateSysprepSecret(ctx, c, ns, spec.Windows.SysprepSecretRef); err != nil {
 			return "", fmt.Errorf("windows sysprepSecretRef: %w", err)
-		}
-		// Sysprep unattend is consumed by Cloudbase-Init via metadata; annotate via comment in userData.
-		if userData != "" {
-			userData += "\n# sysprep unattend loaded from secret " + spec.Windows.SysprepSecretRef.Name
 		}
 	}
 
 	return userData, nil
+}
+
+// SysprepAnswerFileKey is the key KubeVirt reads from a sysprep Secret/ConfigMap.
+// KubeVirt is case-insensitive here, but it must be one of these two names.
+const SysprepAnswerFileKey = "autounattend.xml"
+
+// validateSysprepSecret checks the referenced Secret exists and actually carries an
+// answer file. Without this a typo'd key means Windows Setup boots to an interactive
+// prompt with no indication anything is wrong.
+func validateSysprepSecret(ctx context.Context, c client.Client, defaultNS string, ref *veyronv1alpha1.SecretKeyRef) error {
+	if ref == nil || ref.Name == "" {
+		return fmt.Errorf("invalid secret ref: name is required")
+	}
+	secNS := ref.Namespace
+	if secNS == "" {
+		secNS = defaultNS
+	}
+
+	var sec corev1.Secret
+	if err := c.Get(ctx, client.ObjectKey{Namespace: secNS, Name: ref.Name}, &sec); err != nil {
+		return fmt.Errorf("get secret %s/%s: %w", secNS, ref.Name, err)
+	}
+
+	for k := range sec.Data {
+		if strings.EqualFold(k, SysprepAnswerFileKey) {
+			return nil
+		}
+	}
+	return fmt.Errorf(
+		"secret %s/%s has no %q key (found: %v) — KubeVirt will not mount an answer file",
+		secNS, ref.Name, SysprepAnswerFileKey, secretKeys(sec),
+	)
+}
+
+func secretKeys(sec corev1.Secret) []string {
+	keys := make([]string, 0, len(sec.Data))
+	for k := range sec.Data {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 func readSecretKey(ctx context.Context, c client.Client, defaultNS string, ref *veyronv1alpha1.SecretKeyRef) (string, error) {

@@ -29,13 +29,15 @@
 # auto-apply an IPAddressPool + L2Advertisement in V9S_METALLB_NAMESPACE (default metallb-system).
 #
 # Versions (override via env):
-#   V9S_CILIUM_CHART_VERSION    (default 1.16.4)  Helm chart for Cilium CNI
-#   V9S_KUBEVIRT_VERSION        (default v1.4.0)
-#   V9S_CDI_VERSION             (default v1.59.0)
-#   V9S_SNAPSHOTTER_VERSION     (default v8.0.0)  external-snapshotter git ref
-#   V9S_METRICS_SERVER_MANIFEST (default v0.7.2 components.yaml)
-#   V9S_MULTUS_MANIFEST_URL     (default multus-cni v4.0.2 thick DaemonSet manifest)
-#   V9S_ROOK_REF        git tag for Rook manifests (default v1.14.11)
+#   V9S_CILIUM_CHART_VERSION    (default: see cluster/versions.env)  Helm chart for Cilium CNI
+#   V9S_KUBEVIRT_VERSION        (default: see cluster/versions.env)
+#   V9S_CDI_VERSION             (default: see cluster/versions.env)
+#   V9S_SNAPSHOTTER_VERSION     external-snapshotter git ref
+#   V9S_METRICS_SERVER_MANIFEST components.yaml URL
+#   V9S_MULTUS_MANIFEST_URL     (default: multus-cni thick DaemonSet, version from cluster/versions.env)
+#   V9S_ROOK_REF                git tag for Rook manifests
+#
+# ALL baseline versions live in cluster/versions.env — do not hardcode them here.
 #
 set -euo pipefail
 
@@ -59,17 +61,21 @@ should_install() {
     case "$_val" in 1|true|TRUE|yes|Yes) return 0 ;; *) return 1 ;; esac
 }
 
-CILIUM_CHART_VERSION="${V9S_CILIUM_CHART_VERSION:-1.19.4}"
+# Baseline versions come from the single source of truth; V9S_* still overrides.
+# shellcheck source=./versions.env
+source "${SCRIPT_DIR}/versions.env"
+
+CILIUM_CHART_VERSION="${V9S_CILIUM_CHART_VERSION:-${CILIUM_CHART_VERSION}}"
 CILIUM_K3S_VALUES="${V9S_CILIUM_K3S_VALUES:-${SCRIPT_DIR}/cilium-k3s-values.yaml}"
-KUBEVIRT_VERSION="${V9S_KUBEVIRT_VERSION:-v1.4.0}"
-CDI_VERSION="${V9S_CDI_VERSION:-v1.59.0}"
-SNAPSHOTTER_REF="${V9S_SNAPSHOTTER_VERSION:-v8.0.0}"
-METRICS_SERVER_URL="${V9S_METRICS_SERVER_MANIFEST:-https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml}"
+KUBEVIRT_VERSION="${V9S_KUBEVIRT_VERSION:-${KUBEVIRT_VERSION}}"
+CDI_VERSION="${V9S_CDI_VERSION:-${CDI_VERSION}}"
+SNAPSHOTTER_REF="${V9S_SNAPSHOTTER_VERSION:-${SNAPSHOTTER_VERSION}}"
+METRICS_SERVER_URL="${V9S_METRICS_SERVER_MANIFEST:-https://github.com/kubernetes-sigs/metrics-server/releases/download/${METRICS_SERVER_VERSION}/components.yaml}"
 
 PROMETHEUS_RELEASE="${V9S_PROMETHEUS_HELM_RELEASE:-v9s-prom}"
 PROMETHEUS_NS="${V9S_PROMETHEUS_NAMESPACE:-monitoring}"
 
-ROOK_REF="${V9S_ROOK_REF:-v1.14.11}"
+ROOK_REF="${V9S_ROOK_REF:-${ROOK_VERSION}}"
 ROOK_NS="${V9S_ROOK_NAMESPACE:-rook-ceph}"
 
 METALLB_RELEASE="${V9S_METALLB_HELM_RELEASE:-metallb}"
@@ -78,7 +84,7 @@ METALLB_IP_POOL="${V9S_METALLB_IP_POOL:-}"
 METALLB_POOL_NAME="${V9S_METALLB_POOL_NAME:-v9s-pool}"
 METALLB_L2_NAME="${V9S_METALLB_L2_NAME:-v9s-l2}"
 
-MULTUS_MANIFEST_URL="${V9S_MULTUS_MANIFEST_URL:-https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/v4.0.2/deployments/multus-daemonset-thick.yml}"
+MULTUS_MANIFEST_URL="${V9S_MULTUS_MANIFEST_URL:-https://raw.githubusercontent.com/k8snetworkplumbingwg/multus-cni/${MULTUS_VERSION}/deployments/multus-daemonset-thick.yml}"
 
 preflight() {
     command -v kubectl >/dev/null 2>&1 || { echo "kubectl not found"; exit 1; }

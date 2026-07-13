@@ -52,9 +52,16 @@ rules:
     verbs: ["get", "list", "watch", "create", "delete"]
 
   # CDI / upload / CSI snapshots / instance types / Multus (VM specs and storage workflows)
+  #
+  # Write verbs are required for golden-image cloning: a VeyronVM with a
+  # `dataSource` disk emits `dataVolumeTemplates`, and the clone is admitted only
+  # if the creating ServiceAccount may `create` on `datavolumes/source` in the
+  # image's source namespace. `resources: ["*"]` already covers that subresource;
+  # if you ever tighten this to explicit names, you must list `datavolumes`,
+  # `datavolumes/source`, `datasources`, and `dataimportcrons` separately.
   - apiGroups: ["cdi.kubevirt.io"]
     resources: ["*"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["upload.cdi.kubevirt.io"]
     resources: ["*"]
     verbs: ["get", "list", "watch"]

@@ -238,6 +238,21 @@ fn validate_disk(disk: &DiskConfig) -> Result<()> {
                 return Err(anyhow!("PVC name cannot be empty"));
             }
         }
+        DiskSource::GoldenImage {
+            name, namespace, ..
+        } => {
+            if name.is_empty() {
+                return Err(anyhow!("Golden image source name cannot be empty"));
+            }
+            if namespace.is_empty() {
+                return Err(anyhow!(
+                    "Golden image source namespace cannot be empty (e.g. 'vm-images')"
+                ));
+            }
+            // The clone must be at least as large as the source disk; CDI rejects
+            // a smaller target, so a bad size here fails at DataVolume bind time.
+            validate_memory_size(&disk.size)?;
+        }
     }
 
     Ok(())

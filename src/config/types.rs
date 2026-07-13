@@ -64,6 +64,9 @@ pub struct VMConfig {
     pub interfaces: Vec<InterfaceConfig>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cloud_init: Option<CloudInitConfig>,
+    /// Windows unattended setup (`autounattend.xml`), mounted as a sysprep CD-ROM.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sysprep: Option<SysprepConfig>,
     #[serde(default)]
     pub labels: HashMap<String, String>,
     #[serde(default)]
@@ -266,9 +269,44 @@ pub enum DiskSource {
     ContainerDisk {
         image: String,
     },
+    /// Reference a DataVolume that already exists, by name.
     DataVolume {
         name: String,
     },
+    /// Clone a per-VM disk from a golden image at create time.
+    ///
+    /// Unlike `PVC` / `DataVolume` — which *point at* a shared disk and would let
+    /// two VMs write the same volume — this emits a `dataVolumeTemplates` entry, so
+    /// the VM gets its own copy, garbage-collected with it.
+    ///
+    /// `DataSource` is the stable catalog handle: repointing it at a new image
+    /// version rolls the whole fleet's next clone without editing any VM.
+    GoldenImage {
+        /// CDI `DataSource` name (preferred), or a source PVC name when `from_pvc`.
+        name: String,
+        /// Namespace holding the DataSource / source PVC (e.g. `vm-images`).
+        namespace: String,
+        /// Clone straight from a PVC instead of resolving a DataSource.
+        #[serde(default)]
+        from_pvc: bool,
+        /// Storage class for the *clone*; falls back to the cluster default.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        storage_class: Option<String>,
+    },
+}
+
+/// Windows unattended-setup answer file, delivered to the guest as sysprep media.
+///
+/// Prefer `secret` — an `autounattend.xml` almost always carries the local
+/// administrator password and/or domain-join credentials.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SysprepConfig {
+    /// Secret holding key `autounattend.xml`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub secret: Option<String>,
+    /// ConfigMap holding key `autounattend.xml` (only when there are no secrets in it).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config_map: Option<String>,
 }
 
 /// Network interface configuration

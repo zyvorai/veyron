@@ -229,6 +229,22 @@ async fn validate_node_ports_available(
     Ok(())
 }
 
+/// Opt-in for exposing RDP directly on a node/LB address.
+///
+/// A NodePort/LoadBalancer on 3389 puts Windows authentication on the network with
+/// no gateway, no MFA, and no TLS termination in front of it — it is the single most
+/// commonly brute-forced port on the internet. Veyron therefore refuses to create one
+/// unless the operator explicitly accepts that, and prefers `ClusterIP` + a broker
+/// (VPN / zero-trust gateway / `kubectl port-forward`).
+const ALLOW_PUBLIC_RDP_ENV: &str = "VEYRON_ALLOW_PUBLIC_RDP";
+
+fn public_rdp_allowed() -> bool {
+    matches!(
+        std::env::var(ALLOW_PUBLIC_RDP_ENV).as_deref(),
+        Ok("1") | Ok("true") | Ok("yes")
+    )
+}
+
 pub async fn upsert_rdp_expose_service(
     client: Client,
     namespace: &str,
@@ -236,6 +252,18 @@ pub async fn upsert_rdp_expose_service(
     service_type: &str,
     node_port: i32,
 ) -> Result<()> {
+    // Refuse to put bare RDP on a routable address unless explicitly authorized.
+    if (service_type == "NodePort" || service_type == "LoadBalancer") && !public_rdp_allowed() {
+        return Err(anyhow!(
+            "refusing to expose RDP for {namespace}/{vm_name} as a {service_type}: this publishes \
+             Windows authentication on 3389 with no gateway, MFA, or TLS in front of it. \
+             Use service_type=ClusterIP and reach it through a VPN / zero-trust gateway, or \
+             `kubectl port-forward -n {namespace} svc/{svc} 13389:3389`. \
+             To accept the risk anyway, set {ALLOW_PUBLIC_RDP_ENV}=1 on the API.",
+            svc = veyron_rdp_service_name(vm_name),
+        ));
+    }
+
     let svc_name = veyron_rdp_service_name(vm_name);
     let svc_api: Api<Service> = Api::namespaced(client.clone(), namespace);
 

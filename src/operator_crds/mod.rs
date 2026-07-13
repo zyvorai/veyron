@@ -168,12 +168,20 @@ pub struct CRDDiskSpec {
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
 pub struct CRDDiskSource {
+    /// `blank` | `pvc` | `containerDisk` | `dataVolume` | `dataSource`
     #[serde(rename = "type")]
     pub source_type: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
+    /// Namespace of the golden-image `DataSource` / source PVC (`dataSource` type).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+    /// Clone straight from a PVC instead of resolving a `DataSource` (`dataSource` type).
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    #[serde(rename = "fromPvc")]
+    pub from_pvc: bool,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, JsonSchema)]
@@ -601,17 +609,39 @@ impl From<&crate::config::VMConfig> for VeyronVMSpec {
             .disks
             .iter()
             .map(|d| {
-                let (source_type, name, image) = match &d.source {
-                    crate::config::DiskSource::Blank => ("blank".to_string(), None, None),
+                let (source_type, name, image, src_ns, src_from_pvc) = match &d.source {
+                    crate::config::DiskSource::Blank => {
+                        ("blank".to_string(), None, None, None, false)
+                    }
                     crate::config::DiskSource::PVC { name } => {
-                        ("pvc".to_string(), Some(name.clone()), None)
+                        ("pvc".to_string(), Some(name.clone()), None, None, false)
                     }
-                    crate::config::DiskSource::ContainerDisk { image } => {
-                        ("containerDisk".to_string(), None, Some(image.clone()))
-                    }
-                    crate::config::DiskSource::DataVolume { name } => {
-                        ("dataVolume".to_string(), Some(name.clone()), None)
-                    }
+                    crate::config::DiskSource::ContainerDisk { image } => (
+                        "containerDisk".to_string(),
+                        None,
+                        Some(image.clone()),
+                        None,
+                        false,
+                    ),
+                    crate::config::DiskSource::DataVolume { name } => (
+                        "dataVolume".to_string(),
+                        Some(name.clone()),
+                        None,
+                        None,
+                        false,
+                    ),
+                    crate::config::DiskSource::GoldenImage {
+                        name,
+                        namespace,
+                        from_pvc,
+                        ..
+                    } => (
+                        "dataSource".to_string(),
+                        Some(name.clone()),
+                        None,
+                        Some(namespace.clone()),
+                        *from_pvc,
+                    ),
                 };
 
                 let device_type = match d.device_type {
@@ -629,6 +659,8 @@ impl From<&crate::config::VMConfig> for VeyronVMSpec {
                         source_type,
                         name,
                         image,
+                        namespace: src_ns,
+                        from_pvc: src_from_pvc,
                     },
                     device_type: device_type.to_string(),
                     bus: d.bus.clone(),

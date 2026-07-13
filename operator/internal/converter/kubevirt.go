@@ -22,10 +22,10 @@ func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured
 
 	// Build labels
 	labels := map[string]interface{}{
-		"kubevirt.io/vm":          vm.Name,
-		"app.kubernetes.io/name":  vm.Name,
+		"kubevirt.io/vm":         vm.Name,
+		"app.kubernetes.io/name": vm.Name,
 		"veyron.io/managed-by":   "veyron-operator",
-		"veyron.io/veyron-vm":   vm.Name,
+		"veyron.io/veyron-vm":    vm.Name,
 	}
 	for k, v := range spec.Labels {
 		labels[k] = v
@@ -39,6 +39,9 @@ func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured
 
 	// Build volumes
 	volumes := buildVolumes(vm.Name, spec)
+
+	// Golden-image disks additionally own a cloned DataVolume.
+	dataVolumeTemplates := buildDataVolumeTemplates(vm.Name, spec)
 
 	// Build disks
 	disks := buildDisks(spec)
@@ -150,6 +153,12 @@ func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured
 		},
 	}
 
+	// Per-VM cloned disks (golden images).
+	if len(dataVolumeTemplates) > 0 {
+		vmSpec := kvVM.Object["spec"].(map[string]interface{})
+		vmSpec["dataVolumeTemplates"] = dataVolumeTemplates
+	}
+
 	// Add annotations if non-empty
 	if len(annotations) > 0 {
 		metadata := kvVM.Object["metadata"].(map[string]interface{})
@@ -179,6 +188,73 @@ func VeyronVMToKubeVirt(vm *veyronv1alpha1.VeyronVM) (*unstructured.Unstructured
 	return kvVM, nil
 }
 
+// SysprepVolumeName is the volume/disk name for the Windows unattend CD-ROM.
+// Must match the Rust converter (src/kube/converter.rs).
+const SysprepVolumeName = "sysprep"
+
+// goldenDataVolumeName names the per-VM clone of a golden image. Keyed by VM +
+// disk so two VMs built from the same image never target the same DataVolume.
+func goldenDataVolumeName(vmName, diskName string) string {
+	return vmName + "-" + diskName
+}
+
+// buildDataVolumeTemplates emits a VM-owned CDI DataVolume for each golden-image
+// disk, so the VM boots a private clone that is garbage-collected with it.
+//
+// sourceRef -> DataSource is preferred over an inline PVC source: the DataSource is
+// the stable catalog handle, so publishing a new image version repoints every future
+// clone without editing a single VM.
+func buildDataVolumeTemplates(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
+	var templates []interface{}
+
+	for _, disk := range spec.Disks {
+		if disk.Source.Type != "dataSource" {
+			continue
+		}
+
+		storage := map[string]interface{}{
+			"resources": map[string]interface{}{
+				"requests": map[string]interface{}{
+					"storage": disk.Size,
+				},
+			},
+		}
+		if disk.StorageClass != nil && *disk.StorageClass != "" {
+			storage["storageClassName"] = *disk.StorageClass
+		}
+
+		dvSpec := map[string]interface{}{
+			"storage": storage,
+		}
+		if disk.Source.FromPvc {
+			dvSpec["source"] = map[string]interface{}{
+				"pvc": map[string]interface{}{
+					"namespace": disk.Source.Namespace,
+					"name":      disk.Source.Name,
+				},
+			}
+		} else {
+			sourceRef := map[string]interface{}{
+				"kind": "DataSource",
+				"name": disk.Source.Name,
+			}
+			if disk.Source.Namespace != "" {
+				sourceRef["namespace"] = disk.Source.Namespace
+			}
+			dvSpec["sourceRef"] = sourceRef
+		}
+
+		templates = append(templates, map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name": goldenDataVolumeName(vmName, disk.Name),
+			},
+			"spec": dvSpec,
+		})
+	}
+
+	return templates
+}
+
 func buildVolumes(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 	var volumes []interface{}
 
@@ -205,9 +281,26 @@ func buildVolumes(vmName string, spec *veyronv1alpha1.VeyronVMSpec) []interface{
 			vol["dataVolume"] = map[string]interface{}{
 				"name": disk.Source.Name,
 			}
+		case "dataSource":
+			// The VM boots its own clone; buildDataVolumeTemplates creates it.
+			vol["dataVolume"] = map[string]interface{}{
+				"name": goldenDataVolumeName(vmName, disk.Name),
+			}
 		}
 
 		volumes = append(volumes, vol)
+	}
+
+	// Windows unattended setup: autounattend.xml as sysprep CD-ROM media.
+	if spec.Windows != nil && spec.Windows.SysprepSecretRef != nil {
+		volumes = append(volumes, map[string]interface{}{
+			"name": SysprepVolumeName,
+			"sysprep": map[string]interface{}{
+				"secret": map[string]interface{}{
+					"name": spec.Windows.SysprepSecretRef.Name,
+				},
+			},
+		})
 	}
 
 	// Cloud-init volume (NoCloud vs config-drive / Cloudbase-Init)
@@ -315,6 +408,18 @@ func buildDisks(spec *veyronv1alpha1.VeyronVMSpec) []interface{} {
 			"name": "cloudinitdisk",
 			"disk": map[string]interface{}{
 				"bus": "virtio",
+			},
+		})
+	}
+
+	// Sysprep media must be a CD-ROM: Windows Setup only reads autounattend.xml
+	// from removable/optical media.
+	if spec.Windows != nil && spec.Windows.SysprepSecretRef != nil {
+		disks = append(disks, map[string]interface{}{
+			"name": SysprepVolumeName,
+			"cdrom": map[string]interface{}{
+				"bus":      "sata",
+				"readonly": true,
 			},
 		})
 	}
