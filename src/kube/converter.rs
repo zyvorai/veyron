@@ -112,6 +112,7 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                 namespace,
                 from_pvc,
                 storage_class,
+                volume_mode,
             } => {
                 // The clone gets its own DataVolume, named for the VM+disk so two
                 // VMs from the same image never collide.
@@ -153,7 +154,15 @@ pub fn vm_config_to_kubevirt(config: &VMConfig) -> Result<VirtualMachine> {
                         storage: Some(DataVolumeStorage {
                             storage_class_name: storage_class.clone(),
                             access_modes: None, // let the StorageProfile decide
-                            volume_mode: None,
+                            // Default to Filesystem: golden images are Filesystem, and a
+                            // matching-mode clone gets the fast native CSI clone. Leaving
+                            // this to the StorageProfile default (often Block) forces a
+                            // slow host-assisted copy that fails on some Ceph RBD setups.
+                            volume_mode: Some(
+                                volume_mode
+                                    .clone()
+                                    .unwrap_or_else(|| "Filesystem".to_string()),
+                            ),
                             resources: Some(DataVolumeResources {
                                 requests: Some(requests),
                             }),
@@ -879,6 +888,7 @@ mod tests {
             namespace: "vm-images".to_string(),
             from_pvc: false,
             storage_class: Some("zyvor-rbd-prod".to_string()),
+            volume_mode: None,
         };
 
         let vm = vm_config_to_kubevirt(&config).unwrap();
@@ -956,6 +966,7 @@ mod tests {
             namespace: "vm-images".to_string(),
             from_pvc: true,
             storage_class: None,
+            volume_mode: None,
         };
 
         let vm = vm_config_to_kubevirt(&config).unwrap();

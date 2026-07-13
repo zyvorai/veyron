@@ -3509,6 +3509,10 @@ pub mod web {
         /// Storage class for the clone; defaults to the cluster default class.
         #[serde(default)]
         storage_class: Option<String>,
+        /// `Filesystem` (default) or `Block` for the clone. Defaults to Filesystem to
+        /// match golden images and get the fast native CSI clone.
+        #[serde(default)]
+        volume_mode: Option<String>,
         /// Auto-size the VM from the image's instancetype/preference labels
         /// (`inferFromVolume`). Default true; ignored if `profile`/`cpus` are given.
         #[serde(default = "default_true")]
@@ -3706,6 +3710,7 @@ pub mod web {
                     .unwrap_or_else(|| DEFAULT_IMAGE_NAMESPACE.to_string()),
                 from_pvc: img.from_pvc,
                 storage_class: img.storage_class.clone(),
+                volume_mode: img.volume_mode.clone(),
             };
             // A cloned disk boots on its own; an install-media CD-ROM must not
             // out-rank it or the VM reruns Setup on every boot.

@@ -301,6 +301,13 @@ pub enum DiskSource {
         /// Storage class for the *clone*; falls back to the cluster default.
         #[serde(skip_serializing_if = "Option::is_none")]
         storage_class: Option<String>,
+        /// `Filesystem` or `Block` for the clone. Omit to inherit the StorageProfile
+        /// default — but a clone should match its source's mode: a cross-mode clone
+        /// falls back to host-assisted copy, which is slow and, on some Ceph RBD
+        /// setups, fails with a block-device permission error. Prefer matching the
+        /// golden image's mode (usually `Filesystem`) to get the fast CSI clone.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        volume_mode: Option<String>,
     },
 }
 
