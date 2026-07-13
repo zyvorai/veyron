@@ -7636,12 +7636,14 @@ html.glass-deck .mac-page-toolbar{
 
 <div class="page section-shell" id="page-images" data-section="storage">
 <div class="space-y animate-fade-in">
-  <div class="page-header"><div><h1>Golden Images</h1><p>CDI DataVolumes and image-tagged PVCs</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportImagesCsv()" title="Export images as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchImages()">&#8635; Refresh</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button></div>
+  <div class="page-header"><div><h1>Golden Images</h1><p>Import an OS image, publish it as a versioned golden image, clone VMs from it</p></div><div class="page-header-right" style="display:flex;gap:8px"><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="exportImagesCsv()" title="Export images as CSV">&#8595; CSV</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="fetchImages();fetchDataSources()">&#8635; Refresh</button><button type="button" class="glass-btn-secondary glass-btn-sm" onclick="openImageUploadModal()" title="Upload a local ISO/QCOW2 via CDI upload proxy">&#8593; Upload ISO</button><button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageImportModal()">+ Import DataVolume</button></div>
   </div>
     <div id="images-cap-banner"></div>
   <div id="images-summary" class="grid-4 page-glass-stats"></div>
+  <div class="card glass-card"><div class="card-header"><span class="card-title">Published golden images</span><span style="font-size:.78rem;color:var(--text-muted);padding:0 4px">DataSources — the stable handle VMs clone from</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchDataSources()">&#8635; Refresh</button></div>
+  <table class="table"><thead><tr><th>DataSource</th><th>Namespace</th><th>Ready</th><th>Backing PVC</th><th>Actions</th></tr></thead><tbody id="datasources-body"><tr><td colspan="5" style="text-align:center;color:var(--text-dim)">Loading…</td></tr></tbody></table></div>
   <div class="card glass-card"><div class="card-header"><span class="card-title">Catalog</span><span id="images-filter-count" style="font-size:.78rem;color:var(--text-muted);white-space:nowrap;padding:0 4px"></span><input type="search" id="images-search" class="form-input" placeholder="Filter images…" oninput="filterImagesView(this.value)" style="width:200px;font-size:.82rem;margin-left:auto"></div>
-  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th></tr></thead><tbody id="images-body"></tbody></table></div>
+  <table class="table"><thead><tr><th>Name</th><th>Namespace</th><th>Kind</th><th>Source</th><th>Status</th><th>Size</th><th>Age</th><th>Actions</th></tr></thead><tbody id="images-body"></tbody></table></div>
   <div class="card glass-card">
     <div class="card-header"><span class="card-title">Windows Setup Guide</span><span style="font-size:.78rem;color:var(--text-muted);padding:0 4px">Packer → CDI → KubeVirt runbook</span><button type="button" class="glass-btn-secondary glass-btn-sm" style="margin-left:auto" onclick="fetchWindowsSetupPlan()">&#8635; Load Plan</button></div>
     <div id="windows-setup-body" style="padding:8px 0"><p style="color:var(--text-dim);padding:12px;font-size:.85rem">Click <strong>Load Plan</strong> to fetch the Windows golden-image setup steps.</p></div>
@@ -8028,6 +8030,89 @@ html.glass-deck .mac-page-toolbar{
     <div class="modal-footer">
       <button type="button" class="glass-btn-secondary" onclick="closeImageImportModal()">Cancel</button>
       <button type="button" class="glass-btn-primary" onclick="submitImageImport()">Start import</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE UPLOAD MODAL (CDI upload proxy) -->
+<div class="modal-overlay" id="image-upload-modal">
+  <div class="modal glass-modal mac-sheet-modal" style="max-width:560px">
+    <div class="mac-sheet-titlebar">
+      <div class="mac-window-traffic" aria-label="Window controls">
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeImageUploadModal()" aria-label="Cancel"></button>
+        <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+        <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+      </div>
+      <div class="mac-sheet-title">Upload ISO / disk image</div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 12px">Creates an upload-target DataVolume and mints a CDI upload token. Push the image bytes to the returned proxy URL — e.g. <code>virtctl image-upload dv &lt;name&gt; --image-path &lt;file&gt;</code>.</p>
+      <div class="form-group"><label class="form-label">DataVolume name</label><input type="text" class="form-input" id="image-upload-name" placeholder="win2022-iso"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">Size</label><input type="text" class="form-input" id="image-upload-size" value="8Gi"></div>
+        <div class="form-group"><label class="form-label">Volume mode</label><select class="form-select" id="image-upload-mode"><option value="filesystem">filesystem (ISO)</option><option value="block">block (raw disk)</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Storage class <span style="color:var(--text-dim)">(optional)</span></label><input type="text" class="form-input" id="image-upload-sc" placeholder="cluster default"></div>
+      <div id="image-upload-result" style="margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="glass-btn-secondary" onclick="closeImageUploadModal()">Close</button>
+      <button type="button" class="glass-btn-primary" onclick="submitImageUpload()">Create upload target</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMAGE PUBLISH MODAL -->
+<div class="modal-overlay" id="image-publish-modal">
+  <div class="modal glass-modal mac-sheet-modal" style="max-width:520px">
+    <div class="mac-sheet-titlebar">
+      <div class="mac-window-traffic" aria-label="Window controls">
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeImagePublishModal()" aria-label="Cancel"></button>
+        <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+        <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+      </div>
+      <div class="mac-sheet-title">Publish golden image</div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 12px">Promotes <strong id="image-publish-src"></strong> to a versioned golden image and points a DataSource at it. VMs clone from the DataSource, so publishing a new version rolls future clones without touching existing VMs. <em>Admin only.</em></p>
+      <input type="hidden" id="image-publish-name"><input type="hidden" id="image-publish-ns">
+      <div class="form-group"><label class="form-label">DataSource name (catalog handle)</label><input type="text" class="form-input" id="image-publish-ds" placeholder="windows-server-2022"></div>
+      <div class="form-group"><label class="form-label">Version <span style="color:var(--text-dim)">(optional)</span></label><input type="text" class="form-input" id="image-publish-ver" placeholder="2026-07"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted)"><input type="checkbox" id="image-publish-force"> Force (skip the Succeeded check — publishing an incomplete image gives every clone a corrupt disk)</label>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="glass-btn-secondary" onclick="closeImagePublishModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" onclick="submitImagePublish()">Publish</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE VM FROM IMAGE MODAL -->
+<div class="modal-overlay" id="image-createvm-modal">
+  <div class="modal glass-modal mac-sheet-modal" style="max-width:520px">
+    <div class="mac-sheet-titlebar">
+      <div class="mac-window-traffic" aria-label="Window controls">
+        <button type="button" class="mac-traffic-btn mac-traffic-close" onclick="closeImageCreateVmModal()" aria-label="Cancel"></button>
+        <span class="mac-traffic-btn mac-traffic-min" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+        <span class="mac-traffic-btn mac-traffic-full" style="opacity:.35;pointer-events:none" aria-hidden="true"></span>
+      </div>
+      <div class="mac-sheet-title">Create VM from golden image</div>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:var(--text-muted);margin:0 0 12px">Clones a new VM disk from <strong id="image-createvm-src"></strong>. The VM gets its own copy — it never shares the golden disk.</p>
+      <input type="hidden" id="image-createvm-dsname"><input type="hidden" id="image-createvm-dsns">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">VM name</label><input type="text" class="form-input" id="image-createvm-name" placeholder="win01"></div>
+        <div class="form-group"><label class="form-label">Namespace</label><input type="text" class="form-input" id="image-createvm-ns" placeholder="customer-a"></div>
+        <div class="form-group"><label class="form-label">Template</label><select class="form-select" id="image-createvm-template"><option value="windows-2022">windows-2022</option><option value="windows-2019">windows-2019</option><option value="windows-11">windows-11</option><option value="windows-10">windows-10</option><option value="">(none)</option></select></div>
+        <div class="form-group"><label class="form-label">Disk size</label><input type="text" class="form-input" id="image-createvm-disk" value="50Gi"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Sysprep secret <span style="color:var(--text-dim)">(optional, holds autounattend.xml)</span></label><input type="text" class="form-input" id="image-createvm-sysprep" placeholder="win01-sysprep"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--text-muted)"><input type="checkbox" id="image-createvm-start" checked> Start immediately</label>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="glass-btn-secondary" onclick="closeImageCreateVmModal()">Cancel</button>
+      <button type="button" class="glass-btn-primary" onclick="submitImageCreateVm()">Create VM</button>
     </div>
   </div>
 </div>
@@ -9996,7 +10081,7 @@ function loadPageData(page, opts) {
   if (page === 'heatmap') fetchHeatmap();
   if (page === 'custom-dashboards') fetchCustomDashboards();
   if (page === 'network-policies') fetchNetworkPolicies();
-  if (page === 'images') { fetchImages(); fetchWindowsSetupPlan(); }
+  if (page === 'images') { fetchImages(); fetchDataSources(); fetchWindowsSetupPlan(); }
   if (page === 'app-store') {
     fetchAppStore(opts);
     if (typeof renderFoundryVmr === 'function') renderFoundryVmr();
@@ -19131,8 +19216,19 @@ function filterImagesView(query) {
   const imagesCountEl = document.getElementById('images-filter-count');
   if (imagesCountEl) imagesCountEl.textContent = filtered.length === images.length ? images.length + ' images' : filtered.length + ' of ' + images.length + ' images';
   tb.innerHTML = filtered.map(function(img) {
-    return '<tr><td class="vmr-copy-tile" title="Copy image name" ' + onStopHandler('copyToClipboard(' + jsArgs(img.name) + ')') + '>' + esc(img.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td>' + idSig(img.status) + '</td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td></tr>';
-  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--text-dim)">No matching images</td></tr>';
+    // Only a completed image can be published; a half-imported disk would clone corrupt.
+    const ready = imageStatusClass(img.status) === 'running';
+    const published = (img.tags || []).some(function(t) { return String(t).indexOf('published') >= 0 || String(t) === 'golden-image'; });
+    let actions;
+    if (published) {
+      actions = '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImagePublishModal(' + jsArgs(img.name) + ',' + jsArgs(img.namespace) + ',' + jsArgs(img.kind) + ')" title="Re-publish / new version">Re-publish</button>';
+    } else if (ready) {
+      actions = '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImagePublishModal(' + jsArgs(img.name) + ',' + jsArgs(img.namespace) + ',' + jsArgs(img.kind) + ')">Publish</button>';
+    } else {
+      actions = '<span style="color:var(--text-dim);font-size:.78rem">importing…</span>';
+    }
+    return '<tr><td class="vmr-copy-tile" title="Copy image name" ' + onStopHandler('copyToClipboard(' + jsArgs(img.name) + ')') + '>' + esc(img.name) + '<span class="vmr-copy-hint">copy</span></td><td>' + esc(img.namespace) + '</td><td>' + esc(img.kind) + '</td><td>' + esc(img.source_type) + '</td><td>' + idSig(img.status) + '</td><td>' + esc(img.capacity) + '</td><td>' + esc(img.age) + '</td><td>' + actions + '</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--text-dim)">No matching images</td></tr>';
 }
 
 function filterTopologyView(query) {
@@ -20331,6 +20427,15 @@ document.getElementById('platform-install-modal')?.addEventListener('click', e =
 });
 document.getElementById('image-import-modal')?.addEventListener('click', e => {
   if (e.target === e.currentTarget) closeImageImportModal();
+});
+document.getElementById('image-upload-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeImageUploadModal();
+});
+document.getElementById('image-publish-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeImagePublishModal();
+});
+document.getElementById('image-createvm-modal')?.addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeImageCreateVmModal();
 });
 document.getElementById('crd-create-modal')?.addEventListener('click', e => {
   if (e.target === e.currentTarget) closeCrdCreateModal();
@@ -27136,6 +27241,129 @@ async function submitImageImport() {
     toast('Import started', 'success');
     closeImageImportModal();
     fetchImages();
+  } catch (e) { toast(e.message || String(e), 'error'); }
+}
+
+// ── Golden-image catalog (DataSources) ────────────────────────────────────
+async function fetchDataSources() {
+  const tb = document.getElementById('datasources-body');
+  if (!tb) return;
+  try {
+    const data = await apiJson('/api/v1/images/datasources' + nsParam());
+    const rows = data.data_sources || [];
+    window.lastDataSources = rows;
+    tb.innerHTML = rows.map(function(d) {
+      const dsName = d.name || '';
+      const dsNs = d.namespace || '';
+      const create = '<button type="button" class="glass-btn-primary glass-btn-sm" onclick="openImageCreateVmModal(' + jsArgs(dsName) + ',' + jsArgs(dsNs) + ')">Create VM</button>';
+      return '<tr><td class="vmr-copy-tile" title="Copy" ' + onStopHandler('copyToClipboard(' + jsArgs(dsName) + ')') + '>' + esc(dsName) + '<span class="vmr-copy-hint">copy</span></td>' +
+        '<td>' + esc(dsNs) + '</td>' +
+        '<td>' + idSig(d.ready ? 'running' : 'stopped', d.ready ? 'ready' : 'not ready') + '</td>' +
+        '<td>' + esc(d.source_pvc || '—') + '</td>' +
+        '<td>' + create + '</td></tr>';
+    }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">No published golden images. Publish a completed image below.</td></tr>';
+  } catch (e) {
+    tb.innerHTML = tbodyError(5, e.message || String(e), 'fetchDataSources');
+  }
+}
+
+// ── Upload ISO / disk image (CDI upload proxy) ────────────────────────────
+function openImageUploadModal() {
+  document.getElementById('image-upload-name').value = '';
+  document.getElementById('image-upload-size').value = '8Gi';
+  document.getElementById('image-upload-mode').value = 'filesystem';
+  document.getElementById('image-upload-sc').value = '';
+  document.getElementById('image-upload-result').innerHTML = '';
+  document.getElementById('image-upload-modal').classList.add('open');
+}
+function closeImageUploadModal() { document.getElementById('image-upload-modal').classList.remove('open'); }
+async function submitImageUpload() {
+  const name = document.getElementById('image-upload-name').value.trim();
+  const size = document.getElementById('image-upload-size').value.trim() || '8Gi';
+  const volume_mode = document.getElementById('image-upload-mode').value;
+  const sc = document.getElementById('image-upload-sc').value.trim();
+  if (!name) { toast('Name required', 'error'); return; }
+  const ns = currentNamespace === 'all' ? 'vm-images' : currentNamespace;
+  try {
+    const r = await apiJson('/api/v1/images/upload', {
+      method: 'POST',
+      body: JSON.stringify({ name, namespace: ns, size, volume_mode, storage_class: sc || undefined })
+    });
+    const tok = r.token ? esc(r.token.slice(0, 24)) + '…' : '(pending — poll the DataVolume)';
+    document.getElementById('image-upload-result').innerHTML =
+      '<div class="glass-card" style="padding:10px;font-size:.8rem">' +
+      '<div style="color:var(--success);margin-bottom:6px">✔ Upload target ready</div>' +
+      '<div style="color:var(--text-muted)">Proxy: <code>' + esc(r.upload_proxy || '') + '</code></div>' +
+      '<div style="color:var(--text-muted);margin-top:4px">Push bytes with:</div>' +
+      '<code style="display:block;margin-top:4px;white-space:pre-wrap;font-size:.76rem">virtctl image-upload dv ' + esc(name) + ' -n ' + esc(ns) + ' --image-path &lt;file&gt;</code>' +
+      '<div style="color:var(--text-dim);margin-top:6px">Token: ' + tok + '</div></div>';
+    toast('Upload target created', 'success');
+    fetchImages();
+  } catch (e) { toast(e.message || String(e), 'error'); }
+}
+
+// ── Publish a completed image as a golden DataSource ──────────────────────
+function openImagePublishModal(name, ns, kind) {
+  document.getElementById('image-publish-name').value = name || '';
+  document.getElementById('image-publish-ns').value = ns || '';
+  document.getElementById('image-publish-src').textContent = (ns || '') + '/' + (name || '');
+  document.getElementById('image-publish-ds').value = '';
+  document.getElementById('image-publish-ver').value = '';
+  document.getElementById('image-publish-force').checked = false;
+  document.getElementById('image-publish-modal').classList.add('open');
+}
+function closeImagePublishModal() { document.getElementById('image-publish-modal').classList.remove('open'); }
+async function submitImagePublish() {
+  const name = document.getElementById('image-publish-name').value.trim();
+  const ns = document.getElementById('image-publish-ns').value.trim();
+  const data_source = document.getElementById('image-publish-ds').value.trim();
+  const version = document.getElementById('image-publish-ver').value.trim();
+  const force = document.getElementById('image-publish-force').checked;
+  if (!data_source) { toast('DataSource name required', 'error'); return; }
+  try {
+    await apiJson('/api/v1/images/publish', {
+      method: 'POST',
+      body: JSON.stringify({ name, namespace: ns, data_source, version: version || undefined, force })
+    });
+    toast('Published ' + data_source, 'success');
+    closeImagePublishModal();
+    fetchDataSources();
+  } catch (e) { toast(e.message || String(e), 'error'); }
+}
+
+// ── Create a VM cloned from a golden DataSource ───────────────────────────
+function openImageCreateVmModal(dsName, dsNs) {
+  document.getElementById('image-createvm-dsname').value = dsName || '';
+  document.getElementById('image-createvm-dsns').value = dsNs || '';
+  document.getElementById('image-createvm-src').textContent = (dsNs || '') + '/' + (dsName || '');
+  document.getElementById('image-createvm-name').value = '';
+  document.getElementById('image-createvm-ns').value = currentNamespace === 'all' ? '' : currentNamespace;
+  document.getElementById('image-createvm-disk').value = '50Gi';
+  document.getElementById('image-createvm-sysprep').value = '';
+  document.getElementById('image-createvm-start').checked = true;
+  document.getElementById('image-createvm-modal').classList.add('open');
+}
+function closeImageCreateVmModal() { document.getElementById('image-createvm-modal').classList.remove('open'); }
+async function submitImageCreateVm() {
+  const dsName = document.getElementById('image-createvm-dsname').value.trim();
+  const dsNs = document.getElementById('image-createvm-dsns').value.trim();
+  const name = document.getElementById('image-createvm-name').value.trim();
+  const ns = document.getElementById('image-createvm-ns').value.trim();
+  const template = document.getElementById('image-createvm-template').value;
+  const disk_size = document.getElementById('image-createvm-disk').value.trim() || '50Gi';
+  const sysprep = document.getElementById('image-createvm-sysprep').value.trim();
+  const start = document.getElementById('image-createvm-start').checked;
+  if (!name || !ns) { toast('VM name and namespace required', 'error'); return; }
+  const body = {
+    name, namespace: ns, disk_size, start,
+    image: { name: dsName, namespace: dsNs }
+  };
+  if (template) body.template = template;
+  if (sysprep) body.sysprep_secret = sysprep;
+  try {
+    await apiJson('/api/v1/vms', { method: 'POST', body: JSON.stringify(body) });
+    toast('VM ' + name + ' created from ' + dsName, 'success');
+    closeImageCreateVmModal();
   } catch (e) { toast(e.message || String(e), 'error'); }
 }
 
