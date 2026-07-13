@@ -46,12 +46,19 @@ For a lab/one-off ISO build, know these:
 4. **Cross-namespace clone RBAC** binds the TENANT namespace's `default` SA, not the
    Veyron API SA — see `deploy/k8s/bootstrap/cdi-golden-image-cloner.yaml`.
 
-5. **Windows 11 24H2 Setup + custom autounattend** can fail early with
-   `0xD000A000 - 0x40031` (before setupact.log is written) — a 24H2 Setup-engine
-   answer-file compatibility issue that needs iterative tuning. This is the strongest
-   argument for the **Packer pre-built-image** pipeline over interactive ISO installs
-   for production: build and validate the image once, then CDI-import a known-good
-   qcow2 and skip Setup entirely.
+5. **`0xD000A000 - 0x40031` = the windowsPE driver-injection block.** Confirmed from
+   `X:\$WINDOWS.~BT\Sources\Panther\setuperr.log`: it fails in
+   `ExecuteUnattendDriverInstall`. A `PnpCustomizationsWinPE` `DriverPaths` block
+   pointing at CD-ROM roots makes 24H2 Setup abort. The answer file here has NO
+   windowsPE driver injection — the builder root disk is **SATA** (WinPE sees it
+   natively), and VirtIO drivers are installed at first logon instead.
+
+6. **Win11 24H2's redesigned Setup shows the first two locale screens (language,
+   keyboard) interactively even with a full answer file** — a known 24H2 regression.
+   Drive past them (2× Enter, Next is the focused default); the answer file then
+   auto-handles product key/edition, disk partitioning, image install, OOBE, and
+   sysprep with no further input. For fully hands-off production, prefer the Packer
+   pre-built-image pipeline (`docs/WINDOWS_PACKER_GITOPS_PIPELINE.md`).
 
 ## Notes
 
