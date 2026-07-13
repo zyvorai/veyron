@@ -3,17 +3,24 @@
 #
 # Cross-namespace golden-image cloning (CDI).
 #
-# CDI refuses to clone a PVC/DataSource across namespaces unless the *creating*
-# ServiceAccount holds `create` on `datavolumes/source` in the SOURCE namespace.
-# Without this binding, a VM in a tenant namespace that references a golden image
-# in `vm-images` never gets its disk: the DataVolume sits in a permission error.
+# CDI refuses to clone a PVC/DataSource across namespaces unless the ServiceAccount
+# that will OWN the clone holds `create` on `datavolumes/source` in the SOURCE
+# namespace. For a KubeVirt VM whose `dataVolumeTemplates` clone a golden image, that
+# owner is the TENANT namespace's **default** ServiceAccount (`<tenant>:default`) — NOT
+# the Veyron API SA that issued `POST /vms`. (Verified the hard way: binding the veyron
+# SA left the clone stuck on `UnauthorizedDataVolumeCreate: User
+# system:serviceaccount:<tenant>:default has insufficient permissions in clone source
+# namespace`.)
+#
+# Without this binding, a VM in a tenant namespace that references a golden image in
+# `vm-images` never gets its disk: the DataVolume sits in a permission error.
 #
 # Grant one RoleBinding per tenant namespace, in the image namespace.
 #
 #   kubectl apply -f deploy/k8s/bootstrap/cdi-golden-image-cloner.yaml
 #
 # To authorize another tenant, copy the RoleBinding and change:
-#   metadata.name        -> <tenant>-golden-image-cloner
+#   metadata.name         -> <tenant>-golden-image-cloner
 #   subjects[0].namespace -> <tenant>
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -31,19 +38,19 @@ rules:
     resources: ["datasources"]
     verbs: ["get", "list", "watch"]
 ---
-# The Veyron API/operator ServiceAccount creates VMs on behalf of users, so it is
-# the identity CDI authorizes for the clone.
+# The clone's owner is the tenant namespace's default SA — bind THAT here, one per
+# tenant. (customer-a shown; copy per tenant.)
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: veyron-golden-image-cloner
+  name: customer-a-golden-image-cloner
   namespace: vm-images
   labels:
     veyron.io/managed-by: veyron
 subjects:
   - kind: ServiceAccount
-    name: veyron
-    namespace: veyron-system
+    name: default
+    namespace: customer-a
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

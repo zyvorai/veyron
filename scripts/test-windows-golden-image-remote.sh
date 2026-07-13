@@ -49,6 +49,27 @@ ok "windows_golden_images capability present"
 $SSH "$K get ns ${IMG_NS} >/dev/null 2>&1 || $K create ns ${IMG_NS}" >/dev/null 2>&1
 $SSH "$K get ns ${TENANT_NS} >/dev/null 2>&1 || $K create ns ${TENANT_NS}" >/dev/null 2>&1
 ok "namespaces ${IMG_NS}, ${TENANT_NS}"
+# Cross-namespace clone RBAC: the TENANT's default SA (the clone's owner) needs
+# datavolumes/source create in the image namespace, or the clone hangs Unauthorized.
+$SSH "$K apply -f - >/dev/null 2>&1" <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: { name: cdi-golden-image-cloner }
+rules:
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datavolumes/source"]
+    verbs: ["create"]
+  - apiGroups: ["cdi.kubevirt.io"]
+    resources: ["datasources"]
+    verbs: ["get","list","watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: { name: ${TENANT_NS}-golden-image-cloner, namespace: ${IMG_NS} }
+subjects: [{ kind: ServiceAccount, name: default, namespace: ${TENANT_NS} }]
+roleRef: { apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: cdi-golden-image-cloner }
+EOF
+ok "cross-namespace clone RBAC (${TENANT_NS}:default → ${IMG_NS})"
 
 # ── 2. Import the ISO through the API ────────────────────────────────────────
 step "Import Windows ISO via POST /images/import"

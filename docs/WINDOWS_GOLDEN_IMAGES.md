@@ -135,15 +135,20 @@ Never commit answer files — they carry the local administrator password.
 
 ## 5. Cross-namespace clone RBAC (required)
 
-CDI refuses a cross-namespace clone unless the creating ServiceAccount can `create`
-on `datavolumes/source` in the **source** namespace. Without it the DataVolume hangs
-in a permission error and the VM never gets a disk.
+CDI refuses a cross-namespace clone unless the ServiceAccount that will **own** the
+clone can `create` on `datavolumes/source` in the **source** namespace. For a VM whose
+`dataVolumeTemplates` clone a golden image, that owner is the **tenant namespace's
+`default` ServiceAccount** — not the Veyron API SA. Bind the tenant's default SA in
+the image namespace:
 
 ```bash
 kubectl apply -f deploy/k8s/bootstrap/cdi-golden-image-cloner.yaml
 ```
 
-Copy the RoleBinding per tenant namespace.
+Copy the RoleBinding per tenant namespace (change `subjects[0].namespace`). Without it
+the clone hangs on `UnauthorizedDataVolumeCreate: User
+system:serviceaccount:<tenant>:default has insufficient permissions in clone source
+namespace`.
 
 ## Rolling a new image version
 
